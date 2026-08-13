@@ -41,7 +41,9 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 
 ### セキュリティ
 
-- **すべての API Route Handler は `lib/authz.ts` の `requireUser` / `requireEditor` / `requireAdmin` を必ず通す。** 画面側の出し分けだけに頼らない
+- **すべての API Route Handler は `lib/authz.ts` の `requireUser` / `requirePermission` / `requireAnyPermission` / `requireAdmin` を必ず通す。**
+  画面側の出し分けだけに頼らない（呼び忘れは `apps/web/lib/authz-coverage.test.ts` が検出する）
+- 権限を要する画面は、サーバーコンポーネントでも `getActor()` で確認して中身を描画しない（`app/admin/layout.tsx` が例）
 - **機密（非公開製品・非公開組成）はサーバー側で除外してから返す。** クライアントで隠すのは不可。TSV/ドキュメント出力にも同じマスキングを適用する
 - パスワードは Argon2id。セッションはトークン生値を httpOnly Cookie、DBには SHA-256 ハッシュのみ保存
 - `.env` は絶対にコミットしない

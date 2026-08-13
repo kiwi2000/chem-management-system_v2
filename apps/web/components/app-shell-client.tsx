@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 const STORAGE_KEY = "chem.sidebar.open";
 
 interface Props {
-  user: Pick<MeDto, "email" | "displayName" | "role" | "canEdit">;
+  user: Pick<MeDto, "email" | "displayName" | "permissions" | "canEdit" | "isAdmin">;
   children: ReactNode;
 }
 
@@ -65,7 +65,7 @@ export function AppShellClient({ user, children }: Props) {
           <X className="size-4" />
         </Button>
       </div>
-      <SidebarNav isAdmin={user.role === "SYSTEM_ADMIN"} onNavigate={() => setDrawerOpen(false)} />
+      <SidebarNav permissions={user.permissions} onNavigate={() => setDrawerOpen(false)} />
     </>
   );
 
@@ -122,7 +122,7 @@ export function AppShellClient({ user, children }: Props) {
             <span className="text-muted-foreground hidden text-sm sm:inline">
               {user.displayName ?? user.email}
             </span>
-            <Badge variant="secondary">{m.shell.roles[user.role]}</Badge>
+            {user.isAdmin && <Badge variant="secondary">{m.shell.admin}</Badge>}
             {!user.canEdit && <Badge variant="outline">{m.shell.readOnly}</Badge>}
             <LanguageSwitcher />
             <SignOutButton />

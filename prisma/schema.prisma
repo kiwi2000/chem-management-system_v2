@@ -21,10 +21,29 @@ datasource db {
 
 // ---------- Enum ----------
 
-enum Role {
-  SYSTEM_ADMIN
-  PRIVILEGED
-  NON_PRIVILEGED
+/**
+ * 権限。役割ではなく権限そのものをユーザーに持たせる。
+ * packages/shared/src/permissions.ts の PERMISSIONS と必ず一致させること。
+ */
+enum Permission {
+  PRODUCT_VIEW
+  PRODUCT_VIEW_PRIVATE
+  PRODUCT_EDIT
+  COMPOSITION_VIEW
+  COMPOSITION_VIEW_PRIVATE
+  SUBSTANCE_VIEW
+  SUBSTANCE_EDIT
+  REGULATION_VIEW
+  REGULATION_EDIT
+  DATA_EXPORT
+  NEWS_POST
+  NEWS_MANAGE
+  ADMIN
+}
+
+enum NewsStatus {
+  DRAFT
+  PUBLISHED
 }
 
 enum SettingValueType {
@@ -53,9 +72,6 @@ model User {
   mfaSecret          String?   @map("mfa_secret")
   mfaEnabled         Boolean   @default(false) @map("mfa_enabled")
   displayName        String?   @map("display_name")
-  role               Role
-  /** 非特権ユーザーの編集可否。管理者・特権は常に可（アプリ層で強制） */
-  canEdit            Boolean   @default(false) @map("can_edit")
   /** 表示言語の ISO コード（"ja" / "en"）。null=未設定（既定言語を使う） */
   preferredLocale    String?   @map("preferred_locale")
   activeFlag         Boolean   @default(true) @map("active_flag")
@@ -63,9 +79,28 @@ model User {
   updatedAt          DateTime  @updatedAt @map("updated_at")
   deletedAt          DateTime? @map("deleted_at")
 
-  sessions Session[]
+  sessions    Session[]
+  permissions UserPermission[]
+  news        News[]
 
   @@map("users")
+}
+
+/**
+ * ユーザーが持つ権限。
+ * 含意（編集できるなら見られる 等）は保存前に展開しておくので、
+ * 判定側はこの表に行があるかどうかだけを見ればよい。
+ */
+model UserPermission {
+  userId     String     @map("user_id")
+  permission Permission
+  grantedAt  DateTime   @default(now()) @map("granted_at")
+  grantedBy  String?    @map("granted_by")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permission])
+  @@map("user_permissions")
 }
 
 /**
@@ -118,6 +153,36 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([actorId, at])
   @@map("audit_logs")
+}
+
+// ---------- お知らせ ----------
+
+/**
+ * ログイン後のホームに出すお知らせ。
+ * 閲覧は全ログインユーザー。投稿は NEWS_POST、他人の分の編集・削除は NEWS_MANAGE。
+ */
+model News {
+  id       String     @id @default(cuid())
+  titleJa  String     @map("title_ja")
+  bodyJa   String     @map("body_ja")
+  /** 英語は任意。未入力なら英語表示でも日本語を出す */
+  titleEn  String?    @map("title_en")
+  bodyEn   String?    @map("body_en")
+  status   NewsStatus @default(DRAFT)
+  /** 重要なお知らせを一覧の先頭に固定する */
+  pinned   Boolean    @default(false)
+  /** 掲載期間。null は「制限なし」 */
+  publishFrom  DateTime? @map("publish_from")
+  publishUntil DateTime? @map("publish_until")
+  authorId  String   @map("author_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([status, pinned, publishFrom])
+  @@index([authorId])
+  @@map("news")
 }
 
 // ---------- 多言語 ----------

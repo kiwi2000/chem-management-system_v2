@@ -57,20 +57,6 @@ export const changePasswordSchema = (m: Messages) =>
     });
 export type ChangePasswordInput = z.infer<ReturnType<typeof changePasswordSchema>>;
 
-/** 管理者によるユーザー作成（初期パスワードを発行し、初回ログイン時に変更を強制） */
-export const userCreateSchema = (m: Messages) =>
-  z.object({
-    email: emailSchema(m),
-    displayName: z.string().trim().max(200).optional().nullable(),
-    role: z.enum(["SYSTEM_ADMIN", "PRIVILEGED", "NON_PRIVILEGED"]),
-    canEdit: z.boolean().optional(),
-    initialPassword: passwordSchema(m),
-  });
-export type UserCreateInput = z.infer<ReturnType<typeof userCreateSchema>>;
-
-/** 管理者によるパスワード再発行 */
-export const passwordResetSchema = (m: Messages) => z.object({ newPassword: passwordSchema(m) });
-
 /** セキュリティ関連の定数（値の変更は運用ポリシーの変更を意味する） */
 export const AUTH_POLICY = {
   /** 連続失敗でロックする回数 */

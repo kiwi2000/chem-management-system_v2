@@ -1,6 +1,6 @@
 "use client";
 
-import type { Messages } from "@chem/shared";
+import type { Messages, Permission } from "@chem/shared";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n-client";
@@ -10,6 +10,8 @@ interface NavItem {
   href: string;
   /** 辞書の nav ブロックから文言を引くためのキー */
   key: keyof Messages["nav"];
+  /** この権限が無い人にはメニューを出さない（サーバー側でも別途弾く） */
+  needs?: Permission;
   /** この接頭辞のパスでも選択中扱いにする（詳細画面など） */
   match?: string[];
 }
@@ -21,16 +23,24 @@ interface NavItem {
  */
 const ITEMS: NavItem[] = [
   { href: "/", key: "home" },
-  { href: "/substances", key: "substances" },
-  { href: "/products", key: "products" },
-  { href: "/laws", key: "laws", match: ["/laws", "/categories"] },
-  { href: "/link-versions", key: "links", match: ["/link-versions", "/sources"] },
-  { href: "/metal-factors", key: "metalFactors" },
-  { href: "/import-export", key: "importExport" },
-  { href: "/doc-templates", key: "docTemplates" },
+  { href: "/news", key: "news" },
+  { href: "/substances", key: "substances", needs: "SUBSTANCE_VIEW" },
+  { href: "/products", key: "products", needs: "PRODUCT_VIEW" },
+  { href: "/laws", key: "laws", needs: "REGULATION_VIEW", match: ["/laws", "/categories"] },
+  {
+    href: "/link-versions",
+    key: "links",
+    needs: "REGULATION_VIEW",
+    match: ["/link-versions", "/sources"],
+  },
+  { href: "/metal-factors", key: "metalFactors", needs: "REGULATION_VIEW" },
+  { href: "/import-export", key: "importExport", needs: "DATA_EXPORT" },
+  { href: "/doc-templates", key: "docTemplates", needs: "DATA_EXPORT" },
 ];
 
-const ADMIN_ITEMS: NavItem[] = [{ href: "/admin", key: "admin", match: ["/admin"] }];
+const ADMIN_ITEMS: NavItem[] = [
+  { href: "/admin/users", key: "users", needs: "ADMIN", match: ["/admin/users"] },
+];
 
 function isActive(pathname: string, item: NavItem): boolean {
   if (item.href === "/") return pathname === "/";
@@ -38,12 +48,21 @@ function isActive(pathname: string, item: NavItem): boolean {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-export function SidebarNav({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
+export function SidebarNav({
+  permissions,
+  onNavigate,
+}: {
+  permissions: Permission[];
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const { m } = useI18n();
+  const allowed = (item: NavItem) => !item.needs || permissions.includes(item.needs);
+
+  const adminItems = ADMIN_ITEMS.filter(allowed);
   const groups: { title: string | null; items: NavItem[] }[] = [
-    { title: null, items: ITEMS },
-    ...(isAdmin ? [{ title: m.nav.system, items: ADMIN_ITEMS }] : []),
+    { title: null, items: ITEMS.filter(allowed) },
+    ...(adminItems.length > 0 ? [{ title: m.nav.system, items: adminItems }] : []),
   ];
 
   return (
