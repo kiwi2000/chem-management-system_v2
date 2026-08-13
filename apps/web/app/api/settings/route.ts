@@ -1,18 +1,18 @@
 import { settingsSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requireAdmin, requireUser } from "@/lib/authz";
+import { jsonError, requireAdmin } from "@/lib/authz";
 import { getServerMessages } from "@/lib/i18n";
 import { getAppSettings, saveAppSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/settings — 現在の設定。
- * 入力欄の出し分け（CASを必須にするか等）に使うため、ログインしていれば読める。
- * 業務データは含まない。
+ * GET /api/settings — 現在の設定（システム管理者のみ）。
+ * 一般ユーザーの画面が設定を必要とする場合は、この API ではなく
+ * サーバーコンポーネントから lib/settings.ts の getAppSettings() を呼んで値だけ渡すこと。
  */
 export async function GET() {
-  const actor = await requireUser();
+  const actor = await requireAdmin();
   if (actor instanceof Response) return actor;
   return Response.json({ settings: await getAppSettings() });
 }
