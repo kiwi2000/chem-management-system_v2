@@ -2,6 +2,7 @@ import {
   looksLikeCas,
   normalizeCas,
   normalizeCode,
+  type AppSettings,
   type Messages,
   type SubstanceInput,
 } from "@chem/shared";
@@ -82,16 +83,38 @@ export function validateProperties(
   return errors;
 }
 
+/**
+ * CAS欄の扱いはシステム設定で切り替える。
+ * 厳しくしている場合はここで止め、そうでなければ警告に落とす。
+ */
+export function validateCas(
+  casNormalized: string | null,
+  settings: AppSettings,
+  m: Messages,
+): string | null {
+  if (!casNormalized) {
+    return settings.casRequired ? m.errors.casRequired : null;
+  }
+  if (settings.casFormatEnforced && !looksLikeCas(casNormalized)) {
+    return m.errors.casFormatInvalid;
+  }
+  return null;
+}
+
 /** 保存はできるが利用者に伝えたいこと */
 export async function collectWarnings(
   casNormalized: string | null,
   excludeSubstanceId: string | null,
+  settings: AppSettings,
   m: Messages,
 ): Promise<string[]> {
   const warnings: string[] = [];
   if (!casNormalized) return warnings;
 
-  if (!looksLikeCas(casNormalized)) warnings.push(m.substances.warnCasFormat);
+  // 形式を強制している場合は validateCas がエラーで弾くので、ここでは警告を出さない
+  if (!settings.casFormatEnforced && !looksLikeCas(casNormalized)) {
+    warnings.push(m.substances.warnCasFormat);
+  }
 
   // 同一CASは意図的に許しているが、取り違えに気づけるよう知らせる
   const same = await prisma.substance.findMany({

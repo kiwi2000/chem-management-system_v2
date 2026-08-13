@@ -46,6 +46,7 @@ const ADMIN_ITEMS: NavItem[] = [
     needs: "ADMIN",
     match: ["/admin/substance-property-defs"],
   },
+  { href: "/admin/settings", key: "settings", needs: "ADMIN", match: ["/admin/settings"] },
 ];
 
 function isActive(pathname: string, item: NavItem): boolean {

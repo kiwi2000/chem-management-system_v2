@@ -11,8 +11,10 @@ import {
   hasDuplicateGazette,
   normalizeInput,
   toListItem,
+  validateCas,
   validateProperties,
 } from "@/lib/substance-service";
+import { getAppSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +91,10 @@ export async function POST(req: Request) {
   }
 
   const base = normalizeInput(input);
+  const settings = await getAppSettings();
+  const casError = validateCas(base.casNormalized, settings, m);
+  if (casError) return jsonError(400, "validation_error", casError);
+
   if (await prisma.substance.findUnique({ where: { codeNormalized: base.codeNormalized } })) {
     return jsonError(409, "duplicate_code", m.errors.duplicateCode(base.code));
   }
@@ -113,6 +119,6 @@ export async function POST(req: Request) {
     diff: { code: base.code, casNumber: base.casNumber, mainNameJa: input.mainNameJa },
   });
 
-  const warnings = await collectWarnings(base.casNormalized, created.id, m);
+  const warnings = await collectWarnings(base.casNormalized, created.id, settings, m);
   return Response.json({ id: created.id, warnings }, { status: 201 });
 }

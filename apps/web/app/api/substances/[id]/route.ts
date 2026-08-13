@@ -10,8 +10,10 @@ import {
   hasDuplicateGazette,
   normalizeInput,
   toDetail,
+  validateCas,
   validateProperties,
 } from "@/lib/substance-service";
+import { getAppSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +69,10 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
 
   const base = normalizeInput(input);
+  const settings = await getAppSettings();
+  const casError = validateCas(base.casNormalized, settings, m);
+  if (casError) return jsonError(400, "validation_error", casError);
+
   if (base.codeNormalized !== existing.codeNormalized) {
     const clash = await prisma.substance.findUnique({
       where: { codeNormalized: base.codeNormalized },
@@ -105,7 +111,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   });
 
   // 更新でも同一CASの警告を出す（v1は登録時しか見ていなかった）
-  const warnings = await collectWarnings(base.casNormalized, id, m);
+  const warnings = await collectWarnings(base.casNormalized, id, settings, m);
   return Response.json({ ok: true, warnings });
 }
 

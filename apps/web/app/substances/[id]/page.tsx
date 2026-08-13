@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_SETTINGS, type AppSettings } from "@chem/shared";
 import { use, useEffect, useState } from "react";
 import { SubstanceForm } from "@/components/substance-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -13,14 +14,16 @@ export default function EditSubstancePage({ params }: { params: Promise<{ id: st
   const { me, can } = useMe();
   const [item, setItem] = useState<SubstanceDetailDto | null>(null);
   const [defs, setDefs] = useState<PropertyDefDto[] | null>(null);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
-      const [sRes, dRes] = await Promise.all([
+      const [sRes, dRes, cRes] = await Promise.all([
         fetch(`/api/substances/${id}`),
         // 入力済みの値が消えて見えないよう、使わなくなった項目も含めて取得する
         fetch("/api/substance-property-defs?includeInactive=true"),
+        fetch("/api/settings"),
       ]);
       if (!sRes.ok) {
         const body = (await sRes.json().catch(() => null)) as ApiError | null;
@@ -29,6 +32,11 @@ export default function EditSubstancePage({ params }: { params: Promise<{ id: st
       }
       setItem(((await sRes.json()) as { item: SubstanceDetailDto }).item);
       setDefs(dRes.ok ? ((await dRes.json()) as { items: PropertyDefDto[] }).items : []);
+      setSettings(
+        cRes.ok
+          ? ((await cRes.json()) as { settings: AppSettings }).settings
+          : { ...DEFAULT_SETTINGS },
+      );
     })();
   }, [id, m]);
 
@@ -42,11 +50,16 @@ export default function EditSubstancePage({ params }: { params: Promise<{ id: st
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      {!error && (item === null || defs === null || me === null) && (
+      {!error && (item === null || defs === null || settings === null || me === null) && (
         <p className="text-muted-foreground">{m.common.loading}</p>
       )}
-      {item && defs && me && (
-        <SubstanceForm initial={item} defs={defs} readOnly={!can("SUBSTANCE_EDIT")} />
+      {item && defs && settings && me && (
+        <SubstanceForm
+          initial={item}
+          defs={defs}
+          settings={settings}
+          readOnly={!can("SUBSTANCE_EDIT")}
+        />
       )}
     </div>
   );

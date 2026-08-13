@@ -40,6 +40,7 @@ export const en: Messages = {
     news: "Announcements",
     users: "Users",
     propertyDefs: "Substance property definitions",
+    settings: "System settings",
     substances: "Substances",
     products: "Products / Materials",
     laws: "Regulations",
@@ -170,6 +171,19 @@ export const en: Messages = {
     savedWithWarnings: "Saved. Please check the following",
   },
 
+  settings: {
+    title: "System settings",
+    description: "Adjust how strict the input checks are to match how you work.",
+    substanceSection: "Substance CAS numbers",
+    casRequired: "Require a CAS number",
+    casRequiredHint:
+      "Turn this off to allow empty values — needed for polymers, UVCB and substances of unknown composition",
+    casFormatEnforced: "Require the CAS format (e.g. 7439-92-1)",
+    casFormatEnforcedHint:
+      "Turn this off to save other formats with a warning only — useful for provisional in-house numbers",
+    saved: "Settings saved",
+  },
+
   propertyDefs: {
     title: "Substance property definitions",
     newTitle: "New property",
@@ -273,6 +287,9 @@ export const en: Messages = {
     duplicateGazette: "The same number is registered twice under the same law",
     propertyTypeMismatch: (label: string) => `The value of "${label}" does not match its type`,
     unknownProperty: "The request contains a property that is not defined",
+    casRequired: "A CAS number is required (this can be changed in the system settings)",
+    casFormatInvalid:
+      "The CAS number format is not valid (e.g. 7439-92-1). This can be relaxed in the system settings",
   },
 
   validation: {

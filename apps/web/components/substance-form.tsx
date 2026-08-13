@@ -1,6 +1,6 @@
 "use client";
 
-import { GAZETTE_LAW_KINDS, pickName, type GazetteLawKind } from "@chem/shared";
+import { GAZETTE_LAW_KINDS, pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,6 +15,8 @@ interface Props {
   /** 未指定なら新規登録 */
   initial?: SubstanceDetailDto;
   defs: PropertyDefDto[];
+  /** CAS欄の厳しさはシステム設定で変わる */
+  settings: AppSettings;
   readOnly: boolean;
 }
 
@@ -29,7 +31,7 @@ interface GazetteRow {
 
 const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
 
-export function SubstanceForm({ initial, defs, readOnly }: Props) {
+export function SubstanceForm({ initial, defs, settings, readOnly }: Props) {
   const router = useRouter();
   const { m, locale } = useI18n();
 
@@ -144,17 +146,20 @@ export function SubstanceForm({ initial, defs, readOnly }: Props) {
               <div className="space-y-2">
                 <Label htmlFor="cas">
                   {m.substances.casNumber}
-                  {m.common.optional}
+                  {!settings.casRequired && m.common.optional}
                 </Label>
                 <Input
                   id="cas"
                   maxLength={20}
+                  required={settings.casRequired}
                   value={casNumber}
                   onChange={(e) => setCasNumber(e.target.value)}
                   className="w-56 font-mono"
                   placeholder="7439-92-1"
                 />
-                <p className="text-muted-foreground text-xs">{m.substances.casHint}</p>
+                {!settings.casRequired && (
+                  <p className="text-muted-foreground text-xs">{m.substances.casHint}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">{m.substances.status}</Label>

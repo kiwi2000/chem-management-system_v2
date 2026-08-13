@@ -39,6 +39,7 @@ export const ja = {
     news: "お知らせ",
     users: "ユーザー管理",
     propertyDefs: "拡張属性の項目定義",
+    settings: "システム設定",
     substances: "物質",
     products: "製品 / 原材料",
     laws: "法規制",
@@ -171,6 +172,19 @@ export const ja = {
     savedWithWarnings: "保存しました。次の点を確認してください",
   },
 
+  settings: {
+    title: "システム設定",
+    description: "運用の方針に合わせて、入力チェックの厳しさを切り替えます。",
+    substanceSection: "物質のCAS番号",
+    casRequired: "CAS番号を必須にする",
+    casRequiredHint:
+      "外すと空欄で登録できます。ポリマー・UVCB・組成不明のものを扱うなら外してください",
+    casFormatEnforced: "CAS番号の形（例: 7439-92-1）を強制する",
+    casFormatEnforcedHint:
+      "外すと形が違っても警告だけで保存できます。暫定の管理番号を入れる運用なら外してください",
+    saved: "設定を保存しました",
+  },
+
   propertyDefs: {
     title: "拡張属性の項目定義",
     newTitle: "項目の追加",
@@ -277,6 +291,8 @@ export const ja = {
     duplicateGazette: "同じ区分に同じ番号が重複しています",
     propertyTypeMismatch: (label: string) => `「${label}」の値の種類が定義と合っていません`,
     unknownProperty: "定義されていない項目が含まれています",
+    casRequired: "CAS番号は必須です（システム設定で変更できます）",
+    casFormatInvalid: "CAS番号の形が正しくありません（例: 7439-92-1）。システム設定で緩められます",
   },
 
   /** 入力チェック（Zodスキーマが使う） */
