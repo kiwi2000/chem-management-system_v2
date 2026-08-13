@@ -3,6 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { createSession, hashPassword, revokeAllSessions, verifyPassword } from "@/lib/auth";
 import { jsonError, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { getServerMessages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -14,28 +15,25 @@ export async function POST(req: Request) {
   const auth = await requireUser();
   if (auth instanceof Response) return auth;
   const { user } = auth;
+  const m = await getServerMessages();
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return jsonError(400, "invalid_json", "リクエストボディがJSONではありません");
+    return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const parsed = changePasswordSchema.safeParse(body);
+  const parsed = changePasswordSchema(m).safeParse(body);
   if (!parsed.success) {
-    return jsonError(400, "validation_error", "入力内容に誤りがあります", parsed.error.flatten());
+    return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const { currentPassword, newPassword } = parsed.data;
 
   if (!user.passwordHash) {
-    return jsonError(
-      400,
-      "no_password",
-      "パスワードが設定されていません。管理者にお問い合わせください",
-    );
+    return jsonError(400, "no_password", m.errors.noPassword);
   }
   if (!(await verifyPassword(user.passwordHash, currentPassword))) {
-    return jsonError(401, "invalid_credentials", "現在のパスワードが正しくありません");
+    return jsonError(401, "invalid_credentials", m.errors.currentPasswordWrong);
   }
 
   await prisma.user.update({

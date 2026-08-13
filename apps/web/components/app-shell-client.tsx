@@ -3,11 +3,13 @@
 import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ROLE_LABELS, type MeDto } from "@/lib/types";
+import { useI18n } from "@/lib/i18n-client";
+import type { MeDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /** サイドバーの開閉状態は端末ごとに覚えておく */
@@ -24,6 +26,7 @@ interface Props {
  * どちらもトップバー左端の同じボタンで開閉する。
  */
 export function AppShellClient({ user, children }: Props) {
+  const { m } = useI18n();
   // 広い画面用（既定は開いた状態。localStorage に前回の状態を覚える）
   const [open, setOpen] = useState(true);
   // 狭い画面用のドロワー（既定は閉じた状態）
@@ -50,12 +53,12 @@ export function AppShellClient({ user, children }: Props) {
     <>
       <div className="flex h-14 items-center justify-between gap-2 border-b px-4">
         <Link href="/" className="truncate text-sm font-semibold">
-          化学物質管理システム
+          {m.common.appName}
         </Link>
         <Button
           variant="ghost"
           size="icon"
-          aria-label="メニューを閉じる"
+          aria-label={m.shell.closeMenu}
           className="md:hidden"
           onClick={() => setDrawerOpen(false)}
         >
@@ -86,7 +89,7 @@ export function AppShellClient({ user, children }: Props) {
         <div className="fixed inset-0 z-40 md:hidden">
           <button
             type="button"
-            aria-label="メニューを閉じる"
+            aria-label={m.shell.closeMenu}
             className="absolute inset-0 bg-black/40"
             onClick={() => setDrawerOpen(false)}
           />
@@ -106,21 +109,22 @@ export function AppShellClient({ user, children }: Props) {
             variant="ghost"
             size="icon"
             onClick={toggle}
-            aria-label={open ? "メニューを閉じる" : "メニューを開く"}
+            aria-label={open ? m.shell.closeMenu : m.shell.openMenu}
             aria-expanded={open}
           >
             {open ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
           </Button>
           {/* サイドバーが閉じているとタイトルが消えるのでここに出す */}
-          <Link href="/" className={cn("text-sm font-semibold", open && "md:hidden")}>
-            化学物質管理システム
+          <Link href="/" className={cn("truncate text-sm font-semibold", open && "md:hidden")}>
+            {m.common.appName}
           </Link>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-muted-foreground hidden text-sm sm:inline">
               {user.displayName ?? user.email}
             </span>
-            <Badge variant="secondary">{ROLE_LABELS[user.role] ?? user.role}</Badge>
-            {!user.canEdit && <Badge variant="outline">参照のみ</Badge>}
+            <Badge variant="secondary">{m.shell.roles[user.role]}</Badge>
+            {!user.canEdit && <Badge variant="outline">{m.shell.readOnly}</Badge>}
+            <LanguageSwitcher />
             <SignOutButton />
           </div>
         </header>

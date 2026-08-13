@@ -56,6 +56,8 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 
 - 共通化は同じものを3回書いてから。早すぎる抽象化は作り直しのコストが大きい
 - 既存コードのスタイル（命名・コメント密度）に合わせる。コメントは日本語
+- **画面に出る文字列を直接書かない。** `packages/shared/src/i18n/ja.ts` にキーを足し、
+  `en.ts` にも英語を入れる（入れ忘れはビルドで落ちる）。使い方は `docs/steps/S18_多言語UI基盤.md`
 
 ## 5. 環境（Windows 11 + WSL2）— 過去に詰まった点
 
@@ -71,7 +73,8 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 ```
 docker compose up -d          # DB起動（v2 は 5433。v1 の 5432 と併存できる）
 npm run dev                   # 開発サーバー（v2 は 3001。v1 の 3000 と併存できる）
-npx prisma migrate dev        # マイグレーション作成・適用
+npx prisma migrate dev        # マイグレーション作成・適用（データ欠損を伴う変更は
+                              #   非対話環境で止まるので migration.sql を手書きして migrate deploy）
 npx prisma studio             # DBをブラウザで確認
 npx tsx scripts/set-password.ts <メール> <パスワード>   # パスワード発行
 ```

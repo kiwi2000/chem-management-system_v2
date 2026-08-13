@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n-client";
 
 export function SignOutButton() {
   const router = useRouter();
+  const { m } = useI18n();
   const [busy, setBusy] = useState(false);
 
   async function signOut() {
@@ -21,7 +23,7 @@ export function SignOutButton() {
 
   return (
     <Button variant="outline" size="sm" onClick={() => void signOut()} disabled={busy}>
-      {busy ? "処理中..." : "ログアウト"}
+      {busy ? m.common.processing : m.shell.signOut}
     </Button>
   );
 }

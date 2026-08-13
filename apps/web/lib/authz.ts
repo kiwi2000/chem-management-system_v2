@@ -1,5 +1,6 @@
 import type { User as AppUser } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
+import { getServerMessages } from "@/lib/i18n";
 
 /**
  * 認可ポリシー（単一モジュールに集中: CLAUDE.md §4）。
@@ -18,11 +19,14 @@ export function jsonError(
 /** 認証必須。未認証は 401 Response を返す */
 export async function requireUser(): Promise<{ user: AppUser } | Response> {
   const user = await getSessionUser();
-  if (!user) return jsonError(401, "unauthorized", "ログインが必要です");
+  if (!user) {
+    const m = await getServerMessages();
+    return jsonError(401, "unauthorized", m.errors.unauthorized);
+  }
   return { user };
 }
 
-/** 編集権限（Q-A1）: 管理者・特権は常に可。非特権は canEdit による */
+/** 編集権限: 管理者・特権は常に可。非特権は canEdit による */
 export function canEdit(user: AppUser): boolean {
   return user.role === "SYSTEM_ADMIN" || user.role === "PRIVILEGED" || user.canEdit;
 }
@@ -32,11 +36,8 @@ export async function requireEditor(): Promise<{ user: AppUser } | Response> {
   const auth = await requireUser();
   if (auth instanceof Response) return auth;
   if (!canEdit(auth.user)) {
-    return jsonError(
-      403,
-      "forbidden",
-      "編集権限がありません（参照・判定実行・ダウンロードのみ可能です）",
-    );
+    const m = await getServerMessages();
+    return jsonError(403, "forbidden", m.errors.forbiddenEdit);
   }
   return auth;
 }
@@ -46,7 +47,8 @@ export async function requireAdmin(): Promise<{ user: AppUser } | Response> {
   const auth = await requireUser();
   if (auth instanceof Response) return auth;
   if (auth.user.role !== "SYSTEM_ADMIN") {
-    return jsonError(403, "forbidden", "システム管理者のみ実行できます");
+    const m = await getServerMessages();
+    return jsonError(403, "forbidden", m.errors.forbiddenAdmin);
   }
   return auth;
 }

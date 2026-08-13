@@ -15,11 +15,5 @@ export interface MeDto {
   role: "SYSTEM_ADMIN" | "PRIVILEGED" | "NON_PRIVILEGED";
   canEdit: boolean;
   privileged: boolean;
-  preferredLocaleId: string | null;
+  preferredLocale: string | null;
 }
-
-export const ROLE_LABELS: Record<MeDto["role"], string> = {
-  SYSTEM_ADMIN: "システム管理者",
-  PRIVILEGED: "特権ユーザー",
-  NON_PRIVILEGED: "非特権ユーザー",
-};

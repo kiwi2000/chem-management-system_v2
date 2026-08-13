@@ -1,33 +1,36 @@
 "use client";
 
+import type { Messages } from "@chem/shared";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
   href: string;
-  label: string;
+  /** 辞書の nav ブロックから文言を引くためのキー */
+  key: keyof Messages["nav"];
   /** この接頭辞のパスでも選択中扱いにする（詳細画面など） */
   match?: string[];
 }
 
 /**
  * メニュー定義。
- * 未実装の画面もここに並べる（S3 の時点で全体像が見えるようにするため）。
+ * 未実装の画面もここに並べる（全体像が見えるようにするため）。
  * リンク先が未実装のうちは 404 になる。実装のたびに順次つながる。
  */
 const ITEMS: NavItem[] = [
-  { href: "/", label: "ホーム" },
-  { href: "/substances", label: "物質" },
-  { href: "/products", label: "製品 / 原材料" },
-  { href: "/laws", label: "法規制", match: ["/laws", "/categories"] },
-  { href: "/link-versions", label: "リンク", match: ["/link-versions", "/sources"] },
-  { href: "/metal-factors", label: "金属換算係数" },
-  { href: "/import-export", label: "TSV取込 / 出力" },
-  { href: "/doc-templates", label: "ドキュメント生成" },
+  { href: "/", key: "home" },
+  { href: "/substances", key: "substances" },
+  { href: "/products", key: "products" },
+  { href: "/laws", key: "laws", match: ["/laws", "/categories"] },
+  { href: "/link-versions", key: "links", match: ["/link-versions", "/sources"] },
+  { href: "/metal-factors", key: "metalFactors" },
+  { href: "/import-export", key: "importExport" },
+  { href: "/doc-templates", key: "docTemplates" },
 ];
 
-const ADMIN_ITEMS: NavItem[] = [{ href: "/admin", label: "管理", match: ["/admin"] }];
+const ADMIN_ITEMS: NavItem[] = [{ href: "/admin", key: "admin", match: ["/admin"] }];
 
 function isActive(pathname: string, item: NavItem): boolean {
   if (item.href === "/") return pathname === "/";
@@ -37,9 +40,10 @@ function isActive(pathname: string, item: NavItem): boolean {
 
 export function SidebarNav({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { m } = useI18n();
   const groups: { title: string | null; items: NavItem[] }[] = [
     { title: null, items: ITEMS },
-    ...(isAdmin ? [{ title: "システム", items: ADMIN_ITEMS }] : []),
+    ...(isAdmin ? [{ title: m.nav.system, items: ADMIN_ITEMS }] : []),
   ];
 
   return (
@@ -66,7 +70,7 @@ export function SidebarNav({ isAdmin, onNavigate }: { isAdmin: boolean; onNaviga
                     : "text-muted-foreground hover:bg-[var(--muted)] hover:text-foreground",
                 )}
               >
-                {item.label}
+                {m.nav[item.key]}
               </Link>
             );
           })}

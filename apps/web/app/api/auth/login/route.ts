@@ -2,6 +2,7 @@ import { loginSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { login, purgeExpiredSessions } from "@/lib/auth";
 import { jsonError } from "@/lib/authz";
+import { getServerMessages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -11,15 +12,17 @@ export const dynamic = "force-dynamic";
  * （authz を通さない数少ないルート。呼び忘れ検出テストの allowlist に入っている）
  */
 export async function POST(req: Request) {
+  const m = await getServerMessages();
+
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return jsonError(400, "invalid_json", "リクエストボディがJSONではありません");
+    return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const parsed = loginSchema.safeParse(body);
+  const parsed = loginSchema(m).safeParse(body);
   if (!parsed.success) {
-    return jsonError(400, "validation_error", "入力内容に誤りがあります", parsed.error.flatten());
+    return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const { email, password, totp } = parsed.data;
 
@@ -31,27 +34,15 @@ export async function POST(req: Request) {
       return Response.json({ mfaRequired: true }, { status: 401 });
     }
     if (result.reason === "mfa_invalid") {
-      return jsonError(401, "mfa_invalid", "認証コードが正しくありません", { mfaRequired: true });
+      return jsonError(401, "mfa_invalid", m.errors.mfaInvalid, { mfaRequired: true });
     }
     if (result.reason === "locked") {
-      return jsonError(
-        423,
-        "locked",
-        "ログイン試行が続いたため一時的にロックされています。しばらく待ってから再試行してください",
-      );
+      return jsonError(423, "locked", m.errors.locked);
     }
     if (result.reason === "inactive") {
-      return jsonError(
-        403,
-        "inactive",
-        "このアカウントは利用できません。管理者にお問い合わせください",
-      );
+      return jsonError(403, "inactive", m.errors.inactive);
     }
-    return jsonError(
-      401,
-      "invalid_credentials",
-      "メールアドレスまたはパスワードが正しくありません",
-    );
+    return jsonError(401, "invalid_credentials", m.errors.invalidCredentials);
   }
 
   void purgeExpiredSessions();

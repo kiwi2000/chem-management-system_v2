@@ -1,18 +1,25 @@
+import { getMessages } from "@chem/shared";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
+import { getLocale } from "@/lib/i18n";
+import { I18nProvider } from "@/lib/i18n-client";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "化学物質管理システム",
-  description: "化学物質・製品組成・法規制情報を一元管理し、規制該当を自動判定するシステム",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const m = getMessages(await getLocale());
+  return { title: m.common.appName };
+}
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = await getLocale();
+
   return (
-    <html lang="ja">
+    <html lang={locale}>
       <body className="bg-muted/20 min-h-screen antialiased">
-        <AppShell>{children}</AppShell>
+        <I18nProvider locale={locale}>
+          <AppShell>{children}</AppShell>
+        </I18nProvider>
       </body>
     </html>
   );

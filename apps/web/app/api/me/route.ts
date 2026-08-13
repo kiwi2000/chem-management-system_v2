@@ -14,6 +14,6 @@ export async function GET() {
     role: user.role,
     canEdit: canEdit(user),
     privileged: isPrivileged(user),
-    preferredLocaleId: user.preferredLocaleId,
+    preferredLocale: user.preferredLocale,
   });
 }

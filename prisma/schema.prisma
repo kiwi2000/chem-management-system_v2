@@ -56,14 +56,14 @@ model User {
   role               Role
   /** 非特権ユーザーの編集可否。管理者・特権は常に可（アプリ層で強制） */
   canEdit            Boolean   @default(false) @map("can_edit")
-  preferredLocaleId  String?   @map("preferred_locale_id")
+  /** 表示言語の ISO コード（"ja" / "en"）。null=未設定（既定言語を使う） */
+  preferredLocale    String?   @map("preferred_locale")
   activeFlag         Boolean   @default(true) @map("active_flag")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
   deletedAt          DateTime? @map("deleted_at")
 
-  preferredLocale Locale?   @relation(fields: [preferredLocaleId], references: [id])
-  sessions        Session[]
+  sessions Session[]
 
   @@map("users")
 }
@@ -121,31 +121,7 @@ model AuditLog {
 }
 
 // ---------- 多言語 ----------
-
-model Locale {
-  id          String   @id @default(cuid())
-  code        String   @unique // 例: ja, en
-  displayName String   @map("display_name")
-  /** 既定ロケール。1件のみ＝アプリ層で担保 */
-  isDefault   Boolean  @default(false) @map("is_default")
-  activeFlag  Boolean  @default(true) @map("active_flag")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  translations UiTranslation[]
-  users        User[]
-
-  @@map("locales")
-}
-
-model UiTranslation {
-  id       String @id @default(cuid())
-  key      String
-  localeId String @map("locale_id")
-  value    String
-
-  locale Locale @relation(fields: [localeId], references: [id])
-
-  @@unique([localeId, key])
-  @@map("ui_translations")
-}
+//
+// 画面の文言は packages/shared/src/i18n の辞書ファイルで管理する（DBに持たない）。
+// 訳の抜けをビルド時に検出できることと、表示のチラつきが無いことを優先した（docs/decisions/0002）。
+// マスタの名称は各テーブルが日本語名・英語名の2列を持つ方式（物質・製品など）。

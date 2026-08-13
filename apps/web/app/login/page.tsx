@@ -2,15 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { m } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [totp, setTotp] = useState("");
@@ -36,12 +39,12 @@ export default function LoginPage() {
         // 多要素認証のコード待ち（パスワードは正しい）
         if (body && "mfaRequired" in body && body.mfaRequired) {
           setMfaRequired(true);
-          setError("認証アプリのコードを入力してください");
+          setError(m.login.mfaPrompt);
           return;
         }
         const apiErr = body as ApiError | null;
         if (apiErr?.error.code === "mfa_invalid") setMfaRequired(true);
-        setError(apiErr?.error.message ?? "ログインできませんでした");
+        setError(apiErr?.error.message ?? m.login.failed);
         return;
       }
       const body = (await res.json()) as { mustChangePassword: boolean };
@@ -54,60 +57,65 @@ export default function LoginPage() {
 
   return (
     <main className="bg-muted/40 flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>化学物質管理システム</CardTitle>
-          <CardDescription>アカウントでログインしてください</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">メールアドレス</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="username"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">パスワード</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            {mfaRequired && (
+      <div className="w-full max-w-sm space-y-3">
+        <div className="flex justify-end">
+          <LanguageSwitcher />
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{m.common.appName}</CardTitle>
+            <CardDescription>{m.login.description}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="totp">認証コード（6桁）</Label>
+                <Label htmlFor="email">{m.login.email}</Label>
                 <Input
-                  id="totp"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  value={totp}
-                  onChange={(e) => setTotp(e.target.value)}
-                  placeholder="000000"
+                  id="email"
+                  type="email"
+                  autoComplete="username"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-            )}
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "ログイン中..." : "ログイン"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <Label htmlFor="password">{m.login.password}</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              {mfaRequired && (
+                <div className="space-y-2">
+                  <Label htmlFor="totp">{m.login.totp}</Label>
+                  <Input
+                    id="totp"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={totp}
+                    onChange={(e) => setTotp(e.target.value)}
+                    placeholder="000000"
+                  />
+                </div>
+              )}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? m.login.submitting : m.login.submit}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </main>
   );
 }

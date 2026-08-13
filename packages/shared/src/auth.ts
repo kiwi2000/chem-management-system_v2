@@ -1,17 +1,15 @@
 import { z } from "zod";
+import type { Messages } from "./i18n/ja";
 
 /**
- * 認証（自前・外部サービス非依存）のバリデーション。
- * 高セキュリティ運用のため、パスワードは長さ重視のポリシーとする。
+ * 認証（自前・外部サービス非依存）の入力チェック。
+ * エラー文言を多言語化するため、スキーマは辞書を受け取る関数として定義する。
+ * 呼び出し側は `loginSchema(m)` のように、その場のロケールの辞書を渡す。
  */
 
 /** ログインID＝メールアドレス。突合は小文字化して行う */
-export const emailSchema = z
-  .string()
-  .trim()
-  .min(1, "メールアドレスは必須です")
-  .max(255)
-  .email("メールアドレスの形式が正しくありません");
+export const emailSchema = (m: Messages) =>
+  z.string().trim().min(1, m.validation.emailRequired).max(255).email(m.validation.emailFormat);
 
 export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
@@ -21,55 +19,57 @@ export function normalizeEmail(raw: string): string {
  * パスワードポリシー: 12文字以上（長さを最重視）。
  * 加えて英字・数字を各1文字以上（記号は任意・日本語入力も可）。
  */
-export const passwordSchema = z
-  .string()
-  .min(12, "パスワードは12文字以上にしてください")
-  .max(200, "パスワードが長すぎます")
-  .refine((v) => /[A-Za-z]/.test(v), "英字を1文字以上含めてください")
-  .refine((v) => /[0-9]/.test(v), "数字を1文字以上含めてください");
-
-export const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1, "パスワードは必須です").max(200),
-  /** MFA有効ユーザーのワンタイムコード（6桁） */
-  totp: z
+export const passwordSchema = (m: Messages) =>
+  z
     .string()
-    .trim()
-    .regex(/^\d{6}$/, "6桁の数字を入力してください")
-    .optional(),
-});
-export type LoginInput = z.infer<typeof loginSchema>;
+    .min(12, m.validation.passwordMin)
+    .max(200, m.validation.passwordMax)
+    .refine((v) => /[A-Za-z]/.test(v), m.validation.passwordNeedsLetter)
+    .refine((v) => /[0-9]/.test(v), m.validation.passwordNeedsDigit);
 
-export const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "現在のパスワードは必須です"),
-    newPassword: passwordSchema,
-    confirmPassword: z.string(),
-  })
-  .refine((v) => v.newPassword === v.confirmPassword, {
-    message: "新しいパスワードが一致しません",
-    path: ["confirmPassword"],
-  })
-  .refine((v) => v.newPassword !== v.currentPassword, {
-    message: "現在のパスワードと同じものは使用できません",
-    path: ["newPassword"],
+export const loginSchema = (m: Messages) =>
+  z.object({
+    email: emailSchema(m),
+    password: z.string().min(1, m.validation.passwordRequired).max(200),
+    /** MFA有効ユーザーのワンタイムコード（6桁） */
+    totp: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, m.validation.totpFormat)
+      .optional(),
   });
-export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type LoginInput = z.infer<ReturnType<typeof loginSchema>>;
+
+export const changePasswordSchema = (m: Messages) =>
+  z
+    .object({
+      currentPassword: z.string().min(1, m.validation.currentPasswordRequired),
+      newPassword: passwordSchema(m),
+      confirmPassword: z.string(),
+    })
+    .refine((v) => v.newPassword === v.confirmPassword, {
+      message: m.validation.passwordMismatch,
+      path: ["confirmPassword"],
+    })
+    .refine((v) => v.newPassword !== v.currentPassword, {
+      message: m.validation.passwordSameAsCurrent,
+      path: ["newPassword"],
+    });
+export type ChangePasswordInput = z.infer<ReturnType<typeof changePasswordSchema>>;
 
 /** 管理者によるユーザー作成（初期パスワードを発行し、初回ログイン時に変更を強制） */
-export const userCreateSchema = z.object({
-  email: emailSchema,
-  displayName: z.string().trim().max(200).optional().nullable(),
-  role: z.enum(["SYSTEM_ADMIN", "PRIVILEGED", "NON_PRIVILEGED"]),
-  canEdit: z.boolean().optional(),
-  initialPassword: passwordSchema,
-});
-export type UserCreateInput = z.infer<typeof userCreateSchema>;
+export const userCreateSchema = (m: Messages) =>
+  z.object({
+    email: emailSchema(m),
+    displayName: z.string().trim().max(200).optional().nullable(),
+    role: z.enum(["SYSTEM_ADMIN", "PRIVILEGED", "NON_PRIVILEGED"]),
+    canEdit: z.boolean().optional(),
+    initialPassword: passwordSchema(m),
+  });
+export type UserCreateInput = z.infer<ReturnType<typeof userCreateSchema>>;
 
 /** 管理者によるパスワード再発行 */
-export const passwordResetSchema = z.object({
-  newPassword: passwordSchema,
-});
+export const passwordResetSchema = (m: Messages) => z.object({ newPassword: passwordSchema(m) });
 
 /** セキュリティ関連の定数（値の変更は運用ポリシーの変更を意味する） */
 export const AUTH_POLICY = {
