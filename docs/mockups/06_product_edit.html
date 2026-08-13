@@ -1,0 +1,94 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="_style.css"></head>
+<body><div class="page">
+<div class="header">
+  <span class="logo">化学物質管理システム</span>
+  <nav class="nav"><a>物質</a><a class="active">製品</a><a>法規制</a><a>リンク</a><a>金属換算</a><a>取込/出力</a><a>管理</a></nav>
+  <span class="spacer"></span>
+  <span class="userbox">山田 太郎（yamada@example.com）<span class="badge">システム管理者</span><span class="select">▼ 日本語</span><span class="btn outline sm">ログアウト</span></span>
+</div>
+<div class="main" style="max-width:960px;margin:0 auto;">
+  <div class="card">
+    <div class="card-h">製品の編集</div>
+    <div class="card-b">
+      <div class="grid2">
+        <div class="field"><label>製品コード ○</label><div class="input">PRD-002</div></div>
+        <div class="field"><label>日本語名称 ○</label><div class="input">防錆塗料レッドガードRG-2</div></div>
+      </div>
+      <div class="field" style="margin-top:14px;"><label>英語名称</label><div class="input">Anti-rust Paint RedGuard RG-2</div></div>
+      <div class="check" style="margin-top:14px;"><input type="checkbox" checked disabled> 原材料として他製品の組成に使用できる（原材料利用可）</div>
+      <div class="check"><input type="checkbox" disabled> 非公開（非特権ユーザーからこの製品を丸ごと隠す）</div>
+      <div class="check"><input type="checkbox" disabled> 組成を公開（非特権ユーザーにも組成を開示する）</div>
+    </div>
+  </div>
+  <div style="margin:-6px 0 16px;"><span class="btn">保存</span> <span class="btn outline">一覧へ戻る</span></div>
+
+  <div class="card">
+    <div class="card-h">原組成</div>
+    <div class="card-b">
+      <table>
+        <tr><th>種別</th><th>構成要素</th><th class="right" style="width:130px;">含有率(wt%)</th><th style="width:70px;">balance</th><th style="width:60px;"></th></tr>
+        <tr><td><span class="badge outline">原材料</span></td><td>PRD-101｜顔料ペーストY-1（原材料）</td><td class="right"><div class="input" style="width:90px;margin-left:auto;">40</div></td><td></td><td><span class="btn ghost sm">削除</span></td></tr>
+        <tr><td><span class="badge outline">原材料</span></td><td>PRD-102｜溶剤ブレンドS-7（原材料）</td><td class="right"><div class="input" style="width:90px;margin-left:auto;">25</div></td><td></td><td><span class="btn ghost sm">削除</span></td></tr>
+        <tr><td><span class="badge">物質</span></td><td>SUB-0024｜炭酸カルシウム</td><td class="right"><div class="input" style="width:90px;margin-left:auto;">20</div></td><td></td><td><span class="btn ghost sm">削除</span></td></tr>
+        <tr><td><span class="badge">物質</span></td><td>SUB-0028｜フェノール</td><td class="right"><div class="input" style="width:90px;margin-left:auto;">0.5</div></td><td></td><td><span class="btn ghost sm">削除</span></td></tr>
+        <tr><td><span class="badge">物質</span></td><td>SUB-0025｜水</td><td class="right" style="color:#999;">自動補完</td><td style="text-align:center;">☑</td><td><span class="btn ghost sm">削除</span></td></tr>
+      </table>
+      <div class="desc" style="margin-top:10px;">入力済み合計（参考）: 85.5%</div>
+      <div class="card" style="margin:12px 0 0;box-shadow:none;">
+        <div class="card-h" style="font-size:12.5px;background:#fbfbfb;">構成要素を追加</div>
+        <div class="card-b" style="display:flex;gap:8px;align-items:center;">
+          <span class="select">▼ 物質</span><div class="input" style="max-width:260px;">コード / 名称で検索</div><span class="btn secondary sm">検索</span>
+        </div>
+      </div>
+      <div class="alert green" style="margin-top:12px;">保存しました。既知成分合計 85.5%・balance 14.5%</div>
+      <div style="margin-top:6px;"><span class="btn">組成を保存</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">展開・統合組成（物質レベル）<span class="btn secondary sm">展開を実行</span></div>
+    <div class="card-b" style="padding:0;">
+      <table>
+        <tr><th>物質コード</th><th>CAS番号</th><th>名称</th><th class="right">統合後含有率(wt%)</th></tr>
+        <tr><td class="mono">SUB-0003</td><td class="mono">7758-97-6</td><td>クロム酸鉛</td><td class="right mono">6</td></tr>
+        <tr><td class="mono">SUB-0008</td><td class="mono">108-88-3</td><td>トルエン</td><td class="right mono">12.5</td></tr>
+        <tr><td class="mono">SUB-0009</td><td class="mono">1330-20-7</td><td>キシレン</td><td class="right mono">7.5</td></tr>
+        <tr><td class="mono">SUB-0014</td><td class="mono">141-78-6</td><td>酢酸エチル</td><td class="right mono">5</td></tr>
+        <tr><td class="mono">SUB-0021</td><td class="mono">1314-13-2</td><td>酸化亜鉛</td><td class="right mono">4</td></tr>
+        <tr><td class="mono">SUB-0023</td><td class="mono">13463-67-7</td><td>二酸化チタン</td><td class="right mono">12</td></tr>
+        <tr><td class="mono">SUB-0024</td><td class="mono">471-34-1</td><td>炭酸カルシウム</td><td class="right mono">20</td></tr>
+        <tr><td class="mono">SUB-0025</td><td class="mono">7732-18-5</td><td>水</td><td class="right mono">32.5</td></tr>
+        <tr><td class="mono">SUB-0028</td><td class="mono">108-95-2</td><td>フェノール</td><td class="right mono">0.5</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">規制該当判定</div>
+    <div class="card-b">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:12.5px;">使用リンクバージョン</span>
+        <span class="select">▼ 2026Q2（有効）</span>
+        <span class="btn sm">判定を実行</span>
+      </div>
+      <div class="alert green">判定完了（バージョン 2026Q2）。最終該当区分: 安衛法／名称等表示義務物質、PRTR法／第一種指定化学物質</div>
+      <table>
+        <tr><th>法律</th><th>規制区分</th><th>該当</th><th class="right">算定値(wt%)</th><th>結果</th></tr>
+        <tr><td>化審法</td><td>第一種特定化学物質</td><td><span class="badge outline">非該当</span></td><td class="right mono">—</td><td></td></tr>
+        <tr><td>安衛法</td><td>名称等表示義務物質</td><td><span class="badge red">該当</span></td><td class="right mono">12.5</td><td><span class="badge red">最終該当</span></td></tr>
+        <tr><td>毒劇法</td><td>劇物</td><td><span class="badge outline">非該当</span></td><td class="right mono">0.5</td><td></td></tr>
+        <tr><td>PRTR法</td><td>第一種指定化学物質</td><td><span class="badge red">該当</span></td><td class="right mono">12.5</td><td><span class="badge red">最終該当</span></td></tr>
+        <tr><td>PRTR法</td><td>特定第一種指定化学物質</td><td><span class="badge outline">非該当</span></td><td class="right mono">—</td><td></td></tr>
+      </table>
+      <div class="desc" style="margin-top:8px;">└ 根拠（寄与物質 3 件）: SUB-0008（108-88-3）トルエン → 寄与 12.5%／002 トルエン／情報源: LOLI　他2件</div>
+      <div class="card" style="margin-top:14px;box-shadow:none;">
+        <div class="card-h" style="font-size:12.5px;">判定履歴（最新20件）</div>
+        <table>
+          <tr><th>実行日時</th><th>バージョン</th><th>最終該当区分</th><th></th></tr>
+          <tr><td>2026-07-03 10:12</td><td class="mono">2026Q2</td><td>安衛法／名称等表示義務物質、PRTR法／第一種指定化学物質</td><td><span class="btn outline sm">表示</span></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</div></body></html>

@@ -1,0 +1,69 @@
+/* 化学物質管理システム モックアップ共通スタイル（shadcn/ui ニュートラル配色を近似） */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root{
+  --bg:#ffffff; --fg:#252525; --muted:#8a8a8a; --muted-bg:#f6f6f6;
+  --border:#e6e6e6; --primary:#2b2b2b; --primary-fg:#fafafa;
+  --secondary:#f2f2f2; --destructive:#c0392b; --accent:#f2f2f2;
+  --radius:8px;
+}
+body{ font-family:"Segoe UI","Yu Gothic UI","Meiryo",sans-serif; color:var(--fg);
+  background:#fafafa; font-size:13px; line-height:1.5; }
+.page{ width:1180px; margin:0 auto; background:#fafafa; }
+/* ヘッダー */
+.header{ display:flex; align-items:center; gap:22px; height:52px; padding:0 20px;
+  background:#fff; border-bottom:1px solid var(--border); }
+.logo{ font-weight:700; font-size:14px; }
+.nav{ display:flex; gap:16px; color:var(--muted); font-size:13px; }
+.nav a{ color:var(--muted); text-decoration:none; }
+.nav a.active{ color:var(--fg); font-weight:600; }
+.spacer{ margin-left:auto; }
+.userbox{ display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+.badge{ display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; background:var(--secondary); color:#333; }
+.badge.outline{ background:transparent; border:1px solid var(--border); }
+.badge.red{ background:#fdecea; color:var(--destructive); }
+.badge.green{ background:#e8f5ec; color:#1e7e4b; }
+.select{ border:1px solid var(--border); border-radius:6px; padding:3px 8px; background:#fff; font-size:12px; }
+.btn{ display:inline-block; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:600;
+  background:var(--primary); color:var(--primary-fg); border:1px solid transparent; cursor:default; }
+.btn.sm{ padding:4px 9px; font-size:11px; }
+.btn.outline{ background:#fff; color:#333; border:1px solid var(--border); }
+.btn.secondary{ background:var(--secondary); color:#333; }
+.btn.ghost{ background:transparent; color:var(--destructive); }
+/* コンテンツ */
+.main{ padding:22px 26px; }
+.main.narrow{ max-width:820px; margin:0 auto; }
+h1{ font-size:20px; font-weight:600; margin-bottom:16px; }
+.row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.desc{ color:var(--muted); font-size:12px; margin-bottom:14px; }
+/* カード */
+.card{ background:#fff; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px; }
+.card-h{ padding:12px 16px; border-bottom:1px solid var(--border); font-weight:600; font-size:14px;
+  display:flex; align-items:center; justify-content:space-between; }
+.card-b{ padding:16px; }
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+.field label{ display:block; font-size:12px; margin-bottom:5px; color:#333; }
+.input{ width:100%; border:1px solid var(--border); border-radius:6px; padding:7px 9px; font-size:13px; background:#fff; color:#333; }
+.input.dis{ background:var(--muted-bg); color:var(--muted); }
+.check{ display:flex; align-items:center; gap:8px; font-size:13px; margin:6px 0; }
+.check input{ width:15px; height:15px; }
+/* テーブル */
+table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+th,td{ text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); }
+th{ color:#555; font-weight:600; background:#fcfcfc; }
+td.mono,th.mono{ font-family:"Consolas",monospace; }
+.right{ text-align:right; }
+.tablewrap{ border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; background:#fff; }
+.search{ display:flex; gap:8px; margin-bottom:14px; }
+.search .input{ max-width:420px; }
+.pager{ display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:12px; margin-top:12px; }
+.alert{ border:1px solid var(--border); border-radius:6px; padding:9px 12px; font-size:12.5px; margin:10px 0; background:#fbfbfb; }
+.alert.red{ border-color:#f3c9c4; background:#fdecea; color:#a5332a; }
+.alert.green{ border-color:#c7e6d2; background:#eef8f1; }
+.cards3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+.menucard{ background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.menucard .t{ font-size:15px; font-weight:600; margin-bottom:6px; }
+.menucard .d{ font-size:12px; color:var(--muted); }
+.caption{ text-align:center; color:var(--muted); font-size:12px; margin:6px 0 26px; }
+.screentitle{ text-align:center; font-weight:700; font-size:15px; background:#eef0f3; padding:8px; border-radius:6px 6px 0 0; }
+.frame{ border:1px solid #d5d8dd; border-radius:8px; overflow:hidden; margin-bottom:34px; box-shadow:0 1px 3px rgba(0,0,0,.06); }

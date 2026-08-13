@@ -1,0 +1,34 @@
+# リバースプロキシ＋HTTPS設定
+#
+# 既定: VPN(Tailscale)内運用。
+#   アクセスに使われたホスト名（Tailscale名やIP）に対して、Caddy内部CAが
+#   証明書をオンデマンド発行してHTTPS化する（外部DNS不要）。
+#   初回アクセス時はブラウザの証明書警告が出る。警告を消すには
+#   `docker compose -f compose.prod.yml exec caddy cat /data/caddy/pki/authorities/local/root.crt`
+#   を各PCに「信頼されたルート証明機関」として登録する。
+{
+	# オンデマンド発行の許可確認（VPN内限定運用なので全ホスト名を許可）
+	on_demand_tls {
+		ask http://app:3000/api/health
+	}
+}
+
+:443 {
+	tls internal {
+		on_demand
+	}
+	reverse_proxy app:3000
+}
+
+:80 {
+	redir https://{host}{uri} permanent
+}
+
+# ─────────────────────────────────────────────
+# 公開ドメインで運用する場合（DNSでVPSのIPを指すこと）は、
+# 上の { } ブロックと :443 / :80 ブロックを削除して以下を有効化
+# （Let's Encrypt で自動HTTPS・証明書警告なし）:
+#
+# chem.example.com {
+# 	reverse_proxy app:3000
+# }

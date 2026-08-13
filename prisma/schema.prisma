@@ -1,0 +1,151 @@
+// 化学物質管理システム v2 — Prisma スキーマ
+//
+// ここには「そのステップで確定した分だけ」を置き、機能ごとにマイグレーションを分けて積み上げる。
+//
+// 共通ルール（CLAUDE.md §4）:
+// - provider は postgresql を既定とし、mysql / sqlserver へ切替可能な書き方を保つ。
+// - 数値（含有率・閾値・係数）は Decimal。Float 禁止。桁は S5 で確定する。
+// - code / cas は *_normalized 列（trim＋大文字化）で突合・一意判定する（照合順序差の吸収）。
+// - created_by / updated_by は User.id を保持するが、リレーション爆発を避けるため
+//   物理FKは張らずアプリ層で整合を担保する。
+// - Prisma は 6 系に固定（7 系は datasource url の設定方式が変わる）。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // 切替: "mysql" / "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enum ----------
+
+enum Role {
+  SYSTEM_ADMIN
+  PRIVILEGED
+  NON_PRIVILEGED
+}
+
+enum SettingValueType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+// ---------- ユーザー・セッション ----------
+
+model User {
+  id           String  @id @default(cuid())
+  /** ログインID（メールアドレス）。小文字化して保存・突合する */
+  email        String  @unique
+  /** Argon2id パスワードハッシュ。null=未発行（管理者が発行するまでログイン不可） */
+  passwordHash String? @map("password_hash")
+  /** 次回ログイン時にパスワード変更を強制する（初期パスワード発行時に true） */
+  mustChangePassword Boolean @default(false) @map("must_change_password")
+  /** 連続ログイン失敗回数（総当たり対策） */
+  failedLoginCount   Int       @default(0) @map("failed_login_count")
+  /** この日時までログイン試行を拒否（ロックアウト） */
+  lockedUntil        DateTime? @map("locked_until")
+  lastLoginAt        DateTime? @map("last_login_at")
+  /** TOTP（多要素認証）の秘密鍵。null=MFA未設定 */
+  mfaSecret          String?   @map("mfa_secret")
+  mfaEnabled         Boolean   @default(false) @map("mfa_enabled")
+  displayName        String?   @map("display_name")
+  role               Role
+  /** 非特権ユーザーの編集可否。管理者・特権は常に可（アプリ層で強制） */
+  canEdit            Boolean   @default(false) @map("can_edit")
+  preferredLocaleId  String?   @map("preferred_locale_id")
+  activeFlag         Boolean   @default(true) @map("active_flag")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
+
+  preferredLocale Locale?   @relation(fields: [preferredLocaleId], references: [id])
+  sessions        Session[]
+
+  @@map("users")
+}
+
+/**
+ * ログインセッション（自前認証・外部サービスに一切依存しない）。
+ * Cookie には推測不能なトークンのみを入れ、DBにはその SHA-256 ハッシュだけを保存する。
+ */
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique @map("token_hash")
+  userId     String   @map("user_id")
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  /** 監査用（どの端末からのセッションか） */
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ---------- システム設定・監査 ----------
+
+model SystemSetting {
+  id           String           @id @default(cuid())
+  key          String           @unique
+  value        String?
+  valueType    SettingValueType @map("value_type")
+  defaultValue String?          @map("default_value")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  updatedBy    String?          @map("updated_by")
+
+  @@map("system_settings")
+}
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  entity   String
+  entityId String?  @map("entity_id")
+  action   String // create / update / delete / login / determine / import / export ...
+  actorId  String?  @map("actor_id")
+  at       DateTime @default(now())
+  /** 変更差分（表示専用。条件検索・並べ替えには使わない） */
+  diff     Json?
+
+  @@index([entity, entityId])
+  @@index([actorId, at])
+  @@map("audit_logs")
+}
+
+// ---------- 多言語 ----------
+
+model Locale {
+  id          String   @id @default(cuid())
+  code        String   @unique // 例: ja, en
+  displayName String   @map("display_name")
+  /** 既定ロケール。1件のみ＝アプリ層で担保 */
+  isDefault   Boolean  @default(false) @map("is_default")
+  activeFlag  Boolean  @default(true) @map("active_flag")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  translations UiTranslation[]
+  users        User[]
+
+  @@map("locales")
+}
+
+model UiTranslation {
+  id       String @id @default(cuid())
+  key      String
+  localeId String @map("locale_id")
+  value    String
+
+  locale Locale @relation(fields: [localeId], references: [id])
+
+  @@unique([localeId, key])
+  @@map("ui_translations")
+}

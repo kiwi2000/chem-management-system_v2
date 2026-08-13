@@ -1,0 +1,260 @@
+# 判定エンジン仕様書（アルゴリズム＋テストケース）
+
+| 項目 | 内容 |
+|---|---|
+| 文書名 | 化学物質管理システム 判定エンジン仕様書 |
+| バージョン | 0.1（ドラフト） |
+| 作成日 | 2026-07-02 |
+| 親仕様 | `化学物質管理システム_要件定義書_v0.7.md` 第5章 |
+| 実装場所 | `packages/domain`（DB非依存の純粋関数・CLAUDE.md §1.2/§4） |
+
+> 判定は**決定的（deterministic）**であること。同一入力（組成・リンクバージョン・マスタ）から常に同一結果を返す。ORM・フレームワークに依存しない純粋関数として実装し、要件§5のケースをユニットテストで必ず担保する（CLAUDE.md §4）。
+
+---
+
+## 1. 原則
+- **DB非依存**: 入力は「展開・統合後組成」「法規制マスタのスナップショット」「解決済みリンク（指定バージョン）」「金属換算係数」を値として受け取り、値として結果を返す。
+- **決定的**: 集合の反復順序に依存しない（合算・比較は順序非依存）。浮動小数点を使わず **Decimal** で計算（CLAUDE.md §3）。
+- **マスキング非関与**: 判定は**全データで実行**し、正確な結論・根拠を保存する。マスキング（§2.3/§5）は**表示・出力の段階**で適用する（判定ロジック内では行わない）。
+
+---
+
+## 2. 入力 / 出力（概念型）
+
+### 入力
+```
+JudgmentInput {
+  product: {
+    id
+    expanded: [ { substanceId, casNormalized, contentPct: Decimal } ]   // 展開・統合後組成
+  }
+  categories: [ RegulationCategory ]        // 対象規制区分（rank, 兼ね合い, 合算方式, 閾値, 結果抑制）
+  statutorySubstances: [ StatutorySubstance ] // 法文物質名（閾値, 判定方式, 判定金属元素）
+  links: [ { statutorySubstanceId, casNormalized, sourceId } ]  // 指定バージョン内のリンク
+  sources: [ { id, priority, active } ]     // 情報源優先度
+  metalFactors: [ { casNormalized, metalElement, ratioPct: Decimal } ]
+  options: { lowerBoundInclusive, upperBoundInclusive }   // 境界の扱い（Q-N2）
+}
+```
+
+### 出力
+```
+JudgmentResult {
+  perCategory: [ {
+    categoryId
+    applicable: boolean
+    calculatedValue: Decimal?      // 合算量 / 金属換算量（合算方式に応じる）
+    isFinal: boolean               // 最終該当区分か（結果抑制後）
+    suppressed: boolean            // 下位として抑制されたか
+    contributions: [ { substanceId, value: Decimal, adoptedSourceId, statutorySubstanceId } ]  // 根拠
+  } ]
+  finalCategories: [ categoryId ]  // 最終該当区分（兼ね合い・抑制適用後）
+}
+```
+
+---
+
+## 3. 記号・寄与量の定義（要件§5.1）
+製品 P の展開・統合後組成 `{(物質 i, 含有率 r_i)}`、法文物質名 S に該当する物質集合 `M(S)`（リンク解決＋フォールバック後）に対し:
+
+- **含有率方式**（S.判定金属元素 = NULL）: `寄与(i,S) = r_i`
+- **金属換算方式**（S.判定金属元素 = e）: `寄与(i,S) = r_i × f(CAS_i, e) / 100`
+  - `f(CAS_i, e)` = 金属換算係数（`metalFactors` を `casNormalized + metalElement` で引く）。該当係数が無ければ寄与 0（かつ整合性警告 FR-AU-03 の対象）。
+
+---
+
+## 4. リンク解決と情報源フォールバック
+1. 判定は**特定の1バージョン**を基準（混在させない）。入力 `links` は当該バージョン分のみ。
+2. 各法文物質名 S について、`active` な情報源を**優先度順**に探索し、**最初に S のリンクを1件以上持つ情報源を採用**する（フォールバック）。採用情報源のリンク集合のみを使う。
+   - フォールバックの単位（法文物質名ごと／CASごと／法律ごと）は **【要確認 Q-L2】**。本仕様は既定を**「法文物質名ごと」**とする。
+3. 採用情報源のリンクの `casNormalized` を、製品組成の各物質の `casNormalized` と突合して `M(S)` を作る。
+   - **CAS非ユニーク（Q-D1）**: 同一 CAS を複数物質が持ちうるが、判定は「組成に実在する物質 i の CAS が S のリンク CAS と一致するか」で行うため一意に定まる。
+   - 突合の多重一致/未一致（リンク CAS が組成に無い等）の扱いは **【要確認 Q-L1】**（既定: 組成に無い CAS は寄与に現れないので無視。組成にある物質の CAS が複数 S に一致するのは許容）。
+
+---
+
+## 5. 閾値と境界
+- 使用閾値: **法文物質名の該当含有率範囲があれば優先、無ければ規制区分の区分閾値**（Q-J1）。
+- 該当条件: `下限 ≤ 値`（かつ上限が設定されていれば `値 ≤ 上限`）。**上限超過は当該区分では非該当**（濃度帯振り分け・Q-J6）。
+- 境界（以上/超過・以下/未満）は **【要確認 Q-N2】**。実装は `options.lowerBoundInclusive` / `upperBoundInclusive` で切替可能にし、既定は**両端含む（以上・以下）**とする。
+
+---
+
+## 6. 合算方式（区分単位・3択／Q-J2）
+区分 C の対象法文物質名集合を `S∈C` とする。
+
+- **法文物質名単位合算（STATUTORY_NAME）**（最頻）:
+  各 S で `S該当量 = Σ_{i∈M(S)} 寄与(i,S)`。`S該当量` が閾値条件を満たせば S 該当。**いずれかの S 該当で区分該当**。
+  同一物質が複数 S に該当すれば**各 S でそれぞれ合算**（名称間の重複可）。
+- **区分全体合算（CATEGORY_TOTAL）**:
+  `区分該当量 = Σ_{distinct i ∈ ∪_S M(S)} 寄与(i)`。**同一物質は1回のみ計上**（多重合算禁止）。`区分該当量` が区分閾値条件を満たせば区分該当。
+  金属換算との混在は対象外（含有率方式前提・Q-J5）。
+- **合算なし（NONE）**:
+  各該当物質 i を個別に `寄与(i)` で閾値判定し、**いずれか該当で区分該当**。
+
+---
+
+## 7. 兼ね合い（累積判定／Q-J3）
+- 区分に **兼ね合いフラグ**（既定オフ＝独立判定）。**オフの大多数は区分ごとに独立判定**。
+- オンの区分 C は、判定対象物質に **同一兼ね合いグループ内で C より上位（rank が小さい＝厳しい）区分の物質を累積**する。
+  - 例（rank: 1種=1, 2種=2, 3種=3）: 3種の判定に 1種+2種+3種 の物質を累積、2種は 1種+2種、1種は 1種のみ。
+- 累積した物質集合（同一物質は1回・寄与は最大値を採用）の**合計**を、当該区分 C の**区分閾値**と比較する（プール合算）。
+  - 根拠: 要件§5.3 ケース4 の確定例（3種3%＋2種3%=6% ≥ 3種閾値5% → 3種該当）は**名称・区分をまたいだ合算**を要求するため、累積時は合算方式によらずプール合算とする。名称単位合算を適用すると各名称3%＜5%で非該当となり確定例と矛盾する。
+  - 兼ね合い×合算方式の相互作用の正式ルールは **【要確認 Q-G8】**（対象規制の実挙動で確定。本仕様のプール合算は暫定既定）。
+
+---
+
+## 8. 結果抑制（Q-J4）
+- 兼ね合いで複数区分が該当した場合、**最も厳しい該当区分（rank 最小）のみを最終結果**とし、下位の該当を抑制する（`suppress_result_flag` 既定オン）。
+- 抑制対象は `suppressed=true`、最終は `isFinal=true` として結果に残す（監査・根拠のため非表示にはしない。表示制御は別途）。
+- 兼ね合いオフの独立区分は、各々そのまま最終結果になりうる（抑制は同一兼ね合いグループ内でのみ働く）。
+
+---
+
+## 9. アルゴリズム（擬似コード）
+```
+function judge(input):
+  results = []
+  # 9.1 区分ごとに素の該当量を算定（累積前）
+  for C in input.categories:
+    targetSubstances = expanded(P)                      # 独立判定の対象
+    if C.interaction_flag:
+      targetSubstances = accumulate(P, C, group)        # §7: 上位区分の物質を累積
+    (applicable, value, contribs) = evaluateCategory(C, targetSubstances, input)
+    results[C] = { applicable, value, contribs }
+
+  # 9.2 結果抑制（§8）: 兼ね合いグループごとに rank 最小の該当のみ isFinal
+  for group in interactionGroups:
+    applicableInGroup = [C in group where results[C].applicable]
+    if applicableInGroup not empty:
+      winner = argmin(rank) of applicableInGroup
+      results[winner].isFinal = true
+      for C in applicableInGroup where C != winner: results[C].suppressed = true
+
+  # 独立区分（兼ね合いオフ）で該当なら isFinal = true
+  for C where not C.interaction_flag and results[C].applicable:
+    results[C].isFinal = true
+
+  finalCategories = [C where results[C].isFinal]
+  return { perCategory: results, finalCategories }
+
+
+function evaluateCategory(C, substances, input):
+  switch C.summation_method:
+    case STATUTORY_NAME:
+      for S in statutorySubstancesOf(C):
+        M = resolveLinks(S, substances, input)          # §4
+        amount = Σ_{i in M} contribution(i, S)          # §3
+        th = threshold(S) or threshold(C)               # §5 (Q-J1)
+        if withinThreshold(amount, th): return 該当 (value=amount, contribs)
+      return 非該当
+    case CATEGORY_TOTAL:
+      distinct = ∪_S resolveLinks(S, substances, input) # 同一物質1回のみ
+      amount = Σ_{i in distinct} contribution(i)         # 含有率方式前提
+      if withinThreshold(amount, threshold(C)): return 該当
+      return 非該当
+    case NONE:
+      for S in statutorySubstancesOf(C):
+        for i in resolveLinks(S, substances, input):
+          if withinThreshold(contribution(i, S), threshold(S) or threshold(C)): return 該当
+      return 非該当
+
+
+function withinThreshold(value, th):
+  okLower = th.lower is null or (lowerInclusive ? value >= th.lower : value > th.lower)
+  okUpper = th.upper is null or (upperInclusive ? value <= th.upper : value < th.upper)
+  return okLower and okUpper
+```
+
+---
+
+## 10. テストケース（要件§5・必須）
+
+> すべて Decimal 計算。境界は既定（以上・以下）。金額は wt%。
+
+### T1: 法文物質名単位合算（ケース1）
+- 設定: C.summation=STATUTORY_NAME、S1閾値 下限=1%。
+- 組成: 物質a(∈M(S1))=0.6%、物質b(∈M(S1))=0.5%。
+- 期待: S1該当量 = 1.1% ≥ 1% → **S1該当 → 区分該当**。
+
+### T2: 名称間の重複（ケース1補足）
+- 設定: STATUTORY_NAME、S1閾値=1%、S2閾値=1%。物質a ∈ M(S1) かつ ∈ M(S2)、a=1.2%。
+- 期待: S1該当量=1.2%≥1% 該当、S2該当量=1.2%≥1% 該当。**各名称で別々に合算（重複可）→ 区分該当**。
+
+### T3: 合算なし（ケース2）
+- 設定: NONE、閾値 下限=1%。組成: a=0.6%、b=0.6%（ともに同一 S に該当）。
+- 期待: 個別に 0.6% < 1% → いずれも非該当 → **区分非該当**（合算しない）。
+
+### T4: 区分全体合算・同一物質1回計上（ケース3）
+- 設定: CATEGORY_TOTAL、区分閾値 下限=1%。物質a が S1 と S2 の両方に該当、a=0.8%。物質b(∈S1)=0.3%。
+- 期待: distinct 集合 = {a, b}、区分該当量 = 0.8 + 0.3 = 1.1% ≥ 1% → **区分該当**。a を二重計上しない（誤: 0.8+0.8+0.3=1.9 は不可）。
+
+### T5: 兼ね合い（ケース4・確定例）★最重要
+- 設定: rank 1種=1,2種=2,3種=3、同一兼ね合いグループ、各区分 interaction_flag=ON、合算=STATUTORY_NAME、3種閾値=5%（1種・2種閾値は本例では非該当想定）。
+- 組成: 3種物質=3%、2種物質=3%。
+- 算定:
+  - 3種判定: 累積(1種+2種+3種) → 3% + 3% = 6% ≥ 5% → **3種該当**。
+  - 2種判定: 累積(1種+2種) → 3%（2種のみ） → 2種閾値未満で非該当（例の前提）。
+  - 1種判定: 1種のみ → 0% → 非該当。
+- 結果抑制: 該当は3種のみ → **最終結果 = 3種**（`isFinal=true`）。
+
+### T6: 兼ね合い＋結果抑制（上位も該当）
+- 設定: T5と同様、ただし 1種物質=6%、1種閾値=5%、2種閾値=5%、3種閾値=5%。
+- 算定: 1種判定=6%≥5% 該当、2種判定(1種+2種)=6%≥5% 該当、3種判定=6%≥5% 該当。
+- 期待: 複数該当 → **最厳の1種のみ isFinal**、2種・3種は `suppressed=true`。finalCategories=[1種]。
+
+### T7: PRTR 金属換算（ケース5）
+- 設定: 金属換算方式、e=Pb、S閾値 下限=1%。組成: 物質A（鉛化合物）=10%、f(CAS_A, Pb)=50%。
+- 算定: 寄与 = 10 × 50/100 = 5% ≥ 1% → **該当**（value=5%）。
+
+### T8: 上限による非該当（Q-J6）
+- 設定: STATUTORY_NAME、S閾値 下限=1% 上限=10%。組成: 該当物質合計=12%。
+- 期待: 12% > 上限10% → **当該区分では非該当**（別の濃度帯区分へ振り分ける用途）。
+
+### T9: 閾値フォールバック（Q-J1）
+- 設定: S に閾値なし、区分閾値 下限=2%。該当物質合計=2.5%。
+- 期待: 区分閾値を使用 → 2.5% ≥ 2% → **該当**。
+
+### T10: 情報源フォールバック（§4）
+- 設定: 情報源 優先度 USER(高) > LOLI(低)。S について USER にリンク無し、LOLI にリンクあり。
+- 期待: USER をスキップし **LOLI を採用**して M(S) を構成。採用情報源 = LOLI を根拠に記録。
+
+### T11: 独立判定（兼ね合いオフ・大多数）
+- 設定: 2区分とも interaction_flag=OFF。両区分それぞれ該当。
+- 期待: 抑制は働かず **両区分とも isFinal=true**。
+
+### T12: 金属換算係数の欠落（整合性）
+- 設定: 金属換算方式・e=Pb だが f(CAS, Pb) 未登録。
+- 期待: 寄与 0 として非該当扱い、かつ**整合性警告**（FR-AU-03）を別途起票（判定はクラッシュしない）。
+
+### T13: 境界値（Q-N2 依存）
+- 設定: 閾値 下限=1%、該当量=ちょうど1.000000%。
+- 期待: 既定（以上）で **該当**。`lowerBoundInclusive=false`（超過）に切替時は**非該当**。※Q-N2確定で固定。
+
+---
+
+## 11. 決定性・数値の注意
+- 合算は集合走査順に依存しない（加算の順序で結果が変わらないよう Decimal を使用）。
+- 丸めは**判定の最終比較まで行わない**（途中で丸めない）。表示丸めは別レイヤ（Q-N1）。
+- 同点・複数該当時の最終選択は rank の全順序で決定（rank 同値は同一グループ内で発生しない前提。発生時はエラーとして検出）。
+
+---
+
+## 12. 未確定事項（判定に影響）
+| Q | 影響 | 既定の暫定挙動 |
+|---|---|---|
+| **Q-N1** | Decimal桁 | `Decimal(9,6)` 仮 |
+| **Q-N2** | 閾値境界（以上/超過） | 既定は両端含む（options で切替） |
+| **Q-L1** | CAS突合の多重一致/未一致 | 組成に無いCASは無視、複数一致は許容 |
+| **Q-L2** | フォールバック単位 | 法文物質名ごと |
+| **Q-G8** | 兼ね合い×合算の相互作用 | 累積集合をプール合算し区分閾値と比較（§7。ケース4確定例と整合する唯一の解釈） |
+
+> 確定後、本書のロジックとテスト期待値を更新する。テストは要件§5の全ケースを常時グリーンに保つ（回帰禁止・CLAUDE.md §4）。
+
+---
+
+## 改訂履歴
+| Ver | 日付 | 変更内容 |
+|---|---|---|
+| 0.1 | 2026-07-02 | 初版。要件定義書 v0.7 第5章に基づくアルゴリズム＋テストケース T1〜T13。 |
+| 0.2 | 2026-07-02 | 実装反映。兼ね合い（累積）はプール合算に修正（§7・Q-G8暫定。ケース4確定例との矛盾解消）。`packages/domain` に実装完了、T1〜T13＋決定性テスト=15件グリーン。 |

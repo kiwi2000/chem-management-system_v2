@@ -1,0 +1,50 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="_style.css"></head>
+<body><div class="page">
+<div class="header">
+  <span class="logo">化学物質管理システム</span>
+  <nav class="nav"><a>物質</a><a>製品</a><a class="active">法規制</a><a>リンク</a><a>金属換算</a><a>取込/出力</a><a>管理</a></nav>
+  <span class="spacer"></span>
+  <span class="userbox">山田 太郎（yamada@example.com）<span class="badge">システム管理者</span><span class="select">▼ 日本語</span><span class="btn outline sm">ログアウト</span></span>
+</div>
+<div class="main" style="max-width:960px;margin:0 auto;">
+  <div class="desc" style="margin-bottom:10px;">法規制マスタ ＞ 化学物質の審査及び製造等の規制に関する法律 ＞ 第三種特定化学物質相当（監視化学物質）</div>
+  <div class="card">
+    <div class="card-h">規制区分の編集</div>
+    <div class="card-b">
+      <div class="grid2">
+        <div class="field"><label>区分コード ○（法律内で一意）</label><div class="input">MONITOR</div></div>
+        <div class="field"><label>区分名（日本語）○</label><div class="input">監視化学物質</div></div>
+      </div>
+      <div class="grid2" style="margin-top:14px;">
+        <div class="field"><label>区分名（英語）</label><div class="input">Monitoring Chemical Substances</div></div>
+        <div class="field"><label>合算方式 ○</label><div class="input">法文物質名単位合算（最頻）</div></div>
+      </div>
+      <div class="grid2" style="margin-top:14px;">
+        <div class="field"><label>区分閾値 下限(wt%)</label><div class="input">5</div></div>
+        <div class="field"><label>区分閾値 上限(wt%)</label><div class="input">（未設定）</div></div>
+      </div>
+      <div class="card" style="margin-top:14px;box-shadow:none;">
+        <div class="card-b">
+          <div class="check"><input type="checkbox" checked disabled> 兼ね合い判定を行う（上位区分の物質を累積・大多数の区分はオフ）</div>
+          <div class="grid2">
+            <div class="field"><label>rank ○（小さいほど厳しい。1種=1, 2種=2, 3種=3）</label><div class="input">3</div></div>
+            <div class="field"><label>兼ね合いグループ ○</label><div class="input">CSCL-SP</div></div>
+          </div>
+          <div class="check" style="margin-top:10px;"><input type="checkbox" checked disabled> 結果抑制（複数該当時は最も厳しい区分のみ最終結果・既定オン）</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin:-6px 0 16px;"><span class="btn">保存</span> <span class="btn outline">法律へ戻る</span></div>
+
+  <div class="card">
+    <div class="card-h">法文物質名（管理番号順）<span class="btn sm">＋ 追加</span></div>
+    <div class="card-b">
+      <table>
+        <tr><th>管理番号</th><th>法文物質名</th><th>閾値（下限〜上限）</th><th>判定方式</th><th style="width:120px;">操作</th></tr>
+        <tr><td class="mono">001</td><td>スチレン <span style="color:#999;font-size:11px;">Styrene</span></td><td class="mono">（区分閾値）</td><td><span class="badge outline">含有率方式</span></td><td><span class="btn outline sm">編集</span> <span class="btn outline sm" style="color:#c0392b;">削除</span></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+</div></body></html>

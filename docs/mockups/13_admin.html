@@ -1,0 +1,37 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="_style.css"></head>
+<body><div class="page">
+<div class="header">
+  <span class="logo">化学物質管理システム</span>
+  <nav class="nav"><a>物質</a><a>製品</a><a>法規制</a><a>リンク</a><a>金属換算</a><a>取込/出力</a><a class="active">管理</a></nav>
+  <span class="spacer"></span>
+  <span class="userbox">山田 太郎（yamada@example.com）<span class="badge">システム管理者</span><span class="select">▼ 日本語</span><span class="btn outline sm">ログアウト</span></span>
+</div>
+<div class="main" style="max-width:960px;margin:0 auto;">
+  <div class="row"><h1>管理（ユーザー・システム設定）</h1><span style="font-size:12px;text-decoration:underline;color:#555;">多言語（ロケール・UI翻訳）→</span></div>
+  <div class="card">
+    <div class="card-h">ユーザー管理</div>
+    <div class="card-b" style="padding-top:0;">
+      <div class="desc">新しいユーザーは Supabase でアカウント作成後、初回ログイン時に「非特権・編集不可」で自動登録されます。ここでロール・編集権限を付与してください。</div>
+      <table>
+        <tr><th>名前 / メール</th><th>ロール</th><th>編集権限</th><th>状態</th></tr>
+        <tr><td>山田 太郎（yamada@example.com）</td><td class="mono">システム管理者</td><td><span class="badge">常に可</span></td><td><span class="btn outline sm">有効（クリックで無効化）</span></td></tr>
+        <tr><td>佐藤 花子（sato@example.com）</td><td class="mono">特権ユーザー</td><td><span class="badge">常に可</span></td><td><span class="btn outline sm">有効（クリックで無効化）</span></td></tr>
+        <tr><td>鈴木 次郎（suzuki@example.com）</td><td class="mono">非特権ユーザー</td><td><span class="check" style="margin:0;"><input type="checkbox" checked disabled>編集可</span></td><td><span class="btn outline sm">有効（クリックで無効化）</span></td></tr>
+        <tr><td>田中 三郎（tanaka@example.com）</td><td class="mono">非特権ユーザー</td><td><span class="check" style="margin:0;"><input type="checkbox" disabled>編集可</span></td><td><span class="btn outline sm">有効（クリックで無効化）</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h">システム設定</div>
+    <div class="card-b">
+      <div class="grid2">
+        <div style="font-size:13px;">含有率合計の検証モード</div><div class="input">標準（&gt;100%拒否・&lt;100%警告）</div>
+      </div>
+      <div class="grid2" style="margin-top:12px;">
+        <div style="font-size:13px;">丸め許容誤差 ε (wt%)</div><div class="input" style="width:100px;">0.01</div>
+      </div>
+      <div class="check" style="margin-top:12px;"><input type="checkbox" checked disabled> balance（残部）行の許容</div>
+    </div>
+  </div>
+</div>
+</div></body></html>

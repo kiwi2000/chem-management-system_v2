@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+/out/
+apps/*/out/
+next-env.d.ts
+
+# typescript
+*.tsbuildinfo
+
+# build
+dist/
+coverage/
+
+# env（機密・接続情報はコミットしない: CLAUDE.md §8）
+.env
+.env.local
+.env.*.local
+.env.prod
+
+# misc
+*.log
+.DS_Store

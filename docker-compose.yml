@@ -1,0 +1,27 @@
+# ローカル開発用 業務DB（PostgreSQL 既定）
+# 起動:   docker compose up -d
+# 停止:   docker compose down          （データは volume に保持）
+# 破棄:   docker compose down -v       （データも削除）
+#
+# v1（chem-management-system）と並走できるよう、コンテナ名・ポート・volume を分けている。
+# v1: chem-db / 5432 / chem-db-data      v2: chem-db-v2 / 5433 / chem-db-v2-data
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: chem-db-v2
+    environment:
+      POSTGRES_USER: chem
+      POSTGRES_PASSWORD: chem_local_dev
+      POSTGRES_DB: chem_v2
+    ports:
+      - "5433:5432"
+    volumes:
+      - chem-db-v2-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chem -d chem_v2"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  chem-db-v2-data:

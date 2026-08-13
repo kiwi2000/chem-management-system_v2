@@ -1,0 +1,18 @@
+# イメージに含めないもの（機密・生成物・開発専用）
+node_modules
+**/node_modules
+.next
+**/.next
+.git
+.env
+.env.*
+docs
+deploy
+out
+**/out
+*.log
+*.tsbuildinfo
+docker-compose.yml
+compose.prod.yml
+Dockerfile
+.dockerignore

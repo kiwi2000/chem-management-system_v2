@@ -1,0 +1,57 @@
+# 本番構成（VPS想定）: Caddy(HTTPS) → app(Next.js+LibreOffice) → db(PostgreSQL)
+#
+# 使い方（VPS上）:
+#   cp .env.prod.example .env.prod   → 値を編集（DB_PASSWORD は必ず変更）
+#   docker compose -f compose.prod.yml --env-file .env.prod up -d --build
+#   docker compose -f compose.prod.yml --env-file .env.prod exec app npx prisma db seed   # 初回のみ
+#
+# セキュリティ設計:
+# - db / app はポートを一切公開しない（外部から到達できるのは Caddy の 80/443 のみ）
+# - VPN(Tailscale)運用ではVPSのファイアウォールで 80/443 も Tailscale IF に限定する
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: chem
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD を .env.prod に設定してください}
+      POSTGRES_DB: chem
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chem -d chem"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    # ports: なし（アプリコンテナからのみ到達可）
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://chem:${DB_PASSWORD}@db:5432/chem?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+    # ports: なし（Caddy経由のみ）
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

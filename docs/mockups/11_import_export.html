@@ -1,0 +1,35 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="_style.css"></head>
+<body><div class="page">
+<div class="header">
+  <span class="logo">化学物質管理システム</span>
+  <nav class="nav"><a>物質</a><a>製品</a><a>法規制</a><a>リンク</a><a>金属換算</a><a class="active">取込/出力</a><a>管理</a></nav>
+  <span class="spacer"></span>
+  <span class="userbox">山田 太郎（yamada@example.com）<span class="badge">システム管理者</span><span class="select">▼ 日本語</span><span class="btn outline sm">ログアウト</span></span>
+</div>
+<div class="main" style="max-width:860px;margin:0 auto;">
+  <h1>TSV取込 / 出力</h1>
+  <div class="desc">UTF-8（BOM付き・Excel互換）・タブ区切り・1行目ヘッダ。取込はエラーがあると全件取り込まれません（暫定仕様 Q-IO1〜5）。</div>
+  <div class="card">
+    <div class="card-h">ダウンロード</div>
+    <div class="card-b">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <span class="btn outline">物質</span><span class="btn outline">製品</span><span class="btn outline">法規制（階層）</span><span class="btn outline">金属換算係数</span>
+        <span class="btn outline">リンク</span><span class="select">▼ 2026Q2</span>
+      </div>
+      <div class="desc" style="margin:0;">空テンプレート: <u>物質</u> <u>金属換算係数</u> <u>リンク</u></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h">一括取込（編集権限が必要）</div>
+    <div class="card-b">
+      <div style="display:flex;align-items:end;gap:14px;flex-wrap:wrap;">
+        <div class="field"><label>対象データ</label><div class="input" style="width:170px;">物質</div></div>
+        <div class="field"><label>TSVファイル</label><div class="input" style="width:220px;">substances_202607.tsv</div></div>
+        <span class="btn sm">取込を実行</span>
+      </div>
+      <div class="desc" style="margin-top:10px;">物質・金属換算係数は upsert（コードで突合し、既存は更新）。リンクは既存と同一の行をスキップして追加します。製品・法規制の取込は今後対応予定です。</div>
+      <div class="alert green">取込完了: 128 行・新規 120 件・更新 8 件</div>
+    </div>
+  </div>
+</div>
+</div></body></html>

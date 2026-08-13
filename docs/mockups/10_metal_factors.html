@@ -1,0 +1,32 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="_style.css"></head>
+<body><div class="page">
+<div class="header">
+  <span class="logo">化学物質管理システム</span>
+  <nav class="nav"><a>物質</a><a>製品</a><a>法規制</a><a>リンク</a><a class="active">金属換算</a><a>取込/出力</a><a>管理</a></nav>
+  <span class="spacer"></span>
+  <span class="userbox">山田 太郎（yamada@example.com）<span class="badge">システム管理者</span><span class="select">▼ 日本語</span><span class="btn outline sm">ログアウト</span></span>
+</div>
+<div class="main" style="max-width:900px;margin:0 auto;">
+  <h1>金属換算係数マスタ</h1>
+  <div class="desc">PRTR型（金属換算方式）の判定で使用します。寄与 = 含有率 × 係数 ÷ 100（Q-J5）。CAS基準の独立マスタです。</div>
+  <div class="card">
+    <div class="card-h">係数の登録</div>
+    <div class="card-b" style="display:flex;align-items:end;gap:14px;">
+      <div class="field"><label>CAS番号 ○</label><div class="input" style="width:160px;">7758-97-6</div></div>
+      <div class="field"><label>金属元素 ○</label><div class="input" style="width:80px;">Pb</div></div>
+      <div class="field"><label>割合(%) ○</label><div class="input" style="width:100px;">64.1</div></div>
+      <span class="btn sm">保存</span>
+    </div>
+  </div>
+  <div class="search"><div class="input">CAS / 元素で検索</div><span class="btn secondary">検索</span></div>
+  <div class="tablewrap"><table>
+    <tr><th>CAS番号</th><th>金属元素</th><th class="right">割合(%)</th><th style="width:150px;">操作</th></tr>
+    <tr><td class="mono">1317-36-8</td><td>Pb</td><td class="right mono">92.8</td><td><span class="btn outline sm">編集</span> <span class="btn outline sm" style="color:#c0392b;">削除</span></td></tr>
+    <tr><td class="mono">7758-97-6</td><td>Pb</td><td class="right mono">64.1</td><td><span class="btn outline sm">編集</span> <span class="btn outline sm" style="color:#c0392b;">削除</span></td></tr>
+    <tr><td class="mono">7758-97-6</td><td>Cr</td><td class="right mono">16.1</td><td><span class="btn outline sm">編集</span> <span class="btn outline sm" style="color:#c0392b;">削除</span></td></tr>
+    <tr><td class="mono">7446-14-2</td><td>Pb</td><td class="right mono">68.3</td><td><span class="btn outline sm">編集</span> <span class="btn outline sm" style="color:#c0392b;">削除</span></td></tr>
+    <tr><td class="mono">1314-13-2</td><td>Zn</td><td class="right mono">80.3</td><td><span class="btn outline sm">編集</span> <span class="btn outline sm" style="color:#c0392b;">削除</span></td></tr>
+    <tr><td class="mono">7786-81-4</td><td>Ni</td><td class="right mono">37.9</td><td><span class="btn outline sm">編集</span> <span class="btn outline sm" style="color:#c0392b;">削除</span></td></tr>
+  </table></div>
+</div>
+</div></body></html>

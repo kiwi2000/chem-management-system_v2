@@ -1,0 +1,43 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="_style.css"></head>
+<body><div class="page">
+<div class="header">
+  <span class="logo">化学物質管理システム</span>
+  <nav class="nav"><a>物質</a><a>製品</a><a>法規制</a><a>リンク</a><a>金属換算</a><a>取込/出力</a><a class="active">管理</a></nav>
+  <span class="spacer"></span>
+  <span class="userbox">山田 太郎（yamada@example.com）<span class="badge">システム管理者</span><span class="select">▼ 日本語</span><span class="btn outline sm">ログアウト</span></span>
+</div>
+<div class="main" style="max-width:900px;margin:0 auto;">
+  <div class="desc">管理 ＞ 多言語（ロケール・UI翻訳）</div>
+  <div class="card">
+    <div class="card-h">ロケール</div>
+    <div class="card-b">
+      <div style="display:flex;align-items:end;gap:14px;margin-bottom:14px;">
+        <div class="field"><label>コード ○</label><div class="input" style="width:120px;">zh-CN</div></div>
+        <div class="field"><label>表示名 ○</label><div class="input" style="width:180px;">简体中文</div></div>
+        <span class="btn sm">追加</span>
+      </div>
+      <table>
+        <tr><th>コード</th><th>表示名</th><th>状態</th><th style="width:190px;">操作</th></tr>
+        <tr><td class="mono">ja</td><td>日本語</td><td><span class="badge">既定（フォールバック先）</span> <span class="badge outline">有効</span></td><td><span class="btn outline sm">無効化</span></td></tr>
+        <tr><td class="mono">en</td><td>English</td><td><span class="badge outline">有効</span></td><td><span class="btn outline sm">既定にする</span> <span class="btn outline sm">無効化</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h">UI翻訳</div>
+    <div class="card-b">
+      <div style="display:flex;align-items:end;gap:14px;margin-bottom:14px;">
+        <div class="field"><label>ロケール</label><div class="input" style="width:150px;">en（English）</div></div>
+        <div class="field"><label>翻訳キー</label><div class="input" style="width:180px;">home.title</div></div>
+        <div class="field"><label>訳文</label><div class="input" style="width:180px;">Home</div></div>
+        <span class="btn sm">保存</span>
+      </div>
+      <table>
+        <tr><th>キー</th><th>訳文</th><th style="width:140px;">操作</th></tr>
+        <tr><td class="mono">home.title</td><td>Home</td><td><span class="btn outline sm">編集</span> <span class="btn outline sm" style="color:#c0392b;">削除</span></td></tr>
+        <tr><td class="mono">menu.substances.title</td><td>Substances</td><td><span class="btn outline sm">編集</span> <span class="btn outline sm" style="color:#c0392b;">削除</span></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+</div></body></html>

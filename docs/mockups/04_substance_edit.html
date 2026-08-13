@@ -1,0 +1,45 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="_style.css"></head>
+<body><div class="page">
+<div class="header">
+  <span class="logo">化学物質管理システム</span>
+  <nav class="nav"><a class="active">物質</a><a>製品</a><a>法規制</a><a>リンク</a><a>金属換算</a><a>取込/出力</a><a>管理</a></nav>
+  <span class="spacer"></span>
+  <span class="userbox">山田 太郎（yamada@example.com）<span class="badge">システム管理者</span><span class="select">▼ 日本語</span><span class="btn outline sm">ログアウト</span></span>
+</div>
+<div class="main narrow">
+  <div class="card">
+    <div class="card-h">物質の編集</div>
+    <div class="card-b">
+      <div class="grid2">
+        <div class="field"><label>物質コード ○</label><div class="input">SUB-0003</div></div>
+        <div class="field"><label>CAS番号 ○</label><div class="input">7758-97-6</div></div>
+      </div>
+      <div class="grid2" style="margin-top:14px;">
+        <div class="field"><label>メイン日本語名称 ○</label><div class="input">クロム酸鉛</div></div>
+        <div class="field"><label>英訳</label><div class="input">Lead chromate</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h">サブ名称（任意）</div>
+    <div class="card-b">
+      <div class="grid2" style="grid-template-columns:1fr 1fr 60px;align-items:end;margin-bottom:10px;">
+        <div class="input">クロムイエロー</div><div class="input">Chrome Yellow</div><span class="btn outline sm" style="color:#c0392b;">削除</span>
+      </div>
+      <span class="btn secondary sm">＋ サブ名称を追加</span>
+    </div>
+  </div>
+  <div class="alert">⚠️ 同一CAS番号（7758-97-6）の物質が既に 1 件登録されています</div>
+  <div style="margin:14px 0;"><span class="btn">保存</span> <span class="btn outline">一覧へ戻る</span></div>
+  <div class="card">
+    <div class="card-h">この物質を含む製品（展開済みデータに基づく）</div>
+    <div class="tablewrap" style="border:none;">
+      <table>
+        <tr><th>製品コード</th><th>製品名</th><th class="right">統合後含有率(wt%)</th><th></th></tr>
+        <tr><td class="mono">PRD-101</td><td>顔料ペーストY-1（原材料）</td><td class="right mono">15</td><td><span class="btn outline sm">開く</span></td></tr>
+        <tr><td class="mono">PRD-002</td><td>防錆塗料レッドガードRG-2</td><td class="right mono">6</td><td><span class="btn outline sm">開く</span></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+</div></body></html>
