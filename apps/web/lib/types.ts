@@ -1,4 +1,4 @@
-import type { Permission } from "@chem/shared";
+import type { GazetteLawKind, Permission, PropertyDataType, SubstanceStatus } from "@chem/shared";
 
 /**
  * 画面が使う API レスポンスの型。
@@ -29,6 +29,52 @@ export interface UserSummaryDto {
   mfaEnabled: boolean;
   lastLoginAt: string | null;
   permissions: Permission[];
+}
+
+export interface ListResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SubstanceListItemDto {
+  id: string;
+  code: string;
+  casNumber: string | null;
+  status: SubstanceStatus;
+  nameJa: string;
+  nameEn: string | null;
+  subNameCount: number;
+}
+
+export interface SubstanceDetailDto extends SubstanceListItemDto {
+  note: string | null;
+  mainNameJa: string;
+  mainNameEn: string | null;
+  subNames: { nameJa: string; nameEn: string | null }[];
+  gazetteNumbers: { lawKind: GazetteLawKind; number: string }[];
+  /** 数値は文字列で受け渡す（浮動小数点を経由させない） */
+  properties: {
+    propertyDefId: string;
+    valueText: string | null;
+    valueNum: string | null;
+    unit: string | null;
+  }[];
+  updatedAt: string;
+}
+
+export interface PropertyDefDto {
+  id: string;
+  key: string;
+  labelJa: string;
+  labelEn: string | null;
+  dataType: PropertyDataType;
+  defaultUnit: string | null;
+  displayOrder: number;
+  activeFlag: boolean;
+  /** 入力済みの物質数（削除の影響を知らせるため） */
+  valueCount: number;
 }
 
 export interface NewsDto {

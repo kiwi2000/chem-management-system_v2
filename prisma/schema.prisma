@@ -46,6 +46,28 @@ enum NewsStatus {
   PUBLISHED
 }
 
+enum SubstanceStatus {
+  ACTIVE
+  DISCONTINUED
+}
+
+enum SubstanceNameType {
+  MAIN
+  SUB
+}
+
+/** 官報公示整理番号の法令区分。CSCL（化審法）の番号が通称 MITI番号 */
+enum GazetteLawKind {
+  CSCL
+  ISHA
+  OTHER
+}
+
+enum PropertyDataType {
+  NUMBER
+  TEXT
+}
+
 enum SettingValueType {
   STRING
   NUMBER
@@ -153,6 +175,112 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([actorId, at])
   @@map("audit_logs")
+}
+
+// ---------- 物質 ----------
+
+model Substance {
+  id   String @id @default(cuid())
+  /** 業務キー（ユーザーが付与）。原文を保持し、突合は正規化列で行う */
+  code String @db.VarChar(20)
+  /**
+   * 正規化コード（全角→半角・trim・大文字化）。
+   * 論理削除するときは "<正規化コード>:<id>" に退避し、同じコードを再登録できるようにする。
+   */
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  /** CAS番号は任意（ポリマー・UVCB・企業秘密物質を登録できるようにするため） */
+  casNumber String? @map("cas_number") @db.VarChar(20)
+  /** 正規化CAS。法規制リンク・金属換算係数はこの値で突合する。一意にしない（別物質が同一CASを持てる） */
+  casNormalized String? @map("cas_normalized") @db.VarChar(20)
+
+  status SubstanceStatus @default(ACTIVE)
+  /** 備考（日本語のみ）。検索対象に含める */
+  note   String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  names          SubstanceName[]
+  gazetteNumbers SubstanceGazetteNumber[]
+  properties     SubstanceProperty[]
+
+  @@index([casNormalized])
+  @@index([status])
+  @@map("substances")
+}
+
+/** 主名称（MAIN）は1物質1件。DB制約にできないのでアプリ層で担保する */
+model SubstanceName {
+  id           String            @id @default(cuid())
+  substanceId  String            @map("substance_id")
+  nameType     SubstanceNameType @map("name_type")
+  nameJa       String            @map("name_ja") @db.VarChar(500)
+  nameEn       String?           @map("name_en") @db.VarChar(500)
+  /** 別名の並び順（主名称は null） */
+  displayOrder Int?              @map("display_order")
+
+  substance Substance @relation(fields: [substanceId], references: [id], onDelete: Cascade)
+
+  @@index([substanceId])
+  @@index([nameJa])
+  @@index([nameEn])
+  @@map("substance_names")
+}
+
+model SubstanceGazetteNumber {
+  id           String         @id @default(cuid())
+  substanceId  String         @map("substance_id")
+  lawKind      GazetteLawKind @map("law_kind")
+  number       String         @db.VarChar(50)
+  displayOrder Int            @default(0) @map("display_order")
+
+  substance Substance @relation(fields: [substanceId], references: [id], onDelete: Cascade)
+
+  @@unique([substanceId, lawKind, number])
+  @@index([number])
+  @@map("substance_gazette_numbers")
+}
+
+/** 拡張属性の項目定義（システム管理者が作る） */
+model SubstancePropertyDef {
+  id           String           @id @default(cuid())
+  key          String           @unique @db.VarChar(50)
+  labelJa      String           @map("label_ja") @db.VarChar(100)
+  labelEn      String?          @map("label_en") @db.VarChar(100)
+  dataType     PropertyDataType @map("data_type")
+  defaultUnit  String?          @map("default_unit") @db.VarChar(50)
+  displayOrder Int              @default(0) @map("display_order")
+  activeFlag   Boolean          @default(true) @map("active_flag")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  values SubstanceProperty[]
+
+  @@map("substance_property_defs")
+}
+
+/**
+ * 拡張属性の値。
+ * 種類（数値/テキスト）と入っている列の整合は CHECK 制約でも担保する（migration SQL に手書き）。
+ */
+model SubstanceProperty {
+  id            String   @id @default(cuid())
+  substanceId   String   @map("substance_id")
+  propertyDefId String   @map("property_def_id")
+  valueText     String?  @map("value_text")
+  valueNum      Decimal? @map("value_num") @db.Decimal(18, 6)
+  unit          String?  @db.VarChar(50)
+
+  substance Substance            @relation(fields: [substanceId], references: [id], onDelete: Cascade)
+  def       SubstancePropertyDef @relation(fields: [propertyDefId], references: [id], onDelete: Cascade)
+
+  @@unique([substanceId, propertyDefId])
+  @@index([propertyDefId, valueNum])
+  @@map("substance_properties")
 }
 
 // ---------- お知らせ ----------

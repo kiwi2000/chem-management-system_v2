@@ -11,3 +11,4 @@ export * from "./constants";
 export * from "./i18n";
 export * from "./news";
 export * from "./permissions";
+export * from "./substance";

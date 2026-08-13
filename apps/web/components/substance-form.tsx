@@ -1,0 +1,392 @@
+"use client";
+
+import { GAZETTE_LAW_KINDS, pickName, type GazetteLawKind } from "@chem/shared";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useI18n } from "@/lib/i18n-client";
+import type { ApiError, PropertyDefDto, SubstanceDetailDto } from "@/lib/types";
+
+interface Props {
+  /** 未指定なら新規登録 */
+  initial?: SubstanceDetailDto;
+  defs: PropertyDefDto[];
+  readOnly: boolean;
+}
+
+interface SubNameRow {
+  nameJa: string;
+  nameEn: string;
+}
+interface GazetteRow {
+  lawKind: GazetteLawKind;
+  number: string;
+}
+
+const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
+
+export function SubstanceForm({ initial, defs, readOnly }: Props) {
+  const router = useRouter();
+  const { m, locale } = useI18n();
+
+  const [code, setCode] = useState(initial?.code ?? "");
+  const [casNumber, setCasNumber] = useState(initial?.casNumber ?? "");
+  const [status, setStatus] = useState(initial?.status ?? "ACTIVE");
+  const [note, setNote] = useState(initial?.note ?? "");
+  const [mainNameJa, setMainNameJa] = useState(initial?.mainNameJa ?? "");
+  const [mainNameEn, setMainNameEn] = useState(initial?.mainNameEn ?? "");
+  const [subNames, setSubNames] = useState<SubNameRow[]>(
+    initial?.subNames.map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn ?? "" })) ?? [],
+  );
+  const [gazette, setGazette] = useState<GazetteRow[]>(
+    initial?.gazetteNumbers.map((g) => ({ lawKind: g.lawKind, number: g.number })) ?? [],
+  );
+  // 拡張属性は「定義ID → 入力値（文字列）」で持つ。数値も文字列のまま送る
+  const [propValues, setPropValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const p of initial?.properties ?? []) {
+      init[p.propertyDefId] = p.valueNum ?? p.valueText ?? "";
+    }
+    return init;
+  });
+  const [propUnits, setPropUnits] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const p of initial?.properties ?? []) if (p.unit) init[p.propertyDefId] = p.unit;
+    return init;
+  });
+
+  const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  function buildBody() {
+    return {
+      code,
+      casNumber: casNumber || null,
+      status,
+      note: note || null,
+      mainNameJa,
+      mainNameEn: mainNameEn || null,
+      subNames: subNames
+        .filter((n) => n.nameJa.trim() !== "")
+        .map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn || null })),
+      gazetteNumbers: gazette.filter((g) => g.number.trim() !== ""),
+      properties: defs
+        .map((d) => {
+          const raw = (propValues[d.id] ?? "").trim();
+          if (raw === "") return null;
+          return {
+            propertyDefId: d.id,
+            valueText: d.dataType === "TEXT" ? raw : null,
+            valueNum: d.dataType === "NUMBER" ? raw : null,
+            unit: propUnits[d.id] || d.defaultUnit || null,
+          };
+        })
+        .filter((p) => p !== null),
+    };
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setWarnings([]);
+    setSaving(true);
+    try {
+      const res = await fetch(initial ? `/api/substances/${initial.id}` : "/api/substances", {
+        method: initial ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildBody()),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      const body = (await res.json()) as { warnings?: string[] };
+      // 警告があるときは一覧に戻らず、その場で確認してもらう
+      if (body.warnings && body.warnings.length > 0) {
+        setWarnings(body.warnings);
+        router.refresh();
+        return;
+      }
+      router.push("/substances");
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <fieldset disabled={readOnly} className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.substances.basic}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">{m.substances.code}</Label>
+                <Input
+                  id="code"
+                  required
+                  maxLength={20}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="w-56 font-mono"
+                />
+                <p className="text-muted-foreground text-xs">{m.substances.codeHint}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cas">
+                  {m.substances.casNumber}
+                  {m.common.optional}
+                </Label>
+                <Input
+                  id="cas"
+                  maxLength={20}
+                  value={casNumber}
+                  onChange={(e) => setCasNumber(e.target.value)}
+                  className="w-56 font-mono"
+                  placeholder="7439-92-1"
+                />
+                <p className="text-muted-foreground text-xs">{m.substances.casHint}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">{m.substances.status}</Label>
+                <select
+                  id="status"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as typeof status)}
+                  className={selectClass}
+                >
+                  <option value="ACTIVE">{m.substances.statusActive}</option>
+                  <option value="DISCONTINUED">{m.substances.statusDiscontinued}</option>
+                </select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note">
+                {m.substances.note}
+                {m.common.optional}
+              </Label>
+              <textarea
+                id="note"
+                rows={3}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.substances.names}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="mainJa">
+                  {m.substances.mainName} / {m.substances.nameJa}
+                </Label>
+                <Input
+                  id="mainJa"
+                  required
+                  value={mainNameJa}
+                  onChange={(e) => setMainNameJa(e.target.value)}
+                  className="w-80"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mainEn">
+                  {m.substances.mainName} / {m.substances.nameEn}
+                  {m.common.optional}
+                </Label>
+                <Input
+                  id="mainEn"
+                  value={mainNameEn}
+                  onChange={(e) => setMainNameEn(e.target.value)}
+                  className="w-80"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{m.substances.subNames}</Label>
+              {subNames.map((n, i) => (
+                <div key={i} className="flex flex-wrap items-center gap-2">
+                  <Input
+                    aria-label={`${m.substances.subNames} ${i + 1} ${m.substances.nameJa}`}
+                    value={n.nameJa}
+                    onChange={(e) =>
+                      setSubNames(
+                        subNames.map((x, j) => (j === i ? { ...x, nameJa: e.target.value } : x)),
+                      )
+                    }
+                    className="w-80"
+                  />
+                  <Input
+                    aria-label={`${m.substances.subNames} ${i + 1} ${m.substances.nameEn}`}
+                    value={n.nameEn}
+                    onChange={(e) =>
+                      setSubNames(
+                        subNames.map((x, j) => (j === i ? { ...x, nameEn: e.target.value } : x)),
+                      )
+                    }
+                    className="w-80"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => setSubNames(subNames.filter((_, j) => j !== i))}
+                  >
+                    {m.common.remove}
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSubNames([...subNames, { nameJa: "", nameEn: "" }])}
+              >
+                {m.substances.addSubName}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.substances.gazette}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p className="text-muted-foreground text-xs">{m.substances.gazetteHint}</p>
+            {gazette.map((g, i) => (
+              <div key={i} className="flex flex-wrap items-center gap-2">
+                <select
+                  aria-label={`${m.substances.gazetteLawKind} ${i + 1}`}
+                  value={g.lawKind}
+                  onChange={(e) =>
+                    setGazette(
+                      gazette.map((x, j) =>
+                        j === i ? { ...x, lawKind: e.target.value as GazetteLawKind } : x,
+                      ),
+                    )
+                  }
+                  className={selectClass}
+                >
+                  {GAZETTE_LAW_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {m.substances.lawKinds[k]}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  aria-label={`${m.substances.gazetteNumber} ${i + 1}`}
+                  value={g.number}
+                  maxLength={50}
+                  onChange={(e) =>
+                    setGazette(
+                      gazette.map((x, j) => (j === i ? { ...x, number: e.target.value } : x)),
+                    )
+                  }
+                  className="w-56 font-mono"
+                  placeholder="1-234"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive"
+                  onClick={() => setGazette(gazette.filter((_, j) => j !== i))}
+                >
+                  {m.common.remove}
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setGazette([...gazette, { lawKind: "CSCL", number: "" }])}
+            >
+              {m.substances.addGazette}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.substances.properties}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {defs.length === 0 && (
+              <p className="text-muted-foreground text-sm">{m.substances.propertiesEmpty}</p>
+            )}
+            {defs.map((d) => (
+              <div key={d.id} className="flex flex-wrap items-center gap-2">
+                <Label htmlFor={`prop-${d.id}`} className="w-48">
+                  {pickName(locale, d.labelJa, d.labelEn)}
+                </Label>
+                <Input
+                  id={`prop-${d.id}`}
+                  inputMode={d.dataType === "NUMBER" ? "decimal" : "text"}
+                  value={propValues[d.id] ?? ""}
+                  onChange={(e) => setPropValues({ ...propValues, [d.id]: e.target.value })}
+                  className="w-64"
+                />
+                {d.dataType === "NUMBER" && (
+                  <Input
+                    aria-label={`${pickName(locale, d.labelJa, d.labelEn)} ${m.common.unit}`}
+                    value={propUnits[d.id] ?? d.defaultUnit ?? ""}
+                    onChange={(e) => setPropUnits({ ...propUnits, [d.id]: e.target.value })}
+                    className="w-28"
+                    placeholder={m.common.unit}
+                  />
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </fieldset>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {warnings.length > 0 && (
+        <Alert>
+          <AlertDescription>
+            <p className="font-medium">{m.substances.savedWithWarnings}</p>
+            <ul className="mt-1 list-disc pl-5">
+              {warnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex gap-2">
+        {!readOnly && (
+          <Button type="submit" disabled={saving}>
+            {saving ? m.common.saving : m.common.save}
+          </Button>
+        )}
+        <Button type="button" variant="outline" onClick={() => router.push("/substances")}>
+          {readOnly ? m.common.back : m.common.cancel}
+        </Button>
+      </div>
+    </form>
+  );
+}

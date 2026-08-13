@@ -40,6 +40,12 @@ const ITEMS: NavItem[] = [
 
 const ADMIN_ITEMS: NavItem[] = [
   { href: "/admin/users", key: "users", needs: "ADMIN", match: ["/admin/users"] },
+  {
+    href: "/admin/substance-property-defs",
+    key: "propertyDefs",
+    needs: "ADMIN",
+    match: ["/admin/substance-property-defs"],
+  },
 ];
 
 function isActive(pathname: string, item: NavItem): boolean {
