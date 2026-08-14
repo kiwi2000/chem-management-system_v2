@@ -278,7 +278,7 @@ export const ja = {
       rose: "少し濃いピンクを基調にした配色",
       contrast: "白黒をはっきりさせ、枠線を強く出す",
     },
-    headerStrong: "見出しをテーマの色で塗る",
+    headerStrong: "色付きヘッダー",
     headerStrongHint: "上部のバー・表の見出し・左メニューの見出しに、選んだテーマの色を敷きます",
     account: "アカウント",
     changePassword: "パスワードを変更する",

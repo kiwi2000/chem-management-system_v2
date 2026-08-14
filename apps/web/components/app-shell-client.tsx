@@ -76,6 +76,8 @@ export function AppShellClient({ user, children }: Props) {
         className={cn(
           // overflow-hidden が無いと中身の幅（w-56）が下限になって閉じきらない
           "hidden shrink-0 overflow-hidden transition-[width] duration-200 md:block",
+          // 本文だけをスクロールさせ、メニューは画面に貼り付ける
+          "sticky top-0 h-screen self-start",
           open ? "w-56 border-r" : "w-0",
         )}
         style={{ backgroundColor: "var(--background)" }}
@@ -104,8 +106,11 @@ export function AppShellClient({ user, children }: Props) {
 
       {/* 本体（トップバー＋コンテンツ） */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* テーマによっては濃い色が敷かれる。中の文字色は header-foreground に従わせる */}
-        <header className="bg-header text-header-foreground flex h-14 items-center gap-3 border-b px-4">
+        {/*
+          設定によっては色が敷かれる。中の文字色は header-foreground に従わせる。
+          スクロールしても隠れないよう画面上端に固定する（ドロワーの z-40 より下）。
+        */}
+        <header className="bg-header text-header-foreground sticky top-0 z-30 flex h-14 items-center gap-3 border-b px-4">
           <Button
             variant="ghost"
             size="icon"

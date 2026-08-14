@@ -273,7 +273,7 @@ export const en: Messages = {
       rose: "Based on a deeper pink",
       contrast: "Strong black and white with heavier borders",
     },
-    headerStrong: "Colour the headings",
+    headerStrong: "Coloured header",
     headerStrongHint:
       "Fills the top bar, table headings and the sidebar title with the chosen theme's colour",
     account: "Account",
