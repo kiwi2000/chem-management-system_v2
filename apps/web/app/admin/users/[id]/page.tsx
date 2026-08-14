@@ -1,10 +1,12 @@
 "use client";
 
 import type { Permission } from "@chem/shared";
+import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 import { PermissionPicker } from "@/components/permission-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [displayName, setDisplayName] = useState("");
   const [activeFlag, setActiveFlag] = useState(true);
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [editing, setEditing] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [forceChange, setForceChange] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -109,60 +112,75 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     <div className="mx-auto max-w-4xl space-y-4 p-6">
       <h1 className="text-2xl font-semibold">{m.users.editTitle}</h1>
 
+      {/* まず表示だけにして、「編集」を押してから書き換えられるようにする（物質・お知らせと同じ形） */}
+      <div className="flex items-center gap-3">
+        <Badge variant={editing ? "secondary" : "outline"}>
+          {editing ? m.common.editMode : m.common.viewMode}
+        </Badge>
+        {!editing && (
+          <Button type="button" size="sm" onClick={() => setEditing(true)}>
+            <Pencil className="mr-1 size-3.5" />
+            {m.common.edit}
+          </Button>
+        )}
+      </div>
+
       <form onSubmit={onSave} className="space-y-4">
-        <Card>
-          <CardContent className="space-y-4 pt-6">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <div className="text-muted-foreground text-xs">{m.users.email}</div>
-                <div className="font-mono text-sm">{item.email}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground text-xs">{m.users.lastLogin}</div>
-                <div className="text-sm">
-                  {item.lastLoginAt
-                    ? new Date(item.lastLoginAt).toLocaleString(locale)
-                    : m.users.never}
+        <fieldset disabled={!editing} className="space-y-4">
+          <Card>
+            <CardContent className="space-y-4 pt-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-muted-foreground text-xs">{m.users.email}</div>
+                  <div className="font-mono text-sm">{item.email}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground text-xs">{m.users.lastLogin}</div>
+                  <div className="text-sm">
+                    {item.lastLoginAt
+                      ? new Date(item.lastLoginAt).toLocaleString(locale)
+                      : m.users.never}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                {m.users.displayName}
-                {m.common.optional}
-              </Label>
-              <Input
-                id="name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="max-w-md"
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={activeFlag}
-                disabled={isSelf}
-                onChange={(e) => setActiveFlag(e.target.checked)}
-              />
-              {m.users.activeFlag}
-            </label>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  {m.users.displayName}
+                  {m.common.optional}
+                </Label>
+                <Input
+                  id="name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="max-w-md"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={activeFlag}
+                  disabled={isSelf}
+                  onChange={(e) => setActiveFlag(e.target.checked)}
+                />
+                {m.users.activeFlag}
+              </label>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{m.users.permissions}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PermissionPicker
-              value={permissions}
-              onChange={setPermissions}
-              disabled={saving}
-              adminLockedReason={isSelf ? m.users.selfNote : null}
-            />
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{m.users.permissions}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PermissionPicker
+                value={permissions}
+                onChange={setPermissions}
+                disabled={saving}
+                adminLockedReason={isSelf ? m.users.selfNote : null}
+              />
+            </CardContent>
+          </Card>
+        </fieldset>
 
         {error && (
           <Alert variant="destructive">
@@ -176,11 +194,25 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         )}
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={saving}>
-            {saving ? m.common.saving : m.common.save}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => router.push("/admin/users")}>
-            {m.common.back}
+          {editing && (
+            <Button type="submit" disabled={saving}>
+              {saving ? m.common.saving : m.common.save}
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (editing) {
+                // 書きかけを捨てて表示に戻す
+                void load();
+                setEditing(false);
+              } else {
+                router.push("/admin/users");
+              }
+            }}
+          >
+            {editing ? m.common.cancel : m.common.back}
           </Button>
         </div>
       </form>

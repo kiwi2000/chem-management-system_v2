@@ -8,7 +8,7 @@ export default function NewNewsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <h1 className="text-2xl font-semibold">{m.news.newTitle}</h1>
-      <NewsForm />
+      <NewsForm canEdit />
     </div>
   );
 }

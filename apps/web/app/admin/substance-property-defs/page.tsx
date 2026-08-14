@@ -2,6 +2,7 @@
 
 import { pickName, type PropertyDataType } from "@chem/shared";
 import { useCallback, useEffect, useState } from "react";
+import { RowActions } from "@/components/data-table/row-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -276,34 +277,21 @@ export default function PropertyDefsPage() {
                 </TableCell>
                 <TableCell>{d.defaultUnit ?? ""}</TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setForm({
-                          id: d.id,
-                          key: d.key,
-                          labelJa: d.labelJa,
-                          labelEn: d.labelEn ?? "",
-                          dataType: d.dataType,
-                          defaultUnit: d.defaultUnit ?? "",
-                          displayOrder: d.displayOrder,
-                          activeFlag: d.activeFlag,
-                        })
-                      }
-                    >
-                      {m.common.edit}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => void onDelete(d)}
-                    >
-                      {m.common.delete}
-                    </Button>
-                  </div>
+                  <RowActions
+                    onEdit={() =>
+                      setForm({
+                        id: d.id,
+                        key: d.key,
+                        labelJa: d.labelJa,
+                        labelEn: d.labelEn ?? "",
+                        dataType: d.dataType,
+                        defaultUnit: d.defaultUnit ?? "",
+                        displayOrder: d.displayOrder,
+                        activeFlag: d.activeFlag,
+                      })
+                    }
+                    onDelete={() => void onDelete(d)}
+                  />
                 </TableCell>
               </TableRow>
             ))}

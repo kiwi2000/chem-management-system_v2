@@ -13,6 +13,8 @@ export const en: Messages = {
     edit: "Edit",
     detail: "Details",
     view: "View",
+    viewMode: "View only",
+    editMode: "Editing",
     search: "Search",
     create: "+ New",
     open: "Open",

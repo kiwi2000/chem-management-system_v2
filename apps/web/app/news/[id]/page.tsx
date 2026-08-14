@@ -26,14 +26,15 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
-      <h1 className="text-2xl font-semibold">{m.news.editTitle}</h1>
+      <h1 className="text-2xl font-semibold">{m.news.title}</h1>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       {!error && !item && <p className="text-muted-foreground">{m.common.loading}</p>}
-      {item && <NewsForm initial={item} />}
+      {/* 編集できるかはサーバー側が判断済み（自分の投稿か、他人の分も編集できる権限があるか） */}
+      {item && <NewsForm initial={item} canEdit={item.editable} />}
     </div>
   );
 }

@@ -12,6 +12,9 @@ export const ja = {
     edit: "編集",
     detail: "詳細",
     view: "表示",
+    /** 詳細画面が今どちらの状態かを示す */
+    viewMode: "表示のみ",
+    editMode: "編集中",
     search: "検索",
     create: "＋ 新規登録",
     open: "開く",

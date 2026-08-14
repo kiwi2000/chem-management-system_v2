@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -134,6 +135,21 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      {/* 既存データは長い画面なので、いまどちらの状態かと編集ボタンを上にも出す */}
+      {initial && (
+        <div className="flex items-center gap-3">
+          <Badge variant={readOnly ? "outline" : "secondary"}>
+            {readOnly ? m.common.viewMode : m.common.editMode}
+          </Badge>
+          {readOnly && canEdit && (
+            <Button type="button" size="sm" onClick={() => setEditing(true)}>
+              <Pencil className="mr-1 size-3.5" />
+              {m.common.edit}
+            </Button>
+          )}
+        </div>
+      )}
+
       <fieldset disabled={readOnly} className="space-y-4">
         <Card>
           <CardHeader>

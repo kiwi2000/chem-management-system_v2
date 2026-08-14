@@ -3,6 +3,7 @@
 import { pickName } from "@chem/shared";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { RowActions } from "@/components/data-table/row-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -118,26 +119,10 @@ export default function NewsListPage() {
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">{n.authorName}</TableCell>
                 <TableCell>
-                  {n.editable && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        nativeButton={false}
-                        render={<Link href={`/news/${n.id}`} />}
-                      >
-                        {m.common.edit}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-destructive"
-                        onClick={() => void onDelete(n)}
-                      >
-                        {m.common.delete}
-                      </Button>
-                    </div>
-                  )}
+                  <RowActions
+                    detailHref={`/news/${n.id}`}
+                    onDelete={n.editable ? () => void onDelete(n) : undefined}
+                  />
                 </TableCell>
               </TableRow>
             ))}
