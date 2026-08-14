@@ -200,6 +200,25 @@ export const en: Messages = {
     savedWithWarnings: "Saved. Please check the following",
   },
 
+  metalFactors: {
+    title: "Metal conversion factors",
+    description:
+      "Register how much of a metal, by weight, a substance with a given CAS number contains. Used when an assessment needs the amount as metal.",
+    newTitle: "New factor",
+    editTitle: "Edit factor",
+    casNumber: "CAS number",
+    metalElement: "Metal",
+    metalElementHint: "Element symbol (e.g. Pb)",
+    ratioPct: "Factor (weight %)",
+    ratioHint: "Greater than 0 and up to 100, with up to 6 decimals",
+    matchedSubstances: "Matching substances",
+    empty: "No factors",
+    deleteConfirm: (label: string) => `Delete "${label}"?`,
+    warnUnknownCas:
+      "No substance with this CAS number is registered (a factor can still be kept in advance)",
+    revived: "A deleted entry with the same combination was restored with the new values",
+  },
+
   settings: {
     title: "System settings",
     description: "Adjust how strict the input checks are to match how you work.",
@@ -314,6 +333,8 @@ export const en: Messages = {
     duplicateCode: (code: string) => `The substance code "${code}" is already in use`,
     duplicateKey: (key: string) => `The key "${key}" is already in use`,
     duplicateGazette: "The same number is registered twice under the same law",
+    duplicateMetalFactor: (cas: string, element: string) =>
+      `A factor for ${cas} and ${element} already exists`,
     propertyTypeMismatch: (label: string) => `The value of "${label}" does not match its type`,
     unknownProperty: "The request contains a property that is not defined",
     casRequired: "A CAS number is required (this can be changed in the system settings)",
@@ -339,5 +360,7 @@ export const en: Messages = {
     tooMany: (n: number) => `At most ${n} entries`,
     keyFormat: "Start with a lower-case letter; use lower-case letters, digits and underscores",
     numberFormat: "Enter a number",
+    elementFormat: "Enter an element symbol (e.g. Pb, Cr, Cd)",
+    percentRange: "Enter a value greater than 0 and up to 100",
   },
 };

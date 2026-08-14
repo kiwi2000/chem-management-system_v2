@@ -64,6 +64,17 @@ export interface SubstanceDetailDto extends SubstanceListItemDto {
   }[];
 }
 
+export interface MetalFactorDto {
+  id: string;
+  casNumber: string;
+  metalElement: string;
+  /** 重量パーセント。数値は文字列で受け渡す */
+  ratioPct: string;
+  updatedAt: string;
+  /** このCASを持つ物質（物理FKは無く、正規化CASで突き合わせた結果） */
+  matchedSubstances: { id: string; code: string; nameJa: string; nameEn: string | null }[];
+}
+
 export interface PropertyDefDto {
   id: string;
   key: string;

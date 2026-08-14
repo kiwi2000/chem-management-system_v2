@@ -202,6 +202,25 @@ export const ja = {
     savedWithWarnings: "保存しました。次の点を確認してください",
   },
 
+  metalFactors: {
+    title: "金属換算係数",
+    description:
+      "CAS番号と金属元素の組で、その金属が重量で何パーセント含まれるかを登録します。規制該当の判定で「金属としての量」を求めるときに使います。",
+    newTitle: "係数の追加",
+    editTitle: "係数の編集",
+    casNumber: "CAS番号",
+    metalElement: "金属元素",
+    metalElementHint: "元素記号（例: Pb）",
+    ratioPct: "換算係数（重量%）",
+    ratioHint: "0 より大きく 100 以下。小数は6桁まで",
+    matchedSubstances: "該当する物質",
+    empty: "係数がありません",
+    deleteConfirm: (label: string) => `「${label}」を削除しますか？`,
+    /** 保存はできるが注意してほしいこと */
+    warnUnknownCas: "このCAS番号の物質は登録されていません（係数だけ先に持つことはできます）",
+    revived: "以前に削除した同じ組み合わせがあったため、内容を更新して復活させました",
+  },
+
   settings: {
     title: "システム設定",
     description: "運用の方針に合わせて、入力チェックの厳しさを切り替えます。",
@@ -319,6 +338,8 @@ export const ja = {
     duplicateCode: (code: string) => `物質コード「${code}」は既に使われています`,
     duplicateKey: (key: string) => `キー「${key}」は既に使われています`,
     duplicateGazette: "同じ区分に同じ番号が重複しています",
+    duplicateMetalFactor: (cas: string, element: string) =>
+      `${cas} と ${element} の組み合わせは既に登録されています`,
     propertyTypeMismatch: (label: string) => `「${label}」の値の種類が定義と合っていません`,
     unknownProperty: "定義されていない項目が含まれています",
     casRequired: "CAS番号は必須です（システム設定で変更できます）",
@@ -344,6 +365,8 @@ export const ja = {
     tooMany: (n: number) => `${n}件までです`,
     keyFormat: "英小文字で始まり、英小文字・数字・アンダースコアのみ使えます",
     numberFormat: "数値で入力してください",
+    elementFormat: "元素記号で入力してください（例: Pb, Cr, Cd）",
+    percentRange: "0 より大きく 100 以下で入力してください",
   },
 };
 

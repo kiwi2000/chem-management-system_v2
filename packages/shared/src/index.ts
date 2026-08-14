@@ -9,6 +9,7 @@ export * from "./admin";
 export * from "./auth";
 export * from "./constants";
 export * from "./i18n";
+export * from "./metal-factor";
 export * from "./news";
 export * from "./permissions";
 export * from "./settings";

@@ -285,6 +285,37 @@ model SubstanceProperty {
   @@map("substance_properties")
 }
 
+// ---------- 金属換算係数 ----------
+
+/**
+ * 金属換算係数。
+ * 「この CAS の物質には、その金属元素が重量で何パーセント含まれるか」を持つ。
+ * 判定では 寄与 = 含有率 × ratio_pct ÷ 100 として使う。
+ *
+ * 物質マスタとは物理FKで繋がない。CAS で引ければよく、
+ * 物質として登録していない CAS の係数も先に持てるようにするため。
+ */
+model MetalConversionFactor {
+  id String @id @default(cuid())
+  /** 原文。正規化した値は突合用 */
+  casNumber     String @map("cas_number") @db.VarChar(20)
+  casNormalized String @map("cas_normalized") @db.VarChar(20)
+  /** 金属元素の記号（Pb, Cr, Cd など） */
+  metalElement  String @map("metal_element") @db.VarChar(4)
+  /** 重量パーセント。0 より大きく 100 以下（CHECK 制約は migration に手書き） */
+  ratioPct      Decimal @map("ratio_pct") @db.Decimal(9, 6)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([casNormalized, metalElement])
+  @@index([casNormalized])
+  @@map("metal_conversion_factors")
+}
+
 // ---------- お知らせ ----------
 
 /**

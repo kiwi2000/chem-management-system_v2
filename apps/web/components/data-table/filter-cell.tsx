@@ -9,6 +9,7 @@ import {
   type ColumnFilter,
   type Messages,
 } from "@chem/shared";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n-client";
 import type { TableColumn } from "./types";
@@ -25,6 +26,14 @@ interface Props<T> {
 export function FilterCell<T>({ column, value, onChange }: Props<T>) {
   const { m } = useI18n();
   const ops = m.table.operators as Record<string, string>;
+
+  // 「以上」を選んでから数字を入れる、という順序を保てるように、
+  // 値が空でも選んだ演算子は覚えておく（条件としてはまだ送らない）
+  const appliedOp = value && value.kind !== "enum" ? value.op : null;
+  const [pickedOp, setPickedOp] = useState<string | null>(null);
+  useEffect(() => {
+    if (appliedOp) setPickedOp(appliedOp);
+  }, [appliedOp]);
 
   if (column.kind === "enum") {
     const selected = value?.kind === "enum" ? value.values : [];
@@ -71,7 +80,7 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
         ? NUMBER_OPERATORS
         : DATE_OPERATORS;
   const defaultOp = operators[0] as string;
-  const op = value && value.kind !== "enum" ? value.op : defaultOp;
+  const op = appliedOp ?? pickedOp ?? defaultOp;
   const v1 = value && value.kind !== "enum" ? value.value : "";
   const v2 =
     value && (value.kind === "number" || value.kind === "date") ? (value.value2 ?? "") : "";
@@ -94,7 +103,10 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
       <select
         aria-label={`${column.header} ${m.table.condition}`}
         value={op}
-        onChange={(e) => emit(e.target.value, v1, v2)}
+        onChange={(e) => {
+          setPickedOp(e.target.value);
+          emit(e.target.value, v1, v2);
+        }}
         className={selectClass}
       >
         {operators.map((o) => (
