@@ -4,12 +4,13 @@ import { jsonError, requirePermission, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { NEWS_COLUMNS } from "@/lib/list-columns";
-import { parseDateOnly, publishedNowWhere, toNewsDto } from "@/lib/news-service";
+import { NEWS_INCLUDE, parseDateOnly, publishedNowWhere, toNewsDto } from "@/lib/news-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
-const AUTHOR_SELECT = { select: { id: true, displayName: true, email: true } };
+/** ホームに出す件数の上限。分類ごとに見出しを付けるので、5件では足りない */
+const HOME_LIMIT = 30;
 
 /** 既定は重要なものを先に、次に掲載開始日の新しい順 */
 const DEFAULT_STATE = emptyTableState([
@@ -28,11 +29,18 @@ export async function GET(req: Request) {
 
   const params = new URL(req.url).searchParams;
   if (params.get("scope") === "home") {
+    // 分類ごとの見出しで区切って出すので、まず分類の表示順で並べる。
+    // 分類なしは Postgres の既定どおり最後に来る（「その他のお知らせ」の位置）。
     const items = await prisma.news.findMany({
       where: publishedNowWhere(new Date()),
-      orderBy: [{ pinned: "desc" }, { publishFrom: "desc" }, { updatedAt: "desc" }],
-      include: { author: AUTHOR_SELECT },
-      take: 5,
+      orderBy: [
+        { group: { displayOrder: "asc" } },
+        { pinned: "desc" },
+        { publishFrom: "desc" },
+        { updatedAt: "desc" },
+      ],
+      include: NEWS_INCLUDE,
+      take: HOME_LIMIT,
     });
     return Response.json({ items: items.map((n) => toNewsDto(n, actor)) });
   }
@@ -54,7 +62,7 @@ export async function GET(req: Request) {
     prisma.news.findMany({
       where,
       orderBy: buildOrderBy(NEWS_COLUMNS, state.sort, { updatedAt: "desc" }),
-      include: { author: AUTHOR_SELECT },
+      include: NEWS_INCLUDE,
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
     }),
@@ -98,6 +106,8 @@ export async function POST(req: Request) {
       publishFrom: parseDateOnly(v.publishFrom),
       publishUntil: parseDateOnly(v.publishUntil),
       authorId: actor.user.id,
+      // 投稿時点の分類を写し取る。後で異動しても過去の投稿は動かない
+      groupId: actor.user.newsGroupId,
     },
   });
 

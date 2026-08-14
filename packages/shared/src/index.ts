@@ -8,6 +8,7 @@
 export * from "./admin";
 export * from "./auth";
 export * from "./constants";
+export * from "./group";
 export * from "./i18n";
 export * from "./metal-factor";
 export * from "./news";

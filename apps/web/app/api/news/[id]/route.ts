@@ -3,12 +3,11 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { canEditNews, parseDateOnly, toNewsDto } from "@/lib/news-service";
+import { canEditNews, NEWS_INCLUDE, parseDateOnly, toNewsDto } from "@/lib/news-service";
 
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
-const AUTHOR_SELECT = { select: { id: true, displayName: true, email: true } };
 
 /** GET /api/news/[id] — 下書きは編集できる人だけが読める */
 export async function GET(_req: Request, { params }: Ctx) {
@@ -17,7 +16,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   const { id } = await params;
   const m = await getServerMessages();
 
-  const item = await prisma.news.findUnique({ where: { id }, include: { author: AUTHOR_SELECT } });
+  const item = await prisma.news.findUnique({ where: { id }, include: NEWS_INCLUDE });
   if (!item) return jsonError(404, "not_found", m.errors.notFound);
   if (item.status === "DRAFT" && !canEditNews(actor, item.authorId)) {
     return jsonError(404, "not_found", m.errors.notFound);

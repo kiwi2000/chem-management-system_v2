@@ -1,4 +1,4 @@
-import type { News, User } from "@prisma/client";
+import type { Group, News, User } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
 import type { NewsDto } from "@/lib/types";
 
@@ -12,7 +12,16 @@ export function formatDateOnly(d: Date | null): string | null {
   return d ? d.toISOString().slice(0, 10) : null;
 }
 
-export type NewsWithAuthor = News & { author: Pick<User, "id" | "displayName" | "email"> };
+export type NewsWithAuthor = News & {
+  author: Pick<User, "id" | "displayName" | "email">;
+  group?: Pick<Group, "id" | "nameJa" | "nameEn" | "displayOrder"> | null;
+};
+
+/** 一覧・詳細で毎回同じものを読むので共通化する */
+export const NEWS_INCLUDE = {
+  author: { select: { id: true, displayName: true, email: true } },
+  group: { select: { id: true, nameJa: true, nameEn: true, displayOrder: true } },
+} as const;
 
 export function toNewsDto(n: NewsWithAuthor, actor: Actor): NewsDto {
   return {
@@ -27,6 +36,10 @@ export function toNewsDto(n: NewsWithAuthor, actor: Actor): NewsDto {
     publishUntil: formatDateOnly(n.publishUntil),
     authorId: n.authorId,
     authorName: n.author.displayName ?? n.author.email,
+    groupId: n.groupId,
+    groupNameJa: n.group?.nameJa ?? null,
+    groupNameEn: n.group?.nameEn ?? null,
+    groupOrder: n.group?.displayOrder ?? null,
     updatedAt: n.updatedAt.toISOString(),
     editable: canEditNews(actor, n.authorId),
   };

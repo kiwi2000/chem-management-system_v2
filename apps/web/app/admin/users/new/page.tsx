@@ -1,8 +1,9 @@
 "use client";
 
-import type { Permission } from "@chem/shared";
+import { expandPermissions, type Permission } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { GroupSelect } from "@/components/group-select";
 import { PermissionPicker } from "@/components/permission-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -11,16 +12,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
+import { useGroups } from "@/lib/use-groups";
 
 export default function NewUserPage() {
   const router = useRouter();
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [orgGroupId, setOrgGroupId] = useState("");
+  const [newsGroupId, setNewsGroupId] = useState("");
+  const groups = useGroups();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // 「他人のお知らせも編集できる」を選ぶと投稿もできるので、含意を展開して見る
+  const canPost = expandPermissions(permissions).includes("NEWS_POST");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,6 +43,8 @@ export default function NewUserPage() {
           displayName: displayName || null,
           initialPassword,
           permissions,
+          orgGroupId: orgGroupId || null,
+          newsGroupId: newsGroupId || null,
         }),
       });
       if (!res.ok) {
@@ -91,6 +101,19 @@ export default function NewUserPage() {
               />
               <p className="text-muted-foreground text-xs">{m.users.initialPasswordHint}</p>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="orgGroup">{m.users.orgGroup}</Label>
+              <GroupSelect
+                id="orgGroup"
+                kind="ORG"
+                groups={groups}
+                value={orgGroupId}
+                locale={locale}
+                noneLabel={m.groups.none}
+                onChange={setOrgGroupId}
+              />
+              <p className="text-muted-foreground text-xs">{m.users.orgGroupHint}</p>
+            </div>
           </CardContent>
         </Card>
 
@@ -98,8 +121,25 @@ export default function NewUserPage() {
           <CardHeader>
             <CardTitle className="text-base">{m.users.permissions}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <PermissionPicker value={permissions} onChange={setPermissions} disabled={saving} />
+            {/* 投稿できる人にだけ意味があるので、権限が無いときは選ばせない */}
+            <div className="space-y-2">
+              <Label htmlFor="newsGroup">{m.users.newsGroup}</Label>
+              <GroupSelect
+                id="newsGroup"
+                kind="NEWS"
+                groups={groups}
+                value={newsGroupId}
+                locale={locale}
+                noneLabel={m.groups.none}
+                disabled={!canPost}
+                onChange={setNewsGroupId}
+              />
+              <p className="text-muted-foreground text-xs">
+                {canPost ? m.users.newsGroupHint : m.users.newsGroupDisabled}
+              </p>
+            </div>
           </CardContent>
         </Card>
 

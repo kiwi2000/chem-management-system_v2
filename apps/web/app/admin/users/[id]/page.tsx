@@ -1,9 +1,10 @@
 "use client";
 
-import type { Permission } from "@chem/shared";
+import { expandPermissions, type Permission } from "@chem/shared";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
+import { GroupSelect } from "@/components/group-select";
 import { PermissionPicker } from "@/components/permission-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, MeDto, UserSummaryDto } from "@/lib/types";
+import { useGroups } from "@/lib/use-groups";
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -24,6 +26,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [displayName, setDisplayName] = useState("");
   const [activeFlag, setActiveFlag] = useState(true);
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [orgGroupId, setOrgGroupId] = useState("");
+  const [newsGroupId, setNewsGroupId] = useState("");
+  const groups = useGroups();
   const [editing, setEditing] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [forceChange, setForceChange] = useState(true);
@@ -44,6 +49,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setDisplayName(u.displayName ?? "");
     setActiveFlag(u.activeFlag);
     setPermissions(u.permissions);
+    setOrgGroupId(u.orgGroupId ?? "");
+    setNewsGroupId(u.newsGroupId ?? "");
     if (meRes.ok) setMe((await meRes.json()) as MeDto);
   }, [id, m]);
 
@@ -52,6 +59,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   }, [load]);
 
   const isSelf = me !== null && me.id === id;
+  // 「他人のお知らせも編集できる」を選ぶと投稿もできるので、含意を展開して見る
+  const canPost = expandPermissions(permissions).includes("NEWS_POST");
 
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
@@ -62,7 +71,13 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       const res = await fetch(`/api/admin/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName: displayName || null, permissions, activeFlag }),
+        body: JSON.stringify({
+          displayName: displayName || null,
+          permissions,
+          activeFlag,
+          orgGroupId: orgGroupId || null,
+          newsGroupId: newsGroupId || null,
+        }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -154,6 +169,19 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   className="max-w-md"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="orgGroup">{m.users.orgGroup}</Label>
+                <GroupSelect
+                  id="orgGroup"
+                  kind="ORG"
+                  groups={groups}
+                  value={orgGroupId}
+                  locale={locale}
+                  noneLabel={m.groups.none}
+                  onChange={setOrgGroupId}
+                />
+                <p className="text-muted-foreground text-xs">{m.users.orgGroupHint}</p>
+              </div>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -170,13 +198,30 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             <CardHeader>
               <CardTitle className="text-base">{m.users.permissions}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <PermissionPicker
                 value={permissions}
                 onChange={setPermissions}
                 disabled={saving}
                 adminLockedReason={isSelf ? m.users.selfNote : null}
               />
+              {/* 投稿できる人にだけ意味があるので、権限が無いときは選ばせない */}
+              <div className="space-y-2">
+                <Label htmlFor="newsGroup">{m.users.newsGroup}</Label>
+                <GroupSelect
+                  id="newsGroup"
+                  kind="NEWS"
+                  groups={groups}
+                  value={newsGroupId}
+                  locale={locale}
+                  noneLabel={m.groups.none}
+                  disabled={!canPost}
+                  onChange={setNewsGroupId}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {canPost ? m.users.newsGroupHint : m.users.newsGroupDisabled}
+                </p>
+              </div>
             </CardContent>
           </Card>
         </fieldset>

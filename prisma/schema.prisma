@@ -70,6 +70,17 @@ enum SettingValueType {
   JSON
 }
 
+/**
+ * グループの用途。
+ * NEWS = ホームのお知らせを見出しで区切るための分類
+ * ORG  = 組織の所属（○○部 など）
+ * 用途ごとに表を分けず種別で持つのは、管理画面と操作をひとつにまとめられるため。
+ */
+enum GroupKind {
+  NEWS
+  ORG
+}
+
 // ---------- ユーザー・セッション ----------
 
 model User {
@@ -95,6 +106,10 @@ model User {
   preferredTheme     String?   @map("preferred_theme")
   /** ヘッダーなどを濃くするか。null=未設定（既定=しない） */
   preferredHeaderStrong Boolean? @map("preferred_header_strong")
+  /** 組織の所属。1人1つ。null=未所属 */
+  orgGroupId         String?   @map("org_group_id")
+  /** お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある */
+  newsGroupId        String?   @map("news_group_id")
   activeFlag         Boolean   @default(true) @map("active_flag")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
@@ -103,8 +118,37 @@ model User {
   sessions    Session[]
   permissions UserPermission[]
   news        News[]
+  orgGroup    Group? @relation("UserOrgGroup", fields: [orgGroupId], references: [id])
+  newsGroup   Group? @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
 
+  @@index([orgGroupId])
+  @@index([newsGroupId])
   @@map("users")
+}
+
+/**
+ * グループ（お知らせの分類 / 組織の所属）。
+ * 階層は持たない。並列に作り、表示順で並べる。
+ */
+model Group {
+  id      String    @id @default(cuid())
+  kind    GroupKind
+  nameJa  String    @map("name_ja")
+  /** 英語は任意。未入力なら英語表示でも日本語を出す */
+  nameEn  String?   @map("name_en")
+  /** 小さいほど先。お知らせの見出しの並び順にもなる */
+  displayOrder Int      @default(0) @map("display_order")
+  activeFlag   Boolean  @default(true) @map("active_flag")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  orgMembers  User[] @relation("UserOrgGroup")
+  newsMembers User[] @relation("UserNewsGroup")
+  news        News[]
+
+  @@index([kind, displayOrder])
+  @@map("groups")
 }
 
 /**
@@ -340,13 +384,21 @@ model News {
   publishFrom  DateTime? @map("publish_from")
   publishUntil DateTime? @map("publish_until")
   authorId  String   @map("author_id")
+  /**
+   * ホームで見出しを分けるための分類。投稿時に投稿者のグループを写し取る。
+   * 写すのは、投稿者が異動しても過去の投稿が別の見出しへ移らないようにするため。
+   * null=分類なし（見出しの最後にまとめる）
+   */
+  groupId   String?  @map("group_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  author User @relation(fields: [authorId], references: [id])
+  author User   @relation(fields: [authorId], references: [id])
+  group  Group? @relation(fields: [groupId], references: [id])
 
   @@index([status, pinned, publishFrom])
   @@index([authorId])
+  @@index([groupId])
   @@map("news")
 }
 

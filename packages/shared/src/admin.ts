@@ -3,6 +3,14 @@ import { emailSchema, passwordSchema } from "./auth";
 import type { Messages } from "./i18n/ja";
 import { PERMISSIONS } from "./permissions";
 
+/** グループの割り当て。空文字は「未所属」として null に倒す */
+const groupId = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .optional();
+
 /** 管理者によるユーザー作成。初期パスワードを発行し、初回ログイン時に変更を強制する */
 export const userCreateSchema = (m: Messages) =>
   z.object({
@@ -10,6 +18,8 @@ export const userCreateSchema = (m: Messages) =>
     displayName: z.string().trim().max(200).nullable().optional(),
     permissions: z.array(z.enum(PERMISSIONS)),
     initialPassword: passwordSchema(m),
+    orgGroupId: groupId,
+    newsGroupId: groupId,
   });
 export type UserCreateInput = z.infer<ReturnType<typeof userCreateSchema>>;
 
@@ -19,6 +29,8 @@ export const userUpdateSchema = (_m: Messages) =>
     displayName: z.string().trim().max(200).nullable().optional(),
     permissions: z.array(z.enum(PERMISSIONS)),
     activeFlag: z.boolean(),
+    orgGroupId: groupId,
+    newsGroupId: groupId,
   });
 export type UserUpdateInput = z.infer<ReturnType<typeof userUpdateSchema>>;
 

@@ -4,7 +4,13 @@ import { revokeAllSessions } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { countActiveAdmins, setPermissions, toUserSummary } from "@/lib/user-service";
+import {
+  countActiveAdmins,
+  resolveGroups,
+  setPermissions,
+  toUserSummary,
+  USER_INCLUDE,
+} from "@/lib/user-service";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +24,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   const user = await prisma.user.findFirst({
     where: { id, deletedAt: null },
-    include: { permissions: { select: { permission: true } } },
+    include: USER_INCLUDE,
   });
   if (!user) {
     const m = await getServerMessages();
@@ -47,8 +53,11 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const { displayName, permissions, activeFlag } = parsed.data;
+  const { displayName, permissions, activeFlag, orgGroupId, newsGroupId } = parsed.data;
   const next = expandPermissions(permissions);
+
+  const groups = await resolveGroups(orgGroupId ?? null, newsGroupId ?? null, next);
+  if (groups instanceof Response) return groups;
 
   // 締め出し防止: 自分自身の管理権限は外せない。管理者が0人になる操作もできない
   const losesAdmin = !next.includes("ADMIN") || !activeFlag;
@@ -63,7 +72,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 
   await prisma.user.update({
     where: { id },
-    data: { displayName: displayName ?? null, activeFlag },
+    data: { displayName: displayName ?? null, activeFlag, ...groups },
   });
   const granted = await setPermissions(id, next, actor.user.id);
 

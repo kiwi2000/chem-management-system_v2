@@ -1,4 +1,10 @@
-import type { GazetteLawKind, Permission, PropertyDataType, SubstanceStatus } from "@chem/shared";
+import type {
+  GazetteLawKind,
+  GroupKind,
+  Permission,
+  PropertyDataType,
+  SubstanceStatus,
+} from "@chem/shared";
 
 /**
  * 画面が使う API レスポンスの型。
@@ -29,6 +35,25 @@ export interface UserSummaryDto {
   mfaEnabled: boolean;
   lastLoginAt: string | null;
   permissions: Permission[];
+  orgGroupId: string | null;
+  orgGroupName: string | null;
+  orgGroupNameEn: string | null;
+  newsGroupId: string | null;
+  newsGroupName: string | null;
+  newsGroupNameEn: string | null;
+}
+
+export interface GroupDto {
+  id: string;
+  kind: GroupKind;
+  nameJa: string;
+  nameEn: string | null;
+  displayOrder: number;
+  activeFlag: boolean;
+  /** 用途に応じた所属人数（削除の影響を知らせるため） */
+  memberCount: number;
+  /** この分類が付いたお知らせの数 */
+  newsCount: number;
 }
 
 export interface ListResponse<T> {
@@ -102,6 +127,11 @@ export interface NewsDto {
   publishUntil: string | null;
   authorId: string;
   authorName: string;
+  /** ホームの見出しを分けるための分類（投稿時に投稿者のグループを写し取る） */
+  groupId: string | null;
+  groupNameJa: string | null;
+  groupNameEn: string | null;
+  groupOrder: number | null;
   updatedAt: string;
   /** この閲覧者が編集できるか（サーバー側で判断済み） */
   editable: boolean;

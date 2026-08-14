@@ -47,6 +47,14 @@ export const USER_COLUMNS: QueryColumn[] = [
   { key: "lastLoginAt", kind: "date", field: "lastLoginAt" },
 ];
 
+export const GROUP_COLUMNS: QueryColumn[] = [
+  { key: "kind", kind: "enum", field: "kind" },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  { key: "displayOrder", kind: "number", field: "displayOrder" },
+  { key: "activeFlag", kind: "enum", field: "activeFlag", booleanEnum: true },
+];
+
 export const PROPERTY_DEF_COLUMNS: QueryColumn[] = [
   { key: "key", kind: "text", field: "key", caseInsensitive: true },
   { key: "labelJa", kind: "text", field: "labelJa", caseInsensitive: true },

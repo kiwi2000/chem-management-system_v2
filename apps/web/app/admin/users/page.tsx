@@ -1,6 +1,6 @@
 "use client";
 
-import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
+import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -36,6 +36,26 @@ export default function UsersPage() {
         kind: "text",
         width: 160,
         render: (u) => u.displayName ?? "",
+      },
+      {
+        key: "orgGroup",
+        header: m.users.orgGroup,
+        kind: "text",
+        width: 140,
+        sortable: false,
+        filterable: false,
+        className: "text-muted-foreground text-xs",
+        render: (u) => pickName(locale, u.orgGroupName ?? "", u.orgGroupNameEn),
+      },
+      {
+        key: "newsGroup",
+        header: m.users.newsGroup,
+        kind: "text",
+        width: 140,
+        sortable: false,
+        filterable: false,
+        className: "text-muted-foreground text-xs",
+        render: (u) => pickName(locale, u.newsGroupName ?? "", u.newsGroupNameEn),
       },
       {
         key: "permissions",

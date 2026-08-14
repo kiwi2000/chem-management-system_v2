@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { USER_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
-import { setPermissions, toUserSummary } from "@/lib/user-service";
+import { resolveGroups, setPermissions, toUserSummary, USER_INCLUDE } from "@/lib/user-service";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     prisma.user.findMany({
       where,
       orderBy: buildOrderBy(USER_COLUMNS, state.sort, { email: "asc" }),
-      include: { permissions: { select: { permission: true } } },
+      include: USER_INCLUDE,
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
     }),
@@ -60,12 +60,15 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const { email, displayName, permissions, initialPassword } = parsed.data;
+  const { email, displayName, permissions, initialPassword, orgGroupId, newsGroupId } = parsed.data;
   const normalized = normalizeEmail(email);
 
   if (await prisma.user.findUnique({ where: { email: normalized } })) {
     return jsonError(409, "email_taken", m.errors.emailTaken);
   }
+
+  const groups = await resolveGroups(orgGroupId ?? null, newsGroupId ?? null, permissions);
+  if (groups instanceof Response) return groups;
 
   const created = await prisma.user.create({
     data: {
@@ -73,6 +76,7 @@ export async function POST(req: Request) {
       displayName: displayName ?? null,
       passwordHash: await hashPassword(initialPassword),
       mustChangePassword: true,
+      ...groups,
     },
   });
   const granted = await setPermissions(created.id, permissions, actor.user.id);
