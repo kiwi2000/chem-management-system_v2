@@ -1,10 +1,11 @@
-import { getMessages, themeClass } from "@chem/shared";
+import { HEADER_STRONG_CLASS, getMessages, themeClass } from "@chem/shared";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
 import { getLocale } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n-client";
-import { getTheme } from "@/lib/theme";
+import { getHeaderStrong, getTheme } from "@/lib/theme";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,10 +20,14 @@ export async function generateMetadata(): Promise<Metadata> {
 const SYSTEM_THEME_SCRIPT = `try{if(matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}`;
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const [locale, theme] = await Promise.all([getLocale(), getTheme()]);
+  const [locale, theme, headerStrong] = await Promise.all([
+    getLocale(),
+    getTheme(),
+    getHeaderStrong(),
+  ]);
 
   return (
-    <html lang={locale} className={themeClass(theme)}>
+    <html lang={locale} className={cn(themeClass(theme), headerStrong && HEADER_STRONG_CLASS)}>
       <head>
         {theme === "system" && <script dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }} />}
       </head>

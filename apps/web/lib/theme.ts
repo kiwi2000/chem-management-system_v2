@@ -1,4 +1,10 @@
-import { DEFAULT_THEME, THEME_COOKIE, isTheme, type Theme } from "@chem/shared";
+import {
+  DEFAULT_THEME,
+  HEADER_STRONG_COOKIE,
+  THEME_COOKIE,
+  isTheme,
+  type Theme,
+} from "@chem/shared";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth";
 
@@ -16,4 +22,19 @@ export async function getTheme(): Promise<Theme> {
   if (isTheme(user?.preferredTheme)) return user.preferredTheme;
 
   return DEFAULT_THEME;
+}
+
+/**
+ * 「ヘッダーなどを濃くする」の解決。テーマと同じ順序（Cookie → 本人の設定 → 既定=しない）。
+ * テーマとは独立した設定なので、どの配色でも入切できる。
+ */
+export async function getHeaderStrong(): Promise<boolean> {
+  const fromCookie = (await cookies()).get(HEADER_STRONG_COOKIE)?.value;
+  if (fromCookie === "1") return true;
+  if (fromCookie === "0") return false;
+
+  const user = await getSessionUser().catch(() => null);
+  if (typeof user?.preferredHeaderStrong === "boolean") return user.preferredHeaderStrong;
+
+  return false;
 }

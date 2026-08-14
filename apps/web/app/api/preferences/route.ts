@@ -1,4 +1,4 @@
-import { LOCALE_COOKIE, THEME_COOKIE, isLocale, isTheme } from "@chem/shared";
+import { HEADER_STRONG_COOKIE, LOCALE_COOKIE, THEME_COOKIE, isLocale, isTheme } from "@chem/shared";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth";
 import { jsonError } from "@/lib/authz";
@@ -23,12 +23,19 @@ export async function PUT(req: Request) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const { locale, theme } = (body ?? {}) as { locale?: unknown; theme?: unknown };
+  const { locale, theme, headerStrong } = (body ?? {}) as {
+    locale?: unknown;
+    theme?: unknown;
+    headerStrong?: unknown;
+  };
 
   if (locale !== undefined && !isLocale(locale)) {
     return jsonError(400, "validation_error", m.errors.validation);
   }
   if (theme !== undefined && !isTheme(theme)) {
+    return jsonError(400, "validation_error", m.errors.validation);
+  }
+  if (headerStrong !== undefined && typeof headerStrong !== "boolean") {
     return jsonError(400, "validation_error", m.errors.validation);
   }
 
@@ -42,6 +49,9 @@ export async function PUT(req: Request) {
   };
   if (isLocale(locale)) store.set(LOCALE_COOKIE, locale, cookieOptions);
   if (isTheme(theme)) store.set(THEME_COOKIE, theme, cookieOptions);
+  if (typeof headerStrong === "boolean") {
+    store.set(HEADER_STRONG_COOKIE, headerStrong ? "1" : "0", cookieOptions);
+  }
 
   const user = await getSessionUser().catch(() => null);
   if (user) {
@@ -50,9 +60,10 @@ export async function PUT(req: Request) {
       data: {
         ...(isLocale(locale) ? { preferredLocale: locale } : {}),
         ...(isTheme(theme) ? { preferredTheme: theme } : {}),
+        ...(typeof headerStrong === "boolean" ? { preferredHeaderStrong: headerStrong } : {}),
       },
     });
   }
 
-  return Response.json({ ok: true, locale, theme });
+  return Response.json({ ok: true, locale, theme, headerStrong });
 }

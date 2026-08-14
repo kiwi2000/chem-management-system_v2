@@ -4,6 +4,7 @@ import {
   LOCALES,
   LOCALE_LABELS,
   THEMES,
+  THEME_STRONG_SWATCH,
   THEME_SWATCHES,
   type Locale,
   type Theme,
@@ -25,14 +26,22 @@ import { cn } from "@/lib/utils";
  * 選んだ時点ですぐ保存して画面に反映する（保存ボタンを押させない）。
  * 見た目の設定は、押した結果がその場で見えたほうが選びやすいため。
  */
-export function PreferencesForm({ locale, theme }: { locale: Locale; theme: Theme }) {
+export function PreferencesForm({
+  locale,
+  theme,
+  headerStrong,
+}: {
+  locale: Locale;
+  theme: Theme;
+  headerStrong: boolean;
+}) {
   const { m } = useI18n();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  async function save(patch: { locale?: Locale; theme?: Theme }) {
+  async function save(patch: { locale?: Locale; theme?: Theme; headerStrong?: boolean }) {
     setError(null);
     setNotice(null);
     setSaving(true);
@@ -100,15 +109,24 @@ export function PreferencesForm({ locale, theme }: { locale: Locale; theme: Them
                   >
                     {/* 配色の見本。実際の色と同じ値を使っている */}
                     <span
-                      className="flex size-9 shrink-0 items-center justify-center rounded border"
+                      className="flex size-9 shrink-0 flex-col overflow-hidden rounded border"
                       style={{ backgroundColor: bg }}
                       aria-hidden
                     >
-                      <span className="size-3 rounded-full" style={{ backgroundColor: fg }} />
-                      <span
-                        className="ml-0.5 size-3 rounded-full"
-                        style={{ backgroundColor: accent }}
-                      />
+                      {/* ヘッダーを濃くしているときは、上端にその色を出す */}
+                      {headerStrong && (
+                        <span
+                          className="block h-2.5 w-full"
+                          style={{ backgroundColor: THEME_STRONG_SWATCH[t] }}
+                        />
+                      )}
+                      <span className="flex flex-1 items-center justify-center">
+                        <span className="size-3 rounded-full" style={{ backgroundColor: fg }} />
+                        <span
+                          className="ml-0.5 size-3 rounded-full"
+                          style={{ backgroundColor: accent }}
+                        />
+                      </span>
                     </span>
                     <span className="min-w-0">
                       <span className="flex items-center gap-1 text-sm font-medium">
@@ -124,6 +142,23 @@ export function PreferencesForm({ locale, theme }: { locale: Locale; theme: Them
               })}
             </div>
           </div>
+
+          {/* テーマとは独立した設定。どの配色でも入切できる */}
+          <label className="flex gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={headerStrong}
+              disabled={saving}
+              onChange={(e) => void save({ headerStrong: e.target.checked })}
+            />
+            <span>
+              <span className="block">{m.preferences.headerStrong}</span>
+              <span className="text-muted-foreground block text-xs">
+                {m.preferences.headerStrongHint}
+              </span>
+            </span>
+          </label>
         </CardContent>
       </Card>
 

@@ -93,6 +93,8 @@ model User {
   preferredLocale    String?   @map("preferred_locale")
   /** 画面のテーマ（"system" / "light" / "dark" など）。null=未設定 */
   preferredTheme     String?   @map("preferred_theme")
+  /** ヘッダーなどを濃くするか。null=未設定（既定=しない） */
+  preferredHeaderStrong Boolean? @map("preferred_header_strong")
   activeFlag         Boolean   @default(true) @map("active_flag")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")

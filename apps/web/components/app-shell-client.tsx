@@ -50,7 +50,8 @@ export function AppShellClient({ user, children }: Props) {
 
   const sidebarBody = (
     <>
-      <div className="flex h-14 items-center justify-between gap-2 border-b px-4">
+      {/* 設定で濃くできる。既定は左ペインと同じ色なので見た目は変わらない */}
+      <div className="bg-sidebar-header text-sidebar-header-foreground flex h-14 items-center justify-between gap-2 border-b px-4">
         <Link href="/" className="truncate text-sm font-semibold">
           {m.common.appName}
         </Link>
