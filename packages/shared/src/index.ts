@@ -7,6 +7,7 @@
  */
 export * from "./admin";
 export * from "./auth";
+export * from "./background";
 export * from "./constants";
 export * from "./group";
 export * from "./i18n";

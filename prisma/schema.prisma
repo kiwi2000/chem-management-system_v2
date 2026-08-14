@@ -106,6 +106,8 @@ model User {
   preferredTheme     String?   @map("preferred_theme")
   /** ヘッダーなどを濃くするか。null=未設定（既定=しない） */
   preferredHeaderStrong Boolean? @map("preferred_header_strong")
+  /** 背景の模様・挿絵（"none" / "grid" など）。null=未設定 */
+  preferredBackground   String?  @map("preferred_background")
   /** 組織の所属。1人1つ。null=未所属 */
   orgGroupId         String?   @map("org_group_id")
   /** お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある */

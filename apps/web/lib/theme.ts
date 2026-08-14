@@ -1,8 +1,12 @@
 import {
+  BACKGROUND_COOKIE,
+  DEFAULT_BACKGROUND,
   DEFAULT_THEME,
   HEADER_STRONG_COOKIE,
   THEME_COOKIE,
+  isBackground,
   isTheme,
+  type Background,
   type Theme,
 } from "@chem/shared";
 import { cookies } from "next/headers";
@@ -37,4 +41,15 @@ export async function getHeaderStrong(): Promise<boolean> {
   if (typeof user?.preferredHeaderStrong === "boolean") return user.preferredHeaderStrong;
 
   return false;
+}
+
+/** 背景の模様・挿絵。テーマと同じ順序（Cookie → 本人の設定 → 既定=なし） */
+export async function getBackground(): Promise<Background> {
+  const fromCookie = (await cookies()).get(BACKGROUND_COOKIE)?.value;
+  if (isBackground(fromCookie)) return fromCookie;
+
+  const user = await getSessionUser().catch(() => null);
+  if (isBackground(user?.preferredBackground)) return user.preferredBackground;
+
+  return DEFAULT_BACKGROUND;
 }

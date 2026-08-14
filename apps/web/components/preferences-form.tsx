@@ -3,9 +3,12 @@
 import {
   LOCALES,
   LOCALE_LABELS,
+  PATTERN_BACKGROUNDS,
+  PICTURE_BACKGROUNDS,
   THEMES,
   THEME_STRONG_SWATCH,
   THEME_SWATCHES,
+  type Background,
   type Locale,
   type Theme,
 } from "@chem/shared";
@@ -57,11 +60,13 @@ export function PreferencesForm({
   locale,
   theme,
   headerStrong,
+  background,
   displayName,
 }: {
   locale: Locale;
   theme: Theme;
   headerStrong: boolean;
+  background: Background;
   displayName: string;
 }) {
   const { m } = useI18n();
@@ -77,6 +82,7 @@ export function PreferencesForm({
     locale?: Locale;
     theme?: Theme;
     headerStrong?: boolean;
+    background?: Background;
     displayName?: string;
   }) {
     setError(null);
@@ -199,6 +205,37 @@ export function PreferencesForm({
                 />
                 {m.preferences.headerStrong}
               </label>
+            </div>
+
+            {/* 背景はテーマとは独立。名前で選べるので、場所を取らないプルダウンにする */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Label htmlFor="background" className="text-sm font-normal">
+                {m.preferences.background}
+              </Label>
+              <select
+                id="background"
+                value={background}
+                disabled={saving}
+                onChange={(e) => void save({ background: e.target.value as Background })}
+                className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+              >
+                <option value="none">{m.preferences.backgrounds.none}</option>
+                <optgroup label={m.preferences.backgroundPatterns}>
+                  {PATTERN_BACKGROUNDS.map((b) => (
+                    <option key={b} value={b}>
+                      {m.preferences.backgrounds[b]}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label={m.preferences.backgroundPictures}>
+                  {PICTURE_BACKGROUNDS.map((b) => (
+                    <option key={b} value={b}>
+                      {m.preferences.backgrounds[b]}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+              <p className="text-muted-foreground w-full text-xs">{m.preferences.backgroundHint}</p>
             </div>
 
             {themeOpen && (

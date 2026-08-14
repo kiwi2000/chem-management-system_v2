@@ -1,4 +1,12 @@
-import { HEADER_STRONG_COOKIE, LOCALE_COOKIE, THEME_COOKIE, isLocale, isTheme } from "@chem/shared";
+import {
+  BACKGROUND_COOKIE,
+  HEADER_STRONG_COOKIE,
+  LOCALE_COOKIE,
+  THEME_COOKIE,
+  isBackground,
+  isLocale,
+  isTheme,
+} from "@chem/shared";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth";
 import { jsonError } from "@/lib/authz";
@@ -26,10 +34,11 @@ export async function PUT(req: Request) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const { locale, theme, headerStrong, displayName } = (body ?? {}) as {
+  const { locale, theme, headerStrong, background, displayName } = (body ?? {}) as {
     locale?: unknown;
     theme?: unknown;
     headerStrong?: unknown;
+    background?: unknown;
     displayName?: unknown;
   };
 
@@ -40,6 +49,9 @@ export async function PUT(req: Request) {
     return jsonError(400, "validation_error", m.errors.validation);
   }
   if (headerStrong !== undefined && typeof headerStrong !== "boolean") {
+    return jsonError(400, "validation_error", m.errors.validation);
+  }
+  if (background !== undefined && !isBackground(background)) {
     return jsonError(400, "validation_error", m.errors.validation);
   }
   // 表示名は空欄を認めない。前後の空白だけの入力も弾く
@@ -67,6 +79,7 @@ export async function PUT(req: Request) {
   if (typeof headerStrong === "boolean") {
     store.set(HEADER_STRONG_COOKIE, headerStrong ? "1" : "0", cookieOptions);
   }
+  if (isBackground(background)) store.set(BACKGROUND_COOKIE, background, cookieOptions);
 
   const user = await getSessionUser().catch(() => null);
   // 表示名は本人のアカウントを書き換えるので、ログインしていないと変更できない
@@ -80,10 +93,18 @@ export async function PUT(req: Request) {
         ...(isLocale(locale) ? { preferredLocale: locale } : {}),
         ...(isTheme(theme) ? { preferredTheme: theme } : {}),
         ...(typeof headerStrong === "boolean" ? { preferredHeaderStrong: headerStrong } : {}),
+        ...(isBackground(background) ? { preferredBackground: background } : {}),
         ...(trimmedName !== undefined ? { displayName: trimmedName } : {}),
       },
     });
   }
 
-  return Response.json({ ok: true, locale, theme, headerStrong, displayName: trimmedName });
+  return Response.json({
+    ok: true,
+    locale,
+    theme,
+    headerStrong,
+    background,
+    displayName: trimmedName,
+  });
 }
