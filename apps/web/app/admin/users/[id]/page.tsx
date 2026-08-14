@@ -193,29 +193,32 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           </Alert>
         )}
 
-        <div className="flex gap-2">
-          {editing && (
+        {/* 表示のみのときは form の中に送信ボタンを置かない */}
+        {editing && (
+          <div className="flex gap-2">
             <Button type="submit" disabled={saving}>
               {saving ? m.common.saving : m.common.save}
             </Button>
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (editing) {
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
                 // 書きかけを捨てて表示に戻す
                 void load();
                 setEditing(false);
-              } else {
-                router.push("/admin/users");
-              }
-            }}
-          >
-            {editing ? m.common.cancel : m.common.back}
-          </Button>
-        </div>
+              }}
+            >
+              {m.common.cancel}
+            </Button>
+          </div>
+        )}
       </form>
+
+      {!editing && (
+        <Button type="button" variant="outline" onClick={() => router.push("/admin/users")}>
+          {m.common.back}
+        </Button>
+      )}
 
       <Card>
         <CardHeader>
