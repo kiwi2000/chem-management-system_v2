@@ -22,7 +22,14 @@ export function SignOutButton() {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={() => void signOut()} disabled={busy}>
+    // 背景を持つボタンなので、濃いヘッダーでも文字色は本文色に固定する
+    <Button
+      variant="outline"
+      size="sm"
+      className="text-foreground"
+      onClick={() => void signOut()}
+      disabled={busy}
+    >
       {busy ? m.common.processing : m.shell.signOut}
     </Button>
   );

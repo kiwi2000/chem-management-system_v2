@@ -172,7 +172,11 @@ export function DataTable<T>({
               <col key={c.key} style={{ width: widthOf(c) }} />
             ))}
           </colgroup>
-          <TableHeader>
+          {/*
+            テーマによっては濃い色が敷かれる。中の文字色は table-head-foreground に従わせる。
+            th は既定で text-foreground を持つので、打ち消して継承させる。
+          */}
+          <TableHeader className="bg-table-head text-table-head-foreground [&_th]:text-inherit">
             <TableRow>
               {selectable && (
                 <TableHead className={CELL_BORDER}>
@@ -197,7 +201,8 @@ export function DataTable<T>({
                       <button
                         type="button"
                         onClick={(e) => toggleSort(c.key, e.shiftKey)}
-                        className="hover:text-foreground flex w-full items-center gap-1 overflow-hidden"
+                        // 濃いヘッダーでも成り立つよう、色を変えず濃さで反応させる
+                        className="flex w-full items-center gap-1 overflow-hidden hover:opacity-75"
                         title={`${c.header} — ${m.table.sortHint}`}
                       >
                         <span className="truncate">{c.header}</span>
@@ -211,9 +216,7 @@ export function DataTable<T>({
                           <ChevronsUpDown className="size-3.5 shrink-0 opacity-40" />
                         )}
                         {rule && state.sort.length > 1 && (
-                          <span className="text-muted-foreground shrink-0 text-[10px]">
-                            {priority}
-                          </span>
+                          <span className="shrink-0 text-[10px] opacity-70">{priority}</span>
                         )}
                       </button>
                     ) : (

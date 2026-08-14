@@ -103,7 +103,8 @@ export function AppShellClient({ user, children }: Props) {
 
       {/* 本体（トップバー＋コンテンツ） */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="bg-background flex h-14 items-center gap-3 border-b px-4">
+        {/* テーマによっては濃い色が敷かれる。中の文字色は header-foreground に従わせる */}
+        <header className="bg-header text-header-foreground flex h-14 items-center gap-3 border-b px-4">
           <Button
             variant="ghost"
             size="icon"
@@ -118,11 +119,17 @@ export function AppShellClient({ user, children }: Props) {
             {m.common.appName}
           </Link>
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-muted-foreground hidden text-sm sm:inline">
+            {/* 濃いヘッダーでも読めるよう、色を変えず薄くするだけにする */}
+            <span className="hidden text-sm opacity-75 sm:inline">
               {user.displayName ?? user.email}
             </span>
             {user.isAdmin && <Badge variant="secondary">{m.shell.admin}</Badge>}
-            {!user.canEdit && <Badge variant="outline">{m.shell.readOnly}</Badge>}
+            {/* 枠線だけのバッジは、濃いヘッダーでも読めるよう文字色を継承させる */}
+            {!user.canEdit && (
+              <Badge variant="outline" className="border-current text-inherit">
+                {m.shell.readOnly}
+              </Badge>
+            )}
             <Button
               variant="ghost"
               size="icon"

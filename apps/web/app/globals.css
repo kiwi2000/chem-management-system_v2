@@ -38,6 +38,11 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  /* トップバーと表の見出し。テーマによって濃い色を敷けるようにしている */
+  --color-header: var(--header);
+  --color-header-foreground: var(--header-foreground);
+  --color-table-head: var(--table-head);
+  --color-table-head-foreground: var(--table-head-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -72,6 +77,15 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
+  /*
+   * 既定では、トップバーは本文と同じ色・表の見出しは色を敷かない。
+   * var(--background) を参照しているので、どのテーマでもその配色に追随する。
+   * 濃い色にしたいテーマだけ、この4つを上書きする。
+   */
+  --header: var(--background);
+  --header-foreground: var(--foreground);
+  --table-head: transparent;
+  --table-head-foreground: var(--foreground);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -106,6 +120,8 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+  /* 暗い配色では表の見出しだけ少し明るくして区切りを出す */
+  --table-head: oklch(0.269 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -270,6 +286,128 @@
   --sidebar: oklch(0.96 0.032 70);
   --sidebar-foreground: oklch(0.28 0.035 50);
   --sidebar-border: oklch(0.895 0.04 70);
+}
+
+/*
+ * ここから「ヘッダーが濃い」テーマ。
+ * 本文は明るいまま、トップバーと表の見出しに濃い色を敷いて画面を締める。
+ * --header / --table-head の4つを上書きするのが要点。
+ */
+
+/* ネイビー: 紺のヘッダー。事務システムらしい落ち着いた見た目 */
+.theme-navy {
+  --background: oklch(0.985 0.004 250);
+  --foreground: oklch(0.24 0.03 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.03 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.03 255);
+  --primary: oklch(0.36 0.08 255);
+  --primary-foreground: oklch(0.98 0.005 250);
+  --secondary: oklch(0.93 0.02 250);
+  --secondary-foreground: oklch(0.3 0.05 255);
+  --muted: oklch(0.95 0.012 250);
+  --muted-foreground: oklch(0.5 0.03 255);
+  --accent: oklch(0.92 0.03 250);
+  --accent-foreground: oklch(0.28 0.05 255);
+  --destructive: oklch(0.55 0.22 27);
+  --border: oklch(0.88 0.02 250);
+  --input: oklch(0.88 0.02 250);
+  --ring: oklch(0.5 0.08 255);
+  --header: oklch(0.3 0.07 258);
+  --header-foreground: oklch(0.97 0.01 250);
+  --table-head: oklch(0.42 0.06 256);
+  --table-head-foreground: oklch(0.97 0.01 250);
+  --sidebar: oklch(0.955 0.012 250);
+  --sidebar-foreground: oklch(0.24 0.03 255);
+  --sidebar-border: oklch(0.88 0.02 250);
+}
+
+/* ティール: 青緑のヘッダー */
+.theme-teal {
+  --background: oklch(0.985 0.006 195);
+  --foreground: oklch(0.25 0.03 200);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.03 200);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0.03 200);
+  --primary: oklch(0.42 0.08 195);
+  --primary-foreground: oklch(0.98 0.005 195);
+  --secondary: oklch(0.93 0.03 195);
+  --secondary-foreground: oklch(0.3 0.05 200);
+  --muted: oklch(0.95 0.018 195);
+  --muted-foreground: oklch(0.5 0.035 198);
+  --accent: oklch(0.92 0.04 195);
+  --accent-foreground: oklch(0.28 0.05 200);
+  --destructive: oklch(0.55 0.22 27);
+  --border: oklch(0.88 0.028 195);
+  --input: oklch(0.88 0.028 195);
+  --ring: oklch(0.55 0.08 195);
+  --header: oklch(0.36 0.07 196);
+  --header-foreground: oklch(0.97 0.012 190);
+  --table-head: oklch(0.47 0.06 195);
+  --table-head-foreground: oklch(0.97 0.012 190);
+  --sidebar: oklch(0.955 0.018 195);
+  --sidebar-foreground: oklch(0.25 0.03 200);
+  --sidebar-border: oklch(0.88 0.028 195);
+}
+
+/* ワイン: 深い赤紫のヘッダー */
+.theme-wine {
+  --background: oklch(0.985 0.006 5);
+  --foreground: oklch(0.26 0.035 10);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.26 0.035 10);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.26 0.035 10);
+  --primary: oklch(0.4 0.11 10);
+  --primary-foreground: oklch(0.98 0.005 5);
+  --secondary: oklch(0.93 0.028 5);
+  --secondary-foreground: oklch(0.32 0.06 10);
+  --muted: oklch(0.95 0.016 5);
+  --muted-foreground: oklch(0.51 0.04 10);
+  --accent: oklch(0.92 0.04 5);
+  --accent-foreground: oklch(0.3 0.06 10);
+  --destructive: oklch(0.52 0.24 27);
+  --border: oklch(0.88 0.026 5);
+  --input: oklch(0.88 0.026 5);
+  --ring: oklch(0.53 0.1 10);
+  --header: oklch(0.32 0.09 12);
+  --header-foreground: oklch(0.97 0.012 5);
+  --table-head: oklch(0.44 0.08 12);
+  --table-head-foreground: oklch(0.97 0.012 5);
+  --sidebar: oklch(0.955 0.016 5);
+  --sidebar-foreground: oklch(0.26 0.035 10);
+  --sidebar-border: oklch(0.88 0.026 5);
+}
+
+/* チャコール: 無彩色の濃いヘッダー。色味を出したくない場合に */
+.theme-charcoal {
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.22 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0 0);
+  --primary: oklch(0.32 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.93 0 0);
+  --secondary-foreground: oklch(0.28 0 0);
+  --muted: oklch(0.95 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.92 0 0);
+  --accent-foreground: oklch(0.26 0 0);
+  --destructive: oklch(0.55 0.22 27);
+  --border: oklch(0.88 0 0);
+  --input: oklch(0.88 0 0);
+  --ring: oklch(0.5 0 0);
+  --header: oklch(0.28 0 0);
+  --header-foreground: oklch(0.97 0 0);
+  --table-head: oklch(0.4 0 0);
+  --table-head-foreground: oklch(0.97 0 0);
+  --sidebar: oklch(0.955 0 0);
+  --sidebar-foreground: oklch(0.22 0 0);
+  --sidebar-border: oklch(0.88 0 0);
 }
 
 /* 高コントラスト: 白黒をはっきりさせ、文字と枠を強く出す */
