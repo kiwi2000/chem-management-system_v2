@@ -10,42 +10,42 @@ import type { Prisma, SubstancePropertyDef } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { SubstanceDetailDto, SubstanceListItemDto } from "@/lib/types";
 
-/** 詳細取得で必要になる関連（一覧では names のみ使う） */
+/** 一覧に必要な関連（別名は件数だけ使う） */
+export const SUBSTANCE_LIST_INCLUDE = {
+  _count: { select: { aliases: true } },
+} satisfies Prisma.SubstanceInclude;
+
+/** 詳細取得で必要になる関連 */
 export const SUBSTANCE_INCLUDE = {
-  names: { orderBy: [{ nameType: "asc" }, { displayOrder: "asc" }] },
+  _count: { select: { aliases: true } },
+  aliases: { orderBy: { displayOrder: "asc" } },
   gazetteNumbers: { orderBy: { displayOrder: "asc" } },
   properties: { include: { def: true } },
 } satisfies Prisma.SubstanceInclude;
 
+type SubstanceListRow = Prisma.SubstanceGetPayload<{ include: typeof SUBSTANCE_LIST_INCLUDE }>;
 type SubstanceWithRelations = Prisma.SubstanceGetPayload<{ include: typeof SUBSTANCE_INCLUDE }>;
 
-function mainNameOf(s: SubstanceWithRelations) {
-  return s.names.find((n) => n.nameType === "MAIN");
-}
-
-export function toListItem(s: SubstanceWithRelations): SubstanceListItemDto {
-  const main = mainNameOf(s);
+export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
   return {
     id: s.id,
     code: s.code,
     casNumber: s.casNumber,
     status: s.status,
-    nameJa: main?.nameJa ?? "",
-    nameEn: main?.nameEn ?? null,
-    subNameCount: s.names.filter((n) => n.nameType === "SUB").length,
+    nameJa: s.nameJa,
+    nameEn: s.nameEn,
+    note: s.note,
+    aliasCount: s._count.aliases,
+    updatedAt: s.updatedAt.toISOString(),
   };
 }
 
 export function toDetail(s: SubstanceWithRelations): SubstanceDetailDto {
-  const main = mainNameOf(s);
   return {
     ...toListItem(s),
-    note: s.note,
-    mainNameJa: main?.nameJa ?? "",
-    mainNameEn: main?.nameEn ?? null,
-    subNames: s.names
-      .filter((n) => n.nameType === "SUB")
-      .map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn })),
+    mainNameJa: s.nameJa,
+    mainNameEn: s.nameEn,
+    subNames: s.aliases.map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn })),
     gazetteNumbers: s.gazetteNumbers.map((g) => ({ lawKind: g.lawKind, number: g.number })),
     properties: s.properties.map((p) => ({
       propertyDefId: p.propertyDefId,
@@ -53,7 +53,6 @@ export function toDetail(s: SubstanceWithRelations): SubstanceDetailDto {
       valueNum: p.valueNum?.toString() ?? null,
       unit: p.unit,
     })),
-    updatedAt: s.updatedAt.toISOString(),
   };
 }
 
@@ -146,26 +145,19 @@ export function normalizeInput(input: SubstanceInput) {
     casNormalized,
     status: input.status,
     note: input.note?.trim() || null,
+    nameJa: input.mainNameJa.trim(),
+    nameEn: input.mainNameEn?.trim() || null,
   };
 }
 
-/** 名称・整理番号・拡張属性は入れ替え方式（差分を追うより単純で事故が少ない） */
+/** 別名・整理番号・拡張属性は入れ替え方式（差分を追うより単純で事故が少ない） */
 export function childWrites(input: SubstanceInput) {
   return {
-    names: [
-      {
-        nameType: "MAIN" as const,
-        nameJa: input.mainNameJa.trim(),
-        nameEn: input.mainNameEn?.trim() || null,
-        displayOrder: null,
-      },
-      ...input.subNames.map((n, i) => ({
-        nameType: "SUB" as const,
-        nameJa: n.nameJa.trim(),
-        nameEn: n.nameEn?.trim() || null,
-        displayOrder: i + 1,
-      })),
-    ],
+    aliases: input.subNames.map((n, i) => ({
+      nameJa: n.nameJa.trim(),
+      nameEn: n.nameEn?.trim() || null,
+      displayOrder: i + 1,
+    })),
     gazetteNumbers: input.gazetteNumbers.map((g, i) => ({
       lawKind: g.lawKind,
       number: g.number.trim(),

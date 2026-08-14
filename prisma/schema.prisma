@@ -51,11 +51,6 @@ enum SubstanceStatus {
   DISCONTINUED
 }
 
-enum SubstanceNameType {
-  MAIN
-  SUB
-}
-
 /** 官報公示整理番号の法令区分。CSCL（化審法）の番号が通称 MITI番号 */
 enum GazetteLawKind {
   CSCL
@@ -194,6 +189,13 @@ model Substance {
   /** 正規化CAS。法規制リンク・金属換算係数はこの値で突合する。一意にしない（別物質が同一CASを持てる） */
   casNormalized String? @map("cas_normalized") @db.VarChar(20)
 
+  /**
+   * 主名称。1物質1件なので子テーブルではなくこの行に持つ。
+   * 別テーブルにすると一覧の並べ替え・絞り込みができない（Prisma は 1対多 の項目で並べ替えできない）。
+   */
+  nameJa String  @map("name_ja") @db.VarChar(500)
+  nameEn String? @map("name_en") @db.VarChar(500)
+
   status SubstanceStatus @default(ACTIVE)
   /** 備考（日本語のみ）。検索対象に含める */
   note   String?
@@ -204,31 +206,31 @@ model Substance {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  names          SubstanceName[]
+  aliases        SubstanceAlias[]
   gazetteNumbers SubstanceGazetteNumber[]
   properties     SubstanceProperty[]
 
   @@index([casNormalized])
   @@index([status])
+  @@index([nameJa])
+  @@index([nameEn])
   @@map("substances")
 }
 
-/** 主名称（MAIN）は1物質1件。DB制約にできないのでアプリ層で担保する */
-model SubstanceName {
-  id           String            @id @default(cuid())
-  substanceId  String            @map("substance_id")
-  nameType     SubstanceNameType @map("name_type")
-  nameJa       String            @map("name_ja") @db.VarChar(500)
-  nameEn       String?           @map("name_en") @db.VarChar(500)
-  /** 別名の並び順（主名称は null） */
-  displayOrder Int?              @map("display_order")
+/** 別名（0件以上）。主名称は substances 側に持つ */
+model SubstanceAlias {
+  id           String  @id @default(cuid())
+  substanceId  String  @map("substance_id")
+  nameJa       String  @map("name_ja") @db.VarChar(500)
+  nameEn       String? @map("name_en") @db.VarChar(500)
+  displayOrder Int     @default(0) @map("display_order")
 
   substance Substance @relation(fields: [substanceId], references: [id], onDelete: Cascade)
 
   @@index([substanceId])
   @@index([nameJa])
   @@index([nameEn])
-  @@map("substance_names")
+  @@map("substance_aliases")
 }
 
 model SubstanceGazetteNumber {

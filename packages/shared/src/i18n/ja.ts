@@ -132,6 +132,36 @@ export const ja = {
     clear: "すべて外す",
   },
 
+  /** 一覧（共通テーブル）の文言 */
+  table: {
+    filtering: "絞り込み中",
+    filterCount: (n: number) => `条件 ${n} 件`,
+    sortCount: (n: number) => `並べ替え ${n} 列`,
+    clear: "条件をクリア",
+    sortHint: "クリックで並べ替え。Shift＋クリックで並べ替えのキーを追加",
+    condition: "条件",
+    filterValue: "値",
+    filterValue2: "値（終わり）",
+    all: "すべて",
+    pageSize: "1ページの件数",
+    perPage: (n: number) => `${n} 件`,
+    operators: {
+      contains: "を含む",
+      startsWith: "で始まる",
+      endsWith: "で終わる",
+      equals: "と一致",
+      empty: "空白",
+      notEmpty: "空白でない",
+      eq: "＝",
+      gte: "以上",
+      lte: "以下",
+      between: "範囲",
+      on: "その日",
+      from: "以降",
+      to: "以前",
+    },
+  },
+
   substances: {
     title: "物質マスタ",
     newTitle: "物質の新規登録",

@@ -82,7 +82,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 
   const children = childWrites(input);
   await prisma.$transaction([
-    prisma.substanceName.deleteMany({ where: { substanceId: id } }),
+    prisma.substanceAlias.deleteMany({ where: { substanceId: id } }),
     prisma.substanceGazetteNumber.deleteMany({ where: { substanceId: id } }),
     prisma.substanceProperty.deleteMany({ where: { substanceId: id } }),
     prisma.substance.update({
@@ -90,7 +90,7 @@ export async function PUT(req: Request, { params }: Ctx) {
       data: {
         ...base,
         updatedBy: actor.user.id,
-        names: { create: children.names },
+        aliases: { create: children.aliases },
         gazetteNumbers: { create: children.gazetteNumbers },
         properties: { create: children.properties },
       },

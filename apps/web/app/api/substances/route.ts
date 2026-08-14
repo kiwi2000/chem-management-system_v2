@@ -1,11 +1,12 @@
-import { normalizeCas, normalizeCode, substanceSchema } from "@chem/shared";
-import type { Prisma } from "@prisma/client";
+import { emptyTableState, parseTableState, substanceSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { SUBSTANCE_COLUMNS } from "@/lib/substance-columns";
+import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import {
-  SUBSTANCE_INCLUDE,
+  SUBSTANCE_LIST_INCLUDE,
   childWrites,
   collectWarnings,
   hasDuplicateGazette,
@@ -18,38 +19,35 @@ import { getAppSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 50;
+/** 既定の並びはコード順 */
+const DEFAULT_STATE = emptyTableState([{ column: "code", direction: "asc" }]);
 
 /**
  * GET /api/substances — 一覧。
- * 検索はコード・CAS番号（どちらも正規化値）・名称・備考を横断する。
+ * 並べ替え・列ごとの絞り込み・ページングはクエリで受け取る（形式は @chem/shared の table.ts）。
  */
 export async function GET(req: Request) {
   const actor = await requirePermission("SUBSTANCE_VIEW");
   if (actor instanceof Response) return actor;
 
-  const params = new URL(req.url).searchParams;
-  const q = params.get("q")?.trim() ?? "";
-  const page = Math.max(1, Number(params.get("page") ?? "1") || 1);
+  const state = parseTableState(
+    new URL(req.url).searchParams,
+    SUBSTANCE_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+    DEFAULT_STATE,
+  );
 
-  const where: Prisma.SubstanceWhereInput = { deletedAt: null };
-  if (q) {
-    where.OR = [
-      { codeNormalized: { contains: normalizeCode(q) } },
-      { casNormalized: { contains: normalizeCas(q) } },
-      { note: { contains: q, mode: "insensitive" } },
-      { names: { some: { nameJa: { contains: q, mode: "insensitive" } } } },
-      { names: { some: { nameEn: { contains: q, mode: "insensitive" } } } },
-    ];
-  }
+  const where = {
+    deletedAt: null,
+    ...buildWhere(SUBSTANCE_COLUMNS, state.filters),
+  };
 
   const [items, total] = await Promise.all([
     prisma.substance.findMany({
       where,
-      include: SUBSTANCE_INCLUDE,
-      orderBy: { codeNormalized: "asc" },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      include: SUBSTANCE_LIST_INCLUDE,
+      orderBy: buildOrderBy(SUBSTANCE_COLUMNS, state.sort, { codeNormalized: "asc" }),
+      skip: (state.page - 1) * state.pageSize,
+      take: state.pageSize,
     }),
     prisma.substance.count({ where }),
   ]);
@@ -57,8 +55,8 @@ export async function GET(req: Request) {
   return Response.json({
     items: items.map(toListItem),
     total,
-    page,
-    pageSize: PAGE_SIZE,
+    page: state.page,
+    pageSize: state.pageSize,
   });
 }
 
@@ -105,7 +103,7 @@ export async function POST(req: Request) {
       ...base,
       createdBy: actor.user.id,
       updatedBy: actor.user.id,
-      names: { create: children.names },
+      aliases: { create: children.aliases },
       gazetteNumbers: { create: children.gazetteNumbers },
       properties: { create: children.properties },
     },

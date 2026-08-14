@@ -13,3 +13,4 @@ export * from "./news";
 export * from "./permissions";
 export * from "./settings";
 export * from "./substance";
+export * from "./table";

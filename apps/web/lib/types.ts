@@ -45,11 +45,12 @@ export interface SubstanceListItemDto {
   status: SubstanceStatus;
   nameJa: string;
   nameEn: string | null;
-  subNameCount: number;
+  note: string | null;
+  aliasCount: number;
+  updatedAt: string;
 }
 
 export interface SubstanceDetailDto extends SubstanceListItemDto {
-  note: string | null;
   mainNameJa: string;
   mainNameEn: string | null;
   subNames: { nameJa: string; nameEn: string | null }[];
@@ -61,7 +62,6 @@ export interface SubstanceDetailDto extends SubstanceListItemDto {
     valueNum: string | null;
     unit: string | null;
   }[];
-  updatedAt: string;
 }
 
 export interface PropertyDefDto {
