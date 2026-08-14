@@ -75,7 +75,7 @@ export default function NewsListPage() {
         header: m.news.publishFrom,
         kind: "date",
         width: 170,
-        className: "text-muted-foreground text-xs",
+        className: "text-muted-foreground text-center text-xs",
         render: (n) => `${n.publishFrom ?? "—"}${n.publishUntil ? ` 〜 ${n.publishUntil}` : ""}`,
       },
       {
@@ -93,7 +93,7 @@ export default function NewsListPage() {
         header: m.news.updatedAt,
         kind: "date",
         width: 92,
-        className: "text-muted-foreground text-xs",
+        className: "text-muted-foreground text-center text-xs",
         render: (n) => new Date(n.updatedAt).toLocaleDateString(locale),
       },
     ],

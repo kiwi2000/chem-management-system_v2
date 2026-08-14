@@ -81,6 +81,7 @@ export default function UsersPage() {
         header: m.common.activeHeader,
         kind: "enum",
         width: 64,
+        className: "text-center",
         options: [
           { value: "true", label: m.users.active },
           { value: "false", label: m.users.inactive },
@@ -98,7 +99,7 @@ export default function UsersPage() {
         header: m.users.lastLogin,
         kind: "date",
         width: 160,
-        className: "text-muted-foreground text-xs",
+        className: "text-muted-foreground text-center text-xs",
         render: (u) =>
           u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString(locale) : m.users.never,
       },

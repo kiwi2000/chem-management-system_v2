@@ -70,6 +70,7 @@ export default function SubstancesPage() {
         header: m.common.activeHeader,
         kind: "enum",
         width: 72,
+        className: "text-center",
         options: [
           { value: "ACTIVE", label: m.substances.statusActive },
           { value: "DISCONTINUED", label: m.substances.statusDiscontinued },
@@ -105,7 +106,7 @@ export default function SubstancesPage() {
         header: m.news.updatedAt,
         kind: "date",
         width: 92,
-        className: "text-muted-foreground text-xs",
+        className: "text-muted-foreground text-center text-xs",
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
       },
     ],

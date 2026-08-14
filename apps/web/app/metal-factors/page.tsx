@@ -88,7 +88,7 @@ export default function MetalFactorsPage() {
         header: m.news.updatedAt,
         kind: "date",
         width: 120,
-        className: "text-muted-foreground text-xs",
+        className: "text-muted-foreground text-center text-xs",
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
       },
     ],

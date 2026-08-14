@@ -229,7 +229,7 @@ export function DataTable<T>({
                         type="button"
                         onClick={(e) => toggleSort(c.key, e.shiftKey)}
                         // 濃いヘッダーでも成り立つよう、色を変えず濃さで反応させる
-                        className="flex w-full items-center gap-1 overflow-hidden hover:opacity-75"
+                        className="flex w-full items-center justify-center gap-1 overflow-hidden hover:opacity-75"
                         title={`${c.header} — ${m.table.sortHint}`}
                       >
                         <span className="truncate">{c.header}</span>
@@ -247,7 +247,7 @@ export function DataTable<T>({
                         )}
                       </button>
                     ) : (
-                      <span className="block truncate">{c.header}</span>
+                      <span className="block truncate text-center">{c.header}</span>
                     )}
                     <ResizeHandle
                       label={`${c.header} ${m.table.resize}`}

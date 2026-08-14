@@ -101,6 +101,7 @@ export default function PropertyDefsPage() {
         header: m.common.activeHeader,
         kind: "enum",
         width: 64,
+        className: "text-center",
         options: [
           { value: "true", label: m.users.active },
           { value: "false", label: m.users.inactive },
