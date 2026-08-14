@@ -170,7 +170,7 @@ export const ja = {
       gte: "以上",
       lte: "以下",
       between: "範囲",
-      on: "その日",
+      on: "指定日",
       from: "以降",
       to: "以前",
     },
