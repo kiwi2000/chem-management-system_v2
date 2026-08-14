@@ -1,6 +1,7 @@
 "use client";
 
 import { GAZETTE_LAW_KINDS, pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
+import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -17,7 +18,11 @@ interface Props {
   defs: PropertyDefDto[];
   /** CAS欄の厳しさはシステム設定で変わる */
   settings: AppSettings;
-  readOnly: boolean;
+  /**
+   * 編集できるか。既存データを開いたときは、まず読み取り専用で見せて
+   * 「編集」ボタンを押してから書き換えられるようにする（誤操作を防ぐため）。
+   */
+  canEdit: boolean;
 }
 
 interface SubNameRow {
@@ -31,9 +36,12 @@ interface GazetteRow {
 
 const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
 
-export function SubstanceForm({ initial, defs, settings, readOnly }: Props) {
+export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
   const router = useRouter();
   const { m, locale } = useI18n();
+  // 新規登録は最初から入力できる。既存データは「編集」を押すまで読み取り専用
+  const [editing, setEditing] = useState(!initial);
+  const readOnly = !canEdit || !editing;
 
   const [code, setCode] = useState(initial?.code ?? "");
   const [casNumber, setCasNumber] = useState(initial?.casNumber ?? "");
@@ -109,9 +117,11 @@ export function SubstanceForm({ initial, defs, settings, readOnly }: Props) {
         return;
       }
       const body = (await res.json()) as { warnings?: string[] };
-      // 警告があるときは一覧に戻らず、その場で確認してもらう
+      // 警告があるときは一覧に戻らず、その場で確認してもらう。
+      // 保存は済んでいるので表示に戻す（続けて書き換えるなら「編集」を押し直す）
       if (body.warnings && body.warnings.length > 0) {
         setWarnings(body.warnings);
+        if (initial) setEditing(false);
         router.refresh();
         return;
       }
@@ -383,14 +393,37 @@ export function SubstanceForm({ initial, defs, settings, readOnly }: Props) {
       )}
 
       <div className="flex gap-2">
-        {!readOnly && (
-          <Button type="submit" disabled={saving}>
-            {saving ? m.common.saving : m.common.save}
-          </Button>
+        {readOnly ? (
+          <>
+            {canEdit && (
+              <Button type="button" onClick={() => setEditing(true)}>
+                <Pencil className="mr-1 size-4" />
+                {m.common.edit}
+              </Button>
+            )}
+            <Button type="button" variant="outline" onClick={() => router.push("/substances")}>
+              {m.common.back}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="submit" disabled={saving}>
+              {saving ? m.common.saving : m.common.save}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                // 既存データの編集をやめるときは、書きかけを捨てて表示に戻す
+                if (initial) router.refresh();
+                else router.push("/substances");
+                setEditing(!initial);
+              }}
+            >
+              {m.common.cancel}
+            </Button>
+          </>
         )}
-        <Button type="button" variant="outline" onClick={() => router.push("/substances")}>
-          {readOnly ? m.common.back : m.common.cancel}
-        </Button>
       </div>
     </form>
   );

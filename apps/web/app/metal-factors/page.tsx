@@ -4,6 +4,7 @@ import { emptyTableState, pickName, serializeTableState, type TableState } from 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { RowActions } from "@/components/data-table/row-actions";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -38,30 +39,31 @@ export default function MetalFactorsPage() {
         key: "casNumber",
         header: m.metalFactors.casNumber,
         kind: "text",
+        width: 140,
         className: "font-mono",
-        headerClassName: "w-40",
         render: (r) => r.casNumber,
       },
       {
         key: "metalElement",
         header: m.metalFactors.metalElement,
         kind: "text",
+        width: 110,
         className: "font-mono",
-        headerClassName: "w-28",
         render: (r) => r.metalElement,
       },
       {
         key: "ratioPct",
         header: m.metalFactors.ratioPct,
         kind: "number",
+        width: 150,
         className: "text-right font-mono",
-        headerClassName: "w-40",
         render: (r) => r.ratioPct,
       },
       {
         key: "matchedSubstances",
         header: m.metalFactors.matchedSubstances,
         kind: "text",
+        width: 280,
         sortable: false,
         filterable: false,
         render: (r) =>
@@ -85,7 +87,7 @@ export default function MetalFactorsPage() {
         key: "updatedAt",
         header: m.news.updatedAt,
         kind: "date",
-        headerClassName: "w-36",
+        width: 120,
         className: "text-muted-foreground text-xs",
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
       },
@@ -254,6 +256,7 @@ export default function MetalFactorsPage() {
       )}
 
       <DataTable
+        storageKey="chem.table.metalFactors"
         columns={columns}
         rows={data?.items ?? null}
         rowKey={(r) => r.id}
@@ -263,34 +266,20 @@ export default function MetalFactorsPage() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.metalFactors.empty}
-        actionsHeaderClassName="w-40"
         actions={
           editable
             ? (f) => (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setForm({
-                        id: f.id,
-                        casNumber: f.casNumber,
-                        metalElement: f.metalElement,
-                        ratioPct: f.ratioPct,
-                      })
-                    }
-                  >
-                    {m.common.edit}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive"
-                    onClick={() => void onDelete(f)}
-                  >
-                    {m.common.delete}
-                  </Button>
-                </div>
+                <RowActions
+                  onEdit={() =>
+                    setForm({
+                      id: f.id,
+                      casNumber: f.casNumber,
+                      metalElement: f.metalElement,
+                      ratioPct: f.ratioPct,
+                    })
+                  }
+                  onDelete={() => void onDelete(f)}
+                />
               )
             : undefined
         }

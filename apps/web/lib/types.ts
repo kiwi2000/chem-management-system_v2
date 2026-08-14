@@ -47,6 +47,8 @@ export interface SubstanceListItemDto {
   nameEn: string | null;
   note: string | null;
   aliasCount: number;
+  /** 官報公示整理番号（区分つき）。一覧では1セルに複数行で出す */
+  gazetteNumbers: { lawKind: GazetteLawKind; number: string }[];
   updatedAt: string;
 }
 
@@ -54,7 +56,6 @@ export interface SubstanceDetailDto extends SubstanceListItemDto {
   mainNameJa: string;
   mainNameEn: string | null;
   subNames: { nameJa: string; nameEn: string | null }[];
-  gazetteNumbers: { lawKind: GazetteLawKind; number: string }[];
   /** 数値は文字列で受け渡す（浮動小数点を経由させない） */
   properties: {
     propertyDefId: string;

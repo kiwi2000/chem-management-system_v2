@@ -13,6 +13,7 @@ import type { SubstanceDetailDto, SubstanceListItemDto } from "@/lib/types";
 /** 一覧に必要な関連（別名は件数だけ使う） */
 export const SUBSTANCE_LIST_INCLUDE = {
   _count: { select: { aliases: true } },
+  gazetteNumbers: { orderBy: { displayOrder: "asc" } },
 } satisfies Prisma.SubstanceInclude;
 
 /** 詳細取得で必要になる関連 */
@@ -36,6 +37,7 @@ export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
     nameEn: s.nameEn,
     note: s.note,
     aliasCount: s._count.aliases,
+    gazetteNumbers: s.gazetteNumbers.map((g) => ({ lawKind: g.lawKind, number: g.number })),
     updatedAt: s.updatedAt.toISOString(),
   };
 }
@@ -46,7 +48,6 @@ export function toDetail(s: SubstanceWithRelations): SubstanceDetailDto {
     mainNameJa: s.nameJa,
     mainNameEn: s.nameEn,
     subNames: s.aliases.map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn })),
-    gazetteNumbers: s.gazetteNumbers.map((g) => ({ lawKind: g.lawKind, number: g.number })),
     properties: s.properties.map((p) => ({
       propertyDefId: p.propertyDefId,
       valueText: p.valueText,

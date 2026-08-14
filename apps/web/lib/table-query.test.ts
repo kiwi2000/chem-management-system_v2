@@ -13,6 +13,7 @@ const COLUMNS: QueryColumn[] = [
   { key: "updatedAt", kind: "date", field: "updatedAt" },
   { key: "count", kind: "number", field: "count" },
   { key: "id", kind: "text", field: "id", sortable: false },
+  { key: "tags", kind: "text", field: "label", relation: "tags", sortable: false },
 ];
 
 describe("buildWhere", () => {
@@ -67,6 +68,23 @@ describe("buildWhere", () => {
     expect(buildWhere(COLUMNS, { status: { kind: "text", op: "contains", value: "x" } })).toEqual(
       {},
     );
+  });
+
+  it("子テーブルの列は「1件でも合えば該当」に包む", () => {
+    expect(buildWhere(COLUMNS, { tags: { kind: "text", op: "contains", value: "1-234" } })).toEqual(
+      {
+        AND: [{ tags: { some: { label: { contains: "1-234" } } } }],
+      },
+    );
+  });
+
+  it("子テーブルの「空白」は行が1件も無いこと（列がNULLかどうかではない）", () => {
+    expect(buildWhere(COLUMNS, { tags: { kind: "text", op: "empty", value: "" } })).toEqual({
+      AND: [{ tags: { none: {} } }],
+    });
+    expect(buildWhere(COLUMNS, { tags: { kind: "text", op: "notEmpty", value: "" } })).toEqual({
+      AND: [{ tags: { some: {} } }],
+    });
   });
 
   it("複数の条件は AND で重ねる", () => {

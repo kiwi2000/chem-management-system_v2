@@ -11,6 +11,7 @@ export const en: Messages = {
     cancel: "Cancel",
     delete: "Delete",
     edit: "Edit",
+    detail: "Details",
     view: "View",
     search: "Search",
     create: "+ New",
@@ -133,6 +134,9 @@ export const en: Messages = {
   },
 
   table: {
+    filterPanel: "Filters",
+    resize: "resize column",
+    resetWidths: "Reset widths",
     filtering: "Filtered",
     filterCount: (n: number) => `${n} condition${n === 1 ? "" : "s"}`,
     sortCount: (n: number) => `sorted by ${n} column${n === 1 ? "" : "s"}`,
@@ -165,6 +169,7 @@ export const en: Messages = {
     title: "Substances",
     newTitle: "New substance",
     editTitle: "Edit substance",
+    detailTitle: "Substance details",
     basic: "Basic information",
     code: "Substance code",
     codeHint: "Up to 20 characters. Matched in upper case after converting to half width",
@@ -189,6 +194,11 @@ export const en: Messages = {
       CSCL: "CSCL (MITI number)",
       ISHA: "ISHA",
       OTHER: "Other",
+    },
+    lawKindsShort: {
+      CSCL: "C",
+      ISHA: "I",
+      OTHER: "O",
     },
     properties: "Properties",
     propertiesEmpty: "No properties are defined (a system administrator sets these up)",

@@ -4,7 +4,9 @@ import { emptyTableState, pickName, serializeTableState, type TableState } from 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { RowActions } from "@/components/data-table/row-actions";
 import type { TableColumn } from "@/components/data-table/types";
+import { GazetteNumbers } from "@/components/gazette-numbers";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,22 +28,24 @@ export default function SubstancesPage() {
         key: "code",
         header: m.substances.code,
         kind: "text",
-        className: "font-mono",
-        headerClassName: "w-40",
+        // コード20文字・CAS12桁が等幅で収まる最小限の幅にする
+        width: 104,
+        className: "font-mono text-xs",
         render: (r) => r.code,
       },
       {
         key: "casNumber",
         header: m.substances.casNumber,
         kind: "text",
-        className: "font-mono",
-        headerClassName: "w-40",
+        width: 104,
+        className: "font-mono text-xs",
         render: (r) => r.casNumber ?? "—",
       },
       {
         key: "nameJa",
         header: m.substances.nameJa,
         kind: "text",
+        width: 240,
         render: (r) => (
           <>
             {pickName(locale, r.nameJa, r.nameEn)}
@@ -55,6 +59,7 @@ export default function SubstancesPage() {
         key: "nameEn",
         header: m.substances.nameEn,
         kind: "text",
+        width: 200,
         className: "text-muted-foreground",
         render: (r) => r.nameEn ?? "",
       },
@@ -62,28 +67,41 @@ export default function SubstancesPage() {
         key: "status",
         header: m.substances.status,
         kind: "enum",
-        headerClassName: "w-28",
+        width: 72,
         options: [
           { value: "ACTIVE", label: m.substances.statusActive },
           { value: "DISCONTINUED", label: m.substances.statusDiscontinued },
         ],
         render: (r) =>
           r.status === "DISCONTINUED" ? (
-            <Badge variant="outline">{m.substances.statusDiscontinued}</Badge>
+            <Badge variant="outline" className="px-1 text-[10px]">
+              {m.substances.statusDiscontinued}
+            </Badge>
           ) : null,
+      },
+      {
+        key: "gazetteNumbers",
+        header: m.substances.gazette,
+        kind: "text",
+        width: 150,
+        // 区分ごとに1行ずつ出すので、行の高さを伸ばす
+        multiline: true,
+        sortable: false,
+        render: (r) => <GazetteNumbers items={r.gazetteNumbers} />,
       },
       {
         key: "note",
         header: m.substances.note,
         kind: "text",
-        className: "text-muted-foreground max-w-48 truncate text-xs",
+        width: 200,
+        className: "text-muted-foreground text-xs",
         render: (r) => r.note ?? "",
       },
       {
         key: "updatedAt",
         header: m.news.updatedAt,
         kind: "date",
-        headerClassName: "w-36",
+        width: 92,
         className: "text-muted-foreground text-xs",
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
       },
@@ -154,6 +172,7 @@ export default function SubstancesPage() {
       )}
 
       <DataTable
+        storageKey="chem.table.substances"
         columns={columns}
         rows={data?.items ?? null}
         rowKey={(r) => r.id}
@@ -163,28 +182,12 @@ export default function SubstancesPage() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.substances.empty}
-        actionsHeaderClassName="w-40"
+        actionsWidth={editable ? 84 : 48}
         actions={(s) => (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={<Link href={`/substances/${s.id}`} />}
-            >
-              {editable ? m.common.edit : m.common.view}
-            </Button>
-            {editable && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive"
-                onClick={() => void onDelete(s)}
-              >
-                {m.common.delete}
-              </Button>
-            )}
-          </div>
+          <RowActions
+            detailHref={`/substances/${s.id}`}
+            onDelete={editable ? () => void onDelete(s) : undefined}
+          />
         )}
       />
     </div>

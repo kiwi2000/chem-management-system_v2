@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  PAGE_SIZE_OPTIONS,
-  activeFilterCount,
-  type ColumnFilter,
-  type TableState,
-} from "@chem/shared";
-import { ArrowDown, ArrowUp, ChevronsUpDown, FilterX } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { PAGE_SIZE_OPTIONS, type ColumnFilter, type TableState } from "@chem/shared";
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -19,31 +14,39 @@ import {
 } from "@/components/ui/table";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
-import { FilterCell } from "./filter-cell";
-import type { TableColumn } from "./types";
+import { FilterPanel } from "./filter-panel";
+import { ACTIONS_COLUMN_WIDTH, MIN_COLUMN_WIDTH, type TableColumn } from "./types";
+import { useColumnWidths } from "./use-column-widths";
 
 interface Props<T> {
+  /** 端末に列幅・パネル開閉を覚えるための識別子（画面ごとに一意） */
+  storageKey: string;
   columns: TableColumn<T>[];
   rows: T[] | null;
   rowKey: (row: T) => string;
   total: number;
   state: TableState;
-  /** 既定の状態。これと違うときだけ「絞り込み中」の帯を出す */
+  /** 既定の状態。これと違うときだけ「絞り込み中」を出す */
   defaultState: TableState;
   onStateChange: (updater: (prev: TableState) => TableState) => void;
   onReset: () => void;
   /** 一番右に置く操作列（並べ替え・絞り込みの対象外） */
   actions?: (row: T) => React.ReactNode;
-  actionsHeaderClassName?: string;
+  /** 操作列の幅（既定はアイコン2つ分） */
+  actionsWidth?: number;
   emptyMessage: string;
 }
 
+/** 罫線。セルの右側に薄い線を引く（最後の列は引かない） */
+const CELL_BORDER = "border-r last:border-r-0";
+
 /**
  * 一覧の共通部品。すべてのテーブルはこれを使う。
- * 列ごとの絞り込み・複数列の並べ替え・ページングを備え、
- * 絞り込み中は帯で明示して、1クリックで全件に戻せるようにしている。
+ * 絞り込み条件は表の外（上のパネル）に置く。表の中に入れると列幅に引きずられて
+ * 入力欄の横幅がばらつくため。
  */
 export function DataTable<T>({
+  storageKey,
   columns,
   rows,
   rowKey,
@@ -53,14 +56,13 @@ export function DataTable<T>({
   onStateChange,
   onReset,
   actions,
-  actionsHeaderClassName,
+  actionsWidth = ACTIONS_COLUMN_WIDTH,
   emptyMessage,
 }: Props<T>) {
   const { m } = useI18n();
-  const filterCount = activeFilterCount(state);
-  const asKey = (s: TableState) => s.sort.map((r) => `${r.column}:${r.direction}`).join(",");
-  // 既定の並びのままなら「並べ替えている」とは言わない
-  const sorted = asKey(state) !== asKey(defaultState);
+  const { widthOf, setWidth, resetWidths, hasCustomWidths } = useColumnWidths(
+    `${storageKey}.widths`,
+  );
   const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
 
   /** 見出しクリックで 昇順 → 降順 → 解除。Shift+クリックで並べ替えのキーを足す */
@@ -85,30 +87,25 @@ export function DataTable<T>({
     });
   }
 
-  const filterable = columns.some((c) => c.filterable !== false);
-
   return (
     <div className="space-y-3">
-      {(filterCount > 0 || sorted) && (
-        <div
-          className="flex flex-wrap items-center gap-3 rounded-md border px-3 py-2 text-sm"
-          style={{ backgroundColor: "var(--secondary)" }}
-        >
-          <Badge variant="secondary">{m.table.filtering}</Badge>
-          <span className="text-muted-foreground">
-            {filterCount > 0 && m.table.filterCount(filterCount)}
-            {filterCount > 0 && sorted && " ・ "}
-            {sorted && m.table.sortCount(state.sort.length)}
-          </span>
-          <Button variant="outline" size="sm" className="ml-auto" onClick={onReset}>
-            <FilterX className="mr-1 size-3.5" />
-            {m.table.clear}
-          </Button>
-        </div>
-      )}
+      <FilterPanel
+        columns={columns}
+        state={state}
+        defaultState={defaultState}
+        onFilterChange={setFilter}
+        onReset={onReset}
+        storageKey={`${storageKey}.filterPanel`}
+      />
 
       <div className="bg-background overflow-x-auto rounded-md border">
-        <Table>
+        <Table className="table-fixed">
+          <colgroup>
+            {columns.map((c) => (
+              <col key={c.key} style={{ width: widthOf(c) }} />
+            ))}
+            {actions && <col style={{ width: actionsWidth }} />}
+          </colgroup>
           <TableHeader>
             <TableRow>
               {columns.map((c) => {
@@ -116,52 +113,43 @@ export function DataTable<T>({
                 const priority = state.sort.findIndex((s) => s.column === c.key) + 1;
                 const canSort = c.sortable !== false;
                 return (
-                  <TableHead key={c.key} className={c.headerClassName}>
+                  <TableHead key={c.key} className={cn("relative", CELL_BORDER)}>
                     {canSort ? (
                       <button
                         type="button"
                         onClick={(e) => toggleSort(c.key, e.shiftKey)}
-                        className="hover:text-foreground flex items-center gap-1"
-                        title={m.table.sortHint}
+                        className="hover:text-foreground flex w-full items-center gap-1 overflow-hidden"
+                        title={`${c.header} — ${m.table.sortHint}`}
                       >
-                        {c.header}
+                        <span className="truncate">{c.header}</span>
                         {rule ? (
                           rule.direction === "asc" ? (
-                            <ArrowUp className="size-3.5" />
+                            <ArrowUp className="size-3.5 shrink-0" />
                           ) : (
-                            <ArrowDown className="size-3.5" />
+                            <ArrowDown className="size-3.5 shrink-0" />
                           )
                         ) : (
-                          <ChevronsUpDown className="size-3.5 opacity-40" />
+                          <ChevronsUpDown className="size-3.5 shrink-0 opacity-40" />
                         )}
                         {rule && state.sort.length > 1 && (
-                          <span className="text-muted-foreground text-[10px]">{priority}</span>
+                          <span className="text-muted-foreground shrink-0 text-[10px]">
+                            {priority}
+                          </span>
                         )}
                       </button>
                     ) : (
-                      c.header
+                      <span className="block truncate">{c.header}</span>
                     )}
+                    <ResizeHandle
+                      label={`${c.header} ${m.table.resize}`}
+                      current={() => widthOf(c)}
+                      onResize={(px) => setWidth(c.key, px)}
+                    />
                   </TableHead>
                 );
               })}
-              {actions && <TableHead className={actionsHeaderClassName} />}
+              {actions && <TableHead />}
             </TableRow>
-            {filterable && (
-              <TableRow>
-                {columns.map((c) => (
-                  <TableHead key={c.key} className="py-1">
-                    {c.filterable !== false && (
-                      <FilterCell
-                        column={c}
-                        value={state.filters[c.key]}
-                        onChange={(f) => setFilter(c.key, f)}
-                      />
-                    )}
-                  </TableHead>
-                ))}
-                {actions && <TableHead />}
-              </TableRow>
-            )}
           </TableHeader>
           <TableBody>
             {rows === null && (
@@ -187,7 +175,14 @@ export function DataTable<T>({
             {rows?.map((row) => (
               <TableRow key={rowKey(row)}>
                 {columns.map((c) => (
-                  <TableCell key={c.key} className={cn(c.className)}>
+                  <TableCell
+                    key={c.key}
+                    className={cn(
+                      c.multiline ? "align-top break-words whitespace-normal" : "truncate",
+                      CELL_BORDER,
+                      c.className,
+                    )}
+                  >
                     {c.render?.(row)}
                   </TableCell>
                 ))}
@@ -215,6 +210,11 @@ export function DataTable<T>({
               </option>
             ))}
           </select>
+          {hasCustomWidths && (
+            <Button variant="ghost" size="sm" onClick={resetWidths}>
+              {m.table.resetWidths}
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -237,5 +237,57 @@ export function DataTable<T>({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * 列幅を変えるつまみ。見出しの右端をドラッグする。
+ * キーボードでも矢印キーで変えられるようにしている。
+ */
+function ResizeHandle({
+  label,
+  current,
+  onResize,
+}: {
+  label: string;
+  current: () => number;
+  onResize: (px: number) => void;
+}) {
+  const drag = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={label}
+      tabIndex={0}
+      className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none select-none"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        drag.current = { startX: e.clientX, startWidth: current() };
+      }}
+      onPointerMove={(e) => {
+        if (!drag.current) return;
+        onResize(
+          Math.max(MIN_COLUMN_WIDTH, drag.current.startWidth + (e.clientX - drag.current.startX)),
+        );
+      }}
+      onPointerUp={(e) => {
+        drag.current = null;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }}
+      onKeyDown={(e) => {
+        const step = e.shiftKey ? 40 : 10;
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          onResize(current() - step);
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          onResize(current() + step);
+        }
+      }}
+    />
   );
 }

@@ -27,7 +27,7 @@ export default async function NewSubstancePage() {
       <SubstanceForm
         defs={defs.map(toPropertyDefDto)}
         settings={settings}
-        readOnly={!actor?.has("SUBSTANCE_EDIT")}
+        canEdit={actor?.has("SUBSTANCE_EDIT") ?? false}
       />
     </div>
   );

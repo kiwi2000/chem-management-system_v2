@@ -16,6 +16,12 @@ export interface QueryColumn {
   caseInsensitive?: boolean;
   /** 並べ替えに使えるか（既定は可） */
   sortable?: boolean;
+  /**
+   * 子テーブルの項目で絞り込む場合の関連名（例: 官報公示整理番号）。
+   * 「1件でも条件に合う行があれば該当」として扱う。
+   * 並べ替えには使えない（Prisma が1対多の項目で並べ替えできないため）。
+   */
+  relation?: string;
 }
 
 type Where = Record<string, unknown>;
@@ -104,7 +110,20 @@ export function buildWhere(columns: QueryColumn[], filters: TableState["filters"
             : f.values.length > 0
               ? { [col.field]: { in: f.values } }
               : null;
-    if (cond) conditions.push(cond);
+    if (!cond) continue;
+    if (!col.relation) {
+      conditions.push(cond);
+      continue;
+    }
+    // 子テーブルの「空白」は列の値ではなく「行が1件も無い」を意味する
+    if (f.kind === "text" && f.op === "empty") {
+      conditions.push({ [col.relation]: { none: {} } });
+    } else if (f.kind === "text" && f.op === "notEmpty") {
+      conditions.push({ [col.relation]: { some: {} } });
+    } else {
+      // それ以外は「1件でも条件に合う行があれば該当」
+      conditions.push({ [col.relation]: { some: cond } });
+    }
   }
 
   return conditions.length > 0 ? { AND: conditions } : {};
@@ -124,7 +143,7 @@ export function buildOrderBy(
 
   for (const rule of sort) {
     const col = byKey.get(rule.column);
-    if (!col || col.sortable === false) continue;
+    if (!col || col.sortable === false || col.relation) continue;
     order.push({ [col.field]: rule.direction });
   }
 

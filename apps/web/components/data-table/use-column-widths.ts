@@ -1,0 +1,44 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { DEFAULT_COLUMN_WIDTH, MIN_COLUMN_WIDTH, type TableColumn } from "./types";
+
+/**
+ * 列幅。利用者がドラッグで変えた幅を端末に覚えておく。
+ * 絞り込み条件と違って見た目の好みなので URL には載せない。
+ */
+export function useColumnWidths(storageKey: string) {
+  const [widths, setWidths] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+      if (saved) setWidths(JSON.parse(saved) as Record<string, number>);
+    } catch {
+      // 壊れた値が入っていたら既定幅で始める
+    }
+  }, [storageKey]);
+
+  const widthOf = useCallback(
+    <T>(col: TableColumn<T>) => widths[col.key] ?? col.width ?? DEFAULT_COLUMN_WIDTH,
+    [widths],
+  );
+
+  const setWidth = useCallback(
+    (key: string, px: number) => {
+      setWidths((prev) => {
+        const next = { ...prev, [key]: Math.max(MIN_COLUMN_WIDTH, Math.round(px)) };
+        window.localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+    },
+    [storageKey],
+  );
+
+  const resetWidths = useCallback(() => {
+    window.localStorage.removeItem(storageKey);
+    setWidths({});
+  }, [storageKey]);
+
+  return { widthOf, setWidth, resetWidths, hasCustomWidths: Object.keys(widths).length > 0 };
+}

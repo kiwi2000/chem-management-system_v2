@@ -10,6 +10,7 @@ export const ja = {
     cancel: "キャンセル",
     delete: "削除",
     edit: "編集",
+    detail: "詳細",
     view: "表示",
     search: "検索",
     create: "＋ 新規登録",
@@ -134,6 +135,9 @@ export const ja = {
 
   /** 一覧（共通テーブル）の文言 */
   table: {
+    filterPanel: "絞り込み条件",
+    resize: "列幅を変える",
+    resetWidths: "列幅を戻す",
     filtering: "絞り込み中",
     filterCount: (n: number) => `条件 ${n} 件`,
     sortCount: (n: number) => `並べ替え ${n} 列`,
@@ -166,6 +170,7 @@ export const ja = {
     title: "物質マスタ",
     newTitle: "物質の新規登録",
     editTitle: "物質の編集",
+    detailTitle: "物質の詳細",
     basic: "基本情報",
     code: "物質コード",
     codeHint: "20文字以内。半角に直して大文字で突き合わせます",
@@ -190,6 +195,12 @@ export const ja = {
       CSCL: "化審法（MITI番号）",
       ISHA: "安衛法",
       OTHER: "その他",
+    },
+    /** 一覧のセルに複数行で出すときの先頭記号 */
+    lawKindsShort: {
+      CSCL: "化",
+      ISHA: "安",
+      OTHER: "他",
     },
     properties: "拡張属性",
     propertiesEmpty: "項目が定義されていません（システム管理者が設定します）",

@@ -12,7 +12,15 @@ export interface TableColumn<T> {
   options?: { value: string; label: string }[];
   sortable?: boolean;
   filterable?: boolean;
-  /** セルに付けるクラス（幅・等幅フォントなど） */
+  /** 既定の列幅（px）。利用者がドラッグで変えた幅は端末に記憶される */
+  width?: number;
+  /** 1セルに複数行を出す（省略記号で切らず、行の高さを伸ばす） */
+  multiline?: boolean;
+  /** セルに付けるクラス（等幅フォントなど） */
   className?: string;
-  headerClassName?: string;
 }
+
+export const DEFAULT_COLUMN_WIDTH = 160;
+export const MIN_COLUMN_WIDTH = 48;
+/** 操作列（アイコンボタン）の既定幅 */
+export const ACTIONS_COLUMN_WIDTH = 84;

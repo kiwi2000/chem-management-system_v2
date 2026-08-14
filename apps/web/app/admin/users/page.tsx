@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { RowActions } from "@/components/data-table/row-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -113,24 +114,10 @@ export default function UsersPage() {
                   {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString(locale) : m.users.never}
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      nativeButton={false}
-                      render={<Link href={`/admin/users/${u.id}`} />}
-                    >
-                      {m.common.edit}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => void onDelete(u)}
-                    >
-                      {m.common.delete}
-                    </Button>
-                  </div>
+                  <RowActions
+                    detailHref={`/admin/users/${u.id}`}
+                    onDelete={() => void onDelete(u)}
+                  />
                 </TableCell>
               </TableRow>
             ))}

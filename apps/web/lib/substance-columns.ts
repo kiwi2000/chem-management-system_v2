@@ -12,6 +12,14 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "status", kind: "enum", field: "status" },
+  // 官報公示整理番号は子テーブル。番号で絞り込めるが並べ替えはできない
+  {
+    key: "gazetteNumbers",
+    kind: "text",
+    field: "number",
+    relation: "gazetteNumbers",
+    sortable: false,
+  },
   { key: "note", kind: "text", field: "note", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
