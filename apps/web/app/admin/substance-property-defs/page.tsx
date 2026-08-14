@@ -1,26 +1,28 @@
 "use client";
 
-import { pickName, type PropertyDataType } from "@chem/shared";
-import { useCallback, useEffect, useState } from "react";
-import { RowActions } from "@/components/data-table/row-actions";
+import {
+  emptyTableState,
+  pickName,
+  serializeTableState,
+  type PropertyDataType,
+  type TableState,
+} from "@chem/shared";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/data-table";
+import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, PropertyDefDto } from "@/lib/types";
+import type { ApiError, ListResponse, PropertyDefDto } from "@/lib/types";
+import { useTableState } from "@/lib/use-table-state";
 
 const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
+
+const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
 /** 空のフォーム。新規追加と編集で同じ形を使う */
 const EMPTY = {
@@ -36,26 +38,109 @@ const EMPTY = {
 
 export default function PropertyDefsPage() {
   const { m, locale } = useI18n();
-  const [items, setItems] = useState<PropertyDefDto[] | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const columns = useMemo<TableColumn<PropertyDefDto>[]>(
+    () => [
+      {
+        key: "displayOrder",
+        header: m.propertyDefs.displayOrder,
+        kind: "number",
+        width: 72,
+        className: "text-muted-foreground text-right",
+        render: (d) => d.displayOrder,
+      },
+      {
+        key: "key",
+        header: m.propertyDefs.key,
+        kind: "text",
+        width: 180,
+        className: "font-mono text-xs",
+        render: (d) => d.key,
+      },
+      {
+        key: "labelJa",
+        header: m.propertyDefs.labelJa,
+        kind: "text",
+        width: 280,
+        render: (d) => (
+          <>
+            {pickName(locale, d.labelJa, d.labelEn)}
+            {d.valueCount > 0 && (
+              <span className="text-muted-foreground ml-2 text-xs">
+                {m.propertyDefs.valueCount(d.valueCount)}
+              </span>
+            )}
+          </>
+        ),
+      },
+      {
+        key: "dataType",
+        header: m.propertyDefs.dataType,
+        kind: "enum",
+        width: 100,
+        options: [
+          { value: "TEXT", label: m.propertyDefs.typeText },
+          { value: "NUMBER", label: m.propertyDefs.typeNumber },
+        ],
+        render: (d) =>
+          d.dataType === "NUMBER" ? m.propertyDefs.typeNumber : m.propertyDefs.typeText,
+      },
+      {
+        key: "defaultUnit",
+        header: m.propertyDefs.defaultUnit,
+        kind: "text",
+        width: 100,
+        render: (d) => d.defaultUnit ?? "",
+      },
+      {
+        key: "activeFlag",
+        header: m.propertyDefs.activeFlag,
+        kind: "enum",
+        width: 90,
+        options: [
+          { value: "true", label: m.common.yes },
+          { value: "false", label: m.common.no },
+        ],
+        render: (d) =>
+          d.activeFlag ? (
+            m.common.yes
+          ) : (
+            <Badge variant="outline" className="px-1 text-[10px]">
+              {m.common.no}
+            </Badge>
+          ),
+      },
+    ],
+    [m, locale],
+  );
+
+  const { state, setState, reset, ready } = useTableState(
+    "chem.table.propertyDefs",
+    columns,
+    DEFAULT_STATE,
+  );
+  const [data, setData] = useState<ListResponse<PropertyDefDto> | null>(null);
+
+  const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
+
   const load = useCallback(async () => {
     setError(null);
-    const res = await fetch("/api/admin/substance-property-defs");
+    const res = await fetch(`/api/admin/substance-property-defs?${query}`);
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
-      setItems([]);
+      setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setItems(((await res.json()) as { items: PropertyDefDto[] }).items);
-  }, [m]);
+    setData((await res.json()) as ListResponse<PropertyDefDto>);
+  }, [query, m]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (ready) void load();
+  }, [ready, load]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -93,15 +178,18 @@ export default function PropertyDefsPage() {
     }
   }
 
-  async function onDelete(d: PropertyDefDto) {
-    if (!confirm(m.propertyDefs.deleteConfirm(pickName(locale, d.labelJa, d.labelEn)))) return;
-    const res = await fetch(`/api/admin/substance-property-defs/${d.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.deleteFailed);
-      return;
+  /** 確認は共通テーブル側で出す（入力済みの値も消える点は画面の説明で伝える） */
+  async function onDeleteSelected(targets: PropertyDefDto[]) {
+    setError(null);
+    for (const d of targets) {
+      const res = await fetch(`/api/admin/substance-property-defs/${d.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        break;
+      }
+      if (form.id === d.id) setForm({ ...EMPTY });
     }
-    if (form.id === d.id) setForm({ ...EMPTY });
     void load();
   }
 
@@ -228,76 +316,34 @@ export default function PropertyDefsPage() {
         </CardContent>
       </Card>
 
-      <div className="bg-background overflow-x-auto rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">{m.propertyDefs.displayOrder}</TableHead>
-              <TableHead>{m.propertyDefs.key}</TableHead>
-              <TableHead>{m.propertyDefs.labelJa}</TableHead>
-              <TableHead className="w-24">{m.propertyDefs.dataType}</TableHead>
-              <TableHead className="w-24">{m.propertyDefs.defaultUnit}</TableHead>
-              <TableHead className="w-44" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items === null && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground text-center">
-                  {m.common.loading}
-                </TableCell>
-              </TableRow>
-            )}
-            {items?.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground text-center">
-                  {m.propertyDefs.empty}
-                </TableCell>
-              </TableRow>
-            )}
-            {items?.map((d) => (
-              <TableRow key={d.id}>
-                <TableCell className="text-muted-foreground">{d.displayOrder}</TableCell>
-                <TableCell className="font-mono">{d.key}</TableCell>
-                <TableCell>
-                  {pickName(locale, d.labelJa, d.labelEn)}
-                  {!d.activeFlag && (
-                    <Badge variant="outline" className="ml-2">
-                      {m.substances.statusDiscontinued}
-                    </Badge>
-                  )}
-                  {d.valueCount > 0 && (
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      {m.propertyDefs.valueCount(d.valueCount)}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {d.dataType === "NUMBER" ? m.propertyDefs.typeNumber : m.propertyDefs.typeText}
-                </TableCell>
-                <TableCell>{d.defaultUnit ?? ""}</TableCell>
-                <TableCell>
-                  <RowActions
-                    onEdit={() =>
-                      setForm({
-                        id: d.id,
-                        key: d.key,
-                        labelJa: d.labelJa,
-                        labelEn: d.labelEn ?? "",
-                        dataType: d.dataType,
-                        defaultUnit: d.defaultUnit ?? "",
-                        displayOrder: d.displayOrder,
-                        activeFlag: d.activeFlag,
-                      })
-                    }
-                    onDelete={() => void onDelete(d)}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable
+        storageKey="chem.table.propertyDefs"
+        columns={columns}
+        rows={data?.items ?? null}
+        rowKey={(d) => d.id}
+        total={data?.total ?? 0}
+        state={state}
+        defaultState={DEFAULT_STATE}
+        onStateChange={setState}
+        onReset={reset}
+        emptyMessage={m.propertyDefs.empty}
+        selectable
+        onDeleteSelected={onDeleteSelected}
+        // この画面は詳細を別に持たないので、ダブルクリックで上のフォームに読み込む
+        onRowActivate={(d) => {
+          setForm({
+            id: d.id,
+            key: d.key,
+            labelJa: d.labelJa,
+            labelEn: d.labelEn ?? "",
+            dataType: d.dataType,
+            defaultUnit: d.defaultUnit ?? "",
+            displayOrder: d.displayOrder,
+            activeFlag: d.activeFlag,
+          });
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
     </div>
   );
 }

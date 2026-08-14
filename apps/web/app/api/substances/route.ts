@@ -3,7 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { SUBSTANCE_COLUMNS } from "@/lib/substance-columns";
+import { SUBSTANCE_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import {
   SUBSTANCE_LIST_INCLUDE,

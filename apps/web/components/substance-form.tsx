@@ -140,16 +140,15 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
         このバーは form の外に置く。中に置くと、押し方によっては送信（保存）と
         受け取られる余地があるため。
       */}
-      {initial && (
+      {initial && (readOnly ? canEdit : true) && (
         <div className="flex items-center gap-3">
-          <Badge variant={readOnly ? "outline" : "secondary"}>
-            {readOnly ? m.common.viewMode : m.common.editMode}
-          </Badge>
-          {readOnly && canEdit && (
+          {readOnly ? (
             <Button type="button" size="sm" onClick={() => setEditing(true)}>
               <Pencil className="mr-1 size-3.5" />
               {m.common.edit}
             </Button>
+          ) : (
+            <Badge variant="secondary">{m.common.editMode}</Badge>
           )}
         </div>
       )}

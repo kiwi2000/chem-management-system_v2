@@ -1,24 +1,47 @@
-import { normalizeEmail, userCreateSchema } from "@chem/shared";
+import { emptyTableState, normalizeEmail, parseTableState, userCreateSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { hashPassword } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { USER_COLUMNS } from "@/lib/list-columns";
+import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import { setPermissions, toUserSummary } from "@/lib/user-service";
 
 export const dynamic = "force-dynamic";
 
+/** 既定はメールアドレス順 */
+const DEFAULT_STATE = emptyTableState([{ column: "email", direction: "asc" }]);
+
 /** GET /api/admin/users — ユーザー一覧 */
-export async function GET() {
+export async function GET(req: Request) {
   const actor = await requireAdmin();
   if (actor instanceof Response) return actor;
 
-  const users = await prisma.user.findMany({
-    where: { deletedAt: null },
-    orderBy: { createdAt: "asc" },
-    include: { permissions: { select: { permission: true } } },
+  const state = parseTableState(
+    new URL(req.url).searchParams,
+    USER_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+    DEFAULT_STATE,
+  );
+  const where = { deletedAt: null, ...buildWhere(USER_COLUMNS, state.filters) };
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: buildOrderBy(USER_COLUMNS, state.sort, { email: "asc" }),
+      include: { permissions: { select: { permission: true } } },
+      skip: (state.page - 1) * state.pageSize,
+      take: state.pageSize,
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return Response.json({
+    items: users.map(toUserSummary),
+    total,
+    page: state.page,
+    pageSize: state.pageSize,
   });
-  return Response.json({ items: users.map(toUserSummary) });
 }
 
 /** POST /api/admin/users — ユーザー作成（初期パスワードを発行し、初回ログイン時に変更を強制） */

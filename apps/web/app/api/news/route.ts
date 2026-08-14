@@ -1,41 +1,72 @@
-import { newsSchema } from "@chem/shared";
+import { emptyTableState, newsSchema, parseTableState } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { NEWS_COLUMNS } from "@/lib/list-columns";
 import { parseDateOnly, publishedNowWhere, toNewsDto } from "@/lib/news-service";
+import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
 const AUTHOR_SELECT = { select: { id: true, displayName: true, email: true } };
 
+/** 既定は重要なものを先に、次に掲載開始日の新しい順 */
+const DEFAULT_STATE = emptyTableState([
+  { column: "pinned", direction: "desc" },
+  { column: "publishFrom", direction: "desc" },
+]);
+
 /**
  * GET /api/news — お知らせ一覧。
  * 閲覧は全ログインユーザー。ただし下書きは、その投稿を編集できる人にしか見せない。
- * ?scope=home を付けると掲載中のものだけを返す（ホーム用）。
+ * ?scope=home を付けると掲載中のものだけを返す（ホーム用・並べ替えや絞り込みは効かない）。
  */
 export async function GET(req: Request) {
   const actor = await requireUser();
   if (actor instanceof Response) return actor;
 
-  const scope = new URL(req.url).searchParams.get("scope");
-  const canSeeAllDrafts = actor.has("NEWS_MANAGE");
+  const params = new URL(req.url).searchParams;
+  if (params.get("scope") === "home") {
+    const items = await prisma.news.findMany({
+      where: publishedNowWhere(new Date()),
+      orderBy: [{ pinned: "desc" }, { publishFrom: "desc" }, { updatedAt: "desc" }],
+      include: { author: AUTHOR_SELECT },
+      take: 5,
+    });
+    return Response.json({ items: items.map((n) => toNewsDto(n, actor)) });
+  }
 
-  const where =
-    scope === "home"
-      ? publishedNowWhere(new Date())
-      : canSeeAllDrafts
-        ? {}
-        : // 公開済み＋自分の下書き
-          { OR: [{ status: "PUBLISHED" as const }, { authorId: actor.user.id }] };
+  const state = parseTableState(
+    params,
+    NEWS_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+    DEFAULT_STATE,
+  );
 
-  const items = await prisma.news.findMany({
-    where,
-    orderBy: [{ pinned: "desc" }, { publishFrom: "desc" }, { updatedAt: "desc" }],
-    include: { author: AUTHOR_SELECT },
-    take: scope === "home" ? 5 : 200,
+  // 下書きは、その投稿を編集できる人にしか見せない
+  const visible = actor.has("NEWS_MANAGE")
+    ? {}
+    : { OR: [{ status: "PUBLISHED" as const }, { authorId: actor.user.id }] };
+
+  const where = { ...visible, ...buildWhere(NEWS_COLUMNS, state.filters) };
+
+  const [items, total] = await Promise.all([
+    prisma.news.findMany({
+      where,
+      orderBy: buildOrderBy(NEWS_COLUMNS, state.sort, { updatedAt: "desc" }),
+      include: { author: AUTHOR_SELECT },
+      skip: (state.page - 1) * state.pageSize,
+      take: state.pageSize,
+    }),
+    prisma.news.count({ where }),
+  ]);
+
+  return Response.json({
+    items: items.map((n) => toNewsDto(n, actor)),
+    total,
+    page: state.page,
+    pageSize: state.pageSize,
   });
-  return Response.json({ items: items.map((n) => toNewsDto(n, actor)) });
 }
 
 /** POST /api/news — お知らせの投稿 */

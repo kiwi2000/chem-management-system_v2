@@ -2,9 +2,9 @@
 
 import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
-import { RowActions } from "@/components/data-table/row-actions";
 import type { TableColumn } from "@/components/data-table/types";
 import { GazetteNumbers } from "@/components/gazette-numbers";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,6 +19,7 @@ const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: 
 
 export default function SubstancesPage() {
   const { m, locale } = useI18n();
+  const router = useRouter();
   const { can } = useMe();
   const editable = can("SUBSTANCE_EDIT");
 
@@ -142,14 +143,16 @@ export default function SubstancesPage() {
     if (ready) void load();
   }, [ready, load]);
 
-  async function onDelete(s: SubstanceListItemDto) {
-    if (!confirm(m.substances.deleteConfirm(`${s.code}: ${pickName(locale, s.nameJa, s.nameEn)}`)))
-      return;
-    const res = await fetch(`/api/substances/${s.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.deleteFailed);
-      return;
+  /** 確認は共通テーブル側で出す。ここは消す処理だけ */
+  async function onDeleteSelected(targets: SubstanceListItemDto[]) {
+    setError(null);
+    for (const s of targets) {
+      const res = await fetch(`/api/substances/${s.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        break;
+      }
     }
     void load();
   }
@@ -182,13 +185,9 @@ export default function SubstancesPage() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.substances.empty}
-        actionsWidth={editable ? 84 : 48}
-        actions={(s) => (
-          <RowActions
-            detailHref={`/substances/${s.id}`}
-            onDelete={editable ? () => void onDelete(s) : undefined}
-          />
-        )}
+        selectable={editable}
+        onDeleteSelected={onDeleteSelected}
+        onRowActivate={(s) => router.push(`/substances/${s.id}`)}
       />
     </div>
   );

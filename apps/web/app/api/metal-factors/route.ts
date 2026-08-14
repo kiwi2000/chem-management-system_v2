@@ -3,11 +3,8 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import {
-  METAL_FACTOR_COLUMNS,
-  findSubstancesByCas,
-  toMetalFactorDto,
-} from "@/lib/metal-factor-service";
+import { METAL_FACTOR_COLUMNS } from "@/lib/list-columns";
+import { findSubstancesByCas, toMetalFactorDto } from "@/lib/metal-factor-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";

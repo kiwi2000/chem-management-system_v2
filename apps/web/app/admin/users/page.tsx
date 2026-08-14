@@ -1,50 +1,125 @@
 "use client";
 
+import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { RowActions } from "@/components/data-table/row-actions";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/data-table";
+import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, UserSummaryDto } from "@/lib/types";
+import type { ApiError, ListResponse, UserSummaryDto } from "@/lib/types";
+import { useTableState } from "@/lib/use-table-state";
+
+const DEFAULT_STATE: TableState = emptyTableState([{ column: "email", direction: "asc" }]);
 
 export default function UsersPage() {
   const { m, locale } = useI18n();
-  const [items, setItems] = useState<UserSummaryDto[] | null>(null);
+  const router = useRouter();
+
+  const columns = useMemo<TableColumn<UserSummaryDto>[]>(
+    () => [
+      {
+        key: "email",
+        header: m.users.email,
+        kind: "text",
+        width: 240,
+        className: "font-mono text-xs",
+        render: (u) => u.email,
+      },
+      {
+        key: "displayName",
+        header: m.users.displayName,
+        kind: "text",
+        width: 160,
+        render: (u) => u.displayName ?? "",
+      },
+      {
+        key: "permissions",
+        header: m.users.permissions,
+        kind: "text",
+        width: 120,
+        sortable: false,
+        filterable: false,
+        render: (u) =>
+          u.permissions.includes("ADMIN") ? (
+            <Badge variant="secondary" className="px-1">
+              {m.shell.admin}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground text-xs">
+              {m.users.permissionCount(u.permissions.length)}
+            </span>
+          ),
+      },
+      {
+        key: "activeFlag",
+        header: m.users.active,
+        kind: "enum",
+        width: 80,
+        options: [
+          { value: "true", label: m.users.active },
+          { value: "false", label: m.users.inactive },
+        ],
+        render: (u) =>
+          u.activeFlag ? null : (
+            <Badge variant="outline" className="px-1 text-[10px]">
+              {m.users.inactive}
+            </Badge>
+          ),
+      },
+      {
+        key: "lastLoginAt",
+        header: m.users.lastLogin,
+        kind: "date",
+        width: 160,
+        className: "text-muted-foreground text-xs",
+        render: (u) =>
+          u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString(locale) : m.users.never,
+      },
+    ],
+    [m, locale],
+  );
+
+  const { state, setState, reset, ready } = useTableState(
+    "chem.table.users",
+    columns,
+    DEFAULT_STATE,
+  );
+
+  const [data, setData] = useState<ListResponse<UserSummaryDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
   const load = useCallback(async () => {
     setError(null);
-    const res = await fetch("/api/admin/users");
+    const res = await fetch(`/api/admin/users?${query}`);
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
-      setItems([]); // 「読み込み中」のまま止まって見えないようにする
+      setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setItems(((await res.json()) as { items: UserSummaryDto[] }).items);
-  }, [m]);
+    setData((await res.json()) as ListResponse<UserSummaryDto>);
+  }, [query, m]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (ready) void load();
+  }, [ready, load]);
 
-  async function onDelete(u: UserSummaryDto) {
-    if (!confirm(m.users.deleteConfirm(u.email))) return;
-    const res = await fetch(`/api/admin/users/${u.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.deleteFailed);
-      return;
+  /** 確認は共通テーブル側で出す。自分自身や最後の管理者はサーバーが弾く */
+  async function onDeleteSelected(targets: UserSummaryDto[]) {
+    setError(null);
+    for (const u of targets) {
+      const res = await fetch(`/api/admin/users/${u.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        break;
+      }
     }
     void load();
   }
@@ -64,66 +139,21 @@ export default function UsersPage() {
         </Alert>
       )}
 
-      <div className="bg-background rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{m.users.email}</TableHead>
-              <TableHead>{m.users.displayName}</TableHead>
-              <TableHead>{m.users.permissions}</TableHead>
-              <TableHead>{m.users.lastLogin}</TableHead>
-              <TableHead className="w-40" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items === null && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground text-center">
-                  {m.common.loading}
-                </TableCell>
-              </TableRow>
-            )}
-            {items?.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground text-center">
-                  {m.users.empty}
-                </TableCell>
-              </TableRow>
-            )}
-            {items?.map((u) => (
-              <TableRow key={u.id}>
-                <TableCell className="font-mono">
-                  {u.email}
-                  {!u.activeFlag && (
-                    <Badge variant="outline" className="ml-2">
-                      {m.users.inactive}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>{u.displayName ?? ""}</TableCell>
-                <TableCell>
-                  {u.permissions.includes("ADMIN") ? (
-                    <Badge variant="secondary">{m.shell.admin}</Badge>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">
-                      {m.users.permissionCount(u.permissions.length)}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
-                  {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString(locale) : m.users.never}
-                </TableCell>
-                <TableCell>
-                  <RowActions
-                    detailHref={`/admin/users/${u.id}`}
-                    onDelete={() => void onDelete(u)}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable
+        storageKey="chem.table.users"
+        columns={columns}
+        rows={data?.items ?? null}
+        rowKey={(u) => u.id}
+        total={data?.total ?? 0}
+        state={state}
+        defaultState={DEFAULT_STATE}
+        onStateChange={setState}
+        onReset={reset}
+        emptyMessage={m.users.empty}
+        selectable
+        onDeleteSelected={onDeleteSelected}
+        onRowActivate={(u) => router.push(`/admin/users/${u.id}`)}
+      />
     </div>
   );
 }

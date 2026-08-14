@@ -4,7 +4,6 @@ import { emptyTableState, pickName, serializeTableState, type TableState } from 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
-import { RowActions } from "@/components/data-table/row-actions";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -155,15 +154,18 @@ export default function MetalFactorsPage() {
     }
   }
 
-  async function onDelete(f: MetalFactorDto) {
-    if (!confirm(m.metalFactors.deleteConfirm(`${f.casNumber} / ${f.metalElement}`))) return;
-    const res = await fetch(`/api/metal-factors/${f.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.deleteFailed);
-      return;
+  /** 確認は共通テーブル側で出す。ここは消す処理だけ */
+  async function onDeleteSelected(targets: MetalFactorDto[]) {
+    setError(null);
+    for (const f of targets) {
+      const res = await fetch(`/api/metal-factors/${f.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        break;
+      }
+      if (form.id === f.id) setForm({ ...EMPTY_FORM });
     }
-    if (form.id === f.id) setForm({ ...EMPTY_FORM });
     void load();
   }
 
@@ -266,21 +268,20 @@ export default function MetalFactorsPage() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.metalFactors.empty}
-        actions={
+        selectable={editable}
+        onDeleteSelected={onDeleteSelected}
+        // この画面は詳細を別に持たないので、ダブルクリックで上のフォームに読み込む
+        onRowActivate={
           editable
-            ? (f) => (
-                <RowActions
-                  onEdit={() =>
-                    setForm({
-                      id: f.id,
-                      casNumber: f.casNumber,
-                      metalElement: f.metalElement,
-                      ratioPct: f.ratioPct,
-                    })
-                  }
-                  onDelete={() => void onDelete(f)}
-                />
-              )
+            ? (f) => {
+                setForm({
+                  id: f.id,
+                  casNumber: f.casNumber,
+                  metalElement: f.metalElement,
+                  ratioPct: f.ratioPct,
+                });
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
             : undefined
         }
       />

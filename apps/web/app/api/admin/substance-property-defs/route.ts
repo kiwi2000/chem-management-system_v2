@@ -1,22 +1,46 @@
-import { propertyDefSchema } from "@chem/shared";
+import { emptyTableState, parseTableState, propertyDefSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { PROPERTY_DEF_COLUMNS } from "@/lib/list-columns";
 import { toPropertyDefDto } from "@/lib/property-def-service";
+import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
+/** 既定は表示順 */
+const DEFAULT_STATE = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
+
 /** GET /api/admin/substance-property-defs — 管理画面用（使わない項目も含む） */
-export async function GET() {
+export async function GET(req: Request) {
   const actor = await requireAdmin();
   if (actor instanceof Response) return actor;
 
-  const items = await prisma.substancePropertyDef.findMany({
-    orderBy: [{ displayOrder: "asc" }, { key: "asc" }],
-    include: { _count: { select: { values: true } } },
+  const state = parseTableState(
+    new URL(req.url).searchParams,
+    PROPERTY_DEF_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+    DEFAULT_STATE,
+  );
+  const where = buildWhere(PROPERTY_DEF_COLUMNS, state.filters);
+
+  const [items, total] = await Promise.all([
+    prisma.substancePropertyDef.findMany({
+      where,
+      orderBy: buildOrderBy(PROPERTY_DEF_COLUMNS, state.sort, { key: "asc" }),
+      include: { _count: { select: { values: true } } },
+      skip: (state.page - 1) * state.pageSize,
+      take: state.pageSize,
+    }),
+    prisma.substancePropertyDef.count({ where }),
+  ]);
+
+  return Response.json({
+    items: items.map(toPropertyDefDto),
+    total,
+    page: state.page,
+    pageSize: state.pageSize,
   });
-  return Response.json({ items: items.map(toPropertyDefDto) });
 }
 
 /** POST /api/admin/substance-property-defs — 項目の追加 */

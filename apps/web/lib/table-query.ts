@@ -22,6 +22,8 @@ export interface QueryColumn {
    * 並べ替えには使えない（Prisma が1対多の項目で並べ替えできないため）。
    */
   relation?: string;
+  /** はい/いいえ の列。選択肢の "true" / "false" を真偽値に直して渡す */
+  booleanEnum?: boolean;
 }
 
 type Where = Record<string, unknown>;
@@ -108,7 +110,11 @@ export function buildWhere(columns: QueryColumn[], filters: TableState["filters"
           : f.kind === "date"
             ? dateCondition(col, f)
             : f.values.length > 0
-              ? { [col.field]: { in: f.values } }
+              ? {
+                  [col.field]: col.booleanEnum
+                    ? { in: f.values.map((v) => v === "true") }
+                    : { in: f.values },
+                }
               : null;
     if (!cond) continue;
     if (!col.relation) {

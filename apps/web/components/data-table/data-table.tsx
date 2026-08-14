@@ -1,8 +1,8 @@
 "use client";
 
 import { PAGE_SIZE_OPTIONS, type ColumnFilter, type TableState } from "@chem/shared";
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
-import { useRef } from "react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -15,7 +15,7 @@ import {
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 import { FilterPanel } from "./filter-panel";
-import { ACTIONS_COLUMN_WIDTH, MIN_COLUMN_WIDTH, type TableColumn } from "./types";
+import { MIN_COLUMN_WIDTH, SELECT_COLUMN_WIDTH, type TableColumn } from "./types";
 import { useColumnWidths } from "./use-column-widths";
 
 interface Props<T> {
@@ -30,11 +30,13 @@ interface Props<T> {
   defaultState: TableState;
   onStateChange: (updater: (prev: TableState) => TableState) => void;
   onReset: () => void;
-  /** 一番右に置く操作列（並べ替え・絞り込みの対象外） */
-  actions?: (row: T) => React.ReactNode;
-  /** 操作列の幅（既定はアイコン2つ分） */
-  actionsWidth?: number;
   emptyMessage: string;
+  /** 編集権限があるときだけ true。先頭にチェックボックスの列と削除ボタンを出す */
+  selectable?: boolean;
+  /** 選択した行の削除。確認はこの部品が出すので、呼び出し側は消す処理だけ書く */
+  onDeleteSelected?: (rows: T[]) => void | Promise<void>;
+  /** 行をダブルクリックしたとき（詳細を開く・その場のフォームに読み込む） */
+  onRowActivate?: (row: T) => void;
 }
 
 /** 罫線。セルの右側に薄い線を引く（最後の列は引かない） */
@@ -42,8 +44,9 @@ const CELL_BORDER = "border-r last:border-r-0";
 
 /**
  * 一覧の共通部品。すべてのテーブルはこれを使う。
- * 絞り込み条件は表の外（上のパネル）に置く。表の中に入れると列幅に引きずられて
- * 入力欄の横幅がばらつくため。
+ *
+ * - 絞り込み条件は表の外（上のパネル）。表の中に入れると列幅に引きずられるため
+ * - 行ごとの操作ボタンは置かない。**チェックして上の削除ボタン**、**ダブルクリックで詳細**
  */
 export function DataTable<T>({
   storageKey,
@@ -55,15 +58,52 @@ export function DataTable<T>({
   defaultState,
   onStateChange,
   onReset,
-  actions,
-  actionsWidth = ACTIONS_COLUMN_WIDTH,
   emptyMessage,
+  selectable = false,
+  onDeleteSelected,
+  onRowActivate,
 }: Props<T>) {
   const { m } = useI18n();
   const { widthOf, setWidth, resetWidths, hasCustomWidths } = useColumnWidths(
     `${storageKey}.widths`,
   );
   const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+
+  // 読み直したら選択は解除する（見えていない行を消してしまわないように）
+  useEffect(() => setSelected(new Set()), [rows]);
+
+  const visible = rows ?? [];
+  const allChecked = visible.length > 0 && visible.every((r) => selected.has(rowKey(r)));
+  const someChecked = visible.some((r) => selected.has(rowKey(r)));
+
+  function toggleAll(checked: boolean) {
+    setSelected(checked ? new Set(visible.map(rowKey)) : new Set());
+  }
+
+  function toggleRow(key: string, checked: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }
+
+  async function deleteSelected() {
+    const targets = visible.filter((r) => selected.has(rowKey(r)));
+    if (targets.length === 0 || !onDeleteSelected) return;
+    if (!confirm(m.table.deleteSelectedConfirm(targets.length))) return;
+    setDeleting(true);
+    try {
+      await onDeleteSelected(targets);
+      setSelected(new Set());
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   /** 見出しクリックで 昇順 → 降順 → 解除。Shift+クリックで並べ替えのキーを足す */
   function toggleSort(key: string, additive: boolean) {
@@ -87,6 +127,8 @@ export function DataTable<T>({
     });
   }
 
+  const colSpan = columns.length + (selectable ? 1 : 0);
+
   return (
     <div className="space-y-3">
       <FilterPanel
@@ -98,16 +140,53 @@ export function DataTable<T>({
         storageKey={`${storageKey}.filterPanel`}
       />
 
+      {selectable && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-8"
+            title={m.table.deleteSelected}
+            aria-label={m.table.deleteSelected}
+            disabled={selected.size === 0 || deleting}
+            onClick={() => void deleteSelected()}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+          {selected.size > 0 && (
+            <span className="text-muted-foreground text-sm">
+              {m.table.selectedCount(selected.size)}
+            </span>
+          )}
+          {onRowActivate && (
+            <span className="text-muted-foreground ml-auto text-xs">{m.table.openHint}</span>
+          )}
+        </div>
+      )}
+
       <div className="bg-background overflow-x-auto rounded-md border">
         <Table className="table-fixed">
           <colgroup>
+            {selectable && <col style={{ width: SELECT_COLUMN_WIDTH }} />}
             {columns.map((c) => (
               <col key={c.key} style={{ width: widthOf(c) }} />
             ))}
-            {actions && <col style={{ width: actionsWidth }} />}
           </colgroup>
           <TableHeader>
             <TableRow>
+              {selectable && (
+                <TableHead className={CELL_BORDER}>
+                  <input
+                    type="checkbox"
+                    aria-label={m.table.selectAll}
+                    checked={allChecked}
+                    ref={(el) => {
+                      if (el) el.indeterminate = !allChecked && someChecked;
+                    }}
+                    onChange={(e) => toggleAll(e.target.checked)}
+                  />
+                </TableHead>
+              )}
               {columns.map((c) => {
                 const rule = state.sort.find((s) => s.column === c.key);
                 const priority = state.sort.findIndex((s) => s.column === c.key) + 1;
@@ -148,47 +227,59 @@ export function DataTable<T>({
                   </TableHead>
                 );
               })}
-              {actions && <TableHead />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows === null && (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length + (actions ? 1 : 0)}
-                  className="text-muted-foreground text-center"
-                >
+                <TableCell colSpan={colSpan} className="text-muted-foreground text-center">
                   {m.common.loading}
                 </TableCell>
               </TableRow>
             )}
             {rows?.length === 0 && (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length + (actions ? 1 : 0)}
-                  className="text-muted-foreground text-center"
-                >
+                <TableCell colSpan={colSpan} className="text-muted-foreground text-center">
                   {emptyMessage}
                 </TableCell>
               </TableRow>
             )}
-            {rows?.map((row) => (
-              <TableRow key={rowKey(row)}>
-                {columns.map((c) => (
-                  <TableCell
-                    key={c.key}
-                    className={cn(
-                      c.multiline ? "align-top break-words whitespace-normal" : "truncate",
-                      CELL_BORDER,
-                      c.className,
-                    )}
-                  >
-                    {c.render?.(row)}
-                  </TableCell>
-                ))}
-                {actions && <TableCell>{actions(row)}</TableCell>}
-              </TableRow>
-            ))}
+            {rows?.map((row) => {
+              const key = rowKey(row);
+              return (
+                <TableRow
+                  key={key}
+                  onDoubleClick={onRowActivate ? () => onRowActivate(row) : undefined}
+                  className={cn(onRowActivate && "cursor-pointer")}
+                  data-state={selected.has(key) ? "selected" : undefined}
+                >
+                  {selectable && (
+                    <TableCell className={CELL_BORDER}>
+                      <input
+                        type="checkbox"
+                        aria-label={m.table.selectRow}
+                        checked={selected.has(key)}
+                        onChange={(e) => toggleRow(key, e.target.checked)}
+                        // チェックのつもりでダブルクリックしても詳細が開かないようにする
+                        onDoubleClick={(e) => e.stopPropagation()}
+                      />
+                    </TableCell>
+                  )}
+                  {columns.map((c) => (
+                    <TableCell
+                      key={c.key}
+                      className={cn(
+                        c.multiline ? "align-top break-words whitespace-normal" : "truncate",
+                        CELL_BORDER,
+                        c.className,
+                      )}
+                    >
+                      {c.render?.(row)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

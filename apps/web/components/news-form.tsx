@@ -73,16 +73,15 @@ export function NewsForm({ initial, canEdit }: Props) {
   return (
     <div className="space-y-4">
       {/* 状態と編集ボタンは form の外に置く（送信と受け取られないように） */}
-      {initial && (
+      {initial && (readOnly ? canEdit : true) && (
         <div className="flex items-center gap-3">
-          <Badge variant={readOnly ? "outline" : "secondary"}>
-            {readOnly ? m.common.viewMode : m.common.editMode}
-          </Badge>
-          {readOnly && canEdit && (
+          {readOnly ? (
             <Button type="button" size="sm" onClick={() => setEditing(true)}>
               <Pencil className="mr-1 size-3.5" />
               {m.common.edit}
             </Button>
+          ) : (
+            <Badge variant="secondary">{m.common.editMode}</Badge>
           )}
         </div>
       )}

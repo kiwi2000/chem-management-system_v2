@@ -114,10 +114,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
       {/* まず表示だけにして、「編集」を押してから書き換えられるようにする（物質・お知らせと同じ形） */}
       <div className="flex items-center gap-3">
-        <Badge variant={editing ? "secondary" : "outline"}>
-          {editing ? m.common.editMode : m.common.viewMode}
-        </Badge>
-        {!editing && (
+        {editing ? (
+          <Badge variant="secondary">{m.common.editMode}</Badge>
+        ) : (
           <Button type="button" size="sm" onClick={() => setEditing(true)}>
             <Pencil className="mr-1 size-3.5" />
             {m.common.edit}

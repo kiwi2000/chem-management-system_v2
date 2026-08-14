@@ -22,5 +22,5 @@ export interface TableColumn<T> {
 
 export const DEFAULT_COLUMN_WIDTH = 160;
 export const MIN_COLUMN_WIDTH = 48;
-/** 操作列（アイコンボタン）の既定幅 */
-export const ACTIONS_COLUMN_WIDTH = 84;
+/** 先頭のチェックボックス列の幅 */
+export const SELECT_COLUMN_WIDTH = 36;

@@ -1,19 +1,6 @@
-import { normalizeCas } from "@chem/shared";
 import type { MetalConversionFactor } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import type { QueryColumn } from "@/lib/table-query";
 import type { MetalFactorDto } from "@/lib/types";
-
-/**
- * 金属換算係数の一覧の列定義（サーバー側）。
- * 画面側（app/metal-factors/page.tsx）とキーを一致させること。
- */
-export const METAL_FACTOR_COLUMNS: QueryColumn[] = [
-  { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
-  { key: "metalElement", kind: "text", field: "metalElement" },
-  { key: "ratioPct", kind: "number", field: "ratioPct" },
-  { key: "updatedAt", kind: "date", field: "updatedAt" },
-];
 
 export function toMetalFactorDto(
   f: MetalConversionFactor,
