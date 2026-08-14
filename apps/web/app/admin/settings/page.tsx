@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 export default function SettingsPage() {
   const { m } = useI18n();
@@ -19,6 +20,7 @@ export default function SettingsPage() {
     void (async () => {
       const res = await fetch("/api/settings");
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.loadFailed(res.status));
         setSettings({ ...DEFAULT_SETTINGS });
@@ -41,6 +43,7 @@ export default function SettingsPage() {
         body: JSON.stringify(settings),
       });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;

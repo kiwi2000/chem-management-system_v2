@@ -34,6 +34,8 @@ export const en: Messages = {
     value: "Value",
     yes: "Yes",
     no: "No",
+    /** Header of the active/inactive column, shared by every table */
+    activeHeader: "Active",
     totalCount: (n: number) => `${n} item${n === 1 ? "" : "s"}`,
     pageOf: (page: number, total: number) => `${page} / ${total}`,
   },
@@ -74,6 +76,7 @@ export const en: Messages = {
     submitting: "Signing in...",
     failed: "Could not sign in",
     mfaPrompt: "Enter the code from your authenticator app",
+    sessionExpired: "Your session has expired. Please sign in again",
   },
 
   changePassword: {
@@ -380,7 +383,6 @@ export const en: Messages = {
     displayNameHint: "The email address is shown if this is empty",
     initialPassword: "Initial password",
     initialPasswordHint: "The user is asked to change it at first sign-in",
-    status: "Status",
     active: "Active",
     inactive: "Disabled",
     activeFlag: "This account is active",

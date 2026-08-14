@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, PropertyDefDto, SubstanceDetailDto } from "@/lib/types";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 interface Props {
   /** 未指定なら新規登録 */
@@ -113,6 +114,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
         body: JSON.stringify(buildBody()),
       });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;

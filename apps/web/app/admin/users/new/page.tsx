@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 export default function NewUserPage() {
   const router = useRouter();
@@ -48,6 +49,7 @@ export default function NewUserPage() {
         }),
       });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;

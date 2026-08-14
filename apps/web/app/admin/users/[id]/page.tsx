@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, MeDto, UserSummaryDto } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -40,6 +41,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setError(null);
     const [uRes, meRes] = await Promise.all([fetch(`/api/admin/users/${id}`), fetch("/api/me")]);
     if (!uRes.ok) {
+      if (redirectIfUnauthorized(uRes)) return;
       const body = (await uRes.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.loadFailed(uRes.status));
       return;
@@ -80,6 +82,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         }),
       });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
@@ -100,6 +103,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       body: JSON.stringify({ newPassword, mustChangePassword: forceChange }),
     });
     if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.saveFailed(res.status));
       return;

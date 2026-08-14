@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, PropertyDefDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
 
@@ -97,7 +98,7 @@ export default function PropertyDefsPage() {
       },
       {
         key: "activeFlag",
-        header: m.users.status,
+        header: m.common.activeHeader,
         kind: "enum",
         width: 64,
         options: [
@@ -129,6 +130,7 @@ export default function PropertyDefsPage() {
     setError(null);
     const res = await fetch(`/api/admin/substance-property-defs?${query}`);
     if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
@@ -166,6 +168,7 @@ export default function PropertyDefsPage() {
         },
       );
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
@@ -183,6 +186,7 @@ export default function PropertyDefsPage() {
     for (const d of targets) {
       const res = await fetch(`/api/admin/substance-property-defs/${d.id}`, { method: "DELETE" });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.deleteFailed);
         break;

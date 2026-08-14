@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 /**
  * 配色の見本。実際の画面と同じ色の値を使っている。
@@ -95,6 +96,7 @@ export function PreferencesForm({
         body: JSON.stringify(patch),
       });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
@@ -205,19 +207,22 @@ export function PreferencesForm({
                 />
                 {m.preferences.headerStrong}
               </label>
-            </div>
 
-            {/* 背景はテーマとは独立。名前で選べるので、場所を取らないプルダウンにする */}
-            <div className="flex flex-wrap items-center gap-2">
-              <Label htmlFor="background" className="text-sm font-normal">
+              {/* 背景もテーマとは独立。名前で選べるので、場所を取らないプルダウンにする */}
+              <Label
+                htmlFor="background"
+                className="shrink-0 text-sm font-normal"
+                title={m.preferences.backgroundHint}
+              >
                 {m.preferences.background}
               </Label>
               <select
                 id="background"
                 value={background}
                 disabled={saving}
+                title={m.preferences.backgroundHint}
                 onChange={(e) => void save({ background: e.target.value as Background })}
-                className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+                className="border-input bg-background h-9 shrink-0 rounded-md border px-2 text-sm"
               >
                 <option value="none">{m.preferences.backgrounds.none}</option>
                 <optgroup label={m.preferences.backgroundPatterns}>
@@ -235,7 +240,6 @@ export function PreferencesForm({
                   ))}
                 </optgroup>
               </select>
-              <p className="text-muted-foreground w-full text-xs">{m.preferences.backgroundHint}</p>
             </div>
 
             {themeOpen && (

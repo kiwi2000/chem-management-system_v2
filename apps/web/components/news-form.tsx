@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, NewsDto } from "@/lib/types";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 interface Props {
   /** 既存の内容。未指定なら新規作成 */
@@ -59,6 +60,7 @@ export function NewsForm({ initial, canEdit }: Props) {
         }),
       });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;

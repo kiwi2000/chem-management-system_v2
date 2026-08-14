@@ -13,6 +13,7 @@ import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, NewsDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 const DEFAULT_STATE: TableState = emptyTableState([
   { column: "pinned", direction: "desc" },
@@ -114,6 +115,7 @@ export default function NewsListPage() {
     setError(null);
     const res = await fetch(`/api/news?${query}`);
     if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
@@ -132,6 +134,7 @@ export default function NewsListPage() {
     for (const n of targets) {
       const res = await fetch(`/api/news/${n.id}`, { method: "DELETE" });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.deleteFailed);
         break;

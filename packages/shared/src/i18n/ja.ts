@@ -34,6 +34,8 @@ export const ja = {
     value: "値",
     yes: "はい",
     no: "いいえ",
+    /** 一覧の「有効／無効」列の見出し。全テーブル共通 */
+    activeHeader: "有効",
     totalCount: (n: number) => `全 ${n} 件`,
     pageOf: (page: number, total: number) => `${page} / ${total}`,
   },
@@ -74,6 +76,7 @@ export const ja = {
     submitting: "ログイン中...",
     failed: "ログインできませんでした",
     mfaPrompt: "認証アプリのコードを入力してください",
+    sessionExpired: "ログインの有効期限が切れました。もう一度ログインしてください",
   },
 
   changePassword: {
@@ -384,7 +387,6 @@ export const ja = {
     displayNameHint: "未入力ならメールアドレスを表示します",
     initialPassword: "初期パスワード",
     initialPasswordHint: "本人には初回ログイン時にパスワード変更を求めます",
-    status: "状態",
     active: "有効",
     inactive: "無効",
     activeFlag: "このアカウントを有効にする",

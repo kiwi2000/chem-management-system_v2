@@ -14,6 +14,7 @@ import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, SubstanceListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
 
@@ -66,7 +67,7 @@ export default function SubstancesPage() {
       },
       {
         key: "status",
-        header: m.substances.status,
+        header: m.common.activeHeader,
         kind: "enum",
         width: 72,
         options: [
@@ -130,6 +131,7 @@ export default function SubstancesPage() {
     setError(null);
     const res = await fetch(`/api/substances?${query}`);
     if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: state.pageSize });
@@ -150,6 +152,7 @@ export default function SubstancesPage() {
     for (const s of targets) {
       const res = await fetch(`/api/substances/${s.id}`, { method: "DELETE" });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.deleteFailed);
         break;

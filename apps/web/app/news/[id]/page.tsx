@@ -5,6 +5,7 @@ import { NewsForm } from "@/components/news-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, NewsDto } from "@/lib/types";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 export default function EditNewsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -16,6 +17,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
     void (async () => {
       const res = await fetch(`/api/news/${id}`);
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.loadFailed(res.status));
         return;

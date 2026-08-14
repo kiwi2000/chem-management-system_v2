@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
+
+/**
+ * セッションが切れて送り返されたときだけ、その理由を出す。
+ * useSearchParams はビルド時に Suspense を要求するので、この部分だけ切り出してある。
+ */
+function ExpiredNotice() {
+  const { m } = useI18n();
+  const expired = useSearchParams().get("expired") === "1";
+  if (!expired) return null;
+  return (
+    <Alert>
+      <AlertDescription>{m.login.sessionExpired}</AlertDescription>
+    </Alert>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -61,6 +76,9 @@ export default function LoginPage() {
         <div className="flex justify-end">
           <LanguageSwitcher />
         </div>
+        <Suspense>
+          <ExpiredNotice />
+        </Suspense>
         <Card>
           <CardHeader>
             <CardTitle>{m.common.appName}</CardTitle>

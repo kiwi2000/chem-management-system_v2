@@ -14,6 +14,7 @@ import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, MetalFactorDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 const DEFAULT_STATE: TableState = emptyTableState([
   { column: "casNumber", direction: "asc" },
@@ -112,6 +113,7 @@ export default function MetalFactorsPage() {
     setError(null);
     const res = await fetch(`/api/metal-factors?${query}`);
     if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
@@ -141,6 +143,7 @@ export default function MetalFactorsPage() {
         }),
       });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
@@ -160,6 +163,7 @@ export default function MetalFactorsPage() {
     for (const f of targets) {
       const res = await fetch(`/api/metal-factors/${f.id}`, { method: "DELETE" });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.deleteFailed);
         break;

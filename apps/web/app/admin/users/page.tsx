@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, UserSummaryDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "email", direction: "asc" }]);
 
@@ -77,7 +78,7 @@ export default function UsersPage() {
       },
       {
         key: "activeFlag",
-        header: m.users.status,
+        header: m.common.activeHeader,
         kind: "enum",
         width: 64,
         options: [
@@ -120,6 +121,7 @@ export default function UsersPage() {
     setError(null);
     const res = await fetch(`/api/admin/users?${query}`);
     if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
@@ -138,6 +140,7 @@ export default function UsersPage() {
     for (const u of targets) {
       const res = await fetch(`/api/admin/users/${u.id}`, { method: "DELETE" });
       if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.deleteFailed);
         break;
