@@ -116,6 +116,112 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/*
+ * 追加テーマ。<html> に付くクラスで色の変数を差し替える。
+ * 「システムに合わせる」を選んだときは、OSの設定に応じて .dark が付く（app/layout.tsx）。
+ * 新しいテーマを足すときは packages/shared/src/theme.ts にも同じ名前を書くこと。
+ */
+
+/* セピア: 紙のような温かみのある配色。長時間の閲覧向け */
+.theme-sepia {
+  --background: oklch(0.968 0.014 85);
+  --foreground: oklch(0.29 0.03 60);
+  --card: oklch(0.985 0.01 85);
+  --card-foreground: oklch(0.29 0.03 60);
+  --popover: oklch(0.985 0.01 85);
+  --popover-foreground: oklch(0.29 0.03 60);
+  --primary: oklch(0.42 0.06 60);
+  --primary-foreground: oklch(0.985 0.01 85);
+  --secondary: oklch(0.925 0.025 85);
+  --secondary-foreground: oklch(0.35 0.04 60);
+  --muted: oklch(0.93 0.02 85);
+  --muted-foreground: oklch(0.52 0.03 65);
+  --accent: oklch(0.915 0.03 80);
+  --accent-foreground: oklch(0.32 0.04 60);
+  --destructive: oklch(0.55 0.2 27);
+  --border: oklch(0.87 0.025 80);
+  --input: oklch(0.87 0.025 80);
+  --ring: oklch(0.62 0.05 70);
+  --sidebar: oklch(0.945 0.02 85);
+  --sidebar-foreground: oklch(0.29 0.03 60);
+  --sidebar-border: oklch(0.87 0.025 80);
+}
+
+/* オーシャン: 青系の明るい配色 */
+.theme-ocean {
+  --background: oklch(0.985 0.008 230);
+  --foreground: oklch(0.24 0.04 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.04 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.04 250);
+  --primary: oklch(0.48 0.13 250);
+  --primary-foreground: oklch(0.99 0.005 230);
+  --secondary: oklch(0.94 0.025 230);
+  --secondary-foreground: oklch(0.3 0.06 250);
+  --muted: oklch(0.945 0.02 230);
+  --muted-foreground: oklch(0.5 0.04 245);
+  --accent: oklch(0.92 0.04 230);
+  --accent-foreground: oklch(0.28 0.06 250);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.89 0.025 230);
+  --input: oklch(0.89 0.025 230);
+  --ring: oklch(0.62 0.1 245);
+  --sidebar: oklch(0.955 0.02 230);
+  --sidebar-foreground: oklch(0.24 0.04 250);
+  --sidebar-border: oklch(0.89 0.025 230);
+}
+
+/* フォレスト: 緑系の落ち着いた配色 */
+.theme-forest {
+  --background: oklch(0.98 0.01 145);
+  --foreground: oklch(0.25 0.03 150);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.03 150);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0.03 150);
+  --primary: oklch(0.44 0.1 150);
+  --primary-foreground: oklch(0.99 0.005 145);
+  --secondary: oklch(0.935 0.03 145);
+  --secondary-foreground: oklch(0.3 0.05 150);
+  --muted: oklch(0.94 0.022 145);
+  --muted-foreground: oklch(0.5 0.035 150);
+  --accent: oklch(0.915 0.045 145);
+  --accent-foreground: oklch(0.28 0.05 150);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.885 0.03 145);
+  --input: oklch(0.885 0.03 145);
+  --ring: oklch(0.6 0.08 150);
+  --sidebar: oklch(0.95 0.025 145);
+  --sidebar-foreground: oklch(0.25 0.03 150);
+  --sidebar-border: oklch(0.885 0.03 145);
+}
+
+/* 高コントラスト: 白黒をはっきりさせ、文字と枠を強く出す */
+.theme-contrast {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --primary: oklch(0 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.93 0 0);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0.95 0 0);
+  --muted-foreground: oklch(0.28 0 0);
+  --accent: oklch(0.9 0 0);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.45 0.24 27);
+  --border: oklch(0.35 0 0);
+  --input: oklch(0.35 0 0);
+  --ring: oklch(0 0 0);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0.35 0 0);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

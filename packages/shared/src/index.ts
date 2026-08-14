@@ -15,3 +15,4 @@ export * from "./permissions";
 export * from "./settings";
 export * from "./substance";
 export * from "./table";
+export * from "./theme";

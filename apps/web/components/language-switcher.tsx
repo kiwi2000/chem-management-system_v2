@@ -6,8 +6,8 @@ import { useState } from "react";
 import { useI18n } from "@/lib/i18n-client";
 
 /**
- * 言語切替。
- * 選ぶと Cookie（とログイン中なら自分の設定）を更新し、サーバー側で描画し直す。
+ * 言語の切替。ログイン画面に置く用。
+ * ログイン後は個人設定の画面（/preferences）で切り替える。
  */
 export function LanguageSwitcher() {
   const { locale, m } = useI18n();
@@ -18,7 +18,7 @@ export function LanguageSwitcher() {
     if (next === locale) return;
     setBusy(true);
     try {
-      await fetch("/api/locale", {
+      await fetch("/api/preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locale: next }),

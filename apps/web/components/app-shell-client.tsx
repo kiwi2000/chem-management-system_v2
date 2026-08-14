@@ -1,9 +1,8 @@
 "use client";
 
-import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Badge } from "@/components/ui/badge";
@@ -124,7 +123,16 @@ export function AppShellClient({ user, children }: Props) {
             </span>
             {user.isAdmin && <Badge variant="secondary">{m.shell.admin}</Badge>}
             {!user.canEdit && <Badge variant="outline">{m.shell.readOnly}</Badge>}
-            <LanguageSwitcher />
+            <Button
+              variant="ghost"
+              size="icon"
+              title={m.preferences.title}
+              aria-label={m.preferences.title}
+              nativeButton={false}
+              render={<Link href="/preferences" />}
+            >
+              <Settings className="size-4" />
+            </Button>
             <SignOutButton />
           </div>
         </header>

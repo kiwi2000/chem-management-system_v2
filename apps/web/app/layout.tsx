@@ -1,9 +1,10 @@
-import { getMessages } from "@chem/shared";
+import { getMessages, themeClass } from "@chem/shared";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
 import { getLocale } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n-client";
+import { getTheme } from "@/lib/theme";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -11,12 +12,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: m.common.appName };
 }
 
+/**
+ * 「端末の設定に合わせる」を選んでいるときだけ、OSが暗い配色なら .dark を付ける。
+ * 描画前に実行して、白い画面が一瞬見えるのを防ぐ。
+ */
+const SYSTEM_THEME_SCRIPT = `try{if(matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}`;
+
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const locale = await getLocale();
+  const [locale, theme] = await Promise.all([getLocale(), getTheme()]);
 
   return (
-    <html lang={locale}>
-      <body className="bg-muted/20 min-h-screen antialiased">
+    <html lang={locale} className={themeClass(theme)}>
+      <head>
+        {theme === "system" && <script dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }} />}
+      </head>
+      <body className="bg-background min-h-screen antialiased">
         <I18nProvider locale={locale}>
           <AppShell>{children}</AppShell>
         </I18nProvider>

@@ -91,6 +91,8 @@ model User {
   displayName        String?   @map("display_name")
   /** 表示言語の ISO コード（"ja" / "en"）。null=未設定（既定言語を使う） */
   preferredLocale    String?   @map("preferred_locale")
+  /** 画面のテーマ（"system" / "light" / "dark" など）。null=未設定 */
+  preferredTheme     String?   @map("preferred_theme")
   activeFlag         Boolean   @default(true) @map("active_flag")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")

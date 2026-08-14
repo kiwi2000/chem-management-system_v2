@@ -15,7 +15,9 @@ const ALLOWLIST = new Set([
   "auth/login/route.ts", // ログイン自体。認証前に呼ばれる
   "auth/logout/route.ts", // 未ログインでも安全に空振りする
   "health/route.ts", // 監視・デプロイ確認用。業務データを返さない
-  "locale/route.ts", // 表示言語の切替。ログイン画面でも使うため認証不要
+  // 表示言語とテーマの切替。ログイン画面でも使うため認証不要。
+  // 副作用は Cookie と、ログイン中なら自分の設定だけで、業務データには触れない
+  "preferences/route.ts",
 ]);
 
 const GUARDS = ["requireUser", "requirePermission", "requireAnyPermission", "requireAdmin"];

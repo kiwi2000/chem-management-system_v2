@@ -238,6 +238,37 @@ export const en: Messages = {
     revived: "A deleted entry with the same combination was restored with the new values",
   },
 
+  preferences: {
+    title: "Preferences",
+    description: "These settings apply only to your own account.",
+    display: "Display",
+    language: "Language",
+    languageHint: "Used for the interface and for data that has both Japanese and English",
+    theme: "Theme",
+    themeHint: "Changes the colours of the screen",
+    themes: {
+      system: "Match my device",
+      light: "Light",
+      dark: "Dark",
+      sepia: "Sepia",
+      ocean: "Ocean",
+      forest: "Forest",
+      contrast: "High contrast",
+    },
+    themeDescriptions: {
+      system: "Dark if your device uses a dark appearance, light otherwise",
+      light: "The standard light colours",
+      dark: "A dark background — easier on the eyes in dim rooms",
+      sepia: "Warm, paper-like colours for long reading sessions",
+      ocean: "Based on blues",
+      forest: "Calm colours based on greens",
+      contrast: "Strong black and white with heavier borders",
+    },
+    account: "Account",
+    changePassword: "Change your password",
+    saved: "Preferences saved",
+  },
+
   settings: {
     title: "System settings",
     description: "Adjust how strict the input checks are to match how you work.",

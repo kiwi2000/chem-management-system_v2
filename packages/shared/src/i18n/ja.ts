@@ -242,6 +242,38 @@ export const ja = {
     revived: "以前に削除した同じ組み合わせがあったため、内容を更新して復活させました",
   },
 
+  /** 利用者ごとの設定（システム全体の設定とは別） */
+  preferences: {
+    title: "個人設定",
+    description: "この画面の設定は、あなたのアカウントにだけ適用されます。",
+    display: "表示",
+    language: "言語",
+    languageHint: "画面の文言と、日英を持つデータの表示に使います",
+    theme: "テーマ",
+    themeHint: "画面の配色を変えます",
+    themes: {
+      system: "端末の設定に合わせる",
+      light: "ライト",
+      dark: "ダーク",
+      sepia: "セピア",
+      ocean: "オーシャン",
+      forest: "フォレスト",
+      contrast: "高コントラスト",
+    },
+    themeDescriptions: {
+      system: "お使いの端末が暗い配色ならダーク、そうでなければライトになります",
+      light: "白を基調にした標準の配色",
+      dark: "暗い背景。暗い場所で目が疲れにくい",
+      sepia: "紙のような温かみのある配色。長時間の閲覧向け",
+      ocean: "青を基調にした配色",
+      forest: "緑を基調にした落ち着いた配色",
+      contrast: "白黒をはっきりさせ、枠線を強く出す",
+    },
+    account: "アカウント",
+    changePassword: "パスワードを変更する",
+    saved: "設定を保存しました",
+  },
+
   settings: {
     title: "システム設定",
     description: "運用の方針に合わせて、入力チェックの厳しさを切り替えます。",
