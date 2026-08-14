@@ -174,7 +174,7 @@ export default function MetalFactorsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-6">
+    <div className="w-full space-y-4 p-4 lg:p-6">
       <h1 className="text-2xl font-semibold">{m.metalFactors.title}</h1>
       <p className="text-muted-foreground text-sm">{m.metalFactors.description}</p>
 

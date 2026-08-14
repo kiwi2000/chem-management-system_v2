@@ -144,7 +144,7 @@ export default function NewsListPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-6">
+    <div className="w-full space-y-4 p-4 lg:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{m.news.title}</h1>
         {canPost && (

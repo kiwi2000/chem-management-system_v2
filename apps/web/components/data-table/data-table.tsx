@@ -64,13 +64,33 @@ export function DataTable<T>({
   onRowActivate,
 }: Props<T>) {
   const { m } = useI18n();
-  const { widthOf, setWidth, resetWidths, hasCustomWidths } = useColumnWidths(
+  const { widthOf, setWidth, setWidths, resetWidths, hasCustomWidths } = useColumnWidths(
     `${storageKey}.widths`,
   );
   const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+
+  /**
+   * 列幅の合計。これを 100% とみなして各列を比率で置く。
+   * 表示領域のほうが広ければ各列は指定より広がり、狭ければ同じ割合で詰まる。
+   */
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const widthSum =
+    (selectable ? SELECT_COLUMN_WIDTH : 0) + columns.reduce((sum, c) => sum + widthOf(c), 0);
+  const pct = (px: number) => `${((px / widthSum) * 100).toFixed(4)}%`;
+  // 詰めすぎると読めなくなるので、ここまでしか縮めない（これより狭い画面ではスクロールする）
+  const minTableWidth = Math.min(widthSum, MIN_COLUMN_WIDTH * (columns.length + 1));
+  /**
+   * 指定した幅と実際に描かれる幅の比。
+   * 幅を変えるドラッグは画面上の px で動くので、覚える値へ戻すときにこれで割る。
+   */
+  const scale = () => {
+    const el = scrollerRef.current;
+    if (!el || widthSum === 0) return 1;
+    return Math.max(el.clientWidth, minTableWidth) / widthSum;
+  };
 
   // 読み直したら選択は解除する（見えていない行を消してしまわないように）
   useEffect(() => setSelected(new Set()), [rows]);
@@ -164,12 +184,18 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="bg-background overflow-x-auto rounded-md border">
-        <Table className="table-fixed">
+      <div ref={scrollerRef} className="bg-background overflow-x-auto rounded-md border">
+        {/*
+          列幅は比率で指定する。
+          合計が表示領域より広いときは全体を同じ割合で詰めるので、
+          余白があるのに横スクロールバーが出る、という状態にならない。
+          ただし詰めすぎると読めないので、min-width より狭くはしない（そのときだけスクロールする）。
+        */}
+        <Table className="table-fixed" style={{ minWidth: minTableWidth }}>
           <colgroup>
-            {selectable && <col style={{ width: SELECT_COLUMN_WIDTH }} />}
+            {selectable && <col style={{ width: pct(SELECT_COLUMN_WIDTH) }} />}
             {columns.map((c) => (
-              <col key={c.key} style={{ width: widthOf(c) }} />
+              <col key={c.key} style={{ width: pct(widthOf(c)) }} />
             ))}
           </colgroup>
           {/*
@@ -191,10 +217,11 @@ export function DataTable<T>({
                   />
                 </TableHead>
               )}
-              {columns.map((c) => {
+              {columns.map((c, i) => {
                 const rule = state.sort.find((s) => s.column === c.key);
                 const priority = state.sort.findIndex((s) => s.column === c.key) + 1;
                 const canSort = c.sortable !== false;
+                const neighbor = columns[i + 1];
                 return (
                   <TableHead key={c.key} className={cn("relative", CELL_BORDER)}>
                     {canSort ? (
@@ -224,8 +251,19 @@ export function DataTable<T>({
                     )}
                     <ResizeHandle
                       label={`${c.header} ${m.table.resize}`}
-                      current={() => widthOf(c)}
-                      onResize={(px) => setWidth(c.key, px)}
+                      current={() => widthOf(c) * scale()}
+                      onResize={(px) => {
+                        const want = px / scale();
+                        // 隣から同じだけもらう（合計が変わらないので掴んだ位置がずれない）
+                        if (!neighbor) return setWidth(c.key, want);
+                        const delta = want - widthOf(c);
+                        const room = widthOf(neighbor) - MIN_COLUMN_WIDTH;
+                        const move = Math.min(delta, room);
+                        setWidths({
+                          [c.key]: widthOf(c) + move,
+                          [neighbor.key]: widthOf(neighbor) - move,
+                        });
+                      }}
                     />
                   </TableHead>
                 );

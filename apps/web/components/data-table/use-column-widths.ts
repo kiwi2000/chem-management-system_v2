@@ -24,10 +24,18 @@ export function useColumnWidths(storageKey: string) {
     [widths],
   );
 
-  const setWidth = useCallback(
-    (key: string, px: number) => {
+  /**
+   * まとめて幅を変える。
+   * 列幅は比率で描くので、1列を広げるときは隣を同じだけ狭めないと
+   * 掴んだ場所とカーソルがずれていく。そのため2列を一度に書き換えられるようにしてある。
+   */
+  const setWidths2 = useCallback(
+    (changes: Record<string, number>) => {
       setWidths((prev) => {
-        const next = { ...prev, [key]: Math.max(MIN_COLUMN_WIDTH, Math.round(px)) };
+        const next = { ...prev };
+        for (const [key, px] of Object.entries(changes)) {
+          next[key] = Math.max(MIN_COLUMN_WIDTH, Math.round(px));
+        }
         window.localStorage.setItem(storageKey, JSON.stringify(next));
         return next;
       });
@@ -35,10 +43,21 @@ export function useColumnWidths(storageKey: string) {
     [storageKey],
   );
 
+  const setWidth = useCallback(
+    (key: string, px: number) => setWidths2({ [key]: px }),
+    [setWidths2],
+  );
+
   const resetWidths = useCallback(() => {
     window.localStorage.removeItem(storageKey);
     setWidths({});
   }, [storageKey]);
 
-  return { widthOf, setWidth, resetWidths, hasCustomWidths: Object.keys(widths).length > 0 };
+  return {
+    widthOf,
+    setWidth,
+    setWidths: setWidths2,
+    resetWidths,
+    hasCustomWidths: Object.keys(widths).length > 0,
+  };
 }
