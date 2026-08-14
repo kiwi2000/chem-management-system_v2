@@ -197,6 +197,81 @@
   --sidebar-border: oklch(0.885 0.03 145);
 }
 
+/* スカイ: 明るい空色を基調にした、事務用途向けのすっきりした配色 */
+.theme-sky {
+  --background: oklch(0.99 0.006 220);
+  --foreground: oklch(0.26 0.03 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.26 0.03 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.26 0.03 240);
+  --primary: oklch(0.6 0.13 230);
+  --primary-foreground: oklch(0.99 0.005 220);
+  --secondary: oklch(0.945 0.03 220);
+  --secondary-foreground: oklch(0.32 0.05 240);
+  --muted: oklch(0.955 0.018 220);
+  --muted-foreground: oklch(0.52 0.035 235);
+  --accent: oklch(0.925 0.05 220);
+  --accent-foreground: oklch(0.3 0.05 240);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.895 0.03 220);
+  --input: oklch(0.895 0.03 220);
+  --ring: oklch(0.66 0.11 230);
+  --sidebar: oklch(0.96 0.025 220);
+  --sidebar-foreground: oklch(0.26 0.03 240);
+  --sidebar-border: oklch(0.895 0.03 220);
+}
+
+/* ローズ: 少し濃いピンクを基調にした配色 */
+.theme-rose {
+  --background: oklch(0.985 0.008 350);
+  --foreground: oklch(0.27 0.04 350);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.27 0.04 350);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.27 0.04 350);
+  --primary: oklch(0.55 0.17 355);
+  --primary-foreground: oklch(0.99 0.005 350);
+  --secondary: oklch(0.94 0.035 350);
+  --secondary-foreground: oklch(0.34 0.07 352);
+  --muted: oklch(0.95 0.02 350);
+  --muted-foreground: oklch(0.52 0.045 350);
+  --accent: oklch(0.92 0.055 350);
+  --accent-foreground: oklch(0.32 0.07 352);
+  --destructive: oklch(0.52 0.24 27);
+  --border: oklch(0.89 0.035 350);
+  --input: oklch(0.89 0.035 350);
+  --ring: oklch(0.63 0.14 355);
+  --sidebar: oklch(0.955 0.028 350);
+  --sidebar-foreground: oklch(0.27 0.04 350);
+  --sidebar-border: oklch(0.89 0.035 350);
+}
+
+/* サンセット: 温かいオレンジを基調にした配色 */
+.theme-sunset {
+  --background: oklch(0.99 0.012 70);
+  --foreground: oklch(0.28 0.035 50);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.28 0.035 50);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.28 0.035 50);
+  --primary: oklch(0.62 0.15 55);
+  --primary-foreground: oklch(0.99 0.008 70);
+  --secondary: oklch(0.945 0.04 70);
+  --secondary-foreground: oklch(0.34 0.06 50);
+  --muted: oklch(0.955 0.025 70);
+  --muted-foreground: oklch(0.53 0.045 55);
+  --accent: oklch(0.925 0.06 65);
+  --accent-foreground: oklch(0.32 0.06 50);
+  --destructive: oklch(0.52 0.24 27);
+  --border: oklch(0.895 0.04 70);
+  --input: oklch(0.895 0.04 70);
+  --ring: oklch(0.68 0.13 55);
+  --sidebar: oklch(0.96 0.032 70);
+  --sidebar-foreground: oklch(0.28 0.035 50);
+  --sidebar-border: oklch(0.895 0.04 70);
+}
+
 /* 高コントラスト: 白黒をはっきりさせ、文字と枠を強く出す */
 .theme-contrast {
   --background: oklch(1 0 0);

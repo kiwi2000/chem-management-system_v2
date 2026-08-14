@@ -3,7 +3,18 @@
  * 実際の色は apps/web/app/globals.css の `.theme-*` クラスで定義する。
  * ここに名前を足したら globals.css と i18n の themes ブロックにも足すこと。
  */
-export const THEMES = ["system", "light", "dark", "sepia", "ocean", "forest", "contrast"] as const;
+export const THEMES = [
+  "system",
+  "light",
+  "dark",
+  "sky",
+  "ocean",
+  "forest",
+  "sepia",
+  "sunset",
+  "rose",
+  "contrast",
+] as const;
 export type Theme = (typeof THEMES)[number];
 
 export const DEFAULT_THEME: Theme = "system";
@@ -31,8 +42,11 @@ export const THEME_SWATCHES: Record<Theme, [string, string, string]> = {
   system: ["oklch(1 0 0)", "oklch(0.145 0 0)", "oklch(0.556 0 0)"],
   light: ["oklch(1 0 0)", "oklch(0.145 0 0)", "oklch(0.205 0 0)"],
   dark: ["oklch(0.145 0 0)", "oklch(0.985 0 0)", "oklch(0.708 0 0)"],
-  sepia: ["oklch(0.968 0.014 85)", "oklch(0.29 0.03 60)", "oklch(0.42 0.06 60)"],
+  sky: ["oklch(0.99 0.006 220)", "oklch(0.26 0.03 240)", "oklch(0.6 0.13 230)"],
   ocean: ["oklch(0.985 0.008 230)", "oklch(0.24 0.04 250)", "oklch(0.48 0.13 250)"],
   forest: ["oklch(0.98 0.01 145)", "oklch(0.25 0.03 150)", "oklch(0.44 0.1 150)"],
+  sepia: ["oklch(0.968 0.014 85)", "oklch(0.29 0.03 60)", "oklch(0.42 0.06 60)"],
+  sunset: ["oklch(0.99 0.012 70)", "oklch(0.28 0.035 50)", "oklch(0.62 0.15 55)"],
+  rose: ["oklch(0.985 0.008 350)", "oklch(0.27 0.04 350)", "oklch(0.55 0.17 355)"],
   contrast: ["oklch(1 0 0)", "oklch(0 0 0)", "oklch(0.35 0 0)"],
 };
