@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { StatusIcon } from "@/components/status-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -97,21 +97,20 @@ export default function PropertyDefsPage() {
       },
       {
         key: "activeFlag",
-        header: m.propertyDefs.activeFlag,
+        header: m.users.status,
         kind: "enum",
-        width: 90,
+        width: 64,
         options: [
-          { value: "true", label: m.common.yes },
-          { value: "false", label: m.common.no },
+          { value: "true", label: m.users.active },
+          { value: "false", label: m.users.inactive },
         ],
-        render: (d) =>
-          d.activeFlag ? (
-            m.common.yes
-          ) : (
-            <Badge variant="outline" className="px-1 text-[10px]">
-              {m.common.no}
-            </Badge>
-          ),
+        render: (d) => (
+          <StatusIcon
+            active={d.activeFlag}
+            activeLabel={m.users.active}
+            inactiveLabel={m.users.inactive}
+          />
+        ),
       },
     ],
     [m, locale],

@@ -16,6 +16,7 @@ import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
@@ -30,18 +31,27 @@ export function PreferencesForm({
   locale,
   theme,
   headerStrong,
+  displayName,
 }: {
   locale: Locale;
   theme: Theme;
   headerStrong: boolean;
+  displayName: string;
 }) {
   const { m } = useI18n();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // 表示名だけは打ち終わってから保存するので、入力中の値を持つ
+  const [name, setName] = useState(displayName);
 
-  async function save(patch: { locale?: Locale; theme?: Theme; headerStrong?: boolean }) {
+  async function save(patch: {
+    locale?: Locale;
+    theme?: Theme;
+    headerStrong?: boolean;
+    displayName?: string;
+  }) {
     setError(null);
     setNotice(null);
     setSaving(true);
@@ -63,8 +73,45 @@ export function PreferencesForm({
     }
   }
 
+  // 表示名は空欄にできない。保存ボタンを押せなくして、理由もその場に出す
+  const nameEmpty = name.trim().length === 0;
+
   return (
     <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{m.preferences.profile}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="space-y-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (nameEmpty) return;
+              void save({ displayName: name.trim() });
+            }}
+          >
+            <Label htmlFor="displayName">{m.preferences.displayName}</Label>
+            <div className="flex flex-wrap items-start gap-2">
+              <Input
+                id="displayName"
+                value={name}
+                maxLength={200}
+                aria-invalid={nameEmpty}
+                onChange={(e) => setName(e.target.value)}
+                className="max-w-xs"
+              />
+              <Button type="submit" disabled={saving || nameEmpty || name.trim() === displayName}>
+                {m.common.save}
+              </Button>
+            </div>
+            <p className={nameEmpty ? "text-destructive text-xs" : "text-muted-foreground text-xs"}>
+              {nameEmpty ? m.errors.displayNameRequired : m.preferences.displayNameHint}
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{m.preferences.display}</CardTitle>

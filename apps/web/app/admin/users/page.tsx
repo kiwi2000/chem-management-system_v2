@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
+import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,19 +57,20 @@ export default function UsersPage() {
       },
       {
         key: "activeFlag",
-        header: m.users.active,
+        header: m.users.status,
         kind: "enum",
-        width: 80,
+        width: 64,
         options: [
           { value: "true", label: m.users.active },
           { value: "false", label: m.users.inactive },
         ],
-        render: (u) =>
-          u.activeFlag ? null : (
-            <Badge variant="outline" className="px-1 text-[10px]">
-              {m.users.inactive}
-            </Badge>
-          ),
+        render: (u) => (
+          <StatusIcon
+            active={u.activeFlag}
+            activeLabel={m.users.active}
+            inactiveLabel={m.users.inactive}
+          />
+        ),
       },
       {
         key: "lastLoginAt",

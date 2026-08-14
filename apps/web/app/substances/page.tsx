@@ -7,8 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { GazetteNumbers } from "@/components/gazette-numbers";
+import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, SubstanceListItemDto } from "@/lib/types";
@@ -73,12 +73,13 @@ export default function SubstancesPage() {
           { value: "ACTIVE", label: m.substances.statusActive },
           { value: "DISCONTINUED", label: m.substances.statusDiscontinued },
         ],
-        render: (r) =>
-          r.status === "DISCONTINUED" ? (
-            <Badge variant="outline" className="px-1 text-[10px]">
-              {m.substances.statusDiscontinued}
-            </Badge>
-          ) : null,
+        render: (r) => (
+          <StatusIcon
+            active={r.status !== "DISCONTINUED"}
+            activeLabel={m.substances.statusActive}
+            inactiveLabel={m.substances.statusDiscontinued}
+          />
+        ),
       },
       {
         key: "gazetteNumbers",

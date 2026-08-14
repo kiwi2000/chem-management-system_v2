@@ -7,6 +7,9 @@ import { getServerMessages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
+/** 管理者側のユーザー編集（packages/shared/src/admin.ts）と同じ上限に合わせる */
+const DISPLAY_NAME_MAX = 200;
+
 /**
  * PUT /api/preferences — 表示言語とテーマ（利用者ごとの設定）。
  *
@@ -23,10 +26,11 @@ export async function PUT(req: Request) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const { locale, theme, headerStrong } = (body ?? {}) as {
+  const { locale, theme, headerStrong, displayName } = (body ?? {}) as {
     locale?: unknown;
     theme?: unknown;
     headerStrong?: unknown;
+    displayName?: unknown;
   };
 
   if (locale !== undefined && !isLocale(locale)) {
@@ -37,6 +41,17 @@ export async function PUT(req: Request) {
   }
   if (headerStrong !== undefined && typeof headerStrong !== "boolean") {
     return jsonError(400, "validation_error", m.errors.validation);
+  }
+  // 表示名は空欄を認めない。前後の空白だけの入力も弾く
+  let trimmedName: string | undefined;
+  if (displayName !== undefined) {
+    if (typeof displayName !== "string") {
+      return jsonError(400, "validation_error", m.errors.validation);
+    }
+    trimmedName = displayName.trim();
+    if (trimmedName.length === 0 || trimmedName.length > DISPLAY_NAME_MAX) {
+      return jsonError(400, "validation_error", m.errors.displayNameRequired);
+    }
   }
 
   const store = await cookies();
@@ -54,6 +69,10 @@ export async function PUT(req: Request) {
   }
 
   const user = await getSessionUser().catch(() => null);
+  // 表示名は本人のアカウントを書き換えるので、ログインしていないと変更できない
+  if (trimmedName !== undefined && !user) {
+    return jsonError(401, "unauthorized", m.errors.unauthorized);
+  }
   if (user) {
     await prisma.user.update({
       where: { id: user.id },
@@ -61,9 +80,10 @@ export async function PUT(req: Request) {
         ...(isLocale(locale) ? { preferredLocale: locale } : {}),
         ...(isTheme(theme) ? { preferredTheme: theme } : {}),
         ...(typeof headerStrong === "boolean" ? { preferredHeaderStrong: headerStrong } : {}),
+        ...(trimmedName !== undefined ? { displayName: trimmedName } : {}),
       },
     });
   }
 
-  return Response.json({ ok: true, locale, theme, headerStrong });
+  return Response.json({ ok: true, locale, theme, headerStrong, displayName: trimmedName });
 }

@@ -90,9 +90,15 @@
   --table-head-foreground: var(--foreground);
   --sidebar-header: var(--sidebar);
   --sidebar-header-foreground: var(--sidebar-foreground);
-  /* 濃くしたときに使う色。テーマごとに上書きする */
-  --strong: oklch(0.28 0 0);
-  --strong-foreground: oklch(0.97 0 0);
+  /*
+   * 濃くしたときに使う色。テーマごとに上書きする。
+   * --strong-head は表の見出し用。トップバーと差を付けて境目を見せるが、
+   * 明暗どちらへずらすかは配色によるので、計算せずテーマごとに書く
+   * （スカイのように明るい色は、さらに明るくすると文字が読めなくなるため）。
+   */
+  --strong: oklch(0.93 0 0);
+  --strong-foreground: oklch(0.2 0 0);
+  --strong-head: oklch(0.88 0 0);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -103,42 +109,50 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/*
+ * ダーク: 黒地に金の線を通した配色。
+ * 面はほぼ無彩色のまま、罫線・枠線・フォーカス・主ボタンだけを金にして締める。
+ * 面まで金にすると安っぽくなるので、彩度を持たせるのは「線」に限っている。
+ */
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.2 0.004 85);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.2 0.004 85);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  /* 主ボタンは金地に黒文字 */
+  --primary: oklch(0.79 0.135 85);
+  --primary-foreground: oklch(0.2 0.02 80);
+  --secondary: oklch(0.27 0.012 85);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.26 0.008 85);
+  --muted-foreground: oklch(0.72 0.02 85);
+  --accent: oklch(0.3 0.025 85);
+  --accent-foreground: oklch(0.9 0.06 85);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
+  /* 罫線・枠線が金。透過させて、面の暗さを保ったまま線だけ光らせる */
+  --border: oklch(0.78 0.13 85 / 30%);
+  --input: oklch(0.78 0.13 85 / 45%);
+  --ring: oklch(0.79 0.135 85);
+  --chart-1: oklch(0.79 0.135 85);
+  --chart-2: oklch(0.68 0.1 85);
+  --chart-3: oklch(0.556 0 0);
+  --chart-4: oklch(0.439 0 0);
   --chart-5: oklch(0.269 0 0);
   /* 暗い配色では表の見出しだけ少し明るくして区切りを出す */
-  --table-head: oklch(0.269 0 0);
-  --strong: oklch(0.21 0 0);
-  --strong-foreground: oklch(0.985 0 0);
-  --sidebar: oklch(0.205 0 0);
+  --table-head: oklch(0.25 0.012 85);
+  --strong: oklch(0.21 0.008 85);
+  --strong-foreground: oklch(0.9 0.07 85);
+  --strong-head: oklch(0.29 0.018 85);
+  --sidebar: oklch(0.19 0.004 85);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-primary: oklch(0.79 0.135 85);
+  --sidebar-primary-foreground: oklch(0.2 0.02 80);
+  --sidebar-accent: oklch(0.3 0.025 85);
+  --sidebar-accent-foreground: oklch(0.9 0.06 85);
+  --sidebar-border: oklch(0.78 0.13 85 / 30%);
+  --sidebar-ring: oklch(0.79 0.135 85);
 }
 
 /*
@@ -169,6 +183,7 @@
   --ring: oklch(0.62 0.05 70);
   --strong: oklch(0.35 0.05 60);
   --strong-foreground: oklch(0.97 0.015 85);
+  --strong-head: oklch(0.45 0.05 60);
   --sidebar: oklch(0.945 0.02 85);
   --sidebar-foreground: oklch(0.29 0.03 60);
   --sidebar-border: oklch(0.87 0.025 80);
@@ -194,8 +209,10 @@
   --border: oklch(0.89 0.025 230);
   --input: oklch(0.89 0.025 230);
   --ring: oklch(0.62 0.1 245);
-  --strong: oklch(0.3 0.08 255);
-  --strong-foreground: oklch(0.97 0.012 230);
+  /* 紺にならないよう、青みを残したまま濃くする */
+  --strong: oklch(0.45 0.15 250);
+  --strong-foreground: oklch(0.98 0.01 230);
+  --strong-head: oklch(0.37 0.13 250);
   --sidebar: oklch(0.955 0.02 230);
   --sidebar-foreground: oklch(0.24 0.04 250);
   --sidebar-border: oklch(0.89 0.025 230);
@@ -221,8 +238,9 @@
   --border: oklch(0.885 0.03 145);
   --input: oklch(0.885 0.03 145);
   --ring: oklch(0.6 0.08 150);
-  --strong: oklch(0.33 0.07 150);
-  --strong-foreground: oklch(0.97 0.015 145);
+  --strong: oklch(0.53 0.14 152);
+  --strong-foreground: oklch(0.99 0.01 145);
+  --strong-head: oklch(0.44 0.12 152);
   --sidebar: oklch(0.95 0.025 145);
   --sidebar-foreground: oklch(0.25 0.03 150);
   --sidebar-border: oklch(0.885 0.03 145);
@@ -248,8 +266,10 @@
   --border: oklch(0.895 0.03 220);
   --input: oklch(0.895 0.03 220);
   --ring: oklch(0.66 0.11 230);
-  --strong: oklch(0.35 0.09 240);
-  --strong-foreground: oklch(0.97 0.012 220);
+  /* 明るい空色。白文字では読めない明るさなので、この配色は文字を濃紺にしている */
+  --strong: oklch(0.66 0.125 232);
+  --strong-foreground: oklch(0.22 0.05 240);
+  --strong-head: oklch(0.74 0.1 232);
   --sidebar: oklch(0.96 0.025 220);
   --sidebar-foreground: oklch(0.26 0.03 240);
   --sidebar-border: oklch(0.895 0.03 220);
@@ -275,8 +295,10 @@
   --border: oklch(0.89 0.035 350);
   --input: oklch(0.89 0.035 350);
   --ring: oklch(0.63 0.14 355);
-  --strong: oklch(0.36 0.12 355);
-  --strong-foreground: oklch(0.97 0.015 350);
+  /* 暗くするとワイン色になってしまうので、バラの花に近い明るさまで上げる */
+  --strong: oklch(0.58 0.215 15);
+  --strong-foreground: oklch(0.99 0.01 350);
+  --strong-head: oklch(0.48 0.19 12);
   --sidebar: oklch(0.955 0.028 350);
   --sidebar-foreground: oklch(0.27 0.04 350);
   --sidebar-border: oklch(0.89 0.035 350);
@@ -302,8 +324,13 @@
   --border: oklch(0.895 0.04 70);
   --input: oklch(0.895 0.04 70);
   --ring: oklch(0.68 0.13 55);
-  --strong: oklch(0.4 0.11 50);
-  --strong-foreground: oklch(0.98 0.015 70);
+  /*
+   * オレンジは明るくしないと茶色に見えるので、暗くせず彩度で締める。
+   * 白文字だと読めないため、この配色だけ文字を濃い茶色にしている。
+   */
+  --strong: oklch(0.7 0.175 55);
+  --strong-foreground: oklch(0.24 0.045 45);
+  --strong-head: oklch(0.78 0.15 60);
   --sidebar: oklch(0.96 0.032 70);
   --sidebar-foreground: oklch(0.28 0.035 50);
   --sidebar-border: oklch(0.895 0.04 70);
@@ -331,6 +358,7 @@
   --ring: oklch(0 0 0);
   --strong: oklch(0 0 0);
   --strong-foreground: oklch(1 0 0);
+  --strong-head: oklch(0.25 0 0);
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0 0 0);
   --sidebar-border: oklch(0.35 0 0);
@@ -340,12 +368,12 @@
  * 「ヘッダーなどを濃くする」を入にしたときに <html> へ付くクラス。
  * テーマごとの --strong（その配色の濃い色）を、トップバー・表の見出し・
  * 左ペインの見出しへ流し込む。テーマとは独立して効くので、どの配色でも使える。
- * 表の見出しはトップバーより少しだけ明るくして、境目が分かるようにしている。
+ * 表の見出しだけは --strong-head（トップバーと少し差を付けた色）を使う。
  */
 .header-strong {
   --header: var(--strong);
   --header-foreground: var(--strong-foreground);
-  --table-head: color-mix(in oklab, var(--strong), white 12%);
+  --table-head: var(--strong-head);
   --table-head-foreground: var(--strong-foreground);
   --sidebar-header: var(--strong);
   --sidebar-header-foreground: var(--strong-foreground);
