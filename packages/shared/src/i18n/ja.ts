@@ -421,6 +421,8 @@ export const ja = {
     pinned: "重要（一覧の先頭に固定）",
     /** バッジ用の短い表記 */
     pinnedShort: "重要",
+    expandHint: "ダブルクリックで全文",
+    collapseHint: "ダブルクリックで閉じる",
     publishFrom: "掲載開始日",
     publishUntil: "掲載終了日",
     periodHint: "空欄なら制限なし",

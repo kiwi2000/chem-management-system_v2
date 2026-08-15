@@ -3,7 +3,7 @@
 import { pickName } from "@chem/shared";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { NewsCard } from "@/components/news-card";
+import { NewsRow } from "@/components/news-row";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import type { NewsDto } from "@/lib/types";
@@ -44,8 +44,11 @@ export function HomeNews() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{m.news.title}</h2>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-baseline gap-3">
+          <h2 className="text-lg font-semibold">{m.news.title}</h2>
+          <span className="text-muted-foreground text-xs">{m.news.expandHint}</span>
+        </div>
         <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/news" />}>
           {m.home.seeAllNews}
         </Button>
@@ -55,11 +58,11 @@ export function HomeNews() {
       {items?.length === 0 && <p className="text-muted-foreground text-sm">{m.home.noNews}</p>}
 
       {sections.map((s) => (
-        <div key={s.key} className="space-y-3">
+        <div key={s.key} className="space-y-2">
           {/* 分類が1つも無い運用では見出しが1本だけ出る。邪魔にならない大きさにしてある */}
           <h3 className="text-muted-foreground border-b pb-1 text-sm font-medium">{s.heading}</h3>
           {s.items.map((n) => (
-            <NewsCard key={n.id} item={n} />
+            <NewsRow key={n.id} item={n} />
           ))}
         </div>
       ))}

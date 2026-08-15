@@ -127,6 +127,9 @@ export interface NewsDto {
   publishUntil: string | null;
   authorId: string;
   authorName: string;
+  /** 投稿者の所属（現在の所属。過去の投稿でも今の所属が出る） */
+  authorOrgNameJa: string | null;
+  authorOrgNameEn: string | null;
   /** ホームの見出しを分けるための分類（投稿時に投稿者のグループを写し取る） */
   groupId: string | null;
   groupNameJa: string | null;

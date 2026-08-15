@@ -416,6 +416,8 @@ export const en: Messages = {
     published: "Published",
     pinned: "Important (pin to top)",
     pinnedShort: "Important",
+    expandHint: "Double-click to read in full",
+    collapseHint: "Double-click to collapse",
     publishFrom: "Publish from",
     publishUntil: "Publish until",
     periodHint: "Leave empty for no limit",

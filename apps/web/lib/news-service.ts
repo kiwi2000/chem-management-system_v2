@@ -12,14 +12,24 @@ export function formatDateOnly(d: Date | null): string | null {
   return d ? d.toISOString().slice(0, 10) : null;
 }
 
+type GroupName = Pick<Group, "id" | "nameJa" | "nameEn" | "displayOrder">;
+
 export type NewsWithAuthor = News & {
-  author: Pick<User, "id" | "displayName" | "email">;
-  group?: Pick<Group, "id" | "nameJa" | "nameEn" | "displayOrder"> | null;
+  author: Pick<User, "id" | "displayName" | "email"> & { orgGroup?: GroupName | null };
+  group?: GroupName | null;
 };
 
 /** 一覧・詳細で毎回同じものを読むので共通化する */
 export const NEWS_INCLUDE = {
-  author: { select: { id: true, displayName: true, email: true } },
+  author: {
+    select: {
+      id: true,
+      displayName: true,
+      email: true,
+      // 一覧に「所属 / 氏名 / 日時」を出すので、投稿者の所属も一緒に読む
+      orgGroup: { select: { id: true, nameJa: true, nameEn: true, displayOrder: true } },
+    },
+  },
   group: { select: { id: true, nameJa: true, nameEn: true, displayOrder: true } },
 } as const;
 
@@ -36,6 +46,8 @@ export function toNewsDto(n: NewsWithAuthor, actor: Actor): NewsDto {
     publishUntil: formatDateOnly(n.publishUntil),
     authorId: n.authorId,
     authorName: n.author.displayName ?? n.author.email,
+    authorOrgNameJa: n.author.orgGroup?.nameJa ?? null,
+    authorOrgNameEn: n.author.orgGroup?.nameEn ?? null,
     groupId: n.groupId,
     groupNameJa: n.group?.nameJa ?? null,
     groupNameEn: n.group?.nameEn ?? null,
