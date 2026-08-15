@@ -59,8 +59,14 @@ export function HomeNews() {
 
       {sections.map((s) => (
         <div key={s.key} className="space-y-2">
-          {/* 分類が1つも無い運用では見出しが1本だけ出る。邪魔にならない大きさにしてある */}
-          <h3 className="text-muted-foreground border-b pb-1 text-sm font-medium">{s.heading}</h3>
+          {/*
+            どこからのお知らせかが一目で分かるよう、見出しははっきり出す。
+            左の色付きの帯と下線でひとまとまりだと分かるようにしている。
+          */}
+          <h3 className="text-foreground border-primary/40 flex items-center gap-2 border-b-2 pt-2 pb-1.5 text-base font-bold">
+            <span aria-hidden className="bg-primary inline-block h-4 w-1.5 shrink-0 rounded-full" />
+            {s.heading}
+          </h3>
           {s.items.map((n) => (
             <NewsRow key={n.id} item={n} />
           ))}
