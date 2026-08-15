@@ -22,5 +22,9 @@ export interface TableColumn<T> {
 
 export const DEFAULT_COLUMN_WIDTH = 160;
 export const MIN_COLUMN_WIDTH = 48;
-/** 先頭のチェックボックス列の幅 */
-export const SELECT_COLUMN_WIDTH = 36;
+/**
+ * 先頭のチェックボックス列の幅。
+ * チェックボックス（約16px）＋左右の余白ぶん。
+ * この列だけは他の列のように比率で伸び縮みさせず、常にこの幅で固定する。
+ */
+export const SELECT_COLUMN_WIDTH = 32;

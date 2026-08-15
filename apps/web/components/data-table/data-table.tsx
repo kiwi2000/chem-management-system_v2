@@ -41,6 +41,8 @@ interface Props<T> {
 
 /** 罫線。セルの右側に薄い線を引く（最後の列は引かない） */
 const CELL_BORDER = "border-r last:border-r-0";
+/** チェックボックス列。左右の余白を詰めて中央に置く */
+const SELECT_CELL = "px-0 text-center";
 
 /**
  * 一覧の共通部品。すべてのテーブルはこれを使う。
@@ -73,23 +75,32 @@ export function DataTable<T>({
   const [deleting, setDeleting] = useState(false);
 
   /**
-   * 列幅の合計。これを 100% とみなして各列を比率で置く。
+   * データ列の幅の合計。残り幅（チェックボックス列を除いた分）をこの比率で分け合う。
    * 表示領域のほうが広ければ各列は指定より広がり、狭ければ同じ割合で詰まる。
+   * チェックボックス列だけは中身が固定サイズなので、伸び縮みさせず px で固定する。
    */
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const widthSum =
-    (selectable ? SELECT_COLUMN_WIDTH : 0) + columns.reduce((sum, c) => sum + widthOf(c), 0);
-  const pct = (px: number) => `${((px / widthSum) * 100).toFixed(4)}%`;
+  const selectWidth = selectable ? SELECT_COLUMN_WIDTH : 0;
+  const dataSum = columns.reduce((sum, c) => sum + widthOf(c), 0);
+  /*
+    データ列は合計が 100% になる比率で置く。チェックボックス列は px で固定してあるので、
+    合計は表の幅を少しはみ出す形になり、ブラウザが比率を保ったまま詰めてくれる。
+    （calc() で残り幅から計算する書き方は col 要素では効かなかった）
+  */
+  const pct = (px: number) => `${(dataSum === 0 ? 0 : (px / dataSum) * 100).toFixed(4)}%`;
   // 詰めすぎると読めなくなるので、ここまでしか縮めない（これより狭い画面ではスクロールする）
-  const minTableWidth = Math.min(widthSum, MIN_COLUMN_WIDTH * (columns.length + 1));
+  const minTableWidth = Math.min(
+    selectWidth + dataSum,
+    selectWidth + MIN_COLUMN_WIDTH * columns.length,
+  );
   /**
    * 指定した幅と実際に描かれる幅の比。
    * 幅を変えるドラッグは画面上の px で動くので、覚える値へ戻すときにこれで割る。
    */
   const scale = () => {
     const el = scrollerRef.current;
-    if (!el || widthSum === 0) return 1;
-    return Math.max(el.clientWidth, minTableWidth) / widthSum;
+    if (!el || dataSum === 0) return 1;
+    return (Math.max(el.clientWidth, minTableWidth) - selectWidth) / dataSum;
   };
 
   // 読み直したら選択は解除する（見えていない行を消してしまわないように）
@@ -193,7 +204,7 @@ export function DataTable<T>({
         */}
         <Table className="table-fixed" style={{ minWidth: minTableWidth }}>
           <colgroup>
-            {selectable && <col style={{ width: pct(SELECT_COLUMN_WIDTH) }} />}
+            {selectable && <col style={{ width: SELECT_COLUMN_WIDTH }} />}
             {columns.map((c) => (
               <col key={c.key} style={{ width: pct(widthOf(c)) }} />
             ))}
@@ -205,7 +216,7 @@ export function DataTable<T>({
           <TableHeader className="bg-table-head text-table-head-foreground [&_th]:text-inherit">
             <TableRow>
               {selectable && (
-                <TableHead className={CELL_BORDER}>
+                <TableHead className={cn(CELL_BORDER, SELECT_CELL)}>
                   <input
                     type="checkbox"
                     aria-label={m.table.selectAll}
@@ -214,6 +225,7 @@ export function DataTable<T>({
                       if (el) el.indeterminate = !allChecked && someChecked;
                     }}
                     onChange={(e) => toggleAll(e.target.checked)}
+                    className="align-middle"
                   />
                 </TableHead>
               )}
@@ -295,7 +307,7 @@ export function DataTable<T>({
                   data-state={selected.has(key) ? "selected" : undefined}
                 >
                   {selectable && (
-                    <TableCell className={CELL_BORDER}>
+                    <TableCell className={cn(CELL_BORDER, SELECT_CELL)}>
                       <input
                         type="checkbox"
                         aria-label={m.table.selectRow}
@@ -303,6 +315,7 @@ export function DataTable<T>({
                         onChange={(e) => toggleRow(key, e.target.checked)}
                         // チェックのつもりでダブルクリックしても詳細が開かないようにする
                         onDoubleClick={(e) => e.stopPropagation()}
+                        className="align-middle"
                       />
                     </TableCell>
                   )}

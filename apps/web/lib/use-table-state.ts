@@ -17,15 +17,31 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
  *
  * 前回の条件が勝手に効いていると混乱するので、
  * 呼び出し側で「絞り込み中」を必ず明示し、リセットできるようにすること。
+ *
+ * 1つの画面に表が2つ以上あるときは `paramPrefix` を指定する。
+ * 指定しないと両方が同じ `sort` や `f.○○` を書き合って壊れる。
  */
 export function useTableState(
   storageKey: string,
   columns: { key: string; kind: ColumnKind }[],
   fallback: TableState,
+  paramPrefix = "",
 ) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const prefix = paramPrefix ? `${paramPrefix}.` : "";
+
+  /** この表が使うクエリかどうか（他の表のぶんは触らない） */
+  const isOwn = useCallback(
+    (name: string) => {
+      if (!name.startsWith(prefix)) return false;
+      const key = name.slice(prefix.length);
+      return key === "sort" || key === "page" || key === "size" || key.startsWith("f.");
+    },
+    [prefix],
+  );
 
   const columnDefs = useMemo(
     () => columns.map((c) => ({ key: c.key, kind: c.kind })),
@@ -34,33 +50,44 @@ export function useTableState(
     [columns.map((c) => `${c.key}:${c.kind}`).join(",")],
   );
 
-  const hasUrlState = useMemo(() => {
-    for (const name of searchParams.keys()) {
-      if (name === "sort" || name === "page" || name === "size" || name.startsWith("f.")) {
-        return true;
-      }
+  /** URL からこの表のぶんだけ取り出し、接頭辞を外した形にする */
+  const ownParams = useMemo(() => {
+    const out = new URLSearchParams();
+    for (const [name, value] of searchParams.entries()) {
+      if (isOwn(name)) out.set(name.slice(prefix.length), value);
     }
-    return false;
-  }, [searchParams]);
+    return out;
+  }, [searchParams, isOwn, prefix]);
+
+  const hasUrlState = ownParams.size > 0;
 
   const state = useMemo(
-    () => parseTableState(new URLSearchParams(searchParams.toString()), columnDefs, fallback),
+    () => parseTableState(ownParams, columnDefs, fallback),
     // fallback は呼び出し側で毎回作られる可能性があるため、依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [searchParams, columnDefs],
+    [ownParams, columnDefs],
+  );
+
+  /** 他の表のクエリを残したまま、この表のぶんだけ書き換える */
+  const buildUrl = useCallback(
+    (ownQuery: URLSearchParams) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const name of [...params.keys()]) if (isOwn(name)) params.delete(name);
+      for (const [key, value] of ownQuery.entries()) params.set(`${prefix}${key}`, value);
+      const qs = params.toString();
+      return qs ? `${pathname}?${qs}` : pathname;
+    },
+    [searchParams, isOwn, prefix, pathname],
   );
 
   const write = useCallback(
-    (next: TableState, replace: boolean) => {
-      const params = serializeTableState(next, fallback);
-      const qs = params.toString();
-      window.localStorage.setItem(storageKey, qs);
-      const url = qs ? `${pathname}?${qs}` : pathname;
-      if (replace) router.replace(url, { scroll: false });
-      else router.push(url, { scroll: false });
+    (next: TableState) => {
+      const own = serializeTableState(next, fallback);
+      window.localStorage.setItem(storageKey, own.toString());
+      router.push(buildUrl(own), { scroll: false });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pathname, router, storageKey],
+    [buildUrl, router, storageKey],
   );
 
   // 条件なしで開かれたときだけ、前回の条件を復元する（1回だけ）
@@ -72,23 +99,25 @@ export function useTableState(
     if (!hasUrlState) {
       const saved = window.localStorage.getItem(storageKey);
       if (saved) {
-        router.replace(`${pathname}?${saved}`, { scroll: false });
+        router.replace(buildUrl(new URLSearchParams(saved)), { scroll: false });
         setReady(true);
         return;
       }
     }
     setReady(true);
-  }, [hasUrlState, pathname, router, storageKey]);
+    // buildUrl は searchParams に依存して毎回変わるが、この処理は初回だけ動かす
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasUrlState, storageKey, router]);
 
   const setState = useCallback(
-    (updater: (prev: TableState) => TableState) => write(updater(state), false),
+    (updater: (prev: TableState) => TableState) => write(updater(state)),
     [state, write],
   );
 
   const reset = useCallback(() => {
     window.localStorage.removeItem(storageKey);
-    router.replace(pathname, { scroll: false });
-  }, [pathname, router, storageKey]);
+    router.replace(buildUrl(new URLSearchParams()), { scroll: false });
+  }, [buildUrl, router, storageKey]);
 
   return { state, setState, reset, ready };
 }
