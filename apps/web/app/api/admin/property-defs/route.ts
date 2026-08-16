@@ -4,7 +4,7 @@ import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { PROPERTY_DEF_COLUMNS } from "@/lib/list-columns";
-import { toPropertyDefDto } from "@/lib/property-def-service";
+import { PROPERTY_DEF_COUNT, toPropertyDefDto } from "@/lib/property-def-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 /** 既定は表示順 */
 const DEFAULT_STATE = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
-/** GET /api/admin/substance-property-defs — 管理画面用（使わない項目も含む） */
+/** GET /api/admin/property-defs — 管理画面用（使わない項目も含む）。用途は f.target で絞る */
 export async function GET(req: Request) {
   const actor = await requireAdmin();
   if (actor instanceof Response) return actor;
@@ -25,14 +25,14 @@ export async function GET(req: Request) {
   const where = buildWhere(PROPERTY_DEF_COLUMNS, state.filters);
 
   const [items, total] = await Promise.all([
-    prisma.substancePropertyDef.findMany({
+    prisma.propertyDef.findMany({
       where,
       orderBy: buildOrderBy(PROPERTY_DEF_COLUMNS, state.sort, { key: "asc" }),
-      include: { _count: { select: { values: true } } },
+      include: PROPERTY_DEF_COUNT,
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
     }),
-    prisma.substancePropertyDef.count({ where }),
+    prisma.propertyDef.count({ where }),
   ]);
 
   return Response.json({
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
   });
 }
 
-/** POST /api/admin/substance-property-defs — 項目の追加 */
+/** POST /api/admin/property-defs — 項目の追加 */
 export async function POST(req: Request) {
   const actor = await requireAdmin();
   if (actor instanceof Response) return actor;
@@ -61,12 +61,15 @@ export async function POST(req: Request) {
   }
   const v = parsed.data;
 
-  if (await prisma.substancePropertyDef.findUnique({ where: { key: v.key } })) {
-    return jsonError(409, "duplicate_key", m.errors.duplicateKey(v.key));
-  }
+  // キーは用途ごとに一意。物質と製品で同じキーを使ってよい
+  const clash = await prisma.propertyDef.findUnique({
+    where: { target_key: { target: v.target, key: v.key } },
+  });
+  if (clash) return jsonError(409, "duplicate_key", m.errors.duplicateKey(v.key));
 
-  const created = await prisma.substancePropertyDef.create({
+  const created = await prisma.propertyDef.create({
     data: {
+      target: v.target,
       key: v.key,
       labelJa: v.labelJa,
       labelEn: v.labelEn ?? null,
@@ -78,11 +81,11 @@ export async function POST(req: Request) {
   });
 
   await writeAudit({
-    entity: "substance_property_defs",
+    entity: "property_defs",
     entityId: created.id,
     action: "create",
     actorId: actor.user.id,
-    diff: { key: v.key, labelJa: v.labelJa, dataType: v.dataType },
+    diff: { target: v.target, key: v.key, labelJa: v.labelJa, dataType: v.dataType },
   });
   return Response.json({ id: created.id }, { status: 201 });
 }

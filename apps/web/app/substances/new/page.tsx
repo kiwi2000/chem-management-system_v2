@@ -2,7 +2,7 @@ import { SubstanceForm } from "@/components/substance-form";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { toPropertyDefDto } from "@/lib/property-def-service";
+import { PROPERTY_DEF_COUNT, toPropertyDefDto } from "@/lib/property-def-service";
 import { getAppSettings } from "@/lib/settings";
 
 /**
@@ -14,10 +14,10 @@ export default async function NewSubstancePage() {
     getServerMessages(),
     getActor(),
     getAppSettings(),
-    prisma.substancePropertyDef.findMany({
-      where: { activeFlag: true },
+    prisma.propertyDef.findMany({
+      where: { target: "SUBSTANCE", activeFlag: true },
       orderBy: [{ displayOrder: "asc" }, { key: "asc" }],
-      include: { _count: { select: { values: true } } },
+      include: PROPERTY_DEF_COUNT,
     }),
   ]);
 

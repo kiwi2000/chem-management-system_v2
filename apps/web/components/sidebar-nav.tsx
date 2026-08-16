@@ -44,10 +44,10 @@ const ADMIN_ITEMS: NavItem[] = [
   { href: "/admin/groups", key: "groups", needs: "ADMIN", match: ["/admin/groups"] },
   { href: "/admin/users", key: "users", needs: "ADMIN", match: ["/admin/users"] },
   {
-    href: "/admin/substance-property-defs",
+    href: "/admin/property-defs",
     key: "propertyDefs",
     needs: "ADMIN",
-    match: ["/admin/substance-property-defs"],
+    match: ["/admin/property-defs"],
   },
   { href: "/admin/settings", key: "settings", needs: "ADMIN", match: ["/admin/settings"] },
 ];

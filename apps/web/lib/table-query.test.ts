@@ -14,6 +14,7 @@ const COLUMNS: QueryColumn[] = [
   { key: "count", kind: "number", field: "count" },
   { key: "id", kind: "text", field: "id", sortable: false },
   { key: "tags", kind: "text", field: "label", relation: "tags", sortable: false },
+  { key: "activeFlag", kind: "enum", field: "activeFlag", booleanEnum: true },
 ];
 
 describe("buildWhere", () => {
@@ -43,6 +44,27 @@ describe("buildWhere", () => {
   it("選択肢は in で絞る", () => {
     expect(buildWhere(COLUMNS, { status: { kind: "enum", values: ["ACTIVE"] } })).toEqual({
       AND: [{ status: { in: ["ACTIVE"] } }],
+    });
+  });
+
+  /**
+   * Prisma の Boolean 型には in が無く、渡すと実行時エラーになる。
+   * 「はい」だけ選んだときに一覧が 500 で落ちていたので、値そのものを渡す形に固定する。
+   */
+  describe("はい/いいえ の列", () => {
+    it("片方だけ選んだら真偽値そのもので絞る", () => {
+      expect(buildWhere(COLUMNS, { activeFlag: { kind: "enum", values: ["true"] } })).toEqual({
+        AND: [{ activeFlag: true }],
+      });
+      expect(buildWhere(COLUMNS, { activeFlag: { kind: "enum", values: ["false"] } })).toEqual({
+        AND: [{ activeFlag: false }],
+      });
+    });
+
+    it("両方選んだら絞り込まない（列は null を取らないため）", () => {
+      expect(
+        buildWhere(COLUMNS, { activeFlag: { kind: "enum", values: ["true", "false"] } }),
+      ).toEqual({});
     });
   });
 

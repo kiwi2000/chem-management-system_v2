@@ -5,41 +5,60 @@ import {
   pickName,
   serializeTableState,
   type PropertyDataType,
+  type PropertyTarget,
   type TableState,
 } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { StatusIcon } from "@/components/status-icon";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, PropertyDefDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
-import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+
+/** 用途は節ごとに固定なので、並びは表示順だけでよい */
+const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
 const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
 
-const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
+interface Props {
+  target: PropertyTarget;
+  title: string;
+  hint: string;
+  /** 端末に列幅・絞り込みを覚えるための識別子（節ごとに分ける） */
+  storageKey: string;
+  /** キー欄の入力例（物質と製品で違う例を出す） */
+  keyPlaceholder: string;
+}
 
-/** 空のフォーム。新規追加と編集で同じ形を使う */
-const EMPTY = {
-  id: "",
-  key: "",
-  labelJa: "",
-  labelEn: "",
-  dataType: "TEXT" as PropertyDataType,
-  defaultUnit: "",
-  displayOrder: 0,
-  activeFlag: true,
-};
-
-export default function PropertyDefsPage() {
+/**
+ * 拡張属性の1節（物質の項目 / 製品の項目）。
+ * 定義の表は物質・製品で共有しているが、使う場面が違うので節を分けている。
+ * 用途は節で決まるため、フォームにも表にも「用途」は出さない。
+ */
+export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceholder }: Props) {
   const { m, locale } = useI18n();
-  const [form, setForm] = useState({ ...EMPTY });
+
+  const emptyForm = useMemo(
+    () => ({
+      id: "",
+      key: "",
+      labelJa: "",
+      labelEn: "",
+      dataType: "TEXT" as PropertyDataType,
+      defaultUnit: "",
+      displayOrder: 0,
+      activeFlag: true,
+    }),
+    [],
+  );
+  const [form, setForm] = useState({ ...emptyForm });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -118,18 +137,25 @@ export default function PropertyDefsPage() {
     [m, locale],
   );
 
+  // 1画面に表が2つあるので、URLのクエリを用途ごとに分ける
   const { state, setState, reset, ready } = useTableState(
-    "chem.table.propertyDefs",
+    storageKey,
     columns,
     DEFAULT_STATE,
+    target.toLowerCase(),
   );
   const [data, setData] = useState<ListResponse<PropertyDefDto> | null>(null);
 
-  const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
+  // 用途は利用者が変えられない条件なので、画面の状態とは別にここで足す
+  const query = useMemo(() => {
+    const params = serializeTableState(state, DEFAULT_STATE);
+    params.set("f.target", `in:${target}`);
+    return params.toString();
+  }, [state, target]);
 
   const load = useCallback(async () => {
     setError(null);
-    const res = await fetch(`/api/admin/substance-property-defs?${query}`);
+    const res = await fetch(`/api/admin/property-defs?${query}`);
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -151,13 +177,12 @@ export default function PropertyDefsPage() {
     try {
       const editing = form.id !== "";
       const res = await fetch(
-        editing
-          ? `/api/admin/substance-property-defs/${form.id}`
-          : "/api/admin/substance-property-defs",
+        editing ? `/api/admin/property-defs/${form.id}` : "/api/admin/property-defs",
         {
           method: editing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            target,
             key: form.key,
             labelJa: form.labelJa,
             labelEn: form.labelEn || null,
@@ -174,7 +199,7 @@ export default function PropertyDefsPage() {
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
-      setForm({ ...EMPTY });
+      setForm({ ...emptyForm });
       void load();
     } finally {
       setSaving(false);
@@ -185,22 +210,26 @@ export default function PropertyDefsPage() {
   async function onDeleteSelected(targets: PropertyDefDto[]) {
     setError(null);
     for (const d of targets) {
-      const res = await fetch(`/api/admin/substance-property-defs/${d.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/property-defs/${d.id}`, { method: "DELETE" });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.deleteFailed);
         break;
       }
-      if (form.id === d.id) setForm({ ...EMPTY });
+      if (form.id === d.id) setForm({ ...emptyForm });
     }
     void load();
   }
 
+  const fieldId = (name: string) => `${target.toLowerCase()}-${name}`;
+
   return (
-    <div className="w-full space-y-4 p-4 lg:p-6">
-      <h1 className="text-2xl font-semibold">{m.propertyDefs.title}</h1>
-      <p className="text-muted-foreground text-sm">{m.propertyDefs.description}</p>
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <p className="text-muted-foreground text-sm">{hint}</p>
+      </div>
 
       {error && (
         <Alert variant="destructive">
@@ -218,23 +247,23 @@ export default function PropertyDefsPage() {
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="flex flex-wrap gap-4">
               <div className="space-y-2">
-                <Label htmlFor="key">{m.propertyDefs.key}</Label>
+                <Label htmlFor={fieldId("key")}>{m.propertyDefs.key}</Label>
                 <Input
-                  id="key"
+                  id={fieldId("key")}
                   required
                   maxLength={50}
                   disabled={form.id !== ""}
                   value={form.key}
                   onChange={(e) => setForm({ ...form, key: e.target.value })}
                   className="w-48 font-mono"
-                  placeholder="melting_point"
+                  placeholder={keyPlaceholder}
                 />
                 <p className="text-muted-foreground text-xs">{m.propertyDefs.keyHint}</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="labelJa">{m.propertyDefs.labelJa}</Label>
+                <Label htmlFor={fieldId("labelJa")}>{m.propertyDefs.labelJa}</Label>
                 <Input
-                  id="labelJa"
+                  id={fieldId("labelJa")}
                   required
                   maxLength={100}
                   value={form.labelJa}
@@ -243,12 +272,12 @@ export default function PropertyDefsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="labelEn">
+                <Label htmlFor={fieldId("labelEn")}>
                   {m.propertyDefs.labelEn}
                   {m.common.optional}
                 </Label>
                 <Input
-                  id="labelEn"
+                  id={fieldId("labelEn")}
                   maxLength={100}
                   value={form.labelEn}
                   onChange={(e) => setForm({ ...form, labelEn: e.target.value })}
@@ -258,9 +287,9 @@ export default function PropertyDefsPage() {
             </div>
             <div className="flex flex-wrap items-end gap-4">
               <div className="space-y-2">
-                <Label htmlFor="dataType">{m.propertyDefs.dataType}</Label>
+                <Label htmlFor={fieldId("dataType")}>{m.propertyDefs.dataType}</Label>
                 <select
-                  id="dataType"
+                  id={fieldId("dataType")}
                   value={form.dataType}
                   onChange={(e) =>
                     setForm({ ...form, dataType: e.target.value as PropertyDataType })
@@ -272,12 +301,12 @@ export default function PropertyDefsPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="unit">
+                <Label htmlFor={fieldId("unit")}>
                   {m.propertyDefs.defaultUnit}
                   {m.common.optional}
                 </Label>
                 <Input
-                  id="unit"
+                  id={fieldId("unit")}
                   maxLength={50}
                   value={form.defaultUnit}
                   onChange={(e) => setForm({ ...form, defaultUnit: e.target.value })}
@@ -286,9 +315,9 @@ export default function PropertyDefsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="order">{m.propertyDefs.displayOrder}</Label>
+                <Label htmlFor={fieldId("order")}>{m.propertyDefs.displayOrder}</Label>
                 <Input
-                  id="order"
+                  id={fieldId("order")}
                   type="number"
                   min={0}
                   max={9999}
@@ -311,7 +340,7 @@ export default function PropertyDefsPage() {
                 {saving ? m.common.saving : m.common.save}
               </Button>
               {form.id !== "" && (
-                <Button type="button" variant="outline" onClick={() => setForm({ ...EMPTY })}>
+                <Button type="button" variant="outline" onClick={() => setForm({ ...emptyForm })}>
                   {m.common.cancel}
                 </Button>
               )}
@@ -321,7 +350,7 @@ export default function PropertyDefsPage() {
       </Card>
 
       <DataTable
-        storageKey="chem.table.propertyDefs"
+        storageKey={storageKey}
         columns={columns}
         rows={data?.items ?? null}
         rowKey={(d) => d.id}
@@ -345,9 +374,8 @@ export default function PropertyDefsPage() {
             displayOrder: d.displayOrder,
             activeFlag: d.activeFlag,
           });
-          window.scrollTo({ top: 0, behavior: "smooth" });
         }}
       />
-    </div>
+    </section>
   );
 }

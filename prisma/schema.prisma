@@ -58,6 +58,17 @@ enum GazetteLawKind {
   OTHER
 }
 
+/** 拡張属性の項目定義が、物質と製品のどちらのものか */
+enum PropertyTarget {
+  SUBSTANCE
+  PRODUCT
+}
+
+enum ProductStatus {
+  ACTIVE
+  DISCONTINUED
+}
+
 enum PropertyDataType {
   NUMBER
   TEXT
@@ -298,9 +309,15 @@ model SubstanceGazetteNumber {
 }
 
 /** 拡張属性の項目定義（システム管理者が作る） */
-model SubstancePropertyDef {
+/**
+ * 拡張属性の項目定義。物質と製品で1つの表を共有し、`target` でどちらのものかを分ける
+ * （画面はグループ管理と同じく用途ごとに節を分ける）。
+ * 値の表は FK を保ちたいので物質用・製品用に分ける。
+ */
+model PropertyDef {
   id           String           @id @default(cuid())
-  key          String           @unique @db.VarChar(50)
+  target       PropertyTarget
+  key          String           @db.VarChar(50)
   labelJa      String           @map("label_ja") @db.VarChar(100)
   labelEn      String?          @map("label_en") @db.VarChar(100)
   dataType     PropertyDataType @map("data_type")
@@ -310,13 +327,16 @@ model SubstancePropertyDef {
   createdAt    DateTime         @default(now()) @map("created_at")
   updatedAt    DateTime         @updatedAt @map("updated_at")
 
-  values SubstanceProperty[]
+  substanceValues SubstanceProperty[]
+  productValues   ProductProperty[]
 
-  @@map("substance_property_defs")
+  /** キーは用途ごとに一意。物質と製品で同じキーを使ってよい */
+  @@unique([target, key])
+  @@map("property_defs")
 }
 
 /**
- * 拡張属性の値。
+ * 拡張属性の値（物質）。
  * 種類（数値/テキスト）と入っている列の整合は CHECK 制約でも担保する（migration SQL に手書き）。
  */
 model SubstanceProperty {
@@ -327,12 +347,88 @@ model SubstanceProperty {
   valueNum      Decimal? @map("value_num") @db.Decimal(18, 6)
   unit          String?  @db.VarChar(50)
 
-  substance Substance            @relation(fields: [substanceId], references: [id], onDelete: Cascade)
-  def       SubstancePropertyDef @relation(fields: [propertyDefId], references: [id], onDelete: Cascade)
+  substance Substance   @relation(fields: [substanceId], references: [id], onDelete: Cascade)
+  def       PropertyDef @relation(fields: [propertyDefId], references: [id], onDelete: Cascade)
 
   @@unique([substanceId, propertyDefId])
   @@index([propertyDefId, valueNum])
   @@map("substance_properties")
+}
+
+// ---------- 製品 / 原材料 ----------
+
+/**
+ * 製品と原材料は同じもの。`usableAsMaterial` が立っているものだけ、
+ * 他の製品の組成に部品として入れられる（これ以外に両者の違いは無い）。
+ */
+model Product {
+  id   String @id @default(cuid())
+  code String @db.VarChar(20)
+  /** 論理削除するときは "<正規化コード>:<id>" に退避し、同じコードを再登録できるようにする */
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  nameJa String  @map("name_ja") @db.VarChar(500)
+  nameEn String? @map("name_en") @db.VarChar(500)
+
+  status ProductStatus @default(ACTIVE)
+  /** 備考（日本語のみ）。検索対象に含める */
+  note   String?
+
+  /** 他製品の組成に部品として使えるか */
+  usableAsMaterial Boolean @default(false) @map("usable_as_material")
+  /** 非公開。権限が無い人には存在ごと見せない（一覧から除外し、詳細は404） */
+  privateFlag      Boolean @default(false) @map("private_flag")
+  /** 組成を公開するか。オフだと本体は見えるが組成は非開示 */
+  compositionPublicFlag Boolean @default(true) @map("composition_public_flag")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  aliases    ProductAlias[]
+  properties ProductProperty[]
+
+  @@index([nameJa])
+  @@index([nameEn])
+  @@index([status])
+  @@index([usableAsMaterial])
+  @@index([privateFlag])
+  @@map("products")
+}
+
+/** 別名（旧品番・社内の呼び方など） */
+model ProductAlias {
+  id           String  @id @default(cuid())
+  productId    String  @map("product_id")
+  nameJa       String  @map("name_ja") @db.VarChar(500)
+  nameEn       String? @map("name_en") @db.VarChar(500)
+  displayOrder Int     @default(0) @map("display_order")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([nameJa])
+  @@index([nameEn])
+  @@map("product_aliases")
+}
+
+/** 拡張属性の値（製品）。項目定義は物質と共有する */
+model ProductProperty {
+  id            String   @id @default(cuid())
+  productId     String   @map("product_id")
+  propertyDefId String   @map("property_def_id")
+  valueText     String?  @map("value_text")
+  valueNum      Decimal? @map("value_num") @db.Decimal(18, 6)
+  unit          String?  @db.VarChar(50)
+
+  product Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  def     PropertyDef @relation(fields: [propertyDefId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, propertyDefId])
+  @@index([propertyDefId, valueNum])
+  @@map("product_properties")
 }
 
 // ---------- 金属換算係数 ----------

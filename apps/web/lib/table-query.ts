@@ -93,6 +93,18 @@ function dateCondition(col: QueryColumn, f: Extract<ColumnFilter, { kind: "date"
   return to ? { [col.field]: { gte: from, lte: to } } : { [col.field]: { gte: from } };
 }
 
+/**
+ * はい/いいえ の列。
+ * Prisma の Boolean 型には `in` が無いので、選択肢を真偽値そのものにほどく。
+ * 両方選ばれている場合は絞り込まないのと同じ（列は null を取らないため）。
+ */
+function boolCondition(col: QueryColumn, values: string[]): Where | null {
+  const picked = [...new Set(values.map((v) => v === "true"))];
+  const only = picked[0];
+  if (only === undefined || picked.length > 1) return null;
+  return { [col.field]: only };
+}
+
 /** 絞り込み条件を AND で組み立てる。解釈できない条件は無視する */
 export function buildWhere(columns: QueryColumn[], filters: TableState["filters"]): Where {
   const byKey = new Map(columns.map((c) => [c.key, c]));
@@ -109,13 +121,11 @@ export function buildWhere(columns: QueryColumn[], filters: TableState["filters"
           ? numberCondition(col, f)
           : f.kind === "date"
             ? dateCondition(col, f)
-            : f.values.length > 0
-              ? {
-                  [col.field]: col.booleanEnum
-                    ? { in: f.values.map((v) => v === "true") }
-                    : { in: f.values },
-                }
-              : null;
+            : f.values.length === 0
+              ? null
+              : col.booleanEnum
+                ? boolCondition(col, f.values)
+                : { [col.field]: { in: f.values } };
     if (!cond) continue;
     if (!col.relation) {
       conditions.push(cond);

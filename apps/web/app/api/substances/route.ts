@@ -13,8 +13,8 @@ import {
   normalizeInput,
   toListItem,
   validateCas,
-  validateProperties,
 } from "@/lib/substance-service";
+import { validatePropertyValues } from "@/lib/property-values";
 import { getAppSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -82,8 +82,8 @@ export async function POST(req: Request) {
     return jsonError(400, "duplicate_gazette", m.errors.duplicateGazette);
   }
 
-  const defs = await prisma.substancePropertyDef.findMany();
-  const propErrors = validateProperties(input, defs, m);
+  const defs = await prisma.propertyDef.findMany({ where: { target: "SUBSTANCE" } });
+  const propErrors = validatePropertyValues(input.properties, defs, m);
   if (propErrors.length > 0) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }

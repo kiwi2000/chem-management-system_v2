@@ -25,6 +25,23 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
+export const PRODUCT_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  { key: "usableAsMaterial", kind: "enum", field: "usableAsMaterial", booleanEnum: true },
+  { key: "privateFlag", kind: "enum", field: "privateFlag", booleanEnum: true },
+  {
+    key: "compositionPublicFlag",
+    kind: "enum",
+    field: "compositionPublicFlag",
+    booleanEnum: true,
+  },
+  { key: "status", kind: "enum", field: "status" },
+  { key: "note", kind: "text", field: "note", caseInsensitive: true },
+  { key: "updatedAt", kind: "date", field: "updatedAt" },
+];
+
 export const METAL_FACTOR_COLUMNS: QueryColumn[] = [
   { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
   { key: "metalElement", kind: "text", field: "metalElement" },
@@ -56,6 +73,8 @@ export const GROUP_COLUMNS: QueryColumn[] = [
 ];
 
 export const PROPERTY_DEF_COLUMNS: QueryColumn[] = [
+  // 用途は節ごとに固定（画面には出さないが、節から必ず条件として送られる）
+  { key: "target", kind: "enum", field: "target" },
   { key: "key", kind: "text", field: "key", caseInsensitive: true },
   { key: "labelJa", kind: "text", field: "labelJa", caseInsensitive: true },
   { key: "dataType", kind: "enum", field: "dataType" },

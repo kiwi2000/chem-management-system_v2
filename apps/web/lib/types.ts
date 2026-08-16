@@ -2,7 +2,9 @@ import type {
   GazetteLawKind,
   GroupKind,
   Permission,
+  ProductStatus,
   PropertyDataType,
+  PropertyTarget,
   SubstanceStatus,
 } from "@chem/shared";
 
@@ -81,13 +83,36 @@ export interface SubstanceDetailDto extends SubstanceListItemDto {
   mainNameJa: string;
   mainNameEn: string | null;
   subNames: { nameJa: string; nameEn: string | null }[];
-  /** 数値は文字列で受け渡す（浮動小数点を経由させない） */
-  properties: {
-    propertyDefId: string;
-    valueText: string | null;
-    valueNum: string | null;
-    unit: string | null;
-  }[];
+  properties: PropertyValueDto[];
+}
+
+/** 拡張属性の値。物質と製品で同じ形（数値は文字列で受け渡す） */
+export interface PropertyValueDto {
+  propertyDefId: string;
+  valueText: string | null;
+  valueNum: string | null;
+  unit: string | null;
+}
+
+export interface ProductListItemDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  status: ProductStatus;
+  note: string | null;
+  aliasCount: number;
+  /** 他製品の組成に部品として使えるか */
+  usableAsMaterial: boolean;
+  /** 非公開。権限が無い人にはそもそもこの行が返らない */
+  privateFlag: boolean;
+  compositionPublicFlag: boolean;
+  updatedAt: string;
+}
+
+export interface ProductDetailDto extends ProductListItemDto {
+  aliases: { nameJa: string; nameEn: string | null }[];
+  properties: PropertyValueDto[];
 }
 
 export interface MetalFactorDto {
@@ -103,6 +128,8 @@ export interface MetalFactorDto {
 
 export interface PropertyDefDto {
   id: string;
+  /** 物質用か製品用か。キーは用途ごとに一意 */
+  target: PropertyTarget;
   key: string;
   labelJa: string;
   labelEn: string | null;
@@ -110,7 +137,7 @@ export interface PropertyDefDto {
   defaultUnit: string | null;
   displayOrder: number;
   activeFlag: boolean;
-  /** 入力済みの物質数（削除の影響を知らせるため） */
+  /** この項目に値が入っている件数（削除の影響を知らせるため）。用途側だけを数える */
   valueCount: number;
 }
 

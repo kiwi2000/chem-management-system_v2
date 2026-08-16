@@ -14,6 +14,7 @@ export * from "./i18n";
 export * from "./metal-factor";
 export * from "./news";
 export * from "./permissions";
+export * from "./product";
 export * from "./settings";
 export * from "./substance";
 export * from "./table";

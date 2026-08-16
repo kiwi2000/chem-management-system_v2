@@ -6,8 +6,9 @@ import {
   type Messages,
   type SubstanceInput,
 } from "@chem/shared";
-import type { Prisma, SubstancePropertyDef } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { propertyWrites } from "@/lib/property-values";
 import type { SubstanceDetailDto, SubstanceListItemDto } from "@/lib/types";
 
 /** 一覧に必要な関連（別名は件数だけ使う） */
@@ -55,32 +56,6 @@ export function toDetail(s: SubstanceWithRelations): SubstanceDetailDto {
       unit: p.unit,
     })),
   };
-}
-
-/**
- * 保存前の検証のうち、辞書やDBを見ないと判定できないもの。
- * 返り値が空でなければ 400 で止める。
- */
-export function validateProperties(
-  input: SubstanceInput,
-  defs: SubstancePropertyDef[],
-  m: Messages,
-): string[] {
-  const byId = new Map(defs.map((d) => [d.id, d]));
-  const errors: string[] = [];
-  for (const p of input.properties) {
-    const def = byId.get(p.propertyDefId);
-    if (!def) {
-      errors.push(m.errors.unknownProperty);
-      continue;
-    }
-    const hasNum = p.valueNum !== null && p.valueNum !== undefined;
-    const hasText = p.valueText !== null && p.valueText !== undefined;
-    // 定義の種類と入っている値が食い違っていないか（DBのCHECK制約は「片方だけ」までしか見られない）
-    const ok = def.dataType === "NUMBER" ? hasNum && !hasText : hasText && !hasNum;
-    if (!ok) errors.push(m.errors.propertyTypeMismatch(def.labelJa));
-  }
-  return errors;
 }
 
 /**
@@ -164,15 +139,7 @@ export function childWrites(input: SubstanceInput) {
       number: g.number.trim(),
       displayOrder: i + 1,
     })),
-    properties: input.properties
-      // 値が空の行は保存しない（画面上は全項目の欄が並ぶため）
-      .filter((p) => p.valueNum != null || p.valueText != null)
-      .map((p) => ({
-        propertyDefId: p.propertyDefId,
-        valueText: p.valueText ?? null,
-        valueNum: p.valueNum ?? null,
-        unit: p.unit ?? null,
-      })),
+    properties: propertyWrites(input.properties),
   };
 }
 

@@ -3,14 +3,15 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { PROPERTY_DEF_COUNT, valueCountOf } from "@/lib/property-def-service";
 
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * PUT /api/admin/substance-property-defs/[id]
- * キーは変更できない（入力済みの値との対応が切れるため）。
+ * PUT /api/admin/property-defs/[id]
+ * キーと用途は変更できない（入力済みの値との対応が切れるため）。
  * 種類（数値/テキスト）も、値が既に入っている場合は変更できない。
  */
 export async function PUT(req: Request, { params }: Ctx) {
@@ -19,9 +20,9 @@ export async function PUT(req: Request, { params }: Ctx) {
   const { id } = await params;
   const m = await getServerMessages();
 
-  const existing = await prisma.substancePropertyDef.findUnique({
+  const existing = await prisma.propertyDef.findUnique({
     where: { id },
-    include: { _count: { select: { values: true } } },
+    include: PROPERTY_DEF_COUNT,
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
 
@@ -38,11 +39,11 @@ export async function PUT(req: Request, { params }: Ctx) {
   const v = parsed.data;
 
   const dataType =
-    existing._count.values > 0 && v.dataType !== existing.dataType
+    valueCountOf(existing) > 0 && v.dataType !== existing.dataType
       ? existing.dataType // 入力済みの値があるので種類は据え置く
       : v.dataType;
 
-  await prisma.substancePropertyDef.update({
+  await prisma.propertyDef.update({
     where: { id },
     data: {
       labelJa: v.labelJa,
@@ -55,7 +56,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   });
 
   await writeAudit({
-    entity: "substance_property_defs",
+    entity: "property_defs",
     entityId: id,
     action: "update",
     actorId: actor.user.id,
@@ -71,17 +72,17 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const { id } = await params;
   const m = await getServerMessages();
 
-  const existing = await prisma.substancePropertyDef.findUnique({ where: { id } });
+  const existing = await prisma.propertyDef.findUnique({ where: { id } });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
 
-  await prisma.substancePropertyDef.delete({ where: { id } });
+  await prisma.propertyDef.delete({ where: { id } });
 
   await writeAudit({
-    entity: "substance_property_defs",
+    entity: "property_defs",
     entityId: id,
     action: "delete",
     actorId: actor.user.id,
-    diff: { key: existing.key },
+    diff: { target: existing.target, key: existing.key },
   });
   return Response.json({ ok: true });
 }
