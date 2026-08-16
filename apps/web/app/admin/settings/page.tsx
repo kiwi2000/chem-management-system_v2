@@ -1,10 +1,17 @@
 "use client";
 
-import { DEFAULT_SETTINGS, type AppSettings } from "@chem/shared";
+import {
+  COMPOSITION_VALIDATION_MODES,
+  DEFAULT_SETTINGS,
+  type AppSettings,
+  type CompositionValidationMode,
+} from "@chem/shared";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -98,6 +105,63 @@ export default function SettingsPage() {
                 <span className="block">{m.settings.casFormatEnforced}</span>
                 <span className="text-muted-foreground block text-xs">
                   {m.settings.casFormatEnforcedHint}
+                </span>
+              </span>
+            </label>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.compositionSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="validationMode">{m.settings.validationMode}</Label>
+              <select
+                id="validationMode"
+                value={settings.compositionValidationMode}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    compositionValidationMode: e.target.value as CompositionValidationMode,
+                  })
+                }
+                className="border-input bg-background h-9 w-full max-w-md rounded-md border px-2 text-sm"
+              >
+                {COMPOSITION_VALIDATION_MODES.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {m.settings.validationModes[mode]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="epsilon">{m.settings.epsilonPct}</Label>
+              <Input
+                id="epsilon"
+                inputMode="decimal"
+                value={settings.compositionEpsilonPct}
+                onChange={(e) =>
+                  setSettings({ ...settings, compositionEpsilonPct: e.target.value })
+                }
+                className="w-28"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.epsilonPctHint}</p>
+            </div>
+            <label className="flex gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={settings.compositionBalanceAllowed}
+                onChange={(e) =>
+                  setSettings({ ...settings, compositionBalanceAllowed: e.target.checked })
+                }
+              />
+              <span>
+                <span className="block">{m.settings.balanceAllowed}</span>
+                <span className="text-muted-foreground block text-xs">
+                  {m.settings.balanceAllowedHint}
                 </span>
               </span>
             </label>

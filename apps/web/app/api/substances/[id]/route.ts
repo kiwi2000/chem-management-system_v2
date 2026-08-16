@@ -1,6 +1,7 @@
 import { substanceSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
+import { countUsesOfSubstance } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import {
@@ -118,7 +119,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 /**
  * DELETE /api/substances/[id] — 論理削除。
  * 正規化コードを退避して、同じコードを再登録できるようにする（v1はできなかった）。
- * 他テーブルからの参照チェックは、参照元ができる組成（S8）で追加する。
+ * 組成から使われている場合は断る（消すと製品の組成が壊れるため）。
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const actor = await requirePermission("SUBSTANCE_EDIT");
@@ -128,6 +129,11 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
   const existing = await prisma.substance.findFirst({ where: { id, deletedAt: null } });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
+
+  const uses = await countUsesOfSubstance(id);
+  if (uses > 0) {
+    return jsonError(409, "referenced", m.composition.referencedByProducts(uses));
+  }
 
   await prisma.substance.update({
     where: { id },

@@ -115,6 +115,33 @@ export interface ProductDetailDto extends ProductListItemDto {
   properties: PropertyValueDto[];
 }
 
+/** 組成の構成要素（物質でも原材料でも同じ形で見せる） */
+export interface CompositionElementDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+}
+
+export interface CompositionLineDto {
+  id: string;
+  substanceId: string | null;
+  childProductId: string | null;
+  /** 残部の行は null。数値は文字列で受け渡す */
+  contentPct: string | null;
+  isBalance: boolean;
+  note: string | null;
+  element: CompositionElementDto | null;
+}
+
+export interface CompositionResponse {
+  lines: CompositionLineDto[];
+  /** 既知成分（残部を除く）の合計 */
+  totalPct: string;
+  /** 残部の行に入る値。残部の行が無ければ null */
+  balancePct: string | null;
+}
+
 export interface MetalFactorDto {
   id: string;
   casNumber: string;

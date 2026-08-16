@@ -1,22 +1,9 @@
-/** 定数・正規化ユーティリティ（循環importを避けるため index から分離） */
-
-/** 含有率合計の検証モード（SystemSetting で管理者が切替） */
-export const COMPOSITION_VALIDATION_MODES = ["STRICT", "STANDARD", "LENIENT"] as const;
-export type CompositionValidationMode = (typeof COMPOSITION_VALIDATION_MODES)[number];
-
-/** SystemSetting のキー（値のハードコード禁止） */
-export const SETTING_KEYS = {
-  compositionValidationMode: "composition.validation_mode",
-  compositionEpsilon: "composition.epsilon",
-  compositionBalanceAllowed: "composition.balance_allowed",
-} as const;
-
-/** SystemSetting の既定値（DB未設定時のフォールバック） */
-export const SETTING_DEFAULTS: Record<string, string> = {
-  [SETTING_KEYS.compositionValidationMode]: "STANDARD",
-  [SETTING_KEYS.compositionEpsilon]: "0.01",
-  [SETTING_KEYS.compositionBalanceAllowed]: "true",
-};
+/**
+ * 定数・正規化ユーティリティ（循環importを避けるため index から分離）。
+ *
+ * システム設定のキーと既定値は settings.ts の SETTING_DEFS に一本化してある。
+ * 検証モードの定義は composition.ts にある。
+ */
 
 /** 全角英数記号を半角へ（コード・CAS番号の表記ゆれ対策） */
 function toHalfWidth(s: string): string {

@@ -318,7 +318,71 @@ export const en: Messages = {
     casFormatEnforced: "Require the CAS format (e.g. 7439-92-1)",
     casFormatEnforcedHint:
       "Turn this off to save other formats with a warning only — useful for provisional in-house numbers",
+    compositionSection: "Composition percentage checks",
+    validationMode: "When the total is not 100%",
+    validationModes: {
+      STRICT: "Strict (refuse to save unless the total is 100%)",
+      STANDARD: "Standard (warn if short, refuse if over)",
+      LENIENT: "Lenient (warn only when over 100%)",
+    },
+    epsilonPct: "Tolerance (%)",
+    epsilonPctHint: "Totals within this margin count as 100%. Use a value between 0 and 10",
+    epsilonRange: "The tolerance must be between 0 and 10",
+    balanceAllowed: "Allow a balance (remainder) line",
+    balanceAllowedHint:
+      "Lets one line per product mean “the rest”. Its percentage is derived from the difference to 100%",
     saved: "Settings saved",
+  },
+
+  composition: {
+    title: "Composition",
+    description: "Register what this product is made of, and how much of each.",
+    kind: "Type",
+    kindSubstance: "Substance",
+    kindProduct: "Raw material",
+    element: "Component",
+    contentPct: "Content (wt%)",
+    balance: "Balance",
+    balanceAuto: "auto",
+    note: "Notes",
+    addLine: "+ Add a component",
+    searchPlaceholder: "Search by code or name",
+    searching: "Searching...",
+    noCandidates: "Nothing matches",
+    empty: "No composition registered",
+    total: (pct: string) => `Entered total: ${pct}%`,
+    balanceValue: (pct: string) => `Balance: ${pct}%`,
+    moveUp: "Move up",
+    moveDown: "Move down",
+    withheld: "The composition of this product is withheld",
+    withheldEdit: "The composition of this product is withheld, so it cannot be edited",
+    saved: "Composition saved",
+    savedWithWarnings: "Composition saved. Please check the following",
+    errorPickOne: "Choose either a substance or a raw material, not both",
+    errorPctRequired: "Enter a content percentage (except on the balance line)",
+    errorBalanceHasPct: "The balance line cannot have a percentage (it is derived)",
+    errorBalanceNotAllowed: "Balance lines are not allowed by the system settings",
+    errorBalanceMultiple: "Only one balance line is allowed per product",
+    errorBalanceNegative: (total: string) =>
+      `The known components already exceed 100%, so the balance would be negative (total ${total}%)`,
+    errorSumNot100: (total: string) => `The percentages do not add up to 100% (total ${total}%)`,
+    errorDuplicateSubstance: (label: string) => `The substance "${label}" appears on several lines`,
+    errorDuplicateProduct: (label: string) =>
+      `The raw material "${label}" appears on several lines`,
+    errorSubstanceNotFound: "The selected substance could not be found",
+    errorProductNotFound: "The selected raw material could not be found",
+    errorNotUsableAsMaterial: (label: string) =>
+      `"${label}" cannot be used in a composition because it is not marked as a raw material`,
+    errorCycle:
+      "This would create a cycle: one of the raw materials leads back to this product itself",
+    warnEmpty: "The composition is empty",
+    warnSumOver: (total: string) => `The percentages add up to more than 100% (total ${total}%)`,
+    warnSumUnder: (total: string) =>
+      `The percentages add up to less than 100% (total ${total}% — undisclosed or remainder)`,
+    referencedByProducts: (n: number) =>
+      `Cannot delete: it is used in ${n} composition${n === 1 ? "" : "s"}`,
+    usedAsMaterialWarning: (n: number) =>
+      `This product is used as a raw material in ${n} composition${n === 1 ? "" : "s"} (those references stay as they are)`,
   },
 
   propertyDefs: {

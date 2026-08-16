@@ -321,7 +321,72 @@ export const ja = {
     casFormatEnforced: "CAS番号の形（例: 7439-92-1）を強制する",
     casFormatEnforcedHint:
       "外すと形が違っても警告だけで保存できます。暫定の管理番号を入れる運用なら外してください",
+    compositionSection: "組成の含有率チェック",
+    validationMode: "合計が100%でないときの扱い",
+    validationModes: {
+      STRICT: "厳しい（100%でなければ保存しない）",
+      STANDARD: "標準（足りないときは警告、超えたら保存しない）",
+      LENIENT: "ゆるい（超えたときだけ警告）",
+    },
+    epsilonPct: "許容誤差（%）",
+    epsilonPctHint: "この範囲のずれは 100% とみなします。0〜10 の間で指定してください",
+    epsilonRange: "許容誤差は 0〜10 の間で入力してください",
+    balanceAllowed: "balance（残部）行を使えるようにする",
+    balanceAllowedHint:
+      "「残り全部」の行を1製品に1件だけ置けます。含有率は 100% との差から自動で決まります",
     saved: "設定を保存しました",
+  },
+
+  composition: {
+    title: "原組成",
+    description: "この製品に何がどれだけ入っているかを登録します。",
+    kind: "種別",
+    kindSubstance: "物質",
+    kindProduct: "原材料",
+    element: "構成要素",
+    contentPct: "含有率(wt%)",
+    balance: "残部",
+    balanceAuto: "自動補完",
+    note: "備考",
+    addLine: "＋ 構成要素を追加",
+    searchPlaceholder: "コード / 名称で検索",
+    searching: "検索中...",
+    noCandidates: "該当するものがありません",
+    empty: "組成が登録されていません",
+    total: (pct: string) => `入力済み合計: ${pct}%`,
+    balanceValue: (pct: string) => `残部: ${pct}%`,
+    moveUp: "上へ",
+    moveDown: "下へ",
+    /** 非開示のときに本体だけ見せる文言 */
+    withheld: "この製品の組成は非開示です",
+    withheldEdit: "この製品の組成は非開示のため編集できません",
+    saved: "組成を保存しました",
+    savedWithWarnings: "組成を保存しました。次の点を確認してください",
+    /** 保存を止めるもの */
+    errorPickOne: "構成要素は物質か原材料のどちらか一方を選んでください",
+    errorPctRequired: "含有率を入力してください（残部の行を除く）",
+    errorBalanceHasPct: "残部の行に含有率は入力できません（自動で決まります）",
+    errorBalanceNotAllowed: "残部の行はシステム設定で許可されていません",
+    errorBalanceMultiple: "残部の行は1製品につき1件までです",
+    errorBalanceNegative: (total: string) =>
+      `既知成分だけで100%を超えているため、残部が負になります（合計 ${total}%）`,
+    errorSumNot100: (total: string) => `含有率の合計が100%になっていません（合計 ${total}%）`,
+    errorDuplicateSubstance: (label: string) => `物質「${label}」が複数の行に指定されています`,
+    errorDuplicateProduct: (label: string) => `原材料「${label}」が複数の行に指定されています`,
+    errorSubstanceNotFound: "選んだ物質が見つかりません",
+    errorProductNotFound: "選んだ原材料が見つかりません",
+    errorNotUsableAsMaterial: (label: string) =>
+      `「${label}」は原材料利用可がオフのため組成に使えません`,
+    errorCycle: "循環参照になるため登録できません（この製品自身に行き着く原材料が含まれています）",
+    /** 保存はするが伝えるもの */
+    warnEmpty: "組成が空です",
+    warnSumOver: (total: string) => `含有率の合計が100%を超えています（合計 ${total}%）`,
+    warnSumUnder: (total: string) =>
+      `含有率の合計が100%未満です（合計 ${total}%・未開示や残部があるかもしれません）`,
+    /** 参照されているものを消そうとしたとき */
+    referencedByProducts: (n: number) => `${n} 件の組成から参照されているため削除できません`,
+    usedAsMaterialWarning: (n: number) =>
+      `この製品は ${n} 件の組成から原材料として参照されています（参照はそのまま残ります）`,
   },
 
   propertyDefs: {

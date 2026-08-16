@@ -1,6 +1,7 @@
 import { productSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
+import { countUsesAsMaterial } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import {
@@ -108,14 +109,19 @@ export async function PUT(req: Request, { params }: Ctx) {
     },
   });
 
-  // 警告の中身は組成（S8）ができてから増える
-  return Response.json({ ok: true, warnings: [] });
+  // 原材料利用可を外しても既存の参照は残る。気づけるように知らせる（保存は通す）
+  const warnings: string[] = [];
+  if (existing.usableAsMaterial && !base.usableAsMaterial) {
+    const uses = await countUsesAsMaterial(id);
+    if (uses > 0) warnings.push(m.composition.usedAsMaterialWarning(uses));
+  }
+  return Response.json({ ok: true, warnings });
 }
 
 /**
  * DELETE /api/products/[id] — 論理削除。
  * 正規化コードを退避して、同じコードを再登録できるようにする（v1はできなかった）。
- * 他テーブルからの参照チェックは、参照元ができる組成（S8）で追加する。
+ * 他の組成から原材料として使われている場合は断る（消すと親の組成が壊れるため）。
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRODUCT_EDIT");
@@ -127,6 +133,11 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
+
+  const uses = await countUsesAsMaterial(id);
+  if (uses > 0) {
+    return jsonError(409, "referenced", m.composition.referencedByProducts(uses));
+  }
 
   await prisma.product.update({
     where: { id },

@@ -267,9 +267,10 @@ model Substance {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  aliases        SubstanceAlias[]
-  gazetteNumbers SubstanceGazetteNumber[]
-  properties     SubstanceProperty[]
+  aliases          SubstanceAlias[]
+  gazetteNumbers   SubstanceGazetteNumber[]
+  properties       SubstanceProperty[]
+  compositionLines CompositionLine[]
 
   @@index([casNormalized])
   @@index([status])
@@ -390,6 +391,11 @@ model Product {
   aliases    ProductAlias[]
   properties ProductProperty[]
 
+  /** この製品の組成（何が入っているか） */
+  compositionLines CompositionLine[] @relation("ProductComposition")
+  /** この製品を原材料として使っている組成行（逆参照） */
+  usedAsMaterialIn CompositionLine[] @relation("ProductAsMaterial")
+
   @@index([nameJa])
   @@index([nameEn])
   @@index([status])
@@ -429,6 +435,40 @@ model ProductProperty {
   @@unique([productId, propertyDefId])
   @@index([propertyDefId, valueNum])
   @@map("product_properties")
+}
+
+/**
+ * 原組成の1行。製品に「何がどれだけ入っているか」を1段だけ持つ。
+ * 構成要素は物質か子製品のどちらか一方（CHECK制約で担保）。
+ *
+ * 多段の展開（親×子の掛け算で物質まで下ろす）は別テーブルに持つ（S11）。
+ */
+model CompositionLine {
+  id              String  @id @default(cuid())
+  parentProductId String  @map("parent_product_id")
+  substanceId     String? @map("substance_id")
+  childProductId  String? @map("child_product_id")
+
+  /** 重量含有率。残部（balance）の行だけ null で、100% との差から算出する */
+  contentPct Decimal? @map("content_pct") @db.Decimal(9, 6)
+  /** 残部の行。1製品につき1件まで（アプリ層で担保） */
+  isBalance  Boolean  @default(false) @map("is_balance")
+
+  note         String?
+  displayOrder Int     @default(0) @map("display_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  parentProduct Product    @relation("ProductComposition", fields: [parentProductId], references: [id], onDelete: Cascade)
+  /** 参照されているものは物理削除させない（論理削除の前にアプリ側で参照を確認する） */
+  substance     Substance? @relation(fields: [substanceId], references: [id], onDelete: Restrict)
+  childProduct  Product?   @relation("ProductAsMaterial", fields: [childProductId], references: [id], onDelete: Restrict)
+
+  @@index([parentProductId])
+  @@index([substanceId])
+  @@index([childProductId])
+  @@map("composition_lines")
 }
 
 // ---------- 金属換算係数 ----------

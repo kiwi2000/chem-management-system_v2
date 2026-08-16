@@ -16,7 +16,9 @@ export async function getAppSettings(): Promise<AppSettings> {
   for (const def of SETTING_DEFS) {
     const raw = byKey.get(def.key);
     if (raw === undefined || raw === null) continue;
-    settings[def.field] = raw === "true";
+    // 読めない値（手でDBを書き換えた等）は既定のままにする
+    const parsed = def.parse(raw);
+    if (parsed !== null) Object.assign(settings, { [def.field]: parsed });
   }
   return settings;
 }

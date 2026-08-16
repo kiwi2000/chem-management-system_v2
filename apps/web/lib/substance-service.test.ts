@@ -1,5 +1,5 @@
 import type { AppSettings, Messages } from "@chem/shared";
-import { getMessages } from "@chem/shared";
+import { DEFAULT_SETTINGS, getMessages } from "@chem/shared";
 import { describe, expect, it } from "vitest";
 import { validateCas } from "./substance-service";
 
@@ -10,6 +10,7 @@ import { validateCas } from "./substance-service";
 const m: Messages = getMessages("ja");
 
 const settings = (casRequired: boolean, casFormatEnforced: boolean): AppSettings => ({
+  ...DEFAULT_SETTINGS,
   casRequired,
   casFormatEnforced,
 });
