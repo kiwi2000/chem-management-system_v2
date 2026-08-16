@@ -23,7 +23,9 @@ interface NavItem {
  */
 const ITEMS: NavItem[] = [
   { href: "/", key: "home" },
-  { href: "/news", key: "news" },
+  // お知らせを読むだけならホームで足りる。この画面は投稿・編集のためのものなので、
+  // 投稿できる人にだけ見せる（他人の分を編集できる権限は投稿権限を含む）
+  { href: "/news", key: "news", needs: "NEWS_POST" },
   { href: "/substances", key: "substances", needs: "SUBSTANCE_VIEW" },
   { href: "/products", key: "products", needs: "PRODUCT_VIEW" },
   { href: "/laws", key: "laws", needs: "REGULATION_VIEW", match: ["/laws", "/categories"] },

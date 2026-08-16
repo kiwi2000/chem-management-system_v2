@@ -7,10 +7,13 @@ import { NewsRow } from "@/components/news-row";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import type { NewsDto } from "@/lib/types";
+import { useMe } from "@/lib/use-me";
 
 /** ホーム本文に出す「掲載中のお知らせ」。分類ごとに見出しを付けて並べる */
 export function HomeNews() {
   const { m, locale } = useI18n();
+  // お知らせ一覧は投稿・編集のための画面なので、投稿できる人にだけ入口を出す
+  const { can } = useMe();
   const [items, setItems] = useState<NewsDto[] | null>(null);
 
   useEffect(() => {
@@ -49,9 +52,11 @@ export function HomeNews() {
           <h2 className="text-lg font-semibold">{m.news.title}</h2>
           <span className="text-muted-foreground text-xs">{m.news.expandHint}</span>
         </div>
-        <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/news" />}>
-          {m.home.seeAllNews}
-        </Button>
+        {can("NEWS_POST") && (
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/news" />}>
+            {m.home.seeAllNews}
+          </Button>
+        )}
       </div>
 
       {items === null && <p className="text-muted-foreground text-sm">{m.common.loading}</p>}
