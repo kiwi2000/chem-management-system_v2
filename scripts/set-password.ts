@@ -7,13 +7,12 @@
  * 実行:
  *   npx tsx scripts/set-password.ts --list                             ユーザー一覧
  *   npx tsx scripts/set-password.ts <メール> <パスワード>                既存ユーザーに設定
- *   npx tsx scripts/set-password.ts <メール> <パスワード> --create      いなければ作る（既定 SYSTEM_ADMIN）
- *   npx tsx scripts/set-password.ts <メール> <パスワード> --create PRIVILEGED
+ *   npx tsx scripts/set-password.ts <メール> <パスワード> --create      いなければ作る（全権限を付与）
  *
  * 注意: 引数に渡したパスワードはシェル履歴に残る。共用端末では実行後に履歴を消すこと。
  */
 import { hash } from "@node-rs/argon2";
-import { PrismaClient, Role } from "@prisma/client";
+import { Permission, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 const ARGON_OPTS = { memoryCost: 19456, timeCost: 2, parallelism: 1 } as const;
@@ -24,11 +23,11 @@ async function list() {
     orderBy: { createdAt: "asc" },
     select: {
       email: true,
-      role: true,
       activeFlag: true,
       passwordHash: true,
       mfaEnabled: true,
       lastLoginAt: true,
+      permissions: { select: { permission: true } },
     },
   });
   if (users.length === 0) {
@@ -38,7 +37,7 @@ async function list() {
   console.table(
     users.map((u) => ({
       email: u.email,
-      role: u.role,
+      権限数: u.permissions.length,
       有効: u.activeFlag,
       パスワード: u.passwordHash ? "設定済み" : "未設定",
       MFA: u.mfaEnabled ? "有効" : "無効",
@@ -66,11 +65,7 @@ async function main() {
     return;
   }
 
-  const createIdx = args.indexOf("--create");
-  const wantCreate = createIdx >= 0;
-  const roleArg = wantCreate ? args[createIdx + 1] : undefined;
-  const role: Role =
-    roleArg && roleArg in Role ? Role[roleArg as keyof typeof Role] : Role.SYSTEM_ADMIN;
+  const wantCreate = args.includes("--create");
 
   let user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
@@ -80,10 +75,13 @@ async function main() {
       process.exitCode = 1;
       return;
     }
-    user = await prisma.user.create({
-      data: { email, role, canEdit: true, displayName: null },
+    user = await prisma.user.create({ data: { email, displayName: null } });
+    // 初期セットアップ用なので全権限を付与する。過剰な分は画面から外せばよい
+    await prisma.userPermission.createMany({
+      data: Object.values(Permission).map((permission) => ({ userId: user!.id, permission })),
+      skipDuplicates: true,
     });
-    console.log(`ユーザーを作成しました: ${email}（${role}）`);
+    console.log(`ユーザーを作成しました: ${email}（全権限を付与）`);
   }
 
   await prisma.user.update({
@@ -98,7 +96,7 @@ async function main() {
   });
   // 既存セッションを全て失効（安全側）
   await prisma.session.deleteMany({ where: { userId: user.id } });
-  console.log(`パスワードを設定しました: ${email}（${user.role}）`);
+  console.log(`パスワードを設定しました: ${email}`);
 }
 
 main()
