@@ -3,10 +3,11 @@
 
 FROM node:22-slim
 
-# LibreOffice（PDF変換）＋日本語フォント＋Prisma実行に必要なOpenSSL
+# 日本語フォント＋Prisma実行に必要なOpenSSL
+# Note: LibreOffice（Q-DOC4用）はまだ未実装のため、将来の実装時に追加
 RUN apt-get update && apt-get install -y --no-install-recommends \
       openssl ca-certificates \
-      libreoffice-writer fonts-noto-cjk \
+      fonts-noto-cjk \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
