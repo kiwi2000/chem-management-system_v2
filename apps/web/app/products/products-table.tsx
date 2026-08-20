@@ -86,7 +86,7 @@ export function ProductsTable({
       ),
     });
 
-    return [
+    const cols: TableColumn<ProductListItemDto>[] = [
       {
         key: "code",
         header: m.products.code,
@@ -205,7 +205,9 @@ export function ProductsTable({
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
       },
     ];
-  }, [m, locale, modelOptions, useOptions]);
+    // 上の表は公開済しか並ばないので、状態の列は出さない（全部同じ値になるため）
+    return scope === "working" ? cols : cols.filter((c) => c.key !== "publishState");
+  }, [m, locale, modelOptions, useOptions, scope]);
 
   // 組成の節だけは見出しに文言を使うので、ここで組み立てる
   const filterLayout = useMemo<FilterLayoutRow[]>(

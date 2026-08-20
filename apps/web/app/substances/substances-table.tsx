@@ -42,8 +42,8 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
   const { can } = useMe();
   const editable = can("SUBSTANCE_EDIT");
 
-  const columns = useMemo<TableColumn<SubstanceListItemDto>[]>(
-    () => [
+  const columns = useMemo<TableColumn<SubstanceListItemDto>[]>(() => {
+    const cols: TableColumn<SubstanceListItemDto>[] = [
       {
         key: "code",
         header: m.substances.code,
@@ -146,9 +146,10 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         className: "text-muted-foreground text-center text-xs",
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
       },
-    ],
-    [m, locale],
-  );
+    ];
+    // 上の表は公開済しか並ばないので、状態の列は出さない（全部同じ値になるため）
+    return scope === "working" ? cols : cols.filter((c) => c.key !== "publishState");
+  }, [m, locale, scope]);
 
   // 1画面に表が2つあるので、URLのクエリを節ごとに分ける
   const storageKey = `chem.table.substances.${scope}`;
