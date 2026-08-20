@@ -22,8 +22,6 @@ export const productSchema = (m: Messages) =>
     status: z.enum(PRODUCT_STATUSES),
     note: emptyToNull(z.string().trim().max(2000, m.validation.tooLong(2000))).optional(),
 
-    /** 作成中。オンの間は組成の候補に出さない */
-    draftFlag: z.boolean(),
     usableAsMaterial: z.boolean(),
     /** 型式。システム設定の選択肢から1つ。未選択は null */
     modelValue: emptyToNull(z.string().trim().max(100)).optional(),

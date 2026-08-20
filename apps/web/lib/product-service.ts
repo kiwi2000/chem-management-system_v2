@@ -88,7 +88,6 @@ export function normalizeInput(input: ProductInput) {
     nameJa: input.nameJa.trim(),
     nameEn: input.nameEn?.trim() || null,
     status: input.status,
-    draftFlag: input.draftFlag,
     note: input.note?.trim() || null,
     usableAsMaterial: input.usableAsMaterial,
     modelValue: input.modelValue?.trim() || null,

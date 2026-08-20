@@ -143,7 +143,6 @@ export function normalizeInput(input: SubstanceInput) {
     casNumber: casNormalized,
     casNormalized,
     status: input.status,
-    draftFlag: input.draftFlag,
     note: input.note?.trim() || null,
     nameJa: input.mainNameJa.trim(),
     nameEn: input.mainNameEn?.trim() || null,
