@@ -43,7 +43,7 @@ export async function GET(req: Request) {
       where: {
         deletedAt: null,
         status: "ACTIVE",
-        // 作成中のものは、まだ他の人に使わせない
+        // ドラフトのものは、まだ他の人に使わせない
         draftFlag: false,
         usableAsMaterial: true,
         // 自分自身は原材料にできない（循環になる）

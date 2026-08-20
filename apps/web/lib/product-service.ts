@@ -24,7 +24,7 @@ type ProductWithRelations = Prisma.ProductGetPayload<{ include: typeof PRODUCT_I
 /**
  * 一覧・詳細に出してよい製品の条件。
  *
- * 無効（廃番）と作成中のものは、作成者と `INACTIVE_VIEW` を持つ人にだけ見せる。
+ * 無効（廃番）とドラフトのものは、作成者と `INACTIVE_VIEW` を持つ人にだけ見せる。
  * 一覧・件数・詳細のすべてに同じ条件を掛けること
  * （詳細は 403 ではなく 404。403 だと「その ID の製品は在る」と分かってしまうため）。
  *
@@ -36,7 +36,7 @@ export function visibilityWhere(actor: Actor): Prisma.ProductWhereInput {
   return { OR: [{ status: "ACTIVE", draftFlag: false }, { createdBy: actor.user.id }] };
 }
 
-/** 書き換えてよいか。見えるだけでは足りず、無効・作成中は専用の権限が要る */
+/** 書き換えてよいか。見えるだけでは足りず、無効・ドラフトは専用の権限が要る */
 export function canEditProduct(
   actor: Actor,
   target: { status: string; draftFlag: boolean; createdBy: string | null },

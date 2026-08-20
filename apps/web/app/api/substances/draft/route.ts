@@ -7,7 +7,7 @@ import { canEditSubstance, visibilityWhere } from "@/lib/substance-service";
 
 export const dynamic = "force-dynamic";
 
-/** POST /api/substances/draft — 作成中／完成を切り替える（製品と同じ扱い） */
+/** POST /api/substances/draft — ドラフト／完成を切り替える（製品と同じ扱い） */
 export async function POST(req: Request) {
   const m = await getServerMessages();
   const actor = await requirePermission("SUBSTANCE_EDIT");

@@ -19,7 +19,7 @@ interface Props {
 }
 
 /**
- * 作成中と完成の切り替え。
+ * ドラフトと完成の切り替え。
  * 保存とは分けた操作にしている。「とりあえず保存しておく」と
  * 「他の人に使わせてよい」を、はっきり別の意思表示にするため。
  */
@@ -52,23 +52,29 @@ export function DraftToggle({ entity, id, draftFlag, canEdit }: Props) {
 
   return (
     <div className="flex items-center gap-3">
-      {draftFlag && <Badge variant="secondary">{m.common.draftBadge}</Badge>}
+      {/* ドラフトであることは見落とすと困るので、はっきり分かる大きさと色にする */}
+      {draftFlag && (
+        <Badge className="border border-amber-400 bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-900 dark:border-amber-500/60 dark:bg-amber-500/20 dark:text-amber-200">
+          {m.common.draftBadge}
+        </Badge>
+      )}
       {canEdit && (
         <Button
           type="button"
-          variant="outline"
-          size="sm"
+          // 完成させるのは意識的な操作なので、目立つ色で大きく出す
+          variant={draftFlag ? "default" : "outline"}
+          size="lg"
           disabled={busy}
           onClick={() => void toggle()}
         >
           {draftFlag ? (
             <>
-              <CircleCheck className="mr-1 size-3.5" />
+              <CircleCheck className="mr-1 size-4" />
               {m.common.markDone}
             </>
           ) : (
             <>
-              <Undo2 className="mr-1 size-3.5" />
+              <Undo2 className="mr-1 size-4" />
               {m.common.markDraft}
             </>
           )}

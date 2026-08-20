@@ -41,7 +41,7 @@ interface Props<T> {
   selectable?: boolean;
   /** 選択した行の削除。確認はこの部品が出すので、呼び出し側は消す処理だけ書く */
   onDeleteSelected?: (rows: T[]) => void | Promise<void>;
-  /** 選択した行をまとめて完成にする（作成中を持つ一覧だけ渡す） */
+  /** 選択した行をまとめて完成にする（ドラフトを持つ一覧だけ渡す） */
   onMarkDoneSelected?: (rows: T[]) => void | Promise<void>;
   /** 行をダブルクリックしたとき（詳細を開く・その場のフォームに読み込む） */
   onRowActivate?: (row: T) => void;

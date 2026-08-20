@@ -215,7 +215,7 @@ export function splitNumericTokens(raw: string): string[] {
   return out;
 }
 
-/** 作成中／完成の切り替え。一覧からまとめて変えることもある */
+/** ドラフト／完成の切り替え。一覧からまとめて変えることもある */
 export const draftUpdateSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(500),
   draftFlag: z.boolean(),

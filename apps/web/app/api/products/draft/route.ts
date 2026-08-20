@@ -8,7 +8,7 @@ import { canEditProduct, visibilityWhere } from "@/lib/product-service";
 export const dynamic = "force-dynamic";
 
 /**
- * POST /api/products/draft — 作成中／完成を切り替える。
+ * POST /api/products/draft — ドラフト／完成を切り替える。
  *
  * 保存（PUT）ではこのフラグを動かさず、この操作でだけ変える。
  * 「とりあえず保存しておく」と「他の人に使わせてよい」を、操作として分けるため。
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   }
   const { ids, draftFlag } = parsed.data;
 
-  // 見えないものは対象にしない。見えていても、無効・作成中は編集の権限を別に見る
+  // 見えないものは対象にしない。見えていても、無効・ドラフトは編集の権限を別に見る
   const targets = await prisma.product.findMany({
     where: { id: { in: ids }, deletedAt: null, ...visibilityWhere(actor) },
     select: { id: true, code: true, status: true, draftFlag: true, createdBy: true },

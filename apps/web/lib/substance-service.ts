@@ -33,14 +33,14 @@ type SubstanceWithRelations = Prisma.SubstanceGetPayload<{ include: typeof SUBST
  * 一覧・詳細に出してよい物質の条件。
  *
  * 物質は「無効」でも隠さない（組成に使われているものが読めなくなるため）。
- * 隠すのは作成中のものだけで、作成者と `INACTIVE_VIEW` を持つ人にだけ見せる。
+ * 隠すのはドラフトのものだけで、作成者と `INACTIVE_VIEW` を持つ人にだけ見せる。
  */
 export function visibilityWhere(actor: Actor): Prisma.SubstanceWhereInput {
   if (actor.has("INACTIVE_VIEW")) return {};
   return { OR: [{ draftFlag: false }, { createdBy: actor.user.id }] };
 }
 
-/** 書き換えてよいか。作成中のものは専用の権限か、作成者本人だけ */
+/** 書き換えてよいか。ドラフトのものは専用の権限か、作成者本人だけ */
 export function canEditSubstance(
   actor: Actor,
   target: { draftFlag: boolean; createdBy: string | null },

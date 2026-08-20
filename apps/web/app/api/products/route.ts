@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }
 
-  // 新規登録は必ず作成中から始める（完成させるのは意識的な操作にする）
+  // 新規登録は必ずドラフトから始める（完成させるのは意識的な操作にする）
   const base = { ...normalizeInput(input), draftFlag: true };
   if (await prisma.product.findUnique({ where: { codeNormalized: base.codeNormalized } })) {
     return jsonError(409, "duplicate_code", m.errors.duplicateProductCode(base.code));

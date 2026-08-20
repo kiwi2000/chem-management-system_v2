@@ -12,7 +12,7 @@ export const PERMISSIONS = [
   // 物質
   "SUBSTANCE_VIEW",
   "SUBSTANCE_EDIT",
-  // 無効・作成中のデータ（物質・製品で共通）
+  // 無効・ドラフトのデータ（物質・製品で共通）
   "INACTIVE_VIEW",
   "INACTIVE_EDIT",
   // 法規制（金属換算係数・情報源・リンクバージョンを含む）
@@ -42,7 +42,7 @@ const IMPLIES: Partial<Record<Permission, readonly Permission[]>> = {
   // 組成の編集は製品の編集に含まれるため、組成の閲覧も必要
   PRODUCT_EDIT: ["PRODUCT_VIEW", "COMPOSITION_VIEW"],
   SUBSTANCE_EDIT: ["SUBSTANCE_VIEW"],
-  // 無効・作成中を編集できる人は、当然それを見られる
+  // 無効・ドラフトを編集できる人は、当然それを見られる
   INACTIVE_EDIT: ["INACTIVE_VIEW"],
   REGULATION_EDIT: ["REGULATION_VIEW"],
   // 他人のお知らせを編集できる人は、自分でも投稿できるものとして扱う

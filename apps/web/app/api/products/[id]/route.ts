@@ -49,7 +49,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-  // 無効・作成中のものは、作成者か専用の権限を持つ人だけが書き換えられる
+  // 無効・ドラフトのものは、作成者か専用の権限を持つ人だけが書き換えられる
   if (!canEditProduct(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
 
   let body: unknown;
@@ -70,7 +70,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }
 
-  // 作成中かどうかは専用の操作でだけ変える（保存で意図せず完成にしない）
+  // ドラフトかどうかは専用の操作でだけ変える（保存で意図せず完成にしない）
   const base = { ...normalizeInput(input), draftFlag: existing.draftFlag };
   if (base.codeNormalized !== existing.codeNormalized) {
     const clash = await prisma.product.findUnique({

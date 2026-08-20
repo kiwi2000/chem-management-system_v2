@@ -83,7 +83,7 @@ export interface SubstanceListItemDto {
   code: string;
   casNumber: string | null;
   status: SubstanceStatus;
-  /** 作成中。入力の途中で、まだ他の人に使わせたくない状態 */
+  /** ドラフト。入力の途中で、まだ他の人に使わせたくない状態 */
   draftFlag: boolean;
   nameJa: string;
   nameEn: string | null;
@@ -115,7 +115,7 @@ export interface ProductListItemDto {
   nameJa: string;
   nameEn: string | null;
   status: ProductStatus;
-  /** 作成中。入力の途中で、まだ他の人に使わせたくない状態 */
+  /** ドラフト。入力の途中で、まだ他の人に使わせたくない状態 */
   draftFlag: boolean;
   note: string | null;
   aliasCount: number;
