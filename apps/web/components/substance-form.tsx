@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AliasList } from "@/components/alias-list";
+import { FieldError } from "@/components/field-error";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, PropertyDefDto, SubstanceDetailDto } from "@/lib/types";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 
 interface Props {
   /** 未指定なら新規登録 */
@@ -73,6 +75,9 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
   });
 
   const [error, setError] = useState<string | null>(null);
+  // どの項目が悪いのかを、その欄の下に出す
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const fieldError = (key: string) => firstError(fieldErrors, key);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -107,6 +112,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
     setWarnings([]);
     setSaving(true);
     try {
@@ -119,6 +125,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        setFieldErrors(toFieldErrors(body?.error.details));
         return;
       }
       const body = (await res.json()) as { warnings?: string[] };
@@ -173,8 +180,10 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                     maxLength={20}
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
+                    aria-invalid={Boolean(fieldError("code"))}
                     className="w-56 font-mono"
                   />
+                  <FieldError message={fieldError("code")} />
                   <p className="text-muted-foreground text-xs">{m.substances.codeHint}</p>
                 </div>
                 <div className="space-y-2">
@@ -188,9 +197,11 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                     required={settings.casRequired}
                     value={casNumber}
                     onChange={(e) => setCasNumber(e.target.value)}
+                    aria-invalid={Boolean(fieldError("casNumber"))}
                     className="w-56 font-mono"
                     placeholder="7439-92-1"
                   />
+                  <FieldError message={fieldError("casNumber")} />
                   {!settings.casRequired && (
                     <p className="text-muted-foreground text-xs">{m.substances.casHint}</p>
                   )}
@@ -219,6 +230,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                   rows={3}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
+                  aria-invalid={Boolean(fieldError("note"))}
                   className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
                 />
               </div>
@@ -239,8 +251,10 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                   required
                   value={mainNameJa}
                   onChange={(e) => setMainNameJa(e.target.value)}
+                  aria-invalid={Boolean(fieldError("mainNameJa"))}
                   className="w-full"
                 />
+                <FieldError message={fieldError("mainNameJa")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mainEn">
@@ -251,10 +265,13 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                   id="mainEn"
                   value={mainNameEn}
                   onChange={(e) => setMainNameEn(e.target.value)}
+                  aria-invalid={Boolean(fieldError("mainNameEn"))}
                   className="w-full"
                 />
+                <FieldError message={fieldError("mainNameEn")} />
               </div>
 
+              <FieldError message={fieldError("subNames")} />
               <AliasList
                 label={m.substances.subNamesJa}
                 addLabel={m.substances.addSubNameJa}

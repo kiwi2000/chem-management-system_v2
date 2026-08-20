@@ -5,7 +5,9 @@ import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { AliasList } from "@/components/alias-list";
+import { FieldError } from "@/components/field-error";
 import { MultiSelect } from "@/components/multi-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +79,9 @@ export function ProductForm({
   });
 
   const [error, setError] = useState<string | null>(null);
+  // どの項目が悪いのかを、その欄の下に出す
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const fieldError = (key: string) => firstError(fieldErrors, key);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -112,6 +117,7 @@ export function ProductForm({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
     setWarnings([]);
     setSaving(true);
     try {
@@ -124,6 +130,7 @@ export function ProductForm({
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        setFieldErrors(toFieldErrors(body?.error.details));
         return;
       }
       const body = (await res.json()) as { warnings?: string[] };
@@ -206,8 +213,10 @@ export function ProductForm({
                     maxLength={20}
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
+                    aria-invalid={Boolean(fieldError("code"))}
                     className="w-56 font-mono"
                   />
+                  <FieldError message={fieldError("code")} />
                 </div>
                 {/* 見出しはチェックの状態そのもの（有効／無効）を出す */}
                 <div className="space-y-2">
@@ -295,8 +304,10 @@ export function ProductForm({
                   required
                   value={nameJa}
                   onChange={(e) => setNameJa(e.target.value)}
+                  aria-invalid={Boolean(fieldError("nameJa"))}
                   className="w-full"
                 />
+                <FieldError message={fieldError("nameJa")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nameEn">
@@ -307,11 +318,14 @@ export function ProductForm({
                   id="nameEn"
                   value={nameEn}
                   onChange={(e) => setNameEn(e.target.value)}
+                  aria-invalid={Boolean(fieldError("nameEn"))}
                   className="w-full"
                 />
+                <FieldError message={fieldError("nameEn")} />
               </div>
 
               <p className="text-muted-foreground text-xs">{m.products.aliasHint}</p>
+              <FieldError message={fieldError("aliases")} />
               <AliasList
                 label={m.products.aliasesJa}
                 addLabel={m.products.addAliasJa}
@@ -346,6 +360,7 @@ export function ProductForm({
                 aria-label={m.products.note}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
+                aria-invalid={Boolean(fieldError("note"))}
                 className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
               />
             </CardContent>

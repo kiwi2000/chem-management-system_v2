@@ -45,8 +45,8 @@ export const aliasesSchema = (m: Messages) =>
     .array(
       z
         .object({
-          nameJa: emptyToNull(z.string().trim().max(500)).optional(),
-          nameEn: emptyToNull(z.string().trim().max(500)).optional(),
+          nameJa: emptyToNull(z.string().trim().max(500, m.validation.tooLong(500))).optional(),
+          nameEn: emptyToNull(z.string().trim().max(500, m.validation.tooLong(500))).optional(),
         })
         .refine((a) => Boolean(a.nameJa) || Boolean(a.nameEn), m.validation.required),
     )
@@ -69,7 +69,7 @@ export const substanceSchema = (m: Messages) =>
       .array(
         z.object({
           lawKind: z.enum(GAZETTE_LAW_KINDS),
-          number: z.string().trim().min(1, m.validation.required).max(50),
+          number: z.string().trim().min(1, m.validation.required).max(50, m.validation.tooLong(50)),
         }),
       )
       .max(50, m.validation.tooMany(50)),

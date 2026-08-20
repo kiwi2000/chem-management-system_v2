@@ -24,9 +24,11 @@ export const productSchema = (m: Messages) =>
 
     usableAsMaterial: z.boolean(),
     /** 型式。システム設定の選択肢から1つ。未選択は null */
-    modelValue: emptyToNull(z.string().trim().max(100)).optional(),
+    modelValue: emptyToNull(z.string().trim().max(100, m.validation.tooLong(100))).optional(),
     /** 用途。システム設定の選択肢から複数。並び順がそのまま表示順 */
-    uses: z.array(z.string().trim().min(1).max(100)).max(50),
+    uses: z
+      .array(z.string().trim().min(1).max(100, m.validation.tooLong(100)))
+      .max(50, m.validation.tooMany(50)),
 
     aliases: aliasesSchema(m),
     properties: propertyValuesSchema,
