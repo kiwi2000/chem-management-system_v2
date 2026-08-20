@@ -10,13 +10,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
- * 一覧の状態（並べ替え・絞り込み・ページ）を URL と端末に保持する。
+ * 一覧の状態（並べ替え・フィルター・ページ）を URL と端末に保持する。
  *
  * - URL に載せる … 詳細から戻ったときに同じ一覧に戻れる／URLを人に送れる
  * - 端末にも覚える … 条件を付けずに画面を開き直したとき、前回の条件を復元する
  *
  * 前回の条件が勝手に効いていると混乱するので、
- * 呼び出し側で「絞り込み中」を必ず明示し、リセットできるようにすること。
+ * 呼び出し側で「フィルター中」を必ず明示し、リセットできるようにすること。
  *
  * 1つの画面に表が2つ以上あるときは `paramPrefix` を指定する。
  * 指定しないと両方が同じ `sort` や `f.○○` を書き合って壊れる。

@@ -11,6 +11,8 @@ import {
   hasDuplicateGazette,
   normalizeInput,
   toDetail,
+  canEditSubstance,
+  visibilityWhere,
   validateCas,
 } from "@/lib/substance-service";
 import { validatePropertyValues } from "@/lib/property-values";
@@ -27,7 +29,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   const { id } = await params;
 
   const item = await prisma.substance.findFirst({
-    where: { id, deletedAt: null },
+    where: { id, deletedAt: null, ...visibilityWhere(actor) },
     include: SUBSTANCE_INCLUDE,
   });
   if (!item) {
@@ -44,8 +46,12 @@ export async function PUT(req: Request, { params }: Ctx) {
   const { id } = await params;
   const m = await getServerMessages();
 
-  const existing = await prisma.substance.findFirst({ where: { id, deletedAt: null } });
+  const existing = await prisma.substance.findFirst({
+    where: { id, deletedAt: null, ...visibilityWhere(actor) },
+  });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
+  // 作成中のものは、作成者か専用の権限を持つ人だけが書き換えられる
+  if (!canEditSubstance(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
 
   let body: unknown;
   try {
@@ -69,7 +75,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }
 
-  const base = normalizeInput(input);
+  // 作成中かどうかは専用の操作でだけ変える（保存で意図せず完成にしない）
+  const base = { ...normalizeInput(input), draftFlag: existing.draftFlag };
   const settings = await getAppSettings();
   const casError = validateCas(base.casNormalized, settings, m);
   if (casError) return jsonError(400, "validation_error", casError);
@@ -127,8 +134,12 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const { id } = await params;
   const m = await getServerMessages();
 
-  const existing = await prisma.substance.findFirst({ where: { id, deletedAt: null } });
+  const existing = await prisma.substance.findFirst({
+    where: { id, deletedAt: null, ...visibilityWhere(actor) },
+  });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
+  // 作成中のものは、作成者か専用の権限を持つ人だけが書き換えられる
+  if (!canEditSubstance(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
 
   const uses = await countUsesOfSubstance(id);
   if (uses > 0) {

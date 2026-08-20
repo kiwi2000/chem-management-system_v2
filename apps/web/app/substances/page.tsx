@@ -30,6 +30,8 @@ export default function SubstancesPage() {
         key: "code",
         header: m.substances.code,
         kind: "text",
+        // 必須の列。「空白」で絞る意味が無い
+        nullable: false,
         // コード20文字・CAS12桁が等幅で収まる最小限の幅にする
         width: 104,
         className: "font-mono text-xs",
@@ -47,6 +49,7 @@ export default function SubstancesPage() {
         key: "nameJa",
         header: m.substances.nameJa,
         kind: "text",
+        nullable: false,
         width: 240,
         render: (r) => (
           <>
@@ -69,6 +72,8 @@ export default function SubstancesPage() {
         key: "status",
         header: m.common.activeHeader,
         kind: "enum",
+        // 選択肢の文言（有効/無効）だけで分かるので、フィルターでは列名を出さない
+        filterLabelHidden: true,
         width: 72,
         className: "text-center",
         options: [
@@ -84,7 +89,28 @@ export default function SubstancesPage() {
         ),
       },
       {
+        key: "draftFlag",
+        header: m.substances.draftFlag,
+        kind: "enum",
+        width: 72,
+        className: "text-center",
+        filterLabelHidden: true,
+        options: [
+          { value: "true", label: m.substances.draftFlag },
+          { value: "false", label: m.substances.draftDone },
+        ],
+        render: (r) => (
+          <StatusIcon
+            active={r.draftFlag}
+            activeLabel={m.substances.draftFlag}
+            inactiveLabel={m.substances.draftDone}
+          />
+        ),
+      },
+      {
         key: "gazetteNumbers",
+        // 子テーブルを引いた列。「空白」で絞れないので出さない
+        nullable: false,
         header: m.substances.gazette,
         kind: "text",
         width: 150,
@@ -105,6 +131,8 @@ export default function SubstancesPage() {
         key: "updatedAt",
         header: m.news.updatedAt,
         kind: "date",
+        // 必ず入る列。「空白」で絞る意味が無い
+        nullable: false,
         width: 92,
         className: "text-muted-foreground text-center text-xs",
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
@@ -162,6 +190,27 @@ export default function SubstancesPage() {
     void load();
   }
 
+  /** 選択した行をまとめて完成にする。権限が無いものはサーバー側で飛ばされる */
+  async function onMarkDoneSelected(targets: SubstanceListItemDto[]) {
+    setError(null);
+    const res = await fetch("/api/substances/draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: targets.map((t) => t.id), draftFlag: false }),
+    });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      return;
+    }
+    const body = (await res.json()) as { updated: number; requested: number };
+    if (body.updated < body.requested) {
+      setError(m.common.markedSome(body.updated, body.requested));
+    }
+    void load();
+  }
+
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
       <div className="flex items-center justify-between">
@@ -192,6 +241,7 @@ export default function SubstancesPage() {
         emptyMessage={m.substances.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
+        onMarkDoneSelected={onMarkDoneSelected}
         onRowActivate={(s) => router.push(`/substances/${s.id}`)}
       />
     </div>

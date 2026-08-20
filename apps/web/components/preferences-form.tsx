@@ -159,7 +159,7 @@ export function PreferencesForm({
               value={locale}
               disabled={saving}
               onChange={(e) => void save({ locale: e.target.value as Locale })}
-              className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+              className="border-input bg-background h-9 rounded-none border px-2 text-sm"
             >
               {LOCALES.map((l) => (
                 <option key={l} value={l}>
@@ -222,7 +222,7 @@ export function PreferencesForm({
                 disabled={saving}
                 title={m.preferences.backgroundHint}
                 onChange={(e) => void save({ background: e.target.value as Background })}
-                className="border-input bg-background h-9 shrink-0 rounded-md border px-2 text-sm"
+                className="border-input bg-background h-9 shrink-0 rounded-none border px-2 text-sm"
               >
                 <option value="none">{m.preferences.backgrounds.none}</option>
                 <optgroup label={m.preferences.backgroundPatterns}>

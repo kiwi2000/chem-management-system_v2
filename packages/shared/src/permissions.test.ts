@@ -10,9 +10,8 @@ describe("権限の含意", () => {
     ]);
   });
 
-  it("非公開を見られるなら、公開も見られる", () => {
-    expect(expandPermissions(["PRODUCT_VIEW_PRIVATE"])).toContain("PRODUCT_VIEW");
-    expect(expandPermissions(["COMPOSITION_VIEW_PRIVATE"])).toContain("COMPOSITION_VIEW");
+  it("無効・作成中を編集できるなら、見ることもできる", () => {
+    expect(expandPermissions(["INACTIVE_EDIT"])).toEqual(["INACTIVE_VIEW", "INACTIVE_EDIT"]);
   });
 
   it("他人のお知らせを編集できるなら、投稿もできる", () => {
@@ -33,8 +32,10 @@ describe("権限の含意", () => {
   it("依存の洗い出しは間接的なものも拾う", () => {
     // COMPOSITION_VIEW を外すと、それを前提にしている PRODUCT_EDIT も外れる
     expect(dependentsOf("COMPOSITION_VIEW")).toContain("PRODUCT_EDIT");
-    // PRODUCT_VIEW を外すと PRODUCT_EDIT と PRODUCT_VIEW_PRIVATE が外れる
-    expect(dependentsOf("PRODUCT_VIEW")).toEqual(["PRODUCT_VIEW_PRIVATE", "PRODUCT_EDIT"]);
+    // PRODUCT_VIEW を外すと PRODUCT_EDIT も外れる
+    expect(dependentsOf("PRODUCT_VIEW")).toEqual(["PRODUCT_EDIT"]);
+    // 無効・作成中の閲覧を外すと、その編集も外れる
+    expect(dependentsOf("INACTIVE_VIEW")).toEqual(["INACTIVE_EDIT"]);
   });
 
   it("何も持たない状態は空のまま", () => {

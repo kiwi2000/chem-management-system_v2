@@ -7,6 +7,7 @@ import {
   type SubstanceInput,
 } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
+import type { Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { propertyWrites } from "@/lib/property-values";
 import type { SubstanceDetailDto, SubstanceListItemDto } from "@/lib/types";
@@ -28,12 +29,34 @@ export const SUBSTANCE_INCLUDE = {
 type SubstanceListRow = Prisma.SubstanceGetPayload<{ include: typeof SUBSTANCE_LIST_INCLUDE }>;
 type SubstanceWithRelations = Prisma.SubstanceGetPayload<{ include: typeof SUBSTANCE_INCLUDE }>;
 
+/**
+ * 一覧・詳細に出してよい物質の条件。
+ *
+ * 物質は「無効」でも隠さない（組成に使われているものが読めなくなるため）。
+ * 隠すのは作成中のものだけで、作成者と `INACTIVE_VIEW` を持つ人にだけ見せる。
+ */
+export function visibilityWhere(actor: Actor): Prisma.SubstanceWhereInput {
+  if (actor.has("INACTIVE_VIEW")) return {};
+  return { OR: [{ draftFlag: false }, { createdBy: actor.user.id }] };
+}
+
+/** 書き換えてよいか。作成中のものは専用の権限か、作成者本人だけ */
+export function canEditSubstance(
+  actor: Actor,
+  target: { draftFlag: boolean; createdBy: string | null },
+): boolean {
+  if (!actor.has("SUBSTANCE_EDIT")) return false;
+  if (!target.draftFlag) return true;
+  return actor.has("INACTIVE_EDIT") || target.createdBy === actor.user.id;
+}
+
 export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
   return {
     id: s.id,
     code: s.code,
     casNumber: s.casNumber,
     status: s.status,
+    draftFlag: s.draftFlag,
     nameJa: s.nameJa,
     nameEn: s.nameEn,
     note: s.note,
@@ -120,6 +143,7 @@ export function normalizeInput(input: SubstanceInput) {
     casNumber: casNormalized,
     casNormalized,
     status: input.status,
+    draftFlag: input.draftFlag,
     note: input.note?.trim() || null,
     nameJa: input.mainNameJa.trim(),
     nameEn: input.mainNameEn?.trim() || null,
@@ -130,7 +154,7 @@ export function normalizeInput(input: SubstanceInput) {
 export function childWrites(input: SubstanceInput) {
   return {
     aliases: input.subNames.map((n, i) => ({
-      nameJa: n.nameJa.trim(),
+      nameJa: n.nameJa?.trim() || null,
       nameEn: n.nameEn?.trim() || null,
       displayOrder: i + 1,
     })),

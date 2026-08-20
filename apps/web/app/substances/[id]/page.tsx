@@ -1,11 +1,17 @@
 import { notFound } from "next/navigation";
+import { DraftToggle } from "@/components/draft-toggle";
 import { SubstanceForm } from "@/components/substance-form";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { PROPERTY_DEF_COUNT, toPropertyDefDto } from "@/lib/property-def-service";
 import { getAppSettings } from "@/lib/settings";
-import { SUBSTANCE_INCLUDE, toDetail } from "@/lib/substance-service";
+import {
+  SUBSTANCE_INCLUDE,
+  canEditSubstance,
+  toDetail,
+  visibilityWhere,
+} from "@/lib/substance-service";
 
 /**
  * 物質の詳細。
@@ -15,11 +21,15 @@ import { SUBSTANCE_INCLUDE, toDetail } from "@/lib/substance-service";
  */
 export default async function SubstanceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [m, actor, settings, item, defs] = await Promise.all([
+  // 可視性の条件に actor が要るので、先に解決してから残りをまとめて取る
+  const actor = await getActor();
+  const [m, settings, item, defs] = await Promise.all([
     getServerMessages(),
-    getActor(),
     getAppSettings(),
-    prisma.substance.findFirst({ where: { id, deletedAt: null }, include: SUBSTANCE_INCLUDE }),
+    prisma.substance.findFirst({
+      where: { id, deletedAt: null, ...(actor ? visibilityWhere(actor) : {}) },
+      include: SUBSTANCE_INCLUDE,
+    }),
     prisma.propertyDef.findMany({
       where: { target: "SUBSTANCE" },
       orderBy: [{ displayOrder: "asc" }, { key: "asc" }],
@@ -28,11 +38,19 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
   ]);
 
   if (!item) notFound();
-  const canEdit = actor?.has("SUBSTANCE_EDIT") ?? false;
+  const canEdit = actor ? canEditSubstance(actor, item) : false;
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
-      <h1 className="text-2xl font-semibold">{m.substances.detailTitle}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">{m.substances.detailTitle}</h1>
+        <DraftToggle
+          entity="substances"
+          id={item.id}
+          draftFlag={item.draftFlag}
+          canEdit={canEdit}
+        />
+      </div>
       <SubstanceForm
         initial={toDetail(item)}
         defs={defs.map(toPropertyDefDto)}

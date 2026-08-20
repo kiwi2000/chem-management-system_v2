@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildOrderBy, buildWhere, type QueryColumn } from "./table-query";
 
 /**
- * 絞り込み条件が Prisma の条件へ正しく変換されることを固定する。
+ * フィルターが Prisma の条件へ正しく変換されることを固定する。
  * 特に「正規化してから突合する」列は、ここが崩れると全角入力で検索できなくなる。
  */
 const COLUMNS: QueryColumn[] = [
@@ -61,7 +61,7 @@ describe("buildWhere", () => {
       });
     });
 
-    it("両方選んだら絞り込まない（列は null を取らないため）", () => {
+    it("両方選んだらフィルターしない（列は null を取らないため）", () => {
       expect(
         buildWhere(COLUMNS, { activeFlag: { kind: "enum", values: ["true", "false"] } }),
       ).toEqual({});

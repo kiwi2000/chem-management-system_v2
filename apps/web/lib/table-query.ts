@@ -1,7 +1,7 @@
 import type { ColumnFilter, ColumnKind, SortRule, TableState } from "@chem/shared";
 
 /**
- * 一覧の絞り込み・並べ替えを Prisma の条件に変換する。
+ * 一覧のフィルター・並べ替えを Prisma の条件に変換する。
  * すべての一覧画面で同じ挙動になるよう、ここに集約する。
  */
 
@@ -10,20 +10,52 @@ export interface QueryColumn {
   kind: ColumnKind;
   /** Prisma のフィールド名（画面のキーと違ってよい） */
   field: string;
-  /** 絞り込み前に値を正規化する（コード・CAS番号など） */
+  /** フィルター前に値を正規化する（コード・CAS番号など） */
   normalize?: (raw: string) => string;
   /** 大文字小文字を区別せずに突合する（正規化列には付けない） */
   caseInsensitive?: boolean;
   /** 並べ替えに使えるか（既定は可） */
   sortable?: boolean;
   /**
-   * 子テーブルの項目で絞り込む場合の関連名（例: 官報公示整理番号）。
+   * 子テーブルの項目でフィルターする場合の関連名（例: 官報公示整理番号）。
    * 「1件でも条件に合う行があれば該当」として扱う。
    * 並べ替えには使えない（Prisma が1対多の項目で並べ替えできないため）。
    */
   relation?: string;
   /** はい/いいえ の列。選択肢の "true" / "false" を真偽値に直して渡す */
   booleanEnum?: boolean;
+  /**
+   * kind="list" の列で、値を探しに行く関連の道順（例: 組成のCAS番号なら
+   * ["compositionLines", "substance"]）。最後に `field` で突き合わせる。
+   */
+  relationPath?: string[];
+}
+
+/**
+ * 関連をたどって「この値を持つ行が1件でもあるか」を作る。
+ * 例: { compositionLines: { some: { substance: { casNormalized: "7439-92-1" } } } }
+ */
+function someAlong(path: string[], field: string, value: string): Where {
+  let inner: Where = { [field]: value };
+  for (let i = path.length - 1; i >= 0; i--) {
+    const step = path[i] as string;
+    // 先頭は1対多（some）、その先は1対1（そのまま入れ子）
+    inner = i === 0 ? { [step]: { some: inner } } : { [step]: inner };
+  }
+  return inner;
+}
+
+/**
+ * 複数の値をまとめて指定する条件。
+ * all=すべて含む（値ごとに条件を作って AND）／ any=いずれかを含む（OR）。
+ */
+function listCondition(col: QueryColumn, f: Extract<ColumnFilter, { kind: "list" }>): Where | null {
+  const values = col.normalize ? f.values.map((v) => col.normalize!(v)) : f.values;
+  const uniq = [...new Set(values.filter((v) => v !== ""))];
+  if (uniq.length === 0) return null;
+  const path = col.relationPath ?? [];
+  const each = uniq.map((v) => someAlong(path, col.field, v));
+  return f.op === "all" ? { AND: each } : { OR: each };
 }
 
 type Where = Record<string, unknown>;
@@ -96,7 +128,7 @@ function dateCondition(col: QueryColumn, f: Extract<ColumnFilter, { kind: "date"
 /**
  * はい/いいえ の列。
  * Prisma の Boolean 型には `in` が無いので、選択肢を真偽値そのものにほどく。
- * 両方選ばれている場合は絞り込まないのと同じ（列は null を取らないため）。
+ * 両方選ばれている場合はフィルターしないのと同じ（列は null を取らないため）。
  */
 function boolCondition(col: QueryColumn, values: string[]): Where | null {
   const picked = [...new Set(values.map((v) => v === "true"))];
@@ -105,7 +137,7 @@ function boolCondition(col: QueryColumn, values: string[]): Where | null {
   return { [col.field]: only };
 }
 
-/** 絞り込み条件を AND で組み立てる。解釈できない条件は無視する */
+/** フィルターを AND で組み立てる。解釈できない条件は無視する */
 export function buildWhere(columns: QueryColumn[], filters: TableState["filters"]): Where {
   const byKey = new Map(columns.map((c) => [c.key, c]));
   const conditions: Where[] = [];
@@ -113,6 +145,13 @@ export function buildWhere(columns: QueryColumn[], filters: TableState["filters"
   for (const [key, f] of Object.entries(filters)) {
     const col = byKey.get(key);
     if (!col || col.kind !== f.kind) continue;
+
+    if (f.kind === "list") {
+      // 関連をたどる条件は、この時点で完成している（relation の共通処理には乗せない）
+      const listCond = listCondition(col, f);
+      if (listCond) conditions.push(listCond);
+      continue;
+    }
 
     const cond =
       f.kind === "text"

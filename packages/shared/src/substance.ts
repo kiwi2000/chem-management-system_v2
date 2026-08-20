@@ -36,14 +36,19 @@ export const propertyValuesSchema = z
   )
   .max(200);
 
-/** 別名。物質と製品で同じ形 */
+/**
+ * 別名。物質と製品で同じ形。
+ * 日本語別名と英語別名は件数が一致しないので、1件につきどちらか一方が入っていればよい。
+ */
 export const aliasesSchema = (m: Messages) =>
   z
     .array(
-      z.object({
-        nameJa: z.string().trim().min(1, m.validation.required).max(500),
-        nameEn: emptyToNull(z.string().trim().max(500)).optional(),
-      }),
+      z
+        .object({
+          nameJa: emptyToNull(z.string().trim().max(500)).optional(),
+          nameEn: emptyToNull(z.string().trim().max(500)).optional(),
+        })
+        .refine((a) => Boolean(a.nameJa) || Boolean(a.nameEn), m.validation.required),
     )
     .max(100, m.validation.tooMany(100));
 
@@ -53,6 +58,8 @@ export const substanceSchema = (m: Messages) =>
     /** CAS は任意（ポリマー・UVCB・企業秘密物質を登録できるようにするため） */
     casNumber: emptyToNull(z.string().trim().max(20, m.validation.tooLong(20))).optional(),
     status: z.enum(SUBSTANCE_STATUSES),
+    /** 作成中。オンの間は組成の候補に出さない */
+    draftFlag: z.boolean(),
     note: emptyToNull(z.string().trim().max(2000, m.validation.tooLong(2000))).optional(),
 
     mainNameJa: z.string().trim().min(1, m.validation.required).max(500, m.validation.tooLong(500)),

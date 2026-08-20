@@ -235,8 +235,6 @@ export function CompositionEditor({ productId, settings }: Props) {
       </CardHeader>
 
       <CardContent className="space-y-3">
-        <p className="text-muted-foreground text-sm">{m.composition.description}</p>
-
         {rows === null ? (
           <p className="text-muted-foreground text-sm">{m.common.loading}</p>
         ) : rows.length === 0 ? (
@@ -362,7 +360,7 @@ export function CompositionEditor({ productId, settings }: Props) {
                 aria-label={m.composition.kind}
                 value={kind}
                 onChange={(e) => setKind(e.target.value as Kind)}
-                className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+                className="border-input bg-background h-9 rounded-none border px-2 text-sm"
               >
                 <option value="substance">{m.composition.kindSubstance}</option>
                 <option value="product">{m.composition.kindProduct}</option>

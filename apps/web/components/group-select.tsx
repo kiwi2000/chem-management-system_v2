@@ -35,7 +35,7 @@ export function GroupSelect({
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
-      className="border-input bg-background h-9 max-w-xs rounded-md border px-2 text-sm"
+      className="border-input bg-background h-9 max-w-xs rounded-none border px-2 text-sm"
     >
       <option value="">{noneLabel}</option>
       {options.map((g) => (

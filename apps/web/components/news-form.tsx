@@ -109,7 +109,7 @@ export function NewsForm({ initial, canEdit }: Props) {
                   rows={6}
                   value={bodyJa}
                   onChange={(e) => setBodyJa(e.target.value)}
-                  className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+                  className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -129,7 +129,7 @@ export function NewsForm({ initial, canEdit }: Props) {
                   rows={6}
                   value={bodyEn}
                   onChange={(e) => setBodyEn(e.target.value)}
-                  className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+                  className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
                 />
                 <p className="text-muted-foreground text-xs">{m.news.englishHint}</p>
               </div>
@@ -144,7 +144,7 @@ export function NewsForm({ initial, canEdit }: Props) {
                   id="status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as "DRAFT" | "PUBLISHED")}
-                  className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+                  className="border-input bg-background h-9 rounded-none border px-2 text-sm"
                 >
                   <option value="DRAFT">{m.news.draft}</option>
                   <option value="PUBLISHED">{m.news.published}</option>

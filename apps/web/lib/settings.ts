@@ -26,7 +26,7 @@ export async function getAppSettings(): Promise<AppSettings> {
 export async function saveAppSettings(next: AppSettings, actorId: string): Promise<void> {
   await prisma.$transaction(
     SETTING_DEFS.map((def) => {
-      const value = String(next[def.field]);
+      const value = def.format ? def.format(next[def.field]) : String(next[def.field]);
       return prisma.systemSetting.upsert({
         where: { key: def.key },
         update: { value, updatedBy: actorId },
@@ -34,7 +34,9 @@ export async function saveAppSettings(next: AppSettings, actorId: string): Promi
           key: def.key,
           value,
           valueType: def.valueType,
-          defaultValue: String(DEFAULT_SETTINGS[def.field]),
+          defaultValue: def.format
+            ? def.format(DEFAULT_SETTINGS[def.field])
+            : String(DEFAULT_SETTINGS[def.field]),
           updatedBy: actorId,
         },
       });

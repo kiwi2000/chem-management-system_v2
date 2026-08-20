@@ -12,6 +12,7 @@ import {
   hasDuplicateGazette,
   normalizeInput,
   toListItem,
+  visibilityWhere,
   validateCas,
 } from "@/lib/substance-service";
 import { validatePropertyValues } from "@/lib/property-values";
@@ -24,7 +25,7 @@ const DEFAULT_STATE = emptyTableState([{ column: "code", direction: "asc" }]);
 
 /**
  * GET /api/substances — 一覧。
- * 並べ替え・列ごとの絞り込み・ページングはクエリで受け取る（形式は @chem/shared の table.ts）。
+ * 並べ替え・列ごとのフィルター・ページングはクエリで受け取る（形式は @chem/shared の table.ts）。
  */
 export async function GET(req: Request) {
   const actor = await requirePermission("SUBSTANCE_VIEW");
@@ -38,6 +39,7 @@ export async function GET(req: Request) {
 
   const where = {
     deletedAt: null,
+    ...visibilityWhere(actor),
     ...buildWhere(SUBSTANCE_COLUMNS, state.filters),
   };
 
@@ -88,7 +90,8 @@ export async function POST(req: Request) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }
 
-  const base = normalizeInput(input);
+  // 新規登録は必ず作成中から始める（完成させるのは意識的な操作にする）
+  const base = { ...normalizeInput(input), draftFlag: true };
   const settings = await getAppSettings();
   const casError = validateCas(base.casNormalized, settings, m);
   if (casError) return jsonError(400, "validation_error", casError);

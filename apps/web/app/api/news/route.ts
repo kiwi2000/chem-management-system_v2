@@ -21,7 +21,7 @@ const DEFAULT_STATE = emptyTableState([
 /**
  * GET /api/news — お知らせ一覧。
  * 閲覧は全ログインユーザー。ただし下書きは、その投稿を編集できる人にしか見せない。
- * ?scope=home を付けると掲載中のものだけを返す（ホーム用・並べ替えや絞り込みは効かない）。
+ * ?scope=home を付けると掲載中のものだけを返す（ホーム用・並べ替えやフィルターは効かない）。
  */
 export async function GET(req: Request) {
   const actor = await requireUser();

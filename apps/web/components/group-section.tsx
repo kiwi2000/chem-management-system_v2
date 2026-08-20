@@ -28,7 +28,7 @@ interface Props {
   kind: GroupKind;
   title: string;
   hint: string;
-  /** 端末に列幅・絞り込みを覚えるための識別子（節ごとに分ける） */
+  /** 端末に列幅・フィルターを覚えるための識別子（節ごとに分ける） */
   storageKey: string;
 }
 

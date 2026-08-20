@@ -25,13 +25,13 @@ import { useTableState } from "@/lib/use-table-state";
 /** 用途は節ごとに固定なので、並びは表示順だけでよい */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
-const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
+const selectClass = "border-input bg-background h-9 rounded-none border px-2 text-sm";
 
 interface Props {
   target: PropertyTarget;
   title: string;
   hint: string;
-  /** 端末に列幅・絞り込みを覚えるための識別子（節ごとに分ける） */
+  /** 端末に列幅・フィルターを覚えるための識別子（節ごとに分ける） */
   storageKey: string;
   /** キー欄の入力例（物質と製品で違う例を出す） */
   keyPlaceholder: string;

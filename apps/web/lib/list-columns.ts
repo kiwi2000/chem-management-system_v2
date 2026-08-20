@@ -13,7 +13,8 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "status", kind: "enum", field: "status" },
-  // 官報公示整理番号は子テーブル。番号で絞り込めるが並べ替えはできない
+  { key: "draftFlag", kind: "enum", field: "draftFlag", booleanEnum: true },
+  // 官報公示整理番号は子テーブル。番号でフィルターできるが並べ替えはできない
   {
     key: "gazetteNumbers",
     kind: "text",
@@ -30,14 +31,20 @@ export const PRODUCT_COLUMNS: QueryColumn[] = [
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "usableAsMaterial", kind: "enum", field: "usableAsMaterial", booleanEnum: true },
-  { key: "privateFlag", kind: "enum", field: "privateFlag", booleanEnum: true },
-  {
-    key: "compositionPublicFlag",
-    kind: "enum",
-    field: "compositionPublicFlag",
-    booleanEnum: true,
-  },
   { key: "status", kind: "enum", field: "status" },
+  { key: "draftFlag", kind: "enum", field: "draftFlag", booleanEnum: true },
+  { key: "modelValue", kind: "enum", field: "modelValue" },
+  // 用途は子テーブル。「選んだもののどれかを持つ」で絞る
+  { key: "uses", kind: "enum", field: "value", relation: "uses", sortable: false },
+  // 組成をたどって物質のCAS番号で探す。値は完全一致（正規化して突合）
+  {
+    key: "casNumbers",
+    kind: "list",
+    field: "casNormalized",
+    normalize: normalizeCas,
+    relationPath: ["compositionLines", "substance"],
+    sortable: false,
+  },
   { key: "note", kind: "text", field: "note", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];

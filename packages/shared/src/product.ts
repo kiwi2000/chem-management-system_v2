@@ -12,8 +12,7 @@ const emptyToNull = <T extends z.ZodTypeAny>(schema: T) =>
  * 製品 / 原材料。両者は同じもので、`usableAsMaterial` が立っているものだけ
  * 他製品の組成に部品として入れられる。
  *
- * 機密のフラグ（privateFlag / compositionPublicFlag）は、
- * 対応する閲覧権限を持つ人しか変更できない（サーバー側で確認する）。
+ * 誰に何を見せるかは製品ごとのフラグではなく、ユーザーの権限だけで決める。
  */
 export const productSchema = (m: Messages) =>
   z.object({
@@ -23,9 +22,13 @@ export const productSchema = (m: Messages) =>
     status: z.enum(PRODUCT_STATUSES),
     note: emptyToNull(z.string().trim().max(2000, m.validation.tooLong(2000))).optional(),
 
+    /** 作成中。オンの間は組成の候補に出さない */
+    draftFlag: z.boolean(),
     usableAsMaterial: z.boolean(),
-    privateFlag: z.boolean(),
-    compositionPublicFlag: z.boolean(),
+    /** 型式。システム設定の選択肢から1つ。未選択は null */
+    modelValue: emptyToNull(z.string().trim().max(100)).optional(),
+    /** 用途。システム設定の選択肢から複数。並び順がそのまま表示順 */
+    uses: z.array(z.string().trim().min(1).max(100)).max(50),
 
     aliases: aliasesSchema(m),
     properties: propertyValuesSchema,

@@ -19,12 +19,10 @@ type LineRow = Prisma.CompositionLineGetPayload<{ include: typeof COMPOSITION_IN
 
 /**
  * 組成を見られるか。
- * 「組成を見られる」権限に加えて、非開示の製品は専用の権限が要る。
- * 製品そのものが見えるかどうか（非公開フラグ）は product-service 側で別に判定する。
+ * 製品ごとの公開フラグは廃止したので、判定は権限だけで決まる。
  */
-export function canViewComposition(actor: Actor, product: Product): boolean {
-  if (!actor.has("COMPOSITION_VIEW")) return false;
-  return product.compositionPublicFlag || actor.has("COMPOSITION_VIEW_PRIVATE");
+export function canViewComposition(actor: Actor, _product: Product): boolean {
+  return actor.has("COMPOSITION_VIEW");
 }
 
 /** 組成を書き換えられるか。見えないものは編集させない */
@@ -99,7 +97,6 @@ export async function validateReferences(
       id: { in: productIds },
       deletedAt: null,
       status: "ACTIVE",
-      ...(actor.has("PRODUCT_VIEW_PRIVATE") ? {} : { privateFlag: false }),
     },
     select: { id: true, code: true, usableAsMaterial: true },
   });

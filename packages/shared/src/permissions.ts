@@ -6,14 +6,15 @@
 export const PERMISSIONS = [
   // 製品 / 原材料（判定の実行・逆引き検索は「製品を見られる」に含む）
   "PRODUCT_VIEW",
-  "PRODUCT_VIEW_PRIVATE",
   "PRODUCT_EDIT",
   // 組成（組成の編集は PRODUCT_EDIT に含む）
   "COMPOSITION_VIEW",
-  "COMPOSITION_VIEW_PRIVATE",
   // 物質
   "SUBSTANCE_VIEW",
   "SUBSTANCE_EDIT",
+  // 無効・作成中のデータ（物質・製品で共通）
+  "INACTIVE_VIEW",
+  "INACTIVE_EDIT",
   // 法規制（金属換算係数・情報源・リンクバージョンを含む）
   "REGULATION_VIEW",
   "REGULATION_EDIT",
@@ -40,9 +41,9 @@ export function isPermission(v: unknown): v is Permission {
 const IMPLIES: Partial<Record<Permission, readonly Permission[]>> = {
   // 組成の編集は製品の編集に含まれるため、組成の閲覧も必要
   PRODUCT_EDIT: ["PRODUCT_VIEW", "COMPOSITION_VIEW"],
-  PRODUCT_VIEW_PRIVATE: ["PRODUCT_VIEW"],
-  COMPOSITION_VIEW_PRIVATE: ["COMPOSITION_VIEW"],
   SUBSTANCE_EDIT: ["SUBSTANCE_VIEW"],
+  // 無効・作成中を編集できる人は、当然それを見られる
+  INACTIVE_EDIT: ["INACTIVE_VIEW"],
   REGULATION_EDIT: ["REGULATION_VIEW"],
   // 他人のお知らせを編集できる人は、自分でも投稿できるものとして扱う
   NEWS_MANAGE: ["NEWS_POST"],
@@ -88,9 +89,10 @@ export function dependentsOf(target: Permission): Permission[] {
 
 /** 画面でのグループ分け（この順に並べる） */
 export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[] }[] = [
-  { key: "product", permissions: ["PRODUCT_VIEW", "PRODUCT_VIEW_PRIVATE", "PRODUCT_EDIT"] },
-  { key: "composition", permissions: ["COMPOSITION_VIEW", "COMPOSITION_VIEW_PRIVATE"] },
+  { key: "product", permissions: ["PRODUCT_VIEW", "PRODUCT_EDIT"] },
+  { key: "composition", permissions: ["COMPOSITION_VIEW"] },
   { key: "substance", permissions: ["SUBSTANCE_VIEW", "SUBSTANCE_EDIT"] },
+  { key: "inactive", permissions: ["INACTIVE_VIEW", "INACTIVE_EDIT"] },
   { key: "regulation", permissions: ["REGULATION_VIEW", "REGULATION_EDIT"] },
   { key: "data", permissions: ["DATA_EXPORT"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },

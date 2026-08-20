@@ -80,6 +80,8 @@ export default function UsersPage() {
         key: "activeFlag",
         header: m.common.activeHeader,
         kind: "enum",
+        // 選択肢の文言（有効/無効）だけで分かるので、フィルターでは列名を出さない
+        filterLabelHidden: true,
         width: 64,
         className: "text-center",
         options: [

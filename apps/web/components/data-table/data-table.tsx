@@ -1,7 +1,13 @@
 "use client";
 
-import { PAGE_SIZE_OPTIONS, type ColumnFilter, type TableState } from "@chem/shared";
-import { ArrowDown, ArrowUp, ChevronsUpDown, Trash2 } from "lucide-react";
+import {
+  PAGE_SIZE_OPTIONS,
+  parseTableState,
+  serializeTableState,
+  type ColumnFilter,
+  type TableState,
+} from "@chem/shared";
+import { ArrowDown, ArrowUp, ChevronsUpDown, CircleCheck, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
-import { FilterPanel } from "./filter-panel";
+import { FilterPanel, type FilterLayoutRow } from "./filter-panel";
 import { MIN_COLUMN_WIDTH, SELECT_COLUMN_WIDTH, type TableColumn } from "./types";
 import { useColumnWidths } from "./use-column-widths";
 
@@ -26,7 +32,7 @@ interface Props<T> {
   rowKey: (row: T) => string;
   total: number;
   state: TableState;
-  /** 既定の状態。これと違うときだけ「絞り込み中」を出す */
+  /** 既定の状態。これと違うときだけ「フィルター中」を出す */
   defaultState: TableState;
   onStateChange: (updater: (prev: TableState) => TableState) => void;
   onReset: () => void;
@@ -35,8 +41,12 @@ interface Props<T> {
   selectable?: boolean;
   /** 選択した行の削除。確認はこの部品が出すので、呼び出し側は消す処理だけ書く */
   onDeleteSelected?: (rows: T[]) => void | Promise<void>;
+  /** 選択した行をまとめて完成にする（作成中を持つ一覧だけ渡す） */
+  onMarkDoneSelected?: (rows: T[]) => void | Promise<void>;
   /** 行をダブルクリックしたとき（詳細を開く・その場のフォームに読み込む） */
   onRowActivate?: (row: T) => void;
+  /** フィルターの並びを指定する場合、1行に置く列キーを行ごとに並べる */
+  filterLayout?: FilterLayoutRow[];
 }
 
 /** 罫線。セルの右側に薄い線を引く（最後の列は引かない） */
@@ -47,12 +57,12 @@ const SELECT_CELL = "px-0 text-center";
 /**
  * 一覧の共通部品。すべてのテーブルはこれを使う。
  *
- * - 絞り込み条件は表の外（上のパネル）。表の中に入れると列幅に引きずられるため
+ * - フィルターは表の外（上のパネル）。表の中に入れると列幅に引きずられるため
  * - 行ごとの操作ボタンは置かない。**チェックして上の削除ボタン**、**ダブルクリックで詳細**
  */
 export function DataTable<T>({
   storageKey,
-  columns,
+  columns: allColumns,
   rows,
   rowKey,
   total,
@@ -63,8 +73,12 @@ export function DataTable<T>({
   emptyMessage,
   selectable = false,
   onDeleteSelected,
+  onMarkDoneSelected,
   onRowActivate,
+  filterLayout,
 }: Props<T>) {
+  // 表に出す列。フィルター専用の列（組成のCAS番号など）はここから外す
+  const columns = allColumns.filter((c) => !c.filterOnly);
   const { m } = useI18n();
   const { widthOf, setWidth, setWidths, resetWidths, hasCustomWidths } = useColumnWidths(
     `${storageKey}.widths`,
@@ -123,6 +137,19 @@ export function DataTable<T>({
     });
   }
 
+  async function markDoneSelected() {
+    const targets = (rows ?? []).filter((r) => selected.has(rowKey(r)));
+    if (targets.length === 0 || !onMarkDoneSelected) return;
+    if (!confirm(m.common.markDoneConfirm(targets.length))) return;
+    setDeleting(true);
+    try {
+      await onMarkDoneSelected(targets);
+      setSelected(new Set());
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   async function deleteSelected() {
     const targets = visible.filter((r) => selected.has(rowKey(r)));
     if (targets.length === 0 || !onDeleteSelected) return;
@@ -163,12 +190,24 @@ export function DataTable<T>({
   return (
     <div className="space-y-3">
       <FilterPanel
-        columns={columns}
+        columns={allColumns}
         state={state}
         defaultState={defaultState}
         onFilterChange={setFilter}
         onReset={onReset}
         storageKey={`${storageKey}.filterPanel`}
+        filterLayout={filterLayout}
+        currentQuery={serializeTableState(state, defaultState).toString()}
+        onLoadQuery={(query) =>
+          onStateChange(() =>
+            // 読めない条件（列構成が変わった等）は parseTableState が黙って捨てる
+            parseTableState(
+              new URLSearchParams(query),
+              allColumns.map((c) => ({ key: c.key, kind: c.kind })),
+              defaultState,
+            ),
+          )
+        }
       />
 
       {selectable && (
@@ -184,6 +223,17 @@ export function DataTable<T>({
           >
             <Trash2 className="size-4" />
           </Button>
+          {onMarkDoneSelected && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={selected.size === 0 || deleting}
+              onClick={() => void markDoneSelected()}
+            >
+              <CircleCheck className="mr-1 size-3.5" />
+              {m.common.markDoneSelected}
+            </Button>
+          )}
           {selected.size > 0 && (
             <span className="text-muted-foreground text-sm">
               {m.table.selectedCount(selected.size)}
@@ -347,7 +397,7 @@ export function DataTable<T>({
             onChange={(e) =>
               onStateChange((prev) => ({ ...prev, pageSize: Number(e.target.value), page: 1 }))
             }
-            className="border-input bg-background h-8 rounded-md border px-1 text-xs"
+            className="border-input bg-background h-8 rounded-none border px-1 text-xs"
           >
             {PAGE_SIZE_OPTIONS.map((n) => (
               <option key={n} value={n}>

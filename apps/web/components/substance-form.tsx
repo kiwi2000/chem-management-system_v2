@@ -4,6 +4,7 @@ import { GAZETTE_LAW_KINDS, pickName, type AppSettings, type GazetteLawKind } fr
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AliasList } from "@/components/alias-list";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,16 +28,12 @@ interface Props {
   canEdit: boolean;
 }
 
-interface SubNameRow {
-  nameJa: string;
-  nameEn: string;
-}
 interface GazetteRow {
   lawKind: GazetteLawKind;
   number: string;
 }
 
-const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
+const selectClass = "border-input bg-background h-9 rounded-none border px-2 text-sm";
 
 export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
   const router = useRouter();
@@ -51,8 +48,12 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
   const [note, setNote] = useState(initial?.note ?? "");
   const [mainNameJa, setMainNameJa] = useState(initial?.mainNameJa ?? "");
   const [mainNameEn, setMainNameEn] = useState(initial?.mainNameEn ?? "");
-  const [subNames, setSubNames] = useState<SubNameRow[]>(
-    initial?.subNames.map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn ?? "" })) ?? [],
+  // 日本語別名と英語別名は1対1にならないため、別々の一覧として持つ
+  const [subNamesJa, setSubNamesJa] = useState<string[]>(
+    initial?.subNames.flatMap((n) => (n.nameJa ? [n.nameJa] : [])) ?? [],
+  );
+  const [subNamesEn, setSubNamesEn] = useState<string[]>(
+    initial?.subNames.flatMap((n) => (n.nameEn ? [n.nameEn] : [])) ?? [],
   );
   const [gazette, setGazette] = useState<GazetteRow[]>(
     initial?.gazetteNumbers.map((g) => ({ lawKind: g.lawKind, number: g.number })) ?? [],
@@ -83,9 +84,10 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
       note: note || null,
       mainNameJa,
       mainNameEn: mainNameEn || null,
-      subNames: subNames
-        .filter((n) => n.nameJa.trim() !== "")
-        .map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn || null })),
+      subNames: [
+        ...subNamesJa.filter((n) => n.trim() !== "").map((n) => ({ nameJa: n, nameEn: null })),
+        ...subNamesEn.filter((n) => n.trim() !== "").map((n) => ({ nameJa: null, nameEn: n })),
+      ],
       gazetteNumbers: gazette.filter((g) => g.number.trim() !== ""),
       properties: defs
         .map((d) => {
@@ -193,18 +195,19 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                     <p className="text-muted-foreground text-xs">{m.substances.casHint}</p>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">{m.substances.status}</Label>
-                  <select
+                {/* 見出しは置かず、チェックの有無をそのまま有効／無効の文言で示す */}
+                <label className="flex items-center gap-2 self-end pb-2 text-sm">
+                  <input
                     id="status"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as typeof status)}
-                    className={selectClass}
-                  >
-                    <option value="ACTIVE">{m.substances.statusActive}</option>
-                    <option value="DISCONTINUED">{m.substances.statusDiscontinued}</option>
-                  </select>
-                </div>
+                    type="checkbox"
+                    aria-label={m.substances.status}
+                    checked={status === "ACTIVE"}
+                    onChange={(e) => setStatus(e.target.checked ? "ACTIVE" : "DISCONTINUED")}
+                  />
+                  {status === "ACTIVE"
+                    ? m.substances.statusActive
+                    : m.substances.statusDiscontinued}
+                </label>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="note">
@@ -216,7 +219,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                   rows={3}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
+                  className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
                 />
               </div>
             </CardContent>
@@ -227,77 +230,45 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
               <CardTitle className="text-base">{m.substances.names}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="mainJa">
-                    {m.substances.mainName} / {m.substances.nameJa}
-                  </Label>
-                  <Input
-                    id="mainJa"
-                    required
-                    value={mainNameJa}
-                    onChange={(e) => setMainNameJa(e.target.value)}
-                    className="w-80"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mainEn">
-                    {m.substances.mainName} / {m.substances.nameEn}
-                    {m.common.optional}
-                  </Label>
-                  <Input
-                    id="mainEn"
-                    value={mainNameEn}
-                    onChange={(e) => setMainNameEn(e.target.value)}
-                    className="w-80"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="mainJa">
+                  {m.substances.mainName} / {m.substances.nameJa}
+                </Label>
+                <Input
+                  id="mainJa"
+                  required
+                  value={mainNameJa}
+                  onChange={(e) => setMainNameJa(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mainEn">
+                  {m.substances.mainName} / {m.substances.nameEn}
+                  {m.common.optional}
+                </Label>
+                <Input
+                  id="mainEn"
+                  value={mainNameEn}
+                  onChange={(e) => setMainNameEn(e.target.value)}
+                  className="w-full"
+                />
               </div>
 
-              <div className="space-y-2">
-                <Label>{m.substances.subNames}</Label>
-                {subNames.map((n, i) => (
-                  <div key={i} className="flex flex-wrap items-center gap-2">
-                    <Input
-                      aria-label={`${m.substances.subNames} ${i + 1} ${m.substances.nameJa}`}
-                      value={n.nameJa}
-                      onChange={(e) =>
-                        setSubNames(
-                          subNames.map((x, j) => (j === i ? { ...x, nameJa: e.target.value } : x)),
-                        )
-                      }
-                      className="w-80"
-                    />
-                    <Input
-                      aria-label={`${m.substances.subNames} ${i + 1} ${m.substances.nameEn}`}
-                      value={n.nameEn}
-                      onChange={(e) =>
-                        setSubNames(
-                          subNames.map((x, j) => (j === i ? { ...x, nameEn: e.target.value } : x)),
-                        )
-                      }
-                      className="w-80"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => setSubNames(subNames.filter((_, j) => j !== i))}
-                    >
-                      {m.common.remove}
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSubNames([...subNames, { nameJa: "", nameEn: "" }])}
-                >
-                  {m.substances.addSubName}
-                </Button>
-              </div>
+              <AliasList
+                label={m.substances.subNamesJa}
+                addLabel={m.substances.addSubNameJa}
+                idPrefix="subNameJa"
+                values={subNamesJa}
+                onChange={setSubNamesJa}
+              />
+              <AliasList
+                label={m.substances.subNamesEn}
+                addLabel={m.substances.addSubNameEn}
+                idPrefix="subNameEn"
+                values={subNamesEn}
+                onChange={setSubNamesEn}
+              />
             </CardContent>
           </Card>
 

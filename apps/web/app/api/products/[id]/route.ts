@@ -6,9 +6,9 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import {
   PRODUCT_INCLUDE,
-  checkFlagPermissions,
   childWrites,
   normalizeInput,
+  canEditProduct,
   toDetail,
   visibilityWhere,
 } from "@/lib/product-service";
@@ -49,6 +49,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
+  // 無効・作成中のものは、作成者か専用の権限を持つ人だけが書き換えられる
+  if (!canEditProduct(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
 
   let body: unknown;
   try {
@@ -62,16 +64,14 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const input = parsed.data;
 
-  const flagError = checkFlagPermissions(input, existing, actor, m);
-  if (flagError) return jsonError(403, "forbidden", flagError);
-
   const defs = await prisma.propertyDef.findMany({ where: { target: "PRODUCT" } });
   const propErrors = validatePropertyValues(input.properties, defs, m);
   if (propErrors.length > 0) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }
 
-  const base = normalizeInput(input);
+  // 作成中かどうかは専用の操作でだけ変える（保存で意図せず完成にしない）
+  const base = { ...normalizeInput(input), draftFlag: existing.draftFlag };
   if (base.codeNormalized !== existing.codeNormalized) {
     const clash = await prisma.product.findUnique({
       where: { codeNormalized: base.codeNormalized },
@@ -82,6 +82,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   const children = childWrites(input);
   await prisma.$transaction([
     prisma.productAlias.deleteMany({ where: { productId: id } }),
+    prisma.productUse.deleteMany({ where: { productId: id } }),
     prisma.productProperty.deleteMany({ where: { productId: id } }),
     prisma.product.update({
       where: { id },
@@ -89,6 +90,7 @@ export async function PUT(req: Request, { params }: Ctx) {
         ...base,
         updatedBy: actor.user.id,
         aliases: { create: children.aliases },
+        uses: { create: children.uses },
         properties: { create: children.properties },
       },
     }),
@@ -104,8 +106,6 @@ export async function PUT(req: Request, { params }: Ctx) {
       nameJa: base.nameJa,
       status: base.status,
       usableAsMaterial: base.usableAsMaterial,
-      privateFlag: base.privateFlag,
-      compositionPublicFlag: base.compositionPublicFlag,
     },
   });
 
@@ -133,6 +133,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
+  if (!canEditProduct(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
 
   const uses = await countUsesAsMaterial(id);
   if (uses > 0) {

@@ -92,6 +92,8 @@ export default function NewsListPage() {
         key: "updatedAt",
         header: m.news.updatedAt,
         kind: "date",
+        // 必ず入る列。「空白」で絞る意味が無い
+        nullable: false,
         width: 92,
         className: "text-muted-foreground text-center text-xs",
         render: (n) => new Date(n.updatedAt).toLocaleDateString(locale),

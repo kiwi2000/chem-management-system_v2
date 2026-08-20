@@ -5,6 +5,8 @@ import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { AliasList } from "@/components/alias-list";
+import { MultiSelect } from "@/components/multi-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,25 +25,21 @@ interface Props {
    * 「編集」ボタンを押してから書き換えられるようにする（誤操作を防ぐため）。
    */
   canEdit: boolean;
-  /** 非公開フラグを触れるか（PRODUCT_VIEW_PRIVATE）。サーバー側でも必ず確認する */
-  canSetPrivate: boolean;
-  /** 組成公開フラグを触れるか（COMPOSITION_VIEW_PRIVATE）。同上 */
-  canSetCompositionPublic: boolean;
+  /** 型式で選べる値（システム設定）。並び順がそのまま表示順 */
+  modelOptions: string[];
+  /** 用途で選べる値（システム設定）。同上 */
+  useOptions: string[];
+  /** 組成の節。基本情報と備考の間に置きたいので、呼び出し側から受け取る（新規登録では無い） */
+  composition?: React.ReactNode;
 }
-
-interface AliasRow {
-  nameJa: string;
-  nameEn: string;
-}
-
-const selectClass = "border-input bg-background h-9 rounded-md border px-2 text-sm";
 
 export function ProductForm({
   initial,
   defs,
   canEdit,
-  canSetPrivate,
-  canSetCompositionPublic,
+  modelOptions,
+  useOptions,
+  composition,
 }: Props) {
   const router = useRouter();
   const { m, locale } = useI18n();
@@ -55,13 +53,14 @@ export function ProductForm({
   const [status, setStatus] = useState(initial?.status ?? "ACTIVE");
   const [note, setNote] = useState(initial?.note ?? "");
   const [usableAsMaterial, setUsableAsMaterial] = useState(initial?.usableAsMaterial ?? false);
-  // 既定は「非公開でない・組成は公開」。サーバー側の既定値と揃えること
-  const [privateFlag, setPrivateFlag] = useState(initial?.privateFlag ?? false);
-  const [compositionPublicFlag, setCompositionPublicFlag] = useState(
-    initial?.compositionPublicFlag ?? true,
+  const [modelValue, setModelValue] = useState(initial?.modelValue ?? "");
+  const [uses, setUses] = useState<string[]>(initial?.uses ?? []);
+  // 日本語別名と英語別名は1対1にならないため、別々の一覧として持つ
+  const [aliasesJa, setAliasesJa] = useState<string[]>(
+    initial?.aliases.flatMap((a) => (a.nameJa ? [a.nameJa] : [])) ?? [],
   );
-  const [aliases, setAliases] = useState<AliasRow[]>(
-    initial?.aliases.map((a) => ({ nameJa: a.nameJa, nameEn: a.nameEn ?? "" })) ?? [],
+  const [aliasesEn, setAliasesEn] = useState<string[]>(
+    initial?.aliases.flatMap((a) => (a.nameEn ? [a.nameEn] : [])) ?? [],
   );
   // 拡張属性は「定義ID → 入力値（文字列）」で持つ。数値も文字列のまま送る
   const [propValues, setPropValues] = useState<Record<string, string>>(() => {
@@ -89,11 +88,12 @@ export function ProductForm({
       status,
       note: note || null,
       usableAsMaterial,
-      privateFlag,
-      compositionPublicFlag,
-      aliases: aliases
-        .filter((a) => a.nameJa.trim() !== "")
-        .map((a) => ({ nameJa: a.nameJa, nameEn: a.nameEn || null })),
+      modelValue: modelValue || null,
+      uses,
+      aliases: [
+        ...aliasesJa.filter((n) => n.trim() !== "").map((n) => ({ nameJa: n, nameEn: null })),
+        ...aliasesEn.filter((n) => n.trim() !== "").map((n) => ({ nameJa: null, nameEn: n })),
+      ],
       properties: defs
         .map((d) => {
           const raw = (propValues[d.id] ?? "").trim();
@@ -141,30 +141,35 @@ export function ProductForm({
     }
   }
 
-  /** 権限が無い機密フラグは、触れないことが分かるように理由も添える */
+  /**
+   * チェックボックスの1項目。他の入力欄と同じく見出しを上に置き、
+   * 説明は場所を取るのでホバー（とスクリーンリーダー）で読める形にとどめる。
+   */
   function flagRow(
     id: string,
     checked: boolean,
     onChange: (v: boolean) => void,
     label: string,
     hint: string,
-    allowed: boolean,
   ) {
     return (
-      <div className="space-y-1">
-        <label className="flex items-center gap-2 text-sm">
+      <div className="space-y-2" title={hint}>
+        {/* 見出しとチェックボックスは、横位置を互いの中央で揃える */}
+        <Label htmlFor={id} className="block text-center">
+          {label}
+        </Label>
+        <div className="flex h-9 items-center justify-center">
           <input
             id={id}
             type="checkbox"
             checked={checked}
-            disabled={!allowed}
+            aria-describedby={`${id}-help`}
             onChange={(e) => onChange(e.target.checked)}
           />
-          {label}
-        </label>
-        <p className="text-muted-foreground pl-6 text-xs">
-          {allowed ? hint : m.products.flagLocked}
-        </p>
+          <span id={`${id}-help`} className="sr-only">
+            {hint}
+          </span>
+        </div>
       </div>
     );
   }
@@ -203,178 +208,146 @@ export function ProductForm({
                     onChange={(e) => setCode(e.target.value)}
                     className="w-56 font-mono"
                   />
-                  <p className="text-muted-foreground text-xs">{m.products.codeHint}</p>
                 </div>
+                {/* 見出しはチェックの状態そのもの（有効／無効）を出す */}
                 <div className="space-y-2">
-                  <Label htmlFor="status">{m.products.status}</Label>
+                  <Label htmlFor="status" className="block text-center">
+                    {status === "ACTIVE" ? m.products.statusActive : m.products.statusDiscontinued}
+                  </Label>
+                  <div className="flex h-9 items-center justify-center">
+                    <input
+                      id="status"
+                      type="checkbox"
+                      aria-label={m.products.status}
+                      checked={status === "ACTIVE"}
+                      onChange={(e) => setStatus(e.target.checked ? "ACTIVE" : "DISCONTINUED")}
+                    />
+                  </div>
+                </div>
+                {flagRow(
+                  "usableAsMaterial",
+                  usableAsMaterial,
+                  setUsableAsMaterial,
+                  m.products.usableAsMaterial,
+                  m.products.usableAsMaterialHint,
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="modelValue">{m.products.modelValue}</Label>
                   <select
-                    id="status"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as typeof status)}
-                    className={selectClass}
+                    id="modelValue"
+                    value={modelValue}
+                    onChange={(e) => setModelValue(e.target.value)}
+                    className="border-input bg-background h-9 w-48 rounded-none border px-2 text-sm"
                   >
-                    <option value="ACTIVE">{m.products.statusActive}</option>
-                    <option value="DISCONTINUED">{m.products.statusDiscontinued}</option>
+                    <option value="">{m.products.unselected}</option>
+                    {/* 設定から消された値でも、選ばれていれば選択肢に残す（記録を勝手に変えない） */}
+                    {(modelValue && !modelOptions.includes(modelValue)
+                      ? [modelValue, ...modelOptions]
+                      : modelOptions
+                    ).map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
                   </select>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="note">
-                  {m.products.note}
-                  {m.common.optional}
-                </Label>
-                <textarea
-                  id="note"
-                  rows={3}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{m.products.names}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nameJa">{m.products.nameJa}</Label>
-                  <Input
-                    id="nameJa"
-                    required
-                    value={nameJa}
-                    onChange={(e) => setNameJa(e.target.value)}
-                    className="w-80"
+                  <Label htmlFor="uses">{m.products.uses}</Label>
+                  <MultiSelect
+                    id="uses"
+                    ariaLabel={m.products.uses}
+                    placeholder={m.products.unselected}
+                    options={useOptions}
+                    values={uses}
+                    onChange={setUses}
+                    disabled={readOnly}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nameEn">
-                    {m.products.nameEn}
-                    {m.common.optional}
-                  </Label>
-                  <Input
-                    id="nameEn"
-                    value={nameEn}
-                    onChange={(e) => setNameEn(e.target.value)}
-                    className="w-80"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{m.products.aliases}</Label>
-                <p className="text-muted-foreground text-xs">{m.products.aliasHint}</p>
-                {aliases.map((a, i) => (
-                  <div key={i} className="flex flex-wrap items-center gap-2">
-                    <Input
-                      aria-label={`${m.products.aliases} ${i + 1} ${m.products.nameJa}`}
-                      value={a.nameJa}
-                      onChange={(e) =>
-                        setAliases(
-                          aliases.map((x, j) => (j === i ? { ...x, nameJa: e.target.value } : x)),
-                        )
-                      }
-                      className="w-80"
-                    />
-                    <Input
-                      aria-label={`${m.products.aliases} ${i + 1} ${m.products.nameEn}`}
-                      value={a.nameEn}
-                      onChange={(e) =>
-                        setAliases(
-                          aliases.map((x, j) => (j === i ? { ...x, nameEn: e.target.value } : x)),
-                        )
-                      }
-                      className="w-80"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => setAliases(aliases.filter((_, j) => j !== i))}
-                    >
-                      {m.common.remove}
-                    </Button>
+                {defs.map((d) => (
+                  <div key={d.id} className="space-y-2">
+                    <Label htmlFor={`prop-${d.id}`}>{pickName(locale, d.labelJa, d.labelEn)}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id={`prop-${d.id}`}
+                        inputMode={d.dataType === "NUMBER" ? "decimal" : "text"}
+                        value={propValues[d.id] ?? ""}
+                        onChange={(e) => setPropValues({ ...propValues, [d.id]: e.target.value })}
+                        className="w-48"
+                      />
+                      {d.dataType === "NUMBER" && (
+                        <Input
+                          aria-label={`${pickName(locale, d.labelJa, d.labelEn)} ${m.common.unit}`}
+                          value={propUnits[d.id] ?? d.defaultUnit ?? ""}
+                          onChange={(e) => setPropUnits({ ...propUnits, [d.id]: e.target.value })}
+                          className="w-28"
+                          placeholder={m.common.unit}
+                        />
+                      )}
+                    </div>
                   </div>
                 ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAliases([...aliases, { nameJa: "", nameEn: "" }])}
-                >
-                  {m.products.addAlias}
-                </Button>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="nameJa">{m.products.nameJa}</Label>
+                <Input
+                  id="nameJa"
+                  required
+                  value={nameJa}
+                  onChange={(e) => setNameJa(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nameEn">
+                  {m.products.nameEn}
+                  {m.common.optional}
+                </Label>
+                <Input
+                  id="nameEn"
+                  value={nameEn}
+                  onChange={(e) => setNameEn(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <p className="text-muted-foreground text-xs">{m.products.aliasHint}</p>
+              <AliasList
+                label={m.products.aliasesJa}
+                addLabel={m.products.addAliasJa}
+                idPrefix="aliasJa"
+                values={aliasesJa}
+                onChange={setAliasesJa}
+              />
+              <AliasList
+                label={m.products.aliasesEn}
+                addLabel={m.products.addAliasEn}
+                idPrefix="aliasEn"
+                values={aliasesEn}
+                onChange={setAliasesEn}
+              />
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{m.products.flags}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {flagRow(
-                "usableAsMaterial",
-                usableAsMaterial,
-                setUsableAsMaterial,
-                m.products.usableAsMaterial,
-                m.products.usableAsMaterialHint,
-                true,
-              )}
-              {flagRow(
-                "privateFlag",
-                privateFlag,
-                setPrivateFlag,
-                m.products.privateFlag,
-                m.products.privateFlagHint,
-                canSetPrivate,
-              )}
-              {flagRow(
-                "compositionPublicFlag",
-                compositionPublicFlag,
-                setCompositionPublicFlag,
-                m.products.compositionPublicFlag,
-                m.products.compositionPublicFlagHint,
-                canSetCompositionPublic,
-              )}
-            </CardContent>
-          </Card>
+          {/* 組成は別部品だが、備考より前に出したいのでフォームの内側に差し込む */}
+          {composition}
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">{m.products.properties}</CardTitle>
+              <CardTitle className="text-base">
+                {m.products.note}
+                {m.common.optional}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {defs.length === 0 && (
-                <p className="text-muted-foreground text-sm">{m.products.propertiesEmpty}</p>
-              )}
-              {defs.map((d) => (
-                <div key={d.id} className="flex flex-wrap items-center gap-2">
-                  <Label htmlFor={`prop-${d.id}`} className="w-48">
-                    {pickName(locale, d.labelJa, d.labelEn)}
-                  </Label>
-                  <Input
-                    id={`prop-${d.id}`}
-                    inputMode={d.dataType === "NUMBER" ? "decimal" : "text"}
-                    value={propValues[d.id] ?? ""}
-                    onChange={(e) => setPropValues({ ...propValues, [d.id]: e.target.value })}
-                    className="w-64"
-                  />
-                  {d.dataType === "NUMBER" && (
-                    <Input
-                      aria-label={`${pickName(locale, d.labelJa, d.labelEn)} ${m.common.unit}`}
-                      value={propUnits[d.id] ?? d.defaultUnit ?? ""}
-                      onChange={(e) => setPropUnits({ ...propUnits, [d.id]: e.target.value })}
-                      className="w-28"
-                      placeholder={m.common.unit}
-                    />
-                  )}
-                </div>
-              ))}
+            <CardContent>
+              <textarea
+                id="note"
+                rows={3}
+                aria-label={m.products.note}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
+              />
             </CardContent>
           </Card>
         </fieldset>

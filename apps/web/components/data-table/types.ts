@@ -12,6 +12,22 @@ export interface TableColumn<T> {
   options?: { value: string; label: string }[];
   sortable?: boolean;
   filterable?: boolean;
+  /**
+   * 空になりうる列か。必須の列（製品コードなど）は false にすると
+   * 「空白」「空白でない」を出さない（選んでも意味が無いため）。
+   */
+  nullable?: boolean;
+  /**
+   * フィルターのパネルで列名を出さない。
+   * 選択肢の文言だけで何の列か分かるとき（原材料/原材料以外 など）に使う。
+   */
+  filterLabelHidden?: boolean;
+  /** フィルターの入力欄を、その行いっぱいに広げる（長い名称を打つ列向け） */
+  filterFullWidth?: boolean;
+  /** フィルターの入力欄に出す入力例 */
+  filterPlaceholder?: string;
+  /** 表には出さず、フィルターの条件としてだけ使う列（組成のCAS番号など） */
+  filterOnly?: boolean;
   /** 既定の列幅（px）。利用者がドラッグで変えた幅は端末に記憶される */
   width?: number;
   /** 1セルに複数行を出す（省略記号で切らず、行の高さを伸ばす） */

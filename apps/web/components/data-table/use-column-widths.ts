@@ -5,7 +5,7 @@ import { DEFAULT_COLUMN_WIDTH, MIN_COLUMN_WIDTH, type TableColumn } from "./type
 
 /**
  * 列幅。利用者がドラッグで変えた幅を端末に覚えておく。
- * 絞り込み条件と違って見た目の好みなので URL には載せない。
+ * フィルターと違って見た目の好みなので URL には載せない。
  */
 export function useColumnWidths(storageKey: string) {
   const [widths, setWidths] = useState<Record<string, number>>({});

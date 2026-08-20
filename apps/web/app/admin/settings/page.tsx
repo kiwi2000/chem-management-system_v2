@@ -3,6 +3,8 @@
 import {
   COMPOSITION_VALIDATION_MODES,
   DEFAULT_SETTINGS,
+  formatOptionList,
+  parseOptionList,
   type AppSettings,
   type CompositionValidationMode,
 } from "@chem/shared";
@@ -22,6 +24,9 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // 選択肢の入力欄は打っている途中の改行を消さないよう、生の文字列のまま持つ
+  const [modelOptionsText, setModelOptionsText] = useState("");
+  const [useOptionsText, setUseOptionsText] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -33,7 +38,10 @@ export default function SettingsPage() {
         setSettings({ ...DEFAULT_SETTINGS });
         return;
       }
-      setSettings(((await res.json()) as { settings: AppSettings }).settings);
+      const loaded = ((await res.json()) as { settings: AppSettings }).settings;
+      setSettings(loaded);
+      setModelOptionsText(formatOptionList(loaded.productModelOptions));
+      setUseOptionsText(formatOptionList(loaded.productUseOptions));
     })();
   }, [m]);
 
@@ -127,7 +135,7 @@ export default function SettingsPage() {
                     compositionValidationMode: e.target.value as CompositionValidationMode,
                   })
                 }
-                className="border-input bg-background h-9 w-full max-w-md rounded-md border px-2 text-sm"
+                className="border-input bg-background h-9 w-full max-w-md rounded-none border px-2 text-sm"
               >
                 {COMPOSITION_VALIDATION_MODES.map((mode) => (
                   <option key={mode} value={mode}>
@@ -165,6 +173,46 @@ export default function SettingsPage() {
                 </span>
               </span>
             </label>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.productSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 1行1件。並べた順がそのまま製品画面のプルダウンの順になる */}
+            <div className="space-y-2">
+              <Label htmlFor="modelOptions">{m.settings.modelOptions}</Label>
+              <textarea
+                id="modelOptions"
+                rows={5}
+                value={modelOptionsText}
+                onChange={(e) => {
+                  setModelOptionsText(e.target.value);
+                  setSettings({
+                    ...settings,
+                    productModelOptions: parseOptionList(e.target.value),
+                  });
+                }}
+                className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.optionListHint}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="useOptions">{m.settings.useOptions}</Label>
+              <textarea
+                id="useOptions"
+                rows={5}
+                value={useOptionsText}
+                onChange={(e) => {
+                  setUseOptionsText(e.target.value);
+                  setSettings({ ...settings, productUseOptions: parseOptionList(e.target.value) });
+                }}
+                className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.optionListHint}</p>
+            </div>
           </CardContent>
         </Card>
 

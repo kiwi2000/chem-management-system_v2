@@ -5,9 +5,7 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { PRODUCT_COLUMNS } from "@/lib/list-columns";
 import {
-  FLAG_DEFAULTS,
   PRODUCT_LIST_INCLUDE,
-  checkFlagPermissions,
   childWrites,
   normalizeInput,
   toListItem,
@@ -78,17 +76,14 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
 
-  // 新規は「既定値から変えたか」で判断する
-  const flagError = checkFlagPermissions(input, FLAG_DEFAULTS, actor, m);
-  if (flagError) return jsonError(403, "forbidden", flagError);
-
   const defs = await prisma.propertyDef.findMany({ where: { target: "PRODUCT" } });
   const propErrors = validatePropertyValues(input.properties, defs, m);
   if (propErrors.length > 0) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }
 
-  const base = normalizeInput(input);
+  // 新規登録は必ず作成中から始める（完成させるのは意識的な操作にする）
+  const base = { ...normalizeInput(input), draftFlag: true };
   if (await prisma.product.findUnique({ where: { codeNormalized: base.codeNormalized } })) {
     return jsonError(409, "duplicate_code", m.errors.duplicateProductCode(base.code));
   }
@@ -100,6 +95,7 @@ export async function POST(req: Request) {
       createdBy: actor.user.id,
       updatedBy: actor.user.id,
       aliases: { create: children.aliases },
+      uses: { create: children.uses },
       properties: { create: children.properties },
     },
   });
@@ -109,7 +105,7 @@ export async function POST(req: Request) {
     entityId: created.id,
     action: "create",
     actorId: actor.user.id,
-    diff: { code: base.code, nameJa: base.nameJa, privateFlag: base.privateFlag },
+    diff: { code: base.code, nameJa: base.nameJa },
   });
 
   // 警告の中身は組成（S8）ができてから増える

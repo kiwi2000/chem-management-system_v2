@@ -35,7 +35,7 @@ export function LanguageSwitcher() {
       value={locale}
       disabled={busy}
       onChange={(e) => void change(e.target.value as Locale)}
-      className="border-input bg-background h-8 rounded-md border px-2 text-sm"
+      className="border-input bg-background h-8 rounded-none border px-2 text-sm"
     >
       {LOCALES.map((l) => (
         <option key={l} value={l}>

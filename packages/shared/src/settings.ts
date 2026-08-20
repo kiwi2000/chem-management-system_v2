@@ -21,6 +21,11 @@ export interface AppSettings {
   compositionEpsilonPct: string;
   /** balance（残部）行を使えるようにするか */
   compositionBalanceAllowed: boolean;
+
+  /** 製品の「型式」で選べる値。並べた順がそのまま表示順になる */
+  productModelOptions: string[];
+  /** 製品の「用途」で選べる値。並べた順がそのまま表示順になる */
+  productUseOptions: string[];
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -29,7 +34,24 @@ export const DEFAULT_SETTINGS: AppSettings = {
   compositionValidationMode: "STANDARD",
   compositionEpsilonPct: "0.01",
   compositionBalanceAllowed: true,
+  productModelOptions: [],
+  productUseOptions: [],
 };
+
+/** 選択肢の一覧は1行1件で持つ。空行と前後の空白は捨て、重複は先に出たものを残す */
+export function parseOptionList(raw: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const line of raw.split("\n")) {
+    const v = line.trim();
+    if (v === "" || seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
+export const formatOptionList = (values: string[]): string => values.join("\n");
 
 /**
  * DB のキーと AppSettings の対応（値のハードコードを避けるため一元管理する）。
@@ -41,6 +63,8 @@ interface SettingDef<K extends keyof AppSettings = keyof AppSettings> {
   valueType: "BOOLEAN" | "STRING" | "NUMBER";
   /** DB の文字列 → 設定値。読めない値は既定にフォールバックさせるため null を返す */
   parse: (raw: string) => AppSettings[K] | null;
+  /** 設定値 → DB の文字列。既定は String()。一覧のように単純変換できないものだけ指定する */
+  format?: (value: AppSettings[K]) => string;
 }
 
 const boolDef = (field: keyof AppSettings, key: string): SettingDef => ({
@@ -72,6 +96,20 @@ export const SETTING_DEFS: SettingDef[] = [
     },
   },
   boolDef("compositionBalanceAllowed", "composition.balance_allowed"),
+  {
+    field: "productModelOptions",
+    key: "product.model_options",
+    valueType: "STRING",
+    parse: (raw) => parseOptionList(raw),
+    format: (v) => formatOptionList(v as string[]),
+  },
+  {
+    field: "productUseOptions",
+    key: "product.use_options",
+    valueType: "STRING",
+    parse: (raw) => parseOptionList(raw),
+    format: (v) => formatOptionList(v as string[]),
+  },
 ];
 
 /** 許容誤差は 0〜10%。これより大きい値は設定ミスとみなす */
@@ -92,6 +130,9 @@ export const settingsSchema = (m: Messages) =>
     compositionValidationMode: z.enum(COMPOSITION_VALIDATION_MODES),
     compositionEpsilonPct: epsilonSchema(m),
     compositionBalanceAllowed: z.boolean(),
+    // 1件あたり100文字・全体で200件まで。桁外れの入力で画面が壊れないようにする
+    productModelOptions: z.array(z.string().trim().min(1).max(100)).max(200),
+    productUseOptions: z.array(z.string().trim().min(1).max(100)).max(200),
   });
 
 export type SettingsInput = z.infer<ReturnType<typeof settingsSchema>>;

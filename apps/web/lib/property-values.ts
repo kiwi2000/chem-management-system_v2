@@ -13,7 +13,7 @@ export interface PropertyValueInput {
  * 拡張属性の値の検証。辞書とDBの定義を突き合わせないと判定できない部分。
  * 返り値が空でなければ 400 で止める。
  *
- * `defs` は用途（物質/製品）で絞り込んだものを渡すこと。
+ * `defs` は用途（物質/製品）でフィルターしたものを渡すこと。
  * 絞らずに渡すと、製品の項目IDを物質に付けるような取り違えを通してしまう。
  */
 export function validatePropertyValues(

@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import { CompositionEditor } from "@/components/composition-editor";
+import { DraftToggle } from "@/components/draft-toggle";
 import { ProductForm } from "@/components/product-form";
 import { getActor } from "@/lib/authz";
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { PRODUCT_INCLUDE, toDetail, visibilityWhere } from "@/lib/product-service";
+import { PRODUCT_INCLUDE, canEditProduct, toDetail, visibilityWhere } from "@/lib/product-service";
 import { PROPERTY_DEF_COUNT, toPropertyDefDto } from "@/lib/property-def-service";
 import { getAppSettings } from "@/lib/settings";
 
@@ -39,21 +40,30 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
-      <h1 className="text-2xl font-semibold">{m.products.detailTitle}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">{m.products.detailTitle}</h1>
+        <DraftToggle
+          entity="products"
+          id={item.id}
+          draftFlag={item.draftFlag}
+          canEdit={canEditProduct(actor, item)}
+        />
+      </div>
       <ProductForm
         initial={toDetail(item)}
         defs={defs.map(toPropertyDefDto)}
-        canEdit={actor.has("PRODUCT_EDIT")}
-        canSetPrivate={actor.has("PRODUCT_VIEW_PRIVATE")}
-        canSetCompositionPublic={actor.has("COMPOSITION_VIEW_PRIVATE")}
+        modelOptions={settings.productModelOptions}
+        useOptions={settings.productUseOptions}
+        canEdit={canEditProduct(actor, item)}
+        composition={
+          /* 非開示の組成は、そもそもこの節ごと出さない */
+          canViewComposition(actor, item) ? (
+            <CompositionEditor productId={item.id} settings={settings} />
+          ) : (
+            <p className="text-muted-foreground text-sm">{m.composition.withheld}</p>
+          )
+        }
       />
-
-      {/* 非開示の組成は、そもそもこの節ごと出さない */}
-      {canViewComposition(actor, item) ? (
-        <CompositionEditor productId={item.id} settings={settings} />
-      ) : (
-        <p className="text-muted-foreground text-sm">{m.composition.withheld}</p>
-      )}
     </div>
   );
 }

@@ -41,7 +41,7 @@ describe("一覧の状態の URL 往復", () => {
     expect(roundTrip(state).sort).toEqual(state.sort);
   });
 
-  it("文字列・選択肢・日付・数値の絞り込みが往復する", () => {
+  it("文字列・選択肢・日付・数値のフィルターが往復する", () => {
     const state: TableState = {
       ...FALLBACK,
       filters: {
@@ -107,7 +107,7 @@ describe("壊れた URL の扱い", () => {
 });
 
 describe("activeFilterCount", () => {
-  it("掛かっている絞り込みの数を返す", () => {
+  it("掛かっているフィルターの数を返す", () => {
     expect(activeFilterCount(FALLBACK)).toBe(0);
     expect(
       activeFilterCount({

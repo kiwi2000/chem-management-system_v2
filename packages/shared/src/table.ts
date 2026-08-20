@@ -1,14 +1,17 @@
 /**
- * 一覧（テーブル）の並べ替え・絞り込み・ページングの状態。
+ * 一覧（テーブル）の並べ替え・フィルター・ページングの状態。
  * URL に載せる形と型の相互変換をここに集約し、画面とサーバーで同じ解釈になるようにする。
  *
  * URL の形:
  *   sort=code:asc,status:desc      並べ替え（先頭が第1キー）
- *   f.code=contains:pb             列ごとの絞り込み
+ *   f.code=contains:pb             列ごとのフィルター
  *   f.status=in:ACTIVE|DISCONTINUED
  *   f.updatedAt=between:2026-01-01|2026-12-31
  *   page=2&size=50
  */
+
+import { z } from "zod";
+import type { Messages } from "./i18n/ja";
 
 export const TEXT_OPERATORS = [
   "contains",
@@ -35,13 +38,19 @@ export function needsSecondValue(op: string): boolean {
   return op === "between";
 }
 
-export type ColumnKind = "text" | "number" | "date" | "enum";
+/** 複数の値をまとめて指定する条件（組成のCAS番号など） */
+export const LIST_OPERATORS = ["any", "all"] as const;
+export type ListOperator = (typeof LIST_OPERATORS)[number];
+
+export type ColumnKind = "text" | "number" | "date" | "enum" | "list";
 
 export type ColumnFilter =
   | { kind: "text"; op: TextOperator; value: string }
   | { kind: "number"; op: NumberOperator; value: string; value2?: string }
   | { kind: "date"; op: DateOperator; value: string; value2?: string }
-  | { kind: "enum"; values: string[] };
+  | { kind: "enum"; values: string[] }
+  /** any=いずれかを含む / all=すべて含む。値は正規化済みのものを並べる */
+  | { kind: "list"; op: ListOperator; values: string[] };
 
 export type SortDirection = "asc" | "desc";
 export interface SortRule {
@@ -63,7 +72,7 @@ export function emptyTableState(sort: SortRule[] = []): TableState {
   return { sort, filters: {}, page: 1, pageSize: DEFAULT_PAGE_SIZE };
 }
 
-/** 絞り込みが1つでも掛かっているか（「絞り込み中」の表示に使う） */
+/** フィルターが1つでも掛かっているか（「フィルター中」の表示に使う） */
 export function activeFilterCount(state: TableState): number {
   return Object.keys(state.filters).length;
 }
@@ -75,9 +84,14 @@ function splitOnce(s: string, sep: string): [string, string] {
   return i < 0 ? [s, ""] : [s.slice(0, i), s.slice(i + 1)];
 }
 
-/** その列の種類として解釈できる絞り込みだけを受け取る（不正なURLは黙って無視する） */
+/** その列の種類として解釈できるフィルターだけを受け取る（不正なURLは黙って無視する） */
 function parseFilter(kind: ColumnKind, raw: string): ColumnFilter | null {
   const [op, rest] = splitOnce(raw, ":");
+  if (kind === "list") {
+    if (!(LIST_OPERATORS as readonly string[]).includes(op)) return null;
+    const values = rest.split("|").filter((v) => v !== "");
+    return values.length > 0 ? { kind: "list", op: op as ListOperator, values } : null;
+  }
   if (kind === "enum") {
     if (op !== "in") return null;
     const values = rest.split("|").filter((v) => v !== "");
@@ -103,6 +117,7 @@ function parseFilter(kind: ColumnKind, raw: string): ColumnFilter | null {
 
 function serializeFilter(f: ColumnFilter): string {
   if (f.kind === "enum") return `in:${f.values.join("|")}`;
+  if (f.kind === "list") return `${f.op}:${f.values.join("|")}`;
   if (!needsValue(f.op)) return `${f.op}:`;
   if (f.kind !== "text" && needsSecondValue(f.op)) return `${f.op}:${f.value}|${f.value2 ?? ""}`;
   return `${f.op}:${f.value}`;
@@ -167,3 +182,43 @@ export function serializeTableState(state: TableState, fallback: TableState): UR
 
   return params;
 }
+
+/**
+ * 保存したフィルター。
+ * 条件そのものはクエリ文字列で持つので、列構成が変わっても
+ * 解釈できるものだけが効く（parseTableState が不正な条件を捨てる）。
+ */
+export const savedFilterSchema = (m: Messages) =>
+  z.object({
+    tableKey: z.string().trim().min(1).max(100),
+    title: z.string().trim().min(1, m.validation.required).max(100, m.validation.tooLong(100)),
+    query: z.string().max(2000, m.validation.tooLong(2000)),
+    shared: z.boolean(),
+  });
+
+export type SavedFilterInput = z.infer<ReturnType<typeof savedFilterSchema>>;
+
+/**
+ * まとめて入力された値を1件ずつに分ける。
+ * 数字とハイフン以外はすべて区切りとみなすので、改行・カンマ・空白のどれで区切ってもよい。
+ * CAS番号のように「形が数字とハイフンだけ」の値に使う。
+ */
+export function splitNumericTokens(raw: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const token of raw.split(/[^0-9-]+/)) {
+    const v = token.replace(/^-+|-+$/g, "");
+    if (v === "" || seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
+/** 作成中／完成の切り替え。一覧からまとめて変えることもある */
+export const draftUpdateSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(500),
+  draftFlag: z.boolean(),
+});
+
+export type DraftUpdateInput = z.infer<typeof draftUpdateSchema>;

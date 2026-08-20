@@ -6,7 +6,9 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
+import { cn } from "@/lib/utils";
 import { FilterCell } from "./filter-cell";
+import { SavedFilters } from "./saved-filters";
 import type { TableColumn } from "./types";
 
 interface Props<T> {
@@ -16,14 +18,26 @@ interface Props<T> {
   defaultState: TableState;
   onFilterChange: (key: string, filter: ColumnFilter | undefined) => void;
   onReset: () => void;
-  /** 開閉の状態を端末に覚えるためのキー */
+  /** 開閉の状態を端末に覚えるためのキー。保存した条件の紐付けにも使う */
   storageKey: string;
+  /** いまの状態をクエリ文字列にしたもの（保存する中身） */
+  currentQuery: string;
+  /** 保存した条件を読み込むとき */
+  onLoadQuery: (query: string) => void;
+  /**
+   * 並びを指定する場合、1行に置く列キーを行ごとに並べる。
+   * ここに書かなかった列は、下に既定の並び（3列）で続けて出す。
+   */
+  filterLayout?: FilterLayoutRow[];
 }
 
+/** 1行に置く列キー。見出しを付けたいときは title を添える */
+export type FilterLayoutRow = string[] | { title: string; keys: string[] };
+
 /**
- * 絞り込み条件のパネル。
+ * フィルターのパネル。
  * 表の中に入れると列幅に引きずられて入力欄が伸び縮みするので、表の外に出している。
- * ボタンで開閉でき、閉じていても「絞り込み中」であることは分かるようにする。
+ * ボタンで開閉でき、閉じていても「フィルター中」であることは分かるようにする。
  */
 export function FilterPanel<T>({
   columns,
@@ -32,6 +46,9 @@ export function FilterPanel<T>({
   onFilterChange,
   onReset,
   storageKey,
+  currentQuery,
+  onLoadQuery,
+  filterLayout,
 }: Props<T>) {
   const { m } = useI18n();
   const [open, setOpen] = useState(false);
@@ -53,6 +70,20 @@ export function FilterPanel<T>({
   const active = filterCount > 0 || sorted;
 
   const filterable = columns.filter((c) => c.filterable !== false);
+  const byKey = new Map(filterable.map((c) => [c.key, c]));
+  // 指定された並び。存在しない列キーは黙って飛ばす（列構成を変えても壊れないように）
+  const laidOut = (filterLayout ?? []).map((row) => {
+    const keys = Array.isArray(row) ? row : row.keys;
+    return {
+      title: Array.isArray(row) ? null : row.title,
+      cols: keys.flatMap((key) => {
+        const col = byKey.get(key);
+        return col ? [col] : [];
+      }),
+    };
+  });
+  const placed = new Set(laidOut.flatMap((r) => r.cols).map((c) => c.key));
+  const rest = filterLayout ? filterable.filter((c) => !placed.has(c.key)) : filterable;
 
   return (
     <div className="bg-background rounded-md border">
@@ -65,6 +96,8 @@ export function FilterPanel<T>({
           )}
           {m.table.filterPanel}
         </Button>
+
+        <SavedFilters tableKey={storageKey} currentQuery={currentQuery} onLoad={onLoadQuery} />
 
         {active && (
           <>
@@ -83,17 +116,54 @@ export function FilterPanel<T>({
       </div>
 
       {open && (
-        <div className="grid gap-x-4 gap-y-3 border-t p-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filterable.map((c) => (
-            <div key={c.key} className="space-y-1">
-              <div className="text-muted-foreground text-xs font-medium">{c.header}</div>
-              <FilterCell
-                column={c}
-                value={state.filters[c.key]}
-                onChange={(f) => onFilterChange(c.key, f)}
-              />
+        <div className="space-y-2 border-t p-4">
+          {laidOut.map((row, i) => (
+            <div
+              key={i}
+              // 先頭の節はパネルの区切り線がすぐ上にあるので、線を重ねない
+              className={cn(row.title && "space-y-2", row.title && i > 0 && "border-t pt-4")}
+            >
+              {row.title && <div className="text-sm font-medium">{row.title}</div>}
+              <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
+                {row.cols.map((c) => (
+                  <div
+                    key={c.key}
+                    className={cn("flex items-center gap-2", c.filterFullWidth && "flex-1")}
+                  >
+                    {/* 見出しは入力欄の左。幅を揃えて、どの行も入力欄の左端が並ぶようにする */}
+                    {!c.filterLabelHidden && (
+                      <div className="text-muted-foreground w-20 shrink-0 text-right text-xs font-medium">
+                        {c.header}
+                      </div>
+                    )}
+                    <FilterCell
+                      column={c}
+                      value={state.filters[c.key]}
+                      onChange={(f) => onFilterChange(c.key, f)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
+          {rest.length > 0 && (
+            <div className="grid gap-x-6 gap-y-2 lg:grid-cols-2">
+              {rest.map((c) => (
+                <div key={c.key} className="flex items-center gap-2">
+                  {!c.filterLabelHidden && (
+                    <div className="text-muted-foreground w-20 shrink-0 text-right text-xs font-medium">
+                      {c.header}
+                    </div>
+                  )}
+                  <FilterCell
+                    column={c}
+                    value={state.filters[c.key]}
+                    onChange={(f) => onFilterChange(c.key, f)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

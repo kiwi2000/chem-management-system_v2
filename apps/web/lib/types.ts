@@ -58,6 +58,19 @@ export interface GroupDto {
   newsCount: number;
 }
 
+/** 保存したフィルター。共有されたものは他人が作ったものも並ぶ */
+export interface SavedFilterDto {
+  id: string;
+  tableKey: string;
+  title: string;
+  /** 並べ替え・フィルター・件数をまとめたクエリ文字列 */
+  query: string;
+  shared: boolean;
+  /** 自分が保存したものか（消せるかどうかの判断に使う） */
+  mine: boolean;
+  ownerName: string;
+}
+
 export interface ListResponse<T> {
   items: T[];
   total: number;
@@ -70,6 +83,8 @@ export interface SubstanceListItemDto {
   code: string;
   casNumber: string | null;
   status: SubstanceStatus;
+  /** 作成中。入力の途中で、まだ他の人に使わせたくない状態 */
+  draftFlag: boolean;
   nameJa: string;
   nameEn: string | null;
   note: string | null;
@@ -82,7 +97,7 @@ export interface SubstanceListItemDto {
 export interface SubstanceDetailDto extends SubstanceListItemDto {
   mainNameJa: string;
   mainNameEn: string | null;
-  subNames: { nameJa: string; nameEn: string | null }[];
+  subNames: { nameJa: string | null; nameEn: string | null }[];
   properties: PropertyValueDto[];
 }
 
@@ -100,18 +115,21 @@ export interface ProductListItemDto {
   nameJa: string;
   nameEn: string | null;
   status: ProductStatus;
+  /** 作成中。入力の途中で、まだ他の人に使わせたくない状態 */
+  draftFlag: boolean;
   note: string | null;
   aliasCount: number;
   /** 他製品の組成に部品として使えるか */
   usableAsMaterial: boolean;
-  /** 非公開。権限が無い人にはそもそもこの行が返らない */
-  privateFlag: boolean;
-  compositionPublicFlag: boolean;
+  /** 型式。未選択は null */
+  modelValue: string | null;
+  /** 用途。表示順に並べた文字列 */
+  uses: string[];
   updatedAt: string;
 }
 
 export interface ProductDetailDto extends ProductListItemDto {
-  aliases: { nameJa: string; nameEn: string | null }[];
+  aliases: { nameJa: string | null; nameEn: string | null }[];
   properties: PropertyValueDto[];
 }
 

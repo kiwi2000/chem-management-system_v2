@@ -14,7 +14,7 @@ const SELECT = { id: true, code: true, nameJa: true, nameEn: true } as const;
  * GET /api/composition/candidates?kind=substance|product&q=...&exclude=<製品ID>
  *
  * 組成に入れられる物質・原材料を、コードか名称の部分一致で探す。
- * 一覧APIは列ごとの絞り込み（AND）なので「コードか名称のどちらかに一致」が作れず、
+ * 一覧APIは列ごとのフィルター（AND）なので「コードか名称のどちらかに一致」が作れず、
  * 選択用に専用の入口を用意した。返すのはコードと名称だけ。
  *
  * 権限は PRODUCT_EDIT。組成を組む以上、構成要素の名前が見えないと作業にならないため、
@@ -43,10 +43,11 @@ export async function GET(req: Request) {
       where: {
         deletedAt: null,
         status: "ACTIVE",
+        // 作成中のものは、まだ他の人に使わせない
+        draftFlag: false,
         usableAsMaterial: true,
         // 自分自身は原材料にできない（循環になる）
         ...(exclude ? { id: { not: exclude } } : {}),
-        ...(actor.has("PRODUCT_VIEW_PRIVATE") ? {} : { privateFlag: false }),
         OR: [byCode, ...byName],
       },
       select: SELECT,
@@ -57,7 +58,7 @@ export async function GET(req: Request) {
   }
 
   const items = await prisma.substance.findMany({
-    where: { deletedAt: null, status: "ACTIVE", OR: [byCode, ...byName] },
+    where: { deletedAt: null, status: "ACTIVE", draftFlag: false, OR: [byCode, ...byName] },
     select: SELECT,
     orderBy: { codeNormalized: "asc" },
     take: LIMIT,

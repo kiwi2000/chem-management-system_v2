@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { GroupDto, ListResponse } from "@/lib/types";
 
 /**
- * グループの一覧をまとめて読む（用途での絞り込みは呼び出し側でやる）。
+ * グループの一覧をまとめて読む（用途でのフィルターは呼び出し側でやる）。
  * グループは多くても数十件なので、用途ごとに分けて2回読むより1回で済ませる。
  * 管理者専用APIなので、使うのは管理画面だけ。
  */

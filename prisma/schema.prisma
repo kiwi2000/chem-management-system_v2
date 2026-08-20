@@ -27,12 +27,12 @@ datasource db {
  */
 enum Permission {
   PRODUCT_VIEW
-  PRODUCT_VIEW_PRIVATE
   PRODUCT_EDIT
   COMPOSITION_VIEW
-  COMPOSITION_VIEW_PRIVATE
   SUBSTANCE_VIEW
   SUBSTANCE_EDIT
+  INACTIVE_VIEW
+  INACTIVE_EDIT
   REGULATION_VIEW
   REGULATION_EDIT
   DATA_EXPORT
@@ -128,8 +128,9 @@ model User {
   updatedAt          DateTime  @updatedAt @map("updated_at")
   deletedAt          DateTime? @map("deleted_at")
 
-  sessions    Session[]
-  permissions UserPermission[]
+  sessions     Session[]
+  permissions  UserPermission[]
+  savedFilters SavedFilter[]
   news        News[]
   orgGroup    Group? @relation("UserOrgGroup", fields: [orgGroupId], references: [id])
   newsGroup   Group? @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
@@ -252,12 +253,17 @@ model Substance {
 
   /**
    * 主名称。1物質1件なので子テーブルではなくこの行に持つ。
-   * 別テーブルにすると一覧の並べ替え・絞り込みができない（Prisma は 1対多 の項目で並べ替えできない）。
+   * 別テーブルにすると一覧の並べ替え・フィルターができない（Prisma は 1対多 の項目で並べ替えできない）。
    */
   nameJa String  @map("name_ja") @db.VarChar(500)
   nameEn String? @map("name_en") @db.VarChar(500)
 
   status SubstanceStatus @default(ACTIVE)
+  /**
+   * 入力の途中で、まだ他の人に使わせたくない状態。
+   * 有効／無効とは別の軸。オンの間は組成の候補に出さない。
+   */
+  draftFlag Boolean @default(false) @map("draft_flag")
   /** 備考（日本語のみ）。検索対象に含める */
   note   String?
 
@@ -281,9 +287,10 @@ model Substance {
 
 /** 別名（0件以上）。主名称は substances 側に持つ */
 model SubstanceAlias {
-  id           String  @id @default(cuid())
-  substanceId  String  @map("substance_id")
-  nameJa       String  @map("name_ja") @db.VarChar(500)
+  id          String @id @default(cuid())
+  substanceId String @map("substance_id")
+  /** 日本語と英語は件数が一致しないため、どちらか一方だけの行を許す（両方 null は不可・アプリ層で担保） */
+  nameJa       String? @map("name_ja") @db.VarChar(500)
   nameEn       String? @map("name_en") @db.VarChar(500)
   displayOrder Int     @default(0) @map("display_order")
 
@@ -372,15 +379,19 @@ model Product {
   nameEn String? @map("name_en") @db.VarChar(500)
 
   status ProductStatus @default(ACTIVE)
+  /**
+   * 入力の途中で、まだ他の人に使わせたくない状態。
+   * 有効／無効とは別の軸。オンの間は組成の候補に出さない。
+   */
+  draftFlag Boolean @default(false) @map("draft_flag")
   /** 備考（日本語のみ）。検索対象に含める */
   note   String?
 
   /** 他製品の組成に部品として使えるか */
   usableAsMaterial Boolean @default(false) @map("usable_as_material")
-  /** 非公開。権限が無い人には存在ごと見せない（一覧から除外し、詳細は404） */
-  privateFlag      Boolean @default(false) @map("private_flag")
-  /** 組成を公開するか。オフだと本体は見えるが組成は非開示 */
-  compositionPublicFlag Boolean @default(true) @map("composition_public_flag")
+
+  /** 型式。システム設定に登録した選択肢から1つ選ぶ（値は文字列で持つ） */
+  modelValue String? @map("model_value") @db.VarChar(100)
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
@@ -390,6 +401,7 @@ model Product {
 
   aliases    ProductAlias[]
   properties ProductProperty[]
+  uses       ProductUse[]
 
   /** この製品の組成（何が入っているか） */
   compositionLines CompositionLine[] @relation("ProductComposition")
@@ -400,15 +412,35 @@ model Product {
   @@index([nameEn])
   @@index([status])
   @@index([usableAsMaterial])
-  @@index([privateFlag])
+  @@index([draftFlag])
+  @@index([modelValue])
   @@map("products")
 }
 
 /** 別名（旧品番・社内の呼び方など） */
+/**
+ * 用途。1製品に複数持てる。
+ * 選べる値はシステム設定に持ち、ここには選んだ文字列をそのまま残す
+ * （設定から選択肢を消しても、過去の製品の記録は変わらないようにするため）。
+ */
+model ProductUse {
+  id           String @id @default(cuid())
+  productId    String @map("product_id")
+  value        String @db.VarChar(100)
+  displayOrder Int    @default(0) @map("display_order")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, value])
+  @@index([value])
+  @@map("product_uses")
+}
+
 model ProductAlias {
-  id           String  @id @default(cuid())
-  productId    String  @map("product_id")
-  nameJa       String  @map("name_ja") @db.VarChar(500)
+  id        String @id @default(cuid())
+  productId String @map("product_id")
+  /** 日本語と英語は件数が一致しないため、どちらか一方だけの行を許す（両方 null は不可・アプリ層で担保） */
+  nameJa       String? @map("name_ja") @db.VarChar(500)
   nameEn       String? @map("name_en") @db.VarChar(500)
   displayOrder Int     @default(0) @map("display_order")
 
@@ -545,3 +577,31 @@ model News {
 // 画面の文言は packages/shared/src/i18n の辞書ファイルで管理する（DBに持たない）。
 // 訳の抜けをビルド時に検出できることと、表示のチラつきが無いことを優先した（docs/decisions/0002）。
 // マスタの名称は各テーブルが日本語名・英語名の2列を持つ方式（物質・製品など）。
+
+/**
+ * 保存したフィルター。
+ * 一覧のある画面すべてで共通。どの画面のものかは `tableKey`（DataTable の storageKey）で分ける。
+ * 条件は URL のクエリ文字列と同じ形（@chem/shared の table.ts）で持つので、
+ * 列構成が変わっても読めるものだけ効く（解釈できない条件は黙って無視される）。
+ */
+model SavedFilter {
+  id       String @id @default(cuid())
+  /** どの一覧のものか（例: chem.table.products） */
+  tableKey String @map("table_key") @db.VarChar(100)
+  title    String @db.VarChar(100)
+  /** 並べ替え・フィルター・件数をまとめたクエリ文字列 */
+  query    String @db.VarChar(2000)
+  /** true=全員が読める。false=作った本人だけ */
+  shared   Boolean @default(false)
+
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /** 同じ人が同じ画面に同じ名前を2つ作れないようにする（上書き保存にする） */
+  @@unique([tableKey, ownerId, title])
+  @@index([tableKey, shared])
+  @@map("saved_filters")
+}
