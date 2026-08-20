@@ -255,7 +255,7 @@
   --card-foreground: oklch(0.26 0.03 240);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.26 0.03 240);
-  --primary: oklch(0.51 0.13 230);
+  --primary: oklch(0.6 0.13 230);
   --primary-foreground: oklch(0.99 0.005 220);
   --secondary: oklch(0.945 0.03 220);
   --secondary-foreground: oklch(0.32 0.05 240);
@@ -267,13 +267,10 @@
   --border: oklch(0.895 0.03 220);
   --input: oklch(0.895 0.03 220);
   --ring: oklch(0.66 0.11 230);
-  /*
-   * 濃いヘッダー。以前は明るい空色に濃紺の文字だったが、背景の明るさが中途半端で
-   * どちらの文字色でも読みにくかった（濃紺 5.7 / 白 3.1）。暗い青に白文字へ改めた。
-   */
-  --strong: oklch(0.47 0.12 232);
-  --strong-foreground: oklch(0.99 0.005 220);
-  --strong-head: oklch(0.39 0.1 232);
+  /* 明るい空色。白文字では読めない明るさなので、この配色は文字を濃紺にしている */
+  --strong: oklch(0.66 0.125 232);
+  --strong-foreground: oklch(0.22 0.05 240);
+  --strong-head: oklch(0.74 0.1 232);
   --sidebar: oklch(0.96 0.025 220);
   --sidebar-foreground: oklch(0.26 0.03 240);
   --sidebar-border: oklch(0.895 0.03 220);
@@ -316,7 +313,7 @@
   --card-foreground: oklch(0.28 0.035 50);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.28 0.035 50);
-  --primary: oklch(0.52 0.15 55);
+  --primary: oklch(0.62 0.15 55);
   --primary-foreground: oklch(0.99 0.008 70);
   --secondary: oklch(0.945 0.04 70);
   --secondary-foreground: oklch(0.34 0.06 50);
