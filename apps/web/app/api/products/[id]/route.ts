@@ -4,6 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { countUsesAsMaterial } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { writeApprovalEvent } from "@/lib/publish-service";
 import {
   PRODUCT_INCLUDE,
   childWrites,
@@ -70,8 +71,16 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }
 
-  // 公開の状態は専用の操作でだけ変える（保存で意図せず公開しない）
-  const base = normalizeInput(input);
+  /**
+   * 公開の状態は専用の操作でだけ変える（保存で意図せず公開しない）。
+   * ただし却下されたものを直したときは、作成中に戻す。
+   * 直したのに却下のまま並んでいると、対応が済んだのか分からなくなるため。
+   */
+  const fixedAfterReject = existing.publishState === "REJECTED";
+  const base = {
+    ...normalizeInput(input),
+    ...(fixedAfterReject ? { publishState: "DRAFT" as const } : {}),
+  };
   if (base.codeNormalized !== existing.codeNormalized) {
     const clash = await prisma.product.findUnique({
       where: { codeNormalized: base.codeNormalized },
@@ -108,6 +117,16 @@ export async function PUT(req: Request, { params }: Ctx) {
       usableAsMaterial: base.usableAsMaterial,
     },
   });
+
+  if (fixedAfterReject) {
+    await writeApprovalEvent({
+      entity: "product",
+      entityId: id,
+      action: "withdraw",
+      actorId: actor.user.id,
+      comment: "却下されたものを直したため",
+    });
+  }
 
   // 原材料利用可を外しても既存の参照は残る。気づけるように知らせる（保存は通す）
   const warnings: string[] = [];

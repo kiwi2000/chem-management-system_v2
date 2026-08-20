@@ -4,6 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { countUsesOfSubstance } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { writeApprovalEvent } from "@/lib/publish-service";
 import {
   SUBSTANCE_INCLUDE,
   childWrites,
@@ -75,8 +76,16 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }
 
-  // 公開の状態は専用の操作でだけ変える（保存で意図せず公開しない）
-  const base = normalizeInput(input);
+  /**
+   * 公開の状態は専用の操作でだけ変える（保存で意図せず公開しない）。
+   * ただし却下されたものを直したときは、作成中に戻す。
+   * 直したのに却下のまま並んでいると、対応が済んだのか分からなくなるため。
+   */
+  const fixedAfterReject = existing.publishState === "REJECTED";
+  const base = {
+    ...normalizeInput(input),
+    ...(fixedAfterReject ? { publishState: "DRAFT" as const } : {}),
+  };
   const settings = await getAppSettings();
   const casError = validateCas(base.casNormalized, settings, m);
   if (casError) return jsonError(400, "validation_error", casError);
@@ -117,6 +126,16 @@ export async function PUT(req: Request, { params }: Ctx) {
       mainNameJa: input.mainNameJa,
     },
   });
+
+  if (fixedAfterReject) {
+    await writeApprovalEvent({
+      entity: "substance",
+      entityId: id,
+      action: "withdraw",
+      actorId: actor.user.id,
+      comment: "却下されたものを直したため",
+    });
+  }
 
   // 更新でも同一CASの警告を出す（v1は登録時しか見ていなかった）
   const warnings = await collectWarnings(base.casNormalized, id, settings, m);
