@@ -45,6 +45,8 @@ interface Props<T> {
   onMarkDoneSelected?: (rows: T[]) => void | Promise<void>;
   /** 上のボタンの文言。省略すると「選択した行を完成にする」 */
   markDoneLabel?: string;
+  /** 押したときの確認文。省略すると「選択した ○ 件を完成にしますか？」 */
+  markDoneConfirm?: (n: number) => string;
   /** 行をダブルクリックしたとき（詳細を開く・その場のフォームに読み込む） */
   onRowActivate?: (row: T) => void;
   /** フィルターの並びを指定する場合、1行に置く列キーを行ごとに並べる */
@@ -77,6 +79,7 @@ export function DataTable<T>({
   onDeleteSelected,
   onMarkDoneSelected,
   markDoneLabel,
+  markDoneConfirm,
   onRowActivate,
   filterLayout,
 }: Props<T>) {
@@ -143,7 +146,7 @@ export function DataTable<T>({
   async function markDoneSelected() {
     const targets = (rows ?? []).filter((r) => selected.has(rowKey(r)));
     if (targets.length === 0 || !onMarkDoneSelected) return;
-    if (!confirm(m.common.markDoneConfirm(targets.length))) return;
+    if (!confirm((markDoneConfirm ?? m.common.markDoneConfirm)(targets.length))) return;
     setDeleting(true);
     try {
       await onMarkDoneSelected(targets);

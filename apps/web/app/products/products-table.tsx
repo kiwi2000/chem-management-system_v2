@@ -346,6 +346,7 @@ export function ProductsTable({
             : undefined
         }
         markDoneLabel={approvalRequired ? m.common.submitSelected : m.common.publishSelected}
+        markDoneConfirm={approvalRequired ? m.common.submitConfirm : m.common.publishConfirm}
         filterLayout={filterLayout}
         onRowActivate={(p) => router.push(`/products/${p.id}`)}
       />

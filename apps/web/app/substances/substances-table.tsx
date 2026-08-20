@@ -278,6 +278,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
             : undefined
         }
         markDoneLabel={approvalRequired ? m.common.submitSelected : m.common.publishSelected}
+        markDoneConfirm={approvalRequired ? m.common.submitConfirm : m.common.publishConfirm}
         onRowActivate={(s) => router.push(`/substances/${s.id}`)}
       />
     </div>

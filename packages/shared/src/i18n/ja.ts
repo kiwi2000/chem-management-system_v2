@@ -20,6 +20,8 @@ export const ja = {
     submitSelected: "選択した行を申請",
     approveSelected: "選択した行を承認",
     publishSelected: "選択した行を発行",
+    submitConfirm: (n: number) => `選択した ${n} 件の承認を申請しますか？`,
+    publishConfirm: (n: number) => `選択した ${n} 件を発行しますか？`,
     rejectReason: "却下の理由（任意）",
     approvalHistory: "承認の履歴",
     noApprovalHistory: "履歴はありません",

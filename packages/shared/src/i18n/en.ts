@@ -21,6 +21,9 @@ export const en: Messages = {
     submitSelected: "Request approval for selected",
     approveSelected: "Approve selected",
     publishSelected: "Publish selected",
+    submitConfirm: (n: number) =>
+      `Request approval for the ${n} selected item${n === 1 ? "" : "s"}?`,
+    publishConfirm: (n: number) => `Publish the ${n} selected item${n === 1 ? "" : "s"}?`,
     rejectReason: "Reason for rejection (optional)",
     approvalHistory: "Approval history",
     noApprovalHistory: "No history",
