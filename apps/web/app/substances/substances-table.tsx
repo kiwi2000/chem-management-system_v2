@@ -110,11 +110,20 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         key: "publishState",
         header: m.substances.publishState,
         kind: "enum",
-        width: 88,
-        className: "text-center text-xs",
+        // 「承認待ち」が切れない最小限。左右の余白を詰めて幅を稼ぐ
+        width: 76,
+        className: "px-1 text-center text-xs",
         filterLabelHidden: true,
         options: PUBLISH_STATES.map((v) => ({ value: v, label: m.common.publishStates[v] })),
-        render: (r) => m.common.publishStates[r.publishState],
+        // 却下は見落とすと放置されるので、赤の太字で目立たせる
+        render: (r) =>
+          r.publishState === "REJECTED" ? (
+            <span className="text-destructive font-bold">
+              {m.common.publishStates[r.publishState]}
+            </span>
+          ) : (
+            m.common.publishStates[r.publishState]
+          ),
       },
       {
         key: "gazetteNumbers",

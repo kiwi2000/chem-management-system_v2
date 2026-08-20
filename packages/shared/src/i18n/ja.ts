@@ -227,7 +227,7 @@ export const ja = {
   },
 
   substances: {
-    publishState: "公開の状態",
+    publishState: "状態",
     workingSection: "作業中",
     title: "物質マスタ",
     newTitle: "物質の新規登録",
@@ -481,7 +481,7 @@ export const ja = {
   },
 
   products: {
-    publishState: "公開の状態",
+    publishState: "状態",
     workingSection: "作業中",
     title: "製品 / 原材料",
     newTitle: "製品の新規登録",
