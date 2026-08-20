@@ -7,7 +7,7 @@ import {
   type PublishState,
 } from "@chem/shared";
 import type { ApprovalAction } from "@prisma/client";
-import type { Actor } from "@/lib/authz";
+import { jsonError, type Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 
 /** 履歴の1件。画面に出す形 */
@@ -18,6 +18,15 @@ export interface ApprovalEventDto {
   comment: string | null;
   createdAt: string;
 }
+
+/**
+ * できなかった理由。
+ * 「権限が無い」と「その状態では対象にならない」は原因が違うので、種類で分けて返す。
+ */
+export type TransitionDenial =
+  | { code: "state"; state: PublishState }
+  | { code: "setting"; message: string }
+  | { code: "forbidden" };
 
 /**
  * その操作をしてよいか。
@@ -31,19 +40,41 @@ export function checkTransition(params: {
   actor: Actor;
   canEdit: boolean;
   m: Messages;
-}): string | null {
+}): TransitionDenial | null {
   const { action, from, approvalRequired, actor, canEdit, m } = params;
 
-  if (!ALLOWED_FROM[action].includes(from)) return m.errors.publishStateMismatch;
+  if (!ALLOWED_FROM[action].includes(from)) return { code: "state", state: from };
 
-  if (action === "submit" && !approvalRequired) return m.errors.approvalNotRequired;
-  if (action === "publish" && approvalRequired) return m.errors.approvalRequired;
+  if (action === "submit" && !approvalRequired) {
+    return { code: "setting", message: m.errors.approvalNotRequired };
+  }
+  if (action === "publish" && approvalRequired) {
+    return { code: "setting", message: m.errors.approvalRequired };
+  }
 
   // 承認と却下は承認の権限。それ以外は対象を編集できることが条件
   if (action === "approve" || action === "reject") {
-    return actor.has("APPROVE") ? null : m.errors.forbidden;
+    return actor.has("APPROVE") ? null : { code: "forbidden" };
   }
-  return canEdit ? null : m.errors.forbidden;
+  return canEdit ? null : { code: "forbidden" };
+}
+
+/**
+ * 1件も処理できなかったときの返事。
+ * 状態が合わないだけなのに「権限がありません」と返すと原因を取り違えるため、理由で出し分ける。
+ */
+export function denialError(denials: TransitionDenial[], m: Messages): Response {
+  const setting = denials.find(
+    (d): d is Extract<TransitionDenial, { code: "setting" }> => d.code === "setting",
+  );
+  if (setting) return jsonError(409, "publish_state_mismatch", setting.message);
+
+  const states = [...new Set(denials.flatMap((d) => (d.code === "state" ? [d.state] : [])))];
+  if (states.length > 0) {
+    const labels = states.map((st) => m.common.publishStates[st]).join("・");
+    return jsonError(409, "publish_state_mismatch", m.errors.publishStateMismatch(labels));
+  }
+  return jsonError(403, "forbidden", m.errors.forbidden);
 }
 
 /** 履歴を1件書く。業務処理を止めないよう、失敗しても投げない */

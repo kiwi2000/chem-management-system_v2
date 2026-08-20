@@ -6,9 +6,11 @@ import { getServerMessages } from "@/lib/i18n";
 import { canEditProduct, visibilityWhere } from "@/lib/product-service";
 import {
   checkTransition,
+  denialError,
   nextStateOf,
   publishedParentsOf,
   writeApprovalEvent,
+  type TransitionDenial,
 } from "@/lib/publish-service";
 import { getAppSettings } from "@/lib/settings";
 
@@ -47,6 +49,7 @@ export async function POST(req: Request) {
 
   const allowed: typeof targets = [];
   const blocked: string[] = [];
+  const denials: TransitionDenial[] = [];
   for (const t of targets) {
     const err = checkTransition({
       action,
@@ -56,7 +59,10 @@ export async function POST(req: Request) {
       canEdit: canEditProduct(actor, { ...t, publishState: "DRAFT" }),
       m,
     });
-    if (err) continue;
+    if (err) {
+      denials.push(err);
+      continue;
+    }
     // 公開を取り消すときだけ、公開済の組成から参照されていないか確かめる
     if (action === "unpublish") {
       const parents = await publishedParentsOf("product", t.id);
@@ -72,7 +78,7 @@ export async function POST(req: Request) {
     if (blocked.length > 0) {
       return jsonError(409, "referenced", m.errors.usedByPublished(blocked.join(" / ")));
     }
-    return jsonError(403, "forbidden", m.errors.forbidden);
+    return denialError(denials, m);
   }
 
   const next = nextStateOf(action);

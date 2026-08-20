@@ -607,7 +607,7 @@ export const en: Messages = {
   },
 
   errors: {
-    publishStateMismatch: "This action is not available in the current state",
+    publishStateMismatch: (states: string) => `This action does not apply to items that are ${states}`,
     pendingResolutionRequired:
       "Some items are still awaiting approval. Choose what to do with them",
     approvalRequired: "This kind of data needs approval",

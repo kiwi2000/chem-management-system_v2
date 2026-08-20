@@ -614,7 +614,7 @@ export const ja = {
 
   /** サーバーが返すエラー（APIのレスポンス文言） */
   errors: {
-    publishStateMismatch: "いまの状態ではこの操作はできません",
+    publishStateMismatch: (states: string) => `${states}のものは、この操作の対象になりません`,
     pendingResolutionRequired: "承認待ちのものが残っています。扱いを選んでください",
     approvalRequired: "この種類のデータは承認が必要です",
     approvalNotRequired: "この種類のデータに承認は不要です",
