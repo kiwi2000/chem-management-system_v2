@@ -391,6 +391,10 @@ export const ja = {
       "「残り全部」の行を1製品に1件だけ置けます。含有率は 100% との差から自動で決まります",
     productSection: "製品",
     approvalSection: "承認",
+    pendingTitle: "承認待ちのものが残っています",
+    pendingHint: "承認を不要にすると、承認する人がいなくなります。まとめてどちらかに寄せてください",
+    pendingPublish: "公開する",
+    pendingDraft: "作成中に戻す",
     substanceApprovalRequired: "物質は承認を経てから公開する",
     productApprovalRequired: "製品 / 原材料は承認を経てから公開する",
     approvalHint: "オフにすると、作成した人が「発行」を押すだけで他の人が使えるようになります",
@@ -611,6 +615,7 @@ export const ja = {
   /** サーバーが返すエラー（APIのレスポンス文言） */
   errors: {
     publishStateMismatch: "いまの状態ではこの操作はできません",
+    pendingResolutionRequired: "承認待ちのものが残っています。扱いを選んでください",
     approvalRequired: "この種類のデータは承認が必要です",
     approvalNotRequired: "この種類のデータに承認は不要です",
     usedByPublished: (list: string) =>

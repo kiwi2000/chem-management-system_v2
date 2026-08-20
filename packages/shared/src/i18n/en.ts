@@ -387,6 +387,11 @@ export const en: Messages = {
       "Lets one line per product mean “the rest”. Its percentage is derived from the difference to 100%",
     productSection: "Products",
     approvalSection: "Approval",
+    pendingTitle: "Some items are still awaiting approval",
+    pendingHint:
+      "Turning approval off leaves no one to approve them. Move them all one way or the other",
+    pendingPublish: "Publish them",
+    pendingDraft: "Back to draft",
     substanceApprovalRequired: "Substances need approval before they are published",
     productApprovalRequired: "Products / materials need approval before they are published",
     approvalHint: "When off, the person who created it can publish directly",
@@ -602,6 +607,8 @@ export const en: Messages = {
 
   errors: {
     publishStateMismatch: "This action is not available in the current state",
+    pendingResolutionRequired:
+      "Some items are still awaiting approval. Choose what to do with them",
     approvalRequired: "This kind of data needs approval",
     approvalNotRequired: "This kind of data does not need approval",
     usedByPublished: (list: string) =>

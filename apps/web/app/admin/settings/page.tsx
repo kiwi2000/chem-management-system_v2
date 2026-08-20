@@ -7,6 +7,7 @@ import {
   parseOptionList,
   type AppSettings,
   type CompositionValidationMode,
+  type PendingResolution,
 } from "@chem/shared";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -27,6 +28,8 @@ export default function SettingsPage() {
   // 選択肢の入力欄は打っている途中の改行を消さないよう、生の文字列のまま持つ
   const [modelOptionsText, setModelOptionsText] = useState("");
   const [useOptionsText, setUseOptionsText] = useState("");
+  // 承認を不要に切り替えたときに残る承認待ちの件数（種類ごと）
+  const [pending, setPending] = useState<Record<string, number> | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -45,8 +48,11 @@ export default function SettingsPage() {
     })();
   }, [m]);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  /**
+   * 保存。承認を「必要 → 不要」に切り替えると承認待ちのものが宙に浮くので、
+   * サーバーが 409 で扱いを聞いてくる。選んでもらってから同じ内容を送り直す。
+   */
+  async function save(resolution?: Record<string, PendingResolution>) {
     if (!settings) return;
     setError(null);
     setNotice(null);
@@ -55,18 +61,36 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
+        body: JSON.stringify({ ...settings, pendingResolution: resolution }),
       });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
+        if (res.status === 409) {
+          const details = body?.error.details as { pending?: Record<string, number> } | undefined;
+          setPending(details?.pending ?? null);
+          return;
+        }
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      setPending(null);
       setNotice(m.settings.saved);
     } finally {
       setSaving(false);
     }
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await save();
+  }
+
+  /** 承認待ちの扱いを1つ選んで、その内容で保存し直す */
+  function resolveAll(how: PendingResolution) {
+    const resolution: Record<string, PendingResolution> = {};
+    for (const entity of Object.keys(pending ?? {})) resolution[entity] = how;
+    void save(resolution);
   }
 
   if (!settings) {
@@ -255,6 +279,44 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {pending && (
+          <Alert>
+            <AlertDescription>
+              <p className="font-medium">{m.settings.pendingTitle}</p>
+              <ul className="mt-1 list-disc pl-5 text-sm">
+                {Object.entries(pending).map(([entity, count]) => (
+                  <li key={entity}>
+                    {entity === "substance" ? m.nav.substances : m.nav.products}: {count} 件
+                  </li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground mt-2 text-xs">{m.settings.pendingHint}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={saving}
+                  onClick={() => resolveAll("publish")}
+                >
+                  {m.settings.pendingPublish}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={saving}
+                  onClick={() => resolveAll("draft")}
+                >
+                  {m.settings.pendingDraft}
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setPending(null)}>
+                  {m.common.cancel}
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {error && (
           <Alert variant="destructive">
