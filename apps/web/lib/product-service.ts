@@ -1,4 +1,4 @@
-import { normalizeCode, type ProductInput } from "@chem/shared";
+import { normalizeCode, type ProductInput, type PublishState } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
 import { propertyWrites } from "@/lib/property-values";
@@ -33,16 +33,25 @@ type ProductWithRelations = Prisma.ProductGetPayload<{ include: typeof PRODUCT_I
  */
 export function visibilityWhere(actor: Actor): Prisma.ProductWhereInput {
   if (actor.has("INACTIVE_VIEW")) return {};
-  return { OR: [{ status: "ACTIVE", draftFlag: false }, { createdBy: actor.user.id }] };
+  return {
+    OR: [{ status: "ACTIVE", publishState: "PUBLISHED" }, { createdBy: actor.user.id }],
+  };
 }
+
+/** 公開済のものだけを見せる条件（一覧の上の表・組成の候補） */
+export const publishedWhere: Prisma.ProductWhereInput = {
+  publishState: "PUBLISHED",
+};
 
 /** 書き換えてよいか。見えるだけでは足りず、無効・ドラフトは専用の権限が要る */
 export function canEditProduct(
   actor: Actor,
-  target: { status: string; draftFlag: boolean; createdBy: string | null },
+  target: { status: string; publishState: PublishState; createdBy: string | null },
 ): boolean {
   if (!actor.has("PRODUCT_EDIT")) return false;
-  const restricted = target.status !== "ACTIVE" || target.draftFlag;
+  // 承認待ちは誰も書き換えられない。直すなら取り下げてから
+  if (target.publishState === "PENDING") return false;
+  const restricted = target.status !== "ACTIVE" || target.publishState !== "PUBLISHED";
   if (!restricted) return true;
   return actor.has("INACTIVE_EDIT") || target.createdBy === actor.user.id;
 }
@@ -54,9 +63,9 @@ export function toListItem(p: ProductListRow): ProductListItemDto {
     nameJa: p.nameJa,
     nameEn: p.nameEn,
     status: p.status,
-    draftFlag: p.draftFlag,
     note: p.note,
     aliasCount: p._count.aliases,
+    publishState: p.publishState,
     usableAsMaterial: p.usableAsMaterial,
     modelValue: p.modelValue,
     uses: p.uses.map((u) => u.value),

@@ -43,6 +43,8 @@ interface Props<T> {
   onDeleteSelected?: (rows: T[]) => void | Promise<void>;
   /** 選択した行をまとめて完成にする（ドラフトを持つ一覧だけ渡す） */
   onMarkDoneSelected?: (rows: T[]) => void | Promise<void>;
+  /** 上のボタンの文言。省略すると「選択した行を完成にする」 */
+  markDoneLabel?: string;
   /** 行をダブルクリックしたとき（詳細を開く・その場のフォームに読み込む） */
   onRowActivate?: (row: T) => void;
   /** フィルターの並びを指定する場合、1行に置く列キーを行ごとに並べる */
@@ -74,6 +76,7 @@ export function DataTable<T>({
   selectable = false,
   onDeleteSelected,
   onMarkDoneSelected,
+  markDoneLabel,
   onRowActivate,
   filterLayout,
 }: Props<T>) {
@@ -231,7 +234,7 @@ export function DataTable<T>({
               onClick={() => void markDoneSelected()}
             >
               <CircleCheck className="mr-1 size-3.5" />
-              {m.common.markDoneSelected}
+              {markDoneLabel ?? m.common.markDoneSelected}
             </Button>
           )}
           {selected.size > 0 && (

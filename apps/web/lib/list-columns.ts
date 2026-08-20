@@ -13,7 +13,7 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "status", kind: "enum", field: "status" },
-  { key: "draftFlag", kind: "enum", field: "draftFlag", booleanEnum: true },
+  { key: "publishState", kind: "enum", field: "publishState" },
   // 官報公示整理番号は子テーブル。番号でフィルターできるが並べ替えはできない
   {
     key: "gazetteNumbers",
@@ -32,7 +32,7 @@ export const PRODUCT_COLUMNS: QueryColumn[] = [
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "usableAsMaterial", kind: "enum", field: "usableAsMaterial", booleanEnum: true },
   { key: "status", kind: "enum", field: "status" },
-  { key: "draftFlag", kind: "enum", field: "draftFlag", booleanEnum: true },
+  { key: "publishState", kind: "enum", field: "publishState" },
   { key: "modelValue", kind: "enum", field: "modelValue" },
   // 用途は子テーブル。「選んだもののどれかを持つ」で絞る
   { key: "uses", kind: "enum", field: "value", relation: "uses", sortable: false },

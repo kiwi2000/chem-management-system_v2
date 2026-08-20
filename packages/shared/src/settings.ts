@@ -26,6 +26,11 @@ export interface AppSettings {
   productModelOptions: string[];
   /** 製品の「用途」で選べる値。並べた順がそのまま表示順になる */
   productUseOptions: string[];
+
+  /** 物質を公開するのに承認が要るか。false なら「発行」で直接公開できる */
+  substanceApprovalRequired: boolean;
+  /** 製品を公開するのに承認が要るか。同上 */
+  productApprovalRequired: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -36,6 +41,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   compositionBalanceAllowed: true,
   productModelOptions: [],
   productUseOptions: [],
+  substanceApprovalRequired: false,
+  productApprovalRequired: false,
 };
 
 /** 選択肢の一覧は1行1件で持つ。空行と前後の空白は捨て、重複は先に出たものを残す */
@@ -96,6 +103,8 @@ export const SETTING_DEFS: SettingDef[] = [
     },
   },
   boolDef("compositionBalanceAllowed", "composition.balance_allowed"),
+  boolDef("substanceApprovalRequired", "substance.approval_required"),
+  boolDef("productApprovalRequired", "product.approval_required"),
   {
     field: "productModelOptions",
     key: "product.model_options",
@@ -133,6 +142,8 @@ export const settingsSchema = (m: Messages) =>
     // 1件あたり100文字・全体で200件まで。桁外れの入力で画面が壊れないようにする
     productModelOptions: z.array(z.string().trim().min(1).max(100)).max(200),
     productUseOptions: z.array(z.string().trim().min(1).max(100)).max(200),
+    substanceApprovalRequired: z.boolean(),
+    productApprovalRequired: z.boolean(),
   });
 
 export type SettingsInput = z.infer<ReturnType<typeof settingsSchema>>;

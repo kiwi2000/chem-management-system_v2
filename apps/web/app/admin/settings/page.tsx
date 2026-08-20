@@ -178,6 +178,46 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">{m.settings.approvalSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <label className="flex gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={settings.substanceApprovalRequired}
+                onChange={(e) =>
+                  setSettings({ ...settings, substanceApprovalRequired: e.target.checked })
+                }
+              />
+              <span>
+                <span className="block">{m.settings.substanceApprovalRequired}</span>
+                <span className="text-muted-foreground block text-xs">
+                  {m.settings.approvalHint}
+                </span>
+              </span>
+            </label>
+            <label className="flex gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={settings.productApprovalRequired}
+                onChange={(e) =>
+                  setSettings({ ...settings, productApprovalRequired: e.target.checked })
+                }
+              />
+              <span>
+                <span className="block">{m.settings.productApprovalRequired}</span>
+                <span className="text-muted-foreground block text-xs">
+                  {m.settings.approvalHint}
+                </span>
+              </span>
+            </label>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">{m.settings.productSection}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

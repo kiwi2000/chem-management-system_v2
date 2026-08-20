@@ -5,6 +5,26 @@
  */
 export const ja = {
   common: {
+    publishStates: {
+      DRAFT: "作成中",
+      PENDING: "承認待ち",
+      REJECTED: "却下",
+      PUBLISHED: "公開済",
+    },
+    submit: "承認を申請",
+    withdraw: "申請を取り下げ",
+    approve: "承認する",
+    reject: "却下する",
+    publish: "発行する",
+    unpublish: "作成中に戻す",
+    submitSelected: "選択した行を申請",
+    approveSelected: "選択した行を承認",
+    publishSelected: "選択した行を発行",
+    rejectReason: "却下の理由（任意）",
+    approvalHistory: "承認の履歴",
+    noApprovalHistory: "履歴はありません",
+    actionDone: (updated: number, requested: number) =>
+      `${requested} 件のうち ${updated} 件を変更しました`,
     appName: "化学物質管理システム",
     save: "保存",
     cancel: "キャンセル",
@@ -115,6 +135,7 @@ export const ja = {
     SUBSTANCE_EDIT: "物質を編集できる",
     INACTIVE_VIEW: "無効・ドラフトのデータも見られる",
     INACTIVE_EDIT: "無効・ドラフトのデータも編集できる",
+    APPROVE: "承認できる",
     REGULATION_VIEW: "法規制を見られる",
     REGULATION_EDIT: "法規制を編集できる",
     DATA_EXPORT: "データを出力できる",
@@ -206,6 +227,9 @@ export const ja = {
   },
 
   substances: {
+    publishState: "公開の状態",
+    publishedSection: "使えるもの",
+    workingSection: "作業中のもの",
     title: "物質マスタ",
     newTitle: "物質の新規登録",
     editTitle: "物質の編集",
@@ -366,6 +390,10 @@ export const ja = {
     balanceAllowedHint:
       "「残り全部」の行を1製品に1件だけ置けます。含有率は 100% との差から自動で決まります",
     productSection: "製品",
+    approvalSection: "承認",
+    substanceApprovalRequired: "物質は承認を経てから公開する",
+    productApprovalRequired: "製品 / 原材料は承認を経てから公開する",
+    approvalHint: "オフにすると、作成した人が「発行」を押すだけで他の人が使えるようになります",
     modelOptions: "型式の選択肢",
     useOptions: "用途の選択肢",
     optionListHint: "1行に1件。並べた順が、そのまま製品画面での表示順になります",
@@ -450,6 +478,9 @@ export const ja = {
   },
 
   products: {
+    publishState: "公開の状態",
+    publishedSection: "使えるもの",
+    workingSection: "作業中のもの",
     title: "製品 / 原材料",
     newTitle: "製品の新規登録",
     editTitle: "製品の編集",
@@ -579,6 +610,11 @@ export const ja = {
 
   /** サーバーが返すエラー（APIのレスポンス文言） */
   errors: {
+    publishStateMismatch: "いまの状態ではこの操作はできません",
+    approvalRequired: "この種類のデータは承認が必要です",
+    approvalNotRequired: "この種類のデータに承認は不要です",
+    usedByPublished: (list: string) =>
+      `公開中の製品から使われているため、公開を取り消せません: ${list}。先にその製品を作成中に戻してください`,
     invalidJson: "リクエストボディがJSONではありません",
     validation: "入力内容に誤りがあります",
     invalidCredentials: "メールアドレスまたはパスワードが正しくありません",

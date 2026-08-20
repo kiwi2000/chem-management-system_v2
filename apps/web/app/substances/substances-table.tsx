@@ -11,33 +11,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
-import type { FilterLayoutRow } from "@/components/data-table/filter-panel";
 import type { TableColumn } from "@/components/data-table/types";
+import { GazetteNumbers } from "@/components/gazette-numbers";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, ListResponse, ProductListItemDto } from "@/lib/types";
+import type { ApiError, ListResponse, SubstanceListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
 
-/** フィルターの並び（1行に置く列キー）。指定しない列は下に既定の並びで続く */
-const FILTER_LAYOUT: string[][] = [
-  ["code", "status", "publishState", "usableAsMaterial"],
-  ["nameJa"],
-  ["nameEn"],
-  ["modelValue", "uses"],
-  ["updatedAt", "note"],
-];
-
 interface Props {
-  /** 型式で選べる値（システム設定）。並び順がそのまま表示順 */
-  modelOptions: string[];
-  /** 用途で選べる値（システム設定）。同上 */
-  useOptions: string[];
   /** 公開が承認制か（申請ボタンを出すか、発行ボタンを出すかの判断） */
   approvalRequired: boolean;
   /** published=公開済だけ / working=まだ公開されていないもの */
@@ -49,62 +36,39 @@ interface Props {
   onChanged: () => void;
 }
 
-export function ProductsTable({
-  modelOptions,
-  useOptions,
-  approvalRequired,
-  scope,
-  title,
-  reloadToken,
-  onChanged,
-}: Props) {
+export function SubstancesTable({ approvalRequired, scope, title, reloadToken, onChanged }: Props) {
   const { m, locale } = useI18n();
   const router = useRouter();
   const { can } = useMe();
-  const editable = can("PRODUCT_EDIT");
+  const editable = can("SUBSTANCE_EDIT");
 
-  const columns = useMemo<TableColumn<ProductListItemDto>[]>(() => {
-    /** はい/いいえの列は共通の形。狭くしたいのでアイコンで出す */
-    const boolColumn = (
-      key: string,
-      header: string,
-      get: (r: ProductListItemDto) => boolean,
-      /** フィルターの選択肢の文言。省略すると はい/いいえ */
-      labels?: { yes: string; no: string },
-    ): TableColumn<ProductListItemDto> => ({
-      key,
-      header,
-      kind: "enum",
-      width: 72,
-      className: "text-center",
-      options: [
-        { value: "true", label: labels?.yes ?? m.common.yes },
-        { value: "false", label: labels?.no ?? m.common.no },
-      ],
-      render: (r) => (
-        <StatusIcon active={get(r)} activeLabel={m.common.yes} inactiveLabel={m.common.no} />
-      ),
-    });
-
-    return [
+  const columns = useMemo<TableColumn<SubstanceListItemDto>[]>(
+    () => [
       {
         key: "code",
-        header: m.products.code,
+        header: m.substances.code,
         kind: "text",
         // 必須の列。「空白」で絞る意味が無い
         nullable: false,
-        // コード20文字が等幅で収まる最小限の幅にする
+        // コード20文字・CAS12桁が等幅で収まる最小限の幅にする
         width: 104,
         className: "font-mono text-xs",
         render: (r) => r.code,
       },
       {
+        key: "casNumber",
+        header: m.substances.casNumber,
+        kind: "text",
+        width: 104,
+        className: "font-mono text-xs",
+        render: (r) => r.casNumber ?? "—",
+      },
+      {
         key: "nameJa",
-        header: m.products.nameJa,
+        header: m.substances.nameJa,
         kind: "text",
         nullable: false,
-        filterFullWidth: true,
-        width: 260,
+        width: 240,
         render: (r) => (
           <>
             {pickName(locale, r.nameJa, r.nameEn)}
@@ -116,51 +80,35 @@ export function ProductsTable({
       },
       {
         key: "nameEn",
-        header: m.products.nameEn,
+        header: m.substances.nameEn,
         kind: "text",
-        filterFullWidth: true,
         width: 200,
         className: "text-muted-foreground",
         render: (r) => r.nameEn ?? "",
       },
       {
-        ...boolColumn("usableAsMaterial", m.products.materialShort, (r) => r.usableAsMaterial, {
-          yes: m.products.materialShort,
-          no: m.products.nonMaterial,
-        }),
-        // 選択肢の文言だけで何の列か分かるので、フィルターでは列名を出さない
-        filterLabelHidden: true,
-      },
-      {
         key: "status",
         header: m.common.activeHeader,
         kind: "enum",
+        // 選択肢の文言（有効/無効）だけで分かるので、フィルターでは列名を出さない
         filterLabelHidden: true,
         width: 72,
         className: "text-center",
         options: [
-          { value: "ACTIVE", label: m.products.statusActive },
-          { value: "DISCONTINUED", label: m.products.statusDiscontinued },
+          { value: "ACTIVE", label: m.substances.statusActive },
+          { value: "DISCONTINUED", label: m.substances.statusDiscontinued },
         ],
         render: (r) => (
           <StatusIcon
             active={r.status !== "DISCONTINUED"}
-            activeLabel={m.products.statusActive}
-            inactiveLabel={m.products.statusDiscontinued}
+            activeLabel={m.substances.statusActive}
+            inactiveLabel={m.substances.statusDiscontinued}
           />
         ),
       },
       {
-        key: "note",
-        header: m.products.note,
-        kind: "text",
-        width: 200,
-        className: "text-muted-foreground text-xs",
-        render: (r) => r.note ?? "",
-      },
-      {
         key: "publishState",
-        header: m.products.publishState,
+        header: m.substances.publishState,
         kind: "enum",
         width: 88,
         className: "text-center text-xs",
@@ -169,30 +117,24 @@ export function ProductsTable({
         render: (r) => m.common.publishStates[r.publishState],
       },
       {
-        key: "modelValue",
-        header: m.products.modelValue,
-        kind: "enum",
-        // 表には出さず、条件としてだけ使う。未選択なら全件、選べばそのいずれか
-        filterOnly: true,
-        options: modelOptions.map((o) => ({ value: o, label: o })),
+        key: "gazetteNumbers",
+        // 子テーブルを引いた列。「空白」で絞れないので出さない
+        nullable: false,
+        header: m.substances.gazette,
+        kind: "text",
+        width: 150,
+        // 区分ごとに1行ずつ出すので、行の高さを伸ばす
+        multiline: true,
+        sortable: false,
+        render: (r) => <GazetteNumbers items={r.gazetteNumbers} />,
       },
       {
-        key: "uses",
-        header: m.products.uses,
-        kind: "enum",
-        filterOnly: true,
-        sortable: false,
-        options: useOptions.map((o) => ({ value: o, label: o })),
-      },
-      {
-        key: "casNumbers",
-        header: m.table.casNumbers,
-        kind: "list",
-        // 表には出さない。組成をたどる条件なので並べ替えもできない
-        filterOnly: true,
-        sortable: false,
-        filterFullWidth: true,
-        filterPlaceholder: m.table.casNumbersPlaceholder,
+        key: "note",
+        header: m.substances.note,
+        kind: "text",
+        width: 200,
+        className: "text-muted-foreground text-xs",
+        render: (r) => r.note ?? "",
       },
       {
         key: "updatedAt",
@@ -204,21 +146,12 @@ export function ProductsTable({
         className: "text-muted-foreground text-center text-xs",
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
       },
-    ];
-  }, [m, locale, modelOptions, useOptions]);
-
-  // 組成の節だけは見出しに文言を使うので、ここで組み立てる
-  const filterLayout = useMemo<FilterLayoutRow[]>(
-    () => [
-      // 見出しは1つ目の行にだけ付ける（節の区切りとして使う）
-      ...FILTER_LAYOUT.map((keys, i) => (i === 0 ? { title: m.products.basic, keys } : keys)),
-      { title: m.table.compositionSection, keys: ["casNumbers"] },
     ],
-    [m],
+    [m, locale],
   );
 
   // 1画面に表が2つあるので、URLのクエリを節ごとに分ける
-  const storageKey = `chem.table.products.${scope}`;
+  const storageKey = `chem.table.substances.${scope}`;
   const { state, setState, reset, ready } = useTableState(
     storageKey,
     columns,
@@ -226,7 +159,7 @@ export function ProductsTable({
     scope,
   );
 
-  const [data, setData] = useState<ListResponse<ProductListItemDto> | null>(null);
+  const [data, setData] = useState<ListResponse<SubstanceListItemDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const query = useMemo(() => {
@@ -242,7 +175,7 @@ export function ProductsTable({
 
   const load = useCallback(async () => {
     setError(null);
-    const res = await fetch(`/api/products?${query}`);
+    const res = await fetch(`/api/substances?${query}`);
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -250,7 +183,7 @@ export function ProductsTable({
       setData({ items: [], total: 0, page: 1, pageSize: state.pageSize });
       return;
     }
-    setData((await res.json()) as ListResponse<ProductListItemDto>);
+    setData((await res.json()) as ListResponse<SubstanceListItemDto>);
     // state.pageSize はエラー時の表示にしか使わないので依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, m]);
@@ -260,10 +193,10 @@ export function ProductsTable({
   }, [ready, load, reloadToken]);
 
   /** 確認は共通テーブル側で出す。ここは消す処理だけ */
-  async function onDeleteSelected(targets: ProductListItemDto[]) {
+  async function onDeleteSelected(targets: SubstanceListItemDto[]) {
     setError(null);
-    for (const p of targets) {
-      const res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
+    for (const s of targets) {
+      const res = await fetch(`/api/substances/${s.id}`, { method: "DELETE" });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -275,9 +208,9 @@ export function ProductsTable({
   }
 
   /** 選択した行をまとめて次の状態へ。権限が無いものはサーバー側で飛ばされる */
-  async function runBulk(action: "submit" | "publish" | "approve", targets: ProductListItemDto[]) {
+  async function runBulk(action: "submit" | "publish", targets: SubstanceListItemDto[]) {
     setError(null);
-    const res = await fetch("/api/products/publish-state", {
+    const res = await fetch("/api/substances/publish-state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: targets.map((t) => t.id), action }),
@@ -296,15 +229,15 @@ export function ProductsTable({
   }
 
   return (
-    <div className="w-full space-y-4 p-4 lg:p-6">
+    <div className="w-full space-y-4">
       <div className="flex items-center justify-between">
         {title ? (
           <h2 className="text-lg font-medium">{title}</h2>
         ) : (
-          <h1 className="text-2xl font-semibold">{m.products.title}</h1>
+          <h1 className="text-2xl font-semibold">{m.substances.title}</h1>
         )}
         {editable && scope === "published" && (
-          <Button nativeButton={false} render={<Link href="/products/new" />}>
+          <Button nativeButton={false} render={<Link href="/substances/new" />}>
             {m.common.create}
           </Button>
         )}
@@ -326,7 +259,7 @@ export function ProductsTable({
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
         onReset={reset}
-        emptyMessage={m.products.empty}
+        emptyMessage={m.substances.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
         onMarkDoneSelected={
@@ -335,8 +268,7 @@ export function ProductsTable({
             : undefined
         }
         markDoneLabel={approvalRequired ? m.common.submitSelected : m.common.publishSelected}
-        filterLayout={filterLayout}
-        onRowActivate={(p) => router.push(`/products/${p.id}`)}
+        onRowActivate={(s) => router.push(`/substances/${s.id}`)}
       />
     </div>
   );

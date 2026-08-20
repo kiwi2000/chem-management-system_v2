@@ -6,6 +6,25 @@ import type { Messages } from "./ja";
  */
 export const en: Messages = {
   common: {
+    publishStates: {
+      DRAFT: "Draft",
+      PENDING: "Awaiting approval",
+      REJECTED: "Rejected",
+      PUBLISHED: "Published",
+    },
+    submit: "Request approval",
+    withdraw: "Withdraw request",
+    approve: "Approve",
+    reject: "Reject",
+    publish: "Publish",
+    unpublish: "Back to draft",
+    submitSelected: "Request approval for selected",
+    approveSelected: "Approve selected",
+    publishSelected: "Publish selected",
+    rejectReason: "Reason for rejection (optional)",
+    approvalHistory: "Approval history",
+    noApprovalHistory: "No history",
+    actionDone: (updated: number, requested: number) => `Changed ${updated} of ${requested}`,
     appName: "Chemical Substance Management",
     save: "Save",
     cancel: "Cancel",
@@ -114,6 +133,7 @@ export const en: Messages = {
     SUBSTANCE_EDIT: "Edit substances",
     INACTIVE_VIEW: "View inactive and draft data",
     INACTIVE_EDIT: "Edit inactive and draft data",
+    APPROVE: "Approve submissions",
     REGULATION_VIEW: "View regulations",
     REGULATION_EDIT: "Edit regulations",
     DATA_EXPORT: "Export data",
@@ -204,6 +224,9 @@ export const en: Messages = {
   },
 
   substances: {
+    publishState: "Publish state",
+    publishedSection: "Available",
+    workingSection: "In progress",
     title: "Substances",
     newTitle: "New substance",
     editTitle: "Edit substance",
@@ -363,6 +386,10 @@ export const en: Messages = {
     balanceAllowedHint:
       "Lets one line per product mean “the rest”. Its percentage is derived from the difference to 100%",
     productSection: "Products",
+    approvalSection: "Approval",
+    substanceApprovalRequired: "Substances need approval before they are published",
+    productApprovalRequired: "Products / materials need approval before they are published",
+    approvalHint: "When off, the person who created it can publish directly",
     modelOptions: "Model choices",
     useOptions: "Application choices",
     optionListHint: "One per line. The order here is the order shown on the product screen",
@@ -446,6 +473,9 @@ export const en: Messages = {
   },
 
   products: {
+    publishState: "Publish state",
+    publishedSection: "Available",
+    workingSection: "In progress",
     title: "Products / raw materials",
     newTitle: "New product",
     editTitle: "Edit product",
@@ -571,6 +601,11 @@ export const en: Messages = {
   },
 
   errors: {
+    publishStateMismatch: "This action is not available in the current state",
+    approvalRequired: "This kind of data needs approval",
+    approvalNotRequired: "This kind of data does not need approval",
+    usedByPublished: (list: string) =>
+      `Cannot unpublish: still used by published products (${list}). Move those back to draft first`,
     invalidJson: "The request body is not valid JSON",
     validation: "Please check your input",
     invalidCredentials: "The email address or password is incorrect",

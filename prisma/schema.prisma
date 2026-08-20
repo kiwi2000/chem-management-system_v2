@@ -33,6 +33,7 @@ enum Permission {
   SUBSTANCE_EDIT
   INACTIVE_VIEW
   INACTIVE_EDIT
+  APPROVE
   REGULATION_VIEW
   REGULATION_EDIT
   DATA_EXPORT
@@ -44,6 +45,27 @@ enum Permission {
 enum NewsStatus {
   DRAFT
   PUBLISHED
+}
+
+/**
+ * 公開の状態。作った直後は作成中で、他の人には見せない。
+ * 承認が必要かどうかはシステム設定で切り替える（不要なら「発行」で直接公開する）。
+ * 廃番かどうか（status）とは別の軸。
+ */
+enum PublishState {
+  DRAFT
+  PENDING
+  REJECTED
+  PUBLISHED
+}
+
+/** 承認の履歴に残す操作 */
+enum ApprovalAction {
+  SUBMIT
+  APPROVE
+  REJECT
+  WITHDRAW
+  UNPUBLISH
 }
 
 enum SubstanceStatus {
@@ -260,10 +282,10 @@ model Substance {
 
   status SubstanceStatus @default(ACTIVE)
   /**
-   * 入力の途中で、まだ他の人に使わせたくない状態。
-   * 有効／無効とは別の軸。オンの間は組成の候補に出さない。
+   * 公開の状態。公開済になるまで他の人には見せず、組成の候補にも出さない。
+   * 有効／無効（status）とは別の軸。
    */
-  draftFlag Boolean @default(false) @map("draft_flag")
+  publishState PublishState @default(DRAFT) @map("publish_state")
   /** 備考（日本語のみ）。検索対象に含める */
   note   String?
 
@@ -380,10 +402,10 @@ model Product {
 
   status ProductStatus @default(ACTIVE)
   /**
-   * 入力の途中で、まだ他の人に使わせたくない状態。
-   * 有効／無効とは別の軸。オンの間は組成の候補に出さない。
+   * 公開の状態。公開済になるまで他の人には見せず、組成の候補にも出さない。
+   * 有効／無効（status）とは別の軸。
    */
-  draftFlag Boolean @default(false) @map("draft_flag")
+  publishState PublishState @default(DRAFT) @map("publish_state")
   /** 備考（日本語のみ）。検索対象に含める */
   note   String?
 
@@ -412,7 +434,7 @@ model Product {
   @@index([nameEn])
   @@index([status])
   @@index([usableAsMaterial])
-  @@index([draftFlag])
+  @@index([publishState])
   @@index([modelValue])
   @@map("products")
 }
@@ -584,6 +606,25 @@ model News {
  * 条件は URL のクエリ文字列と同じ形（@chem/shared の table.ts）で持つので、
  * 列構成が変わっても読めるものだけ効く（解釈できない条件は黙って無視される）。
  */
+/**
+ * 承認の履歴。物質と製品で共通に使うため、監査ログと同じく
+ * entity + entityId で対象を指し、物理FKは張らない（スキーマ冒頭のルール）。
+ */
+model ApprovalEvent {
+  id       String         @id @default(cuid())
+  /** "substance" / "product" */
+  entity   String         @db.VarChar(20)
+  entityId String         @map("entity_id")
+  action   ApprovalAction
+  actorId  String?        @map("actor_id")
+  /** 却下の理由など。任意 */
+  comment  String?        @db.VarChar(500)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@index([entity, entityId, createdAt])
+  @@map("approval_events")
+}
+
 model SavedFilter {
   id       String @id @default(cuid())
   /** どの一覧のものか（例: chem.table.products） */

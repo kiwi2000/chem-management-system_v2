@@ -75,8 +75,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);
   }
 
-  // ドラフトかどうかは専用の操作でだけ変える（保存で意図せず完成にしない）
-  const base = { ...normalizeInput(input), draftFlag: existing.draftFlag };
+  // 公開の状態は専用の操作でだけ変える（保存で意図せず公開しない）
+  const base = normalizeInput(input);
   const settings = await getAppSettings();
   const casError = validateCas(base.casNormalized, settings, m);
   if (casError) return jsonError(400, "validation_error", casError);

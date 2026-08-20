@@ -43,8 +43,8 @@ export async function GET(req: Request) {
       where: {
         deletedAt: null,
         status: "ACTIVE",
-        // ドラフトのものは、まだ他の人に使わせない
-        draftFlag: false,
+        // 公開されていないものは、まだ他の人に使わせない
+        publishState: "PUBLISHED",
         usableAsMaterial: true,
         // 自分自身は原材料にできない（循環になる）
         ...(exclude ? { id: { not: exclude } } : {}),
@@ -58,7 +58,12 @@ export async function GET(req: Request) {
   }
 
   const items = await prisma.substance.findMany({
-    where: { deletedAt: null, status: "ACTIVE", draftFlag: false, OR: [byCode, ...byName] },
+    where: {
+      deletedAt: null,
+      status: "ACTIVE",
+      publishState: "PUBLISHED",
+      OR: [byCode, ...byName],
+    },
     select: SELECT,
     orderBy: { codeNormalized: "asc" },
     take: LIMIT,

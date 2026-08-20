@@ -4,6 +4,7 @@ import {
   normalizeCode,
   type AppSettings,
   type Messages,
+  type PublishState,
   type SubstanceInput,
 } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
@@ -37,16 +38,23 @@ type SubstanceWithRelations = Prisma.SubstanceGetPayload<{ include: typeof SUBST
  */
 export function visibilityWhere(actor: Actor): Prisma.SubstanceWhereInput {
   if (actor.has("INACTIVE_VIEW")) return {};
-  return { OR: [{ draftFlag: false }, { createdBy: actor.user.id }] };
+  return { OR: [{ publishState: "PUBLISHED" }, { createdBy: actor.user.id }] };
 }
+
+/** 公開済のものだけを見せる条件（一覧の上の表・組成の候補） */
+export const publishedWhere: Prisma.SubstanceWhereInput = {
+  publishState: "PUBLISHED",
+};
 
 /** 書き換えてよいか。ドラフトのものは専用の権限か、作成者本人だけ */
 export function canEditSubstance(
   actor: Actor,
-  target: { draftFlag: boolean; createdBy: string | null },
+  target: { publishState: PublishState; createdBy: string | null },
 ): boolean {
   if (!actor.has("SUBSTANCE_EDIT")) return false;
-  if (!target.draftFlag) return true;
+  // 承認待ちは誰も書き換えられない。直すなら取り下げてから
+  if (target.publishState === "PENDING") return false;
+  if (target.publishState === "PUBLISHED") return true;
   return actor.has("INACTIVE_EDIT") || target.createdBy === actor.user.id;
 }
 
@@ -56,7 +64,7 @@ export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
     code: s.code,
     casNumber: s.casNumber,
     status: s.status,
-    draftFlag: s.draftFlag,
+    publishState: s.publishState,
     nameJa: s.nameJa,
     nameEn: s.nameEn,
     note: s.note,

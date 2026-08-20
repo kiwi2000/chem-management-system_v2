@@ -12,9 +12,11 @@ export const PERMISSIONS = [
   // 物質
   "SUBSTANCE_VIEW",
   "SUBSTANCE_EDIT",
-  // 無効・ドラフトのデータ（物質・製品で共通）
+  // 未公開・無効のデータ（物質・製品で共通）
   "INACTIVE_VIEW",
   "INACTIVE_EDIT",
+  // 承認（申請されたものを公開してよいか判断する）
+  "APPROVE",
   // 法規制（金属換算係数・情報源・リンクバージョンを含む）
   "REGULATION_VIEW",
   "REGULATION_EDIT",
@@ -92,7 +94,7 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "product", permissions: ["PRODUCT_VIEW", "PRODUCT_EDIT"] },
   { key: "composition", permissions: ["COMPOSITION_VIEW"] },
   { key: "substance", permissions: ["SUBSTANCE_VIEW", "SUBSTANCE_EDIT"] },
-  { key: "inactive", permissions: ["INACTIVE_VIEW", "INACTIVE_EDIT"] },
+  { key: "inactive", permissions: ["INACTIVE_VIEW", "INACTIVE_EDIT", "APPROVE"] },
   { key: "regulation", permissions: ["REGULATION_VIEW", "REGULATION_EDIT"] },
   { key: "data", permissions: ["DATA_EXPORT"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },

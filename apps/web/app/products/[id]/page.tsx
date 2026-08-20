@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { CompositionEditor } from "@/components/composition-editor";
-import { DraftToggle } from "@/components/draft-toggle";
+import { ApprovalHistory } from "@/components/approval-history";
+import { PublishActions } from "@/components/publish-actions";
 import { ProductForm } from "@/components/product-form";
 import { getActor } from "@/lib/authz";
 import { canViewComposition } from "@/lib/composition-service";
@@ -42,11 +43,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     <div className="mx-auto max-w-4xl space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{m.products.detailTitle}</h1>
-        <DraftToggle
+        <PublishActions
           entity="products"
           id={item.id}
-          draftFlag={item.draftFlag}
+          publishState={item.publishState}
+          approvalRequired={settings.productApprovalRequired}
           canEdit={canEditProduct(actor, item)}
+          canApprove={actor.has("APPROVE")}
         />
       </div>
       <ProductForm
@@ -64,6 +67,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           )
         }
       />
+
+      <ApprovalHistory entity="product" entityId={item.id} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import type {
   GroupKind,
   Permission,
   ProductStatus,
+  PublishState,
   PropertyDataType,
   PropertyTarget,
   SubstanceStatus,
@@ -83,8 +84,8 @@ export interface SubstanceListItemDto {
   code: string;
   casNumber: string | null;
   status: SubstanceStatus;
-  /** ドラフト。入力の途中で、まだ他の人に使わせたくない状態 */
-  draftFlag: boolean;
+  /** 公開の状態。公開済になるまで他の人には見えない */
+  publishState: PublishState;
   nameJa: string;
   nameEn: string | null;
   note: string | null;
@@ -115,8 +116,8 @@ export interface ProductListItemDto {
   nameJa: string;
   nameEn: string | null;
   status: ProductStatus;
-  /** ドラフト。入力の途中で、まだ他の人に使わせたくない状態 */
-  draftFlag: boolean;
+  /** 公開の状態。公開済になるまで他の人には見えない */
+  publishState: PublishState;
   note: string | null;
   aliasCount: number;
   /** 他製品の組成に部品として使えるか */

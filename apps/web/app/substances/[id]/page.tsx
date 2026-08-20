@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { DraftToggle } from "@/components/draft-toggle";
+import { ApprovalHistory } from "@/components/approval-history";
+import { PublishActions } from "@/components/publish-actions";
 import { SubstanceForm } from "@/components/substance-form";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
@@ -44,11 +45,13 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
     <div className="mx-auto max-w-4xl space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{m.substances.detailTitle}</h1>
-        <DraftToggle
+        <PublishActions
           entity="substances"
           id={item.id}
-          draftFlag={item.draftFlag}
+          publishState={item.publishState}
+          approvalRequired={settings.substanceApprovalRequired}
           canEdit={canEdit}
+          canApprove={actor?.has("APPROVE") ?? false}
         />
       </div>
       <SubstanceForm
@@ -57,6 +60,8 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
         settings={settings}
         canEdit={canEdit}
       />
+
+      <ApprovalHistory entity="substance" entityId={item.id} />
     </div>
   );
 }
