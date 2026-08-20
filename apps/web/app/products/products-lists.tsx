@@ -31,7 +31,6 @@ export function ProductsLists({ modelOptions, useOptions, approvalRequired }: Pr
     <div className="w-full space-y-8 p-4 lg:p-6">
       <ProductsTable
         scope="published"
-        title={showWorking ? m.products.publishedSection : undefined}
         modelOptions={modelOptions}
         useOptions={useOptions}
         approvalRequired={approvalRequired}

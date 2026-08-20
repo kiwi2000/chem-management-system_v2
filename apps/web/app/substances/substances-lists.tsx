@@ -24,7 +24,6 @@ export function SubstancesLists({ approvalRequired }: { approvalRequired: boolea
     <div className="w-full space-y-8 p-4 lg:p-6">
       <SubstancesTable
         scope="published"
-        title={showWorking ? m.substances.publishedSection : undefined}
         approvalRequired={approvalRequired}
         reloadToken={reloadToken}
         onChanged={onChanged}

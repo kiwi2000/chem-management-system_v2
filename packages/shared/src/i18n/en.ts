@@ -225,7 +225,6 @@ export const en: Messages = {
 
   substances: {
     publishState: "Publish state",
-    publishedSection: "Available",
     workingSection: "In progress",
     title: "Substances",
     newTitle: "New substance",
@@ -479,7 +478,6 @@ export const en: Messages = {
 
   products: {
     publishState: "Publish state",
-    publishedSection: "Available",
     workingSection: "In progress",
     title: "Products / raw materials",
     newTitle: "New product",
