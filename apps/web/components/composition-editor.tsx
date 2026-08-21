@@ -17,6 +17,7 @@ import { CompositionAggregateTable } from "@/components/composition-aggregate-ta
 import {
   CompositionTreeRows,
   ExpandToggle,
+  isFullyExpanded,
   useCompositionTree,
   type TreeRoot,
 } from "@/components/composition-tree";
@@ -429,7 +430,12 @@ export function CompositionEditor({
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={showAggregate ? false : tree.expandingAll}
+                // もう全部開いているなら押せない（「閉じる」と揃える）
+                disabled={
+                  showAggregate
+                    ? aggregateKeys.every((k) => aggregateOpen.has(k))
+                    : tree.expandingAll || isFullyExpanded(tree, treeRoots)
+                }
                 onClick={() =>
                   showAggregate
                     ? setAggregateOpen(new Set(aggregateKeys))

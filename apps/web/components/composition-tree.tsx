@@ -166,6 +166,26 @@ export function useCompositionTree(): TreeState {
   return { open, branches, expandingAll, toggle, expandAll, collapseAll };
 }
 
+/**
+ * 見えている範囲で、開ける枝がすべて開いているか。
+ *
+ * 木の全体像は、取りに行くまで分からない。しかし枝を開けば中身がその場で見えるので、
+ * 「いま見えている中に、開ける枝が残っているか」だけを見れば足りる。
+ * 開いた瞬間に閉じた子が現れれば、そこでまた false に戻る。
+ */
+export function isFullyExpanded(tree: TreeState, roots: TreeRoot[]): boolean {
+  if (roots.some((r) => !tree.open.has(r.path))) return false;
+
+  for (const [path, branch] of tree.branches) {
+    if (!tree.open.has(path) || branch.state !== "ready") continue;
+    for (const line of branch.data.lines) {
+      if (!line.element?.hasComposition) continue;
+      if (!tree.open.has(`${path}/${line.id}`)) return false;
+    }
+  }
+  return true;
+}
+
 /** 展開の印。中身を持つ原材料の行にだけ出す */
 export function ExpandToggle({
   open,
