@@ -1,4 +1,4 @@
-import { List, Note, P, PageHead, Section, SpecTable, Sub } from "../_parts";
+import { List, Note, P, PageHead, Section, SpecTable, Sub, T } from "../_parts";
 import { SpecPager } from "../spec-pager";
 
 export default function SpecChangesPage() {
@@ -6,10 +6,14 @@ export default function SpecChangesPage() {
     <>
       <PageHead
         title="変更の履歴"
-        lead="テスト環境に反映した内容を、新しい順にまとめています。まだ反映していないものは最後の節に分けてあります。"
+        lead="いつ何を変えたかの記録です。新しい順に並べています。開発は済んでいるものの、まだテスト環境に出していないものは、いちばん上にまとめてあります。"
       />
 
-      <Section title="まだ反映していない変更">
+      <Section title="デプロイ待ち">
+        <P>
+          次に挙げるものは<T>すでに開発が済んでいて、手元の環境では動いています</T>。
+          テスト環境（chem.ca-japan.jp）へは、まだ出していません。次回のデプロイで反映されます。
+        </P>
         <List
           items={[
             "権限の説明にあった「ドラフト」という言い方を「未公開」に統一しました。状態が4つある以上、あるかないかを指す言い方は実態と合わないためです。",
