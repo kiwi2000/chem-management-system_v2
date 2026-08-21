@@ -217,6 +217,25 @@ export function CompositionEditor({
     });
   }
 
+  /**
+   * 検索条件を初期に戻す。結果も一緒に消す。
+   * 条件だけ消して前の結果が残ると、いま何を探した結果なのか分からなくなるため。
+   */
+  function clearSearch() {
+    setCond({
+      id: "",
+      cas: "",
+      name: "",
+      nameOp: "contains",
+      nameScope: "mainJa",
+      substance: true,
+      product: true,
+    });
+    setCandidates(null);
+    setPicked(new Set());
+    searchRef.current?.focus();
+  }
+
   /** 選んだ候補をまとめて組成に足す */
   function addPicked() {
     const targets = (candidates ?? []).filter(
@@ -597,6 +616,9 @@ export function CompositionEditor({
             <div className="flex flex-wrap items-center gap-2">
               <Button type="button" size="sm" disabled={searching} onClick={() => void search()}>
                 {searching ? m.composition.searching : m.common.search}
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={clearSearch}>
+                {m.table.clear}
               </Button>
               {full && (
                 <span className="text-muted-foreground text-xs">
