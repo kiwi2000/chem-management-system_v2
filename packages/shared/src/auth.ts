@@ -16,8 +16,15 @@ export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
-/** 記号とみなす文字。英数字と空白以外は、ひとまとめに記号として扱う */
-const SYMBOL = /[^A-Za-z0-9\s]/;
+/**
+ * 記号を含んでいるか。
+ * 設定で文字が並べてあればその中から、空ならば英数字と空白以外すべてを記号とみなす。
+ */
+function hasSymbol(value: string, chars: string): boolean {
+  const list = [...chars];
+  if (list.length === 0) return /[^A-Za-z0-9\s]/.test(value);
+  return [...value].some((c) => list.includes(c));
+}
 
 /**
  * パスワードの決まり。長さと文字種はシステム設定で決める。
@@ -36,7 +43,13 @@ export const passwordSchema = (m: Messages, policy?: PasswordPolicy) => {
       const add = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
       if (p.passwordRequireLetter && !/[A-Za-z]/.test(v)) add(m.validation.passwordNeedsLetter);
       if (p.passwordRequireDigit && !/[0-9]/.test(v)) add(m.validation.passwordNeedsDigit);
-      if (p.passwordRequireSymbol && !SYMBOL.test(v)) add(m.validation.passwordNeedsSymbol);
+      if (p.passwordRequireSymbol && !hasSymbol(v, p.passwordSymbolChars)) {
+        add(
+          p.passwordSymbolChars === ""
+            ? m.validation.passwordNeedsSymbol
+            : m.validation.passwordNeedsSymbolOf(p.passwordSymbolChars),
+        );
+      }
       if (p.passwordRequireMixedCase && !(/[a-z]/.test(v) && /[A-Z]/.test(v))) {
         add(m.validation.passwordNeedsMixedCase);
       }
@@ -49,7 +62,13 @@ export function describePasswordPolicy(m: Messages, policy?: PasswordPolicy): st
   const kinds: string[] = [];
   if (p.passwordRequireLetter) kinds.push(m.validation.kindLetter);
   if (p.passwordRequireDigit) kinds.push(m.validation.kindDigit);
-  if (p.passwordRequireSymbol) kinds.push(m.validation.kindSymbol);
+  if (p.passwordRequireSymbol) {
+    kinds.push(
+      p.passwordSymbolChars === ""
+        ? m.validation.kindSymbol
+        : m.validation.kindSymbolOf(p.passwordSymbolChars),
+    );
+  }
   if (p.passwordRequireMixedCase) kinds.push(m.validation.kindMixedCase);
   return kinds.length === 0
     ? m.validation.passwordRuleLengthOnly(p.passwordMinLength)

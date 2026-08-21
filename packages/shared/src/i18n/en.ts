@@ -391,6 +391,9 @@ export const en: Messages = {
     epsilonPctHint: "Totals within this margin count as 100%. Use a value between 0 and 10",
     epsilonRange: "The tolerance must be between 0 and 10",
     passwordSection: "Password rules",
+    passwordSymbolChars: "Characters counted as symbols",
+    passwordSymbolCharsHint:
+      "Only the characters listed here count as symbols. Leave it empty to count anything but letters, digits and spaces",
     passwordSectionHint:
       "These apply only to passwords set from now on. Existing passwords keep working",
     passwordMinLength: "Minimum length",
@@ -691,10 +694,12 @@ export const en: Messages = {
     passwordNeedsLetter: "Include at least one letter",
     passwordNeedsDigit: "Include at least one digit",
     passwordNeedsSymbol: "Include at least one symbol",
+    passwordNeedsSymbolOf: (chars: string) => `Include at least one of these symbols: ${chars}`,
     passwordNeedsMixedCase: "Include both upper and lower case letters",
     kindLetter: "letters",
     kindDigit: "digits",
     kindSymbol: "symbols",
+    kindSymbolOf: (chars: string) => `symbols (${chars})`,
     kindMixedCase: "upper and lower case",
     passwordRule: (n: number, kinds: string) => `At least ${n} characters, including ${kinds}`,
     passwordRuleLengthOnly: (n: number) => `At least ${n} characters`,

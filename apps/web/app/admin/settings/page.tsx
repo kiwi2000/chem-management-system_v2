@@ -378,6 +378,24 @@ export default function SettingsPage() {
               ))}
             </div>
 
+            {/* 記号を求めるときだけ意味を持つので、外しているあいだは触れないようにする */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="pwSymbols"
+                className={settings.passwordRequireSymbol ? "" : "opacity-50"}
+              >
+                {m.settings.passwordSymbolChars}
+              </Label>
+              <Input
+                id="pwSymbols"
+                value={settings.passwordSymbolChars}
+                disabled={!settings.passwordRequireSymbol}
+                onChange={(e) => setSettings({ ...settings, passwordSymbolChars: e.target.value })}
+                className="font-mono"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.passwordSymbolCharsHint}</p>
+            </div>
+
             {/* 決めた内容が実際どう伝わるかを、その場で見せる */}
             <p className="text-sm">
               <span className="text-muted-foreground">{m.settings.passwordPreview}: </span>

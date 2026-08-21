@@ -42,6 +42,11 @@ export interface AppSettings {
   passwordRequireDigit: boolean;
   /** 記号を1文字以上入れさせる */
   passwordRequireSymbol: boolean;
+  /**
+   * 記号とみなす文字。ここに並べた文字だけを記号として数える。
+   * 空にすると、英数字と空白以外のすべてを記号として扱う。
+   */
+  passwordSymbolChars: string;
   /** 大文字と小文字を両方入れさせる（英字を使う場合のみ意味を持つ） */
   passwordRequireMixedCase: boolean;
 }
@@ -59,6 +64,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   passwordRequireLetter: true,
   passwordRequireDigit: true,
   passwordRequireSymbol: false,
+  passwordSymbolChars: "!@#$%^&*()-_=+[]{};:,.?/",
   passwordRequireMixedCase: false,
 };
 
@@ -69,6 +75,7 @@ export type PasswordPolicy = Pick<
   | "passwordRequireLetter"
   | "passwordRequireDigit"
   | "passwordRequireSymbol"
+  | "passwordSymbolChars"
   | "passwordRequireMixedCase"
 >;
 
@@ -81,6 +88,7 @@ export const pickPasswordPolicy = (s: AppSettings): PasswordPolicy => ({
   passwordRequireLetter: s.passwordRequireLetter,
   passwordRequireDigit: s.passwordRequireDigit,
   passwordRequireSymbol: s.passwordRequireSymbol,
+  passwordSymbolChars: s.passwordSymbolChars,
   passwordRequireMixedCase: s.passwordRequireMixedCase,
 });
 
@@ -156,6 +164,13 @@ export const SETTING_DEFS: SettingDef[] = [
   boolDef("passwordRequireLetter", "password.require_letter"),
   boolDef("passwordRequireDigit", "password.require_digit"),
   boolDef("passwordRequireSymbol", "password.require_symbol"),
+  {
+    field: "passwordSymbolChars",
+    key: "password.symbol_chars",
+    valueType: "STRING",
+    // 空も正しい設定（そのときは英数字と空白以外すべてを記号とみなす）
+    parse: (raw) => raw,
+  },
   boolDef("passwordRequireMixedCase", "password.require_mixed_case"),
   {
     field: "productModelOptions",
@@ -203,6 +218,7 @@ export const settingsSchema = (m: Messages) =>
     passwordRequireLetter: z.boolean(),
     passwordRequireDigit: z.boolean(),
     passwordRequireSymbol: z.boolean(),
+    passwordSymbolChars: z.string().max(100),
     passwordRequireMixedCase: z.boolean(),
   });
 
