@@ -14,4 +14,5 @@ export const SPEC_PAGES = [
   { href: "/spec/preferences", label: "自分用の設定" },
   { href: "/spec/feedback", label: "気づいたことを伝える" },
   { href: "/spec/changes", label: "変更履歴" },
+  { href: "/spec/pending", label: "保留事項" },
 ] as const;
