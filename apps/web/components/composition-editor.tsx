@@ -469,12 +469,14 @@ export function CompositionEditor({
                     </td>
                     <td className={CELL}>
                       {editing ? (
-                        <Input
+                        // 長い備考も読めるよう、下へ引っぱって広げられるようにする
+                        <textarea
                           aria-label={`${r.element.code} ${m.composition.note}`}
                           maxLength={500}
+                          rows={1}
                           value={r.note}
                           onChange={(e) => update(i, { note: e.target.value })}
-                          className="h-8"
+                          className="border-input bg-background block min-h-8 w-full resize-y rounded-none border px-2 py-1 text-sm"
                         />
                       ) : (
                         <span className="text-muted-foreground text-xs">{r.note}</span>
