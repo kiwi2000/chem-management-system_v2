@@ -13,5 +13,5 @@ export const SPEC_PAGES = [
   { href: "/spec/permissions", label: "だれが何をできるか" },
   { href: "/spec/preferences", label: "自分用の設定" },
   { href: "/spec/feedback", label: "気づいたことを伝える" },
-  { href: "/spec/changes", label: "変更の履歴" },
+  { href: "/spec/changes", label: "変更履歴" },
 ] as const;
