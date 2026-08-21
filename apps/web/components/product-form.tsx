@@ -43,6 +43,9 @@ interface Props {
   settings?: AppSettings;
 }
 
+/** 直す単位。保存先が分かれているので、節ごとに開け閉めする */
+type Section = "basic" | "composition" | "note";
+
 export function ProductForm({
   initial,
   defs,
@@ -54,9 +57,20 @@ export function ProductForm({
 }: Props) {
   const router = useRouter();
   const { m, locale } = useI18n();
-  // 新規登録は最初から入力できる。既存データは「編集」を押すまで読み取り専用
-  const [editing, setEditing] = useState(!initial);
-  const readOnly = !canEdit || !editing;
+  /**
+   * 新規登録は「基本情報 → 組成 → 備考」の順に進める。
+   * 組成の入力には製品のIDが要るので、基本情報の段で先に登録してしまう。
+   */
+  const wizard = !initial;
+  /**
+   * どの節を直しているか。既存データは節ごとに「編集」を押して直す。
+   * 同時に2か所は直せない。保存先が分かれていて、片方を捨てたときに
+   * もう片方まで巻き戻ってしまうのを避けるため。
+   */
+  const [editingSection, setEditingSection] = useState<Section | null>(null);
+  const [blocked, setBlocked] = useState<string | null>(null);
+  // 新規登録は段ごとに全部入力できる。既存データは選んだ節だけ
+  const isEditing = (sec: Section) => (wizard ? true : canEdit && editingSection === sec);
 
   const [code, setCode] = useState(initial?.code ?? "");
   const [nameJa, setNameJa] = useState(initial?.nameJa ?? "");
@@ -87,12 +101,6 @@ export function ProductForm({
     return init;
   });
 
-  /**
-   * 新規登録は「基本情報 → 組成 → 備考」の順に進める。
-   * 組成の入力には製品のIDが要るので、基本情報の段で先に登録してしまう。
-   * 既存データを開いたときは段に分けず、今までどおり全部を1画面に出す。
-   */
-  const wizard = !initial;
   const [step, setStep] = useState(1);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const targetId = initial?.id ?? createdId;
@@ -131,6 +139,80 @@ export function ProductForm({
         })
         .filter((p) => p !== null),
     };
+  }
+
+  const sectionLabel: Record<Section, string> = {
+    basic: m.products.basic,
+    composition: m.composition.title,
+    note: m.products.note,
+  };
+
+  /** 他の節を直している最中は、そちらを片付けてもらう */
+  function tryEdit(sec: Section) {
+    if (editingSection !== null && editingSection !== sec) {
+      setBlocked(m.products.editingElsewhere(sectionLabel[editingSection]));
+      return;
+    }
+    setBlocked(null);
+    setError(null);
+    setFieldErrors({});
+    setEditingSection(sec);
+  }
+
+  /** 書きかけを捨てて、読み取りに戻す */
+  function discard(sec: Section) {
+    if (sec === "basic") {
+      setCode(initial?.code ?? "");
+      setNameJa(initial?.nameJa ?? "");
+      setNameEn(initial?.nameEn ?? "");
+      setStatus(initial?.status ?? "ACTIVE");
+      setUsableAsMaterial(initial?.usableAsMaterial ?? false);
+      setModelValue(initial?.modelValue ?? "");
+      setUses(initial?.uses ?? []);
+      setAliasesJa(initial?.aliases.flatMap((a) => (a.nameJa ? [a.nameJa] : [])) ?? []);
+      setAliasesEn(initial?.aliases.flatMap((a) => (a.nameEn ? [a.nameEn] : [])) ?? []);
+      const vals: Record<string, string> = {};
+      const units: Record<string, string> = {};
+      for (const p of initial?.properties ?? []) {
+        vals[p.propertyDefId] = p.valueNum ?? p.valueText ?? "";
+        if (p.unit) units[p.propertyDefId] = p.unit;
+      }
+      setPropValues(vals);
+      setPropUnits(units);
+    }
+    if (sec === "note") setNote(initial?.note ?? "");
+    setError(null);
+    setFieldErrors({});
+    setBlocked(null);
+    setEditingSection(null);
+  }
+
+  /** 節ごとの見出しに出す「編集」ボタン、または編集中の印 */
+  function sectionAction(sec: Section) {
+    if (wizard || !canEdit) return null;
+    return isEditing(sec) ? (
+      <Badge variant="secondary">{m.common.editMode}</Badge>
+    ) : (
+      <Button type="button" size="sm" variant="outline" onClick={() => tryEdit(sec)}>
+        <Pencil className="mr-1 size-3.5" />
+        {m.common.edit}
+      </Button>
+    );
+  }
+
+  /** 節ごとの保存・破棄。組成は自分で持っているのでここには出さない */
+  function sectionButtons(sec: Section) {
+    if (wizard || !isEditing(sec)) return null;
+    return (
+      <div className="flex gap-2 pt-2">
+        <Button type="submit" disabled={saving}>
+          {saving ? m.common.saving : m.common.save}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => discard(sec)}>
+          {m.common.discard}
+        </Button>
+      </div>
+    );
   }
 
   /** 書き込みを1か所にまとめる。段によって作る／直すが変わるだけで、送る中身は同じ */
@@ -179,12 +261,17 @@ export function ProductForm({
       // 警告があるときは一覧に戻らず、その場で確認してもらう（S5と同じ作法）
       if (done.warnings.length > 0) {
         setWarnings(done.warnings);
-        if (initial) setEditing(false);
+        setEditingSection(null);
         router.refresh();
         return;
       }
-      // ウィザードを終えたときは、作ったものを見せる。編集のときは今までどおり一覧へ
-      router.push(wizard && done.id ? `/products/${done.id}` : "/products");
+      // 既存データは、続けて別の節を直せるようその場に留まる
+      if (!wizard) {
+        setEditingSection(null);
+        router.refresh();
+        return;
+      }
+      router.push(done.id ? `/products/${done.id}` : "/products");
       router.refresh();
     } finally {
       setSaving(false);
@@ -226,18 +313,10 @@ export function ProductForm({
 
   return (
     <div className="space-y-4">
-      {/* 既存データは画面が長いので、状態と編集ボタンを上にも出す（form の外に置く） */}
-      {initial && (readOnly ? canEdit : true) && (
-        <div className="flex items-center gap-3">
-          {readOnly ? (
-            <Button type="button" size="sm" onClick={() => setEditing(true)}>
-              <Pencil className="mr-1 size-3.5" />
-              {m.common.edit}
-            </Button>
-          ) : (
-            <Badge variant="secondary">{m.common.editMode}</Badge>
-          )}
-        </div>
+      {blocked && (
+        <Alert variant="destructive">
+          <AlertDescription>{blocked}</AlertDescription>
+        </Alert>
       )}
 
       {wizard && (
@@ -267,186 +346,201 @@ export function ProductForm({
       )}
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <fieldset disabled={readOnly} className="space-y-4">
+        <div className="space-y-4">
           {(!wizard || step === 1) && (
             <Card>
-              <CardHeader>
+              <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
                 <CardTitle className="text-base">{m.products.basic}</CardTitle>
+                {sectionAction("basic")}
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="code">{m.products.code}</Label>
-                    <Input
-                      id="code"
-                      required
-                      maxLength={20}
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      aria-invalid={Boolean(fieldError("code"))}
-                      className="w-56 font-mono"
-                    />
-                    <FieldError message={fieldError("code")} />
-                  </div>
-                  {/* 見出しはチェックの状態そのもの（有効／無効）を出す */}
-                  <div className="space-y-2">
-                    <Label htmlFor="status" className="block text-center">
-                      {status === "ACTIVE"
-                        ? m.products.statusActive
-                        : m.products.statusDiscontinued}
-                    </Label>
-                    <div className="flex h-9 items-center justify-center">
-                      <input
-                        id="status"
-                        type="checkbox"
-                        aria-label={m.products.status}
-                        checked={status === "ACTIVE"}
-                        onChange={(e) => setStatus(e.target.checked ? "ACTIVE" : "DISCONTINUED")}
+                <fieldset disabled={!isEditing("basic")} className="space-y-4">
+                  <div className="flex flex-wrap gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="code">{m.products.code}</Label>
+                      <Input
+                        id="code"
+                        required
+                        maxLength={20}
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        aria-invalid={Boolean(fieldError("code"))}
+                        className="w-56 font-mono"
                       />
+                      <FieldError message={fieldError("code")} />
                     </div>
-                  </div>
-                  {flagRow(
-                    "usableAsMaterial",
-                    usableAsMaterial,
-                    setUsableAsMaterial,
-                    m.products.usableAsMaterial,
-                    m.products.usableAsMaterialHint,
-                  )}
-                  <div className="space-y-2">
-                    <Label htmlFor="modelValue">{m.products.modelValue}</Label>
-                    <select
-                      id="modelValue"
-                      value={modelValue}
-                      onChange={(e) => setModelValue(e.target.value)}
-                      className="border-input bg-background h-9 w-48 rounded-none border px-2 text-sm"
-                    >
-                      <option value="">{m.products.unselected}</option>
-                      {/* 設定から消された値でも、選ばれていれば選択肢に残す（記録を勝手に変えない） */}
-                      {(modelValue && !modelOptions.includes(modelValue)
-                        ? [modelValue, ...modelOptions]
-                        : modelOptions
-                      ).map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="uses">{m.products.uses}</Label>
-                    <MultiSelect
-                      id="uses"
-                      ariaLabel={m.products.uses}
-                      placeholder={m.products.unselected}
-                      options={useOptions}
-                      values={uses}
-                      onChange={setUses}
-                      disabled={readOnly}
-                    />
-                  </div>
-                  {defs.map((d) => (
-                    <div key={d.id} className="space-y-2">
-                      <Label htmlFor={`prop-${d.id}`}>
-                        {pickName(locale, d.labelJa, d.labelEn)}
+                    {/* 見出しはチェックの状態そのもの（有効／無効）を出す */}
+                    <div className="space-y-2">
+                      <Label htmlFor="status" className="block text-center">
+                        {status === "ACTIVE"
+                          ? m.products.statusActive
+                          : m.products.statusDiscontinued}
                       </Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id={`prop-${d.id}`}
-                          inputMode={d.dataType === "NUMBER" ? "decimal" : "text"}
-                          value={propValues[d.id] ?? ""}
-                          onChange={(e) => setPropValues({ ...propValues, [d.id]: e.target.value })}
-                          className="w-48"
+                      <div className="flex h-9 items-center justify-center">
+                        <input
+                          id="status"
+                          type="checkbox"
+                          aria-label={m.products.status}
+                          checked={status === "ACTIVE"}
+                          onChange={(e) => setStatus(e.target.checked ? "ACTIVE" : "DISCONTINUED")}
                         />
-                        {d.dataType === "NUMBER" && (
-                          <Input
-                            aria-label={`${pickName(locale, d.labelJa, d.labelEn)} ${m.common.unit}`}
-                            value={propUnits[d.id] ?? d.defaultUnit ?? ""}
-                            onChange={(e) => setPropUnits({ ...propUnits, [d.id]: e.target.value })}
-                            className="w-28"
-                            placeholder={m.common.unit}
-                          />
-                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
+                    {flagRow(
+                      "usableAsMaterial",
+                      usableAsMaterial,
+                      setUsableAsMaterial,
+                      m.products.usableAsMaterial,
+                      m.products.usableAsMaterialHint,
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="modelValue">{m.products.modelValue}</Label>
+                      <select
+                        id="modelValue"
+                        value={modelValue}
+                        onChange={(e) => setModelValue(e.target.value)}
+                        className="border-input bg-background h-9 w-48 rounded-none border px-2 text-sm"
+                      >
+                        <option value="">{m.products.unselected}</option>
+                        {/* 設定から消された値でも、選ばれていれば選択肢に残す（記録を勝手に変えない） */}
+                        {(modelValue && !modelOptions.includes(modelValue)
+                          ? [modelValue, ...modelOptions]
+                          : modelOptions
+                        ).map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="uses">{m.products.uses}</Label>
+                      <MultiSelect
+                        id="uses"
+                        ariaLabel={m.products.uses}
+                        placeholder={m.products.unselected}
+                        options={useOptions}
+                        values={uses}
+                        onChange={setUses}
+                        disabled={!isEditing("basic")}
+                      />
+                    </div>
+                    {defs.map((d) => (
+                      <div key={d.id} className="space-y-2">
+                        <Label htmlFor={`prop-${d.id}`}>
+                          {pickName(locale, d.labelJa, d.labelEn)}
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id={`prop-${d.id}`}
+                            inputMode={d.dataType === "NUMBER" ? "decimal" : "text"}
+                            value={propValues[d.id] ?? ""}
+                            onChange={(e) =>
+                              setPropValues({ ...propValues, [d.id]: e.target.value })
+                            }
+                            className="w-48"
+                          />
+                          {d.dataType === "NUMBER" && (
+                            <Input
+                              aria-label={`${pickName(locale, d.labelJa, d.labelEn)} ${m.common.unit}`}
+                              value={propUnits[d.id] ?? d.defaultUnit ?? ""}
+                              onChange={(e) =>
+                                setPropUnits({ ...propUnits, [d.id]: e.target.value })
+                              }
+                              className="w-28"
+                              placeholder={m.common.unit}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="nameJa">{m.products.nameJa}</Label>
-                  <Input
-                    id="nameJa"
-                    required
-                    value={nameJa}
-                    onChange={(e) => setNameJa(e.target.value)}
-                    aria-invalid={Boolean(fieldError("nameJa"))}
-                    className="w-full"
-                  />
-                  <FieldError message={fieldError("nameJa")} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nameEn">
-                    {m.products.nameEn}
-                    {m.common.optional}
-                  </Label>
-                  <Input
-                    id="nameEn"
-                    value={nameEn}
-                    onChange={(e) => setNameEn(e.target.value)}
-                    aria-invalid={Boolean(fieldError("nameEn"))}
-                    className="w-full"
-                  />
-                  <FieldError message={fieldError("nameEn")} />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nameJa">{m.products.nameJa}</Label>
+                    <Input
+                      id="nameJa"
+                      required
+                      value={nameJa}
+                      onChange={(e) => setNameJa(e.target.value)}
+                      aria-invalid={Boolean(fieldError("nameJa"))}
+                      className="w-full"
+                    />
+                    <FieldError message={fieldError("nameJa")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nameEn">
+                      {m.products.nameEn}
+                      {m.common.optional}
+                    </Label>
+                    <Input
+                      id="nameEn"
+                      value={nameEn}
+                      onChange={(e) => setNameEn(e.target.value)}
+                      aria-invalid={Boolean(fieldError("nameEn"))}
+                      className="w-full"
+                    />
+                    <FieldError message={fieldError("nameEn")} />
+                  </div>
 
-                <FieldError message={fieldError("aliases")} />
-                <AliasList
-                  label={m.products.aliasesJa}
-                  addLabel={m.products.addAliasJa}
-                  idPrefix="aliasJa"
-                  values={aliasesJa}
-                  onChange={setAliasesJa}
-                />
-                <AliasList
-                  label={m.products.aliasesEn}
-                  addLabel={m.products.addAliasEn}
-                  idPrefix="aliasEn"
-                  values={aliasesEn}
-                  onChange={setAliasesEn}
-                />
+                  <FieldError message={fieldError("aliases")} />
+                  <AliasList
+                    label={m.products.aliasesJa}
+                    addLabel={m.products.addAliasJa}
+                    idPrefix="aliasJa"
+                    values={aliasesJa}
+                    onChange={setAliasesJa}
+                  />
+                  <AliasList
+                    label={m.products.aliasesEn}
+                    addLabel={m.products.addAliasEn}
+                    idPrefix="aliasEn"
+                    values={aliasesEn}
+                    onChange={setAliasesEn}
+                  />
+                </fieldset>
+                {sectionButtons("basic")}
               </CardContent>
             </Card>
           )}
 
-          {/*
-            組成は備考より前に出す。この節だけの「編集」ボタンは持たせず、
-            製品全体が編集中かどうかに合わせる。
-          */}
+          {/* 組成は備考より前に出す。開け閉めはこの節だけで完結する */}
           {(!wizard || step === 2) && canViewComposition && targetId && settings && (
-            <CompositionEditor productId={targetId} settings={settings} editing={!readOnly} />
+            <CompositionEditor
+              productId={targetId}
+              settings={settings}
+              editing={isEditing("composition")}
+              onRequestEdit={wizard ? undefined : () => tryEdit("composition")}
+              onFinishEdit={() => setEditingSection(null)}
+            />
           )}
 
           {(!wizard || step === 3) && (
             <Card>
-              <CardHeader>
+              <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
                 <CardTitle className="text-base">
                   {m.products.note}
                   {m.common.optional}
                 </CardTitle>
+                {sectionAction("note")}
               </CardHeader>
               <CardContent>
-                <textarea
-                  id="note"
-                  rows={3}
-                  aria-label={m.products.note}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  aria-invalid={Boolean(fieldError("note"))}
-                  className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
-                />
+                <fieldset disabled={!isEditing("note")}>
+                  <textarea
+                    id="note"
+                    rows={3}
+                    aria-label={m.products.note}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    aria-invalid={Boolean(fieldError("note"))}
+                    className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
+                  />
+                </fieldset>
+                {sectionButtons("note")}
               </CardContent>
             </Card>
           )}
-        </fieldset>
+        </div>
 
         {error && (
           <Alert variant="destructive">
@@ -466,51 +560,36 @@ export function ProductForm({
           </Alert>
         )}
 
-        {/* 保存ボタンは編集中だけ。表示のみのときは form の中に送信ボタンを置かない */}
-        {!readOnly && (
+        {/* 新規登録は段ごとに進む。既存データの保存は節ごとのボタンで行う */}
+        {wizard && (
           <div className="space-y-2">
-            {wizard && step === 2 && (
+            {step === 2 && (
               <p className="text-muted-foreground text-sm">{m.products.compositionStepHint}</p>
             )}
             <div className="flex gap-2">
-              {wizard && step > 1 && (
+              {step > 1 && (
                 <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
                   {m.common.back}
                 </Button>
               )}
               <Button type="submit" disabled={saving}>
-                {saving ? m.common.saving : wizard && step < 3 ? m.common.next : m.common.save}
+                {saving ? m.common.saving : step < 3 ? m.common.next : m.common.save}
               </Button>
-              {(!wizard || step === 1) && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    // 既存データの編集をやめるときは、書きかけを捨てて表示に戻す
-                    if (initial) router.refresh();
-                    else router.push("/products");
-                    setEditing(!initial);
-                  }}
-                >
+              {step === 1 && (
+                <Button type="button" variant="outline" onClick={() => router.push("/products")}>
                   {m.common.cancel}
                 </Button>
               )}
             </div>
-            {wizard && step > 1 && (
+            {step > 1 && (
               <p className="text-muted-foreground text-xs">{m.products.wizardSavedHint}</p>
             )}
           </div>
         )}
       </form>
 
-      {readOnly && (
+      {!wizard && (
         <div className="flex gap-2">
-          {canEdit && (
-            <Button type="button" onClick={() => setEditing(true)}>
-              <Pencil className="mr-1 size-4" />
-              {m.common.edit}
-            </Button>
-          )}
           <Button type="button" variant="outline" onClick={() => router.push("/products")}>
             {m.common.back}
           </Button>

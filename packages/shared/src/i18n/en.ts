@@ -36,6 +36,7 @@ export const en: Messages = {
     detail: "Details",
     view: "View",
     editMode: "Editing",
+    discard: "Discard changes",
     search: "Search",
     create: "+ New",
     open: "Open",
@@ -418,7 +419,6 @@ export const en: Messages = {
     searching: "Searching...",
     noCandidates: "Nothing matches",
     empty: "No composition registered",
-    discard: "Discard changes",
     withheld: "The composition of this product is withheld",
     withheldEdit: "The composition of this product is withheld, so it cannot be edited",
     saved: "Composition saved",
@@ -514,6 +514,8 @@ export const en: Messages = {
     deleteConfirm: (label: string) => `Delete the product "${label}"?`,
     materialShort: "Material",
     nonMaterial: "Not a raw material",
+    editingElsewhere: (section: string) =>
+      `${section} is being edited. Save it or discard the changes first`,
     savedWithWarnings: "Saved. Please check the following",
   },
 

@@ -36,6 +36,7 @@ export const ja = {
     view: "表示",
     /** 詳細画面で入力できる状態になっていることを示す */
     editMode: "編集中",
+    discard: "変更を破棄",
     search: "検索",
     create: "＋ 新規登録",
     open: "開く",
@@ -421,7 +422,6 @@ export const ja = {
     noCandidates: "該当するものがありません",
     empty: "組成が登録されていません",
     /** 非開示のときに本体だけ見せる文言 */
-    discard: "変更を破棄",
     withheld: "この製品の組成は非開示です",
     withheldEdit: "この製品の組成は非開示のため編集できません",
     saved: "組成を保存しました",
@@ -518,6 +518,7 @@ export const ja = {
     materialShort: "原材料",
     nonMaterial: "原材料以外",
     /** 保存はできるが注意してほしいこと（中身は S8 以降で増える） */
+    editingElsewhere: (section: string) => `${section}が編集中です。保存か変更を破棄してください`,
     savedWithWarnings: "保存しました。次の点を確認してください",
   },
 
