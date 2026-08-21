@@ -15,16 +15,23 @@ export function UserAvatar({
   /** 画像を差し替えた直後に古い絵が残らないよう、変えるたびに違う値を渡す */
   version,
   className,
+  override,
 }: {
   userId: string | null;
   name: string;
   size?: number;
   version?: string | number;
   className?: string;
+  /**
+   * 保存前の見え方を出すための差し替え。
+   * 文字列ならその絵、null なら頭文字、渡さなければ保存済みのものを出す。
+   */
+  override?: string | null;
 }) {
   const [failed, setFailed] = useState(false);
   const initial = name.trim().charAt(0) || "?";
-  const src = userId ? `/api/users/${userId}/avatar${version ? `?v=${version}` : ""}` : null;
+  const stored = userId ? `/api/users/${userId}/avatar${version ? `?v=${version}` : ""}` : null;
+  const src = override === undefined ? stored : override;
 
   return (
     <span

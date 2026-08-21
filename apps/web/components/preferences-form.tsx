@@ -91,57 +91,103 @@ export function PreferencesForm({
   const [hasAvatar, setHasAvatar] = useState(avatarSet);
   // 選んだあと、切り出しを決めるまで持っておく画像
   const [picked, setPicked] = useState<File | null>(null);
+  /**
+   * 切り出しの済んだ画像と、外すと決めたかどうか。
+   * 押した時点では送らず、「保存」でまとめて反映する（表示名と足並みを揃えるため）。
+   */
+  const [newAvatar, setNewAvatar] = useState<Blob | null>(null);
+  const [newAvatarUrl, setNewAvatarUrl] = useState<string | null>(null);
+  const [avatarCleared, setAvatarCleared] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  /**
-   * 切り出しの済んだ画像を送る。
-   * 元の大きさのまま持つとDBが太るうえ、表示は小さな丸なので大きさは要らない。
-   */
-  async function uploadAvatar(blob: Blob) {
+  /** 切り出しが決まった。送るのは「保存」のとき */
+  function stageAvatar(blob: Blob) {
+    if (newAvatarUrl) URL.revokeObjectURL(newAvatarUrl);
+    setNewAvatar(blob);
+    setNewAvatarUrl(URL.createObjectURL(blob));
+    setAvatarCleared(false);
+    setPicked(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  /** 外すと決めた。こちらも実際に消すのは「保存」のとき */
+  function stageRemoveAvatar() {
+    if (newAvatarUrl) URL.revokeObjectURL(newAvatarUrl);
+    setNewAvatar(null);
+    setNewAvatarUrl(null);
+    setAvatarCleared(true);
+    setPicked(null);
+  }
+
+  const nameChanged = name.trim() !== displayName;
+  const avatarChanged = newAvatar !== null || avatarCleared;
+  const profileDirty = nameChanged || avatarChanged;
+
+  /** 表示名とアバターをまとめて保存する */
+  async function saveProfile() {
     setError(null);
     setNotice(null);
     setSaving(true);
     try {
-      const res = await fetch("/api/preferences/avatar", {
-        method: "PUT",
-        headers: { "Content-Type": blob.type },
-        body: blob,
-      });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.saveFailed(res.status));
-        return;
+      if (nameChanged) {
+        const res = await fetch("/api/preferences", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ displayName: name.trim() }),
+        });
+        if (!res.ok) {
+          if (redirectIfUnauthorized(res)) return;
+          const body = (await res.json().catch(() => null)) as ApiError | null;
+          setError(body?.error.message ?? m.errors.saveFailed(res.status));
+          return;
+        }
       }
+      if (newAvatar) {
+        const res = await fetch("/api/preferences/avatar", {
+          method: "PUT",
+          headers: { "Content-Type": newAvatar.type },
+          body: newAvatar,
+        });
+        if (!res.ok) {
+          if (redirectIfUnauthorized(res)) return;
+          const body = (await res.json().catch(() => null)) as ApiError | null;
+          setError(body?.error.message ?? m.errors.saveFailed(res.status));
+          return;
+        }
+        setHasAvatar(true);
+      } else if (avatarCleared) {
+        const res = await fetch("/api/preferences/avatar", { method: "DELETE" });
+        if (!res.ok) {
+          if (redirectIfUnauthorized(res)) return;
+          setError(m.errors.saveFailed(res.status));
+          return;
+        }
+        setHasAvatar(false);
+      }
+
+      if (newAvatarUrl) URL.revokeObjectURL(newAvatarUrl);
+      setNewAvatar(null);
+      setNewAvatarUrl(null);
+      setAvatarCleared(false);
       setAvatarVersion((v) => v + 1);
-      setHasAvatar(true);
-      setPicked(null);
       setNotice(m.preferences.saved);
       router.refresh();
     } finally {
       setSaving(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
-  async function removeAvatar() {
+  /** 書きかけを捨てて、開いたときの状態に戻す */
+  function discardProfile() {
+    if (newAvatarUrl) URL.revokeObjectURL(newAvatarUrl);
+    setName(displayName);
+    setNewAvatar(null);
+    setNewAvatarUrl(null);
+    setAvatarCleared(false);
+    setPicked(null);
     setError(null);
     setNotice(null);
-    setSaving(true);
-    try {
-      const res = await fetch("/api/preferences/avatar", { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        setError(m.errors.saveFailed(res.status));
-        return;
-      }
-      setAvatarVersion((v) => v + 1);
-      setHasAvatar(false);
-      setNotice(m.preferences.saved);
-      router.refresh();
-    } finally {
-      setSaving(false);
-    }
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   async function save(patch: {
@@ -190,7 +236,7 @@ export function PreferencesForm({
               onSubmit={(e) => {
                 e.preventDefault();
                 if (nameEmpty) return;
-                void save({ displayName: name.trim() });
+                void saveProfile();
               }}
             >
               <Label htmlFor="displayName">{m.preferences.displayName}</Label>
@@ -207,16 +253,32 @@ export function PreferencesForm({
               >
                 {nameEmpty ? m.errors.displayNameRequired : m.preferences.displayNameHint}
               </p>
-              <Button type="submit" disabled={saving || nameEmpty || name.trim() === displayName}>
-                {m.common.save}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={saving || nameEmpty || !profileDirty}>
+                  {saving ? m.common.saving : m.common.save}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={saving || !profileDirty}
+                  onClick={discardProfile}
+                >
+                  {m.common.discard}
+                </Button>
+              </div>
             </form>
 
             {userId && (
               <div className="space-y-2">
                 <span className="text-sm leading-none font-medium">{m.preferences.avatar}</span>
                 <div className="flex items-start gap-4">
-                  <UserAvatar userId={userId} name={name} size={64} version={avatarVersion} />
+                  <UserAvatar
+                    userId={userId}
+                    name={name}
+                    size={64}
+                    version={avatarVersion}
+                    override={newAvatarUrl ?? (avatarCleared ? null : undefined)}
+                  />
                   <div className="space-y-2">
                     {/*
                     素の file 入力は「ファイルを選択 選択されていません」と出て、
@@ -245,13 +307,13 @@ export function PreferencesForm({
                         <Upload className="mr-1 size-3.5" />
                         {m.preferences.avatarUpload}
                       </Button>
-                      {hasAvatar && (
+                      {(hasAvatar || newAvatar) && !avatarCleared && (
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           disabled={saving}
-                          onClick={removeAvatar}
+                          onClick={stageRemoveAvatar}
                         >
                           <Trash2 className="mr-1 size-3.5" />
                           {m.preferences.avatarRemove}
@@ -262,7 +324,7 @@ export function PreferencesForm({
                       <AvatarCropper
                         file={picked}
                         saving={saving}
-                        onDone={(blob) => void uploadAvatar(blob)}
+                        onDone={stageAvatar}
                         onCancel={() => {
                           setPicked(null);
                           if (fileRef.current) fileRef.current.value = "";
