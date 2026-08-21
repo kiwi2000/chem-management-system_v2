@@ -3,7 +3,7 @@
 import { GAZETTE_LAW_KINDS, pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AliasList } from "@/components/alias-list";
 import { FieldError } from "@/components/field-error";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, PropertyDefDto, SubstanceDetailDto } from "@/lib/types";
+import type { ApiError, CasSiblingDto, PropertyDefDto, SubstanceDetailDto } from "@/lib/types";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 
@@ -46,6 +46,44 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
 
   const [code, setCode] = useState(initial?.code ?? "");
   const [casNumber, setCasNumber] = useState(initial?.casNumber ?? "");
+  /**
+   * 同じCASの他の物質と、この物質を代表にするか。
+   * 他にいなければ自動で代表になるので、その場合は何も出さない。
+   */
+  const [casSiblings, setCasSiblings] = useState<CasSiblingDto[]>([]);
+  const [casRepresentative, setCasRepresentative] = useState(initial?.casRepresentative ?? false);
+  /** 代表を降りるときの後任。無効にする操作でだけ聞く */
+  const [successorId, setSuccessorId] = useState("");
+  /** 後任になれるのは、有効なものだけ（廃番品を代表にしても同じ問題が起きる） */
+  const activeSiblings = casSiblings.filter((sib) => sib.status === "ACTIVE");
+
+  /*
+   * CAS欄を打ち終わったら、同じCASの物質がいるかを見に行く。
+   * いなければ自動で代表になるので、画面には何も出さない。
+   * 打っている途中で何度も問い合わせないよう、少し待ってから引く。
+   */
+  useEffect(() => {
+    const cas = casNumber.trim();
+    if (cas === "") {
+      setCasSiblings([]);
+      return;
+    }
+    let alive = true;
+    const timer = setTimeout(() => {
+      void (async () => {
+        const params = new URLSearchParams({ cas });
+        if (initial?.id) params.set("exclude", initial.id);
+        const res = await fetch(`/api/substances/cas-siblings?${params}`).catch(() => null);
+        if (!res?.ok || !alive) return;
+        const body = (await res.json()) as { items?: CasSiblingDto[] };
+        if (alive) setCasSiblings(body.items ?? []);
+      })();
+    }, 400);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [casNumber, initial?.id]);
   const [status, setStatus] = useState(initial?.status ?? "ACTIVE");
   const [note, setNote] = useState(initial?.note ?? "");
   const [mainNameJa, setMainNameJa] = useState(initial?.mainNameJa ?? "");
@@ -85,6 +123,8 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
     return {
       code,
       casNumber: casNumber || null,
+      casRepresentative,
+      casRepresentativeSuccessorId: successorId || null,
       status,
       note: note || null,
       mainNameJa,
@@ -206,6 +246,40 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                     <p className="text-muted-foreground text-xs">{m.substances.casHint}</p>
                   )}
                 </div>
+                {/*
+                 * 同じCASの物質が他にいるときだけ、代表をどちらにするか聞く。
+                 * 他にいなければ自動で代表になるので、何も出さない。
+                 */}
+                {!readOnly && casSiblings.length > 0 && (
+                  <div className="border-primary/60 bg-muted/40 col-span-full space-y-2 border-l-2 py-2 pl-3">
+                    <p className="text-sm font-medium">{m.substances.casRepresentativeTitle}</p>
+                    <p className="text-muted-foreground text-sm">
+                      {m.substances.casRepresentativeHint}
+                    </p>
+                    <ul className="text-muted-foreground space-y-0.5 text-sm">
+                      {casSiblings.map((sib) => (
+                        <li key={sib.id}>
+                          <span className="font-mono text-xs">{sib.code}</span>{" "}
+                          {pickName(locale, sib.nameJa, sib.nameEn)}
+                          {sib.isCasRepresentative && (
+                            <span className="text-foreground">
+                              {" "}
+                              — {m.substances.casRepresentativeNow}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={casRepresentative}
+                        onChange={(e) => setCasRepresentative(e.target.checked)}
+                      />
+                      {m.substances.casRepresentativeMake}
+                    </label>
+                  </div>
+                )}
                 {/* 見出しは置かず、チェックの有無をそのまま有効／無効の文言で示す */}
                 <label className="flex items-center gap-2 self-end pb-2 text-sm">
                   <input
@@ -219,6 +293,34 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                     ? m.substances.statusActive
                     : m.substances.statusDiscontinued}
                 </label>
+                {/*
+                 * 代表のまま無効にすると、合算表に廃番品の名前が出続ける。
+                 * 無効にする前に、誰が代わりになるかをここで決めてもらう。
+                 */}
+                {!readOnly &&
+                  status !== "ACTIVE" &&
+                  initial?.casRepresentative &&
+                  activeSiblings.length > 0 && (
+                    <div className="border-primary/60 bg-muted/40 col-span-full space-y-2 border-l-2 py-2 pl-3">
+                      <p className="text-sm font-medium">{m.substances.casSuccessorTitle}</p>
+                      <p className="text-muted-foreground text-sm">
+                        {m.substances.casSuccessorHint}
+                      </p>
+                      <select
+                        aria-label={m.substances.casSuccessorTitle}
+                        value={successorId}
+                        onChange={(e) => setSuccessorId(e.target.value)}
+                        className="border-input bg-background h-9 rounded-none border px-2 text-sm"
+                      >
+                        <option value="">{m.substances.casSuccessorAuto}</option>
+                        {activeSiblings.map((sib) => (
+                          <option key={sib.id} value={sib.id}>
+                            {sib.code} {pickName(locale, sib.nameJa, sib.nameEn)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="note">

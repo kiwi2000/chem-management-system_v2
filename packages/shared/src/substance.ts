@@ -58,6 +58,17 @@ export const substanceSchema = (m: Messages) =>
     /** CAS は任意（ポリマー・UVCB・企業秘密物質を登録できるようにするため） */
     casNumber: emptyToNull(z.string().trim().max(20, m.validation.tooLong(20))).optional(),
     status: z.enum(SUBSTANCE_STATUSES),
+    /**
+     * このCASの代表にするか。
+     * 同じCASの物質が他にいるときだけ画面で選ばせる。他にいなければ自動で代表になるので、
+     * 送られてこなくても構わない（省略時は今のままにする）。
+     */
+    casRepresentative: z.boolean().optional(),
+    /**
+     * 代表を降りるとき、代わりに代表になる物質。
+     * 無効にする操作で代表が空くときに、画面で選ばせた結果が届く。
+     */
+    casRepresentativeSuccessorId: z.string().trim().max(50).nullish(),
     note: emptyToNull(z.string().trim().max(2000, m.validation.tooLong(2000))).optional(),
 
     mainNameJa: z.string().trim().min(1, m.validation.required).max(500, m.validation.tooLong(500)),

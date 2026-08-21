@@ -266,6 +266,15 @@ export const en: Messages = {
     propertiesEmpty: "No properties are defined (a system administrator sets these up)",
     empty: "No matching substances",
     deleteConfirm: (label: string) => `Delete the substance "${label}"?`,
+    casRepresentativeTitle: "Representative for this CAS number",
+    casRepresentativeHint:
+      "Other substances already use this CAS number. Regulatory checks add their contents together and treat them as one CAS. Choose which substance gives the name shown on the combined row.",
+    casRepresentativeNow: "current representative",
+    casSuccessorTitle: "Substance to take over as representative",
+    casSuccessorHint:
+      "This substance is currently the representative for its CAS number. Deactivating it would leave a discontinued name on the combined row. Choose which substance takes over.",
+    casSuccessorAuto: "Decide automatically (the oldest active one)",
+    casRepresentativeMake: "Make this substance the representative",
     warnSameCas: (codes: string) => `Other substances already use this CAS number: ${codes}`,
     warnCasFormat: "The CAS number does not look like the usual format (e.g. 7439-92-1)",
     savedWithWarnings: "Saved. Please check the following",

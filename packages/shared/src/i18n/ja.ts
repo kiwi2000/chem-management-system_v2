@@ -271,6 +271,15 @@ export const ja = {
     empty: "該当する物質がありません",
     deleteConfirm: (label: string) => `物質「${label}」を削除しますか？`,
     /** 保存はできるが注意してほしいこと */
+    casRepresentativeTitle: "このCAS番号の代表",
+    casRepresentativeHint:
+      "同じCAS番号の物質がすでにあります。法規制の判定では、これらの含有率をまとめて1つのCASとして扱います。まとめた行に出す名称を、どの物質から取るかを決めてください。",
+    casRepresentativeNow: "いまの代表",
+    casSuccessorTitle: "代表を引き継ぐ物質",
+    casSuccessorHint:
+      "この物質はいまこのCAS番号の代表です。無効にすると、まとめた行に廃番品の名称が出続けてしまいます。代わりに代表になる物質を選んでください。",
+    casSuccessorAuto: "自動で決める（有効なものの中でいちばん古いもの）",
+    casRepresentativeMake: "この物質を代表にする",
     warnSameCas: (codes: string) => `同じCAS番号の物質が既にあります: ${codes}`,
     warnCasFormat: "CAS番号が一般的な形（例: 7439-92-1）ではありません",
     savedWithWarnings: "保存しました。次の点を確認してください",

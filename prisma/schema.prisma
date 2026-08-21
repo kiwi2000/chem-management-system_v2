@@ -321,11 +321,18 @@ model Substance {
   /**
    * CAS番号は任意（ポリマー・UVCB・企業秘密物質を登録できるようにするため）
    */
-  casNumber     String? @map("cas_number") @db.VarChar(20)
+  casNumber           String? @map("cas_number") @db.VarChar(20)
   /**
    * 正規化CAS。法規制リンク・金属換算係数はこの値で突合する。一意にしない（別物質が同一CASを持てる）
    */
-  casNormalized String? @map("cas_normalized") @db.VarChar(20)
+  casNormalized       String? @map("cas_normalized") @db.VarChar(20)
+  /**
+   * このCASを代表する物質か。
+   * 同じCASの物質が複数あるとき、合算した行に出す名称をこの物質から取る。
+   * 1つのCASにつき1件までで、制約は migration の部分ユニーク索引で持つ
+   * （Prisma では条件付きの一意制約を書けないため）。
+   */
+  isCasRepresentative Boolean @default(false) @map("is_cas_representative")
 
   /**
    * 主名称。1物質1件なので子テーブルではなくこの行に持つ。

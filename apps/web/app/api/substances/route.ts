@@ -9,6 +9,8 @@ import {
   SUBSTANCE_LIST_INCLUDE,
   childWrites,
   collectWarnings,
+  ensureCasRepresentative,
+  makeCasRepresentative,
   hasDuplicateGazette,
   normalizeInput,
   toListItem,
@@ -111,6 +113,19 @@ export async function POST(req: Request) {
       properties: { create: children.properties },
     },
   });
+
+  /*
+   * 代表物質の割り当て。
+   * そのCASに他がいなければ自動で代表になる（人に聞くことは何も無い）。
+   * 他がいるときは、画面で選ばせた結果が casRepresentative で届く。
+   */
+  if (base.casNormalized) {
+    if (input.casRepresentative) {
+      await makeCasRepresentative(prisma, created.id, base.casNormalized);
+    } else {
+      await ensureCasRepresentative(prisma, base.casNormalized);
+    }
+  }
 
   await writeAudit({
     entity: "substances",

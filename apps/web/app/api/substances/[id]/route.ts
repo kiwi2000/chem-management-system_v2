@@ -9,6 +9,8 @@ import {
   SUBSTANCE_INCLUDE,
   childWrites,
   collectWarnings,
+  ensureCasRepresentative,
+  makeCasRepresentative,
   hasDuplicateGazette,
   normalizeInput,
   toDetail,
@@ -114,6 +116,37 @@ export async function PUT(req: Request, { params }: Ctx) {
     }),
   ]);
 
+  /*
+   * 代表物質の割り当て。
+   * CASを付け替えたときは、元のCASの代表が空くことがあるので埋め直す。
+   * 無効にしたときは、同じCASに有効なものがいれば代表をそちらへ移す
+   * （廃番品の名前が合算表に出続けるのを避けるため）。
+   */
+  if (input.casRepresentative && base.casNormalized) {
+    await makeCasRepresentative(prisma, id, base.casNormalized);
+  } else if (existing.isCasRepresentative && base.status !== "ACTIVE") {
+    // 無効にした物質の名前を合算表に出し続けないよう、代表を降ろす
+    await prisma.substance.update({ where: { id }, data: { isCasRepresentative: false } });
+    // 画面で後任を選んでいれば、そのとおりにする（選んでいなければ下で自動的に埋まる）
+    if (input.casRepresentativeSuccessorId && existing.casNormalized) {
+      const successor = await prisma.substance.findFirst({
+        where: {
+          id: input.casRepresentativeSuccessorId,
+          casNormalized: existing.casNormalized,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (successor) {
+        await makeCasRepresentative(prisma, successor.id, existing.casNormalized);
+      }
+    }
+  }
+  if (existing.casNormalized && existing.casNormalized !== base.casNormalized) {
+    await ensureCasRepresentative(prisma, existing.casNormalized);
+  }
+  await ensureCasRepresentative(prisma, base.casNormalized);
+
   await writeAudit({
     entity: "substances",
     entityId: id,
@@ -170,10 +203,13 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     data: {
       deletedAt: new Date(),
       updatedBy: actor.user.id,
+      isCasRepresentative: false,
       // 一意制約を空けるための退避。原文の code はそのまま残す
       codeNormalized: `${existing.codeNormalized}:${existing.id}`.slice(0, 64),
     },
   });
+  // 消したのが代表だった場合、そのCASの代表が空く。残っているものから埋め直す
+  await ensureCasRepresentative(prisma, existing.casNormalized);
 
   await writeAudit({
     entity: "substances",

@@ -100,6 +100,18 @@ export interface SubstanceDetailDto extends SubstanceListItemDto {
   mainNameEn: string | null;
   subNames: { nameJa: string | null; nameEn: string | null }[];
   properties: PropertyValueDto[];
+  /** このCASを代表する物質か。合算した行に出す名称をこの物質から取る */
+  casRepresentative: boolean;
+}
+
+/** 同じCAS番号の、生きている他の物質。代表を選ばせるときに並べる */
+export interface CasSiblingDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  status: SubstanceStatus;
+  isCasRepresentative: boolean;
 }
 
 /** 拡張属性の値。物質と製品で同じ形（数値は文字列で受け渡す） */
