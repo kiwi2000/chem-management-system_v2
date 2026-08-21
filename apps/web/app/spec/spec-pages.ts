@@ -1,14 +1,17 @@
 /**
- * 仕様書の目次。ページを増やしたらここに足す。
- * 目次（クライアント側）と本文（サーバー側）の両方から読むので、
- * "use client" を付けたファイルには置かない。
+ * ユーザーマニュアルの目次。
+ * 目次と前後リンクの両方から参照するので、"use client" を付けたファイルには置かない。
+ *
+ * 並びは、初めて使う人が上から読んでいける順にしてある。
  */
 export const SPEC_PAGES = [
-  { href: "/spec", label: "この資料について" },
-  { href: "/spec/states", label: "状態と承認の流れ" },
+  { href: "/spec", label: "はじめに" },
+  { href: "/spec/substances", label: "物質を登録する" },
+  { href: "/spec/products", label: "製品・原材料を登録する" },
+  { href: "/spec/lists", label: "探す・絞り込む" },
+  { href: "/spec/states", label: "公開までの流れ" },
   { href: "/spec/permissions", label: "だれが何をできるか" },
-  { href: "/spec/data", label: "登録する情報" },
-  { href: "/spec/lists", label: "一覧とフィルター" },
-  { href: "/spec/feedback", label: "フィードバック" },
+  { href: "/spec/preferences", label: "自分用の設定" },
+  { href: "/spec/feedback", label: "気づいたことを伝える" },
   { href: "/spec/changes", label: "変更の履歴" },
 ] as const;

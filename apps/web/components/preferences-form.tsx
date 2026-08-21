@@ -107,6 +107,9 @@ export function PreferencesForm({
     setNewAvatarUrl(URL.createObjectURL(blob));
     setAvatarCleared(false);
     setPicked(null);
+    setError(null);
+    // 押しても何も起きていないように見えるので、次に何をすればよいかを出す
+    setNotice(m.preferences.avatarStaged);
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -117,6 +120,8 @@ export function PreferencesForm({
     setNewAvatarUrl(null);
     setAvatarCleared(true);
     setPicked(null);
+    setError(null);
+    setNotice(m.preferences.avatarRemoveStaged);
   }
 
   const nameChanged = name.trim() !== displayName;
@@ -224,6 +229,17 @@ export function PreferencesForm({
 
   return (
     <div className="space-y-4">
+      {/* 下に置くと、上のほうを操作したときに見えないので先頭に出す */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {notice && (
+        <Alert>
+          <AlertDescription>{notice}</AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{m.preferences.profile}</CardTitle>
@@ -272,13 +288,20 @@ export function PreferencesForm({
               <div className="space-y-2">
                 <span className="text-sm leading-none font-medium">{m.preferences.avatar}</span>
                 <div className="flex items-start gap-4">
-                  <UserAvatar
-                    userId={userId}
-                    name={name}
-                    size={64}
-                    version={avatarVersion}
-                    override={newAvatarUrl ?? (avatarCleared ? null : undefined)}
-                  />
+                  <div className="space-y-1">
+                    <UserAvatar
+                      userId={userId}
+                      name={name}
+                      size={64}
+                      version={avatarVersion}
+                      override={newAvatarUrl ?? (avatarCleared ? null : undefined)}
+                    />
+                    {avatarChanged && (
+                      <p className="text-primary text-center text-xs font-medium">
+                        {m.preferences.avatarUnsaved}
+                      </p>
+                    )}
+                  </div>
                   <div className="space-y-2">
                     {/*
                     素の file 入力は「ファイルを選択 選択されていません」と出て、
@@ -487,17 +510,6 @@ export function PreferencesForm({
           </Button>
         </CardContent>
       </Card>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {notice && (
-        <Alert>
-          <AlertDescription>{notice}</AlertDescription>
-        </Alert>
-      )}
     </div>
   );
 }

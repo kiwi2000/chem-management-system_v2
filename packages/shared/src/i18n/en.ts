@@ -297,6 +297,9 @@ export const en: Messages = {
     profile: "Profile",
     displayName: "Display name",
     avatar: "Avatar",
+    avatarStaged: "Cropped. Press Save to apply it",
+    avatarRemoveStaged: "It will be removed. Press Save to apply it",
+    avatarUnsaved: "Not saved",
     avatarZoom: "Size",
     avatarApply: "Use this area",
     avatarCropHint:
