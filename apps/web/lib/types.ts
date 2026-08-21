@@ -185,6 +185,49 @@ export interface CompositionResponse {
   balancePct: string | null;
 }
 
+/** CASでまとめた行の、1件ぶんの寄与元 */
+export interface AggregateContributionDto {
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  /** どの原材料の中から来たか。この製品に直接入っているなら null */
+  via: string | null;
+  /** その原材料の中での重量% */
+  withinPct: string;
+  /** 製品全体に対する重量% */
+  pct: string;
+}
+
+/** CASでまとめた行。合算の結果はこの形で返す */
+export interface AggregateRowDto {
+  /** CAS番号。持たない物質は null（まとめようがないので1物質1行になる） */
+  casNumber: string | null;
+  /** 代表物質のコードと名称。CASを持たない物質は自分自身のもの */
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  totalPct: string;
+  contributions: AggregateContributionDto[];
+}
+
+export interface CompositionAggregateDto {
+  /** 重量%の多い順 */
+  rows: AggregateRowDto[];
+  /** すべて展開できていれば 100 になる。届かないときは下の blocked を見る */
+  totalPct: string;
+  /** 展開できなかった原材料。この表が不完全であることを示す */
+  blocked: {
+    code: string;
+    nameJa: string;
+    nameEn: string | null;
+    /** その原材料が製品全体に占める重量% */
+    pct: string;
+    reason: "empty" | "notFound";
+  }[];
+  /** 深さの上限で打ち切った枝の数 */
+  truncated: number;
+}
+
 export interface MetalFactorDto {
   id: string;
   casNumber: string;

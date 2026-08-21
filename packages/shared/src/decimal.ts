@@ -91,3 +91,36 @@ export function ratioToPct(ratio: Ratio): string {
   const rounded = (abs + 5n) / 10n;
   return fromScaled(negative ? -rounded : rounded);
 }
+
+/**
+ * 合算のときに使う細かさ。表示（小数6桁）より6桁細かい。
+ *
+ * 展開した値を足し合わせるとき、比率のまま（分数のまま）足すと分母が段ごとに
+ * 膨らんでいく。かわりに、この細かさの整数に一度だけ直してから足す。
+ * 1件あたりの誤差は 10^-12 より小さく、何百件足しても表示の桁には届かない。
+ */
+const FINE_SCALE = 10n ** 12n;
+
+/** 比率を、合算用の細かい整数にする（四捨五入は1回だけ） */
+export function ratioToFine(ratio: Ratio): bigint {
+  if (ratio.den === 0n) return 0n;
+  const tenTimes = (ratio.num * 100n * FINE_SCALE * 10n) / ratio.den;
+  const negative = tenTimes < 0n;
+  const abs = negative ? -tenTimes : tenTimes;
+  const rounded = (abs + 5n) / 10n;
+  return negative ? -rounded : rounded;
+}
+
+/** 合算した整数を % の文字列にする（小数6桁で四捨五入） */
+export function fineToPct(fine: bigint): string {
+  const step = FINE_SCALE / FACTOR;
+  const negative = fine < 0n;
+  const abs = negative ? -fine : fine;
+  const rounded = (abs + step / 2n) / step;
+  return fromScaled(negative ? -rounded : rounded);
+}
+
+/** 合算した整数どうしの大小（多い順に並べるのに使う） */
+export function compareFine(a: bigint, b: bigint): number {
+  return a === b ? 0 : a > b ? 1 : -1;
+}

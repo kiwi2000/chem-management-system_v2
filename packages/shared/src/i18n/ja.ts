@@ -467,6 +467,20 @@ export const ja = {
     // 原材料の中身を下ろして見せる（展開）
     expand: "中身を見る",
     expandAll: "展開",
+
+    // CASでまとめた組成
+    tabRegistered: "登録組成",
+    tabAggregate: "CAS合算",
+    aggregateLead:
+      "原材料を末端の物質まで下ろし、同じCAS番号のものを1行にまとめた表です。法規制の判定にはこの値を使います。多い順に並んでいます。",
+    aggregateName: "名称（代表物質）",
+    aggregateSources: "寄与元",
+    aggregateNoCas: "CASなし",
+    aggregateCount: (n: number) => `${n}件`,
+    aggregateDirect: "この製品に直接",
+    aggregateVia: (name: string) => `${name} の中`,
+    aggregateIncomplete: (n: number) =>
+      `中身をたどれない原材料が ${n} 件あります。この表はまだ完全ではありません。下の合計も100%に届きません。`,
     collapseAll: "閉じる",
     collapse: "閉じる",
     expandedOf: (name: string) => `${name} の中身`,

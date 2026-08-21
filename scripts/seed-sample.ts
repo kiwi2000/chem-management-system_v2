@@ -204,6 +204,37 @@ const PRODUCTS: ProductSeed[] = [
     ],
   },
   {
+    code: "MT-BRASS",
+    nameJa: "銅ペレット（2社混合）",
+    nameEn: "Copper pellets (two suppliers)",
+    material: true,
+    note: "原材料を含まないが、同じCASの物質を2件含む。合算表への切り替えが出る",
+    lines: [
+      { substance: "SB-CU-A", pct: "40" },
+      { substance: "SB-CU-B", pct: "59.9" },
+      { substance: "SB-PB", pct: "0.1" },
+    ],
+  },
+  {
+    code: "MT-NOSPEC",
+    nameJa: "中身未登録の部材",
+    nameEn: "Part with no composition on file",
+    material: true,
+    note: "組成をわざと登録していない。合算表が不完全になることを試すためのもの",
+    lines: [],
+  },
+  {
+    code: "PR-PARTIAL",
+    nameJa: "中身の分からない部材を含む製品",
+    nameEn: "Product with an unknown part",
+    material: false,
+    note: "合算表の合計が100%に届かない例",
+    lines: [
+      { material: "MT-NOSPEC", pct: "30" },
+      { substance: "SB-ABS", pct: "70" },
+    ],
+  },
+  {
     code: "PR-SW200",
     nameJa: "表示スイッチユニット SW-200",
     nameEn: "Display switch unit SW-200",

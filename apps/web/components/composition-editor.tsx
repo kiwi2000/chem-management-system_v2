@@ -13,6 +13,7 @@ import {
 } from "@chem/shared";
 import { FoldVertical, GripVertical, Pencil, Trash2, UnfoldVertical } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CompositionAggregateTable } from "@/components/composition-aggregate-table";
 import {
   CompositionTreeRows,
   ExpandToggle,
@@ -318,6 +319,33 @@ export function CompositionEditor({
    * 編集中も展開できないので出さない。
    */
   const showWithin = !editing && (rows ?? []).some((r) => r.element.hasComposition);
+  /**
+   * CASでまとめた表に切り替えられるか。
+   *
+   * 原材料が1つも無く、同じCASの物質も重なっていなければ、まとめても同じ表になる。
+   * その場合は切り替えを出さない（押しても何も変わらないタブは、迷わせるだけ）。
+   * 原材料があれば、中身が登録されていなくても切り替えを出す。
+   * 「判定に使える値が揃っていない」ことを知らせる場所が、まとめた表しか無いため。
+   *
+   * 判定は登録済みの行だけで済む。展開しないと分からない重複は、
+   * 原材料がある時点でどのみち切り替えを出すので、見に行く必要がない。
+   */
+  const canAggregate = useMemo(() => {
+    const list = rows ?? [];
+    if (list.some((r) => r.kind === "product")) return true;
+    const seen = new Set<string>();
+    return list.some((r) => {
+      const cas = r.element.casNumber?.trim().toUpperCase();
+      if (!cas) return false;
+      if (seen.has(cas)) return true;
+      seen.add(cas);
+      return false;
+    });
+  }, [rows]);
+  const [tab, setTab] = useState<"registered" | "aggregate">("registered");
+  // 直しているあいだは、登録した組成だけを見せる
+  const showAggregate = tab === "aggregate" && canAggregate && !editing;
+
   /** すべて展開の出発点。表に並んでいる、中身を持つ原材料の行 */
   const treeRoots: TreeRoot[] = useMemo(
     () =>
@@ -414,7 +442,37 @@ export function CompositionEditor({
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {rows === null ? (
+        {/* まとめても同じ表になるときは出さない。押しても何も変わらないタブは迷わせるだけ */}
+        {canAggregate && !editing && (
+          <div className="border-border flex gap-1 border-b" role="tablist">
+            {(
+              [
+                ["registered", m.composition.tabRegistered],
+                ["aggregate", m.composition.tabAggregate],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={tab === key}
+                onClick={() => setTab(key)}
+                className={cn(
+                  "-mb-px border-b-2 px-3 py-1.5 text-sm",
+                  tab === key
+                    ? "border-primary text-foreground font-medium"
+                    : "text-muted-foreground border-transparent",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {showAggregate ? (
+          <CompositionAggregateTable productId={productId} />
+        ) : rows === null ? (
           <p className="text-muted-foreground text-sm">{m.common.loading}</p>
         ) : rows.length === 0 ? (
           <p className="text-muted-foreground text-sm">{m.composition.empty}</p>

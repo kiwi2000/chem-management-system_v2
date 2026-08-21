@@ -463,6 +463,19 @@ export const en: Messages = {
 
     expand: "Show contents",
     expandAll: "Expand",
+
+    tabRegistered: "Registered",
+    tabAggregate: "Combined by CAS",
+    aggregateLead:
+      "Materials are broken down to the substances inside them, and substances sharing a CAS number are combined into one row. Regulatory checks use these values. Sorted by weight.",
+    aggregateName: "Name (representative)",
+    aggregateSources: "Sources",
+    aggregateNoCas: "No CAS",
+    aggregateCount: (n: number) => `${n}`,
+    aggregateDirect: "directly in this product",
+    aggregateVia: (name: string) => `inside ${name}`,
+    aggregateIncomplete: (n: number) =>
+      `${n} material(s) could not be broken down. This table is not complete yet, and the total below will not reach 100%.`,
     collapseAll: "Collapse",
     collapse: "Hide",
     expandedOf: (name: string) => `Contents of ${name}`,
