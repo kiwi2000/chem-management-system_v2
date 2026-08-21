@@ -457,6 +457,8 @@ export const ja = {
 
     // 原材料の中身を下ろして見せる（展開）
     expand: "中身を見る",
+    expandAll: "展開",
+    collapseAll: "閉じる",
     collapse: "閉じる",
     expandedOf: (name: string) => `${name} の中身`,
     /** 換算値に添える、その原材料の中での値 */

@@ -453,6 +453,8 @@ export const en: Messages = {
     noCandidates: "Nothing matches",
 
     expand: "Show contents",
+    expandAll: "Expand",
+    collapseAll: "Collapse",
     collapse: "Hide",
     expandedOf: (name: string) => `Contents of ${name}`,
     withinParent: (name: string, pct: string) => `${pct}% within ${name}`,

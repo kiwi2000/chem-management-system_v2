@@ -11,7 +11,7 @@ import {
   type Ratio,
 } from "@chem/shared";
 import { ChevronRight } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { CompositionLineDto, CompositionResponse } from "@/lib/types";
@@ -42,21 +42,64 @@ type Branch =
  */
 type Path = string;
 
+/** すべて展開の出発点。表に並んでいる、中身を持つ原材料の行 */
+export interface TreeRoot {
+  path: Path;
+  productId: string;
+}
+
 export interface TreeState {
   /** 開いている枝 */
   open: Set<Path>;
   /** 取りに行った結果。閉じても捨てないので、開き直しても通信しない */
   branches: Map<Path, Branch>;
+  /** すべて展開の最中か（連打とボタンの見た目のため） */
+  expandingAll: boolean;
   toggle: (path: Path, productId: string) => void;
+  expandAll: (roots: TreeRoot[]) => void;
+  collapseAll: () => void;
 }
 
 export function useCompositionTree(): TreeState {
   const [open, setOpen] = useState<Set<Path>>(new Set());
   const [branches, setBranches] = useState<Map<Path, Branch>>(new Map());
+  const [expandingAll, setExpandingAll] = useState(false);
+  // 取ったものの実体。すべて展開の途中でも読めるよう、描画用とは別に持つ
+  const cache = useRef<Map<Path, Branch>>(new Map());
 
   const put = useCallback((path: Path, branch: Branch) => {
-    setBranches((prev) => new Map(prev).set(path, branch));
+    cache.current.set(path, branch);
+    setBranches(new Map(cache.current));
   }, []);
+
+  /** 中身を取りに行く。一度取ったものは覚えておき、二度は取りに行かない */
+  const load = useCallback(
+    async (path: Path, productId: string): Promise<Branch> => {
+      const known = cache.current.get(path);
+      if (known && known.state !== "loading") return known;
+
+      put(path, { state: "loading" });
+      const fail = (reason: "empty" | "forbidden" | "notFound" | "failed"): Branch => {
+        const branch: Branch = { state: "denied", reason };
+        put(path, branch);
+        return branch;
+      };
+
+      const res = await fetch(`/api/products/${productId}/composition`).catch(() => null);
+      if (!res) return fail("failed");
+      if (redirectIfUnauthorized(res)) return { state: "loading" };
+      if (res.status === 403) return fail("forbidden");
+      if (res.status === 404) return fail("notFound");
+      if (!res.ok) return fail("failed");
+
+      const data = (await res.json()) as CompositionResponse;
+      if (data.lines.length === 0) return fail("empty");
+      const branch: Branch = { state: "ready", data };
+      put(path, branch);
+      return branch;
+    },
+    [put],
+  );
 
   const toggle = useCallback(
     (path: Path, productId: string) => {
@@ -66,29 +109,61 @@ export function useCompositionTree(): TreeState {
         else next.add(path);
         return next;
       });
-
-      // 一度取ったものは覚えておく。閉じて開き直しても取りに行かない
-      setBranches((prev) => {
-        if (prev.has(path)) return prev;
-        void (async () => {
-          put(path, { state: "loading" });
-          const res = await fetch(`/api/products/${productId}/composition`).catch(() => null);
-          if (!res) return put(path, { state: "denied", reason: "failed" });
-          if (redirectIfUnauthorized(res)) return;
-          if (res.status === 403) return put(path, { state: "denied", reason: "forbidden" });
-          if (res.status === 404) return put(path, { state: "denied", reason: "notFound" });
-          if (!res.ok) return put(path, { state: "denied", reason: "failed" });
-          const data = (await res.json()) as CompositionResponse;
-          if (data.lines.length === 0) return put(path, { state: "denied", reason: "empty" });
-          put(path, { state: "ready", data });
-        })();
-        return new Map(prev).set(path, { state: "loading" });
-      });
+      void load(path, productId);
     },
-    [put],
+    [load],
   );
 
-  return { open, branches, toggle };
+  /**
+   * 原材料をすべて開く。
+   * 同じ深さのものをまとめて取りに行き、届いた中身からさらに下を探す、を繰り返す。
+   * 循環は保存時に止めているので、この繰り返しは必ず終わる。
+   */
+  const expandAll = useCallback(
+    (roots: TreeRoot[]) => {
+      setExpandingAll(true);
+      void (async () => {
+        try {
+          let frontier = roots.map((r) => ({ ...r, depth: 0 }));
+          while (frontier.length > 0) {
+            const found = await Promise.all(
+              frontier.map(async (node) => ({
+                node,
+                branch: await load(node.path, node.productId),
+              })),
+            );
+            // 届いたぶんから順に開く。全部そろうまで待たせない。
+            // 更新関数は後から呼ばれるので、そのときには frontier が次の段に
+            // 書き換わっている。開く先はここで確定させておく
+            const opened = frontier.map((n) => n.path);
+            setOpen((prev) => new Set([...prev, ...opened]));
+
+            const next: typeof frontier = [];
+            for (const { node, branch } of found) {
+              if (branch.state !== "ready" || node.depth >= COMPOSITION_MAX_DEPTH) continue;
+              for (const line of branch.data.lines) {
+                if (!line.element?.hasComposition) continue;
+                next.push({
+                  path: `${node.path}/${line.id}`,
+                  productId: line.element.id,
+                  depth: node.depth + 1,
+                });
+              }
+            }
+            frontier = next;
+          }
+        } finally {
+          setExpandingAll(false);
+        }
+      })();
+    },
+    [load],
+  );
+
+  /** 取ってきた中身は捨てない。開き直したときに通信しなくて済む */
+  const collapseAll = useCallback(() => setOpen(new Set()), []);
+
+  return { open, branches, expandingAll, toggle, expandAll, collapseAll };
 }
 
 /** 展開の印。中身を持つ原材料の行にだけ出す */

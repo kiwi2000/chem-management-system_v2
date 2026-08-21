@@ -11,12 +11,13 @@ import {
   type AppSettings,
   type TextOperator,
 } from "@chem/shared";
-import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import { FoldVertical, GripVertical, Pencil, Trash2, UnfoldVertical } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CompositionTreeRows,
   ExpandToggle,
   useCompositionTree,
+  type TreeRoot,
 } from "@/components/composition-tree";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -317,6 +318,14 @@ export function CompositionEditor({
    * 編集中も展開できないので出さない。
    */
   const showWithin = !editing && (rows ?? []).some((r) => r.element.hasComposition);
+  /** すべて展開の出発点。表に並んでいる、中身を持つ原材料の行 */
+  const treeRoots: TreeRoot[] = useMemo(
+    () =>
+      (rows ?? [])
+        .filter((r) => r.element.hasComposition)
+        .map((r) => ({ path: r.key, productId: r.element.id })),
+    [rows],
+  );
   /** 展開行が結合に使う列の数 */
   const columnCount = (editing ? 7 : 5) + (showWithin ? 1 : 0);
 
@@ -363,16 +372,45 @@ export function CompositionEditor({
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
         <CardTitle className="text-base">{m.composition.title}</CardTitle>
-        {onRequestEdit &&
-          canEdit &&
-          (editing ? (
-            <Badge variant="secondary">{m.common.editMode}</Badge>
-          ) : (
-            <Button type="button" size="sm" variant="outline" onClick={onRequestEdit}>
-              <Pencil className="mr-1 size-3.5" />
-              {m.common.edit}
-            </Button>
-          ))}
+        {/* 編集を先に置く。展開のボタンは組成の中身によって出たり出なかったりするので、
+          後ろに並べておくと「編集」の位置が動かない */}
+        <div className="flex items-center gap-1">
+          {onRequestEdit &&
+            canEdit &&
+            (editing ? (
+              <Badge variant="secondary">{m.common.editMode}</Badge>
+            ) : (
+              <Button type="button" size="sm" variant="outline" onClick={onRequestEdit}>
+                <Pencil className="mr-1 size-3.5" />
+                {m.common.edit}
+              </Button>
+            ))}
+          {/* 原材料が入っているときだけ。開くものが無ければ置いても押せない */}
+          {showWithin && (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={tree.expandingAll}
+                onClick={() => tree.expandAll(treeRoots)}
+              >
+                <UnfoldVertical className="mr-1 size-3.5" />
+                {m.composition.expandAll}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={tree.open.size === 0}
+                onClick={tree.collapseAll}
+              >
+                <FoldVertical className="mr-1 size-3.5" />
+                {m.composition.collapseAll}
+              </Button>
+            </>
+          )}
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-3">
