@@ -144,6 +144,11 @@ export interface CompositionElementDto {
   casNumber: string | null;
 }
 
+/** 検索で出す候補。物質か原材料かを添えて返す */
+export interface CompositionCandidateDto extends CompositionElementDto {
+  kind: "substance" | "product";
+}
+
 export interface CompositionLineDto {
   id: string;
   substanceId: string | null;

@@ -268,7 +268,6 @@ export const ja = {
     },
     properties: "拡張属性",
     propertiesEmpty: "項目が定義されていません（システム管理者が設定します）",
-    searchPlaceholder: "コード / CAS番号 / 名称 / 備考 で検索",
     empty: "該当する物質がありません",
     deleteConfirm: (label: string) => `物質「${label}」を削除しますか？`,
     /** 保存はできるが注意してほしいこと */
@@ -401,7 +400,6 @@ export const ja = {
 
   composition: {
     title: "組成",
-    kind: "種別",
     kindSubstance: "物質",
     kindProduct: "原材料",
     element: "構成要素",
@@ -419,6 +417,12 @@ export const ja = {
     addLine: "＋ 構成要素を追加",
     searchPlaceholder: "コード / 名称で検索",
     searching: "検索中...",
+    searchTitle: "構成要素を探す",
+    target: "対象",
+    nameOp: "名称の探し方",
+    casSearchHint: "完全一致。原材料は、そのCASを組成に含むものが対象になります",
+    addSelected: (n: number) => `選択した ${n} 件を追加`,
+    alreadyAdded: "追加済み",
     noCandidates: "該当するものがありません",
     empty: "組成が登録されていません",
     /** 非開示のときに本体だけ見せる文言 */

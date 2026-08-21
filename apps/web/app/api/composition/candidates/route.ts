@@ -1,23 +1,42 @@
-import { normalizeCode } from "@chem/shared";
+import { normalizeCas, normalizeCode, TEXT_OPERATORS, type TextOperator } from "@chem/shared";
 import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import type { CompositionElementDto } from "@/lib/types";
+import type { CompositionCandidateDto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 /** 候補は選ぶためのものなので、多すぎても選べない */
-const LIMIT = 20;
+const LIMIT = 50;
 
 const SELECT = { id: true, code: true, nameJa: true, nameEn: true } as const;
 /** 物質はCAS番号も返す。原材料は持たないので null を足す */
 const SELECT_SUBSTANCE = { ...SELECT, casNumber: true } as const;
 
+/** 名称の突合。前方・後方・完全は Prisma の演算子にそのまま対応する */
+function nameWhere(name: string, op: TextOperator) {
+  const mode = "insensitive" as const;
+  const cond =
+    op === "startsWith"
+      ? { startsWith: name, mode }
+      : op === "endsWith"
+        ? { endsWith: name, mode }
+        : op === "equals"
+          ? { equals: name, mode }
+          : { contains: name, mode };
+  return [{ nameJa: cond }, { nameEn: cond }];
+}
+
 /**
- * GET /api/composition/candidates?kind=substance|product&q=...&exclude=<製品ID>
+ * GET /api/composition/candidates
+ *   ?id=...&cas=...&name=...&nameOp=contains|startsWith|endsWith|equals
+ *   &substance=1&product=1&exclude=<製品ID>
  *
- * 組成に入れられる物質・原材料を、コードか名称の部分一致で探す。
- * 一覧APIは列ごとのフィルター（AND）なので「コードか名称のどちらかに一致」が作れず、
- * 選択用に専用の入口を用意した。返すのはコードと名称だけ。
+ * 組成に入れられる物質・原材料を探す。指定した条件はすべて満たすもの（AND）。
+ *
+ * CAS を指定したときの扱いが物質と原材料で違う。
+ * 物質はそれ自身の CAS で突き合わせるが、原材料は CAS を持たないので、
+ * 「その CAS を組成に含む製品」を対象にする。目的の物質が入っている原材料を
+ * 探したい、という使い方に合わせたもの。
  *
  * 権限は PRODUCT_EDIT。組成を組む以上、構成要素の名前が見えないと作業にならないため、
  * 物質の閲覧権限とは切り離している（返す情報をコードと名称に絞ることで釣り合いを取る）。
@@ -27,21 +46,46 @@ export async function GET(req: Request) {
   if (actor instanceof Response) return actor;
 
   const url = new URL(req.url);
-  const kind = url.searchParams.get("kind") === "product" ? "product" : "substance";
-  const q = (url.searchParams.get("q") ?? "").trim();
+  const id = (url.searchParams.get("id") ?? "").trim();
+  const cas = (url.searchParams.get("cas") ?? "").trim();
+  const name = (url.searchParams.get("name") ?? "").trim();
+  const rawOp = url.searchParams.get("nameOp") ?? "contains";
+  const nameOp: TextOperator = (TEXT_OPERATORS as readonly string[]).includes(rawOp)
+    ? (rawOp as TextOperator)
+    : "contains";
+  const wantSubstance = url.searchParams.get("substance") !== "0";
+  const wantProduct = url.searchParams.get("product") !== "0";
   const exclude = url.searchParams.get("exclude");
 
-  if (q === "") return Response.json({ items: [] });
+  // 条件が何も無いときは全件を返さない（選ぶための一覧なので、まず絞ってもらう）
+  if (id === "" && cas === "" && name === "") return Response.json({ items: [] });
 
-  // コードは正規化列で、名称はそのまま大文字小文字を無視して突合する
-  const byCode = { codeNormalized: { contains: normalizeCode(q) } };
-  const byName = [
-    { nameJa: { contains: q, mode: "insensitive" as const } },
-    { nameEn: { contains: q, mode: "insensitive" as const } },
+  const common = [
+    ...(id === "" ? [] : [{ codeNormalized: { contains: normalizeCode(id) } }]),
+    ...(name === "" ? [] : [{ OR: nameWhere(name, nameOp) }]),
   ];
+  const casNormalized = normalizeCas(cas);
 
-  if (kind === "product") {
-    const items = await prisma.product.findMany({
+  const items: CompositionCandidateDto[] = [];
+
+  if (wantSubstance) {
+    const rows = await prisma.substance.findMany({
+      where: {
+        deletedAt: null,
+        status: "ACTIVE",
+        publishState: "PUBLISHED",
+        ...(cas === "" ? {} : { casNormalized }),
+        AND: common,
+      },
+      select: SELECT_SUBSTANCE,
+      orderBy: { codeNormalized: "asc" },
+      take: LIMIT,
+    });
+    items.push(...rows.map((r) => ({ ...r, kind: "substance" as const })));
+  }
+
+  if (wantProduct) {
+    const rows = await prisma.product.findMany({
       where: {
         deletedAt: null,
         status: "ACTIVE",
@@ -50,26 +94,18 @@ export async function GET(req: Request) {
         usableAsMaterial: true,
         // 自分自身は原材料にできない（循環になる）
         ...(exclude ? { id: { not: exclude } } : {}),
-        OR: [byCode, ...byName],
+        // CAS は原材料自身ではなく、その組成に含まれる物質で突き合わせる
+        ...(cas === ""
+          ? {}
+          : { compositionLines: { some: { substance: { casNormalized, deletedAt: null } } } }),
+        AND: common,
       },
       select: SELECT,
       orderBy: { codeNormalized: "asc" },
       take: LIMIT,
     });
-    const withoutCas = items.map((i) => ({ ...i, casNumber: null }));
-    return Response.json({ items: withoutCas satisfies CompositionElementDto[] });
+    items.push(...rows.map((r) => ({ ...r, casNumber: null, kind: "product" as const })));
   }
 
-  const items = await prisma.substance.findMany({
-    where: {
-      deletedAt: null,
-      status: "ACTIVE",
-      publishState: "PUBLISHED",
-      OR: [byCode, ...byName],
-    },
-    select: SELECT_SUBSTANCE,
-    orderBy: { codeNormalized: "asc" },
-    take: LIMIT,
-  });
-  return Response.json({ items: items satisfies CompositionElementDto[] });
+  return Response.json({ items });
 }

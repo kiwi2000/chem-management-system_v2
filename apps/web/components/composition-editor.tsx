@@ -7,6 +7,7 @@ import {
   sumScaled,
   validateCompositionSum,
   type AppSettings,
+  type TextOperator,
 } from "@chem/shared";
 import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -19,6 +20,7 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type {
   ApiError,
+  CompositionCandidateDto,
   CompositionElementDto,
   CompositionLineDto,
   CompositionResponse,
@@ -37,6 +39,9 @@ interface Props {
   onFinishEdit?: () => void;
 }
 
+/** 名称の突合で選べるもの。「空白」「空白でない」は候補探しに使わない */
+const NAME_OPS = ["contains", "startsWith", "endsWith", "equals"] as const;
+
 /** 画面が持つ行。保存するまで id を持たない行があるので、並べ替え用の鍵を別に振る */
 interface Row {
   key: string;
@@ -46,8 +51,6 @@ interface Row {
   isBalance: boolean;
   note: string;
 }
-
-type Kind = Row["kind"];
 
 const CELL = "border-r px-2 py-1 last:border-r-0";
 
@@ -93,9 +96,18 @@ export function CompositionEditor({
   const [saving, setSaving] = useState(false);
 
   // 追加用の検索
-  const [kind, setKind] = useState<Kind>("substance");
-  const [query, setQuery] = useState("");
-  const [candidates, setCandidates] = useState<CompositionElementDto[] | null>(null);
+  /** 検索の条件。入れた条件はすべて満たすものを探す */
+  const [cond, setCond] = useState({
+    id: "",
+    cas: "",
+    name: "",
+    nameOp: "contains" as TextOperator,
+    substance: true,
+    product: true,
+  });
+  const [candidates, setCandidates] = useState<CompositionCandidateDto[] | null>(null);
+  /** 結果から選んだもの。「種別:ID」で持つ */
+  const [picked, setPicked] = useState<Set<string>>(new Set());
   const [searching, setSearching] = useState(false);
 
   const load = useCallback(async () => {
@@ -128,31 +140,31 @@ export function CompositionEditor({
     [rows, settings, m],
   );
 
-  /** 候補の検索。入力が落ち着いてから引く */
-  useEffect(() => {
-    if (!editing || query.trim() === "") {
-      setCandidates(null);
-      return;
+  /** 条件で候補を探す。打つたびではなく「検索」で引く */
+  async function search() {
+    setSearching(true);
+    setPicked(new Set());
+    try {
+      const params = new URLSearchParams({
+        id: cond.id,
+        cas: cond.cas,
+        name: cond.name,
+        nameOp: cond.nameOp,
+        substance: cond.substance ? "1" : "0",
+        product: cond.product ? "1" : "0",
+        exclude: productId,
+      });
+      const res = await fetch(`/api/composition/candidates?${params.toString()}`);
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        setCandidates([]);
+        return;
+      }
+      setCandidates(((await res.json()) as { items: CompositionCandidateDto[] }).items);
+    } finally {
+      setSearching(false);
     }
-    const timer = setTimeout(() => {
-      void (async () => {
-        setSearching(true);
-        try {
-          const params = new URLSearchParams({ kind, q: query, exclude: productId });
-          const res = await fetch(`/api/composition/candidates?${params.toString()}`);
-          if (!res.ok) {
-            if (redirectIfUnauthorized(res)) return;
-            setCandidates([]);
-            return;
-          }
-          setCandidates(((await res.json()) as { items: CompositionElementDto[] }).items);
-        } finally {
-          setSearching(false);
-        }
-      })();
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [editing, query, kind, productId]);
+  }
 
   function update(index: number, patch: Partial<Row>) {
     setRows((prev) => prev?.map((r, i) => (i === index ? { ...r, ...patch } : r)) ?? prev);
@@ -181,13 +193,30 @@ export function CompositionEditor({
     });
   }
 
-  function add(element: CompositionElementDto) {
+  /** 選んだ候補をまとめて組成に足す */
+  function addPicked() {
+    const targets = (candidates ?? []).filter(
+      (c) => picked.has(`${c.kind}:${c.id}`) && !alreadyAdded.has(`${c.kind}:${c.id}`),
+    );
+    if (targets.length === 0) return;
     setRows((prev) => [
       ...(prev ?? []),
-      { key: `new-${element.id}`, kind, element, contentPct: "", isBalance: false, note: "" },
+      ...targets.map((c) => ({
+        key: `new-${c.kind}-${c.id}`,
+        kind: c.kind,
+        element: {
+          id: c.id,
+          code: c.code,
+          nameJa: c.nameJa,
+          nameEn: c.nameEn,
+          casNumber: c.casNumber,
+        },
+        contentPct: "",
+        isBalance: false,
+        note: "",
+      })),
     ]);
-    setQuery("");
-    setCandidates(null);
+    setPicked(new Set());
   }
 
   async function onSave() {
@@ -461,29 +490,84 @@ export function CompositionEditor({
         )}
 
         {editing && (
-          <div className="space-y-2 rounded-md border p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                aria-label={m.composition.kind}
-                value={kind}
-                onChange={(e) => setKind(e.target.value as Kind)}
-                className="border-input bg-background h-9 rounded-none border px-2 text-sm"
-              >
-                <option value="substance">{m.composition.kindSubstance}</option>
-                <option value="product">{m.composition.kindProduct}</option>
-              </select>
+          <div className="space-y-3 rounded-md border p-3">
+            <p className="text-sm font-medium">{m.composition.searchTitle}</p>
+
+            <div className="grid gap-2 sm:grid-cols-[6rem_1fr]">
+              <label htmlFor="cand-id" className="self-center text-right text-sm">
+                {m.composition.elementId}
+              </label>
               <Input
                 ref={searchRef}
-                aria-label={m.composition.searchPlaceholder}
-                value={query}
-                disabled={full}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={m.composition.searchPlaceholder}
-                className="w-72"
+                id="cand-id"
+                value={cond.id}
+                onChange={(e) => setCond({ ...cond, id: e.target.value })}
+                className="w-full sm:w-64"
               />
-              {searching && (
-                <span className="text-muted-foreground text-xs">{m.composition.searching}</span>
-              )}
+
+              <label htmlFor="cand-cas" className="self-center text-right text-sm">
+                {m.composition.casNumber}
+              </label>
+              <div className="space-y-1">
+                <Input
+                  id="cand-cas"
+                  value={cond.cas}
+                  onChange={(e) => setCond({ ...cond, cas: e.target.value })}
+                  className="w-full sm:w-64"
+                  placeholder="7439-92-1"
+                />
+                <p className="text-muted-foreground text-xs">{m.composition.casSearchHint}</p>
+              </div>
+
+              <label htmlFor="cand-name" className="self-center text-right text-sm">
+                {m.composition.elementName}
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  id="cand-name"
+                  value={cond.name}
+                  onChange={(e) => setCond({ ...cond, name: e.target.value })}
+                  className="w-full sm:w-64"
+                />
+                <select
+                  aria-label={m.composition.nameOp}
+                  value={cond.nameOp}
+                  onChange={(e) => setCond({ ...cond, nameOp: e.target.value as TextOperator })}
+                  className="border-input bg-background h-9 rounded-none border px-2 text-sm"
+                >
+                  {NAME_OPS.map((op) => (
+                    <option key={op} value={op}>
+                      {m.table.operators[op]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <span className="self-center text-right text-sm">{m.composition.target}</span>
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={cond.substance}
+                    onChange={(e) => setCond({ ...cond, substance: e.target.checked })}
+                  />
+                  {m.composition.kindSubstance}
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={cond.product}
+                    onChange={(e) => setCond({ ...cond, product: e.target.checked })}
+                  />
+                  {m.composition.kindProduct}
+                </label>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" size="sm" disabled={searching} onClick={() => void search()}>
+                {searching ? m.composition.searching : m.common.search}
+              </Button>
               {full && (
                 <span className="text-muted-foreground text-xs">
                   {m.validation.tooMany(COMPOSITION_MAX_LINES)}
@@ -495,24 +579,72 @@ export function CompositionEditor({
               (candidates.length === 0 ? (
                 <p className="text-muted-foreground text-xs">{m.composition.noCandidates}</p>
               ) : (
-                <ul className="max-h-56 divide-y overflow-y-auto rounded-md border">
-                  {candidates.map((c) => {
-                    const added = alreadyAdded.has(`${kind}:${c.id}`);
-                    return (
-                      <li key={c.id}>
-                        <button
-                          type="button"
-                          disabled={added || full}
-                          onClick={() => add(c)}
-                          className="hover:bg-muted flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm disabled:opacity-50"
-                        >
-                          <span className="font-mono text-xs">{c.code}</span>
-                          <span>{pickName(locale, c.nameJa, c.nameEn)}</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <>
+                  <div className="max-h-64 overflow-y-auto rounded-md border">
+                    <table className="w-full border-collapse text-sm">
+                      <thead>
+                        <tr className="bg-muted/50 border-b text-left">
+                          <th className={cn(CELL, "w-8")} />
+                          <th className={cn(CELL, "w-28 font-medium")}>
+                            {m.composition.elementId}
+                          </th>
+                          <th className={cn(CELL, "w-32 font-medium")}>
+                            {m.composition.casNumber}
+                          </th>
+                          <th className={cn(CELL, "font-medium")}>{m.composition.elementName}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {candidates.map((c) => {
+                          const key = `${c.kind}:${c.id}`;
+                          const added = alreadyAdded.has(key);
+                          return (
+                            <tr key={key} className={cn("border-b", added && "opacity-50")}>
+                              <td className={cn(CELL, "text-center")}>
+                                <input
+                                  type="checkbox"
+                                  aria-label={c.code}
+                                  disabled={added || full}
+                                  checked={picked.has(key)}
+                                  onChange={(e) => {
+                                    const next = new Set(picked);
+                                    if (e.target.checked) next.add(key);
+                                    else next.delete(key);
+                                    setPicked(next);
+                                  }}
+                                />
+                              </td>
+                              <td className={cn(CELL, "font-mono text-xs")}>{c.code}</td>
+                              <td className={cn(CELL, "font-mono text-xs")}>
+                                {c.casNumber ?? (
+                                  <span className="text-muted-foreground font-sans">
+                                    {m.composition.kindProduct}
+                                  </span>
+                                )}
+                              </td>
+                              <td className={CELL}>
+                                {pickName(locale, c.nameJa, c.nameEn)}
+                                {added && (
+                                  <span className="text-muted-foreground ml-2 text-xs">
+                                    {m.composition.alreadyAdded}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={picked.size === 0 || full}
+                    onClick={addPicked}
+                  >
+                    {m.composition.addSelected(picked.size)}
+                  </Button>
+                </>
               ))}
           </div>
         )}

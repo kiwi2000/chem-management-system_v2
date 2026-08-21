@@ -265,7 +265,6 @@ export const en: Messages = {
     },
     properties: "Properties",
     propertiesEmpty: "No properties are defined (a system administrator sets these up)",
-    searchPlaceholder: "Search by code / CAS number / name / notes",
     empty: "No matching substances",
     deleteConfirm: (label: string) => `Delete the substance "${label}"?`,
     warnSameCas: (codes: string) => `Other substances already use this CAS number: ${codes}`,
@@ -399,7 +398,6 @@ export const en: Messages = {
 
   composition: {
     title: "Composition",
-    kind: "Type",
     kindSubstance: "Substance",
     kindProduct: "Raw material",
     element: "Component",
@@ -417,6 +415,12 @@ export const en: Messages = {
     addLine: "+ Add a component",
     searchPlaceholder: "Search by code or name",
     searching: "Searching...",
+    searchTitle: "Find components",
+    target: "Target",
+    nameOp: "Name match",
+    casSearchHint: "Exact match. Materials are matched by the CAS numbers in their own composition",
+    addSelected: (n: number) => `Add ${n} selected`,
+    alreadyAdded: "Already added",
     noCandidates: "Nothing matches",
     empty: "No composition registered",
     withheld: "The composition of this product is withheld",
