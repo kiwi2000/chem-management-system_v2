@@ -43,6 +43,10 @@ interface Props {
 /** 名称の突合で選べるもの。「空白」「空白でない」は候補探しに使わない */
 const NAME_OPS = ["contains", "startsWith", "endsWith", "equals"] as const;
 
+/** 名称を探す範囲。既定は主名称の日本語だけ */
+const NAME_SCOPES = ["mainJa", "all"] as const;
+type NameScope = (typeof NAME_SCOPES)[number];
+
 /** 画面が持つ行。保存するまで id を持たない行があるので、並べ替え用の鍵を別に振る */
 interface Row {
   key: string;
@@ -103,6 +107,7 @@ export function CompositionEditor({
     cas: "",
     name: "",
     nameOp: "contains" as TextOperator,
+    nameScope: "mainJa" as NameScope,
     substance: true,
     product: true,
   });
@@ -151,6 +156,7 @@ export function CompositionEditor({
         cas: cond.cas,
         name: cond.name,
         nameOp: cond.nameOp,
+        nameScope: cond.nameScope,
         substance: cond.substance ? "1" : "0",
         product: cond.product ? "1" : "0",
         exclude: productId,
@@ -291,6 +297,14 @@ export function CompositionEditor({
     [rows],
   );
   const full = (rows?.length ?? 0) >= COMPOSITION_MAX_LINES;
+
+  // 全選択の対象は、まだ組成に入っていない候補だけ
+  const selectable = useMemo(
+    () => (candidates ?? []).filter((c) => !alreadyAdded.has(`${c.kind}:${c.id}`)),
+    [candidates, alreadyAdded],
+  );
+  const allPicked =
+    selectable.length > 0 && selectable.every((c) => picked.has(`${c.kind}:${c.id}`));
 
   if (loadError) {
     return (
@@ -496,8 +510,8 @@ export function CompositionEditor({
           <div className="space-y-3 rounded-md border p-3">
             <p className="text-sm font-medium">{m.composition.searchTitle}</p>
 
-            {/* ID と CAS は短いので1行に並べる。名称と対象は横幅を使うので行を分ける */}
-            <div className="grid gap-2 sm:grid-cols-[8rem_minmax(0,16rem)_4rem_minmax(0,16rem)]">
+            {/* 見出しはどれも短いので、左の列は詰める。説明は入力欄の右に添える */}
+            <div className="grid gap-2 sm:grid-cols-[4rem_1fr]">
               <label htmlFor="cand-id" className="self-center text-right text-sm">
                 {m.composition.elementId}
               </label>
@@ -506,28 +520,26 @@ export function CompositionEditor({
                 id="cand-id"
                 value={cond.id}
                 onChange={(e) => setCond({ ...cond, id: e.target.value })}
-                className="w-full"
+                className="w-full sm:w-64"
               />
 
               <label htmlFor="cand-cas" className="self-center text-right text-sm">
                 {m.composition.casNumber}
               </label>
-              <Input
-                id="cand-cas"
-                value={cond.cas}
-                onChange={(e) => setCond({ ...cond, cas: e.target.value })}
-                className="w-full"
-              />
-
-              <span className="hidden sm:block" />
-              <p className="text-muted-foreground text-xs sm:col-span-3">
-                {m.composition.casSearchHint}
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Input
+                  id="cand-cas"
+                  value={cond.cas}
+                  onChange={(e) => setCond({ ...cond, cas: e.target.value })}
+                  className="w-full sm:w-64"
+                />
+                <p className="text-muted-foreground text-xs">{m.composition.casSearchHint}</p>
+              </div>
 
               <label htmlFor="cand-name" className="self-center text-right text-sm">
-                {m.composition.elementName}
+                {m.composition.searchName}
               </label>
-              <div className="flex flex-wrap items-center gap-2 sm:col-span-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <Input
                   id="cand-name"
                   value={cond.name}
@@ -547,10 +559,22 @@ export function CompositionEditor({
                     </option>
                   ))}
                 </select>
+                <select
+                  aria-label={m.composition.nameScope}
+                  value={cond.nameScope}
+                  onChange={(e) => setCond({ ...cond, nameScope: e.target.value as NameScope })}
+                  className="border-input bg-background h-9 rounded-none border px-2 text-sm"
+                >
+                  {NAME_SCOPES.map((sc) => (
+                    <option key={sc} value={sc}>
+                      {m.composition.nameScopes[sc]}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <span className="self-center text-right text-sm">{m.composition.target}</span>
-              <div className="flex flex-wrap items-center gap-4 text-sm sm:col-span-3">
+              <div className="flex flex-wrap items-center gap-4 text-sm">
                 <label className="flex items-center gap-1.5">
                   <input
                     type="checkbox"
@@ -590,7 +614,26 @@ export function CompositionEditor({
                     <table className="w-full border-collapse text-sm">
                       <thead>
                         <tr className="bg-muted/50 border-b text-left">
-                          <th className={cn(CELL, "w-8")} />
+                          <th className={cn(CELL, "w-8 text-center")}>
+                            {/* まとめて選ぶ。追加済みのものは対象にしない */}
+                            <input
+                              type="checkbox"
+                              aria-label={m.composition.selectAll}
+                              title={m.composition.selectAll}
+                              disabled={full || selectable.length === 0}
+                              checked={allPicked}
+                              ref={(el) => {
+                                if (el) el.indeterminate = !allPicked && picked.size > 0;
+                              }}
+                              onChange={(e) =>
+                                setPicked(
+                                  e.target.checked
+                                    ? new Set(selectable.map((c) => `${c.kind}:${c.id}`))
+                                    : new Set(),
+                                )
+                              }
+                            />
+                          </th>
                           <th className={cn(CELL, "w-28 font-medium")}>
                             {m.composition.elementId}
                           </th>

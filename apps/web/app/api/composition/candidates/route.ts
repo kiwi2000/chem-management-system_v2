@@ -12,8 +12,12 @@ const SELECT = { id: true, code: true, nameJa: true, nameEn: true } as const;
 /** 物質はCAS番号も返す。原材料は持たないので null を足す */
 const SELECT_SUBSTANCE = { ...SELECT, casNumber: true } as const;
 
-/** 名称の突合。前方・後方・完全は Prisma の演算子にそのまま対応する */
-function nameWhere(name: string, op: TextOperator) {
+/**
+ * 名称の突合。前方・後方・完全は Prisma の演算子にそのまま対応する。
+ * 探す範囲は2つ。既定は主名称の日本語だけで、広げると英語名と別名も見る。
+ * 別名まで含めると件数が増えて絞りにくくなるので、既定は狭いほうにしてある。
+ */
+function nameWhere(name: string, op: TextOperator, wide: boolean) {
   const mode = "insensitive" as const;
   const cond =
     op === "startsWith"
@@ -23,7 +27,13 @@ function nameWhere(name: string, op: TextOperator) {
         : op === "equals"
           ? { equals: name, mode }
           : { contains: name, mode };
-  return [{ nameJa: cond }, { nameEn: cond }];
+  if (!wide) return [{ nameJa: cond }];
+  return [
+    { nameJa: cond },
+    { nameEn: cond },
+    // 別名は子テーブル。1件でも当たれば該当とする
+    { aliases: { some: { OR: [{ nameJa: cond }, { nameEn: cond }] } } },
+  ];
 }
 
 /**
@@ -53,6 +63,8 @@ export async function GET(req: Request) {
   const nameOp: TextOperator = (TEXT_OPERATORS as readonly string[]).includes(rawOp)
     ? (rawOp as TextOperator)
     : "contains";
+  // 名称を探す範囲。all は英語名と別名も見る
+  const wideName = url.searchParams.get("nameScope") === "all";
   const wantSubstance = url.searchParams.get("substance") !== "0";
   const wantProduct = url.searchParams.get("product") !== "0";
   const exclude = url.searchParams.get("exclude");
@@ -62,7 +74,7 @@ export async function GET(req: Request) {
 
   const common = [
     ...(id === "" ? [] : [{ codeNormalized: { contains: normalizeCode(id) } }]),
-    ...(name === "" ? [] : [{ OR: nameWhere(name, nameOp) }]),
+    ...(name === "" ? [] : [{ OR: nameWhere(name, nameOp, wideName) }]),
   ];
   const casNormalized = normalizeCas(cas);
 
