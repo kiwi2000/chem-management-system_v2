@@ -83,19 +83,6 @@ export default function ManualPendingPage() {
         />
       </Section>
 
-      <Section title="管理者にお願いしていること">
-        <P>システム管理者の方に、まだ済んでいない作業です。済むまで承認の操作ができません。</P>
-        <SpecTable
-          head={["作業", "内容"]}
-          rows={[
-            [
-              "権限の配り直し",
-              "権限の種類を入れ替えたため、必要な人に「無効・未公開のデータも編集できる」「承認できる」を付け直してください（ユーザー管理から）",
-            ],
-          ]}
-        />
-      </Section>
-
       <SpecPager current="/spec/pending" />
     </>
   );
