@@ -10,12 +10,27 @@ description: 化学物質管理システム v2 を本番（Railway / chem.ca-jap
 
 ## 1. 何を出すのかを確かめる
 
+前回のデプロイ記録は `Record this deploy in the change log` という件名のコミット。
+
 ```bash
-git log --oneline <前回のデプロイ記録コミット>..HEAD
+git log --format="%H %s" | grep "Record this deploy in the change log" | head -1
 ```
 
-前回のデプロイ記録は `Record this deploy in the change log` という件名のコミット。
 それ以降が今回出すもの。作業ツリーが汚れていないことも見る。
+
+**この目印は当てにしすぎない。**変更履歴を機能のコミットに含めてしまうと、印が残らず
+1回ぶん多く数えてしまう（実際に起きた）。**必ず `railway deployment list` の時刻と
+コミットの時刻を突き合わせて確かめる。**
+
+```bash
+railway deployment list
+```
+
+```bash
+git log --format="%h %ad %s" --date=format:"%m-%d %H:%M" -8
+```
+
+いちばん上の SUCCESS の時刻より後のコミットが、今回出すもの。
 
 ## 2. マニュアル本体を直す
 
@@ -65,7 +80,8 @@ npm test
 
 ## 6. コミットしてデプロイ
 
-コミットの件名は `Record this deploy in the change log`（次回この印を探すため）。
+**変更履歴の更新は、必ず単独のコミットにする。**件名は
+`Record this deploy in the change log`。機能のコミットに混ぜると、次回この印を探せない。
 
 ```bash
 railway up --detach
@@ -93,3 +109,7 @@ status が `Online` になっていれば反映済み。
   （`--remove` で消える。`SB-` / `MT-` / `PR-` のコードだけを対象にする）
 - 開発サーバーが動いている間に `prisma generate` や `next build` を走らせると
   `.next` が壊れる。先に止める
+- **本番のDBには外から繋げない。** Postgres の公開プロキシが無効なので、
+  `railway run` を使っても `postgres.railway.internal` には届かない。
+  本番にデータを入れる手段は、画面から手で登録するか、
+  Railway の設定でプロキシを開けてもらうかのどちらか
