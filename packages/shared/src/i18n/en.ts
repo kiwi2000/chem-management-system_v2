@@ -418,7 +418,7 @@ export const en: Messages = {
     searching: "Searching...",
     noCandidates: "Nothing matches",
     empty: "No composition registered",
-    discard: "Discard changes",
+    discard: "Discard",
     withheld: "The composition of this product is withheld",
     withheldEdit: "The composition of this product is withheld, so it cannot be edited",
     saved: "Composition saved",

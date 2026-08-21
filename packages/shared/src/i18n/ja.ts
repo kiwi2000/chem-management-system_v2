@@ -421,7 +421,7 @@ export const ja = {
     noCandidates: "該当するものがありません",
     empty: "組成が登録されていません",
     /** 非開示のときに本体だけ見せる文言 */
-    discard: "書きかけを捨てる",
+    discard: "破棄",
     withheld: "この製品の組成は非開示です",
     withheldEdit: "この製品の組成は非開示のため編集できません",
     saved: "組成を保存しました",
