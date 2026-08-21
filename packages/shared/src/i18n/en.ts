@@ -431,6 +431,8 @@ export const en: Messages = {
     fillHint: "Double-click to fill in the value that makes the total 100%",
     sumLabel: "Total",
     contentPct: "Weight %",
+    pctOfProduct: "of product",
+    pctWithinMaterial: "within material",
     balanceAuto: "auto",
     note: "Notes",
     searchPlaceholder: "Search by code or name",

@@ -312,6 +312,15 @@ export function CompositionEditor({
   const tree = useCompositionTree();
 
   /**
+   * 「原材料内」の列を出すか。
+   * 開ける原材料が1つも無い組成では、いつまでも空のままなので列ごと出さない。
+   * 編集中も展開できないので出さない。
+   */
+  const showWithin = !editing && (rows ?? []).some((r) => r.element.hasComposition);
+  /** 展開行が結合に使う列の数 */
+  const columnCount = (editing ? 7 : 5) + (showWithin ? 1 : 0);
+
+  /**
    * 表に出す合計。
    * サーバーが返す totalPct は残部を除いた「入力済み」の合計なので、
    * そのまま「合計」として出すと 100% にならず、足りないように見えてしまう。
@@ -383,7 +392,21 @@ export function CompositionEditor({
                   <th className={cn(CELL, "font-medium")}>{m.composition.elementName}</th>
                   <th className={cn(CELL, "w-px text-right font-medium whitespace-nowrap")}>
                     {m.composition.contentPct}
+                    {/* 列が2つ並ぶときだけ、どちらの重量%かを添える */}
+                    {showWithin && (
+                      <span className="text-muted-foreground block text-xs font-normal">
+                        {m.composition.pctOfProduct}
+                      </span>
+                    )}
                   </th>
+                  {showWithin && (
+                    <th className={cn(CELL, "w-px text-right font-medium whitespace-nowrap")}>
+                      {m.composition.contentPct}
+                      <span className="text-muted-foreground block text-xs font-normal">
+                        {m.composition.pctWithinMaterial}
+                      </span>
+                    </th>
+                  )}
                   <th className={cn(CELL, "w-40 font-medium")}>{m.composition.note}</th>
                   {/* 行の操作は、直しているときだけ出す */}
                   {editing && <th className={cn(CELL, "w-px")} />}
@@ -495,6 +518,10 @@ export function CompositionEditor({
                           r.contentPct
                         )}
                       </td>
+                      {showWithin && (
+                        // 登録した行には親の原材料が無いので、比べる相手がいない
+                        <td className={cn(CELL, "text-muted-foreground text-right")}>—</td>
+                      )}
                       <td className={CELL}>
                         {editing ? (
                           // 長い備考も読めるよう、下へ引っぱって広げられるようにする
@@ -537,7 +564,8 @@ export function CompositionEditor({
                         }
                         parentName={pickName(locale, r.element.nameJa, r.element.nameEn)}
                         depth={1}
-                        colSpan={editing ? 7 : 5}
+                        colSpan={columnCount}
+                        showWithin={showWithin}
                         cellClass={CELL}
                       />
                     )}
@@ -551,6 +579,8 @@ export function CompositionEditor({
                     {m.composition.sumLabel}
                   </td>
                   <td className={cn(CELL, "text-right font-medium")}>{grandTotalPct}%</td>
+                  {/* 合計は登録した行のぶんだけ。原材料内の値は足し合わせても意味を持たない */}
+                  {showWithin && <td className={CELL} />}
                   <td className={CELL} />
                   {/* 追加は下の「組成検索」で行うので、合計行に操作は置かない */}
                   {editing && <td className={CELL} />}

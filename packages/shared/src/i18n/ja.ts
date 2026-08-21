@@ -433,6 +433,9 @@ export const ja = {
     fillHint: "ダブルクリックすると、合計が100%になる値が入ります",
     sumLabel: "合計",
     contentPct: "重量%",
+    /** 重量%の列が2つ並ぶときの、それぞれの副題 */
+    pctOfProduct: "製品全体",
+    pctWithinMaterial: "原材料内",
     balanceAuto: "自動補完",
     note: "備考",
     searchPlaceholder: "コード / 名称で検索",

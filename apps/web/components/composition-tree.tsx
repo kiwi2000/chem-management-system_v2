@@ -124,8 +124,10 @@ interface RowsProps {
   /** 換算値に添える「◯◯の中で」の◯◯ */
   parentName: string;
   depth: number;
-  /** 編集中は列の数が変わるので、結合の幅を合わせるために受け取る */
+  /** 結合の幅を合わせるための列数（編集中かどうかで変わる） */
   colSpan: number;
+  /** 「原材料内」の列を出すか */
+  showWithin: boolean;
   cellClass: string;
 }
 
@@ -140,6 +142,7 @@ export function CompositionTreeRows({
   parentName,
   depth,
   colSpan,
+  showWithin,
   cellClass,
 }: RowsProps) {
   const { m, locale } = useI18n();
@@ -183,6 +186,7 @@ export function CompositionTreeRows({
           balancePct={balancePct}
           depth={depth}
           colSpan={colSpan}
+          showWithin={showWithin}
           cellClass={cellClass}
           locale={locale}
         />
@@ -200,6 +204,7 @@ function TreeRow({
   balancePct,
   depth,
   colSpan,
+  showWithin,
   cellClass,
   locale,
 }: {
@@ -211,6 +216,7 @@ function TreeRow({
   balancePct: string | null;
   depth: number;
   colSpan: number;
+  showWithin: boolean;
   cellClass: string;
   locale: Locale;
 }) {
@@ -250,22 +256,30 @@ function TreeRow({
           )}
         </td>
         <td className={cellClass}>{name}</td>
+        {/* 製品全体に対する値。法規制の判定はこちらを使う */}
         <td className={cn(cellClass, "text-right whitespace-nowrap")}>
           {childRatio === null ? (
             <span className="text-muted-foreground text-xs">{m.composition.balanceAuto}</span>
           ) : (
-            <>
-              <span>{ratioToPct(childRatio)}%</span>
-              {/* 仕入先の資料と突き合わせられるよう、その原材料の中での値も添える */}
-              <span className="text-muted-foreground block text-xs">
-                {m.composition.withinParent(parentName, within ?? "")}
-              </span>
-            </>
+            `${ratioToPct(childRatio)}%`
           )}
         </td>
+        {/*
+         * その原材料の中での値。仕入先の資料と突き合わせるときに使う。
+         * どの原材料の中での話かは字下げが示すので、行では名前をくり返さない。
+         * 深く潜って見失ったときのために、マウスを乗せると元の文が出るようにしておく。
+         */}
+        {showWithin && (
+          <td
+            className={cn(cellClass, "text-muted-foreground text-right whitespace-nowrap")}
+            title={within === null ? undefined : m.composition.withinParent(parentName, within)}
+          >
+            {within === null ? "" : `${within}%`}
+          </td>
+        )}
         <td className={cn(cellClass, "text-muted-foreground text-xs")}>{line.note}</td>
         {/* 編集中の操作列ぶん。展開行に操作は無い */}
-        {colSpan > 5 && <td className={cellClass} />}
+        {colSpan > (showWithin ? 6 : 5) && <td className={cellClass} />}
       </tr>
       {expandable && childRatio !== null && (
         <CompositionTreeRows
@@ -275,6 +289,7 @@ function TreeRow({
           parentName={name}
           depth={depth + 1}
           colSpan={colSpan}
+          showWithin={showWithin}
           cellClass={cellClass}
         />
       )}
