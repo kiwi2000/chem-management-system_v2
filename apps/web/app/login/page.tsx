@@ -127,10 +127,13 @@ export default function LoginPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              {/* この画面の主役なので、他の画面のボタンより高くして押しやすくする */}
-              <Button type="submit" className="h-10 w-full" disabled={loading}>
-                {loading ? m.login.submitting : m.login.submit}
-              </Button>
+              {/* 入力欄と地続きに見えないよう、ボタンの上だけ少し余分に空ける */}
+              <div className="pt-2">
+                {/* この画面の主役なので、他の画面のボタンより高くして押しやすくする */}
+                <Button type="submit" className="h-10 w-full" disabled={loading}>
+                  {loading ? m.login.submitting : m.login.submit}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
