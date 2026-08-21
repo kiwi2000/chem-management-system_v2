@@ -527,7 +527,8 @@ export const ja = {
     materialShort: "原材料",
     nonMaterial: "原材料以外",
     /** 保存はできるが注意してほしいこと（中身は S8 以降で増える） */
-    editingElsewhere: (section: string) => `${section}が編集中です。保存か変更を破棄してください`,
+    editingElsewhere: (section: string) =>
+      `${section}が編集中です。保存するか、変更を破棄してください。`,
     savedWithWarnings: "保存しました。次の点を確認してください",
   },
 

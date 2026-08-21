@@ -68,7 +68,8 @@ export function ProductForm({
    * もう片方まで巻き戻ってしまうのを避けるため。
    */
   const [editingSection, setEditingSection] = useState<Section | null>(null);
-  const [blocked, setBlocked] = useState<string | null>(null);
+  /** 断った理由と、断った相手の節。押した場所の近くに出すために節も持つ */
+  const [blocked, setBlocked] = useState<{ section: Section; message: string } | null>(null);
   // 新規登録は段ごとに全部入力できる。既存データは選んだ節だけ
   const isEditing = (sec: Section) => (wizard ? true : canEdit && editingSection === sec);
 
@@ -150,7 +151,10 @@ export function ProductForm({
   /** 他の節を直している最中は、そちらを片付けてもらう */
   function tryEdit(sec: Section) {
     if (editingSection !== null && editingSection !== sec) {
-      setBlocked(m.products.editingElsewhere(sectionLabel[editingSection]));
+      setBlocked({
+        section: sec,
+        message: m.products.editingElsewhere(sectionLabel[editingSection]),
+      });
       return;
     }
     setBlocked(null);
@@ -183,8 +187,26 @@ export function ProductForm({
     if (sec === "note") setNote(initial?.note ?? "");
     setError(null);
     setFieldErrors({});
-    setBlocked(null);
+    finishEditing();
+  }
+
+  /** 編集を終えたときの後始末。断りのメッセージも一緒に片付ける */
+  function finishEditing() {
     setEditingSection(null);
+    setBlocked(null);
+  }
+
+  /**
+   * 断ったことを、押したボタンのすぐ上に出す。
+   * 画面の一番上に出すと、下の節を触っているときに見えないため。
+   */
+  function blockedNotice(sec: Section) {
+    if (blocked?.section !== sec) return null;
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>{blocked.message}</AlertDescription>
+      </Alert>
+    );
   }
 
   /** 節ごとの見出しに出す「編集」ボタン、または編集中の印 */
@@ -261,13 +283,13 @@ export function ProductForm({
       // 警告があるときは一覧に戻らず、その場で確認してもらう（S5と同じ作法）
       if (done.warnings.length > 0) {
         setWarnings(done.warnings);
-        setEditingSection(null);
+        finishEditing();
         router.refresh();
         return;
       }
       // 既存データは、続けて別の節を直せるようその場に留まる
       if (!wizard) {
-        setEditingSection(null);
+        finishEditing();
         router.refresh();
         return;
       }
@@ -313,12 +335,6 @@ export function ProductForm({
 
   return (
     <div className="space-y-4">
-      {blocked && (
-        <Alert variant="destructive">
-          <AlertDescription>{blocked}</AlertDescription>
-        </Alert>
-      )}
-
       {wizard && (
         <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           {[m.products.basic, m.composition.title, m.products.note].map((label, i) => {
@@ -347,6 +363,7 @@ export function ProductForm({
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-4">
+          {blockedNotice("basic")}
           {(!wizard || step === 1) && (
             <Card>
               <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
@@ -504,6 +521,7 @@ export function ProductForm({
             </Card>
           )}
 
+          {blockedNotice("composition")}
           {/* 組成は備考より前に出す。開け閉めはこの節だけで完結する */}
           {(!wizard || step === 2) && canViewComposition && targetId && settings && (
             <CompositionEditor
@@ -511,10 +529,11 @@ export function ProductForm({
               settings={settings}
               editing={isEditing("composition")}
               onRequestEdit={wizard ? undefined : () => tryEdit("composition")}
-              onFinishEdit={() => setEditingSection(null)}
+              onFinishEdit={finishEditing}
             />
           )}
 
+          {blockedNotice("note")}
           {(!wizard || step === 3) && (
             <Card>
               <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">

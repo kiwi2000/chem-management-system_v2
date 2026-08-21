@@ -524,7 +524,7 @@ export const en: Messages = {
     materialShort: "Material",
     nonMaterial: "Not a raw material",
     editingElsewhere: (section: string) =>
-      `${section} is being edited. Save it or discard the changes first`,
+      `${section} is being edited. Save it, or discard the changes.`,
     savedWithWarnings: "Saved. Please check the following",
   },
 
