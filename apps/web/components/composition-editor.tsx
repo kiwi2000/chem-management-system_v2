@@ -371,12 +371,12 @@ export function CompositionEditor({
                   <th className={cn(CELL, "w-28 font-medium")}>{m.composition.elementId}</th>
                   <th className={cn(CELL, "w-32 font-medium")}>{m.composition.casNumber}</th>
                   <th className={cn(CELL, "font-medium")}>{m.composition.elementName}</th>
-                  <th className={cn(CELL, "w-28 text-right font-medium")}>
+                  <th className={cn(CELL, "w-px text-right font-medium whitespace-nowrap")}>
                     {m.composition.contentPct}
                   </th>
                   <th className={cn(CELL, "w-40 font-medium")}>{m.composition.note}</th>
                   {/* 行の操作は、直しているときだけ出す */}
-                  {editing && <th className={cn(CELL, "w-24")} />}
+                  {editing && <th className={cn(CELL, "w-px")} />}
                 </tr>
               </thead>
               <tbody>
@@ -461,7 +461,7 @@ export function CompositionEditor({
                           onDoubleClick={() => fillToHundred(i)}
                           value={r.contentPct}
                           onChange={(e) => update(i, { contentPct: e.target.value })}
-                          className="h-8 w-24 text-right"
+                          className="h-8 w-20 text-right"
                         />
                       ) : (
                         r.contentPct
@@ -483,7 +483,7 @@ export function CompositionEditor({
                       )}
                     </td>
                     {editing && (
-                      <td className={cn(CELL, "w-12 px-1 text-center")}>
+                      <td className={cn(CELL, "w-px px-1 text-center")}>
                         <Button
                           type="button"
                           variant="ghost"
@@ -508,7 +508,7 @@ export function CompositionEditor({
                   <td className={cn(CELL, "text-right font-medium")}>{grandTotalPct}%</td>
                   <td className={CELL} />
                   {editing && (
-                    <td className={cn(CELL, "w-12 px-1 text-center")}>
+                    <td className={cn(CELL, "w-px px-1 text-center")}>
                       <Button
                         type="button"
                         variant="ghost"
