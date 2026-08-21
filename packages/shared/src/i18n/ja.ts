@@ -7,7 +7,7 @@ export const ja = {
   common: {
     publishStates: {
       DRAFT: "作成中",
-      PENDING: "承認待ち",
+      PENDING: "承認待",
       REJECTED: "却下",
       PUBLISHED: "公開済",
     },
@@ -79,6 +79,7 @@ export const ja = {
     docTemplates: "ドキュメント生成",
     admin: "管理",
     spec: "仕様書",
+    feedback: "フィードバック",
   },
 
   shell: {
@@ -383,7 +384,7 @@ export const ja = {
       "「残り全部」の行を1製品に1件だけ置けます。含有率は 100% との差から自動で決まります",
     productSection: "製品",
     approvalSection: "承認",
-    pendingTitle: "承認待ちのものが残っています",
+    pendingTitle: "承認待のものが残っています",
     pendingHint: "承認を不要にすると、承認する人がいなくなります。まとめてどちらかに寄せてください",
     pendingPublish: "公開する",
     pendingDraft: "作成中に戻す",
@@ -603,7 +604,7 @@ export const ja = {
   /** サーバーが返すエラー（APIのレスポンス文言） */
   errors: {
     publishStateMismatch: (states: string) => `${states}のものは、この操作の対象になりません`,
-    pendingResolutionRequired: "承認待ちのものが残っています。扱いを選んでください",
+    pendingResolutionRequired: "承認待のものが残っています。扱いを選んでください",
     approvalRequired: "この種類のデータは承認が必要です",
     approvalNotRequired: "この種類のデータに承認は不要です",
     usedByPublished: (list: string) =>

@@ -64,6 +64,16 @@ export const NEWS_COLUMNS: QueryColumn[] = [
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
+export const FEEDBACK_COLUMNS: QueryColumn[] = [
+  { key: "title", kind: "text", field: "title", caseInsensitive: true },
+  { key: "kind", kind: "enum", field: "kind" },
+  { key: "priority", kind: "enum", field: "priority" },
+  { key: "status", kind: "enum", field: "status" },
+  { key: "body", kind: "text", field: "body", caseInsensitive: true },
+  { key: "createdAt", kind: "date", field: "createdAt" },
+  { key: "updatedAt", kind: "date", field: "updatedAt" },
+];
+
 export const USER_COLUMNS: QueryColumn[] = [
   { key: "email", kind: "text", field: "email", caseInsensitive: true },
   { key: "displayName", kind: "text", field: "displayName", caseInsensitive: true },

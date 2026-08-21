@@ -59,7 +59,9 @@ enum PublishState {
   PUBLISHED
 }
 
-/** 承認の履歴に残す操作 */
+/**
+ * 承認の履歴に残す操作
+ */
 enum ApprovalAction {
   SUBMIT
   APPROVE
@@ -73,14 +75,18 @@ enum SubstanceStatus {
   DISCONTINUED
 }
 
-/** 官報公示整理番号の法令区分。CSCL（化審法）の番号が通称 MITI番号 */
+/**
+ * 官報公示整理番号の法令区分。CSCL（化審法）の番号が通称 MITI番号
+ */
 enum GazetteLawKind {
   CSCL
   ISHA
   OTHER
 }
 
-/** 拡張属性の項目定義が、物質と製品のどちらのものか */
+/**
+ * 拡張属性の項目定義が、物質と製品のどちらのものか
+ */
 enum PropertyTarget {
   SUBSTANCE
   PRODUCT
@@ -117,45 +123,69 @@ enum GroupKind {
 // ---------- ユーザー・セッション ----------
 
 model User {
-  id           String  @id @default(cuid())
-  /** ログインID（メールアドレス）。小文字化して保存・突合する */
-  email        String  @unique
-  /** Argon2id パスワードハッシュ。null=未発行（管理者が発行するまでログイン不可） */
-  passwordHash String? @map("password_hash")
-  /** 次回ログイン時にパスワード変更を強制する（初期パスワード発行時に true） */
-  mustChangePassword Boolean @default(false) @map("must_change_password")
-  /** 連続ログイン失敗回数（総当たり対策） */
-  failedLoginCount   Int       @default(0) @map("failed_login_count")
-  /** この日時までログイン試行を拒否（ロックアウト） */
-  lockedUntil        DateTime? @map("locked_until")
-  lastLoginAt        DateTime? @map("last_login_at")
-  /** TOTP（多要素認証）の秘密鍵。null=MFA未設定 */
-  mfaSecret          String?   @map("mfa_secret")
-  mfaEnabled         Boolean   @default(false) @map("mfa_enabled")
-  displayName        String?   @map("display_name")
-  /** 表示言語の ISO コード（"ja" / "en"）。null=未設定（既定言語を使う） */
-  preferredLocale    String?   @map("preferred_locale")
-  /** 画面のテーマ（"system" / "light" / "dark" など）。null=未設定 */
-  preferredTheme     String?   @map("preferred_theme")
-  /** ヘッダーなどを濃くするか。null=未設定（既定=しない） */
-  preferredHeaderStrong Boolean? @map("preferred_header_strong")
-  /** 背景の模様・挿絵（"none" / "grid" など）。null=未設定 */
-  preferredBackground   String?  @map("preferred_background")
-  /** 組織の所属。1人1つ。null=未所属 */
-  orgGroupId         String?   @map("org_group_id")
-  /** お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある */
-  newsGroupId        String?   @map("news_group_id")
-  activeFlag         Boolean   @default(true) @map("active_flag")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-  deletedAt          DateTime? @map("deleted_at")
+  id                    String    @id @default(cuid())
+  /**
+   * ログインID（メールアドレス）。小文字化して保存・突合する
+   */
+  email                 String    @unique
+  /**
+   * Argon2id パスワードハッシュ。null=未発行（管理者が発行するまでログイン不可）
+   */
+  passwordHash          String?   @map("password_hash")
+  /**
+   * 次回ログイン時にパスワード変更を強制する（初期パスワード発行時に true）
+   */
+  mustChangePassword    Boolean   @default(false) @map("must_change_password")
+  /**
+   * 連続ログイン失敗回数（総当たり対策）
+   */
+  failedLoginCount      Int       @default(0) @map("failed_login_count")
+  /**
+   * この日時までログイン試行を拒否（ロックアウト）
+   */
+  lockedUntil           DateTime? @map("locked_until")
+  lastLoginAt           DateTime? @map("last_login_at")
+  /**
+   * TOTP（多要素認証）の秘密鍵。null=MFA未設定
+   */
+  mfaSecret             String?   @map("mfa_secret")
+  mfaEnabled            Boolean   @default(false) @map("mfa_enabled")
+  displayName           String?   @map("display_name")
+  /**
+   * 表示言語の ISO コード（"ja" / "en"）。null=未設定（既定言語を使う）
+   */
+  preferredLocale       String?   @map("preferred_locale")
+  /**
+   * 画面のテーマ（"system" / "light" / "dark" など）。null=未設定
+   */
+  preferredTheme        String?   @map("preferred_theme")
+  /**
+   * ヘッダーなどを濃くするか。null=未設定（既定=しない）
+   */
+  preferredHeaderStrong Boolean?  @map("preferred_header_strong")
+  /**
+   * 背景の模様・挿絵（"none" / "grid" など）。null=未設定
+   */
+  preferredBackground   String?   @map("preferred_background")
+  /**
+   * 組織の所属。1人1つ。null=未所属
+   */
+  orgGroupId            String?   @map("org_group_id")
+  /**
+   * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
+   */
+  newsGroupId           String?   @map("news_group_id")
+  activeFlag            Boolean   @default(true) @map("active_flag")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
 
   sessions     Session[]
   permissions  UserPermission[]
   savedFilters SavedFilter[]
-  news        News[]
-  orgGroup    Group? @relation("UserOrgGroup", fields: [orgGroupId], references: [id])
-  newsGroup   Group? @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
+  news         News[]
+  orgGroup     Group?           @relation("UserOrgGroup", fields: [orgGroupId], references: [id])
+  newsGroup    Group?           @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
 
   @@index([orgGroupId])
   @@index([newsGroupId])
@@ -167,16 +197,20 @@ model User {
  * 階層は持たない。並列に作り、表示順で並べる。
  */
 model Group {
-  id      String    @id @default(cuid())
-  kind    GroupKind
-  nameJa  String    @map("name_ja")
-  /** 英語は任意。未入力なら英語表示でも日本語を出す */
-  nameEn  String?   @map("name_en")
-  /** 小さいほど先。お知らせの見出しの並び順にもなる */
-  displayOrder Int      @default(0) @map("display_order")
-  activeFlag   Boolean  @default(true) @map("active_flag")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id           String    @id @default(cuid())
+  kind         GroupKind
+  nameJa       String    @map("name_ja")
+  /**
+   * 英語は任意。未入力なら英語表示でも日本語を出す
+   */
+  nameEn       String?   @map("name_en")
+  /**
+   * 小さいほど先。お知らせの見出しの並び順にもなる
+   */
+  displayOrder Int       @default(0) @map("display_order")
+  activeFlag   Boolean   @default(true) @map("active_flag")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
   orgMembers  User[] @relation("UserOrgGroup")
@@ -215,7 +249,9 @@ model Session {
   expiresAt  DateTime @map("expires_at")
   createdAt  DateTime @default(now()) @map("created_at")
   lastSeenAt DateTime @default(now()) @map("last_seen_at")
-  /** 監査用（どの端末からのセッションか） */
+  /**
+   * 監査用（どの端末からのセッションか）
+   */
   ipAddress  String?  @map("ip_address")
   userAgent  String?  @map("user_agent")
 
@@ -248,7 +284,9 @@ model AuditLog {
   action   String // create / update / delete / login / determine / import / export ...
   actorId  String?  @map("actor_id")
   at       DateTime @default(now())
-  /** 変更差分（表示専用。条件検索・並べ替えには使わない） */
+  /**
+   * 変更差分（表示専用。条件検索・並べ替えには使わない）
+   */
   diff     Json?
 
   @@index([entity, entityId])
@@ -259,18 +297,24 @@ model AuditLog {
 // ---------- 物質 ----------
 
 model Substance {
-  id   String @id @default(cuid())
-  /** 業務キー（ユーザーが付与）。原文を保持し、突合は正規化列で行う */
-  code String @db.VarChar(20)
+  id             String @id @default(cuid())
+  /**
+   * 業務キー（ユーザーが付与）。原文を保持し、突合は正規化列で行う
+   */
+  code           String @db.VarChar(20)
   /**
    * 正規化コード（全角→半角・trim・大文字化）。
    * 論理削除するときは "<正規化コード>:<id>" に退避し、同じコードを再登録できるようにする。
    */
   codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
 
-  /** CAS番号は任意（ポリマー・UVCB・企業秘密物質を登録できるようにするため） */
-  casNumber String? @map("cas_number") @db.VarChar(20)
-  /** 正規化CAS。法規制リンク・金属換算係数はこの値で突合する。一意にしない（別物質が同一CASを持てる） */
+  /**
+   * CAS番号は任意（ポリマー・UVCB・企業秘密物質を登録できるようにするため）
+   */
+  casNumber     String? @map("cas_number") @db.VarChar(20)
+  /**
+   * 正規化CAS。法規制リンク・金属換算係数はこの値で突合する。一意にしない（別物質が同一CASを持てる）
+   */
   casNormalized String? @map("cas_normalized") @db.VarChar(20)
 
   /**
@@ -280,14 +324,16 @@ model Substance {
   nameJa String  @map("name_ja") @db.VarChar(500)
   nameEn String? @map("name_en") @db.VarChar(500)
 
-  status SubstanceStatus @default(ACTIVE)
+  status       SubstanceStatus @default(ACTIVE)
   /**
    * 公開の状態。公開済になるまで他の人には見せず、組成の候補にも出さない。
    * 有効／無効（status）とは別の軸。
    */
-  publishState PublishState @default(DRAFT) @map("publish_state")
-  /** 備考（日本語のみ）。検索対象に含める */
-  note   String?
+  publishState PublishState    @default(DRAFT) @map("publish_state")
+  /**
+   * 備考（日本語のみ）。検索対象に含める
+   */
+  note         String?
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
@@ -307,11 +353,15 @@ model Substance {
   @@map("substances")
 }
 
-/** 別名（0件以上）。主名称は substances 側に持つ */
+/**
+ * 別名（0件以上）。主名称は substances 側に持つ
+ */
 model SubstanceAlias {
-  id          String @id @default(cuid())
-  substanceId String @map("substance_id")
-  /** 日本語と英語は件数が一致しないため、どちらか一方だけの行を許す（両方 null は不可・アプリ層で担保） */
+  id           String  @id @default(cuid())
+  substanceId  String  @map("substance_id")
+  /**
+   * 日本語と英語は件数が一致しないため、どちらか一方だけの行を許す（両方 null は不可・アプリ層で担保）
+   */
   nameJa       String? @map("name_ja") @db.VarChar(500)
   nameEn       String? @map("name_en") @db.VarChar(500)
   displayOrder Int     @default(0) @map("display_order")
@@ -338,7 +388,9 @@ model SubstanceGazetteNumber {
   @@map("substance_gazette_numbers")
 }
 
-/** 拡張属性の項目定義（システム管理者が作る） */
+/**
+ * 拡張属性の項目定義（システム管理者が作る）
+ */
 /**
  * 拡張属性の項目定義。物質と製品で1つの表を共有し、`target` でどちらのものかを分ける
  * （画面はグループ管理と同じく用途ごとに節を分ける）。
@@ -360,7 +412,9 @@ model PropertyDef {
   substanceValues SubstanceProperty[]
   productValues   ProductProperty[]
 
-  /** キーは用途ごとに一意。物質と製品で同じキーを使ってよい */
+  /**
+   * キーは用途ごとに一意。物質と製品で同じキーを使ってよい
+   */
   @@unique([target, key])
   @@map("property_defs")
 }
@@ -392,27 +446,35 @@ model SubstanceProperty {
  * 他の製品の組成に部品として入れられる（これ以外に両者の違いは無い）。
  */
 model Product {
-  id   String @id @default(cuid())
-  code String @db.VarChar(20)
-  /** 論理削除するときは "<正規化コード>:<id>" に退避し、同じコードを再登録できるようにする */
+  id             String @id @default(cuid())
+  code           String @db.VarChar(20)
+  /**
+   * 論理削除するときは "<正規化コード>:<id>" に退避し、同じコードを再登録できるようにする
+   */
   codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
 
   nameJa String  @map("name_ja") @db.VarChar(500)
   nameEn String? @map("name_en") @db.VarChar(500)
 
-  status ProductStatus @default(ACTIVE)
+  status       ProductStatus @default(ACTIVE)
   /**
    * 公開の状態。公開済になるまで他の人には見せず、組成の候補にも出さない。
    * 有効／無効（status）とは別の軸。
    */
-  publishState PublishState @default(DRAFT) @map("publish_state")
-  /** 備考（日本語のみ）。検索対象に含める */
-  note   String?
+  publishState PublishState  @default(DRAFT) @map("publish_state")
+  /**
+   * 備考（日本語のみ）。検索対象に含める
+   */
+  note         String?
 
-  /** 他製品の組成に部品として使えるか */
+  /**
+   * 他製品の組成に部品として使えるか
+   */
   usableAsMaterial Boolean @default(false) @map("usable_as_material")
 
-  /** 型式。システム設定に登録した選択肢から1つ選ぶ（値は文字列で持つ） */
+  /**
+   * 型式。システム設定に登録した選択肢から1つ選ぶ（値は文字列で持つ）
+   */
   modelValue String? @map("model_value") @db.VarChar(100)
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -425,9 +487,13 @@ model Product {
   properties ProductProperty[]
   uses       ProductUse[]
 
-  /** この製品の組成（何が入っているか） */
+  /**
+   * この製品の組成（何が入っているか）
+   */
   compositionLines CompositionLine[] @relation("ProductComposition")
-  /** この製品を原材料として使っている組成行（逆参照） */
+  /**
+   * この製品を原材料として使っている組成行（逆参照）
+   */
   usedAsMaterialIn CompositionLine[] @relation("ProductAsMaterial")
 
   @@index([nameJa])
@@ -439,7 +505,9 @@ model Product {
   @@map("products")
 }
 
-/** 別名（旧品番・社内の呼び方など） */
+/**
+ * 別名（旧品番・社内の呼び方など）
+ */
 /**
  * 用途。1製品に複数持てる。
  * 選べる値はシステム設定に持ち、ここには選んだ文字列をそのまま残す
@@ -459,9 +527,11 @@ model ProductUse {
 }
 
 model ProductAlias {
-  id        String @id @default(cuid())
-  productId String @map("product_id")
-  /** 日本語と英語は件数が一致しないため、どちらか一方だけの行を許す（両方 null は不可・アプリ層で担保） */
+  id           String  @id @default(cuid())
+  productId    String  @map("product_id")
+  /**
+   * 日本語と英語は件数が一致しないため、どちらか一方だけの行を許す（両方 null は不可・アプリ層で担保）
+   */
   nameJa       String? @map("name_ja") @db.VarChar(500)
   nameEn       String? @map("name_en") @db.VarChar(500)
   displayOrder Int     @default(0) @map("display_order")
@@ -474,7 +544,9 @@ model ProductAlias {
   @@map("product_aliases")
 }
 
-/** 拡張属性の値（製品）。項目定義は物質と共有する */
+/**
+ * 拡張属性の値（製品）。項目定義は物質と共有する
+ */
 model ProductProperty {
   id            String   @id @default(cuid())
   productId     String   @map("product_id")
@@ -494,7 +566,6 @@ model ProductProperty {
 /**
  * 原組成の1行。製品に「何がどれだけ入っているか」を1段だけ持つ。
  * 構成要素は物質か子製品のどちらか一方（CHECK制約で担保）。
- *
  * 多段の展開（親×子の掛け算で物質まで下ろす）は別テーブルに持つ（S11）。
  */
 model CompositionLine {
@@ -503,9 +574,13 @@ model CompositionLine {
   substanceId     String? @map("substance_id")
   childProductId  String? @map("child_product_id")
 
-  /** 重量含有率。残部（balance）の行だけ null で、100% との差から算出する */
+  /**
+   * 重量含有率。残部（balance）の行だけ null で、100% との差から算出する
+   */
   contentPct Decimal? @map("content_pct") @db.Decimal(9, 6)
-  /** 残部の行。1製品につき1件まで（アプリ層で担保） */
+  /**
+   * 残部の行。1製品につき1件まで（アプリ層で担保）
+   */
   isBalance  Boolean  @default(false) @map("is_balance")
 
   note         String?
@@ -515,7 +590,9 @@ model CompositionLine {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   parentProduct Product    @relation("ProductComposition", fields: [parentProductId], references: [id], onDelete: Cascade)
-  /** 参照されているものは物理削除させない（論理削除の前にアプリ側で参照を確認する） */
+  /**
+   * 参照されているものは物理削除させない（論理削除の前にアプリ側で参照を確認する）
+   */
   substance     Substance? @relation(fields: [substanceId], references: [id], onDelete: Restrict)
   childProduct  Product?   @relation("ProductAsMaterial", fields: [childProductId], references: [id], onDelete: Restrict)
 
@@ -531,18 +608,23 @@ model CompositionLine {
  * 金属換算係数。
  * 「この CAS の物質には、その金属元素が重量で何パーセント含まれるか」を持つ。
  * 判定では 寄与 = 含有率 × ratio_pct ÷ 100 として使う。
- *
  * 物質マスタとは物理FKで繋がない。CAS で引ければよく、
  * 物質として登録していない CAS の係数も先に持てるようにするため。
  */
 model MetalConversionFactor {
-  id String @id @default(cuid())
-  /** 原文。正規化した値は突合用 */
-  casNumber     String @map("cas_number") @db.VarChar(20)
-  casNormalized String @map("cas_normalized") @db.VarChar(20)
-  /** 金属元素の記号（Pb, Cr, Cd など） */
-  metalElement  String @map("metal_element") @db.VarChar(4)
-  /** 重量パーセント。0 より大きく 100 以下（CHECK 制約は migration に手書き） */
+  id            String  @id @default(cuid())
+  /**
+   * 原文。正規化した値は突合用
+   */
+  casNumber     String  @map("cas_number") @db.VarChar(20)
+  casNormalized String  @map("cas_normalized") @db.VarChar(20)
+  /**
+   * 金属元素の記号（Pb, Cr, Cd など）
+   */
+  metalElement  String  @map("metal_element") @db.VarChar(4)
+  /**
+   * 重量パーセント。0 より大きく 100 以下（CHECK 制約は migration に手書き）
+   */
   ratioPct      Decimal @map("ratio_pct") @db.Decimal(9, 6)
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -563,27 +645,33 @@ model MetalConversionFactor {
  * 閲覧は全ログインユーザー。投稿は NEWS_POST、他人の分の編集・削除は NEWS_MANAGE。
  */
 model News {
-  id       String     @id @default(cuid())
-  titleJa  String     @map("title_ja")
-  bodyJa   String     @map("body_ja")
-  /** 英語は任意。未入力なら英語表示でも日本語を出す */
-  titleEn  String?    @map("title_en")
-  bodyEn   String?    @map("body_en")
-  status   NewsStatus @default(DRAFT)
-  /** 重要なお知らせを一覧の先頭に固定する */
-  pinned   Boolean    @default(false)
-  /** 掲載期間。null は「制限なし」 */
-  publishFrom  DateTime? @map("publish_from")
-  publishUntil DateTime? @map("publish_until")
-  authorId  String   @map("author_id")
+  id           String     @id @default(cuid())
+  titleJa      String     @map("title_ja")
+  bodyJa       String     @map("body_ja")
+  /**
+   * 英語は任意。未入力なら英語表示でも日本語を出す
+   */
+  titleEn      String?    @map("title_en")
+  bodyEn       String?    @map("body_en")
+  status       NewsStatus @default(DRAFT)
+  /**
+   * 重要なお知らせを一覧の先頭に固定する
+   */
+  pinned       Boolean    @default(false)
+  /**
+   * 掲載期間。null は「制限なし」
+   */
+  publishFrom  DateTime?  @map("publish_from")
+  publishUntil DateTime?  @map("publish_until")
+  authorId     String     @map("author_id")
   /**
    * ホームで見出しを分けるための分類。投稿時に投稿者のグループを写し取る。
    * 写すのは、投稿者が異動しても過去の投稿が別の見出しへ移らないようにするため。
    * null=分類なし（見出しの最後にまとめる）
    */
-  groupId   String?  @map("group_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  groupId      String?    @map("group_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
   author User   @relation(fields: [authorId], references: [id])
   group  Group? @relation(fields: [groupId], references: [id])
@@ -611,28 +699,38 @@ model News {
  * entity + entityId で対象を指し、物理FKは張らない（スキーマ冒頭のルール）。
  */
 model ApprovalEvent {
-  id       String         @id @default(cuid())
-  /** "substance" / "product" */
-  entity   String         @db.VarChar(20)
-  entityId String         @map("entity_id")
-  action   ApprovalAction
-  actorId  String?        @map("actor_id")
-  /** 却下の理由など。任意 */
-  comment  String?        @db.VarChar(500)
-  createdAt DateTime      @default(now()) @map("created_at")
+  id        String         @id @default(cuid())
+  /**
+   * "substance" / "product"
+   */
+  entity    String         @db.VarChar(20)
+  entityId  String         @map("entity_id")
+  action    ApprovalAction
+  actorId   String?        @map("actor_id")
+  /**
+   * 却下の理由など。任意
+   */
+  comment   String?        @db.VarChar(500)
+  createdAt DateTime       @default(now()) @map("created_at")
 
   @@index([entity, entityId, createdAt])
   @@map("approval_events")
 }
 
 model SavedFilter {
-  id       String @id @default(cuid())
-  /** どの一覧のものか（例: chem.table.products） */
-  tableKey String @map("table_key") @db.VarChar(100)
-  title    String @db.VarChar(100)
-  /** 並べ替え・フィルター・件数をまとめたクエリ文字列 */
-  query    String @db.VarChar(2000)
-  /** true=全員が読める。false=作った本人だけ */
+  id       String  @id @default(cuid())
+  /**
+   * どの一覧のものか（例: chem.table.products）
+   */
+  tableKey String  @map("table_key") @db.VarChar(100)
+  title    String  @db.VarChar(100)
+  /**
+   * 並べ替え・フィルター・件数をまとめたクエリ文字列
+   */
+  query    String  @db.VarChar(2000)
+  /**
+   * true=全員が読める。false=作った本人だけ
+   */
   shared   Boolean @default(false)
 
   ownerId   String   @map("owner_id")
@@ -641,8 +739,62 @@ model SavedFilter {
 
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  /** 同じ人が同じ画面に同じ名前を2つ作れないようにする（上書き保存にする） */
+  /**
+   * 同じ人が同じ画面に同じ名前を2つ作れないようにする（上書き保存にする）
+   */
   @@unique([tableKey, ownerId, title])
   @@index([tableKey, shared])
   @@map("saved_filters")
+}
+
+// ---------- フィードバック ----------
+
+/**
+ * 寄せられた声の種類
+ */
+enum FeedbackKind {
+  BUG
+  REQUEST
+  QUESTION
+  OTHER
+}
+
+enum FeedbackPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/**
+ * 対応の進み具合
+ */
+enum FeedbackStatus {
+  OPEN
+  IN_PROGRESS
+  ON_HOLD
+  DONE
+}
+
+/**
+ * 使ってみて気づいたことの記録。開発中の窓口として使う。
+ * 誰が書いたかは残すが、閲覧も更新もログインしている人なら誰でもできる。
+ */
+model Feedback {
+  id       String           @id @default(cuid())
+  title    String           @db.VarChar(200)
+  body     String           @db.Text
+  kind     FeedbackKind
+  priority FeedbackPriority @default(MEDIUM)
+  status   FeedbackStatus   @default(OPEN)
+
+  createdBy String?   @map("created_by")
+  updatedBy String?   @map("updated_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([status])
+  @@index([kind])
+  @@index([updatedAt])
+  @@map("feedbacks")
 }

@@ -8,7 +8,7 @@ import { SubstancesTable } from "./substances-table";
 /**
  * 物質の一覧。
  *
- * 使えるもの（公開済）を上、まだ使えないもの（作成中・承認待ち・却下）を下に分ける。
+ * 使えるもの（公開済）を上、まだ使えないもの（作成中・承認待・却下）を下に分ける。
  * 下の表は、未公開のデータを見られる人にだけ出す。
  */
 export function SubstancesLists({ approvalRequired }: { approvalRequired: boolean }) {

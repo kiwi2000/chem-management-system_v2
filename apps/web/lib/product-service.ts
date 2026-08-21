@@ -49,7 +49,7 @@ export function canEditProduct(
   target: { status: string; publishState: PublishState; createdBy: string | null },
 ): boolean {
   if (!actor.has("PRODUCT_EDIT")) return false;
-  // 承認待ちは誰も書き換えられない。直すなら取り下げてから
+  // 承認待は誰も書き換えられない。直すなら取り下げてから
   if (target.publishState === "PENDING") return false;
   const restricted = target.status !== "ACTIVE" || target.publishState !== "PUBLISHED";
   if (!restricted) return true;

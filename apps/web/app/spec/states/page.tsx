@@ -63,7 +63,7 @@ export default function SpecStatesPage() {
             ],
             [
               <StateChip key="p" tone="pending">
-                承認待ち
+                承認待
               </StateChip>,
               "完成したので確認してほしい、と申し出た状態",
               "作った本人と、権限のある人だけ",
@@ -104,7 +104,7 @@ export default function SpecStatesPage() {
           <div className="flex flex-wrap items-center gap-1">
             <StateChip tone="draft">作成中</StateChip>
             <Arrow label="申請" />
-            <StateChip tone="pending">承認待ち</StateChip>
+            <StateChip tone="pending">承認待</StateChip>
             <Arrow label="承認" />
             <StateChip tone="published">公開済</StateChip>
           </div>
@@ -114,7 +114,7 @@ export default function SpecStatesPage() {
             <Arrow label="直して保存" />
             <StateChip tone="draft">作成中</StateChip>
             <Arrow label="もう一度申請" />
-            <StateChip tone="pending">承認待ち</StateChip>
+            <StateChip tone="pending">承認待</StateChip>
           </div>
         </Flow>
 
@@ -147,14 +147,14 @@ export default function SpecStatesPage() {
                 <StateChip tone="rejected">却下</StateChip> のとき
               </>,
               <StateChip key="v" tone="pending">
-                承認待ち
+                承認待
               </StateChip>,
             ],
             [
               <T key="b">取り下げ</T>,
               "そのデータを編集できる人",
               <>
-                <StateChip tone="pending">承認待ち</StateChip> のとき
+                <StateChip tone="pending">承認待</StateChip> のとき
               </>,
               <StateChip key="v" tone="draft">
                 作成中
@@ -164,7 +164,7 @@ export default function SpecStatesPage() {
               <T key="c">承認</T>,
               "承認の権限を持つ人",
               <>
-                <StateChip tone="pending">承認待ち</StateChip> のとき
+                <StateChip tone="pending">承認待</StateChip> のとき
               </>,
               <StateChip key="v" tone="published">
                 公開済
@@ -174,7 +174,7 @@ export default function SpecStatesPage() {
               <T key="d">却下</T>,
               "承認の権限を持つ人",
               <>
-                <StateChip tone="pending">承認待ち</StateChip> のとき
+                <StateChip tone="pending">承認待</StateChip> のとき
               </>,
               <StateChip key="v" tone="rejected">
                 却下
@@ -227,9 +227,9 @@ export default function SpecStatesPage() {
           </P>
         </Sub>
 
-        <Sub title="承認待ちのものを直したいときは">
+        <Sub title="承認待のものを直したいときは">
           <P>
-            <StateChip tone="pending">承認待ち</StateChip>{" "}
+            <StateChip tone="pending">承認待</StateChip>{" "}
             の間は、作った本人も含めて誰も編集できません。
             確認している最中に中身が変わると、何を承認したのか分からなくなるためです。
             直したいときは、いったん「取り下げ」で作成中に戻してください。
@@ -254,7 +254,7 @@ export default function SpecStatesPage() {
           </P>
         </Sub>
 
-        <Sub title="設定を「承認が必要」から「不要」に変えたら、承認待ちのものはどうなりますか">
+        <Sub title="設定を「承認が必要」から「不要」に変えたら、承認待のものはどうなりますか">
           <P>
             承認する人がいなくなってしまうので、そのままにはできません。
             設定を保存するときに残っている件数をお知らせして、

@@ -13,7 +13,8 @@ export default function SpecIndexPage() {
       <Section title="読み方">
         <P>
           左の目次から読みたいところへ移動できます。上から順に読むと、 全体像 → 状態のしくみ → 権限
-          → 登録する情報 → 画面の使い方 → これまでの変更、の順になります。
+          → 登録する情報 → 画面の使い方 → 気づいたことの書き留めかた →
+          これまでの変更、の順になります。
         </P>
         <SpecTable
           head={["ページ", "書いてあること"]}
@@ -22,7 +23,8 @@ export default function SpecIndexPage() {
             [SPEC_PAGES[2].label, "権限の一覧と、権限が無いとどう見えるか"],
             [SPEC_PAGES[3].label, "物質・製品・組成に登録する項目"],
             [SPEC_PAGES[4].label, "一覧の絞り込み、保存と読込"],
-            [SPEC_PAGES[5].label, "いつ何を変えたかの記録"],
+            [SPEC_PAGES[5].label, "気づいたことの書き留めかた"],
+            [SPEC_PAGES[6].label, "いつ何を変えたかの記録"],
           ]}
         />
       </Section>

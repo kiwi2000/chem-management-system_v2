@@ -79,6 +79,7 @@ export const en: Messages = {
     docTemplates: "Documents",
     admin: "Administration",
     spec: "Specification",
+    feedback: "Feedback",
   },
 
   shell: {

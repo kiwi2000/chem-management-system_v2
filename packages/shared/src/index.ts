@@ -11,6 +11,7 @@ export * from "./background";
 export * from "./composition";
 export * from "./constants";
 export * from "./decimal";
+export * from "./feedback";
 export * from "./group";
 export * from "./i18n";
 export * from "./metal-factor";

@@ -29,7 +29,7 @@ export default function SpecListsPage() {
               "下",
               <span key="w" className="flex flex-wrap gap-1">
                 <StateChip tone="draft">作成中</StateChip>
-                <StateChip tone="pending">承認待ち</StateChip>
+                <StateChip tone="pending">承認待</StateChip>
                 <StateChip tone="rejected">却下</StateChip>
               </span>,
               "作業中",

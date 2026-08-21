@@ -110,8 +110,8 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         key: "publishState",
         header: m.substances.publishState,
         kind: "enum",
-        // 「承認待ち」が切れない最小限。左右の余白を詰めて幅を稼ぐ
-        width: 76,
+        // 状態名はどれも3文字以内。切れない最小限まで詰める
+        width: 64,
         className: "px-1 text-center text-xs",
         filterLabelHidden: true,
         options: PUBLISH_STATES.map((v) => ({ value: v, label: m.common.publishStates[v] })),

@@ -1,8 +1,10 @@
 "use client";
 
 import type { Messages, Permission } from "@chem/shared";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
@@ -57,7 +59,10 @@ const ADMIN_ITEMS: NavItem[] = [
  * 仕様の確認先を画面の中に置いておくためのもので、本番を作るときに消す。
  * 検証環境でも見せたいので、環境では出し分けない。権限も要らない。
  */
-const DEV_ITEMS: NavItem[] = [{ href: "/spec", key: "spec" }];
+const DEV_ITEMS: NavItem[] = [
+  { href: "/spec", key: "spec" },
+  { href: "/feedback", key: "feedback" },
+];
 
 function isActive(pathname: string, item: NavItem): boolean {
   if (item.href === "/") return pathname === "/";
@@ -84,35 +89,68 @@ export function SidebarNav({
     { title: null, items: DEV_ITEMS, apart: true },
   ];
 
+  /**
+   * 「システム」の開閉。普段は畳んでおき、押したときに中身を出す。
+   * ただし配下の画面を開いている間は開けておく（選択中の項目が隠れてしまうため）。
+   */
+  const inAdmin = adminItems.some((item) => isActive(pathname, item));
+  const [openSystem, setOpenSystem] = useState(false);
+  const systemOpen = openSystem || inAdmin;
+
+  const renderItem = (item: NavItem, indented: boolean) => {
+    const active = isActive(pathname, item);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        onClick={onNavigate}
+        // 選択中の背景は CSS 変数を直接指定（ユーティリティが環境により効かないため）
+        style={active ? { backgroundColor: "var(--secondary)" } : undefined}
+        className={cn(
+          "block truncate rounded-md py-2 text-sm transition-colors",
+          indented ? "px-2" : "px-3",
+          active
+            ? "text-foreground font-medium"
+            : "text-muted-foreground hover:bg-[var(--muted)] hover:text-foreground",
+        )}
+      >
+        {m.nav[item.key]}
+      </Link>
+    );
+  };
+
   return (
     <nav className="space-y-4 p-3">
       {groups.map((g, gi) => (
         // 余白は padding で足す（space-y の margin と打ち消し合わないように）
         <div key={gi} className={cn("space-y-1", g.apart && "pt-6")}>
-          {g.title && (
-            <div className="text-muted-foreground px-3 pb-1 text-xs font-medium">{g.title}</div>
-          )}
-          {g.items.map((item) => {
-            const active = isActive(pathname, item);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                onClick={onNavigate}
-                // 選択中の背景は CSS 変数を直接指定（ユーティリティが環境により効かないため）
-                style={active ? { backgroundColor: "var(--secondary)" } : undefined}
-                className={cn(
-                  "block truncate rounded-md px-3 py-2 text-sm transition-colors",
-                  active
-                    ? "text-foreground font-medium"
-                    : "text-muted-foreground hover:bg-[var(--muted)] hover:text-foreground",
-                )}
+          {g.title ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setOpenSystem((v) => !v)}
+                aria-expanded={systemOpen}
+                className="text-muted-foreground hover:bg-[var(--muted)] hover:text-foreground flex w-full items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors"
               >
-                {m.nav[item.key]}
-              </Link>
-            );
-          })}
+                <ChevronRight
+                  className={cn(
+                    "size-3.5 shrink-0 transition-transform",
+                    systemOpen && "rotate-90",
+                  )}
+                />
+                <span className="truncate">{g.title}</span>
+              </button>
+              {systemOpen && (
+                // 配下であることが見た目で分かるよう、左に一本線を引いて字下げする
+                <div className="border-border ml-4 space-y-1 border-l pl-2">
+                  {g.items.map((item) => renderItem(item, true))}
+                </div>
+              )}
+            </>
+          ) : (
+            g.items.map((item) => renderItem(item, false))
+          )}
         </div>
       ))}
     </nav>

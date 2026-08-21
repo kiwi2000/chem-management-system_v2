@@ -28,7 +28,7 @@ export default function SettingsPage() {
   // 選択肢の入力欄は打っている途中の改行を消さないよう、生の文字列のまま持つ
   const [modelOptionsText, setModelOptionsText] = useState("");
   const [useOptionsText, setUseOptionsText] = useState("");
-  // 承認を不要に切り替えたときに残る承認待ちの件数（種類ごと）
+  // 承認を不要に切り替えたときに残る承認待の件数（種類ごと）
   const [pending, setPending] = useState<Record<string, number> | null>(null);
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export default function SettingsPage() {
   }, [m]);
 
   /**
-   * 保存。承認を「必要 → 不要」に切り替えると承認待ちのものが宙に浮くので、
+   * 保存。承認を「必要 → 不要」に切り替えると承認待のものが宙に浮くので、
    * サーバーが 409 で扱いを聞いてくる。選んでもらってから同じ内容を送り直す。
    */
   async function save(resolution?: Record<string, PendingResolution>) {
@@ -86,7 +86,7 @@ export default function SettingsPage() {
     await save();
   }
 
-  /** 承認待ちの扱いを1つ選んで、その内容で保存し直す */
+  /** 承認待の扱いを1つ選んで、その内容で保存し直す */
   function resolveAll(how: PendingResolution) {
     const resolution: Record<string, PendingResolution> = {};
     for (const entity of Object.keys(pending ?? {})) resolution[entity] = how;

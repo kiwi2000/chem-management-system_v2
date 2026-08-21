@@ -37,7 +37,7 @@ export async function PUT(req: Request) {
   const { pendingResolution, ...next } = parsed.data;
 
   /**
-   * 承認を「必要 → 不要」に切り替えると、承認待ちのものを承認する人がいなくなる。
+   * 承認を「必要 → 不要」に切り替えると、承認待のものを承認する人がいなくなる。
    * 宙に浮かせないよう、作成中に戻すか公開するかを選んでもらってから進める。
    */
   const before = await getAppSettings();

@@ -2,7 +2,7 @@ import type { PendingResolution } from "@chem/shared";
 import { prisma } from "@/lib/db";
 import { writeApprovalEvent } from "@/lib/publish-service";
 
-/** 承認待ちの件数。設定を切り替える前に、宙に浮くものがあるか確かめる */
+/** 承認待の件数。設定を切り替える前に、宙に浮くものがあるか確かめる */
 export async function countPending(): Promise<{ substance: number; product: number }> {
   const [substance, product] = await Promise.all([
     prisma.substance.count({ where: { deletedAt: null, publishState: "PENDING" } }),

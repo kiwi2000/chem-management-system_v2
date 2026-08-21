@@ -149,13 +149,13 @@ export const settingsSchema = (m: Messages) =>
 export type SettingsInput = z.infer<ReturnType<typeof settingsSchema>>;
 
 /**
- * 承認を「必要 → 不要」に切り替えるとき、承認待ちのものをどうするか。
+ * 承認を「必要 → 不要」に切り替えるとき、承認待のものをどうするか。
  * 承認する人がいなくなるので、宙に浮かせないよう必ずどちらかに寄せる。
  */
 export const PENDING_RESOLUTIONS = ["draft", "publish"] as const;
 export type PendingResolution = (typeof PENDING_RESOLUTIONS)[number];
 
-/** 設定の保存。承認待ちが残る切り替えのときだけ、その扱いを添えてもらう */
+/** 設定の保存。承認待が残る切り替えのときだけ、その扱いを添えてもらう */
 export const settingsSaveSchema = (m: Messages) =>
   settingsSchema(m).extend({
     pendingResolution: z

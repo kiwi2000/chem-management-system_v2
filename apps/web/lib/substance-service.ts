@@ -52,7 +52,7 @@ export function canEditSubstance(
   target: { publishState: PublishState; createdBy: string | null },
 ): boolean {
   if (!actor.has("SUBSTANCE_EDIT")) return false;
-  // 承認待ちは誰も書き換えられない。直すなら取り下げてから
+  // 承認待は誰も書き換えられない。直すなら取り下げてから
   if (target.publishState === "PENDING") return false;
   if (target.publishState === "PUBLISHED") return true;
   return actor.has("INACTIVE_EDIT") || target.createdBy === actor.user.id;
