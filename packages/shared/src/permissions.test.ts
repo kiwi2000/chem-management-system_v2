@@ -10,7 +10,7 @@ describe("権限の含意", () => {
     ]);
   });
 
-  it("無効・ドラフトを編集できるなら、見ることもできる", () => {
+  it("無効・未公開を編集できるなら、見ることもできる", () => {
     expect(expandPermissions(["INACTIVE_EDIT"])).toEqual(["INACTIVE_VIEW", "INACTIVE_EDIT"]);
   });
 
@@ -34,7 +34,7 @@ describe("権限の含意", () => {
     expect(dependentsOf("COMPOSITION_VIEW")).toContain("PRODUCT_EDIT");
     // PRODUCT_VIEW を外すと PRODUCT_EDIT も外れる
     expect(dependentsOf("PRODUCT_VIEW")).toEqual(["PRODUCT_EDIT"]);
-    // 無効・ドラフトの閲覧を外すと、その編集も外れる
+    // 無効・未公開の閲覧を外すと、その編集も外れる
     expect(dependentsOf("INACTIVE_VIEW")).toEqual(["INACTIVE_EDIT"]);
   });
 

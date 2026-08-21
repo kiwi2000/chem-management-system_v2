@@ -44,7 +44,7 @@ const IMPLIES: Partial<Record<Permission, readonly Permission[]>> = {
   // 組成の編集は製品の編集に含まれるため、組成の閲覧も必要
   PRODUCT_EDIT: ["PRODUCT_VIEW", "COMPOSITION_VIEW"],
   SUBSTANCE_EDIT: ["SUBSTANCE_VIEW"],
-  // 無効・ドラフトを編集できる人は、当然それを見られる
+  // 無効・未公開を編集できる人は、当然それを見られる
   INACTIVE_EDIT: ["INACTIVE_VIEW"],
   REGULATION_EDIT: ["REGULATION_VIEW"],
   // 他人のお知らせを編集できる人は、自分でも投稿できるものとして扱う

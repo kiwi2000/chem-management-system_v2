@@ -51,7 +51,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-  // ドラフトのものは、作成者か専用の権限を持つ人だけが書き換えられる
+  // 未公開のものは、作成者か専用の権限を持つ人だけが書き換えられる
   if (!canEditSubstance(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
 
   let body: unknown;
@@ -157,7 +157,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-  // ドラフトのものは、作成者か専用の権限を持つ人だけが書き換えられる
+  // 未公開のものは、作成者か専用の権限を持つ人だけが書き換えられる
   if (!canEditSubstance(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
 
   const uses = await countUsesOfSubstance(id);

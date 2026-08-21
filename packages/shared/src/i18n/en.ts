@@ -127,8 +127,8 @@ export const en: Messages = {
     COMPOSITION_VIEW: "View compositions",
     SUBSTANCE_VIEW: "View substances",
     SUBSTANCE_EDIT: "Edit substances",
-    INACTIVE_VIEW: "View inactive and draft data",
-    INACTIVE_EDIT: "Edit inactive and draft data",
+    INACTIVE_VIEW: "View inactive and unpublished data",
+    INACTIVE_EDIT: "Edit inactive and unpublished data",
     APPROVE: "Approve submissions",
     REGULATION_VIEW: "View regulations",
     REGULATION_EDIT: "Edit regulations",
@@ -143,7 +143,7 @@ export const en: Messages = {
     REGULATION_EDIT: "Includes metal conversion factors, sources and link versions",
     DATA_EXPORT: "TSV export and document download. Grant only to those who need it",
     INACTIVE_VIEW:
-      "See draft data and inactive products in lists and details (creators always see their own)",
+      "See unpublished data and inactive products in lists and details (creators always see their own)",
     NEWS_POST: "Announcements you posted can be edited and deleted by you",
     ADMIN: "Creating users, changing permissions, system settings, audit log",
   },
@@ -151,7 +151,7 @@ export const en: Messages = {
     product: "Products / Materials",
     composition: "Compositions",
     substance: "Substances",
-    inactive: "Inactive / draft data",
+    inactive: "Inactive / unpublished data",
     regulation: "Regulations",
     data: "Data export",
     news: "Announcements",
@@ -594,7 +594,8 @@ export const en: Messages = {
   },
 
   errors: {
-    publishStateMismatch: (states: string) => `This action does not apply to items that are ${states}`,
+    publishStateMismatch: (states: string) =>
+      `This action does not apply to items that are ${states}`,
     pendingResolutionRequired:
       "Some items are still awaiting approval. Choose what to do with them",
     approvalRequired: "This kind of data needs approval",
