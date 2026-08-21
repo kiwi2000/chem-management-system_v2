@@ -12,10 +12,12 @@ import {
   type Locale,
   type Theme,
 } from "@chem/shared";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { AvatarCropper } from "@/components/avatar-cropper";
+import { UserAvatar } from "@/components/user-avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,12 +65,18 @@ export function PreferencesForm({
   headerStrong,
   background,
   displayName,
+  userId,
+  avatarSet,
 }: {
   locale: Locale;
   theme: Theme;
   headerStrong: boolean;
   background: Background;
   displayName: string;
+  /** ログインしていないとき（ログイン画面から開いたとき）は null */
+  userId: string | null;
+  /** アバターが登録済みか。「外す」を出すかどうかの判断に使う */
+  avatarSet: boolean;
 }) {
   const { m } = useI18n();
   const router = useRouter();
@@ -78,6 +86,63 @@ export function PreferencesForm({
   // 表示名だけは打ち終わってから保存するので、入力中の値を持つ
   const [name, setName] = useState(displayName);
   const [themeOpen, setThemeOpen] = useState(false);
+  // 差し替えたら古い絵が残らないよう、読み込み直す合図として持つ
+  const [avatarVersion, setAvatarVersion] = useState(0);
+  const [hasAvatar, setHasAvatar] = useState(avatarSet);
+  // 選んだあと、切り出しを決めるまで持っておく画像
+  const [picked, setPicked] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * 切り出しの済んだ画像を送る。
+   * 元の大きさのまま持つとDBが太るうえ、表示は小さな丸なので大きさは要らない。
+   */
+  async function uploadAvatar(blob: Blob) {
+    setError(null);
+    setNotice(null);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/preferences/avatar", {
+        method: "PUT",
+        headers: { "Content-Type": blob.type },
+        body: blob,
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      setAvatarVersion((v) => v + 1);
+      setHasAvatar(true);
+      setPicked(null);
+      setNotice(m.preferences.saved);
+      router.refresh();
+    } finally {
+      setSaving(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function removeAvatar() {
+    setError(null);
+    setNotice(null);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/preferences/avatar", { method: "DELETE" });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        setError(m.errors.saveFailed(res.status));
+        return;
+      }
+      setAvatarVersion((v) => v + 1);
+      setHasAvatar(false);
+      setNotice(m.preferences.saved);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function save(patch: {
     locale?: Locale;
@@ -118,32 +183,102 @@ export function PreferencesForm({
           <CardTitle className="text-base">{m.preferences.profile}</CardTitle>
         </CardHeader>
         <CardContent>
-          <form
-            className="space-y-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (nameEmpty) return;
-              void save({ displayName: name.trim() });
-            }}
-          >
-            <Label htmlFor="displayName">{m.preferences.displayName}</Label>
-            <div className="flex flex-wrap items-start gap-2">
+          {/* 表示名を左、アバターを右に。どちらも短いので横に並べたほうが収まりがよい */}
+          <div className="flex flex-wrap items-start gap-x-8 gap-y-6">
+            <form
+              className="space-y-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (nameEmpty) return;
+                void save({ displayName: name.trim() });
+              }}
+            >
+              <Label htmlFor="displayName">{m.preferences.displayName}</Label>
               <Input
                 id="displayName"
                 value={name}
                 maxLength={200}
                 aria-invalid={nameEmpty}
                 onChange={(e) => setName(e.target.value)}
-                className="max-w-xs"
+                className="w-full sm:w-72"
               />
+              <p
+                className={nameEmpty ? "text-destructive text-xs" : "text-muted-foreground text-xs"}
+              >
+                {nameEmpty ? m.errors.displayNameRequired : m.preferences.displayNameHint}
+              </p>
               <Button type="submit" disabled={saving || nameEmpty || name.trim() === displayName}>
                 {m.common.save}
               </Button>
-            </div>
-            <p className={nameEmpty ? "text-destructive text-xs" : "text-muted-foreground text-xs"}>
-              {nameEmpty ? m.errors.displayNameRequired : m.preferences.displayNameHint}
-            </p>
-          </form>
+            </form>
+
+            {userId && (
+              <div className="space-y-2">
+                <span className="text-sm leading-none font-medium">{m.preferences.avatar}</span>
+                <div className="flex items-start gap-4">
+                  <UserAvatar userId={userId} name={name} size={64} version={avatarVersion} />
+                  <div className="space-y-2">
+                    {/*
+                    素の file 入力は「ファイルを選択 選択されていません」と出て、
+                    他のボタンと見た目が揃わない。読み上げには残したまま隠し、
+                    見えるボタンから開く
+                  */}
+                    <input
+                      ref={fileRef}
+                      id="avatar"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) setPicked(f);
+                      }}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={saving}
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        <Upload className="mr-1 size-3.5" />
+                        {m.preferences.avatarUpload}
+                      </Button>
+                      {hasAvatar && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={saving}
+                          onClick={removeAvatar}
+                        >
+                          <Trash2 className="mr-1 size-3.5" />
+                          {m.preferences.avatarRemove}
+                        </Button>
+                      )}
+                    </div>
+                    {picked ? (
+                      <AvatarCropper
+                        file={picked}
+                        saving={saving}
+                        onDone={(blob) => void uploadAvatar(blob)}
+                        onCancel={() => {
+                          setPicked(null);
+                          if (fileRef.current) fileRef.current.value = "";
+                        }}
+                      />
+                    ) : (
+                      // 説明が長いと右の列が広がって、表示名の隣に収まらなくなる
+                      <p className="text-muted-foreground max-w-[15rem] text-xs">
+                        {m.preferences.avatarHint}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

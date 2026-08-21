@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
+import { UserAvatar } from "@/components/user-avatar";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { cn } from "@/lib/utils";
 const STORAGE_KEY = "chem.sidebar.open";
 
 interface Props {
-  user: Pick<MeDto, "email" | "displayName" | "permissions" | "canEdit" | "isAdmin">;
+  user: Pick<MeDto, "id" | "email" | "displayName" | "permissions" | "canEdit" | "isAdmin">;
   children: ReactNode;
 }
 
@@ -125,6 +126,9 @@ export function AppShellClient({ user, children }: Props) {
             {m.common.appName}
           </Link>
           <div className="ml-auto flex items-center gap-3">
+            <Link href="/preferences" title={user.displayName ?? user.email}>
+              <UserAvatar userId={user.id} name={user.displayName ?? user.email} size={28} />
+            </Link>
             {/* 濃いヘッダーでも読めるよう、色を変えず薄くするだけにする */}
             <span className="hidden text-sm opacity-75 sm:inline">
               {user.displayName ?? user.email}

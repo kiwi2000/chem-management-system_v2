@@ -28,6 +28,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
   return (
     <AppShellClient
       user={{
+        id: actor.user.id,
         email: actor.user.email,
         displayName: actor.user.displayName,
         permissions: actor.permissions,
