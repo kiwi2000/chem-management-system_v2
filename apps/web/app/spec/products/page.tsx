@@ -1,3 +1,4 @@
+import { WizardDiagram } from "../_diagrams";
 import { List, Note, P, PageHead, Section, SpecTable, Sub, T } from "../_parts";
 import { SpecPager } from "../spec-pager";
 
@@ -14,6 +15,7 @@ export default function ManualProductsPage() {
           左のメニューから「製品 / 原材料」を開き、「＋ 新規登録」を押すと、次の順に進みます。
           画面の上に、いまどの段にいるかが出ます。
         </P>
+        <WizardDiagram />
         <SpecTable
           head={["段", "すること", "押すボタン"]}
           rows={[

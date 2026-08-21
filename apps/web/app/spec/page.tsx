@@ -1,3 +1,4 @@
+import { DataModelDiagram, ScreenLayoutDiagram } from "./_diagrams";
 import { List, Note, P, PageHead, Section, SpecTable, Sub, T } from "./_parts";
 import { SpecPager } from "./spec-pager";
 
@@ -30,6 +31,7 @@ export default function ManualHomePage() {
           製品の中身は、物質を直接入れることも、別の製品を<T>原材料として</T>
           入れることもできます。原材料を入れた場合、その原材料の中身もたどれます。
         </P>
+        <DataModelDiagram />
         <Note title="紙の管理と違うところ">
           同じ物質を何度も書き写す必要がありません。物質は1回だけ登録し、製品からはそれを指すだけです。
           物質の情報を直せば、その物質を使っているすべての製品に反映されます。
@@ -50,6 +52,7 @@ export default function ManualHomePage() {
 
         <Sub title="画面の見かた">
           <P>画面は大きく3つに分かれています。</P>
+          <ScreenLayoutDiagram />
           <SpecTable
             head={["場所", "何があるか"]}
             rows={[

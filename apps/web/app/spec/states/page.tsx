@@ -1,3 +1,4 @@
+import { StateFlowDiagram, TwoTablesDiagram } from "../_diagrams";
 import { List, Note, P, PageHead, Section, SpecTable, StateChip, Sub, T } from "../_parts";
 import { SpecPager } from "../spec-pager";
 
@@ -63,6 +64,8 @@ export default function ManualStatesPage() {
           どちらなのかは、詳細画面に出るボタンで分かります。
         </P>
 
+        <StateFlowDiagram />
+
         <Sub title="承認が要るとき">
           <P>
             <StateChip tone="draft">作成中</StateChip> →「承認を申請」→{" "}
@@ -102,6 +105,7 @@ export default function ManualStatesPage() {
             ["下（作業中）", "作成中・承認待・却下", "未公開のものを扱える人だけ"],
           ]}
         />
+        <TwoTablesDiagram />
         <Note title="登録したのに一覧に出てこないとき">
           たいていは下の「作業中」の表にあります。下の表そのものが出ていない場合は、
           未公開のものを見る権限がありません。管理者に相談してください。
