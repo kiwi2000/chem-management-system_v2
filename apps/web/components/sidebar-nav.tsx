@@ -46,9 +46,6 @@ interface NavItem {
  */
 const ITEMS: NavItem[] = [
   { href: "/", key: "home", icon: Home },
-  // お知らせを読むだけならホームで足りる。この画面は投稿・編集のためのものなので、
-  // 投稿できる人にだけ見せる（他人の分を編集できる権限は投稿権限を含む）
-  { href: "/news", key: "news", icon: Megaphone, needs: "NEWS_POST" },
   { href: "/substances", key: "substances", icon: FlaskConical, needs: "SUBSTANCE_VIEW" },
   { href: "/products", key: "products", icon: Package, needs: "PRODUCT_VIEW" },
   {
@@ -68,6 +65,10 @@ const ITEMS: NavItem[] = [
   { href: "/metal-factors", key: "metalFactors", icon: Sigma, needs: "REGULATION_VIEW" },
   { href: "/import-export", key: "importExport", icon: ArrowDownUp, needs: "DATA_EXPORT" },
   { href: "/doc-templates", key: "docTemplates", icon: FileText, needs: "DATA_EXPORT" },
+  // お知らせを読むだけならホームで足りる。この画面は投稿・編集のためのものなので、
+  // 投稿できる人にだけ見せる（他人の分を編集できる権限は投稿権限を含む）。
+  // 日々の作業ではないので、業務の項目の後ろ、システムの手前に置く
+  { href: "/news", key: "news", icon: Megaphone, needs: "NEWS_POST" },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
