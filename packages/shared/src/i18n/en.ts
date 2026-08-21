@@ -480,6 +480,10 @@ export const en: Messages = {
     editTitle: "Edit product",
     detailTitle: "Product",
     basic: "Basic information",
+    compositionStepHint:
+      "The composition is stored when you press Save below. You can move on without entering one.",
+    wizardSavedHint:
+      "This product is already registered as a draft. If you stop here, you can continue later from the working list.",
     code: "Product code",
     codeHint: "Up to 20 characters. Matched in upper case with full-width characters folded",
     nameJa: "Name (Japanese)",
@@ -492,7 +496,6 @@ export const en: Messages = {
     aliases: "Other names",
     aliasesJa: "Japanese other names",
     aliasesEn: "English other names",
-    aliasHint: "Register former part numbers or names used in-house",
     addAliasJa: "+ Add Japanese name",
     addAliasEn: "+ Add English name",
     usableAsMaterial: "Raw material",

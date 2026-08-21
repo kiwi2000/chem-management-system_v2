@@ -26,6 +26,7 @@ export default async function NewProductPage() {
         modelOptions={settings.productModelOptions}
         useOptions={settings.productUseOptions}
         canEdit={actor?.has("PRODUCT_EDIT") ?? false}
+        settings={settings}
       />
     </div>
   );

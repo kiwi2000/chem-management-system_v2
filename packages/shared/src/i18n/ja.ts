@@ -483,6 +483,10 @@ export const ja = {
     editTitle: "製品の編集",
     detailTitle: "製品の詳細",
     basic: "基本情報",
+    compositionStepHint:
+      "組成は、下の「保存」を押した時点で登録されます。入力しない場合はそのまま次へ進めます。",
+    wizardSavedHint:
+      "この製品は「作成中」として登録済みです。ここでやめても、あとから一覧の「作業中」から続けられます。",
     code: "製品コード",
     codeHint: "20文字以内。半角に直して大文字で突き合わせます",
     nameJa: "日本語名称",
@@ -495,7 +499,6 @@ export const ja = {
     aliases: "別名",
     aliasesJa: "日本語別名",
     aliasesEn: "英語別名",
-    aliasHint: "旧品番や社内の呼び方を登録できます",
     addAliasJa: "＋ 日本語別名を追加",
     addAliasEn: "＋ 英語別名を追加",
     usableAsMaterial: "原材料",

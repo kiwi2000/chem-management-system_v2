@@ -16,6 +16,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
+import { CompositionEditor } from "@/components/composition-editor";
+import { cn } from "@/lib/utils";
+import type { AppSettings } from "@chem/shared";
 import type { ApiError, ProductDetailDto, PropertyDefDto } from "@/lib/types";
 
 interface Props {
@@ -31,8 +34,13 @@ interface Props {
   modelOptions: string[];
   /** 用途で選べる値（システム設定）。同上 */
   useOptions: string[];
-  /** 組成の節。基本情報と備考の間に置きたいので、呼び出し側から受け取る（新規登録では無い） */
+  /** 組成の節。基本情報と備考の間に置きたいので、呼び出し側から受け取る（既存データを開いたとき用） */
   composition?: React.ReactNode;
+  /**
+   * 組成の合計チェックの設定。新規登録のウィザードで組成エディタを出すのに使う。
+   * 既存データのときは composition を受け取るので要らない。
+   */
+  settings?: AppSettings;
 }
 
 export function ProductForm({
@@ -42,6 +50,7 @@ export function ProductForm({
   modelOptions,
   useOptions,
   composition,
+  settings,
 }: Props) {
   const router = useRouter();
   const { m, locale } = useI18n();
@@ -77,6 +86,16 @@ export function ProductForm({
     for (const p of initial?.properties ?? []) if (p.unit) init[p.propertyDefId] = p.unit;
     return init;
   });
+
+  /**
+   * 新規登録は「基本情報 → 組成 → 備考」の順に進める。
+   * 組成の入力には製品のIDが要るので、基本情報の段で先に登録してしまう。
+   * 既存データを開いたときは段に分けず、今までどおり全部を1画面に出す。
+   */
+  const wizard = !initial;
+  const [step, setStep] = useState(1);
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const targetId = initial?.id ?? createdId;
 
   const [error, setError] = useState<string | null>(null);
   // どの項目が悪いのかを、その欄の下に出す
@@ -114,34 +133,58 @@ export function ProductForm({
     };
   }
 
+  /** 書き込みを1か所にまとめる。段によって作る／直すが変わるだけで、送る中身は同じ */
+  async function save(): Promise<{ id: string; warnings: string[] } | null> {
+    const res = await fetch(targetId ? `/api/products/${targetId}` : "/api/products", {
+      method: targetId ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildBody()),
+    });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return null;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      setFieldErrors(toFieldErrors(body?.error.details));
+      return null;
+    }
+    const body = (await res.json()) as { id?: string; warnings?: string[] };
+    return { id: body.id ?? targetId ?? "", warnings: body.warnings ?? [] };
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setFieldErrors({});
     setWarnings([]);
+
+    // 組成の段は、エディタ側が自分で保存する。ここでは進むだけ
+    if (wizard && step === 2) {
+      setStep(3);
+      return;
+    }
+
     setSaving(true);
     try {
-      const res = await fetch(initial ? `/api/products/${initial.id}` : "/api/products", {
-        method: initial ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildBody()),
-      });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.saveFailed(res.status));
-        setFieldErrors(toFieldErrors(body?.error.details));
+      const done = await save();
+      if (!done) return;
+
+      // 基本情報を登録できたら、そのIDで組成を入力させる
+      if (wizard && step === 1) {
+        setCreatedId(done.id);
+        setStep(2);
+        router.refresh();
         return;
       }
-      const body = (await res.json()) as { warnings?: string[] };
+
       // 警告があるときは一覧に戻らず、その場で確認してもらう（S5と同じ作法）
-      if (body.warnings && body.warnings.length > 0) {
-        setWarnings(body.warnings);
+      if (done.warnings.length > 0) {
+        setWarnings(done.warnings);
         if (initial) setEditing(false);
         router.refresh();
         return;
       }
-      router.push("/products");
+      // ウィザードを終えたときは、作ったものを見せる。編集のときは今までどおり一覧へ
+      router.push(wizard && done.id ? `/products/${done.id}` : "/products");
       router.refresh();
     } finally {
       setSaving(false);
@@ -197,174 +240,210 @@ export function ProductForm({
         </div>
       )}
 
+      {wizard && (
+        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          {[m.products.basic, m.composition.title, m.products.note].map((label, i) => {
+            const n = i + 1;
+            return (
+              <li key={label} className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "flex size-6 items-center justify-center rounded-full border text-xs",
+                    n === step && "border-primary bg-primary text-primary-foreground font-medium",
+                    n < step && "border-primary text-primary",
+                    n > step && "text-muted-foreground",
+                  )}
+                >
+                  {n}
+                </span>
+                <span className={n === step ? "font-medium" : "text-muted-foreground"}>
+                  {label}
+                </span>
+                {n < 3 && <span className="text-muted-foreground px-1">›</span>}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
       <form onSubmit={onSubmit} className="space-y-4">
         <fieldset disabled={readOnly} className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{m.products.basic}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="code">{m.products.code}</Label>
-                  <Input
-                    id="code"
-                    required
-                    maxLength={20}
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    aria-invalid={Boolean(fieldError("code"))}
-                    className="w-56 font-mono"
-                  />
-                  <FieldError message={fieldError("code")} />
-                </div>
-                {/* 見出しはチェックの状態そのもの（有効／無効）を出す */}
-                <div className="space-y-2">
-                  <Label htmlFor="status" className="block text-center">
-                    {status === "ACTIVE" ? m.products.statusActive : m.products.statusDiscontinued}
-                  </Label>
-                  <div className="flex h-9 items-center justify-center">
-                    <input
-                      id="status"
-                      type="checkbox"
-                      aria-label={m.products.status}
-                      checked={status === "ACTIVE"}
-                      onChange={(e) => setStatus(e.target.checked ? "ACTIVE" : "DISCONTINUED")}
+          {(!wizard || step === 1) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{m.products.basic}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="code">{m.products.code}</Label>
+                    <Input
+                      id="code"
+                      required
+                      maxLength={20}
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      aria-invalid={Boolean(fieldError("code"))}
+                      className="w-56 font-mono"
                     />
+                    <FieldError message={fieldError("code")} />
                   </div>
-                </div>
-                {flagRow(
-                  "usableAsMaterial",
-                  usableAsMaterial,
-                  setUsableAsMaterial,
-                  m.products.usableAsMaterial,
-                  m.products.usableAsMaterialHint,
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="modelValue">{m.products.modelValue}</Label>
-                  <select
-                    id="modelValue"
-                    value={modelValue}
-                    onChange={(e) => setModelValue(e.target.value)}
-                    className="border-input bg-background h-9 w-48 rounded-none border px-2 text-sm"
-                  >
-                    <option value="">{m.products.unselected}</option>
-                    {/* 設定から消された値でも、選ばれていれば選択肢に残す（記録を勝手に変えない） */}
-                    {(modelValue && !modelOptions.includes(modelValue)
-                      ? [modelValue, ...modelOptions]
-                      : modelOptions
-                    ).map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="uses">{m.products.uses}</Label>
-                  <MultiSelect
-                    id="uses"
-                    ariaLabel={m.products.uses}
-                    placeholder={m.products.unselected}
-                    options={useOptions}
-                    values={uses}
-                    onChange={setUses}
-                    disabled={readOnly}
-                  />
-                </div>
-                {defs.map((d) => (
-                  <div key={d.id} className="space-y-2">
-                    <Label htmlFor={`prop-${d.id}`}>{pickName(locale, d.labelJa, d.labelEn)}</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id={`prop-${d.id}`}
-                        inputMode={d.dataType === "NUMBER" ? "decimal" : "text"}
-                        value={propValues[d.id] ?? ""}
-                        onChange={(e) => setPropValues({ ...propValues, [d.id]: e.target.value })}
-                        className="w-48"
+                  {/* 見出しはチェックの状態そのもの（有効／無効）を出す */}
+                  <div className="space-y-2">
+                    <Label htmlFor="status" className="block text-center">
+                      {status === "ACTIVE"
+                        ? m.products.statusActive
+                        : m.products.statusDiscontinued}
+                    </Label>
+                    <div className="flex h-9 items-center justify-center">
+                      <input
+                        id="status"
+                        type="checkbox"
+                        aria-label={m.products.status}
+                        checked={status === "ACTIVE"}
+                        onChange={(e) => setStatus(e.target.checked ? "ACTIVE" : "DISCONTINUED")}
                       />
-                      {d.dataType === "NUMBER" && (
-                        <Input
-                          aria-label={`${pickName(locale, d.labelJa, d.labelEn)} ${m.common.unit}`}
-                          value={propUnits[d.id] ?? d.defaultUnit ?? ""}
-                          onChange={(e) => setPropUnits({ ...propUnits, [d.id]: e.target.value })}
-                          className="w-28"
-                          placeholder={m.common.unit}
-                        />
-                      )}
                     </div>
                   </div>
-                ))}
-              </div>
+                  {flagRow(
+                    "usableAsMaterial",
+                    usableAsMaterial,
+                    setUsableAsMaterial,
+                    m.products.usableAsMaterial,
+                    m.products.usableAsMaterialHint,
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="modelValue">{m.products.modelValue}</Label>
+                    <select
+                      id="modelValue"
+                      value={modelValue}
+                      onChange={(e) => setModelValue(e.target.value)}
+                      className="border-input bg-background h-9 w-48 rounded-none border px-2 text-sm"
+                    >
+                      <option value="">{m.products.unselected}</option>
+                      {/* 設定から消された値でも、選ばれていれば選択肢に残す（記録を勝手に変えない） */}
+                      {(modelValue && !modelOptions.includes(modelValue)
+                        ? [modelValue, ...modelOptions]
+                        : modelOptions
+                      ).map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="uses">{m.products.uses}</Label>
+                    <MultiSelect
+                      id="uses"
+                      ariaLabel={m.products.uses}
+                      placeholder={m.products.unselected}
+                      options={useOptions}
+                      values={uses}
+                      onChange={setUses}
+                      disabled={readOnly}
+                    />
+                  </div>
+                  {defs.map((d) => (
+                    <div key={d.id} className="space-y-2">
+                      <Label htmlFor={`prop-${d.id}`}>
+                        {pickName(locale, d.labelJa, d.labelEn)}
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id={`prop-${d.id}`}
+                          inputMode={d.dataType === "NUMBER" ? "decimal" : "text"}
+                          value={propValues[d.id] ?? ""}
+                          onChange={(e) => setPropValues({ ...propValues, [d.id]: e.target.value })}
+                          className="w-48"
+                        />
+                        {d.dataType === "NUMBER" && (
+                          <Input
+                            aria-label={`${pickName(locale, d.labelJa, d.labelEn)} ${m.common.unit}`}
+                            value={propUnits[d.id] ?? d.defaultUnit ?? ""}
+                            onChange={(e) => setPropUnits({ ...propUnits, [d.id]: e.target.value })}
+                            className="w-28"
+                            placeholder={m.common.unit}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="nameJa">{m.products.nameJa}</Label>
-                <Input
-                  id="nameJa"
-                  required
-                  value={nameJa}
-                  onChange={(e) => setNameJa(e.target.value)}
-                  aria-invalid={Boolean(fieldError("nameJa"))}
-                  className="w-full"
+                <div className="space-y-2">
+                  <Label htmlFor="nameJa">{m.products.nameJa}</Label>
+                  <Input
+                    id="nameJa"
+                    required
+                    value={nameJa}
+                    onChange={(e) => setNameJa(e.target.value)}
+                    aria-invalid={Boolean(fieldError("nameJa"))}
+                    className="w-full"
+                  />
+                  <FieldError message={fieldError("nameJa")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nameEn">
+                    {m.products.nameEn}
+                    {m.common.optional}
+                  </Label>
+                  <Input
+                    id="nameEn"
+                    value={nameEn}
+                    onChange={(e) => setNameEn(e.target.value)}
+                    aria-invalid={Boolean(fieldError("nameEn"))}
+                    className="w-full"
+                  />
+                  <FieldError message={fieldError("nameEn")} />
+                </div>
+
+                <FieldError message={fieldError("aliases")} />
+                <AliasList
+                  label={m.products.aliasesJa}
+                  addLabel={m.products.addAliasJa}
+                  idPrefix="aliasJa"
+                  values={aliasesJa}
+                  onChange={setAliasesJa}
                 />
-                <FieldError message={fieldError("nameJa")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="nameEn">
-                  {m.products.nameEn}
+                <AliasList
+                  label={m.products.aliasesEn}
+                  addLabel={m.products.addAliasEn}
+                  idPrefix="aliasEn"
+                  values={aliasesEn}
+                  onChange={setAliasesEn}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 組成は別部品だが、備考より前に出す。既存データは受け取り、新規はここで作る */}
+          {!wizard && composition}
+          {wizard && step === 2 && createdId && settings && (
+            <CompositionEditor productId={createdId} settings={settings} />
+          )}
+
+          {(!wizard || step === 3) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {m.products.note}
                   {m.common.optional}
-                </Label>
-                <Input
-                  id="nameEn"
-                  value={nameEn}
-                  onChange={(e) => setNameEn(e.target.value)}
-                  aria-invalid={Boolean(fieldError("nameEn"))}
-                  className="w-full"
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <textarea
+                  id="note"
+                  rows={3}
+                  aria-label={m.products.note}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  aria-invalid={Boolean(fieldError("note"))}
+                  className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
                 />
-                <FieldError message={fieldError("nameEn")} />
-              </div>
-
-              <p className="text-muted-foreground text-xs">{m.products.aliasHint}</p>
-              <FieldError message={fieldError("aliases")} />
-              <AliasList
-                label={m.products.aliasesJa}
-                addLabel={m.products.addAliasJa}
-                idPrefix="aliasJa"
-                values={aliasesJa}
-                onChange={setAliasesJa}
-              />
-              <AliasList
-                label={m.products.aliasesEn}
-                addLabel={m.products.addAliasEn}
-                idPrefix="aliasEn"
-                values={aliasesEn}
-                onChange={setAliasesEn}
-              />
-            </CardContent>
-          </Card>
-
-          {/* 組成は別部品だが、備考より前に出したいのでフォームの内側に差し込む */}
-          {composition}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                {m.products.note}
-                {m.common.optional}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <textarea
-                id="note"
-                rows={3}
-                aria-label={m.products.note}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                aria-invalid={Boolean(fieldError("note"))}
-                className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
-              />
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </fieldset>
 
         {error && (
@@ -387,22 +466,37 @@ export function ProductForm({
 
         {/* 保存ボタンは編集中だけ。表示のみのときは form の中に送信ボタンを置かない */}
         {!readOnly && (
-          <div className="flex gap-2">
-            <Button type="submit" disabled={saving}>
-              {saving ? m.common.saving : m.common.save}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                // 既存データの編集をやめるときは、書きかけを捨てて表示に戻す
-                if (initial) router.refresh();
-                else router.push("/products");
-                setEditing(!initial);
-              }}
-            >
-              {m.common.cancel}
-            </Button>
+          <div className="space-y-2">
+            {wizard && step === 2 && (
+              <p className="text-muted-foreground text-sm">{m.products.compositionStepHint}</p>
+            )}
+            <div className="flex gap-2">
+              {wizard && step > 1 && (
+                <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
+                  {m.common.back}
+                </Button>
+              )}
+              <Button type="submit" disabled={saving}>
+                {saving ? m.common.saving : wizard && step < 3 ? m.common.next : m.common.save}
+              </Button>
+              {(!wizard || step === 1) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    // 既存データの編集をやめるときは、書きかけを捨てて表示に戻す
+                    if (initial) router.refresh();
+                    else router.push("/products");
+                    setEditing(!initial);
+                  }}
+                >
+                  {m.common.cancel}
+                </Button>
+              )}
+            </div>
+            {wizard && step > 1 && (
+              <p className="text-muted-foreground text-xs">{m.products.wizardSavedHint}</p>
+            )}
           </div>
         )}
       </form>
