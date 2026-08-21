@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { emailSchema, passwordSchema } from "./auth";
+import type { PasswordPolicy } from "./settings";
 import type { Messages } from "./i18n/ja";
 import { PERMISSIONS } from "./permissions";
 
@@ -12,12 +13,12 @@ const groupId = z
   .optional();
 
 /** 管理者によるユーザー作成。初期パスワードを発行し、初回ログイン時に変更を強制する */
-export const userCreateSchema = (m: Messages) =>
+export const userCreateSchema = (m: Messages, policy?: PasswordPolicy) =>
   z.object({
     email: emailSchema(m),
     displayName: z.string().trim().max(200).nullable().optional(),
     permissions: z.array(z.enum(PERMISSIONS)),
-    initialPassword: passwordSchema(m),
+    initialPassword: passwordSchema(m, policy),
     orgGroupId: groupId,
     newsGroupId: groupId,
   });
@@ -35,9 +36,9 @@ export const userUpdateSchema = (_m: Messages) =>
 export type UserUpdateInput = z.infer<ReturnType<typeof userUpdateSchema>>;
 
 /** 管理者によるパスワード再発行 */
-export const passwordResetSchema = (m: Messages) =>
+export const passwordResetSchema = (m: Messages, policy?: PasswordPolicy) =>
   z.object({
-    newPassword: passwordSchema(m),
+    newPassword: passwordSchema(m, policy),
     /** 次回ログイン時に本人へ変更を強制する（既定 true） */
     mustChangePassword: z.boolean().optional(),
   });

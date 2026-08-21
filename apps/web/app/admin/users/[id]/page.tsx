@@ -1,6 +1,6 @@
 "use client";
 
-import { expandPermissions, type Permission } from "@chem/shared";
+import { describePasswordPolicy, expandPermissions, type Permission } from "@chem/shared";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { firstError, summaryError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
 import { passwordProblem } from "@/lib/password-check";
+import { usePasswordPolicy } from "@/lib/use-password-policy";
 import type { ApiError, MeDto, UserSummaryDto } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -38,8 +39,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   // どの項目が悪いのかを、その欄の下に出す
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const fieldError = (key: string) => firstError(fieldErrors, key);
+  const policy = usePasswordPolicy();
   // 打っている最中から決まりを見る
-  const pwProblem = passwordProblem(newPassword, m);
+  const pwProblem = passwordProblem(newPassword, m, policy);
   const [forceChange, setForceChange] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -296,7 +298,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               className="max-w-md font-mono"
             />
             <FieldError message={pwProblem ?? fieldError("newPassword")} />
-            <p className="text-muted-foreground text-xs">{m.users.initialPasswordHint}</p>
+            <p className="text-muted-foreground text-xs">{describePasswordPolicy(m, policy)}</p>
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input

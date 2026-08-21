@@ -1,5 +1,12 @@
-import { emptyTableState, normalizeEmail, parseTableState, userCreateSchema } from "@chem/shared";
+import {
+  emptyTableState,
+  normalizeEmail,
+  parseTableState,
+  userCreateSchema,
+  pickPasswordPolicy,
+} from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
+import { getAppSettings } from "@/lib/settings";
 import { hashPassword } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
@@ -56,7 +63,7 @@ export async function POST(req: Request) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const parsed = userCreateSchema(m).safeParse(body);
+  const parsed = userCreateSchema(m, pickPasswordPolicy(await getAppSettings())).safeParse(body);
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }

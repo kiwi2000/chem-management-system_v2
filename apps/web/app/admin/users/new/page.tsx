@@ -1,6 +1,6 @@
 "use client";
 
-import { expandPermissions, type Permission } from "@chem/shared";
+import { describePasswordPolicy, expandPermissions, type Permission } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FieldError } from "@/components/field-error";
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { firstError, summaryError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
 import { passwordProblem } from "@/lib/password-check";
+import { usePasswordPolicy } from "@/lib/use-password-policy";
 import type { ApiError } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -34,8 +35,9 @@ export default function NewUserPage() {
   const fieldError = (key: string) => firstError(fieldErrors, key);
   const [saving, setSaving] = useState(false);
 
+  const policy = usePasswordPolicy();
   // 打っている最中から決まりを見る。送ってから断られるより早く気づける
-  const pwProblem = passwordProblem(initialPassword, m);
+  const pwProblem = passwordProblem(initialPassword, m, policy);
 
   // 「他人のお知らせも編集できる」を選ぶと投稿もできるので、含意を展開して見る
   const canPost = expandPermissions(permissions).includes("NEWS_POST");
@@ -120,7 +122,7 @@ export default function NewUserPage() {
                 className="max-w-md font-mono"
               />
               <FieldError message={pwProblem ?? fieldError("initialPassword")} />
-              <p className="text-muted-foreground text-xs">{m.users.initialPasswordHint}</p>
+              <p className="text-muted-foreground text-xs">{describePasswordPolicy(m, policy)}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="orgGroup">{m.users.orgGroup}</Label>

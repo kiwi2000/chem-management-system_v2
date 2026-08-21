@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import { passwordProblem } from "@/lib/password-check";
+import { usePasswordPolicy } from "@/lib/use-password-policy";
 import type { ApiError } from "@/lib/types";
 
 /** パスワード変更。初期パスワードでログインした直後はここへ誘導される */
@@ -20,8 +21,9 @@ export default function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const policy = usePasswordPolicy();
   // 打っている最中から決まりを見る。確認欄は、打ち終わるまで食い違いを責めない
-  const pwProblem = passwordProblem(newPassword, m);
+  const pwProblem = passwordProblem(newPassword, m, policy);
   const mismatch =
     confirmPassword !== "" && confirmPassword !== newPassword
       ? m.validation.passwordMismatch

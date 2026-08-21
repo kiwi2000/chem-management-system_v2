@@ -1,5 +1,6 @@
-import { changePasswordSchema } from "@chem/shared";
+import { changePasswordSchema, pickPasswordPolicy } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
+import { getAppSettings } from "@/lib/settings";
 import { createSession, hashPassword, revokeAllSessions, verifyPassword } from "@/lib/auth";
 import { jsonError, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
@@ -23,7 +24,9 @@ export async function POST(req: Request) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const parsed = changePasswordSchema(m).safeParse(body);
+  const parsed = changePasswordSchema(m, pickPasswordPolicy(await getAppSettings())).safeParse(
+    body,
+  );
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }

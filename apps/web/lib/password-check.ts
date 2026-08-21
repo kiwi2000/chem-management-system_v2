@@ -1,4 +1,4 @@
-import { passwordSchema, type Messages } from "@chem/shared";
+import { passwordSchema, type Messages, type PasswordPolicy } from "@chem/shared";
 
 /**
  * 打っている最中のパスワードを、その場で見る。
@@ -9,9 +9,13 @@ import { passwordSchema, type Messages } from "@chem/shared";
  *
  * 返すのは最初の1つだけ。全部並べても、直せるのは結局1つずつのため。
  */
-export function passwordProblem(value: string, m: Messages): string | null {
+export function passwordProblem(
+  value: string,
+  m: Messages,
+  policy?: PasswordPolicy,
+): string | null {
   if (value === "") return null;
-  const result = passwordSchema(m).safeParse(value);
+  const result = passwordSchema(m, policy).safeParse(value);
   if (result.success) return null;
   return result.error.issues[0]?.message ?? null;
 }

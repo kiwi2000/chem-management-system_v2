@@ -31,6 +31,21 @@ export interface AppSettings {
   substanceApprovalRequired: boolean;
   /** 製品を公開するのに承認が要るか。同上 */
   productApprovalRequired: boolean;
+
+  /**
+   * パスワードの決まり。これから設定するパスワードにだけ効く。
+   * 決まりを厳しくしても、すでに使われているパスワードは無効にならない
+   * （ログインできなくなる人が出るため）。
+   */
+  passwordMinLength: number;
+  /** 英字を1文字以上入れさせる */
+  passwordRequireLetter: boolean;
+  /** 数字を1文字以上入れさせる */
+  passwordRequireDigit: boolean;
+  /** 記号を1文字以上入れさせる */
+  passwordRequireSymbol: boolean;
+  /** 大文字と小文字を両方入れさせる（英字を使う場合のみ意味を持つ） */
+  passwordRequireMixedCase: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -43,7 +58,34 @@ export const DEFAULT_SETTINGS: AppSettings = {
   productUseOptions: [],
   substanceApprovalRequired: false,
   productApprovalRequired: false,
+  passwordMinLength: 12,
+  passwordRequireLetter: true,
+  passwordRequireDigit: true,
+  passwordRequireSymbol: false,
+  passwordRequireMixedCase: false,
 };
+
+/** パスワードの決まりだけを取り出したもの。画面にも渡すのでこの形で持つ */
+export type PasswordPolicy = Pick<
+  AppSettings,
+  | "passwordMinLength"
+  | "passwordRequireLetter"
+  | "passwordRequireDigit"
+  | "passwordRequireSymbol"
+  | "passwordRequireMixedCase"
+>;
+
+/** 決まりのうち、短くしすぎると総当たりに耐えられない下限 */
+export const PASSWORD_MIN_LENGTH_FLOOR = 8;
+export const PASSWORD_MAX_LENGTH_CEILING = 128;
+
+export const pickPasswordPolicy = (s: AppSettings): PasswordPolicy => ({
+  passwordMinLength: s.passwordMinLength,
+  passwordRequireLetter: s.passwordRequireLetter,
+  passwordRequireDigit: s.passwordRequireDigit,
+  passwordRequireSymbol: s.passwordRequireSymbol,
+  passwordRequireMixedCase: s.passwordRequireMixedCase,
+});
 
 /** 選択肢の一覧は1行1件で持つ。空行と前後の空白は捨て、重複は先に出たものを残す */
 export function parseOptionList(raw: string): string[] {
@@ -106,6 +148,20 @@ export const SETTING_DEFS: SettingDef[] = [
   boolDef("substanceApprovalRequired", "substance.approval_required"),
   boolDef("productApprovalRequired", "product.approval_required"),
   {
+    field: "passwordMinLength",
+    key: "password.min_length",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const n = Number(raw);
+      if (!Number.isInteger(n)) return null;
+      return n >= PASSWORD_MIN_LENGTH_FLOOR && n <= PASSWORD_MAX_LENGTH_CEILING ? n : null;
+    },
+  },
+  boolDef("passwordRequireLetter", "password.require_letter"),
+  boolDef("passwordRequireDigit", "password.require_digit"),
+  boolDef("passwordRequireSymbol", "password.require_symbol"),
+  boolDef("passwordRequireMixedCase", "password.require_mixed_case"),
+  {
     field: "productModelOptions",
     key: "product.model_options",
     valueType: "STRING",
@@ -144,6 +200,15 @@ export const settingsSchema = (m: Messages) =>
     productUseOptions: z.array(z.string().trim().min(1).max(100)).max(200),
     substanceApprovalRequired: z.boolean(),
     productApprovalRequired: z.boolean(),
+    passwordMinLength: z
+      .number()
+      .int()
+      .min(PASSWORD_MIN_LENGTH_FLOOR, m.settings.passwordMinLengthRange)
+      .max(PASSWORD_MAX_LENGTH_CEILING, m.settings.passwordMinLengthRange),
+    passwordRequireLetter: z.boolean(),
+    passwordRequireDigit: z.boolean(),
+    passwordRequireSymbol: z.boolean(),
+    passwordRequireMixedCase: z.boolean(),
   });
 
 export type SettingsInput = z.infer<ReturnType<typeof settingsSchema>>;

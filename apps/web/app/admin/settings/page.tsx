@@ -3,8 +3,12 @@
 import {
   COMPOSITION_VALIDATION_MODES,
   DEFAULT_SETTINGS,
+  describePasswordPolicy,
   formatOptionList,
   parseOptionList,
+  pickPasswordPolicy,
+  PASSWORD_MAX_LENGTH_CEILING,
+  PASSWORD_MIN_LENGTH_FLOOR,
   type AppSettings,
   type CompositionValidationMode,
   type PendingResolution,
@@ -345,6 +349,58 @@ export default function SettingsPage() {
             <AlertDescription>{notice}</AlertDescription>
           </Alert>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.passwordSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-sm">{m.settings.passwordSectionHint}</p>
+
+            <div className="space-y-2">
+              <Label htmlFor="pwMin">{m.settings.passwordMinLength}</Label>
+              <Input
+                id="pwMin"
+                type="number"
+                min={PASSWORD_MIN_LENGTH_FLOOR}
+                max={PASSWORD_MAX_LENGTH_CEILING}
+                step={1}
+                value={settings.passwordMinLength}
+                onChange={(e) =>
+                  setSettings({ ...settings, passwordMinLength: Number(e.target.value) })
+                }
+                className="w-28"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.passwordMinLengthRange}</p>
+            </div>
+
+            <div className="space-y-2">
+              {(
+                [
+                  ["passwordRequireLetter", m.settings.passwordRequireLetter],
+                  ["passwordRequireDigit", m.settings.passwordRequireDigit],
+                  ["passwordRequireSymbol", m.settings.passwordRequireSymbol],
+                  ["passwordRequireMixedCase", m.settings.passwordRequireMixedCase],
+                ] as const
+              ).map(([field, label]) => (
+                <label key={field} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings[field]}
+                    onChange={(e) => setSettings({ ...settings, [field]: e.target.checked })}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+
+            {/* 決めた内容が実際どう伝わるかを、その場で見せる */}
+            <p className="text-sm">
+              <span className="text-muted-foreground">{m.settings.passwordPreview}: </span>
+              {describePasswordPolicy(m, pickPasswordPolicy(settings))}
+            </p>
+          </CardContent>
+        </Card>
 
         <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={saving}>

@@ -1,5 +1,6 @@
-import { passwordResetSchema } from "@chem/shared";
+import { passwordResetSchema, pickPasswordPolicy } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
+import { getAppSettings } from "@/lib/settings";
 import { hashPassword, revokeAllSessions } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
@@ -26,7 +27,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const parsed = passwordResetSchema(m).safeParse(body);
+  const parsed = passwordResetSchema(m, pickPasswordPolicy(await getAppSettings())).safeParse(body);
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }

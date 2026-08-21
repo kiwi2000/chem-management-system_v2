@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Messages } from "./i18n/ja";
+import { DEFAULT_SETTINGS, type PasswordPolicy } from "./settings";
 
 /**
  * 認証（自前・外部サービス非依存）の入力チェック。
@@ -15,17 +16,45 @@ export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
+/** 記号とみなす文字。英数字と空白以外は、ひとまとめに記号として扱う */
+const SYMBOL = /[^A-Za-z0-9\s]/;
+
 /**
- * パスワードポリシー: 12文字以上（長さを最重視）。
- * 加えて英字・数字を各1文字以上（記号は任意・日本語入力も可）。
+ * パスワードの決まり。長さと文字種はシステム設定で決める。
+ * 決まりを渡さないときは既定（12文字以上・英字と数字）で見る。
+ *
+ * すでに使われているパスワードには効かない。決まりを厳しくした途端に
+ * 誰もログインできなくなるのを避けるため、これから設定するものだけを見る。
  */
-export const passwordSchema = (m: Messages) =>
-  z
+export const passwordSchema = (m: Messages, policy?: PasswordPolicy) => {
+  const p = policy ?? DEFAULT_SETTINGS;
+  return z
     .string()
-    .min(12, m.validation.passwordMin)
+    .min(p.passwordMinLength, m.validation.passwordMin(p.passwordMinLength))
     .max(200, m.validation.passwordMax)
-    .refine((v) => /[A-Za-z]/.test(v), m.validation.passwordNeedsLetter)
-    .refine((v) => /[0-9]/.test(v), m.validation.passwordNeedsDigit);
+    .superRefine((v, ctx) => {
+      const add = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+      if (p.passwordRequireLetter && !/[A-Za-z]/.test(v)) add(m.validation.passwordNeedsLetter);
+      if (p.passwordRequireDigit && !/[0-9]/.test(v)) add(m.validation.passwordNeedsDigit);
+      if (p.passwordRequireSymbol && !SYMBOL.test(v)) add(m.validation.passwordNeedsSymbol);
+      if (p.passwordRequireMixedCase && !(/[a-z]/.test(v) && /[A-Z]/.test(v))) {
+        add(m.validation.passwordNeedsMixedCase);
+      }
+    });
+};
+
+/** 決まりを日本語の一文にする。入力欄の説明に出す */
+export function describePasswordPolicy(m: Messages, policy?: PasswordPolicy): string {
+  const p = policy ?? DEFAULT_SETTINGS;
+  const kinds: string[] = [];
+  if (p.passwordRequireLetter) kinds.push(m.validation.kindLetter);
+  if (p.passwordRequireDigit) kinds.push(m.validation.kindDigit);
+  if (p.passwordRequireSymbol) kinds.push(m.validation.kindSymbol);
+  if (p.passwordRequireMixedCase) kinds.push(m.validation.kindMixedCase);
+  return kinds.length === 0
+    ? m.validation.passwordRuleLengthOnly(p.passwordMinLength)
+    : m.validation.passwordRule(p.passwordMinLength, kinds.join("・"));
+}
 
 export const loginSchema = (m: Messages) =>
   z.object({
@@ -40,11 +69,11 @@ export const loginSchema = (m: Messages) =>
   });
 export type LoginInput = z.infer<ReturnType<typeof loginSchema>>;
 
-export const changePasswordSchema = (m: Messages) =>
+export const changePasswordSchema = (m: Messages, policy?: PasswordPolicy) =>
   z
     .object({
       currentPassword: z.string().min(1, m.validation.currentPasswordRequired),
-      newPassword: passwordSchema(m),
+      newPassword: passwordSchema(m, policy),
       confirmPassword: z.string(),
     })
     .refine((v) => v.newPassword === v.confirmPassword, {
