@@ -13,12 +13,12 @@ import {
   MessageSquare,
   Package,
   Scale,
-  Settings2,
+  Settings,
   Sigma,
-  SlidersHorizontal,
   Tags,
   UserCog,
   Users,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -83,7 +83,7 @@ const ADMIN_ITEMS: NavItem[] = [
   {
     href: "/admin/settings",
     key: "settings",
-    icon: SlidersHorizontal,
+    icon: Settings,
     needs: "ADMIN",
     match: ["/admin/settings"],
   },
@@ -177,7 +177,7 @@ export function SidebarNav({
                   )}
                   aria-hidden
                 />
-                <Settings2 className="size-4 shrink-0" aria-hidden />
+                <Wrench className="size-4 shrink-0" aria-hidden />
                 <span className="truncate">{g.title}</span>
               </button>
               {systemOpen && (
