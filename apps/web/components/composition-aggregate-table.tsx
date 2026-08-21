@@ -21,11 +21,27 @@ import { cn } from "@/lib/utils";
 
 const CELL = "border-r px-2 py-1 last:border-r-0";
 
-export function CompositionAggregateTable({ productId }: { productId: string }) {
+/** 行を指す鍵。CASを持たない物質は自分のコードで区別する */
+const keyOf = (row: { casNumber: string | null; code: string }) => row.casNumber ?? row.code;
+
+interface Props {
+  productId: string;
+  /** 開いている行。見出しの「展開」「閉じる」から操るので、状態は親が持つ */
+  open: Set<string>;
+  onOpenChange: (next: Set<string>) => void;
+  /** 開ける行の鍵。親がボタンを出すかどうかの判断に使う */
+  onExpandableChange: (keys: string[]) => void;
+}
+
+export function CompositionAggregateTable({
+  productId,
+  open,
+  onOpenChange,
+  onExpandableChange,
+}: Props) {
   const { m, locale } = useI18n();
   const [data, setData] = useState<CompositionAggregateDto | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let alive = true;
@@ -46,6 +62,13 @@ export function CompositionAggregateTable({ productId }: { productId: string }) 
     };
   }, [productId, m]);
 
+  // 取れたら、開ける行の鍵を親に渡す（見出しのボタンを出すかどうかの判断に使う）
+  useEffect(() => {
+    onExpandableChange(
+      (data?.rows ?? []).filter((r) => r.contributions.length > 1).map((r) => keyOf(r)),
+    );
+  }, [data, onExpandableChange]);
+
   if (error) {
     return (
       <Alert variant="destructive">
@@ -55,13 +78,12 @@ export function CompositionAggregateTable({ productId }: { productId: string }) 
   }
   if (!data) return <p className="text-muted-foreground text-sm">{m.common.loading}</p>;
 
-  const toggle = (key: string) =>
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const toggle = (key: string) => {
+    const next = new Set(open);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    onOpenChange(next);
+  };
 
   return (
     <div className="space-y-3">
@@ -115,7 +137,7 @@ export function CompositionAggregateTable({ productId }: { productId: string }) 
             </thead>
             <tbody>
               {data.rows.map((row) => {
-                const key = row.casNumber ?? row.code;
+                const key = keyOf(row);
                 const many = row.contributions.length > 1;
                 const shown = open.has(key);
                 return (

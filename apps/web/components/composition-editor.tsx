@@ -343,6 +343,12 @@ export function CompositionEditor({
     });
   }, [rows]);
   const [tab, setTab] = useState<"registered" | "aggregate">("registered");
+  /**
+   * 合算表の開閉。見出しの「展開」「閉じる」から操るので、状態はここで持つ。
+   * 鍵は合算表の側から受け取る（どの行が開けるかは、中身を取ってみないと分からない）。
+   */
+  const [aggregateOpen, setAggregateOpen] = useState<Set<string>>(new Set());
+  const [aggregateKeys, setAggregateKeys] = useState<string[]>([]);
   // 直しているあいだは、登録した組成だけを見せる
   const showAggregate = tab === "aggregate" && canAggregate && !editing;
 
@@ -413,15 +419,22 @@ export function CompositionEditor({
                 {m.common.edit}
               </Button>
             ))}
-          {/* 原材料が入っているときだけ。開くものが無ければ置いても押せない */}
-          {showWithin && (
+          {/*
+            開くものが無ければ置いても押せないので出さない。
+            いま見えている表に効かせる。合算表を開いていれば合算表の行を開け閉めする。
+          */}
+          {(showAggregate ? aggregateKeys.length > 0 : showWithin) && (
             <>
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={tree.expandingAll}
-                onClick={() => tree.expandAll(treeRoots)}
+                disabled={showAggregate ? false : tree.expandingAll}
+                onClick={() =>
+                  showAggregate
+                    ? setAggregateOpen(new Set(aggregateKeys))
+                    : tree.expandAll(treeRoots)
+                }
               >
                 <UnfoldVertical className="mr-1 size-3.5" />
                 {m.composition.expandAll}
@@ -430,8 +443,8 @@ export function CompositionEditor({
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={tree.open.size === 0}
-                onClick={tree.collapseAll}
+                disabled={(showAggregate ? aggregateOpen.size : tree.open.size) === 0}
+                onClick={() => (showAggregate ? setAggregateOpen(new Set()) : tree.collapseAll())}
               >
                 <FoldVertical className="mr-1 size-3.5" />
                 {m.composition.collapseAll}
@@ -471,7 +484,12 @@ export function CompositionEditor({
         )}
 
         {showAggregate ? (
-          <CompositionAggregateTable productId={productId} />
+          <CompositionAggregateTable
+            productId={productId}
+            open={aggregateOpen}
+            onOpenChange={setAggregateOpen}
+            onExpandableChange={setAggregateKeys}
+          />
         ) : rows === null ? (
           <p className="text-muted-foreground text-sm">{m.common.loading}</p>
         ) : rows.length === 0 ? (
