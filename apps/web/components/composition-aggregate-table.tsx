@@ -2,7 +2,7 @@
 
 import { pickName } from "@chem/shared";
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
@@ -101,6 +101,9 @@ export function CompositionAggregateTable({ productId }: { productId: string }) 
             <thead>
               <tr className="bg-muted/50 border-y text-left">
                 <th className={cn(CELL, "w-32 font-medium")}>{m.composition.casNumber}</th>
+                <th className={cn(CELL, "w-28 font-medium")}>
+                  {m.composition.aggregateSubstanceId}
+                </th>
                 <th className={cn(CELL, "font-medium")}>{m.composition.aggregateName}</th>
                 <th className={cn(CELL, "w-px text-right font-medium whitespace-nowrap")}>
                   {m.composition.contentPct}
@@ -116,22 +119,26 @@ export function CompositionAggregateTable({ productId }: { productId: string }) 
                 const many = row.contributions.length > 1;
                 const shown = open.has(key);
                 return (
-                  <tr key={key} className="border-b align-top">
-                    <td className={cn(CELL, "font-mono text-xs")}>
-                      {row.casNumber ?? (
-                        <span className="text-muted-foreground font-sans">
-                          {m.composition.aggregateNoCas}
-                        </span>
-                      )}
-                    </td>
-                    <td className={CELL}>
-                      {many ? (
-                        <>
+                  <Fragment key={key}>
+                    <tr className="border-b">
+                      <td className={cn(CELL, "font-mono text-xs")}>
+                        {row.casNumber ?? (
+                          <span className="text-muted-foreground font-sans">
+                            {m.composition.aggregateNoCas}
+                          </span>
+                        )}
+                      </td>
+                      <td className={cn(CELL, "font-mono text-xs")}>{row.code}</td>
+                      <td className={CELL}>
+                        {many ? (
                           <button
                             type="button"
                             onClick={() => toggle(key)}
                             aria-expanded={shown}
-                            className="hover:text-foreground inline-flex items-center gap-1 text-left"
+                            aria-label={
+                              shown ? m.composition.collapse : m.composition.aggregateShowSources
+                            }
+                            className="hover:text-foreground -ml-1 inline-flex items-center gap-1 text-left"
                           >
                             <ChevronRight
                               className={cn(
@@ -141,37 +148,47 @@ export function CompositionAggregateTable({ productId }: { productId: string }) 
                             />
                             {pickName(locale, row.nameJa, row.nameEn)}
                           </button>
-                          {shown && (
-                            <ul className="text-muted-foreground mt-1 space-y-0.5 pl-5 text-xs">
-                              {row.contributions.map((c, i) => (
-                                <li key={`${c.code}-${i}`}>
-                                  <span className="font-mono">{c.code}</span>{" "}
-                                  {pickName(locale, c.nameJa, c.nameEn)}
-                                  {" — "}
-                                  {c.via === null
-                                    ? m.composition.aggregateDirect
-                                    : m.composition.aggregateVia(c.via)}{" "}
-                                  {c.pct}%
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </>
-                      ) : (
-                        <span className="pl-5">{pickName(locale, row.nameJa, row.nameEn)}</span>
-                      )}
-                    </td>
-                    <td className={cn(CELL, "text-right whitespace-nowrap")}>{row.totalPct}%</td>
-                    <td className={cn(CELL, "text-muted-foreground text-right text-xs")}>
-                      {many ? m.composition.aggregateCount(row.contributions.length) : "—"}
-                    </td>
-                  </tr>
+                        ) : (
+                          pickName(locale, row.nameJa, row.nameEn)
+                        )}
+                      </td>
+                      <td className={cn(CELL, "text-right whitespace-nowrap")}>{row.totalPct}%</td>
+                      <td className={cn(CELL, "text-muted-foreground text-right text-xs")}>
+                        {many ? m.composition.aggregateCount(row.contributions.length) : "—"}
+                      </td>
+                    </tr>
+                    {/*
+                     * 内訳は物質コードと、製品全体に対する重量%だけ。
+                     * どの原材料から来たかは登録組成のほうを見れば分かる。
+                     * 数字を上の行と同じ列に置くので、足すと合計になることが目で追える。
+                     */}
+                    {many &&
+                      shown &&
+                      row.contributions.map((c, i) => (
+                        <tr key={`${key}-${i}`} className="bg-muted/40 border-b">
+                          <td className={CELL} />
+                          <td className={cn(CELL, "text-muted-foreground pl-6 font-mono text-xs")}>
+                            {c.code}
+                          </td>
+                          <td className={CELL} />
+                          <td
+                            className={cn(
+                              CELL,
+                              "text-muted-foreground text-right text-xs whitespace-nowrap",
+                            )}
+                          >
+                            {c.pct}%
+                          </td>
+                          <td className={CELL} />
+                        </tr>
+                      ))}
+                  </Fragment>
                 );
               })}
             </tbody>
             <tfoot>
               <tr className="bg-muted/50 border-t">
-                <td className={cn(CELL, "text-right font-medium")} colSpan={2}>
+                <td className={cn(CELL, "text-right font-medium")} colSpan={3}>
                   {m.composition.sumLabel}
                 </td>
                 <td className={cn(CELL, "text-right font-medium")}>{data.totalPct}%</td>

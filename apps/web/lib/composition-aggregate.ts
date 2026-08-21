@@ -14,7 +14,7 @@ import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { visibilityWhere } from "@/lib/product-service";
 import type { Actor } from "@/lib/authz";
-import type { AggregateContributionDto, CompositionAggregateDto } from "@/lib/types";
+import type { CompositionAggregateDto } from "@/lib/types";
 
 /**
  * 組成をCAS番号でまとめる。
@@ -46,7 +46,8 @@ interface Bucket {
   nameEn: string | null;
   /** 合算用の細かい整数 */
   fine: bigint;
-  contributions: AggregateContributionDto[];
+  /** 寄与元。並べ替えたいので、細かい整数のまま持つ */
+  contributions: { code: string; fine: bigint }[];
 }
 
 export async function aggregateComposition(
@@ -87,7 +88,7 @@ export async function aggregateComposition(
     });
   }
 
-  async function walk(productId: string, ratio: Ratio, via: string | null, depth: number) {
+  async function walk(productId: string, ratio: Ratio, depth: number) {
     const found = await cachedLines(productId);
     if ("reason" in found) return found.reason;
 
@@ -108,7 +109,7 @@ export async function aggregateComposition(
       if (!next) continue;
 
       if (line.substance) {
-        addLeaf(line.substance, next, via, within);
+        addLeaf(line.substance, next);
         continue;
       }
       if (!line.childProduct) continue;
@@ -118,7 +119,7 @@ export async function aggregateComposition(
         continue;
       }
       const child = line.childProduct;
-      const reason = await walk(child.id, next, child.nameJa, depth + 1);
+      const reason = await walk(child.id, next, depth + 1);
       if (reason) {
         blocked.push({
           code: child.code,
@@ -141,8 +142,6 @@ export async function aggregateComposition(
       casNumber: string | null;
     },
     ratio: Ratio,
-    via: string | null,
-    within: string,
   ) {
     const casNormalized = substance.casNumber?.trim().toUpperCase() ?? null;
     const key = keyOf(casNormalized, substance.id);
@@ -158,18 +157,11 @@ export async function aggregateComposition(
       contributions: [],
     };
     bucket.fine += fine;
-    bucket.contributions.push({
-      code: substance.code,
-      nameJa: substance.nameJa,
-      nameEn: substance.nameEn,
-      via,
-      withinPct: within,
-      pct: fineToPct(fine),
-    });
+    bucket.contributions.push({ code: substance.code, fine });
     buckets.set(key, bucket);
   }
 
-  const rootReason = await walk(rootProductId, RATIO_ONE, null, 0);
+  const rootReason = await walk(rootProductId, RATIO_ONE, 0);
   if (rootReason) {
     return { rows: [], totalPct: "0", blocked, truncated };
   }
@@ -195,7 +187,10 @@ export async function aggregateComposition(
         nameJa: rep?.nameJa ?? b.nameJa,
         nameEn: rep?.nameEn ?? b.nameEn,
         totalPct: fineToPct(b.fine),
-        contributions: b.contributions,
+        // 内訳も多い順。上の表と並びを揃える
+        contributions: b.contributions
+          .sort((x, y) => compareFine(y.fine, x.fine))
+          .map((c) => ({ code: c.code, pct: fineToPct(c.fine) })),
       };
     });
 

@@ -477,8 +477,8 @@ export const ja = {
     aggregateSources: "寄与元",
     aggregateNoCas: "CASなし",
     aggregateCount: (n: number) => `${n}件`,
-    aggregateDirect: "この製品に直接",
-    aggregateVia: (name: string) => `${name} の中`,
+    aggregateSubstanceId: "物質ID",
+    aggregateShowSources: "寄与元を見る",
     aggregateIncomplete: (n: number) =>
       `中身をたどれない原材料が ${n} 件あります。この表はまだ完全ではありません。下の合計も100%に届きません。`,
     collapseAll: "閉じる",

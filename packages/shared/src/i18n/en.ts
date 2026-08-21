@@ -472,8 +472,8 @@ export const en: Messages = {
     aggregateSources: "Sources",
     aggregateNoCas: "No CAS",
     aggregateCount: (n: number) => `${n}`,
-    aggregateDirect: "directly in this product",
-    aggregateVia: (name: string) => `inside ${name}`,
+    aggregateSubstanceId: "Substance ID",
+    aggregateShowSources: "Show sources",
     aggregateIncomplete: (n: number) =>
       `${n} material(s) could not be broken down. This table is not complete yet, and the total below will not reach 100%.`,
     collapseAll: "Collapse",

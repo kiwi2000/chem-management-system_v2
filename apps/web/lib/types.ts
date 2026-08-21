@@ -185,15 +185,13 @@ export interface CompositionResponse {
   balancePct: string | null;
 }
 
-/** CASでまとめた行の、1件ぶんの寄与元 */
+/**
+ * CASでまとめた行の、1件ぶんの寄与元。
+ * どの原材料から来たかは登録組成のほうを見れば分かるので、ここには持たない。
+ */
 export interface AggregateContributionDto {
+  /** 物質コード。同じCASの別の物質を見分けるのに使う */
   code: string;
-  nameJa: string;
-  nameEn: string | null;
-  /** どの原材料の中から来たか。この製品に直接入っているなら null */
-  via: string | null;
-  /** その原材料の中での重量% */
-  withinPct: string;
   /** 製品全体に対する重量% */
   pct: string;
 }
