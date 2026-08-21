@@ -69,7 +69,7 @@ export const en: Messages = {
     groups: "Groups",
     users: "Users",
     propertyDefs: "Custom properties",
-    settings: "System settings",
+    settings: "Settings",
     substances: "Substances",
     products: "Products / Materials",
     laws: "Regulations",

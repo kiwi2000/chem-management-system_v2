@@ -1,7 +1,26 @@
 "use client";
 
 import type { Messages, Permission } from "@chem/shared";
-import { ChevronRight } from "lucide-react";
+import {
+  ArrowDownUp,
+  BookOpen,
+  ChevronRight,
+  FileText,
+  FlaskConical,
+  Home,
+  Link2,
+  Megaphone,
+  MessageSquare,
+  Package,
+  Scale,
+  Settings2,
+  Sigma,
+  SlidersHorizontal,
+  Tags,
+  UserCog,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -10,6 +29,8 @@ import { cn } from "@/lib/utils";
 
 interface NavItem {
   href: string;
+  /** 行頭のアイコン。文字を読まなくても見当が付くように置く */
+  icon: LucideIcon;
   /** 辞書の nav ブロックから文言を引くためのキー */
   key: keyof Messages["nav"];
   /** この権限が無い人にはメニューを出さない（サーバー側でも別途弾く） */
@@ -24,34 +45,48 @@ interface NavItem {
  * リンク先が未実装のうちは 404 になる。実装のたびに順次つながる。
  */
 const ITEMS: NavItem[] = [
-  { href: "/", key: "home" },
+  { href: "/", key: "home", icon: Home },
   // お知らせを読むだけならホームで足りる。この画面は投稿・編集のためのものなので、
   // 投稿できる人にだけ見せる（他人の分を編集できる権限は投稿権限を含む）
-  { href: "/news", key: "news", needs: "NEWS_POST" },
-  { href: "/substances", key: "substances", needs: "SUBSTANCE_VIEW" },
-  { href: "/products", key: "products", needs: "PRODUCT_VIEW" },
-  { href: "/laws", key: "laws", needs: "REGULATION_VIEW", match: ["/laws", "/categories"] },
+  { href: "/news", key: "news", icon: Megaphone, needs: "NEWS_POST" },
+  { href: "/substances", key: "substances", icon: FlaskConical, needs: "SUBSTANCE_VIEW" },
+  { href: "/products", key: "products", icon: Package, needs: "PRODUCT_VIEW" },
+  {
+    href: "/laws",
+    key: "laws",
+    icon: Scale,
+    needs: "REGULATION_VIEW",
+    match: ["/laws", "/categories"],
+  },
   {
     href: "/link-versions",
     key: "links",
+    icon: Link2,
     needs: "REGULATION_VIEW",
     match: ["/link-versions", "/sources"],
   },
-  { href: "/metal-factors", key: "metalFactors", needs: "REGULATION_VIEW" },
-  { href: "/import-export", key: "importExport", needs: "DATA_EXPORT" },
-  { href: "/doc-templates", key: "docTemplates", needs: "DATA_EXPORT" },
+  { href: "/metal-factors", key: "metalFactors", icon: Sigma, needs: "REGULATION_VIEW" },
+  { href: "/import-export", key: "importExport", icon: ArrowDownUp, needs: "DATA_EXPORT" },
+  { href: "/doc-templates", key: "docTemplates", icon: FileText, needs: "DATA_EXPORT" },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
-  { href: "/admin/groups", key: "groups", needs: "ADMIN", match: ["/admin/groups"] },
-  { href: "/admin/users", key: "users", needs: "ADMIN", match: ["/admin/users"] },
+  { href: "/admin/groups", key: "groups", icon: Users, needs: "ADMIN", match: ["/admin/groups"] },
+  { href: "/admin/users", key: "users", icon: UserCog, needs: "ADMIN", match: ["/admin/users"] },
   {
     href: "/admin/property-defs",
     key: "propertyDefs",
+    icon: Tags,
     needs: "ADMIN",
     match: ["/admin/property-defs"],
   },
-  { href: "/admin/settings", key: "settings", needs: "ADMIN", match: ["/admin/settings"] },
+  {
+    href: "/admin/settings",
+    key: "settings",
+    icon: SlidersHorizontal,
+    needs: "ADMIN",
+    match: ["/admin/settings"],
+  },
 ];
 
 /**
@@ -60,8 +95,8 @@ const ADMIN_ITEMS: NavItem[] = [
  * 検証環境でも見せたいので、環境では出し分けない。権限も要らない。
  */
 const DEV_ITEMS: NavItem[] = [
-  { href: "/spec", key: "spec" },
-  { href: "/feedback", key: "feedback" },
+  { href: "/spec", key: "spec", icon: BookOpen },
+  { href: "/feedback", key: "feedback", icon: MessageSquare },
 ];
 
 function isActive(pathname: string, item: NavItem): boolean {
@@ -99,6 +134,7 @@ export function SidebarNav({
 
   const renderItem = (item: NavItem, indented: boolean) => {
     const active = isActive(pathname, item);
+    const Icon = item.icon;
     return (
       <Link
         key={item.href}
@@ -108,14 +144,15 @@ export function SidebarNav({
         // 選択中の背景は CSS 変数を直接指定（ユーティリティが環境により効かないため）
         style={active ? { backgroundColor: "var(--secondary)" } : undefined}
         className={cn(
-          "block truncate rounded-md py-2 text-sm transition-colors",
+          "flex items-center gap-2 rounded-md py-2 text-sm transition-colors",
           indented ? "px-2" : "px-3",
           active
             ? "text-foreground font-medium"
             : "text-muted-foreground hover:bg-[var(--muted)] hover:text-foreground",
         )}
       >
-        {m.nav[item.key]}
+        <Icon className="size-4 shrink-0" aria-hidden />
+        <span className="truncate">{m.nav[item.key]}</span>
       </Link>
     );
   };
@@ -138,7 +175,9 @@ export function SidebarNav({
                     "size-3.5 shrink-0 transition-transform",
                     systemOpen && "rotate-90",
                   )}
+                  aria-hidden
                 />
+                <Settings2 className="size-4 shrink-0" aria-hidden />
                 <span className="truncate">{g.title}</span>
               </button>
               {systemOpen && (

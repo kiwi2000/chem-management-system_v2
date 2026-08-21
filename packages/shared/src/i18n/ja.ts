@@ -69,7 +69,7 @@ export const ja = {
     groups: "グループ管理",
     users: "ユーザー管理",
     propertyDefs: "拡張属性",
-    settings: "システム設定",
+    settings: "設定",
     substances: "物質",
     products: "製品 / 原材料",
     laws: "法規制",
