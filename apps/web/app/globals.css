@@ -273,9 +273,9 @@
    * 濃くするとオーシャンと見分けが付かなくなる（濃い青＋白文字も試したが差が出なかった）。
    * 明るいことがこの配色の個性なので、暗くする方向へは動かさない。
    */
-  --strong: oklch(0.71 0.115 232);
+  --strong: oklch(0.76 0.1 232);
   --strong-foreground: oklch(0.26 0.11 250);
-  --strong-head: oklch(0.79 0.093 232);
+  --strong-head: oklch(0.84 0.075 232);
   --sidebar: oklch(0.96 0.025 220);
   --sidebar-foreground: oklch(0.26 0.03 240);
   --sidebar-border: oklch(0.895 0.03 220);
