@@ -117,11 +117,19 @@ export function SidebarNav({
   const allowed = (item: NavItem) => !item.needs || permissions.includes(item.needs);
 
   const adminItems = ADMIN_ITEMS.filter(allowed);
-  const groups: { title: string | null; items: NavItem[]; apart?: boolean }[] = [
+  const groups: {
+    title: string | null;
+    items: NavItem[];
+    /** 押して開け閉めする見出しにする（いまは「システム」だけ） */
+    collapsible?: boolean;
+    apart?: boolean;
+  }[] = [
     { title: null, items: ITEMS.filter(allowed) },
-    ...(adminItems.length > 0 ? [{ title: m.nav.system, items: adminItems }] : []),
+    ...(adminItems.length > 0
+      ? [{ title: m.nav.system, items: adminItems, collapsible: true }]
+      : []),
     // 業務のメニューと地続きに見えないよう、上を大きめに空ける
-    { title: null, items: DEV_ITEMS, apart: true },
+    { title: m.nav.devOnly, items: DEV_ITEMS, apart: true },
   ];
 
   /**
@@ -162,7 +170,11 @@ export function SidebarNav({
       {groups.map((g, gi) => (
         // 余白は padding で足す（space-y の margin と打ち消し合わないように）
         <div key={gi} className={cn("space-y-1", g.apart && "pt-6")}>
-          {g.title ? (
+          {g.title && !g.collapsible && (
+            // 押しても何も起きない、ただの見出し
+            <div className="text-muted-foreground px-3 pb-1 text-xs font-medium">{g.title}</div>
+          )}
+          {g.title && g.collapsible ? (
             <>
               <button
                 type="button"

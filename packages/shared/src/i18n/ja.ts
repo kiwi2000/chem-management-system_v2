@@ -78,6 +78,7 @@ export const ja = {
     importExport: "TSV取込 / 出力",
     docTemplates: "ドキュメント生成",
     admin: "管理",
+    devOnly: "開発中限定",
     spec: "仕様書",
     feedback: "フィードバック",
   },
