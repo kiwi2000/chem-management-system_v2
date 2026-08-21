@@ -340,13 +340,15 @@ export function ProductsTable({
         emptyMessage={m.products.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
-        onMarkDoneSelected={
+        bulkAction={
           scope === "working"
-            ? (rows) => void runBulk(approvalRequired ? "submit" : "publish", rows)
+            ? {
+                label: approvalRequired ? m.common.submitSelected : m.common.publishSelected,
+                confirm: approvalRequired ? m.common.submitConfirm : m.common.publishConfirm,
+                run: (rows) => void runBulk(approvalRequired ? "submit" : "publish", rows),
+              }
             : undefined
         }
-        markDoneLabel={approvalRequired ? m.common.submitSelected : m.common.publishSelected}
-        markDoneConfirm={approvalRequired ? m.common.submitConfirm : m.common.publishConfirm}
         filterLayout={filterLayout}
         onRowActivate={(p) => router.push(`/products/${p.id}`)}
       />

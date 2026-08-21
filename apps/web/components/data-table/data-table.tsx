@@ -41,12 +41,15 @@ interface Props<T> {
   selectable?: boolean;
   /** 選択した行の削除。確認はこの部品が出すので、呼び出し側は消す処理だけ書く */
   onDeleteSelected?: (rows: T[]) => void | Promise<void>;
-  /** 選択した行をまとめて完成にする（ドラフトを持つ一覧だけ渡す） */
-  onMarkDoneSelected?: (rows: T[]) => void | Promise<void>;
-  /** 上のボタンの文言。省略すると「選択した行を完成にする」 */
-  markDoneLabel?: string;
-  /** 押したときの確認文。省略すると「選択した ○ 件を完成にしますか？」 */
-  markDoneConfirm?: (n: number) => string;
+  /**
+   * 選択した行をまとめて次の状態へ送る操作（申請・発行）。
+   * 文言と処理はいつも一組なので、まとめて受ける。渡さなければボタンを出さない。
+   */
+  bulkAction?: {
+    label: string;
+    confirm: (n: number) => string;
+    run: (rows: T[]) => void | Promise<void>;
+  };
   /** 行をダブルクリックしたとき（詳細を開く・その場のフォームに読み込む） */
   onRowActivate?: (row: T) => void;
   /** フィルターの並びを指定する場合、1行に置く列キーを行ごとに並べる */
@@ -77,9 +80,7 @@ export function DataTable<T>({
   emptyMessage,
   selectable = false,
   onDeleteSelected,
-  onMarkDoneSelected,
-  markDoneLabel,
-  markDoneConfirm,
+  bulkAction,
   onRowActivate,
   filterLayout,
 }: Props<T>) {
@@ -143,13 +144,13 @@ export function DataTable<T>({
     });
   }
 
-  async function markDoneSelected() {
+  async function runBulkAction() {
     const targets = (rows ?? []).filter((r) => selected.has(rowKey(r)));
-    if (targets.length === 0 || !onMarkDoneSelected) return;
-    if (!confirm((markDoneConfirm ?? m.common.markDoneConfirm)(targets.length))) return;
+    if (targets.length === 0 || !bulkAction) return;
+    if (!confirm(bulkAction.confirm(targets.length))) return;
     setDeleting(true);
     try {
-      await onMarkDoneSelected(targets);
+      await bulkAction.run(targets);
       setSelected(new Set());
     } finally {
       setDeleting(false);
@@ -229,15 +230,15 @@ export function DataTable<T>({
           >
             <Trash2 className="size-4" />
           </Button>
-          {onMarkDoneSelected && (
+          {bulkAction && (
             <Button
               variant="outline"
               size="sm"
               disabled={selected.size === 0 || deleting}
-              onClick={() => void markDoneSelected()}
+              onClick={() => void runBulkAction()}
             >
               <CircleCheck className="mr-1 size-3.5" />
-              {markDoneLabel ?? m.common.markDoneSelected}
+              {bulkAction.label}
             </Button>
           )}
           {selected.size > 0 && (

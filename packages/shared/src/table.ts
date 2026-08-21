@@ -215,10 +215,3 @@ export function splitNumericTokens(raw: string): string[] {
   return out;
 }
 
-/** ドラフト／完成の切り替え。一覧からまとめて変えることもある */
-export const draftUpdateSchema = z.object({
-  ids: z.array(z.string().min(1)).min(1).max(500),
-  draftFlag: z.boolean(),
-});
-
-export type DraftUpdateInput = z.infer<typeof draftUpdateSchema>;
