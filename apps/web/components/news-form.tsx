@@ -207,7 +207,7 @@ export function NewsForm({ initial, canEdit }: Props) {
                 setEditing(!initial);
               }}
             >
-              {m.common.cancel}
+              {initial ? m.common.discard : m.common.cancel}
             </Button>
           </div>
         )}

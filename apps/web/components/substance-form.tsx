@@ -418,7 +418,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
                 setEditing(!initial);
               }}
             >
-              {m.common.cancel}
+              {initial ? m.common.discard : m.common.cancel}
             </Button>
           </div>
         )}

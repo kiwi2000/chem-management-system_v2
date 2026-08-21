@@ -256,7 +256,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 setEditing(false);
               }}
             >
-              {m.common.cancel}
+              {m.common.discard}
             </Button>
           </div>
         )}

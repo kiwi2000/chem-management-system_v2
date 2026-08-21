@@ -255,7 +255,7 @@ export default function MetalFactorsPage() {
                     variant="outline"
                     onClick={() => setForm({ ...EMPTY_FORM })}
                   >
-                    {m.common.cancel}
+                    {m.common.discard}
                   </Button>
                 )}
               </div>

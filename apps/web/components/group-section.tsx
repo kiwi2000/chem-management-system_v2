@@ -260,7 +260,7 @@ export function GroupSection({ kind, title, hint, storageKey }: Props) {
               </Button>
               {form.id !== "" && (
                 <Button type="button" variant="outline" onClick={() => setForm({ ...emptyForm })}>
-                  {m.common.cancel}
+                  {m.common.discard}
                 </Button>
               )}
             </div>

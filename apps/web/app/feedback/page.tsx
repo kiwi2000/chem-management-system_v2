@@ -338,7 +338,7 @@ export default function FeedbackPage() {
                     variant="outline"
                     onClick={() => setForm({ ...EMPTY_FORM })}
                   >
-                    {m.common.cancel}
+                    {m.common.discard}
                   </Button>
                 )}
               </div>

@@ -22,6 +22,8 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 export default function SettingsPage() {
   const { m } = useI18n();
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  /** 読み込んだ直後の内容。「変更を破棄」で戻す先 */
+  const [loaded, setLoaded] = useState<AppSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -39,12 +41,14 @@ export default function SettingsPage() {
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.loadFailed(res.status));
         setSettings({ ...DEFAULT_SETTINGS });
+        setLoaded({ ...DEFAULT_SETTINGS });
         return;
       }
-      const loaded = ((await res.json()) as { settings: AppSettings }).settings;
-      setSettings(loaded);
-      setModelOptionsText(formatOptionList(loaded.productModelOptions));
-      setUseOptionsText(formatOptionList(loaded.productUseOptions));
+      const fresh = ((await res.json()) as { settings: AppSettings }).settings;
+      setSettings(fresh);
+      setLoaded(fresh);
+      setModelOptionsText(formatOptionList(fresh.productModelOptions));
+      setUseOptionsText(formatOptionList(fresh.productUseOptions));
     })();
   }, [m]);
 
@@ -52,6 +56,16 @@ export default function SettingsPage() {
    * 保存。承認を「必要 → 不要」に切り替えると承認待のものが宙に浮くので、
    * サーバーが 409 で扱いを聞いてくる。選んでもらってから同じ内容を送り直す。
    */
+  /** 書きかけを捨てて、読み込んだときの内容に戻す */
+  function discard() {
+    if (!loaded) return;
+    setSettings(loaded);
+    setModelOptionsText(formatOptionList(loaded.productModelOptions));
+    setUseOptionsText(formatOptionList(loaded.productUseOptions));
+    setError(null);
+    setNotice(null);
+  }
+
   async function save(resolution?: Record<string, PendingResolution>) {
     if (!settings) return;
     setError(null);
@@ -75,6 +89,8 @@ export default function SettingsPage() {
         return;
       }
       setPending(null);
+      // 保存できたら、破棄で戻す先も新しい内容にする
+      setLoaded(settings);
       setNotice(m.settings.saved);
     } finally {
       setSaving(false);
@@ -330,9 +346,14 @@ export default function SettingsPage() {
           </Alert>
         )}
 
-        <Button type="submit" disabled={saving}>
-          {saving ? m.common.saving : m.common.save}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={saving}>
+            {saving ? m.common.saving : m.common.save}
+          </Button>
+          <Button type="button" variant="outline" disabled={saving} onClick={discard}>
+            {m.common.discard}
+          </Button>
+        </div>
       </form>
     </div>
   );
