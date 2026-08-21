@@ -402,9 +402,6 @@ export const ja = {
     passwordRequireSymbol: "記号を必ず入れる（英数字と空白以外）",
     passwordRequireMixedCase: "英字の大文字と小文字を両方入れる",
     passwordPreview: "いまの決まり",
-    balanceAllowed: "balance（残部）行を使えるようにする",
-    balanceAllowedHint:
-      "「残り全部」の行を1製品に1件だけ置けます。含有率は 100% との差から自動で決まります",
     productSection: "製品",
     approvalSection: "承認",
     pendingTitle: "承認待のものが残っています",
@@ -461,7 +458,6 @@ export const ja = {
     errorPickOne: "構成要素は物質か原材料のどちらか一方を選んでください",
     errorPctRequired: "含有率を入力してください（残部の行を除く）",
     errorBalanceHasPct: "残部の行に含有率は入力できません（自動で決まります）",
-    errorBalanceNotAllowed: "残部の行はシステム設定で許可されていません",
     errorBalanceMultiple: "残部の行は1製品につき1件までです",
     errorBalanceNegative: (total: string) =>
       `既知成分だけで100%を超えているため、残部が負になります（合計 ${total}%）`,

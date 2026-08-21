@@ -400,9 +400,6 @@ export const en: Messages = {
     passwordRequireSymbol: "Require a symbol (anything but letters, digits and spaces)",
     passwordRequireMixedCase: "Require both upper and lower case letters",
     passwordPreview: "Current rule",
-    balanceAllowed: "Allow a balance (remainder) line",
-    balanceAllowedHint:
-      "Lets one line per product mean “the rest”. Its percentage is derived from the difference to 100%",
     productSection: "Products",
     approvalSection: "Approval",
     pendingTitle: "Some items are still awaiting approval",
@@ -458,7 +455,6 @@ export const en: Messages = {
     errorPickOne: "Choose either a substance or a raw material, not both",
     errorPctRequired: "Enter a content percentage (except on the balance line)",
     errorBalanceHasPct: "The balance line cannot have a percentage (it is derived)",
-    errorBalanceNotAllowed: "Balance lines are not allowed by the system settings",
     errorBalanceMultiple: "Only one balance line is allowed per product",
     errorBalanceNegative: (total: string) =>
       `The known components already exceed 100%, so the balance would be negative (total ${total}%)`,

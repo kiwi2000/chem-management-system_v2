@@ -19,8 +19,6 @@ export interface AppSettings {
   compositionValidationMode: CompositionValidationMode;
   /** 合計を 100% と見なす許容誤差（%）。数値は文字列で持つ */
   compositionEpsilonPct: string;
-  /** balance（残部）行を使えるようにするか */
-  compositionBalanceAllowed: boolean;
 
   /** 製品の「型式」で選べる値。並べた順がそのまま表示順になる */
   productModelOptions: string[];
@@ -52,8 +50,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   casRequired: false,
   casFormatEnforced: false,
   compositionValidationMode: "STANDARD",
-  compositionEpsilonPct: "0.01",
-  compositionBalanceAllowed: true,
+  compositionEpsilonPct: "0.001",
   productModelOptions: [],
   productUseOptions: [],
   substanceApprovalRequired: false,
@@ -144,7 +141,6 @@ export const SETTING_DEFS: SettingDef[] = [
       return scaled !== null && scaled >= 0n ? raw.trim() : null;
     },
   },
-  boolDef("compositionBalanceAllowed", "composition.balance_allowed"),
   boolDef("substanceApprovalRequired", "substance.approval_required"),
   boolDef("productApprovalRequired", "product.approval_required"),
   {
@@ -194,7 +190,6 @@ export const settingsSchema = (m: Messages) =>
     casFormatEnforced: z.boolean(),
     compositionValidationMode: z.enum(COMPOSITION_VALIDATION_MODES),
     compositionEpsilonPct: epsilonSchema(m),
-    compositionBalanceAllowed: z.boolean(),
     // 1件あたり100文字・全体で200件まで。桁外れの入力で画面が壊れないようにする
     productModelOptions: z.array(z.string().trim().min(1).max(100)).max(200),
     productUseOptions: z.array(z.string().trim().min(1).max(100)).max(200),

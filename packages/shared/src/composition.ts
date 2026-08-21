@@ -132,9 +132,6 @@ export function validateCompositionSum(
     return { errors, warnings: [m.composition.warnEmpty], totalPct: "0", balancePct: null };
   }
 
-  if (balanceLines.length > 0 && !settings.compositionBalanceAllowed) {
-    errors.push(m.composition.errorBalanceNotAllowed);
-  }
   if (balanceLines.length > 1) {
     errors.push(m.composition.errorBalanceMultiple);
   }

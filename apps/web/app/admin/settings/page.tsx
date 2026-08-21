@@ -202,22 +202,6 @@ export default function SettingsPage() {
               />
               <p className="text-muted-foreground text-xs">{m.settings.epsilonPctHint}</p>
             </div>
-            <label className="flex gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={settings.compositionBalanceAllowed}
-                onChange={(e) =>
-                  setSettings({ ...settings, compositionBalanceAllowed: e.target.checked })
-                }
-              />
-              <span>
-                <span className="block">{m.settings.balanceAllowed}</span>
-                <span className="text-muted-foreground block text-xs">
-                  {m.settings.balanceAllowedHint}
-                </span>
-              </span>
-            </label>
           </CardContent>
         </Card>
 

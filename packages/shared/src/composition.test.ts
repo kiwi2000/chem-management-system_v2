@@ -94,7 +94,11 @@ describe("validateCompositionSum", () => {
     });
 
     it("許容誤差の内側なら通す", () => {
-      const r = validateCompositionSum([line("99.995")], settings(), m);
+      const r = validateCompositionSum(
+        [line("99.995")],
+        settings({ compositionEpsilonPct: "0.01" }),
+        m,
+      );
       expect(r.errors).toEqual([]);
       expect(r.warnings).toEqual([]);
     });
@@ -115,18 +119,13 @@ describe("validateCompositionSum", () => {
     });
 
     it("誤差の範囲で超えている分は 0 に丸める", () => {
-      const r = validateCompositionSum([line("100.005"), line(null, true)], settings(), m);
-      expect(r.errors).toEqual([]);
-      expect(r.balancePct).toBe("0");
-    });
-
-    it("設定で禁止していればエラー", () => {
       const r = validateCompositionSum(
-        [line("60"), line(null, true)],
-        settings({ compositionBalanceAllowed: false }),
+        [line("100.005"), line(null, true)],
+        settings({ compositionEpsilonPct: "0.01" }),
         m,
       );
-      expect(r.errors).toEqual([m.composition.errorBalanceNotAllowed]);
+      expect(r.errors).toEqual([]);
+      expect(r.balancePct).toBe("0");
     });
 
     it("2件以上あればエラー", () => {
