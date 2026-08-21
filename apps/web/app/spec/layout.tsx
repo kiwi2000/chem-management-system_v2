@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 import { SpecNav } from "./spec-nav";
 
 /**
- * 仕様書。
+ * ユーザーマニュアル。
  *
- * 開発中の確認用に、仕様と変更点を画面の中から読めるようにしたもの。
+ * 使いかたを画面の中から読めるようにしたもの。開発中の確認にも使う。
  * 本番を作るときに、この画面ごとメニューから外す。
  */
-export default function SpecLayout({ children }: { children: ReactNode }) {
+export default function ManualLayout({ children }: { children: ReactNode }) {
   return (
     <div className="w-full p-4 lg:p-6">
       <div className="flex flex-col gap-8 lg:flex-row">

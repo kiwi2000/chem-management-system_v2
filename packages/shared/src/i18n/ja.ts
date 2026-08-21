@@ -80,7 +80,7 @@ export const ja = {
     docTemplates: "ドキュメント生成",
     admin: "管理",
     devOnly: "開発中限定",
-    spec: "仕様書",
+    spec: "ユーザーマニュアル",
     feedback: "フィードバック",
   },
 

@@ -80,7 +80,7 @@ export const en: Messages = {
     docTemplates: "Documents",
     admin: "Administration",
     devOnly: "Development only",
-    spec: "Specification",
+    spec: "User manual",
     feedback: "Feedback",
   },
 

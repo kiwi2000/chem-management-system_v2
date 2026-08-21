@@ -1,12 +1,12 @@
 import { List, Note, P, PageHead, Section, SpecTable, T } from "../_parts";
 import { SpecPager } from "../spec-pager";
 
-export default function SpecFeedbackPage() {
+export default function ManualFeedbackPage() {
   return (
     <>
       <PageHead
         title="フィードバック"
-        lead="使ってみて気づいたことを、その場で書き留めておく画面です。不具合の報告も、要望も、ちょっとした質問も、同じ場所に集めます。"
+        lead="使ってみて困ったこと・こうしてほしいことを書き残す場所です。開発中の窓口として用意しています。遠慮なく書いてください。"
       />
 
       <Section title="書きかた">

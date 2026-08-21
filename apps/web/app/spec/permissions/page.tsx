@@ -1,13 +1,33 @@
 import { List, Note, P, PageHead, Section, SpecTable, T } from "../_parts";
 import { SpecPager } from "../spec-pager";
 
-export default function SpecPermissionsPage() {
+export default function ManualPermissionsPage() {
   return (
     <>
       <PageHead
         title="だれが何をできるか"
-        lead="「役職」ではなく、できること一つひとつを本人に持たせるやり方にしています。実際の担当は会社ごとに違うので、役職でまとめると必ず当てはまらない人が出てくるためです。"
+        lead="人によって、見える画面もできる操作も違います。「押せない」「出てこない」と思ったら、まずここを確かめてください。"
       />
+
+      <Section title="自分に何ができるかを確かめる">
+        <P>
+          いちばん早いのは<T>左のメニューを見ること</T>
+          です。許されていない画面は、そもそも並びません。
+          「物質」が出ていなければ物質を見る権限がない、ということです。
+        </P>
+        <P>
+          もっと細かく知りたいときは、システム管理者に聞いてください。
+          自分で自分の権限を変えることはできません。
+        </P>
+      </Section>
+
+      <Section title="なぜ役職で決めないのか">
+        <P>
+          このシステムは「課長だからこれができる」という決め方をしていません。
+          できること一つひとつを、人ごとに付け外しします。実際の担当は会社ごとに違うので、
+          役職でまとめると必ず当てはまらない人が出てくるためです。
+        </P>
+      </Section>
 
       <Section title="権限の一覧">
         <SpecTable
@@ -72,7 +92,7 @@ export default function SpecPermissionsPage() {
         </P>
       </Section>
 
-      <Section title="権限が無いとどう見えるか">
+      <Section title="見えかたの違い">
         <SpecTable
           head={["対象", "一覧・詳細", "組成の材料に選べるか", "組成の中の名前"]}
           rows={[

@@ -1,15 +1,30 @@
 import { List, Note, P, PageHead, Section, SpecTable, StateChip, Sub, T } from "../_parts";
 import { SpecPager } from "../spec-pager";
 
-export default function SpecListsPage() {
+export default function ManualListsPage() {
   return (
     <>
       <PageHead
-        title="一覧とフィルター"
-        lead="物質や製品の一覧は、どの画面でも同じ操作で扱えるようにしてあります。並べ替え・絞り込み・1ページの件数は、次に開いたときも覚えています。"
+        title="探す・絞り込む"
+        lead="登録したものの中から目当てのものを見つけるやりかたです。物質・製品・お知らせなど、一覧のある画面はすべて同じ操作で扱えます。"
       />
 
-      <Section title="一覧が上下2つに分かれている理由">
+      <Section title="まず覚える3つ">
+        <SpecTable
+          head={["したいこと", "やりかた"]}
+          rows={[
+            ["中身を見たい", "行をダブルクリックすると詳細が開きます"],
+            ["順番を変えたい", "列の見出しを押します。もう一度押すと逆順です"],
+            ["条件で絞りたい", "表の上の「フィルター」を開いて条件を入れます"],
+          ]}
+        />
+        <P>
+          並べ替え・絞り込み・1ページの件数は<T>画面ごとに覚えています</T>
+          。次に開いたときも同じ状態から始まるので、毎回入れ直す必要はありません。
+        </P>
+      </Section>
+
+      <Section title="表が上下2つに分かれているとき">
         <P>
           物質と製品の一覧は、上下2つの表に分かれています。
           <T>上が、みんなが使える公開済のもの</T>。<T>下が、まだ仕上がっていないもの</T>です。
