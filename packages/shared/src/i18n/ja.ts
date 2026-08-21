@@ -408,6 +408,7 @@ export const ja = {
     elementName: "物質名/原材料名",
     casNumber: "CAS",
     balanceOf: (pct: string) => `${pct}（残部）`,
+    dragHint: "つかんで上下に動かすと順番を変えられます（矢印キーでも動かせます）",
     balanceHint: "残りを自動で埋める行にします。1製品に1つだけ置けます",
     sumLabel: "合計",
     contentPct: "重量%",
@@ -419,8 +420,6 @@ export const ja = {
     searching: "検索中...",
     noCandidates: "該当するものがありません",
     empty: "組成が登録されていません",
-    moveUp: "上へ",
-    moveDown: "下へ",
     /** 非開示のときに本体だけ見せる文言 */
     discard: "書きかけを捨てる",
     withheld: "この製品の組成は非開示です",

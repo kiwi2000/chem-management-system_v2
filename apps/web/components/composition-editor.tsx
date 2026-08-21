@@ -8,7 +8,7 @@ import {
   validateCompositionSum,
   type AppSettings,
 } from "@chem/shared";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,9 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
   // 表の「＋」から、下の検索欄へ飛ばすために持つ
   const searchRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
+  // 並べ替え中の行と、いま重ねている行
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
   const [canEdit, setCanEdit] = useState(false);
   // サーバー側でも可否を見ている。製品が編集中で、かつ権限があるときだけ書き換えられる
   const editing = editable && canEdit;
@@ -145,6 +148,17 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
 
   function update(index: number, patch: Partial<Row>) {
     setRows((prev) => prev?.map((r, i) => (i === index ? { ...r, ...patch } : r)) ?? prev);
+  }
+
+  /** つかんで運んだ行を、落とした位置へ入れ直す */
+  function reorder(from: number, to: number) {
+    setRows((prev) => {
+      if (!prev || from === to || to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      if (moved) next.splice(to, 0, moved);
+      return next;
+    });
   }
 
   function move(index: number, delta: number) {
@@ -253,6 +267,8 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
             <table className="w-full min-w-[40rem] border-collapse text-sm">
               <thead>
                 <tr className="bg-muted/50 border-y text-left">
+                  {/* 行をつかんで並べ替えるためのつまみ */}
+                  {editing && <th className={cn(CELL, "w-8")} />}
                   <th className={cn(CELL, "w-28 font-medium")}>{m.composition.elementId}</th>
                   <th className={cn(CELL, "w-32 font-medium")}>{m.composition.casNumber}</th>
                   <th className={cn(CELL, "font-medium")}>{m.composition.elementName}</th>
@@ -271,7 +287,59 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr key={r.key} className="border-b">
+                  <tr
+                    key={r.key}
+                    className={cn(
+                      "border-b",
+                      dragIndex === i && "opacity-40",
+                      overIndex === i && dragIndex !== i && "border-primary border-t-2",
+                    )}
+                    onDragOver={(e) => {
+                      if (dragIndex === null) return;
+                      // 既定では落とせないので、受け取れることを伝える
+                      e.preventDefault();
+                      setOverIndex(i);
+                    }}
+                    onDrop={(e) => {
+                      if (dragIndex === null) return;
+                      e.preventDefault();
+                      reorder(dragIndex, i);
+                      setDragIndex(null);
+                      setOverIndex(null);
+                    }}
+                  >
+                    {editing && (
+                      <td className={cn(CELL, "w-8 px-1")}>
+                        <button
+                          type="button"
+                          draggable
+                          aria-label={m.composition.dragHint}
+                          title={m.composition.dragHint}
+                          className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+                          onDragStart={(e) => {
+                            setDragIndex(i);
+                            e.dataTransfer.effectAllowed = "move";
+                            // Firefox は中身が空だと運べない
+                            e.dataTransfer.setData("text/plain", String(i));
+                            // つまみだけでなく行ごと動いて見えるようにする
+                            const tr = e.currentTarget.closest("tr");
+                            if (tr) e.dataTransfer.setDragImage(tr, 0, 0);
+                          }}
+                          onDragEnd={() => {
+                            setDragIndex(null);
+                            setOverIndex(null);
+                          }}
+                          // つかめない人のために、矢印キーでも動かせるようにする
+                          onKeyDown={(e) => {
+                            if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+                            e.preventDefault();
+                            move(i, e.key === "ArrowUp" ? -1 : 1);
+                          }}
+                        >
+                          <GripVertical className="size-4" />
+                        </button>
+                      </td>
+                    )}
                     <td className={cn(CELL, "font-mono text-xs")}>{r.element.code}</td>
                     <td className={cn(CELL, "font-mono text-xs")}>
                       {r.element.casNumber ?? (
@@ -328,27 +396,7 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
                       </td>
                     )}
                     {editing && (
-                      <td className={cn(CELL, "whitespace-nowrap")}>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={m.composition.moveUp}
-                          disabled={i === 0}
-                          onClick={() => move(i, -1)}
-                        >
-                          <ChevronUp className="size-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={m.composition.moveDown}
-                          disabled={i === rows.length - 1}
-                          onClick={() => move(i, 1)}
-                        >
-                          <ChevronDown className="size-4" />
-                        </Button>
+                      <td className={cn(CELL, "w-12 px-1 text-center")}>
                         <Button
                           type="button"
                           variant="ghost"
@@ -367,14 +415,14 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
               <tfoot>
                 <tr className="bg-muted/50 border-t">
                   {/* 合計は数字の真上に来るよう、重量%の1つ手前まで結合する */}
-                  <td className={cn(CELL, "text-right font-medium")} colSpan={3}>
+                  <td className={cn(CELL, "text-right font-medium")} colSpan={editing ? 4 : 3}>
                     {m.composition.sumLabel}
                   </td>
                   <td className={cn(CELL, "text-right font-medium")}>{grandTotalPct}%</td>
                   <td className={CELL} />
                   {editing && <td className={CELL} />}
                   {editing && (
-                    <td className={cn(CELL, "whitespace-nowrap")}>
+                    <td className={cn(CELL, "w-12 px-1 text-center")}>
                       <Button
                         type="button"
                         variant="ghost"
