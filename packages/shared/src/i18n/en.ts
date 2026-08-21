@@ -107,8 +107,7 @@ export const en: Messages = {
 
   changePassword: {
     title: "Change password",
-    description:
-      "Use at least 12 characters including at least one letter and one digit. Changing your password signs you out of all other devices.",
+    description: "Changing your password signs you out of all other devices.",
     current: "Current password",
     next: "New password",
     confirm: "New password (confirm)",
