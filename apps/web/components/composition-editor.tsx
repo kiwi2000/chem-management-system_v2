@@ -10,7 +10,7 @@ import {
   type AppSettings,
   type TextOperator,
 } from "@chem/shared";
-import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -85,7 +85,7 @@ export function CompositionEditor({
 }: Props) {
   const { m, locale } = useI18n();
 
-  // 表の「＋」から、下の検索欄へ飛ばすために持つ
+  // 条件をクリアしたあと、ID欄へカーソルを戻すために持つ
   const searchRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   // 並べ替え中の行と、いま重ねている行
@@ -507,20 +507,8 @@ export function CompositionEditor({
                   </td>
                   <td className={cn(CELL, "text-right font-medium")}>{grandTotalPct}%</td>
                   <td className={CELL} />
-                  {editing && (
-                    <td className={cn(CELL, "w-px px-1 text-center")}>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={m.composition.addLine}
-                        title={m.composition.addLine}
-                        onClick={() => searchRef.current?.focus()}
-                      >
-                        <Plus className="size-4" />
-                      </Button>
-                    </td>
-                  )}
+                  {/* 追加は下の「組成検索」で行うので、合計行に操作は置かない */}
+                  {editing && <td className={CELL} />}
                 </tr>
               </tfoot>
             </table>

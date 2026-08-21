@@ -411,7 +411,6 @@ export const en: Messages = {
     contentPct: "Weight %",
     balanceAuto: "auto",
     note: "Notes",
-    addLine: "+ Add a component",
     searchPlaceholder: "Search by code or name",
     searching: "Searching...",
     searchTitle: "Composition search",

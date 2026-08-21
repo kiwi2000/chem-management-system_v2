@@ -413,7 +413,6 @@ export const ja = {
     contentPct: "重量%",
     balanceAuto: "自動補完",
     note: "備考",
-    addLine: "＋ 構成要素を追加",
     searchPlaceholder: "コード / 名称で検索",
     searching: "検索中...",
     searchTitle: "組成検索",
