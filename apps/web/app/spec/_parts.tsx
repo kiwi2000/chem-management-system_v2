@@ -25,7 +25,8 @@ export function Section({
   id?: string;
 }) {
   return (
-    <section id={id} className="scroll-mt-20 space-y-3">
+    // 目印を付けておくと、検索結果からこの節へ直接飛べる
+    <section id={id ?? title} className="scroll-mt-20 space-y-3">
       <h2 className="border-border border-b pb-1 text-lg font-semibold">{title}</h2>
       <div className="max-w-3xl space-y-3 leading-relaxed">{children}</div>
     </section>
