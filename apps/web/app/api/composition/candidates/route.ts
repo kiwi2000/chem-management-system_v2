@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 const LIMIT = 20;
 
 const SELECT = { id: true, code: true, nameJa: true, nameEn: true } as const;
+/** 物質はCAS番号も返す。原材料は持たないので null を足す */
+const SELECT_SUBSTANCE = { ...SELECT, casNumber: true } as const;
 
 /**
  * GET /api/composition/candidates?kind=substance|product&q=...&exclude=<製品ID>
@@ -54,7 +56,8 @@ export async function GET(req: Request) {
       orderBy: { codeNormalized: "asc" },
       take: LIMIT,
     });
-    return Response.json({ items: items satisfies CompositionElementDto[] });
+    const withoutCas = items.map((i) => ({ ...i, casNumber: null }));
+    return Response.json({ items: withoutCas satisfies CompositionElementDto[] });
   }
 
   const items = await prisma.substance.findMany({
@@ -64,7 +67,7 @@ export async function GET(req: Request) {
       publishState: "PUBLISHED",
       OR: [byCode, ...byName],
     },
-    select: SELECT,
+    select: SELECT_SUBSTANCE,
     orderBy: { codeNormalized: "asc" },
     take: LIMIT,
   });

@@ -2,12 +2,14 @@
 
 import {
   COMPOSITION_MAX_LINES,
+  fromScaled,
   pickName,
+  sumScaled,
   validateCompositionSum,
   type AppSettings,
 } from "@chem/shared";
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,6 +69,8 @@ function toRow(l: CompositionLineDto, index: number): Row | null {
 export function CompositionEditor({ productId, settings, editing: editable }: Props) {
   const { m, locale } = useI18n();
 
+  // 表の「＋」から、下の検索欄へ飛ばすために持つ
+  const searchRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [canEdit, setCanEdit] = useState(false);
   // サーバー側でも可否を見ている。製品が編集中で、かつ権限があるときだけ書き換えられる
@@ -202,6 +206,16 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
     }
   }
 
+  /**
+   * 表に出す合計。
+   * サーバーが返す totalPct は残部を除いた「入力済み」の合計なので、
+   * そのまま「合計」として出すと 100% にならず、足りないように見えてしまう。
+   */
+  const grandTotalPct = useMemo(
+    () => fromScaled(sumScaled([sum.totalPct, sum.balancePct])),
+    [sum.totalPct, sum.balancePct],
+  );
+
   const alreadyAdded = useMemo(
     () => new Set((rows ?? []).map((r) => `${r.kind}:${r.element.id}`)),
     [rows],
@@ -239,34 +253,41 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
             <table className="w-full min-w-[40rem] border-collapse text-sm">
               <thead>
                 <tr className="bg-muted/50 border-y text-left">
-                  <th className={cn(CELL, "w-16 font-medium")}>{m.composition.kind}</th>
-                  <th className={cn(CELL, "font-medium")}>{m.composition.element}</th>
-                  <th className={cn(CELL, "w-28 font-medium")}>{m.composition.contentPct}</th>
-                  <th className={cn(CELL, "w-16 text-center font-medium")}>
-                    {m.composition.balance}
+                  <th className={cn(CELL, "w-28 font-medium")}>{m.composition.elementId}</th>
+                  <th className={cn(CELL, "w-32 font-medium")}>{m.composition.casNumber}</th>
+                  <th className={cn(CELL, "font-medium")}>{m.composition.elementName}</th>
+                  <th className={cn(CELL, "w-28 text-right font-medium")}>
+                    {m.composition.contentPct}
                   </th>
                   <th className={cn(CELL, "w-40 font-medium")}>{m.composition.note}</th>
+                  {/* 残部の切り替えと行の操作は、直しているときだけ出す */}
+                  {editing && (
+                    <th className={cn(CELL, "w-16 text-center font-medium")}>
+                      {m.composition.balance}
+                    </th>
+                  )}
                   {editing && <th className={cn(CELL, "w-24")} />}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={r.key} className="border-b">
-                    <td className={cn(CELL, "text-muted-foreground text-xs")}>
-                      {r.kind === "product"
-                        ? m.composition.kindProduct
-                        : m.composition.kindSubstance}
+                    <td className={cn(CELL, "font-mono text-xs")}>{r.element.code}</td>
+                    <td className={cn(CELL, "font-mono text-xs")}>
+                      {r.element.casNumber ?? (
+                        // 原材料にCASは無い。値と紛れないよう淡い文字にする
+                        <span className="text-muted-foreground font-sans">
+                          {m.composition.kindProduct}
+                        </span>
+                      )}
                     </td>
-                    <td className={CELL}>
-                      <span className="font-mono text-xs">{r.element.code}</span>
-                      <span className="ml-2">
-                        {pickName(locale, r.element.nameJa, r.element.nameEn)}
-                      </span>
-                    </td>
+                    <td className={CELL}>{pickName(locale, r.element.nameJa, r.element.nameEn)}</td>
                     <td className={cn(CELL, "text-right")}>
                       {r.isBalance ? (
                         <span className="text-muted-foreground text-xs">
-                          {sum.balancePct ?? m.composition.balanceAuto}
+                          {sum.balancePct === null
+                            ? m.composition.balanceAuto
+                            : m.composition.balanceOf(sum.balancePct)}
                         </span>
                       ) : editing ? (
                         <Input
@@ -279,15 +300,6 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
                       ) : (
                         r.contentPct
                       )}
-                    </td>
-                    <td className={cn(CELL, "text-center")}>
-                      <input
-                        type="checkbox"
-                        aria-label={`${r.element.code} ${m.composition.balance}`}
-                        checked={r.isBalance}
-                        disabled={!editing || !settings.compositionBalanceAllowed}
-                        onChange={(e) => update(i, { isBalance: e.target.checked, contentPct: "" })}
-                      />
                     </td>
                     <td className={CELL}>
                       {editing ? (
@@ -302,6 +314,19 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
                         <span className="text-muted-foreground text-xs">{r.note}</span>
                       )}
                     </td>
+                    {editing && (
+                      <td className={cn(CELL, "text-center")} title={m.composition.balanceHint}>
+                        <input
+                          type="checkbox"
+                          aria-label={`${r.element.code} ${m.composition.balance}`}
+                          checked={r.isBalance}
+                          disabled={!settings.compositionBalanceAllowed}
+                          onChange={(e) =>
+                            update(i, { isBalance: e.target.checked, contentPct: "" })
+                          }
+                        />
+                      </td>
+                    )}
                     {editing && (
                       <td className={cn(CELL, "whitespace-nowrap")}>
                         <Button
@@ -339,14 +364,34 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="bg-muted/50 border-t">
+                  {/* 合計は数字の真上に来るよう、重量%の1つ手前まで結合する */}
+                  <td className={cn(CELL, "text-right font-medium")} colSpan={3}>
+                    {m.composition.sumLabel}
+                  </td>
+                  <td className={cn(CELL, "text-right font-medium")}>{grandTotalPct}%</td>
+                  <td className={CELL} />
+                  {editing && <td className={CELL} />}
+                  {editing && (
+                    <td className={cn(CELL, "whitespace-nowrap")}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={m.composition.addLine}
+                        title={m.composition.addLine}
+                        onClick={() => searchRef.current?.focus()}
+                      >
+                        <Plus className="size-4" />
+                      </Button>
+                    </td>
+                  )}
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
-
-        <div className="text-muted-foreground flex flex-wrap gap-4 text-sm">
-          <span>{m.composition.total(sum.totalPct)}</span>
-          {sum.balancePct !== null && <span>{m.composition.balanceValue(sum.balancePct)}</span>}
-        </div>
 
         {editing && (
           <div className="space-y-2 rounded-md border p-3">
@@ -361,6 +406,7 @@ export function CompositionEditor({ productId, settings, editing: editable }: Pr
                 <option value="product">{m.composition.kindProduct}</option>
               </select>
               <Input
+                ref={searchRef}
                 aria-label={m.composition.searchPlaceholder}
                 value={query}
                 disabled={full}

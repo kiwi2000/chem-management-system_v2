@@ -140,6 +140,8 @@ export interface CompositionElementDto {
   code: string;
   nameJa: string;
   nameEn: string | null;
+  /** 物質のCAS番号。原材料（子製品）は持たないので null */
+  casNumber: string | null;
 }
 
 export interface CompositionLineDto {
