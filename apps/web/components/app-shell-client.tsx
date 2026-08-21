@@ -17,6 +17,8 @@ const STORAGE_KEY = "chem.sidebar.open";
 
 interface Props {
   user: Pick<MeDto, "id" | "email" | "displayName" | "permissions" | "canEdit" | "isAdmin">;
+  /** アバターの更新日時。変わると画像を取り直す */
+  avatarVersion: number;
   children: ReactNode;
 }
 
@@ -25,7 +27,7 @@ interface Props {
  * 広い画面ではサイドバーが本文を押し出し、狭い画面では本文の上に重ねて表示する。
  * どちらもトップバー左端の同じボタンで開閉する。
  */
-export function AppShellClient({ user, children }: Props) {
+export function AppShellClient({ user, avatarVersion, children }: Props) {
   const { m } = useI18n();
   // 広い画面用（既定は開いた状態。localStorage に前回の状態を覚える）
   const [open, setOpen] = useState(true);
@@ -127,7 +129,12 @@ export function AppShellClient({ user, children }: Props) {
           </Link>
           <div className="ml-auto flex items-center gap-3">
             <Link href="/preferences" title={user.displayName ?? user.email}>
-              <UserAvatar userId={user.id} name={user.displayName ?? user.email} size={28} />
+              <UserAvatar
+                userId={user.id}
+                name={user.displayName ?? user.email}
+                size={28}
+                version={avatarVersion}
+              />
             </Link>
             {/* 濃いヘッダーでも読めるよう、色を変えず薄くするだけにする */}
             <span className="hidden text-sm opacity-75 sm:inline">

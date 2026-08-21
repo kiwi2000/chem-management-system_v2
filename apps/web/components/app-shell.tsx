@@ -35,6 +35,9 @@ export async function AppShell({ children }: { children: ReactNode }) {
         canEdit: canEdit(actor),
         isAdmin: actor.has("ADMIN"),
       }}
+      // アバターを差し替えても、URLが同じだとブラウザが古い絵を出し続ける。
+      // 更新日時をURLに乗せて、変わったときだけ取り直させる
+      avatarVersion={actor.user.avatarUpdatedAt?.getTime() ?? 0}
     >
       {children}
     </AppShellClient>
