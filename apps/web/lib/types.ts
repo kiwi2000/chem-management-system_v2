@@ -192,6 +192,13 @@ export interface CompositionResponse {
 export interface AggregateContributionDto {
   /** 物質コード。同じCASの別の物質を見分けるのに使う */
   code: string;
+  /**
+   * まとめる前の物質名。
+   * まとめた行の名称は代表物質のものなので、寄与元と食い違うことがある。
+   * 空欄にすると「入っていない」と読まれるため、同じ名前でもそのまま出す。
+   */
+  nameJa: string;
+  nameEn: string | null;
   /** 製品全体に対する重量% */
   pct: string;
 }

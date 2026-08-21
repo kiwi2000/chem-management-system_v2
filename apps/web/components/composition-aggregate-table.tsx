@@ -170,7 +170,10 @@ export function CompositionAggregateTable({ productId }: { productId: string }) 
                           <td className={cn(CELL, "text-muted-foreground pl-6 font-mono text-xs")}>
                             {c.code}
                           </td>
-                          <td className={CELL} />
+                          {/* まとめる前の名前。代表と同じでも空欄にはしない（空欄は「入っていない」に見える） */}
+                          <td className={cn(CELL, "text-muted-foreground pl-6 text-xs")}>
+                            {pickName(locale, c.nameJa, c.nameEn)}
+                          </td>
                           <td
                             className={cn(
                               CELL,

@@ -47,7 +47,7 @@ interface Bucket {
   /** 合算用の細かい整数 */
   fine: bigint;
   /** 寄与元。並べ替えたいので、細かい整数のまま持つ */
-  contributions: { code: string; fine: bigint }[];
+  contributions: { code: string; nameJa: string; nameEn: string | null; fine: bigint }[];
 }
 
 export async function aggregateComposition(
@@ -157,7 +157,12 @@ export async function aggregateComposition(
       contributions: [],
     };
     bucket.fine += fine;
-    bucket.contributions.push({ code: substance.code, fine });
+    bucket.contributions.push({
+      code: substance.code,
+      nameJa: substance.nameJa,
+      nameEn: substance.nameEn,
+      fine,
+    });
     buckets.set(key, bucket);
   }
 
@@ -190,7 +195,12 @@ export async function aggregateComposition(
         // 内訳も多い順。上の表と並びを揃える
         contributions: b.contributions
           .sort((x, y) => compareFine(y.fine, x.fine))
-          .map((c) => ({ code: c.code, pct: fineToPct(c.fine) })),
+          .map((c) => ({
+            code: c.code,
+            nameJa: c.nameJa,
+            nameEn: c.nameEn,
+            pct: fineToPct(c.fine),
+          })),
       };
     });
 

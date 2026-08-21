@@ -468,7 +468,7 @@ export const en: Messages = {
     tabAggregate: "Combined by CAS",
     aggregateLead:
       "Materials are broken down to the substances inside them, and substances sharing a CAS number are combined into one row. Regulatory checks use these values. Sorted by weight.",
-    aggregateName: "Name (representative)",
+    aggregateName: "Substance name",
     aggregateSources: "Sources",
     aggregateNoCas: "No CAS",
     aggregateCount: (n: number) => `${n}`,

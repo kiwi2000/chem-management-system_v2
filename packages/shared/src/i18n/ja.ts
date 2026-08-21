@@ -473,7 +473,7 @@ export const ja = {
     tabAggregate: "CAS合算",
     aggregateLead:
       "原材料を末端の物質まで下ろし、同じCAS番号のものを1行にまとめた表です。法規制の判定にはこの値を使います。多い順に並んでいます。",
-    aggregateName: "名称（代表物質）",
+    aggregateName: "物質名",
     aggregateSources: "寄与元",
     aggregateNoCas: "CASなし",
     aggregateCount: (n: number) => `${n}件`,
