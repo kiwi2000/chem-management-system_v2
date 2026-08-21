@@ -127,7 +127,8 @@ export default function LoginPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <Button type="submit" className="w-full" disabled={loading}>
+              {/* この画面の主役なので、他の画面のボタンより高くして押しやすくする */}
+              <Button type="submit" className="h-10 w-full" disabled={loading}>
                 {loading ? m.login.submitting : m.login.submit}
               </Button>
             </form>
