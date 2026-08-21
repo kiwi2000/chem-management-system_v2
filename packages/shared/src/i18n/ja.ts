@@ -451,6 +451,21 @@ export const ja = {
     selectAll: "すべて選ぶ",
     alreadyAdded: "追加済み",
     noCandidates: "該当するものがありません",
+
+    // 原材料の中身を下ろして見せる（展開）
+    expand: "中身を見る",
+    collapse: "閉じる",
+    expandedOf: (name: string) => `${name} の中身`,
+    /** 換算値に添える、その原材料の中での値 */
+    withinParent: (name: string, pct: string) => `${name}の中で ${pct}%`,
+    expandLoading: "中身を読み込んでいます...",
+    expandEmpty: "この原材料の組成は、まだ登録されていません",
+    expandForbidden: "この原材料の組成を見る権限がありません",
+    expandNotFound: "この原材料は、いまは見られません",
+    expandFailed: "中身を読み込めませんでした",
+    expandTooDeep: "これ以上は展開できません",
+    expandTotalNot100: (pct: string) =>
+      `この原材料の組成の合計は ${pct}% です。下の値を足しても、上の行の値には一致しません`,
     empty: "組成が登録されていません",
     /** 非開示のときに本体だけ見せる文言 */
     withheld: "この製品の組成は非開示です",

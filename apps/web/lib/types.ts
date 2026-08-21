@@ -142,6 +142,11 @@ export interface CompositionElementDto {
   nameEn: string | null;
   /** 物質のCAS番号。原材料（子製品）は持たないので null */
   casNumber: string | null;
+  /**
+   * 原材料が、自分の組成を持っているか。物質は常に false。
+   * 開いても何も出ない行に、展開の印を出さないために使う。
+   */
+  hasComposition: boolean;
 }
 
 /** 検索で出す候補。物質か原材料かを添えて返す */

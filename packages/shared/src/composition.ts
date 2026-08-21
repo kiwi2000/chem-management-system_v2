@@ -5,11 +5,20 @@ import type { AppSettings } from "./settings";
 
 /**
  * 原組成。製品に「何がどれだけ入っているか」を1段だけ持つ。
- * 多段の展開（親×子の掛け算で物質まで下ろす）は S11 で別に作る。
+ *
+ * 原材料の中身まで下ろして見せる「展開」は、この1段を積み重ねて作る。
+ * 保存するのはあくまで1段だけで、展開は見せかたの話（記録は置き換えない）。
  */
 
 /** 1製品あたりの行数の上限 */
 export const COMPOSITION_MAX_LINES = 100;
+
+/**
+ * 展開してたどれる深さの上限。
+ * 循環は保存時に止めている（wouldCreateCycle）ので、展開は放っておいても必ず終わる。
+ * これは、取り込みなどで壊れた形が入り込んだときのための安全網。
+ */
+export const COMPOSITION_MAX_DEPTH = 20;
 
 export const COMPOSITION_VALIDATION_MODES = ["STRICT", "STANDARD", "LENIENT"] as const;
 export type CompositionValidationMode = (typeof COMPOSITION_VALIDATION_MODES)[number];

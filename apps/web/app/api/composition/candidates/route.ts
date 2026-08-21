@@ -11,6 +11,11 @@ const LIMIT = 50;
 const SELECT = { id: true, code: true, nameJa: true, nameEn: true } as const;
 /** 物質はCAS番号も返す。原材料は持たないので null を足す */
 const SELECT_SUBSTANCE = { ...SELECT, casNumber: true } as const;
+/** 原材料は、中身を持っているかも返す（足した行に展開の印を出すため） */
+const SELECT_PRODUCT = {
+  ...SELECT,
+  _count: { select: { compositionLines: true } },
+} as const;
 
 /**
  * 名称の突合。前方・後方・完全は Prisma の演算子にそのまま対応する。
@@ -93,7 +98,7 @@ export async function GET(req: Request) {
       orderBy: { codeNormalized: "asc" },
       take: LIMIT,
     });
-    items.push(...rows.map((r) => ({ ...r, kind: "substance" as const })));
+    items.push(...rows.map((r) => ({ ...r, hasComposition: false, kind: "substance" as const })));
   }
 
   if (wantProduct) {
@@ -112,11 +117,18 @@ export async function GET(req: Request) {
           : { compositionLines: { some: { substance: { casNormalized, deletedAt: null } } } }),
         AND: common,
       },
-      select: SELECT,
+      select: SELECT_PRODUCT,
       orderBy: { codeNormalized: "asc" },
       take: LIMIT,
     });
-    items.push(...rows.map((r) => ({ ...r, casNumber: null, kind: "product" as const })));
+    items.push(
+      ...rows.map(({ _count, ...r }) => ({
+        ...r,
+        casNumber: null,
+        hasComposition: _count.compositionLines > 0,
+        kind: "product" as const,
+      })),
+    );
   }
 
   return Response.json({ items });

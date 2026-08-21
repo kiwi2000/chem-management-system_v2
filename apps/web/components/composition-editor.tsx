@@ -4,6 +4,7 @@ import {
   COMPOSITION_MAX_LINES,
   fromScaled,
   pickName,
+  ratioOfPct,
   SCALED_HUNDRED,
   sumScaled,
   validateCompositionSum,
@@ -11,7 +12,12 @@ import {
   type TextOperator,
 } from "@chem/shared";
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CompositionTreeRows,
+  ExpandToggle,
+  useCompositionTree,
+} from "@/components/composition-tree";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -253,6 +259,7 @@ export function CompositionEditor({
           nameJa: c.nameJa,
           nameEn: c.nameEn,
           casNumber: c.casNumber,
+          hasComposition: c.hasComposition,
         },
         contentPct: "",
         isBalance: false,
@@ -300,6 +307,9 @@ export function CompositionEditor({
       setSaving(false);
     }
   }
+
+  // 原材料の中身を下ろして見せる。編集中は使わない（つまみと印が同じ場所を取り合うため）
+  const tree = useCompositionTree();
 
   /**
    * 表に出す合計。
@@ -381,122 +391,157 @@ export function CompositionEditor({
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr
-                    key={r.key}
-                    className={cn(
-                      "border-b",
-                      dragIndex === i && "opacity-40",
-                      overIndex === i && dragIndex !== i && "border-primary border-t-2",
-                    )}
-                    onDragOver={(e) => {
-                      if (dragIndex === null) return;
-                      // 既定では落とせないので、受け取れることを伝える
-                      e.preventDefault();
-                      setOverIndex(i);
-                    }}
-                    onDrop={(e) => {
-                      if (dragIndex === null) return;
-                      e.preventDefault();
-                      reorder(dragIndex, i);
-                      setDragIndex(null);
-                      setOverIndex(null);
-                    }}
-                  >
-                    {editing && (
-                      <td className={cn(CELL, "w-8 px-1")}>
-                        <button
-                          type="button"
-                          draggable
-                          aria-label={m.composition.dragHint}
-                          title={m.composition.dragHint}
-                          className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-                          onDragStart={(e) => {
-                            setDragIndex(i);
-                            e.dataTransfer.effectAllowed = "move";
-                            // Firefox は中身が空だと運べない
-                            e.dataTransfer.setData("text/plain", String(i));
-                            // つまみだけでなく行ごと動いて見えるようにする
-                            const tr = e.currentTarget.closest("tr");
-                            if (tr) e.dataTransfer.setDragImage(tr, 0, 0);
-                          }}
-                          onDragEnd={() => {
-                            setDragIndex(null);
-                            setOverIndex(null);
-                          }}
-                          // つかめない人のために、矢印キーでも動かせるようにする
-                          onKeyDown={(e) => {
-                            if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-                            e.preventDefault();
-                            move(i, e.key === "ArrowUp" ? -1 : 1);
-                          }}
-                        >
-                          <GripVertical className="size-4" />
-                        </button>
+                  <Fragment key={r.key}>
+                    <tr
+                      className={cn(
+                        "border-b",
+                        dragIndex === i && "opacity-40",
+                        overIndex === i && dragIndex !== i && "border-primary border-t-2",
+                      )}
+                      onDragOver={(e) => {
+                        if (dragIndex === null) return;
+                        // 既定では落とせないので、受け取れることを伝える
+                        e.preventDefault();
+                        setOverIndex(i);
+                      }}
+                      onDrop={(e) => {
+                        if (dragIndex === null) return;
+                        e.preventDefault();
+                        reorder(dragIndex, i);
+                        setDragIndex(null);
+                        setOverIndex(null);
+                      }}
+                    >
+                      {editing && (
+                        <td className={cn(CELL, "w-8 px-1")}>
+                          <button
+                            type="button"
+                            draggable
+                            aria-label={m.composition.dragHint}
+                            title={m.composition.dragHint}
+                            className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+                            onDragStart={(e) => {
+                              setDragIndex(i);
+                              e.dataTransfer.effectAllowed = "move";
+                              // Firefox は中身が空だと運べない
+                              e.dataTransfer.setData("text/plain", String(i));
+                              // つまみだけでなく行ごと動いて見えるようにする
+                              const tr = e.currentTarget.closest("tr");
+                              if (tr) e.dataTransfer.setDragImage(tr, 0, 0);
+                            }}
+                            onDragEnd={() => {
+                              setDragIndex(null);
+                              setOverIndex(null);
+                            }}
+                            // つかめない人のために、矢印キーでも動かせるようにする
+                            onKeyDown={(e) => {
+                              if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+                              e.preventDefault();
+                              move(i, e.key === "ArrowUp" ? -1 : 1);
+                            }}
+                          >
+                            <GripVertical className="size-4" />
+                          </button>
+                        </td>
+                      )}
+                      <td className={cn(CELL, "font-mono text-xs")}>
+                        {/* 中身を持つ原材料だけ開ける。編集中は出さない */}
+                        {!editing && r.element.hasComposition ? (
+                          <span className="inline-flex items-center gap-1">
+                            <ExpandToggle
+                              open={tree.open.has(r.key)}
+                              onClick={() => tree.toggle(r.key, r.element.id)}
+                              label={
+                                tree.open.has(r.key) ? m.composition.collapse : m.composition.expand
+                              }
+                            />
+                            {r.element.code}
+                          </span>
+                        ) : (
+                          r.element.code
+                        )}
                       </td>
-                    )}
-                    <td className={cn(CELL, "font-mono text-xs")}>{r.element.code}</td>
-                    <td className={cn(CELL, "font-mono text-xs")}>
-                      {r.element.casNumber ?? (
-                        // 原材料にCASは無い。値と紛れないよう淡い文字にする
-                        <span className="text-muted-foreground font-sans">
-                          {m.composition.kindProduct}
-                        </span>
-                      )}
-                    </td>
-                    <td className={CELL}>{pickName(locale, r.element.nameJa, r.element.nameEn)}</td>
-                    <td className={cn(CELL, "text-right")}>
-                      {r.isBalance ? (
-                        <span className="text-muted-foreground text-xs">
-                          {sum.balancePct === null
-                            ? m.composition.balanceAuto
-                            : m.composition.balanceOf(sum.balancePct)}
-                        </span>
-                      ) : editing ? (
-                        <Input
-                          aria-label={`${r.element.code} ${m.composition.contentPct}`}
-                          inputMode="decimal"
-                          // 過去に打った文字が候補として出るのを止める
-                          autoComplete="off"
-                          title={m.composition.fillHint}
-                          onDoubleClick={() => fillToHundred(i)}
-                          value={r.contentPct}
-                          onChange={(e) => update(i, { contentPct: e.target.value })}
-                          className="h-8 w-20 text-right"
-                        />
-                      ) : (
-                        r.contentPct
-                      )}
-                    </td>
-                    <td className={CELL}>
-                      {editing ? (
-                        // 長い備考も読めるよう、下へ引っぱって広げられるようにする
-                        <textarea
-                          aria-label={`${r.element.code} ${m.composition.note}`}
-                          maxLength={500}
-                          rows={1}
-                          value={r.note}
-                          onChange={(e) => update(i, { note: e.target.value })}
-                          className="border-input bg-background block min-h-8 w-full resize-y rounded-none border px-2 py-1 text-sm"
-                        />
-                      ) : (
-                        <span className="text-muted-foreground text-xs">{r.note}</span>
-                      )}
-                    </td>
-                    {editing && (
-                      <td className={cn(CELL, "w-px px-1 text-center")}>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`${m.common.delete} ${r.element.code}`}
-                          className="text-destructive"
-                          onClick={() => setRows(rows.filter((_, j) => j !== i))}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                      <td className={cn(CELL, "font-mono text-xs")}>
+                        {r.element.casNumber ?? (
+                          // 原材料にCASは無い。値と紛れないよう淡い文字にする
+                          <span className="text-muted-foreground font-sans">
+                            {m.composition.kindProduct}
+                          </span>
+                        )}
                       </td>
+                      <td className={CELL}>
+                        {pickName(locale, r.element.nameJa, r.element.nameEn)}
+                      </td>
+                      <td className={cn(CELL, "text-right")}>
+                        {r.isBalance ? (
+                          <span className="text-muted-foreground text-xs">
+                            {sum.balancePct === null
+                              ? m.composition.balanceAuto
+                              : m.composition.balanceOf(sum.balancePct)}
+                          </span>
+                        ) : editing ? (
+                          <Input
+                            aria-label={`${r.element.code} ${m.composition.contentPct}`}
+                            inputMode="decimal"
+                            // 過去に打った文字が候補として出るのを止める
+                            autoComplete="off"
+                            title={m.composition.fillHint}
+                            onDoubleClick={() => fillToHundred(i)}
+                            value={r.contentPct}
+                            onChange={(e) => update(i, { contentPct: e.target.value })}
+                            className="h-8 w-20 text-right"
+                          />
+                        ) : (
+                          r.contentPct
+                        )}
+                      </td>
+                      <td className={CELL}>
+                        {editing ? (
+                          // 長い備考も読めるよう、下へ引っぱって広げられるようにする
+                          <textarea
+                            aria-label={`${r.element.code} ${m.composition.note}`}
+                            maxLength={500}
+                            rows={1}
+                            value={r.note}
+                            onChange={(e) => update(i, { note: e.target.value })}
+                            className="border-input bg-background block min-h-8 w-full resize-y rounded-none border px-2 py-1 text-sm"
+                          />
+                        ) : (
+                          <span className="text-muted-foreground text-xs">{r.note}</span>
+                        )}
+                      </td>
+                      {editing && (
+                        <td className={cn(CELL, "w-px px-1 text-center")}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`${m.common.delete} ${r.element.code}`}
+                            className="text-destructive"
+                            onClick={() => setRows(rows.filter((_, j) => j !== i))}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                    {!editing && r.element.hasComposition && (
+                      <CompositionTreeRows
+                        tree={tree}
+                        path={r.key}
+                        ratio={
+                          ratioOfPct((r.isBalance ? sum.balancePct : r.contentPct) || "0") ?? {
+                            num: 0n,
+                            den: 1n,
+                          }
+                        }
+                        parentName={pickName(locale, r.element.nameJa, r.element.nameEn)}
+                        depth={1}
+                        colSpan={editing ? 7 : 5}
+                        cellClass={CELL}
+                      />
                     )}
-                  </tr>
+                  </Fragment>
                 ))}
               </tbody>
               <tfoot>

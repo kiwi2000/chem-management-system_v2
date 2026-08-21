@@ -12,7 +12,16 @@ import type { CompositionLineDto, CompositionResponse } from "@/lib/types";
 /** 表示に必要な関連（構成要素のコード・名称・CAS番号） */
 export const COMPOSITION_INCLUDE = {
   substance: { select: { id: true, code: true, nameJa: true, nameEn: true, casNumber: true } },
-  childProduct: { select: { id: true, code: true, nameJa: true, nameEn: true } },
+  childProduct: {
+    select: {
+      id: true,
+      code: true,
+      nameJa: true,
+      nameEn: true,
+      // 中身を持っているかどうか。展開の印を出すかの判断に使う
+      _count: { select: { compositionLines: true } },
+    },
+  },
 } satisfies Prisma.CompositionLineInclude;
 
 type LineRow = Prisma.CompositionLineGetPayload<{ include: typeof COMPOSITION_INCLUDE }>;
@@ -45,6 +54,7 @@ export function toLineDto(l: LineRow): CompositionLineDto {
           nameJa: l.substance.nameJa,
           nameEn: l.substance.nameEn,
           casNumber: l.substance.casNumber,
+          hasComposition: false,
         }
       : l.childProduct
         ? {
@@ -54,6 +64,7 @@ export function toLineDto(l: LineRow): CompositionLineDto {
             nameEn: l.childProduct.nameEn,
             // 原材料にCASは無い。表では「原材料」と示す
             casNumber: null,
+            hasComposition: l.childProduct._count.compositionLines > 0,
           }
         : null,
   };
