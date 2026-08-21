@@ -12,6 +12,7 @@ import { getSessionUser } from "@/lib/auth";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { PREFERENCE_COOKIE_OPTIONS } from "@/lib/preference-cookies";
 
 export const dynamic = "force-dynamic";
 
@@ -67,13 +68,7 @@ export async function PUT(req: Request) {
   }
 
   const store = await cookies();
-  const cookieOptions = {
-    // 言語もテーマも機密ではない。将来クライアント側から読めると都合が良い
-    httpOnly: false,
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-  };
+  const cookieOptions = PREFERENCE_COOKIE_OPTIONS;
   if (isLocale(locale)) store.set(LOCALE_COOKIE, locale, cookieOptions);
   if (isTheme(theme)) store.set(THEME_COOKIE, theme, cookieOptions);
   if (typeof headerStrong === "boolean") {

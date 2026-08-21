@@ -2,6 +2,7 @@ import { loginSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { login, purgeExpiredSessions } from "@/lib/auth";
 import { jsonError } from "@/lib/authz";
+import { syncPreferenceCookies } from "@/lib/preference-cookies";
 import { getServerMessages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +47,8 @@ export async function POST(req: Request) {
   }
 
   void purgeExpiredSessions();
+  // 前に使った人の Cookie が残っていることがあるので、この人のものに入れ替える
+  await syncPreferenceCookies(result.user);
   await writeAudit({
     entity: "users",
     entityId: result.user.id,

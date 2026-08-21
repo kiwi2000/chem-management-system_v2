@@ -11,16 +11,19 @@ import { getSessionUser } from "@/lib/auth";
 
 /**
  * サーバー側のロケール解決。
- * 優先順位は Cookie → ログインユーザーの設定 → 既定（日本語）。
- * Cookie を先に見るのは、ログイン前に選んだ言語をログイン画面でも保つため。
- * 言語の切替時は Cookie とユーザー設定の両方を更新するので、両者は基本的に一致する。
+ * 優先順位は ログインユーザーの設定 → Cookie → 既定（日本語）。
+ *
+ * 本人の設定を先に見る。Cookie は端末に1つしか無いので、共有のパソコンだと
+ * 先に使った人の言語が次の人にも当たってしまう。
+ * Cookie を見るのは、まだログインしていないとき（ログイン画面で選んだ言語を保つため）と、
+ * 本人がまだ何も選んでいないときだけ。
  */
 export async function getLocale(): Promise<Locale> {
-  const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
-  if (isLocale(fromCookie)) return fromCookie;
-
   const user = await getSessionUser().catch(() => null);
   if (isLocale(user?.preferredLocale)) return user.preferredLocale;
+
+  const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
+  if (isLocale(fromCookie)) return fromCookie;
 
   return DEFAULT_LOCALE;
 }

@@ -3,6 +3,7 @@ import { hash as argonHash, verify as argonVerify } from "@node-rs/argon2";
 import { AUTH_POLICY, normalizeEmail } from "@chem/shared";
 import type { User as AppUser } from "@prisma/client";
 import { cookies, headers } from "next/headers";
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 
 /**
@@ -164,8 +165,11 @@ export async function revokeAllSessions(userId: string): Promise<void> {
 /**
  * 現在のリクエストのログインユーザー。
  * 無効なセッション・期限切れ・無効化ユーザーは null。
+ *
+ * 同じリクエストの中では何度呼んでも1回しか引かない（cache）。
+ * 言語・テーマ・背景の解決でそれぞれ呼ぶため、素のままだと同じ問い合わせが並ぶ。
  */
-export async function getSessionUser(): Promise<AppUser | null> {
+export const getSessionUser = cache(async function getSessionUser(): Promise<AppUser | null> {
   const store = await cookies();
   const raw = store.get(AUTH_POLICY.sessionCookieName)?.value;
   if (!raw) return null;
@@ -189,7 +193,7 @@ export async function getSessionUser(): Promise<AppUser | null> {
       .catch(() => {});
   }
   return user;
-}
+});
 
 /** 期限切れセッションの掃除（ログイン時などに随時呼ぶ） */
 export async function purgeExpiredSessions(): Promise<void> {
