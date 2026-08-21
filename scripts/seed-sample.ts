@@ -294,6 +294,33 @@ async function seed() {
     substanceIds.set(s.code, row.id);
   }
 
+  /*
+   * CASごとの代表物質。
+   * 画面から登録すればアプリ側が立ててくれるが、ここは直接書き込むので自分で立てる。
+   * 代表が不在のCASを作らないこと自体がこの仕組みの肝なので、手を抜かない。
+   * 決め方は ensureCasRepresentative と揃える（いちばん先に作ったもの）。
+   */
+  const candidateOf = new Map<string, string>();
+  for (const sub of SUBSTANCES) {
+    if (!sub.cas) continue;
+    const cas = normalize(sub.cas);
+    if (candidateOf.has(cas)) continue;
+    const id = substanceIds.get(sub.code);
+    if (id) candidateOf.set(cas, id);
+  }
+
+  let assigned = 0;
+  for (const [cas, id] of candidateOf) {
+    // すでに代表がいるCASは触らない。他の物質が持っている代表を奪わないため
+    const taken = await prisma.substance.findFirst({
+      where: { casNormalized: cas, deletedAt: null, isCasRepresentative: true },
+      select: { id: true },
+    });
+    if (taken) continue;
+    await prisma.substance.update({ where: { id }, data: { isCasRepresentative: true } });
+    assigned += 1;
+  }
+
   const productIds = new Map<string, string>();
   for (const p of PRODUCTS) {
     const row = await prisma.product.create({
@@ -330,7 +357,8 @@ async function seed() {
 
   console.warn(
     `入れました — 物質 ${SUBSTANCES.length} / 製品・原材料 ${PRODUCTS.length} / ` +
-      `組成行 ${PRODUCTS.reduce((n, p) => n + p.lines.length, 0)}`,
+      `組成行 ${PRODUCTS.reduce((n, p) => n + p.lines.length, 0)} / ` +
+      `CASの代表 ${assigned}`,
   );
   console.warn("組成を見るなら PR-CU100（コントロールユニット CU-100）から。5段たどれます。");
 }
