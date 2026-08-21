@@ -579,7 +579,8 @@ export const en: Messages = {
     displayName: "Display name",
     displayNameHint: "The email address is shown if this is empty",
     initialPassword: "Initial password",
-    initialPasswordHint: "The user is asked to change it at first sign-in",
+    initialPasswordHint:
+      "At least 12 characters, including at least one letter and one digit. The user is asked to change it at first sign-in",
     active: "Active",
     inactive: "Disabled",
     activeFlag: "This account is active",

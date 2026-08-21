@@ -3,6 +3,7 @@
 import { expandPermissions, type Permission } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
 import { PermissionPicker } from "@/components/permission-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
@@ -26,6 +28,9 @@ export default function NewUserPage() {
   const [newsGroupId, setNewsGroupId] = useState("");
   const groups = useGroups();
   const [error, setError] = useState<string | null>(null);
+  // どの項目が悪いのかを、その欄の下に出す
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const fieldError = (key: string) => firstError(fieldErrors, key);
   const [saving, setSaving] = useState(false);
 
   // 「他人のお知らせも編集できる」を選ぶと投稿もできるので、含意を展開して見る
@@ -34,6 +39,7 @@ export default function NewUserPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
     setSaving(true);
     try {
       const res = await fetch("/api/admin/users", {
@@ -52,6 +58,7 @@ export default function NewUserPage() {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        setFieldErrors(toFieldErrors(body?.error.details));
         return;
       }
       router.push("/admin/users");
@@ -75,8 +82,10 @@ export default function NewUserPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={Boolean(fieldError("email"))}
                 className="max-w-md"
               />
+              <FieldError message={fieldError("email")} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">
@@ -87,8 +96,10 @@ export default function NewUserPage() {
                 id="name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
+                aria-invalid={Boolean(fieldError("displayName"))}
                 className="max-w-md"
               />
+              <FieldError message={fieldError("displayName")} />
               <p className="text-muted-foreground text-xs">{m.users.displayNameHint}</p>
             </div>
             <div className="space-y-2">
@@ -99,8 +110,10 @@ export default function NewUserPage() {
                 required
                 value={initialPassword}
                 onChange={(e) => setInitialPassword(e.target.value)}
+                aria-invalid={Boolean(fieldError("initialPassword"))}
                 className="max-w-md font-mono"
               />
+              <FieldError message={fieldError("initialPassword")} />
               <p className="text-muted-foreground text-xs">{m.users.initialPasswordHint}</p>
             </div>
             <div className="space-y-2">

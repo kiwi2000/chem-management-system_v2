@@ -4,6 +4,7 @@ import { expandPermissions, type Permission } from "@chem/shared";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
+import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
 import { PermissionPicker } from "@/components/permission-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, MeDto, UserSummaryDto } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
@@ -32,6 +34,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const groups = useGroups();
   const [editing, setEditing] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  // どの項目が悪いのかを、その欄の下に出す
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const fieldError = (key: string) => firstError(fieldErrors, key);
   const [forceChange, setForceChange] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -97,6 +102,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   async function onResetPassword() {
     setError(null);
     setNotice(null);
+    setFieldErrors({});
     const res = await fetch(`/api/admin/users/${id}/password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -106,6 +112,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      setFieldErrors(toFieldErrors(body?.error.details));
       return;
     }
     setNewPassword("");
@@ -280,8 +287,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               type="text"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              aria-invalid={Boolean(fieldError("newPassword"))}
               className="max-w-md font-mono"
             />
+            <FieldError message={fieldError("newPassword")} />
+            <p className="text-muted-foreground text-xs">{m.users.initialPasswordHint}</p>
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input

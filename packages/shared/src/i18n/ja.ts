@@ -583,7 +583,8 @@ export const ja = {
     displayName: "表示名",
     displayNameHint: "未入力ならメールアドレスを表示します",
     initialPassword: "初期パスワード",
-    initialPasswordHint: "本人には初回ログイン時にパスワード変更を求めます",
+    initialPasswordHint:
+      "12文字以上で、英字と数字をそれぞれ1文字以上入れてください。本人には初回ログイン時に変更を求めます",
     active: "有効",
     inactive: "無効",
     activeFlag: "このアカウントを有効にする",
