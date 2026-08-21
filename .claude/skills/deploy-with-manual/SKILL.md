@@ -111,7 +111,18 @@ status が `Online` になっていれば反映済み。
   （`--remove` で消える。`SB-` / `MT-` / `PR-` のコードだけを対象にする）
 - 開発サーバーが動いている間に `prisma generate` や `next build` を走らせると
   `.next` が壊れる。先に止める
-- **本番のDBには外から繋げない。** Postgres の公開プロキシが無効なので、
-  `railway run` を使っても `postgres.railway.internal` には届かない。
-  本番にデータを入れる手段は、画面から手で登録するか、
-  Railway の設定でプロキシを開けてもらうかのどちらか
+- **本番のDBにはトンネルで繋げる。** `DATABASE_URL` は
+  `postgres.railway.internal` なので直接は届かないが、次のコマンドで
+  暗号化トンネルが開く（公開プロキシを有効にする必要はない）。
+
+  ```bash
+  railway connect Postgres --tunnel-only
+  ```
+
+  出力の `postgresql://...127.0.0.1:<ポート>/railway` を一時ファイルに書いて、
+  `node --env-file=<一時ファイル> node_modules/tsx/dist/cli.mjs <スクリプト>` で流す
+  （`node_modules/.bin/tsx` はシェルの薄皮なので `node` から直接は動かない）。
+  終わったらトンネルを閉じ、一時ファイルを消す。
+
+  **本番に書き込む前に、必ず現状を読んで確かめる。**とくに、投入スクリプトが
+  消す対象（`SB-` / `MT-` / `PR-` で始まるコード）に既存データが無いこと
