@@ -33,3 +33,20 @@ export function toFieldErrors(details: unknown): FieldErrors {
 export function firstError(errors: FieldErrors, key: string): string | undefined {
   return errors[key]?.[0];
 }
+
+/**
+ * まとめて上に出す文。
+ * 項目ごとに出せない誤り（対応する欄が無いものなど）も、ここに並べて理由が分かるようにする。
+ * 何も取れなかったときだけ、汎用の文に落とす。
+ */
+export function summaryError(details: unknown, fallback: string): string {
+  const byField = toFieldErrors(details);
+  const messages = Object.values(byField).flat();
+  if (typeof details === "object" && details !== null) {
+    const form = (details as Flattened).formErrors;
+    if (Array.isArray(form))
+      messages.push(...form.filter((v): v is string => typeof v === "string" && v !== ""));
+  }
+  const uniq = [...new Set(messages)];
+  return uniq.length > 0 ? uniq.join(" / ") : fallback;
+}

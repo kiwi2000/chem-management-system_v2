@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
+import { firstError, summaryError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
+import { passwordProblem } from "@/lib/password-check";
 import type { ApiError } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -32,6 +33,9 @@ export default function NewUserPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const fieldError = (key: string) => firstError(fieldErrors, key);
   const [saving, setSaving] = useState(false);
+
+  // 打っている最中から決まりを見る。送ってから断られるより早く気づける
+  const pwProblem = passwordProblem(initialPassword, m);
 
   // 「他人のお知らせも編集できる」を選ぶと投稿もできるので、含意を展開して見る
   const canPost = expandPermissions(permissions).includes("NEWS_POST");
@@ -57,7 +61,9 @@ export default function NewUserPage() {
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        setError(
+          summaryError(body?.error.details, body?.error.message ?? m.errors.saveFailed(res.status)),
+        );
         setFieldErrors(toFieldErrors(body?.error.details));
         return;
       }
@@ -110,10 +116,10 @@ export default function NewUserPage() {
                 required
                 value={initialPassword}
                 onChange={(e) => setInitialPassword(e.target.value)}
-                aria-invalid={Boolean(fieldError("initialPassword"))}
+                aria-invalid={Boolean(pwProblem ?? fieldError("initialPassword"))}
                 className="max-w-md font-mono"
               />
-              <FieldError message={fieldError("initialPassword")} />
+              <FieldError message={pwProblem ?? fieldError("initialPassword")} />
               <p className="text-muted-foreground text-xs">{m.users.initialPasswordHint}</p>
             </div>
             <div className="space-y-2">
@@ -165,7 +171,7 @@ export default function NewUserPage() {
         )}
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={saving}>
+          <Button type="submit" disabled={saving || Boolean(pwProblem)}>
             {saving ? m.common.saving : m.common.save}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.push("/admin/users")}>
