@@ -418,6 +418,7 @@ export const ja = {
     moveUp: "上へ",
     moveDown: "下へ",
     /** 非開示のときに本体だけ見せる文言 */
+    discard: "書きかけを捨てる",
     withheld: "この製品の組成は非開示です",
     withheldEdit: "この製品の組成は非開示のため編集できません",
     saved: "組成を保存しました",

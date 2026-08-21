@@ -415,6 +415,7 @@ export const en: Messages = {
     balanceValue: (pct: string) => `Balance: ${pct}%`,
     moveUp: "Move up",
     moveDown: "Move down",
+    discard: "Discard changes",
     withheld: "The composition of this product is withheld",
     withheldEdit: "The composition of this product is withheld, so it cannot be edited",
     saved: "Composition saved",

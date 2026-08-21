@@ -6,10 +6,9 @@ import {
   validateCompositionSum,
   type AppSettings,
 } from "@chem/shared";
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +26,11 @@ interface Props {
   productId: string;
   /** 合計チェックの厳しさ。サーバー側で解決して渡す（設定は管理者しか読めない） */
   settings: AppSettings;
+  /**
+   * 書き換えられる状態か。製品の編集と足並みを揃えるため、この節だけの
+   * 「編集」ボタンは持たず、製品側から渡してもらう。
+   */
+  editing: boolean;
 }
 
 /** 画面が持つ行。保存するまで id を持たない行があるので、並べ替え用の鍵を別に振る */
@@ -60,12 +64,13 @@ function toRow(l: CompositionLineDto, index: number): Row | null {
  * 製品詳細の下に置き、製品本体とは別に保存する（行数が多いので、
  * 名称を触っていないのに全部保存し直すのを避けるため）。
  */
-export function CompositionEditor({ productId, settings }: Props) {
+export function CompositionEditor({ productId, settings, editing: editable }: Props) {
   const { m, locale } = useI18n();
 
   const [rows, setRows] = useState<Row[] | null>(null);
   const [canEdit, setCanEdit] = useState(false);
-  const [editing, setEditing] = useState(false);
+  // サーバー側でも可否を見ている。製品が編集中で、かつ権限があるときだけ書き換えられる
+  const editing = editable && canEdit;
   const [loadError, setLoadError] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -191,7 +196,6 @@ export function CompositionEditor({ productId, settings }: Props) {
       const body = (await res.json()) as { warnings: string[] };
       setWarnings(body.warnings);
       setNotice(body.warnings.length > 0 ? m.composition.savedWithWarnings : m.composition.saved);
-      setEditing(false);
       void load();
     } finally {
       setSaving(false);
@@ -221,17 +225,8 @@ export function CompositionEditor({ productId, settings }: Props) {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
+      <CardHeader>
         <CardTitle className="text-base">{m.composition.title}</CardTitle>
-        {canEdit &&
-          (editing ? (
-            <Badge variant="secondary">{m.common.editMode}</Badge>
-          ) : (
-            <Button type="button" size="sm" onClick={() => setEditing(true)}>
-              <Pencil className="mr-1 size-3.5" />
-              {m.common.edit}
-            </Button>
-          ))}
       </CardHeader>
 
       <CardContent className="space-y-3">
@@ -444,14 +439,13 @@ export function CompositionEditor({ productId, settings }: Props) {
               type="button"
               variant="outline"
               onClick={() => {
-                // 書きかけを捨てて読み直す
-                setEditing(false);
+                // 編集をやめるのは製品側の役目。ここは書きかけを捨てて読み直すだけ
                 setErrors([]);
                 setNotice(null);
                 void load();
               }}
             >
-              {m.common.cancel}
+              {m.composition.discard}
             </Button>
           </div>
         )}

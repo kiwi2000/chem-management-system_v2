@@ -34,12 +34,12 @@ interface Props {
   modelOptions: string[];
   /** 用途で選べる値（システム設定）。同上 */
   useOptions: string[];
-  /** 組成の節。基本情報と備考の間に置きたいので、呼び出し側から受け取る（既存データを開いたとき用） */
-  composition?: React.ReactNode;
   /**
-   * 組成の合計チェックの設定。新規登録のウィザードで組成エディタを出すのに使う。
-   * 既存データのときは composition を受け取るので要らない。
+   * 組成を見せてよいか。見せない相手には、この節ごと出さない。
+   * 製品を編集できるなら組成も見られる（権限の含意）ので、新規登録では常に見せる。
    */
+  canViewComposition?: boolean;
+  /** 組成の合計チェックの設定。組成エディタに渡す */
   settings?: AppSettings;
 }
 
@@ -49,7 +49,7 @@ export function ProductForm({
   canEdit,
   modelOptions,
   useOptions,
-  composition,
+  canViewComposition = true,
   settings,
 }: Props) {
   const router = useRouter();
@@ -417,10 +417,12 @@ export function ProductForm({
             </Card>
           )}
 
-          {/* 組成は別部品だが、備考より前に出す。既存データは受け取り、新規はここで作る */}
-          {!wizard && composition}
-          {wizard && step === 2 && createdId && settings && (
-            <CompositionEditor productId={createdId} settings={settings} />
+          {/*
+            組成は備考より前に出す。この節だけの「編集」ボタンは持たせず、
+            製品全体が編集中かどうかに合わせる。
+          */}
+          {(!wizard || step === 2) && canViewComposition && targetId && settings && (
+            <CompositionEditor productId={targetId} settings={settings} editing={!readOnly} />
           )}
 
           {(!wizard || step === 3) && (

@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { CompositionEditor } from "@/components/composition-editor";
 import { ApprovalHistory } from "@/components/approval-history";
 import { PublishActions } from "@/components/publish-actions";
 import { ProductForm } from "@/components/product-form";
@@ -58,14 +57,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         modelOptions={settings.productModelOptions}
         useOptions={settings.productUseOptions}
         canEdit={canEditProduct(actor, item)}
-        composition={
-          /* 非開示の組成は、そもそもこの節ごと出さない */
-          canViewComposition(actor, item) ? (
-            <CompositionEditor productId={item.id} settings={settings} />
-          ) : (
-            <p className="text-muted-foreground text-sm">{m.composition.withheld}</p>
-          )
-        }
+        /* 非開示の組成は、そもそもこの節ごと出さない */
+        canViewComposition={canViewComposition(actor, item)}
+        settings={settings}
       />
 
       <ApprovalHistory entity="product" entityId={item.id} />
