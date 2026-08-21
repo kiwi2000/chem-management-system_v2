@@ -78,6 +78,7 @@ export const en: Messages = {
     importExport: "TSV import / export",
     docTemplates: "Documents",
     admin: "Administration",
+    spec: "Specification",
   },
 
   shell: {

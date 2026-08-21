@@ -52,6 +52,13 @@ const ADMIN_ITEMS: NavItem[] = [
   { href: "/admin/settings", key: "settings", needs: "ADMIN", match: ["/admin/settings"] },
 ];
 
+/**
+ * 開発中だけ出す項目。
+ * 仕様の確認先を画面の中に置いておくためのもので、本番を作るときに消す。
+ * 検証環境でも見せたいので、環境では出し分けない。権限も要らない。
+ */
+const DEV_ITEMS: NavItem[] = [{ href: "/spec", key: "spec" }];
+
 function isActive(pathname: string, item: NavItem): boolean {
   if (item.href === "/") return pathname === "/";
   const prefixes = item.match ?? [item.href];
@@ -70,15 +77,18 @@ export function SidebarNav({
   const allowed = (item: NavItem) => !item.needs || permissions.includes(item.needs);
 
   const adminItems = ADMIN_ITEMS.filter(allowed);
-  const groups: { title: string | null; items: NavItem[] }[] = [
+  const groups: { title: string | null; items: NavItem[]; apart?: boolean }[] = [
     { title: null, items: ITEMS.filter(allowed) },
     ...(adminItems.length > 0 ? [{ title: m.nav.system, items: adminItems }] : []),
+    // 業務のメニューと地続きに見えないよう、上を大きめに空ける
+    { title: null, items: DEV_ITEMS, apart: true },
   ];
 
   return (
     <nav className="space-y-4 p-3">
       {groups.map((g, gi) => (
-        <div key={gi} className="space-y-1">
+        // 余白は padding で足す（space-y の margin と打ち消し合わないように）
+        <div key={gi} className={cn("space-y-1", g.apart && "pt-6")}>
           {g.title && (
             <div className="text-muted-foreground px-3 pb-1 text-xs font-medium">{g.title}</div>
           )}
