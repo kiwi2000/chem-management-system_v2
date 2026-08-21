@@ -173,6 +173,7 @@ export default function SettingsPage() {
               <Input
                 id="epsilon"
                 inputMode="decimal"
+                autoComplete="off"
                 value={settings.compositionEpsilonPct}
                 onChange={(e) =>
                   setSettings({ ...settings, compositionEpsilonPct: e.target.value })

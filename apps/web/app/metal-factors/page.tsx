@@ -237,6 +237,7 @@ export default function MetalFactorsPage() {
                   id="ratio"
                   required
                   inputMode="decimal"
+                  autoComplete="off"
                   value={form.ratioPct}
                   onChange={(e) => setForm({ ...form, ratioPct: e.target.value })}
                   className="w-32 text-right font-mono"

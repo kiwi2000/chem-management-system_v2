@@ -4,6 +4,7 @@ import {
   COMPOSITION_MAX_LINES,
   fromScaled,
   pickName,
+  SCALED_HUNDRED,
   sumScaled,
   validateCompositionSum,
   type AppSettings,
@@ -166,6 +167,23 @@ export function CompositionEditor({
     }
   }
 
+  /**
+   * その行に「残り」を入れる。合計がちょうど100%になる値を計算して埋める。
+   * 他の行を直すたびに電卓を叩かずに済むよう、ダブルクリックで呼べるようにしてある。
+   */
+  function fillToHundred(index: number) {
+    setRows((prev) => {
+      if (!prev) return prev;
+      const others = prev
+        .filter((_, j) => j !== index)
+        .map((r) => (r.isBalance ? null : r.contentPct || null));
+      const rest = SCALED_HUNDRED - sumScaled(others);
+      // 他の行だけで100%を超えているときは0にする（負の含有率は無い）
+      const value = fromScaled(rest < 0n ? 0n : rest);
+      return prev.map((r, j) => (j === index ? { ...r, contentPct: value, isBalance: false } : r));
+    });
+  }
+
   function update(index: number, patch: Partial<Row>) {
     setRows((prev) => prev?.map((r, i) => (i === index ? { ...r, ...patch } : r)) ?? prev);
   }
@@ -324,12 +342,7 @@ export function CompositionEditor({
                     {m.composition.contentPct}
                   </th>
                   <th className={cn(CELL, "w-40 font-medium")}>{m.composition.note}</th>
-                  {/* 残部の切り替えと行の操作は、直しているときだけ出す */}
-                  {editing && (
-                    <th className={cn(CELL, "w-16 text-center font-medium")}>
-                      {m.composition.balance}
-                    </th>
-                  )}
+                  {/* 行の操作は、直しているときだけ出す */}
                   {editing && <th className={cn(CELL, "w-24")} />}
                 </tr>
               </thead>
@@ -409,6 +422,10 @@ export function CompositionEditor({
                         <Input
                           aria-label={`${r.element.code} ${m.composition.contentPct}`}
                           inputMode="decimal"
+                          // 過去に打った文字が候補として出るのを止める
+                          autoComplete="off"
+                          title={m.composition.fillHint}
+                          onDoubleClick={() => fillToHundred(i)}
                           value={r.contentPct}
                           onChange={(e) => update(i, { contentPct: e.target.value })}
                           className="h-8 w-24 text-right"
@@ -430,19 +447,6 @@ export function CompositionEditor({
                         <span className="text-muted-foreground text-xs">{r.note}</span>
                       )}
                     </td>
-                    {editing && (
-                      <td className={cn(CELL, "text-center")} title={m.composition.balanceHint}>
-                        <input
-                          type="checkbox"
-                          aria-label={`${r.element.code} ${m.composition.balance}`}
-                          checked={r.isBalance}
-                          disabled={!settings.compositionBalanceAllowed}
-                          onChange={(e) =>
-                            update(i, { isBalance: e.target.checked, contentPct: "" })
-                          }
-                        />
-                      </td>
-                    )}
                     {editing && (
                       <td className={cn(CELL, "w-12 px-1 text-center")}>
                         <Button
@@ -468,7 +472,6 @@ export function CompositionEditor({
                   </td>
                   <td className={cn(CELL, "text-right font-medium")}>{grandTotalPct}%</td>
                   <td className={CELL} />
-                  {editing && <td className={CELL} />}
                   {editing && (
                     <td className={cn(CELL, "w-12 px-1 text-center")}>
                       <Button
@@ -493,7 +496,8 @@ export function CompositionEditor({
           <div className="space-y-3 rounded-md border p-3">
             <p className="text-sm font-medium">{m.composition.searchTitle}</p>
 
-            <div className="grid gap-2 sm:grid-cols-[6rem_1fr]">
+            {/* ID と CAS は短いので1行に並べる。名称と対象は横幅を使うので行を分ける */}
+            <div className="grid gap-2 sm:grid-cols-[8rem_minmax(0,16rem)_4rem_minmax(0,16rem)]">
               <label htmlFor="cand-id" className="self-center text-right text-sm">
                 {m.composition.elementId}
               </label>
@@ -502,32 +506,34 @@ export function CompositionEditor({
                 id="cand-id"
                 value={cond.id}
                 onChange={(e) => setCond({ ...cond, id: e.target.value })}
-                className="w-full sm:w-64"
+                className="w-full"
               />
 
               <label htmlFor="cand-cas" className="self-center text-right text-sm">
                 {m.composition.casNumber}
               </label>
-              <div className="space-y-1">
-                <Input
-                  id="cand-cas"
-                  value={cond.cas}
-                  onChange={(e) => setCond({ ...cond, cas: e.target.value })}
-                  className="w-full sm:w-64"
-                  placeholder="7439-92-1"
-                />
-                <p className="text-muted-foreground text-xs">{m.composition.casSearchHint}</p>
-              </div>
+              <Input
+                id="cand-cas"
+                value={cond.cas}
+                onChange={(e) => setCond({ ...cond, cas: e.target.value })}
+                className="w-full"
+              />
+
+              <span className="hidden sm:block" />
+              <p className="text-muted-foreground text-xs sm:col-span-3">
+                {m.composition.casSearchHint}
+              </p>
 
               <label htmlFor="cand-name" className="self-center text-right text-sm">
                 {m.composition.elementName}
               </label>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:col-span-3">
                 <Input
                   id="cand-name"
                   value={cond.name}
                   onChange={(e) => setCond({ ...cond, name: e.target.value })}
                   className="w-full sm:w-64"
+                  autoComplete="off"
                 />
                 <select
                   aria-label={m.composition.nameOp}
@@ -544,7 +550,7 @@ export function CompositionEditor({
               </div>
 
               <span className="self-center text-right text-sm">{m.composition.target}</span>
-              <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex flex-wrap items-center gap-4 text-sm sm:col-span-3">
                 <label className="flex items-center gap-1.5">
                   <input
                     type="checkbox"
