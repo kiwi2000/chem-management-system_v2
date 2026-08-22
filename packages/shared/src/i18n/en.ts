@@ -374,8 +374,7 @@ export const en: Messages = {
     headerStrongHint:
       "Fills the top bar, table headings and the sidebar title with the chosen theme's colour",
     account: "Account",
-    email: "Email address (sign-in ID)",
-    emailHint: "You cannot change this yourself. Ask an administrator if it needs to change.",
+    loginId: "Sign-in ID",
     changePassword: "Change your password",
     saved: "Preferences saved",
   },

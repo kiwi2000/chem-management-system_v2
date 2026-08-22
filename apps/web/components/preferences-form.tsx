@@ -247,7 +247,14 @@ export function PreferencesForm({
         <CardHeader>
           <CardTitle className="text-base">{m.preferences.profile}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          {/* ログインIDは自分では変えられないので、入力欄ではなく表示だけ。1行に収める */}
+          {email && (
+            <p className="flex flex-wrap items-baseline gap-x-3 text-sm">
+              <span className="font-medium">{m.preferences.loginId}</span>
+              <span className="font-mono">{email}</span>
+            </p>
+          )}
           {/* 表示名を左、アバターを右に。どちらも短いので横に並べたほうが収まりがよい */}
           <div className="flex flex-wrap items-start gap-x-8 gap-y-6">
             <form
@@ -507,15 +514,7 @@ export function PreferencesForm({
         <CardHeader>
           <CardTitle className="text-base">{m.preferences.account}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* ログインIDは自分では変えられない。問い合わせのときに要るので出しておく */}
-          {email && (
-            <div className="space-y-1">
-              <p className="text-sm font-medium">{m.preferences.email}</p>
-              <p className="font-mono text-sm">{email}</p>
-              <p className="text-muted-foreground text-xs">{m.preferences.emailHint}</p>
-            </div>
-          )}
+        <CardContent>
           <Button variant="outline" nativeButton={false} render={<Link href="/change-password" />}>
             {m.preferences.changePassword}
           </Button>
