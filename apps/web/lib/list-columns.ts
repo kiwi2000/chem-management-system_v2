@@ -49,6 +49,22 @@ export const PRODUCT_COLUMNS: QueryColumn[] = [
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
+export const REGION_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  { key: "displayOrder", kind: "number", field: "displayOrder" },
+];
+
+export const COUNTRY_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  // 地域は選択式。値は地域のIDで送られる
+  { key: "regionId", kind: "enum", field: "regionId" },
+  { key: "displayOrder", kind: "number", field: "displayOrder" },
+];
+
 export const METAL_FACTOR_COLUMNS: QueryColumn[] = [
   { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
   { key: "metalElement", kind: "text", field: "metalElement" },

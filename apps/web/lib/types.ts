@@ -233,6 +233,27 @@ export interface CompositionAggregateDto {
   truncated: number;
 }
 
+/** 地域（アジア・欧州など）。国は含まない */
+export interface RegionDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  displayOrder: number;
+}
+
+/** 国。法令の持ち主になる単位で、地域の配下に置く */
+export interface CountryDto {
+  id: string;
+  code: string;
+  regionId: string;
+  regionNameJa: string;
+  regionNameEn: string | null;
+  nameJa: string;
+  nameEn: string | null;
+  displayOrder: number;
+}
+
 export interface MetalFactorDto {
   id: string;
   casNumber: string;

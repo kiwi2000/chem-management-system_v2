@@ -7,6 +7,7 @@ import {
   ChevronRight,
   FileText,
   FlaskConical,
+  Globe,
   Home,
   Link2,
   Megaphone,
@@ -37,6 +38,8 @@ interface NavItem {
   needs?: Permission;
   /** この接頭辞のパスでも選択中扱いにする（詳細画面など） */
   match?: string[];
+  /** 配下に置く項目。字下げして親のすぐ下に並べる */
+  children?: NavItem[];
 }
 
 /**
@@ -54,6 +57,8 @@ const ITEMS: NavItem[] = [
     icon: Scale,
     needs: "REGULATION_VIEW",
     match: ["/laws", "/categories"],
+    // 地域は法規制マスタの一部なので、配下に置く
+    children: [{ href: "/regions", key: "regions", icon: Globe, needs: "REGULATION_VIEW" }],
   },
   {
     href: "/link-versions",
@@ -166,6 +171,20 @@ export function SidebarNav({
     );
   };
 
+  /** 親と、その配下の項目。配下は左に一本線を引いて字下げする */
+  const renderTree = (item: NavItem, indented: boolean) => {
+    const children = (item.children ?? []).filter(allowed);
+    if (children.length === 0) return renderItem(item, indented);
+    return (
+      <div key={item.href} className="space-y-1">
+        {renderItem(item, indented)}
+        <div className="border-border ml-4 space-y-1 border-l pl-2">
+          {children.map((c) => renderItem(c, true))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <nav className="space-y-4 p-3">
       {groups.map((g, gi) => (
@@ -201,7 +220,7 @@ export function SidebarNav({
               )}
             </>
           ) : (
-            g.items.map((item) => renderItem(item, false))
+            g.items.map((item) => renderTree(item, false))
           )}
         </div>
       ))}

@@ -8,7 +8,7 @@ import {
   type TableState,
 } from "@chem/shared";
 import { ArrowDown, ArrowUp, ChevronsUpDown, CircleCheck, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -54,6 +54,17 @@ interface Props<T> {
   onRowActivate?: (row: T) => void;
   /** フィルターの並びを指定する場合、1行に置く列キーを行ごとに並べる */
   filterLayout?: FilterLayoutRow[];
+  /** 件数が少なく絞り込む意味が無い表では false にしてパネルごと消す（並べ替えは見出しで行う） */
+  showFilters?: boolean;
+  /** 表の右上に置くボタン（「＋ 新規登録」など） */
+  headerActions?: ReactNode;
+  /** 「行をダブルクリックすると詳細を開きます」を出すか */
+  showOpenHint?: boolean;
+  /**
+   * ダブルクリックしたあと、次の画面が出るまでカーソルを砂時計にするか。
+   * その場で開くだけの一覧（地域・国）では待ち時間が無いので false にする
+   */
+  busyOnActivate?: boolean;
 }
 
 /** 罫線。セルの右側に薄い線を引く（最後の列は引かない） */
@@ -83,6 +94,10 @@ export function DataTable<T>({
   bulkAction,
   onRowActivate,
   filterLayout,
+  showFilters = true,
+  headerActions,
+  showOpenHint = true,
+  busyOnActivate = true,
 }: Props<T>) {
   // 表に出す列。フィルター専用の列（組成のCAS番号など）はここから外す
   const columns = allColumns.filter((c) => !c.filterOnly);
@@ -126,6 +141,33 @@ export function DataTable<T>({
 
   // 読み直したら選択は解除する（見えていない行を消してしまわないように）
   useEffect(() => setSelected(new Set()), [rows]);
+
+  /**
+   * 行をダブルクリックしてから次の画面が出るまで、カーソルを砂時計にする。
+   * 何も変わらないと、押せたのか読み込み中なのか分からないため。
+   * 次の画面へ移ればこの一覧が消えるので、片付けで外れる。
+   * 移らなかったとき（開くのに失敗した等）に固まらないよう、時間でも外す。
+   */
+  const busyTimer = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (busyTimer.current !== null) window.clearTimeout(busyTimer.current);
+      document.body.classList.remove("cursor-busy");
+    };
+  }, []);
+
+  function activateRow(row: T) {
+    if (!onRowActivate) return;
+    if (busyOnActivate) {
+      document.body.classList.add("cursor-busy");
+      if (busyTimer.current !== null) window.clearTimeout(busyTimer.current);
+      busyTimer.current = window.setTimeout(
+        () => document.body.classList.remove("cursor-busy"),
+        10_000,
+      );
+    }
+    onRowActivate(row);
+  }
 
   const visible = rows ?? [];
   const allChecked = visible.length > 0 && visible.every((r) => selected.has(rowKey(r)));
@@ -196,40 +238,44 @@ export function DataTable<T>({
 
   return (
     <div className="space-y-3">
-      <FilterPanel
-        columns={allColumns}
-        state={state}
-        defaultState={defaultState}
-        onFilterChange={setFilter}
-        onReset={onReset}
-        storageKey={`${storageKey}.filterPanel`}
-        filterLayout={filterLayout}
-        currentQuery={serializeTableState(state, defaultState).toString()}
-        onLoadQuery={(query) =>
-          onStateChange(() =>
-            // 読めない条件（列構成が変わった等）は parseTableState が黙って捨てる
-            parseTableState(
-              new URLSearchParams(query),
-              allColumns.map((c) => ({ key: c.key, kind: c.kind })),
-              defaultState,
-            ),
-          )
-        }
-      />
+      {showFilters && (
+        <FilterPanel
+          columns={allColumns}
+          state={state}
+          defaultState={defaultState}
+          onFilterChange={setFilter}
+          onReset={onReset}
+          storageKey={`${storageKey}.filterPanel`}
+          filterLayout={filterLayout}
+          currentQuery={serializeTableState(state, defaultState).toString()}
+          onLoadQuery={(query) =>
+            onStateChange(() =>
+              // 読めない条件（列構成が変わった等）は parseTableState が黙って捨てる
+              parseTableState(
+                new URLSearchParams(query),
+                allColumns.map((c) => ({ key: c.key, kind: c.kind })),
+                defaultState,
+              ),
+            )
+          }
+        />
+      )}
 
-      {selectable && (
+      {(selectable || headerActions) && (
         <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            title={m.table.deleteSelected}
-            aria-label={m.table.deleteSelected}
-            disabled={selected.size === 0 || deleting}
-            onClick={() => void deleteSelected()}
-          >
-            <Trash2 className="size-4" />
-          </Button>
+          {selectable && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-8"
+              title={m.table.deleteSelected}
+              aria-label={m.table.deleteSelected}
+              disabled={selected.size === 0 || deleting}
+              onClick={() => void deleteSelected()}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
           {bulkAction && (
             <Button
               variant="outline"
@@ -246,8 +292,14 @@ export function DataTable<T>({
               {m.table.selectedCount(selected.size)}
             </span>
           )}
-          {onRowActivate && (
+          {onRowActivate && showOpenHint && (
             <span className="text-muted-foreground ml-auto text-xs">{m.table.openHint}</span>
+          )}
+          {/* 表の右上。ml-auto は上の説明が無いときだけ効かせる */}
+          {headerActions && (
+            <div className={cn((!onRowActivate || !showOpenHint) && "ml-auto")}>
+              {headerActions}
+            </div>
           )}
         </div>
       )}
@@ -359,7 +411,7 @@ export function DataTable<T>({
               return (
                 <TableRow
                   key={key}
-                  onDoubleClick={onRowActivate ? () => onRowActivate(row) : undefined}
+                  onDoubleClick={onRowActivate ? () => activateRow(row) : undefined}
                   className={cn(onRowActivate && "cursor-pointer")}
                   data-state={selected.has(key) ? "selected" : undefined}
                 >

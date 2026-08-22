@@ -47,6 +47,8 @@ export const ja = {
     prev: "前へ",
     next: "次へ",
     optional: "（任意）",
+    /** 入力を編集前の値に戻す */
+    clear: "クリア",
     saving: "保存中...",
     saved: "保存しました",
     created: "作成しました",
@@ -73,6 +75,7 @@ export const ja = {
     settings: "設定",
     substances: "物質",
     products: "製品 / 原材料",
+    regions: "地域・国",
     laws: "法規制",
     links: "リンク",
     metalFactors: "金属換算係数",
@@ -96,7 +99,6 @@ export const ja = {
   },
 
   login: {
-    description: "アカウントでログインしてください",
     email: "メールアドレス",
     password: "パスワード",
     totp: "認証コード（6桁）",
@@ -285,6 +287,40 @@ export const ja = {
     warnSameCas: (codes: string) => `同じCAS番号の物質が既にあります: ${codes}`,
     warnCasFormat: "CAS番号が一般的な形（例: 7439-92-1）ではありません",
     savedWithWarnings: "保存しました。次の点を確認してください",
+  },
+
+  regions: {
+    title: "地域",
+    newTitle: "地域の追加",
+    editTitle: "地域の編集",
+    code: "地域コード",
+    nameJa: "名称（日本語）",
+    nameEn: "名称（英語）",
+    displayOrder: "並び順",
+    empty: "地域が登録されていません",
+    deleteConfirm: (name: string) => `「${name}」を削除しますか？`,
+    duplicateCode: (code: string) => `地域コード「${code}」は既に使われています`,
+    inUse: (n: number) => `この地域は法令${n}件から使われています。先にその法令を移してください`,
+    revived: "以前に削除した同じコードがあったため、内容を更新して復活させました",
+    inUseByCountries: (n: number) =>
+      `この地域は国${n}件から使われています。先にその国を移してください`,
+  },
+
+  countries: {
+    title: "国",
+    newTitle: "国の追加",
+    editTitle: "国の編集",
+    code: "国コード",
+    region: "地域",
+    nameJa: "名称（日本語）",
+    nameEn: "名称（英語）",
+    displayOrder: "並び順",
+    empty: "国が登録されていません",
+    noRegion: "先に地域を登録してください",
+    deleteConfirm: (name: string) => `「${name}」を削除しますか？`,
+    duplicateCode: (code: string) => `国コード「${code}」は既に使われています`,
+    inUse: (n: number) => `この国は法令${n}件から使われています。先にその法令を移してください`,
+    revived: "以前に削除した同じコードがあったため、内容を更新して復活させました",
   },
 
   metalFactors: {

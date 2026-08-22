@@ -47,6 +47,7 @@ export const en: Messages = {
     prev: "Previous",
     next: "Next",
     optional: " (optional)",
+    clear: "Reset",
     saving: "Saving...",
     saved: "Saved",
     created: "Created",
@@ -73,6 +74,7 @@ export const en: Messages = {
     settings: "Settings",
     substances: "Substances",
     products: "Products / Materials",
+    regions: "Regions / Countries",
     laws: "Regulations",
     links: "Links",
     metalFactors: "Metal conversion factors",
@@ -96,7 +98,6 @@ export const en: Messages = {
   },
 
   login: {
-    description: "Sign in with your account",
     email: "Email address",
     password: "Password",
     totp: "Authentication code (6 digits)",
@@ -280,6 +281,40 @@ export const en: Messages = {
     warnSameCas: (codes: string) => `Other substances already use this CAS number: ${codes}`,
     warnCasFormat: "The CAS number does not look like the usual format (e.g. 7439-92-1)",
     savedWithWarnings: "Saved. Please check the following",
+  },
+
+  regions: {
+    title: "Regions",
+    newTitle: "New region",
+    editTitle: "Edit region",
+    code: "Region code",
+    nameJa: "Name (Japanese)",
+    nameEn: "Name (English)",
+    displayOrder: "Order",
+    empty: "No regions",
+    deleteConfirm: (name: string) => `Delete "${name}"?`,
+    duplicateCode: (code: string) => `Region code "${code}" is already in use`,
+    inUse: (n: number) => `${n} law(s) still use this region. Move them first`,
+    revived: "A deleted entry with the same code was restored with the new values",
+    inUseByCountries: (n: number) =>
+      `${n} country/countries still use this region. Move them first`,
+  },
+
+  countries: {
+    title: "Countries",
+    newTitle: "New country",
+    editTitle: "Edit country",
+    code: "Country code",
+    region: "Region",
+    nameJa: "Name (Japanese)",
+    nameEn: "Name (English)",
+    displayOrder: "Order",
+    empty: "No countries",
+    noRegion: "Register a region first",
+    deleteConfirm: (name: string) => `Delete "${name}"?`,
+    duplicateCode: (code: string) => `Country code "${code}" is already in use`,
+    inUse: (n: number) => `${n} law(s) still use this country. Move them first`,
+    revived: "A deleted entry with the same code was restored with the new values",
   },
 
   metalFactors: {
