@@ -104,7 +104,7 @@ export const ja = {
     submitting: "ログイン中...",
     failed: "ログインできませんでした",
     mfaPrompt: "認証アプリのコードを入力してください",
-    sessionExpired: "ログインの有効期限が切れました。もう一度ログインしてください",
+    sessionExpired: "一定時間操作がなかったため、ログアウトしました。",
   },
 
   changePassword: {

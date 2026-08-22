@@ -20,7 +20,7 @@ function ExpiredNotice() {
   const expired = useSearchParams().get("expired") === "1";
   if (!expired) return null;
   return (
-    <Alert>
+    <Alert variant="destructive">
       <AlertDescription>{m.login.sessionExpired}</AlertDescription>
     </Alert>
   );

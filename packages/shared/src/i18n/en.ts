@@ -104,7 +104,7 @@ export const en: Messages = {
     submitting: "Signing in...",
     failed: "Could not sign in",
     mfaPrompt: "Enter the code from your authenticator app",
-    sessionExpired: "Your session has expired. Please sign in again",
+    sessionExpired: "You were signed out after a period of inactivity.",
   },
 
   changePassword: {
