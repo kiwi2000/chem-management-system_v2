@@ -90,6 +90,8 @@ export const ja = {
     signOut: "ログアウト",
     readOnly: "参照のみ",
     admin: "管理者",
+    idleRemainMinutes: (m: number, s: number) => `あと${m}分${s}秒で自動ログアウトします`,
+    idleRemainSeconds: (s: number) => `あと${s}秒で自動ログアウトします`,
     language: "言語",
   },
 

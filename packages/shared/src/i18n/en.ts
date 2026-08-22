@@ -90,6 +90,8 @@ export const en: Messages = {
     signOut: "Sign out",
     readOnly: "Read only",
     admin: "Administrator",
+    idleRemainMinutes: (m: number, s: number) => `Signing out in ${m}m ${s}s`,
+    idleRemainSeconds: (s: number) => `Signing out in ${s}s`,
     language: "Language",
   },
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { EXPIRED_LOGIN_URL } from "@/lib/routes";
 
 /**
@@ -12,6 +12,9 @@ import { EXPIRED_LOGIN_URL } from "@/lib/routes";
  *
  * 画面を触っているだけでは通信が起きない。放っておくとサーバー側の時計だけが進み、
  * 長い入力の途中で打ち切られてしまうので、操作が続いているあいだは時々知らせる。
+ *
+ * 残りが少なくなったらツールバーに時計を出す（IdleCountdown）。
+ * ふだんは出さない。残り8分と知っても、することが無いため。
  */
 
 /** 操作を数え直す間隔。マウスの移動は1秒に何十回も来るので、この間隔まで間引く */
@@ -27,27 +30,125 @@ const PING_STEP_MS = 60_000;
  */
 const RECHECK_MS = 5_000;
 
-export function IdleLogout({ idleMinutes }: { idleMinutes: number }) {
+/** 残りがこれを切ったら時計を出す。上限を短く設定したときは、その1/3まで縮める */
+const warnWindow = (limit: number) => Math.min(2 * 60_000, Math.floor(limit / 3));
+
+/** 残りがこれを切ったら色を変える。出ている時間の半分は超えない */
+const alarmWindow = (warn: number) => Math.min(30_000, Math.floor(warn / 2));
+
+interface Countdown {
+  /** 残りミリ秒。まだ出す時間でなければ null */
+  remainMs: number | null;
+  /** 色を変える段階か */
+  alarm: boolean;
+}
+
+const CountdownContext = createContext<Countdown>({ remainMs: null, alarm: false });
+
+/** ツールバーの時計が読む。ここに値が入るのは、残りが少なくなったときだけ */
+export function useIdleCountdown(): Countdown {
+  return useContext(CountdownContext);
+}
+
+/**
+ * 短く2回鳴らす。音声ファイルは持たず、その場で作る。
+ * そのページで一度も操作していないとブラウザが止めるので、鳴らないことがある。
+ */
+function beep() {
+  try {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    const play = (offset: number, freq: number) => {
+      const at = ctx.currentTime + offset;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      // 立ち上がりと切れ際をなだらかにする。角があると耳障りな「プツ」が入る
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(0.05, at + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.09);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(at);
+      osc.stop(at + 0.1);
+    };
+    play(0, 880);
+    play(0.13, 1175);
+    window.setTimeout(() => void ctx.close(), 800);
+  } catch {
+    // 鳴らせない環境では黙って諦める。知らせる手段は画面のほうにもある
+  }
+}
+
+export function IdleGuard({
+  idleMinutes,
+  enabled,
+  children,
+}: {
+  idleMinutes: number;
+  /** ログインしていない画面では時計を回さない */
+  enabled: boolean;
+  children: ReactNode;
+}) {
+  const [countdown, setCountdown] = useState<Countdown>({ remainMs: null, alarm: false });
+
   useEffect(() => {
+    if (!enabled) return;
+
     const limit = idleMinutes * 60_000;
+    const warn = warnWindow(limit);
+    const alarmAt = alarmWindow(warn);
     let deadline = Date.now() + limit;
     let lastActivity = Date.now();
     let lastPing = Date.now();
     let timer = 0;
+    let ticker = 0;
+    let showing = false;
     let leaving = false;
 
     const leave = () => {
       if (leaving) return;
       leaving = true;
+      window.clearInterval(ticker);
       // 出ていく前にサーバー側のセッションも消す（Cookie だけ残っても意味が無い）
       void fetch("/api/auth/logout", { method: "POST" })
         .catch(() => {})
         .finally(() => window.location.replace(EXPIRED_LOGIN_URL));
     };
 
+    /** 出ているあいだだけ秒を刻む。それ以外の時間はタイマーを持たない */
+    const tick = () => {
+      const remain = deadline - Date.now();
+      if (remain <= 0) {
+        leave();
+        return;
+      }
+      setCountdown({ remainMs: remain, alarm: remain <= alarmAt });
+    };
+
+    const startShowing = () => {
+      // 何度呼ばれても、そのつど今の残りを出す。
+      // 画面が隠れているあいだ秒の刻みは止められるので、戻ったときに数字が古いままになる
+      tick();
+      if (showing) return;
+      showing = true;
+      ticker = window.setInterval(tick, 1_000);
+      beep();
+    };
+
+    const stopShowing = () => {
+      if (!showing) return;
+      showing = false;
+      window.clearInterval(ticker);
+      setCountdown({ remainMs: null, alarm: false });
+    };
+
     /**
      * 期限を狙って1回だけ起きる。常時まわし続けるタイマーは持たない。
-     * まだ期限前だったら、残り時間ぶん置いて仕掛け直す。
+     * 出す時刻（期限の少し前）と、期限そのものの2段構えで仕掛ける。
      */
     const schedule = () => {
       window.clearTimeout(timer);
@@ -57,7 +158,13 @@ export function IdleLogout({ idleMinutes }: { idleMinutes: number }) {
         leave();
         return;
       }
-      timer = window.setTimeout(schedule, Math.max(remain, RECHECK_MS));
+      if (remain <= warn) {
+        startShowing();
+        // 出したあとは1秒ごとの刻みが期限を見るので、別に仕掛け直さない
+        return;
+      }
+      stopShowing();
+      timer = window.setTimeout(schedule, Math.max(remain - warn, RECHECK_MS));
     };
 
     const onActivity = () => {
@@ -88,6 +195,7 @@ export function IdleLogout({ idleMinutes }: { idleMinutes: number }) {
       "pointermove",
       "pointerdown",
       "keydown",
+      "input",
       "wheel",
       "touchstart",
       "scroll",
@@ -102,8 +210,9 @@ export function IdleLogout({ idleMinutes }: { idleMinutes: number }) {
       for (const name of events) window.removeEventListener(name, onActivity);
       document.removeEventListener("visibilitychange", onVisible);
       window.clearTimeout(timer);
+      window.clearInterval(ticker);
     };
-  }, [idleMinutes]);
+  }, [idleMinutes, enabled]);
 
-  return null;
+  return <CountdownContext.Provider value={countdown}>{children}</CountdownContext.Provider>;
 }

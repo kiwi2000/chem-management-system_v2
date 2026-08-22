@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
+import { IdleCountdown } from "@/components/idle-countdown";
 import { UserAvatar } from "@/components/user-avatar";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Badge } from "@/components/ui/badge";
@@ -128,6 +129,8 @@ export function AppShellClient({ user, avatarVersion, children }: Props) {
             {m.common.appName}
           </Link>
           <div className="ml-auto flex items-center gap-3">
+            {/* 自動ログアウトが近いときだけ出る。ふだんは何も無い */}
+            <IdleCountdown />
             <Link href="/preferences" title={user.displayName ?? user.email}>
               <UserAvatar
                 userId={user.id}

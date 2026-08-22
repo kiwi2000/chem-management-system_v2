@@ -2,7 +2,7 @@ import { HEADER_STRONG_CLASS, backgroundClass, getMessages, themeClass } from "@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
-import { IdleLogout } from "@/components/idle-logout";
+import { IdleGuard } from "@/components/idle-logout";
 import { getSessionUser } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n-client";
@@ -47,8 +47,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="bg-background min-h-screen antialiased">
         <I18nProvider locale={locale}>
           {/* ログインしている画面だけ。ログイン画面で時計を回しても意味が無い */}
-          {user && <IdleLogout idleMinutes={settings.sessionIdleMinutes} />}
-          <AppShell>{children}</AppShell>
+          <IdleGuard idleMinutes={settings.sessionIdleMinutes} enabled={user !== null}>
+            <AppShell>{children}</AppShell>
+          </IdleGuard>
         </I18nProvider>
       </body>
     </html>
