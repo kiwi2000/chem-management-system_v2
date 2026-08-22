@@ -13,48 +13,43 @@ import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth";
 
 /**
- * サーバー側のテーマ解決。言語と同じ順序で決める。
- * ログインユーザーの設定 → Cookie → 既定（システムに合わせる）。
+ * サーバー側のテーマ解決。言語と同じ決め方をする。
  *
- * 本人の設定を先に見る。Cookie は端末に1つしか無いので、
- * 共有のパソコンだと、先に使った人の Cookie が次の人にも当たってしまう。
- * Cookie を見るのは、まだログインしていないとき（ログイン画面）と、
- * 本人がまだ何も選んでいないときだけ。
+ * ログインしていれば、見るのは<本人の設定だけ>。選んでいなければ既定に落とす。
+ * Cookie は端末に1つしか無いので、前に使った人の値が残っている。
+ * そこへ落ちると、まだ何も選んでいない人に前の人の配色が当たってしまう
+ * （1台のスマホで人を入れ替えると、これが起きた）。
+ *
+ * Cookie を見るのは、ログインしていないときだけ。ログイン画面の配色を保つため。
  *
  * サーバーで決めてから描画するので、開いた直後に色が切り替わるちらつきは起きない。
  */
 export async function getTheme(): Promise<Theme> {
   const user = await getSessionUser().catch(() => null);
-  if (isTheme(user?.preferredTheme)) return user.preferredTheme;
+  if (user) return isTheme(user.preferredTheme) ? user.preferredTheme : DEFAULT_THEME;
 
   const fromCookie = (await cookies()).get(THEME_COOKIE)?.value;
-  if (isTheme(fromCookie)) return fromCookie;
-
-  return DEFAULT_THEME;
+  return isTheme(fromCookie) ? fromCookie : DEFAULT_THEME;
 }
 
 /**
- * 「ヘッダーなどを濃くする」の解決。テーマと同じ順序（本人の設定 → Cookie → 既定=しない）。
+ * 「ヘッダーなどを濃くする」の解決。テーマと同じ決め方。
  * テーマとは独立した設定なので、どの配色でも入切できる。
  */
 export async function getHeaderStrong(): Promise<boolean> {
   const user = await getSessionUser().catch(() => null);
-  if (typeof user?.preferredHeaderStrong === "boolean") return user.preferredHeaderStrong;
+  if (user) return user.preferredHeaderStrong ?? false;
 
   const fromCookie = (await cookies()).get(HEADER_STRONG_COOKIE)?.value;
-  if (fromCookie === "1") return true;
-  if (fromCookie === "0") return false;
-
-  return false;
+  return fromCookie === "1";
 }
 
-/** 背景の模様・挿絵。テーマと同じ順序（本人の設定 → Cookie → 既定=なし） */
+/** 背景の模様・挿絵。テーマと同じ決め方 */
 export async function getBackground(): Promise<Background> {
   const user = await getSessionUser().catch(() => null);
-  if (isBackground(user?.preferredBackground)) return user.preferredBackground;
+  if (user)
+    return isBackground(user.preferredBackground) ? user.preferredBackground : DEFAULT_BACKGROUND;
 
   const fromCookie = (await cookies()).get(BACKGROUND_COOKIE)?.value;
-  if (isBackground(fromCookie)) return fromCookie;
-
-  return DEFAULT_BACKGROUND;
+  return isBackground(fromCookie) ? fromCookie : DEFAULT_BACKGROUND;
 }

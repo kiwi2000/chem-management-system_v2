@@ -26,29 +26,31 @@ type Preferences = Pick<
 /**
  * ログインした人の設定を Cookie に写す。
  *
- * Cookie は端末に1つ、設定は人ごと。共有のパソコンで前の人の Cookie が残っていると、
- * ログアウトしたあとのログイン画面に前の人の配色が出たままになる。
- * 画面の見た目を決めるのは本人の設定（lib/theme.ts）なので、
- * これは、ログインしていない画面のための後始末。
+ * Cookie は端末に1つ、設定は人ごと。1台のスマホで人が入れ替わると、
+ * 前の人の Cookie が残ったままになる。
  *
- * 本人がまだ何も選んでいない項目には触らない。ログイン画面で選んだ言語を消さないため。
+ * 画面の見た目を決めるのは本人の設定だけ（lib/theme.ts はログイン中に Cookie を見ない）。
+ * これは、ログアウトしたあとのログイン画面のための後始末。
+ *
+ * **選んでいない項目は消す。**残しておくと、次にログアウトしたときに
+ * 前の人の配色でログイン画面が出る。
  */
 export async function syncPreferenceCookies(user: Preferences): Promise<void> {
   const store = await cookies();
-  if (isLocale(user.preferredLocale)) {
-    store.set(LOCALE_COOKIE, user.preferredLocale, PREFERENCE_COOKIE_OPTIONS);
-  }
-  if (isTheme(user.preferredTheme)) {
-    store.set(THEME_COOKIE, user.preferredTheme, PREFERENCE_COOKIE_OPTIONS);
-  }
-  if (typeof user.preferredHeaderStrong === "boolean") {
-    store.set(
-      HEADER_STRONG_COOKIE,
-      user.preferredHeaderStrong ? "1" : "0",
-      PREFERENCE_COOKIE_OPTIONS,
-    );
-  }
-  if (isBackground(user.preferredBackground)) {
-    store.set(BACKGROUND_COOKIE, user.preferredBackground, PREFERENCE_COOKIE_OPTIONS);
-  }
+  const put = (name: string, value: string | null) => {
+    if (value === null) store.delete(name);
+    else store.set(name, value, PREFERENCE_COOKIE_OPTIONS);
+  };
+
+  put(LOCALE_COOKIE, isLocale(user.preferredLocale) ? user.preferredLocale : null);
+  put(THEME_COOKIE, isTheme(user.preferredTheme) ? user.preferredTheme : null);
+  put(
+    HEADER_STRONG_COOKIE,
+    typeof user.preferredHeaderStrong === "boolean"
+      ? user.preferredHeaderStrong
+        ? "1"
+        : "0"
+      : null,
+  );
+  put(BACKGROUND_COOKIE, isBackground(user.preferredBackground) ? user.preferredBackground : null);
 }
