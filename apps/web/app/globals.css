@@ -595,6 +595,16 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%23808080' stroke-opacity='.35' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M48 14h24M53 14v28L24 96a7 7 0 0 0 6 11h60a7 7 0 0 0 6-11L67 42V14'/%3E%3Cpath d='M38 76h44' stroke-opacity='.22'/%3E%3Cpath d='M84 26a8 8 0 1 1-16 0 8 8 0 0 1 16 0' stroke-opacity='.18'/%3E%3C/svg%3E");
 }
 
+/*
+  一覧の行をダブルクリックしてから、次の画面が描かれるまでのあいだ。
+  何も変わらないと、押せたのか読み込み中なのか分からないため、カーソルを砂時計にする。
+  次の画面へ移ると一覧が消えるので、その片付けで自動的に外れる。
+*/
+body.cursor-busy,
+body.cursor-busy * {
+  cursor: wait !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

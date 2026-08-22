@@ -5,7 +5,7 @@ import { Suspense, useState } from "react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
@@ -81,8 +81,8 @@ export default function LoginPage() {
         </Suspense>
         <Card>
           <CardHeader>
-            <CardTitle>{m.common.appName}</CardTitle>
-            <CardDescription>{m.login.description}</CardDescription>
+            {/* 説明文は置かず、システム名だけを大きく中央に出す */}
+            <CardTitle className="text-center text-xl">{m.common.appName}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
