@@ -374,6 +374,8 @@ export const en: Messages = {
     headerStrongHint:
       "Fills the top bar, table headings and the sidebar title with the chosen theme's colour",
     account: "Account",
+    email: "Email address (sign-in ID)",
+    emailHint: "You cannot change this yourself. Ask an administrator if it needs to change.",
     changePassword: "Change your password",
     saved: "Preferences saved",
   },
@@ -398,7 +400,17 @@ export const en: Messages = {
     epsilonPct: "Tolerance (%)",
     epsilonPctHint: "Totals within this margin count as 100%. Use a value between 0 and 10",
     epsilonRange: "The tolerance must be between 0 and 10",
+    sessionSection: "Automatic sign-out",
+    sessionIdleMinutes: "Minutes of inactivity before signing out",
+    sessionIdleHint:
+      "Stops an unattended device from staying signed in. Acting after this time returns you to the sign-in screen.",
+    sessionIdleRange: "Choose between 1 and 480 minutes (8 hours)",
     passwordSection: "Password rules",
+    passwordRequiredKinds: "Required characters",
+    kindLetter: "Letters",
+    kindMixedCase: "upper and lower case",
+    kindDigit: "Digits",
+    kindSymbol: "Symbols",
     passwordSymbolChars: "Characters counted as symbols",
     passwordSymbolCharsHint:
       "Only the characters listed here count as symbols. Leave it empty to count anything but letters, digits and spaces",

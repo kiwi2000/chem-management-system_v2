@@ -65,6 +65,7 @@ export function PreferencesForm({
   headerStrong,
   background,
   displayName,
+  email,
   userId,
   avatarSet,
 }: {
@@ -73,6 +74,8 @@ export function PreferencesForm({
   headerStrong: boolean;
   background: Background;
   displayName: string;
+  /** ログインID。変えられないので出すだけ。ログインしていなければ null */
+  email: string | null;
   /** ログインしていないとき（ログイン画面から開いたとき）は null */
   userId: string | null;
   /** アバターが登録済みか。「外す」を出すかどうかの判断に使う */
@@ -504,7 +507,15 @@ export function PreferencesForm({
         <CardHeader>
           <CardTitle className="text-base">{m.preferences.account}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* ログインIDは自分では変えられない。問い合わせのときに要るので出しておく */}
+          {email && (
+            <div className="space-y-1">
+              <p className="text-sm font-medium">{m.preferences.email}</p>
+              <p className="font-mono text-sm">{email}</p>
+              <p className="text-muted-foreground text-xs">{m.preferences.emailHint}</p>
+            </div>
+          )}
           <Button variant="outline" nativeButton={false} render={<Link href="/change-password" />}>
             {m.preferences.changePassword}
           </Button>

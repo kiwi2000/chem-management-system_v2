@@ -1,11 +1,15 @@
 import { DEFAULT_SETTINGS, SETTING_DEFS, type AppSettings } from "@chem/shared";
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 
 /**
  * システム設定の読み書き。
  * 未設定のキーは既定値にフォールバックするので、初期状態でも動く（初回投入は不要）。
+ *
+ * 同じリクエストの中では何度呼んでも1回しか引かない（cache）。
+ * 自動ログアウトの判定でセッション確認のたびに読むので、素のままだと同じ問い合わせが並ぶ。
  */
-export async function getAppSettings(): Promise<AppSettings> {
+export const getAppSettings = cache(async function getAppSettings(): Promise<AppSettings> {
   const rows = await prisma.systemSetting.findMany({
     where: { key: { in: SETTING_DEFS.map((d) => d.key) } },
     select: { key: true, value: true },
@@ -21,7 +25,7 @@ export async function getAppSettings(): Promise<AppSettings> {
     if (parsed !== null) Object.assign(settings, { [def.field]: parsed });
   }
   return settings;
-}
+});
 
 export async function saveAppSettings(next: AppSettings, actorId: string): Promise<void> {
   await prisma.$transaction(

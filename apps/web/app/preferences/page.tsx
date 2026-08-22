@@ -27,6 +27,7 @@ export default async function PreferencesPage() {
         headerStrong={headerStrong}
         background={background}
         displayName={user?.displayName ?? ""}
+        email={user?.email ?? null}
         userId={user?.id ?? null}
         avatarSet={Boolean(user?.avatarMime)}
       />

@@ -9,6 +9,8 @@ import {
   pickPasswordPolicy,
   PASSWORD_MAX_LENGTH_CEILING,
   PASSWORD_MIN_LENGTH_FLOOR,
+  SESSION_IDLE_MIN,
+  SESSION_IDLE_MAX,
   type AppSettings,
   type CompositionValidationMode,
   type PendingResolution,
@@ -336,6 +338,29 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">{m.settings.sessionSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label htmlFor="idleMinutes">{m.settings.sessionIdleMinutes}</Label>
+            <Input
+              id="idleMinutes"
+              type="number"
+              min={SESSION_IDLE_MIN}
+              max={SESSION_IDLE_MAX}
+              step={1}
+              value={settings.sessionIdleMinutes}
+              onChange={(e) =>
+                setSettings({ ...settings, sessionIdleMinutes: Number(e.target.value) })
+              }
+              className="w-28"
+            />
+            <p className="text-muted-foreground text-xs">{m.settings.sessionIdleHint}</p>
+            <p className="text-muted-foreground text-xs">{m.settings.sessionIdleRange}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">{m.settings.passwordSection}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -359,42 +384,77 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-2">
-              {(
-                [
-                  ["passwordRequireLetter", m.settings.passwordRequireLetter],
-                  ["passwordRequireDigit", m.settings.passwordRequireDigit],
-                  ["passwordRequireSymbol", m.settings.passwordRequireSymbol],
-                  ["passwordRequireMixedCase", m.settings.passwordRequireMixedCase],
-                ] as const
-              ).map(([field, label]) => (
-                <label key={field} className="flex items-center gap-2 text-sm">
+              <p className="text-sm font-medium">{m.settings.passwordRequiredKinds}</p>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={settings[field]}
-                    onChange={(e) => setSettings({ ...settings, [field]: e.target.checked })}
+                    checked={settings.passwordRequireLetter}
+                    onChange={(e) =>
+                      setSettings({ ...settings, passwordRequireLetter: e.target.checked })
+                    }
                   />
-                  {label}
+                  {m.settings.kindLetter}
                 </label>
-              ))}
+                {/* 大文字小文字の混在は、英字を求めていなければ意味を持たない */}
+                {settings.passwordRequireLetter && (
+                  <span className="text-muted-foreground -ml-4 flex items-center">
+                    （
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={settings.passwordRequireMixedCase}
+                        onChange={(e) =>
+                          setSettings({ ...settings, passwordRequireMixedCase: e.target.checked })
+                        }
+                      />
+                      {m.settings.kindMixedCase}
+                    </label>
+                    ）
+                  </span>
+                )}
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={settings.passwordRequireDigit}
+                    onChange={(e) =>
+                      setSettings({ ...settings, passwordRequireDigit: e.target.checked })
+                    }
+                  />
+                  {m.settings.kindDigit}
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={settings.passwordRequireSymbol}
+                    onChange={(e) =>
+                      setSettings({ ...settings, passwordRequireSymbol: e.target.checked })
+                    }
+                  />
+                  {m.settings.kindSymbol}
+                </label>
+              </div>
             </div>
 
-            {/* 記号を求めるときだけ意味を持つので、外しているあいだは触れないようにする */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="pwSymbols"
-                className={settings.passwordRequireSymbol ? "" : "opacity-50"}
-              >
-                {m.settings.passwordSymbolChars}
-              </Label>
-              <Input
-                id="pwSymbols"
-                value={settings.passwordSymbolChars}
-                disabled={!settings.passwordRequireSymbol}
-                onChange={(e) => setSettings({ ...settings, passwordSymbolChars: e.target.value })}
-                className="font-mono"
-              />
-              <p className="text-muted-foreground text-xs">{m.settings.passwordSymbolCharsHint}</p>
-            </div>
+            {/* 記号を求めるときだけ意味を持つので、外しているあいだは出さない */}
+            {settings.passwordRequireSymbol && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Label htmlFor="pwSymbols" className="shrink-0">
+                  {m.settings.kindSymbol}
+                </Label>
+                <Input
+                  id="pwSymbols"
+                  value={settings.passwordSymbolChars}
+                  onChange={(e) =>
+                    setSettings({ ...settings, passwordSymbolChars: e.target.value })
+                  }
+                  className="w-auto min-w-72 flex-1 font-mono"
+                />
+                <p className="text-muted-foreground w-full text-xs">
+                  {m.settings.passwordSymbolCharsHint}
+                </p>
+              </div>
+            )}
 
             {/* 決めた内容が実際どう伝わるかを、その場で見せる */}
             <p className="text-sm">

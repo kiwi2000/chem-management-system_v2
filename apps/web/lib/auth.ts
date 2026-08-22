@@ -5,6 +5,7 @@ import type { User as AppUser } from "@prisma/client";
 import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { getAppSettings } from "@/lib/settings";
 
 /**
  * 認証（自前実装・外部サービスに一切依存しない）。
@@ -186,8 +187,24 @@ export const getSessionUser = cache(async function getSessionUser(): Promise<App
   const user = session.user;
   if (user.deletedAt || !user.activeFlag) return null;
 
-  // 最終アクセス時刻の更新（頻繁な書き込みを避け5分間隔）
-  if (Date.now() - session.lastSeenAt.getTime() > 5 * 60_000) {
+  /*
+   * 操作が無いまま一定時間が過ぎていたら打ち切る。
+   * 席を離れた端末が開いたままになるのを防ぐ。時間はシステム設定で決める。
+   */
+  const { sessionIdleMinutes } = await getAppSettings();
+  const idleMs = Date.now() - session.lastSeenAt.getTime();
+  if (idleMs > sessionIdleMinutes * 60_000) {
+    await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+    return null;
+  }
+
+  /*
+   * 最終アクセス時刻の更新。
+   * 毎回書くと無駄が多いので少し間引くが、間引きすぎると打ち切りが早まる
+   * （最後の操作ではなく、最後に書いた時刻からの経過で見ることになるため）。
+   * 30秒なら、実際の無操作時間とのずれはその範囲に収まる。
+   */
+  if (idleMs > 30_000) {
     await prisma.session
       .update({ where: { id: session.id }, data: { lastSeenAt: new Date() } })
       .catch(() => {});

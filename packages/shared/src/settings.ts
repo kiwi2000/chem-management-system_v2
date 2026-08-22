@@ -40,6 +40,11 @@ export interface AppSettings {
   passwordRequireLetter: boolean;
   /** 数字を1文字以上入れさせる */
   passwordRequireDigit: boolean;
+  /**
+   * 操作が無いまま、この分数を過ぎたらログアウトさせる。
+   * 席を離れた端末が開いたままになるのを防ぐ。
+   */
+  sessionIdleMinutes: number;
   /** 記号を1文字以上入れさせる */
   passwordRequireSymbol: boolean;
   /**
@@ -60,6 +65,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   productUseOptions: [],
   substanceApprovalRequired: false,
   productApprovalRequired: false,
+  sessionIdleMinutes: 10,
   passwordMinLength: 12,
   passwordRequireLetter: true,
   passwordRequireDigit: true,
@@ -80,6 +86,13 @@ export type PasswordPolicy = Pick<
 >;
 
 /** 決まりのうち、短くしすぎると総当たりに耐えられない下限 */
+/**
+ * 自動ログアウトまでの分数の範囲。
+ * 短すぎると入力の途中で切れ、長すぎると席を離れた端末が開いたままになる。
+ */
+export const SESSION_IDLE_MIN = 1;
+export const SESSION_IDLE_MAX = 480;
+
 export const PASSWORD_MIN_LENGTH_FLOOR = 8;
 export const PASSWORD_MAX_LENGTH_CEILING = 128;
 
@@ -161,6 +174,16 @@ export const SETTING_DEFS: SettingDef[] = [
       return n >= PASSWORD_MIN_LENGTH_FLOOR && n <= PASSWORD_MAX_LENGTH_CEILING ? n : null;
     },
   },
+  {
+    field: "sessionIdleMinutes",
+    key: "session.idle_minutes",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const n = Number(raw);
+      if (!Number.isInteger(n)) return null;
+      return n >= SESSION_IDLE_MIN && n <= SESSION_IDLE_MAX ? n : null;
+    },
+  },
   boolDef("passwordRequireLetter", "password.require_letter"),
   boolDef("passwordRequireDigit", "password.require_digit"),
   boolDef("passwordRequireSymbol", "password.require_symbol"),
@@ -215,6 +238,11 @@ export const settingsSchema = (m: Messages) =>
       .int()
       .min(PASSWORD_MIN_LENGTH_FLOOR, m.settings.passwordMinLengthRange)
       .max(PASSWORD_MAX_LENGTH_CEILING, m.settings.passwordMinLengthRange),
+    sessionIdleMinutes: z
+      .number()
+      .int()
+      .min(SESSION_IDLE_MIN, m.settings.sessionIdleRange)
+      .max(SESSION_IDLE_MAX, m.settings.sessionIdleRange),
     passwordRequireLetter: z.boolean(),
     passwordRequireDigit: z.boolean(),
     passwordRequireSymbol: z.boolean(),
