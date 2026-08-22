@@ -815,3 +815,398 @@ model Feedback {
   @@index([updatedAt])
   @@map("feedbacks")
 }
+
+// ---------- 法規制 ----------
+//
+// 階層は 地域 → 法令 → 区分 → 分類 → 法文物質名 → CASリンク。
+//
+// 判定に使う値の置き場所を1か所に定めてある:
+// - 閾値は**法文物質名**が持つ。区分の閾値はひな型で、作成時に複写するだけ（判定では読まない）
+// - リンクは**法文物質名 ↔ CAS**。版で管理するのはこのリンクだけで、
+//   閾値や区分の増減は版に含まれない（法改正は新しい区分などを別に登録して表す）
+//
+// 名称はどの段も 原文・原文の言語・日本語・英語 の4列で持つ。
+// 一覧の並べ替え・絞り込みに使うため、子テーブルには出さない（CLAUDE.md §4）。
+
+/**
+ * 閾値の境目。
+ * 下限では EXCLUSIVE=「超」/ INCLUSIVE=「以上」、
+ * 上限では EXCLUSIVE=「未満」/ INCLUSIVE=「以下」を表す。
+ */
+enum ThresholdBound {
+  EXCLUSIVE
+  INCLUSIVE
+}
+
+/**
+ * 地域。アジア・欧州・北米・国際条約といった、国より大きいまとまりを表す。
+ * 国（日本・アメリカ合衆国など）は地域ではないので、ここには入れない。
+ */
+model Region {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(20)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  nameJa String  @map("name_ja") @db.VarChar(200)
+  nameEn String? @map("name_en") @db.VarChar(200)
+
+  displayOrder Int @default(0) @map("display_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  laws      Law[]
+  countries Country[]
+
+  @@map("regions")
+}
+
+/**
+ * 国。日本・アメリカ合衆国のほか、EU・EAEU のような国家連合や、
+ * 国際条約のように国でないものも1件として置く（法令の持ち主になる単位）。
+ * 米国の州は作らず、州法も「アメリカ合衆国」に入れる（法律名で見分けられるため）。
+ */
+model Country {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(20)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  regionId String @map("region_id")
+
+  nameJa String  @map("name_ja") @db.VarChar(200)
+  nameEn String? @map("name_en") @db.VarChar(200)
+
+  displayOrder Int @default(0) @map("display_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  region Region @relation(fields: [regionId], references: [id])
+
+  @@index([regionId, displayOrder])
+  @@map("countries")
+}
+
+/**
+ * 法律の単位（化審法・毒劇法など）。
+ * 安衛法の下位規則（特化則・有機則）はここに並べず、区分として持つ
+ */
+model Law {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  regionId String @map("region_id")
+
+  /**
+   * 原文の名称（必須）。日本の法令は正式名称を入れ、通称は nameJa に入れる
+   */
+  nameOriginal String  @map("name_original") @db.VarChar(500)
+  /**
+   * 原文の言語（ja / en / zh / ko など）
+   */
+  nameLang     String  @map("name_lang") @db.VarChar(10)
+  nameJa       String? @map("name_ja") @db.VarChar(500)
+  nameEn       String? @map("name_en") @db.VarChar(500)
+
+  displayOrder Int     @default(0) @map("display_order")
+  note         String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  region     Region               @relation(fields: [regionId], references: [id])
+  categories RegulationCategory[]
+
+  @@index([regionId])
+  @@index([displayOrder])
+  @@map("laws")
+}
+
+/**
+ * 区分。判定の骨組みで、SDSに書く単位でもある。
+ *
+ * 閾値の4欄は**ひな型**。法文物質名を作るときに複写するだけで、判定では読まない。
+ * 兼ね合いは「特定毒物に該当していれば毒物は出さない」という表示のルールに使う。
+ * 上乗せの指定（特化則の特定第2類物質など）には効かせてはいけないので、
+ * 全体の規則にはせず区分・分類ごとに持たせる。
+ */
+model RegulationCategory {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @map("code_normalized") @db.VarChar(64)
+
+  lawId String @map("law_id")
+
+  nameOriginal String  @map("name_original") @db.VarChar(500)
+  nameLang     String  @map("name_lang") @db.VarChar(10)
+  nameJa       String? @map("name_ja") @db.VarChar(500)
+  nameEn       String? @map("name_en") @db.VarChar(500)
+
+  /**
+   * 改正で番号に割込みが起きるため、並べ替えは番号ではなくこの値で行う
+   */
+  displayOrder Int @default(0) @map("display_order")
+
+  /** 既定の閾値（ひな型・4欄とも必須）。初期値は 0 < x <= 100 */
+  thresholdLower Decimal        @map("threshold_lower") @db.Decimal(9, 6)
+  lowerBound     ThresholdBound @map("lower_bound")
+  thresholdUpper Decimal        @map("threshold_upper") @db.Decimal(9, 6)
+  upperBound     ThresholdBound @map("upper_bound")
+
+  /** 兼ね合い。同じグループの中で rank の小さい方だけを出す */
+  interactionGroup String? @map("interaction_group") @db.VarChar(50)
+  rank             Int?
+
+  note String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  law     Law               @relation(fields: [lawId], references: [id])
+  classes RegulationClass[]
+
+  @@unique([lawId, codeNormalized])
+  @@index([lawId, displayOrder])
+  @@index([interactionGroup, rank])
+  @@map("regulation_categories")
+}
+
+/**
+ * 分類。特化則の第1類・第2類のように、区分をさらに分けるときに使う。
+ *
+ * **分けない区分にも必ず1件置く**（原文名を空にすると画面に出さない）。
+ * 中の形を1通りに保つための約束で、法文物質名の親は常に分類になる。
+ * 後から分けたくなったら、その1件に名前を付けて2件目を足せばよく、既存のぶら下がりは動かない。
+ */
+model RegulationClass {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @map("code_normalized") @db.VarChar(64)
+
+  categoryId String @map("category_id")
+
+  /**
+   * 空なら画面に出さない（分けない区分の受け皿）
+   */
+  nameOriginal String? @map("name_original") @db.VarChar(500)
+  nameLang     String? @map("name_lang") @db.VarChar(10)
+  nameJa       String? @map("name_ja") @db.VarChar(500)
+  nameEn       String? @map("name_en") @db.VarChar(500)
+
+  displayOrder Int @default(0) @map("display_order")
+
+  interactionGroup String? @map("interaction_group") @db.VarChar(50)
+  rank             Int?
+
+  note String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  category            RegulationCategory   @relation(fields: [categoryId], references: [id])
+  statutorySubstances StatutorySubstance[]
+
+  @@unique([categoryId, codeNormalized])
+  @@index([categoryId, displayOrder])
+  @@index([interactionGroup, rank])
+  @@map("regulation_classes")
+}
+
+/**
+ * 法文物質名。法令の一覧に載っている物質名で、**判定はこの行の閾値だけを読む**。
+ * 「〜及びその塩」「〜化合物」のような群も1件として持ち、CASリンクを複数張る。
+ */
+model StatutorySubstance {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @map("code_normalized") @db.VarChar(64)
+
+  classId String @map("class_id")
+
+  /**
+   * 法令が付けている番号（政令番号・通し番号・官報公示整理番号など）。
+   * 改正で「2の2」のような枝番になるため文字列で持ち、並べ替えには使わない
+   */
+  officialNumber String? @map("official_number") @db.VarChar(50)
+
+  nameOriginal String  @map("name_original") @db.VarChar(500)
+  nameLang     String  @map("name_lang") @db.VarChar(10)
+  nameJa       String? @map("name_ja") @db.VarChar(500)
+  nameEn       String? @map("name_en") @db.VarChar(500)
+
+  displayOrder Int @default(0) @map("display_order")
+
+  /** 判定に使う閾値。4欄とも必須。作成時に区分の既定を複写する */
+  thresholdLower Decimal        @map("threshold_lower") @db.Decimal(9, 6)
+  lowerBound     ThresholdBound @map("lower_bound")
+  thresholdUpper Decimal        @map("threshold_upper") @db.Decimal(9, 6)
+  upperBound     ThresholdBound @map("upper_bound")
+
+  /**
+   * 参考情報。**判定には使わない**（どの一覧を使うかは版と、登録してある区分で決まる）
+   */
+  effectiveFrom DateTime? @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+
+  /**
+   * 用途や製品の種類で決まるもの（第一種特定の使用用途など）は判定できないため、
+   * ここに文字で残す
+   */
+  note String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  regulationClass RegulationClass    @relation(fields: [classId], references: [id])
+  links           StatutoryCasLink[]
+
+  @@unique([classId, codeNormalized])
+  @@index([classId, displayOrder])
+  @@index([nameJa])
+  @@index([nameEn])
+  @@map("statutory_substances")
+}
+
+/**
+ * 版。管理する対象は **CASリンクだけ**。
+ * 「現在版」を明示的に指定する（作っただけでは切り替わらない）。
+ * 制約は migration の部分ユニーク索引で持つ（Prisma では条件付きの一意制約を書けない）
+ */
+model LinkSetVersion {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  nameJa String  @map("name_ja") @db.VarChar(200)
+  nameEn String? @map("name_en") @db.VarChar(200)
+
+  /**
+   * 判定に使う版。システム全体で1件だけ立てられる
+   */
+  isCurrent Boolean   @default(false) @map("is_current")
+  loadedAt  DateTime? @map("loaded_at")
+  note      String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  sources LinkVersionSource[]
+  links   StatutoryCasLink[]
+
+  @@map("link_set_versions")
+}
+
+/**
+ * データソース（USER / LOLI / CHRIP など）。
+ * 優先度はここには持たない。版ごとに決まるため LinkVersionSource が持つ
+ */
+model Source {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  nameJa String  @map("name_ja") @db.VarChar(200)
+  nameEn String? @map("name_en") @db.VarChar(200)
+
+  activeFlag Boolean @default(true) @map("active_flag")
+  note       String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  versions LinkVersionSource[]
+  links    StatutoryCasLink[]
+
+  @@map("sources")
+}
+
+/**
+ * 版ごとのデータソースと優先度。
+ * 判定は優先度の高いものから順に当て、**最初に見つかったリンクで確定する**
+ */
+model LinkVersionSource {
+  id        String @id @default(cuid())
+  versionId String @map("version_id")
+  sourceId  String @map("source_id")
+  /**
+   * 小さいほど優先。通常は自社で登録したもの（USER）を 1 にする
+   */
+  priority  Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  version LinkSetVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  source  Source         @relation(fields: [sourceId], references: [id])
+
+  @@unique([versionId, sourceId])
+  @@unique([versionId, priority])
+  @@map("link_version_sources")
+}
+
+/**
+ * 法文物質名と CAS番号 のつながり。版で管理するのはこの表だけ。
+ *
+ * CAS番号を持たない物質（ポリマー・UVCB・企業秘密物質）は、
+ * 物質側に入れた独自コードで結ぶ。突合はどちらも cas_normalized で行う。
+ */
+model StatutoryCasLink {
+  id                   String @id @default(cuid())
+  versionId            String @map("version_id")
+  statutorySubstanceId String @map("statutory_substance_id")
+  sourceId             String @map("source_id")
+
+  /** 原文。突合は正規化列で行う */
+  casNumber     String @map("cas_number") @db.VarChar(20)
+  casNormalized String @map("cas_normalized") @db.VarChar(20)
+
+  /**
+   * 立てると**非該当で確定する**。
+   * 優先度の高いデータソースが、下位のソースの内容を打ち消すために使う
+   */
+  excluded Boolean @default(false)
+
+  note String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  version            LinkSetVersion     @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id])
+  source             Source             @relation(fields: [sourceId], references: [id])
+
+  @@unique([versionId, statutorySubstanceId, casNormalized, sourceId])
+  /** 判定はここを引く。製品に入っているCASの集合から一気に絞り込む */
+  @@index([versionId, casNormalized])
+  @@index([statutorySubstanceId])
+  @@map("statutory_cas_links")
+}
