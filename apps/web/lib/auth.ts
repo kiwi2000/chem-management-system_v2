@@ -212,6 +212,30 @@ export const getSessionUser = cache(async function getSessionUser(): Promise<App
   return user;
 });
 
+/**
+ * 自動ログアウトまでの残りミリ秒。無効なセッションなら null。
+ *
+ * **最終操作時刻には触らない。**見ただけで時間が延びてしまうと、
+ * 「画面に戻ったときに確かめる」ことがそのまま延命になってしまう。
+ */
+export async function peekIdleRemainMs(): Promise<number | null> {
+  const store = await cookies();
+  const raw = store.get(AUTH_POLICY.sessionCookieName)?.value;
+  if (!raw) return null;
+
+  const session = await prisma.session.findUnique({
+    where: { tokenHash: sha256(raw) },
+    include: { user: { select: { deletedAt: true, activeFlag: true } } },
+  });
+  if (!session) return null;
+  if (session.expiresAt < new Date()) return null;
+  if (session.user.deletedAt || !session.user.activeFlag) return null;
+
+  const { sessionIdleMinutes } = await getAppSettings();
+  const remain = sessionIdleMinutes * 60_000 - (Date.now() - session.lastSeenAt.getTime());
+  return remain > 0 ? remain : null;
+}
+
 /** 期限切れセッションの掃除（ログイン時などに随時呼ぶ） */
 export async function purgeExpiredSessions(): Promise<void> {
   await prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } }).catch(() => {});

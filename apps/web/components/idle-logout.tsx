@@ -183,23 +183,41 @@ export function IdleGuard({
     };
 
     /*
-     * 画面が隠れているあいだ、タイマーは止められていることがある（とくにスマホ）。
-     * 戻ってきた時点で、経過時間を見て判断し直す。
+     * 画面が隠れているあいだ、ブラウザはタイマーを止める（とくにスマホ）。
+     * その間このページは時間を数えていないので、戻ってきたときの残り時間は当てにならない。
+     * 画面の時計ではなく、サーバーに聞き直す。過ぎていればその場で出ていく。
      */
     const onVisible = () => {
-      if (document.visibilityState === "visible") schedule();
+      if (document.visibilityState !== "visible" || leaving) return;
+      void (async () => {
+        const res = await fetch("/api/auth/session-status", { cache: "no-store" }).catch(
+          () => null,
+        );
+        if (leaving) return;
+        if (!res) {
+          // 通信できないときは画面の時計で判断する（繋がらないだけかもしれない）
+          schedule();
+          return;
+        }
+        if (res.status === 401) {
+          leave();
+          return;
+        }
+        const body = (await res.json().catch(() => null)) as { remainMs?: number } | null;
+        // サーバーが持っている残り時間を正とする
+        if (typeof body?.remainMs === "number") deadline = Date.now() + body.remainMs;
+        schedule();
+      })();
     };
 
-    /** マウスやゆびの移動も操作として数える。触っていれば切らない */
-    const events = [
-      "pointermove",
-      "pointerdown",
-      "keydown",
-      "input",
-      "wheel",
-      "touchstart",
-      "scroll",
-    ] as const;
+    /*
+     * 意図のある操作だけを数える。
+     * マウスが画面の上を通っただけでは数えない。机の振動や袖が触れただけでも起きるので、
+     * それで延命すると、席を離れた端末がいつまでも開いたままになる。
+     *
+     * input を入れているのは、右クリックからの貼り付けがキー入力を伴わないため。
+     */
+    const events = ["pointerdown", "keydown", "input", "wheel", "touchstart", "scroll"] as const;
     for (const name of events) {
       window.addEventListener(name, onActivity, { passive: true });
     }

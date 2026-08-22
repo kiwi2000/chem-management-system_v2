@@ -13,6 +13,9 @@ const API_DIR = join(__dirname, "..", "app", "api");
 /** 認証を通さないことが意図的なルート（理由をコメントで残すこと） */
 const ALLOWLIST = new Set([
   "auth/login/route.ts", // ログイン自体。認証前に呼ばれる
+  // 自動ログアウトの残り時間を見るだけ。最終操作時刻に触らないため requireUser を通さない
+  // （通すと、確かめる行為そのものが延命になってしまう）
+  "auth/session-status/route.ts",
   "auth/logout/route.ts", // 未ログインでも安全に空振りする
   "health/route.ts", // 監視・デプロイ確認用。業務データを返さない
   // 表示言語とテーマの切替。ログイン画面でも使うため認証不要。
