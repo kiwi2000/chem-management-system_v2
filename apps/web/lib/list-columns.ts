@@ -65,6 +65,34 @@ export const COUNTRY_COLUMNS: QueryColumn[] = [
   { key: "displayOrder", kind: "number", field: "displayOrder" },
 ];
 
+export const LAW_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  { key: "nameOriginal", kind: "text", field: "nameOriginal", caseInsensitive: true },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  { key: "countryId", kind: "enum", field: "countryId" },
+  { key: "displayOrder", kind: "number", field: "displayOrder" },
+];
+
+export const REGULATION_CATEGORY_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  { key: "nameOriginal", kind: "text", field: "nameOriginal", caseInsensitive: true },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  { key: "lawId", kind: "enum", field: "lawId" },
+  { key: "displayOrder", kind: "number", field: "displayOrder" },
+];
+
+export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  { key: "officialNumber", kind: "text", field: "officialNumber", caseInsensitive: true },
+  { key: "nameOriginal", kind: "text", field: "nameOriginal", caseInsensitive: true },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  { key: "classId", kind: "enum", field: "classId" },
+  { key: "displayOrder", kind: "number", field: "displayOrder" },
+];
+
 export const METAL_FACTOR_COLUMNS: QueryColumn[] = [
   { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
   { key: "metalElement", kind: "text", field: "metalElement" },

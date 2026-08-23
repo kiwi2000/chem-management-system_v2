@@ -8,6 +8,7 @@ export const SPEC_PAGES = [
   { href: "/spec", label: "はじめに" },
   { href: "/spec/substances", label: "物質を登録する" },
   { href: "/spec/products", label: "製品・原材料を登録する" },
+  { href: "/spec/laws", label: "法規制を登録する" },
   { href: "/spec/lists", label: "探す・絞り込む" },
   { href: "/spec/states", label: "公開までの流れ" },
   { href: "/spec/permissions", label: "だれが何をできるか" },

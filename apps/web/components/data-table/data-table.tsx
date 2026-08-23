@@ -1,13 +1,14 @@
 "use client";
 
 import {
-  PAGE_SIZE_OPTIONS,
+  DEFAULT_PAGE_SIZE_OPTIONS,
   parseTableState,
   serializeTableState,
   type ColumnFilter,
   type TableState,
 } from "@chem/shared";
-import { ArrowDown, ArrowUp, ChevronsUpDown, CircleCheck, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, CircleCheck, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,7 +57,18 @@ interface Props<T> {
   filterLayout?: FilterLayoutRow[];
   /** 件数が少なく絞り込む意味が無い表では false にしてパネルごと消す（並べ替えは見出しで行う） */
   showFilters?: boolean;
-  /** 表の右上に置くボタン（「＋ 新規登録」など） */
+  /**
+   * 新規登録。渡すと表の左上に「＋」のアイコンボタンを出す。
+   * 別の画面へ移るものは href、その場でフォームを開くものは onClick を渡す。
+   */
+  create?: {
+    onClick?: () => void;
+    href?: string;
+    /** 吹き出しに出す言葉。省略すると「新規登録」 */
+    label?: string;
+    disabled?: boolean;
+  };
+  /** ＋・ごみ箱に続けて置くボタン（新規登録が2種類ある表など） */
   headerActions?: ReactNode;
   /** 「行をダブルクリックすると詳細を開きます」を出すか */
   showOpenHint?: boolean;
@@ -65,6 +77,14 @@ interface Props<T> {
    * その場で開くだけの一覧（地域・国）では待ち時間が無いので false にする
    */
   busyOnActivate?: boolean;
+  /** 「1ページの件数」に出す選択肢。件数の少ない表では小さい値だけにする */
+  pageSizeOptions?: readonly number[];
+  /**
+   * いま選んでいる行（下の表を絞り込むために「1行だけ選ぶ」使い方をする画面で使う）。
+   * チェックボックスの選択（まとめて消す用）とは別のもの。
+   */
+  selectedKey?: string | null;
+  onRowSelect?: (row: T) => void;
 }
 
 /** 罫線。セルの右側に薄い線を引く（最後の列は引かない） */
@@ -95,9 +115,13 @@ export function DataTable<T>({
   onRowActivate,
   filterLayout,
   showFilters = true,
+  create,
   headerActions,
   showOpenHint = true,
   busyOnActivate = true,
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  selectedKey = null,
+  onRowSelect,
 }: Props<T>) {
   // 表に出す列。フィルター専用の列（組成のCAS番号など）はここから外す
   const columns = allColumns.filter((c) => !c.filterOnly);
@@ -236,9 +260,68 @@ export function DataTable<T>({
 
   const colSpan = columns.length + (selectable ? 1 : 0);
 
+  /**
+   * 表の操作。左から「新規登録（＋）→ その表だけのボタン → ごみ箱」の順に並べる。
+   * フィルターと同じ1行に置くので、行が2段になって空白の帯ができることがない。
+   */
+  const actions =
+    create || selectable || bulkAction || headerActions ? (
+      <div className="flex flex-wrap items-center gap-2">
+        {create && (
+          <Button
+            size="icon"
+            className="size-8"
+            title={create.label ?? m.table.create}
+            aria-label={create.label ?? m.table.create}
+            disabled={create.disabled}
+            {...(create.href
+              ? { nativeButton: false, render: <Link href={create.href} /> }
+              : { onClick: create.onClick })}
+          >
+            <Plus className="size-4" />
+          </Button>
+        )}
+        {headerActions}
+        {selectable && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-8"
+            title={m.table.deleteSelected}
+            aria-label={m.table.deleteSelected}
+            disabled={selected.size === 0 || deleting}
+            onClick={() => void deleteSelected()}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        )}
+        {bulkAction && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={selected.size === 0 || deleting}
+            onClick={() => void runBulkAction()}
+          >
+            <CircleCheck className="mr-1 size-3.5" />
+            {bulkAction.label}
+          </Button>
+        )}
+        {selected.size > 0 && (
+          <span className="text-muted-foreground text-sm">
+            {m.table.selectedCount(selected.size)}
+          </span>
+        )}
+      </div>
+    ) : null;
+
+  const hint =
+    onRowActivate && showOpenHint ? (
+      <span className="text-muted-foreground text-xs">{m.table.openHint}</span>
+    ) : null;
+
   return (
     <div className="space-y-3">
-      {showFilters && (
+      {showFilters ? (
         <FilterPanel
           columns={allColumns}
           state={state}
@@ -247,6 +330,8 @@ export function DataTable<T>({
           onReset={onReset}
           storageKey={`${storageKey}.filterPanel`}
           filterLayout={filterLayout}
+          actions={actions}
+          trailing={hint}
           currentQuery={serializeTableState(state, defaultState).toString()}
           onLoadQuery={(query) =>
             onStateChange(() =>
@@ -259,49 +344,14 @@ export function DataTable<T>({
             )
           }
         />
-      )}
-
-      {(selectable || headerActions) && (
-        <div className="flex flex-wrap items-center gap-3">
-          {selectable && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
-              title={m.table.deleteSelected}
-              aria-label={m.table.deleteSelected}
-              disabled={selected.size === 0 || deleting}
-              onClick={() => void deleteSelected()}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          )}
-          {bulkAction && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={selected.size === 0 || deleting}
-              onClick={() => void runBulkAction()}
-            >
-              <CircleCheck className="mr-1 size-3.5" />
-              {bulkAction.label}
-            </Button>
-          )}
-          {selected.size > 0 && (
-            <span className="text-muted-foreground text-sm">
-              {m.table.selectedCount(selected.size)}
-            </span>
-          )}
-          {onRowActivate && showOpenHint && (
-            <span className="text-muted-foreground ml-auto text-xs">{m.table.openHint}</span>
-          )}
-          {/* 表の右上。ml-auto は上の説明が無いときだけ効かせる */}
-          {headerActions && (
-            <div className={cn((!onRowActivate || !showOpenHint) && "ml-auto")}>
-              {headerActions}
-            </div>
-          )}
-        </div>
+      ) : (
+        // フィルターを出さない表でも、操作の並びと見た目は同じにする
+        (actions || hint) && (
+          <div className="bg-background flex flex-wrap items-center gap-2 rounded-md border px-3 py-2">
+            {actions}
+            {hint && <div className="ml-auto">{hint}</div>}
+          </div>
+        )
       )}
 
       <div ref={scrollerRef} className="bg-background overflow-x-auto rounded-md border">
@@ -411,8 +461,11 @@ export function DataTable<T>({
               return (
                 <TableRow
                   key={key}
+                  onClick={onRowSelect ? () => onRowSelect(row) : undefined}
                   onDoubleClick={onRowActivate ? () => activateRow(row) : undefined}
-                  className={cn(onRowActivate && "cursor-pointer")}
+                  className={cn((onRowActivate || onRowSelect) && "cursor-pointer")}
+                  // 選んでいる行は背景を変える。ユーティリティが効かない環境があるので変数を直に指定
+                  style={selectedKey === key ? { backgroundColor: "var(--secondary)" } : undefined}
                   data-state={selected.has(key) ? "selected" : undefined}
                 >
                   {selectable && (
@@ -458,7 +511,7 @@ export function DataTable<T>({
             }
             className="border-input bg-background h-8 rounded-none border px-1 text-xs"
           >
-            {PAGE_SIZE_OPTIONS.map((n) => (
+            {pageSizeOptions.map((n) => (
               <option key={n} value={n}>
                 {m.table.perPage(n)}
               </option>

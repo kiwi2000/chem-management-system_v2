@@ -6,3 +6,4 @@ docs/
 package-lock.json
 prisma/migrations/
 *.tsbuildinfo
+scripts/data/

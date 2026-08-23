@@ -1,7 +1,6 @@
 "use client";
 
 import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -9,7 +8,6 @@ import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, UserSummaryDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
@@ -154,12 +152,7 @@ export default function UsersPage() {
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{m.users.title}</h1>
-        <Button nativeButton={false} render={<Link href="/admin/users/new" />}>
-          {m.common.create}
-        </Button>
-      </div>
+      <h1 className="text-2xl font-semibold">{m.users.title}</h1>
 
       {error && (
         <Alert variant="destructive">
@@ -178,6 +171,7 @@ export default function UsersPage() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.users.empty}
+        create={{ href: "/admin/users/new" }}
         selectable
         onDeleteSelected={onDeleteSelected}
         onRowActivate={(u) => router.push(`/admin/users/${u.id}`)}

@@ -2,7 +2,7 @@
 
 import { activeFilterCount, type ColumnFilter, type TableState } from "@chem/shared";
 import { ChevronDown, ChevronRight, FilterX } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
@@ -29,6 +29,10 @@ interface Props<T> {
    * ここに書かなかった列は、下に既定の並び（3列）で続けて出す。
    */
   filterLayout?: FilterLayoutRow[];
+  /** 表の操作ボタン（＋・ごみ箱など）。この行の左端に置いて1行にまとめる */
+  actions?: ReactNode;
+  /** 行の右端に寄せるもの（ダブルクリックの説明など） */
+  trailing?: ReactNode;
 }
 
 /** 1行に置く列キー。見出しを付けたいときは title を添える */
@@ -49,6 +53,8 @@ export function FilterPanel<T>({
   currentQuery,
   onLoadQuery,
   filterLayout,
+  actions,
+  trailing,
 }: Props<T>) {
   const { m } = useI18n();
   const [open, setOpen] = useState(false);
@@ -87,7 +93,11 @@ export function FilterPanel<T>({
 
   return (
     <div className="bg-background rounded-md border">
-      <div className="flex flex-wrap items-center gap-3 px-3 py-2">
+      {/* 操作ボタンとフィルターを1行にまとめる。行を分けると空白だけの帯ができてしまう */}
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2">
+        {actions}
+        {actions && <span className="bg-border mx-1 h-5 w-px shrink-0" aria-hidden />}
+
         <Button variant="ghost" size="sm" onClick={toggle} aria-expanded={open}>
           {open ? (
             <ChevronDown className="mr-1 size-4" />
@@ -107,12 +117,14 @@ export function FilterPanel<T>({
               {filterCount > 0 && sorted && " ・ "}
               {sorted && m.table.sortCount(state.sort.length)}
             </span>
-            <Button variant="outline" size="sm" className="ml-auto" onClick={onReset}>
+            <Button variant="outline" size="sm" onClick={onReset}>
               <FilterX className="mr-1 size-3.5" />
               {m.table.clear}
             </Button>
           </>
         )}
+
+        {trailing && <div className="ml-auto">{trailing}</div>}
       </div>
 
       {open && (

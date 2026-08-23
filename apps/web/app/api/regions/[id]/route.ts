@@ -71,11 +71,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const existing = await prisma.region.findFirst({ where: { id, deletedAt: null } });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
 
+  // 法令は国にぶら下がるので、地域を守るには国の数だけ見ればよい
   const countries = await prisma.country.count({ where: { regionId: id, deletedAt: null } });
   if (countries > 0) return jsonError(409, "referenced", m.regions.inUseByCountries(countries));
-
-  const uses = await prisma.law.count({ where: { regionId: id, deletedAt: null } });
-  if (uses > 0) return jsonError(409, "referenced", m.regions.inUse(uses));
 
   await prisma.region.update({
     where: { id },

@@ -7,7 +7,6 @@ import {
   serializeTableState,
   type TableState,
 } from "@chem/shared";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -15,7 +14,6 @@ import type { TableColumn } from "@/components/data-table/types";
 import { GazetteNumbers } from "@/components/gazette-numbers";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, SubstanceListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -240,18 +238,11 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
 
   return (
     <div className="w-full space-y-4">
-      <div className="flex items-center justify-between">
-        {title ? (
-          <h2 className="text-lg font-medium">{title}</h2>
-        ) : (
-          <h1 className="text-2xl font-semibold">{m.substances.title}</h1>
-        )}
-        {editable && scope === "published" && (
-          <Button nativeButton={false} render={<Link href="/substances/new" />}>
-            {m.common.create}
-          </Button>
-        )}
-      </div>
+      {title ? (
+        <h2 className="text-lg font-medium">{title}</h2>
+      ) : (
+        <h1 className="text-2xl font-semibold">{m.substances.title}</h1>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -270,6 +261,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.substances.empty}
+        create={editable && scope === "published" ? { href: "/substances/new" } : undefined}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
         bulkAction={

@@ -839,6 +839,29 @@ enum ThresholdBound {
 }
 
 /**
+ * 言語。法規制の名称で「原文の言語」として選ぶ。
+ * コードは ISO 639-1 を大文字にした2文字（JA, EN, ZH …）。
+ * 打ち間違いで同じ言語が別扱いにならないよう、自由入力ではなくここから選ばせる。
+ */
+model Language {
+  id     String @id @default(cuid())
+  code   String @unique @db.VarChar(2)
+  nameJa String @map("name_ja") @db.VarChar(100)
+  nameEn String @map("name_en") @db.VarChar(100)
+
+  displayOrder Int @default(0) @map("display_order")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([displayOrder])
+  @@map("languages")
+}
+
+/**
  * 地域。アジア・欧州・北米・国際条約といった、国より大きいまとまりを表す。
  * 国（日本・アメリカ合衆国など）は地域ではないので、ここには入れない。
  */
@@ -858,7 +881,6 @@ model Region {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  laws      Law[]
   countries Country[]
 
   @@map("regions")
@@ -888,13 +910,14 @@ model Country {
   deletedAt DateTime? @map("deleted_at")
 
   region Region @relation(fields: [regionId], references: [id])
+  laws   Law[]
 
   @@index([regionId, displayOrder])
   @@map("countries")
 }
 
 /**
- * 法律の単位（化審法・毒劇法など）。
+ * 法律の単位（化審法・毒劇法など）。持ち主は国。
  * 安衛法の下位規則（特化則・有機則）はここに並べず、区分として持つ
  */
 model Law {
@@ -902,18 +925,18 @@ model Law {
   code           String @db.VarChar(50)
   codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
 
-  regionId String @map("region_id")
+  countryId String @map("country_id")
 
   /**
    * 原文の名称（必須）。日本の法令は正式名称を入れ、通称は nameJa に入れる
    */
-  nameOriginal String  @map("name_original") @db.VarChar(500)
+  nameOriginal String  @map("name_original")
   /**
-   * 原文の言語（ja / en / zh / ko など）
+   * 原文の言語。言語マスタのコード（JA / EN / ZH …）
    */
   nameLang     String  @map("name_lang") @db.VarChar(10)
-  nameJa       String? @map("name_ja") @db.VarChar(500)
-  nameEn       String? @map("name_en") @db.VarChar(500)
+  nameJa       String? @map("name_ja")
+  nameEn       String? @map("name_en")
 
   displayOrder Int     @default(0) @map("display_order")
   note         String?
@@ -924,10 +947,10 @@ model Law {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  region     Region               @relation(fields: [regionId], references: [id])
+  country    Country              @relation(fields: [countryId], references: [id])
   categories RegulationCategory[]
 
-  @@index([regionId])
+  @@index([countryId])
   @@index([displayOrder])
   @@map("laws")
 }
@@ -947,10 +970,10 @@ model RegulationCategory {
 
   lawId String @map("law_id")
 
-  nameOriginal String  @map("name_original") @db.VarChar(500)
+  nameOriginal String  @map("name_original")
   nameLang     String  @map("name_lang") @db.VarChar(10)
-  nameJa       String? @map("name_ja") @db.VarChar(500)
-  nameEn       String? @map("name_en") @db.VarChar(500)
+  nameJa       String? @map("name_ja")
+  nameEn       String? @map("name_en")
 
   /**
    * 改正で番号に割込みが起きるため、並べ替えは番号ではなくこの値で行う
@@ -1001,10 +1024,10 @@ model RegulationClass {
   /**
    * 空なら画面に出さない（分けない区分の受け皿）
    */
-  nameOriginal String? @map("name_original") @db.VarChar(500)
+  nameOriginal String? @map("name_original")
   nameLang     String? @map("name_lang") @db.VarChar(10)
-  nameJa       String? @map("name_ja") @db.VarChar(500)
-  nameEn       String? @map("name_en") @db.VarChar(500)
+  nameJa       String? @map("name_ja")
+  nameEn       String? @map("name_en")
 
   displayOrder Int @default(0) @map("display_order")
 
@@ -1045,10 +1068,10 @@ model StatutorySubstance {
    */
   officialNumber String? @map("official_number") @db.VarChar(50)
 
-  nameOriginal String  @map("name_original") @db.VarChar(500)
+  nameOriginal String  @map("name_original")
   nameLang     String  @map("name_lang") @db.VarChar(10)
-  nameJa       String? @map("name_ja") @db.VarChar(500)
-  nameEn       String? @map("name_en") @db.VarChar(500)
+  nameJa       String? @map("name_ja")
+  nameEn       String? @map("name_en")
 
   displayOrder Int @default(0) @map("display_order")
 
@@ -1081,8 +1104,6 @@ model StatutorySubstance {
 
   @@unique([classId, codeNormalized])
   @@index([classId, displayOrder])
-  @@index([nameJa])
-  @@index([nameEn])
   @@map("statutory_substances")
 }
 

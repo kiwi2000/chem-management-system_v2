@@ -29,7 +29,8 @@ import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
-  href: string;
+  /** 押したときに開く画面。配下をまとめるだけの行では持たない */
+  href?: string;
   /** 行頭のアイコン。文字を読まなくても見当が付くように置く */
   icon: LucideIcon;
   /** 辞書の nav ブロックから文言を引くためのキー */
@@ -52,13 +53,20 @@ const ITEMS: NavItem[] = [
   { href: "/substances", key: "substances", icon: FlaskConical, needs: "SUBSTANCE_VIEW" },
   { href: "/products", key: "products", icon: Package, needs: "PRODUCT_VIEW" },
   {
-    href: "/laws",
+    // 中身は配下の2つなので、この行自体は押しても何も開かない見出しにする
     key: "laws",
     icon: Scale,
     needs: "REGULATION_VIEW",
-    match: ["/laws", "/categories"],
-    // 地域は法規制マスタの一部なので、配下に置く
-    children: [{ href: "/regions", key: "regions", icon: Globe, needs: "REGULATION_VIEW" }],
+    children: [
+      { href: "/regions", key: "regions", icon: Globe, needs: "REGULATION_VIEW" },
+      {
+        href: "/laws",
+        key: "laws",
+        icon: Scale,
+        needs: "REGULATION_VIEW",
+        match: ["/laws", "/categories"],
+      },
+    ],
   },
   {
     href: "/link-versions",
@@ -106,6 +114,7 @@ const DEV_ITEMS: NavItem[] = [
 ];
 
 function isActive(pathname: string, item: NavItem): boolean {
+  if (!item.href) return false;
   if (item.href === "/") return pathname === "/";
   const prefixes = item.match ?? [item.href];
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -149,6 +158,23 @@ export function SidebarNav({
   const renderItem = (item: NavItem, indented: boolean) => {
     const active = isActive(pathname, item);
     const Icon = item.icon;
+    const inner = (
+      <>
+        <Icon className="size-4 shrink-0" aria-hidden />
+        <span className="truncate">{m.nav[item.key]}</span>
+      </>
+    );
+    const shape = cn("flex items-center gap-2 rounded-md py-2 text-sm", indented ? "px-2" : "px-3");
+
+    // 行き先を持たない行は、配下をまとめるための見出し。押せる見た目にしない
+    if (!item.href) {
+      return (
+        <div key={item.key} className={cn(shape, "text-muted-foreground font-medium")}>
+          {inner}
+        </div>
+      );
+    }
+
     return (
       <Link
         key={item.href}
@@ -158,15 +184,14 @@ export function SidebarNav({
         // 選択中の背景は CSS 変数を直接指定（ユーティリティが環境により効かないため）
         style={active ? { backgroundColor: "var(--secondary)" } : undefined}
         className={cn(
-          "flex items-center gap-2 rounded-md py-2 text-sm transition-colors",
-          indented ? "px-2" : "px-3",
+          shape,
+          "transition-colors",
           active
             ? "text-foreground font-medium"
             : "text-muted-foreground hover:bg-[var(--muted)] hover:text-foreground",
         )}
       >
-        <Icon className="size-4 shrink-0" aria-hidden />
-        <span className="truncate">{m.nav[item.key]}</span>
+        {inner}
       </Link>
     );
   };
@@ -176,7 +201,7 @@ export function SidebarNav({
     const children = (item.children ?? []).filter(allowed);
     if (children.length === 0) return renderItem(item, indented);
     return (
-      <div key={item.href} className="space-y-1">
+      <div key={item.href ?? item.key} className="space-y-1">
         {renderItem(item, indented)}
         <div className="border-border ml-4 space-y-1 border-l pl-2">
           {children.map((c) => renderItem(c, true))}

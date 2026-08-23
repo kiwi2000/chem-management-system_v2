@@ -1,14 +1,12 @@
 "use client";
 
 import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, NewsDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -147,14 +145,7 @@ export default function NewsListPage() {
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{m.news.title}</h1>
-        {canPost && (
-          <Button nativeButton={false} render={<Link href="/news/new" />}>
-            {m.common.create}
-          </Button>
-        )}
-      </div>
+      <h1 className="text-2xl font-semibold">{m.news.title}</h1>
 
       {error && (
         <Alert variant="destructive">
@@ -173,6 +164,7 @@ export default function NewsListPage() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.news.empty}
+        create={canPost ? { href: "/news/new" } : undefined}
         selectable={canPost}
         onDeleteSelected={onDeleteSelected}
         onRowActivate={(n) => router.push(`/news/${n.id}`)}

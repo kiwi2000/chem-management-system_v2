@@ -247,7 +247,7 @@ export function RegionSection({ onChanged }: { onChanged?: () => void }) {
         : items;
 
   return (
-    <section className="max-w-2xl space-y-3">
+    <section className="space-y-3">
       <h2 className="text-lg font-semibold">{m.regions.title}</h2>
 
       {error && (
@@ -280,31 +280,28 @@ export function RegionSection({ onChanged }: { onChanged?: () => void }) {
         emptyMessage={m.regions.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
+        // 件数が少ないので、1ページの件数も小さい値だけにする
+        pageSizeOptions={[10, 25, 50, 100]}
         // 件数が少ないので絞り込みは出さない（並べ替えは見出しで行う）
         showFilters={false}
         // 案内の文言は出さない（この表では「詳細」ではなく編集を開くため）
         showOpenHint={false}
         // その場で入力欄に変わるだけなので、待ち時間の表示は要らない
         busyOnActivate={false}
+        create={editable && !editingId ? { onClick: startNew } : undefined}
         headerActions={
-          editable ? (
-            editingId ? (
-              <div className="flex gap-2">
-                <Button size="sm" disabled={saving} onClick={() => void save()}>
-                  {saving ? m.common.saving : m.common.save}
-                </Button>
-                <Button size="sm" variant="outline" onClick={stopEdit}>
-                  {m.common.cancel}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setDraft(original)}>
-                  {m.common.clear}
-                </Button>
-              </div>
-            ) : (
-              <Button size="sm" onClick={startNew}>
-                {m.common.create}
+          editable && editingId ? (
+            <div className="flex gap-2">
+              <Button size="sm" disabled={saving} onClick={() => void save()}>
+                {saving ? m.common.saving : m.common.save}
               </Button>
-            )
+              <Button size="sm" variant="outline" onClick={stopEdit}>
+                {m.common.cancel}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setDraft(original)}>
+                {m.common.clear}
+              </Button>
+            </div>
           ) : undefined
         }
         // 編集中は他の行に移らない（打ちかけの内容を黙って捨てないため）

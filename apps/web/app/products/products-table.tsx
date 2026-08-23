@@ -7,7 +7,6 @@ import {
   serializeTableState,
   type TableState,
 } from "@chem/shared";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -15,7 +14,6 @@ import type { FilterLayoutRow } from "@/components/data-table/filter-panel";
 import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, ProductListItemDto } from "@/lib/types";
@@ -308,18 +306,11 @@ export function ProductsTable({
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <div className="flex items-center justify-between">
-        {title ? (
-          <h2 className="text-lg font-medium">{title}</h2>
-        ) : (
-          <h1 className="text-2xl font-semibold">{m.products.title}</h1>
-        )}
-        {editable && scope === "published" && (
-          <Button nativeButton={false} render={<Link href="/products/new" />}>
-            {m.common.create}
-          </Button>
-        )}
-      </div>
+      {title ? (
+        <h2 className="text-lg font-medium">{title}</h2>
+      ) : (
+        <h1 className="text-2xl font-semibold">{m.products.title}</h1>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -338,6 +329,7 @@ export function ProductsTable({
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.products.empty}
+        create={editable && scope === "published" ? { href: "/products/new" } : undefined}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
         bulkAction={

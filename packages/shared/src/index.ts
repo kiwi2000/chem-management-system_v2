@@ -14,6 +14,8 @@ export * from "./country";
 export * from "./decimal";
 export * from "./feedback";
 export * from "./group";
+export * from "./language";
+export * from "./law";
 export * from "./i18n";
 export * from "./metal-factor";
 export * from "./news";

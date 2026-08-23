@@ -1,0 +1,1041 @@
+{
+ "banned": [
+  {
+   "number": "1",
+   "name": "黄りんマツチ",
+   "note": null,
+   "lower": "0"
+  },
+  {
+   "number": "2",
+   "name": "ベンジジン及びその塩",
+   "note": null,
+   "lower": "1"
+  },
+  {
+   "number": "3",
+   "name": "四―アミノジフエニル及びその塩",
+   "note": null,
+   "lower": "1"
+  },
+  {
+   "number": "4",
+   "name": "石綿（次に掲げる物で厚生労働省令で定めるものを除く。）",
+   "note": "イ 石綿の分析のための試料の用に供される石綿 ロ 石綿の使用状況の調査に関する知識又は技能の習得のための教育の用に供される石綿 ハ イ又はロに掲げる物の原料又は材料として使用される石綿",
+   "lower": "0.1"
+  },
+  {
+   "number": "5",
+   "name": "四―ニトロジフエニル及びその塩",
+   "note": null,
+   "lower": "1"
+  },
+  {
+   "number": "6",
+   "name": "ビス（クロロメチル）エーテル",
+   "note": null,
+   "lower": "1"
+  },
+  {
+   "number": "7",
+   "name": "ベータ―ナフチルアミン及びその塩",
+   "note": null,
+   "lower": "1"
+  },
+  {
+   "number": "8",
+   "name": "ベンゼンを含有するゴムのりで、その含有するベンゼンの容量が当該ゴムのりの溶剤（希釈剤を含む。）の五パーセントを超えるもの",
+   "note": null,
+   "lower": "0"
+  }
+ ],
+ "spec1": [
+  {
+   "number": "1",
+   "name": "ジクロルベンジジン及びその塩",
+   "lower": "1"
+  },
+  {
+   "number": "2",
+   "name": "アルフア―ナフチルアミン及びその塩",
+   "lower": "1"
+  },
+  {
+   "number": "3",
+   "name": "塩素化ビフエニル（別名ＰＣＢ）",
+   "lower": "1"
+  },
+  {
+   "number": "4",
+   "name": "オルト―トリジン及びその塩",
+   "lower": "1"
+  },
+  {
+   "number": "5",
+   "name": "ジアニシジン及びその塩",
+   "lower": "1"
+  },
+  {
+   "number": "6",
+   "name": "ベリリウム及びその化合物",
+   "lower": "1"
+  },
+  {
+   "number": "7",
+   "name": "ベンゾトリクロリド",
+   "lower": "0.5"
+  }
+ ],
+ "spec2": [
+  {
+   "number": "1",
+   "name": "アクリルアミド",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "2",
+   "name": "アクリロニトリル",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "3",
+   "name": "アルキル水銀化合物（アルキル基がメチル基又はエチル基である物に限る。）",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "3-2",
+   "name": "インジウム化合物",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "3-3",
+   "name": "エチルベンゼン",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "4",
+   "name": "エチレンイミン",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "5",
+   "name": "エチレンオキシド",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "6",
+   "name": "塩化ビニル",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "7",
+   "name": "塩素",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "8",
+   "name": "オーラミン",
+   "lower": "1",
+   "klass": "AUR",
+   "note": null
+  },
+  {
+   "number": "8-2",
+   "name": "オルト―トルイジン",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "9",
+   "name": "オルト―フタロジニトリル",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "10",
+   "name": "カドミウム及びその化合物",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "11",
+   "name": "クロム酸及びその塩",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "11-2",
+   "name": "クロロホルム",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "12",
+   "name": "クロロメチルメチルエーテル",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "13",
+   "name": "五酸化バナジウム",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "13-2",
+   "name": "コバルト及びその無機化合物",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "14",
+   "name": "コールタール",
+   "lower": "5",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "15",
+   "name": "酸化プロピレン",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "15-2",
+   "name": "三酸化二アンチモン",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "16",
+   "name": "シアン化カリウム",
+   "lower": "5",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "17",
+   "name": "シアン化水素",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "18",
+   "name": "シアン化ナトリウム",
+   "lower": "5",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "18-2",
+   "name": "四塩化炭素",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "18-3",
+   "name": "一・四―ジオキサン",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "18-4",
+   "name": "一・二―ジクロロエタン（別名二塩化エチレン）",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "19",
+   "name": "三・三′―ジクロロ―四・四′―ジアミノジフェニルメタン",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "19-2",
+   "name": "一・二―ジクロロプロパン",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "19-3",
+   "name": "ジクロロメタン（別名二塩化メチレン）",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "19-4",
+   "name": "ジメチル―二・二―ジクロロビニルホスフェイト（別名ＤＤＶＰ）",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "19-5",
+   "name": "一・一―ジメチルヒドラジン",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "20",
+   "name": "臭化メチル",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "21",
+   "name": "重クロム酸及びその塩",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "22",
+   "name": "水銀及びその無機化合物（硫化水銀を除く。）",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "22-2",
+   "name": "スチレン",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "22-3",
+   "name": "一・一・二・二―テトラクロロエタン（別名四塩化アセチレン）",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "22-4",
+   "name": "テトラクロロエチレン（別名パークロルエチレン）",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "22-5",
+   "name": "トリクロロエチレン",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "23",
+   "name": "トリレンジイソシアネート",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "23-2",
+   "name": "ナフタレン",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "23-3",
+   "name": "ニツケル化合物（２４に掲げる物を除き、粉状の物に限る。）",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "24",
+   "name": "ニツケルカルボニル",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "25",
+   "name": "ニトログリコール",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "26",
+   "name": "パラ―ジメチルアミノアゾベンゼン",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "27",
+   "name": "パラ―ニトロクロルベンゼン",
+   "lower": "5",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "27-2",
+   "name": "砒素及びその化合物（アルシン及び砒化ガリウムを除く。）",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "28",
+   "name": "弗化水素",
+   "lower": "5",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "29",
+   "name": "ベータ―プロピオラクトン",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "30",
+   "name": "ベンゼン",
+   "lower": "1",
+   "klass": "T2S",
+   "note": "法文では容量の1パーセント。この欄は重量%なので、値をそのまま置いている"
+  },
+  {
+   "number": "31",
+   "name": "ペンタクロルフエノール（別名ＰＣＰ）及びそのナトリウム塩",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "31-2",
+   "name": "ホルムアルデヒド",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "32",
+   "name": "マゼンタ",
+   "lower": "1",
+   "klass": "AUR",
+   "note": null
+  },
+  {
+   "number": "33",
+   "name": "マンガン及びその化合物",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "33-2",
+   "name": "メチルイソブチルケトン",
+   "lower": "1",
+   "klass": "SOL",
+   "note": null
+  },
+  {
+   "number": "34",
+   "name": "沃化メチル",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "34-2",
+   "name": "溶接ヒューム",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "34-3",
+   "name": "リフラクトリーセラミックファイバー",
+   "lower": "1",
+   "klass": "MGD",
+   "note": null
+  },
+  {
+   "number": "35",
+   "name": "硫化水素",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  },
+  {
+   "number": "36",
+   "name": "硫酸ジメチル",
+   "lower": "1",
+   "klass": "T2S",
+   "note": null
+  }
+ ],
+ "spec3": [
+  {
+   "number": "1",
+   "name": "アンモニア",
+   "lower": "1"
+  },
+  {
+   "number": "2",
+   "name": "一酸化炭素",
+   "lower": "1"
+  },
+  {
+   "number": "3",
+   "name": "塩化水素",
+   "lower": "1"
+  },
+  {
+   "number": "4",
+   "name": "硝酸",
+   "lower": "1"
+  },
+  {
+   "number": "5",
+   "name": "二酸化硫黄",
+   "lower": "1"
+  },
+  {
+   "number": "6",
+   "name": "フエノール",
+   "lower": "5"
+  },
+  {
+   "number": "7",
+   "name": "ホスゲン",
+   "lower": "1"
+  },
+  {
+   "number": "8",
+   "name": "硫酸",
+   "lower": "1"
+  }
+ ],
+ "special": [
+  {
+   "number": "1",
+   "name": "ジクロルベンジジン及びその塩",
+   "lower": "1",
+   "from": "1"
+  },
+  {
+   "number": "2",
+   "name": "アルフア―ナフチルアミン及びその塩",
+   "lower": "1",
+   "from": "1"
+  },
+  {
+   "number": "4",
+   "name": "オルト―トリジン及びその塩",
+   "lower": "1",
+   "from": "1"
+  },
+  {
+   "number": "5",
+   "name": "ジアニシジン及びその塩",
+   "lower": "1",
+   "from": "1"
+  },
+  {
+   "number": "6",
+   "name": "ベリリウム及びその化合物",
+   "lower": "1",
+   "from": "1"
+  },
+  {
+   "number": "7",
+   "name": "ベンゾトリクロリド",
+   "lower": "0.5",
+   "from": "1"
+  },
+  {
+   "number": "3-2",
+   "name": "インジウム化合物",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "3-3",
+   "name": "エチルベンゼン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "4",
+   "name": "エチレンイミン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "5",
+   "name": "エチレンオキシド",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "6",
+   "name": "塩化ビニル",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "8",
+   "name": "オーラミン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "8-2",
+   "name": "オルト―トルイジン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "11",
+   "name": "クロム酸及びその塩",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "11-2",
+   "name": "クロロホルム",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "12",
+   "name": "クロロメチルメチルエーテル",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "13-2",
+   "name": "コバルト及びその無機化合物",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "14",
+   "name": "コールタール",
+   "lower": "5",
+   "from": "2"
+  },
+  {
+   "number": "15",
+   "name": "酸化プロピレン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "15-2",
+   "name": "三酸化二アンチモン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "18-2",
+   "name": "四塩化炭素",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "18-3",
+   "name": "一・四―ジオキサン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "18-4",
+   "name": "一・二―ジクロロエタン（別名二塩化エチレン）",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "19",
+   "name": "三・三′―ジクロロ―四・四′―ジアミノジフェニルメタン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "19-2",
+   "name": "一・二―ジクロロプロパン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "19-3",
+   "name": "ジクロロメタン（別名二塩化メチレン）",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "19-4",
+   "name": "ジメチル―二・二―ジクロロビニルホスフェイト（別名ＤＤＶＰ）",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "19-5",
+   "name": "一・一―ジメチルヒドラジン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "21",
+   "name": "重クロム酸及びその塩",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "22-2",
+   "name": "スチレン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "22-3",
+   "name": "一・一・二・二―テトラクロロエタン（別名四塩化アセチレン）",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "22-4",
+   "name": "テトラクロロエチレン（別名パークロルエチレン）",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "22-5",
+   "name": "トリクロロエチレン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "23-2",
+   "name": "ナフタレン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "23-3",
+   "name": "ニツケル化合物（２４に掲げる物を除き、粉状の物に限る。）",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "24",
+   "name": "ニツケルカルボニル",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "26",
+   "name": "パラ―ジメチルアミノアゾベンゼン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "27-2",
+   "name": "砒素及びその化合物（アルシン及び砒化ガリウムを除く。）",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "29",
+   "name": "ベータ―プロピオラクトン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "30",
+   "name": "ベンゼン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "31-2",
+   "name": "ホルムアルデヒド",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "32",
+   "name": "マゼンタ",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "33-2",
+   "name": "メチルイソブチルケトン",
+   "lower": "1",
+   "from": "2"
+  },
+  {
+   "number": "34-3",
+   "name": "リフラクトリーセラミックファイバー",
+   "lower": "1",
+   "from": "2"
+  }
+ ],
+ "solvent": [
+  {
+   "number": "1",
+   "name": "アセトン",
+   "klass": "S2"
+  },
+  {
+   "number": "2",
+   "name": "イソブチルアルコール",
+   "klass": "S2"
+  },
+  {
+   "number": "3",
+   "name": "イソプロピルアルコール",
+   "klass": "S2"
+  },
+  {
+   "number": "4",
+   "name": "イソペンチルアルコール（別名イソアミルアルコール）",
+   "klass": "S2"
+  },
+  {
+   "number": "5",
+   "name": "エチルエーテル",
+   "klass": "S2"
+  },
+  {
+   "number": "6",
+   "name": "エチレングリコールモノエチルエーテル（別名セロソルブ）",
+   "klass": "S2"
+  },
+  {
+   "number": "7",
+   "name": "エチレングリコールモノエチルエーテルアセテート（別名セロソルブアセテート）",
+   "klass": "S2"
+  },
+  {
+   "number": "8",
+   "name": "エチレングリコールモノ―ノルマル―ブチルエーテル（別名ブチルセロソルブ）",
+   "klass": "S2"
+  },
+  {
+   "number": "9",
+   "name": "エチレングリコールモノメチルエーテル（別名メチルセロソルブ）",
+   "klass": "S2"
+  },
+  {
+   "number": "10",
+   "name": "オルト―ジクロルベンゼン",
+   "klass": "S2"
+  },
+  {
+   "number": "11",
+   "name": "キシレン",
+   "klass": "S2"
+  },
+  {
+   "number": "12",
+   "name": "クレゾール",
+   "klass": "S2"
+  },
+  {
+   "number": "13",
+   "name": "クロルベンゼン",
+   "klass": "S2"
+  },
+  {
+   "number": "15",
+   "name": "酢酸イソブチル",
+   "klass": "S2"
+  },
+  {
+   "number": "16",
+   "name": "酢酸イソプロピル",
+   "klass": "S2"
+  },
+  {
+   "number": "17",
+   "name": "酢酸イソペンチル（別名酢酸イソアミル）",
+   "klass": "S2"
+  },
+  {
+   "number": "18",
+   "name": "酢酸エチル",
+   "klass": "S2"
+  },
+  {
+   "number": "19",
+   "name": "酢酸ノルマル―ブチル",
+   "klass": "S2"
+  },
+  {
+   "number": "20",
+   "name": "酢酸ノルマル―プロピル",
+   "klass": "S2"
+  },
+  {
+   "number": "21",
+   "name": "酢酸ノルマル―ペンチル（別名酢酸ノルマル―アミル）",
+   "klass": "S2"
+  },
+  {
+   "number": "22",
+   "name": "酢酸メチル",
+   "klass": "S2"
+  },
+  {
+   "number": "24",
+   "name": "シクロヘキサノール",
+   "klass": "S2"
+  },
+  {
+   "number": "25",
+   "name": "シクロヘキサノン",
+   "klass": "S2"
+  },
+  {
+   "number": "28",
+   "name": "一・二―ジクロルエチレン（別名二塩化アセチレン）",
+   "klass": "S1"
+  },
+  {
+   "number": "30",
+   "name": "Ｎ・Ｎ―ジメチルホルムアミド",
+   "klass": "S2"
+  },
+  {
+   "number": "34",
+   "name": "テトラヒドロフラン",
+   "klass": "S2"
+  },
+  {
+   "number": "35",
+   "name": "一・一・一―トリクロルエタン",
+   "klass": "S2"
+  },
+  {
+   "number": "37",
+   "name": "トルエン",
+   "klass": "S2"
+  },
+  {
+   "number": "38",
+   "name": "二硫化炭素",
+   "klass": "S1"
+  },
+  {
+   "number": "39",
+   "name": "ノルマルヘキサン",
+   "klass": "S2"
+  },
+  {
+   "number": "40",
+   "name": "一―ブタノール",
+   "klass": "S2"
+  },
+  {
+   "number": "41",
+   "name": "二―ブタノール",
+   "klass": "S2"
+  },
+  {
+   "number": "42",
+   "name": "メタノール",
+   "klass": "S2"
+  },
+  {
+   "number": "44",
+   "name": "メチルエチルケトン",
+   "klass": "S2"
+  },
+  {
+   "number": "45",
+   "name": "メチルシクロヘキサノール",
+   "klass": "S2"
+  },
+  {
+   "number": "46",
+   "name": "メチルシクロヘキサノン",
+   "klass": "S2"
+  },
+  {
+   "number": "47",
+   "name": "メチル―ノルマル―ブチルケトン",
+   "klass": "S2"
+  },
+  {
+   "number": "48",
+   "name": "ガソリン",
+   "klass": "S3"
+  },
+  {
+   "number": "49",
+   "name": "コールタールナフサ（ソルベントナフサを含む。）",
+   "klass": "S3"
+  },
+  {
+   "number": "50",
+   "name": "石油エーテル",
+   "klass": "S3"
+  },
+  {
+   "number": "51",
+   "name": "石油ナフサ",
+   "klass": "S3"
+  },
+  {
+   "number": "52",
+   "name": "石油ベンジン",
+   "klass": "S3"
+  },
+  {
+   "number": "53",
+   "name": "テレビン油",
+   "klass": "S3"
+  },
+  {
+   "number": "54",
+   "name": "ミネラルスピリツト（ミネラルシンナー、ペトロリウムスピリツト、ホワイトスピリツト及びミネラルターペンを含む。）",
+   "klass": "S3"
+  }
+ ]
+}

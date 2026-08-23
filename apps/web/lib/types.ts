@@ -7,6 +7,7 @@ import type {
   PropertyDataType,
   PropertyTarget,
   SubstanceStatus,
+  ThresholdBound,
 } from "@chem/shared";
 
 /**
@@ -233,6 +234,16 @@ export interface CompositionAggregateDto {
   truncated: number;
 }
 
+/** 言語。法規制の「原文の言語」で選ぶ */
+export interface LanguageDto {
+  id: string;
+  /** ISO 639-1 を大文字にした2文字（JA, EN …） */
+  code: string;
+  nameJa: string;
+  nameEn: string;
+  displayOrder: number;
+}
+
 /** 地域（アジア・欧州など）。国は含まない */
 export interface RegionDto {
   id: string;
@@ -252,6 +263,79 @@ export interface CountryDto {
   nameJa: string;
   nameEn: string | null;
   displayOrder: number;
+}
+
+/** 法令。国の配下に置く */
+export interface LawDto {
+  id: string;
+  code: string;
+  countryId: string;
+  countryNameJa: string;
+  countryNameEn: string | null;
+  nameOriginal: string;
+  nameLang: string;
+  nameJa: string | null;
+  nameEn: string | null;
+  displayOrder: number;
+  note: string | null;
+  /** ぶら下がっている区分の数 */
+  categoryCount: number;
+}
+
+/** 区分。判定の骨組みで、閾値のひな型を持つ */
+export interface RegulationCategoryDto {
+  id: string;
+  code: string;
+  lawId: string;
+  nameOriginal: string;
+  nameLang: string;
+  nameJa: string | null;
+  nameEn: string | null;
+  thresholdLower: string;
+  lowerBound: ThresholdBound;
+  thresholdUpper: string;
+  upperBound: ThresholdBound;
+  interactionGroup: string | null;
+  rank: number | null;
+  displayOrder: number;
+  note: string | null;
+  /** 配下の法文物質名の数（表示名のない分類のぶんも含む） */
+  substanceCount: number;
+}
+
+/** 分類。名前が無いものは画面に出さない受け皿 */
+export interface RegulationClassDto {
+  id: string;
+  code: string;
+  categoryId: string;
+  nameOriginal: string | null;
+  nameLang: string | null;
+  nameJa: string | null;
+  nameEn: string | null;
+  displayOrder: number;
+  substanceCount: number;
+}
+
+/** 法文物質名。判定はこの行の閾値だけを読む */
+export interface StatutorySubstanceDto {
+  id: string;
+  code: string;
+  classId: string;
+  officialNumber: string | null;
+  nameOriginal: string;
+  nameLang: string;
+  nameJa: string | null;
+  nameEn: string | null;
+  thresholdLower: string;
+  lowerBound: ThresholdBound;
+  thresholdUpper: string;
+  upperBound: ThresholdBound;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
+  displayOrder: number;
+  note: string | null;
+  /** 現在版で結ばれているCASの数 */
+  casCount: number;
 }
 
 export interface MetalFactorDto {

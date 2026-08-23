@@ -65,7 +65,14 @@ export interface TableState {
   pageSize: number;
 }
 
-export const PAGE_SIZE_OPTIONS = [25, 50, 100, 200] as const;
+/**
+ * 1ページの件数として受け付ける値。
+ * どれを選択肢に出すかは表ごとに決められる（件数の少ない表では 10 を出し、200 は出さない等）が、
+ * URL から来た値の検証はここで行うため、出さない値もここには残しておく。
+ */
+export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const;
+/** 選択肢として出す既定。件数の少ない表は自分で指定して差し替える */
+export const DEFAULT_PAGE_SIZE_OPTIONS = [25, 50, 100, 200] as const;
 export const DEFAULT_PAGE_SIZE = 50;
 
 export function emptyTableState(sort: SortRule[] = []): TableState {
