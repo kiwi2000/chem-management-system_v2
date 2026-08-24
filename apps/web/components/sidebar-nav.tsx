@@ -272,11 +272,17 @@ export function SidebarNav({
     const children = (item.children ?? []).filter(allowed);
     if (children.length === 0) return renderItem(item, indented);
 
-    // 業務でよく使うまとまりなので、初めは開いておく。押せば閉じられる
-    const open = toggled[item.key] ?? true;
+    /*
+      畳んだ状態から始める。ログインした直後にメニューが縦に長いと、
+      どこに何があるか掴みづらいため。
+      ただし配下の画面をいま開いているなら、その項目が隠れないよう開けておく
+      （「システム」と同じ扱い）。押したときはその選択を優先する。
+    */
+    const inHere = children.some((c) => isActive(pathname, c));
+    const open = toggled[item.key] ?? inHere;
     return (
       <div key={item.href ?? item.key} className="space-y-1">
-        {groupHeading(m.nav[item.key], item.icon, open, () => toggle(item.key, true))}
+        {groupHeading(m.nav[item.key], item.icon, open, () => toggle(item.key, inHere))}
         {branch(open, children)}
       </div>
     );

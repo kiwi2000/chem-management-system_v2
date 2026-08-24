@@ -204,7 +204,11 @@ async function runOrganicSolvents(versionId: string, sourceId: string) {
     }
     const links = await prisma.statutoryCasLink.findMany({
       where: { versionId, sourceId, statutorySubstanceId: { in: donorIds } },
-      select: { casNumber: true, casNormalized: true, excluded: true },
+      select: {
+        casNumber: true,
+        casNormalized: true,
+        excluded: true,
+      },
     });
     const seen = new Set<string>();
     const data = links
@@ -264,7 +268,11 @@ async function run(job: Job, versionId: string, sourceId: string) {
   let skippedShape = 0;
   const missed = new Set<string>();
   const seen = new Set<string>();
-  const data: { statutorySubstanceId: string; casNumber: string; casNormalized: string }[] = [];
+  const data: {
+    statutorySubstanceId: string;
+    casNumber: string;
+    casNormalized: string;
+  }[] = [];
 
   for (const [key, cas] of rows) {
     if (!key || !cas) continue;
@@ -286,7 +294,11 @@ async function run(job: Job, versionId: string, sourceId: string) {
     const dedup = `${id}/${casNormalized}`;
     if (seen.has(dedup)) continue;
     seen.add(dedup);
-    data.push({ statutorySubstanceId: id, casNumber: cas, casNormalized });
+    data.push({
+      statutorySubstanceId: id,
+      casNumber: cas,
+      casNormalized,
+    });
   }
 
   // この版・このデータソース・この区分ぶんは入れ替え。前の中身は残さない

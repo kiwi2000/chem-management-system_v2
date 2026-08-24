@@ -71,7 +71,7 @@ export function CasLinkSection({
   /** 新しい法文物質名の中身を出し終えた合図。見出しはこれに合わせて切り替わる */
   onShown?: () => void;
 }) {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -105,10 +105,24 @@ export function CasLinkSection({
         render: (r) => r.casNumber,
       },
       {
+        // CAS番号だけでは何なのか分からないので、名前を隣に置く。
+        // 名前は物質マスタの代表物質から引く（二重に持たない）
+        key: "casName",
+        header: m.casLinks.casName,
+        kind: "text",
+        width: 400,
+        sortable: false,
+        filterable: false,
+        render: (r) =>
+          (locale === "ja"
+            ? (r.substanceNameJa ?? r.substanceNameEn)
+            : (r.substanceNameEn ?? r.substanceNameJa)) ?? "",
+      },
+      {
         key: "excluded",
         header: m.casLinks.status,
         kind: "enum",
-        width: 70,
+        width: 62,
         sortable: false,
         filterable: false,
         className: "text-center text-xs",
@@ -123,7 +137,7 @@ export function CasLinkSection({
         key: "sourceCode",
         header: m.casLinks.source,
         kind: "text",
-        width: 110,
+        width: 86,
         sortable: false,
         filterable: false,
         className: "font-mono text-xs",
@@ -140,7 +154,7 @@ export function CasLinkSection({
         key: "used",
         header: m.casLinks.used,
         kind: "enum",
-        width: 56,
+        width: 48,
         sortable: false,
         filterable: false,
         className: "text-center",
@@ -161,7 +175,7 @@ export function CasLinkSection({
         render: (r) => r.note ?? "",
       },
     ],
-    [m],
+    [m, locale],
   );
 
   const { state, setState, reset, ready } = useTableState(

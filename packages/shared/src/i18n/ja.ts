@@ -508,6 +508,7 @@ export const ja = {
   casLinks: {
     title: "対象CAS",
     casNumber: "CAS番号",
+    casName: "物質名",
     status: "該非",
     applicable: "該当",
     notApplicable: "非該当",

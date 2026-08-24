@@ -498,6 +498,7 @@ export const en: Messages = {
   casLinks: {
     title: "Linked CAS numbers",
     casNumber: "CAS number",
+    casName: "Substance",
     status: "Applies",
     applicable: "Applies",
     notApplicable: "Does not apply",

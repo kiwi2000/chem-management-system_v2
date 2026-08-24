@@ -357,6 +357,9 @@ export interface StatutoryCasLinkDto {
   sourceCode: string;
   casNumber: string;
   casNormalized: string;
+  /** そのCASの代表物質から引いた名前。物質マスタに無ければ null */
+  substanceNameJa: string | null;
+  substanceNameEn: string | null;
   /** 立っていれば「該当しない」。下位のデータソースの内容を打ち消す */
   excluded: boolean;
   note: string | null;

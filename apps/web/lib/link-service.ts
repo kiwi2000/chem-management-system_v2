@@ -101,6 +101,20 @@ export async function listCasLinks(
     }),
   ]);
 
+  /*
+    そのCASが何なのかは、物質マスタの代表物質から引く（組成の合算と同じやり方）。
+    リンクさせるCASは物質マスタに載っている前提だが、載っていなければ空で返す。
+  */
+  const reps = await prisma.substance.findMany({
+    where: {
+      deletedAt: null,
+      isCasRepresentative: true,
+      casNormalized: { in: [...new Set(links.map((l) => l.casNormalized))] },
+    },
+    select: { casNormalized: true, nameJa: true, nameEn: true },
+  });
+  const nameByCas = new Map(reps.map((r) => [r.casNormalized ?? "", r]));
+
   const rank = new Map(order.map((o) => [o.sourceId, o.priority]));
   /** 版に並んでいないデータソースは、いつまでも採られない。並びも末尾に置く */
   const rankOf = (sourceId: string) => rank.get(sourceId) ?? Number.MAX_SAFE_INTEGER;
@@ -122,6 +136,8 @@ export async function listCasLinks(
       sourceCode: l.source.code,
       casNumber: l.casNumber,
       casNormalized: l.casNormalized,
+      substanceNameJa: nameByCas.get(l.casNormalized)?.nameJa ?? null,
+      substanceNameEn: nameByCas.get(l.casNormalized)?.nameEn ?? null,
       excluded: l.excluded,
       note: l.note,
       used: best.get(l.casNormalized)?.id === l.id,
