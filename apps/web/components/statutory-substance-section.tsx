@@ -80,6 +80,8 @@ export function StatutorySubstanceSection({
   category,
   slideDir,
   onShown,
+  selectedId,
+  onSelect,
 }: {
   languages: LanguageDto[];
   category: RegulationCategoryDto | null;
@@ -87,6 +89,10 @@ export function StatutorySubstanceSection({
   slideDir: SlideDir;
   /** 新しい区分の中身を画面に出したときに呼ぶ。見出しはこれに合わせて切り替わる */
   onShown?: () => void;
+  /** いま対象CASを見ている法文物質名 */
+  selectedId?: string | null;
+  /** 行を1回押したとき。親はここから対象CASの段へ降りる */
+  onSelect?: (substance: StatutorySubstanceDto, siblings: StatutorySubstanceDto[]) => void;
 }) {
   const { m, locale } = useI18n();
   const { can } = useMe();
@@ -155,7 +161,7 @@ export function StatutorySubstanceSection({
         key: "casCount",
         header: m.statutorySubstances.casCount,
         kind: "number",
-        width: 56,
+        width: 70,
         sortable: false,
         filterable: false,
         className: "text-muted-foreground text-right text-xs",
@@ -748,6 +754,8 @@ export function StatutorySubstanceSection({
         showOpenHint={false}
         busyOnActivate={false}
         onRowActivate={editable ? startEdit : undefined}
+        selectedKey={selectedId ?? null}
+        onRowSelect={onSelect ? (s) => onSelect(s, data?.items ?? []) : undefined}
         create={
           editable && !editingId ? { onClick: startNew, disabled: !activeClassId } : undefined
         }

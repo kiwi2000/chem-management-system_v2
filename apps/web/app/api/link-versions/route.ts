@@ -14,7 +14,7 @@ import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
-/** 現在版を先頭に。あとは版コードの新しい順（年度が下がっていく形になる） */
+/** 版コードの新しい順（年度が下がっていく形になる） */
 const DEFAULT_STATE = emptyTableState([{ column: "code", direction: "desc" }]);
 
 /** GET /api/link-versions — 一覧 */
@@ -32,11 +32,9 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.linkSetVersion.findMany({
       where,
-      // 現在版は必ず先頭に置く。探さずに済むように
-      orderBy: [
-        { isCurrent: "desc" },
-        ...buildOrderBy(LINK_VERSION_COLUMNS, state.sort, { code: "desc" }),
-      ],
+      // 現在版を先頭に寄せたりはしない。切り替えるたびに行が動くと、
+      // どれを押したのか分からなくなるため（印だけが移る）
+      orderBy: buildOrderBy(LINK_VERSION_COLUMNS, state.sort, { code: "desc" }),
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
     }),

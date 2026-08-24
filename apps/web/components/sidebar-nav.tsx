@@ -4,6 +4,7 @@ import type { Messages, Permission } from "@chem/shared";
 import {
   ArrowDownUp,
   BookOpen,
+  Download,
   ChevronRight,
   FileText,
   FlaskConical,
@@ -18,6 +19,7 @@ import {
   Settings,
   Sigma,
   Tags,
+  Upload,
   UserCog,
   Users,
   Wrench,
@@ -81,7 +83,26 @@ const ITEMS: NavItem[] = [
       { href: "/elements", key: "elements", icon: Atom, needs: "REGULATION_VIEW" },
     ],
   },
-  { href: "/import-export", key: "importExport", icon: ArrowDownUp, needs: "DATA_EXPORT" },
+  {
+    // 入れると出すで画面が分かれるので、まとめる見出しにして下にぶら下げる
+    key: "importExport",
+    icon: ArrowDownUp,
+    needs: "DATA_EXPORT",
+    children: [
+      {
+        href: "/import-export/import",
+        key: "dataImport",
+        icon: Upload,
+        needs: "DATA_EXPORT",
+      },
+      {
+        href: "/import-export/export",
+        key: "dataExport",
+        icon: Download,
+        needs: "DATA_EXPORT",
+      },
+    ],
+  },
   { href: "/doc-templates", key: "docTemplates", icon: FileText, needs: "DATA_EXPORT" },
   // お知らせを読むだけならホームで足りる。この画面は投稿・編集のためのものなので、
   // 投稿できる人にだけ見せる（他人の分を編集できる権限は投稿権限を含む）。
@@ -153,12 +174,18 @@ export function SidebarNav({
   ];
 
   /**
-   * 「システム」の開閉。普段は畳んでおき、押したときに中身を出す。
-   * ただし配下の画面を開いている間は開けておく（選択中の項目が隠れてしまうため）。
+   * まとまりの開閉。「システム」と「法規制」で使う。
+   *
+   * 押していないあいだは、配下の画面を開いていれば開いた状態にする
+   * （選択中の項目が隠れてしまうため）。いちど押したらその選択を優先する。
+   * そうしないと、配下の画面を見ているあいだ閉じられなくなる。
    */
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
+  const toggle = (key: string, fallback: boolean) =>
+    setToggled((prev) => ({ ...prev, [key]: !(prev[key] ?? fallback) }));
+
   const inAdmin = adminItems.some((item) => isActive(pathname, item));
-  const [openSystem, setOpenSystem] = useState(false);
-  const systemOpen = openSystem || inAdmin;
+  const systemOpen = toggled.system ?? inAdmin;
 
   const renderItem = (item: NavItem, indented: boolean) => {
     const active = isActive(pathname, item);
@@ -201,16 +228,56 @@ export function SidebarNav({
     );
   };
 
-  /** 親と、その配下の項目。配下は左に一本線を引いて字下げする */
-  const renderTree = (item: NavItem, indented: boolean) => {
-    const children = (item.children ?? []).filter(allowed);
-    if (children.length === 0) return renderItem(item, indented);
-    return (
-      <div key={item.href ?? item.key} className="space-y-1">
-        {renderItem(item, indented)}
+  /**
+   * 配下の入れ物。高さを測らずに開け閉めできるよう、grid の行を 0fr↔1fr で動かす。
+   * 高さを指定しないので、項目が増えても動きが変わらない。
+   */
+  const branch = (open: boolean, children: NavItem[]) => (
+    <div
+      className={cn(
+        "grid transition-[grid-template-rows] duration-300 ease-out",
+        open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+      )}
+      // 閉じているあいだは Tab でも入れないようにする
+      inert={!open}
+    >
+      <div className="min-h-0 overflow-hidden">
+        {/* 配下であることが見た目で分かるよう、左に一本線を引いて字下げする */}
         <div className="border-border ml-4 space-y-1 border-l pl-2">
           {children.map((c) => renderItem(c, true))}
         </div>
+      </div>
+    </div>
+  );
+
+  /** 開け閉めする見出しの行。「システム」と「法規制」で同じ形にそろえる */
+  const groupHeading = (label: string, Icon: LucideIcon, open: boolean, onToggle: () => void) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className="text-muted-foreground hover:bg-[var(--muted)] hover:text-foreground flex w-full items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+    >
+      <ChevronRight
+        className={cn("size-3.5 shrink-0 transition-transform", open && "rotate-90")}
+        aria-hidden
+      />
+      <Icon className="size-4 shrink-0" aria-hidden />
+      <span className="truncate">{label}</span>
+    </button>
+  );
+
+  /** 親と、その配下の項目。配下を持つ見出しは押して開け閉めできる */
+  const renderTree = (item: NavItem, indented: boolean) => {
+    const children = (item.children ?? []).filter(allowed);
+    if (children.length === 0) return renderItem(item, indented);
+
+    // 業務でよく使うまとまりなので、初めは開いておく。押せば閉じられる
+    const open = toggled[item.key] ?? true;
+    return (
+      <div key={item.href ?? item.key} className="space-y-1">
+        {groupHeading(m.nav[item.key], item.icon, open, () => toggle(item.key, true))}
+        {branch(open, children)}
       </div>
     );
   };
@@ -226,28 +293,8 @@ export function SidebarNav({
           )}
           {g.title && g.collapsible ? (
             <>
-              <button
-                type="button"
-                onClick={() => setOpenSystem((v) => !v)}
-                aria-expanded={systemOpen}
-                className="text-muted-foreground hover:bg-[var(--muted)] hover:text-foreground flex w-full items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors"
-              >
-                <ChevronRight
-                  className={cn(
-                    "size-3.5 shrink-0 transition-transform",
-                    systemOpen && "rotate-90",
-                  )}
-                  aria-hidden
-                />
-                <Wrench className="size-4 shrink-0" aria-hidden />
-                <span className="truncate">{g.title}</span>
-              </button>
-              {systemOpen && (
-                // 配下であることが見た目で分かるよう、左に一本線を引いて字下げする
-                <div className="border-border ml-4 space-y-1 border-l pl-2">
-                  {g.items.map((item) => renderItem(item, true))}
-                </div>
-              )}
+              {groupHeading(g.title, Wrench, systemOpen, () => toggle("system", inAdmin))}
+              {branch(systemOpen, g.items)}
             </>
           ) : (
             g.items.map((item) => renderTree(item, false))

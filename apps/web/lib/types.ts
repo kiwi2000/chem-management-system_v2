@@ -348,6 +348,24 @@ export interface StatutorySubstanceDto {
   casCount: number;
 }
 
+/** 法文物質名とCAS番号の結び付き。1つのCASにデータソースの数だけ行が並ぶ */
+export interface StatutoryCasLinkDto {
+  id: string;
+  versionId: string;
+  statutorySubstanceId: string;
+  sourceId: string;
+  sourceCode: string;
+  casNumber: string;
+  casNormalized: string;
+  /** 立っていれば「該当しない」。下位のデータソースの内容を打ち消す */
+  excluded: boolean;
+  note: string | null;
+  /** 優先度で解いた結果、このCASの答えとして採られている行か */
+  used: boolean;
+  /** データソースがこの版に並んでいない。優先度が決まらないので採られることがない */
+  orphan: boolean;
+}
+
 export interface MetalFactorDto {
   id: string;
   casNumber: string;

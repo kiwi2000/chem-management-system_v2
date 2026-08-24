@@ -51,6 +51,25 @@ export const linkVersionSourceSchema = (m: Messages) =>
     note: optionalNote(m),
   });
 
+/**
+ * 法文物質名とCAS番号の結び付き。
+ *
+ * どの版のどのデータソースに書くかまで含めて1件。
+ * 「非該当」（excluded）は、優先度が上のデータソースが下位の内容を打ち消すためのもので、
+ * 行が無いこと（＝何も分からない）とは別物。
+ */
+export const statutoryCasLinkSchema = (m: Messages) =>
+  z.object({
+    versionId: z.string().trim().min(1, m.validation.required),
+    statutorySubstanceId: z.string().trim().min(1, m.validation.required),
+    sourceId: z.string().trim().min(1, m.validation.required),
+    casNumber: z.string().trim().min(1, m.validation.required).max(20, m.validation.tooLong(20)),
+    excluded: z.boolean().default(false),
+    note: optionalNote(m),
+  });
+
+export type StatutoryCasLinkInput = z.infer<ReturnType<typeof statutoryCasLinkSchema>>;
+
 export type SourceInput = z.infer<ReturnType<typeof sourceSchema>>;
 export type LinkSetVersionInput = z.infer<ReturnType<typeof linkSetVersionSchema>>;
 export type LinkVersionSourceInput = z.infer<ReturnType<typeof linkVersionSourceSchema>>;

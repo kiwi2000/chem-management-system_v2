@@ -1,6 +1,11 @@
 import type { LinkSetVersion, LinkVersionSource, Source } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import type { LinkSetVersionDto, LinkVersionSourceDto, SourceDto } from "@/lib/types";
+import type {
+  LinkSetVersionDto,
+  LinkVersionSourceDto,
+  SourceDto,
+  StatutoryCasLinkDto,
+} from "@/lib/types";
 
 export function toSourceDto(s: Source): SourceDto {
   return { id: s.id, code: s.code, note: s.note };
@@ -69,4 +74,63 @@ export function toLinkVersionSourceDto(
     loadedAt: row.loadedAt?.toISOString() ?? null,
     linkCount,
   };
+}
+
+/**
+ * ある法文物質名に結び付いているCASを、データソースごとに全部返す。
+ *
+ * 同じCASでもデータソースの数だけ行が出る。まとめてしまうと、
+ * どのデータソースを直せばよいかが分からなくなるため。
+ *
+ * 「使用」は優先度で解いた結果。CASごとに、その版で優先度がいちばん高い
+ * データソースの行だけが採られる。非該当（excluded）が採られたときは、
+ * それより下位に該当の行があっても当たらない。
+ */
+export async function listCasLinks(
+  versionId: string,
+  statutorySubstanceId: string,
+): Promise<StatutoryCasLinkDto[]> {
+  const [order, links] = await Promise.all([
+    prisma.linkVersionSource.findMany({
+      where: { versionId },
+      select: { sourceId: true, priority: true },
+    }),
+    prisma.statutoryCasLink.findMany({
+      where: { versionId, statutorySubstanceId },
+      include: { source: { select: { code: true } } },
+    }),
+  ]);
+
+  const rank = new Map(order.map((o) => [o.sourceId, o.priority]));
+  /** 版に並んでいないデータソースは、いつまでも採られない。並びも末尾に置く */
+  const rankOf = (sourceId: string) => rank.get(sourceId) ?? Number.MAX_SAFE_INTEGER;
+
+  // CASごとに、いちばん優先度の高い行を1つだけ「使用」にする
+  const best = new Map<string, { id: string; rank: number }>();
+  for (const l of links) {
+    const r = rankOf(l.sourceId);
+    const cur = best.get(l.casNormalized);
+    if (!cur || r < cur.rank) best.set(l.casNormalized, { id: l.id, rank: r });
+  }
+
+  return links
+    .map((l) => ({
+      id: l.id,
+      versionId: l.versionId,
+      statutorySubstanceId: l.statutorySubstanceId,
+      sourceId: l.sourceId,
+      sourceCode: l.source.code,
+      casNumber: l.casNumber,
+      casNormalized: l.casNormalized,
+      excluded: l.excluded,
+      note: l.note,
+      used: best.get(l.casNormalized)?.id === l.id,
+      orphan: !rank.has(l.sourceId),
+    }))
+    .sort(
+      (a, b) =>
+        a.casNormalized.localeCompare(b.casNormalized) ||
+        rankOf(a.sourceId) - rankOf(b.sourceId) ||
+        a.sourceCode.localeCompare(b.sourceCode),
+    );
 }

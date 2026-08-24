@@ -23,3 +23,6 @@ coverage/
 # misc
 *.log
 .DS_Store
+
+# LOLI（社内SQL Server）への接続。手元だけのもの
+.env.loli
