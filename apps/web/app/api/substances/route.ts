@@ -4,6 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { SUBSTANCE_COLUMNS } from "@/lib/list-columns";
+import { listNumbersByCas } from "@/lib/substance-numbers";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import {
   SUBSTANCE_LIST_INCLUDE,
@@ -56,8 +57,18 @@ export async function GET(req: Request) {
     prisma.substance.count({ where }),
   ]);
 
+  // 各種番号はCASリンクから引く。1ページぶんをまとめて1回で取る（決定 0008）
+  const numbers = await listNumbersByCas(items.map((s) => s.casNormalized ?? ""));
+  const rows = items.map((s) => ({
+    ...toListItem(s),
+    numbers: (numbers.get(s.casNormalized ?? "") ?? []).map((n) => ({
+      label: n.label,
+      number: n.number,
+    })),
+  }));
+
   return Response.json({
-    items: items.map(toListItem),
+    items: rows,
     total,
     page: state.page,
     pageSize: state.pageSize,

@@ -93,6 +93,8 @@ export const regulationCategorySchema = (m: Messages) =>
       displayOrder: displayOrder(),
       interactionGroup: optionalText(m, 50),
       rank: z.number().int().min(0).max(999).nullable().optional(),
+      /** 番号のリストとしての呼び名。入っていれば物質の画面に番号が並ぶ */
+      numberLabel: optionalText(m, 100),
       note: optionalText(m, 2000),
     }),
     m,

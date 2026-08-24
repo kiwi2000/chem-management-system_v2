@@ -42,6 +42,7 @@ const EMPTY_FORM = {
   kind: "BUG" as FeedbackKind,
   priority: "MEDIUM" as FeedbackPriority,
   status: "OPEN" as FeedbackStatus,
+  reply: "",
 };
 
 const SELECT_CLASS = "border-input bg-background h-9 rounded-none border px-2 text-sm";
@@ -126,6 +127,28 @@ export default function FeedbackPage() {
         render: (r) => r.body,
       },
       {
+        key: "reply",
+        header: "返事",
+        kind: "text",
+        width: 280,
+        sortable: false,
+        filterFullWidth: true,
+        multiline: true,
+        // 返事が付いていれば、誰がいつ返したかも小さく添える
+        render: (r) =>
+          r.reply ? (
+            <div className="space-y-0.5">
+              <div>{r.reply}</div>
+              <div className="text-muted-foreground text-xs">
+                {r.repliedByName ?? "—"}
+                {r.repliedAt ? ` ${new Date(r.repliedAt).toLocaleString(locale)}` : ""}
+              </div>
+            </div>
+          ) : (
+            ""
+          ),
+      },
+      {
         key: "createdByName",
         header: "投稿者",
         kind: "text",
@@ -200,6 +223,7 @@ export default function FeedbackPage() {
           kind: form.kind,
           priority: form.priority,
           status: form.status,
+          reply: form.reply,
         }),
       });
       if (!res.ok) {
@@ -276,6 +300,24 @@ export default function FeedbackPage() {
                 placeholder="どの画面で、何をしたら、どうなったかを書いてください"
               />
             </div>
+
+            {form.id !== "" && (
+              <div className="space-y-2">
+                <Label htmlFor="fb-reply">返事</Label>
+                <textarea
+                  id="fb-reply"
+                  rows={3}
+                  maxLength={5000}
+                  value={form.reply}
+                  onChange={(e) => setForm({ ...form, reply: e.target.value })}
+                  className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
+                  placeholder="書いた人に伝えたいこと。直したか、直さないか、いつごろになるか"
+                />
+                <p className="text-muted-foreground text-xs">
+                  書くと、一覧の「返事」に出ます。空にすると返事を取り消せます
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-4">
               <div className="space-y-2">
@@ -369,10 +411,17 @@ export default function FeedbackPage() {
             kind: f.kind,
             priority: f.priority,
             status: f.status,
+            reply: f.reply ?? "",
           });
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
-        filterLayout={[["title"], ["body"], ["kind", "priority", "status"], ["updatedAt"]]}
+        filterLayout={[
+          ["title"],
+          ["body"],
+          ["reply"],
+          ["kind", "priority", "status"],
+          ["updatedAt"],
+        ]}
       />
     </div>
   );

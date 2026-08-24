@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { PROPERTY_DEF_COUNT, toPropertyDefDto } from "@/lib/property-def-service";
 import { getAppSettings } from "@/lib/settings";
+import { listNumbers } from "@/lib/substance-numbers";
 import {
   SUBSTANCE_INCLUDE,
   canEditSubstance,
@@ -40,6 +41,8 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
 
   if (!item) notFound();
   const canEdit = actor ? canEditSubstance(actor, item) : false;
+  // 各種番号はインベントリから引く。物質が決まってからでないと引けないのでここで取る
+  const numbers = await listNumbers(item.casNormalized);
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-6">
@@ -59,6 +62,7 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
         defs={defs.map(toPropertyDefDto)}
         settings={settings}
         canEdit={canEdit}
+        numbers={numbers}
       />
 
       <ApprovalHistory entity="substance" entityId={item.id} />

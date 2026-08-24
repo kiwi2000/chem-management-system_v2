@@ -91,8 +91,13 @@ export interface SubstanceListItemDto {
   nameEn: string | null;
   note: string | null;
   aliasCount: number;
-  /** 官報公示整理番号（区分つき）。一覧では1セルに複数行で出す */
+  /** 官報公示整理番号（区分つき）。編集はしないが、保存時にそのまま送り返す */
   gazetteNumbers: { lawKind: GazetteLawKind; number: string }[];
+  /**
+   * 各種番号（官報公示整理番号・EC番号など）。インベントリから引いたもの。
+   * 一覧では1セルに複数行で出す（決定 0008）
+   */
+  numbers: { label: string; number: string }[];
   updatedAt: string;
 }
 
@@ -298,6 +303,11 @@ export interface RegulationCategoryDto {
   interactionGroup: string | null;
   rank: number | null;
   displayOrder: number;
+  /**
+   * 番号のリストとしての呼び名（「官報公示整理番号」「EC番号」など）。
+   * 入っていれば、この区分の番号が物質の画面に並ぶ
+   */
+  numberLabel: string | null;
   note: string | null;
   /** 配下の法文物質名の数（表示名のない分類のぶんも含む） */
   substanceCount: number;
@@ -388,4 +398,48 @@ export interface NewsDto {
   updatedAt: string;
   /** この閲覧者が編集できるか（サーバー側で判断済み） */
   editable: boolean;
+}
+
+/** 元素。法文物質名の「換算先」で選ぶ */
+export interface ElementDto {
+  symbol: string;
+  atomicNumber: number;
+  nameJa: string;
+  nameEn: string;
+}
+
+/** 情報源（LOLI・CHRIP・自社データなど）。どの版で使うかは版の側で決める */
+export interface SourceDto {
+  id: string;
+  code: string;
+  /** 説明。どんなデータで、どこまで載っているか */
+  note: string | null;
+}
+
+/**
+ * バージョン。いつ時点のデータかを押さえるためのもの。
+ * 持つのはコードだけ。中身の件数はデータソースの側で見る
+ */
+export interface LinkSetVersionDto {
+  id: string;
+  code: string;
+  /** 判定に使うバージョン。システム全体で1件だけ */
+  isCurrent: boolean;
+  /** 利用者が選んだものか。立っていなければ自動（コード順でいちばん新しいもの） */
+  currentPinned: boolean;
+}
+
+/** データソース（バージョン × データソース種別）。取り込みの単位でもある */
+export interface LinkVersionSourceDto {
+  id: string;
+  versionId: string;
+  versionCode: string;
+  sourceId: string;
+  sourceCode: string;
+  /** 小さいほど優先。同じバージョンの中で重複しない */
+  priority: number;
+  note: string | null;
+  loadedAt: string | null;
+  /** この組み合わせで入っているリンクの数 */
+  linkCount: number;
 }

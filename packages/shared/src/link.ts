@@ -1,0 +1,56 @@
+import { z } from "zod";
+import type { Messages } from "./i18n/ja";
+
+const CODE_MAX = 50;
+
+const optionalNote = (m: Messages) =>
+  z
+    .string()
+    .trim()
+    .max(2000, m.validation.tooLong(2000))
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .optional();
+
+/**
+ * 情報源（LOLI・CHRIP・自社データなど）。
+ * どの版でどの順に読むかは版の側で決めるので、ここには優先度を持たせない。
+ */
+export const sourceSchema = (m: Messages) =>
+  z.object({
+    code: z
+      .string()
+      .trim()
+      .min(1, m.validation.required)
+      .max(CODE_MAX, m.validation.tooLong(CODE_MAX)),
+    /** 説明。どんなデータで、どこまで載っているかを書く */
+    note: optionalNote(m),
+  });
+
+/**
+ * 版（いつ時点のデータか）。
+ * 現在版の切り替えは専用の操作で行うので、ここには含めない。
+ */
+export const linkSetVersionSchema = (m: Messages) =>
+  z.object({
+    code: z
+      .string()
+      .trim()
+      .min(1, m.validation.required)
+      .max(CODE_MAX, m.validation.tooLong(CODE_MAX)),
+  });
+
+/**
+ * データソース（バージョン × データソース種別）。
+ * 優先度は登録のときに末尾へ付け、あとから上下に動かして決めるので、ここには含めない。
+ */
+export const linkVersionSourceSchema = (m: Messages) =>
+  z.object({
+    versionId: z.string().trim().min(1, m.validation.required),
+    sourceId: z.string().trim().min(1, m.validation.required),
+    note: optionalNote(m),
+  });
+
+export type SourceInput = z.infer<ReturnType<typeof sourceSchema>>;
+export type LinkSetVersionInput = z.infer<ReturnType<typeof linkSetVersionSchema>>;
+export type LinkVersionSourceInput = z.infer<ReturnType<typeof linkVersionSourceSchema>>;

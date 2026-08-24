@@ -114,6 +114,7 @@ export const FEEDBACK_COLUMNS: QueryColumn[] = [
   { key: "priority", kind: "enum", field: "priority" },
   { key: "status", kind: "enum", field: "status" },
   { key: "body", kind: "text", field: "body", caseInsensitive: true },
+  { key: "reply", kind: "text", field: "reply", caseInsensitive: true },
   { key: "createdAt", kind: "date", field: "createdAt" },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
@@ -142,4 +143,27 @@ export const PROPERTY_DEF_COLUMNS: QueryColumn[] = [
   { key: "defaultUnit", kind: "text", field: "defaultUnit", caseInsensitive: true },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
   { key: "activeFlag", kind: "enum", field: "activeFlag", booleanEnum: true },
+];
+
+export const ELEMENT_COLUMNS: QueryColumn[] = [
+  { key: "symbol", kind: "text", field: "symbol", caseInsensitive: true },
+  { key: "atomicNumber", kind: "number", field: "atomicNumber" },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+];
+
+export const SOURCE_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "code", caseInsensitive: true },
+  { key: "note", kind: "text", field: "note", caseInsensitive: true },
+];
+
+export const LINK_VERSION_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "code", caseInsensitive: true },
+  { key: "isCurrent", kind: "enum", field: "isCurrent" },
+];
+
+export const LINK_VERSION_SOURCE_COLUMNS: QueryColumn[] = [
+  { key: "priority", kind: "number", field: "priority" },
+  { key: "note", kind: "text", field: "note", caseInsensitive: true },
+  { key: "loadedAt", kind: "date", field: "loadedAt" },
 ];

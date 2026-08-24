@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
-import { GazetteNumbers } from "@/components/gazette-numbers";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useI18n } from "@/lib/i18n-client";
@@ -124,16 +123,24 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
           ),
       },
       {
-        key: "gazetteNumbers",
-        // 子テーブルを引いた列。「空白」で絞れないので出さない
-        nullable: false,
-        header: m.substances.gazette,
+        key: "numbers",
+        header: m.substances.numbers,
         kind: "text",
         width: 150,
-        // 区分ごとに1行ずつ出すので、行の高さを伸ばす
-        multiline: true,
         sortable: false,
-        render: (r) => <GazetteNumbers items={r.gazetteNumbers} />,
+        filterable: false,
+        className: "text-xs",
+        // インベントリから引いた番号。呼び名を添えて1セルに複数行で出す
+        render: (r) => (
+          <div className="space-y-0.5">
+            {r.numbers.map((n, k) => (
+              <div key={k} className="truncate">
+                <span className="text-muted-foreground">{n.label}</span>{" "}
+                <span className="font-mono">{n.number}</span>
+              </div>
+            ))}
+          </div>
+        ),
       },
       {
         key: "note",

@@ -10,6 +10,7 @@ import {
   Globe,
   Home,
   Link2,
+  Atom,
   Megaphone,
   MessageSquare,
   Package,
@@ -53,7 +54,7 @@ const ITEMS: NavItem[] = [
   { href: "/substances", key: "substances", icon: FlaskConical, needs: "SUBSTANCE_VIEW" },
   { href: "/products", key: "products", icon: Package, needs: "PRODUCT_VIEW" },
   {
-    // 中身は配下の2つなので、この行自体は押しても何も開かない見出しにする
+    // 中身は配下だけなので、この行自体は押しても何も開かない見出しにする
     key: "laws",
     icon: Scale,
     needs: "REGULATION_VIEW",
@@ -66,16 +67,20 @@ const ITEMS: NavItem[] = [
         needs: "REGULATION_VIEW",
         match: ["/laws", "/categories"],
       },
+      // 外から取り込むCASの対応データ。版・情報源・取込・差分をここで扱う
+      // （自社で作ったぶんも、システムの外で管理するものなので同じ扱い）
+      {
+        href: "/external-db",
+        key: "externalDb",
+        icon: Link2,
+        needs: "REGULATION_VIEW",
+        match: ["/external-db"],
+      },
+      // 換算係数と元素は法規制の判定にしか使わないので、ここに置く
+      { href: "/metal-factors", key: "metalFactors", icon: Sigma, needs: "REGULATION_VIEW" },
+      { href: "/elements", key: "elements", icon: Atom, needs: "REGULATION_VIEW" },
     ],
   },
-  {
-    href: "/link-versions",
-    key: "links",
-    icon: Link2,
-    needs: "REGULATION_VIEW",
-    match: ["/link-versions", "/sources"],
-  },
-  { href: "/metal-factors", key: "metalFactors", icon: Sigma, needs: "REGULATION_VIEW" },
   { href: "/import-export", key: "importExport", icon: ArrowDownUp, needs: "DATA_EXPORT" },
   { href: "/doc-templates", key: "docTemplates", icon: FileText, needs: "DATA_EXPORT" },
   // お知らせを読むだけならホームで足りる。この画面は投稿・編集のためのものなので、

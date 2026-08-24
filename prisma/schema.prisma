@@ -804,6 +804,14 @@ model Feedback {
   priority FeedbackPriority @default(MEDIUM)
   status   FeedbackStatus   @default(OPEN)
 
+  /**
+   * 書いた人への返事。受け取った側が書く。
+   * 空なら「まだ返していない」。誰がいつ返したかも残す
+   */
+  reply      String?   @db.Text
+  repliedBy  String?   @map("replied_by")
+  repliedAt  DateTime? @map("replied_at")
+
   createdBy String?   @map("created_by")
   updatedBy String?   @map("updated_by")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -990,6 +998,13 @@ model RegulationCategory {
   interactionGroup String? @map("interaction_group") @db.VarChar(50)
   rank             Int?
 
+  /**
+   * 番号のリストとしての呼び名（「官報公示整理番号」「EC番号」など）。
+   * 入っていればこの区分は番号のリストで、配下の法文物質名の official_number を
+   * 物質の画面に出す。空なら番号のリストではない
+   */
+  numberLabel String? @map("number_label")
+
   note String?
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -1004,6 +1019,7 @@ model RegulationCategory {
   @@unique([lawId, codeNormalized])
   @@index([lawId, displayOrder])
   @@index([interactionGroup, rank])
+  @@index([numberLabel])
   @@map("regulation_categories")
 }
 
@@ -1112,18 +1128,26 @@ model StatutorySubstance {
  * 「現在版」を明示的に指定する（作っただけでは切り替わらない）。
  * 制約は migration の部分ユニーク索引で持つ（Prisma では条件付きの一意制約を書けない）
  */
+/** バージョン。コードだけを登録する（中身はデータソースの側に付く） */
 model LinkSetVersion {
   id             String @id @default(cuid())
   code           String @db.VarChar(50)
   codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
 
-  nameJa String  @map("name_ja") @db.VarChar(200)
+  nameJa String? @map("name_ja") @db.VarChar(200)
   nameEn String? @map("name_en") @db.VarChar(200)
 
   /**
-   * 判定に使う版。システム全体で1件だけ立てられる
+   * 判定に使うバージョン。システム全体で1件だけ立てられる。
+   * バージョンが1件でもあれば、必ずどれかが立つ
    */
-  isCurrent Boolean   @default(false) @map("is_current")
+  isCurrent Boolean @default(false) @map("is_current")
+
+  /**
+   * 利用者が明示的に選んだものか。
+   * 立っていなければ自動で選ばれたもので、新しいバージョンが増えるとそちらへ移る
+   */
+  currentPinned Boolean @default(false) @map("current_pinned")
   loadedAt  DateTime? @map("loaded_at")
   note      String?
 
@@ -1143,16 +1167,17 @@ model LinkSetVersion {
  * データソース（USER / LOLI / CHRIP など）。
  * 優先度はここには持たない。版ごとに決まるため LinkVersionSource が持つ
  */
+/**
+ * データソース種別（LOLI・CHRIP・自社データなど）。
+ * コードと説明だけ。どのバージョンでどの順に読むかはデータソースの側で決める
+ */
 model Source {
   id             String @id @default(cuid())
   code           String @db.VarChar(50)
   codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
 
-  nameJa String  @map("name_ja") @db.VarChar(200)
-  nameEn String? @map("name_en") @db.VarChar(200)
-
-  activeFlag Boolean @default(true) @map("active_flag")
-  note       String?
+  /** どんなデータで、どこまで載っているか */
+  note String?
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
@@ -1175,9 +1200,16 @@ model LinkVersionSource {
   versionId String @map("version_id")
   sourceId  String @map("source_id")
   /**
-   * 小さいほど優先。通常は自社で登録したもの（USER）を 1 にする
+   * 小さいほど優先。通常は自社で登録したもの（USER）を 1 にする。
+   * 登録するときは末尾に付け、あとから上下に動かして決める
    */
   priority  Int
+
+  /** どのファイルを入れたか、どこまで載っているかを書く */
+  note String?
+
+  /** 取り込んだ日時。ファイルは種別ごとに届くので、バージョン単位ではなくここに持つ */
+  loadedAt DateTime? @map("loaded_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   createdBy String?  @map("created_by")
@@ -1230,4 +1262,26 @@ model StatutoryCasLink {
   @@index([versionId, casNormalized])
   @@index([statutorySubstanceId])
   @@map("statutory_cas_links")
+}
+
+/**
+ * 元素。法文物質名の「換算先」で選ぶ。
+ *
+ * キーは元素記号。換算係数の表が記号で持っており、そのまま突き合わせられるため。
+ * 番号は並べ替えのために持つ。
+ * シアン（CN）のように元素でないものも入るので、その場合は900番台を振る。
+ */
+model Element {
+  symbol       String @id @db.VarChar(4)
+  atomicNumber Int    @unique @map("atomic_number")
+  nameJa       String @map("name_ja") @db.VarChar(100)
+  nameEn       String @map("name_en") @db.VarChar(100)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("elements")
 }

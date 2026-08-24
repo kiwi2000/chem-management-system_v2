@@ -7,7 +7,14 @@ import { prisma } from "@/lib/db";
  * 投稿者の名前は一覧に出ている分だけ引く（全ユーザーを持ってこない）。
  */
 export async function toFeedbackDtos(rows: Feedback[]): Promise<FeedbackDto[]> {
-  const ids = [...new Set(rows.flatMap((r) => (r.createdBy ? [r.createdBy] : [])))];
+  const ids = [
+    ...new Set(
+      rows.flatMap((r) => [
+        ...(r.createdBy ? [r.createdBy] : []),
+        ...(r.repliedBy ? [r.repliedBy] : []),
+      ]),
+    ),
+  ];
   const users = ids.length
     ? await prisma.user.findMany({
         where: { id: { in: ids } },
@@ -23,6 +30,9 @@ export async function toFeedbackDtos(rows: Feedback[]): Promise<FeedbackDto[]> {
     kind: r.kind,
     priority: r.priority,
     status: r.status,
+    reply: r.reply,
+    repliedByName: r.repliedBy ? (nameById.get(r.repliedBy) ?? null) : null,
+    repliedAt: r.repliedAt?.toISOString() ?? null,
     createdByName: r.createdBy ? (nameById.get(r.createdBy) ?? null) : null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),

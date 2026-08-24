@@ -1,6 +1,6 @@
 "use client";
 
-import { GAZETTE_LAW_KINDS, pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
+import { pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
+import type { SubstanceNumber } from "@/lib/substance-numbers";
 import type { ApiError, CasSiblingDto, PropertyDefDto, SubstanceDetailDto } from "@/lib/types";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
@@ -28,6 +29,11 @@ interface Props {
    * 「編集」ボタンを押してから書き換えられるようにする（誤操作を防ぐため）。
    */
   canEdit: boolean;
+  /**
+   * 各種番号（官報公示整理番号・EC番号など）。
+   * インベントリから引いたものをサーバー側で組み立てて渡す（決定 0008）
+   */
+  numbers?: SubstanceNumber[];
 }
 
 interface GazetteRow {
@@ -35,9 +41,7 @@ interface GazetteRow {
   number: string;
 }
 
-const selectClass = "border-input bg-background h-9 rounded-none border px-2 text-sm";
-
-export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
+export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }: Props) {
   const router = useRouter();
   const { m, locale } = useI18n();
   // 新規登録は最初から入力できる。既存データは「編集」を押すまで読み取り専用
@@ -95,7 +99,11 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
   const [subNamesEn, setSubNamesEn] = useState<string[]>(
     initial?.subNames.flatMap((n) => (n.nameEn ? [n.nameEn] : [])) ?? [],
   );
-  const [gazette, setGazette] = useState<GazetteRow[]>(
+  /*
+    官報公示整理番号は画面から編集しなくなった（各種番号として引いて出す・決定 0008）。
+    ただし既に入っている値を保存のたびに消してしまわないよう、そのまま送り返す。
+  */
+  const [gazette] = useState<GazetteRow[]>(
     initial?.gazetteNumbers.map((g) => ({ lawKind: g.lawKind, number: g.number })) ?? [],
   );
   // 拡張属性は「定義ID → 入力値（文字列）」で持つ。数値も文字列のまま送る
@@ -391,65 +399,31 @@ export function SubstanceForm({ initial, defs, settings, canEdit }: Props) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{m.substances.gazette}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-muted-foreground text-xs">{m.substances.gazetteHint}</p>
-              {gazette.map((g, i) => (
-                <div key={i} className="flex flex-wrap items-center gap-2">
-                  <select
-                    aria-label={`${m.substances.gazetteLawKind} ${i + 1}`}
-                    value={g.lawKind}
-                    onChange={(e) =>
-                      setGazette(
-                        gazette.map((x, j) =>
-                          j === i ? { ...x, lawKind: e.target.value as GazetteLawKind } : x,
-                        ),
-                      )
-                    }
-                    className={selectClass}
-                  >
-                    {GAZETTE_LAW_KINDS.map((k) => (
-                      <option key={k} value={k}>
-                        {m.substances.lawKinds[k]}
-                      </option>
-                    ))}
-                  </select>
-                  <Input
-                    aria-label={`${m.substances.gazetteNumber} ${i + 1}`}
-                    value={g.number}
-                    maxLength={50}
-                    onChange={(e) =>
-                      setGazette(
-                        gazette.map((x, j) => (j === i ? { ...x, number: e.target.value } : x)),
-                      )
-                    }
-                    className="w-56 font-mono"
-                    placeholder="1-234"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive"
-                    onClick={() => setGazette(gazette.filter((_, j) => j !== i))}
-                  >
-                    {m.common.remove}
-                  </Button>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setGazette([...gazette, { lawKind: "CSCL", number: "" }])}
-              >
-                {m.substances.addGazette}
-              </Button>
-            </CardContent>
-          </Card>
+          {/*
+            各種番号（官報公示整理番号・EC番号など）。
+            これらはインベントリが振っている番号なので、物質側には持たず、
+            「番号としての呼び名」が入っている区分から引いてくる（決定 0008）。
+            ここでは書き換えられない。
+          */}
+          {numbers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{m.substances.numbers}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-muted-foreground text-xs">{m.substances.numbersHint}</p>
+                <dl className="space-y-1">
+                  {numbers.map((n, i) => (
+                    <div key={i} className="flex flex-wrap items-baseline gap-x-3 text-sm">
+                      <dt className="text-muted-foreground w-40 shrink-0">{n.label}</dt>
+                      <dd className="font-mono">{n.number}</dd>
+                      <dd className="text-muted-foreground text-xs">{n.source}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

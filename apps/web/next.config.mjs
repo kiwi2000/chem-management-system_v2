@@ -29,6 +29,10 @@ const nextConfig = {
   // ESLint はリポジトリルートの eslint.config.mjs で `npm run lint` として実行する。
   // next build 内蔵の lint はルート設定を検出できず警告を出すだけなので無効化する。
   eslint: { ignoreDuringBuilds: true },
+
+  // 開発時に画面の左下へ出る Next.js のボタンを消す。
+  // 画面の見た目を確認するときに邪魔になるため（本番には元から出ない）。
+  devIndicators: false,
 };
 
 export default nextConfig;

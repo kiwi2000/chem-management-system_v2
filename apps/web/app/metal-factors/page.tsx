@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, ListResponse, MetalFactorDto } from "@/lib/types";
+import type { ApiError, ElementDto, ListResponse, MetalFactorDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -104,6 +104,8 @@ export default function MetalFactorsPage() {
   );
 
   const [data, setData] = useState<ListResponse<MetalFactorDto> | null>(null);
+  /** 金属元素の選択肢。元素の表に登録されているものだけを選ばせる */
+  const [elements, setElements] = useState<ElementDto[]>([]);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -127,6 +129,14 @@ export default function MetalFactorsPage() {
   useEffect(() => {
     if (ready) void load();
   }, [ready, load]);
+
+  useEffect(() => {
+    // 118個しかないので、1ページで全部引く
+    void (async () => {
+      const res = await fetch("/api/elements?size=200").catch(() => null);
+      if (res?.ok) setElements(((await res.json()) as ListResponse<ElementDto>).items);
+    })();
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -205,7 +215,7 @@ export default function MetalFactorsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-4">
+            <form onSubmit={onSubmit} className="flex flex-wrap items-start gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cas">{m.metalFactors.casNumber}</Label>
                 <Input
@@ -217,19 +227,26 @@ export default function MetalFactorsPage() {
                   className="w-44 font-mono"
                   placeholder="7439-92-1"
                 />
+                {/* 注記は無いが、隣の欄と高さをそろえるため場所だけ空けておく */}
+                <p className="min-h-4 text-xs" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="element">{m.metalFactors.metalElement}</Label>
-                <Input
+                <select
                   id="element"
                   required
-                  maxLength={4}
                   value={form.metalElement}
                   onChange={(e) => setForm({ ...form, metalElement: e.target.value })}
-                  className="w-24 font-mono"
-                  placeholder="Pb"
-                />
-                <p className="text-muted-foreground text-xs">{m.metalFactors.metalElementHint}</p>
+                  className="border-input bg-background h-8 w-40 rounded-none border px-2 font-mono text-sm"
+                >
+                  <option value="">{m.metalFactors.selectElement}</option>
+                  {elements.map((el) => (
+                    <option key={el.symbol} value={el.symbol}>
+                      {el.symbol} — {locale === "ja" ? el.nameJa : el.nameEn}
+                    </option>
+                  ))}
+                </select>
+                <p className="min-h-4 text-xs" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ratio">{m.metalFactors.ratioPct}</Label>
@@ -243,21 +260,28 @@ export default function MetalFactorsPage() {
                   className="w-32 text-right font-mono"
                   placeholder="92.83"
                 />
-                <p className="text-muted-foreground text-xs">{m.metalFactors.ratioHint}</p>
+                <p className="text-muted-foreground min-h-4 text-xs">{m.metalFactors.ratioHint}</p>
               </div>
-              <div className="flex gap-2 pb-6">
-                <Button type="submit" disabled={saving}>
-                  {saving ? m.common.saving : m.common.save}
-                </Button>
-                {form.id !== "" && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setForm({ ...EMPTY_FORM })}
-                  >
-                    {m.common.discard}
+              <div className="space-y-2">
+                {/* 見出しの分だけ下げて、入力欄と同じ行に並べる */}
+                <Label className="invisible" aria-hidden>
+                  &nbsp;
+                </Label>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={saving}>
+                    {saving ? m.common.saving : m.common.save}
                   </Button>
-                )}
+                  {form.id !== "" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setForm({ ...EMPTY_FORM })}
+                    >
+                      {m.common.discard}
+                    </Button>
+                  )}
+                </div>
+                <p className="min-h-4 text-xs" />
               </div>
             </form>
           </CardContent>

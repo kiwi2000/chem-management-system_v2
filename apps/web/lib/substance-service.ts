@@ -70,6 +70,8 @@ export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
     note: s.note,
     aliasCount: s._count.aliases,
     gazetteNumbers: s.gazetteNumbers.map((g) => ({ lawKind: g.lawKind, number: g.number })),
+    // 各種番号はCASリンクから引くので、ここでは空。一覧・詳細で1回にまとめて詰める
+    numbers: [],
     updatedAt: s.updatedAt.toISOString(),
   };
 }

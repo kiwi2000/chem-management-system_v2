@@ -8,7 +8,7 @@ import {
   serializeTableState,
   type TableState,
 } from "@chem/shared";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -83,6 +83,8 @@ export function LawTreeSection({
     | null
   >(null);
   const [error, setError] = useState<string | null>(null);
+  /** まとめて開いている最中。件数が多いと少し待つ */
+  const [expanding, setExpanding] = useState(false);
 
   // 列のキーの並びだけを useTableState が見るので、中身は毎回作ってよい
   const columns = useMemo<TableColumn<Row>[]>(
@@ -114,7 +116,10 @@ export function LawTreeSection({
               {r.law.code}
             </button>
           ) : (
-            <span className="pl-5">{r.category.code}</span>
+            // 法令にぶら下がっていることを縦線で示す。区分が続いても親を見失わない
+            <span className="border-border text-muted-foreground ml-2 border-l pl-3 text-xs">
+              {r.category.code}
+            </span>
           ),
       },
       {
@@ -161,6 +166,21 @@ export function LawTreeSection({
                 r.category.upperBound,
               )
             : "",
+      },
+      {
+        // 表には出さない、絞り込みだけの列。区分の側を探して法令を絞る
+        key: "categoryCode",
+        header: m.regulationCategories.code,
+        kind: "text",
+        filterOnly: true,
+        width: 0,
+      },
+      {
+        key: "categoryName",
+        header: m.regulationCategories.title,
+        kind: "text",
+        filterOnly: true,
+        width: 0,
       },
       {
         key: "count",
@@ -222,16 +242,116 @@ export function LawTreeSection({
     };
   }, []);
 
-  /** その法令の区分を取りに行く。開いている法令ぶんだけ引く */
-  const loadCategories = useCallback(async (id: string) => {
+  /*
+    区分での絞り込み。
+    区分は法令にぶら下がって出てくるので、法令の一覧を引くだけでは絞れない。
+    先に区分の側を探し、当たった区分を持つ法令だけを残して、その法令を開いておく。
+  */
+  const categoryQueries = useMemo(() => {
+    const byCode = tableState.filters.categoryCode;
+    const byName = tableState.filters.categoryName;
+    if (!byCode && !byName) return null;
+    const build = (filters: TableState["filters"]) =>
+      serializeTableState(
+        { sort: [{ column: "displayOrder", direction: "asc" }], filters, page: 1, pageSize: 200 },
+        emptyTableState(),
+      ).toString();
+    return {
+      code: byCode ? build({ code: byCode }) : null,
+      // 名称は原文・日本語・英語のどれに入っているか決まっていないので、3つとも探して合わせる
+      names: byName
+        ? [build({ nameOriginal: byName }), build({ nameJa: byName }), build({ nameEn: byName })]
+        : null,
+    };
+  }, [tableState.filters]);
+
+  /** 絞り込みに当たった区分。条件が無いときは null（＝絞らない） */
+  const [hits, setHits] = useState<RegulationCategoryDto[] | null>(null);
+
+  useEffect(() => {
+    if (!categoryQueries) {
+      setHits(null);
+      return;
+    }
+    let alive = true;
+    const fetchOne = async (query: string) => {
+      const res = await fetch(`/api/regulation-categories?${query}`).catch(() => null);
+      if (!res || !res.ok) return [];
+      return ((await res.json()) as ListResponse<RegulationCategoryDto>).items;
+    };
+    void (async () => {
+      const { code, names } = categoryQueries;
+      let items: RegulationCategoryDto[] = [];
+      if (names) {
+        const lists = await Promise.all(names.map(fetchOne));
+        // 同じ区分が複数の欄で当たることがあるので、idでまとめる
+        const byId = new Map(lists.flat().map((c) => [c.id, c]));
+        items = [...byId.values()];
+      }
+      if (code) {
+        const byCode = await fetchOne(code);
+        // 両方指定されていれば、どちらにも当たったものだけ
+        items = names ? items.filter((c) => byCode.some((x) => x.id === c.id)) : byCode;
+      }
+      if (alive) setHits(items);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [categoryQueries]);
+
+  /** その法令の区分を引くだけ。開いた状態にはしない */
+  const fetchCategories = useCallback(async (id: string) => {
     const res = await fetch(
       `/api/regulation-categories?size=200&f.lawId=in:${id}&sort=displayOrder`,
     ).catch(() => null);
     if (!res || !res.ok) return null;
-    const body = (await res.json()) as ListResponse<RegulationCategoryDto>;
-    setOpen((prev) => new Map(prev).set(id, body.items));
-    return body.items;
+    return ((await res.json()) as ListResponse<RegulationCategoryDto>).items;
   }, []);
+
+  /** その法令の区分を取りに行って、開いた状態にする */
+  const loadCategories = useCallback(
+    async (id: string) => {
+      const items = await fetchCategories(id);
+      if (items) setOpen((prev) => new Map(prev).set(id, items));
+      return items;
+    },
+    [fetchCategories],
+  );
+
+  /** 全部の法令をまとめて開く。区分はまとめて引く */
+  async function expandAll() {
+    const laws = data?.items ?? [];
+    if (laws.length === 0) return;
+    setExpanding(true);
+    try {
+      const lists = await Promise.all(
+        laws.map(async (l) => [l.id, await fetchCategories(l.id)] as const),
+      );
+      setOpen(new Map(lists.map(([id, items]) => [id, items ?? undefined])));
+    } finally {
+      setExpanding(false);
+    }
+  }
+
+  /*
+    区分が当たった法令は開いた状態にする。
+    出すのは当たった区分だけ。当たらなかったものを混ぜると、どれが当たりか分からなくなる。
+  */
+  useEffect(() => {
+    if (hits === null) {
+      // 条件を外したら、絞り込んだときの中途半端な中身を残さない
+      setOpen(new Map());
+      return;
+    }
+    const byLaw = new Map<string, RegulationCategoryDto[]>();
+    for (const c of hits) {
+      const list = byLaw.get(c.lawId);
+      if (list) list.push(c);
+      else byLaw.set(c.lawId, [c]);
+    }
+    setOpen(byLaw);
+  }, [hits]);
 
   async function toggle(id: string) {
     if (open.has(id)) {
@@ -285,23 +405,28 @@ export function LawTreeSection({
     void refresh();
   }
 
+  /** 当たった区分を持つ法令。条件が無いときは null（＝絞らない） */
+  const hitLawIds = hits ? new Set(hits.map((c) => c.lawId)) : null;
+
   // 法令の行と、開いている法令の区分の行を、順に並べる
   const rows: Row[] | null =
-    data === null
+    data === null || (categoryQueries !== null && hits === null)
       ? null
-      : data.items.flatMap((law) => {
-          const head: Row = { kind: "law", key: `law:${law.id}`, law };
-          const kids = open.get(law.id) ?? [];
-          return [
-            head,
-            ...kids.map((category): Row => ({
-              kind: "category",
-              key: `cat:${category.id}`,
-              law,
-              category,
-            })),
-          ];
-        });
+      : data.items
+          .filter((law) => hitLawIds === null || hitLawIds.has(law.id))
+          .flatMap((law) => {
+            const head: Row = { kind: "law", key: `law:${law.id}`, law };
+            const kids = open.get(law.id) ?? [];
+            return [
+              head,
+              ...kids.map((category): Row => ({
+                kind: "category",
+                key: `cat:${category.id}`,
+                law,
+                category,
+              })),
+            ];
+          });
 
   const selectedKey = selected ? `cat:${selected.id}` : lawId ? `law:${lawId}` : null;
 
@@ -345,7 +470,7 @@ export function LawTreeSection({
         columns={columns}
         rows={rows}
         rowKey={(r) => r.key}
-        total={data?.total ?? 0}
+        total={hitLawIds ? (rows?.filter((r) => r.kind === "law").length ?? 0) : (data?.total ?? 0)}
         state={tableState}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
@@ -353,10 +478,16 @@ export function LawTreeSection({
         emptyMessage={countries.length === 0 ? m.laws.noCountry : m.laws.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
-        showFilters={false}
         showOpenHint={false}
         busyOnActivate={false}
         pageSizeOptions={[10, 25, 50, 100]}
+        // 左から詰めて並べる。指定しないと画面幅いっぱいに散らばってしまう
+        filterLayout={[
+          ["code", "nameJa", "countryId"],
+          ["categoryCode", "categoryName"],
+        ]}
+        // 法令は見出しの行。区分がいくつ続いても、どこまでが1つの法令か分かるようにする
+        rowClassName={(r) => (r.kind === "law" ? "bg-muted/60 font-semibold" : undefined)}
         selectedKey={selectedKey}
         onRowSelect={(r) => {
           if (r.kind === "law") {
@@ -382,30 +513,55 @@ export function LawTreeSection({
             : undefined
         }
         headerActions={
-          editable && !editing ? (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={countries.length === 0}
-                onClick={() => setEditing({ kind: "law", initial: null })}
-              >
-                {m.laws.add}
-              </Button>
-              <Button
-                size="sm"
-                disabled={!lawId}
-                onClick={() => {
-                  if (!lawId) return;
-                  // 追加したものがすぐ見えるよう、その法令を開いておく
-                  if (!open.has(lawId)) void toggle(lawId);
-                  setEditing({ kind: "category", lawId, initial: null });
-                }}
-              >
-                {m.regulationCategories.add}
-              </Button>
-            </div>
-          ) : undefined
+          <div className="flex gap-2">
+            {/* 法令の数だけ開け閉めするのは手間なので、まとめて開く・閉じるを置く */}
+            <Button
+              size="icon"
+              variant="outline"
+              className="size-8"
+              title={m.composition.expandAll}
+              aria-label={m.composition.expandAll}
+              disabled={expanding || (data?.items.length ?? 0) === 0}
+              onClick={() => void expandAll()}
+            >
+              <UnfoldVertical className="size-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              className="size-8"
+              title={m.composition.collapseAll}
+              aria-label={m.composition.collapseAll}
+              disabled={open.size === 0}
+              onClick={() => setOpen(new Map())}
+            >
+              <FoldVertical className="size-4" />
+            </Button>
+            {editable && !editing && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={countries.length === 0}
+                  onClick={() => setEditing({ kind: "law", initial: null })}
+                >
+                  {m.laws.add}
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!lawId}
+                  onClick={() => {
+                    if (!lawId) return;
+                    // 追加したものがすぐ見えるよう、その法令を開いておく
+                    if (!open.has(lawId)) void toggle(lawId);
+                    setEditing({ kind: "category", lawId, initial: null });
+                  }}
+                >
+                  {m.regulationCategories.add}
+                </Button>
+              </>
+            )}
+          </div>
         }
       />
     </section>

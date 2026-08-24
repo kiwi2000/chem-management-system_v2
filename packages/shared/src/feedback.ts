@@ -48,6 +48,13 @@ export const feedbackSchema = (m: Messages) =>
     kind: z.enum(FEEDBACK_KINDS),
     priority: z.enum(FEEDBACK_PRIORITIES),
     status: z.enum(FEEDBACK_STATUSES),
+    /** 書いた人への返事。空なら「まだ返していない」 */
+    reply: z
+      .string()
+      .trim()
+      .max(5000, m.validation.tooLong(5000))
+      .nullish()
+      .transform((v) => v || null),
   });
 
 export type FeedbackInput = z.infer<ReturnType<typeof feedbackSchema>>;
@@ -60,6 +67,10 @@ export interface FeedbackDto {
   kind: FeedbackKind;
   priority: FeedbackPriority;
   status: FeedbackStatus;
+  /** 書いた人への返事。null なら、まだ返していない */
+  reply: string | null;
+  repliedByName: string | null;
+  repliedAt: string | null;
   createdByName: string | null;
   createdAt: string;
   updatedAt: string;

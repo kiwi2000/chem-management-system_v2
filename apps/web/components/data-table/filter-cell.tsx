@@ -13,7 +13,7 @@ import {
 } from "@chem/shared";
 import { useCallback, useEffect, useState } from "react";
 import { useOutsideClose } from "@/lib/use-outside-close";
-import { Input } from "@/components/ui/input";
+import { ImeInput, ImeTextarea } from "./ime-field";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "./types";
@@ -67,14 +67,14 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
     };
     return (
       <div className="flex w-full items-start gap-1.5">
-        <textarea
+        <ImeTextarea
           aria-label={column.header}
           rows={3}
           value={listText}
           placeholder={column.filterPlaceholder}
-          onChange={(e) => {
-            setListText(e.target.value);
-            emitList(e.target.value, mode);
+          onValueChange={(next) => {
+            setListText(next);
+            emitList(next, mode);
           }}
           className="border-input bg-background min-w-0 flex-1 rounded-none border px-2 py-1 text-xs"
         />
@@ -101,12 +101,19 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
 
     /**
      * 選択肢を1つ切り替える。
-     * 未指定（＝すべて）のときは全部選ばれている扱いにしてから外す。
+     *
+     * 「すべて」の状態から1つ触ったときは、その1つだけを指したものとして扱う。
+     * （入れたら「それだけ」、外したら「それ以外」。
+     * 全部選ばれている扱いにして足すと、逆に全部に印が付いてしまう）
      * 全部選ばれた状態と、1つも選ばれていない状態は、どちらも「絞らない」に落とす。
      */
     const toggle = (value_: string, checked: boolean) => {
-      const effective = selected.length === 0 ? options.map((o) => o.value) : selected;
-      const next = checked ? [...effective, value_] : effective.filter((v) => v !== value_);
+      if (selected.length === 0) {
+        const only = checked ? [value_] : options.map((o) => o.value).filter((v) => v !== value_);
+        onChange(only.length === 0 ? undefined : { kind: "enum", values: only });
+        return;
+      }
+      const next = checked ? [...selected, value_] : selected.filter((v) => v !== value_);
       const all = next.length === 0 || next.length === options.length;
       onChange(all ? undefined : { kind: "enum", values: next });
     };
@@ -206,20 +213,20 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
       )}
     >
       {needsValue(op) && (
-        <Input
+        <ImeInput
           aria-label={`${column.header} ${m.table.filterValue}`}
           type={inputType}
           value={v1}
-          onChange={(e) => emit(op, e.target.value, v2)}
+          onValueChange={(next) => emit(op, next, v2)}
           className="h-8 min-w-0 flex-1 text-xs"
         />
       )}
       {needsValue(op) && needsSecondValue(op) && column.kind !== "text" && (
-        <Input
+        <ImeInput
           aria-label={`${column.header} ${m.table.filterValue2}`}
           type={inputType}
           value={v2}
-          onChange={(e) => emit(op, v1, e.target.value)}
+          onValueChange={(next) => emit(op, v1, next)}
           className="h-8 min-w-0 flex-1 text-xs"
         />
       )}

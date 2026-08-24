@@ -616,3 +616,27 @@ body.cursor-busy * {
     @apply font-sans;
   }
 }
+
+/*
+  周期表と元素の表の連動。
+  片方で元素を選ぶと、もう片方の同じ元素がしばらく光って、どれのことか分かるようにする。
+  動きが苦手な人の設定では、光らせずに枠だけ残す。
+*/
+@keyframes chem-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--primary);
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--primary);
+  }
+}
+.chem-glow {
+  animation: chem-glow 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chem-glow {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+}

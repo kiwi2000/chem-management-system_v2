@@ -44,3 +44,6 @@ export const MIN_COLUMN_WIDTH = 48;
  * この列だけは他の列のように比率で伸び縮みさせず、常にこの幅で固定する。
  */
 export const SELECT_COLUMN_WIDTH = 32;
+
+/** 行をつかんで並べ替えるための列。アイコン1つぶん */
+export const DRAG_COLUMN_WIDTH = 28;

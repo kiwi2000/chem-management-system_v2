@@ -50,9 +50,20 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const v = parsed.data;
 
+  // 返事の中身が変わったときだけ、誰がいつ返したかを打ち直す。
+  // 種別や状態を直しただけで日時が動くと、いつ返事をもらったのか分からなくなる
+  const replyChanged = (v.reply ?? null) !== (existing.reply ?? null);
   await prisma.feedback.update({
     where: { id },
-    data: { ...v, updatedBy: actor.user.id },
+    data: {
+      ...v,
+      updatedBy: actor.user.id,
+      ...(replyChanged
+        ? v.reply
+          ? { repliedBy: actor.user.id, repliedAt: new Date() }
+          : { repliedBy: null, repliedAt: null }
+        : {}),
+    },
   });
 
   await writeAudit({
