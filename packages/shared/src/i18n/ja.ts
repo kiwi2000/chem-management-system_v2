@@ -75,6 +75,7 @@ export const ja = {
     groups: "グループ管理",
     users: "ユーザー管理",
     propertyDefs: "拡張属性",
+    loginLog: "ログインの記録",
     accessLog: "持ち出しの記録",
     settings: "設定",
     substances: "物質",
@@ -713,6 +714,29 @@ export const ja = {
     unknownActor: "（不明）",
     empty: "まだ記録がありません。",
     goneProduct: "（削除された製品）",
+  },
+
+  /** ログインの記録。入口で何が起きたかを管理者が読む画面 */
+  loginLog: {
+    title: "ログインの記録",
+    lead: "いつ・誰が・どこからログインしたか、また失敗したかが残ります。心当たりのない失敗が続いていたら、誰かがパスワードを試しています。",
+    at: "日時",
+    result: "結果",
+    success: "成功",
+    failed: "失敗",
+    logout: "ログアウト",
+    email: "入力されたアドレス",
+    actor: "利用者",
+    reason: "失敗の理由",
+    ip: "接続元",
+    device: "使った機械",
+    empty: "まだ記録がありません。",
+    reasonUnknownUser: "そのアドレスは無い",
+    reasonInactive: "停止中の利用者",
+    reasonLockedOut: "ロック中に試された",
+    reasonLockedNow: "失敗が続きロックした",
+    reasonBadPassword: "パスワードが違う",
+    reasonBadTotp: "認証コードが違う",
   },
 
   settings: {

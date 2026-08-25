@@ -27,7 +27,7 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
   }, [id, m]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
+    <div className="mx-auto max-w-3xl space-y-4 p-4 lg:p-6">
       <h1 className="text-2xl font-semibold">{m.news.title}</h1>
       {error && (
         <Alert variant="destructive">

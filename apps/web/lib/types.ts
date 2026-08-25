@@ -97,6 +97,25 @@ export interface AccessLogDto {
   ip: string | null;
 }
 
+/**
+ * ログインの記録の1行。
+ *
+ * 失敗のときは利用者が特定できないことがある（存在しないアドレスで試された等）ので、
+ * 記録に残したメールアドレスをそのまま出す。**入力されたパスワードは残していない。**
+ */
+export interface LoginLogDto {
+  id: string;
+  at: string;
+  action: string;
+  actorId: string | null;
+  actorName: string | null;
+  email: string | null;
+  /** 失敗の理由。成功・ログアウトでは null */
+  reason: string | null;
+  ip: string | null;
+  userAgent: string | null;
+}
+
 export interface ListResponse<T> {
   items: T[];
   total: number;

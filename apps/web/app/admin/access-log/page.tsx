@@ -135,7 +135,7 @@ export default function AccessLogPage() {
   }, [ready, load]);
 
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-4 p-4 lg:p-6">
       <div>
         <h1 className="text-2xl font-semibold">{m.accessLog.title}</h1>
         <p className="text-muted-foreground mt-1 text-sm">{m.accessLog.lead}</p>

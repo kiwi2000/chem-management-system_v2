@@ -213,6 +213,8 @@ export async function logout(): Promise<void> {
         entityId: session.userId,
         action: "logout",
         actorId: session.userId,
+        // 成功・失敗と揃える。どこから出たかも記録の手がかりになる
+        diff: await callerInfo(),
       });
     }
   }

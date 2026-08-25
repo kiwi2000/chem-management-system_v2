@@ -118,14 +118,14 @@ export default function SettingsPage() {
 
   if (!settings) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
+      <div className="mx-auto max-w-3xl p-4 lg:p-6">
         <p className="text-muted-foreground">{m.common.loading}</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
+    <div className="mx-auto max-w-3xl space-y-4 p-4 lg:p-6">
       <h1 className="text-2xl font-semibold">{m.settings.title}</h1>
       <p className="text-muted-foreground text-sm">{m.settings.description}</p>
 

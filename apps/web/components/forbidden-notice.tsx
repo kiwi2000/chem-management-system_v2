@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export async function ForbiddenNotice() {
   const m = await getServerMessages();
   return (
-    <div className="mx-auto max-w-2xl p-6">
+    <div className="mx-auto max-w-2xl p-4 lg:p-6">
       <Alert variant="destructive">
         <AlertDescription>{m.errors.forbidden}</AlertDescription>
       </Alert>

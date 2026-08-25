@@ -82,7 +82,7 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md p-6">
+    <div className="mx-auto max-w-md p-4 lg:p-6">
       <Card>
         <CardHeader>
           <CardTitle>{m.changePassword.title}</CardTitle>

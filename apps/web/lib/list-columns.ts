@@ -127,11 +127,11 @@ export const USER_COLUMNS: QueryColumn[] = [
 ];
 
 /**
- * 持ち出しの記録。
- * 対象（製品）と利用者は別の表なので、ここでは絞り込めない
+ * 監査ログの一覧（持ち出しの記録・ログインの記録で共通）。
+ * 対象や利用者の「名前」は別の表にあるので、ここでは絞り込めない
  * （監査ログは関連を張らず、あとから組み立てて見せる作りにしてある）。
  */
-export const ACCESS_LOG_COLUMNS: QueryColumn[] = [
+export const AUDIT_LOG_COLUMNS: QueryColumn[] = [
   { key: "at", kind: "date", field: "at" },
   { key: "action", kind: "enum", field: "action" },
   { key: "actorId", kind: "enum", field: "actorId" },

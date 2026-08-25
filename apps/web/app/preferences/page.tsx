@@ -18,7 +18,7 @@ export default async function PreferencesPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
+    <div className="mx-auto max-w-3xl space-y-4 p-4 lg:p-6">
       <h1 className="text-2xl font-semibold">{m.preferences.title}</h1>
       <p className="text-muted-foreground text-sm">{m.preferences.description}</p>
       <PreferencesForm

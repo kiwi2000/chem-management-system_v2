@@ -9,7 +9,7 @@ export default async function HomePage() {
   const m = await getServerMessages();
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-4 lg:p-6">
       <h1 className="text-2xl font-semibold">{m.home.title}</h1>
       <HomeNews />
     </div>
