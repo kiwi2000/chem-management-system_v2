@@ -158,12 +158,12 @@ async function main() {
   for (const e of asElement) {
     await prisma.statutorySubstance.update({
       where: { id: e.id },
-      data: { aggregation: "ELEMENT", conversionTarget: e.symbol },
+      data: { aggregation: "ELEMENT", metalEtc: e.symbol },
     });
   }
   await prisma.statutorySubstance.updateMany({
     where: { id: { in: asSum } },
-    data: { aggregation: "SUM", conversionTarget: null },
+    data: { aggregation: "SUM", metalEtc: null },
   });
   console.log("\n=== 書き込みました ===");
   await prisma.$disconnect();

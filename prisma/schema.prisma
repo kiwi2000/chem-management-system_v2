@@ -1226,11 +1226,11 @@ model RegulationCategory {
    * 法文物質名ごとの合計を足し上げると、同じ CAS が2つの法文物質名に
    * 紐づいていたときに二重に数えてしまう。
    */
-  aggregation      AggregationMode @default(NONE)
+  aggregation AggregationMode @default(NONE)
   /**
    * 元素換算でまとめるときの元素記号（Pb, Cr, Cd …）。ELEMENT のときだけ使う
    */
-  conversionTarget String?         @map("conversion_target") @db.VarChar(4)
+  metalEtc    String?         @map("metal_etc") @db.VarChar(4)
 
   /**
    * 兼ね合い。同じグループの中で rank の小さい方だけを出す
@@ -1338,11 +1338,11 @@ model StatutorySubstance {
    * **該当を見落とす**。
    * ただし**区分の側でまとめると決めているときは、ここは見ない**（区分が優先）。
    */
-  aggregation      AggregationMode @default(NONE)
+  aggregation AggregationMode @default(NONE)
   /**
    * 元素換算でまとめるときの元素記号（Pb, Cr, Cd …）。ELEMENT のときだけ使う
    */
-  conversionTarget String?         @map("conversion_target") @db.VarChar(4)
+  metalEtc    String?         @map("metal_etc") @db.VarChar(4)
 
   /**
    * 判定に使う閾値。4欄とも必須。作成時に区分の既定を複写する
@@ -1531,7 +1531,7 @@ model StatutoryCasLink {
 }
 
 /**
- * 元素。法文物質名の「換算先」で選ぶ。
+ * 元素。法文物質名の「金属等」で選ぶ。
  * キーは元素記号。換算係数の表が記号で持っており、そのまま突き合わせられるため。
  * 番号は並べ替えのために持つ。
  * シアン（CN）のように元素でないものも入るので、その場合は900番台を振る。

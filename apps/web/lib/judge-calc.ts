@@ -46,7 +46,7 @@ export interface JudgeEntry {
   cas: string[];
   aggregation: Aggregation;
   /** 元素換算でまとめるときの元素記号 */
-  conversionTarget: string | null;
+  metalEtc: string | null;
   threshold: Threshold;
   /** 濃度のほかに条件が付く（備考に印がある）。当たったら要確認にする */
   conditional: boolean;
@@ -56,7 +56,7 @@ export interface JudgeEntry {
 
 export interface JudgeCategory {
   aggregation: Aggregation;
-  conversionTarget: string | null;
+  metalEtc: string | null;
   threshold: Threshold;
 }
 
@@ -76,7 +76,7 @@ export interface JudgeInput {
 
 /** 要確認にした理由。文言は画面側で付ける */
 export type ReviewReason =
-  /** 換算先が決まっているのに、その CAS の換算係数が無い */
+  /** 金属等が決まっているのに、その CAS の換算係数が無い */
   | "missingFactor"
   /** 中身の分からない原材料が残っている */
   | "unknownComposition"
@@ -138,7 +138,7 @@ function within(pct: bigint, t: Threshold): boolean {
  * 画面上それが見分けられない。0 にすると足りないほうへ倒れるので、
  * 呼び出し側で**必ず要確認の印を立てる**（missing を返すのはそのため）。
  *
- * 換算先は金属とは限らない（化管法の「無機シアン化合物」はシアン CN として換算する）。
+ * 金属等は金属とは限らない（化管法の「無機シアン化合物」はシアン CN として換算する）。
  */
 function pctOf(
   line: ExpandedLine,
@@ -200,13 +200,13 @@ export function judge(input: JudgeInput): JudgeResult {
     const cas = [...new Set(entries.flatMap((e) => e.cas))].filter((c) => byCas.has(c));
     let total = 0n;
     for (const c of cas) {
-      total += valueOf(c, category.aggregation, category.conversionTarget);
+      total += valueOf(c, category.aggregation, category.metalEtc);
     }
     if (within(total, category.threshold)) {
       hits.push({
         statutorySubstanceId: null,
         total: fromScaled(total),
-        contributions: shareOf(cas, category.aggregation, category.conversionTarget),
+        contributions: shareOf(cas, category.aggregation, category.metalEtc),
       });
       // まとめた中に、条件つき・閾値未設定のものが混ざっていれば要確認
       for (const e of entries) {
@@ -242,13 +242,13 @@ export function judge(input: JudgeInput): JudgeResult {
       // まとめる。足した値ひとつを閾値と比べる
       let total = 0n;
       for (const c of present) {
-        total += valueOf(c, e.aggregation, e.conversionTarget);
+        total += valueOf(c, e.aggregation, e.metalEtc);
       }
       if (within(total, e.threshold)) {
         hits.push({
           statutorySubstanceId: e.id,
           total: fromScaled(total),
-          contributions: shareOf(present, e.aggregation, e.conversionTarget),
+          contributions: shareOf(present, e.aggregation, e.metalEtc),
         });
         continue;
       }
@@ -269,7 +269,7 @@ export function judge(input: JudgeInput): JudgeResult {
       if (e.conditional) reasons.add("conditionalExclusion");
       if (e.unfilled) reasons.add("unfilledThreshold");
       const aggregated = e.aggregation !== "NONE";
-      const share = shareOf(present, e.aggregation, e.conversionTarget);
+      const share = shareOf(present, e.aggregation, e.metalEtc);
       hits.push({
         statutorySubstanceId: e.id,
         total: aggregated

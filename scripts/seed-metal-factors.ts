@@ -53,7 +53,7 @@ async function main() {
   }
   console.log(`分子式: ${formulaOf.size}件`);
 
-  // どの CAS について、どの換算先の係数が要るか
+  // どの CAS について、どの金属等の係数が要るか
   const version = await prisma.linkSetVersion.findFirst({
     where: { isCurrent: true },
     select: { id: true },
@@ -61,8 +61,8 @@ async function main() {
   if (!version) throw new Error("現在のバージョンが決まっていません");
 
   const entries = await prisma.statutorySubstance.findMany({
-    where: { aggregation: "ELEMENT", conversionTarget: { not: null }, deletedAt: null },
-    select: { id: true, conversionTarget: true },
+    where: { aggregation: "ELEMENT", metalEtc: { not: null }, deletedAt: null },
+    select: { id: true, metalEtc: true },
   });
   const links = await prisma.statutoryCasLink.findMany({
     where: {
@@ -72,16 +72,16 @@ async function main() {
     },
     select: { statutorySubstanceId: true, casNormalized: true },
   });
-  const elementOf = new Map(entries.map((e) => [e.id, e.conversionTarget as string]));
+  const elementOf = new Map(entries.map((e) => [e.id, e.metalEtc as string]));
 
-  /** 「CAS|換算先」で重複を除く */
+  /** 「CAS|金属等」で重複を除く */
   const wanted = new Map<string, { cas: string; element: string }>();
   for (const l of links) {
     const el = elementOf.get(l.statutorySubstanceId);
     if (!el) continue;
     wanted.set(`${l.casNormalized}|${el}`, { cas: l.casNormalized, element: el });
   }
-  console.log(`要る「CAS × 換算先」: ${wanted.size}件`);
+  console.log(`要る「CAS × 金属等」: ${wanted.size}件`);
 
   // 人が入れたものは触らない
   const existing = await prisma.metalConversionFactor.findMany({
@@ -141,7 +141,7 @@ async function main() {
   console.log(`  人が入れたので触らない: ${tally.kept}件`);
   console.log(`  分子式がLOLIに無い  : ${tally.noFormula}件`);
   console.log(`  分子式が読めない    : ${tally.unreadable}件`);
-  console.log(`  分子式に換算先が無い : ${tally.notContained}件`);
+  console.log(`  分子式に金属等が無い : ${tally.notContained}件`);
   console.log("\n  例:");
   for (const s of samples) console.log(`    ${s}`);
   await prisma.$disconnect();

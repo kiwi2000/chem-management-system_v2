@@ -29,7 +29,7 @@ const entry = (x: Partial<JudgeEntry> = {}): JudgeEntry => ({
   id: "e1",
   cas: ["7439-92-1"],
   aggregation: "NONE",
-  conversionTarget: null,
+  metalEtc: null,
   threshold: any,
   conditional: false,
   unfilled: false,
@@ -40,7 +40,7 @@ const input = (x: Partial<JudgeInput> = {}): JudgeInput => ({
   lines: [],
   unknownPct: "0",
   truncated: 0,
-  category: { aggregation: "NONE", conversionTarget: null, threshold: any },
+  category: { aggregation: "NONE", metalEtc: null, threshold: any },
   entries: [entry()],
   factors: new Map(),
   ...x,
@@ -144,7 +144,7 @@ describe("法文物質名でのまとめ", () => {
           entry({
             cas: two,
             aggregation: "ELEMENT",
-            conversionTarget: "Pb",
+            metalEtc: "Pb",
             threshold: over("0.1"),
           }),
         ],
@@ -164,7 +164,7 @@ describe("法文物質名でのまとめ", () => {
           entry({
             cas: ["1317-36-8"],
             aggregation: "ELEMENT",
-            conversionTarget: "Pb",
+            metalEtc: "Pb",
             threshold: over("0.1"),
           }),
         ],
@@ -188,7 +188,7 @@ describe("法文物質名でのまとめ", () => {
           entry({
             cas: ["1317-36-8"],
             aggregation: "ELEMENT",
-            conversionTarget: "Pb",
+            metalEtc: "Pb",
             threshold: over("0.1"),
           }),
         ],
@@ -211,7 +211,7 @@ describe("区分でのまとめ", () => {
     const r = judge(
       input({
         lines: [line("7439-92-1", "0.08")],
-        category: { aggregation: "SUM", conversionTarget: null, threshold: over("0.1") },
+        category: { aggregation: "SUM", metalEtc: null, threshold: over("0.1") },
         entries: [
           entry({ id: "a", cas: ["7439-92-1"], aggregation: "SUM" }),
           entry({ id: "b", cas: ["7439-92-1"], aggregation: "SUM" }),
@@ -226,7 +226,7 @@ describe("区分でのまとめ", () => {
     const r = judge(
       input({
         lines: [line("7439-92-1", "0.07"), line("7440-22-4", "0.07")],
-        category: { aggregation: "SUM", conversionTarget: null, threshold: over("0.1") },
+        category: { aggregation: "SUM", metalEtc: null, threshold: over("0.1") },
         entries: [entry({ id: "a", cas: ["7439-92-1"] }), entry({ id: "b", cas: ["7440-22-4"] })],
       }),
     );
@@ -294,7 +294,7 @@ describe("まとめないときの、複数の当たり", () => {
     const r = judge(
       input({
         lines: [line("7439-92-1", "0.07"), line("7440-22-4", "0.07")],
-        category: { aggregation: "SUM", conversionTarget: null, threshold: over("0.1") },
+        category: { aggregation: "SUM", metalEtc: null, threshold: over("0.1") },
         entries: [entry({ id: "a", cas: ["7439-92-1"] }), entry({ id: "b", cas: ["7440-22-4"] })],
       }),
     );

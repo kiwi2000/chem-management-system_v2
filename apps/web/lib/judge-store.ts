@@ -40,7 +40,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
     select: {
       id: true,
       aggregation: true,
-      conversionTarget: true,
+      metalEtc: true,
       thresholdLower: true,
       lowerBound: true,
       thresholdUpper: true,
@@ -54,7 +54,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
               id: true,
               note: true,
               aggregation: true,
-              conversionTarget: true,
+              metalEtc: true,
               thresholdLower: true,
               lowerBound: true,
               thresholdUpper: true,
@@ -82,7 +82,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
     categoryId: c.id,
     category: {
       aggregation: c.aggregation,
-      conversionTarget: c.conversionTarget,
+      metalEtc: c.metalEtc,
       threshold: {
         lower: c.thresholdLower.toString(),
         lowerBound: c.lowerBound,
@@ -95,7 +95,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
         id: s.id,
         cas: casOf.get(s.id) ?? [],
         aggregation: s.aggregation,
-        conversionTarget: s.conversionTarget,
+        metalEtc: s.metalEtc,
         threshold: {
           lower: s.thresholdLower.toString(),
           lowerBound: s.lowerBound,
