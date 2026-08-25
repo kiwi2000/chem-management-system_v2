@@ -2,6 +2,7 @@ import type { AppSettings, Messages } from "@chem/shared";
 import { COMPOSITION_MAX_DEPTH } from "@chem/shared";
 import { expandTree, type ExpandedProduct, type LineLoader } from "@/lib/expansion-calc";
 import { prisma } from "@/lib/db";
+import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
 
 /**
  * 展開結果の保存と、作り直し。
@@ -115,5 +116,26 @@ export async function recomputeFrom(
   for (const id of targets) {
     await saveExpansion(id, await expandProduct(id, settings, m));
   }
+
+  /*
+    展開が変われば判定の前提が変わるので、判定もやり直す。
+    **前の判定は確認済みの状態ごと捨てる。**判定をやり直すのは、
+    新しい製品を判定するのと同じこと。前の確認結果だけ残るのは筋が通らない。
+
+    法令側の決めごとは1回だけ読んで使い回す。製品ごとに引くと、
+    親をたくさん抱えた原材料を直したときに同じものを何度も引くことになる。
+  */
+  const version = await prisma.linkSetVersion.findFirst({
+    where: { isCurrent: true },
+    select: { id: true },
+  });
+  if (version) {
+    const rules = await loadRules(version.id);
+    const factors = await loadFactors();
+    for (const id of targets) {
+      await judgeProduct(id, rules, factors);
+    }
+  }
+
   return targets.length;
 }

@@ -1,0 +1,301 @@
+import { describe, expect, it } from "vitest";
+import {
+  judge,
+  type ElementFactors,
+  type JudgeEntry,
+  type JudgeInput,
+  type Threshold,
+} from "./judge-calc";
+
+/**
+ * 法規制の判定。
+ *
+ * ここが狂うと、**該当するものを「該当しない」と答える**。
+ * そのまま出荷すれば法令違反になるので、境目を1つずつ確かめる。
+ */
+
+/** 「〇・一％以下を除く」＝ 0.1 を超えて 100 まで、という入りかた */
+const over = (lower: string): Threshold => ({
+  lower,
+  lowerBound: "EXCLUSIVE",
+  upper: "100",
+  upperBound: "INCLUSIVE",
+});
+
+/** どんな濃度でも該当（閾値を入れていない状態の既定） */
+const any: Threshold = over("0");
+
+const entry = (x: Partial<JudgeEntry> = {}): JudgeEntry => ({
+  id: "e1",
+  cas: ["7439-92-1"],
+  aggregation: "NONE",
+  aggregationElement: null,
+  threshold: any,
+  conditional: false,
+  unfilled: false,
+  ...x,
+});
+
+const input = (x: Partial<JudgeInput> = {}): JudgeInput => ({
+  lines: [],
+  unknownPct: "0",
+  truncated: 0,
+  category: { aggregation: "NONE", aggregationElement: null, threshold: any },
+  entries: [entry()],
+  factors: new Map(),
+  ...x,
+});
+
+const line = (cas: string, pct: string) => ({
+  casNormalized: cas,
+  substanceId: null,
+  totalPct: pct,
+});
+
+describe("閾値との比較", () => {
+  it("閾値を超えていれば該当", () => {
+    const r = judge(
+      input({ lines: [line("7439-92-1", "0.2")], entries: [entry({ threshold: over("0.1") })] }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.needsReview).toBe(false);
+    expect(r.hits[0]?.pct).toBe("0.2");
+  });
+
+  it("閾値を下回れば非該当", () => {
+    const r = judge(
+      input({ lines: [line("7439-92-1", "0.05")], entries: [entry({ threshold: over("0.1") })] }),
+    );
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+  });
+
+  it("境目そのものは該当しない（「以下を除く」なので）", () => {
+    // 0.1％ちょうどは「0.1％以下」なので除外される
+    const r = judge(
+      input({ lines: [line("7439-92-1", "0.1")], entries: [entry({ threshold: over("0.1") })] }),
+    );
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+  });
+
+  it("境目を含む書きかたなら、境目でも該当する", () => {
+    const t: Threshold = {
+      lower: "0.1",
+      lowerBound: "INCLUSIVE",
+      upper: "100",
+      upperBound: "INCLUSIVE",
+    };
+    const r = judge(
+      input({ lines: [line("7439-92-1", "0.1")], entries: [entry({ threshold: t })] }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+  });
+
+  it("その物質が入っていなければ、何も起きない", () => {
+    const r = judge(input({ lines: [line("7440-22-4", "50")] }));
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(r.hits).toEqual([]);
+  });
+});
+
+describe("法文物質名でのまとめ", () => {
+  const two = ["7439-92-1", "1317-36-8"]; // 鉛 と 酸化鉛
+
+  it("まとめないと、それぞれが閾値に届かず非該当になる", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.06"), line("1317-36-8", "0.06")],
+        entries: [entry({ cas: two, aggregation: "NONE", threshold: over("0.1") })],
+      }),
+    );
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+  });
+
+  it("まとめれば合計で閾値を超え、該当になる", () => {
+    /*
+      「鉛及びその化合物」のような書きかたでは、配下を合計しないと該当を見落とす。
+      0.06 + 0.06 = 0.12 で 0.1 を超える
+    */
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.06"), line("1317-36-8", "0.06")],
+        entries: [entry({ cas: two, aggregation: "SUM", threshold: over("0.1") })],
+      }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.hits[0]?.pct).toBe("0.12");
+  });
+
+  it("元素換算でまとめると、単純合算とは答えが変わる", () => {
+    /*
+      酸化鉛(PbO)は鉛としては 92.83％。
+      0.06％の酸化鉛は、鉛としては 0.0557％ にしかならない。
+      単純に足せば 0.12％ で該当だが、「鉛として」なら 0.1157％。
+      どちらも 0.1 を超えるが、値が違う。ここを取り違えると境目で答えが変わる
+    */
+    const factors: ElementFactors = new Map([
+      ["1317-36-8", [{ element: "Pb", ratioPct: "92.83" }]],
+      ["7439-92-1", [{ element: "Pb", ratioPct: "100" }]],
+    ]);
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.06"), line("1317-36-8", "0.06")],
+        entries: [
+          entry({
+            cas: two,
+            aggregation: "ELEMENT",
+            aggregationElement: "Pb",
+            threshold: over("0.1"),
+          }),
+        ],
+        factors,
+      }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.hits[0]?.pct).toBe("0.115698");
+  });
+
+  it("換算の結果、閾値を下回れば非該当になる", () => {
+    const factors: ElementFactors = new Map([["1317-36-8", [{ element: "Pb", ratioPct: "50" }]]]);
+    const r = judge(
+      input({
+        lines: [line("1317-36-8", "0.15")],
+        entries: [
+          entry({
+            cas: ["1317-36-8"],
+            aggregation: "ELEMENT",
+            aggregationElement: "Pb",
+            threshold: over("0.1"),
+          }),
+        ],
+        factors,
+      }),
+    );
+    // 0.15 の半分で 0.075。0.1 に届かない
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+  });
+
+  it("換算係数が無ければ、そのままの値で数える（0にして見落とさない）", () => {
+    const r = judge(
+      input({
+        lines: [line("1317-36-8", "0.15")],
+        entries: [
+          entry({
+            cas: ["1317-36-8"],
+            aggregation: "ELEMENT",
+            aggregationElement: "Pb",
+            threshold: over("0.1"),
+          }),
+        ],
+        factors: new Map(),
+      }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+  });
+});
+
+describe("区分でのまとめ", () => {
+  it("区分でまとめると、法文物質名の設定は見ない", () => {
+    /*
+      同じCASが2つの法文物質名に紐づいている。
+      法文物質名ごとの合計を足し上げると二重に数えるので、
+      区分の側でCASを重複なく集めて一度だけ足す
+    */
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.08")],
+        category: { aggregation: "SUM", aggregationElement: null, threshold: over("0.1") },
+        entries: [
+          entry({ id: "a", cas: ["7439-92-1"], aggregation: "SUM" }),
+          entry({ id: "b", cas: ["7439-92-1"], aggregation: "SUM" }),
+        ],
+      }),
+    );
+    // 二重に数えれば 0.16 で該当になってしまう。正しくは 0.08 で非該当
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+  });
+
+  it("区分でまとめて閾値を超えれば、区分そのものが当たる", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.07"), line("7440-22-4", "0.07")],
+        category: { aggregation: "SUM", aggregationElement: null, threshold: over("0.1") },
+        entries: [entry({ id: "a", cas: ["7439-92-1"] }), entry({ id: "b", cas: ["7440-22-4"] })],
+      }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    // 区分が当たったので、どの法文物質名かは指さない
+    expect(r.hits[0]?.statutorySubstanceId).toBeNull();
+    expect(r.hits[0]?.pct).toBe("0.14");
+  });
+});
+
+describe("要確認になる場面", () => {
+  it("中身の分からない原材料が残っていれば、要確認", () => {
+    const r = judge(input({ lines: [line("7440-22-4", "70")], unknownPct: "30" }));
+    expect(r.needsReview).toBe(true);
+    expect(r.reasons).toContain("unknownComposition");
+  });
+
+  it("深すぎて展開しきれなければ、要確認", () => {
+    const r = judge(input({ truncated: 1 }));
+    expect(r.reasons).toContain("truncated");
+  });
+
+  it("条件つきの除外は、閾値を下回っていても該当に倒して要確認にする", () => {
+    /*
+      **ここがいちばん間違えやすい。**
+      「〇・三％以下を含有し、黒色に着色され、かつ…を除く」は、
+      着色していなければ 0.2％でも法令上は該当する。
+      濃度だけを見て非該当と出すと、**見落とす向きの間違い**になる
+    */
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.2")],
+        entries: [entry({ threshold: over("0.3"), conditional: true })],
+      }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.needsReview).toBe(true);
+    expect(r.reasons).toContain("conditionalExclusion");
+  });
+
+  it("条件つきでも、閾値を超えていれば迷わない（除外の余地が無い）", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.5")],
+        entries: [entry({ threshold: over("0.3"), conditional: true })],
+      }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.needsReview).toBe(false);
+  });
+
+  it("条件つきでも、その物質が入っていなければ何も起きない", () => {
+    const r = judge(
+      input({
+        lines: [line("7440-22-4", "50")],
+        entries: [entry({ threshold: over("0.3"), conditional: true })],
+      }),
+    );
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(r.needsReview).toBe(false);
+  });
+
+  it("閾値を入れられていないものは、入っていれば該当に倒して要確認", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.01")],
+        entries: [entry({ threshold: over("50"), unfilled: true })],
+      }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.reasons).toContain("unfilledThreshold");
+  });
+
+  it("何も引っかからなければ、非該当で確定", () => {
+    const r = judge(input({ lines: [line("7440-22-4", "50")] }));
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(r.needsReview).toBe(false);
+    expect(r.reasons).toEqual([]);
+  });
+});

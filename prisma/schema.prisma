@@ -384,6 +384,82 @@ model ProductExpansionLine {
   @@map("product_expansion_lines")
 }
 
+/**
+ * 製品ごと・区分ごとの判定結果。**保持する。**
+ * 判定と「人が見たかどうか」を**別々に持つ**。
+ * 「答えは何か」と「確認が済んでいるか」は別の話で、混ぜると
+ * 「見たけれど答えは変わらない」という結論の置き場所が無くなる。
+ * **前提が変わったら、この行ごと作り直す。**
+ * 組成が変われば、前の判定も確認済みの状態も上書きも、すべて捨てる。
+ * 新しい製品を判定するのと同じ。判定だけやり直して確認結果が残るのは筋が通らない。
+ * 「いつ誰が何をしたか」はアクセス記録の側に残るので、追うことはできる。
+ */
+model ProductJudgement {
+  id         String @id @default(cuid())
+  productId  String @map("product_id")
+  categoryId String @map("category_id")
+
+  verdict JudgementVerdict
+  source  JudgementSource  @default(SYSTEM)
+
+  /**
+   * 人が見なければ決められない、という印。
+   * 確認すると OFF になる（判定を変えなくてもよい）
+   */
+  needsReview   Boolean  @default(false) @map("needs_review")
+  /**
+   * なぜ要確認なのか。機械が読める符号を並べる（文言は画面側で付ける）
+   */
+  reviewReasons String[] @map("review_reasons")
+
+  /**
+   * 確認・上書きをした人。していなければ空
+   */
+  decidedBy   String?   @map("decided_by")
+  decidedAt   DateTime? @map("decided_at")
+  /**
+   * そう判断した根拠。監査で問われたときに答えられるようにする
+   */
+  decidedNote String?   @map("decided_note")
+
+  computedAt DateTime @default(now()) @map("computed_at")
+
+  product  Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category RegulationCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  hits     ProductJudgementHit[]
+
+  @@unique([productId, categoryId])
+  // 一覧で「該当のものだけ」「要確認が残っているものだけ」を絞る
+  @@index([categoryId, verdict])
+  @@index([needsReview])
+  @@map("product_judgements")
+}
+
+/**
+ * 判定の根拠。**何がどれだけ入っていたから該当なのか。**
+ * これが無いと「なぜ該当なのか」に答えられない。
+ * 監査で問われたときに、この行を見せられることが値打ちになる。
+ */
+model ProductJudgementHit {
+  id          String @id @default(cuid())
+  judgementId String @map("judgement_id")
+
+  /**
+   * 当たった法文物質名。区分そのものでまとめて当たったときは空
+   */
+  statutorySubstanceId String? @map("statutory_substance_id")
+  /**
+   * 判定に使った合計％
+   */
+  pct                  Decimal @db.Decimal(9, 6)
+
+  judgement ProductJudgement @relation(fields: [judgementId], references: [id], onDelete: Cascade)
+
+  @@index([judgementId])
+  @@index([statutorySubstanceId])
+  @@map("product_judgement_hits")
+}
+
 // ---------- 物質 ----------
 
 model Substance {
@@ -596,7 +672,11 @@ model Product {
   /**
    * 末端まで下ろして CAS でまとめた結果。組成が変わったら作り直す
    */
-  expansion ProductExpansion?
+  expansion  ProductExpansion?
+  /**
+   * 区分ごとの判定結果。展開結果が変わったら作り直す
+   */
+  judgements ProductJudgement[]
 
   @@index([nameJa])
   @@index([nameEn])
@@ -948,6 +1028,28 @@ enum AggregationMode {
   ELEMENT
 }
 
+/**
+ * 判定の答え。**必ずどちらか**（決められないものは該当に倒す）
+ */
+enum JudgementVerdict {
+  APPLICABLE
+  NOT_APPLICABLE
+}
+
+/**
+ * その答えを誰が出したか
+ */
+enum JudgementSource {
+  /**
+   * システムが計算した
+   */
+  SYSTEM
+  /**
+   * 人が上書きした
+   */
+  USER
+}
+
 enum ThresholdBound {
   EXCLUSIVE
   INCLUSIVE
@@ -1136,8 +1238,9 @@ model RegulationCategory {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  law     Law               @relation(fields: [lawId], references: [id])
-  classes RegulationClass[]
+  law        Law                @relation(fields: [lawId], references: [id])
+  classes    RegulationClass[]
+  judgements ProductJudgement[]
 
   @@unique([lawId, codeNormalized])
   @@index([lawId, displayOrder])
