@@ -148,7 +148,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
   if (!item) {
     return (
-      <div className="mx-auto max-w-4xl p-4 lg:p-6">
+      <div className="mx-auto max-w-6xl p-4 lg:p-6">
         {error ? (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -161,7 +161,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-4 lg:p-6">
+    <div className="mx-auto max-w-6xl space-y-4 p-4 lg:p-6">
       <h1 className="text-2xl font-semibold">{m.users.editTitle}</h1>
 
       {/* まず表示だけにして、「編集」を押してから書き換えられるようにする（物質・お知らせと同じ形） */}
