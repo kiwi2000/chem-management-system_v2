@@ -1,5 +1,6 @@
 import { compositionSchema, validateCompositionSum } from "@chem/shared";
 import { recordCompositionView } from "@/lib/access-log";
+import { recomputeFrom } from "@/lib/expansion-store";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import {
@@ -120,12 +121,25 @@ export async function PUT(req: Request, { params }: Ctx) {
     prisma.product.update({ where: { id }, data: { updatedBy: actor.user.id } }),
   ]);
 
+  /*
+    展開結果を作り直す。**この製品だけでは足りない。**
+    原材料の中身が変われば、それを使っている製品の中身も変わるので、
+    親を何段でもたどって作り直す。取りこぼすと古い結果が静かに残る。
+
+    保存より先に失敗したら困るので、保存が済んだあとに回している。
+    ここで失敗しても組成の保存は取り消さない（作り直しは後からやり直せる）。
+  */
+  const recomputed = await recomputeFrom(id, settings, m).catch((e: unknown) => {
+    console.error("展開結果の作り直しに失敗:", id, e);
+    return 0;
+  });
+
   await writeAudit({
     entity: "composition_lines",
     entityId: id,
     action: "update",
     actorId: actor.user.id,
-    diff: { lineCount: input.lines.length, totalPct: sum.totalPct },
+    diff: { lineCount: input.lines.length, totalPct: sum.totalPct, recomputed },
   });
 
   return Response.json({

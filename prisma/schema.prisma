@@ -123,38 +123,38 @@ enum GroupKind {
 // ---------- ユーザー・セッション ----------
 
 model User {
-  id                    String    @id @default(cuid())
+  id                 String    @id @default(cuid())
   /**
    * ログインID（メールアドレス）。小文字化して保存・突合する
    */
-  email                 String    @unique
+  email              String    @unique
   /**
    * Argon2id パスワードハッシュ。null=未発行（管理者が発行するまでログイン不可）
    */
-  passwordHash          String?   @map("password_hash")
+  passwordHash       String?   @map("password_hash")
   /**
    * 次回ログイン時にパスワード変更を強制する（初期パスワード発行時に true）
    */
-  mustChangePassword    Boolean   @default(false) @map("must_change_password")
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
   /**
    * 連続ログイン失敗回数（総当たり対策）
    */
-  failedLoginCount      Int       @default(0) @map("failed_login_count")
+  failedLoginCount   Int       @default(0) @map("failed_login_count")
   /**
    * この日時までログイン試行を拒否（ロックアウト）
    */
-  lockedUntil           DateTime? @map("locked_until")
-  lastLoginAt           DateTime? @map("last_login_at")
+  lockedUntil        DateTime? @map("locked_until")
+  lastLoginAt        DateTime? @map("last_login_at")
   /**
    * TOTP（多要素認証）の秘密鍵。null=MFA未設定
    */
-  mfaSecret             String?   @map("mfa_secret")
+  mfaSecret          String?   @map("mfa_secret")
   /**
    * 2要素認証のやりかた。none（使わない）/ totp（認証アプリの6桁）。
    * 真偽値ではなく方式で持つのは、将来メール認証を足せるようにするため。
    * 登録の途中（鍵は作ったが6桁の確認がまだ）は mfaSecret だけが入り、ここは none のまま
    */
-  mfaMethod             String    @default("none") @map("mfa_method") @db.VarChar(20)
+  mfaMethod          String    @default("none") @map("mfa_method") @db.VarChar(20)
 
   /**
    * フィードバックを最後に見た時刻。これより後の書き込み・返事が「未読」。
@@ -313,6 +313,75 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([actorId, at])
   @@map("audit_logs")
+}
+
+/**
+ * 組成を末端まで下ろして、CAS でまとめた結果。**製品ごとに保持する。**
+ * 求められるたびに計算する形では、次のことができない。
+ * - 「この物質を含む製品を全部出せ」という逆引き
+ * - 全製品への一括判定
+ * - 判定結果を持っておくこと（土台がその都度変わってしまう）
+ * **権限は見ない。**全部見える前提で1通りだけ作り、見せるときに絞る。
+ * 見る人によって中身が変わると、人によって違う判定結果ができてしまう。
+ * 組成が変わったら作り直す。**変わった製品だけでは足りない**（それを原材料に
+ * 使っている親製品すべてを、何段でも上へたどって作り直す）。
+ */
+model ProductExpansion {
+  productId String @id @map("product_id")
+
+  /**
+   * 展開できたぶんの合計。すべて展開できていれば 100 になる
+   */
+  totalPct   Decimal @map("total_pct") @db.Decimal(9, 6)
+  /**
+   * 中身が分からないまま残ったぶんの合計。
+   * **0 でなければ判定は言い切れない。**「要確認」にする根拠になる
+   */
+  unknownPct Decimal @map("unknown_pct") @db.Decimal(9, 6)
+  /**
+   * 深さの上限で打ち切った枝の数。0 でなければ不完全
+   */
+  truncated  Int     @default(0)
+
+  computedAt DateTime @default(now()) @map("computed_at")
+
+  product Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  lines   ProductExpansionLine[]
+
+  @@map("product_expansions")
+}
+
+/**
+ * 展開結果の1行。CAS 単位でまとめたもの。
+ * CAS を持たない物質はまとめようがないので、物質そのものを鍵にする
+ * （その場合 casNormalized は空で、substanceId が入る）。
+ * 名前は持たない。物質マスターを引けば分かるものを二重に持つと、必ず食い違う。
+ */
+model ProductExpansionLine {
+  id        String @id @default(cuid())
+  productId String @map("product_id")
+
+  /**
+   * CAS でまとめたもの。持たない物質のときは空
+   */
+  casNormalized String? @map("cas_normalized") @db.VarChar(20)
+  /**
+   * CAS を持たない物質のときだけ入る
+   */
+  substanceId   String? @map("substance_id")
+
+  /**
+   * 製品全体に対する重量％
+   */
+  totalPct Decimal @map("total_pct") @db.Decimal(9, 6)
+
+  expansion ProductExpansion @relation(fields: [productId], references: [productId], onDelete: Cascade)
+
+  @@unique([productId, casNormalized, substanceId])
+  // 逆引き（この CAS を含む製品を全部出す）で引く
+  @@index([casNormalized])
+  @@index([substanceId])
+  @@map("product_expansion_lines")
 }
 
 // ---------- 物質 ----------
@@ -523,6 +592,11 @@ model Product {
    * この製品を原材料として使っている組成行（逆参照）
    */
   usedAsMaterialIn CompositionLine[] @relation("ProductAsMaterial")
+
+  /**
+   * 末端まで下ろして CAS でまとめた結果。組成が変わったら作り直す
+   */
+  expansion ProductExpansion?
 
   @@index([nameJa])
   @@index([nameEn])
@@ -819,9 +893,9 @@ model Feedback {
    * 書いた人への返事。受け取った側が書く。
    * 空なら「まだ返していない」。誰がいつ返したかも残す
    */
-  reply      String?   @db.Text
-  repliedBy  String?   @map("replied_by")
-  repliedAt  DateTime? @map("replied_at")
+  reply     String?   @db.Text
+  repliedBy String?   @map("replied_by")
+  repliedAt DateTime? @map("replied_at")
 
   createdBy String?   @map("created_by")
   updatedBy String?   @map("updated_by")
@@ -852,6 +926,28 @@ model Feedback {
  * 下限では EXCLUSIVE=「超」/ INCLUSIVE=「以上」、
  * 上限では EXCLUSIVE=「未満」/ INCLUSIVE=「以下」を表す。
  */
+/**
+ * 判定のときに、含有率をどうまとめるか。
+ * 法令の閾値は「その法文物質名として何％入っているか」に対して定められている。
+ * CAS ごとに見ると、どれも閾値に届かないのに合計では超える、ということが起きる。
+ * 例）鉛 0.06％ ＋ 酸化鉛 0.06％ → CASごとなら非該当、合計すれば 0.12％ で該当
+ * これを取り違えると**該当を見落とす**ので、まとめかたを明示的に持つ。
+ */
+enum AggregationMode {
+  /**
+   * まとめない。CAS ごとに閾値と比べる
+   */
+  NONE
+  /**
+   * そのまま足す
+   */
+  SUM
+  /**
+   * 金属換算係数を掛けてから足す（「鉛として」のような書きかたに対応する）
+   */
+  ELEMENT
+}
+
 enum ThresholdBound {
   EXCLUSIVE
   INCLUSIVE
@@ -976,7 +1072,6 @@ model Law {
 
 /**
  * 区分。判定の骨組みで、SDSに書く単位でもある。
- *
  * 閾値の4欄は**ひな型**。法文物質名を作るときに複写するだけで、判定では読まない。
  * 兼ね合いは「特定毒物に該当していれば毒物は出さない」という表示のルールに使う。
  * 上乗せの指定（特化則の特定第2類物質など）には効かせてはいけないので、
@@ -999,13 +1094,30 @@ model RegulationCategory {
    */
   displayOrder Int @default(0) @map("display_order")
 
-  /** 既定の閾値（ひな型・4欄とも必須）。初期値は 0 < x <= 100 */
+  /**
+   * 既定の閾値（ひな型・4欄とも必須）。初期値は 0 < x <= 100
+   */
   thresholdLower Decimal        @map("threshold_lower") @db.Decimal(9, 6)
   lowerBound     ThresholdBound @map("lower_bound")
   thresholdUpper Decimal        @map("threshold_upper") @db.Decimal(9, 6)
   upperBound     ThresholdBound @map("upper_bound")
 
-  /** 兼ね合い。同じグループの中で rank の小さい方だけを出す */
+  /**
+   * この区分に該当するものを、区分の単位でまとめるか。
+   * **これが NONE 以外なら、配下の法文物質名のまとめかたは見ない。**
+   * 区分でまとめるときは、その区分に紐づく CAS を重複なく集めて一度だけ足す。
+   * 法文物質名ごとの合計を足し上げると、同じ CAS が2つの法文物質名に
+   * 紐づいていたときに二重に数えてしまう。
+   */
+  aggregation        AggregationMode @default(NONE)
+  /**
+   * 元素換算でまとめるときの元素記号（Pb, Cr, Cd …）。ELEMENT のときだけ使う
+   */
+  aggregationElement String?         @map("aggregation_element") @db.VarChar(4)
+
+  /**
+   * 兼ね合い。同じグループの中で rank の小さい方だけを出す
+   */
   interactionGroup String? @map("interaction_group") @db.VarChar(50)
   rank             Int?
 
@@ -1036,7 +1148,6 @@ model RegulationCategory {
 
 /**
  * 分類。特化則の第1類・第2類のように、区分をさらに分けるときに使う。
- *
  * **分けない区分にも必ず1件置く**（原文名を空にすると画面に出さない）。
  * 中の形を1通りに保つための約束で、法文物質名の親は常に分類になる。
  * 後から分けたくなったら、その1件に名前を付けて2件目を足せばよく、既存のぶら下がりは動かない。
@@ -1102,7 +1213,22 @@ model StatutorySubstance {
 
   displayOrder Int @default(0) @map("display_order")
 
-  /** 判定に使う閾値。4欄とも必須。作成時に区分の既定を複写する */
+  /**
+   * この法文物質名に該当する CAS を、まとめて数えるか。
+   * 法令の閾値は「この法文物質名として何％入っているか」に対して定められている。
+   * 「鉛及びその化合物」のような書きかたでは、配下の CAS を合計しないと
+   * **該当を見落とす**。
+   * ただし**区分の側でまとめると決めているときは、ここは見ない**（区分が優先）。
+   */
+  aggregation        AggregationMode @default(NONE)
+  /**
+   * 元素換算でまとめるときの元素記号（Pb, Cr, Cd …）。ELEMENT のときだけ使う
+   */
+  aggregationElement String?         @map("aggregation_element") @db.VarChar(4)
+
+  /**
+   * 判定に使う閾値。4欄とも必須。作成時に区分の既定を複写する
+   */
   thresholdLower Decimal        @map("threshold_lower") @db.Decimal(9, 6)
   lowerBound     ThresholdBound @map("lower_bound")
   thresholdUpper Decimal        @map("threshold_upper") @db.Decimal(9, 6)
@@ -1139,7 +1265,9 @@ model StatutorySubstance {
  * 「現在版」を明示的に指定する（作っただけでは切り替わらない）。
  * 制約は migration の部分ユニーク索引で持つ（Prisma では条件付きの一意制約を書けない）
  */
-/** バージョン。コードだけを登録する（中身はデータソースの側に付く） */
+/**
+ * バージョン。コードだけを登録する（中身はデータソースの側に付く）
+ */
 model LinkSetVersion {
   id             String @id @default(cuid())
   code           String @db.VarChar(50)
@@ -1158,9 +1286,9 @@ model LinkSetVersion {
    * 利用者が明示的に選んだものか。
    * 立っていなければ自動で選ばれたもので、新しいバージョンが増えるとそちらへ移る
    */
-  currentPinned Boolean @default(false) @map("current_pinned")
-  loadedAt  DateTime? @map("loaded_at")
-  note      String?
+  currentPinned Boolean   @default(false) @map("current_pinned")
+  loadedAt      DateTime? @map("loaded_at")
+  note          String?
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
@@ -1187,7 +1315,9 @@ model Source {
   code           String @db.VarChar(50)
   codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
 
-  /** どんなデータで、どこまで載っているか */
+  /**
+   * どんなデータで、どこまで載っているか
+   */
   note String?
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -1216,10 +1346,14 @@ model LinkVersionSource {
    */
   priority  Int
 
-  /** どのファイルを入れたか、どこまで載っているかを書く */
+  /**
+   * どのファイルを入れたか、どこまで載っているかを書く
+   */
   note String?
 
-  /** 取り込んだ日時。ファイルは種別ごとに届くので、バージョン単位ではなくここに持つ */
+  /**
+   * 取り込んだ日時。ファイルは種別ごとに届くので、バージョン単位ではなくここに持つ
+   */
   loadedAt DateTime? @map("loaded_at")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -1237,7 +1371,6 @@ model LinkVersionSource {
 
 /**
  * 法文物質名と CAS番号 のつながり。版で管理するのはこの表だけ。
- *
  * CAS番号を持たない物質（ポリマー・UVCB・企業秘密物質）は、
  * 物質側に入れた独自コードで結ぶ。突合はどちらも cas_normalized で行う。
  */
@@ -1247,7 +1380,9 @@ model StatutoryCasLink {
   statutorySubstanceId String @map("statutory_substance_id")
   sourceId             String @map("source_id")
 
-  /** 原文。突合は正規化列で行う */
+  /**
+   * 原文。突合は正規化列で行う
+   */
   casNumber     String @map("cas_number") @db.VarChar(20)
   casNormalized String @map("cas_normalized") @db.VarChar(20)
 
@@ -1269,7 +1404,9 @@ model StatutoryCasLink {
   source             Source             @relation(fields: [sourceId], references: [id])
 
   @@unique([versionId, statutorySubstanceId, casNormalized, sourceId])
-  /** 判定はここを引く。製品に入っているCASの集合から一気に絞り込む */
+  /**
+   * 判定はここを引く。製品に入っているCASの集合から一気に絞り込む
+   */
   @@index([versionId, casNormalized])
   @@index([statutorySubstanceId])
   @@map("statutory_cas_links")
@@ -1277,7 +1414,6 @@ model StatutoryCasLink {
 
 /**
  * 元素。法文物質名の「換算先」で選ぶ。
- *
  * キーは元素記号。換算係数の表が記号で持っており、そのまま突き合わせられるため。
  * 番号は並べ替えのために持つ。
  * シアン（CN）のように元素でないものも入るので、その場合は900番台を振る。
