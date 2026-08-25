@@ -105,6 +105,8 @@ export const ja = {
   },
 
   login: {
+    /** 目のボタン。押しているあいだだけパスワードが見える */
+    peekPassword: "押しているあいだ、パスワードを表示",
     email: "メールアドレス",
     password: "パスワード",
     totp: "認証コード（6桁）",
@@ -682,6 +684,12 @@ export const ja = {
     adminResetConfirm:
       "この利用者の2要素認証を解除しますか？ その人のログイン中の端末はすべて切れます",
     appHint: "Google Authenticator や Microsoft Authenticator など、無料のアプリが使えます",
+  },
+
+  /** フィードバックの印。読み上げと吹き出しにだけ使う（画面には数と点だけ出す） */
+  feedbackBadge: {
+    unread: (n: number) => `未読 ${n} 件`,
+    open: (n: number) => `未完了 ${n} 件`,
   },
 
   settings: {

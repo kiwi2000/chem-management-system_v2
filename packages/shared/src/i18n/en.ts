@@ -103,6 +103,7 @@ export const en: Messages = {
   },
 
   login: {
+    peekPassword: "Hold to show the password",
     email: "Email address",
     password: "Password",
     totp: "Authentication code (6 digits)",
@@ -675,6 +676,12 @@ export const en: Messages = {
     adminResetConfirm:
       "Reset two-step sign-in for this user? All of their signed-in devices will be signed out",
     appHint: "Free apps such as Google Authenticator or Microsoft Authenticator will work",
+  },
+
+  /** Wording for the feedback badge. Used only in the tooltip and for screen readers */
+  feedbackBadge: {
+    unread: (n: number) => `${n} unread`,
+    open: (n: number) => `${n} open`,
   },
 
   settings: {

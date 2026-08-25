@@ -39,7 +39,11 @@ export async function GET(req: Request) {
   ]);
 
   return Response.json({
-    items: await toFeedbackDtos(items),
+    // 未読の印は、この人が最後に開いた時刻で決める。時刻の更新は /api/feedback/seen で別に行う
+    items: await toFeedbackDtos(items, {
+      seenAt: actor.user.feedbackSeenAt,
+      viewerId: actor.user.id,
+    }),
     total,
     page: state.page,
     pageSize: state.pageSize,

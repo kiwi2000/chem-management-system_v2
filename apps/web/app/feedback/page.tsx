@@ -16,7 +16,7 @@ import {
   type FeedbackStatus,
   type TableState,
 } from "@chem/shared";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -70,6 +70,24 @@ export default function FeedbackPage() {
   const columns = useMemo<TableColumn<FeedbackDto>[]>(
     () => [
       {
+        // 未読の印。字は入れず、点ひとつで示す
+        key: "unread",
+        header: "",
+        kind: "enum",
+        width: 28,
+        sortable: false,
+        filterable: false,
+        className: "text-center",
+        render: (r) =>
+          r.unread ? (
+            <span
+              className="bg-primary mx-auto block size-2 rounded-full"
+              title="未読"
+              aria-label="未読"
+            />
+          ) : null,
+      },
+      {
         key: "title",
         header: "タイトル",
         kind: "text",
@@ -77,7 +95,7 @@ export default function FeedbackPage() {
         nullable: false,
         width: 260,
         filterFullWidth: true,
-        render: (r) => r.title,
+        render: (r) => <span className={r.unread ? "font-semibold" : undefined}>{r.title}</span>,
       },
       {
         key: "kind",
@@ -207,6 +225,18 @@ export default function FeedbackPage() {
   useEffect(() => {
     if (ready) void load();
   }, [ready, load]);
+
+  /*
+    開いたら「ここまで見た」と印を付ける。1回だけでよい。
+    いま出ている行の未読の印は、印を付ける前の時刻で決まっているので消えない。
+    開いた瞬間に消えると、何が新しかったのか分からなくなる。
+  */
+  const marked = useRef(false);
+  useEffect(() => {
+    if (!ready || marked.current) return;
+    marked.current = true;
+    void fetch("/api/feedback/seen", { method: "POST" });
+  }, [ready]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

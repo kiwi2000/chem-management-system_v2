@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -32,6 +33,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [totp, setTotp] = useState("");
+  /** 目のボタンを押しているあいだだけ true。指を離すとすぐ隠す */
+  const [peek, setPeek] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -99,14 +102,41 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">{m.login.password}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={peek ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pr-9"
+                  />
+                  {/*
+                    押しているあいだだけ見せる。
+                    離す・指が外へ出る・別の場所へ移る、のどれでも隠すようにして、
+                    見えたまま置き去りになることが無いようにする。
+                    form の中なので type="button"（押すと送信されてしまうため）
+                  */}
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    aria-label={m.login.peekPassword}
+                    title={m.login.peekPassword}
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 -translate-y-1/2 p-1.5"
+                    onPointerDown={() => setPeek(true)}
+                    onPointerUp={() => setPeek(false)}
+                    onPointerLeave={() => setPeek(false)}
+                    onPointerCancel={() => setPeek(false)}
+                    onBlur={() => setPeek(false)}
+                  >
+                    {peek ? (
+                      <Eye className="size-4" aria-hidden />
+                    ) : (
+                      <EyeOff className="size-4" aria-hidden />
+                    )}
+                  </button>
+                </div>
               </div>
               {mfaRequired && (
                 <div className="space-y-2">

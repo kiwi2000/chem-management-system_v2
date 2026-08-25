@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
@@ -180,6 +180,19 @@ export function SidebarNav({
    * （選択中の項目が隠れてしまうため）。いちど押したらその選択を優先する。
    * そうしないと、配下の画面を見ているあいだ閉じられなくなる。
    */
+  /**
+   * フィードバックの未読・未完了の数。
+   * 画面を移るたびに取り直す。見終わって戻ってきたときに印が消えるようにするため
+   */
+  const [badge, setBadge] = useState<{ unread: number; open: number } | null>(null);
+  const loadBadge = useCallback(async () => {
+    const res = await fetch("/api/feedback/badge").catch(() => null);
+    if (res?.ok) setBadge((await res.json()) as { unread: number; open: number });
+  }, []);
+  useEffect(() => {
+    void loadBadge();
+  }, [loadBadge, pathname]);
+
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const toggle = (key: string, fallback: boolean) =>
     setToggled((prev) => ({ ...prev, [key]: !(prev[key] ?? fallback) }));
@@ -194,6 +207,7 @@ export function SidebarNav({
       <>
         <Icon className="size-4 shrink-0" aria-hidden />
         <span className="truncate">{m.nav[item.key]}</span>
+        {item.key === "feedback" && <FeedbackBadge badge={badge} />}
       </>
     );
     const shape = cn("flex items-center gap-2 rounded-md py-2 text-sm", indented ? "px-2" : "px-3");
@@ -308,5 +322,42 @@ export function SidebarNav({
         </div>
       ))}
     </nav>
+  );
+}
+
+/**
+ * フィードバックの印。字を増やさず、数と動きだけで伝える。
+ *
+ *   数字 … 未完了の件数（完了になっていないもの）
+ *   点滅 … 未読があるとき。読めば静かになる
+ *
+ * どちらも0なら何も出さない。常に何か出ていると、目が慣れて気づけなくなる。
+ */
+function FeedbackBadge({ badge }: { badge: { unread: number; open: number } | null }) {
+  const { m } = useI18n();
+  if (!badge || (badge.unread === 0 && badge.open === 0)) return null;
+
+  const label = [
+    badge.unread > 0 ? m.feedbackBadge.unread(badge.unread) : null,
+    badge.open > 0 ? m.feedbackBadge.open(badge.open) : null,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+
+  return (
+    <span className="ml-auto flex shrink-0 items-center gap-1" title={label} aria-label={label}>
+      {/* 未読があるあいだだけ、小さな点が脈打つ */}
+      {badge.unread > 0 && (
+        <span className="relative flex size-2">
+          <span className="bg-primary absolute inline-flex size-full animate-ping rounded-full opacity-60" />
+          <span className="bg-primary relative inline-flex size-2 rounded-full" />
+        </span>
+      )}
+      {badge.open > 0 && (
+        <span className="bg-muted text-muted-foreground rounded-full px-1.5 text-[11px] leading-4 tabular-nums">
+          {badge.open}
+        </span>
+      )}
+    </span>
   );
 }

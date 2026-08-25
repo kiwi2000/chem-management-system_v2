@@ -155,6 +155,12 @@ model User {
    * 登録の途中（鍵は作ったが6桁の確認がまだ）は mfaSecret だけが入り、ここは none のまま
    */
   mfaMethod             String    @default("none") @map("mfa_method") @db.VarChar(20)
+
+  /**
+   * フィードバックを最後に見た時刻。これより後の書き込み・返事が「未読」。
+   * 一度も開いていない人は null（＝全部が未読）
+   */
+  feedbackSeenAt        DateTime? @map("feedback_seen_at")
   displayName           String?   @map("display_name")
   /**
    * アバター画像の中身と種類。アプリ側のファイルは配置のたびに消えるため、DBに持つ。

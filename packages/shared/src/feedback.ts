@@ -74,4 +74,6 @@ export interface FeedbackDto {
   createdByName: string | null;
   createdAt: string;
   updatedAt: string;
+  /** 自分がまだ見ていない書き込み・返事か */
+  unread: boolean;
 }
