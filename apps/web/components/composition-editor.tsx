@@ -85,6 +85,46 @@ function toRow(l: CompositionLineDto, index: number): Row | null {
  * 製品詳細の下に置き、製品本体とは別に保存する（行数が多いので、
  * 名称を触っていないのに全部保存し直すのを避けるため）。
  */
+/**
+ * 「展開」「閉じる」の組。表ごとに1つずつ置く。
+ *
+ * 表が2つ並ぶので、**どちらに効くのかはボタンの置き場所で示す。**
+ * 1組を共有して「いま見えているほう」に効かせると、押すまで結果が分からない。
+ */
+function ExpandButtons({
+  m,
+  canExpand,
+  canCollapse,
+  onExpand,
+  onCollapse,
+}: {
+  m: ReturnType<typeof useI18n>["m"];
+  canExpand: boolean;
+  canCollapse: boolean;
+  onExpand: () => void;
+  onCollapse: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {/* もう全部開いているなら押せない（「閉じる」と揃える） */}
+      <Button type="button" size="sm" variant="outline" disabled={!canExpand} onClick={onExpand}>
+        <UnfoldVertical className="mr-1 size-3.5" />
+        {m.composition.expandAll}
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={!canCollapse}
+        onClick={onCollapse}
+      >
+        <FoldVertical className="mr-1 size-3.5" />
+        {m.composition.collapseAll}
+      </Button>
+    </div>
+  );
+}
+
 export function CompositionEditor({
   productId,
   settings,
@@ -343,15 +383,18 @@ export function CompositionEditor({
       return false;
     });
   }, [rows]);
-  const [tab, setTab] = useState<"registered" | "aggregate">("registered");
   /**
    * 合算表の開閉。見出しの「展開」「閉じる」から操るので、状態はここで持つ。
    * 鍵は合算表の側から受け取る（どの行が開けるかは、中身を取ってみないと分からない）。
    */
   const [aggregateOpen, setAggregateOpen] = useState<Set<string>>(new Set());
   const [aggregateKeys, setAggregateKeys] = useState<string[]>([]);
-  // 直しているあいだは、登録した組成だけを見せる
-  const showAggregate = tab === "aggregate" && canAggregate && !editing;
+  /*
+    まとめた表を下に並べるか。
+    **直しているあいだは出さない。**書き換えている途中の値をまとめても意味が無く、
+    保存するまで上下が食い違って見えるため。
+  */
+  const showAggregate = canAggregate && !editing;
 
   /** すべて展開の出発点。表に並んでいる、中身を持つ原材料の行 */
   const treeRoots: TreeRoot[] = useMemo(
@@ -422,81 +465,23 @@ export function CompositionEditor({
             ))}
           {/*
             開くものが無ければ置いても押せないので出さない。
-            いま見えている表に効かせる。合算表を開いていれば合算表の行を開け閉めする。
+            **ここは登録組成の木だけを操る。**まとめた表は自分の見出しに同じ組を持つ。
+            2つの表が同時に見えているので、どちらに効くのか分からないボタンは置かない。
           */}
-          {(showAggregate ? aggregateKeys.length > 0 : showWithin) && (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                // もう全部開いているなら押せない（「閉じる」と揃える）
-                disabled={
-                  showAggregate
-                    ? aggregateKeys.every((k) => aggregateOpen.has(k))
-                    : tree.expandingAll || isFullyExpanded(tree, treeRoots)
-                }
-                onClick={() =>
-                  showAggregate
-                    ? setAggregateOpen(new Set(aggregateKeys))
-                    : tree.expandAll(treeRoots)
-                }
-              >
-                <UnfoldVertical className="mr-1 size-3.5" />
-                {m.composition.expandAll}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={(showAggregate ? aggregateOpen.size : tree.open.size) === 0}
-                onClick={() => (showAggregate ? setAggregateOpen(new Set()) : tree.collapseAll())}
-              >
-                <FoldVertical className="mr-1 size-3.5" />
-                {m.composition.collapseAll}
-              </Button>
-            </>
+          {showWithin && (
+            <ExpandButtons
+              m={m}
+              canExpand={!tree.expandingAll && !isFullyExpanded(tree, treeRoots)}
+              canCollapse={tree.open.size > 0}
+              onExpand={() => tree.expandAll(treeRoots)}
+              onCollapse={() => tree.collapseAll()}
+            />
           )}
         </div>
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {/* まとめても同じ表になるときは出さない。押しても何も変わらないタブは迷わせるだけ */}
-        {canAggregate && !editing && (
-          <div className="border-border flex gap-1 border-b" role="tablist">
-            {(
-              [
-                ["registered", m.composition.tabRegistered],
-                ["aggregate", m.composition.tabAggregate],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={tab === key}
-                onClick={() => setTab(key)}
-                className={cn(
-                  "-mb-px border-b-2 px-3 py-1.5 text-sm",
-                  tab === key
-                    ? "border-primary text-foreground font-medium"
-                    : "text-muted-foreground border-transparent",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {showAggregate ? (
-          <CompositionAggregateTable
-            productId={productId}
-            open={aggregateOpen}
-            onOpenChange={setAggregateOpen}
-            onExpandableChange={setAggregateKeys}
-          />
-        ) : rows === null ? (
+        {rows === null ? (
           <p className="text-muted-foreground text-sm">{m.common.loading}</p>
         ) : rows.length === 0 ? (
           <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
@@ -707,6 +692,37 @@ export function CompositionEditor({
                 </tr>
               </tfoot>
             </table>
+          </div>
+        )}
+
+        {/*
+          まとめた表。**登録した組成の下に並べる。**
+          上の表が「登録したそのまま」、下が「判定に使う値」。
+          切り替えではなく並べるのは、**この2つを見比べたい場面が多い**ため
+          （原材料の中に同じCASが散っているとき、上だけ見ても合計が分からない）。
+
+          まとめても同じ表になるなら出さない。同じものを2つ並べても読む手間が増えるだけ。
+        */}
+        {showAggregate && (
+          <div className="space-y-2 border-t pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium">{m.composition.aggregateTitle}</p>
+              {aggregateKeys.length > 0 && (
+                <ExpandButtons
+                  m={m}
+                  canExpand={!aggregateKeys.every((k) => aggregateOpen.has(k))}
+                  canCollapse={aggregateOpen.size > 0}
+                  onExpand={() => setAggregateOpen(new Set(aggregateKeys))}
+                  onCollapse={() => setAggregateOpen(new Set())}
+                />
+              )}
+            </div>
+            <CompositionAggregateTable
+              productId={productId}
+              open={aggregateOpen}
+              onOpenChange={setAggregateOpen}
+              onExpandableChange={setAggregateKeys}
+            />
           </div>
         )}
 

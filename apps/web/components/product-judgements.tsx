@@ -2,7 +2,7 @@
 
 import { pickName } from "@chem/shared";
 import { Check, TriangleAlert } from "lucide-react";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -145,16 +145,23 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
         ) : (
           // 横に長い表なので、はみ出したら中だけ横に送る（画面全体を横に振らない）
           <div className="overflow-x-auto">
-            <Table className="text-sm">
+            {/*
+              table-fixed にして、幅を列の側で決める。
+              自動幅だと、法文物質名の長いものが1件あるだけで表全体の形が変わり、
+              製品ごとに列の位置がずれて見比べられなくなる。
+            */}
+            <Table className="table-fixed text-sm">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16">{m.judgements.verdict}</TableHead>
-                  <TableHead className="w-24">{m.judgements.law}</TableHead>
-                  <TableHead className="w-40">{m.judgements.category}</TableHead>
-                  <TableHead className="w-20">{m.judgements.number}</TableHead>
-                  <TableHead>{m.judgements.statutoryName}</TableHead>
-                  <TableHead className="w-32">{m.judgements.matchedCas}</TableHead>
-                  <TableHead>{m.judgements.warning}</TableHead>
+                  <TableHead className="w-20">{m.judgements.law}</TableHead>
+                  <TableHead className="w-36">{m.judgements.category}</TableHead>
+                  <TableHead className="w-14">{m.judgements.number}</TableHead>
+                  <TableHead className="w-72">{m.judgements.statutoryName}</TableHead>
+                  {/* 含有率とCASは2つで1組。並びを入れ替えないこと */}
+                  <TableHead className="w-24 text-right">{m.judgements.content}</TableHead>
+                  <TableHead className="w-28">{m.judgements.matchedCas}</TableHead>
+                  <TableHead className="w-64">{m.judgements.warning}</TableHead>
                   {canEdit && <TableHead className="w-24" />}
                 </TableRow>
               </TableHeader>
@@ -175,18 +182,21 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
                       {first && pickName(locale, j.lawNameJa ?? j.lawNameOriginal, j.lawNameEn)}
                     </TableCell>
                     <TableCell className="text-muted-foreground align-top">
-                      {first &&
-                        pickName(
-                          locale,
-                          j.categoryNameJa ?? j.categoryNameOriginal,
-                          j.categoryNameEn,
-                        )}
+                      {first && (
+                        <OneLine
+                          text={pickName(
+                            locale,
+                            j.categoryNameJa ?? j.categoryNameOriginal,
+                            j.categoryNameEn,
+                          )}
+                        />
+                      )}
                     </TableCell>
                     <TableCell className="align-top font-mono text-xs">
                       {h?.officialNumber ?? ""}
                     </TableCell>
                     <TableCell className="align-top">
-                      {h ? (h.name ?? m.judgements.categoryItself) : ""}
+                      {h && <OneLine text={h.name ?? m.judgements.categoryItself} />}
                       {first && j.hitsWithheld && (
                         // 空なのか伏せたのかが分からないと、入っていないと読まれてしまう
                         <span className="text-muted-foreground text-xs">
@@ -194,7 +204,7 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="align-top">{h && <Matched hit={h} m={m} />}</TableCell>
+                    {h ? <MatchedCells hit={h} m={m} /> : <TableCell colSpan={2} />}
                     <TableCell className="align-top">
                       {first && j.needsReview && (
                         <div className="space-y-1">
@@ -309,40 +319,88 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
 export type M = ReturnType<typeof useI18n>["m"];
 
 /**
- * 当たった CAS の出しかた。
+ * 当たった含有率と CAS の出しかた。**含有率のセルと CAS のセットで1組。**
+ * 必ず隣り合わせで置く（間に別の列を挟むと読めなくなる）。
  *
- * **合算したのか、個別に当たったのかが一目で分かるようにする。**
- * どちらも「複数のCASが並ぶ」ので、見分けが付かないと
+ * **合算したのか、個別に当たったのかは「区切り線」で見分ける。**
+ * どちらも複数の CAS が縦に並ぶので、見分けが付かないと
  * 「足して超えた」のか「それぞれが超えた」のかを取り違える。
  *
- *   合算 … 縦に足し算の形で並べ、線の下に合計を出す
- *   個別 … それぞれを独立した行として並べ、合計は出さない
+ *   合算 … 含有率は合計ひとつ。CAS はその下に並ぶだけで、線は入らない
+ *   個別 … CAS ごとに薄い線で区切り、その左に各 CAS の含有率を並べる
+ *
+ * 「合算」の札は出さない。**通常は合算で、CAS が1つなら区別する意味も無い。**
+ * 札を並べると、読む値より札のほうが目立つ。
+ *
+ * 1つの CAS が1行を超えないようにしてある。行が増えると表が縦に伸び、
+ * 何件当たったのかが読み取りにくくなるため。
  */
-export function Matched({ hit, m }: { hit: JudgementHitDto; m: M }) {
+export function MatchedCells({ hit, m }: { hit: JudgementHitDto; m: M }) {
+  // 合計が入っているのは、まとめて比べたときだけ
   const aggregated = hit.total !== null;
+
+  if (aggregated) {
+    return (
+      <>
+        <TableCell
+          className="text-right align-top font-mono tabular-nums"
+          title={m.judgements.aggregated}
+        >
+          {hit.total}%
+        </TableCell>
+        <TableCell className="align-top font-mono text-xs">
+          {hit.contributions.map((c) => (
+            // 各CASがいくら効いたかは、合算では畳んである。触れれば読める
+            <div key={c.cas} title={`${c.cas} ${c.pct}%`}>
+              {c.cas}
+            </div>
+          ))}
+        </TableCell>
+      </>
+    );
+  }
+
+  /** 区切り線の高さを左右で揃えるため、同じ余白・同じ文字の大きさで並べる */
+  const cell = "px-2 py-1 leading-5";
   return (
-    <div className="space-y-0.5">
-      <Badge variant="outline" className="text-[10px]">
-        {aggregated ? m.judgements.aggregated : m.judgements.individually}
-      </Badge>
-      {/* 表の中に表を入れない（読み上げの順が壊れる）。桁を揃えるだけなので格子で並べる */}
-      <dl className="grid grid-cols-[auto_auto] gap-x-2 text-xs">
-        {hit.contributions.map((c) => (
-          <Fragment key={c.cas}>
-            <dt className="font-mono">{c.cas}</dt>
-            <dd className="text-muted-foreground text-right font-mono tabular-nums">{c.pct}%</dd>
-          </Fragment>
-        ))}
-        {aggregated && (
-          <>
-            {/* 足した結果であることが分かるよう、線を引いて合計を置く */}
-            <dt className="text-muted-foreground border-t pt-0.5">{m.judgements.sum}</dt>
-            <dd className="border-t pt-0.5 text-right font-mono font-medium tabular-nums">
-              {hit.total}%
-            </dd>
-          </>
-        )}
-      </dl>
+    <>
+      <TableCell className="p-0 align-top" title={m.judgements.individually}>
+        <div className="divide-border/60 divide-y">
+          {hit.contributions.map((c) => (
+            <div key={c.cas} className={`${cell} text-right font-mono tabular-nums`}>
+              {c.pct}%
+            </div>
+          ))}
+        </div>
+      </TableCell>
+      <TableCell className="p-0 align-top">
+        <div className="divide-border/60 divide-y">
+          {hit.contributions.map((c) => (
+            <div key={c.cas} className={`${cell} font-mono text-xs`}>
+              {c.cas}
+            </div>
+          ))}
+        </div>
+      </TableCell>
+    </>
+  );
+}
+
+/**
+ * 長い名前を1行に収める。**行を増やさないために、セルの中だけ横に送る。**
+ * 折り返すと1件で何行も使い、何件当たったのかが読み取れなくなる。
+ *
+ * **スクロールバーは出さない。**表の中に細い横棒が何本も並ぶと、
+ * 行の区切りと見分けが付かず、表そのものが読みにくくなる。
+ * 全文は触れれば読める（title）。
+ */
+export function OneLine({ text }: { text: string }) {
+  return (
+    <div
+      className="overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      title={text}
+    >
+      {text}
     </div>
   );
 }

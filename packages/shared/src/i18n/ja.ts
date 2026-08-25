@@ -795,6 +795,7 @@ export const ja = {
     number: "番号",
     statutoryName: "法文物質名",
     matchedCas: "該当CAS",
+    content: "含有率",
     warning: "警告",
     applicable: "該当",
     notApplicable: "非該当",
@@ -937,8 +938,7 @@ export const ja = {
     expandAll: "展開",
 
     // CASでまとめた組成
-    tabRegistered: "登録組成",
-    tabAggregate: "CAS合算",
+    aggregateTitle: "CASでまとめた組成",
     aggregateLead:
       "原材料を末端の物質まで下ろし、同じCAS番号のものを1行にまとめた表です。法規制の判定にはこの値を使います。多い順に並んでいます。",
     aggregateName: "物質名",

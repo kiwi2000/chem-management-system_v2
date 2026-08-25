@@ -4,7 +4,7 @@ import { pickName } from "@chem/shared";
 import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { Matched, reasonText } from "@/components/product-judgements";
+import { MatchedCells, OneLine, reasonText } from "@/components/product-judgements";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -77,16 +77,19 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
   );
 
   return (
-    <Table>
+    // 幅は列の側で決める。製品ごとに列の位置がずれると見比べられない
+    <Table className="table-fixed">
       <TableHeader>
         <TableRow>
           <TableHead className="w-16">{m.judgements.verdict}</TableHead>
           <TableHead className="w-28">{m.products.code}</TableHead>
           <TableHead className="w-56">{m.products.nameJa}</TableHead>
-          <TableHead className="w-20">{m.judgements.number}</TableHead>
-          <TableHead>{m.judgements.statutoryName}</TableHead>
-          <TableHead className="w-32">{m.judgements.matchedCas}</TableHead>
-          <TableHead>{m.judgements.warning}</TableHead>
+          <TableHead className="w-14">{m.judgements.number}</TableHead>
+          <TableHead className="w-72">{m.judgements.statutoryName}</TableHead>
+          {/* 含有率とCASは2つで1組。並びを入れ替えないこと */}
+          <TableHead className="w-24 text-right">{m.judgements.content}</TableHead>
+          <TableHead className="w-28">{m.judgements.matchedCas}</TableHead>
+          <TableHead className="w-64">{m.judgements.warning}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -112,7 +115,7 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
             <TableCell className="align-top">
               {first && (
                 <Fragment>
-                  {pickName(locale, p.nameJa, p.nameEn)}
+                  <OneLine text={pickName(locale, p.nameJa, p.nameEn)} />
                   {/* 廃番のものも出す。過去の出荷ぶんの問い合わせに答えるため */}
                   {p.status === "DISCONTINUED" && (
                     <Badge variant="secondary" className="ml-2">
@@ -124,13 +127,13 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
             </TableCell>
             <TableCell className="align-top font-mono text-xs">{h?.officialNumber ?? ""}</TableCell>
             <TableCell className="align-top">
-              {h ? (h.name ?? m.judgements.categoryItself) : ""}
+              {h && <OneLine text={h.name ?? m.judgements.categoryItself} />}
               {first && p.hitsWithheld && (
                 // 空なのか伏せたのかが分からないと、入っていないと読まれてしまう
                 <span className="text-muted-foreground text-xs">{m.judgements.basisWithheld}</span>
               )}
             </TableCell>
-            <TableCell className="align-top">{h && <Matched hit={h} m={m} />}</TableCell>
+            {h ? <MatchedCells hit={h} m={m} /> : <TableCell colSpan={2} />}
             <TableCell className="align-top">
               {first && p.needsReview && (
                 <div className="space-y-1">

@@ -783,7 +783,8 @@ export const en: Messages = {
     category: "Category",
     number: "No.",
     statutoryName: "Statutory name",
-    matchedCas: "Matched CAS",
+    matchedCas: "CAS",
+    content: "Content",
     warning: "Warning",
     applicable: "Applies",
     notApplicable: "Does not apply",
@@ -923,8 +924,7 @@ export const en: Messages = {
     expand: "Show contents",
     expandAll: "Expand",
 
-    tabRegistered: "Registered",
-    tabAggregate: "Combined by CAS",
+    aggregateTitle: "Combined by CAS",
     aggregateLead:
       "Materials are broken down to the substances inside them, and substances sharing a CAS number are combined into one row. Regulatory checks use these values. Sorted by weight.",
     aggregateName: "Substance name",
