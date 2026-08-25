@@ -218,10 +218,13 @@ export async function toMatchedProducts(
           : [],
         hitsWithheld: !withHits && r.hits.length > 0,
       }))
-      // 確認が残っているものを先に。放っておかれるのがいちばん困る
+      /*
+        該当したものを先に並べる。それがこの画面の答えだから。
+        判断できなかったものは、そのあとに続ける（付け足しであることが並びで分かる）。
+      */
       .sort(
         (a, b) =>
-          Number(b.needsReview) - Number(a.needsReview) ||
+          Number(b.verdict === "APPLICABLE") - Number(a.verdict === "APPLICABLE") ||
           a.code.localeCompare(b.code, undefined, { numeric: true }),
       )
   );
