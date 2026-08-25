@@ -71,6 +71,8 @@ export const LAW_COLUMNS: QueryColumn[] = [
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "countryId", kind: "enum", field: "countryId" },
+  // 地域は国の1つ上。法令そのものは持っていないので、国をたどって絞る
+  { key: "regionId", kind: "enum", field: "regionId", nested: "country" },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
 ];
 

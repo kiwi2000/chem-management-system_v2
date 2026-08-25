@@ -14,7 +14,14 @@ import type {
  */
 
 export const LAW_INCLUDE = {
-  country: { select: { nameJa: true, nameEn: true } },
+  // 地域は国の1つ上。法令の一覧に出すので、国と一緒に引く
+  country: {
+    select: {
+      nameJa: true,
+      nameEn: true,
+      region: { select: { id: true, nameJa: true, nameEn: true } },
+    },
+  },
   _count: { select: { categories: { where: { deletedAt: null } } } },
 } satisfies Prisma.LawInclude;
 
@@ -27,6 +34,9 @@ export function toLawDto(l: LawRow): LawDto {
     countryId: l.countryId,
     countryNameJa: l.country.nameJa,
     countryNameEn: l.country.nameEn,
+    regionId: l.country.region.id,
+    regionNameJa: l.country.region.nameJa,
+    regionNameEn: l.country.region.nameEn,
     nameOriginal: l.nameOriginal,
     nameLang: l.nameLang,
     nameJa: l.nameJa,

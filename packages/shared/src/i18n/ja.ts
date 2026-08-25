@@ -361,6 +361,7 @@ export const ja = {
     newTitle: "法令の追加",
     editTitle: "法令の編集",
     code: "法令コード",
+    region: "地域",
     country: "国",
     nameOriginal: "原文の名称",
     nameLang: "原文の言語",

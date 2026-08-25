@@ -338,6 +338,10 @@ export interface LawDto {
   countryId: string;
   countryNameJa: string;
   countryNameEn: string | null;
+  /** 国の1つ上。アジア・欧州など。どのあたりの法令かが一目で分かる */
+  regionId: string;
+  regionNameJa: string;
+  regionNameEn: string | null;
   nameOriginal: string;
   nameLang: string;
   nameJa: string | null;

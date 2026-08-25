@@ -353,6 +353,7 @@ export const en: Messages = {
     newTitle: "New law",
     editTitle: "Edit law",
     code: "Law code",
+    region: "Region",
     country: "Country",
     nameOriginal: "Original name",
     nameLang: "Language",

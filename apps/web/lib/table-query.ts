@@ -29,6 +29,12 @@ export interface QueryColumn {
    * ["compositionLines", "substance"]）。最後に `field` で突き合わせる。
    */
   relationPath?: string[];
+  /**
+   * 1対1の関連をたどって絞る（法令 → 国 → 地域 のように）。
+   * `relation` は「1件でも合う行があるか」を見る1対多用なので、
+   * 1対1に使うと Prisma が受け付けない。
+   */
+  nested?: string;
 }
 
 /**
@@ -166,6 +172,11 @@ export function buildWhere(columns: QueryColumn[], filters: TableState["filters"
                 ? boolCondition(col, f.values)
                 : { [col.field]: { in: f.values } };
     if (!cond) continue;
+    // 1対1の関連は、そのまま入れ子にする
+    if (col.nested) {
+      conditions.push({ [col.nested]: cond });
+      continue;
+    }
     if (!col.relation) {
       conditions.push(cond);
       continue;
