@@ -3,7 +3,7 @@
 import { pickName } from "@chem/shared";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { AliasList } from "@/components/alias-list";
@@ -39,6 +39,11 @@ interface Props {
    * 製品を編集できるなら組成も見られる（権限の含意）ので、新規登録では常に見せる。
    */
   canViewComposition?: boolean;
+  /**
+   * 組成と備考のあいだに挟むもの（法規制の判定）。
+   * 組成を見ながら考えたいので、この順にする
+   */
+  afterComposition?: ReactNode;
   /** 組成の合計チェックの設定。組成エディタに渡す */
   settings?: AppSettings;
 }
@@ -53,6 +58,7 @@ export function ProductForm({
   modelOptions,
   useOptions,
   canViewComposition = true,
+  afterComposition,
   settings,
 }: Props) {
   const router = useRouter();
@@ -532,6 +538,9 @@ export function ProductForm({
               onFinishEdit={finishEditing}
             />
           )}
+
+          {/* 判定は組成のすぐ下。組成を見ながら考えるため */}
+          {(!wizard || step === 2) && afterComposition}
 
           {blockedNotice("note")}
           {(!wizard || step === 3) && (

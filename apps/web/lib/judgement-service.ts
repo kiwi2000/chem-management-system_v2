@@ -30,7 +30,7 @@ export async function toJudgementDtos(
       decidedAt: true,
       decidedNote: true,
       computedAt: true,
-      hits: { select: { statutorySubstanceId: true, pct: true } },
+      hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
       category: {
         select: {
           nameJa: true,
@@ -65,7 +65,7 @@ export async function toJudgementDtos(
       ? []
       : prisma.statutorySubstance.findMany({
           where: { id: { in: substanceIds } },
-          select: { id: true, nameJa: true, nameOriginal: true },
+          select: { id: true, nameJa: true, nameOriginal: true, officialNumber: true },
         }),
     actorIds.length === 0
       ? []
@@ -74,7 +74,7 @@ export async function toJudgementDtos(
           select: { id: true, displayName: true, email: true },
         }),
   ]);
-  const nameOf = new Map(substances.map((s) => [s.id, s.nameJa ?? s.nameOriginal]));
+  const infoOf = new Map(substances.map((s) => [s.id, s]));
   const userOf = new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
 
   return rows
@@ -97,13 +97,18 @@ export async function toJudgementDtos(
       computedAt: r.computedAt.toISOString(),
       hits: withHits
         ? r.hits
-            .map((h) => ({
+            .map((h) => {
               // 区分そのものが当たったときは、指す法文物質名が無い
-              name: h.statutorySubstanceId ? (nameOf.get(h.statutorySubstanceId) ?? null) : null,
-              pct: h.pct.toString(),
-            }))
+              const info = h.statutorySubstanceId ? infoOf.get(h.statutorySubstanceId) : undefined;
+              return {
+                name: info ? (info.nameJa ?? info.nameOriginal) : null,
+                officialNumber: info?.officialNumber ?? null,
+                contributions: (h.contributions ?? []) as { cas: string; pct: string }[],
+                total: h.total?.toString() ?? null,
+              };
+            })
             // 多いものから。まず何が効いているかを見たい
-            .sort((a, b) => Number(b.pct) - Number(a.pct))
+            .sort((a, b) => maxPct(b) - maxPct(a))
         : [],
       hitsWithheld: !withHits && r.hits.length > 0,
       // 並びは法令 → 区分の順。画面の法規制と同じ並びにする
@@ -115,4 +120,10 @@ export async function toJudgementDtos(
       return ao - bo || ac.localeCompare(bc) || ad - bd;
     })
     .map(({ _order, ...rest }) => rest);
+}
+
+/** 並べ替えに使う代表値。合計が無いときは、いちばん大きい寄与を見る */
+function maxPct(h: { total: string | null; contributions: { pct: string }[] }): number {
+  if (h.total !== null) return Number(h.total);
+  return Math.max(0, ...h.contributions.map((c) => Number(c.pct)));
 }

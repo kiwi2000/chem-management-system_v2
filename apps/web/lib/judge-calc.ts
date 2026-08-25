@@ -88,8 +88,19 @@ export type ReviewReason =
 export interface JudgeHit {
   /** 当たった法文物質名。区分でまとめたときは null（区分そのものが当たった） */
   statutorySubstanceId: string | null;
-  /** 判定に使った合計％ */
-  pct: string;
+  /**
+   * 合算した含有率。**まとめたときだけ入る。**
+   * まとめないときは CAS ごとに別々に比べているので、合計には意味が無い。
+   * そこに数字を入れると、足していないものを足したように読まれてしまう
+   */
+  total: string | null;
+  /**
+   * 当たった CAS と、それぞれの含有率。
+   *
+   *   まとめない … **個別に閾値を超えた CAS が、すべて並ぶ**
+   *   まとめる   … 足し合わせた CAS が、すべて並ぶ（元素換算なら換算後の値）
+   */
+  contributions: { cas: string; pct: string }[];
 }
 
 export interface JudgeResult {
@@ -160,16 +171,31 @@ export function judge(input: JudgeInput): JudgeResult {
   if ((toScaled(input.unknownPct) ?? 0n) > 0n) reasons.add("unknownComposition");
   if (input.truncated > 0) reasons.add("truncated");
 
+  /** その CAS がいくら効いたかを、まとめかたに従って出す */
+  const shareOf = (list: string[], mode: Aggregation, element: string | null) =>
+    list.map((c) => ({
+      cas: c,
+      pct: fromScaled(pctOf(byCas.get(c) as ExpandedLine, mode, element, factors)),
+    }));
+
   if (category.aggregation !== "NONE") {
     // 区分でまとめる。CAS を重複なく集めてから、一度だけ足す
-    const cas = new Set(entries.flatMap((e) => e.cas));
+    const cas = [...new Set(entries.flatMap((e) => e.cas))].filter((c) => byCas.has(c));
     let total = 0n;
     for (const c of cas) {
-      const line = byCas.get(c);
-      if (line) total += pctOf(line, category.aggregation, category.aggregationElement, factors);
+      total += pctOf(
+        byCas.get(c) as ExpandedLine,
+        category.aggregation,
+        category.aggregationElement,
+        factors,
+      );
     }
     if (within(total, category.threshold)) {
-      hits.push({ statutorySubstanceId: null, pct: fromScaled(total) });
+      hits.push({
+        statutorySubstanceId: null,
+        total: fromScaled(total),
+        contributions: shareOf(cas, category.aggregation, category.aggregationElement),
+      });
       // まとめた中に、条件つき・閾値未設定のものが混ざっていれば要確認
       for (const e of entries) {
         if (!e.cas.some((c) => byCas.has(c))) continue;
@@ -177,61 +203,78 @@ export function judge(input: JudgeInput): JudgeResult {
         if (e.unfilled) reasons.add("unfilledThreshold");
       }
     }
-  } else {
-    for (const e of entries) {
-      const present = e.cas.filter((c) => byCas.has(c));
-      if (present.length === 0) continue;
+    return finish(hits, reasons);
+  }
 
+  for (const e of entries) {
+    const present = e.cas.filter((c) => byCas.has(c));
+    if (present.length === 0) continue;
+
+    if (e.aggregation === "NONE") {
       /*
-        閾値と比べる。まとめないときは CAS ごと、まとめるときは合計で。
-        当たった値と、当たったかどうかを持って先へ進む。
+        まとめない。**CAS ごとに別々に閾値と比べる。**
+        1つの法文物質名の中で、複数の CAS がそれぞれ閾値を超えることがあるので、
+        当たったものは全部拾う（最初の1件で打ち切ると、残りが見えなくなる）。
       */
-      let matchedPct: bigint | null = null;
-      let shownPct = 0n;
-      if (e.aggregation === "NONE") {
-        for (const c of present) {
-          const pct = pctOf(byCas.get(c) as ExpandedLine, "NONE", null, factors);
-          if (pct > shownPct) shownPct = pct;
-          if (matchedPct === null && within(pct, e.threshold)) matchedPct = pct;
-        }
-      } else {
-        let total = 0n;
-        for (const c of present) {
-          total += pctOf(
-            byCas.get(c) as ExpandedLine,
-            e.aggregation,
-            e.aggregationElement,
-            factors,
-          );
-        }
-        shownPct = total;
-        if (within(total, e.threshold)) matchedPct = total;
-      }
-
-      if (matchedPct !== null) {
-        hits.push({ statutorySubstanceId: e.id, pct: fromScaled(matchedPct) });
+      const matched = present.filter((c) =>
+        within(pctOf(byCas.get(c) as ExpandedLine, "NONE", null, factors), e.threshold),
+      );
+      if (matched.length > 0) {
+        hits.push({
+          statutorySubstanceId: e.id,
+          // 足していないので合計は出さない
+          total: null,
+          contributions: shareOf(matched, "NONE", null),
+        });
         continue;
       }
-
-      /*
-        ここから下は「閾値では非該当と出たが、それを信じてよいか」の話。
-
-        条件つきの除外（「〇・三％以下を含有し、**黒色に着色され、かつ…**を除く」）は、
-        濃度が閾値を下回っていても、**条件を満たしていなければ法令上は該当する**。
-        着色していない 0.2％ の製品は該当なのに、濃度だけを見ると非該当と出る。
-        **これは見落とす向きの間違い**なので、該当に倒したうえで要確認にする。
-
-        閾値を入れられなかったものも同じ。入っていることだけは分かっているので、
-        該当として扱い、人に見てもらう。
-      */
-      if (e.conditional || e.unfilled) {
-        reasons.add(e.conditional ? "conditionalExclusion" : "unfilledThreshold");
-        if (e.unfilled) reasons.add("unfilledThreshold");
-        hits.push({ statutorySubstanceId: e.id, pct: fromScaled(shownPct) });
+    } else {
+      // まとめる。足した値ひとつを閾値と比べる
+      let total = 0n;
+      for (const c of present) {
+        total += pctOf(byCas.get(c) as ExpandedLine, e.aggregation, e.aggregationElement, factors);
       }
+      if (within(total, e.threshold)) {
+        hits.push({
+          statutorySubstanceId: e.id,
+          total: fromScaled(total),
+          contributions: shareOf(present, e.aggregation, e.aggregationElement),
+        });
+        continue;
+      }
+    }
+
+    /*
+      ここから下は「閾値では非該当と出たが、それを信じてよいか」の話。
+
+      条件つきの除外（「〇・三％以下を含有し、**黒色に着色され、かつ…**を除く」）は、
+      濃度が閾値を下回っていても、**条件を満たしていなければ法令上は該当する**。
+      着色していない 0.2％ の製品は該当なのに、濃度だけを見ると非該当と出る。
+      **これは見落とす向きの間違い**なので、該当に倒したうえで要確認にする。
+
+      閾値を入れられなかったものも同じ。入っていることだけは分かっているので、
+      該当として扱い、人に見てもらう。
+    */
+    if (e.conditional || e.unfilled) {
+      if (e.conditional) reasons.add("conditionalExclusion");
+      if (e.unfilled) reasons.add("unfilledThreshold");
+      const aggregated = e.aggregation !== "NONE";
+      const share = shareOf(present, e.aggregation, e.aggregationElement);
+      hits.push({
+        statutorySubstanceId: e.id,
+        total: aggregated
+          ? fromScaled(share.reduce((sum, x) => sum + (toScaled(x.pct) ?? 0n), 0n))
+          : null,
+        contributions: share,
+      });
     }
   }
 
+  return finish(hits, reasons);
+}
+
+/** 当たりが1つでもあれば該当。無ければ非該当 */
+function finish(hits: JudgeHit[], reasons: Set<ReviewReason>): JudgeResult {
   return {
     verdict: hits.length > 0 ? "APPLICABLE" : "NOT_APPLICABLE",
     needsReview: reasons.size > 0,

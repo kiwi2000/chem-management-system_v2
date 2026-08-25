@@ -61,10 +61,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         /* 非開示の組成は、そもそもこの節ごと出さない */
         canViewComposition={canViewComposition(actor, item)}
         settings={settings}
+        /* 組成と備考のあいだに挟む。組成を見ながら考えたいので */
+        afterComposition={
+          <ProductJudgements productId={item.id} canEdit={canEditComposition(actor, item)} />
+        }
       />
-
-      {/* 判定は組成の下に置く。組成を見てから「で、法令はどうなのか」と読む順 */}
-      <ProductJudgements productId={item.id} canEdit={canEditComposition(actor, item)} />
 
       <ApprovalHistory entity="product" entityId={item.id} />
     </div>

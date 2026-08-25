@@ -59,7 +59,8 @@ describe("閾値との比較", () => {
     );
     expect(r.verdict).toBe("APPLICABLE");
     expect(r.needsReview).toBe(false);
-    expect(r.hits[0]?.pct).toBe("0.2");
+    expect(r.hits[0]?.total).toBeNull();
+    expect(r.hits[0]?.contributions).toEqual([{ cas: "7439-92-1", pct: "0.2" }]);
   });
 
   it("閾値を下回れば非該当", () => {
@@ -122,7 +123,7 @@ describe("法文物質名でのまとめ", () => {
       }),
     );
     expect(r.verdict).toBe("APPLICABLE");
-    expect(r.hits[0]?.pct).toBe("0.12");
+    expect(r.hits[0]?.total).toBe("0.12");
   });
 
   it("元素換算でまとめると、単純合算とは答えが変わる", () => {
@@ -151,7 +152,7 @@ describe("法文物質名でのまとめ", () => {
       }),
     );
     expect(r.verdict).toBe("APPLICABLE");
-    expect(r.hits[0]?.pct).toBe("0.115698");
+    expect(r.hits[0]?.total).toBe("0.115698");
   });
 
   it("換算の結果、閾値を下回れば非該当になる", () => {
@@ -225,7 +226,73 @@ describe("区分でのまとめ", () => {
     expect(r.verdict).toBe("APPLICABLE");
     // 区分が当たったので、どの法文物質名かは指さない
     expect(r.hits[0]?.statutorySubstanceId).toBeNull();
-    expect(r.hits[0]?.pct).toBe("0.14");
+    expect(r.hits[0]?.total).toBe("0.14");
+  });
+});
+
+describe("まとめないときの、複数の当たり", () => {
+  it("1つの法文物質名の中で、個別に閾値を超えたCASを全部拾う", () => {
+    /*
+      **最初の1件で打ち切ってはいけない。**
+      「なぜ該当なのか」を出すとき、残りのCASが見えなくなる
+    */
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.5"), line("1317-36-8", "0.4"), line("7440-22-4", "0.05")],
+        entries: [
+          entry({
+            cas: ["7439-92-1", "1317-36-8", "7440-22-4"],
+            aggregation: "NONE",
+            threshold: over("0.1"),
+          }),
+        ],
+      }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    // 0.05 の銀は閾値に届かないので入らない
+    expect(r.hits[0]?.contributions).toEqual([
+      { cas: "7439-92-1", pct: "0.5" },
+      { cas: "1317-36-8", pct: "0.4" },
+    ]);
+  });
+
+  it("まとめないときは合計を出さない（足していないため）", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.5"), line("1317-36-8", "0.4")],
+        entries: [entry({ cas: ["7439-92-1", "1317-36-8"], threshold: over("0.1") })],
+      }),
+    );
+    // ここに 0.9 と出すと、足していないものを足したように読まれる
+    expect(r.hits[0]?.total).toBeNull();
+  });
+
+  it("まとめるときは、足したCASを全部並べて合計も出す", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.06"), line("1317-36-8", "0.06")],
+        entries: [
+          entry({ cas: ["7439-92-1", "1317-36-8"], aggregation: "SUM", threshold: over("0.1") }),
+        ],
+      }),
+    );
+    expect(r.hits[0]?.total).toBe("0.12");
+    expect(r.hits[0]?.contributions).toEqual([
+      { cas: "7439-92-1", pct: "0.06" },
+      { cas: "1317-36-8", pct: "0.06" },
+    ]);
+  });
+
+  it("区分でまとめるときも、足したCASを全部並べる", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.07"), line("7440-22-4", "0.07")],
+        category: { aggregation: "SUM", aggregationElement: null, threshold: over("0.1") },
+        entries: [entry({ id: "a", cas: ["7439-92-1"] }), entry({ id: "b", cas: ["7440-22-4"] })],
+      }),
+    );
+    expect(r.hits[0]?.contributions.map((c) => c.cas)).toEqual(["7439-92-1", "7440-22-4"]);
+    expect(r.hits[0]?.total).toBe("0.14");
   });
 });
 

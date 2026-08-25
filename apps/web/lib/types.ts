@@ -164,7 +164,19 @@ export interface ProductJudgementDto {
   computedAt: string;
 
   /** 何が何％入っていたから該当なのか。組成を見られない人には空 */
-  hits: { name: string | null; pct: string }[];
+  hits: {
+    /** 法文物質名。区分そのものが当たったときは空 */
+    name: string | null;
+    /** 法令が付けている番号（政令番号など） */
+    officialNumber: string | null;
+    /**
+     * その値を作ったCASと、それぞれの寄与。まとめたときは複数並ぶ。
+     * 「なぜその合計になったのか」を追えるようにするため
+     */
+    contributions: { cas: string; pct: string }[];
+    /** 合算した含有率。**まとめたときだけ入る**（足していないものを足したように見せない） */
+    total: string | null;
+  }[];
   /** 根拠を伏せているかどうか。空なのか伏せたのかを、画面で区別するため */
   hitsWithheld: boolean;
 }

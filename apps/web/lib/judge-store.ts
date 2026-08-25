@@ -181,7 +181,7 @@ export async function judgeProduct(
           source: "SYSTEM",
           needsReview: result.needsReview,
           reviewReasons: result.reasons,
-          hits: { create: result.hits.map((h) => ({ ...h })) },
+          hits: { create: result.hits.map((h) => ({ ...h, contributions: h.contributions })) },
         },
       }),
     ),

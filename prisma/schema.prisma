@@ -447,11 +447,19 @@ model ProductJudgementHit {
   /**
    * 当たった法文物質名。区分そのものでまとめて当たったときは空
    */
-  statutorySubstanceId String? @map("statutory_substance_id")
+  statutorySubstanceId String?  @map("statutory_substance_id")
   /**
-   * 判定に使った合計％
+   * 合算した含有率。**まとめたときだけ入る。**
+   * まとめないときは CAS ごとに別々に比べているので、合計には意味が無い。
+   * そこに数字を入れると、足していないものを足したように読まれてしまう
    */
-  pct                  Decimal @db.Decimal(9, 6)
+  total                Decimal? @db.Decimal(9, 6)
+  /**
+   * その値を作った CAS と、それぞれがいくら効いたか（[{ cas, pct }]）。
+   * **「なぜその合計になったのか」に答えるために要る。**
+   * 番号と割合を別々の配列で持つと、順番がずれたときに黙って食い違う
+   */
+  contributions        Json?
 
   judgement ProductJudgement @relation(fields: [judgementId], references: [id], onDelete: Cascade)
 
