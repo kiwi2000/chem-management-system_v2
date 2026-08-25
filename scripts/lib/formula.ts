@@ -13,6 +13,7 @@
  *   Ca(NO3)2       括弧でくくって倍にする
  *   2H2O           先頭の数字は、その後ろ全体にかかる（水和物の書きかた）
  *   AsO2.1/2Zn     分数もある（AsO2 ひとつに Zn が半分＝Zn(AsO2)2 のこと）
+ *   PbF2.01        個数が小数のこともある（「.」が区切りではなく小数点）
  *
  * **読めない書きかたは null を返す。**
  * 適当な数を返すと、判定が静かに間違う。読めないと分かれば、
@@ -34,8 +35,21 @@ export function parseFormula(raw: string): Composition | null {
   // 電荷や状態の注記が付くものは、素直に読めないので扱わない
   if (/[+\-·•]/.test(text)) return null;
 
+  /*
+    「.」は成分の区切りだが、**小数点のこともある**
+    （PbF2.01、Bi2Te2.67、Co0.2LiNi0.8O2）。
+
+    **前後がどちらも数字なら小数点**、それ以外は区切り。
+    「区切ったあとが数字だけなら小数」という見かたでは、
+    Co0.2LiNi0.8O2 のように小数のあとに元素が続く形を取り違える。
+
+    ただし数字のあとに「/」が続くときは分数の始まりなので、区切りとして扱う
+    （AsO2.1/2Zn の「.1/2」は 0.1 ではなく「2分の1」）。
+  */
+  const parts = text.split(/(?<!\d)\.|\.(?!\d)|\.(?=\d+\/)/);
+
   const out: Composition = new Map();
-  for (const part of text.split(".")) {
+  for (const part of parts) {
     const parsed = parsePart(part);
     if (!parsed) return null;
     for (const [sym, n] of parsed) out.set(sym, (out.get(sym) ?? 0) + n);
@@ -98,7 +112,7 @@ function parseGroup(s: string): Composition | null {
     }
 
     // 元素記号は「大文字1つ＋小文字0〜2つ」
-    const el = s.slice(i).match(/^([A-Z][a-z]{0,2})(\d*)/);
+    const el = s.slice(i).match(/^([A-Z][a-z]{0,2})(\d*(?:\.\d+)?)/);
     if (!el || !el[1]) return null;
     add(el[1], el[2] ? Number(el[2]) : 1);
     i += el[0].length;

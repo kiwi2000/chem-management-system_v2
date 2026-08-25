@@ -100,8 +100,62 @@ describe("分子式を読む", () => {
     );
   });
 
+  it("個数が小数のものを読む（「.」が小数点のとき）", () => {
+    // PbF2.01 は「PbF2 と 01」ではなく、F が 2.01 個
+    expect(parseFormula("PbF2.01")).toEqual(
+      new Map([
+        ["Pb", 1],
+        ["F", 2.01],
+      ]),
+    );
+    expect(parseFormula("Bi2Te2.67")).toEqual(
+      new Map([
+        ["Bi", 2],
+        ["Te", 2.67],
+      ]),
+    );
+  });
+
+  it("小数のあとに元素が続いても、区切りと取り違えない", () => {
+    // Co0.2LiNi0.8O2 は Co が 0.2 個、Ni が 0.8 個
+    expect(parseFormula("Co0.2LiNi0.8O2")).toEqual(
+      new Map([
+        ["Co", 0.2],
+        ["Li", 1],
+        ["Ni", 0.8],
+        ["O", 2],
+      ]),
+    );
+  });
+
+  it("小数点と成分の区切りを取り違えない", () => {
+    // 「.」のあとが元素記号なら、それは成分の区切り
+    expect(parseFormula("CrH2O4.Pb")).toEqual(
+      new Map([
+        ["Cr", 1],
+        ["H", 2],
+        ["O", 4],
+        ["Pb", 1],
+      ]),
+    );
+  });
+
   it("読めない書きかたは null（適当な数を返さない）", () => {
-    for (const bad of ["", "   ", "cl2", "3", "Pb2+", "H2O·2H2O", "(OH", "??"]) {
+    for (const bad of [
+      "",
+      "   ",
+      "cl2",
+      "3",
+      "Pb2+",
+      "H2O·2H2O",
+      "(OH",
+      "??",
+      // 実データに出てくる、数が決まらない書きかた
+      "Cl2Zn.xH2O", // 水和水の数が不明
+      "C32H22CrN10O8.(C2H4O)nC28H31N2O3", // 重合度が不明
+      "Cr.Fe.Unspecified", // 成分そのものが不明
+      "PbO1-2", // 組成に幅がある
+    ]) {
       expect(parseFormula(bad)).toBeNull();
     }
   });

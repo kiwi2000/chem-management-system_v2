@@ -27,6 +27,25 @@ const prisma = new PrismaClient();
 
 /** この印が付いた係数は、このスクリプトが作ったもの。次回は作り直してよい */
 const MARK = "LOLIの分子式から計算";
+/** 上の印に続けて付ける。**正確な値ではない**ことを、後から探せるようにする */
+const MARK_APPROX = "（概算）";
+
+/**
+ * 水和物の水を落とす。`Cl2Zn.xH2O` → `Cl2Zn`
+ *
+ * LOLI は水和水の数を `x` と書く（数が決まっていない、という意味）。
+ * そのままでは計算できないので、**無水として計算する**。
+ * 水のぶんだけ分母が小さくなるので、金属の割合は**実際より大きく**出る。
+ *
+ * **多めに出るのは、拾いすぎる向きの誤り。**0 として数えて見落とすよりはよい。
+ * ただし正確ではないので、概算の印を付けて後から直せるようにする。
+ */
+function dropUnknownHydrate(formula: string): string | null {
+  const parts = formula.split(".");
+  const kept = parts.filter((p) => !/^x[A-Z]/.test(p.trim()));
+  if (kept.length === parts.length || kept.length === 0) return null;
+  return kept.join(".");
+}
 
 async function main() {
   const path = process.argv[2];
@@ -90,7 +109,15 @@ async function main() {
   });
   const byKey = new Map(existing.map((f) => [`${f.casNormalized}|${f.metalElement}`, f]));
 
-  const tally = { made: 0, updated: 0, kept: 0, noFormula: 0, unreadable: 0, notContained: 0 };
+  const tally = {
+    made: 0,
+    updated: 0,
+    kept: 0,
+    noFormula: 0,
+    unreadable: 0,
+    notContained: 0,
+    approx: 0,
+  };
   const samples: string[] = [];
 
   for (const [key, w] of wanted) {
@@ -106,11 +133,23 @@ async function main() {
       tally.noFormula += 1;
       continue;
     }
-    if (!parseFormula(formula)) {
-      tally.unreadable += 1;
-      continue;
+    /*
+      そのままでは読めないものでも、水和水の数が分からないだけなら
+      無水として計算できる（多めに出るが、0 にして見落とすよりよい）。
+    */
+    let used = formula;
+    let approx = false;
+    if (!parseFormula(used)) {
+      const dry = dropUnknownHydrate(used);
+      if (!dry || !parseFormula(dry)) {
+        tally.unreadable += 1;
+        continue;
+      }
+      used = dry;
+      approx = true;
+      tally.approx += 1;
     }
-    const fraction = elementFraction(formula, w.element, weights);
+    const fraction = elementFraction(used, w.element, weights);
     if (fraction === null) {
       // 分子式にその元素が入っていない（紐づけ自体を疑う手がかりになる）
       tally.notContained += 1;
@@ -118,7 +157,9 @@ async function main() {
     }
 
     const ratioPct = (fraction * 100).toFixed(6);
-    if (samples.length < 8) samples.push(`${w.cas} ${w.element} ${formula} → ${ratioPct}%`);
+    if (samples.length < 8) {
+      samples.push(`${w.cas} ${w.element} ${used}${approx ? "（無水として）" : ""} → ${ratioPct}%`);
+    }
 
     if (write) {
       const data = {
@@ -126,7 +167,7 @@ async function main() {
         casNormalized: w.cas,
         metalElement: w.element,
         ratioPct,
-        note: `${MARK}（${formula}）`,
+        note: `${MARK}${approx ? MARK_APPROX : ""}（${formula}）`,
       };
       if (found) await prisma.metalConversionFactor.update({ where: { id: found.id }, data });
       else await prisma.metalConversionFactor.create({ data });
@@ -141,6 +182,7 @@ async function main() {
   console.log(`  人が入れたので触らない: ${tally.kept}件`);
   console.log(`  分子式がLOLIに無い  : ${tally.noFormula}件`);
   console.log(`  分子式が読めない    : ${tally.unreadable}件`);
+  console.log(`  うち概算で入れた    : ${tally.approx}件（水和水の数が不明。無水として計算）`);
   console.log(`  分子式に金属等が無い : ${tally.notContained}件`);
   console.log("\n  例:");
   for (const s of samples) console.log(`    ${s}`);
