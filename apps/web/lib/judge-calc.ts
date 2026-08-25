@@ -46,7 +46,7 @@ export interface JudgeEntry {
   cas: string[];
   aggregation: Aggregation;
   /** 元素換算でまとめるときの元素記号 */
-  aggregationElement: string | null;
+  conversionTarget: string | null;
   threshold: Threshold;
   /** 濃度のほかに条件が付く（備考に印がある）。当たったら要確認にする */
   conditional: boolean;
@@ -56,7 +56,7 @@ export interface JudgeEntry {
 
 export interface JudgeCategory {
   aggregation: Aggregation;
-  aggregationElement: string | null;
+  conversionTarget: string | null;
   threshold: Threshold;
 }
 
@@ -76,6 +76,8 @@ export interface JudgeInput {
 
 /** 要確認にした理由。文言は画面側で付ける */
 export type ReviewReason =
+  /** 換算先が決まっているのに、その CAS の換算係数が無い */
+  | "missingFactor"
   /** 中身の分からない原材料が残っている */
   | "unknownComposition"
   /** 深すぎて展開しきれなかった */
@@ -128,26 +130,30 @@ function within(pct: bigint, t: Threshold): boolean {
 /**
  * その CAS の含有率を、まとめかたに従って数える。
  *
- * ELEMENT のときは金属換算係数を掛ける。「鉛として」何％か、という数えかた。
+ * ELEMENT のときは換算係数を掛ける。「鉛として」何％か、という数えかた。
  * 酸化鉛 0.06％ は、鉛としては 0.056％。**単純に足すと答えが変わる。**
- * 係数が無い CAS は、換算できないので **そのままの値** で数える
- * （0 にすると見落とすため、多いほうへ倒す）。
+ *
+ * **係数が無い CAS は 0 として数える。**
+ * そのままの値を使うと「換算したつもりで換算していない」状態になり、
+ * 画面上それが見分けられない。0 にすると足りないほうへ倒れるので、
+ * 呼び出し側で**必ず要確認の印を立てる**（missing を返すのはそのため）。
+ *
+ * 換算先は金属とは限らない（化管法の「無機シアン化合物」はシアン CN として換算する）。
  */
 function pctOf(
   line: ExpandedLine,
   mode: Aggregation,
-  element: string | null,
+  target: string | null,
   factors: ElementFactors,
-): bigint {
+): { pct: bigint; missing: boolean } {
   const raw = toScaled(line.totalPct) ?? 0n;
-  if (mode !== "ELEMENT" || !element || !line.casNormalized) return raw;
+  if (mode !== "ELEMENT" || !target || !line.casNormalized) return { pct: raw, missing: false };
 
-  const found = factors.get(line.casNormalized)?.find((f) => f.element === element);
-  if (!found) return raw;
-  const ratio = toScaled(found.ratioPct);
-  if (ratio === null) return raw;
+  const found = factors.get(line.casNormalized)?.find((f) => f.element === target);
+  const ratio = found ? toScaled(found.ratioPct) : null;
+  if (ratio === null) return { pct: 0n, missing: true };
   // 係数は重量％なので 100 で割る
-  return (raw * ratio) / (100n * 1000000n);
+  return { pct: (raw * ratio) / (100n * 1000000n), missing: false };
 }
 
 /**
@@ -171,30 +177,36 @@ export function judge(input: JudgeInput): JudgeResult {
   if ((toScaled(input.unknownPct) ?? 0n) > 0n) reasons.add("unknownComposition");
   if (input.truncated > 0) reasons.add("truncated");
 
-  /** その CAS がいくら効いたかを、まとめかたに従って出す */
-  const shareOf = (list: string[], mode: Aggregation, element: string | null) =>
-    list.map((c) => ({
-      cas: c,
-      pct: fromScaled(pctOf(byCas.get(c) as ExpandedLine, mode, element, factors)),
-    }));
+  /**
+   * その CAS がいくら効いたかを、まとめかたに従って出す。
+   * 換算係数が無いものがあれば、要確認の印を立てる（0 として数えるため）。
+   */
+  const shareOf = (list: string[], mode: Aggregation, target: string | null) =>
+    list.map((c) => {
+      const r = pctOf(byCas.get(c) as ExpandedLine, mode, target, factors);
+      if (r.missing) reasons.add("missingFactor");
+      return { cas: c, pct: fromScaled(r.pct) };
+    });
+
+  /** 閾値と比べる値。合計するときはここを足す */
+  const valueOf = (c: string, mode: Aggregation, target: string | null) => {
+    const r = pctOf(byCas.get(c) as ExpandedLine, mode, target, factors);
+    if (r.missing) reasons.add("missingFactor");
+    return r.pct;
+  };
 
   if (category.aggregation !== "NONE") {
     // 区分でまとめる。CAS を重複なく集めてから、一度だけ足す
     const cas = [...new Set(entries.flatMap((e) => e.cas))].filter((c) => byCas.has(c));
     let total = 0n;
     for (const c of cas) {
-      total += pctOf(
-        byCas.get(c) as ExpandedLine,
-        category.aggregation,
-        category.aggregationElement,
-        factors,
-      );
+      total += valueOf(c, category.aggregation, category.conversionTarget);
     }
     if (within(total, category.threshold)) {
       hits.push({
         statutorySubstanceId: null,
         total: fromScaled(total),
-        contributions: shareOf(cas, category.aggregation, category.aggregationElement),
+        contributions: shareOf(cas, category.aggregation, category.conversionTarget),
       });
       // まとめた中に、条件つき・閾値未設定のものが混ざっていれば要確認
       for (const e of entries) {
@@ -216,9 +228,7 @@ export function judge(input: JudgeInput): JudgeResult {
         1つの法文物質名の中で、複数の CAS がそれぞれ閾値を超えることがあるので、
         当たったものは全部拾う（最初の1件で打ち切ると、残りが見えなくなる）。
       */
-      const matched = present.filter((c) =>
-        within(pctOf(byCas.get(c) as ExpandedLine, "NONE", null, factors), e.threshold),
-      );
+      const matched = present.filter((c) => within(valueOf(c, "NONE", null), e.threshold));
       if (matched.length > 0) {
         hits.push({
           statutorySubstanceId: e.id,
@@ -232,13 +242,13 @@ export function judge(input: JudgeInput): JudgeResult {
       // まとめる。足した値ひとつを閾値と比べる
       let total = 0n;
       for (const c of present) {
-        total += pctOf(byCas.get(c) as ExpandedLine, e.aggregation, e.aggregationElement, factors);
+        total += valueOf(c, e.aggregation, e.conversionTarget);
       }
       if (within(total, e.threshold)) {
         hits.push({
           statutorySubstanceId: e.id,
           total: fromScaled(total),
-          contributions: shareOf(present, e.aggregation, e.aggregationElement),
+          contributions: shareOf(present, e.aggregation, e.conversionTarget),
         });
         continue;
       }
@@ -259,7 +269,7 @@ export function judge(input: JudgeInput): JudgeResult {
       if (e.conditional) reasons.add("conditionalExclusion");
       if (e.unfilled) reasons.add("unfilledThreshold");
       const aggregated = e.aggregation !== "NONE";
-      const share = shareOf(present, e.aggregation, e.aggregationElement);
+      const share = shareOf(present, e.aggregation, e.conversionTarget);
       hits.push({
         statutorySubstanceId: e.id,
         total: aggregated

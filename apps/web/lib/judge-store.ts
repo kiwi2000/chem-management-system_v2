@@ -40,7 +40,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
     select: {
       id: true,
       aggregation: true,
-      aggregationElement: true,
+      conversionTarget: true,
       thresholdLower: true,
       lowerBound: true,
       thresholdUpper: true,
@@ -54,7 +54,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
               id: true,
               note: true,
               aggregation: true,
-              aggregationElement: true,
+              conversionTarget: true,
               thresholdLower: true,
               lowerBound: true,
               thresholdUpper: true,
@@ -82,7 +82,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
     categoryId: c.id,
     category: {
       aggregation: c.aggregation,
-      aggregationElement: c.aggregationElement,
+      conversionTarget: c.conversionTarget,
       threshold: {
         lower: c.thresholdLower.toString(),
         lowerBound: c.lowerBound,
@@ -95,7 +95,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
         id: s.id,
         cas: casOf.get(s.id) ?? [],
         aggregation: s.aggregation,
-        aggregationElement: s.aggregationElement,
+        conversionTarget: s.conversionTarget,
         threshold: {
           lower: s.thresholdLower.toString(),
           lowerBound: s.lowerBound,

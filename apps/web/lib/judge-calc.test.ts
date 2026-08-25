@@ -29,7 +29,7 @@ const entry = (x: Partial<JudgeEntry> = {}): JudgeEntry => ({
   id: "e1",
   cas: ["7439-92-1"],
   aggregation: "NONE",
-  aggregationElement: null,
+  conversionTarget: null,
   threshold: any,
   conditional: false,
   unfilled: false,
@@ -40,7 +40,7 @@ const input = (x: Partial<JudgeInput> = {}): JudgeInput => ({
   lines: [],
   unknownPct: "0",
   truncated: 0,
-  category: { aggregation: "NONE", aggregationElement: null, threshold: any },
+  category: { aggregation: "NONE", conversionTarget: null, threshold: any },
   entries: [entry()],
   factors: new Map(),
   ...x,
@@ -144,7 +144,7 @@ describe("法文物質名でのまとめ", () => {
           entry({
             cas: two,
             aggregation: "ELEMENT",
-            aggregationElement: "Pb",
+            conversionTarget: "Pb",
             threshold: over("0.1"),
           }),
         ],
@@ -164,7 +164,7 @@ describe("法文物質名でのまとめ", () => {
           entry({
             cas: ["1317-36-8"],
             aggregation: "ELEMENT",
-            aggregationElement: "Pb",
+            conversionTarget: "Pb",
             threshold: over("0.1"),
           }),
         ],
@@ -175,7 +175,12 @@ describe("法文物質名でのまとめ", () => {
     expect(r.verdict).toBe("NOT_APPLICABLE");
   });
 
-  it("換算係数が無ければ、そのままの値で数える（0にして見落とさない）", () => {
+  it("換算係数が無ければ 0 として数え、要確認にする", () => {
+    /*
+      そのままの値を使うと「換算したつもりで換算していない」状態になり、
+      画面上それが見分けられない。0 にすると足りないほうへ倒れるので、
+      **必ず要確認の印を立てる**（そのための印が missingFactor）。
+    */
     const r = judge(
       input({
         lines: [line("1317-36-8", "0.15")],
@@ -183,14 +188,16 @@ describe("法文物質名でのまとめ", () => {
           entry({
             cas: ["1317-36-8"],
             aggregation: "ELEMENT",
-            aggregationElement: "Pb",
+            conversionTarget: "Pb",
             threshold: over("0.1"),
           }),
         ],
         factors: new Map(),
       }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(r.needsReview).toBe(true);
+    expect(r.reasons).toContain("missingFactor");
   });
 });
 
@@ -204,7 +211,7 @@ describe("区分でのまとめ", () => {
     const r = judge(
       input({
         lines: [line("7439-92-1", "0.08")],
-        category: { aggregation: "SUM", aggregationElement: null, threshold: over("0.1") },
+        category: { aggregation: "SUM", conversionTarget: null, threshold: over("0.1") },
         entries: [
           entry({ id: "a", cas: ["7439-92-1"], aggregation: "SUM" }),
           entry({ id: "b", cas: ["7439-92-1"], aggregation: "SUM" }),
@@ -219,7 +226,7 @@ describe("区分でのまとめ", () => {
     const r = judge(
       input({
         lines: [line("7439-92-1", "0.07"), line("7440-22-4", "0.07")],
-        category: { aggregation: "SUM", aggregationElement: null, threshold: over("0.1") },
+        category: { aggregation: "SUM", conversionTarget: null, threshold: over("0.1") },
         entries: [entry({ id: "a", cas: ["7439-92-1"] }), entry({ id: "b", cas: ["7440-22-4"] })],
       }),
     );
@@ -287,7 +294,7 @@ describe("まとめないときの、複数の当たり", () => {
     const r = judge(
       input({
         lines: [line("7439-92-1", "0.07"), line("7440-22-4", "0.07")],
-        category: { aggregation: "SUM", aggregationElement: null, threshold: over("0.1") },
+        category: { aggregation: "SUM", conversionTarget: null, threshold: over("0.1") },
         entries: [entry({ id: "a", cas: ["7439-92-1"] }), entry({ id: "b", cas: ["7440-22-4"] })],
       }),
     );

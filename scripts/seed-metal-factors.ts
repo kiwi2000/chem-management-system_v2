@@ -20,6 +20,7 @@
  */
 import { readFileSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
+import { atomicWeightMap } from "./lib/atomic-weights";
 import { elementFraction, parseFormula } from "./lib/formula";
 
 const prisma = new PrismaClient();
@@ -34,12 +35,12 @@ async function main() {
     throw new Error("分子式のTSVのパスを渡してください");
   }
 
-  // 原子量。1つでも欠けている元素が混ざったら計算しない（静かに間違えないため）
-  const elements = await prisma.element.findMany({
-    where: { atomicWeight: { not: null } },
-    select: { symbol: true, atomicWeight: true },
-  });
-  const weights = new Map(elements.map((e) => [e.symbol, Number(e.atomicWeight)]));
+  /*
+    原子量はコードの側に持つ。元素マスタは「元素記号を手で入れるときの選択肢」を
+    出すための一覧で、人が編集するもの。物理定数を混ぜない。
+    1つでも欠けている元素が混ざったら計算しない（静かに間違えないため）。
+  */
+  const weights = atomicWeightMap();
   console.log(`原子量: ${weights.size}件`);
 
   // CAS → 分子式
@@ -52,7 +53,7 @@ async function main() {
   }
   console.log(`分子式: ${formulaOf.size}件`);
 
-  // どの CAS について、どの元素の係数が要るか
+  // どの CAS について、どの換算先の係数が要るか
   const version = await prisma.linkSetVersion.findFirst({
     where: { isCurrent: true },
     select: { id: true },
@@ -60,8 +61,8 @@ async function main() {
   if (!version) throw new Error("現在のバージョンが決まっていません");
 
   const entries = await prisma.statutorySubstance.findMany({
-    where: { aggregation: "ELEMENT", aggregationElement: { not: null }, deletedAt: null },
-    select: { id: true, aggregationElement: true },
+    where: { aggregation: "ELEMENT", conversionTarget: { not: null }, deletedAt: null },
+    select: { id: true, conversionTarget: true },
   });
   const links = await prisma.statutoryCasLink.findMany({
     where: {
@@ -71,16 +72,16 @@ async function main() {
     },
     select: { statutorySubstanceId: true, casNormalized: true },
   });
-  const elementOf = new Map(entries.map((e) => [e.id, e.aggregationElement as string]));
+  const elementOf = new Map(entries.map((e) => [e.id, e.conversionTarget as string]));
 
-  /** 「CAS|元素」で重複を除く */
+  /** 「CAS|換算先」で重複を除く */
   const wanted = new Map<string, { cas: string; element: string }>();
   for (const l of links) {
     const el = elementOf.get(l.statutorySubstanceId);
     if (!el) continue;
     wanted.set(`${l.casNormalized}|${el}`, { cas: l.casNormalized, element: el });
   }
-  console.log(`要る「CAS × 元素」: ${wanted.size}件`);
+  console.log(`要る「CAS × 換算先」: ${wanted.size}件`);
 
   // 人が入れたものは触らない
   const existing = await prisma.metalConversionFactor.findMany({
@@ -140,7 +141,7 @@ async function main() {
   console.log(`  人が入れたので触らない: ${tally.kept}件`);
   console.log(`  分子式がLOLIに無い  : ${tally.noFormula}件`);
   console.log(`  分子式が読めない    : ${tally.unreadable}件`);
-  console.log(`  分子式にその元素が無い: ${tally.notContained}件`);
+  console.log(`  分子式に換算先が無い : ${tally.notContained}件`);
   console.log("\n  例:");
   for (const s of samples) console.log(`    ${s}`);
   await prisma.$disconnect();

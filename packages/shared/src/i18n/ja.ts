@@ -812,6 +812,8 @@ export const ja = {
     notePlaceholder: "そう判断した根拠（あとで問われたときのために）",
     showNotApplicable: (n: number) => `非該当の ${n} 件も見る`,
     hideNotApplicable: "非該当を隠す",
+    reasonMissingFactor:
+      "換算係数が登録されていないCASがあります。そのぶんは0として数えているので、実際より少なく出ています。",
     reasonUnknown:
       "中身の登録されていない原材料が残っています。その分に何が入っているか分かりません。",
     reasonTruncated: "原材料の入れ子が深すぎて、最後まで展開できませんでした。",

@@ -1226,11 +1226,11 @@ model RegulationCategory {
    * 法文物質名ごとの合計を足し上げると、同じ CAS が2つの法文物質名に
    * 紐づいていたときに二重に数えてしまう。
    */
-  aggregation        AggregationMode @default(NONE)
+  aggregation      AggregationMode @default(NONE)
   /**
    * 元素換算でまとめるときの元素記号（Pb, Cr, Cd …）。ELEMENT のときだけ使う
    */
-  aggregationElement String?         @map("aggregation_element") @db.VarChar(4)
+  conversionTarget String?         @map("conversion_target") @db.VarChar(4)
 
   /**
    * 兼ね合い。同じグループの中で rank の小さい方だけを出す
@@ -1338,11 +1338,11 @@ model StatutorySubstance {
    * **該当を見落とす**。
    * ただし**区分の側でまとめると決めているときは、ここは見ない**（区分が優先）。
    */
-  aggregation        AggregationMode @default(NONE)
+  aggregation      AggregationMode @default(NONE)
   /**
    * 元素換算でまとめるときの元素記号（Pb, Cr, Cd …）。ELEMENT のときだけ使う
    */
-  aggregationElement String?         @map("aggregation_element") @db.VarChar(4)
+  conversionTarget String?         @map("conversion_target") @db.VarChar(4)
 
   /**
    * 判定に使う閾値。4欄とも必須。作成時に区分の既定を複写する
@@ -1541,12 +1541,6 @@ model Element {
   atomicNumber Int    @unique @map("atomic_number")
   nameJa       String @map("name_ja") @db.VarChar(100)
   nameEn       String @map("name_en") @db.VarChar(100)
-
-  /**
-   * 標準原子量。分子式から「その元素として何％か」を計算するのに使う。
-   * 安定同位体を持たない元素は、いちばん寿命の長い同位体の質量数を入れる
-   */
-  atomicWeight Decimal? @map("atomic_weight") @db.Decimal(10, 4)
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")

@@ -1,19 +1,17 @@
 /**
- * 元素マスタに標準原子量を入れる管理用スクリプト。
+ * 標準原子量（IUPAC 2021年表）。
  *
- * 実行:
- *   npx tsx scripts/seed-atomic-weights.ts
+ * 分子式から「その元素として何％か」を計算するためだけに使う。
  *
- * 分子式から「その元素として何％か」を出すのに要る。
- * 値は IUPAC の標準原子量（2021年表）。安定同位体を持たない元素は、
- * いちばん寿命の長い同位体の質量数を入れる（判定では使わないが、空にしない）。
+ * **元素マスタ（`elements`）には置かない。**
+ * あちらは元素記号を手で入れるときの選択肢を出すための一覧で、
+ * 人が中身を編集する。物理定数を混ぜると、誰かが直せてしまう。
+ * ここは変わらない値なので、コードの側に置く。
+ *
+ * 安定同位体を持たない元素は、いちばん寿命の長い同位体の質量数を入れてある。
+ * 判定で使うことはまず無いが、欠けていると計算そのものが止まるので埋めておく。
  */
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-/** 元素記号 → 標準原子量 */
-const WEIGHTS: Record<string, number> = {
+export const ATOMIC_WEIGHTS: Record<string, number> = {
   H: 1.008,
   He: 4.0026,
   Li: 6.94,
@@ -134,25 +132,7 @@ const WEIGHTS: Record<string, number> = {
   Og: 294,
 };
 
-async function main() {
-  const elements = await prisma.element.findMany({ select: { symbol: true } });
-  let done = 0;
-  const missing: string[] = [];
-  for (const e of elements) {
-    const w = WEIGHTS[e.symbol];
-    if (w === undefined) {
-      missing.push(e.symbol);
-      continue;
-    }
-    await prisma.element.update({ where: { symbol: e.symbol }, data: { atomicWeight: w } });
-    done += 1;
-  }
-  console.log(`原子量を入れました: ${done}件 / 元素マスタ ${elements.length}件`);
-  if (missing.length > 0) console.log(`  値を持っていない記号: ${missing.join(", ")}`);
-  await prisma.$disconnect();
+/** 計算に渡す形（Map）にする */
+export function atomicWeightMap(): Map<string, number> {
+  return new Map(Object.entries(ATOMIC_WEIGHTS));
 }
-
-main().catch((e) => {
-  console.error(e);
-  process.exitCode = 1;
-});

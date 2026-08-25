@@ -350,6 +350,7 @@ function Matched({ hit, m }: { hit: ProductJudgementDto["hits"][number]; m: M })
 /** なぜ確認が要るのか。次に何をすべきかが分かる言葉にする */
 function reasonText(m: M, reason: string): string {
   const table: Record<string, string> = {
+    missingFactor: m.judgements.reasonMissingFactor,
     unknownComposition: m.judgements.reasonUnknown,
     truncated: m.judgements.reasonTruncated,
     conditionalExclusion: m.judgements.reasonConditional,
