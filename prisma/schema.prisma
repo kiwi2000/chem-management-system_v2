@@ -149,7 +149,12 @@ model User {
    * TOTP（多要素認証）の秘密鍵。null=MFA未設定
    */
   mfaSecret             String?   @map("mfa_secret")
-  mfaEnabled            Boolean   @default(false) @map("mfa_enabled")
+  /**
+   * 2要素認証のやりかた。none（使わない）/ totp（認証アプリの6桁）。
+   * 真偽値ではなく方式で持つのは、将来メール認証を足せるようにするため。
+   * 登録の途中（鍵は作ったが6桁の確認がまだ）は mfaSecret だけが入り、ここは none のまま
+   */
+  mfaMethod             String    @default("none") @map("mfa_method") @db.VarChar(20)
   displayName           String?   @map("display_name")
   /**
    * アバター画像の中身と種類。アプリ側のファイルは配置のたびに消えるため、DBに持つ。

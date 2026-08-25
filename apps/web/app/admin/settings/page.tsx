@@ -365,6 +365,23 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">{m.mfa.title}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={settings.mfaRequired}
+                onChange={(e) => setSettings({ ...settings, mfaRequired: e.target.checked })}
+              />
+              {m.settings.mfaRequired}
+            </label>
+            <p className="text-muted-foreground text-xs">{m.mfa.requiredHint}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">{m.settings.passwordSection}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

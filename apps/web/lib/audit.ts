@@ -7,7 +7,16 @@ import { prisma } from "@/lib/db";
 export async function writeAudit(params: {
   entity: string;
   entityId?: string;
-  action: "create" | "update" | "delete" | "login" | "determine" | "import" | "export";
+  action:
+    | "create"
+    | "update"
+    | "delete"
+    | "login"
+    | "login_failed"
+    | "logout"
+    | "determine"
+    | "import"
+    | "export";
   actorId?: string;
   diff?: unknown;
 }): Promise<void> {

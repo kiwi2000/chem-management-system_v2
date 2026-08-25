@@ -237,8 +237,6 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
         showPager={false}
         // 件数が少ないので絞り込みは出さない（並べ替えは見出しで行う）
         showFilters={false}
-        showOpenHint={false}
-        busyOnActivate={false}
         create={editable && !editingId ? { onClick: startNew } : undefined}
         headerActions={
           editable && editingId ? (
@@ -255,8 +253,10 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
             </div>
           ) : undefined
         }
-        // 編集中は他の行に移らない（打ちかけの内容を黙って捨てないため）
-        onRowActivate={editable && !editingId ? startEdit : undefined}
+        // 編集は行の右端の鉛筆から。編集中は押せなくする（打ちかけの内容を捨てないため）
+        rowAction={
+          editable ? { onClick: startEdit, disabled: () => editingId !== null } : undefined
+        }
       />
     </section>
   );

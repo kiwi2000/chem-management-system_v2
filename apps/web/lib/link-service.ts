@@ -111,7 +111,7 @@ export async function listCasLinks(
       isCasRepresentative: true,
       casNormalized: { in: [...new Set(links.map((l) => l.casNormalized))] },
     },
-    select: { casNormalized: true, nameJa: true, nameEn: true },
+    select: { id: true, casNormalized: true, nameJa: true, nameEn: true },
   });
   const nameByCas = new Map(reps.map((r) => [r.casNormalized ?? "", r]));
 
@@ -136,6 +136,7 @@ export async function listCasLinks(
       sourceCode: l.source.code,
       casNumber: l.casNumber,
       casNormalized: l.casNormalized,
+      substanceId: nameByCas.get(l.casNormalized)?.id ?? null,
       substanceNameJa: nameByCas.get(l.casNormalized)?.nameJa ?? null,
       substanceNameEn: nameByCas.get(l.casNormalized)?.nameEn ?? null,
       excluded: l.excluded,

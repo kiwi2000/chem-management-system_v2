@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import {
   PUBLISH_STATES,
   emptyTableState,
@@ -342,7 +343,13 @@ export function ProductsTable({
             : undefined
         }
         filterLayout={filterLayout}
-        onRowActivate={(p) => router.push(`/products/${p.id}`)}
+        // 行の右端の › で詳細画面へ。編集はその画面の「編集」から行う
+        rowAction={{
+          icon: ChevronRight,
+          label: m.common.detail,
+          busy: true,
+          onClick: (p) => router.push(`/products/${p.id}`),
+        }}
       />
     </div>
   );

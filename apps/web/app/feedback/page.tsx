@@ -402,18 +402,20 @@ export default function FeedbackPage() {
         emptyMessage="まだ投稿がありません"
         selectable
         onDeleteSelected={onDeleteSelected}
-        // この画面は詳細を別に持たないので、ダブルクリックで上のフォームに読み込む
-        onRowActivate={(f) => {
-          setForm({
-            id: f.id,
-            title: f.title,
-            body: f.body,
-            kind: f.kind,
-            priority: f.priority,
-            status: f.status,
-            reply: f.reply ?? "",
-          });
-          window.scrollTo({ top: 0, behavior: "smooth" });
+        // この画面は詳細を別に持たないので、鉛筆で上のフォームに読み込む
+        rowAction={{
+          onClick: (f) => {
+            setForm({
+              id: f.id,
+              title: f.title,
+              body: f.body,
+              kind: f.kind,
+              priority: f.priority,
+              status: f.status,
+              reply: f.reply ?? "",
+            });
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          },
         }}
         filterLayout={[
           ["title"],

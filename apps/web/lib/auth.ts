@@ -4,6 +4,7 @@ import { AUTH_POLICY, normalizeEmail } from "@chem/shared";
 import type { User as AppUser } from "@prisma/client";
 import { cookies, headers } from "next/headers";
 import { cache } from "react";
+import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
 import { getAppSettings } from "@/lib/settings";
 
@@ -69,6 +70,42 @@ export interface LoginSuccess {
  * ログイン検証（試行回数の記録・ロックアウト込み）。
  * 成功時はセッションを発行しCookieへ保存する。
  */
+/**
+ * 誰がどこから触ったか。監査に残すためだけのもの。
+ * 取れなくても認証の流れは止めない。
+ */
+async function callerInfo(): Promise<{ ip: string | null; userAgent: string | null }> {
+  try {
+    const hdrs = await headers();
+    return {
+      ip: hdrs.get("x-forwarded-for") ?? null,
+      userAgent: hdrs.get("user-agent")?.slice(0, 200) ?? null,
+    };
+  } catch {
+    return { ip: null, userAgent: null };
+  }
+}
+
+/**
+ * ログインに失敗したことを残す。
+ *
+ * 攻撃されたとき、あとから「いつ・どこから・どの口座を狙われたか」を追えるようにする。
+ * **入力されたパスワードは絶対に残さない。**残すと、記録そのものが漏洩源になる。
+ *
+ * 存在しない利用者のぶんも残す。書き込みの時間が失敗の種類によって変わると、
+ * そこから口座の有無を当てられてしまうため、どの道でも同じだけ書く。
+ */
+async function auditLoginFailure(email: string, reason: string, userId?: string): Promise<void> {
+  const { ip, userAgent } = await callerInfo();
+  await writeAudit({
+    entity: "users",
+    entityId: userId,
+    action: "login_failed",
+    actorId: userId,
+    diff: { email: normalizeEmail(email), reason, ip, userAgent },
+  });
+}
+
 export async function login(
   email: string,
   password: string,
@@ -84,10 +121,15 @@ export async function login(
       "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHRzb21lc2FsdA$3T7v3sSDkYFRfR3o5xk8Ub0FR2Q1H0V0oTn8h3lM9Zc",
       password,
     );
+    await auditLoginFailure(email, "unknown_user");
     return { ok: false, reason: "invalid" };
   }
-  if (user.deletedAt || !user.activeFlag) return { ok: false, reason: "inactive" };
+  if (user.deletedAt || !user.activeFlag) {
+    await auditLoginFailure(email, "inactive", user.id);
+    return { ok: false, reason: "inactive" };
+  }
   if (user.lockedUntil && user.lockedUntil > new Date()) {
+    await auditLoginFailure(email, "locked_out", user.id);
     return { ok: false, reason: "locked", lockedUntil: user.lockedUntil };
   }
 
@@ -104,14 +146,20 @@ export async function login(
           : user.lockedUntil,
       },
     });
+    // ロックがかかった瞬間は、後から追えるよう別の理由で残す
+    await auditLoginFailure(email, lock ? "locked_now" : "bad_password", user.id);
     return lock ? { ok: false, reason: "locked" } : { ok: false, reason: "invalid" };
   }
 
   // MFA（TOTP）が有効なら検証
-  if (user.mfaEnabled && user.mfaSecret) {
+  if (user.mfaMethod === "totp" && user.mfaSecret) {
     if (!totp) return { ok: false, reason: "mfa_required" };
     const { verifyTotp } = await import("@/lib/totp");
-    if (!verifyTotp(user.mfaSecret, totp)) return { ok: false, reason: "mfa_invalid" };
+    if (!verifyTotp(user.mfaSecret, totp)) {
+      // パスワードは合っていて2要素だけ違う。乗っ取りが進みかけている合図なので必ず残す
+      await auditLoginFailure(email, "bad_totp", user.id);
+      return { ok: false, reason: "mfa_invalid" };
+    }
   }
 
   await prisma.user.update({
@@ -153,7 +201,20 @@ export async function logout(): Promise<void> {
   const store = await cookies();
   const raw = store.get(AUTH_POLICY.sessionCookieName)?.value;
   if (raw) {
+    // 誰のセッションだったかは、消す前でないと分からない
+    const session = await prisma.session.findUnique({
+      where: { tokenHash: sha256(raw) },
+      select: { userId: true },
+    });
     await prisma.session.deleteMany({ where: { tokenHash: sha256(raw) } });
+    if (session) {
+      await writeAudit({
+        entity: "users",
+        entityId: session.userId,
+        action: "logout",
+        actorId: session.userId,
+      });
+    }
   }
   store.delete(AUTH_POLICY.sessionCookieName);
 }

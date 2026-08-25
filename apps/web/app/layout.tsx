@@ -1,5 +1,6 @@
 import { HEADER_STRONG_CLASS, backgroundClass, getMessages, themeClass } from "@chem/shared";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
 import { IdleGuard } from "@/components/idle-logout";
@@ -7,6 +8,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n-client";
 import { getAppSettings } from "@/lib/settings";
+import { NONCE_HEADER } from "@/lib/routes";
 import { getBackground, getHeaderStrong, getTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import "./globals.css";
@@ -23,6 +25,8 @@ export async function generateMetadata(): Promise<Metadata> {
 const SYSTEM_THEME_SCRIPT = `try{if(matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}`;
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  // middleware が要求ごとに作る使い捨ての印。これが付いた script だけが実行できる
+  const nonce = (await headers()).get(NONCE_HEADER) ?? undefined;
   const [locale, theme, headerStrong, background, user, settings] = await Promise.all([
     getLocale(),
     getTheme(),
@@ -42,7 +46,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       )}
     >
       <head>
-        {theme === "system" && <script dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }} />}
+        {theme === "system" && (
+          <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }} />
+        )}
       </head>
       <body className="bg-background min-h-screen antialiased">
         <I18nProvider locale={locale}>

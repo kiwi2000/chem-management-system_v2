@@ -1,4 +1,4 @@
-import { expandPermissions, type Permission } from "@chem/shared";
+import { expandPermissions, type MfaMethod, type Permission } from "@chem/shared";
 import type { Group, User } from "@prisma/client";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
@@ -29,7 +29,7 @@ export function toUserSummary(u: UserWithPermissions) {
     displayName: u.displayName,
     activeFlag: u.activeFlag,
     hasPassword: u.passwordHash !== null,
-    mfaEnabled: u.mfaEnabled,
+    mfaMethod: (u.mfaMethod as MfaMethod) ?? "none",
     lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
     permissions: u.permissions.map((p) => p.permission),
     orgGroupId: u.orgGroupId,

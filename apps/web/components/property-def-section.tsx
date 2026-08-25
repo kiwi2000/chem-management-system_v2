@@ -362,18 +362,20 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
         emptyMessage={m.propertyDefs.empty}
         selectable
         onDeleteSelected={onDeleteSelected}
-        // この画面は詳細を別に持たないので、ダブルクリックで上のフォームに読み込む
-        onRowActivate={(d) => {
-          setForm({
-            id: d.id,
-            key: d.key,
-            labelJa: d.labelJa,
-            labelEn: d.labelEn ?? "",
-            dataType: d.dataType,
-            defaultUnit: d.defaultUnit ?? "",
-            displayOrder: d.displayOrder,
-            activeFlag: d.activeFlag,
-          });
+        // この画面は詳細を別に持たないので、鉛筆で上のフォームに読み込む
+        rowAction={{
+          onClick: (d) => {
+            setForm({
+              id: d.id,
+              key: d.key,
+              labelJa: d.labelJa,
+              labelEn: d.labelEn ?? "",
+              dataType: d.dataType,
+              defaultUnit: d.defaultUnit ?? "",
+              displayOrder: d.displayOrder,
+              activeFlag: d.activeFlag,
+            });
+          },
         }}
       />
     </section>

@@ -4,6 +4,7 @@ import { emptyTableState, type TableState } from "@chem/shared";
 import { Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { slideClass, type SlideDir } from "@/components/category-header";
+import { SubstancePeek } from "@/components/substance-peek";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -86,6 +87,8 @@ export function CasLinkSection({
   /** 追加中は null 以外。編集中は行のid */
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  /** 覗いている物質。null なら小窓は閉じている */
+  const [peekId, setPeekId] = useState<string | null>(null);
 
   const onShownRef = useRef(onShown);
   onShownRef.current = onShown;
@@ -113,10 +116,24 @@ export function CasLinkSection({
         width: 400,
         sortable: false,
         filterable: false,
-        render: (r) =>
-          (locale === "ja"
-            ? (r.substanceNameJa ?? r.substanceNameEn)
-            : (r.substanceNameEn ?? r.substanceNameJa)) ?? "",
+        render: (r) => {
+          const label =
+            (locale === "ja"
+              ? (r.substanceNameJa ?? r.substanceNameEn)
+              : (r.substanceNameEn ?? r.substanceNameJa)) ?? "";
+          // 押すとその物質を覗ける。画面を移らないので、閉じれば元の場所に戻る
+          return r.substanceId ? (
+            <button
+              type="button"
+              onClick={() => setPeekId(r.substanceId)}
+              className="hover:text-foreground w-full truncate text-left underline-offset-2 hover:underline"
+            >
+              {label}
+            </button>
+          ) : (
+            label
+          );
+        },
       },
       {
         key: "excluded",
@@ -401,8 +418,6 @@ export function CasLinkSection({
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
         showFilters={false}
-        showOpenHint={false}
-        busyOnActivate={false}
         showPager={false}
         create={editable && !editingId && version ? { onClick: startNew } : undefined}
         headerActions={
@@ -426,8 +441,13 @@ export function CasLinkSection({
             <span className="text-muted-foreground text-xs">{m.casLinks.usedHint}</span>
           </div>
         }
-        onRowActivate={editable ? startEdit : undefined}
+        // 編集は行の右端の鉛筆から
+        rowAction={
+          editable ? { onClick: startEdit, disabled: () => editingId !== null } : undefined
+        }
       />
+
+      <SubstancePeek substanceId={peekId} onClose={() => setPeekId(null)} />
     </section>
   );
 }

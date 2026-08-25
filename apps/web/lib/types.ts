@@ -1,3 +1,4 @@
+import type { MfaMethod } from "@chem/shared";
 import type {
   GazetteLawKind,
   GroupKind,
@@ -36,7 +37,8 @@ export interface UserSummaryDto {
   displayName: string | null;
   activeFlag: boolean;
   hasPassword: boolean;
-  mfaEnabled: boolean;
+  /** 2要素認証のやりかた。none（使わない）/ totp（認証アプリ） */
+  mfaMethod: MfaMethod;
   lastLoginAt: string | null;
   permissions: Permission[];
   orgGroupId: string | null;
@@ -357,7 +359,8 @@ export interface StatutoryCasLinkDto {
   sourceCode: string;
   casNumber: string;
   casNormalized: string;
-  /** そのCASの代表物質から引いた名前。物質マスタに無ければ null */
+  /** そのCASの代表物質。物質マスタに無ければ null */
+  substanceId: string | null;
   substanceNameJa: string | null;
   substanceNameEn: string | null;
   /** 立っていれば「該当しない」。下位のデータソースの内容を打ち消す */

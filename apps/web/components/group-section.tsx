@@ -281,15 +281,17 @@ export function GroupSection({ kind, title, hint, storageKey }: Props) {
         emptyMessage={m.groups.empty}
         selectable
         onDeleteSelected={onDeleteSelected}
-        // この画面は詳細を別に持たないので、ダブルクリックで上のフォームに読み込む
-        onRowActivate={(g) => {
-          setForm({
-            id: g.id,
-            nameJa: g.nameJa,
-            nameEn: g.nameEn ?? "",
-            displayOrder: g.displayOrder,
-            activeFlag: g.activeFlag,
-          });
+        // この画面は詳細を別に持たないので、鉛筆で上のフォームに読み込む
+        rowAction={{
+          onClick: (g) => {
+            setForm({
+              id: g.id,
+              nameJa: g.nameJa,
+              nameEn: g.nameEn ?? "",
+              displayOrder: g.displayOrder,
+              activeFlag: g.activeFlag,
+            });
+          },
         }}
       />
     </section>

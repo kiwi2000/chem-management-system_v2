@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -167,7 +168,13 @@ export default function NewsListPage() {
         create={canPost ? { href: "/news/new" } : undefined}
         selectable={canPost}
         onDeleteSelected={onDeleteSelected}
-        onRowActivate={(n) => router.push(`/news/${n.id}`)}
+        // 行の右端の › で詳細画面へ
+        rowAction={{
+          icon: ChevronRight,
+          label: m.common.detail,
+          busy: true,
+          onClick: (n) => router.push(`/news/${n.id}`),
+        }}
       />
     </div>
   );

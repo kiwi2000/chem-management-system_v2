@@ -9,6 +9,15 @@ import type { Messages } from "./i18n/ja";
  * 設定を増やすときは AppSettings・DEFAULT_SETTINGS・SETTING_DEFS・settingsSchema の4か所を揃えること。
  */
 
+/**
+ * 2要素認証のやりかた。
+ *  none … 使わない
+ *  totp … 認証アプリが出す6桁（30秒ごとに変わる）
+ * メール認証は将来足す可能性があるので、真偽値ではなく方式で持つ。
+ */
+export const MFA_METHODS = ["none", "totp"] as const;
+export type MfaMethod = (typeof MFA_METHODS)[number];
+
 export interface AppSettings {
   /** CAS番号を必須にする。false なら空欄で登録できる */
   casRequired: boolean;
@@ -45,6 +54,12 @@ export interface AppSettings {
    * 席を離れた端末が開いたままになるのを防ぐ。
    */
   sessionIdleMinutes: number;
+  /**
+   * 2要素認証を全員に求める。
+   * 入にすると、利用者は「使わない」を選べなくなる。
+   * 全員が設定を済ませてから入にする（先に入にすると設定前の人が入れなくなる）
+   */
+  mfaRequired: boolean;
   /** 記号を1文字以上入れさせる */
   passwordRequireSymbol: boolean;
   /**
@@ -72,6 +87,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   passwordRequireSymbol: false,
   passwordSymbolChars: "!@#$%^&*()-_=+[]{};:,.?/",
   passwordRequireMixedCase: false,
+  mfaRequired: false,
 };
 
 /** パスワードの決まりだけを取り出したもの。画面にも渡すのでこの形で持つ */
@@ -184,6 +200,7 @@ export const SETTING_DEFS: SettingDef[] = [
       return n >= SESSION_IDLE_MIN && n <= SESSION_IDLE_MAX ? n : null;
     },
   },
+  boolDef("mfaRequired", "mfa.required"),
   boolDef("passwordRequireLetter", "password.require_letter"),
   boolDef("passwordRequireDigit", "password.require_digit"),
   boolDef("passwordRequireSymbol", "password.require_symbol"),
@@ -248,6 +265,7 @@ export const settingsSchema = (m: Messages) =>
     passwordRequireSymbol: z.boolean(),
     passwordSymbolChars: z.string().max(100),
     passwordRequireMixedCase: z.boolean(),
+    mfaRequired: z.boolean(),
   });
 
 export type SettingsInput = z.infer<ReturnType<typeof settingsSchema>>;

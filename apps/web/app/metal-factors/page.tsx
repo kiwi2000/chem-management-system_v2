@@ -301,17 +301,19 @@ export default function MetalFactorsPage() {
         emptyMessage={m.metalFactors.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
-        // この画面は詳細を別に持たないので、ダブルクリックで上のフォームに読み込む
-        onRowActivate={
+        // この画面は詳細を別に持たないので、鉛筆で上のフォームに読み込む
+        rowAction={
           editable
-            ? (f) => {
-                setForm({
-                  id: f.id,
-                  casNumber: f.casNumber,
-                  metalElement: f.metalElement,
-                  ratioPct: f.ratioPct,
-                });
-                window.scrollTo({ top: 0, behavior: "smooth" });
+            ? {
+                onClick: (f) => {
+                  setForm({
+                    id: f.id,
+                    casNumber: f.casNumber,
+                    metalElement: f.metalElement,
+                    ratioPct: f.ratioPct,
+                  });
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                },
               }
             : undefined
         }

@@ -33,6 +33,40 @@ const nextConfig = {
   // 開発時に画面の左下へ出る Next.js のボタンを消す。
   // 画面の見た目を確認するときに邪魔になるため（本番には元から出ない）。
   devIndicators: false,
+
+  // 使っている技術を外に知らせない（X-Powered-By: Next.js を出さない）
+  poweredByHeader: false,
+
+  /*
+    どの応答にも付ける守りのヘッダ。
+    中身の実行を縛る Content-Security-Policy だけは、要求ごとに違う印（nonce）を
+    埋める必要があるので middleware.ts の側で付ける。
+  */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          // 一度 HTTPS で来た相手には、以後 HTTP を使わせない
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
+          // 中身の種類を勝手に推測して別物として実行させない
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // 別のサイトに埋め込ませない（クリックのすり替えを防ぐ）
+          { key: "X-Frame-Options", value: "DENY" },
+          // 外部へ移るとき、どの画面から来たかを渡さない
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // 使わない端末機能は閉じておく
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

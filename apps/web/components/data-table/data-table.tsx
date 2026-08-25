@@ -13,8 +13,10 @@ import {
   ChevronsUpDown,
   CircleCheck,
   GripVertical,
+  Pencil,
   Plus,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -31,6 +33,7 @@ import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 import { FilterPanel, type FilterLayoutRow } from "./filter-panel";
 import {
+  ACTION_COLUMN_WIDTH,
   DRAG_COLUMN_WIDTH,
   MIN_COLUMN_WIDTH,
   SELECT_COLUMN_WIDTH,
@@ -70,8 +73,6 @@ interface Props<T> {
     confirm: (n: number) => string;
     run: (rows: T[]) => void | Promise<void>;
   };
-  /** 行をダブルクリックしたとき（詳細を開く・その場のフォームに読み込む） */
-  onRowActivate?: (row: T) => void;
   /** フィルターの並びを指定する場合、1行に置く列キーを行ごとに並べる */
   filterLayout?: FilterLayoutRow[];
   /** 件数が少なく絞り込む意味が無い表では false にしてパネルごと消す（並べ替えは見出しで行う） */
@@ -89,13 +90,29 @@ interface Props<T> {
   };
   /** ＋・ごみ箱に続けて置くボタン（新規登録が2種類ある表など） */
   headerActions?: ReactNode;
-  /** 「行をダブルクリックすると詳細を開きます」を出すか */
-  showOpenHint?: boolean;
   /**
-   * ダブルクリックしたあと、次の画面が出るまでカーソルを砂時計にするか。
-   * その場で開くだけの一覧（地域・国）では待ち時間が無いので false にする
+   * 行の右端に置く操作。いまは編集にだけ使っている。
+   *
+   * 編集をダブルクリックに割り当てると、シングルクリックに別の意味がある表では
+   * 掘る動作まで一緒に起きてしまう（ブラウザは click を2回出してから dblclick を出す）。
+   * 見える場所を1つ作って、そこを押したときだけ編集に入る形にする。
    */
-  busyOnActivate?: boolean;
+  rowAction?: {
+    onClick: (row: T) => void;
+    /** 押す場所の絵。省略すると鉛筆（編集） */
+    icon?: LucideIcon;
+    /** 吹き出しに出す言葉。省略すると「編集」 */
+    label?: string;
+    /** 行によって押せなくする（すでに編集中の行など） */
+    disabled?: (row: T) => boolean;
+    /**
+     * 押してから次の画面が出るまで、カーソルを砂時計にするか。
+     * 別の画面へ移るものだけ true にする。その場で開くものは待ち時間が無い
+     */
+    busy?: boolean;
+  };
+  /** 行を押すと何が起きるかを、操作の並びの右端に一言で出す */
+  hintText?: string;
   /** 「1ページの件数」に出す選択肢。件数の少ない表では小さい値だけにする */
   pageSizeOptions?: readonly number[];
   /**
@@ -147,13 +164,12 @@ export function DataTable<T>({
   singleSelect = false,
   onDeleteSelected,
   bulkAction,
-  onRowActivate,
   filterLayout,
   showFilters = true,
   create,
   headerActions,
-  showOpenHint = true,
-  busyOnActivate = true,
+  rowAction,
+  hintText,
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   showPager = true,
   rowClassName,
@@ -181,7 +197,10 @@ export function DataTable<T>({
    * チェックボックス列だけは中身が固定サイズなので、伸び縮みさせず px で固定する。
    */
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const selectWidth = (selectable ? SELECT_COLUMN_WIDTH : 0) + (onReorder ? DRAG_COLUMN_WIDTH : 0);
+  const selectWidth =
+    (selectable ? SELECT_COLUMN_WIDTH : 0) +
+    (onReorder ? DRAG_COLUMN_WIDTH : 0) +
+    (rowAction ? ACTION_COLUMN_WIDTH : 0);
   const dataSum = columns.reduce((sum, c) => sum + widthOf(c), 0);
   /*
     データ列は合計が 100% になる比率で置く。チェックボックス列は px で固定してあるので、
@@ -221,18 +240,18 @@ export function DataTable<T>({
     };
   }, []);
 
-  function activateRow(row: T) {
-    if (!onRowActivate) return;
-    if (busyOnActivate) {
-      document.body.classList.add("cursor-busy");
-      if (busyTimer.current !== null) window.clearTimeout(busyTimer.current);
-      busyTimer.current = window.setTimeout(
-        () => document.body.classList.remove("cursor-busy"),
-        10_000,
-      );
-    }
-    onRowActivate(row);
+  /** 別の画面へ移るあいだ、押せたことが分かるようカーソルを砂時計にする */
+  function markBusy() {
+    document.body.classList.add("cursor-busy");
+    if (busyTimer.current !== null) window.clearTimeout(busyTimer.current);
+    busyTimer.current = window.setTimeout(
+      () => document.body.classList.remove("cursor-busy"),
+      10_000,
+    );
   }
+
+  /** 行の右端に出す絵。指定が無ければ編集の鉛筆 */
+  const RowActionIcon = rowAction?.icon ?? Pencil;
 
   const visible = rows ?? [];
   const allChecked = visible.length > 0 && visible.every((r) => selected.has(rowKey(r)));
@@ -304,7 +323,7 @@ export function DataTable<T>({
     });
   }
 
-  const colSpan = columns.length + (selectable ? 1 : 0) + (onReorder ? 1 : 0);
+  const colSpan = columns.length + (selectable ? 1 : 0) + (onReorder ? 1 : 0) + (rowAction ? 1 : 0);
 
   /**
    * 表の操作。左から「新規登録（＋）→ その表だけのボタン → ごみ箱」の順に並べる。
@@ -360,10 +379,8 @@ export function DataTable<T>({
       </div>
     ) : null;
 
-  const hint =
-    onRowActivate && showOpenHint ? (
-      <span className="text-muted-foreground text-xs">{m.table.openHint}</span>
-    ) : null;
+  // 掘る動作は目に見えないので、表ごとの言葉があればそれを出す
+  const hint = hintText ? <span className="text-muted-foreground text-xs">{hintText}</span> : null;
 
   return (
     <div className="space-y-3">
@@ -414,6 +431,7 @@ export function DataTable<T>({
             {columns.map((c) => (
               <col key={c.key} style={{ width: pct(widthOf(c)) }} />
             ))}
+            {rowAction && <col style={{ width: ACTION_COLUMN_WIDTH }} />}
           </colgroup>
           {/*
             テーマによっては濃い色が敷かれる。中の文字色は table-head-foreground に従わせる。
@@ -491,6 +509,8 @@ export function DataTable<T>({
                   </TableHead>
                 );
               })}
+              {/* 編集の列。見出しは要らない */}
+              {rowAction && <TableHead className={cn(CELL_BORDER, SELECT_CELL)} />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -514,7 +534,6 @@ export function DataTable<T>({
                 <TableRow
                   key={key}
                   onClick={onRowSelect ? () => onRowSelect(row) : undefined}
-                  onDoubleClick={onRowActivate ? () => activateRow(row) : undefined}
                   // 落とし先になれるよう、重ねているあいだは既定の動きを止める
                   onDragOver={
                     onReorder && dragKey && dragKey !== key
@@ -536,7 +555,7 @@ export function DataTable<T>({
                       : undefined
                   }
                   className={cn(
-                    (onRowActivate || onRowSelect) && "cursor-pointer",
+                    onRowSelect && "cursor-pointer",
                     rowClassName?.(row),
                     // いま落とそうとしている行が分かるよう、上端に線を引く
                     overKey === key && dragKey && "border-primary border-t-2",
@@ -595,6 +614,26 @@ export function DataTable<T>({
                       {c.render?.(row)}
                     </TableCell>
                   ))}
+                  {rowAction && (
+                    <TableCell className={cn(CELL_BORDER, SELECT_CELL)}>
+                      <button
+                        type="button"
+                        disabled={rowAction.disabled?.(row) ?? false}
+                        title={rowAction.label ?? m.common.edit}
+                        aria-label={rowAction.label ?? m.common.edit}
+                        // 押したときに行のシングルクリック（掘る動作）を起こさない
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (rowAction.busy) markBusy();
+                          rowAction.onClick(row);
+                        }}
+                        onDoubleClick={(e) => e.stopPropagation()}
+                        className="text-muted-foreground enabled:hover:bg-accent enabled:hover:text-foreground mx-auto flex size-6 items-center justify-center rounded transition-colors disabled:opacity-30"
+                      >
+                        <RowActionIcon className="size-3.5" />
+                      </button>
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}

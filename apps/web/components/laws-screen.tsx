@@ -23,7 +23,10 @@ interface SubstanceSelection {
  *  - 何も選んでいない  : 法令の木だけ
  *  - 区分を選んだ      : 区分の見出しと法文物質名。木は上に隠れる
  *  - 法文物質名を選んだ: 法文物質名の見出しと対象CAS。一覧はさらに上に隠れる
- * 隠れたものは、見出しのつまみを押したときだけ降りてくる。スクロールでは降りてこない。
+ *
+ * 区分の見出しのつまみは、法令の木を出し入れするだけ（見出しは残る）。
+ * 法文物質名の見出しのつまみは、**一段上へ戻す**（見出しごと消える）。
+ * 深い段まで来たときに、そこから出る道が無いと戻れなくなるため。
  */
 export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
   const { m } = useI18n();
@@ -41,14 +44,13 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
   /** 選んだ法文物質名（これから出すもの）と、画面に出ているもの */
   const [subSelection, setSubSelection] = useState<SubstanceSelection | null>(null);
   const [subShown, setSubShown] = useState<SubstanceSelection | null>(null);
-  const [listOpen, setListOpen] = useState(false);
   const [subSlideDir, setSubSlideDir] = useState<SlideDir>(null);
   /** 対象CASを見ている版。法文物質名を移っても保つので、ここで持つ */
   const [versionId, setVersionId] = useState<string | null>(null);
 
   const treeVisible = shown === null || treeOpen;
   /** 法文物質名の一覧。対象CASへ降りているあいだは隠れる */
-  const listVisible = subShown === null || listOpen;
+  const listVisible = subShown === null;
   /** 次の区分を読んでいる最中。読み終わるまで見出しは前のまま */
   const busy = (selection?.category.id ?? null) !== (shown?.category.id ?? null);
   const subBusy = (subSelection?.substance.id ?? null) !== (subShown?.substance.id ?? null);
@@ -60,11 +62,11 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
     closeSubstance();
   }
 
+  /** 対象CASの段から出て、法文物質名の一覧に戻る */
   function closeSubstance() {
     setSubSelection(null);
     setSubShown(null);
     setSubSlideDir(null);
-    setListOpen(false);
   }
 
   /** ［‹ ›］での移動。法令と兄弟はそのままなので、区分だけ差し替える */
@@ -73,7 +75,6 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
     setSelection((prev) => (prev ? { ...prev, category } : prev));
     setSubSelection(null);
     setSubShown(null);
-    setListOpen(false);
   }, []);
 
   /** 下の表が新しい区分を出し終えた合図。見出しと木はここで初めて動く */
@@ -104,7 +105,6 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
   /** 対象CASを出し終えた合図 */
   function onSubShown() {
     setSubShown(subSelection);
-    if (subSelection && subSelection.substance.id !== subShown?.substance.id) setListOpen(false);
   }
 
   return (
@@ -148,8 +148,7 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
               onNavigate={navigateSubstance}
               slideDir={subSlideDir}
               busy={subBusy}
-              listOpen={listOpen}
-              onToggleList={() => setListOpen((v) => !v)}
+              onBack={closeSubstance}
             />
           )}
         </div>

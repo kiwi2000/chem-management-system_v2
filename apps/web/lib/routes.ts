@@ -11,6 +11,13 @@ export const PUBLIC_PATHS = ["/login"];
 export const PATH_HEADER = "x-chem-path";
 
 /**
+ * 1回の要求ごとに作る使い捨ての印。差し込まれた script を実行させないために使う。
+ * middleware が作って、レイアウトが読む。Next.js 自身もこの名前を見て、
+ * 自分が出す script にこの印を付ける。
+ */
+export const NONCE_HEADER = "x-nonce";
+
+/**
  * セッションが切れたときに送る先。
  * `expired=1` が付いていると、Cookie が残っていても middleware がログイン画面を通す
  * （付けないと「Cookie あり → ホームへ」と堂々巡りになる）。

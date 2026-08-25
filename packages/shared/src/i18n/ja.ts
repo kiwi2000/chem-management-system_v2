@@ -206,7 +206,6 @@ export const ja = {
     create: "新規登録",
     deleteSelected: "選択した行を削除",
     deleteSelectedConfirm: (n: number) => `選択した ${n} 件を削除しますか？`,
-    openHint: "行をダブルクリックすると詳細を開きます",
     filtering: "フィルター中",
     filterCount: (n: number) => `条件 ${n} 件`,
     sortCount: (n: number) => `並べ替え ${n} 列`,
@@ -351,6 +350,7 @@ export const ja = {
 
   laws: {
     title: "法令",
+    rowHint: "行を押すと、その区分の法文物質名が下に出ます",
     add: "＋ 法令",
     newTitle: "法令の追加",
     editTitle: "法令の編集",
@@ -524,11 +524,12 @@ export const ja = {
     usedHint: "優先度がいちばん高いデータソースの1件だけが採られます",
     prevSubstance: "前の法文物質名",
     nextSubstance: "次の法文物質名",
-    toggleList: "法文物質名の一覧を出し入れ",
+    backToList: "法文物質名の一覧に戻る",
   },
 
   statutorySubstances: {
     title: "法文物質名",
+    rowHint: "行を押すと、その物質に結び付いたCASが下に出ます",
     newTitle: "法文物質名の追加",
     editTitle: "法文物質名の編集",
     code: "コード",
@@ -651,6 +652,38 @@ export const ja = {
     saved: "設定を保存しました",
   },
 
+  mfa: {
+    title: "2要素認証",
+    lead: "パスワードに加えて、認証アプリが出す6桁の数字を求めます。パスワードが漏れても、スマートフォンが手元に無ければ入れません。",
+    method: "やりかた",
+    methodNone: "使わない",
+    methodTotp: "認証アプリ（6桁の数字）",
+    enable: "認証アプリを設定する",
+    disable: "設定を外す",
+    setupTitle: "認証アプリに読み込ませてください",
+    setupStep1: "スマートフォンで認証アプリを開き、QRコードを読み取ります",
+    setupStep2: "アプリに出た6桁の数字を、下の欄に入れてください",
+    manualKey: "QRコードが読めないときは、この文字列を手で入れてください",
+    code: "6桁の数字",
+    confirm: "確認して有効にする",
+    cancel: "やめる",
+    enabled: "設定されています",
+    notEnabled: "設定されていません",
+    required: "この環境では2要素認証が必須です",
+    requiredHint:
+      "全員が設定を済ませてから入にしてください。先に入にすると、まだ設定していない人が入れなくなります",
+    passwordToDisable: "確認のため、いまのパスワードを入れてください",
+    codeFormat: "6桁の数字を入れてください",
+    codeWrong: "数字が合いません。アプリに出ている最新のものを入れてください",
+    noSecret: "先に「認証アプリを設定する」を押してください",
+    alreadyEnabled: "すでに設定されています",
+    cannotDisable: "この環境では2要素認証が必須のため、外せません",
+    adminReset: "2要素認証を解除",
+    adminResetConfirm:
+      "この利用者の2要素認証を解除しますか？ その人のログイン中の端末はすべて切れます",
+    appHint: "Google Authenticator や Microsoft Authenticator など、無料のアプリが使えます",
+  },
+
   settings: {
     title: "システム設定",
     description: "運用の方針に合わせて、入力チェックの厳しさを切り替えます。",
@@ -673,6 +706,7 @@ export const ja = {
     epsilonRange: "許容誤差は 0〜10 の間で入力してください",
     sessionSection: "自動ログアウト",
     sessionIdleMinutes: "操作が無いままログアウトするまでの時間（分）",
+    mfaRequired: "2要素認証を必須にする",
     sessionIdleHint:
       "席を離れた端末が開いたままになるのを防ぎます。この時間を過ぎてから操作すると、ログイン画面に戻ります。",
     sessionIdleRange: "1分から480分（8時間）までで指定してください",
@@ -922,6 +956,7 @@ export const ja = {
     activeFlag: "このアカウントを有効にする",
     permissions: "権限",
     lastLogin: "最終ログイン",
+    mfaHeader: "2要素",
     never: "—",
     passwordSet: "設定済み",
     passwordUnset: "未設定",

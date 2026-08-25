@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { PATH_HEADER } from "@/lib/routes";
+import { NONCE_HEADER, PATH_HEADER } from "@/lib/routes";
 
 /**
  * 画面の保護。
@@ -14,6 +14,36 @@ import { PATH_HEADER } from "@/lib/routes";
  */
 const SESSION_COOKIE = "chem_session";
 
+/**
+ * 差し込まれた script を実行させないための決まり（CSP）。
+ *
+ * 要求ごとに使い捨ての印（nonce）を作り、その印が付いた script だけを許す。
+ * 外から読み込んでいるものが一つも無いので、行き先はすべて自分自身に絞れる。
+ *
+ * `strict-dynamic` は「印の付いた script が読み込むものは許す」という意味。
+ * Next.js は自分が出す script に、この印を自動で付ける。
+ *
+ * 見た目の指定（style）だけは緩めてある。表の列幅のように、
+ * その場で組み立てる指定を使っているため。
+ */
+function contentSecurityPolicy(nonce: string) {
+  // 開発中は Next.js が eval を使うので、そこだけ許す。本番では許さない
+  const devScript = process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'";
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${devScript}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const hasSession = request.cookies.has(SESSION_COOKIE);
@@ -26,9 +56,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  const csp = contentSecurityPolicy(nonce);
+
   const headers = new Headers(request.headers);
   headers.set(PATH_HEADER, pathname);
-  return NextResponse.next({ request: { headers } });
+  headers.set(NONCE_HEADER, nonce);
+  // 要求側にも同じものを載せる。Next.js はこれを見て、自分の script に印を付ける
+  headers.set("Content-Security-Policy", csp);
+
+  const response = NextResponse.next({ request: { headers } });
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
 }
 
 export const config = {

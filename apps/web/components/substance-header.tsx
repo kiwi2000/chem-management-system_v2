@@ -1,7 +1,7 @@
 "use client";
 
 import { formatThreshold, pickStatutoryName } from "@chem/shared";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useEffect } from "react";
 import { slideClass, type SlideDir } from "@/components/category-header";
 import { useI18n } from "@/lib/i18n-client";
@@ -11,7 +11,9 @@ import { cn } from "@/lib/utils";
 /**
  * 選んでいる法文物質名の見出し。区分の見出しのすぐ下に貼り付く。
  *
- * 作りは区分の見出しと同じ。左端のつまみで法文物質名の一覧が降りてきて、
+ * 左端のつまみを押すと、この段から出て法文物質名の一覧に戻る。
+ * 区分のつまみ（木を出し入れするだけ）と違い、こちらは**一段上へ戻す**。
+ * 一覧を出したまま見出しが残っていると、どの段にいるのか分からなくなるため。
  * 左右の矢印で前後の法文物質名へ移れる。分類はまたがない（一覧に出ているぶんだけ）。
  *
  * 中身の編集はここではできない。一覧の行をダブルクリックして行う。
@@ -22,8 +24,7 @@ export function SubstanceHeader({
   onNavigate,
   slideDir,
   busy = false,
-  listOpen,
-  onToggleList,
+  onBack,
 }: {
   substance: StatutorySubstanceDto;
   /** いま一覧に出ている法文物質名。矢印はこの並びをたどる */
@@ -32,8 +33,8 @@ export function SubstanceHeader({
   slideDir: SlideDir;
   /** 次の法文物質名を読んでいる最中。読み終わるまで矢印は押せない */
   busy?: boolean;
-  listOpen: boolean;
-  onToggleList: () => void;
+  /** 一覧に戻る。この段から出る */
+  onBack: () => void;
 }) {
   const { m, locale } = useI18n();
 
@@ -62,17 +63,16 @@ export function SubstanceHeader({
 
   return (
     <div className="bg-background -mx-4 border-b px-4 lg:-mx-6 lg:px-6">
-      {/* つまみ。法文物質名の一覧を出し入れする。区分のつまみと同じ形にそろえる */}
+      {/* つまみ。押すと一覧に戻る。形は区分のつまみとそろえ、向きだけ上にする */}
       <div className="flex">
         <button
           type="button"
-          onClick={onToggleList}
-          aria-expanded={listOpen}
-          title={m.casLinks.toggleList}
-          aria-label={m.casLinks.toggleList}
+          onClick={onBack}
+          title={m.casLinks.backToList}
+          aria-label={m.casLinks.backToList}
           className="bg-muted text-muted-foreground hover:bg-accent hover:text-foreground flex h-4 w-16 items-center justify-center rounded-b-md border border-t-0 transition-colors"
         >
-          <ChevronDown className={cn("size-3 transition-transform", listOpen && "rotate-180")} />
+          <ChevronUp className="size-3" />
         </button>
       </div>
 

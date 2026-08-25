@@ -47,3 +47,6 @@ export const SELECT_COLUMN_WIDTH = 32;
 
 /** 行をつかんで並べ替えるための列。アイコン1つぶん */
 export const DRAG_COLUMN_WIDTH = 28;
+
+/** 行の右端に置く操作（編集）の列。アイコン1つぶん */
+export const ACTION_COLUMN_WIDTH = 40;

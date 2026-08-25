@@ -751,9 +751,9 @@ export function StatutorySubstanceSection({
         emptyMessage={category ? m.statutorySubstances.empty : m.statutorySubstances.selectCategory}
         selectable={editable && !!activeClassId}
         onDeleteSelected={onDeleteSelected}
-        showOpenHint={false}
-        busyOnActivate={false}
-        onRowActivate={editable ? startEdit : undefined}
+        // 編集は行の右端の鉛筆から。行を押すと下の対象CASが入れ替わる
+        rowAction={editable ? { onClick: startEdit } : undefined}
+        hintText={m.statutorySubstances.rowHint}
         selectedKey={selectedId ?? null}
         onRowSelect={onSelect ? (s) => onSelect(s, data?.items ?? []) : undefined}
         create={

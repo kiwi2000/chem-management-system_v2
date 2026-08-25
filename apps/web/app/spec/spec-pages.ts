@@ -12,6 +12,7 @@ export const SPEC_PAGES = [
   { href: "/spec/lists", label: "探す・絞り込む" },
   { href: "/spec/states", label: "公開までの流れ" },
   { href: "/spec/permissions", label: "だれが何をできるか" },
+  { href: "/spec/security", label: "安全のしくみ" },
   { href: "/spec/preferences", label: "自分用の設定" },
   { href: "/spec/feedback", label: "気づいたことを伝える" },
   { href: "/spec/changes", label: "変更履歴" },

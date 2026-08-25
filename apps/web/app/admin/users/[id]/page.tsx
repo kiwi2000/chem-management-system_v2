@@ -104,6 +104,25 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     }
   }
 
+  /**
+   * 2要素認証の強制解除。端末を失くした人の救済のためにある。
+   * これが無いと、本人が自分の口座から出られなくなる。
+   */
+  async function onResetMfa() {
+    if (!confirm(m.mfa.adminResetConfirm)) return;
+    setError(null);
+    setNotice(null);
+    const res = await fetch(`/api/admin/users/${id}/mfa`, { method: "DELETE" });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      return;
+    }
+    setNotice(m.common.saved);
+    void load();
+  }
+
   async function onResetPassword() {
     setError(null);
     setNotice(null);
@@ -281,6 +300,28 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           {m.common.back}
         </Button>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{m.mfa.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm">
+            <span className="text-muted-foreground">{m.mfa.method} </span>
+            <span className="font-medium">
+              {item.mfaMethod === "totp" ? m.mfa.methodTotp : m.mfa.methodNone}
+            </span>
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={item.mfaMethod !== "totp"}
+            onClick={() => void onResetMfa()}
+          >
+            {m.mfa.adminReset}
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

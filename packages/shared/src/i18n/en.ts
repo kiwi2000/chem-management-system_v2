@@ -201,7 +201,6 @@ export const en: Messages = {
     create: "New",
     deleteSelected: "Delete selected",
     deleteSelectedConfirm: (n: number) => `Delete the ${n} selected item${n === 1 ? "" : "s"}?`,
-    openHint: "Double-click a row to open its details",
     filtering: "Filtered",
     filterCount: (n: number) => `${n} condition${n === 1 ? "" : "s"}`,
     sortCount: (n: number) => `sorted by ${n} column${n === 1 ? "" : "s"}`,
@@ -345,6 +344,7 @@ export const en: Messages = {
 
   laws: {
     title: "Laws",
+    rowHint: "Click a row to list the statutory names of that category below",
     add: "+ Law",
     newTitle: "New law",
     editTitle: "Edit law",
@@ -514,11 +514,12 @@ export const en: Messages = {
     usedHint: "Only the row from the highest-priority data source is taken",
     prevSubstance: "Previous statutory name",
     nextSubstance: "Next statutory name",
-    toggleList: "Show or hide the statutory name list",
+    backToList: "Back to the statutory name list",
   },
 
   statutorySubstances: {
     title: "Statutory names",
+    rowHint: "Click a row to list the CAS numbers linked to it below",
     newTitle: "New statutory name",
     editTitle: "Edit statutory name",
     code: "Code",
@@ -644,6 +645,38 @@ export const en: Messages = {
     saved: "Preferences saved",
   },
 
+  mfa: {
+    title: "Two-step sign-in",
+    lead: "Asks for a 6-digit code from an authenticator app in addition to the password. A leaked password alone is not enough to sign in.",
+    method: "Method",
+    methodNone: "Not used",
+    methodTotp: "Authenticator app (6-digit code)",
+    enable: "Set up an authenticator app",
+    disable: "Turn off",
+    setupTitle: "Scan this with your authenticator app",
+    setupStep1: "Open the authenticator app on your phone and scan the QR code",
+    setupStep2: "Enter the 6-digit code the app shows",
+    manualKey: "If the QR code will not scan, type this key instead",
+    code: "6-digit code",
+    confirm: "Confirm and turn on",
+    cancel: "Cancel",
+    enabled: "Turned on",
+    notEnabled: "Not set up",
+    required: "Two-step sign-in is required here",
+    requiredHint:
+      "Turn this on only after everyone has set it up. Otherwise those who have not will be locked out",
+    passwordToDisable: "Enter your current password to confirm",
+    codeFormat: "Enter a 6-digit code",
+    codeWrong: "That code does not match. Use the latest one shown in the app",
+    noSecret: "Press “Set up an authenticator app” first",
+    alreadyEnabled: "Already set up",
+    cannotDisable: "Two-step sign-in is required here, so it cannot be turned off",
+    adminReset: "Reset two-step sign-in",
+    adminResetConfirm:
+      "Reset two-step sign-in for this user? All of their signed-in devices will be signed out",
+    appHint: "Free apps such as Google Authenticator or Microsoft Authenticator will work",
+  },
+
   settings: {
     title: "System settings",
     description: "Adjust how strict the input checks are to match how you work.",
@@ -666,6 +699,7 @@ export const en: Messages = {
     epsilonRange: "The tolerance must be between 0 and 10",
     sessionSection: "Automatic sign-out",
     sessionIdleMinutes: "Minutes of inactivity before signing out",
+    mfaRequired: "Require two-step sign-in",
     sessionIdleHint:
       "Stops an unattended device from staying signed in. Acting after this time returns you to the sign-in screen.",
     sessionIdleRange: "Choose between 1 and 480 minutes (8 hours)",
@@ -909,6 +943,7 @@ export const en: Messages = {
     activeFlag: "This account is active",
     permissions: "Permissions",
     lastLogin: "Last sign-in",
+    mfaHeader: "2-step",
     never: "—",
     passwordSet: "Set",
     passwordUnset: "Not set",

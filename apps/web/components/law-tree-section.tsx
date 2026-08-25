@@ -478,8 +478,6 @@ export function LawTreeSection({
         emptyMessage={countries.length === 0 ? m.laws.noCountry : m.laws.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
-        showOpenHint={false}
-        busyOnActivate={false}
         pageSizeOptions={[10, 25, 50, 100]}
         // 左から詰めて並べる。指定しないと画面幅いっぱいに散らばってしまう
         filterLayout={[
@@ -502,16 +500,20 @@ export function LawTreeSection({
             });
           }
         }}
-        onRowActivate={
+        // 編集は行の右端の鉛筆から
+        rowAction={
           editable
-            ? (r) =>
-                setEditing(
-                  r.kind === "law"
-                    ? { kind: "law", initial: r.law }
-                    : { kind: "category", lawId: r.law.id, initial: r.category },
-                )
+            ? {
+                onClick: (r) =>
+                  setEditing(
+                    r.kind === "law"
+                      ? { kind: "law", initial: r.law }
+                      : { kind: "category", lawId: r.law.id, initial: r.category },
+                  ),
+              }
             : undefined
         }
+        hintText={m.laws.rowHint}
         headerActions={
           <div className="flex gap-2">
             {/* 法令の数だけ開け閉めするのは手間なので、まとめて開く・閉じるを置く */}

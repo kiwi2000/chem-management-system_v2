@@ -256,7 +256,7 @@ export function ElementSection() {
 
       {/* 表は左、周期表は右。横幅が足りなければ上下に折り返す */}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div className="w-full shrink-0 space-y-4 lg:max-w-[430px]">
+        <div className="w-full shrink-0 space-y-4 lg:max-w-[470px]">
           <DataTable
             storageKey="chem.table.elements"
             columns={columns}
@@ -270,8 +270,6 @@ export function ElementSection() {
             emptyMessage={m.elements.empty}
             selectable={editable}
             onDeleteSelected={onDeleteSelected}
-            showOpenHint={false}
-            busyOnActivate={false}
             selectedKey={picked}
             onRowSelect={(e) => setPicked(e.symbol)}
             create={editable && !editingId ? { onClick: startNew } : undefined}
@@ -290,8 +288,10 @@ export function ElementSection() {
                 </div>
               ) : undefined
             }
-            // 編集中は他の行に移らない（打ちかけの内容を黙って捨てないため）
-            onRowActivate={editable && !editingId ? startEdit : undefined}
+            // 編集は行の右端の鉛筆から。編集中は押せなくする（打ちかけの内容を捨てないため）
+            rowAction={
+              editable ? { onClick: startEdit, disabled: () => editingId !== null } : undefined
+            }
           />
         </div>
 

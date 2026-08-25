@@ -25,7 +25,7 @@ async function list() {
       email: true,
       activeFlag: true,
       passwordHash: true,
-      mfaEnabled: true,
+      mfaMethod: true,
       lastLoginAt: true,
       permissions: { select: { permission: true } },
     },
@@ -40,7 +40,7 @@ async function list() {
       権限数: u.permissions.length,
       有効: u.activeFlag,
       パスワード: u.passwordHash ? "設定済み" : "未設定",
-      MFA: u.mfaEnabled ? "有効" : "無効",
+      MFA: u.mfaMethod === "totp" ? "認証アプリ" : "なし",
       最終ログイン: u.lastLoginAt?.toLocaleString("ja-JP") ?? "-",
     })),
   );

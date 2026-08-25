@@ -1,0 +1,5 @@
+# Next.js が build のたびに作り直すもの。git にも載せていないので、体裁を整える意味がない
+next-env.d.ts
+
+# build の出力。中身は自動生成
+.next/

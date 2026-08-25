@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -95,6 +96,27 @@ export default function UsersPage() {
         ),
       },
       {
+        // 誰がまだ設定していないかが一目で分かるように出す
+        key: "mfaMethod",
+        header: m.users.mfaHeader,
+        kind: "enum",
+        filterLabelHidden: true,
+        width: 64,
+        className: "text-center",
+        sortable: false,
+        options: [
+          { value: "totp", label: m.mfa.methodTotp },
+          { value: "none", label: m.mfa.methodNone },
+        ],
+        render: (u) => (
+          <StatusIcon
+            active={u.mfaMethod === "totp"}
+            activeLabel={m.mfa.enabled}
+            inactiveLabel={m.mfa.notEnabled}
+          />
+        ),
+      },
+      {
         key: "lastLoginAt",
         header: m.users.lastLogin,
         kind: "date",
@@ -174,7 +196,13 @@ export default function UsersPage() {
         create={{ href: "/admin/users/new" }}
         selectable
         onDeleteSelected={onDeleteSelected}
-        onRowActivate={(u) => router.push(`/admin/users/${u.id}`)}
+        // 行の右端の › で詳細画面へ
+        rowAction={{
+          icon: ChevronRight,
+          label: m.common.detail,
+          busy: true,
+          onClick: (u) => router.push(`/admin/users/${u.id}`),
+        }}
       />
     </div>
   );

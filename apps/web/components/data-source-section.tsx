@@ -341,8 +341,6 @@ export function DataSourceSection({
         onDeleteSelected={onDeleteSelected}
         showPager={false}
         showFilters={false}
-        showOpenHint={false}
-        busyOnActivate={false}
         selectedKey={selectedId}
         onRowSelect={(r) => setSelectedId(r.id)}
         onReorder={reorder}
@@ -361,11 +359,15 @@ export function DataSourceSection({
             ) : undefined
           ) : undefined
         }
-        onRowActivate={
-          editable && !adding
-            ? (r) => {
-                setEditingId(r.id);
-                setNote(r.note ?? "");
+        // 編集は行の右端の鉛筆から
+        rowAction={
+          editable
+            ? {
+                onClick: (r) => {
+                  setEditingId(r.id);
+                  setNote(r.note ?? "");
+                },
+                disabled: () => adding,
               }
             : undefined
         }

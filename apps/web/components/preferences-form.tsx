@@ -20,6 +20,7 @@ import { AvatarCropper } from "@/components/avatar-cropper";
 import { UserAvatar } from "@/components/user-avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { MfaSection } from "@/components/mfa-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -520,6 +521,8 @@ export function PreferencesForm({
           </Button>
         </CardContent>
       </Card>
+
+      <MfaSection />
     </div>
   );
 }

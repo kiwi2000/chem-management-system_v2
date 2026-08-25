@@ -276,8 +276,6 @@ export function LinkVersionSection({
         onRowSelect={(v) => onSelect(v.id, v.code)}
         showPager={false}
         showFilters={false}
-        showOpenHint={false}
-        busyOnActivate={false}
         create={editable && !editingId ? { onClick: startNew } : undefined}
         headerActions={
           editable && editingId ? (
@@ -294,8 +292,10 @@ export function LinkVersionSection({
             </div>
           ) : undefined
         }
-        // 編集中は他の行に移らない（打ちかけの内容を黙って捨てないため）
-        onRowActivate={editable && !editingId ? startEdit : undefined}
+        // 編集は行の右端の鉛筆から。編集中は押せなくする（打ちかけの内容を捨てないため）
+        rowAction={
+          editable ? { onClick: startEdit, disabled: () => editingId !== null } : undefined
+        }
       />
     </section>
   );

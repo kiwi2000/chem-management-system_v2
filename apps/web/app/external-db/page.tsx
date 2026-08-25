@@ -33,13 +33,13 @@ export default function ExternalDbPage() {
       <h1 className="text-2xl font-semibold">{m.externalDb.title}</h1>
 
       {/* 種別は2列しかないので、横いっぱいには広げない */}
-      <div className="max-w-[404px]">
+      <div className="max-w-[444px]">
         <SourceSection onChanged={bump} />
       </div>
 
       {/* バージョンは列が2つだけなので幅を決め打ちし、残りをデータソースに渡す */}
       <div className="flex flex-col gap-8 xl:flex-row xl:items-start">
-        <div className="w-full shrink-0 xl:w-[228px]">
+        <div className="w-full shrink-0 xl:w-[268px]">
           <LinkVersionSection
             selectedId={version?.id ?? null}
             onSelect={onSelectVersion}
@@ -47,7 +47,7 @@ export default function ExternalDbPage() {
           />
         </div>
         {/* 列の合計ぶんだけ。画面が広くても表は広げない */}
-        <div className="min-w-0 flex-1 xl:max-w-[622px]">
+        <div className="min-w-0 flex-1 xl:max-w-[662px]">
           <DataSourceSection
             versionId={version?.id ?? null}
             versionCode={version?.code ?? null}

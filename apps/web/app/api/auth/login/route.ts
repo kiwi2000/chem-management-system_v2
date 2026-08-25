@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { loginSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { login, purgeExpiredSessions } from "@/lib/auth";
@@ -49,12 +50,18 @@ export async function POST(req: Request) {
   void purgeExpiredSessions();
   // 前に使った人の Cookie が残っていることがあるので、この人のものに入れ替える
   await syncPreferenceCookies(result.user);
+  // 成功も、どこから入ったかまで残す。失敗の記録と突き合わせて見るため
+  const hdrs = await headers();
   await writeAudit({
     entity: "users",
     entityId: result.user.id,
     action: "login",
     actorId: result.user.id,
-    diff: { email: result.user.email },
+    diff: {
+      email: result.user.email,
+      ip: hdrs.get("x-forwarded-for") ?? null,
+      userAgent: hdrs.get("user-agent")?.slice(0, 200) ?? null,
+    },
   });
   return Response.json({ ok: true, mustChangePassword: result.mustChangePassword });
 }

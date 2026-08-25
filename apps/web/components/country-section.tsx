@@ -348,9 +348,7 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
         // 件数が少ないので絞り込みは出さない（並べ替えは見出しで行う）
         showFilters={false}
         // 案内の文言は出さない（この表では「詳細」ではなく編集を開くため）
-        showOpenHint={false}
         // その場で入力欄に変わるだけなので、待ち時間の表示は要らない
-        busyOnActivate={false}
         // 地域が1件も無いと国は作れない
         create={
           editable && !editingId ? { onClick: startNew, disabled: regions.length === 0 } : undefined
@@ -370,8 +368,10 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
             </div>
           ) : undefined
         }
-        // 編集中は他の行に移らない（打ちかけの内容を黙って捨てないため）
-        onRowActivate={editable && !editingId ? startEdit : undefined}
+        // 編集は行の右端の鉛筆から。編集中は押せなくする（打ちかけの内容を捨てないため）
+        rowAction={
+          editable ? { onClick: startEdit, disabled: () => editingId !== null } : undefined
+        }
       />
     </section>
   );
