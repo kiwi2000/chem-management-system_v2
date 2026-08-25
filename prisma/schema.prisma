@@ -817,6 +817,13 @@ model MetalConversionFactor {
    */
   ratioPct      Decimal @map("ratio_pct") @db.Decimal(9, 6)
 
+  /**
+   * この値がどこから来たか。
+   * **人が入れた値を、機械が上書きしないための目印**にする
+   * （分子式から出せない値＝実測や、法令が定める換算率があるため）
+   */
+  note String?
+
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -1534,6 +1541,12 @@ model Element {
   atomicNumber Int    @unique @map("atomic_number")
   nameJa       String @map("name_ja") @db.VarChar(100)
   nameEn       String @map("name_en") @db.VarChar(100)
+
+  /**
+   * 標準原子量。分子式から「その元素として何％か」を計算するのに使う。
+   * 安定同位体を持たない元素は、いちばん寿命の長い同位体の質量数を入れる
+   */
+  atomicWeight Decimal? @map("atomic_weight") @db.Decimal(10, 4)
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
