@@ -69,12 +69,33 @@ function checkIp(request: NextRequest, pathname: string): NextResponse | null {
   if (ipVerdict(ip, allowList) !== "deny") return null;
 
   const enforce = process.env.IP_FILTER_MODE === "enforce";
-  console.warn(
-    `[ip-filter] ${enforce ? "断りました" : "様子見（通しました）"} ip=${ip ?? "不明"} path=${pathname}`,
-  );
+  if (shouldLog(ip)) {
+    console.warn(
+      `[ip-filter] ${enforce ? "断りました" : "様子見（通しました）"} ip=${ip ?? "不明"} path=${pathname}`,
+    );
+  }
   if (!enforce) return null;
   // 何があるのかを外へ伝えない。ここにシステムがあること自体を悟らせない
   return new NextResponse("Not Found", { status: 404 });
+}
+
+/**
+ * 同じ相手を何度も書かない。
+ *
+ * 画面を1つ開くだけで裏の問い合わせが何本も飛ぶので、素直に書くと
+ * 記録が同じ行で埋まり、肝心の「他にどこから来ているか」が見えなくなる。
+ * ここは「どの場所から使われているか」を集めるための記録なので、相手ごとに1回でよい。
+ *
+ * 覚えておくのは動いているあいだだけ。入れ替わればまた1回書く（それで困らない）。
+ */
+const logged = new Set<string>();
+function shouldLog(ip: string | null): boolean {
+  const key = ip ?? "不明";
+  if (logged.has(key)) return false;
+  // 際限なく増やさない。増えすぎたら忘れて数え直す
+  if (logged.size > 500) logged.clear();
+  logged.add(key);
+  return true;
 }
 
 export function middleware(request: NextRequest) {

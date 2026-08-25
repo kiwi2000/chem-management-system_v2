@@ -152,6 +152,17 @@ async function main() {
     });
   }
 
+  /*
+    全員の「最後に見た時刻」を消す。
+    これを消さないと、既にフィードバックの画面を開いたことがある人には
+    見本が最初から既読で出てしまい、未読の印を試せない。
+    見本を入れるときだけの扱いなので、本番では実行しないこと。
+  */
+  const cleared = await prisma.user.updateMany({
+    where: { feedbackSeenAt: { not: null } },
+    data: { feedbackSeenAt: null },
+  });
+
   const open = SEEDS.filter((s) => s.status !== "DONE").length;
   // 最後に触った人が自分なら未読にならない
   const unread = SEEDS.filter((s) => (s.reply?.by ?? s.author) !== VIEWER).length;
@@ -159,6 +170,7 @@ async function main() {
   console.log(
     `${VIEWER} から見た未読: ${unread}件（自分で書いて返事も無いものだけが未読になりません）`,
   );
+  console.log(`「最後に見た時刻」を消した人: ${cleared.count}人（全員に未読として出ます）`);
 }
 
 main()

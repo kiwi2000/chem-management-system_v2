@@ -191,6 +191,18 @@ export function SidebarNav({
   }, []);
   useEffect(() => {
     void loadBadge();
+    /*
+      画面を移らずに開いたままの人にも届くよう、ときどき取り直す。
+      戻ってきたとき（別の窓から切り替えたとき）にも取り直す。
+      1分に1回。これ以上こまめにしても、気づく早さは変わらない。
+    */
+    const timer = setInterval(() => void loadBadge(), 60_000);
+    const onFocus = () => void loadBadge();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [loadBadge, pathname]);
 
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
@@ -345,12 +357,17 @@ function FeedbackBadge({ badge }: { badge: { unread: number; open: number } | nu
     .join(" / ");
 
   return (
-    <span className="ml-auto flex shrink-0 items-center gap-1" title={label} aria-label={label}>
-      {/* 未読があるあいだだけ、小さな点が脈打つ */}
+    <span className="ml-auto flex shrink-0 items-center gap-1.5" title={label} aria-label={label}>
+      {/*
+        未読の数。あるあいだだけ出して、色を付けて脈打たせる。
+        「新しいものがある」ことは動きで、「どれだけあるか」は数で伝える
+      */}
       {badge.unread > 0 && (
-        <span className="relative flex size-2">
-          <span className="bg-primary absolute inline-flex size-full animate-ping rounded-full opacity-60" />
-          <span className="bg-primary relative inline-flex size-2 rounded-full" />
+        <span className="relative flex">
+          <span className="bg-primary absolute inline-flex size-full animate-ping rounded-full opacity-50" />
+          <span className="bg-primary text-primary-foreground relative rounded-full px-1.5 text-[11px] leading-4 font-medium tabular-nums">
+            {badge.unread}
+          </span>
         </span>
       )}
       {badge.open > 0 && (
