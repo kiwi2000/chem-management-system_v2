@@ -70,7 +70,9 @@ function checkIp(request: NextRequest, pathname: string): NextResponse | null {
 
   const enforce = process.env.IP_FILTER_MODE === "enforce";
   if (shouldLog(ip)) {
-    // 異常ではないので warn にしない（記録の側で「エラー」として扱われてしまう）
+    // 異常ではないので warn にしない（記録の側で「エラー」として扱われてしまう）。
+    // 消し忘れの debug 出力ではなく、運用のための記録なのでここだけ許す
+    // eslint-disable-next-line no-console
     console.log(
       `[ip-filter] ${enforce ? "断りました" : "様子見（通しました）"} ip=${ip ?? "不明"} path=${pathname}`,
     );
