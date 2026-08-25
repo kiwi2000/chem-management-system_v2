@@ -39,6 +39,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html
       lang={locale}
+      /*
+        「システムに合わせる」ときは、下の script が React より先に
+        <html> へ dark を付ける。画面が一瞬白く光るのを防ぐためで、意図した動き。
+        サーバー側は利用者の端末の設定を知りようがないので、ここは必ず食い違う。
+        React に「ここの食い違いは想定内」と伝えて、警告を出させない。
+      */
+      suppressHydrationWarning
       className={cn(
         themeClass(theme),
         headerStrong && HEADER_STRONG_CLASS,

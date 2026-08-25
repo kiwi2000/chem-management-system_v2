@@ -75,6 +75,28 @@ export interface SavedFilterDto {
   ownerName: string;
 }
 
+/**
+ * 持ち出しの記録の1行。
+ *
+ * 利用者名・製品名は記録そのものには入っていない（二重に持つと食い違うため）。
+ * 表に出すときに引いて組み立てる。消えていれば null。
+ */
+export interface AccessLogDto {
+  id: string;
+  at: string;
+  action: string;
+  actorId: string | null;
+  actorName: string | null;
+  productId: string | null;
+  productCode: string | null;
+  productName: string | null;
+  /** 見た行数。多い日が続く人は、まとめて持ち出している */
+  lineCount: number | null;
+  /** 末端の物質まで下ろした表かどうか */
+  expanded: boolean | null;
+  ip: string | null;
+}
+
 export interface ListResponse<T> {
   items: T[];
   total: number;

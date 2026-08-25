@@ -1,3 +1,4 @@
+import { recordCompositionView } from "@/lib/access-log";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
 import { canViewComposition } from "@/lib/composition-service";
@@ -35,5 +36,15 @@ export async function GET(_req: Request, { params }: Ctx) {
   }
 
   const settings = await getAppSettings();
-  return Response.json(await aggregateComposition(actor, id, settings, m));
+  const result = await aggregateComposition(actor, id, settings, m);
+
+  // 見たことを残す。末端まで下ろした表なので、持ち出されたときの重みは1段より大きい
+  await recordCompositionView({
+    productId: id,
+    actorId: actor.user.id,
+    lineCount: result.rows.length,
+    expanded: true,
+  });
+
+  return Response.json(result);
 }

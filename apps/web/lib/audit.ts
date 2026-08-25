@@ -16,7 +16,9 @@ export async function writeAudit(params: {
     | "logout"
     | "determine"
     | "import"
-    | "export";
+    | "export"
+    /** 組成を見た。持ち出しの記録として残す */
+    | "view";
   actorId?: string;
   diff?: unknown;
 }): Promise<void> {

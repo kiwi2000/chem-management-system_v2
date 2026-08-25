@@ -73,6 +73,7 @@ export const en: Messages = {
     groups: "Groups",
     users: "Users",
     propertyDefs: "Custom properties",
+    accessLog: "Data taken out",
     settings: "Settings",
     substances: "Substances",
     products: "Products / Materials",
@@ -103,6 +104,8 @@ export const en: Messages = {
   },
 
   login: {
+    cookieBlocked:
+      "You signed in, but the browser could not keep you signed in. It may be storing too much data for this site, or it may be refusing cookies. Try a private window, or clear this site's cookies and sign in again.",
     peekPassword: "Hold to show the password",
     email: "Email address",
     password: "Password",
@@ -682,6 +685,24 @@ export const en: Messages = {
   feedbackBadge: {
     unread: (n: number) => `${n} unread`,
     open: (n: number) => `${n} open`,
+  },
+
+  accessLog: {
+    title: "Data taken out",
+    lead: "A record of who opened which product's composition, and when. Every action that takes data out of the system appears here.",
+    at: "When",
+    actor: "Who",
+    action: "Action",
+    actionView: "Viewed composition",
+    actionViewExpanded: "Viewed full breakdown",
+    actionExport: "Exported",
+    actionImport: "Imported",
+    product: "Target",
+    lineCount: "Rows",
+    from: "From",
+    unknownActor: "(unknown)",
+    empty: "Nothing recorded yet.",
+    goneProduct: "(deleted product)",
   },
 
   settings: {

@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Package,
   Scale,
+  ScrollText,
   Settings,
   Sigma,
   Tags,
@@ -119,6 +120,14 @@ const ADMIN_ITEMS: NavItem[] = [
     icon: Tags,
     needs: "ADMIN",
     match: ["/admin/property-defs"],
+  },
+  {
+    // 組成を見た記録。持ち出しを追うためのものなので、管理者だけに見せる
+    href: "/admin/access-log",
+    key: "accessLog",
+    icon: ScrollText,
+    needs: "ADMIN",
+    match: ["/admin/access-log"],
   },
   {
     href: "/admin/settings",

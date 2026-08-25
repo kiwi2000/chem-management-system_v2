@@ -1,4 +1,5 @@
 import { compositionSchema, validateCompositionSum } from "@chem/shared";
+import { recordCompositionView } from "@/lib/access-log";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import {
@@ -45,6 +46,14 @@ export async function GET(_req: Request, { params }: Ctx) {
     where: { parentProductId: id },
     include: COMPOSITION_INCLUDE,
     orderBy: ORDER,
+  });
+
+  // 見たことを残す。誰が持ち出したかを後から追えるようにするため
+  await recordCompositionView({
+    productId: id,
+    actorId: actor.user.id,
+    lineCount: lines.length,
+    expanded: false,
   });
 
   const settings = await getAppSettings();

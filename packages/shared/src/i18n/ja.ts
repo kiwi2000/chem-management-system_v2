@@ -75,6 +75,7 @@ export const ja = {
     groups: "グループ管理",
     users: "ユーザー管理",
     propertyDefs: "拡張属性",
+    accessLog: "持ち出しの記録",
     settings: "設定",
     substances: "物質",
     products: "製品 / 原材料",
@@ -105,6 +106,9 @@ export const ja = {
   },
 
   login: {
+    /** ログインは通ったのに、ブラウザがCookieを保存できなかったとき */
+    cookieBlocked:
+      "ログインはできましたが、ブラウザがログイン状態を保存できませんでした。このブラウザに保存されたデータが多すぎるか、Cookieが拒否されています。シークレットウィンドウで開くか、このサイトのCookieを消してからやり直してください。",
     /** 目のボタン。押しているあいだだけパスワードが見える */
     peekPassword: "押しているあいだ、パスワードを表示",
     email: "メールアドレス",
@@ -690,6 +694,25 @@ export const ja = {
   feedbackBadge: {
     unread: (n: number) => `未読 ${n} 件`,
     open: (n: number) => `未完了 ${n} 件`,
+  },
+
+  /** 持ち出しの記録。組成を見た・出した記録を管理者が読む画面 */
+  accessLog: {
+    title: "持ち出しの記録",
+    lead: "組成を見た記録です。誰がいつ、どの製品の中身を見たかが残ります。データが外へ出る操作は、すべてここに並びます。",
+    at: "日時",
+    actor: "利用者",
+    action: "操作",
+    actionView: "組成を見た",
+    actionViewExpanded: "組成を展開して見た",
+    actionExport: "出力した",
+    actionImport: "取り込んだ",
+    product: "対象",
+    lineCount: "件数",
+    from: "接続元",
+    unknownActor: "（不明）",
+    empty: "まだ記録がありません。",
+    goneProduct: "（削除された製品）",
   },
 
   settings: {

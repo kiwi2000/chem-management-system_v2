@@ -66,6 +66,21 @@ export default function LoginPage() {
         return;
       }
       const body = (await res.json()) as { mustChangePassword: boolean };
+
+      /*
+        ログインできたのに、ブラウザがCookieを保存できていないことがある。
+        （そのブラウザに同じ場所のCookieが溜まりすぎている、拒否している、など）
+        このとき何もせずに進むと、次の画面で未ログイン扱いになってここへ戻され、
+        利用者からは「押しても何も起きない」ようにしか見えない。実際にそれで
+        原因が分からず、何度も押し直すことになった。
+
+        1回だけ確かめて、駄目なら何が起きているかを伝える。
+      */
+      if (!(await fetch("/api/me")).ok) {
+        setError(m.login.cookieBlocked);
+        return;
+      }
+
       router.push(body.mustChangePassword ? "/change-password" : "/");
       router.refresh();
     } finally {
