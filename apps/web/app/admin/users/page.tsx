@@ -81,7 +81,8 @@ export default function UsersPage() {
         kind: "enum",
         // 選択肢の文言（有効/無効）だけで分かるので、フィルターでは列名を出さない
         filterLabelHidden: true,
-        width: 64,
+        // 見出しの「有効」が切れない幅。切れると何の列か分からなくなる
+        width: 76,
         className: "text-center",
         options: [
           { value: "true", label: m.users.active },
@@ -101,7 +102,8 @@ export default function UsersPage() {
         header: m.users.mfaHeader,
         kind: "enum",
         filterLabelHidden: true,
-        width: 64,
+        // 見出しの「2要素」が切れない幅
+        width: 84,
         className: "text-center",
         sortable: false,
         options: [
