@@ -6,6 +6,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { countryName } from "@/lib/country-name";
 import { useI18n } from "@/lib/i18n-client";
 import type { AccessLogDto, ApiError, ListResponse, UserSummaryDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
@@ -101,6 +102,17 @@ export default function AccessLogPage() {
         width: 150,
         className: "text-muted-foreground font-mono text-xs",
         render: (r) => r.ip ?? "",
+      },
+      {
+        // 場所は「見慣れない国から入られていないか」に気づくためのもの。
+        // 分かるのは割り当て国であって、その人が今いる場所ではない
+        key: "country",
+        header: m.accessLog.place,
+        kind: "text",
+        sortable: false,
+        filterable: false,
+        width: 110,
+        render: (r) => countryName(r.country, locale, { local: m.accessLog.localPlace }),
       },
     ],
     [m, locale, users],

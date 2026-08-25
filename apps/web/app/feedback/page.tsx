@@ -18,6 +18,7 @@ import {
 } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { FeedbackPeek } from "@/components/feedback-peek";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -142,6 +143,9 @@ export default function FeedbackPage() {
         width: 320,
         filterFullWidth: true,
         multiline: true,
+        // 3行で打ち切る。この幅だと1行30文字ほどなので、90文字あたりまで見える。
+        // 全文は行を開いて読む
+        clampLines: 3,
         render: (r) => r.body,
       },
       {
@@ -152,6 +156,7 @@ export default function FeedbackPage() {
         sortable: false,
         filterFullWidth: true,
         multiline: true,
+        clampLines: 3,
         // 返事が付いていれば、誰がいつ返したかも小さく添える
         render: (r) =>
           r.reply ? (
@@ -231,6 +236,9 @@ export default function FeedbackPage() {
     いま出ている行の未読の印は、印を付ける前の時刻で決まっているので消えない。
     開いた瞬間に消えると、何が新しかったのか分からなくなる。
   */
+  /** 全文を開いている書き込み。一覧は3行で切っているので、続きはここで読む */
+  const [peek, setPeek] = useState<FeedbackDto | null>(null);
+
   const marked = useRef(false);
   useEffect(() => {
     if (!ready || marked.current) return;
@@ -432,7 +440,10 @@ export default function FeedbackPage() {
         emptyMessage="まだ投稿がありません"
         selectable
         onDeleteSelected={onDeleteSelected}
-        // この画面は詳細を別に持たないので、鉛筆で上のフォームに読み込む
+        // 行を押したら全文を出す。表では3行で切っているため
+        selectedKey={peek?.id ?? null}
+        onRowSelect={(f) => setPeek(f)}
+        // 鉛筆で上のフォームに読み込む（システム全体で、鉛筆＝編集に揃えてある）
         rowAction={{
           onClick: (f) => {
             setForm({
@@ -455,6 +466,7 @@ export default function FeedbackPage() {
           ["updatedAt"],
         ]}
       />
+      <FeedbackPeek item={peek} onClose={() => setPeek(null)} />
     </div>
   );
 }

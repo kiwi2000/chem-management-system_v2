@@ -611,7 +611,21 @@ export function DataTable<T>({
                         c.className,
                       )}
                     >
-                      {c.render?.(row)}
+                      {/* 何行で打ち切るかが指定されていたら、その行数で止めて「…」を出す */}
+                      {c.clampLines ? (
+                        <div
+                          className="overflow-hidden"
+                          style={{
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical",
+                            WebkitLineClamp: c.clampLines,
+                          }}
+                        >
+                          {c.render?.(row)}
+                        </div>
+                      ) : (
+                        c.render?.(row)
+                      )}
                     </TableCell>
                   ))}
                   {rowAction && (

@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/authz";
+import { countryOf } from "@/lib/ip-country";
 import { listAuditLogs } from "@/lib/audit-list";
 import type { LoginLogDto } from "@/lib/types";
 
@@ -37,6 +38,7 @@ export async function GET(req: Request) {
       email: u?.email ?? d.email ?? null,
       reason: d.reason ?? null,
       ip: d.ip ?? null,
+      country: countryOf(d.ip ?? null),
       userAgent: d.userAgent ?? null,
     };
   });

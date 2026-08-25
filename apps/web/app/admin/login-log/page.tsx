@@ -6,6 +6,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { countryName } from "@/lib/country-name";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, LoginLogDto, UserSummaryDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
@@ -95,6 +96,17 @@ export default function LoginLogPage() {
         width: 150,
         className: "font-mono text-xs",
         render: (r) => r.ip ?? "",
+      },
+      {
+        // 場所は「見慣れない国から入られていないか」に気づくためのもの。
+        // 分かるのは割り当て国であって、その人が今いる場所ではない
+        key: "country",
+        header: m.loginLog.place,
+        kind: "text",
+        sortable: false,
+        filterable: false,
+        width: 110,
+        render: (r) => countryName(r.country, locale, { local: m.loginLog.localPlace }),
       },
       {
         key: "userAgent",

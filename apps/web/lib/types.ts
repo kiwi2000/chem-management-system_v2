@@ -95,6 +95,8 @@ export interface AccessLogDto {
   /** 末端の物質まで下ろした表かどうか */
   expanded: boolean | null;
   ip: string | null;
+  /** 接続元のおよその国（2文字）。"local" は自分自身、null は分からない */
+  country: string | null;
 }
 
 /**
@@ -113,6 +115,8 @@ export interface LoginLogDto {
   /** 失敗の理由。成功・ログアウトでは null */
   reason: string | null;
   ip: string | null;
+  /** 接続元のおよその国（2文字）。"local" は自分自身、null は分からない */
+  country: string | null;
   userAgent: string | null;
 }
 

@@ -32,6 +32,12 @@ export interface TableColumn<T> {
   width?: number;
   /** 1セルに複数行を出す（省略記号で切らず、行の高さを伸ばす） */
   multiline?: boolean;
+  /**
+   * multiline のとき、何行で打ち切るか。
+   * 長い文章がそのまま入ると行の高さがばらばらになり、一覧として読めなくなる。
+   * 打ち切った行は末尾が「…」になるので、続きは詳細で読む。
+   */
+  clampLines?: number;
   /** セルに付けるクラス（等幅フォントなど） */
   className?: string;
 }
