@@ -70,7 +70,8 @@ function checkIp(request: NextRequest, pathname: string): NextResponse | null {
 
   const enforce = process.env.IP_FILTER_MODE === "enforce";
   if (shouldLog(ip)) {
-    console.warn(
+    // 異常ではないので warn にしない（記録の側で「エラー」として扱われてしまう）
+    console.log(
       `[ip-filter] ${enforce ? "断りました" : "様子見（通しました）"} ip=${ip ?? "不明"} path=${pathname}`,
     );
   }
