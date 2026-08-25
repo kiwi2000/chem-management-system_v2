@@ -1,4 +1,5 @@
 import { ProductForm } from "@/components/product-form";
+import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
@@ -19,7 +20,7 @@ export default async function NewProductPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-4 lg:p-6">
+    <div className={PAGE_SHELL_STACKED}>
       <h1 className="text-2xl font-semibold">{m.products.newTitle}</h1>
       <ProductForm
         defs={defs.map(toPropertyDefDto)}

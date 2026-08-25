@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { firstError, summaryError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
 import { passwordProblem } from "@/lib/password-check";
@@ -77,7 +78,7 @@ export default function NewUserPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-4 lg:p-6">
+    <div className={PAGE_SHELL_STACKED}>
       <h1 className="text-2xl font-semibold">{m.users.newTitle}</h1>
       <form onSubmit={onSubmit} className="space-y-4">
         <Card>

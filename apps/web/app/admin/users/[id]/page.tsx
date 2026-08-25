@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PAGE_SHELL, PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { firstError, summaryError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
 import { passwordProblem } from "@/lib/password-check";
@@ -148,7 +149,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
   if (!item) {
     return (
-      <div className="mx-auto max-w-6xl p-4 lg:p-6">
+      <div className={PAGE_SHELL}>
         {error ? (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -161,7 +162,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-4 lg:p-6">
+    <div className={PAGE_SHELL_STACKED}>
       <h1 className="text-2xl font-semibold">{m.users.editTitle}</h1>
 
       {/* まず表示だけにして、「編集」を押してから書き換えられるようにする（物質・お知らせと同じ形） */}

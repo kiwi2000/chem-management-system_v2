@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ApprovalHistory } from "@/components/approval-history";
 import { PublishActions } from "@/components/publish-actions";
 import { SubstanceForm } from "@/components/substance-form";
+import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
@@ -45,7 +46,7 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
   const numbers = await listNumbers(item.casNormalized);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-4 lg:p-6">
+    <div className={PAGE_SHELL_STACKED}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{m.substances.detailTitle}</h1>
         <PublishActions
