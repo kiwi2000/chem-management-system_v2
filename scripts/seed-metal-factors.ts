@@ -17,6 +17,11 @@
  * **人が手で入れた係数は上書きしない。**
  * 分子式から出せない値（実測や、法令が定める換算率）を上書きすると、
  * 直した意味が無くなる。
+ *
+ * **こちらは穴埋め。本命は `scripts/seed-metal-factors-list.ts`。**
+ * LOLI には換算係数そのものの一覧（ListID 9533）があり、そちらを先に流す。
+ * このスクリプトは、その一覧に載っていない CAS を分子式から埋めるために使う。
+ * 順番を逆にすると、分子式から出した値が一覧の値を上書きしてしまう。
  */
 import { readFileSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
