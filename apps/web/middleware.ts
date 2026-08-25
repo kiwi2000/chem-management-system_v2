@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { clientIp, ipVerdict, parseAllowList } from "@/lib/ip-allow";
 import { NONCE_HEADER, PATH_HEADER } from "@/lib/routes";
 
 /**
@@ -44,8 +45,51 @@ function contentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
+/**
+ * 決まった場所からだけ入れるようにする。
+ *
+ * 許可する相手は `ALLOWED_IPS`（環境変数）で渡す。**空なら制限しない。**
+ * 設定を誤って全員が締め出されたとき、値を消せば必ず戻れるようにするための安全弁。
+ *
+ * `IP_FILTER_MODE` で強さを変える。
+ *
+ *   monitor（既定）… 断らない。許可外から来たことを記録に残すだけ
+ *   enforce … 許可外を断る
+ *
+ * まず monitor でしばらく動かし、正しい利用者のアドレスが記録に出そろって
+ * いることを見てから enforce に切り替える。いきなり弾くと、把握できていない
+ * 場所から使っている人を締め出す。
+ *
+ * 記録は Railway の実行記録（ログ）に出す。middleware は Edge で動くので
+ * データベースに触れないため。
+ */
+function checkIp(request: NextRequest, pathname: string): NextResponse | null {
+  const allowList = parseAllowList(process.env.ALLOWED_IPS);
+  const ip = clientIp(request.headers.get("x-forwarded-for"));
+  if (ipVerdict(ip, allowList) !== "deny") return null;
+
+  const enforce = process.env.IP_FILTER_MODE === "enforce";
+  console.warn(
+    `[ip-filter] ${enforce ? "断りました" : "様子見（通しました）"} ip=${ip ?? "不明"} path=${pathname}`,
+  );
+  if (!enforce) return null;
+  // 何があるのかを外へ伝えない。ここにシステムがあること自体を悟らせない
+  return new NextResponse("Not Found", { status: 404 });
+}
+
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
+
+  const blocked = checkIp(request, pathname);
+  if (blocked) return blocked;
+
+  /*
+    API はここから先の処理をしない。
+    未ログインでもログイン画面へ飛ばさず、各 API が 401 を返せるようにするため
+    （飛ばすと、JSON を待っている画面側に HTML が返る）。
+    認可は各 API の getSessionUser() が見ている。
+  */
+  if (pathname.startsWith("/api/")) return NextResponse.next();
   const hasSession = request.cookies.has(SESSION_COOKIE);
   const isLoginPage = pathname.startsWith("/login");
 
@@ -71,6 +115,9 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // 静的アセットと API を除くすべてのページ
-  matcher: ["/((?!api|_next/static|_next/image|favicon\\.ico).*)"],
+  /*
+    静的な部品を除くすべて。**API も通す**（接続元の判定を効かせるため）。
+    稼働確認だけは、外の監視から叩けるように外しておく。
+  */
+  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|api/health).*)"],
 };
