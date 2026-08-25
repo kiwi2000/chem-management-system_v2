@@ -7,3 +7,6 @@ package-lock.json
 prisma/migrations/
 *.tsbuildinfo
 scripts/data/
+
+# Next.js が build のたびに作り直すもの。git にも載せないので、体裁を整える意味がない
+next-env.d.ts
