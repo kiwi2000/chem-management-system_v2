@@ -1,12 +1,12 @@
 "use client";
 
-import { pickName } from "@chem/shared";
+import { pickName, pickStatutoryName } from "@chem/shared";
 import { ChevronRight } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, CompositionAggregateDto } from "@/lib/types";
+import type { ApiError, CompositionAggregateDto, RowRegulationDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -133,6 +133,14 @@ export function CompositionAggregateTable({
                 <th className={cn(CELL, "w-20 text-right font-medium")}>
                   {m.composition.aggregateSources}
                 </th>
+                {/*
+                  この物質がどの法令に引っかかっているか。
+                  下の判定表と向きが逆で、**組成を見ながら「これが原因だ」とたどれる**。
+                  判定表は「どの区分に当たったか」、こちらは「どの物質が効いたか」
+                */}
+                <th className={cn(CELL, "w-72 font-medium")}>
+                  {m.composition.aggregateRegulations}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -178,6 +186,9 @@ export function CompositionAggregateTable({
                       <td className={cn(CELL, "text-muted-foreground text-right text-xs")}>
                         {many ? m.composition.aggregateCount(row.contributions.length) : "—"}
                       </td>
+                      <td className={cn(CELL, "max-w-0")}>
+                        <RegulationChips items={row.regulations} locale={locale} />
+                      </td>
                     </tr>
                     {/*
                      * 内訳は物質コードと、製品全体に対する重量%だけ。
@@ -205,6 +216,7 @@ export function CompositionAggregateTable({
                             {c.pct}%
                           </td>
                           <td className={CELL} />
+                          <td className={CELL} />
                         </tr>
                       ))}
                   </Fragment>
@@ -218,11 +230,77 @@ export function CompositionAggregateTable({
                 </td>
                 <td className={cn(CELL, "text-right font-medium")}>{data.totalPct}%</td>
                 <td className={CELL} />
+                <td className={CELL} />
               </tr>
             </tfoot>
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * その物質が引っかかっている規制。**法律ごとにまとめて1行に収める。**
+ *
+ * 区分名をそのまま並べると、1物質で6個並ぶことがあり
+ * （キシレンは化審法・安衛法3つ・毒劇法・化管法）、
+ * 組成の並びが読めなくなる。この表は「何がどれだけ入っているか」を見るためのもので、
+ * 規制の中身は下の判定表が受け持つ。ここは**目印**に徹する。
+ *
+ * 区分が1つだけなら区分名まで出す（そのほうが分かるので）。
+ * 2つ以上なら数だけにして、区分名は触れれば読める。
+ *
+ * **空欄は「かかっていない」ではなく「該当が無い」。**
+ * まだ判定していない製品でも空になるので、下の判定表と合わせて読む。
+ */
+function RegulationChips({
+  items,
+  locale,
+}: {
+  items: RowRegulationDto[];
+  locale: ReturnType<typeof useI18n>["locale"];
+}) {
+  if (items.length === 0) return <span className="text-muted-foreground">—</span>;
+
+  /** 法律ごとにまとめる。並びは元のまま（法令 → 区分の順に入っている） */
+  const byLaw = new Map<string, { law: string; categories: string[]; needsReview: boolean }>();
+  for (const r of items) {
+    const law = pickStatutoryName(locale, r.lawNameOriginal, r.lawNameJa, r.lawNameEn);
+    const category = pickStatutoryName(
+      locale,
+      r.categoryNameOriginal,
+      r.categoryNameJa,
+      r.categoryNameEn,
+    );
+    const found = byLaw.get(law) ?? { law, categories: [], needsReview: false };
+    found.categories.push(category);
+    // 1つでも確認が残っていれば、その法律の印に付ける
+    found.needsReview = found.needsReview || r.needsReview;
+    byLaw.set(law, found);
+  }
+
+  return (
+    // 入りきらないぶんはセルの中だけ横に送る。スクロールバーは出さない
+    <div className="flex gap-1 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {[...byLaw.values()].map((g) => (
+        <span
+          key={g.law}
+          title={g.categories.map((c) => `${g.law} › ${c}`).join("\n")}
+          className={cn(
+            "shrink-0 rounded border px-1.5 py-0.5 text-xs",
+            // 確認が残っている法律は、判定表と同じ色で目印を付ける
+            g.needsReview ? "border-destructive/40 text-destructive" : "text-muted-foreground",
+          )}
+        >
+          {g.law}
+          {g.categories.length === 1 ? (
+            <span className="ml-1 opacity-70">{g.categories[0]}</span>
+          ) : (
+            <span className="ml-1 font-medium tabular-nums">{g.categories.length}</span>
+          )}
+        </span>
+      ))}
     </div>
   );
 }

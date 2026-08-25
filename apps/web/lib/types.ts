@@ -362,6 +362,22 @@ export interface AggregateContributionDto {
   pct: string;
 }
 
+/**
+ * まとめ表の行に添える「この CAS が効いている規制区分」。
+ * 下の判定表と向きが逆（あちらは区分ごと、こちらは CAS ごと）。
+ */
+export interface RowRegulationDto {
+  categoryId: string;
+  lawNameJa: string | null;
+  lawNameEn: string | null;
+  lawNameOriginal: string;
+  categoryNameJa: string | null;
+  categoryNameEn: string | null;
+  categoryNameOriginal: string;
+  /** その区分の判定に確認が残っているか */
+  needsReview: boolean;
+}
+
 /** CASでまとめた行。合算の結果はこの形で返す */
 export interface AggregateRowDto {
   /** CAS番号。持たない物質は null（まとめようがないので1物質1行になる） */
@@ -372,6 +388,11 @@ export interface AggregateRowDto {
   nameEn: string | null;
   totalPct: string;
   contributions: AggregateContributionDto[];
+  /**
+   * この CAS が効いている規制区分。該当したものだけ。
+   * **判定し直した結果ではなく、保持してある判定結果から引いている**
+   */
+  regulations: RowRegulationDto[];
 }
 
 export interface CompositionAggregateDto {

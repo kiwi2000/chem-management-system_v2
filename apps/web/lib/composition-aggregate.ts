@@ -11,6 +11,7 @@ import {
   type Ratio,
 } from "@chem/shared";
 import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
+import { regulationsByCas } from "@/lib/composition-regulations";
 import { prisma } from "@/lib/db";
 import { visibilityWhere } from "@/lib/product-service";
 import type { Actor } from "@/lib/authz";
@@ -182,6 +183,14 @@ export async function aggregateComposition(
         });
   const byCas = new Map(representatives.map((r) => [r.casNormalized ?? "", r]));
 
+  /*
+    どの CAS がどの規制区分に効いているか。保持してある判定結果から引くだけで、
+    ここで判定し直しはしない（2か所で計算すると必ず食い違う）。
+    まだ判定していない製品では空になる。空＝該当なし ではないので、
+    印が付かないことを「かかっていない」と読ませないよう、画面側で断る。
+  */
+  const regulations = await regulationsByCas(rootProductId);
+
   const rows = [...buckets.values()]
     .sort((a, b) => compareFine(b.fine, a.fine))
     .map((b) => {
@@ -201,6 +210,8 @@ export async function aggregateComposition(
             nameEn: c.nameEn,
             pct: fineToPct(c.fine),
           })),
+        // 判定は正規化した CAS で紐づいている（表示用の CAS 番号ではない）
+        regulations: (b.casNormalized ? regulations.get(b.casNormalized) : undefined) ?? [],
       };
     });
 

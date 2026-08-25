@@ -946,6 +946,7 @@ export const ja = {
     aggregateNoCas: "CASなし",
     aggregateCount: (n: number) => `${n}件`,
     aggregateSubstanceId: "物質ID",
+    aggregateRegulations: "かかる法規制",
     aggregateShowSources: "寄与元を見る",
     aggregateIncomplete: (n: number) =>
       `中身をたどれない原材料が ${n} 件あります。この表はまだ完全ではありません。下の合計も100%に届きません。`,

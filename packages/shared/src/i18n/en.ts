@@ -931,6 +931,7 @@ export const en: Messages = {
     aggregateSources: "Sources",
     aggregateNoCas: "No CAS",
     aggregateCount: (n: number) => `${n}`,
+    aggregateRegulations: "Regulations",
     aggregateSubstanceId: "Substance ID",
     aggregateShowSources: "Show sources",
     aggregateIncomplete: (n: number) =>
