@@ -770,6 +770,35 @@ export const en: Messages = {
     },
   },
 
+  judgements: {
+    title: "Regulatory judgement",
+    summary: (hit: number, total: number) => `${hit} of ${total} apply`,
+    reviewCount: (n: number) => `${n} to check`,
+    empty: "Not judged yet. Register a composition and it will be judged.",
+    applicable: "Applies",
+    notApplicable: "Does not apply",
+    needsReview: "Needs checking",
+    byUser: "Decided by a person",
+    basis: "Because",
+    categoryItself: "(category total)",
+    basisWithheld: "The basis is close to composition data, so it is not shown.",
+    decidedBy: (who: string, when: string) => `Checked by ${who} on ${when}`,
+    review: "Check this",
+    change: "Change the verdict",
+    confirm: "Confirm as is",
+    changeToNot: "Mark as not applying",
+    changeToYes: "Mark as applying",
+    notePlaceholder: "Why you decided this (for when you are asked later)",
+    showNotApplicable: (n: number) => `Show the ${n} that do not apply`,
+    hideNotApplicable: "Hide the ones that do not apply",
+    reasonUnknown: "A raw material with no registered composition remains. Its content is unknown.",
+    reasonTruncated: "The material nesting was too deep to expand fully.",
+    reasonConditional:
+      "The exemption carries conditions beyond concentration (formulation, colouring, use). It does not apply unless those are met.",
+    reasonUnfilled:
+      "No threshold is set for this entry because its exemption cannot be reduced to a single number. Read the text and decide.",
+  },
+
   settings: {
     title: "System settings",
     description: "Adjust how strict the input checks are to match how you work.",

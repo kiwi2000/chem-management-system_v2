@@ -3,7 +3,8 @@ import { ApprovalHistory } from "@/components/approval-history";
 import { PublishActions } from "@/components/publish-actions";
 import { ProductForm } from "@/components/product-form";
 import { getActor } from "@/lib/authz";
-import { canViewComposition } from "@/lib/composition-service";
+import { ProductJudgements } from "@/components/product-judgements";
+import { canEditComposition, canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { PRODUCT_INCLUDE, canEditProduct, toDetail, visibilityWhere } from "@/lib/product-service";
@@ -61,6 +62,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         canViewComposition={canViewComposition(actor, item)}
         settings={settings}
       />
+
+      {/* 判定は組成の下に置く。組成を見てから「で、法令はどうなのか」と読む順 */}
+      <ProductJudgements productId={item.id} canEdit={canEditComposition(actor, item)} />
 
       <ApprovalHistory entity="product" entityId={item.id} />
     </div>

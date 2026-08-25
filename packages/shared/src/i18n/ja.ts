@@ -780,6 +780,37 @@ export const ja = {
     },
   },
 
+  /** 法規制の判定。製品の詳細に出す */
+  judgements: {
+    title: "法規制の判定",
+    summary: (hit: number, total: number) => `${total} 件中 ${hit} 件に該当`,
+    reviewCount: (n: number) => `要確認 ${n} 件`,
+    empty: "まだ判定していません。組成を登録すると判定されます。",
+    applicable: "該当",
+    notApplicable: "非該当",
+    needsReview: "要確認",
+    byUser: "人が判断",
+    basis: "根拠",
+    categoryItself: "（区分の合計）",
+    basisWithheld: "根拠は組成に近い情報のため、表示していません。",
+    decidedBy: (who: string, when: string) => `${who} が ${when} に確認`,
+    review: "確認する",
+    change: "判定を変える",
+    confirm: "このまま確認",
+    changeToNot: "非該当にする",
+    changeToYes: "該当にする",
+    notePlaceholder: "そう判断した根拠（あとで問われたときのために）",
+    showNotApplicable: (n: number) => `非該当の ${n} 件も見る`,
+    hideNotApplicable: "非該当を隠す",
+    reasonUnknown:
+      "中身の登録されていない原材料が残っています。その分に何が入っているか分かりません。",
+    reasonTruncated: "原材料の入れ子が深すぎて、最後まで展開できませんでした。",
+    reasonConditional:
+      "法令の除外に、濃度以外の条件が付いています（剤型・着色・用途など）。条件を満たしていれば非該当になります。",
+    reasonUnfilled:
+      "この法文物質名は、除外の条件を1つの数値で表せないため閾値を入れていません。条文を読んで判断してください。",
+  },
+
   settings: {
     title: "システム設定",
     description: "運用の方針に合わせて、入力チェックの厳しさを切り替えます。",

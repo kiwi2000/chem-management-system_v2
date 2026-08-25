@@ -134,6 +134,41 @@ export interface AccessStatsDto {
   }[];
 }
 
+/**
+ * 製品ごと・区分ごとの法規制判定。
+ *
+ * 判定（該当／非該当）と「人が見たかどうか」を**別に持つ**。
+ * 根拠は組成そのものに近い情報なので、組成を見られない人には出さない。
+ */
+export interface ProductJudgementDto {
+  categoryId: string;
+  lawCode: string;
+  lawNameJa: string | null;
+  lawNameEn: string | null;
+  lawNameOriginal: string;
+  categoryNameJa: string | null;
+  categoryNameEn: string | null;
+  categoryNameOriginal: string;
+
+  verdict: "APPLICABLE" | "NOT_APPLICABLE";
+  /** システムが出したか、人が上書きしたか */
+  source: "SYSTEM" | "USER";
+  /** 人が見なければ決められない、という印。確認すると消える */
+  needsReview: boolean;
+  /** なぜ要確認なのか。文言は画面側で付ける */
+  reviewReasons: string[];
+
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decidedNote: string | null;
+  computedAt: string;
+
+  /** 何が何％入っていたから該当なのか。組成を見られない人には空 */
+  hits: { name: string | null; pct: string }[];
+  /** 根拠を伏せているかどうか。空なのか伏せたのかを、画面で区別するため */
+  hitsWithheld: boolean;
+}
+
 export interface ListResponse<T> {
   items: T[];
   total: number;
