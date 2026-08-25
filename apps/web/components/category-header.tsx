@@ -40,6 +40,8 @@ export function CategoryHeader({
   busy = false,
   treeOpen,
   onToggleTree,
+  productsOpen,
+  onToggleProducts,
 }: {
   selection: CategorySelection;
   onNavigate: (category: RegulationCategoryDto, dir: "prev" | "next") => void;
@@ -48,6 +50,9 @@ export function CategoryHeader({
   busy?: boolean;
   treeOpen: boolean;
   onToggleTree: () => void;
+  /** この区分に当たる製品（逆引き）を開いているか */
+  productsOpen: boolean;
+  onToggleProducts: () => void;
 }) {
   const { m, locale } = useI18n();
   const { law, category, siblings } = selection;
@@ -130,6 +135,18 @@ export function CategoryHeader({
                 )}
               </span>
             </span>
+            {/* 逆引き。「この区分に引っかかる製品はどれか」を開く */}
+            <button
+              type="button"
+              onClick={onToggleProducts}
+              aria-expanded={productsOpen}
+              className="text-muted-foreground hover:text-foreground flex items-center gap-0.5 rounded px-1 underline-offset-2 transition-colors hover:underline"
+            >
+              <ChevronDown
+                className={cn("size-3 transition-transform", productsOpen && "rotate-180")}
+              />
+              {m.judgements.matchedProducts}
+            </button>
           </div>
         </div>
 

@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { CasLinkSection } from "@/components/cas-link-section";
 import { CategoryHeader, type SlideDir } from "@/components/category-header";
+import { CategoryProducts } from "@/components/category-products";
 import { LawTreeSection, type CategorySelection } from "@/components/law-tree-section";
 import { StatutorySubstanceSection } from "@/components/statutory-substance-section";
 import { SubstanceHeader } from "@/components/substance-header";
@@ -36,6 +37,8 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
   const [selection, setSelection] = useState<CategorySelection | null>(null);
   /** いま画面に出ている区分。下の表が読み終わってから追いつく */
   const [shown, setShown] = useState<CategorySelection | null>(null);
+  /** 逆引き（この区分に当たる製品）を開いているか */
+  const [productsOpen, setProductsOpen] = useState(false);
   /** 区分を選んでいるあいだ、木を一時的に降ろしているか */
   const [treeOpen, setTreeOpen] = useState(false);
   /** 前後の区分へ移ったときだけ、その向きに滑らせる */
@@ -56,6 +59,8 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
   const subBusy = (subSelection?.substance.id ?? null) !== (subShown?.substance.id ?? null);
 
   function select(next: CategorySelection | null) {
+    // 別の区分に移るのだから、前の区分の該当製品は閉じる
+    setProductsOpen(false);
     setSlideDir(null);
     setSelection(next);
     // 別の区分に移ったら、対象CASの段からは出る
@@ -140,6 +145,8 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
             busy={busy}
             treeOpen={treeOpen}
             onToggleTree={() => setTreeOpen((v) => !v)}
+            productsOpen={productsOpen}
+            onToggleProducts={() => setProductsOpen((v) => !v)}
           />
           {subShown && (
             <SubstanceHeader
@@ -151,6 +158,13 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
               onBack={closeSubstance}
             />
           )}
+        </div>
+      )}
+
+      {/* 逆引き。開いているあいだだけ読む（区分を送るたびに引くと重い） */}
+      {shown && productsOpen && (
+        <div className="pt-3">
+          <CategoryProducts categoryId={shown.category.id} />
         </div>
       )}
 

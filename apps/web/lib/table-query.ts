@@ -35,6 +35,16 @@ export interface QueryColumn {
    * 1対1に使うと Prisma が受け付けない。
    */
   nested?: string;
+  /**
+   * 共通の組み立てに乗らない条件を、自分で作る。
+   *
+   * 「該当した区分が1つでもあるか」のように、**関連の有無と行の中身を
+   * 組み合わせて見る**条件は、列と値の対応だけでは書けない。
+   * これを返した場合、`field` などの共通処理はすべて飛ばす。
+   *
+   * 何も絞らないときは `null` を返す。
+   */
+  custom?: (filter: ColumnFilter) => Where | null;
 }
 
 /**
@@ -151,6 +161,13 @@ export function buildWhere(columns: QueryColumn[], filters: TableState["filters"
   for (const [key, f] of Object.entries(filters)) {
     const col = byKey.get(key);
     if (!col || col.kind !== f.kind) continue;
+
+    // 自前で組み立てる列は、共通処理に一切乗せない
+    if (col.custom) {
+      const own = col.custom(f);
+      if (own) conditions.push(own);
+      continue;
+    }
 
     if (f.kind === "list") {
       // 関連をたどる条件は、この時点で完成している（relation の共通処理には乗せない）

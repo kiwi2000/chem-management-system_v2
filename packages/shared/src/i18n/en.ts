@@ -809,6 +809,21 @@ export const en: Messages = {
       "The exemption carries conditions beyond concentration (formulation, colouring, use). It does not apply unless those are met.",
     reasonUnfilled:
       "No threshold is set for this entry because its exemption cannot be reduced to a single number. Read the text and decide.",
+    // Columns in the list. Space is tight, so keep them short
+    listHeader: "Regulated",
+    listReviewHeader: "Review",
+    listHit: (n: number) => `${n}`,
+    listNone: "None",
+    listUnjudged: "Not judged",
+    listUnjudgedHint: "Not judged yet. Register a composition and it will be judged",
+    filterHit: "Applicable",
+    filterNone: "None apply",
+    filterUnjudged: "Not judged",
+    filterReviewYes: "Review pending",
+    filterReviewNo: "Review done",
+    // Reverse lookup from the regulation screen
+    matchedProducts: "Products",
+    noMatchedProducts: "No product falls under this category.",
   },
 
   settings: {

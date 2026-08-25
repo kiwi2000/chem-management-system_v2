@@ -8,6 +8,13 @@ import type { ProductDetailDto, ProductListItemDto } from "@/lib/types";
 export const PRODUCT_LIST_INCLUDE = {
   _count: { select: { aliases: true } },
   uses: { orderBy: { displayOrder: "asc" } },
+  /*
+    判定は区分ごとに1行ずつある（当たらなかった区分も残る）。
+    一覧に出すのは「いくつ当たったか」と「確認が残っているか」の2つだけなので、
+    その2つを出せる最小限の項目だけを引く。根拠（どのCASがいくら効いたか）は
+    組成に近い情報なので、一覧には持ち出さない。
+  */
+  judgements: { select: { verdict: true, needsReview: true } },
 } satisfies Prisma.ProductInclude;
 
 /** 詳細取得で必要になる関連 */
@@ -16,6 +23,8 @@ export const PRODUCT_INCLUDE = {
   uses: { orderBy: { displayOrder: "asc" } },
   aliases: { orderBy: { displayOrder: "asc" } },
   properties: { include: { def: true } },
+  // 一覧と同じ項目を作るために要る（詳細の判定表は別途 judgement-service が引く）
+  judgements: { select: { verdict: true, needsReview: true } },
 } satisfies Prisma.ProductInclude;
 
 type ProductListRow = Prisma.ProductGetPayload<{ include: typeof PRODUCT_LIST_INCLUDE }>;
@@ -70,6 +79,10 @@ export function toListItem(p: ProductListRow): ProductListItemDto {
     modelValue: p.modelValue,
     uses: p.uses.map((u) => u.value),
     updatedAt: p.updatedAt.toISOString(),
+    // 行が1件も無い＝まだ一度も判定していない（「該当なし」とは別）
+    judged: p.judgements.length > 0,
+    hitCount: p.judgements.filter((j) => j.verdict === "APPLICABLE").length,
+    needsReview: p.judgements.some((j) => j.needsReview),
   };
 }
 

@@ -135,6 +135,24 @@ export interface AccessStatsDto {
 }
 
 /**
+ * 判定の根拠1件（当たった法文物質名1つぶん）。
+ * 製品から見る場合も、法規制の区分から見る場合も同じ形。
+ */
+export interface JudgementHitDto {
+  /** 法文物質名。区分そのものが当たったときは空 */
+  name: string | null;
+  /** 法令が付けている番号（政令番号など） */
+  officialNumber: string | null;
+  /**
+   * その値を作ったCASと、それぞれの寄与。まとめたときは複数並ぶ。
+   * 「なぜその合計になったのか」を追えるようにするため
+   */
+  contributions: { cas: string; pct: string }[];
+  /** 合算した含有率。**まとめたときだけ入る**（足していないものを足したように見せない） */
+  total: string | null;
+}
+
+/**
  * 製品ごと・区分ごとの法規制判定。
  *
  * 判定（該当／非該当）と「人が見たかどうか」を**別に持つ**。
@@ -164,19 +182,37 @@ export interface ProductJudgementDto {
   computedAt: string;
 
   /** 何が何％入っていたから該当なのか。組成を見られない人には空 */
-  hits: {
-    /** 法文物質名。区分そのものが当たったときは空 */
-    name: string | null;
-    /** 法令が付けている番号（政令番号など） */
-    officialNumber: string | null;
-    /**
-     * その値を作ったCASと、それぞれの寄与。まとめたときは複数並ぶ。
-     * 「なぜその合計になったのか」を追えるようにするため
-     */
-    contributions: { cas: string; pct: string }[];
-    /** 合算した含有率。**まとめたときだけ入る**（足していないものを足したように見せない） */
-    total: string | null;
-  }[];
+  hits: JudgementHitDto[];
+  /** 根拠を伏せているかどうか。空なのか伏せたのかを、画面で区別するため */
+  hitsWithheld: boolean;
+}
+
+/**
+ * 法規制の画面から見た「この区分に当たる製品」（逆引き）。
+ *
+ * 製品の判定（`ProductJudgementDto`）と向きが逆なので、
+ * 法令・区分の名前は持たない（見ている区分そのものだから）。
+ */
+export interface MatchedProductDto {
+  productId: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  status: ProductStatus;
+  /**
+   * 該当か非該当か。
+   * **非該当のものも並ぶ。**確認が残っている（引っかからないと言い切れていない）ものは、
+   * 法規制の側から見たときにこそ知りたいため
+   */
+  verdict: "APPLICABLE" | "NOT_APPLICABLE";
+  /** システムが出したか、人が上書きしたか */
+  source: "SYSTEM" | "USER";
+  /** 確認が残っているか */
+  needsReview: boolean;
+  reviewReasons: string[];
+  computedAt: string;
+  /** 何が何％入っていたから該当なのか。組成を見られない人には空 */
+  hits: JudgementHitDto[];
   /** 根拠を伏せているかどうか。空なのか伏せたのかを、画面で区別するため */
   hitsWithheld: boolean;
 }
@@ -253,6 +289,15 @@ export interface ProductListItemDto {
   /** 用途。表示順に並べた文字列 */
   uses: string[];
   updatedAt: string;
+  /**
+   * 一度でも判定したか。**false は「該当なし」ではなく「まだ調べていない」。**
+   * 組成が登録されていない製品はここが false のまま
+   */
+  judged: boolean;
+  /** 該当した規制区分の数。判定していなければ 0 */
+  hitCount: number;
+  /** 確認が残っている区分が1つでもあるか */
+  needsReview: boolean;
 }
 
 export interface ProductDetailDto extends ProductListItemDto {

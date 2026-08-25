@@ -821,6 +821,21 @@ export const ja = {
       "法令の除外に、濃度以外の条件が付いています（剤型・着色・用途など）。条件を満たしていれば非該当になります。",
     reasonUnfilled:
       "この法文物質名は、除外の条件を1つの数値で表せないため閾値を入れていません。条文を読んで判断してください。",
+    // 一覧の列。狭いので短く
+    listHeader: "法規制",
+    listReviewHeader: "要確認",
+    listHit: (n: number) => `${n} 件`,
+    listNone: "該当なし",
+    listUnjudged: "未判定",
+    listUnjudgedHint: "まだ判定していません。組成を登録すると判定されます",
+    filterHit: "該当あり",
+    filterNone: "該当なし",
+    filterUnjudged: "未判定",
+    filterReviewYes: "確認が残っている",
+    filterReviewNo: "確認は済んでいる",
+    // 法規制の画面からの逆引き
+    matchedProducts: "該当製品",
+    noMatchedProducts: "この区分に当たる製品はありません。",
   },
 
   settings: {

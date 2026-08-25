@@ -2,6 +2,28 @@ import { normalizeCas, normalizeCode } from "@chem/shared";
 import type { QueryColumn } from "@/lib/table-query";
 
 /**
+ * 製品の一覧で「法規制に当たるか」で絞る。
+ *
+ * 判定は区分ごとに1行ずつ持っており、**当たらなかった区分の行も残る**。
+ * そのため「該当なし」は「行が無い」ではなく「該当の行が1つも無い」。
+ * 「行そのものが無い」は、まだ一度も判定していないという別の意味になる。
+ */
+function judgementCondition(values: string[]): Record<string, unknown> | null {
+  const hit = { judgements: { some: { verdict: "APPLICABLE" as const } } };
+  const each: Record<string, unknown>[] = [];
+  for (const v of new Set(values)) {
+    if (v === "hit") each.push(hit);
+    // 判定はしてあるが、どの区分にも当たらなかった
+    else if (v === "none") each.push({ AND: [{ judgements: { some: {} } }, { NOT: hit }] });
+    // まだ一度も判定していない
+    else if (v === "unjudged") each.push({ judgements: { none: {} } });
+  }
+  if (each.length === 0) return null;
+  // 選択肢が複数選ばれたら「どれか」。すべて選ばれた状態は絞らないのと同じ
+  return each.length === 1 ? (each[0] as Record<string, unknown>) : { OR: each };
+}
+
+/**
  * 各一覧のサーバー側の列定義。
  * 画面側の列定義とキーを一致させること（一致しない列は黙って無視される）。
  */
@@ -26,6 +48,22 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
+/**
+ * 製品の一覧で「確認が残っているか」で絞る。
+ *
+ * **「いいえ」は「印の付いていない行がある」ではない。**
+ * 判定は区分ごとに何行もあるので、それだと確認が残っていても当たってしまう。
+ * 「印の付いた行が1つも無い」で見る。
+ */
+function reviewCondition(values: string[]): Record<string, unknown> | null {
+  const picked = [...new Set(values.map((v) => v === "true"))];
+  const only = picked[0];
+  // 両方選ばれているのは、絞っていないのと同じ
+  if (only === undefined || picked.length > 1) return null;
+  const flagged = { needsReview: true };
+  return only ? { judgements: { some: flagged } } : { judgements: { none: flagged } };
+}
+
 export const PRODUCT_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
@@ -47,6 +85,22 @@ export const PRODUCT_COLUMNS: QueryColumn[] = [
   },
   { key: "note", kind: "text", field: "note", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
+  // 判定は区分ごとの行を数えて決まるので、共通の組み立てには乗らない
+  {
+    key: "judgement",
+    kind: "enum",
+    field: "judgements",
+    sortable: false,
+    custom: (f) => (f.kind === "enum" ? judgementCondition(f.values) : null),
+  },
+  // 「1つでも確認が残っているか」。区分ごとに見るのではない
+  {
+    key: "needsReview",
+    kind: "enum",
+    field: "needsReview",
+    sortable: false,
+    custom: (f) => (f.kind === "enum" ? reviewCondition(f.values) : null),
+  },
 ];
 
 export const REGION_COLUMNS: QueryColumn[] = [

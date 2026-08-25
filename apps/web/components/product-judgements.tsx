@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, ProductJudgementDto } from "@/lib/types";
+import type { ApiError, JudgementHitDto, ProductJudgementDto } from "@/lib/types";
 
 /**
  * その製品の法規制判定。
@@ -306,7 +306,7 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
   );
 }
 
-type M = ReturnType<typeof useI18n>["m"];
+export type M = ReturnType<typeof useI18n>["m"];
 
 /**
  * 当たった CAS の出しかた。
@@ -318,7 +318,7 @@ type M = ReturnType<typeof useI18n>["m"];
  *   合算 … 縦に足し算の形で並べ、線の下に合計を出す
  *   個別 … それぞれを独立した行として並べ、合計は出さない
  */
-function Matched({ hit, m }: { hit: ProductJudgementDto["hits"][number]; m: M }) {
+export function Matched({ hit, m }: { hit: JudgementHitDto; m: M }) {
   const aggregated = hit.total !== null;
   return (
     <div className="space-y-0.5">
@@ -348,7 +348,7 @@ function Matched({ hit, m }: { hit: ProductJudgementDto["hits"][number]; m: M })
 }
 
 /** なぜ確認が要るのか。次に何をすべきかが分かる言葉にする */
-function reasonText(m: M, reason: string): string {
+export function reasonText(m: M, reason: string): string {
   const table: Record<string, string> = {
     missingFactor: m.judgements.reasonMissingFactor,
     unknownComposition: m.judgements.reasonUnknown,

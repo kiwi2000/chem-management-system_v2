@@ -32,6 +32,9 @@ const FILTER_LAYOUT: string[][] = [
   ["updatedAt", "note"],
 ];
 
+/** 法規制の節に置く列。組成をたどって決まるので、組成の節と分ける */
+const REGULATION_KEYS = ["judgement", "needsReview"];
+
 interface Props {
   /** 型式で選べる値（システム設定）。並び順がそのまま表示順 */
   modelOptions: string[];
@@ -203,6 +206,60 @@ export function ProductsTable({
         filterPlaceholder: m.table.casNumbersPlaceholder,
       },
       {
+        key: "judgement",
+        header: m.judgements.listHeader,
+        kind: "enum",
+        // 区分の行を数えて決まるので、並べ替えはできない
+        sortable: false,
+        width: 84,
+        className: "text-center text-xs",
+        filterLabelHidden: true,
+        options: [
+          { value: "hit", label: m.judgements.filterHit },
+          { value: "none", label: m.judgements.filterNone },
+          { value: "unjudged", label: m.judgements.filterUnjudged },
+        ],
+        /*
+          「該当なし」と「まだ判定していない」は意味がまるで違う。
+          どちらも空欄にすると、調べた結果あたらなかったのか、
+          そもそも調べていないのかが読めなくなる。
+        */
+        render: (r) =>
+          !r.judged ? (
+            <span className="text-muted-foreground" title={m.judgements.listUnjudgedHint}>
+              {m.judgements.listUnjudged}
+            </span>
+          ) : r.hitCount === 0 ? (
+            <span className="text-muted-foreground">{m.judgements.listNone}</span>
+          ) : (
+            <span className="font-medium">{m.judgements.listHit(r.hitCount)}</span>
+          ),
+      },
+      {
+        key: "needsReview",
+        header: m.judgements.listReviewHeader,
+        kind: "enum",
+        sortable: false,
+        width: 72,
+        className: "text-center",
+        filterLabelHidden: true,
+        options: [
+          { value: "true", label: m.judgements.filterReviewYes },
+          { value: "false", label: m.judgements.filterReviewNo },
+        ],
+        // 印が付いているものだけ出す。全行にアイコンが並ぶと目印にならない
+        render: (r) =>
+          r.needsReview ? (
+            <StatusIcon
+              active
+              activeLabel={m.judgements.needsReview}
+              inactiveLabel={m.judgements.needsReview}
+            />
+          ) : (
+            ""
+          ),
+      },
+      {
         key: "updatedAt",
         header: m.news.updatedAt,
         kind: "date",
@@ -223,6 +280,7 @@ export function ProductsTable({
       // 見出しは1つ目の行にだけ付ける（節の区切りとして使う）
       ...FILTER_LAYOUT.map((keys, i) => (i === 0 ? { title: m.products.basic, keys } : keys)),
       { title: m.table.compositionSection, keys: ["casNumbers"] },
+      { title: m.judgements.title, keys: REGULATION_KEYS },
     ],
     [m],
   );

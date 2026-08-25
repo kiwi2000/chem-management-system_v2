@@ -1,5 +1,6 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import type { ProductJudgementDto } from "@/lib/types";
+import type { MatchedProductDto, ProductJudgementDto } from "@/lib/types";
 
 /**
  * 判定結果を、画面に出せる形に組み立てる。
@@ -126,4 +127,102 @@ export async function toJudgementDtos(
 function maxPct(h: { total: string | null; contributions: { pct: string }[] }): number {
   if (h.total !== null) return Number(h.total);
   return Math.max(0, ...h.contributions.map((c) => Number(c.pct)));
+}
+
+/**
+ * この区分に当たる製品を出す（法規制の画面からの逆引き）。
+ *
+ * 「この法令に引っかかる製品はどれか」を、製品を1つずつ開かずに知るためのもの。
+ *
+ * 返すのは2種類だけ。
+ *
+ *   該当したもの                   … この区分に引っかかる製品
+ *   非該当だが確認が残っているもの … **引っかからないと言い切れていない**製品
+ *
+ * 2つ目を落とすと、法規制の側から見たときに
+ * 「調べたが当たらなかった」ものと「判断できなかった」ものが同じ扱いになる。
+ * 換算係数が無い・組成が分からない、といった理由で判断できなかったものこそ
+ * 人に見てほしいので、必ず並べる。
+ *
+ * **これ以外の非該当は返さない。**全製品が並んで、目当てのものが埋もれる。
+ *
+ * `visibility` には製品一覧と同じ条件を渡すこと。
+ * **見えない製品は件数にも入れない。**在ることが分かるだけで
+ * 「この会社はこの規制物質を扱っている」と伝わってしまう。
+ */
+export async function toMatchedProducts(
+  categoryId: string,
+  visibility: Prisma.ProductWhereInput,
+  withHits: boolean,
+): Promise<MatchedProductDto[]> {
+  const rows = await prisma.productJudgement.findMany({
+    where: {
+      categoryId,
+      OR: [{ verdict: "APPLICABLE" }, { needsReview: true }],
+      product: { deletedAt: null, ...visibility },
+    },
+    select: {
+      verdict: true,
+      source: true,
+      needsReview: true,
+      reviewReasons: true,
+      computedAt: true,
+      product: { select: { id: true, code: true, nameJa: true, nameEn: true, status: true } },
+      hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
+    },
+  });
+
+  const substanceIds = withHits
+    ? [
+        ...new Set(
+          rows.flatMap((r) => r.hits.map((h) => h.statutorySubstanceId).filter((v) => v !== null)),
+        ),
+      ]
+    : [];
+  const substances =
+    substanceIds.length === 0
+      ? []
+      : await prisma.statutorySubstance.findMany({
+          where: { id: { in: substanceIds } },
+          select: { id: true, nameJa: true, nameOriginal: true, officialNumber: true },
+        });
+  const infoOf = new Map(substances.map((s) => [s.id, s]));
+
+  return (
+    rows
+      .map((r) => ({
+        productId: r.product.id,
+        code: r.product.code,
+        nameJa: r.product.nameJa,
+        nameEn: r.product.nameEn,
+        status: r.product.status,
+        verdict: r.verdict,
+        source: r.source,
+        needsReview: r.needsReview,
+        reviewReasons: r.reviewReasons,
+        computedAt: r.computedAt.toISOString(),
+        hits: withHits
+          ? r.hits
+              .map((h) => {
+                const info = h.statutorySubstanceId
+                  ? infoOf.get(h.statutorySubstanceId)
+                  : undefined;
+                return {
+                  name: info ? (info.nameJa ?? info.nameOriginal) : null,
+                  officialNumber: info?.officialNumber ?? null,
+                  contributions: (h.contributions ?? []) as { cas: string; pct: string }[],
+                  total: h.total?.toString() ?? null,
+                };
+              })
+              .sort((a, b) => maxPct(b) - maxPct(a))
+          : [],
+        hitsWithheld: !withHits && r.hits.length > 0,
+      }))
+      // 確認が残っているものを先に。放っておかれるのがいちばん困る
+      .sort(
+        (a, b) =>
+          Number(b.needsReview) - Number(a.needsReview) ||
+          a.code.localeCompare(b.code, undefined, { numeric: true }),
+      )
+  );
 }
