@@ -1,12 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 
 export function SignOutButton() {
-  const router = useRouter();
   const { m } = useI18n();
   const [busy, setBusy] = useState(false);
 
@@ -14,8 +12,9 @@ export function SignOutButton() {
     setBusy(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
-      router.refresh();
+      // ログインと同じ理由で、読み込み直す。
+      // replace なのは、戻るボタンで中の画面に戻らせないため
+      window.location.replace("/login");
     } finally {
       setBusy(false);
     }

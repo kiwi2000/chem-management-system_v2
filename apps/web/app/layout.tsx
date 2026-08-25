@@ -54,7 +54,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <head>
         {theme === "system" && (
-          <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }} />
+          /*
+            使い捨ての印（nonce）は要求ごとに変わり、しかもブラウザへ渡す控えには
+            載らない（載せると印の意味が無くなるため）。
+            そのため React は、組み立て直したときに必ず食い違いを見つける。
+            これは仕組み上そうなるもので、直しようがない。想定内だと伝えておく。
+          */
+          <script
+            nonce={nonce}
+            suppressHydrationWarning
+            dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }}
+          />
         )}
       </head>
       <body className="bg-background min-h-screen antialiased">

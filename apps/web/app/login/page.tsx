@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye, EyeOff } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -28,7 +28,6 @@ function ExpiredNotice() {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const { m } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -81,8 +80,15 @@ export default function LoginPage() {
         return;
       }
 
-      router.push(body.mustChangePassword ? "/change-password" : "/");
-      router.refresh();
+      /*
+        画面内での移動ではなく、読み込み直して入る。
+
+        ログインでCookieが変わった直後は、画面内で移動しても
+        中身が入れ替わらないことがある（実際、押しても何も起きず、
+        F5で初めて入れる状態になっていた）。
+        ログインは何度もする操作ではないので、確実さを取る。
+      */
+      window.location.assign(body.mustChangePassword ? "/change-password" : "/");
     } finally {
       setLoading(false);
     }
