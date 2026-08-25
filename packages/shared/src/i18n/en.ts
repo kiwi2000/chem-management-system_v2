@@ -784,7 +784,7 @@ export const en: Messages = {
     basisWithheld: "The basis is close to composition data, so it is not shown.",
     decidedBy: (who: string, when: string) => `Checked by ${who} on ${when}`,
     review: "Check this",
-    change: "Change the verdict",
+    change: "Edit verdict",
     confirm: "Confirm as is",
     changeToNot: "Mark as not applying",
     changeToYes: "Mark as applying",

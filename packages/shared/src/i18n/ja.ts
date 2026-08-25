@@ -795,7 +795,7 @@ export const ja = {
     basisWithheld: "根拠は組成に近い情報のため、表示していません。",
     decidedBy: (who: string, when: string) => `${who} が ${when} に確認`,
     review: "確認する",
-    change: "判定を変える",
+    change: "判定修正",
     confirm: "このまま確認",
     changeToNot: "非該当にする",
     changeToYes: "該当にする",
