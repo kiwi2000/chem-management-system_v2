@@ -76,7 +76,11 @@ export interface SavedFilterDto {
 }
 
 /**
- * 持ち出しの記録の1行。
+ * アクセス記録の1行。
+ *
+ * ログインの出来事と、データが外へ出る出来事を**同じ並びで**出す。
+ * 分けると「見慣れない場所から入って、そのあと組成を立て続けに開いた」
+ * という流れが見えなくなる。事故のときに、いちばん見たいのがそれ。
  *
  * 利用者名・製品名は記録そのものには入っていない（二重に持つと食い違うため）。
  * 表に出すときに引いて組み立てる。消えていれば null。
@@ -84,9 +88,14 @@ export interface SavedFilterDto {
 export interface AccessLogDto {
   id: string;
   at: string;
+  /** login / login_failed / logout / view / export / import */
   action: string;
   actorId: string | null;
   actorName: string | null;
+  /** 試されたメールアドレス。ログインの失敗では、利用者が特定できないことがある */
+  email: string | null;
+  /** 失敗の理由。それ以外では null */
+  reason: string | null;
   productId: string | null;
   productCode: string | null;
   productName: string | null;
@@ -97,27 +106,32 @@ export interface AccessLogDto {
   ip: string | null;
   /** 接続元のおよその国（2文字）。"local" は自分自身、null は分からない */
   country: string | null;
+  userAgent: string | null;
 }
 
-/**
- * ログインの記録の1行。
- *
- * 失敗のときは利用者が特定できないことがある（存在しないアドレスで試された等）ので、
- * 記録に残したメールアドレスをそのまま出す。**入力されたパスワードは残していない。**
- */
-export interface LoginLogDto {
-  id: string;
-  at: string;
-  action: string;
-  actorId: string | null;
-  actorName: string | null;
-  email: string | null;
-  /** 失敗の理由。成功・ログアウトでは null */
-  reason: string | null;
-  ip: string | null;
-  /** 接続元のおよその国（2文字）。"local" は自分自身、null は分からない */
-  country: string | null;
-  userAgent: string | null;
+/** 気になる動きの種類 */
+export type AccessRiskKind =
+  "repeatedFailure" | "unknownAccount" | "lockout" | "foreignLogin" | "nightLogin" | "bulkView";
+
+/** アクセス記録の分析。数えた結果だけを返す */
+export interface AccessStatsDto {
+  /** 何日ぶんを数えたか */
+  days: number;
+  totals: { login: number; failed: number; view: number; lockouts: number };
+  /** 時間帯ごと（0〜23時）。いつ使われているかを見る */
+  byHour: { hour: number; login: number; failed: number; view: number }[];
+  /** 失敗の多い相手。上から順 */
+  topFailedUsers: { email: string; count: number }[];
+  topFailedIps: { ip: string; country: string | null; count: number }[];
+  /** 組成をよく見ている人。上から順 */
+  topViewers: { name: string; count: number; lines: number }[];
+  /** 気になる動き。件数の多いものから */
+  risks: {
+    kind: AccessRiskKind;
+    count: number;
+    /** 具体例（アドレス・利用者名・国など）。多いものから3つまで */
+    samples: string[];
+  }[];
 }
 
 export interface ListResponse<T> {

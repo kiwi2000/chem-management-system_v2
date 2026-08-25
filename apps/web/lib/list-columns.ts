@@ -126,17 +126,6 @@ export const USER_COLUMNS: QueryColumn[] = [
   { key: "lastLoginAt", kind: "date", field: "lastLoginAt" },
 ];
 
-/**
- * 監査ログの一覧（持ち出しの記録・ログインの記録で共通）。
- * 対象や利用者の「名前」は別の表にあるので、ここでは絞り込めない
- * （監査ログは関連を張らず、あとから組み立てて見せる作りにしてある）。
- */
-export const AUDIT_LOG_COLUMNS: QueryColumn[] = [
-  { key: "at", kind: "date", field: "at" },
-  { key: "action", kind: "enum", field: "action" },
-  { key: "actorId", kind: "enum", field: "actorId" },
-];
-
 export const GROUP_COLUMNS: QueryColumn[] = [
   { key: "kind", kind: "enum", field: "kind" },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },

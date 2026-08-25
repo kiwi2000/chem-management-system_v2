@@ -16,7 +16,6 @@ import {
   MessageSquare,
   Package,
   Scale,
-  KeyRound,
   ScrollText,
   Settings,
   Sigma,
@@ -123,15 +122,7 @@ const ADMIN_ITEMS: NavItem[] = [
     match: ["/admin/property-defs"],
   },
   {
-    // 入口で何が起きたか。管理者だけに見せる
-    href: "/admin/login-log",
-    key: "loginLog",
-    icon: KeyRound,
-    needs: "ADMIN",
-    match: ["/admin/login-log"],
-  },
-  {
-    // 組成を見た記録。持ち出しを追うためのものなので、管理者だけに見せる
+    // ログインも、組成を見たことも、ここに時間順で並ぶ。管理者だけに見せる
     href: "/admin/access-log",
     key: "accessLog",
     icon: ScrollText,

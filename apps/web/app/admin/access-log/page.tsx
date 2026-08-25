@@ -1,26 +1,36 @@
 "use client";
 
 import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
+import { BarChart3, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { countryName } from "@/lib/country-name";
 import { useI18n } from "@/lib/i18n-client";
 import type { AccessLogDto, ApiError, ListResponse, UserSummaryDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 
-/** 新しいものから。持ち出しを追うときは、まず直近を見る */
+/** 新しいものから。記録を追うときは、まず直近を見る */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "at", direction: "desc" }]);
 
+const STORAGE_KEY = "chem.table.accessLog";
+
+/** 古い記録を消すときの区切り。これより前を消す */
+const KEEP_DAYS = [90, 180, 365];
+
 /**
- * 持ち出しの記録。
+ * アクセス記録。
  *
- * 組成は、暗号化では守れない漏れかたがある。見る権利のある人が正規の手順で開き、
- * そのまま持ち出す形である。この画面は、それを**後から追える**ようにするためのもの。
- * そして**残ると分かっていること自体**が抑えになる。だから隠さず、
- * マニュアルにも「記録されます」と書いてある。
+ * 入口の出来事（ログイン）と、データが外へ出る出来事（組成を見た）を
+ * **同じ並びで**出す。分けると
+ * 「見慣れない場所から入って、そのあと組成を立て続けに開いた」
+ * という流れが見えなくなる。事故のときに、いちばん見たいのがそれ。
+ *
+ * 種類で絞れば、ログインだけ・持ち出しだけの並びにもなる。
  */
 export default function AccessLogPage() {
   const { m, locale } = useI18n();
@@ -40,71 +50,90 @@ export default function AccessLogPage() {
         key: "at",
         header: m.accessLog.at,
         kind: "date",
-        width: 170,
+        width: 175,
         className: "text-xs tabular-nums",
+        // 日付だけでは足りない。何時何分に起きたかが手がかりになる
         render: (r) => new Date(r.at).toLocaleString(locale),
-      },
-      {
-        key: "actorId",
-        header: m.accessLog.actor,
-        kind: "enum",
-        width: 150,
-        options: users.map((u) => ({ value: u.id, label: u.displayName ?? u.email })),
-        render: (r) => r.actorName ?? m.accessLog.unknownActor,
       },
       {
         key: "action",
         header: m.accessLog.action,
         kind: "enum",
-        width: 120,
+        width: 150,
         options: [
+          { value: "login", label: m.accessLog.actionLogin },
+          { value: "login_failed", label: m.accessLog.actionLoginFailed },
+          { value: "logout", label: m.accessLog.actionLogout },
           { value: "view", label: m.accessLog.actionView },
           { value: "export", label: m.accessLog.actionExport },
           { value: "import", label: m.accessLog.actionImport },
         ],
-        render: (r) => actionLabel(m, r),
+        render: (r) => (
+          <span className={r.action === "login_failed" ? "text-destructive font-medium" : ""}>
+            {actionLabel(m, r)}
+          </span>
+        ),
       },
       {
-        key: "product",
-        header: m.accessLog.product,
+        key: "actorId",
+        header: m.accessLog.actor,
+        kind: "enum",
+        width: 130,
+        options: users.map((u) => ({ value: u.id, label: u.displayName ?? u.email })),
+        // ログインの失敗では利用者が分からないことがある。試されたアドレスを出す
+        render: (r) => r.actorName ?? r.email ?? "",
+      },
+      {
+        key: "target",
+        header: m.accessLog.target,
         kind: "text",
-        // 対象は別の表なので、ここでは絞り込めない
         sortable: false,
         filterable: false,
         width: 280,
+        // ログインなら試されたアドレス、持ち出しなら対象の製品
         render: (r) =>
           r.productName ? (
             <span>
               <span className="text-muted-foreground mr-2 font-mono text-xs">{r.productCode}</span>
               {r.productName}
             </span>
-          ) : (
+          ) : r.productId ? (
             // 製品が消されても記録は残る。何を見たかは分からなくなる
             <span className="text-muted-foreground text-xs">{m.accessLog.goneProduct}</span>
+          ) : (
+            <span className="font-mono text-xs">{r.email ?? ""}</span>
           ),
       },
       {
-        key: "lineCount",
-        header: m.accessLog.lineCount,
-        kind: "number",
+        key: "detail",
+        header: m.accessLog.detail,
+        kind: "text",
         sortable: false,
         filterable: false,
-        width: 76,
-        className: "text-right tabular-nums",
-        render: (r) => r.lineCount ?? "",
+        width: 175,
+        // 失敗なら理由、持ち出しなら件数。列を分けるほどの中身ではない
+        render: (r) =>
+          r.reason ? (
+            reasonLabel(m, r.reason)
+          ) : r.lineCount !== null ? (
+            <span className="text-muted-foreground text-xs">
+              {m.accessLog.lineCount(r.lineCount)}
+            </span>
+          ) : (
+            ""
+          ),
       },
       {
         key: "ip",
-        header: m.accessLog.from,
+        header: m.accessLog.ip,
         kind: "text",
         sortable: false,
         filterable: false,
         width: 150,
-        className: "text-muted-foreground font-mono text-xs",
+        className: "font-mono text-xs",
         render: (r) => r.ip ?? "",
       },
       {
-        // 場所は「見慣れない国から入られていないか」に気づくためのもの。
         // 分かるのは割り当て国であって、その人が今いる場所ではない
         key: "country",
         header: m.accessLog.place,
@@ -114,18 +143,26 @@ export default function AccessLogPage() {
         width: 110,
         render: (r) => countryName(r.country, locale, { local: m.accessLog.localPlace }),
       },
+      {
+        key: "userAgent",
+        header: m.accessLog.device,
+        kind: "text",
+        sortable: false,
+        filterable: false,
+        width: 175,
+        className: "text-muted-foreground text-xs",
+        // 生の文字列は長いうえに読めない。使っているものだけを出す
+        render: (r) => deviceLabel(r.userAgent),
+      },
     ],
     [m, locale, users],
   );
 
-  const { state, setState, reset, ready } = useTableState(
-    "chem.table.accessLog",
-    columns,
-    DEFAULT_STATE,
-  );
+  const { state, setState, reset, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
 
   const [data, setData] = useState<ListResponse<AccessLogDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
@@ -146,11 +183,40 @@ export default function AccessLogPage() {
     if (ready) void load();
   }, [ready, load]);
 
+  async function remove(body: { ids?: string[]; before?: string }, confirmText: string) {
+    if (!confirm(confirmText)) return;
+    setError(null);
+    const res = await fetch("/api/admin/access-log", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const e = (await res.json().catch(() => null)) as ApiError | null;
+      setError(e?.error.message ?? m.errors.saveFailed(res.status));
+      return;
+    }
+    const { count } = (await res.json()) as { count: number };
+    setNotice(m.accessLog.removed(count));
+    await load();
+  }
+
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">{m.accessLog.title}</h1>
-        <p className="text-muted-foreground mt-1 text-sm">{m.accessLog.lead}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">{m.accessLog.title}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{m.accessLog.lead}</p>
+        </div>
+        <Button
+          variant="outline"
+          nativeButton={false}
+          render={<Link href="/admin/access-log/stats" />}
+        >
+          <BarChart3 className="mr-1 size-4" />
+          {m.accessLog.analysis}
+        </Button>
       </div>
 
       {error && (
@@ -158,9 +224,14 @@ export default function AccessLogPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      {notice && (
+        <Alert>
+          <AlertDescription>{notice}</AlertDescription>
+        </Alert>
+      )}
 
       <DataTable
-        storageKey="chem.table.accessLog"
+        storageKey={STORAGE_KEY}
         columns={columns}
         rows={data?.items ?? null}
         rowKey={(r) => r.id}
@@ -170,15 +241,97 @@ export default function AccessLogPage() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.accessLog.empty}
+        selectable
+        onDeleteSelected={(rows) =>
+          void remove({ ids: rows.map((r) => r.id) }, m.accessLog.confirmSelected(rows.length))
+        }
+        headerActions={
+          /* 古い記録は溜まる一方なので、まとめて消せるようにする */
+          <div className="flex items-center gap-1">
+            {KEEP_DAYS.map((d) => (
+              <Button
+                key={d}
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  void remove(
+                    { before: new Date(Date.now() - d * 86400_000).toISOString() },
+                    m.accessLog.confirmBefore(d),
+                  )
+                }
+              >
+                <Trash2 className="mr-1 size-3.5" />
+                {m.accessLog.olderThan(d)}
+              </Button>
+            ))}
+          </div>
+        }
       />
     </div>
   );
 }
 
-/** 何をしたか。組成は「見た」だけでも持ち出しなので、展開したかどうかまで出す */
-function actionLabel(m: ReturnType<typeof useI18n>["m"], r: AccessLogDto): string {
-  if (r.action !== "view") {
-    return r.action === "export" ? m.accessLog.actionExport : m.accessLog.actionImport;
+type M = ReturnType<typeof useI18n>["m"];
+
+/** 何が起きたか。組成は「見た」だけでも持ち出しなので、展開したかどうかまで出す */
+function actionLabel(m: M, r: AccessLogDto): string {
+  switch (r.action) {
+    case "login":
+      return m.accessLog.actionLogin;
+    case "login_failed":
+      return m.accessLog.actionLoginFailed;
+    case "logout":
+      return m.accessLog.actionLogout;
+    case "export":
+      return m.accessLog.actionExport;
+    case "import":
+      return m.accessLog.actionImport;
+    default:
+      return r.expanded ? m.accessLog.actionViewExpanded : m.accessLog.actionView;
   }
-  return r.expanded ? m.accessLog.actionViewExpanded : m.accessLog.actionView;
+}
+
+/** 失敗の理由。管理者が次に何をすべきかが分かる言葉にする */
+function reasonLabel(m: M, reason: string): string {
+  const table: Record<string, string> = {
+    unknown_user: m.accessLog.reasonUnknownUser,
+    inactive: m.accessLog.reasonInactive,
+    locked_out: m.accessLog.reasonLockedOut,
+    locked_now: m.accessLog.reasonLockedNow,
+    bad_password: m.accessLog.reasonBadPassword,
+    bad_totp: m.accessLog.reasonBadTotp,
+  };
+  return table[reason] ?? reason;
+}
+
+/**
+ * 使っている機械のあらまし。
+ * 生の文字列は長すぎて表に入らないので、見て分かるところだけ拾う。
+ * 「いつもWindowsの人が、急にスマートフォンから」に気づければ足りる。
+ */
+function deviceLabel(ua: string | null): string {
+  if (!ua) return "";
+  const os = /iPhone|iPad/.test(ua)
+    ? "iPhone / iPad"
+    : /Android/.test(ua)
+      ? "Android"
+      : /Mac OS X/.test(ua)
+        ? "Mac"
+        : /Windows/.test(ua)
+          ? "Windows"
+          : /Linux/.test(ua)
+            ? "Linux"
+            : "";
+  const browser = /Edg\//.test(ua)
+    ? "Edge"
+    : /OPR\//.test(ua)
+      ? "Opera"
+      : /Chrome\//.test(ua)
+        ? "Chrome"
+        : /Firefox\//.test(ua)
+          ? "Firefox"
+          : /Safari\//.test(ua)
+            ? "Safari"
+            : "";
+  return [os, browser].filter(Boolean).join(" / ") || ua.slice(0, 40);
 }
