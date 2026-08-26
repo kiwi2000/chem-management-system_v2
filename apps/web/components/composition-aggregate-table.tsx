@@ -46,12 +46,12 @@ const HEADS: {
   label: (m: ReturnType<typeof useI18n>["m"]) => string;
   className?: string;
 }[] = [
-  { key: "casNumber", width: 128, label: (m) => m.composition.casNumber },
-  { key: "substanceId", width: 112, label: (m) => m.composition.aggregateSubstanceId },
+  { key: "casNumber", width: 96, label: (m) => m.composition.casNumber },
+  { key: "substanceId", width: 88, label: (m) => m.composition.aggregateSubstanceId },
   { key: "name", width: 256, label: (m) => m.composition.aggregateName },
   {
     key: "contentPct",
-    width: 80,
+    width: 72,
     label: (m) => m.composition.contentPct,
     className: "text-right whitespace-nowrap",
   },

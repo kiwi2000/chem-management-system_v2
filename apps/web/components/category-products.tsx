@@ -45,13 +45,13 @@ const HEADS: {
   className?: string;
 }[] = [
   { key: "verdict", width: 64, label: (m) => m.judgements.verdict },
-  { key: "code", width: 112, label: (m) => m.products.code },
+  { key: "code", width: 96, label: (m) => m.products.code },
   { key: "nameJa", width: 224, label: (m) => m.products.nameJa },
   { key: "number", width: 56, label: (m) => m.judgements.number },
   { key: "statutoryName", width: 288, label: (m) => m.judgements.statutoryName },
   // 含有率とCASは2つで1組。並びを入れ替えないこと
-  { key: "content", width: 96, label: (m) => m.judgements.content, className: "text-right" },
-  { key: "matchedCas", width: 112, label: (m) => m.judgements.matchedCas },
+  { key: "content", width: 72, label: (m) => m.judgements.content, className: "text-right" },
+  { key: "matchedCas", width: 96, label: (m) => m.judgements.matchedCas },
   { key: "warning", width: 256, label: (m) => m.judgements.warning },
 ];
 
@@ -60,7 +60,8 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
   const [items, setItems] = useState<MatchedProductDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   // 列幅は一覧と同じ規則
-  const cols = useResizableColumns("chem.table.categoryProducts", HEADS);
+  // 幅を詰めない。判定表と同じ規則にそろえる
+  const cols = useResizableColumns("chem.table.categoryProducts", HEADS, { shrinkToFit: false });
 
   const load = useCallback(async () => {
     setError(null);

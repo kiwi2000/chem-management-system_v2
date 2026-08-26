@@ -46,8 +46,8 @@ const HEADS: { key: string; width: number; label: (m: M) => string; className?: 
   { key: "category", width: 144, label: (m) => m.judgements.category },
   { key: "number", width: 56, label: (m) => m.judgements.number },
   { key: "statutoryName", width: 288, label: (m) => m.judgements.statutoryName },
-  { key: "content", width: 96, label: (m) => m.judgements.content, className: "text-right" },
-  { key: "matchedCas", width: 112, label: (m) => m.judgements.matchedCas },
+  { key: "content", width: 72, label: (m) => m.judgements.content, className: "text-right" },
+  { key: "matchedCas", width: 96, label: (m) => m.judgements.matchedCas },
   { key: "warning", width: 256, label: (m) => m.judgements.warning },
 ];
 
@@ -65,10 +65,12 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
   /** 非該当まで並べると長いので、既定では隠す */
   const [showAll, setShowAll] = useState(false);
   // 列幅は一覧と同じ規則。操作の列は、出るときだけ幅を数に入れる
-  const cols = useResizableColumns("chem.table.productJudgements", [
-    ...HEADS,
-    ...(canEdit ? [ACTION_COLUMN] : []),
-  ]);
+  const cols = useResizableColumns(
+    "chem.table.productJudgements",
+    [...HEADS, ...(canEdit ? [ACTION_COLUMN] : [])],
+    // 幅を詰めない。詰めると製品ごと・画面幅ごとに列の位置が動いて見比べられない
+    { shrinkToFit: false },
+  );
 
   const load = useCallback(async () => {
     setError(null);

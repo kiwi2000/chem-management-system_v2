@@ -782,7 +782,7 @@ export const ja = {
 
   /** 法規制の判定。製品の詳細に出す */
   judgements: {
-    title: "法規制の判定",
+    title: "法規制判定",
     summary: (hit: number, total: number) => `${total} 件中 ${hit} 件に該当`,
     reviewCount: (n: number) => `要確認 ${n} 件`,
     empty: "まだ判定していません。組成を登録すると判定されます。",

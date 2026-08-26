@@ -401,14 +401,19 @@ export function CompositionEditor({
     いつも数に入れると、出ていない製品でも幅を取られて他の列が狭くなる。
   */
   const extra = editing ? DRAG_HANDLE_WIDTH + ROW_ACTION_WIDTH : 0;
-  const cols = useResizableColumns("chem.table.composition", [
-    { key: "elementId", width: 112 },
-    { key: "casNumber", width: 128 },
-    { key: "elementName", width: 288 },
-    { key: "contentPct", width: 96 },
-    ...(showWithin ? [{ key: "withinPct", width: 96 }] : []),
-    { key: "note", width: 160 },
-  ]);
+  const cols = useResizableColumns(
+    "chem.table.composition",
+    [
+      { key: "elementId", width: 88 },
+      { key: "casNumber", width: 96 },
+      { key: "elementName", width: 288 },
+      { key: "contentPct", width: 72 },
+      ...(showWithin ? [{ key: "withinPct", width: 72 }] : []),
+      { key: "note", width: 160 },
+    ],
+    // 下の展開表と同じ規則。並べて見るので、片方だけ詰まると行がずれて見える
+    { shrinkToFit: false },
+  );
   /*
     まとめた表を下に並べるか。
     **直しているあいだは出さない。**書き換えている途中の値をまとめても意味が無く、
