@@ -122,8 +122,6 @@ export function CompositionAggregateTable({
 
   return (
     <div className="space-y-3">
-      <p className="text-muted-foreground text-sm">{m.composition.aggregateLead}</p>
-
       {/*
        * 開けなかった枝があると、この表は不完全になる。
        * 数字は完成して見えてしまうので、表より先に、目立つ形で伝える。

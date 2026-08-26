@@ -755,7 +755,11 @@ export function CompositionEditor({
         */}
         {showAggregate && (
           <div className="space-y-2 border-t pt-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            {/*
+              見出しとボタンの置き方は、上の「組成」の見出しと同じにする。
+              左端がそろっていないと、2つの表が別のものに見える。
+            */}
+            <div className="space-y-1">
               <p className="text-sm font-medium">{m.composition.aggregateTitle}</p>
               {aggregateKeys.length > 0 && (
                 <ExpandButtons

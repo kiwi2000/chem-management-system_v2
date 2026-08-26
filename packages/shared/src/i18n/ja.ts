@@ -938,9 +938,7 @@ export const ja = {
     expandAll: "展開",
 
     // CASでまとめた組成
-    aggregateTitle: "CASでまとめた組成",
-    aggregateLead:
-      "原材料を末端の物質まで下ろし、同じCAS番号のものを1行にまとめた表です。法規制の判定にはこの値を使います。多い順に並んでいます。",
+    aggregateTitle: "原材料展開・CAS合算",
     aggregateName: "物質名",
     aggregateSources: "寄与元",
     aggregateNoCas: "CASなし",
