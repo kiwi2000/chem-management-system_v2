@@ -128,10 +128,32 @@ async function main() {
   }
   if (gone > 0) console.log(`前回のぶんを消しました（法文物質名 ${gone}件）`);
 
-  const country = await prisma.country.findFirst({
+  /*
+    **国が無ければ作る。**EU は国の一覧の初期投入に入っておらず、
+    インベントリの取り込み（`seed-inventories.ts`）が付いでに作っていた。
+    そちらを流さないと、一から作り直すときにここで止まる（実際に止まった）。
+  */
+  let country = await prisma.country.findFirst({
     where: { codeNormalized: COUNTRY_CODE, deletedAt: null },
   });
-  if (!country) throw new Error(`国「${COUNTRY_CODE}」がありません`);
+  if (!country) {
+    const region = await prisma.region.findFirst({ where: { codeNormalized: "EUM" } });
+    if (!region)
+      throw new Error(
+        "地域「EUM」がありません。先に scripts/seed-international.ts を流してください",
+      );
+    country = await prisma.country.create({
+      data: {
+        code: COUNTRY_CODE,
+        codeNormalized: COUNTRY_CODE,
+        regionId: region.id,
+        nameJa: "欧州連合",
+        nameEn: "European Union",
+        displayOrder: 900,
+      },
+    });
+    console.log(`国「${COUNTRY_CODE}」を作りました`);
+  }
 
   const items = JSON.parse(
     readFileSync(join(process.cwd(), "scripts/data/eu.json"), "utf-8"),

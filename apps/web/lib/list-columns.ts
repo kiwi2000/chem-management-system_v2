@@ -180,7 +180,8 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
 
 export const METAL_FACTOR_COLUMNS: QueryColumn[] = [
   { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
-  { key: "metalElement", kind: "text", field: "metalElement" },
+  // 元素記号は決まった集合なので、複数選べる enum で絞る（`in`）
+  { key: "metalElement", kind: "enum", field: "metalElement" },
   { key: "ratioPct", kind: "number", field: "ratioPct" },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];

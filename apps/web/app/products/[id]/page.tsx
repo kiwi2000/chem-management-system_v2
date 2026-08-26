@@ -24,7 +24,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const actor = await getActor();
   if (!actor) notFound();
 
-  const [m, settings, item, defs] = await Promise.all([
+  const [m, settings, item, defs, linkVersion] = await Promise.all([
     getServerMessages(),
     getAppSettings(),
     prisma.product.findFirst({
@@ -35,6 +35,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       where: { target: "PRODUCT" },
       orderBy: [{ displayOrder: "asc" }, { key: "asc" }],
       include: PROPERTY_DEF_COUNT,
+    }),
+    // 判定に使っている法規制の版。見出しに添える
+    prisma.linkSetVersion.findFirst({
+      where: { isCurrent: true, deletedAt: null },
+      select: { code: true },
     }),
   ]);
 
@@ -64,7 +69,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         settings={settings}
         /* 組成と備考のあいだに挟む。組成を見ながら考えたいので */
         afterComposition={
-          <ProductJudgements productId={item.id} canEdit={canEditComposition(actor, item)} />
+          <ProductJudgements
+            productId={item.id}
+            canEdit={canEditComposition(actor, item)}
+            version={linkVersion?.code ?? null}
+          />
         }
       />
 

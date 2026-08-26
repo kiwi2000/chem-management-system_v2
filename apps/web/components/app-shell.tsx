@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppShellClient } from "@/components/app-shell-client";
 import { canEdit, getActor } from "@/lib/authz";
+import { prisma } from "@/lib/db";
 import { EXPIRED_LOGIN_URL, PATH_HEADER, PUBLIC_PATHS } from "@/lib/routes";
 
 /**
@@ -25,8 +26,18 @@ export async function AppShell({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
+  /*
+    いま判定に使っている法規制の版。**どの版で判定したかが分からないと、
+    出た結果を人に見せられない。**左ペインの下に出す
+  */
+  const version = await prisma.linkSetVersion.findFirst({
+    where: { isCurrent: true, deletedAt: null },
+    select: { code: true, nameJa: true },
+  });
+
   return (
     <AppShellClient
+      version={version ? { code: version.code, nameJa: version.nameJa } : null}
       user={{
         id: actor.user.id,
         email: actor.user.email,

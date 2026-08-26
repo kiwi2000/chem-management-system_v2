@@ -10,6 +10,8 @@ import {
 import {
   ArrowDown,
   ArrowUp,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronsUpDown,
   CircleCheck,
   GripVertical,
@@ -684,7 +686,23 @@ export function DataTable<T>({
             )}
           </div>
           {showPager && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {/*
+                **2ページ以上あるときだけ「最初」「最後」を出す。**
+                1ページで終わる一覧に4つ並べても押すところが無い
+              */}
+              {totalPages > 2 && (
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  title={m.table.firstPage}
+                  aria-label={m.table.firstPage}
+                  disabled={state.page <= 1}
+                  onClick={() => onStateChange((prev) => ({ ...prev, page: 1 }))}
+                >
+                  <ChevronsLeft className="size-4" />
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -693,7 +711,7 @@ export function DataTable<T>({
               >
                 {m.common.prev}
               </Button>
-              <span>{m.common.pageOf(state.page, totalPages)}</span>
+              <span className="px-1">{m.common.pageOf(state.page, totalPages)}</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -702,6 +720,18 @@ export function DataTable<T>({
               >
                 {m.common.next}
               </Button>
+              {totalPages > 2 && (
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  title={m.table.lastPage}
+                  aria-label={m.table.lastPage}
+                  disabled={state.page >= totalPages}
+                  onClick={() => onStateChange((prev) => ({ ...prev, page: totalPages }))}
+                >
+                  <ChevronsRight className="size-4" />
+                </Button>
+              )}
             </div>
           )}
         </div>

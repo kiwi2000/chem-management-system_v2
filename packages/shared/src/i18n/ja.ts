@@ -96,6 +96,7 @@ export const ja = {
 
   shell: {
     openMenu: "メニューを開く",
+    linkVersion: "法規制の版",
     closeMenu: "メニューを閉じる",
     signOut: "ログアウト",
     readOnly: "参照のみ",
@@ -221,6 +222,8 @@ export const ja = {
     filterValue: "値",
     filterValue2: "値（終わり）",
     all: "すべて",
+    firstPage: "最初のページ",
+    lastPage: "最後のページ",
     pageSize: "1ページの件数",
     perPage: (n: number) => `${n} 件`,
     operators: {

@@ -20,6 +20,8 @@ interface Props {
   user: Pick<MeDto, "id" | "email" | "displayName" | "permissions" | "canEdit" | "isAdmin">;
   /** アバターの更新日時。変わると画像を取り直す */
   avatarVersion: number;
+  /** いま判定に使っている法規制の版。無ければ出さない */
+  version: { code: string; nameJa: string | null } | null;
   children: ReactNode;
 }
 
@@ -28,7 +30,7 @@ interface Props {
  * 広い画面ではサイドバーが本文を押し出し、狭い画面では本文の上に重ねて表示する。
  * どちらもトップバー左端の同じボタンで開閉する。
  */
-export function AppShellClient({ user, avatarVersion, children }: Props) {
+export function AppShellClient({ user, avatarVersion, version, children }: Props) {
   const { m } = useI18n();
   // 広い画面用（既定は開いた状態。localStorage に前回の状態を覚える）
   const [open, setOpen] = useState(true);
@@ -56,7 +58,7 @@ export function AppShellClient({ user, avatarVersion, children }: Props) {
     <>
       {/* 設定で濃くできる。既定は左ペインと同じ色なので見た目は変わらない */}
       <div className="bg-sidebar-header text-sidebar-header-foreground flex h-14 items-center justify-between gap-2 border-b px-4">
-        <Link href="/" className="truncate text-sm font-semibold">
+        <Link href="/" className="truncate text-base font-semibold">
           {m.common.appName}
         </Link>
         <Button
@@ -70,6 +72,19 @@ export function AppShellClient({ user, avatarVersion, children }: Props) {
         </Button>
       </div>
       <SidebarNav permissions={user.permissions} onNavigate={() => setDrawerOpen(false)} />
+      {/*
+        いま判定に使っている法規制の版。**操作ではないので、いちばん下に置く。**
+        「どの版で判定した結果を見ているか」が常に分かるようにするためのもの
+      */}
+      {version && (
+        <div className="text-muted-foreground mt-auto border-t px-4 py-2 text-xs">
+          <div>{m.shell.linkVersion}</div>
+          <div className="truncate font-medium">
+            {version.code}
+            {version.nameJa && ` ${version.nameJa}`}
+          </div>
+        </div>
+      )}
     </>
   );
 
@@ -87,7 +102,7 @@ export function AppShellClient({ user, avatarVersion, children }: Props) {
         style={{ backgroundColor: "var(--background)" }}
         aria-hidden={!open}
       >
-        <div className="w-56">{sidebarBody}</div>
+        <div className="flex h-full w-56 flex-col">{sidebarBody}</div>
       </aside>
 
       {/* 狭い画面のドロワー（本文に重ねる） */}
@@ -100,7 +115,7 @@ export function AppShellClient({ user, avatarVersion, children }: Props) {
             onClick={() => setDrawerOpen(false)}
           />
           <aside
-            className="absolute inset-y-0 left-0 w-56 border-r shadow-lg"
+            className="absolute inset-y-0 left-0 flex w-56 flex-col border-r shadow-lg"
             style={{ backgroundColor: "var(--background)" }}
           >
             {sidebarBody}
@@ -125,7 +140,7 @@ export function AppShellClient({ user, avatarVersion, children }: Props) {
             {open ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
           </Button>
           {/* サイドバーが閉じているとタイトルが消えるのでここに出す */}
-          <Link href="/" className={cn("truncate text-sm font-semibold", open && "md:hidden")}>
+          <Link href="/" className={cn("truncate text-base font-semibold", open && "md:hidden")}>
             {m.common.appName}
           </Link>
           <div className="ml-auto flex items-center gap-3">

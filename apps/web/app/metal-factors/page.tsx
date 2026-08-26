@@ -33,6 +33,9 @@ export default function MetalFactorsPage() {
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
+  /** 金属元素の選択肢。元素の表に登録されているものだけを選ばせる */
+  const [elements, setElements] = useState<ElementDto[]>([]);
+
   const columns = useMemo<TableColumn<MetalFactorDto>[]>(
     () => [
       {
@@ -44,9 +47,17 @@ export default function MetalFactorsPage() {
         render: (r) => r.casNumber,
       },
       {
+        /*
+          **元素の表から選ばせる。**手で打たせると `Pb` と `pb`、
+          `鉛` と `Pb` が混ざって絞り込めない。複数選べる
+        */
         key: "metalElement",
         header: m.metalFactors.metalElement,
-        kind: "text",
+        kind: "enum",
+        options: elements.map((el) => ({
+          value: el.symbol,
+          label: `${el.symbol} — ${locale === "ja" ? el.nameJa : el.nameEn}`,
+        })),
         width: 110,
         className: "font-mono",
         render: (r) => r.metalElement,
@@ -94,7 +105,7 @@ export default function MetalFactorsPage() {
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
       },
     ],
-    [m, locale],
+    [m, locale, elements],
   );
 
   const { state, setState, reset, ready } = useTableState(
@@ -104,9 +115,13 @@ export default function MetalFactorsPage() {
   );
 
   const [data, setData] = useState<ListResponse<MetalFactorDto> | null>(null);
-  /** 金属元素の選択肢。元素の表に登録されているものだけを選ばせる */
-  const [elements, setElements] = useState<ElementDto[]>([]);
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  /**
+   * 入力欄を開いているか。
+   * **既定は閉じておく。**ふだんは一覧を見に来る画面で、
+   * 常に開いていると表が下に押し下げられる
+   */
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -163,6 +178,7 @@ export default function MetalFactorsPage() {
       const body = (await res.json()) as { warnings?: string[] };
       setWarnings(body.warnings ?? []);
       setForm({ ...EMPTY_FORM });
+      setFormOpen(false);
       void load();
     } finally {
       setSaving(false);
@@ -207,7 +223,21 @@ export default function MetalFactorsPage() {
         </Alert>
       )}
 
-      {editable && (
+      {editable && !formOpen && (
+        <div>
+          <Button
+            type="button"
+            onClick={() => {
+              setForm({ ...EMPTY_FORM });
+              setFormOpen(true);
+            }}
+          >
+            {m.metalFactors.newTitle}
+          </Button>
+        </div>
+      )}
+
+      {editable && formOpen && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
@@ -271,15 +301,17 @@ export default function MetalFactorsPage() {
                   <Button type="submit" disabled={saving}>
                     {saving ? m.common.saving : m.common.save}
                   </Button>
-                  {form.id !== "" && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setForm({ ...EMPTY_FORM })}
-                    >
-                      {m.common.discard}
-                    </Button>
-                  )}
+                  {/* キャンセルで閉じる。書きかけの内容は捨てる */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setForm({ ...EMPTY_FORM });
+                      setFormOpen(false);
+                    }}
+                  >
+                    {m.common.cancel}
+                  </Button>
                 </div>
                 <p className="min-h-4 text-xs" />
               </div>
@@ -312,6 +344,7 @@ export default function MetalFactorsPage() {
                     metalElement: f.metalElement,
                     ratioPct: f.ratioPct,
                   });
+                  setFormOpen(true);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 },
               }

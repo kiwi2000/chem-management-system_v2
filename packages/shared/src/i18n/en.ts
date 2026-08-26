@@ -94,6 +94,7 @@ export const en: Messages = {
 
   shell: {
     openMenu: "Open menu",
+    linkVersion: "Regulation set",
     closeMenu: "Close menu",
     signOut: "Sign out",
     readOnly: "Read only",
@@ -214,6 +215,8 @@ export const en: Messages = {
     filterValue: "value",
     filterValue2: "value (to)",
     all: "All",
+    firstPage: "First page",
+    lastPage: "Last page",
     pageSize: "Rows per page",
     perPage: (n: number) => `${n} rows`,
     operators: {

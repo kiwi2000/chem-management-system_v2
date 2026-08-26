@@ -59,7 +59,19 @@ const HEADS: { key: string; width: number; label: (m: M) => string; className?: 
 /** 操作の列。編集できる人にだけ出るので、列の並びとは別に持つ */
 const ACTION_COLUMN = { key: "actions", width: 96 };
 
-export function ProductJudgements({ productId, canEdit }: { productId: string; canEdit: boolean }) {
+export function ProductJudgements({
+  productId,
+  canEdit,
+  version,
+}: {
+  productId: string;
+  canEdit: boolean;
+  /**
+   * この判定に使った法規制の版。
+   * **どの版で出した結果かが分からないと、印刷して人に渡せない。**
+   */
+  version: string | null;
+}) {
   const { m, locale } = useI18n();
   const [items, setItems] = useState<ProductJudgementDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +169,12 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
   return (
     <Card>
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0">
-        <CardTitle className="text-base">{m.judgements.title}</CardTitle>
+        <CardTitle className="text-base">
+          {m.judgements.title}
+          {version && (
+            <span className="text-muted-foreground ml-2 text-xs font-normal">{version}</span>
+          )}
+        </CardTitle>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-muted-foreground">
             {m.judgements.summary(applicable.length, items.length)}
