@@ -16,8 +16,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { cn } from "@/lib/utils";
 import type { ApiError, JudgementHitDto, ProductJudgementDto } from "@/lib/types";
 
 /**
@@ -30,6 +32,28 @@ import type { ApiError, JudgementHitDto, ProductJudgementDto } from "@/lib/types
  * 判定（該当／非該当）と「人が見たかどうか」は**別の列**に出す。
  * 確認しても判定が変わらないことは普通にあるので、混ぜない。
  */
+export type M = ReturnType<typeof useI18n>["m"];
+
+/**
+ * 列の並びと既定の幅。**見出しと幅を1か所に持つ。**
+ * 別々に書くと、列を足したときに幅だけ古いまま残って気づけない。
+ *
+ * 含有率と該当CASは2つで1組。**間に別の列を挟まないこと**（合算かどうかが読めなくなる）。
+ */
+const HEADS: { key: string; width: number; label: (m: M) => string; className?: string }[] = [
+  { key: "verdict", width: 64, label: (m) => m.judgements.verdict },
+  { key: "law", width: 80, label: (m) => m.judgements.law },
+  { key: "category", width: 144, label: (m) => m.judgements.category },
+  { key: "number", width: 56, label: (m) => m.judgements.number },
+  { key: "statutoryName", width: 288, label: (m) => m.judgements.statutoryName },
+  { key: "content", width: 96, label: (m) => m.judgements.content, className: "text-right" },
+  { key: "matchedCas", width: 112, label: (m) => m.judgements.matchedCas },
+  { key: "warning", width: 256, label: (m) => m.judgements.warning },
+];
+
+/** 操作の列。編集できる人にだけ出るので、列の並びとは別に持つ */
+const ACTION_COLUMN = { key: "actions", width: 96 };
+
 export function ProductJudgements({ productId, canEdit }: { productId: string; canEdit: boolean }) {
   const { m, locale } = useI18n();
   const [items, setItems] = useState<ProductJudgementDto[] | null>(null);
@@ -40,6 +64,11 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
   const [busy, setBusy] = useState(false);
   /** 非該当まで並べると長いので、既定では隠す */
   const [showAll, setShowAll] = useState(false);
+  // 列幅は一覧と同じ規則。操作の列は、出るときだけ幅を数に入れる
+  const cols = useResizableColumns("chem.table.productJudgements", [
+    ...HEADS,
+    ...(canEdit ? [ACTION_COLUMN] : []),
+  ]);
 
   const load = useCallback(async () => {
     setError(null);
@@ -144,25 +173,28 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
           <p className="text-muted-foreground text-sm">{m.judgements.empty}</p>
         ) : (
           // 横に長い表なので、はみ出したら中だけ横に送る（画面全体を横に振らない）
-          <div className="overflow-x-auto">
+          <div ref={cols.scrollerRef} className="overflow-x-auto">
             {/*
               table-fixed にして、幅を列の側で決める。
               自動幅だと、法文物質名の長いものが1件あるだけで表全体の形が変わり、
               製品ごとに列の位置がずれて見比べられなくなる。
+              幅は一覧と同じ規則で、見出しの右端をつまんで変えられる。
             */}
-            <Table className="table-fixed text-sm">
+            <Table className="table-fixed text-sm" style={{ minWidth: cols.minTableWidth }}>
+              <colgroup>{cols.cols()}</colgroup>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">{m.judgements.verdict}</TableHead>
-                  <TableHead className="w-20">{m.judgements.law}</TableHead>
-                  <TableHead className="w-36">{m.judgements.category}</TableHead>
-                  <TableHead className="w-14">{m.judgements.number}</TableHead>
-                  <TableHead className="w-72">{m.judgements.statutoryName}</TableHead>
-                  {/* 含有率とCASは2つで1組。並びを入れ替えないこと */}
-                  <TableHead className="w-24 text-right">{m.judgements.content}</TableHead>
-                  <TableHead className="w-28">{m.judgements.matchedCas}</TableHead>
-                  <TableHead className="w-64">{m.judgements.warning}</TableHead>
-                  {canEdit && <TableHead className="w-24" />}
+                  {HEADS.map(({ key, label, className }) => (
+                    <TableHead key={key} className={cn("relative", className)}>
+                      {label(m)}
+                      {cols.handle(key, `${label(m)} ${m.table.resize}`)}
+                    </TableHead>
+                  ))}
+                  {canEdit && (
+                    <TableHead className="relative">
+                      {cols.handle("actions", m.table.resize)}
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -315,8 +347,6 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
     </Card>
   );
 }
-
-export type M = ReturnType<typeof useI18n>["m"];
 
 /**
  * 当たった含有率と CAS の出しかた。**含有率のセルと CAS のセットで1組。**

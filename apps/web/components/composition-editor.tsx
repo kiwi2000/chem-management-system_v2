@@ -14,6 +14,7 @@ import {
 import { FoldVertical, GripVertical, Pencil, Trash2, UnfoldVertical } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompositionAggregateTable } from "@/components/composition-aggregate-table";
+import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import {
   CompositionTreeRows,
   ExpandToggle,
@@ -85,6 +86,11 @@ function toRow(l: CompositionLineDto, index: number): Row | null {
  * 製品詳細の下に置き、製品本体とは別に保存する（行数が多いので、
  * 名称を触っていないのに全部保存し直すのを避けるため）。
  */
+/** 行をつかんで並べ替えるつまみの列。中身の大きさで決まるので、伸び縮みさせない */
+const DRAG_HANDLE_WIDTH = 32;
+/** 行を消すボタンの列。同上 */
+const ROW_ACTION_WIDTH = 44;
+
 /**
  * 「展開」「閉じる」の組。表ごとに1つずつ置く。
  *
@@ -390,6 +396,20 @@ export function CompositionEditor({
   const [aggregateOpen, setAggregateOpen] = useState<Set<string>>(new Set());
   const [aggregateKeys, setAggregateKeys] = useState<string[]>([]);
   /*
+    列幅は一覧と同じ規則。
+    **原材料内の重量%は、出ているときだけ数に入れる。**
+    いつも数に入れると、出ていない製品でも幅を取られて他の列が狭くなる。
+  */
+  const extra = editing ? DRAG_HANDLE_WIDTH + ROW_ACTION_WIDTH : 0;
+  const cols = useResizableColumns("chem.table.composition", [
+    { key: "elementId", width: 112 },
+    { key: "casNumber", width: 128 },
+    { key: "elementName", width: 288 },
+    { key: "contentPct", width: 96 },
+    ...(showWithin ? [{ key: "withinPct", width: 96 }] : []),
+    { key: "note", width: 160 },
+  ]);
+  /*
     まとめた表を下に並べるか。
     **直しているあいだは出さない。**書き換えている途中の値をまとめても意味が無く、
     保存するまで上下が食い違って見えるため。
@@ -486,16 +506,38 @@ export function CompositionEditor({
         ) : rows.length === 0 ? (
           <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[40rem] border-collapse text-sm">
+          <div ref={cols.scrollerRef} className="overflow-x-auto">
+            <table
+              className="w-full table-fixed border-collapse text-sm"
+              style={{ minWidth: cols.minTableWidth + extra }}
+            >
+              {/*
+                colgroup は列の並びと1対1で対応する。
+                **直しているときだけ出る前後の列も、ここに置くこと。**
+                置き忘れると、幅が1つずつずれて別の列に当たる。
+              */}
+              <colgroup>
+                {editing && <col style={{ width: DRAG_HANDLE_WIDTH }} />}
+                {cols.cols()}
+                {editing && <col style={{ width: ROW_ACTION_WIDTH }} />}
+              </colgroup>
               <thead>
                 <tr className="bg-muted/50 border-y text-left">
-                  {/* 行をつかんで並べ替えるためのつまみ */}
+                  {/* 行をつかんで並べ替えるためのつまみ。幅は固定（つまみの大きさで決まる） */}
                   {editing && <th className={cn(CELL, "w-8")} />}
-                  <th className={cn(CELL, "w-28 font-medium")}>{m.composition.elementId}</th>
-                  <th className={cn(CELL, "w-32 font-medium")}>{m.composition.casNumber}</th>
-                  <th className={cn(CELL, "font-medium")}>{m.composition.elementName}</th>
-                  <th className={cn(CELL, "w-px text-right font-medium whitespace-nowrap")}>
+                  <th className={cn(CELL, "relative font-medium")}>
+                    {m.composition.elementId}
+                    {cols.handle("elementId", `${m.composition.elementId} ${m.table.resize}`)}
+                  </th>
+                  <th className={cn(CELL, "relative font-medium")}>
+                    {m.composition.casNumber}
+                    {cols.handle("casNumber", `${m.composition.casNumber} ${m.table.resize}`)}
+                  </th>
+                  <th className={cn(CELL, "relative font-medium")}>
+                    {m.composition.elementName}
+                    {cols.handle("elementName", `${m.composition.elementName} ${m.table.resize}`)}
+                  </th>
+                  <th className={cn(CELL, "relative text-right font-medium whitespace-nowrap")}>
                     {m.composition.contentPct}
                     {/* 列が2つ並ぶときだけ、どちらの重量%かを添える */}
                     {showWithin && (
@@ -503,17 +545,25 @@ export function CompositionEditor({
                         {m.composition.pctOfProduct}
                       </span>
                     )}
+                    {cols.handle("contentPct", `${m.composition.contentPct} ${m.table.resize}`)}
                   </th>
                   {showWithin && (
-                    <th className={cn(CELL, "w-px text-right font-medium whitespace-nowrap")}>
+                    <th className={cn(CELL, "relative text-right font-medium whitespace-nowrap")}>
                       {m.composition.contentPct}
                       <span className="text-muted-foreground block text-xs font-normal">
                         {m.composition.pctWithinMaterial}
                       </span>
+                      {cols.handle(
+                        "withinPct",
+                        `${m.composition.pctWithinMaterial} ${m.table.resize}`,
+                      )}
                     </th>
                   )}
-                  <th className={cn(CELL, "w-40 font-medium")}>{m.composition.note}</th>
-                  {/* 行の操作は、直しているときだけ出す */}
+                  <th className={cn(CELL, "relative font-medium")}>
+                    {m.composition.note}
+                    {cols.handle("note", `${m.composition.note} ${m.table.resize}`)}
+                  </th>
+                  {/* 行の操作は、直しているときだけ出す。幅は中身で決まる */}
                   {editing && <th className={cn(CELL, "w-px")} />}
                 </tr>
               </thead>

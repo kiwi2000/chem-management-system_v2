@@ -39,6 +39,7 @@ import {
   SELECT_COLUMN_WIDTH,
   type TableColumn,
 } from "./types";
+import { ResizeHandle } from "./resizable-columns";
 import { useColumnWidths } from "./use-column-widths";
 
 interface Props<T> {
@@ -706,57 +707,5 @@ export function DataTable<T>({
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * 列幅を変えるつまみ。見出しの右端をドラッグする。
- * キーボードでも矢印キーで変えられるようにしている。
- */
-function ResizeHandle({
-  label,
-  current,
-  onResize,
-}: {
-  label: string;
-  current: () => number;
-  onResize: (px: number) => void;
-}) {
-  const drag = useRef<{ startX: number; startWidth: number } | null>(null);
-
-  return (
-    <div
-      role="separator"
-      aria-orientation="vertical"
-      aria-label={label}
-      tabIndex={0}
-      className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none select-none"
-      onPointerDown={(e) => {
-        e.preventDefault();
-        e.currentTarget.setPointerCapture(e.pointerId);
-        drag.current = { startX: e.clientX, startWidth: current() };
-      }}
-      onPointerMove={(e) => {
-        if (!drag.current) return;
-        onResize(
-          Math.max(MIN_COLUMN_WIDTH, drag.current.startWidth + (e.clientX - drag.current.startX)),
-        );
-      }}
-      onPointerUp={(e) => {
-        drag.current = null;
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      }}
-      onKeyDown={(e) => {
-        const step = e.shiftKey ? 40 : 10;
-        if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          onResize(current() - step);
-        }
-        if (e.key === "ArrowRight") {
-          e.preventDefault();
-          onResize(current() + step);
-        }
-      }}
-    />
   );
 }

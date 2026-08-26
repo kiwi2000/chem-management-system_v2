@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { DEFAULT_COLUMN_WIDTH, MIN_COLUMN_WIDTH, type TableColumn } from "./types";
+import { DEFAULT_COLUMN_WIDTH, MIN_COLUMN_WIDTH } from "./types";
 
 /**
  * 列幅。利用者がドラッグで変えた幅を端末に覚えておく。
@@ -19,8 +19,13 @@ export function useColumnWidths(storageKey: string) {
     }
   }, [storageKey]);
 
+  /**
+   * その列の幅。
+   * 引数は `key` と `width` だけ見る。一覧の列定義でも、
+   * 手書きの表が持つ簡単な組（`{ key, width }`）でも同じように渡せる。
+   */
   const widthOf = useCallback(
-    <T>(col: TableColumn<T>) => widths[col.key] ?? col.width ?? DEFAULT_COLUMN_WIDTH,
+    (col: { key: string; width?: number }) => widths[col.key] ?? col.width ?? DEFAULT_COLUMN_WIDTH,
     [widths],
   );
 

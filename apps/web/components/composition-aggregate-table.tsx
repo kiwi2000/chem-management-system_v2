@@ -4,6 +4,7 @@ import { pickName, pickStatutoryName } from "@chem/shared";
 import { ChevronRight } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, CompositionAggregateDto, RowRegulationDto } from "@/lib/types";
@@ -33,6 +34,38 @@ interface Props {
   onExpandableChange: (keys: string[]) => void;
 }
 
+/**
+ * 列の並びと既定の幅。
+ *
+ * 「かかる法規制」は**目印**なので、物質名より狭くてよい。
+ * 規制の中身は下の判定表が受け持つ。
+ */
+const HEADS: {
+  key: string;
+  width: number;
+  label: (m: ReturnType<typeof useI18n>["m"]) => string;
+  className?: string;
+}[] = [
+  { key: "casNumber", width: 128, label: (m) => m.composition.casNumber },
+  { key: "substanceId", width: 112, label: (m) => m.composition.aggregateSubstanceId },
+  { key: "name", width: 256, label: (m) => m.composition.aggregateName },
+  {
+    key: "contentPct",
+    width: 80,
+    label: (m) => m.composition.contentPct,
+    className: "text-right whitespace-nowrap",
+  },
+  {
+    key: "sources",
+    width: 80,
+    label: (m) => m.composition.aggregateSources,
+    className: "text-right",
+  },
+  // この物質がどの法令に引っかかっているか。判定表と向きが逆で、
+  // 組成を見ながら「これが原因だ」とたどれる
+  { key: "regulations", width: 288, label: (m) => m.composition.aggregateRegulations },
+];
+
 export function CompositionAggregateTable({
   productId,
   open,
@@ -42,6 +75,8 @@ export function CompositionAggregateTable({
   const { m, locale } = useI18n();
   const [data, setData] = useState<CompositionAggregateDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 列幅は一覧と同じ規則
+  const cols = useResizableColumns("chem.table.compositionAggregate", HEADS);
 
   useEffect(() => {
     let alive = true;
@@ -118,29 +153,20 @@ export function CompositionAggregateTable({
       {data.rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[36rem] border-collapse text-sm">
+        <div ref={cols.scrollerRef} className="overflow-x-auto">
+          <table
+            className="w-full table-fixed border-collapse text-sm"
+            style={{ minWidth: cols.minTableWidth }}
+          >
+            <colgroup>{cols.cols()}</colgroup>
             <thead>
               <tr className="bg-muted/50 border-y text-left">
-                <th className={cn(CELL, "w-32 font-medium")}>{m.composition.casNumber}</th>
-                <th className={cn(CELL, "w-28 font-medium")}>
-                  {m.composition.aggregateSubstanceId}
-                </th>
-                <th className={cn(CELL, "font-medium")}>{m.composition.aggregateName}</th>
-                <th className={cn(CELL, "w-px text-right font-medium whitespace-nowrap")}>
-                  {m.composition.contentPct}
-                </th>
-                <th className={cn(CELL, "w-20 text-right font-medium")}>
-                  {m.composition.aggregateSources}
-                </th>
-                {/*
-                  この物質がどの法令に引っかかっているか。
-                  下の判定表と向きが逆で、**組成を見ながら「これが原因だ」とたどれる**。
-                  判定表は「どの区分に当たったか」、こちらは「どの物質が効いたか」
-                */}
-                <th className={cn(CELL, "w-72 font-medium")}>
-                  {m.composition.aggregateRegulations}
-                </th>
+                {HEADS.map(({ key, label, className }) => (
+                  <th key={key} className={cn(CELL, "relative font-medium", className)}>
+                    {label(m)}
+                    {cols.handle(key, `${label(m)} ${m.table.resize}`)}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
