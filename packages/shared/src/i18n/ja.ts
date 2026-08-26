@@ -795,6 +795,7 @@ export const ja = {
     number: "番号",
     statutoryName: "法文物質名",
     matchedCas: "該当CAS",
+    hitCount: (n: number) => `${n}件`,
     content: "含有率",
     warning: "警告",
     applicable: "該当",
@@ -811,8 +812,6 @@ export const ja = {
     changeToNot: "非該当にする",
     changeToYes: "該当にする",
     notePlaceholder: "そう判断した根拠（あとで問われたときのために）",
-    showNotApplicable: (n: number) => `非該当の ${n} 件も見る`,
-    hideNotApplicable: "非該当を隠す",
     reasonMissingFactor:
       "換算係数が登録されていないCASがあります。そのぶんは0として数えているので、実際より少なく出ています。",
     reasonUnknown:
@@ -948,7 +947,7 @@ export const ja = {
     aggregateShowSources: "寄与元を見る",
     aggregateIncomplete: (n: number) =>
       `中身をたどれない原材料が ${n} 件あります。この表はまだ完全ではありません。下の合計も100%に届きません。`,
-    collapseAll: "閉じる",
+    collapseAll: "格納",
     collapse: "閉じる",
     expandedOf: (name: string) => `${name} の中身`,
     /** 換算値に添える、その原材料の中での値 */

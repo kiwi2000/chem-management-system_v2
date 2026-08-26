@@ -38,6 +38,9 @@ import { cn } from "@/lib/utils";
  * 列の並びと既定の幅。判定表（`product-judgements`）と同じ並びにそろえてある。
  * 向きは逆でも、見るものは同じなので、列の位置が変わると目が迷う。
  */
+/** 組成の表と同じ枠線・余白 */
+const CELL = "border-r px-2 py-1 last:border-r-0";
+
 const HEADS: {
   key: string;
   width: number;
@@ -121,7 +124,7 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
           {rows.map(({ p, h, first }, i) => (
             <TableRow key={`${p.productId}-${i}`}>
               {/* 判定・コード・名前は、同じ製品の2行目からは繰り返さない */}
-              <TableCell className="align-top">
+              <TableCell className={cn(CELL, "align-top")}>
                 {first && (
                   <Badge variant={p.verdict === "APPLICABLE" ? "default" : "secondary"}>
                     {p.verdict === "APPLICABLE"
@@ -130,14 +133,14 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="align-top font-mono text-xs">
+              <TableCell className={cn(CELL, "align-top font-mono text-xs")}>
                 {first && (
                   <Link href={`/products/${p.productId}`} className="hover:underline">
                     {p.code}
                   </Link>
                 )}
               </TableCell>
-              <TableCell className="align-top">
+              <TableCell className={cn(CELL, "align-top")}>
                 {first && (
                   <Fragment>
                     <OneLine text={pickName(locale, p.nameJa, p.nameEn)} />
@@ -150,10 +153,10 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
                   </Fragment>
                 )}
               </TableCell>
-              <TableCell className="align-top font-mono text-xs">
+              <TableCell className={cn(CELL, "align-top font-mono text-xs")}>
                 {h?.officialNumber ?? ""}
               </TableCell>
-              <TableCell className="align-top">
+              <TableCell className={cn(CELL, "align-top")}>
                 {h && <OneLine text={h.name ?? m.judgements.categoryItself} />}
                 {first && p.hitsWithheld && (
                   // 空なのか伏せたのかが分からないと、入っていないと読まれてしまう
@@ -162,8 +165,8 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
                   </span>
                 )}
               </TableCell>
-              {h ? <MatchedCells hit={h} m={m} /> : <TableCell colSpan={2} />}
-              <TableCell className="align-top">
+              {h ? <MatchedCells hit={h} m={m} cellClass={CELL} /> : <TableCell colSpan={2} />}
+              <TableCell className={cn(CELL, "align-top")}>
                 {first && p.needsReview && (
                   <div className="space-y-1">
                     <Badge variant="outline" className="text-destructive gap-1">

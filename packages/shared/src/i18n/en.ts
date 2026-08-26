@@ -784,6 +784,7 @@ export const en: Messages = {
     number: "No.",
     statutoryName: "Statutory name",
     matchedCas: "CAS",
+    hitCount: (n: number) => `${n}`,
     content: "Content",
     warning: "Warning",
     applicable: "Applies",
@@ -800,8 +801,6 @@ export const en: Messages = {
     changeToNot: "Mark as not applying",
     changeToYes: "Mark as applying",
     notePlaceholder: "Why you decided this (for when you are asked later)",
-    showNotApplicable: (n: number) => `Show the ${n} that do not apply`,
-    hideNotApplicable: "Hide the ones that do not apply",
     reasonMissingFactor:
       "Some CAS have no conversion factor. They are counted as zero, so the figure is lower than reality.",
     reasonUnknown: "A raw material with no registered composition remains. Its content is unknown.",
