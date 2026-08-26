@@ -1141,8 +1141,9 @@ model Country {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  region Region @relation(fields: [regionId], references: [id])
-  laws   Law[]
+  region      Region      @relation(fields: [regionId], references: [id])
+  laws        Law[]
+  inventories Inventory[]
 
   @@index([regionId, displayOrder])
   @@map("countries")
@@ -1555,4 +1556,87 @@ model Element {
   deletedAt DateTime? @map("deleted_at")
 
   @@map("elements")
+}
+
+/**
+ * 各国のインベントリ（既存化学物質名簿）。
+ *
+ * **規制区分としては持たない。**
+ * 判定は登録されている区分をすべて見に行くので、インベントリを区分として入れると
+ * どの製品もすべてのインベントリに「該当」してしまう。
+ * インベントリは「載っているか」と「その名簿での番号」を持つだけのもので、
+ * 含有率と閾値で当たりを決める規制とは性質が違う。
+ */
+model Inventory {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  countryId String @map("country_id")
+
+  nameOriginal String  @map("name_original")
+  nameLang     String  @map("name_lang") @db.VarChar(10)
+  nameJa       String? @map("name_ja")
+  nameEn       String? @map("name_en")
+
+  /**
+   * 取り込み元の LOLI の一覧番号。取り込み直すときに使う
+   */
+  sourceListId Int? @map("source_list_id")
+  displayOrder Int  @default(0) @map("display_order")
+
+  /**
+   * 物質の画面に出すときの見出し。入っていなければ出さない
+   */
+  numberLabel   String? @map("number_label")
+  /**
+   * 出す順。法令の並びとは別に決める
+   */
+  numberOrder   Int     @default(0) @map("number_order")
+  /**
+   * 行から番号を取り出す正規表現。**全件一致**で、1行から複数の番号が取れる。
+   * 空なら番号を取り出さない（載っているかどうかだけを出す）
+   */
+  matchPattern  String? @map("match_pattern")
+  /**
+   * 表示の書き方。`$1` などが使える。
+   * 番号を持たない名簿は「該当」のような固定の文字を入れる
+   */
+  displayFormat String? @map("display_format")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  country Country        @relation(fields: [countryId], references: [id])
+  rows    InventoryRow[]
+
+  @@index([countryId, displayOrder])
+  @@map("inventories")
+}
+
+/**
+ * 名簿の1行。**LOLI の Data をそのまま持つ。**
+ * 番号の取り出しかたを直したときに、取り込み直さずに済ませるため
+ * （本番からは LOLI に届かない）。
+ */
+model InventoryRow {
+  id          String @id @default(cuid())
+  inventoryId String @map("inventory_id")
+
+  casNumber     String @map("cas_number") @db.VarChar(20)
+  casNormalized String @map("cas_normalized") @db.VarChar(20)
+  /**
+   * LOLI の Data。ここに正規表現を当てて番号を取り出す
+   */
+  data          String
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  // 物質の画面は CAS から引く
+  @@index([casNormalized])
+  @@index([inventoryId])
+  @@map("inventory_rows")
 }
