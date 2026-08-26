@@ -359,68 +359,85 @@ async function main() {
         classIdOf.set(name, cls.id);
       }
 
+      /*
+        法文物質名とリンクは**まとめて書く**。
+        1件ずつ問い合わせると、危険化学品目録だけで往復が2万回を超える。
+      */
+      const existing = await prisma.statutorySubstance.findMany({
+        where: { classId: { in: [...classIdOf.values()] } },
+        select: { id: true, codeNormalized: true },
+      });
+      const idOfCode = new Map(existing.map((x) => [x.codeNormalized, x.id]));
+      const bound = catDef.lowerPct === 0 ? ("EXCLUSIVE" as const) : ("INCLUSIVE" as const);
+
+      /** これから作るもの。**既にあるものは触らない**（人が直した名前を消さないため） */
+      const toCreate = [];
+      /** 「法文物質名のコード」→ ぶら下がるCAS */
+      const casOfCode = new Map<string, Set<string>>();
+
       let order = 0;
       for (const entry of entries.values()) {
         const classId = classIdOf.get(entry.className ?? DEFAULT_CLASS);
         if (!classId) continue;
         // 目録の中で一意になるコード。項目の鍵をそのまま使う
         const code = `${catDef.code}-${entry.key}`.slice(0, 50);
-        let substance = await prisma.statutorySubstance.findFirst({
-          where: { classId, codeNormalized: normalizeCode(code) },
-          select: { id: true },
+        const normalizedCode = normalizeCode(code);
+        casOfCode.set(normalizedCode, entry.cas);
+        if (idOfCode.has(normalizedCode)) continue;
+        toCreate.push({
+          code,
+          codeNormalized: normalizedCode,
+          classId,
+          officialNumber: entry.officialNumber,
+          /*
+            名前は LOLI の英語。中国語の目録名は持っていないので、
+            原文の言語は EN にしておく（ZH と書くと、中国語が入っていると読まれる）。
+          */
+          nameOriginal: entry.name ?? entry.key,
+          nameLang: "EN",
+          nameEn: entry.name ?? entry.key,
+          displayOrder: order++,
+          thresholdLower: catDef.lowerPct,
+          lowerBound: bound,
+          thresholdUpper: 100,
+          upperBound: "INCLUSIVE" as const,
         });
-        if (!substance) {
-          tally.substances += 1;
-          substance = await prisma.statutorySubstance.create({
-            data: {
-              code,
-              codeNormalized: normalizeCode(code),
-              classId,
-              officialNumber: entry.officialNumber,
-              /*
-                名前は LOLI の英語。中国語の目録名は持っていないので、
-                原文の言語は EN にしておく（ZH と書くと、中国語が入っていると読まれる）。
-              */
-              nameOriginal: entry.name ?? entry.key,
-              nameLang: "EN",
-              nameEn: entry.name ?? entry.key,
-              displayOrder: order++,
-              thresholdLower: catDef.lowerPct,
-              lowerBound: catDef.lowerPct === 0 ? "EXCLUSIVE" : "INCLUSIVE",
-              thresholdUpper: 100,
-              upperBound: "INCLUSIVE",
-            },
-            select: { id: true },
-          });
-        }
+      }
+      if (toCreate.length > 0) {
+        await prisma.statutorySubstance.createMany({ data: toCreate });
+        tally.substances += toCreate.length;
+        // 作ったぶんの id を引き直す
+        const made = await prisma.statutorySubstance.findMany({
+          where: { codeNormalized: { in: toCreate.map((x) => x.codeNormalized) } },
+          select: { id: true, codeNormalized: true },
+        });
+        for (const x of made) idOfCode.set(x.codeNormalized, x.id);
+      }
 
-        for (const cas of entry.cas) {
+      const links = [];
+      for (const [normalizedCode, casSet] of casOfCode) {
+        const statutorySubstanceId = idOfCode.get(normalizedCode);
+        if (!statutorySubstanceId) continue;
+        for (const cas of casSet) {
           const normalized = normalizeCas(cas);
           // LOLI のまとめ番号（RR-...）は CAS ではない。リンクにはしない
           if (!/^\d{2,7}-\d{2}-\d$/.test(normalized)) {
             tally.skipped += 1;
             continue;
           }
-          const exists = await prisma.statutoryCasLink.findFirst({
-            where: {
-              versionId: version.id,
-              statutorySubstanceId: substance.id,
-              casNormalized: normalized,
-            },
-            select: { id: true },
-          });
-          if (exists) continue;
-          tally.links += 1;
-          await prisma.statutoryCasLink.create({
-            data: {
-              versionId: version.id,
-              statutorySubstanceId: substance.id,
-              sourceId: source.id,
-              casNumber: cas,
-              casNormalized: normalized,
-            },
+          links.push({
+            versionId: version.id,
+            statutorySubstanceId,
+            sourceId: source.id,
+            casNumber: cas,
+            casNormalized: normalized,
           });
         }
+      }
+      if (links.length > 0) {
+        // 同じ組み合わせは一意制約で弾かれる。読み直しにならないよう skipDuplicates で流す
+        const r = await prisma.statutoryCasLink.createMany({ data: links, skipDuplicates: true });
+        tally.links += r.count;
       }
     }
   }

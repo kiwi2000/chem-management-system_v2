@@ -33,18 +33,28 @@ interface Name {
   jaSource: string;
 }
 
+/**
+ * 名前の表。国ごとに1つずつ。**先に書いたものが勝つ**（後から足したもので上書きしない）。
+ * 日本のぶんが先。同じCASなら、国内の資料で付いた名前をそのまま使う。
+ */
+const NAME_FILES = ["scripts/data/cas-names.tsv", "scripts/data/cas-names-china.tsv"];
+
 function loadNames(): Map<string, Name> {
   const map = new Map<string, Name>();
-  const text = readFileSync(join(process.cwd(), "scripts/data/cas-names.tsv"), "utf-8");
-  for (const line of text.split(/\r?\n/)) {
-    if (line.trim() === "") continue;
-    const [cas, ja, en, src] = line.split("\t");
-    if (!cas) continue;
-    map.set(normalizeCas(cas), {
-      ja: ja?.trim() || null,
-      en: en?.trim() || null,
-      jaSource: src?.trim() ?? "",
-    });
+  for (const file of NAME_FILES) {
+    const text = readFileSync(join(process.cwd(), file), "utf-8");
+    for (const line of text.split(/\r?\n/)) {
+      if (line.trim() === "") continue;
+      const [cas, ja, en, src] = line.split("\t");
+      if (!cas) continue;
+      const key = normalizeCas(cas);
+      if (map.has(key)) continue;
+      map.set(key, {
+        ja: ja?.trim() || null,
+        en: en?.trim() || null,
+        jaSource: src?.trim() ?? "",
+      });
+    }
   }
   return map;
 }
