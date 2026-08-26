@@ -2,6 +2,7 @@ import type { AppSettings, Messages } from "@chem/shared";
 import { COMPOSITION_MAX_DEPTH } from "@chem/shared";
 import { expandTree, type ExpandedProduct, type LineLoader } from "@/lib/expansion-calc";
 import { prisma } from "@/lib/db";
+import { getAppSettings } from "@/lib/settings";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
 
 /**
@@ -132,8 +133,10 @@ export async function recomputeFrom(
   if (version) {
     const rules = await loadRules(version.id);
     const factors = await loadFactors();
+    // 条件つきリンクの扱いも1回だけ読む
+    const { conditionalLinkMode } = await getAppSettings();
     for (const id of targets) {
-      await judgeProduct(id, rules, factors);
+      await judgeProduct(id, rules, factors, conditionalLinkMode);
     }
   }
 

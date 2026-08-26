@@ -424,11 +424,18 @@ function Warning({
 }) {
   return (
     <>
-      {j.needsReview && (
+      {/*
+        **警告と要確認は別。**要確認でなくても、気を付けることがあれば必ず出す。
+        条件つきで結ばれたCASは、システム設定によっては要確認にせず警告だけになる
+      */}
+      {j.reviewReasons.length > 0 && (
         <div className="space-y-1">
-          <Badge variant="outline" className="text-destructive gap-1">
+          <Badge
+            variant="outline"
+            className={j.needsReview ? "text-destructive gap-1" : "text-muted-foreground gap-1"}
+          >
             <TriangleAlert className="size-3" />
-            {m.judgements.needsReview}
+            {j.needsReview ? m.judgements.needsReview : m.judgements.warning}
           </Badge>
           <ul className="text-muted-foreground list-disc space-y-0.5 pl-4 text-xs">
             {j.reviewReasons.map((r) => (
@@ -559,6 +566,7 @@ export function reasonText(m: M, reason: string): string {
     truncated: m.judgements.reasonTruncated,
     conditionalExclusion: m.judgements.reasonConditional,
     unfilledThreshold: m.judgements.reasonUnfilled,
+    conditionalLink: m.judgements.reasonConditionalLink,
   };
   return table[reason] ?? reason;
 }

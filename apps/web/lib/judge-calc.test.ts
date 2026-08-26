@@ -373,3 +373,70 @@ describe("要確認になる場面", () => {
     expect(r.reasons).toEqual([]);
   });
 });
+
+describe("条件つきで結ばれたCAS", () => {
+  /*
+    外部データベースが総称から広げて結び付けたCAS。
+    法令の名称が「炭素数が10のものに限る」のように絞っていると、当てはまらないことがある。
+    **どちらの設定でも警告は出す。**違いは要確認にするかどうか。
+  */
+  const withConditionalLink = (mode: "hit" | "review") =>
+    judge(
+      input({
+        lines: [{ casNormalized: "7439-92-1", substanceId: "s1", totalPct: "5" }],
+        entries: [entry({ conditionalCas: ["7439-92-1"] })],
+        conditionalLinkMode: mode,
+      }),
+    );
+
+  it("要確認にする設定なら、該当・警告・要確認", () => {
+    const r = withConditionalLink("review");
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.reasons).toContain("conditionalLink");
+    expect(r.needsReview).toBe(true);
+  });
+
+  it("該非を確定する設定なら、該当・警告。要確認にはしない", () => {
+    const r = withConditionalLink("hit");
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.reasons).toContain("conditionalLink");
+    expect(r.needsReview).toBe(false);
+  });
+
+  it("設定を省くと、要確認にする側", () => {
+    const r = judge(
+      input({
+        lines: [{ casNormalized: "7439-92-1", substanceId: "s1", totalPct: "5" }],
+        entries: [entry({ conditionalCas: ["7439-92-1"] })],
+      }),
+    );
+    expect(r.needsReview).toBe(true);
+  });
+
+  it("条件つきでないCASが当たっただけなら、警告は出ない", () => {
+    const r = judge(
+      input({
+        lines: [{ casNormalized: "7439-92-1", substanceId: "s1", totalPct: "5" }],
+        entries: [entry({ conditionalCas: ["7440-02-0"] })],
+        conditionalLinkMode: "review",
+      }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.reasons).not.toContain("conditionalLink");
+    expect(r.needsReview).toBe(false);
+  });
+
+  it("該非を確定する設定でも、ほかの要確認の理由は消さない", () => {
+    const r = judge(
+      input({
+        lines: [{ casNormalized: "7439-92-1", substanceId: "s1", totalPct: "5" }],
+        entries: [entry({ conditionalCas: ["7439-92-1"] })],
+        unknownPct: "3",
+        conditionalLinkMode: "hit",
+      }),
+    );
+    expect(r.reasons).toContain("conditionalLink");
+    expect(r.reasons).toContain("unknownComposition");
+    expect(r.needsReview).toBe(true);
+  });
+});

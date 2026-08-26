@@ -18,6 +18,21 @@ import type { Messages } from "./i18n/ja";
 export const MFA_METHODS = ["none", "totp"] as const;
 export type MfaMethod = (typeof MFA_METHODS)[number];
 
+/**
+ * 条件つきのCASリンクをどう扱うか。
+ *
+ * 外部データベース（LOLI）は、総称（「キシレノール」）から個々の異性体へ結び付け、
+ * 「法令の名称が定める条件に合致すること」という但し書きを付けることがある。
+ * 法令の名称が「２，４－キシレノール」と絞っていても、３，５－体まで結ばれる。
+ *
+ *  hit    … 条件が無いものとして該非を確定し、警告を出す
+ *  review … 要確認にして警告を出す
+ *
+ * どちらでも**警告は必ず出る。**違いは、人の確認を必須にするかどうか。
+ */
+export const CONDITIONAL_LINK_MODES = ["hit", "review"] as const;
+export type ConditionalLinkMode = (typeof CONDITIONAL_LINK_MODES)[number];
+
 export interface AppSettings {
   /** CAS番号を必須にする。false なら空欄で登録できる */
   casRequired: boolean;
@@ -28,6 +43,12 @@ export interface AppSettings {
   compositionValidationMode: CompositionValidationMode;
   /** 合計を 100% と見なす許容誤差（%）。数値は文字列で持つ */
   compositionEpsilonPct: string;
+
+  /**
+   * 条件つきのCASリンクの扱い。
+   * `hit` は該非を確定して警告、`review` は要確認にして警告。
+   */
+  conditionalLinkMode: ConditionalLinkMode;
 
   /** 製品の「型式」で選べる値。並べた順がそのまま表示順になる */
   productModelOptions: string[];
@@ -75,6 +96,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   casRequired: false,
   casFormatEnforced: false,
   compositionValidationMode: "STANDARD",
+  conditionalLinkMode: "review",
   compositionEpsilonPct: "0.001",
   productModelOptions: [],
   productUseOptions: [],
@@ -170,6 +192,15 @@ export const SETTING_DEFS: SettingDef[] = [
         : null,
   },
   {
+    field: "conditionalLinkMode",
+    key: "judgment.conditional_link_mode",
+    valueType: "STRING",
+    parse: (raw) =>
+      (CONDITIONAL_LINK_MODES as readonly string[]).includes(raw)
+        ? (raw as ConditionalLinkMode)
+        : null,
+  },
+  {
     field: "compositionEpsilonPct",
     key: "composition.epsilon_pct",
     valueType: "NUMBER",
@@ -244,6 +275,7 @@ export const settingsSchema = (m: Messages) =>
     casRequired: z.boolean(),
     casFormatEnforced: z.boolean(),
     compositionValidationMode: z.enum(COMPOSITION_VALIDATION_MODES),
+    conditionalLinkMode: z.enum(CONDITIONAL_LINK_MODES),
     compositionEpsilonPct: epsilonSchema(m),
     // 1件あたり100文字・全体で200件まで。桁外れの入力で画面が壊れないようにする
     productModelOptions: z.array(z.string().trim().min(1).max(100)).max(200),

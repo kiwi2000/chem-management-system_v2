@@ -50,6 +50,14 @@ export interface JudgeEntry {
   threshold: Threshold;
   /** 濃度のほかに条件が付く（備考に印がある）。当たったら要確認にする */
   conditional: boolean;
+  /**
+   * **条件つきで結ばれた CAS。**
+   *
+   * 外部データベースが総称から個々の異性体へ広げ、
+   * 「法令の名称が定める条件に合致すること」と但し書きを付けたもの。
+   * 当たったら必ず警告を出す。要確認にするかどうかはシステム設定で決まる
+   */
+  conditionalCas?: string[];
   /** 閾値を入れられなかった（備考に印がある）。当たったら要確認にする */
   unfilled: boolean;
 }
@@ -72,6 +80,15 @@ export interface JudgeInput {
   category: JudgeCategory;
   entries: JudgeEntry[];
   factors: ElementFactors;
+  /**
+   * 条件つきのCASリンクの扱い（システム設定 `judgment.conditional_link_mode`）。
+   *
+   *   hit    … 条件が無いものとして該非を確定し、警告を出す
+   *   review … 要確認にして警告を出す
+   *
+   * **どちらでも警告は出る。**省くと `review`
+   */
+  conditionalLinkMode?: "hit" | "review";
 }
 
 /** 要確認にした理由。文言は画面側で付ける */
@@ -85,7 +102,9 @@ export type ReviewReason =
   /** 当たった法文物質名に、濃度以外の条件が付いている */
   | "conditionalExclusion"
   /** 閾値を入れられていない法文物質名に、当たる物質が入っている */
-  | "unfilledThreshold";
+  | "unfilledThreshold"
+  /** 当たった CAS が、法令の名称の条件に合うか外部データベースが確かめよと言っている */
+  | "conditionalLink";
 
 export interface JudgeHit {
   /** 当たった法文物質名。区分でまとめたときは null（区分そのものが当たった） */
@@ -166,6 +185,11 @@ function pctOf(
  */
 export function judge(input: JudgeInput): JudgeResult {
   const { lines, category, entries, factors } = input;
+  const linkMode = input.conditionalLinkMode ?? "review";
+  /** 当たった CAS が条件つきなら印を立てる */
+  const markConditionalLink = (e: JudgeEntry, cas: string[]) => {
+    if (cas.some((c) => e.conditionalCas?.includes(c))) reasons.add("conditionalLink");
+  };
   const byCas = new Map(
     lines.filter((l) => l.casNormalized).map((l) => [l.casNormalized as string, l]),
   );
@@ -210,12 +234,14 @@ export function judge(input: JudgeInput): JudgeResult {
       });
       // まとめた中に、条件つき・閾値未設定のものが混ざっていれば要確認
       for (const e of entries) {
-        if (!e.cas.some((c) => byCas.has(c))) continue;
+        const present = e.cas.filter((c) => byCas.has(c));
+        if (present.length === 0) continue;
         if (e.conditional) reasons.add("conditionalExclusion");
         if (e.unfilled) reasons.add("unfilledThreshold");
+        markConditionalLink(e, present);
       }
     }
-    return finish(hits, reasons);
+    return finish(hits, reasons, linkMode);
   }
 
   for (const e of entries) {
@@ -236,6 +262,7 @@ export function judge(input: JudgeInput): JudgeResult {
           total: null,
           contributions: shareOf(matched, "NONE", null),
         });
+        markConditionalLink(e, matched);
         continue;
       }
     } else {
@@ -250,6 +277,7 @@ export function judge(input: JudgeInput): JudgeResult {
           total: fromScaled(total),
           contributions: shareOf(present, e.aggregation, e.metalEtc),
         });
+        markConditionalLink(e, present);
         continue;
       }
     }
@@ -277,17 +305,28 @@ export function judge(input: JudgeInput): JudgeResult {
           : null,
         contributions: share,
       });
+      markConditionalLink(e, present);
     }
   }
 
-  return finish(hits, reasons);
+  return finish(hits, reasons, linkMode);
 }
 
-/** 当たりが1つでもあれば該当。無ければ非該当 */
-function finish(hits: JudgeHit[], reasons: Set<ReviewReason>): JudgeResult {
+/**
+ * 当たりが1つでもあれば該当。無ければ非該当。
+ *
+ * **警告（`reasons`）と要確認（`needsReview`）は別。**
+ * 条件つきのCASリンクは、システム設定が `hit` のとき警告だけ出して要確認にしない
+ */
+function finish(
+  hits: JudgeHit[],
+  reasons: Set<ReviewReason>,
+  linkMode: "hit" | "review",
+): JudgeResult {
+  const warnOnly = linkMode === "hit" ? new Set<ReviewReason>(["conditionalLink"]) : new Set();
   return {
     verdict: hits.length > 0 ? "APPLICABLE" : "NOT_APPLICABLE",
-    needsReview: reasons.size > 0,
+    needsReview: [...reasons].some((r) => !warnOnly.has(r)),
     reasons: [...reasons],
     hits,
   };

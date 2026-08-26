@@ -2,6 +2,7 @@
 
 import {
   COMPOSITION_VALIDATION_MODES,
+  CONDITIONAL_LINK_MODES,
   DEFAULT_SETTINGS,
   describePasswordPolicy,
   formatOptionList,
@@ -13,6 +14,7 @@ import {
   SESSION_IDLE_MAX,
   type AppSettings,
   type CompositionValidationMode,
+  type ConditionalLinkMode,
   type PendingResolution,
 } from "@chem/shared";
 import { useEffect, useState } from "react";
@@ -164,6 +166,35 @@ export default function SettingsPage() {
                 </span>
               </span>
             </label>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.judgementSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="conditionalLinkMode">{m.settings.conditionalLinkMode}</Label>
+              <select
+                id="conditionalLinkMode"
+                value={settings.conditionalLinkMode}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    conditionalLinkMode: e.target.value as ConditionalLinkMode,
+                  })
+                }
+                className="border-input bg-background h-9 w-full max-w-md rounded-none border px-2 text-sm"
+              >
+                {CONDITIONAL_LINK_MODES.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {m.settings.conditionalLinkModes[mode]}
+                  </option>
+                ))}
+              </select>
+              <p className="text-muted-foreground text-xs">{m.settings.conditionalLinkModeHint}</p>
+            </div>
           </CardContent>
         </Card>
 

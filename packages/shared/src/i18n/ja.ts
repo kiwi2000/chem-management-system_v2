@@ -823,6 +823,8 @@ export const ja = {
       "法令の除外に、濃度以外の条件が付いています（剤型・着色・用途など）。条件を満たしていれば非該当になります。",
     reasonUnfilled:
       "この法文物質名は、除外の条件を1つの数値で表せないため閾値を入れていません。条文を読んで判断してください。",
+    reasonConditionalLink:
+      "外部データベースが、総称から広げてこのCASを結び付けています。法令の名称が炭素数や置換位置で絞っている場合、実際には当てはまらないことがあります。名称と物質を見比べてください。",
     // 一覧の列。狭いので短く
     listHeader: "法規制",
     listReviewHeader: "要確認",
@@ -878,6 +880,14 @@ export const ja = {
     epsilonPct: "許容誤差（%）",
     epsilonPctHint: "この範囲のずれは 100% とみなします。0〜10 の間で指定してください",
     epsilonRange: "許容誤差は 0〜10 の間で入力してください",
+    judgementSection: "法規制の判定",
+    conditionalLinkMode: "条件つきで結ばれたCASの扱い",
+    conditionalLinkModes: {
+      hit: "条件が無いものとして該非を確定し、警告を出す",
+      review: "要確認にして警告を出す",
+    },
+    conditionalLinkModeHint:
+      "外部データベースが総称から広げて結び付けたCASの扱いです。法令の名称が炭素数や置換位置で絞っている場合、実際には当てはまらないことがあります。どちらを選んでも警告は出ます。",
     sessionSection: "自動ログアウト",
     sessionIdleMinutes: "操作が無いままログアウトするまでの時間（分）",
     mfaRequired: "2要素認証を必須にする",

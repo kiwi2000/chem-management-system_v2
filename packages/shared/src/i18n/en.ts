@@ -811,6 +811,8 @@ export const en: Messages = {
       "The exemption carries conditions beyond concentration (formulation, colouring, use). It does not apply unless those are met.",
     reasonUnfilled:
       "No threshold is set for this entry because its exemption cannot be reduced to a single number. Read the text and decide.",
+    reasonConditionalLink:
+      "The external database linked this CAS by widening from a generic name. Where the statutory name is narrowed by carbon count or substitution position, it may not actually apply. Compare the name with the substance.",
     // Columns in the list. Space is tight, so keep them short
     listHeader: "Regulated",
     listReviewHeader: "Review",
@@ -865,6 +867,14 @@ export const en: Messages = {
     epsilonPct: "Tolerance (%)",
     epsilonPctHint: "Totals within this margin count as 100%. Use a value between 0 and 10",
     epsilonRange: "The tolerance must be between 0 and 10",
+    judgementSection: "Regulatory judgement",
+    conditionalLinkMode: "How to treat conditionally linked CAS",
+    conditionalLinkModes: {
+      hit: "Decide applicability as if unconditional, and warn",
+      review: "Mark for review, and warn",
+    },
+    conditionalLinkModeHint:
+      "Applies to CAS the external database linked by widening from a generic name. Where the statutory name is narrowed by carbon count or substitution position, it may not actually apply. Either choice still shows a warning.",
     sessionSection: "Automatic sign-out",
     sessionIdleMinutes: "Minutes of inactivity before signing out",
     mfaRequired: "Require two-step sign-in",

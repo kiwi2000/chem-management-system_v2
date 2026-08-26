@@ -1,5 +1,7 @@
+import type { ConditionalLinkMode } from "@chem/shared";
 import { prisma } from "@/lib/db";
 import { judge, type ElementFactors, type JudgeEntry, type JudgeResult } from "@/lib/judge-calc";
+import { getAppSettings } from "@/lib/settings";
 
 /**
  * 判定の読み出しと保存。
@@ -14,6 +16,15 @@ import { judge, type ElementFactors, type JudgeEntry, type JudgeResult } from "@
  */
 const MARK_CONDITIONAL = "【条件つき除外】";
 const MARK_UNFILLED = "【閾値未設定】";
+
+/**
+ * CASリンクの備考に付けた目印（`scripts/seed-cas-links.ts` が書く）。
+ *
+ * 外部データベースが総称から個々の異性体へ広げ、
+ * 「法令の名称が定める条件に合致すること」と但し書きを付けたもの。
+ * 扱いはシステム設定 `judgment.conditional_link_mode` で決まる（第4章 4-3a）。
+ */
+const MARK_CONDITIONAL_LINK = "政令の名称が定める条件に合うかは要確認";
 
 /**
  * 判定に使う法令側のひとそろい。
@@ -69,13 +80,20 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
   // CAS の紐づけは、法文物質名ごとにまとめて引く（1件ずつ引くと問い合わせが爆発する）
   const links = await prisma.statutoryCasLink.findMany({
     where: { versionId, excluded: false },
-    select: { statutorySubstanceId: true, casNormalized: true },
+    select: { statutorySubstanceId: true, casNormalized: true, note: true },
   });
   const casOf = new Map<string, string[]>();
+  /** 条件つきで結ばれた CAS。法文物質名ごとに持つ */
+  const conditionalOf = new Map<string, string[]>();
   for (const l of links) {
     const list = casOf.get(l.statutorySubstanceId);
     if (list) list.push(l.casNormalized);
     else casOf.set(l.statutorySubstanceId, [l.casNormalized]);
+    if (l.note?.includes(MARK_CONDITIONAL_LINK)) {
+      const c = conditionalOf.get(l.statutorySubstanceId);
+      if (c) c.push(l.casNormalized);
+      else conditionalOf.set(l.statutorySubstanceId, [l.casNormalized]);
+    }
   }
 
   return categories.map((c) => ({
@@ -103,6 +121,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
           upperBound: s.upperBound,
         },
         conditional: s.note?.includes(MARK_CONDITIONAL) ?? false,
+        conditionalCas: conditionalOf.get(s.id) ?? [],
         unfilled: s.note?.includes(MARK_UNFILLED) ?? false,
       })),
     ),
@@ -136,7 +155,13 @@ export async function judgeProduct(
   productId: string,
   rules: CategoryRule[],
   factors: ElementFactors,
+  /**
+   * 条件つきのCASリンクの扱い。省くとシステム設定を読む。
+   * **全製品をやり直すときは呼ぶ側で1回だけ読んで渡す**（製品ごとに引くと無駄）
+   */
+  conditionalLinkMode?: ConditionalLinkMode,
 ): Promise<{ applicable: number; needsReview: number }> {
+  const linkMode = conditionalLinkMode ?? (await getAppSettings()).conditionalLinkMode;
   const expansion = await prisma.productExpansion.findUnique({
     where: { productId },
     select: { unknownPct: true, truncated: true },
@@ -166,6 +191,7 @@ export async function judgeProduct(
       category: rule.category,
       entries: rule.entries,
       factors,
+      conditionalLinkMode: linkMode,
     }),
   }));
 
