@@ -929,6 +929,10 @@ export const en: Messages = {
     aggregateRegulations: "Regulations",
     aggregateSplitByCategory: "split into categories",
     aggregateGroupByRegion: "group by region",
+    aggregateOnlyThis: "show only matching rows",
+    aggregateShowAllRows: "show all rows",
+    aggregateFocused: (name: string, n: number) =>
+      `Showing the ${n} rows under "${name}". No total is shown.`,
     aggregateSubstanceId: "Substance ID",
     aggregateShowSources: "Show sources",
     aggregateIncomplete: (n: number) =>

@@ -944,6 +944,10 @@ export const ja = {
     aggregateRegulations: "該当法規制",
     aggregateSplitByCategory: "規制区分ごとに分ける",
     aggregateGroupByRegion: "地域にまとめる",
+    aggregateOnlyThis: "これに該当する行だけを見る",
+    aggregateShowAllRows: "すべての行を見る",
+    aggregateFocused: (name: string, n: number) =>
+      `「${name}」に該当する ${n} 件だけを出しています。合計は出していません`,
     aggregateShowSources: "寄与元を見る",
     aggregateIncomplete: (n: number) =>
       `中身をたどれない原材料が ${n} 件あります。この表はまだ完全ではありません。下の合計も100%に届きません。`,

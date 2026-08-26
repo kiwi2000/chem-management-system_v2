@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
+import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, CompositionAggregateDto, RowRegulationDto } from "@/lib/types";
@@ -70,12 +71,21 @@ interface LeafColumn {
   /** 列の鍵。幅を覚える単位になるので、地域・区分の id をそのまま使う */
   key: string;
   regionId: string;
+  /** 区分の列なら、その区分の id。地域のままなら null */
+  categoryId: string | null;
   label: string;
-  /** 区分に分かれた列か。分かれていなければ地域の列 */
-  expanded: boolean;
   /** その列が受け持つ規制区分の id */
   categoryIds: Set<string>;
   width: number;
+}
+
+/** 地域のまとまり。見出しで地域名のセルを横に伸ばすのに要る */
+interface RegionGroup {
+  regionId: string;
+  label: string;
+  expanded: boolean;
+  /** この地域が占める列の数 */
+  span: number;
 }
 
 /** 出ている行から、法規の列を組み立てる */
@@ -83,7 +93,7 @@ function leafColumns(
   rows: { regulations: RowRegulationDto[] }[],
   openRegions: Set<string>,
   locale: ReturnType<typeof useI18n>["locale"],
-): LeafColumn[] {
+): { leaves: LeafColumn[]; groups: RegionGroup[] } {
   /** 地域 → その地域で該当している区分（並び順つき） */
   const regions = new Map<
     string,
@@ -105,33 +115,35 @@ function leafColumns(
     }
   }
 
-  const out: LeafColumn[] = [];
+  const leaves: LeafColumn[] = [];
+  const groups: RegionGroup[] = [];
   for (const [regionId, region] of [...regions.entries()].sort((a, b) => a[1].order - b[1].order)) {
     if (!openRegions.has(regionId)) {
-      out.push({
+      leaves.push({
         key: `region:${regionId}`,
         regionId,
+        categoryId: null,
         label: region.label,
-        expanded: false,
         categoryIds: new Set(region.categories.keys()),
         width: 96,
       });
+      groups.push({ regionId, label: region.label, expanded: false, span: 1 });
       continue;
     }
-    for (const [categoryId, c] of [...region.categories.entries()].sort(
-      (a, b) => a[1].order - b[1].order,
-    )) {
-      out.push({
+    const categories = [...region.categories.entries()].sort((a, b) => a[1].order - b[1].order);
+    for (const [categoryId, c] of categories) {
+      leaves.push({
         key: `category:${categoryId}`,
         regionId,
+        categoryId,
         label: c.label,
-        expanded: true,
         categoryIds: new Set([categoryId]),
         width: 128,
       });
     }
+    groups.push({ regionId, label: region.label, expanded: true, span: categories.length });
   }
-  return out;
+  return { leaves, groups };
 }
 
 export function CompositionAggregateTable({
@@ -143,10 +155,15 @@ export function CompositionAggregateTable({
   const { m, locale } = useI18n();
   const [data, setData] = useState<CompositionAggregateDto | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** 区分まで分けて見ている地域。押すたびに出し入れする */
+  /** 区分まで分けて見ている地域。地域名を押すたびに出し入れする */
   const [openRegions, setOpenRegions] = useState<Set<string>>(new Set());
+  /**
+   * その区分に該当する行だけを見ている、という状態。
+   * **区分名を押すと絞る。**押して閉じるのではない（閉じるのは地域名の役目）。
+   */
+  const [focus, setFocus] = useState<{ categoryId: string; label: string } | null>(null);
 
-  const leaves = leafColumns(data?.rows ?? [], openRegions, locale);
+  const { leaves, groups } = leafColumns(data?.rows ?? [], openRegions, locale);
   // 列幅は一覧と同じ規則。法規の列は中身で増減するが、鍵が id なので幅は覚えたまま
   const cols = useResizableColumns(
     "chem.table.compositionAggregate",
@@ -190,13 +207,30 @@ export function CompositionAggregateTable({
   }
   if (!data) return <p className="text-muted-foreground text-sm">{m.common.loading}</p>;
 
-  /** 地域を、規制区分に分けて見るか、まとめて見るか */
+  /**
+   * 地域を、規制区分に分けて見るか、まとめて見るか。
+   * 格納するときは、その地域の区分での絞り込みも解く（見えない列で絞られたままになるため）。
+   */
   const toggleRegion = (regionId: string) => {
     const next = new Set(openRegions);
-    if (next.has(regionId)) next.delete(regionId);
-    else next.add(regionId);
+    if (next.has(regionId)) {
+      next.delete(regionId);
+      if (focus && leaves.some((c) => c.categoryId === focus.categoryId && c.regionId === regionId))
+        setFocus(null);
+    } else {
+      next.add(regionId);
+    }
     setOpenRegions(next);
   };
+
+  /**
+   * 表に出す行。区分で絞っているときは、その区分に該当するものだけ。
+   * **合計は出さない。**絞った行だけを足した数字を「合計」と書くと、
+   * 製品全体の合計と取り違える。
+   */
+  const visible = focus
+    ? data.rows.filter((r) => r.regulations.some((x) => x.categoryId === focus.categoryId))
+    : data.rows;
 
   const toggle = (key: string) => {
     const next = new Set(open);
@@ -233,6 +267,18 @@ export function CompositionAggregateTable({
         </Alert>
       )}
 
+      {/* 区分で絞っているあいだは、そのことと解きかたを必ず出す */}
+      {focus && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">
+            {m.composition.aggregateFocused(focus.label, visible.length)}
+          </span>
+          <Button type="button" size="sm" variant="outline" onClick={() => setFocus(null)}>
+            {m.composition.aggregateShowAllRows}
+          </Button>
+        </div>
+      )}
+
       {data.rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
       ) : (
@@ -247,12 +293,20 @@ export function CompositionAggregateTable({
               下の段が地域（押すと規制区分に分かれる）。
               組成そのものの列は2段ぶんの高さを取る。
             */}
+            {/*
+              見出しは3段。
+                1段目 … 「該当法規制」の見出し
+                2段目 … 地域。**分けても地域名のセルは残す**（横に伸びて、どこまでが
+                        その地域かが分かる）。押すと分ける／格納する
+                3段目 … 規制区分。押すと**その区分に該当する行だけ**になる（格納ではない）
+              組成そのものの列は3段ぶんの高さを取る。
+            */}
             <thead>
               <tr className="bg-muted/50 border-t text-left">
                 {HEADS.map(({ key, label, className }) => (
                   <th
                     key={key}
-                    rowSpan={2}
+                    rowSpan={3}
                     className={cn(CELL, "relative align-bottom font-medium", className)}
                   >
                     {label(m)}
@@ -265,35 +319,78 @@ export function CompositionAggregateTable({
                   </th>
                 )}
               </tr>
-              <tr className="bg-muted/50 border-b text-left">
-                {leaves.map((c) => (
-                  <th key={c.key} className={cn(CELL, "relative p-0 font-medium")}>
+
+              <tr className="bg-muted/50 text-left">
+                {groups.map((g) => (
+                  <th
+                    key={g.regionId}
+                    colSpan={g.span}
+                    // 分けていない地域は、下の段まで貫いて1つのセルにする
+                    rowSpan={g.expanded ? 1 : 2}
+                    className={cn(CELL, "relative p-0 font-medium", g.expanded && "text-center")}
+                  >
                     <button
                       type="button"
-                      onClick={() => toggleRegion(c.regionId)}
-                      aria-expanded={c.expanded}
+                      onClick={() => toggleRegion(g.regionId)}
+                      aria-expanded={g.expanded}
                       title={
-                        c.expanded
-                          ? `${c.label} — ${m.composition.aggregateGroupByRegion}`
-                          : `${c.label} — ${m.composition.aggregateSplitByCategory}`
+                        g.expanded
+                          ? `${g.label} — ${m.composition.aggregateGroupByRegion}`
+                          : `${g.label} — ${m.composition.aggregateSplitByCategory}`
                       }
-                      className="hover:bg-accent/60 flex w-full items-center gap-1 px-2 py-1 text-left"
+                      className={cn(
+                        "hover:bg-accent/60 flex w-full items-center gap-1 px-2 py-1",
+                        g.expanded ? "justify-center" : "text-left",
+                      )}
                     >
                       <ChevronRight
                         className={cn(
                           "text-muted-foreground size-3 shrink-0 transition-transform",
-                          c.expanded && "rotate-90",
+                          g.expanded && "rotate-90",
                         )}
                       />
-                      <span className="truncate">{c.label}</span>
+                      <span className="truncate">{g.label}</span>
                     </button>
-                    {cols.handle(c.key, `${c.label} ${m.table.resize}`)}
+                    {/* 分けていない地域の列は、ここが幅を変える場所になる */}
+                    {!g.expanded &&
+                      cols.handle(`region:${g.regionId}`, `${g.label} ${m.table.resize}`)}
                   </th>
                 ))}
               </tr>
+
+              <tr className="bg-muted/50 border-b text-left">
+                {leaves
+                  .filter((c) => c.categoryId !== null)
+                  .map((c) => {
+                    const picked = focus?.categoryId === c.categoryId;
+                    return (
+                      <th key={c.key} className={cn(CELL, "relative p-0 font-medium")}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFocus(
+                              picked
+                                ? null
+                                : { categoryId: c.categoryId as string, label: c.label },
+                            )
+                          }
+                          aria-pressed={picked}
+                          title={`${c.label} — ${picked ? m.composition.aggregateShowAllRows : m.composition.aggregateOnlyThis}`}
+                          className={cn(
+                            "hover:bg-accent/60 flex w-full items-center px-2 py-1 text-left",
+                            picked && "bg-accent text-foreground",
+                          )}
+                        >
+                          <span className="truncate">{c.label}</span>
+                        </button>
+                        {cols.handle(c.key, `${c.label} ${m.table.resize}`)}
+                      </th>
+                    );
+                  })}
+              </tr>
             </thead>
             <tbody>
-              {data.rows.map((row) => {
+              {visible.map((row) => {
                 const key = keyOf(row);
                 const many = row.contributions.length > 1;
                 const shown = open.has(key);
@@ -336,7 +433,11 @@ export function CompositionAggregateTable({
                         const hit = row.regulations.filter((r) => c.categoryIds.has(r.categoryId));
                         return (
                           <td key={c.key} className={cn(CELL, "text-center")}>
-                            <RegulationMark hits={hit} expanded={c.expanded} locale={locale} />
+                            <RegulationMark
+                              hits={hit}
+                              expanded={c.categoryId !== null}
+                              locale={locale}
+                            />
                           </td>
                         );
                       })}
@@ -375,17 +476,19 @@ export function CompositionAggregateTable({
                 );
               })}
             </tbody>
-            <tfoot>
-              <tr className="bg-muted/50 border-t">
-                <td className={cn(CELL, "text-right font-medium")} colSpan={3}>
-                  {m.composition.sumLabel}
-                </td>
-                <td className={cn(CELL, "text-right font-medium")}>{data.totalPct}%</td>
-                {leaves.map((c) => (
-                  <td key={c.key} className={CELL} />
-                ))}
-              </tr>
-            </tfoot>
+            {!focus && (
+              <tfoot>
+                <tr className="bg-muted/50 border-t">
+                  <td className={cn(CELL, "text-right font-medium")} colSpan={3}>
+                    {m.composition.sumLabel}
+                  </td>
+                  <td className={cn(CELL, "text-right font-medium")}>{data.totalPct}%</td>
+                  {leaves.map((c) => (
+                    <td key={c.key} className={CELL} />
+                  ))}
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}
