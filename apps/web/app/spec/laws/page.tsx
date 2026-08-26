@@ -5,7 +5,7 @@ import { SpecPager } from "../spec-pager";
  * 法規制マスタの使いかた。
  *
  * 読み手は一般の利用者。法規制の内容は知っているが、画面の作りは知らない前提で書く。
- * 判定やCASリンクはまだ無いので、ここには書かない（できたら足す）。
+ * **判定の読み方は `/spec/judgements` に分けてある。**ここは登録のしかただけ。
  */
 export default function ManualLawsPage() {
   return (
