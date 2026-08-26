@@ -16,6 +16,7 @@ export * from "./feedback";
 export * from "./group";
 export * from "./language";
 export * from "./element";
+export * from "./extract-rule";
 export * from "./law";
 export * from "./link";
 export * from "./i18n";

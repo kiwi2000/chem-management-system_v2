@@ -11,17 +11,22 @@
  * どの製品もすべてのインベントリに「該当」してしまう。
  * インベントリは「載っているか」と「その名簿での番号」を持つだけのもの。
  *
- * **LOLI の Data を加工せずに持つ。**
- * 番号の取り出しは、名簿ごとの正規表現（`match_pattern`）を画面で当てて行う。
- * こうしておくと、取り出しかたを直したときに取り込み直さずに済む
- * （本番からは LOLI に届かないので、取り込み直しは手元でしかできない）。
+ * **加工してから入れる。**
+ * 行が持つのは仕上がった値——番号（`(5)-3714`）か、番号を持たない名簿の「該当」。
+ * 取り出しは取り込みのときに1回で済み、画面は出すだけになる。
+ *
+ * 取り出しかたは、この表（`INVENTORIES`）の正規表現で決める。
+ * 当てるのは `@chem/shared` の `applyExtract`。資料ごとに読み方を書かずに済ませ、
+ * **LOLI 以外の資料でも同じ仕組みで扱える**ようにしてある。
+ *
+ * **1行から複数の番号が取れることがある**（EINECS・KECI）。その数だけ行を作る。
  *
  * 名簿ごとに**入れ替える**（前の行を消してから入れる）。
  * 足すだけにすると、LOLI から消えた物質が残り続ける。
  */
 import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
-import { normalizeCas, normalizeCode } from "@chem/shared";
+import { applyExtract, normalizeCas, normalizeCode } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -290,8 +295,6 @@ async function main() {
           displayOrder: i,
           numberLabel: def.numberLabel,
           numberOrder: i,
-          matchPattern: def.matchPattern,
-          displayFormat: def.displayFormat,
         },
         select: { id: true },
       });
@@ -307,14 +310,22 @@ async function main() {
     if (removed.count > 0) console.log(`  前の行 ${removed.count}件を消しました`);
   }
 
+  /** 名簿ごとの取り出しかた。行を読むたびに引く */
+  const ruleOf = new Map(
+    INVENTORIES.map((d) => [d.listId, { pattern: d.matchPattern, format: d.displayFormat }]),
+  );
+
   const tally = new Map<number, number>();
+  /** 取り出せなかった行。数だけ出す（一致0件なら書き方が合っていない合図） */
+  const noValue = new Map<number, number>();
   let skipped = 0;
-  let buffer: { inventoryId: string; casNumber: string; casNormalized: string; data: string }[] =
+  let buffer: { inventoryId: string; casNumber: string; casNormalized: string; value: string }[] =
     [];
 
   const flush = async () => {
     if (buffer.length === 0) return;
-    if (write) await prisma.inventoryRow.createMany({ data: buffer });
+    // 同じ物質に同じ値が2度書かれている資料がある。一意制約で弾かれるので飛ばす
+    if (write) await prisma.inventoryRow.createMany({ data: buffer, skipDuplicates: true });
     buffer = [];
   };
 
@@ -336,17 +347,34 @@ async function main() {
       skipped += 1;
       continue;
     }
-    buffer.push({ inventoryId, casNumber: cas, casNormalized: normalizeCas(cas), data });
-    tally.set(listId, (tally.get(listId) ?? 0) + 1);
+    const rule = ruleOf.get(listId);
+    const { values } = rule ? applyExtract(rule, data) : { values: [] };
+    if (values.length === 0) {
+      noValue.set(listId, (noValue.get(listId) ?? 0) + 1);
+      continue;
+    }
+    const casNormalized = normalizeCas(cas);
+    for (const value of values) {
+      buffer.push({ inventoryId, casNumber: cas, casNormalized, value });
+    }
+    tally.set(listId, (tally.get(listId) ?? 0) + values.length);
     if (buffer.length >= BATCH) await flush();
   }
   await flush();
 
   console.log(`\n=== ${write ? "書き込みました" : "下見（--write で書き込みます）"} ===`);
   for (const def of INVENTORIES) {
-    console.log(`  ${def.nameJa.padEnd(24)} ${String(tally.get(def.listId) ?? 0).padStart(7)}行`);
+    const made = tally.get(def.listId) ?? 0;
+    const empty = noValue.get(def.listId) ?? 0;
+    const total = made + empty;
+    const rate = total === 0 ? 0 : Math.round(((total - empty) / total) * 100);
+    console.log(
+      `  ${def.nameJa.padEnd(24)} ${String(made).padStart(7)}行` +
+        `  取り出せず ${String(empty).padStart(6)}行 (一致 ${String(rate).padStart(3)}%)`,
+    );
   }
   console.log(`  読み飛ばし: ${skipped}行`);
+  console.log("\n  一致が 0% の名簿があれば、資料の書き方が変わった合図です");
   await prisma.$disconnect();
 }
 
