@@ -940,9 +940,7 @@ export const ja = {
     // CASでまとめた組成
     aggregateTitle: "原材料展開・CAS合算",
     aggregateName: "物質名",
-    aggregateSources: "寄与元",
     aggregateNoCas: "CASなし",
-    aggregateCount: (n: number) => `${n}件`,
     aggregateSubstanceId: "物質ID",
     aggregateRegulations: "該当法規制",
     aggregateSplitByCategory: "規制区分ごとに分ける",

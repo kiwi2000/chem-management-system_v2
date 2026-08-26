@@ -926,9 +926,7 @@ export const en: Messages = {
 
     aggregateTitle: "Expanded and combined by CAS",
     aggregateName: "Substance name",
-    aggregateSources: "Sources",
     aggregateNoCas: "No CAS",
-    aggregateCount: (n: number) => `${n}`,
     aggregateRegulations: "Regulations",
     aggregateSplitByCategory: "split into categories",
     aggregateGroupByRegion: "group by region",

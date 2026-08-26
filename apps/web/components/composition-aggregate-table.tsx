@@ -55,12 +55,6 @@ const HEADS: {
     label: (m) => m.composition.contentPct,
     className: "text-right whitespace-nowrap",
   },
-  {
-    key: "sources",
-    width: 80,
-    label: (m) => m.composition.aggregateSources,
-    className: "text-right",
-  },
 ];
 
 /**
@@ -338,9 +332,6 @@ export function CompositionAggregateTable({
                         )}
                       </td>
                       <td className={cn(CELL, "text-right whitespace-nowrap")}>{row.totalPct}%</td>
-                      <td className={cn(CELL, "text-muted-foreground text-right text-xs")}>
-                        {many ? m.composition.aggregateCount(row.contributions.length) : "—"}
-                      </td>
                       {leaves.map((c) => {
                         const hit = row.regulations.filter((r) => c.categoryIds.has(r.categoryId));
                         return (
@@ -375,7 +366,6 @@ export function CompositionAggregateTable({
                           >
                             {c.pct}%
                           </td>
-                          <td className={CELL} />
                           {leaves.map((c) => (
                             <td key={c.key} className={CELL} />
                           ))}
@@ -391,7 +381,6 @@ export function CompositionAggregateTable({
                   {m.composition.sumLabel}
                 </td>
                 <td className={cn(CELL, "text-right font-medium")}>{data.totalPct}%</td>
-                <td className={CELL} />
                 {leaves.map((c) => (
                   <td key={c.key} className={CELL} />
                 ))}
