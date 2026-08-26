@@ -789,6 +789,7 @@ export const en: Messages = {
     warning: "Warning",
     applicable: "Applies",
     notApplicable: "Does not apply",
+    onlyApplicable: "Applicable only",
     needsReview: "Needs checking",
     byUser: "Decided by a person",
     basis: "Because",

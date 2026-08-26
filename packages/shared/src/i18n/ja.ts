@@ -800,6 +800,7 @@ export const ja = {
     warning: "警告",
     applicable: "該当",
     notApplicable: "非該当",
+    onlyApplicable: "該当のみ表示",
     needsReview: "要確認",
     byUser: "人が判断",
     basis: "根拠",

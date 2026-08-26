@@ -73,6 +73,12 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
    * 中身は必要なものだけ開く（区分ごとに何行も続くと、何件当たったのか読めない）。
    */
   const [open, setOpen] = useState<Set<string>>(new Set());
+  /**
+   * 該当したものだけに絞るか。**既定は絞る。**
+   * ふだん見たいのは当たったものだけだが、**非該当に直した判定を戻す口が要る**ので、
+   * 外して全部出せるようにしてある。
+   */
+  const [onlyApplicable, setOnlyApplicable] = useState(true);
   // 列幅は一覧と同じ規則。操作の列は、出るときだけ幅を数に入れる
   const cols = useResizableColumns(
     "chem.table.productJudgements",
@@ -135,8 +141,8 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
     );
   }
 
-  /** **該当したものだけ並べる。**非該当は出さない */
-  const shown = items.filter((j) => j.verdict === "APPLICABLE");
+  const applicable = items.filter((j) => j.verdict === "APPLICABLE");
+  const shown = onlyApplicable ? applicable : items;
   const review = shown.filter((j) => j.needsReview);
   /** 中身を持つ区分。「展開」「格納」を出すかどうかの判断に使う */
   const openable = shown.filter((j) => j.hits.length > 0).map((j) => j.categoryId);
@@ -154,7 +160,7 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
         <CardTitle className="text-base">{m.judgements.title}</CardTitle>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-muted-foreground">
-            {m.judgements.summary(shown.length, items.length)}
+            {m.judgements.summary(applicable.length, items.length)}
           </span>
           {review.length > 0 && (
             <Badge variant="secondary" className="gap-1">
@@ -162,6 +168,15 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
               {m.judgements.reviewCount(review.length)}
             </Badge>
           )}
+          <Button
+            type="button"
+            size="sm"
+            variant={onlyApplicable ? "default" : "outline"}
+            aria-pressed={onlyApplicable}
+            onClick={() => setOnlyApplicable(!onlyApplicable)}
+          >
+            {m.judgements.onlyApplicable}
+          </Button>
           {/* 開くものが無ければ置いても押せないので出さない。組成の表と同じ形 */}
           {openable.length > 0 && (
             <div className="flex items-center gap-1">
@@ -271,6 +286,15 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
                               )}
                             />
                           )}
+                          {/*
+                            判定の列は置いていない。絞りを外したときだけ、
+                            非該当のものにここで印を付ける（印が無い＝該当）。
+                          */}
+                          {j.verdict !== "APPLICABLE" && (
+                            <Badge variant="secondary" className="mt-0.5">
+                              {m.judgements.notApplicable}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className={CELL} />
                         {/*
@@ -311,9 +335,18 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
                                     size="sm"
                                     variant="outline"
                                     disabled={busy}
-                                    onClick={() => void decide(j.categoryId, "NOT_APPLICABLE")}
+                                    onClick={() =>
+                                      void decide(
+                                        j.categoryId,
+                                        j.verdict === "APPLICABLE"
+                                          ? "NOT_APPLICABLE"
+                                          : "APPLICABLE",
+                                      )
+                                    }
                                   >
-                                    {m.judgements.changeToNot}
+                                    {j.verdict === "APPLICABLE"
+                                      ? m.judgements.changeToNot
+                                      : m.judgements.changeToYes}
                                   </Button>
                                   <Button
                                     size="sm"
