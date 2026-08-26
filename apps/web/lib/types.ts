@@ -221,7 +221,8 @@ export interface MatchedProductDto {
  * 「各種番号」に出す一覧の設定（システム→設定）。
  * 呼び名が入っている区分だけが、物質の詳細に番号として出る。
  */
-export interface NumberLabelDto {
+/** 区分を指し示すのに要る名前。設定画面はこれを並べて出す */
+interface CategoryRef {
   categoryId: string;
   lawNameJa: string | null;
   lawNameEn: string | null;
@@ -231,12 +232,21 @@ export interface NumberLabelDto {
   categoryNameJa: string | null;
   categoryNameEn: string | null;
   categoryNameOriginal: string;
-  /** 番号としての呼び名。null なら出さない */
-  numberLabel: string | null;
-  /** 番号が入っている法文物質名の数。0 なら選んでも何も出ない */
+  /** 番号が入っている法文物質名の数 */
   numberCount: number;
   /** どんな番号が入っているかの例。3件まで */
   samples: string[];
+}
+
+/** いま「各種番号」として出している1件。並びは配列の順そのもの */
+export interface NumberLabelDto extends CategoryRef {
+  /** 番号としての呼び名。そのまま物質の画面の見出しになる */
+  numberLabel: string;
+}
+
+/** これから足せる区分。番号が1件も入っていないものは出てこない */
+export interface NumberLabelChoiceDto extends CategoryRef {
+  lawId: string;
 }
 
 export interface ListResponse<T> {

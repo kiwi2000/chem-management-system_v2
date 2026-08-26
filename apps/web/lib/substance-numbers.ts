@@ -20,8 +20,13 @@ export interface SubstanceNumber {
   source: string;
 }
 
-/** 並びは 法令の並び順 → 区分の並び順 → 番号。設定を増やさずに決まる */
+/**
+ * 並びは **設定した順**（システム→設定「物質に出す番号」）。
+ * よく引く番号を上に置けるようにするため、法令の並びとは別に持つ。
+ * 同じ順のときは法令 → 区分 → 番号 に落ちる。
+ */
 const ORDER = [
+  { statutorySubstance: { regulationClass: { category: { numberOrder: "asc" } } } },
   { statutorySubstance: { regulationClass: { category: { law: { displayOrder: "asc" } } } } },
   { statutorySubstance: { regulationClass: { category: { displayOrder: "asc" } } } },
   { statutorySubstance: { officialNumber: "asc" } },

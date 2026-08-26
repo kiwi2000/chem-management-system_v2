@@ -830,14 +830,18 @@ export const en: Messages = {
 
   numberLabels: {
     title: "Numbers shown on a substance",
-    lead: "Gazette and ordinance numbers are assigned by a law's own register, not by the substance. They are never typed in here: pick the registers below and each substance shows the numbers it carries in them. The name you give becomes the heading.",
+    lead: "Inventory numbers are assigned by a country's own register (Japan's CSCL and ISHA numbers, the EU's EC number, the US TSCA number). They are never typed in on the substance: pick the registers here and each substance shows the numbers it carries in them. The name you give becomes the heading, and the order here is the order shown.",
     shownCount: (n: number) => `${n} shown`,
     country: "Country",
     samples: "Numbers held",
     label: "Shown as",
-    turnOn: "Show",
-    turnOff: "Hide",
-    noNumbers: "no numbers",
+    order: "Order",
+    moveUp: "Move up",
+    moveDown: "Move down",
+    empty: "Nothing set yet. Add one below.",
+    pickLaw: "Pick a law",
+    pickCategory: "Pick a category",
+    blankLabel: "A row has no name. It would appear with a blank heading on the substance page.",
     count: (n: number) => `(${n})`,
   },
 

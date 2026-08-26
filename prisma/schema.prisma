@@ -1244,6 +1244,12 @@ model RegulationCategory {
    * 物質の画面に出す。空なら番号のリストではない
    */
   numberLabel String? @map("number_label")
+  /**
+   * 物質の画面に出すときの並び順。**法令の並びとは別に決める。**
+   * よく引く番号（化審法番号・EC番号・TSCA番号など）を上に置くため。
+   * 出さない区分では使わない
+   */
+  numberOrder Int     @default(0) @map("number_order")
 
   note String?
 

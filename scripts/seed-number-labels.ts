@@ -79,7 +79,8 @@ async function main() {
     if (write) {
       await prisma.regulationCategory.update({
         where: { id: category.id },
-        data: { numberLabel: def.label },
+        // 並び順は、ここに並べた順。画面から入れ替えられる
+        data: { numberLabel: def.label, numberOrder: LABELS.indexOf(def) },
       });
     }
   }
