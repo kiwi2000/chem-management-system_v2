@@ -28,6 +28,12 @@ async function main() {
 
   const rules = await loadRules(version.id);
   const factors = await loadFactors();
+  const { getAppSettings } = await import("../apps/web/lib/settings");
+  const { conditionalLinkMode } = await getAppSettings();
+  console.log(
+    `条件つきCASリンクの扱い: ${conditionalLinkMode === "review" ? "要確認にして警告" : "該非を確定して警告"}`,
+  );
+
   const withCas = rules.filter((r) => r.entries.some((e) => e.cas.length > 0));
   console.log(`区分 ${rules.length}件（うちCASが紐づいているもの ${withCas.length}件）`);
   console.log(`金属換算係数 ${factors.size}件`);
@@ -41,7 +47,7 @@ async function main() {
   let applicable = 0;
   let review = 0;
   for (const p of products) {
-    const r = await judgeProduct(p.id, rules, factors);
+    const r = await judgeProduct(p.id, rules, factors, conditionalLinkMode);
     if (r.applicable > 0) applicable += 1;
     if (r.needsReview > 0) review += 1;
   }

@@ -22,6 +22,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { statutoryNumber } from "./lib/statutory-number";
 
 const LAW_CODE = "JP-ISHA";
 
@@ -65,6 +66,38 @@ interface CategoryDef {
 }
 
 const prisma = new PrismaClient();
+
+/**
+ * 区分ごとの番号の作り方（第0-3章）。
+ *
+ * 特化則の3区分は**同じ別表第三の、号ちがい**。
+ * 番号に出典を入れないと第1類の1号と第2類の1号が同じになる
+ */
+/**
+ * @param from 特別管理物質だけ、元が第1類か第2類かが入る（ / ）。
+ *   **上乗せの指定なので、番号は元の号に合わせる。**でないと第1類の4号と
+ *   第2類の4号が同じ番号になる
+ */
+function numberOf(section: string, num: string, from?: string): string {
+  switch (section) {
+    case "MFG_BAN":
+      // 令第16条第1項
+      return statutoryNumber({ kind: "orderArticle", table: "16", paragraph: "1" }, num);
+    case "SPEC1":
+      return statutoryNumber({ kind: "orderTableItem", table: "3", item: "1" }, num);
+    case "SPEC2":
+      return statutoryNumber({ kind: "orderTableItem", table: "3", item: "2" }, num);
+    case "SPEC3":
+      return statutoryNumber({ kind: "orderTableItem", table: "3", item: "3" }, num);
+    case "ORG":
+      // 令別表第六の二
+      return statutoryNumber({ kind: "orderTable", table: "6の2" }, num);
+    case "SPEC_MGMT":
+      return statutoryNumber({ kind: "orderTableItem", table: "3", item: from ?? "2" }, num);
+    default:
+      return statutoryNumber({ kind: "plain" }, num);
+  }
+}
 
 const CATEGORIES: CategoryDef[] = [
   {
@@ -160,6 +193,10 @@ async function removeMine(lawId: string): Promise<number> {
     where: { category: { lawId, codeNormalized: { in: codes } } },
     select: { id: true },
   });
+  // **CASリンクを先に消す。**法文物質名を参照しているので、残っていると消せない
+  await prisma.statutoryCasLink.deleteMany({
+    where: { statutorySubstance: { classId: { in: classes.map((c) => c.id) } } },
+  });
   const removed = await prisma.statutorySubstance.deleteMany({
     where: { classId: { in: classes.map((c) => c.id) } },
   });
@@ -229,7 +266,7 @@ async function main() {
         code,
         codeNormalized: code,
         classId: classIds.get(target)!,
-        officialNumber: r.number,
+        officialNumber: numberOf(def.code, r.number, (r as { from?: string }).from),
         nameOriginal: r.name,
         nameLang: "JA",
         displayOrder: i + 1,

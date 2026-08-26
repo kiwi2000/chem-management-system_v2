@@ -13,6 +13,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { statutoryNumber } from "./lib/statutory-number";
 
 const LAW_CODE = "JP-CSCL";
 const COUNTRY_CODE = "JPN";
@@ -31,6 +32,21 @@ interface Group {
 
 const prisma = new PrismaClient();
 
+/**
+ * 番号の作り方（第0-3章）。
+ *
+ * 第一種・第二種は施行令の条で決まる。
+ * **監視・優先評価・特定一般は条文に無い**（三大臣の公示）ので、番号はそのまま
+ */
+const ARTICLE: Record<string, string> = { C1: "1", C2: "2" };
+
+function numberOf(section: string, num: string): string {
+  const article = ARTICLE[section];
+  return article
+    ? statutoryNumber({ kind: "orderArticle", table: article }, num)
+    : statutoryNumber({ kind: "plain" }, num);
+}
+
 /** 判定に使う閾値。化審法に裾切値は無いので「含有すれば該当」 */
 const THRESHOLD = {
   thresholdLower: "0",
@@ -45,6 +61,10 @@ async function removeAll(): Promise<number> {
   const classes = await prisma.regulationClass.findMany({
     where: { category: { lawId: law.id } },
     select: { id: true },
+  });
+  // **CASリンクを先に消す。**法文物質名を参照しているので、残っていると消せない
+  await prisma.statutoryCasLink.deleteMany({
+    where: { statutorySubstance: { classId: { in: classes.map((c) => c.id) } } },
   });
   const removed = await prisma.statutorySubstance.deleteMany({
     where: { classId: { in: classes.map((c) => c.id) } },
@@ -117,7 +137,7 @@ async function main() {
         code: `${LAW_CODE}-${key}-${e.number.padStart(4, "0")}`,
         codeNormalized: `${LAW_CODE}-${key}-${e.number.padStart(4, "0")}`,
         classId: cls.id,
-        officialNumber: e.number,
+        officialNumber: numberOf(key, e.number),
         nameOriginal: e.name,
         nameLang: "JA",
         displayOrder: Number(e.number),

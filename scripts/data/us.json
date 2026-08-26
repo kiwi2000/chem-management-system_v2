@@ -1,0 +1,6594 @@
+[
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "71751-41-2",
+  "name": "Abamectin",
+  "cas": "71751-41-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "30560-19-1",
+  "name": "Acephate",
+  "cas": "30560-19-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-07-0",
+  "name": "Acetaldehyde",
+  "cas": "75-07-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "60-35-5",
+  "name": "Acetamide",
+  "cas": "60-35-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-05-8",
+  "name": "Acetonitrile",
+  "cas": "75-05-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "98-86-2",
+  "name": "Acetophenone",
+  "cas": "98-86-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "53-96-3",
+  "name": "2-Acetylaminofluorene",
+  "cas": "53-96-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "62476-59-9",
+  "name": "Acifluorfen, sodium salt",
+  "cas": "62476-59-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "107-02-8",
+  "name": "Acrolein",
+  "cas": "107-02-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-06-1",
+  "name": "Acrylamide",
+  "cas": "79-06-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-10-7",
+  "name": "Acrylic acid",
+  "cas": "79-10-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "107-13-1",
+  "name": "Acrylonitrile",
+  "cas": "107-13-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "15972-60-8",
+  "name": "Alachlor",
+  "cas": "15972-60-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "116-06-3",
+  "name": "Aldicarb",
+  "cas": "116-06-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "309-00-2",
+  "name": "Aldrin",
+  "cas": "309-00-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "28434-00-6",
+  "name": "d-trans-Allethrin",
+  "cas": "28434-00-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "107-18-6",
+  "name": "Allyl alcohol",
+  "cas": "107-18-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "107-11-9",
+  "name": "Allylamine",
+  "cas": "107-11-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "107-05-1",
+  "name": "Allyl chloride",
+  "cas": "107-05-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7429-90-5",
+  "name": "Aluminum (fume or dust)",
+  "cas": "7429-90-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1344-28-1",
+  "name": "Aluminum oxide (fibrous forms) (Alumina)",
+  "cas": "1344-28-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "20859-73-8",
+  "name": "Aluminum phosphide",
+  "cas": "20859-73-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "834-12-8",
+  "name": "Ametryn",
+  "cas": "834-12-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "117-79-3",
+  "name": "2-Aminoanthraquinone",
+  "cas": "117-79-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "60-09-3",
+  "name": "4-Aminoazobenzene",
+  "cas": "60-09-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "92-67-1",
+  "name": "4-Aminobiphenyl",
+  "cas": "92-67-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "81-49-2",
+  "name": "1-Amino-2,4-dibromoanthraquinone",
+  "cas": "81-49-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "82-28-0",
+  "name": "1-Amino-2-methylanthraquinone",
+  "cas": "82-28-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "33089-61-1",
+  "name": "Amitraz",
+  "cas": "33089-61-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "61-82-5",
+  "name": "Amitrole",
+  "cas": "61-82-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7664-41-7",
+  "name": "Ammonia (includes anhydrous ammonia and aqueous ammonia from water dissociable ammonium salts and other sources; 10 percent of total aqueous ammonia is reportable under this listing)",
+  "cas": "7664-41-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "101-05-3",
+  "name": "Anilazine",
+  "cas": "101-05-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "62-53-3",
+  "name": "Aniline",
+  "cas": "62-53-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "90-04-0",
+  "name": "o-Anisidine",
+  "cas": "90-04-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "104-94-9",
+  "name": "p-Anisidine",
+  "cas": "104-94-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "134-29-2",
+  "name": "o-Anisidine hydrochloride",
+  "cas": "134-29-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "120-12-7",
+  "name": "Anthracene",
+  "cas": "120-12-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-36-0",
+  "name": "Antimony",
+  "cas": "7440-36-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-38-2",
+  "name": "Arsenic",
+  "cas": "7440-38-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1332-21-4",
+  "name": "Asbestos (friable)",
+  "cas": "1332-21-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1912-24-9",
+  "name": "Atrazine",
+  "cas": "1912-24-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-39-3",
+  "name": "Barium",
+  "cas": "7440-39-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "22781-23-3",
+  "name": "Bendiocarb",
+  "cas": "22781-23-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1861-40-1",
+  "name": "Benfluralin",
+  "cas": "1861-40-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "17804-35-2",
+  "name": "Benomyl",
+  "cas": "17804-35-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "98-87-3",
+  "name": "Benzal chloride",
+  "cas": "98-87-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "55-21-0",
+  "name": "Benzamide",
+  "cas": "55-21-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "71-43-2",
+  "name": "Benzene",
+  "cas": "71-43-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "92-87-5",
+  "name": "Benzidine",
+  "cas": "92-87-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "191-24-2",
+  "name": "Benzo[g,h,i]perylene",
+  "cas": "191-24-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/00"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "98-07-7",
+  "name": "Benzoic trichloride (Benzotrichloride)",
+  "cas": "98-07-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "98-88-4",
+  "name": "Benzoyl chloride",
+  "cas": "98-88-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "94-36-0",
+  "name": "Benzoyl peroxide",
+  "cas": "94-36-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "100-44-7",
+  "name": "Benzyl chloride",
+  "cas": "100-44-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-41-7",
+  "name": "Beryllium",
+  "cas": "7440-41-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "82657-04-3",
+  "name": "Bifenthrin",
+  "cas": "82657-04-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "92-52-4",
+  "name": "Biphenyl",
+  "cas": "92-52-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3296-90-0",
+  "name": "2,2-Bis(bromomethyl)-1,3-propanediol",
+  "cas": "3296-90-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "111-91-1",
+  "name": "Bis(2-chloroethoxy)methane",
+  "cas": "111-91-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "111-44-4",
+  "name": "Bis(2-chloroethyl) ether",
+  "cas": "111-44-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "542-88-1",
+  "name": "Bis(chloromethyl) ether",
+  "cas": "542-88-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-60-1",
+  "name": "Bis(2-chloro-1-methylethyl) ether",
+  "cas": "108-60-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "56-35-9",
+  "name": "Bis(tributyltin) oxide",
+  "cas": "56-35-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "10294-34-5",
+  "name": "Boron trichloride",
+  "cas": "10294-34-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7637-07-2",
+  "name": "Boron trifluoride",
+  "cas": "7637-07-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "314-40-9",
+  "name": "Bromacil",
+  "cas": "314-40-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "53404-19-6",
+  "name": "Bromacil, lithium salt",
+  "cas": "53404-19-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7726-95-6",
+  "name": "Bromine",
+  "cas": "7726-95-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "35691-65-7",
+  "name": "1-Bromo-1-(bromomethyl)-1,3-propanedicarbonitrile",
+  "cas": "35691-65-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "353-59-3",
+  "name": "Bromochlorodifluoromethane (Halon 1211)",
+  "cas": "353-59-3",
+  "note": "40 CFR 372.65 / 収載日 7/8/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-25-2",
+  "name": "Bromoform (Tribromomethane)",
+  "cas": "75-25-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "74-83-9",
+  "name": "Bromomethane (Methyl bromide)",
+  "cas": "74-83-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-94-5",
+  "name": "1-Bromopropane",
+  "cas": "106-94-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/16"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-63-8",
+  "name": "Bromotrifluoromethane (Halon 1301)",
+  "cas": "75-63-8",
+  "note": "40 CFR 372.65 / 収載日 7/8/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1689-84-5",
+  "name": "Bromoxynil",
+  "cas": "1689-84-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1689-99-2",
+  "name": "Bromoxynil octanoate",
+  "cas": "1689-99-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "357-57-3",
+  "name": "Brucine",
+  "cas": "357-57-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-99-0",
+  "name": "1,3-Butadiene",
+  "cas": "106-99-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "141-32-2",
+  "name": "Butyl acrylate",
+  "cas": "141-32-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "71-36-3",
+  "name": "n-Butyl alcohol (1-Butanol)",
+  "cas": "71-36-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "78-92-2",
+  "name": "sec-Butyl alcohol (2-Butanol)",
+  "cas": "78-92-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-65-0",
+  "name": "tert-Butyl alcohol (tert-Butanol)",
+  "cas": "75-65-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-88-7",
+  "name": "1,2-Butylene oxide",
+  "cas": "106-88-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "123-72-8",
+  "name": "Butyraldehyde",
+  "cas": "123-72-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "4680-78-8",
+  "name": "C.I. Acid Green 3",
+  "cas": "4680-78-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "6459-94-5",
+  "name": "C.I. Acid Red 114",
+  "cas": "6459-94-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "569-64-2",
+  "name": "C.I. Basic Green 4 (Malachite green)",
+  "cas": "569-64-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "989-38-8",
+  "name": "C.I. Basic Red 1",
+  "cas": "989-38-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1937-37-7",
+  "name": "C.I. Direct Black 38",
+  "cas": "1937-37-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2602-46-2",
+  "name": "C.I. Direct Blue 6",
+  "cas": "2602-46-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "28407-37-6",
+  "name": "C.I. Direct Blue 218",
+  "cas": "28407-37-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "16071-86-6",
+  "name": "C.I. Direct Brown 95",
+  "cas": "16071-86-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2832-40-8",
+  "name": "C.I. Disperse Yellow 3",
+  "cas": "2832-40-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3761-53-3",
+  "name": "C.I. Food Red 5",
+  "cas": "3761-53-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "81-88-9",
+  "name": "C.I. Food Red 15 (Rhodamine B)",
+  "cas": "81-88-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3118-97-6",
+  "name": "C.I. Solvent Orange 7",
+  "cas": "3118-97-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "97-56-3",
+  "name": "C.I. Solvent Yellow 3",
+  "cas": "97-56-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "842-07-9",
+  "name": "C.I. Solvent Yellow 14",
+  "cas": "842-07-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "492-80-8",
+  "name": "C.I. Solvent Yellow 34 (Auramine)",
+  "cas": "492-80-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "128-66-5",
+  "name": "C.I. Vat Yellow 4",
+  "cas": "128-66-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-43-9",
+  "name": "Cadmium",
+  "cas": "7440-43-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "156-62-7",
+  "name": "Calcium cyanamide",
+  "cas": "156-62-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "133-06-2",
+  "name": "Captan",
+  "cas": "133-06-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "63-25-2",
+  "name": "Carbaryl",
+  "cas": "63-25-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1563-66-2",
+  "name": "Carbofuran",
+  "cas": "1563-66-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-15-0",
+  "name": "Carbon disulfide",
+  "cas": "75-15-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "56-23-5",
+  "name": "Carbon tetrachloride",
+  "cas": "56-23-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "463-58-1",
+  "name": "Carbonyl sulfide",
+  "cas": "463-58-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "5234-68-4",
+  "name": "Carboxin",
+  "cas": "5234-68-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "120-80-9",
+  "name": "Catechol",
+  "cas": "120-80-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2439-01-2",
+  "name": "Chinomethionate",
+  "cas": "2439-01-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "133-90-4",
+  "name": "Chloramben",
+  "cas": "133-90-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "57-74-9",
+  "name": "Chlordane",
+  "cas": "57-74-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "115-28-6",
+  "name": "Chlorendic acid",
+  "cas": "115-28-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "90982-32-4",
+  "name": "Chlorimuron-ethyl",
+  "cas": "90982-32-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7782-50-5",
+  "name": "Chlorine",
+  "cas": "7782-50-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "10049-04-4",
+  "name": "Chlorine dioxide",
+  "cas": "10049-04-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-11-8",
+  "name": "Chloroacetic acid",
+  "cas": "79-11-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "532-27-4",
+  "name": "2-Chloroacetophenone",
+  "cas": "532-27-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "4080-31-3",
+  "name": "1-(3-Chloroallyl)-3,5,7-triaza-1-azoniaadamantane chloride",
+  "cas": "4080-31-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-47-8",
+  "name": "p-Chloroaniline",
+  "cas": "106-47-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-90-7",
+  "name": "Chlorobenzene",
+  "cas": "108-90-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "510-15-6",
+  "name": "Chlorobenzilate",
+  "cas": "510-15-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-68-3",
+  "name": "1-Chloro-1,1-difluoroethane (HCFC-142b)",
+  "cas": "75-68-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-45-6",
+  "name": "Chlorodifluoromethane (HCFC-22)",
+  "cas": "75-45-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-00-3",
+  "name": "Chloroethane",
+  "cas": "75-00-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67-66-3",
+  "name": "Chloroform",
+  "cas": "67-66-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "74-87-3",
+  "name": "Chloromethane",
+  "cas": "74-87-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "107-30-2",
+  "name": "Chloromethyl methyl ether",
+  "cas": "107-30-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "563-47-3",
+  "name": "3-Chloro-2-methyl-1-propene",
+  "cas": "563-47-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "104-12-1",
+  "name": "p-Chlorophenyl isocyanate",
+  "cas": "104-12-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "76-06-2",
+  "name": "Chloropicrin",
+  "cas": "76-06-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "126-99-8",
+  "name": "Chloroprene",
+  "cas": "126-99-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "542-76-7",
+  "name": "3-Chloropropionitrile",
+  "cas": "542-76-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "63938-10-3",
+  "name": "Chlorotetrafluoroethane",
+  "cas": "63938-10-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "354-25-6",
+  "name": "1-Chloro-1,1,2,2-tetrafluoroethane (HCFC-124a)",
+  "cas": "354-25-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2837-89-0",
+  "name": "2-Chloro-1,1,1,2-tetrafluoroethane (HCFC-124)",
+  "cas": "2837-89-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1897-45-6",
+  "name": "Chlorothalonil",
+  "cas": "1897-45-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95-69-2",
+  "name": "p-Chloro-o-toluidine (4-Chloro-2-methylaniline)",
+  "cas": "95-69-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-88-7",
+  "name": "2-Chloro-1,1,1-trifluoroethane (HCFC-133a)",
+  "cas": "75-88-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-72-9",
+  "name": "Chlorotrifluoromethane (CFC-13)",
+  "cas": "75-72-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "460-35-5",
+  "name": "3-Chloro-1,1,1-trifluoropropane (HCFC-253fb)",
+  "cas": "460-35-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "5598-13-0",
+  "name": "Chlorpyrifos-methyl",
+  "cas": "5598-13-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "64902-72-3",
+  "name": "Chlorsulfuron",
+  "cas": "64902-72-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-47-3",
+  "name": "Chromium",
+  "cas": "7440-47-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-48-4",
+  "name": "Cobalt",
+  "cas": "7440-48-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-50-8",
+  "name": "Copper",
+  "cas": "7440-50-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "8001-58-9",
+  "name": "Creosote",
+  "cas": "8001-58-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "120-71-8",
+  "name": "p-Cresidine",
+  "cas": "120-71-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1319-77-3",
+  "name": "Cresol (mixed isomers)",
+  "cas": "1319-77-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-39-4",
+  "name": "m-Cresol",
+  "cas": "108-39-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95-48-7",
+  "name": "o-Cresol",
+  "cas": "95-48-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-44-5",
+  "name": "p-Cresol",
+  "cas": "106-44-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "4170-30-3",
+  "name": "Crotonaldehyde",
+  "cas": "4170-30-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "98-82-8",
+  "name": "Cumene",
+  "cas": "98-82-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "80-15-9",
+  "name": "Cumene hydroperoxide",
+  "cas": "80-15-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "135-20-6",
+  "name": "Cupferron",
+  "cas": "135-20-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "21725-46-2",
+  "name": "Cyanazine",
+  "cas": "21725-46-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1134-23-2",
+  "name": "Cycloate",
+  "cas": "1134-23-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "110-82-7",
+  "name": "Cyclohexane",
+  "cas": "110-82-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-93-0",
+  "name": "Cyclohexanol",
+  "cas": "108-93-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68359-37-5",
+  "name": "Cyfluthrin",
+  "cas": "68359-37-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68085-85-8",
+  "name": "Cyhalothrin",
+  "cas": "68085-85-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "94-75-7",
+  "name": "2,4-D",
+  "cas": "94-75-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "533-74-4",
+  "name": "Dazomet",
+  "cas": "533-74-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "53404-60-7",
+  "name": "Dazomet, sodium salt",
+  "cas": "53404-60-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "94-82-6",
+  "name": "2,4-DB",
+  "cas": "94-82-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1929-73-3",
+  "name": "2,4-D 2-butoxyethyl ester",
+  "cas": "1929-73-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "94-80-4",
+  "name": "2,4-D butyl ester",
+  "cas": "94-80-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2971-38-2",
+  "name": "2,4-D chlorocrotyl ester",
+  "cas": "2971-38-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1163-19-5",
+  "name": "Decabromodiphenyl oxide",
+  "cas": "1163-19-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "13684-56-5",
+  "name": "Desmedipham",
+  "cas": "13684-56-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1928-43-4",
+  "name": "2,4-D 2-ethylhexyl ester",
+  "cas": "1928-43-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "53404-37-8",
+  "name": "2,4-D 2-ethyl-4-methylpentyl ester",
+  "cas": "53404-37-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2303-16-4",
+  "name": "Diallate",
+  "cas": "2303-16-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "615-05-4",
+  "name": "2,4-Diaminoanisole",
+  "cas": "615-05-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "39156-41-7",
+  "name": "2,4-Diaminoanisole sulfate",
+  "cas": "39156-41-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "101-80-4",
+  "name": "4,4′-Diaminodiphenyl ether",
+  "cas": "101-80-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "25376-45-8",
+  "name": "Diaminotoluene (mixed isomers) (Toluenediamine)",
+  "cas": "25376-45-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95-80-7",
+  "name": "2,4-Diaminotoluene (2,4-Toluenediamine)",
+  "cas": "95-80-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "333-41-5",
+  "name": "Diazinon",
+  "cas": "333-41-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "334-88-3",
+  "name": "Diazomethane",
+  "cas": "334-88-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "132-64-9",
+  "name": "Dibenzofuran",
+  "cas": "132-64-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "96-12-8",
+  "name": "1,2-Dibromo-3-chloropropane",
+  "cas": "96-12-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "10222-01-2",
+  "name": "2,2-Dibromo-3-nitrilopropionamide 1",
+  "cas": "10222-01-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-93-4",
+  "name": "1,2-Dibromoethane (Ethylene dibromide)",
+  "cas": "106-93-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "124-73-2",
+  "name": "Dibromotetrafluoroethane (1,2-Dibromo-1,1,2,2-tetrafluoroethane)",
+  "cas": "124-73-2",
+  "note": "40 CFR 372.65 / 収載日 7/8/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "84-74-2",
+  "name": "Dibutyl phthalate",
+  "cas": "84-74-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "683-18-1",
+  "name": "Dibutyltin dichloride",
+  "cas": "683-18-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1918-00-9",
+  "name": "Dicamba",
+  "cas": "1918-00-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "99-30-9",
+  "name": "Dichloran",
+  "cas": "99-30-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "25321-22-6",
+  "name": "Dichlorobenzene (mixed isomers)",
+  "cas": "25321-22-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95-50-1",
+  "name": "1,2-Dichlorobenzene (o-Dichlorobenzene)",
+  "cas": "95-50-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "541-73-1",
+  "name": "1,3-Dichlorobenzene (m-Dichlorobenzene)",
+  "cas": "541-73-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-46-7",
+  "name": "1,4-Dichlorobenzene (p-Dichlorobenzene)",
+  "cas": "106-46-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "91-94-1",
+  "name": "3,3′-Dichlorobenzidine",
+  "cas": "91-94-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "612-83-9",
+  "name": "3,3′-Dichlorobenzidine dihydrochloride",
+  "cas": "612-83-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "64969-34-2",
+  "name": "3,3′-Dichlorobenzidine sulfate",
+  "cas": "64969-34-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-27-4",
+  "name": "Dichlorobromomethane",
+  "cas": "75-27-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "764-41-0",
+  "name": "1,4-Dichloro-2-butene",
+  "cas": "764-41-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "110-57-6",
+  "name": "trans-1,4-Dichloro-2-butene",
+  "cas": "110-57-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1649-08-7",
+  "name": "1,2-Dichloro-1,1-difluoroethane (HCFC-132b)",
+  "cas": "1649-08-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-71-8",
+  "name": "Dichlorodifluoromethane (CFC-12)",
+  "cas": "75-71-8",
+  "note": "40 CFR 372.65 / 収載日 7/8/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "107-06-2",
+  "name": "1,2-Dichloroethane",
+  "cas": "107-06-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "540-59-0",
+  "name": "1,2-Dichloroethylene",
+  "cas": "540-59-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1717-00-6",
+  "name": "1,1-Dichloro-1-fluoroethane (HCFC-141b)",
+  "cas": "1717-00-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-43-4",
+  "name": "Dichlorofluoromethane (HCFC-21)",
+  "cas": "75-43-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-09-2",
+  "name": "Dichloromethane (Methylene chloride)",
+  "cas": "75-09-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "127564-92-5",
+  "name": "Dichloropentafluoropropane",
+  "cas": "127564-92-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "13474-88-9",
+  "name": "1,1-Dichloro-1,2,2,3,3-pentafluoropropane (HCFC-225cc)",
+  "cas": "13474-88-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "111512-56-2",
+  "name": "1,1-Dichloro-1,2,3,3,3-pentafluoropropane (HCFC-225eb)",
+  "cas": "111512-56-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "422-44-6",
+  "name": "1,2-Dichloro-1,1,2,3,3-pentafluoropropane (HCFC-225bb)",
+  "cas": "422-44-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "431-86-7",
+  "name": "1,2-Dichloro-1,1,3,3,3-pentafluoropropane (HCFC-225da)",
+  "cas": "431-86-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "507-55-1",
+  "name": "1,3-Dichloro-1,1,2,2,3-pentafluoropropane (HCFC-225cb)",
+  "cas": "507-55-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "136013-79-1",
+  "name": "1,3-Dichloro-1,1,2,3,3-pentafluoropropane (HCFC-225ea)",
+  "cas": "136013-79-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "128903-21-9",
+  "name": "2,2-Dichloro-1,1,1,3,3-pentafluoropropane (HCFC-225aa)",
+  "cas": "128903-21-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "422-48-0",
+  "name": "2,3-dichloro-1,1,1,2,3-pentafluoropropane (HCFC-225ba)",
+  "cas": "422-48-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "422-56-0",
+  "name": "3,3-Dichloro-1,1,1,2,2-pentafluoropropane (HCFC-225ca)",
+  "cas": "422-56-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "97-23-4",
+  "name": "Dichlorophene",
+  "cas": "97-23-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "120-83-2",
+  "name": "2,4-Dichlorophenol",
+  "cas": "120-83-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "78-87-5",
+  "name": "1,2-Dichloropropane",
+  "cas": "78-87-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "96-23-1",
+  "name": "1,3-Dichloro-2-propanol",
+  "cas": "96-23-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "78-88-6",
+  "name": "2,3-Dichloropropene",
+  "cas": "78-88-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "10061-02-6",
+  "name": "trans-1,3-Dichloropropene",
+  "cas": "10061-02-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "542-75-6",
+  "name": "1,3-Dichloropropylene (1,3-Dichloropropene)",
+  "cas": "542-75-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "76-14-2",
+  "name": "Dichlorotetrafluoroethane (CFC-114)",
+  "cas": "76-14-2",
+  "note": "40 CFR 372.65 / 収載日 7/8/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "34077-87-7",
+  "name": "Dichlorotrifluoroethane",
+  "cas": "34077-87-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "90454-18-5",
+  "name": "Dichloro-1,1,2-trifluoroethane",
+  "cas": "90454-18-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "812-04-4",
+  "name": "1,1-Dichloro-1,2,2-trifluoroethane (HCFC-123b)",
+  "cas": "812-04-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "354-23-4",
+  "name": "1,2-Dichloro-1,1,2-trifluoroethane (HCFC-123a)",
+  "cas": "354-23-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "306-83-2",
+  "name": "2,2-Dichloro-1,1,1-trifluoroethane (HCFC-123)",
+  "cas": "306-83-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "62-73-7",
+  "name": "Dichlorvos",
+  "cas": "62-73-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "51338-27-3",
+  "name": "Diclofop methyl",
+  "cas": "51338-27-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "115-32-2",
+  "name": "Dicofol",
+  "cas": "115-32-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "77-73-6",
+  "name": "Dicyclopentadiene",
+  "cas": "77-73-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1464-53-5",
+  "name": "Diepoxybutane",
+  "cas": "1464-53-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "111-42-2",
+  "name": "Diethanolamine",
+  "cas": "111-42-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "38727-55-8",
+  "name": "Diethatyl ethyl",
+  "cas": "38727-55-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "117-81-7",
+  "name": "Di(2-ethylhexyl) phthalate",
+  "cas": "117-81-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "64-67-5",
+  "name": "Diethyl sulfate",
+  "cas": "64-67-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "35367-38-5",
+  "name": "Diflubenzuron",
+  "cas": "35367-38-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "101-90-6",
+  "name": "Diglycidyl resorcinol ether",
+  "cas": "101-90-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "94-58-6",
+  "name": "Dihydrosafrole",
+  "cas": "94-58-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "55290-64-7",
+  "name": "Dimethipin",
+  "cas": "55290-64-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "60-51-5",
+  "name": "Dimethoate",
+  "cas": "60-51-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "119-90-4",
+  "name": "3,3′-Dimethoxybenzidine",
+  "cas": "119-90-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "20325-40-0",
+  "name": "3,3′-Dimethoxybenzidine dihydrochloride",
+  "cas": "20325-40-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "111984-09-9",
+  "name": "3,3′-Dimethoxybenzidine monohydrochloride",
+  "cas": "111984-09-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "124-40-3",
+  "name": "Dimethylamine",
+  "cas": "124-40-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2300-66-5",
+  "name": "Dimethylamine dicamba",
+  "cas": "2300-66-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "60-11-7",
+  "name": "4-Dimethylaminoazobenzene",
+  "cas": "60-11-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "121-69-7",
+  "name": "N,N-Dimethylaniline",
+  "cas": "121-69-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "119-93-7",
+  "name": "3,3′-Dimethylbenzidine",
+  "cas": "119-93-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "612-82-8",
+  "name": "3,3′-Dimethylbenzidine dihydrochloride",
+  "cas": "612-82-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "41766-75-0",
+  "name": "3,3′-Dimethylbenzidine dihydrofluoride",
+  "cas": "41766-75-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-44-7",
+  "name": "Dimethylcarbamoyl chloride",
+  "cas": "79-44-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2524-03-0",
+  "name": "Dimethyl chlorothiophosphate",
+  "cas": "2524-03-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68-12-2",
+  "name": "N,N-Dimethylformamide",
+  "cas": "68-12-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "57-14-7",
+  "name": "1,1-Dimethylhydrazine",
+  "cas": "57-14-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "105-67-9",
+  "name": "2,4-Dimethylphenol",
+  "cas": "105-67-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "131-11-3",
+  "name": "Dimethyl phthalate",
+  "cas": "131-11-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "77-78-1",
+  "name": "Dimethyl sulfate",
+  "cas": "77-78-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "99-65-0",
+  "name": "m-Dinitrobenzene",
+  "cas": "99-65-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "528-29-0",
+  "name": "o-Dinitrobenzene",
+  "cas": "528-29-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "100-25-4",
+  "name": "p-Dinitrobenzene",
+  "cas": "100-25-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "88-85-7",
+  "name": "Dinitrobutyl phenol (Dinoseb)",
+  "cas": "88-85-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "534-52-1",
+  "name": "4,6-Dinitro-o-cresol",
+  "cas": "534-52-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "51-28-5",
+  "name": "2,4-Dinitrophenol",
+  "cas": "51-28-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "121-14-2",
+  "name": "2,4-Dinitrotoluene",
+  "cas": "121-14-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "606-20-2",
+  "name": "2,6-Dinitrotoluene",
+  "cas": "606-20-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "25321-14-6",
+  "name": "Dinitrotoluene (mixed isomers)",
+  "cas": "25321-14-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "39300-45-3",
+  "name": "Dinocap",
+  "cas": "39300-45-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "123-91-1",
+  "name": "1,4-Dioxane",
+  "cas": "123-91-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "957-51-7",
+  "name": "Diphenamid",
+  "cas": "957-51-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "122-39-4",
+  "name": "Diphenylamine",
+  "cas": "122-39-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "122-66-7",
+  "name": "1,2-Diphenylhydrazine",
+  "cas": "122-66-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2164-07-0",
+  "name": "Dipotassium endothall",
+  "cas": "2164-07-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "136-45-8",
+  "name": "Dipropyl isocinchomeronate",
+  "cas": "136-45-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "138-93-2",
+  "name": "Disodium cyanodithioimidocarbonate",
+  "cas": "138-93-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "94-11-1",
+  "name": "2,4-D isopropyl ester",
+  "cas": "94-11-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "541-53-7",
+  "name": "2,4-Dithiobiuret (Dithiobiuret)",
+  "cas": "541-53-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "330-54-1",
+  "name": "Diuron",
+  "cas": "330-54-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2439-10-3",
+  "name": "Dodine",
+  "cas": "2439-10-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "120-36-5",
+  "name": "2,4-DP (Dichlorprop)",
+  "cas": "120-36-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1320-18-9",
+  "name": "2,4-D propylene glycol butyl ether ester (2,4-D 2-butoxymethylethyl ester)",
+  "cas": "1320-18-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2702-72-9",
+  "name": "2,4-D sodium salt",
+  "cas": "2702-72-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-89-8",
+  "name": "Epichlorohydrin",
+  "cas": "106-89-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "13194-48-4",
+  "name": "Ethoprop",
+  "cas": "13194-48-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "110-80-5",
+  "name": "2-Ethoxyethanol",
+  "cas": "110-80-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "140-88-5",
+  "name": "Ethyl acrylate",
+  "cas": "140-88-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "100-41-4",
+  "name": "Ethylbenzene",
+  "cas": "100-41-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "541-41-3",
+  "name": "Ethyl chloroformate",
+  "cas": "541-41-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "759-94-4",
+  "name": "S-Ethyl dipropylthiocarbamate",
+  "cas": "759-94-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "74-85-1",
+  "name": "Ethylene",
+  "cas": "74-85-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "107-21-1",
+  "name": "Ethylene glycol",
+  "cas": "107-21-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "151-56-4",
+  "name": "Ethyleneimine (Aziridine)",
+  "cas": "151-56-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-21-8",
+  "name": "Ethylene oxide",
+  "cas": "75-21-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "96-45-7",
+  "name": "Ethylene thiourea",
+  "cas": "96-45-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-34-3",
+  "name": "Ethylidene dichloride (1,1-Dichloroethane)",
+  "cas": "75-34-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "52-85-7",
+  "name": "Famphur",
+  "cas": "52-85-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "60168-88-9",
+  "name": "Fenarimol",
+  "cas": "60168-88-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "13356-08-6",
+  "name": "Fenbutatin oxide",
+  "cas": "13356-08-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "66441-23-4",
+  "name": "Fenoxaprop-ethyl",
+  "cas": "66441-23-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "72490-01-8",
+  "name": "Fenoxycarb",
+  "cas": "72490-01-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "39515-41-8",
+  "name": "Fenpropathrin",
+  "cas": "39515-41-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "55-38-9",
+  "name": "Fenthion",
+  "cas": "55-38-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "51630-58-1",
+  "name": "Fenvalerate",
+  "cas": "51630-58-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "14484-64-1",
+  "name": "Ferbam",
+  "cas": "14484-64-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "69806-50-4",
+  "name": "Fluazifop-butyl",
+  "cas": "69806-50-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2164-17-2",
+  "name": "Fluometuron",
+  "cas": "2164-17-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7782-41-4",
+  "name": "Fluorine",
+  "cas": "7782-41-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "51-21-8",
+  "name": "Fluorouracil (5-Fluorouracil)",
+  "cas": "51-21-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "69409-94-5",
+  "name": "Fluvalinate",
+  "cas": "69409-94-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "133-07-3",
+  "name": "Folpet",
+  "cas": "133-07-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "72178-02-0",
+  "name": "Fomesafen",
+  "cas": "72178-02-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "50-00-0",
+  "name": "Formaldehyde",
+  "cas": "50-00-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-12-7",
+  "name": "Formamide",
+  "cas": "75-12-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "64-18-6",
+  "name": "Formic acid",
+  "cas": "64-18-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "76-13-1",
+  "name": "Freon 113 (CFC-113)",
+  "cas": "76-13-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "110-00-9",
+  "name": "Furan",
+  "cas": "110-00-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "556-52-5",
+  "name": "Glycidol",
+  "cas": "556-52-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "76-44-8",
+  "name": "Heptachlor",
+  "cas": "76-44-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "118-74-1",
+  "name": "Hexachlorobenzene",
+  "cas": "118-74-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "87-68-3",
+  "name": "Hexachloro-1,3-butadiene (Hexachlorobutadiene)",
+  "cas": "87-68-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "319-84-6",
+  "name": "alpha-Hexachlorocyclohexane",
+  "cas": "319-84-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "77-47-4",
+  "name": "Hexachlorocyclopentadiene",
+  "cas": "77-47-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67-72-1",
+  "name": "Hexachloroethane",
+  "cas": "67-72-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1335-87-1",
+  "name": "Hexachloronaphthalene",
+  "cas": "1335-87-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "70-30-4",
+  "name": "Hexachlorophene",
+  "cas": "70-30-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1222-05-5",
+  "name": "1,3,4,6,7,8-Hexahydro-4,6,6,7,8,8-hexamethylcyclopenta[g]-2-benzopyran",
+  "cas": "1222-05-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "680-31-9",
+  "name": "Hexamethylphosphoramide",
+  "cas": "680-31-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "110-54-3",
+  "name": "n-Hexane (Hexane)",
+  "cas": "110-54-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "51235-04-2",
+  "name": "Hexazinone",
+  "cas": "51235-04-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67485-29-4",
+  "name": "Hydramethylnon",
+  "cas": "67485-29-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "302-01-2",
+  "name": "Hydrazine",
+  "cas": "302-01-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "10034-93-2",
+  "name": "Hydrazine sulfate (1:1)",
+  "cas": "10034-93-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7647-01-0",
+  "name": "Hydrochloric acid (acid aerosols including mists, vapors, gas, fog, and other airborne forms of any particle size)",
+  "cas": "7647-01-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "74-90-8",
+  "name": "Hydrogen cyanide",
+  "cas": "74-90-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7664-39-3",
+  "name": "Hydrogen fluoride (Hydrofluoric acid)",
+  "cas": "7664-39-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7783-06-4",
+  "name": "Hydrogen sulfide",
+  "cas": "7783-06-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "123-31-9",
+  "name": "Hydroquinone",
+  "cas": "123-31-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "111-41-1",
+  "name": "N-Hydroxyethylethylenediamine",
+  "cas": "111-41-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "35554-44-0",
+  "name": "Imazalil",
+  "cas": "35554-44-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "55406-53-6",
+  "name": "3-Iodo-2-propynyl butylcarbamate",
+  "cas": "55406-53-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "13463-40-6",
+  "name": "Iron pentacarbonyl",
+  "cas": "13463-40-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "78-84-2",
+  "name": "Isobutyraldehyde",
+  "cas": "78-84-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "465-73-6",
+  "name": "Isodrin",
+  "cas": "465-73-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "25311-71-1",
+  "name": "Isofenphos",
+  "cas": "25311-71-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "78-79-5",
+  "name": "Isoprene",
+  "cas": "78-79-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67-63-0",
+  "name": "Isopropyl alcohol (Isopropanol) (only persons who manufacture by the strong acid process are subject, no supplier notification)",
+  "cas": "67-63-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "80-05-7",
+  "name": "4,4′-Isopropylidenediphenol",
+  "cas": "80-05-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "120-58-1",
+  "name": "Isosafrole",
+  "cas": "120-58-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "77501-63-4",
+  "name": "Lactofen",
+  "cas": "77501-63-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7439-92-1",
+  "name": "Lead",
+  "cas": "7439-92-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "58-89-9",
+  "name": "Lindane",
+  "cas": "58-89-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "330-55-2",
+  "name": "Linuron",
+  "cas": "330-55-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "554-13-2",
+  "name": "Lithium carbonate",
+  "cas": "554-13-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "121-75-5",
+  "name": "Malathion",
+  "cas": "121-75-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-31-6",
+  "name": "Maleic anhydride",
+  "cas": "108-31-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "109-77-3",
+  "name": "Malononitrile",
+  "cas": "109-77-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "12427-38-2",
+  "name": "Maneb",
+  "cas": "12427-38-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7439-96-5",
+  "name": "Manganese",
+  "cas": "7439-96-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "93-65-2",
+  "name": "Mecoprop",
+  "cas": "93-65-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "149-30-4",
+  "name": "2-Mercaptobenzothiazole",
+  "cas": "149-30-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7439-97-6",
+  "name": "Mercury",
+  "cas": "7439-97-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "150-50-5",
+  "name": "Merphos",
+  "cas": "150-50-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "126-98-7",
+  "name": "Methacrylonitrile",
+  "cas": "126-98-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "137-42-8",
+  "name": "Metham sodium (Sodium methyldithiocarbamate)",
+  "cas": "137-42-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67-56-1",
+  "name": "Methanol",
+  "cas": "67-56-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "20354-26-1",
+  "name": "Methazole",
+  "cas": "20354-26-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2032-65-7",
+  "name": "Methiocarb",
+  "cas": "2032-65-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "94-74-6",
+  "name": "Methoxone (MCPA)",
+  "cas": "94-74-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3653-48-3",
+  "name": "Methoxone sodium salt",
+  "cas": "3653-48-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "72-43-5",
+  "name": "Methoxychlor",
+  "cas": "72-43-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "109-86-4",
+  "name": "2-Methoxyethanol",
+  "cas": "109-86-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "96-33-3",
+  "name": "Methyl acrylate",
+  "cas": "96-33-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1634-04-4",
+  "name": "Methyl tert-butyl ether",
+  "cas": "1634-04-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-22-1",
+  "name": "Methyl chlorocarbonate",
+  "cas": "79-22-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "101-14-4",
+  "name": "4,4′-Methylenebis(2-chloroaniline)",
+  "cas": "101-14-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "101-61-1",
+  "name": "4,4′-Methylenebis(N,N-dimethyl)benzenamine (4,4′-Methylenebis[N,N-dimethylaniline])",
+  "cas": "101-61-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "74-95-3",
+  "name": "Methylene bromide (Dibromomethane)",
+  "cas": "74-95-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "101-77-9",
+  "name": "4,4′-Methylenedianiline",
+  "cas": "101-77-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "93-15-2",
+  "name": "Methyleugenol",
+  "cas": "93-15-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "60-34-4",
+  "name": "Methyl hydrazine",
+  "cas": "60-34-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "74-88-4",
+  "name": "Methyl iodide",
+  "cas": "74-88-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-10-1",
+  "name": "Methyl isobutyl ketone",
+  "cas": "108-10-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "624-83-9",
+  "name": "Methyl isocyanate",
+  "cas": "624-83-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "556-61-6",
+  "name": "Methyl isothiocyanate",
+  "cas": "556-61-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-86-5",
+  "name": "2-Methyllactonitrile (Acetone cyanohydrin)",
+  "cas": "75-86-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "74-93-1",
+  "name": "Methyl mercaptan",
+  "cas": "74-93-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "80-62-6",
+  "name": "Methyl methacrylate",
+  "cas": "80-62-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "924-42-5",
+  "name": "N-Methylolacrylamide",
+  "cas": "924-42-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "298-00-0",
+  "name": "Methyl parathion",
+  "cas": "298-00-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "109-06-8",
+  "name": "2-Methylpyridine",
+  "cas": "109-06-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "872-50-4",
+  "name": "N-Methyl-2-pyrrolidone",
+  "cas": "872-50-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "9006-42-2",
+  "name": "Metiram",
+  "cas": "9006-42-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "21087-64-9",
+  "name": "Metribuzin",
+  "cas": "21087-64-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7786-34-7",
+  "name": "Mevinphos",
+  "cas": "7786-34-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "90-94-8",
+  "name": "Michler's ketone",
+  "cas": "90-94-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2212-67-1",
+  "name": "Molinate",
+  "cas": "2212-67-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1313-27-5",
+  "name": "Molybdenum trioxide",
+  "cas": "1313-27-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "76-15-3",
+  "name": "Monochloropentafluoroethane (CFC-115)",
+  "cas": "76-15-3",
+  "note": "40 CFR 372.65 / 収載日 7/8/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "150-68-5",
+  "name": "Monuron",
+  "cas": "150-68-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "505-60-2",
+  "name": "Mustard gas",
+  "cas": "505-60-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "88671-89-0",
+  "name": "Myclobutanil",
+  "cas": "88671-89-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "142-59-6",
+  "name": "Nabam",
+  "cas": "142-59-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "300-76-5",
+  "name": "Naled",
+  "cas": "300-76-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "91-20-3",
+  "name": "Naphthalene",
+  "cas": "91-20-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "134-32-7",
+  "name": "alpha-Naphthylamine (1-Naphthalenamine)",
+  "cas": "134-32-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "91-59-8",
+  "name": "beta-Naphthylamine (2-Naphthalenamine)",
+  "cas": "91-59-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-02-0",
+  "name": "Nickel",
+  "cas": "7440-02-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1929-82-4",
+  "name": "Nitrapyrin",
+  "cas": "1929-82-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7697-37-2",
+  "name": "Nitric acid",
+  "cas": "7697-37-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "139-13-9",
+  "name": "Nitrilotriacetic acid",
+  "cas": "139-13-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "5064-31-3",
+  "name": "Nitrilotriacetic acid trisodium salt",
+  "cas": "5064-31-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "100-01-6",
+  "name": "p-Nitroaniline",
+  "cas": "100-01-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "99-59-2",
+  "name": "5-Nitro-o-anisidine (2-Methoxy-5-nitroaniline)",
+  "cas": "99-59-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "91-23-6",
+  "name": "o-Nitroanisole",
+  "cas": "91-23-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "98-95-3",
+  "name": "Nitrobenzene",
+  "cas": "98-95-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "92-93-3",
+  "name": "4-Nitrobiphenyl",
+  "cas": "92-93-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1836-75-5",
+  "name": "Nitrofen",
+  "cas": "1836-75-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "51-75-2",
+  "name": "Nitrogen mustard (HN-2)",
+  "cas": "51-75-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "55-63-0",
+  "name": "Nitroglycerin",
+  "cas": "55-63-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-52-5",
+  "name": "Nitromethane",
+  "cas": "75-52-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "88-75-5",
+  "name": "2-Nitrophenol (o-Nitrophenol)",
+  "cas": "88-75-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "100-02-7",
+  "name": "4-Nitrophenol (p-Nitrophenol)",
+  "cas": "100-02-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-46-9",
+  "name": "2-Nitropropane",
+  "cas": "79-46-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "924-16-3",
+  "name": "N-Nitrosodi-n-butylamine",
+  "cas": "924-16-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "55-18-5",
+  "name": "N-Nitrosodiethylamine",
+  "cas": "55-18-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "62-75-9",
+  "name": "N-Nitrosodimethylamine",
+  "cas": "62-75-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "86-30-6",
+  "name": "N-Nitrosodiphenylamine",
+  "cas": "86-30-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "156-10-5",
+  "name": "p-Nitrosodiphenylamine",
+  "cas": "156-10-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "621-64-7",
+  "name": "N-Nitrosodi-n-propylamine",
+  "cas": "621-64-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "759-73-9",
+  "name": "N-Nitroso-N-ethylurea",
+  "cas": "759-73-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "684-93-5",
+  "name": "N-Nitroso-N-methylurea",
+  "cas": "684-93-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "4549-40-0",
+  "name": "N-Nitrosomethylvinylamine",
+  "cas": "4549-40-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "59-89-2",
+  "name": "N-Nitrosomorpholine",
+  "cas": "59-89-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "16543-55-8",
+  "name": "N-Nitrosonornicotine",
+  "cas": "16543-55-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "100-75-4",
+  "name": "N-Nitrosopiperidine",
+  "cas": "100-75-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "88-72-2",
+  "name": "o-Nitrotoluene",
+  "cas": "88-72-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/14"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "99-55-8",
+  "name": "5-Nitro-o-toluidine (2-Methyl-5-nitroaniline)",
+  "cas": "99-55-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "27314-13-2",
+  "name": "Norflurazon",
+  "cas": "27314-13-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2234-13-1",
+  "name": "Octachloronaphthalene",
+  "cas": "2234-13-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "29082-74-4",
+  "name": "Octachlorostyrene",
+  "cas": "29082-74-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/00"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "19044-88-3",
+  "name": "Oryzalin",
+  "cas": "19044-88-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "20816-12-0",
+  "name": "Osmium tetroxide",
+  "cas": "20816-12-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "301-12-2",
+  "name": "Oxydemeton-methyl",
+  "cas": "301-12-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "19666-30-9",
+  "name": "Oxadiazon",
+  "cas": "19666-30-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "42874-03-3",
+  "name": "Oxyfluorfen",
+  "cas": "42874-03-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "10028-15-6",
+  "name": "Ozone",
+  "cas": "10028-15-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "123-63-7",
+  "name": "Paraldehyde",
+  "cas": "123-63-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1910-42-5",
+  "name": "Paraquat dichloride",
+  "cas": "1910-42-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "56-38-2",
+  "name": "Parathion",
+  "cas": "56-38-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1114-71-2",
+  "name": "Pebulate",
+  "cas": "1114-71-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "40487-42-1",
+  "name": "Pendimethalin",
+  "cas": "40487-42-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "608-93-5",
+  "name": "Pentachlorobenzene",
+  "cas": "608-93-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/00"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "76-01-7",
+  "name": "Pentachloroethane",
+  "cas": "76-01-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "87-86-5",
+  "name": "Pentachlorophenol",
+  "cas": "87-86-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "57-33-0",
+  "name": "Pentobarbital sodium",
+  "cas": "57-33-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-21-0",
+  "name": "Peracetic acid",
+  "cas": "79-21-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "594-42-3",
+  "name": "Perchloromethyl mercaptan",
+  "cas": "594-42-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "52645-53-1",
+  "name": "Permethrin",
+  "cas": "52645-53-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "85-01-8",
+  "name": "Phenanthrene",
+  "cas": "85-01-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-95-2",
+  "name": "Phenol",
+  "cas": "108-95-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "77-09-8",
+  "name": "Phenolphthalein (3,3-Bis(4-hydroxyphenyl)phthalide)",
+  "cas": "77-09-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "26002-80-2",
+  "name": "Phenothrin",
+  "cas": "26002-80-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-50-3",
+  "name": "p-Phenylenediamine",
+  "cas": "106-50-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95-54-5",
+  "name": "1,2-Phenylenediamine",
+  "cas": "95-54-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-45-2",
+  "name": "1,3-Phenylenediamine",
+  "cas": "108-45-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "615-28-1",
+  "name": "1,2-Phenylenediamine dihydrochloride",
+  "cas": "615-28-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "624-18-0",
+  "name": "1,4-Phenylenediamine dihydrochloride",
+  "cas": "624-18-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "90-43-7",
+  "name": "2-Phenylphenol",
+  "cas": "90-43-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "57-41-0",
+  "name": "Phenytoin",
+  "cas": "57-41-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-44-5",
+  "name": "Phosgene",
+  "cas": "75-44-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7803-51-2",
+  "name": "Phosphine",
+  "cas": "7803-51-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "12185-10-3",
+  "name": "Phosphorus (yellow or white)",
+  "cas": "12185-10-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "85-44-9",
+  "name": "Phthalic anhydride",
+  "cas": "85-44-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1918-02-1",
+  "name": "Picloram",
+  "cas": "1918-02-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "88-89-1",
+  "name": "Picric acid",
+  "cas": "88-89-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "51-03-6",
+  "name": "Piperonyl butoxide",
+  "cas": "51-03-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "29232-93-7",
+  "name": "Pirimiphos-methyl",
+  "cas": "29232-93-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1336-36-3",
+  "name": "Polychlorinated biphenyls",
+  "cas": "1336-36-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7758-01-2",
+  "name": "Potassium bromate",
+  "cas": "7758-01-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "128-03-0",
+  "name": "Potassium dimethyldithiocarbamate",
+  "cas": "128-03-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "137-41-7",
+  "name": "Potassium N-methyldithiocarbamate",
+  "cas": "137-41-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "41198-08-7",
+  "name": "Profenofos",
+  "cas": "41198-08-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7287-19-6",
+  "name": "Prometryn",
+  "cas": "7287-19-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "23950-58-5",
+  "name": "Pronamide",
+  "cas": "23950-58-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1918-16-7",
+  "name": "Propachlor",
+  "cas": "1918-16-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1120-71-4",
+  "name": "1,3-Propane sultone",
+  "cas": "1120-71-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "709-98-8",
+  "name": "Propanil",
+  "cas": "709-98-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2312-35-8",
+  "name": "Propargite",
+  "cas": "2312-35-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "107-19-7",
+  "name": "Propargyl alcohol",
+  "cas": "107-19-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "31218-83-4",
+  "name": "Propetamphos",
+  "cas": "31218-83-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "60207-90-1",
+  "name": "Propiconazole",
+  "cas": "60207-90-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "57-57-8",
+  "name": "beta-Propiolactone",
+  "cas": "57-57-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "123-38-6",
+  "name": "Propionaldehyde",
+  "cas": "123-38-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "114-26-1",
+  "name": "Propoxur",
+  "cas": "114-26-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "115-07-1",
+  "name": "Propylene",
+  "cas": "115-07-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-55-8",
+  "name": "Propyleneimine",
+  "cas": "75-55-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-56-9",
+  "name": "Propylene oxide",
+  "cas": "75-56-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "110-86-1",
+  "name": "Pyridine",
+  "cas": "110-86-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "91-22-5",
+  "name": "Quinoline",
+  "cas": "91-22-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-51-4",
+  "name": "Quinone",
+  "cas": "106-51-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "82-68-8",
+  "name": "Quintozene (Pentachloronitrobenzene)",
+  "cas": "82-68-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "76578-14-8",
+  "name": "Quizalofop-ethyl",
+  "cas": "76578-14-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "10453-86-8",
+  "name": "Resmethrin",
+  "cas": "10453-86-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "81-07-2",
+  "name": "Saccharin (only persons who manufacture are subject, no supplier notification)",
+  "cas": "81-07-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "94-59-7",
+  "name": "Safrole",
+  "cas": "94-59-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7782-49-2",
+  "name": "Selenium",
+  "cas": "7782-49-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "74051-80-2",
+  "name": "Sethoxydim",
+  "cas": "74051-80-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-22-4",
+  "name": "Silver",
+  "cas": "7440-22-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "122-34-9",
+  "name": "Simazine",
+  "cas": "122-34-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "26628-22-8",
+  "name": "Sodium azide",
+  "cas": "26628-22-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1982-69-0",
+  "name": "Sodium dicamba",
+  "cas": "1982-69-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "128-04-1",
+  "name": "Sodium dimethyldithiocarbamate",
+  "cas": "128-04-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "62-74-8",
+  "name": "Sodium fluoroacetate",
+  "cas": "62-74-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7632-00-0",
+  "name": "Sodium nitrite",
+  "cas": "7632-00-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "131-52-2",
+  "name": "Sodium pentachlorophenate",
+  "cas": "131-52-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "132-27-4",
+  "name": "Sodium o-phenylphenoxide",
+  "cas": "132-27-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "100-42-5",
+  "name": "Styrene",
+  "cas": "100-42-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "96-09-3",
+  "name": "Styrene oxide",
+  "cas": "96-09-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7664-93-9",
+  "name": "Sulfuric acid (acid aerosols including mists, vapors, gas, fog, and other airborne forms of any particle size)",
+  "cas": "7664-93-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2699-79-8",
+  "name": "Sulfuryl fluoride",
+  "cas": "2699-79-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "35400-43-2",
+  "name": "Sulprofos",
+  "cas": "35400-43-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "34014-18-1",
+  "name": "Tebuthiuron",
+  "cas": "34014-18-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3383-96-8",
+  "name": "Temephos",
+  "cas": "3383-96-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "5902-51-2",
+  "name": "Terbacil",
+  "cas": "5902-51-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-94-7",
+  "name": "Tetrabromobisphenol A",
+  "cas": "79-94-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/00"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "630-20-6",
+  "name": "1,1,1,2-Tetrachloroethane",
+  "cas": "630-20-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-34-5",
+  "name": "1,1,2,2-Tetrachloroethane",
+  "cas": "79-34-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "127-18-4",
+  "name": "Tetrachloroethylene",
+  "cas": "127-18-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "354-11-0",
+  "name": "1,1,1,2-Tetrachloro-2-fluoroethane (HCFC-121a)",
+  "cas": "354-11-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "354-14-3",
+  "name": "1,1,2,2-Tetrachloro-1-fluoroethane (HCFC-121)",
+  "cas": "354-14-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "961-11-5",
+  "name": "Tetrachlorvinphos",
+  "cas": "961-11-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "64-75-5",
+  "name": "Tetracycline hydrochloride",
+  "cas": "64-75-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "116-14-3",
+  "name": "Tetrafluoroethylene (Tetrafluoroethene)",
+  "cas": "116-14-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7696-12-0",
+  "name": "Tetramethrin",
+  "cas": "7696-12-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "140-66-9",
+  "name": "p-(1,1,3,3-Tetramethylbutyl)phenol",
+  "cas": "140-66-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "509-14-8",
+  "name": "Tetranitromethane",
+  "cas": "509-14-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-28-0",
+  "name": "Thallium",
+  "cas": "7440-28-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "148-79-8",
+  "name": "Thiabendazole",
+  "cas": "148-79-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "62-55-5",
+  "name": "Thioacetamide",
+  "cas": "62-55-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "28249-77-6",
+  "name": "Thiobencarb",
+  "cas": "28249-77-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "139-65-1",
+  "name": "4,4′-Thiodianiline",
+  "cas": "139-65-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "59669-26-0",
+  "name": "Thiodicarb",
+  "cas": "59669-26-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "23564-06-9",
+  "name": "Thiophanate-ethyl",
+  "cas": "23564-06-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "23564-05-8",
+  "name": "Thiophanate-methyl",
+  "cas": "23564-05-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-19-6",
+  "name": "Thiosemicarbazide",
+  "cas": "79-19-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "62-56-6",
+  "name": "Thiourea",
+  "cas": "62-56-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "137-26-8",
+  "name": "Thiram",
+  "cas": "137-26-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1314-20-1",
+  "name": "Thorium dioxide",
+  "cas": "1314-20-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7550-45-0",
+  "name": "Titanium tetrachloride",
+  "cas": "7550-45-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-88-3",
+  "name": "Toluene",
+  "cas": "108-88-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "584-84-9",
+  "name": "Toluene-2,4-diisocyanate",
+  "cas": "584-84-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "91-08-7",
+  "name": "Toluene-2,6-diisocyanate",
+  "cas": "91-08-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "26471-62-5",
+  "name": "Toluene diisocyanate (mixed isomers)",
+  "cas": "26471-62-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95-53-4",
+  "name": "o-Toluidine",
+  "cas": "95-53-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "636-21-5",
+  "name": "o-Toluidine hydrochloride",
+  "cas": "636-21-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "8001-35-2",
+  "name": "Toxaphene",
+  "cas": "8001-35-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "43121-43-3",
+  "name": "Triadimefon",
+  "cas": "43121-43-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2303-17-5",
+  "name": "Triallate",
+  "cas": "2303-17-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68-76-8",
+  "name": "Triaziquone",
+  "cas": "68-76-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "101200-48-0",
+  "name": "Tribenuron-methyl",
+  "cas": "101200-48-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1983-10-4",
+  "name": "Tributyltin fluoride",
+  "cas": "1983-10-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2155-70-6",
+  "name": "Tributyltin methacrylate",
+  "cas": "2155-70-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "78-48-8",
+  "name": "S,S,S-Tributyltrithiophosphate (Tribufos)",
+  "cas": "78-48-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "52-68-6",
+  "name": "Trichlorfon",
+  "cas": "52-68-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "76-02-8",
+  "name": "Trichloroacetyl chloride",
+  "cas": "76-02-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "87-61-6",
+  "name": "1,2,3-Trichlorobenzene",
+  "cas": "87-61-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "120-82-1",
+  "name": "1,2,4-Trichlorobenzene",
+  "cas": "120-82-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "71-55-6",
+  "name": "1,1,1-Trichloroethane",
+  "cas": "71-55-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-00-5",
+  "name": "1,1,2-Trichloroethane",
+  "cas": "79-00-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "79-01-6",
+  "name": "Trichloroethylene",
+  "cas": "79-01-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-69-4",
+  "name": "Trichlorofluoromethane (CFC-11)",
+  "cas": "75-69-4",
+  "note": "40 CFR 372.65 / 収載日 7/8/90"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95-95-4",
+  "name": "2,4,5-Trichlorophenol",
+  "cas": "95-95-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "88-06-2",
+  "name": "2,4,6-Trichlorophenol",
+  "cas": "88-06-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "96-18-4",
+  "name": "1,2,3-Trichloropropane",
+  "cas": "96-18-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "57213-69-1",
+  "name": "Triclopyr-triethylammonium salt",
+  "cas": "57213-69-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "121-44-8",
+  "name": "Triethylamine",
+  "cas": "121-44-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1582-09-8",
+  "name": "Trifluralin",
+  "cas": "1582-09-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "26644-46-2",
+  "name": "Triforine",
+  "cas": "26644-46-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2451-62-9",
+  "name": "Triglycidyl isocyanurate",
+  "cas": "2451-62-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95-63-6",
+  "name": "1,2,4-Trimethylbenzene",
+  "cas": "95-63-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2655-15-4",
+  "name": "2,3,5-Trimethylphenyl methylcarbamate",
+  "cas": "2655-15-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "639-58-7",
+  "name": "Triphenyltin chloride",
+  "cas": "639-58-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "76-87-9",
+  "name": "Triphenyltin hydroxide",
+  "cas": "76-87-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "115-96-8",
+  "name": "Tris(2-chloroethyl) phosphate",
+  "cas": "115-96-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "126-72-7",
+  "name": "Tris(2,3-dibromopropyl) phosphate",
+  "cas": "126-72-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "13674-87-8",
+  "name": "Tris(1,3-dichloro-2-propyl) phosphate",
+  "cas": "13674-87-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "25155-23-1",
+  "name": "Tris(dimethylphenol) phosphate",
+  "cas": "25155-23-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "72-57-1",
+  "name": "Trypan blue",
+  "cas": "72-57-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/94"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "51-79-6",
+  "name": "Urethane",
+  "cas": "51-79-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-62-2",
+  "name": "Vanadium (except when contained in an alloy)",
+  "cas": "7440-62-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/00"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "50471-44-8",
+  "name": "Vinclozolin",
+  "cas": "50471-44-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/95"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-05-4",
+  "name": "Vinyl acetate",
+  "cas": "108-05-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "593-60-2",
+  "name": "Vinyl bromide",
+  "cas": "593-60-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-01-4",
+  "name": "Vinyl chloride",
+  "cas": "75-01-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-02-5",
+  "name": "Vinyl fluoride",
+  "cas": "75-02-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/11"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "75-35-4",
+  "name": "Vinylidene chloride (1,1-Dichloroethylene)",
+  "cas": "75-35-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1330-20-7",
+  "name": "Xylene (mixed isomers)",
+  "cas": "1330-20-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "108-38-3",
+  "name": "m-Xylene",
+  "cas": "108-38-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95-47-6",
+  "name": "o-Xylene",
+  "cas": "95-47-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "106-42-3",
+  "name": "p-Xylene",
+  "cas": "106-42-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "87-62-7",
+  "name": "2,6-Xylidine",
+  "cas": "87-62-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "7440-66-6",
+  "name": "Zinc (fume or dust)",
+  "cas": "7440-66-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "12122-67-7",
+  "name": "Zineb",
+  "cas": "12122-67-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/87"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2742694-36-4",
+  "name": "Acetamide, N-(2-aminoethyl)-, 2-[(γ-ω-perfluoro-C4-20-alkyl)thio] derivs., polymers with N1,N1-dimethyl-1,3-propanediamine, epichlorohydrin and ethylenediamine, oxidized",
+  "cas": "2742694-36-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2738952-61-7",
+  "name": "Acetamide, N-[3-(dimethylamino)propyl]-, 2-[(γ-ω-perfluoro-C4-20-alkyl)thio] derivs.",
+  "cas": "2738952-61-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2744262-09-5",
+  "name": "Acetic acid, 2-[(γ-ω-perfluoro-C4-20-alkyl)thio] derivs., 2-hydroxypropyl esters",
+  "cas": "2744262-09-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3030471-22-5",
+  "name": "Acetic acid, [(γ-ω-perfluoro-C8-10-alkyl)thio] derivs., Bu esters",
+  "cas": "3030471-22-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/25"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68391-08-2",
+  "name": "Alcohols, C8-14, γ-ω-perfluoro",
+  "cas": "68391-08-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2728655-42-1",
+  "name": "Alcohols, C8-16, γ-ω-perfluoro, reaction products with 1,6-diisocyanatohexane, glycidol and stearyl alc.",
+  "cas": "2728655-42-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "97659-47-7",
+  "name": "Alkenes, C8-14 α-, δ-ω-perfluoro",
+  "cas": "97659-47-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68188-12-5",
+  "name": "Alkyl iodides, C4-20, γ-ω-perfluoro",
+  "cas": "68188-12-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "10495-86-0",
+  "name": "Ammonium perfluorobutanoate",
+  "cas": "10495-86-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3108-42-7",
+  "name": "Ammonium perfluorodecanoate (PFDA NH4)",
+  "cas": "3108-42-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/25"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "21615-47-4",
+  "name": "Ammonium perfluorohexanoate",
+  "cas": "21615-47-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/24"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3825-26-1",
+  "name": "Ammonium perfluorooctanoate",
+  "cas": "3825-26-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68515-62-8",
+  "name": "1,4-Benzenedicarboxylic acid, dimethyl ester, reaction products with bis(2-hydroxyethyl)terephthalate, ethylene glycol, α-fluoro-ω-(2-hydroxyethyl)poly(difluoromethylene), hexakis(methoxymethyl)melamine and polyethylene glycol",
+  "cas": "68515-62-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2816091-53-7",
+  "name": "Betaines, dimethyl(γ-ω-perfluoro-γ-hydro-C8-18-alkyl)",
+  "cas": "2816091-53-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/24"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68187-25-7",
+  "name": "Butanoic acid, 4-[[3-(dimethylamino)propyl]amino]-4-oxo-, 2(or 3)-[(γ-ω-perfluoro-C6-20-alkyl)thio] derivs.",
+  "cas": "68187-25-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "383-07-3",
+  "name": "2-[Butyl[(heptadecafluorooctyl)sulfonyl]amino]ethyl acrylate",
+  "cas": "383-07-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68141-02-6",
+  "name": "Chromium(III) perfluorooctanoate",
+  "cas": "68141-02-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67584-42-3",
+  "name": "Cyclohexanesulfonic acid, decafluoro(pentafluoroethyl)-, potassium salt",
+  "cas": "67584-42-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68156-07-0",
+  "name": "Cyclohexanesulfonic acid, decafluoro(trifluoromethyl)-, potassium salt",
+  "cas": "68156-07-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68156-01-4",
+  "name": "Cyclohexanesulfonic acid, nonafluorobis(trifluoromethyl)-, potassium salt",
+  "cas": "68156-01-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3107-18-4",
+  "name": "Cyclohexanesulfonic acid, undecafluoro-, potassium salt",
+  "cas": "3107-18-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2043-53-0",
+  "name": "Decane, 1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8-heptadecafluoro-10-iodo-",
+  "cas": "2043-53-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67906-42-7",
+  "name": "1-Decanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heneicosafluoro-, ammonium salt",
+  "cas": "67906-42-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "27619-90-5",
+  "name": "1-Decanesulfonyl chloride, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-",
+  "cas": "27619-90-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "678-39-7",
+  "name": "1-Decanol, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-",
+  "cas": "678-39-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "118400-71-8",
+  "name": "Disulfides, bis(γ-ω-perfluoro-C6-20-alkyl)",
+  "cas": "118400-71-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2043-54-1",
+  "name": "Dodecane, 1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10-heneicosafluoro-12-iodo-",
+  "cas": "2043-54-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "27619-91-6",
+  "name": "1-Dodecanesulfonyl chloride, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,12-heneicosafluoro-",
+  "cas": "27619-91-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "865-86-1",
+  "name": "1-Dodecanol, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,12-heneicosafluoro-",
+  "cas": "865-86-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65104-65-6",
+  "name": "1-Eicosanol, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18, 18,19,19,20,20,20-heptatriacontafluoro-",
+  "cas": "65104-65-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65636-35-3",
+  "name": "Ethanaminium, N,N-diethyl-N-methyl-2-[(2-methyl-1-oxo-2-propenyl)oxy]-, methyl sulfate, polymer with 2-ethylhexyl 2-methyl-2-propenoate, α-fluoro-ω-[2-[(2-methyl-1-oxo-2-propenyl)oxy]ethyl]poly(difluoromethylene), 2-hydroxyethyl 2-methyl-2-propenoate and N-(hydroxymethyl)-2-propenamide",
+  "cas": "65636-35-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "56773-42-3",
+  "name": "Ethanaminium, N,N,N-triethyl-, salt with 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-1-octanesulfonic acid (1:1)",
+  "cas": "56773-42-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "182176-52-9",
+  "name": "Ethaneperoxoic acid, reaction products with 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl thiocyanate and 3,3,4,4,5,5,6,6,7,7,8,8,8-tridecafluorooctyl thiocyanate",
+  "cas": "182176-52-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-74-7",
+  "name": "Ethanol, 2,2′-iminobis-, compd. with α-fluoro-ω-[2-(phosphonooxy)ethyl]poly(difluoromethylene) (1:1)",
+  "cas": "65530-74-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-63-4",
+  "name": "Ethanol, 2,2′-iminobis-, compd. with α-fluoro-ω-[2-(phosphonooxy)ethyl]poly(difluoromethylene) (2:1)",
+  "cas": "65530-63-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-64-5",
+  "name": "Ethanol, 2,2′-iminobis-, compd. with α,α′-[phosphinicobis(oxy-2,1-ethanediyl)]bis[ω-fluoropoly(difluoromethylene)] (1:1)",
+  "cas": "65530-64-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1691-99-2",
+  "name": "N-Ethyl-N-(2-hydroxyethyl)perfluorooctanesulfonamide",
+  "cas": "1691-99-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "423-82-5",
+  "name": "2-[Ethyl[(heptadecafluorooctyl)sulfonyl]amino]ethyl acrylate",
+  "cas": "423-82-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "376-14-7",
+  "name": "2-[Ethyl[(heptadecafluorooctyl)sulfonyl]amino]ethyl methacrylate",
+  "cas": "376-14-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "72623-77-9",
+  "name": "Fatty acids, C6-18, perfluoro, ammonium salts",
+  "cas": "72623-77-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "72968-38-8",
+  "name": "Fatty acids, C7-13, perfluoro, ammonium salts",
+  "cas": "72968-38-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "178535-23-4",
+  "name": "Fatty acids, linseed-oil, γ-ω-perfluoro-C8-14-alkyl esters",
+  "cas": "178535-23-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "27619-97-2",
+  "name": "6:2 Fluorotelomer sulfonate acid",
+  "cas": "27619-97-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/25"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "59587-39-2",
+  "name": "6:2 Fluorotelomer sulfonate ammonium salt",
+  "cas": "59587-39-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/25"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "425670-75-3",
+  "name": "6:2 Fluorotelomer sulfonate anion",
+  "cas": "425670-75-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/25"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "59587-38-1",
+  "name": "6:2 Fluorotelomer sulfonate potassium salt",
+  "cas": "59587-38-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/25"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "27619-94-9",
+  "name": "6:2 Fluorotelomer sulfonate sodium salt",
+  "cas": "27619-94-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/25"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2991-51-7",
+  "name": "Glycine, N-ethyl-N-[(heptadecafluorooctyl)sulfonyl]-, potassium salt",
+  "cas": "2991-51-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "55910-10-6",
+  "name": "Glycine, N-[(heptadecafluorooctyl)sulfonyl]-N-propyl-, potassium salt",
+  "cas": "55910-10-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67584-62-7",
+  "name": "Glycine, N-ethyl-N-[(pentadecafluoroheptyl)sulfonyl]-, potassium salt",
+  "cas": "67584-62-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67584-53-6",
+  "name": "Glycine, N-ethyl-N-[(tridecafluorohexyl)sulfonyl]-, potassium salt",
+  "cas": "67584-53-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67584-52-5",
+  "name": "Glycine, N-ethyl-N-[(undecafluoropentyl)sulfonyl]-, potassium salt",
+  "cas": "67584-52-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1652-63-7",
+  "name": "3-[[(Heptadecafluorooctyl)sulfonyl]amino]-N,N,N-trimethyl-1-propanaminium iodide",
+  "cas": "1652-63-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "25268-77-3",
+  "name": "2-[[(Heptadecafluorooctyl)sulfonyl]methylamino]ethyl acrylate",
+  "cas": "25268-77-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68555-76-0",
+  "name": "1-Heptanesulfonamide, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,7-pentadecafluoro-N-(2-hydroxyethyl)-N-methyl-",
+  "cas": "68555-76-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68957-62-0",
+  "name": "1-Heptanesulfonamide, N-ethyl-1,1,2,2,3,3,4,4,5,5,6,6,7,7,7-pentadecafluoro-",
+  "cas": "68957-62-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68259-07-4",
+  "name": "1-Heptanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,7-pentadecafluoro-, ammonium salt",
+  "cas": "68259-07-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "70225-15-9",
+  "name": "1-Heptanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,7-pentadecafluoro-, compd. with 2,2′-iminobis[ethanol] (1:1)",
+  "cas": "70225-15-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "60270-55-5",
+  "name": "1-Heptanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,7-pentadecafluoro-, potassium salt",
+  "cas": "60270-55-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "335-71-7",
+  "name": "1-Heptanesulfonyl fluoride, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,7-pentadecafluoro-",
+  "cas": "335-71-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65510-55-6",
+  "name": "Hexadecane, 1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14-nonacosafluoro-16-iodo-",
+  "cas": "65510-55-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "60699-51-6",
+  "name": "1-Hexadecanol, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,16-nonacosafluoro-",
+  "cas": "60699-51-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "13252-13-6",
+  "name": "Hexafluoropropylene oxide dimer acid",
+  "cas": "13252-13-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "62037-80-3",
+  "name": "Hexafluoropropylene oxide dimer acid ammonium salt",
+  "cas": "62037-80-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "135228-60-3",
+  "name": "Hexane, 1,6-diisocyanato-, homopolymer, γ-ω-perfluoro-C6-20-alc.-blocked",
+  "cas": "135228-60-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68555-75-9",
+  "name": "1-Hexanesulfonamide, 1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluoro-N-(2-hydroxyethyl)-N-methyl-",
+  "cas": "68555-75-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68259-08-5",
+  "name": "1-Hexanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluoro-, ammonium salt",
+  "cas": "68259-08-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3871-99-6",
+  "name": "1-Hexanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluoro-, potassium salt",
+  "cas": "3871-99-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "70225-16-0",
+  "name": "1-Hexanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluoro-, compd. with 2,2′-iminobis[ethanol] (1:1)",
+  "cas": "70225-16-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "90076-65-6",
+  "name": "Lithium bis[(trifluoromethyl)sulfonyl] azanide",
+  "cas": "90076-65-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/24"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "29457-72-5",
+  "name": "Lithium (perfluorooctane)sulfonate",
+  "cas": "29457-72-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "376-27-2",
+  "name": "Methyl perfluorooctanoate",
+  "cas": "376-27-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "17202-41-4",
+  "name": "1-Nonanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,9-nonadecafluoro-, ammonium salt",
+  "cas": "17202-41-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "16517-11-6",
+  "name": "Octadecanoic acid, pentatriacontafluoro-",
+  "cas": "16517-11-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65104-67-8",
+  "name": "1-Octadecanol, 3,3,4,4,5,5,6,6,7,7, 8,8,9,9,10,10,11,11,12,12,13,13,14,14,15,15, 16,16,17,17,18,18,18-tritriacontafluoro-",
+  "cas": "65104-67-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "31506-32-8",
+  "name": "1-Octanesulfonamide, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-N-methyl-",
+  "cas": "31506-32-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "24448-09-7",
+  "name": "1-Octanesulfonamide, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-N-(2-hydroxyethyl)-N-methyl-",
+  "cas": "24448-09-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2263-09-4",
+  "name": "1-Octanesulfonamide, N-butyl-1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-N-(2-hydroxyethyl)-",
+  "cas": "2263-09-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "61660-12-6",
+  "name": "1-Octanesulfonamide, N-ethyl-1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-N-[3-(trimethoxysilyl)propyl]-",
+  "cas": "61660-12-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "178094-69-4",
+  "name": "1-Octanesulfonamide, N-[3-(dimethyloxidoamino)propyl]-1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-, potassium salt",
+  "cas": "178094-69-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67969-69-1",
+  "name": "1-Octanesulfonamide, N-ethyl-1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-N-[2-(phosphonooxy)ethyl]-, diammonium salt",
+  "cas": "67969-69-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "29081-56-9",
+  "name": "1-Octanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-, ammonium salt",
+  "cas": "29081-56-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "70225-14-8",
+  "name": "1-Octanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-, compd. with 2,2′-iminobis[ethanol] (1:1)",
+  "cas": "70225-14-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "335-66-0",
+  "name": "Octanoyl fluoride, pentadecafluoro-",
+  "cas": "335-66-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68555-74-8",
+  "name": "1-Pentanesulfonamide, 1,1,2,2,3,3,4,4,5,5,5-undecafluoro-N-(2-hydroxyethyl)-N-methyl-",
+  "cas": "68555-74-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3872-25-1",
+  "name": "1-Pentanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,5-undecafluoro-, potassium salt",
+  "cas": "3872-25-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68259-09-6",
+  "name": "1-Pentanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,5-undecafluoro-, ammonium salt",
+  "cas": "68259-09-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "70225-17-1",
+  "name": "1-Pentanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,5-undecafluoro-, compd. with 2,2′-iminobis[ethanol] (1:1)",
+  "cas": "70225-17-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "71608-60-1",
+  "name": "Pentanoic acid, 4,4-bis[(γ-ω-perfluoro-C8-20-alkyl)thio] derivs.",
+  "cas": "71608-60-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "375-73-5",
+  "name": "Perfluorobutane sulfonic acid",
+  "cas": "375-73-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/22"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "45187-15-3",
+  "name": "Perfluorobutanesulfonate",
+  "cas": "45187-15-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/22"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "45048-62-2",
+  "name": "Perfluorobutanoate",
+  "cas": "45048-62-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "375-22-4",
+  "name": "Perfluorobutanoic acid",
+  "cas": "375-22-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "335-76-2",
+  "name": "Perfluorodecanoic acid",
+  "cas": "335-76-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "307-55-1",
+  "name": "Perfluorododecanoic acid",
+  "cas": "307-55-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "355-46-4",
+  "name": "Perfluorohexanesulfonic acid",
+  "cas": "355-46-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "307-24-4",
+  "name": "Perfluorohexanoic acid",
+  "cas": "307-24-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/24"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "377-73-1",
+  "name": "Perfluoro-3-methoxypropanoic acid",
+  "cas": "377-73-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/25"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "375-95-1",
+  "name": "Perfluorononanoic acid",
+  "cas": "375-95-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1763-23-1",
+  "name": "Perfluorooctane sulfonic acid",
+  "cas": "1763-23-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "335-67-1",
+  "name": "Perfluorooctanoic acid",
+  "cas": "335-67-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "21652-58-4",
+  "name": "Perfluorooctyl Ethylene",
+  "cas": "21652-58-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "507-63-1",
+  "name": "Perfluorooctyl iodide",
+  "cas": "507-63-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/21"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "307-35-7",
+  "name": "Perfluorooctylsulfonyl fluoride",
+  "cas": "307-35-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67905-19-5",
+  "name": "Perfluoropalmitic acid",
+  "cas": "67905-19-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "422-64-0",
+  "name": "Perfluoropropanoic acid",
+  "cas": "422-64-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/24"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "376-06-7",
+  "name": "Perfluorotetradecanoic acid",
+  "cas": "376-06-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68412-69-1",
+  "name": "Phosphinic acid, bis(perfluoro-C6-12-alkyl) derivs.",
+  "cas": "68412-69-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68412-68-0",
+  "name": "Phosphonic acid, perfluoro-C6-12-alkyl derivs.",
+  "cas": "68412-68-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "74499-44-8",
+  "name": "Phosphoric acid, γ-ω-perfluoro-C8-16-alkyl esters, compds. with diethanolamine",
+  "cas": "74499-44-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "123171-68-6",
+  "name": "Poly(difluoromethylene), α-[2-(acetyloxy)-3-[(carboxymethyl)dimethylammonio]propyl]-ω-fluoro-, inner salt",
+  "cas": "123171-68-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-83-8",
+  "name": "Poly(difluoromethylene), α-[2-[(2-carboxyethyl)thio]ethyl]-ω-fluoro-",
+  "cas": "65530-83-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-69-0",
+  "name": "Poly(difluoromethylene), α-[2-[(2-carboxyethyl)thio]ethyl]-ω-fluoro-, lithium salt",
+  "cas": "65530-69-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65605-56-3",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-(2-hydroxyethyl)-, dihydrogen 2-hydroxy-1,2,3-propanetricarboxylate",
+  "cas": "65605-56-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65605-57-4",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-(2-hydroxyethyl)-, hydrogen 2-hydroxy-1,2,3-propanetricarboxylate",
+  "cas": "65605-57-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-59-8",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-(2-hydroxyethyl)-, 2-hydroxy-1,2,3-propanetricarboxylate (3:1)",
+  "cas": "65530-59-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-66-7",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-[2-[(2-methyl-1-oxo-2-propenyl)oxy]ethyl]-",
+  "cas": "65530-66-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65605-73-4",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-[2-[(1-oxo-2-propenyl)oxy]ethyl]-, homopolymer",
+  "cas": "65605-73-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-65-6",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-[2-[(1-oxooctadecyl)oxy]ethyl]-",
+  "cas": "65530-65-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-61-2",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-[2-(phosphonooxy)ethyl]-",
+  "cas": "65530-61-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "95144-12-0",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-[2-(phosphonooxy)ethyl]-, ammonium salt",
+  "cas": "95144-12-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-72-5",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-[2-(phosphonooxy)ethyl]-, diammonium salt",
+  "cas": "65530-72-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-71-4",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-[2-(phosphonooxy)ethyl]-, monoammonium salt",
+  "cas": "65530-71-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "80010-37-3",
+  "name": "Poly(difluoromethylene), α-fluoro-ω-[2-sulphoethyl)-",
+  "cas": "80010-37-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-62-3",
+  "name": "Poly(difluoromethylene), α,α′-[phosphinicobis(oxy-2,1-ethanediyl)]bis[ω-fluoro-",
+  "cas": "65530-62-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65530-70-3",
+  "name": "Poly(difluoromethylene), α,α′-[phosphinicobis(oxy-2,1-ethanediyl)]bis[ω-fluoro-, ammonium salt",
+  "cas": "65530-70-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "56372-23-7",
+  "name": "Poly(oxy-1,2-ethanediyl), α-[2-[ethyl[(tridecafluorohexyl)sulfonyl]amino]ethyl]-ω-hydroxy-",
+  "cas": "56372-23-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "29117-08-6",
+  "name": "Poly(oxy-1,2-ethanediyl), α-[2-[ethyl[(heptadecafluorooctyl)sulfonyl]amino]ethyl]-ω-hydroxy-",
+  "cas": "29117-08-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68958-60-1",
+  "name": "Poly(oxy-1,2-ethanediyl), α-[2-[ethyl[(pentadecafluoroheptyl)sulfonyl]amino]ethyl]-ω-methoxy-",
+  "cas": "68958-60-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68958-61-2",
+  "name": "Poly(oxy-1,2-ethanediyl), α-[2-[ethyl[(heptadecafluorooctyl)sulfonyl]amino]ethyl]-ω-methoxy-",
+  "cas": "68958-61-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68298-80-6",
+  "name": "Poly(oxy-1,2-ethanediyl), α-[2-[ethyl[(undecafluoropentyl)sulfonyl]amino]ethyl]-ω-hydroxy-",
+  "cas": "68298-80-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68298-81-7",
+  "name": "Poly(oxy-1,2-ethanediyl), α-[2-[ethyl[(pentadecafluoroheptyl)sulfonyl]amino]ethyl]-ω-hydroxy-",
+  "cas": "68298-81-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65545-80-4",
+  "name": "Poly(oxy-1,2-ethanediyl), α-hydro-ω-hydroxy-, ether with α-fluoro-ω-(2-hydroxyethyl)poly(difluoromethylene) (1:1)",
+  "cas": "65545-80-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "70983-59-4",
+  "name": "Poly(oxy-1,2-ethanediyl), α-methyl-ω-hydroxy-, 2-hydroxy-3-[(γ-ω-perfluoro-C6-20-alkyl)thio]propyl ethers",
+  "cas": "70983-59-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "37338-48-0",
+  "name": "Poly[oxy(methyl-1,2-ethanediyl)], α-[2-[ethyl[(heptadecafluorooctyl)sulfonyl]amino]ethyl]-ω-hydroxy-",
+  "cas": "37338-48-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68259-39-2",
+  "name": "Poly[oxy(methyl-1,2-ethanediyl)], α-[2-[ethyl[(pentadecafluoroheptyl)sulfonyl]amino]ethyl]-ω-hydroxy-",
+  "cas": "68259-39-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68259-38-1",
+  "name": "Poly[oxy(methyl-1,2-ethanediyl)], α-[2-[ethyl[(tridecafluorohexyl)sulfonyl]amino]ethyl]-ω-hydroxy-",
+  "cas": "68259-38-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68310-17-8",
+  "name": "Poly[oxy(methyl-1,2-ethanediyl)], α-[2-[ethyl[(undecafluoropentyl)sulfonyl]amino]ethyl]-ω-hydroxy-",
+  "cas": "68310-17-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2966-54-3",
+  "name": "Potassium heptafluorobutanoate",
+  "cas": "2966-54-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "29420-49-3",
+  "name": "Potassium perfluorobutane sulfonate",
+  "cas": "29420-49-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/22"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2795-39-3",
+  "name": "Potassium perfluorooctanesulfonate",
+  "cas": "2795-39-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2395-00-8",
+  "name": "Potassium perfluorooctanoate",
+  "cas": "2395-00-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/21"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1078715-61-3",
+  "name": "1-Propanaminium, 3-amino-N-(carboxymethyl)-N,N-dimethyl-, N-[2-[(γ-ω-perfluoro-C4-20-alkyl)thio]acetyl] derivs., inner salts",
+  "cas": "1078715-61-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "38006-74-5",
+  "name": "1-Propanaminium, 3-[[(heptadecafluorooctyl)sulfonyl]amino]-N,N,N-trimethyl-, chloride",
+  "cas": "38006-74-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "70983-60-7",
+  "name": "1-Propanaminium, 2-hydroxy-N,N,N-trimethyl-, 3-[(γ-ω-perfluoro-C6-20-alkyl)thio] derivs., chlorides",
+  "cas": "70983-60-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "52166-82-2",
+  "name": "1-Propanaminium, N,N,N-trimethyl-3-[[(tridecafluorohexyl)sulfonyl]amino]-, chloride",
+  "cas": "52166-82-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67584-58-1",
+  "name": "1-Propanaminium, N,N,N-trimethyl-3-[[(pentadecafluoroheptyl)sulfonyl]amino]-, iodide",
+  "cas": "67584-58-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68555-81-7",
+  "name": "1-Propanaminium, N,N,N-trimethyl-3-[[(pentadecafluoroheptyl)sulfonyl]amino]-, chloride",
+  "cas": "68555-81-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68957-58-4",
+  "name": "1-Propanaminium, N,N,N-trimethyl-3-[[(tridecafluorohexyl)sulfonyl]amino]-, iodide",
+  "cas": "68957-58-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68957-55-1",
+  "name": "1-Propanaminium, N,N,N-trimethyl-3-[[(undecafluoropentyl)sulfonyl]amino]-, chloride",
+  "cas": "68957-55-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68957-57-3",
+  "name": "1-Propanaminium, N,N,N-trimethyl-3-[[(undecafluoropentyl)sulfonyl]amino]-, iodide",
+  "cas": "68957-57-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "238420-80-9",
+  "name": "Propanedioic acid, mono(γ-ω-perfluoro-C8-12-alkyl) derivs., bis[4-(ethenyloxy)butyl] esters",
+  "cas": "238420-80-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "238420-68-3",
+  "name": "Propanedioic acid, mono(γ-ω-perfluoro-C8-12-alkyl) derivs., di-me esters",
+  "cas": "238420-68-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "148240-89-5",
+  "name": "1,3-Propanediol, 2,2-bis[[(γ-ω-perfluoro-C10-20-alkyl)thio]methyl] derivs., phosphates, ammonium salts",
+  "cas": "148240-89-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "148240-85-1",
+  "name": "1,3-Propanediol, 2,2-bis[[(γ-ω-perfluoro-C4-10-alkyl)thio]methyl] derivs., phosphates, ammonium salts",
+  "cas": "148240-85-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "148240-87-3",
+  "name": "1,3-Propanediol, 2,2-bis[[(γ-ω-perfluoro-C6-12-alkyl)thio]methyl] derivs., phosphates, ammonium salts",
+  "cas": "148240-87-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1078142-10-5",
+  "name": "1,3-Propanediol, 2,2-bis[[(γ-ω-perfluoro-C6-12-alkyl)thio]methyl] derivs., polymers with 2,2-bis[[(γ-ω-perfluoro-C10-20-alkyl)thio]methyl]-1,3-propanediol, 1,6-diisocyanato-2,2,4(or 2,4,4)-trimethylhexane, 2-heptyl-3,4-bis(9-isocyanatononyl)-1-pentylcyclohexane and 2,2′-(methylimino)bis[ethanol]",
+  "cas": "1078142-10-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68187-47-3",
+  "name": "1-Propanesulfonic acid, 2-methyl-, 2-[[1-oxo-3-[(γ-ω-perfluoro-C4-16-alkyl)thio]propyl]amino] derivs., sodium salts",
+  "cas": "68187-47-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68227-96-3",
+  "name": "2-Propenoic acid, butyl ester, telomer with 2-[[(heptadecafluorooctyl)sulfonyl]methylamino]ethyl 2-propenoate, 2-[methyl[(nonafluorobutyl)sulfonyl]amino]ethyl 2-propenoate, α-(2-methyl-1-oxo-2-propenyl)-ω-hydroxypoly(oxy-1,4-butanediyl), α-(2-methyl-1-oxo-2-propenyl)-ω-[(2-methyl-1-oxo-2-propenyl)oxy]poly(oxy-1,4-butanediyl), 2-[methyl[(pentadecafluoroheptyl)sulfonyl]amino]ethyl 2-propenoate, 2-[methyl[(tridecafluorohexyl)sulfonyl]amino]ethyl 2-propenoate, 2-[methyl[(undecafluoropentyl)sulfonyl]amino]ethyl 2-propenoate and 1-octanethiol",
+  "cas": "68227-96-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68298-62-4",
+  "name": "2-Propenoic acid, 2-[butyl[(heptadecafluorooctyl)sulfonyl]amino]ethyl ester, telomer with 2-[butyl[(pentadecafluoroheptyl)sulfonyl]amino]ethyl 2-propenoate, methyloxirane polymer with oxirane di-2-propenoate, methyloxirane polymer with oxirane mono-2-propenoate and 1-octanethiol",
+  "cas": "68298-62-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65605-58-5",
+  "name": "2-Propenoic acid, esters, 2-methyl-, dodecyl ester, polymer with α-fluoro-ω-[2-[(2-methyl-1-oxo-2-propen-1-yl)oxy]ethyl]poly(difluoromethylene)",
+  "cas": "65605-58-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "59071-10-2",
+  "name": "2-Propenoic acid, 2-[ethyl[(pentadecafluoroheptyl)sulfonyl]amino]ethyl ester",
+  "cas": "59071-10-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68867-60-7",
+  "name": "2-Propenoic acid, 2-[[(heptadecafluorooctyl)sulfonyl]methylamino]ethyl ester, polymer with 2-[methyl[(nonafluorobutyl)sulfonyl]amino]ethyl 2-propenoate, 2-[methyl[(pentadecafluoroheptyl)sulfonyl]amino]ethyl 2-propenoate, 2-[methyl[(tridecafluorohexyl)sulfonyl]amino]ethyl 2-propenoate, 2-[methyl[(undecafluoropentyl)sulfonyl]amino]ethyl 2-propenoate and α-(1-oxo-2-propenyl)-ω-methoxypoly(oxy-1,2-ethanediyl)",
+  "cas": "68867-60-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "150135-57-2",
+  "name": "2-Propenoic acid, 2-methyl-, 2-(dimethylamino)ethyl ester, polymers with Bu acrylate, γ-ω-perfluoro-C8-14-alkyl acrylate and polyethylene glycol monomethacrylate, 2,2′-azobis[2,4-dimethylpentanenitrile]-initiated",
+  "cas": "150135-57-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "196316-34-4",
+  "name": "2-Propenoic acid, 2-methyl-, 2-(dimethylamino)ethyl ester, polymers with γ-ω-perfluoro-C10-16-alkyl acrylate and vinyl acetate, acetates",
+  "cas": "196316-34-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65605-59-6",
+  "name": "2-Propenoic acid, 2-methyl-, dodecyl ester, polymer with α-fluoro-ω-[2-[(2-methyl-1-oxo-2-propen-1-yl)oxy]ethyl]poly(difluoromethylene) and N-(hydroxymethyl)-2-propenamide",
+  "cas": "65605-59-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68239-43-0",
+  "name": "2-Propenoic acid, 2-methyl-, 2-ethylhexyl ester, polymer with α-fluoro-ω-[2-[(2-methyl-1-oxo-2-propen-1-yl)oxy]ethyl]poly(difluoromethylene), 2-hydroxyethyl 2-methyl-2-propenoate and N-(hydroxymethyl)-2-propenamide",
+  "cas": "68239-43-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68555-91-9",
+  "name": "2-Propenoic acid, 2-methyl-, 2-[ethyl[(heptadecafluorooctyl)sulfonyl]amino]ethyl ester, polymer with 2-[ethyl[(nonafluorobutyl)sulfonyl]amino]ethyl 2-methyl-2-propenoate, 2-[ethyl[(pentadecafluoroheptyl)sulfonyl]amino]ethyl 2-methyl-2-propenoate, 2-[ethyl[(tridecafluorohexyl)sulfonyl]amino]ethyl 2-methyl-2-propenoate, 2-[ethyl[(undecafluoropentyl)sulfonyl]amino]ethyl 2-methyl-2-propenoate and octadecyl 2-methyl-2-propenoate",
+  "cas": "68555-91-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2144-54-9",
+  "name": "2-Propenoic acid, 2-methyl-, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,12-heneicosafluorododecyl ester",
+  "cas": "2144-54-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "65104-45-2",
+  "name": "2-Propenoic acid, 2-methyl-, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,12-heneicosafluorododecyl ester, polymer with 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl 2-methyl-2-propenoate, methyl 2-methyl-2-propenoate, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,14-pentacosafluorotetradecyl 2-methyl-2-propenoate and 3,3,4,4,5,5,6,6,7,7,8,8,8-tridecafluorooctyl 2-methyl-2-propenoate",
+  "cas": "65104-45-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/21"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1996-88-9",
+  "name": "2-Propenoic acid, 2-methyl-, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl ester",
+  "cas": "1996-88-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "203743-03-7",
+  "name": "2-Propenoic acid, 2-methyl-, hexadecyl ester, polymers with 2-hydroxyethyl methacrylate, .gamma.-.omega.-perfluoro-C10-6-alkyl acrylate and stearyl methacrylate",
+  "cas": "203743-03-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/22"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "4980-53-4",
+  "name": "2-Propenoic acid, 2-methyl-, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,16-nonacosafluorohexadecyl ester",
+  "cas": "4980-53-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "142636-88-2",
+  "name": "2-Propenoic acid, 2-methyl-, octadecyl ester, polymer with 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,12-heneicosafluorododecyl 2-propenoate, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl 2-propenoate and 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,14-pentacosafluorotetradecyl 2-propenoate",
+  "cas": "142636-88-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68084-62-8",
+  "name": "2-Propenoic acid, 2-[methyl[(pentadecafluoroheptyl)sulfonyl]amino]ethyl ester",
+  "cas": "68084-62-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "6014-75-1",
+  "name": "2-Propenoic acid, 2-methyl-, 3,3,4,4,5,5,6,6,7,7,8,8,9,9, 10,10,11,11,12,12,13,13,14,14,14-pentacosafluorotetradecyl ester",
+  "cas": "6014-75-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "200513-42-4",
+  "name": "2-Propenoic acid, 2-methyl-, polymer with butyl 2-methyl-2-propenoate, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl 2-propenoate, 2-hydroxyethyl 2-methyl-2-propenoate and methyl 2-methyl-2-propenoate",
+  "cas": "200513-42-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67584-57-0",
+  "name": "2-Propenoic acid, 2-[methyl[(tridecafluorohexyl)sulfonyl]amino]ethyl ester",
+  "cas": "67584-57-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "67584-56-9",
+  "name": "2-Propenoic acid, 2-[methyl[(undecafluoropentyl)sulfonyl]amino]ethyl ester",
+  "cas": "67584-56-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "61798-68-3",
+  "name": "Pyridinium, 1-(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)-, salt with 4-methylbenzenesulfonic acid (1:1)",
+  "cas": "61798-68-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "83048-65-1",
+  "name": "Silane, (3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)trimethoxy-",
+  "cas": "83048-65-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "78560-44-8",
+  "name": "Silane, trichloro(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)-",
+  "cas": "78560-44-8",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "125476-71-3",
+  "name": "Silicic acid (H4 SiO4), disodium salt, reaction products with chlorotrimethylsilane and 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-1-decanol",
+  "cas": "125476-71-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "143372-54-7",
+  "name": "Siloxanes and Silicones, (3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)oxy Me, hydroxy Me, Me octyl, ethers with polyethylene glycol mono-Me ether",
+  "cas": "143372-54-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "335-93-3",
+  "name": "Silver(I) perfluorooctanoate",
+  "cas": "335-93-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/21"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2218-54-4",
+  "name": "Sodium perfluorobutanoate",
+  "cas": "2218-54-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/23"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "3830-45-3",
+  "name": "Sodium perfluorodecanoate (PFDA-Na)",
+  "cas": "3830-45-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/25"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "82382-12-5",
+  "name": "Sodium perfluorohexanesulfonate",
+  "cas": "82382-12-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/26"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "2923-26-4",
+  "name": "Sodium perfluorohexanoate",
+  "cas": "2923-26-4",
+  "note": "40 CFR 372.65 / 収載日 1/1/24"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "335-95-5",
+  "name": "Sodium perfluorooctanoate",
+  "cas": "335-95-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "4151-50-2",
+  "name": "Sulfluramid",
+  "cas": "4151-50-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "180582-79-0",
+  "name": "Sulfonic acids, C6-12-alkane, γ-ω-perfluoro, ammonium salts",
+  "cas": "180582-79-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "30046-31-2",
+  "name": "Tetradecane, 1,1,1,2,2,3,3,4,4,5, 5,6,6,7,7,8,8,9,9,10,10,11,11,12,12-pentacosafluoro-14-iodo-",
+  "cas": "30046-31-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68758-57-6",
+  "name": "1-Tetradecanesulfonyl chloride, 3,3,4,4,5,5,6, 6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,14-pentacosafluoro-",
+  "cas": "68758-57-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "39239-77-5",
+  "name": "1-Tetradecanol, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,14-pentacosafluoro-",
+  "cas": "39239-77-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "27905-45-9",
+  "name": "1,1,2,2-Tetrahydroperfluorodecyl acrylate",
+  "cas": "27905-45-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "17741-60-5",
+  "name": "1,1,2,2-Tetrahydroperfluorododecyl acrylate",
+  "cas": "17741-60-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "34362-49-7",
+  "name": "1,1,2,2-Tetrahydroperfluorohexadecyl acrylate",
+  "cas": "34362-49-7",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "34395-24-9",
+  "name": "1,1,2,2-Tetrahydroperfluorotetradecyl acrylate",
+  "cas": "34395-24-9",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "97553-95-2",
+  "name": "Thiocyanic acid, γ-ω-perfluoro-C4-20-alkyl esters",
+  "cas": "97553-95-2",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68140-18-1",
+  "name": "Thiols, C4-10, γ-ω-perfluoro",
+  "cas": "68140-18-1",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "1078712-88-5",
+  "name": "Thiols, C4-20, γ-ω-perfluoro, telomers with acrylamide and acrylic acid, sodium salts",
+  "cas": "1078712-88-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68140-20-5",
+  "name": "Thiols, C6-12, γ-ω-perfluoro",
+  "cas": "68140-20-5",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "70969-47-0",
+  "name": "Thiols, C8-20, γ-ω-perfluoro, telomers with acrylamide",
+  "cas": "70969-47-0",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "68140-21-6",
+  "name": "Thiols, C10-20, γ-ω-perfluoro",
+  "cas": "68140-21-6",
+  "note": "40 CFR 372.65 / 収載日 1/1/20"
+ },
+ {
+  "law": "US-EPCRA",
+  "section": "TRI",
+  "number": "82113-65-3",
+  "name": "1,1,1-Trifluoro-N-[(trifluoromethyl)sulfonyl] methanesulfonamide",
+  "cas": "82113-65-3",
+  "note": "40 CFR 372.65 / 収載日 1/1/24"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "B-75-09-2",
+  "name": "75-09-2 Methylene Chloride",
+  "cas": "75-09-2",
+  "note": "40 CFR 751 Subpart B（Methylene Chloride）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "D-79-01-6",
+  "name": "79-01-6 Trichloroethylene (TCE)",
+  "cas": "79-01-6",
+  "note": "40 CFR 751 Subpart D（Trichloroethylene (TCE)）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "D-811-97-2",
+  "name": "811-97-2 Trichloroethylene (TCE)",
+  "cas": "811-97-2",
+  "note": "40 CFR 751 Subpart D（Trichloroethylene (TCE)）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "E-732-26-3",
+  "name": "732-26-3 Persistent, Bioaccumulative, and Toxic Chemicals",
+  "cas": "732-26-3",
+  "note": "40 CFR 751 Subpart E（Persistent, Bioaccumulative, and Toxic Chemicals）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "E-1163-19-5",
+  "name": "1163-19-5 Persistent, Bioaccumulative, and Toxic Chemicals",
+  "cas": "1163-19-5",
+  "note": "40 CFR 751 Subpart E（Persistent, Bioaccumulative, and Toxic Chemicals）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "E-87-68-3",
+  "name": "87-68-3 Persistent, Bioaccumulative, and Toxic Chemicals",
+  "cas": "87-68-3",
+  "note": "40 CFR 751 Subpart E（Persistent, Bioaccumulative, and Toxic Chemicals）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "E-133-49-3",
+  "name": "133-49-3 Persistent, Bioaccumulative, and Toxic Chemicals",
+  "cas": "133-49-3",
+  "note": "40 CFR 751 Subpart E（Persistent, Bioaccumulative, and Toxic Chemicals）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "E-68937-41-7",
+  "name": "68937-41-7 Persistent, Bioaccumulative, and Toxic Chemicals",
+  "cas": "68937-41-7",
+  "note": "40 CFR 751 Subpart E（Persistent, Bioaccumulative, and Toxic Chemicals）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "F-132207-32-0",
+  "name": "132207-32-0 Chrysotile Asbestos",
+  "cas": "132207-32-0",
+  "note": "40 CFR 751 Subpart F（Chrysotile Asbestos）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "G-127-18-4",
+  "name": "127-18-4 Perchloroethylene (PCE)",
+  "cas": "127-18-4",
+  "note": "40 CFR 751 Subpart G（Perchloroethylene (PCE)）"
+ },
+ {
+  "law": "US-TSCA",
+  "section": "SEC6",
+  "number": "H-56-23-5",
+  "name": "56-23-5 Carbon Tetrachloride",
+  "cas": "56-23-5",
+  "note": "40 CFR 751 Subpart H（Carbon Tetrachloride）"
+ }
+]

@@ -16,6 +16,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { statutoryNumber } from "./lib/statutory-number";
 
 const LAW_CODE = "JP-PDSCA";
 const COUNTRY_CODE = "JPN";
@@ -32,6 +33,21 @@ interface Entry {
 }
 
 const prisma = new PrismaClient();
+
+/**
+ * 出典ごとの番号の作り方（第0-3章）。
+ *
+ * **法の別表と指定令の両方に「1号」がある。**番号に出典を入れないと区別できない
+ */
+const TABLE: Record<string, string> = { TOX: "1", DEL: "2", SPT: "3" };
+
+/** `L` は法の別表、`O` は毒物及び劇物指定令 */
+function numberOf(section: string, src: string, num: string): string {
+  const table = TABLE[section] ?? "1";
+  return src === "L"
+    ? statutoryNumber({ kind: "lawTable", table }, num)
+    : statutoryNumber({ kind: "orderArticle", table }, num);
+}
 
 /** 毒物・劇物は含有すれば該当。除外は物質ごとの但し書きなので閾値では表せない */
 const THRESHOLD = {
@@ -53,6 +69,10 @@ async function removeAll(): Promise<number> {
   const classes = await prisma.regulationClass.findMany({
     where: { category: { lawId: law.id } },
     select: { id: true },
+  });
+  // **CASリンクを先に消す。**法文物質名を参照しているので、残っていると消せない
+  await prisma.statutoryCasLink.deleteMany({
+    where: { statutorySubstance: { classId: { in: classes.map((c) => c.id) } } },
   });
   const removed = await prisma.statutorySubstance.deleteMany({
     where: { classId: { in: classes.map((c) => c.id) } },
@@ -126,7 +146,7 @@ async function main() {
           code,
           codeNormalized: code,
           classId: cls.id,
-          officialNumber: e.number,
+          officialNumber: numberOf(e.section, e.src, e.number),
           nameOriginal: e.name,
           nameLang: "JA",
           displayOrder: i + 1,

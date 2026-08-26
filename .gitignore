@@ -26,3 +26,6 @@ coverage/
 
 # LOLI（社内SQL Server）への接続。手元だけのもの
 .env.loli
+
+# 照合に使う法令XMLの控え（scripts/verify-jp-laws.ts が作る）
+.cache/

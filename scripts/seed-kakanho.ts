@@ -15,6 +15,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { statutoryNumber } from "./lib/statutory-number";
 
 const LAW_CODE = "JP-PRTR";
 const COUNTRY_CODE = "JPN";
@@ -31,6 +32,14 @@ interface Entry {
 }
 
 const prisma = new PrismaClient();
+
+/**
+ * 番号の作り方（第0-3章）。第一種・特定第一種は別表第一、第二種は別表第二。
+ * **特定第一種は第一種の一部**なので、番号も別表第一のまま
+ */
+function numberOf(section: string, num: string): string {
+  return statutoryNumber({ kind: "orderTable", table: section === "C2" ? "2" : "1" }, num);
+}
 
 /** 裾切値は「その値以上で該当」なので下限は以上 */
 const threshold = (lower: string) => ({
@@ -73,6 +82,10 @@ async function removeAll(): Promise<number> {
   const classes = await prisma.regulationClass.findMany({
     where: { category: { lawId: law.id } },
     select: { id: true },
+  });
+  // **CASリンクを先に消す。**法文物質名を参照しているので、残っていると消せない
+  await prisma.statutoryCasLink.deleteMany({
+    where: { statutorySubstance: { classId: { in: classes.map((c) => c.id) } } },
   });
   const removed = await prisma.statutorySubstance.deleteMany({
     where: { classId: { in: classes.map((c) => c.id) } },
@@ -146,7 +159,7 @@ async function main() {
         code,
         codeNormalized: code,
         classId: cls.id,
-        officialNumber: e.number,
+        officialNumber: numberOf(e.section, e.number),
         nameOriginal: e.name,
         nameLang: "JA",
         displayOrder: i + 1,

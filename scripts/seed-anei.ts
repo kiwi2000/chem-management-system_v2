@@ -15,6 +15,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { statutoryNumber } from "./lib/statutory-number";
 
 const LAW_CODE = "JP-ISHA";
 const COUNTRY_CODE = "JPN";
@@ -37,6 +38,27 @@ interface Entry {
 const prisma = new PrismaClient();
 
 /**
+ * `section` ごとの番号の作り方（第0-3章）。
+ *
+ * **表示対象・SDS対象には3つの表の物質が入る。**どれも1から番号が振られるので、
+ * 出典を番号に入れないと区別できない（実際に40件が取り残されていた）
+ */
+function numberOf(section: string, num: string, suffix: string): string {
+  const n = `${num}${suffix}`;
+  switch (section) {
+    case "MFG_PERMIT":
+      // 令別表第三 第一号（製造許可物質）
+      return statutoryNumber({ kind: "orderTableItem", table: "3", item: "1" }, n);
+    case "OLD_T9":
+      // 令別表第九
+      return statutoryNumber({ kind: "orderTable", table: "9" }, n);
+    default:
+      // 安衛則 別表第2
+      return statutoryNumber({ kind: "ordinanceTable", table: "2" }, n);
+  }
+}
+
+/**
  * 裾切値は「その値以上で該当」なので下限は以上。
  * 裾切値を持たない区分だけは「0を超えれば該当」にする。
  */
@@ -55,6 +77,10 @@ async function removeAll(): Promise<number> {
   const classes = await prisma.regulationClass.findMany({
     where: { category: { lawId: law.id } },
     select: { id: true },
+  });
+  // **CASリンクを先に消す。**法文物質名を参照しているので、残っていると消せない
+  await prisma.statutoryCasLink.deleteMany({
+    where: { statutorySubstance: { classId: { in: classes.map((c) => c.id) } } },
   });
   const removed = await prisma.statutorySubstance.deleteMany({
     where: { classId: { in: classes.map((c) => c.id) } },
@@ -153,7 +179,7 @@ async function main() {
           code,
           codeNormalized: code,
           classId,
-          officialNumber: e.number,
+          officialNumber: numberOf(e.section, e.number, e.suffix),
           nameOriginal: e.name,
           nameLang: "JA",
           nameEn: e.nameEn,
