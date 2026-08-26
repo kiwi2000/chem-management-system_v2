@@ -47,8 +47,9 @@ const HEADS: {
   label: (m: ReturnType<typeof useI18n>["m"]) => string;
   className?: string;
 }[] = [
-  { key: "casNumber", width: 96, label: (m) => m.composition.casNumber },
-  { key: "substanceId", width: 88, label: (m) => m.composition.aggregateSubstanceId },
+  // CAS番号は最長12桁（1001756-09-7）。等幅の小さい文字でこの幅に収まる
+  { key: "casNumber", width: 104, label: (m) => m.composition.casNumber },
+  { key: "substanceId", width: 96, label: (m) => m.composition.aggregateSubstanceId },
   { key: "name", width: 256, label: (m) => m.composition.aggregateName },
   {
     key: "contentPct",
@@ -67,6 +68,20 @@ const HEADS: {
  * 押していないあいだは地域が1列（国内・国際）。
  * 押すと、その地域の該当区分の数だけ列に分かれ、地域名のあった場所が区分名になる。
  */
+/**
+ * 見出しの文字が入るのに要る幅（px）のおよそ。
+ *
+ * 法規の列は**見出しが地域名や区分名になるので、長さが読むまで分からない**。
+ * 決め打ちの幅にすると、短い地域は余り、長い地域は切れる。
+ *
+ * 実測した値に合わせてある（14px の文字で、日本語1文字＝14px、英数字＝8px）。
+ */
+function labelWidth(label: string): number {
+  let px = 0;
+  for (const ch of label) px += /[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? 14 : 8;
+  return px;
+}
+
 interface LeafColumn {
   /** 列の鍵。幅を覚える単位になるので、地域・区分の id をそのまま使う */
   key: string;
@@ -97,7 +112,11 @@ function leafColumns(
   /** 地域 → その地域で該当している区分（並び順つき） */
   const regions = new Map<
     string,
-    { order: number; label: string; categories: Map<string, { order: number; label: string }> }
+    {
+      order: number;
+      label: string;
+      categories: Map<string, { order: number; law: string; name: string }>;
+    }
   >();
   for (const row of rows) {
     for (const r of row.regulations) {
@@ -108,12 +127,26 @@ function leafColumns(
       };
       region.categories.set(r.categoryId, {
         order: r.categoryOrder,
-        // 区分名だけでは法令が分からないので、法令名を前に付ける
-        label: `${pickStatutoryName(locale, r.lawNameOriginal, r.lawNameJa, r.lawNameEn)} ${pickStatutoryName(locale, r.categoryNameOriginal, r.categoryNameJa, r.categoryNameEn)}`,
+        law: pickStatutoryName(locale, r.lawNameOriginal, r.lawNameJa, r.lawNameEn),
+        name: pickStatutoryName(locale, r.categoryNameOriginal, r.categoryNameJa, r.categoryNameEn),
       });
       regions.set(r.regionId, region);
     }
   }
+
+  /*
+    見出しは**区分名だけ**にする。中国の法令名は「危険化学品安全管理条例」のように長く、
+    前に付けると列が名前で埋まって、第1次と第2次のような**末尾の違いが切れて見えなくなる**。
+    同じ区分名が2つ以上の法令にあるときだけ、法令名を前に足して区別する。
+  */
+  const nameCount = new Map<string, number>();
+  for (const region of regions.values()) {
+    for (const c of region.categories.values()) {
+      nameCount.set(c.name, (nameCount.get(c.name) ?? 0) + 1);
+    }
+  }
+  const labelOf = (c: { law: string; name: string }) =>
+    (nameCount.get(c.name) ?? 0) > 1 ? `${c.law} ${c.name}` : c.name;
 
   const leaves: LeafColumn[] = [];
   const groups: RegionGroup[] = [];
@@ -125,20 +158,23 @@ function leafColumns(
         categoryId: null,
         label: region.label,
         categoryIds: new Set(region.categories.keys()),
-        width: 96,
+        // 余白（左右8px）と開閉のつまみ（18px）のぶんを足す
+        width: Math.max(72, labelWidth(region.label) + 34),
       });
       groups.push({ regionId, label: region.label, expanded: false, span: 1 });
       continue;
     }
     const categories = [...region.categories.entries()].sort((a, b) => a[1].order - b[1].order);
     for (const [categoryId, c] of categories) {
+      const label = labelOf(c);
       leaves.push({
         key: `category:${categoryId}`,
         regionId,
         categoryId,
-        label: c.label,
+        label,
         categoryIds: new Set([categoryId]),
-        width: 128,
+        // 区分名は長くなりがち。切れても読めるところで止める（触れれば全文が出る）
+        width: Math.min(224, Math.max(112, labelWidth(label) + 20)),
       });
     }
     groups.push({ regionId, label: region.label, expanded: true, span: categories.length });
@@ -358,6 +394,7 @@ export function CompositionAggregateTable({
                 ))}
               </tr>
 
+              {/* 分けている地域が無ければ、3段目そのものを出さない */}
               <tr className="bg-muted/50 border-b text-left">
                 {leaves
                   .filter((c) => c.categoryId !== null)
