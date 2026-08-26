@@ -217,6 +217,28 @@ export interface MatchedProductDto {
   hitsWithheld: boolean;
 }
 
+/**
+ * 「各種番号」に出す一覧の設定（システム→設定）。
+ * 呼び名が入っている区分だけが、物質の詳細に番号として出る。
+ */
+export interface NumberLabelDto {
+  categoryId: string;
+  lawNameJa: string | null;
+  lawNameEn: string | null;
+  lawNameOriginal: string;
+  countryNameJa: string;
+  countryNameEn: string | null;
+  categoryNameJa: string | null;
+  categoryNameEn: string | null;
+  categoryNameOriginal: string;
+  /** 番号としての呼び名。null なら出さない */
+  numberLabel: string | null;
+  /** 番号が入っている法文物質名の数。0 なら選んでも何も出ない */
+  numberCount: number;
+  /** どんな番号が入っているかの例。3件まで */
+  samples: string[];
+}
+
 export interface ListResponse<T> {
   items: T[];
   total: number;

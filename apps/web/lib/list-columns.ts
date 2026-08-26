@@ -64,6 +64,27 @@ function reviewCondition(values: string[]): Record<string, unknown> | null {
   return only ? { judgements: { some: flagged } } : { judgements: { none: flagged } };
 }
 
+/**
+ * 製品の一覧で「この規制区分に当たっているもの」で絞る。
+ *
+ * **該当したものだけを見る。**非該当まで当てにすると、
+ * 「調べたが当たらなかった」ものが「当たっている」側に混ざる。
+ *
+ *   すべて     … 選んだ区分に全部当たっているもの（AND）
+ *   いずれか   … どれか1つでも当たっているもの（OR）
+ */
+function judgementCategoryCondition(
+  values: string[],
+  op: "all" | "any",
+): Record<string, unknown> | null {
+  const ids = [...new Set(values.filter((v) => v !== ""))];
+  if (ids.length === 0) return null;
+  const each = ids.map((id) => ({
+    judgements: { some: { categoryId: id, verdict: "APPLICABLE" as const } },
+  }));
+  return op === "all" ? { AND: each } : { OR: each };
+}
+
 export const PRODUCT_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
@@ -92,6 +113,14 @@ export const PRODUCT_COLUMNS: QueryColumn[] = [
     field: "judgements",
     sortable: false,
     custom: (f) => (f.kind === "enum" ? judgementCondition(f.values) : null),
+  },
+  // 当たっている規制区分で絞る。区分のIDが値として来る
+  {
+    key: "judgementCategories",
+    kind: "list",
+    field: "categoryId",
+    sortable: false,
+    custom: (f) => (f.kind === "list" ? judgementCategoryCondition(f.values, f.op) : null),
   },
   // 「1つでも確認が残っているか」。区分ごとに見るのではない
   {

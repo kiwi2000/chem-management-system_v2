@@ -67,3 +67,32 @@ describe("要確認の絞り込み", () => {
     expect(where("needsReview", ["true", "false"])).toEqual({});
   });
 });
+
+describe("該当法規制の絞り込み", () => {
+  const list = (values: string[], op: "all" | "any") =>
+    buildWhere(PRODUCT_COLUMNS, { judgementCategories: { kind: "list", op, values } });
+  const hit = (id: string) => ({ judgements: { some: { categoryId: id, verdict: "APPLICABLE" } } });
+
+  it("いずれかを含む", () => {
+    expect(list(["a", "b"], "any")).toEqual({ AND: [{ OR: [hit("a"), hit("b")] }] });
+  });
+
+  it("すべてを含む", () => {
+    expect(list(["a", "b"], "all")).toEqual({ AND: [{ AND: [hit("a"), hit("b")] }] });
+  });
+
+  it("非該当は当てにしない（該当だけを見る）", () => {
+    // ここが verdict なしになると、「調べたが当たらなかった」ものまで拾ってしまう
+    const w = list(["a"], "any") as { AND: { OR: { judgements: { some: unknown } }[] }[] };
+    expect(w.AND[0]?.OR[0]?.judgements.some).toEqual({ categoryId: "a", verdict: "APPLICABLE" });
+  });
+
+  it("同じ区分を2回選んでも1回として扱う", () => {
+    expect(list(["a", "a"], "any")).toEqual({ AND: [{ OR: [hit("a")] }] });
+  });
+
+  it("選んでいなければ絞らない", () => {
+    expect(list([], "any")).toEqual({});
+    expect(list([""], "any")).toEqual({});
+  });
+});

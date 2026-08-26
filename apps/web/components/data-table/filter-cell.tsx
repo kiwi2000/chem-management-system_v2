@@ -61,6 +61,71 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
 
   if (column.kind === "list") {
     const mode = value?.kind === "list" ? value.op : pickedListOp;
+
+    /*
+      選択肢が決まっている列（規制区分など）は、打ち込ませずに選ばせる。
+      CAS番号のように**打ち込むしかない列**とは入力の形が違うだけで、
+      「すべて含む／いずれかを含む」の切り替えは同じ。
+    */
+    if (column.options) {
+      const options = column.options;
+      const toggle = (v: string, checked: boolean) => {
+        const next = checked ? [...appliedValues, v] : appliedValues.filter((x) => x !== v);
+        onChange(next.length > 0 ? { kind: "list", op: mode, values: next } : undefined);
+      };
+      const label =
+        appliedValues.length === 0
+          ? m.table.all
+          : options
+              .filter((o) => appliedValues.includes(o.value))
+              .map((o) => o.label)
+              .join(", ");
+      return (
+        <div className="flex w-full items-start gap-1.5">
+          <div ref={enumBoxRef} className="relative min-w-0 flex-1">
+            <button
+              type="button"
+              aria-expanded={enumOpen}
+              onClick={() => setEnumOpen((v) => !v)}
+              className="border-input bg-background flex h-8 w-full cursor-pointer items-center truncate rounded-none border px-2 text-xs"
+              title={label}
+            >
+              {label}
+            </button>
+            {enumOpen && (
+              <div className="bg-background absolute z-20 max-h-72 min-w-64 space-y-1 overflow-y-auto rounded-md border p-2 shadow-md">
+                {options.map((o) => (
+                  <label key={o.value} className="flex items-center gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={appliedValues.includes(o.value)}
+                      onChange={(e) => toggle(o.value, e.target.checked)}
+                    />
+                    {o.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <select
+            aria-label={`${column.header} ${m.table.condition}`}
+            value={mode}
+            onChange={(e) => {
+              const next = e.target.value as ListOperator;
+              setPickedListOp(next);
+              if (appliedValues.length > 0) {
+                onChange({ kind: "list", op: next, values: appliedValues });
+              }
+            }}
+            className="border-input bg-background h-8 shrink-0 rounded-none border px-1 text-xs"
+          >
+            <option value="any">{m.table.operators.any}</option>
+            <option value="all">{m.table.operators.all}</option>
+          </select>
+        </div>
+      );
+    }
+
     const emitList = (raw: string, nextMode: ListOperator) => {
       const next = splitNumericTokens(raw);
       onChange(next.length > 0 ? { kind: "list", op: nextMode, values: next } : undefined);

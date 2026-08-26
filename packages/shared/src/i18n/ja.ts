@@ -795,6 +795,7 @@ export const ja = {
     number: "番号",
     statutoryName: "法文物質名",
     matchedCas: "該当CAS",
+    matchedCategories: "該当法規制",
     hitCount: (n: number) => `${n}件`,
     content: "含有率",
     warning: "警告",
@@ -837,6 +838,19 @@ export const ja = {
     // 法規制の画面からの逆引き
     matchedProducts: "該当製品",
     noMatchedProducts: "この区分に当たる製品はありません。",
+  },
+
+  numberLabels: {
+    title: "物質に出す番号",
+    lead: "官報公示整理番号や政令番号は、その法令の名簿が振っている番号です。物質には入力せず、ここで選んだ一覧から自動で引いて、物質の詳細に「各種番号」として出します。呼び名がそのまま見出しになります。",
+    shownCount: (n: number) => `${n} 件を出しています`,
+    country: "国・地域",
+    samples: "入っている番号",
+    label: "呼び名",
+    turnOn: "出す",
+    turnOff: "出さない",
+    noNumbers: "番号が入っていません",
+    count: (n: number) => `（${n}件）`,
   },
 
   settings: {

@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LanguageSection } from "@/components/language-section";
+import { NumberLabelSection } from "@/components/number-label-section";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -287,6 +288,12 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/*
+          物質の詳細に「各種番号」として出す一覧を選ぶ。
+          番号は法令の名簿が振っているものなので、物質側には入力させない
+        */}
+        <NumberLabelSection />
 
         {/* 言語は地域・国と同じマスタ。行の中で直す */}
         <LanguageSection />

@@ -9,6 +9,8 @@ interface Props {
   modelOptions: string[];
   useOptions: string[];
   approvalRequired: boolean;
+  /** 「該当法規制」で選べる規制区分。判定を持っているものだけ */
+  judgementCategories: { value: string; label: string }[];
 }
 
 /**
@@ -18,7 +20,12 @@ interface Props {
  * 作業中のものが業務の一覧に混ざらないようにするため。
  * 下の表は、未公開のデータを見られる人にだけ出す。
  */
-export function ProductsLists({ modelOptions, useOptions, approvalRequired }: Props) {
+export function ProductsLists({
+  modelOptions,
+  useOptions,
+  approvalRequired,
+  judgementCategories,
+}: Props) {
   const { m } = useI18n();
   const { can } = useMe();
   const showWorking = can("INACTIVE_VIEW") || can("PRODUCT_EDIT") || can("APPROVE");
@@ -34,6 +41,7 @@ export function ProductsLists({ modelOptions, useOptions, approvalRequired }: Pr
         modelOptions={modelOptions}
         useOptions={useOptions}
         approvalRequired={approvalRequired}
+        judgementCategories={judgementCategories}
         reloadToken={reloadToken}
         onChanged={onChanged}
       />
@@ -45,6 +53,7 @@ export function ProductsLists({ modelOptions, useOptions, approvalRequired }: Pr
           modelOptions={modelOptions}
           useOptions={useOptions}
           approvalRequired={approvalRequired}
+          judgementCategories={judgementCategories}
           reloadToken={reloadToken}
           onChanged={onChanged}
         />

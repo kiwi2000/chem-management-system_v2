@@ -33,7 +33,7 @@ const FILTER_LAYOUT: string[][] = [
 ];
 
 /** 法規制の節に置く列。組成をたどって決まるので、組成の節と分ける */
-const REGULATION_KEYS = ["judgement", "needsReview"];
+const REGULATION_KEYS = ["judgement", "needsReview", "judgementCategories"];
 
 interface Props {
   /** 型式で選べる値（システム設定）。並び順がそのまま表示順 */
@@ -42,6 +42,8 @@ interface Props {
   useOptions: string[];
   /** 公開が承認制か（申請ボタンを出すか、発行ボタンを出すかの判断） */
   approvalRequired: boolean;
+  /** 「該当法規制」で選べる規制区分。判定を持っているものだけ */
+  judgementCategories: { value: string; label: string }[];
   /** published=公開済だけ / working=まだ公開されていないもの */
   scope: "published" | "working";
   /** 節の見出し。1つしか出ないときは省く */
@@ -55,6 +57,7 @@ export function ProductsTable({
   modelOptions,
   useOptions,
   approvalRequired,
+  judgementCategories,
   scope,
   title,
   reloadToken,
@@ -260,6 +263,16 @@ export function ProductsTable({
           ),
       },
       {
+        key: "judgementCategories",
+        header: m.judgements.matchedCategories,
+        kind: "list",
+        // 表には出さず、条件としてだけ使う。当たった区分は「法規制」の列で数が見える
+        filterOnly: true,
+        sortable: false,
+        filterFullWidth: true,
+        options: judgementCategories,
+      },
+      {
         key: "updatedAt",
         header: m.news.updatedAt,
         kind: "date",
@@ -272,7 +285,7 @@ export function ProductsTable({
     ];
     // 上の表は公開済しか並ばないので、状態の列は出さない（全部同じ値になるため）
     return scope === "working" ? cols : cols.filter((c) => c.key !== "publishState");
-  }, [m, locale, modelOptions, useOptions, scope]);
+  }, [m, locale, modelOptions, useOptions, judgementCategories, scope]);
 
   // 組成の節だけは見出しに文言を使うので、ここで組み立てる
   const filterLayout = useMemo<FilterLayoutRow[]>(

@@ -784,6 +784,7 @@ export const en: Messages = {
     number: "No.",
     statutoryName: "Statutory name",
     matchedCas: "CAS",
+    matchedCategories: "Regulations",
     hitCount: (n: number) => `${n}`,
     content: "Content",
     warning: "Warning",
@@ -825,6 +826,19 @@ export const en: Messages = {
     // Reverse lookup from the regulation screen
     matchedProducts: "Products",
     noMatchedProducts: "No product falls under this category.",
+  },
+
+  numberLabels: {
+    title: "Numbers shown on a substance",
+    lead: "Gazette and ordinance numbers are assigned by a law's own register, not by the substance. They are never typed in here: pick the registers below and each substance shows the numbers it carries in them. The name you give becomes the heading.",
+    shownCount: (n: number) => `${n} shown`,
+    country: "Country",
+    samples: "Numbers held",
+    label: "Shown as",
+    turnOn: "Show",
+    turnOff: "Hide",
+    noNumbers: "no numbers",
+    count: (n: number) => `(${n})`,
   },
 
   settings: {
