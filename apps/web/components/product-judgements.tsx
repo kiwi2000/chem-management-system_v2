@@ -223,7 +223,10 @@ export function ProductJudgements({ productId, canEdit }: { productId: string; c
               製品ごとに列の位置がずれて見比べられなくなる。
               幅は一覧と同じ規則で、見出しの右端をつまんで変えられる。
             */}
-            <Table className="table-fixed text-sm" style={{ minWidth: cols.minTableWidth }}>
+            <Table
+              {...cols.tableProps}
+              className={cn("table-fixed text-sm", cols.tableProps.className)}
+            >
               <colgroup>{cols.cols()}</colgroup>
               <TableHeader>
                 {/* 色と枠線は組成の表にそろえる。並べて見るので、別物に見えると困る */}

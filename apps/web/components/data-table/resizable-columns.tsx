@@ -78,14 +78,36 @@ export function useResizableColumns(
     return Math.max(el.clientWidth, minTableWidth) / sum;
   }, [sum, minTableWidth]);
 
-  /** `<colgroup>` の中身 */
+  /**
+   * `<colgroup>` の中身。
+   *
+   * 詰める表は**比率**で置く（画面に合わせて全体が伸び縮みする）。
+   * 詰めない表は**そのままの px** で置く。比率にすると、列が少ないときに
+   * 1列が画面いっぱいまで伸びて、「6」の1文字に何百pxも取られる。
+   */
   const cols = () =>
     columns.map((c) => (
       <col
         key={c.key}
-        style={{ width: `${(sum === 0 ? 0 : (widthOf(c) / sum) * 100).toFixed(4)}%` }}
+        style={{
+          width: shrinkToFit
+            ? `${(sum === 0 ? 0 : (widthOf(c) / sum) * 100).toFixed(4)}%`
+            : widthOf(c),
+        }}
       />
     ));
+
+  /**
+   * `<table>` に渡すもの。
+   *
+   * 詰める表は画面いっぱいに広げる。
+   * 詰めない表は**内容に合わせた幅で止める**。右が余ってもよい。
+   * いちばん右の列のつまみを引けば、そのぶん表が伸びる。
+   */
+  const tableProps = {
+    className: shrinkToFit ? "w-full" : "",
+    style: shrinkToFit ? { minWidth: minTableWidth } : { width: sum },
+  };
 
   /**
    * 見出しに置くつまみ。**置く `th` に `relative` を付けること**（右端に貼り付くため）。
@@ -113,7 +135,16 @@ export function useResizableColumns(
     );
   };
 
-  return { scrollerRef, minTableWidth, cols, handle, resetWidths, hasCustomWidths, widthOf };
+  return {
+    scrollerRef,
+    minTableWidth,
+    tableProps,
+    cols,
+    handle,
+    resetWidths,
+    hasCustomWidths,
+    widthOf,
+  };
 }
 
 /**

@@ -284,8 +284,8 @@ export function CompositionAggregateTable({
       ) : (
         <div ref={cols.scrollerRef} className="overflow-x-auto">
           <table
-            className="w-full table-fixed border-collapse text-sm"
-            style={{ minWidth: cols.minTableWidth }}
+            {...cols.tableProps}
+            className={cn("table-fixed border-collapse text-sm", cols.tableProps.className)}
           >
             <colgroup>{cols.cols()}</colgroup>
             {/*

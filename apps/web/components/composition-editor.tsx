@@ -513,8 +513,10 @@ export function CompositionEditor({
         ) : (
           <div ref={cols.scrollerRef} className="overflow-x-auto">
             <table
-              className="w-full table-fixed border-collapse text-sm"
-              style={{ minWidth: cols.minTableWidth + extra }}
+              {...cols.tableProps}
+              className={cn("table-fixed border-collapse text-sm", cols.tableProps.className)}
+              // 直しているときだけ出る前後の列のぶんを足す
+              style={{ width: (cols.tableProps.style.width ?? 0) + extra }}
             >
               {/*
                 colgroup は列の並びと1対1で対応する。

@@ -15,6 +15,14 @@ set -euo pipefail
 OUT="${1:?出力先ディレクトリを渡してください}"
 mkdir -p "$OUT"
 
+# sqlcmd は Windows のプログラムなので、書き出し先は Windows の書き方で渡す。
+# POSIX のパスをそのまま渡すと "C:" を開こうとして落ちる。
+if command -v cygpath >/dev/null 2>&1; then
+  OUT_WIN="$(cygpath -w "$OUT")"
+else
+  OUT_WIN="$OUT"
+fi
+
 # shellcheck disable=SC1091
 set -a; . ./.env.loli; set +a
 
@@ -26,7 +34,7 @@ for id in $LISTS; do
   sqlcmd -S "$LOLI_SERVER" -U "$LOLI_USER" -P "$LOLI_PASSWORD" -d "$LOLI_DB" -C -l 60 \
     -h -1 -W -s $'\t' \
     -Q "SET NOCOUNT ON; SELECT CAST(Cas AS varchar(20)), CAST(Data AS varchar(400)) FROM ListData WHERE ListID=$id" \
-    -o "$OUT/china-$id.tsv"
+    -o "$OUT_WIN\china-$id.tsv"
   echo "  $(wc -l < "$OUT/china-$id.tsv") 行"
 done
 

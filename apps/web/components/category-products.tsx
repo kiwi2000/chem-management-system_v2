@@ -108,7 +108,7 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
   return (
     // 幅は列の側で決める。製品ごとに列の位置がずれると見比べられない
     <div ref={cols.scrollerRef} className="overflow-x-auto">
-      <Table className="table-fixed" style={{ minWidth: cols.minTableWidth }}>
+      <Table {...cols.tableProps} className={cn("table-fixed", cols.tableProps.className)}>
         <colgroup>{cols.cols()}</colgroup>
         <TableHeader>
           <TableRow>
