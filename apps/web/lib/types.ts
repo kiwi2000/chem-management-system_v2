@@ -368,6 +368,13 @@ export interface AggregateContributionDto {
  */
 export interface RowRegulationDto {
   categoryId: string;
+  /** 地域（国内・国際など）。まとめて1列にするときの単位 */
+  regionId: string;
+  regionNameJa: string;
+  regionNameEn: string | null;
+  regionOrder: number;
+  /** 同じ地域の中での区分の並び。法令 → 区分 の順 */
+  categoryOrder: number;
   lawNameJa: string | null;
   lawNameEn: string | null;
   lawNameOriginal: string;

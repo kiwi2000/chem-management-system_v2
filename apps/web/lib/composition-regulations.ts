@@ -26,7 +26,21 @@ export async function regulationsByCas(
           nameEn: true,
           nameOriginal: true,
           displayOrder: true,
-          law: { select: { nameJa: true, nameEn: true, nameOriginal: true, displayOrder: true } },
+          law: {
+            select: {
+              nameJa: true,
+              nameEn: true,
+              nameOriginal: true,
+              displayOrder: true,
+              country: {
+                select: {
+                  region: {
+                    select: { id: true, nameJa: true, nameEn: true, displayOrder: true },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -40,8 +54,14 @@ export async function regulationsByCas(
       for (const c of contributions) {
         if (!c.cas) continue;
         const seen = byCas.get(c.cas) ?? new Map<string, RowRegulationDto>();
+        const region = r.category.law.country.region;
         seen.set(r.categoryId, {
           categoryId: r.categoryId,
+          regionId: region.id,
+          regionNameJa: region.nameJa,
+          regionNameEn: region.nameEn,
+          regionOrder: region.displayOrder,
+          categoryOrder: r.category.law.displayOrder * 1000 + r.category.displayOrder,
           lawNameJa: r.category.law.nameJa,
           lawNameEn: r.category.law.nameEn,
           lawNameOriginal: r.category.law.nameOriginal,
@@ -55,19 +75,18 @@ export async function regulationsByCas(
     }
   }
 
-  // 並びは法令 → 区分。下の判定表と同じ順にする（目が行き来しても迷わないように）
-  const order = new Map(
-    rows.map((r) => [r.categoryId, [r.category.law.displayOrder, r.category.displayOrder]]),
-  );
+  /*
+    並びは地域 → 法令 → 区分。
+    まとめ表では地域ごとに列をまとめるので、地域が先に来ていないと
+    列の並びと中身の並びが食い違う。
+  */
   const out = new Map<string, RowRegulationDto[]>();
   for (const [cas, seen] of byCas) {
     out.set(
       cas,
-      [...seen.values()].sort((a, b) => {
-        const [al = 0, ac = 0] = order.get(a.categoryId) ?? [];
-        const [bl = 0, bc = 0] = order.get(b.categoryId) ?? [];
-        return al - bl || ac - bc;
-      }),
+      [...seen.values()].sort(
+        (a, b) => a.regionOrder - b.regionOrder || a.categoryOrder - b.categoryOrder,
+      ),
     );
   }
   return out;

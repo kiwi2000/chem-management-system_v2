@@ -39,7 +39,24 @@ export interface ResizableColumn {
   width: number;
 }
 
-export function useResizableColumns(storageKey: string, columns: ResizableColumn[]) {
+export interface ResizableOptions {
+  /**
+   * 画面より広いときに、列を詰めて収めるか。
+   *
+   * 既定は詰める（一覧と同じ）。余白があるのに横スクロールバーが出るのを避けるため。
+   *
+   * **列の数が中身で増える表は false にする。**
+   * 詰める側だと、列が増えるほど1列ずつ細くなり、見出しが読めなくなる。
+   * false なら幅は変わらず、はみ出したぶんだけ横に送る。
+   */
+  shrinkToFit?: boolean;
+}
+
+export function useResizableColumns(
+  storageKey: string,
+  columns: ResizableColumn[],
+  { shrinkToFit = true }: ResizableOptions = {},
+) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const { widthOf, setWidth, setWidths, resetWidths, hasCustomWidths } = useColumnWidths(
     `${storageKey}.widths`,
@@ -52,7 +69,7 @@ export function useResizableColumns(storageKey: string, columns: ResizableColumn
     余白があるのに横スクロールバーが出る、という状態にならない。
     ただし詰めすぎると読めないので、min-width より狭くはしない。
   */
-  const minTableWidth = Math.min(sum, MIN_COLUMN_WIDTH * columns.length);
+  const minTableWidth = shrinkToFit ? Math.min(sum, MIN_COLUMN_WIDTH * columns.length) : sum;
 
   /** 指定した幅と、実際に描かれる幅の比。ドラッグは画面上の px で動くので戻すのに要る */
   const scale = useCallback(() => {

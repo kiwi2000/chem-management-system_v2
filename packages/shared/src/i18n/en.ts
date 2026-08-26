@@ -930,6 +930,8 @@ export const en: Messages = {
     aggregateNoCas: "No CAS",
     aggregateCount: (n: number) => `${n}`,
     aggregateRegulations: "Regulations",
+    aggregateSplitByCategory: "split into categories",
+    aggregateGroupByRegion: "group by region",
     aggregateSubstanceId: "Substance ID",
     aggregateShowSources: "Show sources",
     aggregateIncomplete: (n: number) =>

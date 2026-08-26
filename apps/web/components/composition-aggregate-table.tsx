@@ -61,10 +61,84 @@ const HEADS: {
     label: (m) => m.composition.aggregateSources,
     className: "text-right",
   },
-  // この物質がどの法令に引っかかっているか。判定表と向きが逆で、
-  // 組成を見ながら「これが原因だ」とたどれる
-  { key: "regulations", width: 288, label: (m) => m.composition.aggregateRegulations },
 ];
+
+/**
+ * 該当法規制の列。**地域でまとめておき、押すと規制区分ごとに分かれる。**
+ *
+ * この製品で該当している区分だけを列にする。全区分を並べると、
+ * ほとんど空の列が延々と続いて、どこに印が付いているのか読めなくなる。
+ *
+ * 押していないあいだは地域が1列（国内・国際）。
+ * 押すと、その地域の該当区分の数だけ列に分かれ、地域名のあった場所が区分名になる。
+ */
+interface LeafColumn {
+  /** 列の鍵。幅を覚える単位になるので、地域・区分の id をそのまま使う */
+  key: string;
+  regionId: string;
+  label: string;
+  /** 区分に分かれた列か。分かれていなければ地域の列 */
+  expanded: boolean;
+  /** その列が受け持つ規制区分の id */
+  categoryIds: Set<string>;
+  width: number;
+}
+
+/** 出ている行から、法規の列を組み立てる */
+function leafColumns(
+  rows: { regulations: RowRegulationDto[] }[],
+  openRegions: Set<string>,
+  locale: ReturnType<typeof useI18n>["locale"],
+): LeafColumn[] {
+  /** 地域 → その地域で該当している区分（並び順つき） */
+  const regions = new Map<
+    string,
+    { order: number; label: string; categories: Map<string, { order: number; label: string }> }
+  >();
+  for (const row of rows) {
+    for (const r of row.regulations) {
+      const region = regions.get(r.regionId) ?? {
+        order: r.regionOrder,
+        label: pickName(locale, r.regionNameJa, r.regionNameEn),
+        categories: new Map(),
+      };
+      region.categories.set(r.categoryId, {
+        order: r.categoryOrder,
+        // 区分名だけでは法令が分からないので、法令名を前に付ける
+        label: `${pickStatutoryName(locale, r.lawNameOriginal, r.lawNameJa, r.lawNameEn)} ${pickStatutoryName(locale, r.categoryNameOriginal, r.categoryNameJa, r.categoryNameEn)}`,
+      });
+      regions.set(r.regionId, region);
+    }
+  }
+
+  const out: LeafColumn[] = [];
+  for (const [regionId, region] of [...regions.entries()].sort((a, b) => a[1].order - b[1].order)) {
+    if (!openRegions.has(regionId)) {
+      out.push({
+        key: `region:${regionId}`,
+        regionId,
+        label: region.label,
+        expanded: false,
+        categoryIds: new Set(region.categories.keys()),
+        width: 96,
+      });
+      continue;
+    }
+    for (const [categoryId, c] of [...region.categories.entries()].sort(
+      (a, b) => a[1].order - b[1].order,
+    )) {
+      out.push({
+        key: `category:${categoryId}`,
+        regionId,
+        label: c.label,
+        expanded: true,
+        categoryIds: new Set([categoryId]),
+        width: 128,
+      });
+    }
+  }
+  return out;
+}
 
 export function CompositionAggregateTable({
   productId,
@@ -75,8 +149,17 @@ export function CompositionAggregateTable({
   const { m, locale } = useI18n();
   const [data, setData] = useState<CompositionAggregateDto | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // 列幅は一覧と同じ規則
-  const cols = useResizableColumns("chem.table.compositionAggregate", HEADS);
+  /** 区分まで分けて見ている地域。押すたびに出し入れする */
+  const [openRegions, setOpenRegions] = useState<Set<string>>(new Set());
+
+  const leaves = leafColumns(data?.rows ?? [], openRegions, locale);
+  // 列幅は一覧と同じ規則。法規の列は中身で増減するが、鍵が id なので幅は覚えたまま
+  const cols = useResizableColumns(
+    "chem.table.compositionAggregate",
+    [...HEADS, ...leaves],
+    // 規制区分に分けると列が増える。詰めずに、はみ出したぶんは横に送る
+    { shrinkToFit: false },
+  );
 
   useEffect(() => {
     let alive = true;
@@ -112,6 +195,14 @@ export function CompositionAggregateTable({
     );
   }
   if (!data) return <p className="text-muted-foreground text-sm">{m.common.loading}</p>;
+
+  /** 地域を、規制区分に分けて見るか、まとめて見るか */
+  const toggleRegion = (regionId: string) => {
+    const next = new Set(openRegions);
+    if (next.has(regionId)) next.delete(regionId);
+    else next.add(regionId);
+    setOpenRegions(next);
+  };
 
   const toggle = (key: string) => {
     const next = new Set(open);
@@ -157,12 +248,52 @@ export function CompositionAggregateTable({
             style={{ minWidth: cols.minTableWidth }}
           >
             <colgroup>{cols.cols()}</colgroup>
+            {/*
+              見出しは2段。上の段は「該当法規制」の見出しだけで、
+              下の段が地域（押すと規制区分に分かれる）。
+              組成そのものの列は2段ぶんの高さを取る。
+            */}
             <thead>
-              <tr className="bg-muted/50 border-y text-left">
+              <tr className="bg-muted/50 border-t text-left">
                 {HEADS.map(({ key, label, className }) => (
-                  <th key={key} className={cn(CELL, "relative font-medium", className)}>
+                  <th
+                    key={key}
+                    rowSpan={2}
+                    className={cn(CELL, "relative align-bottom font-medium", className)}
+                  >
                     {label(m)}
                     {cols.handle(key, `${label(m)} ${m.table.resize}`)}
+                  </th>
+                ))}
+                {leaves.length > 0 && (
+                  <th colSpan={leaves.length} className={cn(CELL, "text-center font-medium")}>
+                    {m.composition.aggregateRegulations}
+                  </th>
+                )}
+              </tr>
+              <tr className="bg-muted/50 border-b text-left">
+                {leaves.map((c) => (
+                  <th key={c.key} className={cn(CELL, "relative p-0 font-medium")}>
+                    <button
+                      type="button"
+                      onClick={() => toggleRegion(c.regionId)}
+                      aria-expanded={c.expanded}
+                      title={
+                        c.expanded
+                          ? `${c.label} — ${m.composition.aggregateGroupByRegion}`
+                          : `${c.label} — ${m.composition.aggregateSplitByCategory}`
+                      }
+                      className="hover:bg-accent/60 flex w-full items-center gap-1 px-2 py-1 text-left"
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "text-muted-foreground size-3 shrink-0 transition-transform",
+                          c.expanded && "rotate-90",
+                        )}
+                      />
+                      <span className="truncate">{c.label}</span>
+                    </button>
+                    {cols.handle(c.key, `${c.label} ${m.table.resize}`)}
                   </th>
                 ))}
               </tr>
@@ -210,9 +341,14 @@ export function CompositionAggregateTable({
                       <td className={cn(CELL, "text-muted-foreground text-right text-xs")}>
                         {many ? m.composition.aggregateCount(row.contributions.length) : "—"}
                       </td>
-                      <td className={cn(CELL, "max-w-0")}>
-                        <RegulationChips items={row.regulations} locale={locale} />
-                      </td>
+                      {leaves.map((c) => {
+                        const hit = row.regulations.filter((r) => c.categoryIds.has(r.categoryId));
+                        return (
+                          <td key={c.key} className={cn(CELL, "text-center")}>
+                            <RegulationMark hits={hit} expanded={c.expanded} locale={locale} />
+                          </td>
+                        );
+                      })}
                     </tr>
                     {/*
                      * 内訳は物質コードと、製品全体に対する重量%だけ。
@@ -240,7 +376,9 @@ export function CompositionAggregateTable({
                             {c.pct}%
                           </td>
                           <td className={CELL} />
-                          <td className={CELL} />
+                          {leaves.map((c) => (
+                            <td key={c.key} className={CELL} />
+                          ))}
                         </tr>
                       ))}
                   </Fragment>
@@ -254,7 +392,9 @@ export function CompositionAggregateTable({
                 </td>
                 <td className={cn(CELL, "text-right font-medium")}>{data.totalPct}%</td>
                 <td className={CELL} />
-                <td className={CELL} />
+                {leaves.map((c) => (
+                  <td key={c.key} className={CELL} />
+                ))}
               </tr>
             </tfoot>
           </table>
@@ -265,66 +405,41 @@ export function CompositionAggregateTable({
 }
 
 /**
- * その物質が引っかかっている規制。**法律ごとにまとめて1行に収める。**
+ * その物質が、その列の規制に当たっているかどうかの印。
  *
- * 区分名をそのまま並べると、1物質で6個並ぶことがあり
- * （キシレンは化審法・安衛法3つ・毒劇法・化管法）、
- * 組成の並びが読めなくなる。この表は「何がどれだけ入っているか」を見るためのもので、
- * 規制の中身は下の判定表が受け持つ。ここは**目印**に徹する。
- *
- * 区分が1つだけなら区分名まで出す（そのほうが分かるので）。
- * 2つ以上なら数だけにして、区分名は触れれば読める。
+ *   地域の列（まとめているとき） … **当たっている規制区分の個数**
+ *   区分の列（分けたとき）       … 当たっていれば印、当たっていなければ空
  *
  * **空欄は「かかっていない」ではなく「該当が無い」。**
  * まだ判定していない製品でも空になるので、下の判定表と合わせて読む。
+ *
+ * 確認が残っている区分は、判定表と同じ赤にする。
+ * 地域にまとめているときは、1つでも残っていれば赤くする
+ * （まとめた中に見なければいけないものが隠れる、という事故を防ぐ）。
  */
-function RegulationChips({
-  items,
+function RegulationMark({
+  hits,
+  expanded,
   locale,
 }: {
-  items: RowRegulationDto[];
+  hits: RowRegulationDto[];
+  expanded: boolean;
   locale: ReturnType<typeof useI18n>["locale"];
 }) {
-  if (items.length === 0) return <span className="text-muted-foreground">—</span>;
-
-  /** 法律ごとにまとめる。並びは元のまま（法令 → 区分の順に入っている） */
-  const byLaw = new Map<string, { law: string; categories: string[]; needsReview: boolean }>();
-  for (const r of items) {
-    const law = pickStatutoryName(locale, r.lawNameOriginal, r.lawNameJa, r.lawNameEn);
-    const category = pickStatutoryName(
-      locale,
-      r.categoryNameOriginal,
-      r.categoryNameJa,
-      r.categoryNameEn,
-    );
-    const found = byLaw.get(law) ?? { law, categories: [], needsReview: false };
-    found.categories.push(category);
-    // 1つでも確認が残っていれば、その法律の印に付ける
-    found.needsReview = found.needsReview || r.needsReview;
-    byLaw.set(law, found);
-  }
-
+  if (hits.length === 0) return <span className="text-muted-foreground">—</span>;
+  const needsReview = hits.some((h) => h.needsReview);
+  const title = hits
+    .map(
+      (h) =>
+        `${pickStatutoryName(locale, h.lawNameOriginal, h.lawNameJa, h.lawNameEn)} › ${pickStatutoryName(locale, h.categoryNameOriginal, h.categoryNameJa, h.categoryNameEn)}`,
+    )
+    .join("\n");
   return (
-    // 入りきらないぶんはセルの中だけ横に送る。スクロールバーは出さない
-    <div className="flex gap-1 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {[...byLaw.values()].map((g) => (
-        <span
-          key={g.law}
-          title={g.categories.map((c) => `${g.law} › ${c}`).join("\n")}
-          className={cn(
-            "shrink-0 rounded border px-1.5 py-0.5 text-xs",
-            // 確認が残っている法律は、判定表と同じ色で目印を付ける
-            g.needsReview ? "border-destructive/40 text-destructive" : "text-muted-foreground",
-          )}
-        >
-          {g.law}
-          {g.categories.length === 1 ? (
-            <span className="ml-1 opacity-70">{g.categories[0]}</span>
-          ) : (
-            <span className="ml-1 font-medium tabular-nums">{g.categories.length}</span>
-          )}
-        </span>
-      ))}
-    </div>
+    <span
+      title={title}
+      className={cn("tabular-nums", needsReview ? "text-destructive font-medium" : "")}
+    >
+      {expanded ? "●" : hits.length}
+    </span>
   );
 }
