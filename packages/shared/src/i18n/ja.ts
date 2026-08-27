@@ -925,6 +925,12 @@ export const ja = {
     unknownField: "使えない項目",
   },
   documents: {
+    pickTargetFor: (template: string, target: string) =>
+      `「${template}」で作る${target}を選んでください`,
+    searchPlaceholder: "コードか名前で探す",
+    noTarget: "見つかりませんでした",
+    make: "この様式で作る",
+    lead: "帳票はここか、製品・物質の詳細から作れます。様式（テンプレート）もここで作ります。",
     printHint:
       "PDFにするには、印刷の画面でプリンターを「PDFとして保存」（Microsoft Print to PDF など）に変えてください。",
     print: "印刷 / PDF保存",

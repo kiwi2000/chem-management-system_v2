@@ -9,9 +9,11 @@ import {
   type DocumentTarget,
   type TableState,
 } from "@chem/shared";
+import { FileText } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { TargetPicker } from "@/components/doc-editor/target-picker";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -78,6 +80,8 @@ export function DocTemplatesScreen() {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [adding, setAdding] = useState(false);
 
+  /** 帳票を作る相手を探している最中のテンプレート */
+  const [picking, setPicking] = useState<DocumentTemplateDto | null>(null);
   const [data, setData] = useState<ListResponse<DocumentTemplateDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -314,6 +318,29 @@ export function DocTemplatesScreen() {
           ),
       },
       {
+        key: "make",
+        header: "",
+        kind: "text",
+        width: 132,
+        sortable: false,
+        filterable: false,
+        render: (t) =>
+          t.id === NEW_ID || !t.active ? null : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPicking(t);
+              }}
+            >
+              <FileText className="size-4" />
+              {m.documents.make}
+            </Button>
+          ),
+      },
+      {
         key: "displayOrder",
         header: m.docTemplates.displayOrder,
         kind: "number",
@@ -349,12 +376,21 @@ export function DocTemplatesScreen() {
   return (
     <div className="w-full space-y-3 p-3 pb-10 lg:p-4 lg:pb-12">
       <h1 className="text-2xl font-semibold">{m.docTemplates.title}</h1>
-      <p className="text-muted-foreground text-sm">{m.docTemplates.lead}</p>
+      <p className="text-muted-foreground text-sm">{m.documents.lead}</p>
 
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {picking && (
+        <TargetPicker
+          target={picking.target}
+          templateId={picking.id}
+          templateName={picking.nameJa}
+          onClose={() => setPicking(null)}
+        />
       )}
 
       {broken.length > 0 && (

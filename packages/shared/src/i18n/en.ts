@@ -915,6 +915,11 @@ export const en: Messages = {
     unknownField: "Unavailable field",
   },
   documents: {
+    pickTargetFor: (template: string, target: string) => `Choose the ${target} for "${template}"`,
+    searchPlaceholder: "Search by code or name",
+    noTarget: "Nothing found",
+    make: "Use this template",
+    lead: "Produce a document here or from a product or substance. Templates are built here too.",
     printHint: 'For a PDF, change the printer to "Save as PDF" in the print dialog.',
     print: "Print / Save as PDF",
     unknownFields: "Some fields are not available for this target and were left blank",
