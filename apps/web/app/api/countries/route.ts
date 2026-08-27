@@ -3,6 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { COUNTRY_INCLUDE, toCountryDto } from "@/lib/country-service";
 import { prisma } from "@/lib/db";
+import { COUNTRY_ORDER_BY, isNaturalOrder } from "@/lib/law-order";
 import { getServerMessages } from "@/lib/i18n";
 import { COUNTRY_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
@@ -27,7 +28,13 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.country.findMany({
       where,
-      orderBy: buildOrderBy(COUNTRY_COLUMNS, state.sort, { displayOrder: "asc" }),
+      /*
+        表示順のままなら **地域 → 国**。地域の順を入れ替えると、
+        その地域の国がまとまって動くのは、ここで地域を先に見ているため
+      */
+      orderBy: isNaturalOrder(state.sort)
+        ? [...COUNTRY_ORDER_BY]
+        : buildOrderBy(COUNTRY_COLUMNS, state.sort, { displayOrder: "asc" }),
       include: COUNTRY_INCLUDE,
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,

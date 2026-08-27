@@ -300,6 +300,7 @@ export const en: Messages = {
   },
 
   regions: {
+    reorderHint: "Drag the handle on the left to reorder; countries and laws follow",
     title: "Regions",
     newTitle: "New region",
     editTitle: "Edit region",
@@ -317,6 +318,8 @@ export const en: Messages = {
   },
 
   countries: {
+    sameRegionOnly: "Rows can only be reordered within the same region",
+    reorderHint: "Drag the handle on the left to reorder (within one region)",
     title: "Countries",
     newTitle: "New country",
     editTitle: "Edit country",

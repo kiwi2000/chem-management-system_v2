@@ -4,7 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { LAW_INCLUDE, toLawDto } from "@/lib/law-service";
-import { LAW_ORDER_BY } from "@/lib/law-order";
+import { LAW_ORDER_BY, isNaturalOrder } from "@/lib/law-order";
 import { LAW_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
@@ -32,11 +32,10 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.law.findMany({
       where,
-      // 選んでいなければ 地域 → 国 → 法令。選んでいればその列で並べる
-      orderBy:
-        state.sort.length === 0
-          ? [...LAW_ORDER_BY]
-          : buildOrderBy(LAW_COLUMNS, state.sort, { displayOrder: "asc" }),
+      // 表示順のままなら 地域 → 国 → 法令。ほかの列を選んでいればその列で並べる
+      orderBy: isNaturalOrder(state.sort)
+        ? [...LAW_ORDER_BY]
+        : buildOrderBy(LAW_COLUMNS, state.sort, { displayOrder: "asc" }),
       include: LAW_INCLUDE,
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,

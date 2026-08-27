@@ -2,6 +2,7 @@ import { emptyTableState, normalizeCode, parseTableState, regionSchema } from "@
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { REGION_ORDER_BY, isNaturalOrder } from "@/lib/law-order";
 import { getServerMessages } from "@/lib/i18n";
 import { REGION_COLUMNS } from "@/lib/list-columns";
 import { toRegionDto } from "@/lib/region-service";
@@ -28,7 +29,10 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.region.findMany({
       where,
-      orderBy: buildOrderBy(REGION_COLUMNS, state.sort, { displayOrder: "asc" }),
+      // 表示順が同じものが並ぶので、最後はコードで決める
+      orderBy: isNaturalOrder(state.sort)
+        ? [...REGION_ORDER_BY]
+        : buildOrderBy(REGION_COLUMNS, state.sort, { displayOrder: "asc" }),
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
     }),

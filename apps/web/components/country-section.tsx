@@ -216,6 +216,17 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
     };
   }, [regionsVersion]);
 
+  /*
+    **地域の並びが変わったら、国の表も引き直す。**
+    国は地域ごとにまとまって並ぶので、地域を入れ替えると
+    こちらの並びも変わる。引き直さないと、片方だけ古いまま残る
+  */
+  useEffect(() => {
+    if (regionsVersion > 0) void load();
+    // 初回は上の読み込みで済んでいるので、地域が動いたときだけ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [regionsVersion]);
+
   function startNew() {
     setError(null);
     setWarnings([]);
@@ -273,6 +284,33 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
   }
 
   /** 確認は共通テーブル側で出す。法令から使われているものはサーバーが 409 で断る */
+  /**
+   * 行を引いて並べ替える。**同じ地域の中だけ。**
+   * 表は地域ごとにまとまって並ぶので、別の地域の隣へは出られない
+   * （地域を変えたいときは「地域」の欄を直す）。
+   */
+  async function onReorder(fromKey: string, toKey: string) {
+    const from = (data?.items ?? []).find((c) => c.id === fromKey);
+    const to = (data?.items ?? []).find((c) => c.id === toKey);
+    setError(null);
+    if (from && to && from.regionId !== to.regionId) {
+      setError(m.countries.sameRegionOnly);
+      return;
+    }
+    const res = await fetch(`/api/countries/${fromKey}/move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetId: toKey }),
+    });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      return;
+    }
+    void load();
+  }
+
   async function onDeleteSelected(targets: CountryDto[]) {
     setError(null);
     for (const c of targets) {
@@ -343,6 +381,9 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
         emptyMessage={regions.length === 0 ? m.countries.noRegion : m.countries.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
+        // 直せる人にだけ、つまみを出す
+        onReorder={editable ? onReorder : undefined}
+        hintText={editable ? m.countries.reorderHint : undefined}
         // 件数が少ないので、1ページの件数も小さい値だけにする
         pageSizeOptions={[10, 25, 50, 100]}
         // 件数が少ないので絞り込みは出さない（並べ替えは見出しで行う）

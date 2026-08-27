@@ -309,6 +309,7 @@ export const ja = {
   },
 
   regions: {
+    reorderHint: "左端のつまみを引くと並べ替えられます。国と法令もまとめて動きます",
     title: "地域",
     newTitle: "地域の追加",
     editTitle: "地域の編集",
@@ -326,6 +327,8 @@ export const ja = {
   },
 
   countries: {
+    sameRegionOnly: "並べ替えられるのは同じ地域の国どうしだけです",
+    reorderHint: "左端のつまみを引くと並べ替えられます（同じ地域の中だけ）",
     title: "国",
     newTitle: "国の追加",
     editTitle: "国の編集",

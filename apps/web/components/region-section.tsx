@@ -221,6 +221,27 @@ export function RegionSection({ onChanged }: { onChanged?: () => void }) {
   }
 
   /** 確認は共通テーブル側で出す。国や法令から使われているものはサーバーが 409 で断る */
+  /**
+   * 行を引いて並べ替える。**表示順の数字は打たない。**
+   * 地域の順は下まで効く（国の表も法令の表も、まとまって動く）。
+   */
+  async function onReorder(fromKey: string, toKey: string) {
+    setError(null);
+    const res = await fetch(`/api/regions/${fromKey}/move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetId: toKey }),
+    });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      return;
+    }
+    void load();
+    onChanged?.();
+  }
+
   async function onDeleteSelected(targets: RegionDto[]) {
     setError(null);
     for (const r of targets) {
@@ -280,6 +301,9 @@ export function RegionSection({ onChanged }: { onChanged?: () => void }) {
         emptyMessage={m.regions.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
+        // 直せる人にだけ、つまみを出す
+        onReorder={editable ? onReorder : undefined}
+        hintText={editable ? m.regions.reorderHint : undefined}
         // 件数が少ないので、1ページの件数も小さい値だけにする
         pageSizeOptions={[10, 25, 50, 100]}
         // 件数が少ないので絞り込みは出さない（並べ替えは見出しで行う）
