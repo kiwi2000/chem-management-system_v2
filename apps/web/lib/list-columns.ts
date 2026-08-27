@@ -159,6 +159,21 @@ export const LAW_COLUMNS: QueryColumn[] = [
   { key: "displayOrder", kind: "number", field: "displayOrder" },
 ];
 
+/**
+ * ドキュメント生成のテンプレート。
+ * 中身（ブロックの並び）では絞れない。JSON なので、条件にすると当たり方が読めない
+ */
+export const DOC_TEMPLATE_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  { key: "target", kind: "enum", field: "target" },
+  { key: "locale", kind: "enum", field: "locale" },
+  { key: "active", kind: "enum", field: "active" },
+  { key: "displayOrder", kind: "number", field: "displayOrder" },
+  { key: "updatedAt", kind: "date", field: "updatedAt" },
+];
+
 export const REGULATION_CATEGORY_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "nameOriginal", kind: "text", field: "nameOriginal", caseInsensitive: true },

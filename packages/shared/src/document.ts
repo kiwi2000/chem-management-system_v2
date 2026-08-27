@@ -1,3 +1,6 @@
+import { z } from "zod";
+import type { Messages } from "./i18n/ja";
+
 /**
  * ドキュメント生成のテンプレート。
  *
@@ -278,3 +281,23 @@ export function unknownFields(content: DocumentContent, target: DocumentTarget):
   }
   return [...out];
 }
+
+/**
+ * テンプレートの入れもの（中身の JSON を除いた部分）。
+ *
+ * **中身は別に扱う。**ブロックの並びは編集画面が丸ごと差し替えるので、
+ * 名前や対象を直すのと同じ入口にすると、片方だけ保存したいときに困る。
+ */
+export const documentTemplateSchema = (m: Messages) =>
+  z.object({
+    code: z.string().trim().min(1, m.validation.required).max(50, m.validation.tooLong(50)),
+    nameJa: z.string().trim().min(1, m.validation.required).max(200, m.validation.tooLong(200)),
+    nameEn: z.string().trim().max(200, m.validation.tooLong(200)).nullish(),
+    target: z.enum(DOCUMENT_TARGETS),
+    locale: z.string().trim().min(1, m.validation.required).max(10, m.validation.tooLong(10)),
+    active: z.boolean(),
+    displayOrder: z.number().int().min(0).max(9999),
+    note: z.string().trim().max(2000, m.validation.tooLong(2000)).nullish(),
+  });
+
+export type DocumentTemplateInput = z.infer<ReturnType<typeof documentTemplateSchema>>;

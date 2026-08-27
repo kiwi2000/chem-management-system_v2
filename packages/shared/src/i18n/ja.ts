@@ -860,6 +860,31 @@ export const ja = {
    * インベントリ（各国の既存化学物質の目録）。
    * 判定には使わない。「そのインベントリでの番号」を物質の画面に出すためのもの
    */
+  docTemplates: {
+    title: "ドキュメント生成",
+    lead: "テンプレートを作っておくと、製品や物質を選ぶだけで帳票を作れます。",
+    add: "＋ テンプレート",
+    newTitle: "テンプレートの追加",
+    editTitle: "テンプレートの編集",
+    code: "コード",
+    nameJa: "名称（日本語）",
+    nameEn: "名称（英語）",
+    target: "対象",
+    targets: { PRODUCT: "製品", SUBSTANCE: "物質" },
+    locale: "言語",
+    active: "有効",
+    displayOrder: "表示順",
+    note: "備考",
+    blocks: "ブロック数",
+    updatedAt: "更新日",
+    empty: "テンプレートがありません",
+    edit: "中身を編集",
+    duplicateCode: (code: string) => `コード「${code}」はすでに使われています`,
+    deleteConfirm: (name: string) => `「${name}」を消します。よろしいですか`,
+    contentBroken: "保存されている中身を読めませんでした。作り直してください",
+    unknownFields: (n: number) => `いまの対象では使えない差込項目が ${n} 件あります`,
+    reorderHint: "左端のつまみを引くと並べ替えられます",
+  },
   inventories: {
     title: "インベントリ",
     description:

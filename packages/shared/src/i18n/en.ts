@@ -850,6 +850,31 @@ export const en: Messages = {
    * Inventories (each country's register of existing chemical substances).
    * Not used for assessment — they supply the numbers shown on a substance
    */
+  docTemplates: {
+    title: "Documents",
+    lead: "Set up a template once, then pick a product or substance to produce the document.",
+    add: "+ Template",
+    newTitle: "New template",
+    editTitle: "Edit template",
+    code: "Code",
+    nameJa: "Name (JA)",
+    nameEn: "Name (EN)",
+    target: "Target",
+    targets: { PRODUCT: "Product", SUBSTANCE: "Substance" },
+    locale: "Language",
+    active: "Active",
+    displayOrder: "Order",
+    note: "Note",
+    blocks: "Blocks",
+    updatedAt: "Updated",
+    empty: "No templates yet",
+    edit: "Edit content",
+    duplicateCode: (code: string) => `Code "${code}" is already in use`,
+    deleteConfirm: (name: string) => `Delete "${name}"?`,
+    contentBroken: "The stored content could not be read. Please rebuild it.",
+    unknownFields: (n: number) => `${n} field(s) are not available for the current target`,
+    reorderHint: "Drag the handle on the left to reorder",
+  },
   inventories: {
     title: "Inventories",
     description:

@@ -1,6 +1,9 @@
-import { UnderConstruction } from "@/components/under-construction";
+import { DocTemplatesScreen } from "@/components/doc-templates-screen";
 
-/** まだ作っていない画面。メニューから押せるので、作っていないことだけを伝える */
-export default function Page() {
-  return <UnderConstruction titleKey="docTemplates" />;
+/**
+ * ドキュメント生成のテンプレートの一覧。
+ * 中身（ブロックの並び）は `doc-templates/[id]` で編集する
+ */
+export default function DocTemplatesPage() {
+  return <DocTemplatesScreen />;
 }

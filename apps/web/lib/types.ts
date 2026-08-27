@@ -1,3 +1,4 @@
+import type { DocumentContent, DocumentTarget } from "@chem/shared";
 import type { MfaMethod } from "@chem/shared";
 import type {
   GazetteLawKind,
@@ -428,6 +429,29 @@ export interface AggregateRowDto {
    * **判定し直した結果ではなく、保持してある判定結果から引いている**
    */
   regulations: RowRegulationDto[];
+}
+
+/**
+ * ドキュメント生成のテンプレート。
+ * 中身（ブロックの並び）まで載せる。編集画面がそのまま開くため
+ */
+export interface DocumentTemplateDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  target: DocumentTarget;
+  content: DocumentContent;
+  /** 保存されている中身が、いまの形として読めなかった */
+  contentBroken: boolean;
+  /** いまの対象では使えない差込項目。対象を変えたあとに出る */
+  unknownFields: string[];
+  blockCount: number;
+  locale: string;
+  active: boolean;
+  displayOrder: number;
+  note: string | null;
+  updatedAt: string;
 }
 
 export interface CompositionAggregateDto {
