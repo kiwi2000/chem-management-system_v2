@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 import { AppShellClient } from "@/components/app-shell-client";
 import { canEdit, getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { PENDING_PATH, pendingStep } from "@/lib/pending-step";
 import { EXPIRED_LOGIN_URL, PATH_HEADER, PUBLIC_PATHS } from "@/lib/routes";
+import { getAppSettings } from "@/lib/settings";
 
 /**
  * アプリシェル。
@@ -16,14 +18,25 @@ import { EXPIRED_LOGIN_URL, PATH_HEADER, PUBLIC_PATHS } from "@/lib/routes";
  */
 export async function AppShell({ children }: { children: ReactNode }) {
   const actor = await getActor();
+  const path = (await headers()).get(PATH_HEADER) ?? "";
 
   if (!actor) {
-    const path = (await headers()).get(PATH_HEADER) ?? "";
     if (!PUBLIC_PATHS.some((p) => path.startsWith(p))) {
       redirect(EXPIRED_LOGIN_URL);
     }
     // ログイン画面などはシェル無しで中身だけ出す
     return <>{children}</>;
+  }
+
+  /*
+    済ませていない用事があるなら、その画面から動かさない。
+    ログイン直後に送るだけでは、URL を直に打てば素通りできてしまう。
+
+    **枠は出したまま。**ログアウトの口を消すと、途中でやめられなくなる
+  */
+  const step = pendingStep(actor.user, await getAppSettings());
+  if (step && path !== PENDING_PATH[step]) {
+    redirect(PENDING_PATH[step]);
   }
 
   /*

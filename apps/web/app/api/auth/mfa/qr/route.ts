@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
  * 絵はSVGで返し、画面にそのまま埋める。
  */
 export async function GET(req: Request) {
-  const auth = await requireUser();
+  // 用事そのもの（2要素認証の登録）。ここを止めるとQRコードが出ず、登録を始められない
+  const auth = await requireUser({ allowPending: true });
   if (auth instanceof Response) return auth;
   const m = await getServerMessages();
 

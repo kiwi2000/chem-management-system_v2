@@ -18,7 +18,14 @@ export async function writeAudit(params: {
     | "import"
     | "export"
     /** 組成を見た。持ち出しの記録として残す */
-    | "view";
+    | "view"
+    /*
+      2要素認証の付け外し。**入口の出来事としてアクセス記録に出す。**
+      パスワードだけを知っている相手が本人より先に登録してしまう筋があるので、
+      身に覚えのない登録に本人と管理者が気づけるようにしておく
+    */
+    | "mfa_enable"
+    | "mfa_disable";
   actorId?: string;
   diff?: unknown;
 }): Promise<void> {

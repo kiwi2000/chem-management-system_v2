@@ -223,6 +223,7 @@ export const en: Messages = {
     all: "All",
     firstPage: "First page",
     lastPage: "Last page",
+    jumpToPage: "Go to page",
     pageSize: "Rows per page",
     perPage: (n: number) => `${n} rows`,
     operators: {
@@ -360,7 +361,8 @@ export const en: Messages = {
 
   laws: {
     title: "Laws",
-    rowHint: "Select a row to list the statutory substances below",
+    rowHint:
+      "Click a law code to list its categories below. Click a category code to open its statutory substances",
     sameCountryOnly: "Rows can only be reordered within the same country",
     sameLawOnly: "Rows can only be reordered within the same law",
     reorderHint: "Drag the handle on the left to reorder (within one country, or one law)",
@@ -544,7 +546,7 @@ export const en: Messages = {
 
   statutorySubstances: {
     title: "Statutory names",
-    rowHint: "Click a row to list the CAS numbers linked to it below",
+    rowHint: "Click the code to open the CAS numbers linked to it",
     newTitle: "New statutory name",
     editTitle: "Edit statutory name",
     code: "Code",
@@ -670,6 +672,12 @@ export const en: Messages = {
     saved: "Preferences saved",
   },
 
+  mfaSetup: {
+    title: "Set up two-step sign-in",
+    lead: "Other screens stay closed until this is done.",
+    why: "Once you register an authenticator app on your phone, a leaked password alone will not let anyone in. If you do not have one, ask your administrator.",
+  },
+
   mfa: {
     title: "Two-step sign-in",
     lead: "Asks for a 6-digit code from an authenticator app in addition to the password. A leaked password alone is not enough to sign in.",
@@ -727,6 +735,8 @@ export const en: Messages = {
     actionLogin: "Signed in",
     actionLoginFailed: "Sign-in failed",
     actionLogout: "Signed out",
+    actionMfaEnable: "Registered two-step sign-in",
+    actionMfaDisable: "Removed two-step sign-in",
     actionView: "Viewed composition",
     actionViewExpanded: "Viewed full breakdown",
     actionExport: "Exported",
@@ -737,11 +747,13 @@ export const en: Messages = {
     reasonLockedNow: "Locked after repeated failures",
     reasonBadPassword: "Wrong password",
     reasonBadTotp: "Wrong verification code",
-    olderThan: (d: number) => `Delete older than ${d} days`,
+    purgeLabel: "days old and older",
+    purgeDays: "Days",
+    purgeRun: "Delete",
+    confirmDays: (d: number) =>
+      `Delete every record older than ${d} days? Deleted records cannot be recovered.`,
     confirmSelected: (n: number) =>
       `Delete the ${n} selected records? Deleted records cannot be recovered.`,
-    confirmBefore: (d: number) =>
-      `Delete every record older than ${d} days? Deleted records cannot be recovered.`,
     removed: (n: number) => `Deleted ${n} records. The deletion itself is recorded.`,
   },
 
@@ -859,8 +871,8 @@ export const en: Messages = {
   docTemplates: {
     seq: "No.",
     createdAt: "Created",
-    title: "Documents",
-    lead: "Set up a template once, then pick a product or substance to produce the document.",
+    title: "Templates",
+    lead: "Build the forms that documents are produced from. They appear under Create.",
     add: "+ Template",
     newTitle: "New template",
     editTitle: "Edit template",
@@ -945,7 +957,6 @@ export const en: Messages = {
     pickHere:
       "Choose what to build the document from. Select a code to open it; the filters work as usual.",
     make: "Create",
-    lead: "Produce a document here or from a product or substance. Templates are built here too.",
     printHint: 'For a PDF, change the printer to "Save as PDF" in the print dialog.',
     print: "Print / Save as PDF",
     unknownFields: "Some fields are not available for this target and were left blank",
@@ -1338,8 +1349,8 @@ export const en: Messages = {
     validation: "Please check your input",
     invalidCredentials: "The email address or password is incorrect",
     locked: "Too many failed attempts. This account is temporarily locked; please try again later",
-    inactive: "This account is not available. Please contact your administrator",
     mfaInvalid: "The authentication code is incorrect",
+    pendingSetup: "There is something to finish first. Complete it on the screen you are sent to.",
     unauthorized: "Please sign in",
     forbiddenEdit: "You do not have edit permission (you can view, run assessments and download)",
     forbiddenAdmin: "Only a system administrator can do this",

@@ -30,7 +30,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   await writeAudit({
     entity: "users",
     entityId: id,
-    action: "update",
+    action: "mfa_disable",
     actorId: actor.user.id,
     diff: { mfaResetBy: actor.user.email, email: user.email },
   });

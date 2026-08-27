@@ -325,7 +325,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
                 }
               : undefined
         }
-        // 行の右端の › で詳細画面へ。編集はその画面の「編集」から行う
+        // 詳細へはコードのリンクから移る。編集はその画面の「編集」から行う
       />
     </div>
   );

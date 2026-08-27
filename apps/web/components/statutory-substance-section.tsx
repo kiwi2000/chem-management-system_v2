@@ -81,8 +81,6 @@ export function StatutorySubstanceSection({
   category,
   slideDir,
   onShown,
-  selectedId,
-  onSelect,
 }: {
   languages: LanguageDto[];
   category: RegulationCategoryDto | null;
@@ -90,10 +88,6 @@ export function StatutorySubstanceSection({
   slideDir?: SlideDir;
   /** 新しい区分の中身を画面に出したときに呼ぶ。見出しはこれに合わせて切り替わる */
   onShown?: () => void;
-  /** いま対象CASを見ている法文物質名 */
-  selectedId?: string | null;
-  /** 行を1回押したとき。親はここから対象CASの画面へ移る */
-  onSelect?: (substance: StatutorySubstanceDto) => void;
 }) {
   const { m, locale } = useI18n();
   const { can } = useMe();
@@ -761,11 +755,12 @@ export function StatutorySubstanceSection({
         emptyMessage={category ? m.statutorySubstances.empty : m.statutorySubstances.selectCategory}
         selectable={editable && !!activeClassId}
         onDeleteSelected={onDeleteSelected}
-        // 編集は行の右端の鉛筆から。行を押すと下の対象CASが入れ替わる
+        /*
+          編集は行の右端の鉛筆から。**対象CASへはコードのリンクで移る。**
+          行そのものを押しても移らない（ほかの一覧と揃えてある）
+        */
         rowAction={editable ? { onClick: startEdit } : undefined}
         hintText={m.statutorySubstances.rowHint}
-        selectedKey={selectedId ?? null}
-        onRowSelect={onSelect}
         create={
           editable && !editingId ? { onClick: startNew, disabled: !activeClassId } : undefined
         }

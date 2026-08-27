@@ -13,7 +13,8 @@ export const dynamic = "force-dynamic";
  * 変更後は全セッションを失効させ（他端末の乗っ取り対策）、自分だけ再発行する。
  */
 export async function POST(req: Request) {
-  const auth = await requireUser();
+  // 用事そのもの（初期パスワードの変更）
+  const auth = await requireUser({ allowPending: true });
   if (auth instanceof Response) return auth;
   const { user } = auth;
   const m = await getServerMessages();

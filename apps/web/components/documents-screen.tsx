@@ -99,6 +99,25 @@ export function DocumentsScreen() {
     if (ready) void load();
   }, [ready, load]);
 
+  /**
+   * 選んだものを消す。
+   * **消せるのは自分が作ったものだけ**（この表には自分のものしか出ない）。
+   * 印を付けるのではなく本当に消すので、押したあとは元に戻せない
+   */
+  async function onDeleteSelected(targets: GeneratedDocumentDto[]) {
+    setError(null);
+    for (const d of targets) {
+      const res = await fetch(`/api/documents/${d.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        break;
+      }
+    }
+    void load();
+  }
+
   const columns: TableColumn<GeneratedDocumentDto>[] = useMemo(
     () => [
       {
@@ -212,6 +231,8 @@ export function DocumentsScreen() {
           onStateChange={setState}
           onReset={reset}
           emptyMessage={m.documents.noneYet}
+          selectable
+          onDeleteSelected={onDeleteSelected}
           pageSizeOptions={[10, 25, 50, 100]}
           hintText={m.documents.savedHint}
         />

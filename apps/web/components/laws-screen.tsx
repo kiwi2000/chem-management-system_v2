@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { LawTreeSection, type CategorySelection } from "@/components/law-tree-section";
 import type { LanguageDto } from "@/lib/types";
@@ -14,15 +13,12 @@ import type { LanguageDto } from "@/lib/types";
  * いまどの段にいるのかが URL からも分かるようにした。
  */
 export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
-  const router = useRouter();
-
-  /** 区分の行を押したら、その区分の法文物質名へ移る（コードのリンクと同じ行き先） */
-  const select = useCallback(
-    (next: CategorySelection | null) => {
-      if (next) router.push(`/categories/${next.category.id}`);
-    },
-    [router],
-  );
+  /*
+    **行そのものを押しても移らない。**移るのはコードのリンクから。
+    ほかの一覧と揃えてある（行を押す＝選ぶ・下に開く）。
+    法令の行を押すと、その法令の区分が下に出る（`LawTreeSection` の中で持つ）
+  */
+  const select = useCallback((_next: CategorySelection | null) => {}, []);
 
   return (
     <div className="w-full p-4 lg:p-6">

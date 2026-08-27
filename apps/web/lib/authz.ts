@@ -3,6 +3,8 @@ import type { User as AppUser } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { PENDING_PATH, pendingStep } from "@/lib/pending-step";
+import { getAppSettings } from "@/lib/settings";
 
 /**
  * 認可ポリシー（単一モジュールに集中: CLAUDE.md §4）。
@@ -46,12 +48,30 @@ export async function getActor(): Promise<Actor | null> {
   return { user, permissions, has: (p) => permissions.includes(p) };
 }
 
-/** 認証必須。未認証は 401 Response を返す */
-export async function requireUser(): Promise<Actor | Response> {
+/**
+ * 認証必須。未認証は 401 Response を返す。
+ *
+ * **済ませていない用事（初期パスワードの変更・2要素認証の登録）がある人は、
+ * ここで止める。**画面側の誘導だけに任せると、URL を直に打てば素通りできてしまう。
+ *
+ * `allowPending` を渡せるのは、**その用事を済ませるために要るものだけ。**
+ * 増やすと門の意味が無くなるので、`authz-coverage.test.ts` が数を見張っている。
+ */
+export async function requireUser(opts?: { allowPending?: boolean }): Promise<Actor | Response> {
   const actor = await getActor();
   if (!actor) {
     const m = await getServerMessages();
     return jsonError(401, "unauthorized", m.errors.unauthorized);
+  }
+  if (!opts?.allowPending) {
+    const step = pendingStep(actor.user, await getAppSettings());
+    if (step) {
+      const m = await getServerMessages();
+      // 行き先を添える。画面側はこれを見て、済ませる画面へ送る
+      return jsonError(403, "pending_setup", m.errors.pendingSetup, {
+        path: PENDING_PATH[step],
+      });
+    }
   }
   return actor;
 }

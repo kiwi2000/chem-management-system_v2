@@ -13,7 +13,8 @@ export const dynamic = "force-dynamic";
  * ここで他に何かする必要はない。
  */
 export async function POST() {
-  const auth = await requireUser();
+  // 放置での自動ログアウト。用事の途中でも時計は動かす
+  const auth = await requireUser({ allowPending: true });
   if (auth instanceof Response) return auth;
   return Response.json({ ok: true });
 }

@@ -8,6 +8,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { countryName } from "@/lib/country-name";
 import { useI18n } from "@/lib/i18n-client";
@@ -18,9 +19,6 @@ import { useTableState } from "@/lib/use-table-state";
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "at", direction: "desc" }]);
 
 const STORAGE_KEY = "chem.table.accessLog";
-
-/** 古い記録を消すときの区切り。これより前を消す */
-const KEEP_DAYS = [90, 180, 365];
 
 /**
  * アクセス記録。
@@ -64,6 +62,8 @@ export default function AccessLogPage() {
           { value: "login", label: m.accessLog.actionLogin },
           { value: "login_failed", label: m.accessLog.actionLoginFailed },
           { value: "logout", label: m.accessLog.actionLogout },
+          { value: "mfa_enable", label: m.accessLog.actionMfaEnable },
+          { value: "mfa_disable", label: m.accessLog.actionMfaDisable },
           { value: "view", label: m.accessLog.actionView },
           { value: "export", label: m.accessLog.actionExport },
           { value: "import", label: m.accessLog.actionImport },
@@ -128,7 +128,7 @@ export default function AccessLogPage() {
         header: m.accessLog.ip,
         kind: "text",
         sortable: false,
-        filterable: false,
+        // 記録の中をたどって絞る（`access-log-shared.ts`）
         width: 150,
         className: "font-mono text-xs",
         render: (r) => r.ip ?? "",
@@ -148,7 +148,11 @@ export default function AccessLogPage() {
         header: m.accessLog.device,
         kind: "text",
         sortable: false,
-        filterable: false,
+        /*
+          絞るのは**生の文字列**に対して。画面には「Chrome」などに直して出しているので、
+          打つ言葉と出ている言葉が違う。入力例を添えて、そのことを伝える
+        */
+        filterPlaceholder: "Chrome / Windows",
         width: 175,
         className: "text-muted-foreground text-xs",
         // 生の文字列は長いうえに読めない。使っているものだけを出す
@@ -163,6 +167,7 @@ export default function AccessLogPage() {
   const [data, setData] = useState<ListResponse<AccessLogDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [purgeDays, setPurgeDays] = useState("");
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
@@ -183,7 +188,7 @@ export default function AccessLogPage() {
     if (ready) void load();
   }, [ready, load]);
 
-  async function remove(body: { ids?: string[]; before?: string }, confirmText: string) {
+  async function remove(body: { ids?: string[]; days?: number }, confirmText: string) {
     if (!confirm(confirmText)) return;
     setError(null);
     const res = await fetch("/api/admin/access-log", {
@@ -201,6 +206,13 @@ export default function AccessLogPage() {
     setNotice(m.accessLog.removed(count));
     await load();
   }
+
+  /*
+    何日ぶん残すかは、その時々で違う。決め打ちのボタンを並べるより、
+    打ってもらうほうが早い。**数字だけ**受け取る（`inputMode` はスマホ用）
+  */
+  const days = Number(purgeDays);
+  const daysOk = /^\d+$/.test(purgeDays) && days >= 1;
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
@@ -246,24 +258,30 @@ export default function AccessLogPage() {
           void remove({ ids: rows.map((r) => r.id) }, m.accessLog.confirmSelected(rows.length))
         }
         headerActions={
-          /* 古い記録は溜まる一方なので、まとめて消せるようにする */
-          <div className="flex items-center gap-1">
-            {KEEP_DAYS.map((d) => (
-              <Button
-                key={d}
-                size="sm"
-                variant="ghost"
-                onClick={() =>
-                  void remove(
-                    { before: new Date(Date.now() - d * 86400_000).toISOString() },
-                    m.accessLog.confirmBefore(d),
-                  )
-                }
-              >
-                <Trash2 className="mr-1 size-3.5" />
-                {m.accessLog.olderThan(d)}
-              </Button>
-            ))}
+          /* 古い記録は溜まる一方なので、日数を打ってまとめて消せるようにする */
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={purgeDays}
+              onChange={(e) => setPurgeDays(e.target.value.replace(/[^0-9]/g, ""))}
+              inputMode="numeric"
+              className="h-8 w-16 text-right"
+              aria-label={m.accessLog.purgeDays}
+            />
+            <span className="text-muted-foreground text-sm whitespace-nowrap">
+              {m.accessLog.purgeLabel}
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={!daysOk}
+              onClick={() => {
+                void remove({ days }, m.accessLog.confirmDays(days));
+                setPurgeDays("");
+              }}
+            >
+              <Trash2 className="mr-1 size-3.5" />
+              {m.accessLog.purgeRun}
+            </Button>
           </div>
         }
       />
@@ -282,6 +300,10 @@ function actionLabel(m: M, r: AccessLogDto): string {
       return m.accessLog.actionLoginFailed;
     case "logout":
       return m.accessLog.actionLogout;
+    case "mfa_enable":
+      return m.accessLog.actionMfaEnable;
+    case "mfa_disable":
+      return m.accessLog.actionMfaDisable;
     case "export":
       return m.accessLog.actionExport;
     case "import":

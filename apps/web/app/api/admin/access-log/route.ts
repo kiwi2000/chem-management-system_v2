@@ -128,18 +128,33 @@ export async function DELETE(req: Request) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const { ids, before } = (body ?? {}) as { ids?: unknown; before?: unknown };
+  const { ids, days } = (body ?? {}) as { ids?: unknown; days?: unknown };
 
-  let where;
+  /*
+    消しかたは2つだけ。**選んだ行**か、**指定した日数より前**か。
+    どちらも画面に入口がある。画面に無い削除の入口を残しておくと、
+    誤って叩かれたときに気づけない
+  */
+  let where: { action: { in: string[] } } & Record<string, unknown>;
   let what: string;
-  if (Array.isArray(ids) && ids.length > 0 && ids.every((v) => typeof v === "string")) {
+
+  if (days !== undefined) {
+    /*
+      日数は**1以上の整数**だけ。0を通すと「今より前」＝全件になる。
+      打ち間違いで記録がすべて消えるのは、取り返しがつかない
+    */
+    if (typeof days !== "number" || !Number.isInteger(days) || days < 1) {
+      return jsonError(400, "validation_error", m.errors.validation);
+    }
+    const before = new Date(Date.now() - days * 86400_000);
+    where = { at: { lt: before }, action: { in: ALL_ACTIONS } };
+    what = `${days} 日より前`;
+  } else {
+    if (!Array.isArray(ids) || ids.length === 0 || !ids.every((v) => typeof v === "string")) {
+      return jsonError(400, "validation_error", m.errors.validation);
+    }
     where = { id: { in: ids as string[] }, action: { in: ALL_ACTIONS } };
     what = `選んだ ${ids.length} 件`;
-  } else if (typeof before === "string" && !Number.isNaN(Date.parse(before))) {
-    where = { at: { lt: new Date(before) }, action: { in: ALL_ACTIONS } };
-    what = `${before} より前`;
-  } else {
-    return jsonError(400, "validation_error", m.errors.validation);
   }
 
   const removed = await prisma.auditLog.deleteMany({ where });

@@ -41,9 +41,12 @@ export async function POST(req: Request) {
     if (result.reason === "locked") {
       return jsonError(423, "locked", m.errors.locked);
     }
-    if (result.reason === "inactive") {
-      return jsonError(403, "inactive", m.errors.inactive);
-    }
+    /*
+      **止められているアカウントも、ただの「合いません」で返す。**
+      ここだけ別の文言・別のコードにすると、そのアドレスが実在することが
+      外から分かってしまう（当たったアドレスだけ反応が変わる）。
+      止められていることは、記録には理由付きで残っているので管理者は追える
+    */
     return jsonError(401, "invalid_credentials", m.errors.invalidCredentials);
   }
 

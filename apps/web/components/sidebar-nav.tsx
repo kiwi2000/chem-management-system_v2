@@ -126,19 +126,20 @@ const ITEMS: NavItem[] = [
     icon: FileText,
     needs: "DOCUMENT_CREATE",
     children: [
-      {
-        href: "/documents",
-        key: "documentCreate",
-        icon: FilePlus,
-        needs: "DOCUMENT_CREATE",
-        match: ["/documents"],
-      },
+      // 様式を用意してから作る、という順に並べる
       {
         href: "/doc-templates",
         key: "docTemplates",
         icon: FileCog,
         needs: "DOC_TEMPLATE_EDIT",
         match: ["/doc-templates"],
+      },
+      {
+        href: "/documents",
+        key: "documentCreate",
+        icon: FilePlus,
+        needs: "DOCUMENT_CREATE",
+        match: ["/documents"],
       },
     ],
   },

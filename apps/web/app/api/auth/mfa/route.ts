@@ -21,7 +21,8 @@ export const dynamic = "force-dynamic";
 
 /** GET /api/auth/mfa — いまの状態 */
 export async function GET() {
-  const auth = await requireUser();
+  // 用事そのもの（2要素認証の登録）
+  const auth = await requireUser({ allowPending: true });
   if (auth instanceof Response) return auth;
   const settings = await getAppSettings();
   return Response.json({
@@ -34,7 +35,7 @@ export async function GET() {
 
 /** POST /api/auth/mfa — 鍵を作る。まだ有効にはしない */
 export async function POST() {
-  const auth = await requireUser();
+  const auth = await requireUser({ allowPending: true });
   if (auth instanceof Response) return auth;
   const { user } = auth;
   const m = await getServerMessages();
@@ -53,7 +54,7 @@ export async function POST() {
 
 /** PUT /api/auth/mfa — 6桁を確かめて有効にする */
 export async function PUT(req: Request) {
-  const auth = await requireUser();
+  const auth = await requireUser({ allowPending: true });
   if (auth instanceof Response) return auth;
   const { user } = auth;
   const m = await getServerMessages();
@@ -79,7 +80,7 @@ export async function PUT(req: Request) {
   await writeAudit({
     entity: "users",
     entityId: user.id,
-    action: "update",
+    action: "mfa_enable",
     actorId: user.id,
     diff: { mfaMethod: "totp" },
   });
@@ -91,7 +92,7 @@ export async function PUT(req: Request) {
  * 守りを1枚外す操作なので、パスワードをもう一度確かめる。
  */
 export async function DELETE(req: Request) {
-  const auth = await requireUser();
+  const auth = await requireUser({ allowPending: true });
   if (auth instanceof Response) return auth;
   const { user } = auth;
   const m = await getServerMessages();
@@ -126,7 +127,7 @@ export async function DELETE(req: Request) {
   await writeAudit({
     entity: "users",
     entityId: user.id,
-    action: "update",
+    action: "mfa_disable",
     actorId: user.id,
     diff: { mfaMethod: "none" },
   });

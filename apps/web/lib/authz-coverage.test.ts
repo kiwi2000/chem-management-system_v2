@@ -51,6 +51,26 @@ describe("API ルートの認可", () => {
     expect(guarded, `${rel} が ${GUARDS.join(" / ")} のいずれも呼んでいない`).toBe(true);
   });
 
+  /*
+    済ませていない用事（初期パスワードの変更・2要素認証の登録）がある人でも
+    通してよいルート。**増えると門の意味が無くなる**ので、ここで数を固定する。
+    足したいときは、なぜその用事の最中に要るのかを書いたうえでここに載せる
+  */
+  it("用事を飛ばして通せるルートが増えていない", () => {
+    const opened = files
+      .filter((f) => readFileSync(f, "utf8").includes("allowPending"))
+      .map((f) => relative(API_DIR, f).split(sep).join("/"))
+      .sort();
+    expect(opened).toEqual([
+      "auth/change-password/route.ts", // 用事そのもの
+      "auth/heartbeat/route.ts", // 放置での自動ログアウト
+      "auth/mfa/qr/route.ts", // 用事そのもの（QRコードを絵にする）
+      "auth/mfa/route.ts", // 用事そのもの
+      "me/route.ts", // 画面の枠（利用者名・ログアウト）
+      "password-policy/route.ts", // パスワードの決まりを見せるだけ
+    ]);
+  });
+
   it("allowlist に実在しないパスが残っていない", () => {
     const all = new Set(files.map((f) => relative(API_DIR, f).split(sep).join("/")));
     for (const rel of ALLOWLIST) expect(all.has(rel), `${rel} は存在しない`).toBe(true);

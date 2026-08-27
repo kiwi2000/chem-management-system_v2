@@ -230,6 +230,7 @@ export const ja = {
     all: "すべて",
     firstPage: "最初のページ",
     lastPage: "最後のページ",
+    jumpToPage: "ページを指定",
     pageSize: "1ページの件数",
     perPage: (n: number) => `${n} 件`,
     operators: {
@@ -368,7 +369,8 @@ export const ja = {
 
   laws: {
     title: "法令",
-    rowHint: "行を押すと、その区分の法文物質名が下に出ます",
+    rowHint:
+      "法令のコードを押すと、その法令の区分が下に出ます。区分のコードを押すと法文物質名の一覧へ移ります",
     /** 並べ替えのときに出す断り。表示順は 地域 → 国 → 法令 で決まる */
     sameCountryOnly: "並べ替えられるのは同じ国の法令どうしだけです",
     sameLawOnly: "並べ替えられるのは同じ法令の区分どうしだけです",
@@ -554,7 +556,7 @@ export const ja = {
 
   statutorySubstances: {
     title: "法文物質名",
-    rowHint: "行を押すと、その物質に結び付いたCASが下に出ます",
+    rowHint: "コードを押すと、その物質に結び付いたCASの画面へ移ります",
     newTitle: "法文物質名の追加",
     editTitle: "法文物質名の編集",
     code: "コード",
@@ -677,6 +679,13 @@ export const ja = {
     saved: "設定を保存しました",
   },
 
+  /** 2要素認証の登録を促す画面。必須なのに未登録の人だけが通る */
+  mfaSetup: {
+    title: "2要素認証の登録",
+    lead: "登録が済むまで、ほかの画面は開けません。",
+    why: "スマートフォンの認証アプリを登録すると、パスワードが漏れても、他人は入れなくなります。手元にアプリが無いときは、管理者に相談してください。",
+  },
+
   mfa: {
     title: "2要素認証",
     lead: "パスワードに加えて、認証アプリが出す6桁の数字を求めます。パスワードが漏れても、スマートフォンが手元に無ければ入れません。",
@@ -735,6 +744,8 @@ export const ja = {
     actionLogin: "ログイン成功",
     actionLoginFailed: "ログイン失敗",
     actionLogout: "ログアウト",
+    actionMfaEnable: "2要素認証を登録した",
+    actionMfaDisable: "2要素認証を解除した",
     actionView: "組成を見た",
     actionViewExpanded: "組成を展開して見た",
     actionExport: "出力した",
@@ -745,11 +756,13 @@ export const ja = {
     reasonLockedNow: "失敗が続きロックした",
     reasonBadPassword: "パスワードが違う",
     reasonBadTotp: "認証コードが違う",
-    olderThan: (d: number) => `${d}日より前を消す`,
+    purgeLabel: "日以上前を削除",
+    purgeDays: "日数",
+    purgeRun: "削除",
+    confirmDays: (d: number) =>
+      `${d} 日より前の記録をすべて消します。消した記録は戻りません。よろしいですか。`,
     confirmSelected: (n: number) =>
       `選んだ ${n} 件の記録を消します。消した記録は戻りません。よろしいですか。`,
-    confirmBefore: (d: number) =>
-      `${d}日より前の記録をすべて消します。消した記録は戻りません。よろしいですか。`,
     removed: (n: number) => `${n} 件の記録を消しました。消したことは記録に残ります。`,
   },
 
@@ -869,8 +882,8 @@ export const ja = {
   docTemplates: {
     seq: "通番",
     createdAt: "作成日時",
-    title: "ドキュメント生成",
-    lead: "テンプレートを作っておくと、製品や物質を選ぶだけで帳票を作れます。",
+    title: "テンプレート編集",
+    lead: "帳票の様式を作ります。ここで作った様式は「ドキュメント生成」から選べます。",
     add: "＋ テンプレート",
     newTitle: "テンプレートの追加",
     editTitle: "テンプレートの編集",
@@ -956,7 +969,6 @@ export const ja = {
     pickHere:
       "帳票を作る相手を選んでください。コードを押すと帳票が開きます。絞り込みはいつもどおり使えます。",
     make: "生成",
-    lead: "帳票はここか、製品・物質の詳細から作れます。様式（テンプレート）もここで作ります。",
     printHint:
       "PDFにするには、印刷の画面でプリンターを「PDFとして保存」（Microsoft Print to PDF など）に変えてください。",
     print: "印刷 / PDF保存",
@@ -1361,8 +1373,8 @@ export const ja = {
     invalidCredentials: "メールアドレスまたはパスワードが正しくありません",
     locked:
       "ログイン試行が続いたため一時的にロックされています。しばらく待ってから再試行してください",
-    inactive: "このアカウントは利用できません。管理者にお問い合わせください",
     mfaInvalid: "認証コードが正しくありません",
+    pendingSetup: "先に済ませることがあります。案内される画面で手続きを終えてください",
     unauthorized: "ログインが必要です",
     forbiddenEdit: "編集権限がありません（参照・判定実行・ダウンロードのみ可能です）",
     forbiddenAdmin: "システム管理者のみ実行できます",

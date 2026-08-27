@@ -1,8 +1,7 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -18,7 +17,6 @@ const DEFAULT_STATE: TableState = emptyTableState([{ column: "email", direction:
 
 export default function UsersPage() {
   const { m, locale } = useI18n();
-  const router = useRouter();
 
   const columns = useMemo<TableColumn<UserSummaryDto>[]>(
     () => [
@@ -28,7 +26,16 @@ export default function UsersPage() {
         kind: "text",
         width: 240,
         className: "font-mono text-xs",
-        render: (u) => u.email,
+        // 押すと詳細へ移る。製品・物質・法規制のコードと同じ形
+        render: (u) => (
+          <Link
+            href={`/admin/users/${u.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="underline underline-offset-2"
+          >
+            {u.email}
+          </Link>
+        ),
       },
       {
         key: "displayName",
@@ -198,13 +205,6 @@ export default function UsersPage() {
         create={{ href: "/admin/users/new" }}
         selectable
         onDeleteSelected={onDeleteSelected}
-        // 行の右端の › で詳細画面へ
-        rowAction={{
-          icon: ChevronRight,
-          label: m.common.detail,
-          busy: true,
-          onClick: (u) => router.push(`/admin/users/${u.id}`),
-        }}
       />
     </div>
   );

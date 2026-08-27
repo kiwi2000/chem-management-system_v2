@@ -2,14 +2,13 @@
 
 import { pickStatutoryName } from "@chem/shared";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { CategoryProducts } from "@/components/category-products";
 import { PrevNext, type Neighbour } from "@/components/prev-next";
 import { StatutorySubstanceSection } from "@/components/statutory-substance-section";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
-import type { LanguageDto, RegulationCategoryDto, StatutorySubstanceDto } from "@/lib/types";
+import type { LanguageDto, RegulationCategoryDto } from "@/lib/types";
 
 /** 見出しに出す法令。名前だけあればよい */
 interface LawRef {
@@ -41,7 +40,6 @@ export function CategoryScreen({
   next: Neighbour | null;
 }) {
   const { m, locale } = useI18n();
-  const router = useRouter();
   /** 逆引き（この区分に当たる製品）。開いているあいだだけ読む */
   const [productsOpen, setProductsOpen] = useState(false);
 
@@ -51,14 +49,6 @@ export function CategoryScreen({
     category.nameOriginal,
     category.nameJa,
     category.nameEn,
-  );
-
-  /** 行を押したら対象CASの画面へ移る。兄弟はその画面が自分で引く */
-  const onSelect = useCallback(
-    (substance: StatutorySubstanceDto) => {
-      router.push(`/statutory-substances/${substance.id}`);
-    },
-    [router],
   );
 
   return (
@@ -83,7 +73,7 @@ export function CategoryScreen({
 
       {productsOpen && <CategoryProducts categoryId={category.id} />}
 
-      <StatutorySubstanceSection languages={languages} category={category} onSelect={onSelect} />
+      <StatutorySubstanceSection languages={languages} category={category} />
     </div>
   );
 }

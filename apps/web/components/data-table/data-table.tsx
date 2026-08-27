@@ -711,7 +711,11 @@ export function DataTable<T>({
               >
                 {m.common.prev}
               </Button>
-              <span className="px-1">{m.common.pageOf(state.page, totalPages)}</span>
+              <PageJump
+                page={state.page}
+                totalPages={totalPages}
+                onJump={(page) => onStateChange((prev) => ({ ...prev, page }))}
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -737,5 +741,88 @@ export function DataTable<T>({
         </div>
       )}
     </div>
+  );
+}
+
+/** これ以上のページ数になったら、一覧から選ばせない（選択肢が多すぎて探せない） */
+const PAGE_LIST_LIMIT = 100;
+
+/** 何ページ以上で「直接ページを指定する」口を出すか */
+const PAGE_JUMP_FROM = 10;
+
+/**
+ * ページの指定。
+ *
+ * 数ページなら「次へ」を押していけば着くが、**十数ページを超えると押し切れない。**
+ * そこで、ページ数が増えたときだけ指定できるようにする。
+ *
+ * 出しかたは2通り。**100ページまでは一覧から選ぶ**（押すだけで済む）。
+ * それより多いときは**打ち込む**。59,849件の物質は1,197ページあり、
+ * 一覧にすると選択肢が並びきらず、かえって選べなくなる。
+ */
+function PageJump({
+  page,
+  totalPages,
+  onJump,
+}: {
+  page: number;
+  totalPages: number;
+  onJump: (page: number) => void;
+}) {
+  const { m } = useI18n();
+  const [typed, setTyped] = useState("");
+
+  // 少ないうちは今までどおり。押す先が見えているものに、余計な口を足さない
+  if (totalPages < PAGE_JUMP_FROM) {
+    return <span className="px-1">{m.common.pageOf(page, totalPages)}</span>;
+  }
+
+  if (totalPages <= PAGE_LIST_LIMIT) {
+    return (
+      <span className="flex items-center gap-1 px-1">
+        <select
+          aria-label={m.table.jumpToPage}
+          value={page}
+          onChange={(e) => onJump(Number(e.target.value))}
+          className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+        >
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+        / {totalPages}
+      </span>
+    );
+  }
+
+  /* 打ち込むほう。範囲の外を打たれたら、いちばん近い端に寄せる */
+  function go() {
+    const n = Number(typed);
+    setTyped("");
+    if (!/^\d+$/.test(typed) || n < 1) return;
+    onJump(Math.min(n, totalPages));
+  }
+
+  return (
+    <span className="flex items-center gap-1 px-1">
+      <input
+        aria-label={m.table.jumpToPage}
+        value={typed}
+        placeholder={String(page)}
+        inputMode="numeric"
+        onChange={(e) => setTyped(e.target.value.replace(/[^0-9]/g, ""))}
+        onBlur={go}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            go();
+          }
+        }}
+        className="border-input bg-background h-8 w-16 rounded-none border px-1 text-center text-xs"
+      />
+      / {totalPages}
+    </span>
   );
 }

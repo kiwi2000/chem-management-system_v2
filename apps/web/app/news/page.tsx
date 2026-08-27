@@ -1,8 +1,7 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -21,7 +20,6 @@ const DEFAULT_STATE: TableState = emptyTableState([
 
 export default function NewsListPage() {
   const { m, locale } = useI18n();
-  const router = useRouter();
   const { can } = useMe();
   const canPost = can("NEWS_POST");
 
@@ -32,6 +30,7 @@ export default function NewsListPage() {
         header: m.news.titleJa,
         kind: "text",
         width: 320,
+        // 押すと詳細へ移る。製品・物質・法規制のコードと同じ形
         render: (n) => (
           <>
             {n.pinned && (
@@ -39,7 +38,13 @@ export default function NewsListPage() {
                 {m.news.pinnedShort}
               </Badge>
             )}
-            {pickName(locale, n.titleJa, n.titleEn)}
+            <Link
+              href={`/news/${n.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="underline underline-offset-2"
+            >
+              {pickName(locale, n.titleJa, n.titleEn)}
+            </Link>
           </>
         ),
       },
@@ -168,13 +173,6 @@ export default function NewsListPage() {
         create={canPost ? { href: "/news/new" } : undefined}
         selectable={canPost}
         onDeleteSelected={onDeleteSelected}
-        // 行の右端の › で詳細画面へ
-        rowAction={{
-          icon: ChevronRight,
-          label: m.common.detail,
-          busy: true,
-          onClick: (n) => router.push(`/news/${n.id}`),
-        }}
       />
     </div>
   );
