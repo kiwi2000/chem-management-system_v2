@@ -276,11 +276,19 @@ async function main() {
     バージョンとデータソースは、CASリンクの取り込みと同じ決めかた。
     現在のバージョンが立っていなければ入れる先が決まらないので、そこで止める
   */
+  /* バージョンは引数で選べる。省くと現在のバージョン */
+  const versionArg = process.argv.slice(2).find((a) => /^\d{4}Q\d$/i.test(a));
   const version = await prisma.linkSetVersion.findFirst({
-    where: { isCurrent: true, deletedAt: null },
+    where: versionArg
+      ? { codeNormalized: versionArg.toUpperCase(), deletedAt: null }
+      : { isCurrent: true, deletedAt: null },
     select: { id: true, code: true },
   });
-  if (!version) throw new Error("現在のバージョンが決まっていません");
+  if (!version) {
+    throw new Error(
+      versionArg ? `バージョン ${versionArg} がありません` : "現在のバージョンが決まっていません",
+    );
+  }
   const source = await prisma.source.findFirst({
     where: { codeNormalized: SOURCE_CODE, deletedAt: null },
     select: { id: true, code: true },

@@ -2,7 +2,7 @@
  * 中国のCASリンクを LOLI から入れる。日本の `seed-cas-links.ts` と同じ考え方。
  *
  *   bash scripts/loli-dump-china.sh                            先に取り出す
- *   node --env-file=.env node_modules/tsx/dist/cli.mjs scripts/seed-china-links.ts
+ *   node --env-file=.env node_modules/tsx/dist/cli.mjs scripts/seed-china-links.ts [バージョンコード] [区分コード...]
  *
  * **突合の鍵は番号。**目録の序号を LOLI も `refno` に持っている（第4章 4-2b）。
  * 易製毒（2171）と監控（988）だけは LOLI に番号が無く、
@@ -186,12 +186,23 @@ async function run(job: Job, versionId: string, sourceId: string) {
 }
 
 async function main() {
-  const only = process.argv.slice(2);
+  /*
+    第1引数はバージョンコード。省くと現在のバージョン。
+    過去のバージョンへ入れ直すときに指定する（`2026Q2` など）
+  */
+  const args = process.argv.slice(2);
+  const versionArg = args[0] && /^\d{4}Q\d$/i.test(args[0]) ? args.shift() : undefined;
+  const only = args;
   const version = await prisma.linkSetVersion.findFirst({
-    where: { isCurrent: true },
+    where: versionArg
+      ? { codeNormalized: versionArg.toUpperCase(), deletedAt: null }
+      : { isCurrent: true, deletedAt: null },
     select: { id: true, code: true },
   });
-  if (!version) throw new Error("現在のバージョンが決まっていません");
+  if (!version)
+    throw new Error(
+      versionArg ? `バージョン ${versionArg} がありません` : "現在のバージョンが決まっていません",
+    );
   const source = await prisma.source.findFirst({
     where: { codeNormalized: SOURCE_CODE, deletedAt: null },
     select: { id: true, code: true },

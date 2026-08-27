@@ -8,9 +8,19 @@
 # 親そのものの行には但し書きが無いので、自分のCASを鍵にする。
 #
 # **`-u` を外さない。**付けないと sqlcmd がコンソールの文字コードで書き出す。
+# **取り出し元のデータベースは差し替えられる。**
+# 過去のバージョンを取り込むときは、環境変数で上書きする。
+#
+#   LOLI_DB=LOLI4_Datafeed_2026Q2 bash scripts/<このスクリプト>
+#
+# `.env.loli` の値より、呼ぶ側で渡した値を優先する。
 set -uo pipefail
 cd "$(dirname "$0")/.."
+_LOLI_DB_ARG="${LOLI_DB:-}"
 set -a; . <(tr -d '\r' < .env.loli); set +a
+# 呼ぶ側が指定していれば、そちらを使う（過去のバージョンを取り込むため）
+[ -n "$_LOLI_DB_ARG" ] && LOLI_DB="$_LOLI_DB_ARG"
+echo "  取り出し元: $LOLI_DB"
 mkdir -p .cache scripts/data
 
 python - > .cache/rohs.sql <<'PY'

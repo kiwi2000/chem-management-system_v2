@@ -4,6 +4,7 @@ import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n-client";
 import type { MatrixColumn, MatrixValue, SubstanceMatrix } from "@/lib/substance-matrix";
 import { cn } from "@/lib/utils";
@@ -483,49 +484,56 @@ export function SubstanceMatrixSection({ data }: { data: SubstanceMatrix }) {
   if (data.versions.length === 0) return null;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-muted-foreground text-xs">{m.inventories.source}</span>
-        {/* ボタンを並べる。押した瞬間に色が変わり、表の目立たせ方が切り替わる */}
-        {data.sources.map((s) => (
-          <Button
-            key={s.id}
-            size="sm"
-            variant={s.id === sourceId ? "default" : "outline"}
-            onClick={() => setSourceId(s.id)}
-          >
-            {s.code}
-          </Button>
-        ))}
-        <label className="text-muted-foreground ml-2 flex items-center gap-1 text-xs">
-          <input
-            type="checkbox"
-            checked={allInventories}
-            onChange={(e) => setAllInventories(e.target.checked)}
-          />
-          {m.substanceMatrix.showAllInventories}
-        </label>
-      </div>
+    /*
+      2つの表とデータソースの選びかたで1つの札にする。
+      データソースの選択は**両方の表に効く**ので、表ごとに分けると
+      どちらに効いているのか分からなくなる
+    */
+    <Card>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground text-xs">{m.inventories.source}</span>
+          {/* ボタンを並べる。押した瞬間に色が変わり、表の目立たせ方が切り替わる */}
+          {data.sources.map((s) => (
+            <Button
+              key={s.id}
+              size="sm"
+              variant={s.id === sourceId ? "default" : "outline"}
+              onClick={() => setSourceId(s.id)}
+            >
+              {s.code}
+            </Button>
+          ))}
+          <label className="text-muted-foreground ml-2 flex items-center gap-1 text-xs">
+            <input
+              type="checkbox"
+              checked={allInventories}
+              onChange={(e) => setAllInventories(e.target.checked)}
+            />
+            {m.substanceMatrix.showAllInventories}
+          </label>
+        </div>
 
-      <Matrix
-        title={m.substanceMatrix.inventoryTitle}
-        columns={invColumns}
-        cells={data.inventory.cells}
-        versions={data.versions}
-        sourceId={sourceId}
-        emptyMessage={m.substanceMatrix.inventoryEmpty}
-        storageKey="chem.table.substanceInventory"
-      />
-      <Matrix
-        title={m.substanceMatrix.regulationTitle}
-        columns={data.regulation.columns}
-        cells={data.regulation.cells}
-        versions={data.versions}
-        sourceId={sourceId}
-        emptyMessage={m.substanceMatrix.regulationEmpty}
-        parentHeader={m.laws.title}
-        storageKey="chem.table.substanceRegulation"
-      />
-    </div>
+        <Matrix
+          title={m.substanceMatrix.inventoryTitle}
+          columns={invColumns}
+          cells={data.inventory.cells}
+          versions={data.versions}
+          sourceId={sourceId}
+          emptyMessage={m.substanceMatrix.inventoryEmpty}
+          storageKey="chem.table.substanceInventory"
+        />
+        <Matrix
+          title={m.substanceMatrix.regulationTitle}
+          columns={data.regulation.columns}
+          cells={data.regulation.cells}
+          versions={data.versions}
+          sourceId={sourceId}
+          emptyMessage={m.substanceMatrix.regulationEmpty}
+          parentHeader={m.laws.title}
+          storageKey="chem.table.substanceRegulation"
+        />
+      </CardContent>
+    </Card>
   );
 }

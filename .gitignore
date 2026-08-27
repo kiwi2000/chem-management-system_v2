@@ -29,3 +29,6 @@ coverage/
 
 # 照合に使う法令XMLの控え（scripts/verify-jp-laws.ts が作る）
 .cache/
+
+# 目録の取り出し結果は大きすぎる（60MB超）。取り出し直せるので追わない
+scripts/data/loli-inventories.tsv
