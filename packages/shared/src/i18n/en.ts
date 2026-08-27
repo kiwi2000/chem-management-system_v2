@@ -914,6 +914,13 @@ export const en: Messages = {
     preview: "Preview",
     unknownField: "Unavailable field",
   },
+  documents: {
+    print: "Print / Save as PDF",
+    unknownFields: "Some fields are not available for this target and were left blank",
+    create: "Create document",
+    chooseTemplate: "Choose a template",
+    noTemplate: "No template applies to this target",
+  },
   inventories: {
     title: "Inventories",
     description:

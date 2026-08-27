@@ -1,0 +1,160 @@
+import { isKnownField, type DocumentBlock, type DocumentContent } from "@chem/shared";
+import type { DocumentTable, DocumentTarget, RichLine, RichMark } from "@chem/shared";
+
+/**
+ * テンプレートと、集めたデータから、紙面の中身を組み立てる。
+ *
+ * **データの取り方は知らない。**受け取るのは「鍵→値」と「表の中身」だけで、
+ * どこから引いたかはこの外（`doc-data.ts`）が決める。
+ * 切り離してあるので、ここは試験できる。
+ *
+ * **できあがりに、直しの手がかりを書かない。**
+ * 使えない差込項目があっても、紙面には何も出さず空にする。
+ * 紙に「【不明な項目】」と出ると、受け取った相手が困る。
+ * 気づくための知らせは `warnings` に分けて返し、画面の側だけに出す。
+ */
+
+export interface RenderSpan extends RichMark {
+  text: string;
+}
+
+export interface RenderLine {
+  align?: "left" | "center" | "right";
+  spans: RenderSpan[];
+}
+
+export interface RenderTable {
+  head: string[];
+  rows: string[][];
+}
+
+export type RenderBlock =
+  | { kind: "heading"; level: 1 | 2 | 3; lines: RenderLine[] }
+  | { kind: "text"; lines: RenderLine[] }
+  | { kind: "fields"; items: { label: string; value: string }[] }
+  | { kind: "table"; caption?: string; head: string[]; rows: string[][] }
+  | { kind: "divider" }
+  | { kind: "spacer"; size: "sm" | "md" | "lg" }
+  | { kind: "pageBreak" }
+  | { kind: "signature"; label: string };
+
+export interface RenderedDocument {
+  orientation: "portrait" | "landscape";
+  blocks: RenderBlock[];
+  /** 画面にだけ出す知らせ。紙面には出さない */
+  warnings: string[];
+}
+
+export interface RenderInput {
+  content: DocumentContent;
+  target: DocumentTarget;
+  /** 差込項目の鍵 → 出す文字。値が無い項目は入れなくてよい */
+  values: Map<string, string>;
+  /** 表の鍵 → 全部の列と行。出す列はテンプレートが選ぶ */
+  tables: Map<
+    DocumentTable,
+    { columns: { key: string; label: string }[]; rows: Record<string, string>[] }
+  >;
+}
+
+function renderLines(
+  lines: RichLine[],
+  values: Map<string, string>,
+  target: DocumentTarget,
+  warn: (key: string) => void,
+): RenderLine[] {
+  return lines.map((line) => ({
+    ...(line.align ? { align: line.align } : {}),
+    spans: line.spans.map((s) => {
+      const loose = s as RichSpanLoose;
+      if (loose.kind === "text") return { ...markOnly(loose), text: loose.text ?? "" };
+      const key = loose.field ?? "";
+      if (!isKnownField(target, key)) warn(key);
+      // 値が無いときは空にする。「—」などを入れると、書いた文字と見分けが付かない
+      return { ...markOnly(loose), text: values.get(key) ?? "" };
+    }),
+  }));
+}
+
+/** 印だけを取り出す。`text` `field` は文字の側なので混ぜない */
+type RichSpanLoose = RichMark & { kind: "text" | "field"; text?: string; field?: string };
+function markOnly(v: RichSpanLoose): RichMark {
+  const out: RichMark = {};
+  if (v.bold) out.bold = true;
+  if (v.italic) out.italic = true;
+  if (v.underline) out.underline = true;
+  if (v.color) out.color = v.color;
+  if (v.size) out.size = v.size;
+  return out;
+}
+
+/** テンプレートと集めたデータから、紙面を組み立てる */
+export function renderDocument(input: RenderInput): RenderedDocument {
+  const { content, target, values, tables } = input;
+  const unknown = new Set<string>();
+  const warn = (key: string) => unknown.add(key);
+  const blocks: RenderBlock[] = [];
+
+  for (const b of content.blocks) {
+    blocks.push(...renderBlock(b, target, values, tables, warn));
+  }
+
+  const warnings: string[] = [];
+  if (unknown.size > 0) warnings.push(`unknownFields:${[...unknown].join(",")}`);
+
+  return { orientation: content.orientation, blocks, warnings };
+}
+
+function renderBlock(
+  b: DocumentBlock,
+  target: DocumentTarget,
+  values: Map<string, string>,
+  tables: RenderInput["tables"],
+  warn: (key: string) => void,
+): RenderBlock[] {
+  switch (b.kind) {
+    case "heading":
+      return [
+        { kind: "heading", level: b.level, lines: renderLines(b.lines, values, target, warn) },
+      ];
+    case "text":
+      return [{ kind: "text", lines: renderLines(b.lines, values, target, warn) }];
+    case "fields":
+      return [
+        {
+          kind: "fields",
+          items: b.items
+            // 項目を選んでいない行は、ラベルだけが浮くので出さない
+            .filter((it) => it.field)
+            .map((it) => {
+              if (!isKnownField(target, it.field)) warn(it.field);
+              return { label: it.label, value: values.get(it.field) ?? "" };
+            }),
+        },
+      ];
+    case "table": {
+      const src = tables.get(b.table);
+      // データが取れない表は、見出しだけの枠を出さずに丸ごと省く
+      if (!src) return [];
+      const cols = src.columns.filter((c) => b.columns.includes(c.key));
+      return [
+        {
+          kind: "table",
+          ...(b.caption ? { caption: b.caption } : {}),
+          head: cols.map((c) => c.label),
+          rows: src.rows.map((r) => cols.map((c) => r[c.key] ?? "")),
+        },
+      ];
+    }
+    case "divider":
+      return [{ kind: "divider" }];
+    case "spacer":
+      return [{ kind: "spacer", size: b.size }];
+    case "pageBreak":
+      return [{ kind: "pageBreak" }];
+    case "signature":
+      return [{ kind: "signature", label: b.label }];
+    default:
+      return [];
+  }
+}

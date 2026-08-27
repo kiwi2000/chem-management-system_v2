@@ -924,6 +924,13 @@ export const ja = {
     preview: "できあがりを見る",
     unknownField: "使えない項目",
   },
+  documents: {
+    print: "印刷 / PDF保存",
+    unknownFields: "いまの対象では使えない差込項目があり、その部分は空になっています",
+    create: "帳票を作る",
+    chooseTemplate: "テンプレートを選ぶ",
+    noTemplate: "この対象に使えるテンプレートがありません",
+  },
   inventories: {
     title: "インベントリ",
     description:

@@ -640,3 +640,32 @@ body.cursor-busy * {
     box-shadow: 0 0 0 2px var(--primary);
   }
 }
+
+/*
+  帳票の印刷。
+  **紙に出るのは帳票だけ。**メニュー・見出し・ボタンは消す。
+  紙の向きと余白は `@page` で決まるが、これは要素の style には書けないので、
+  帳票の画面が `<style>` をその場で差し込む（`print-orientation.tsx`）。
+*/
+@media print {
+  .no-print,
+  nav,
+  header,
+  aside {
+    display: none !important;
+  }
+
+  /* 画面用の余白と背景を落とす。紙では `@page` の余白だけを使う */
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 色を薄く刷らせない。表の罫線と見出しの地色は、そのまま出す */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
