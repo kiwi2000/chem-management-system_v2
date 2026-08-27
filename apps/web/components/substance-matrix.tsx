@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
@@ -28,6 +28,16 @@ import { cn } from "@/lib/utils";
  * 「まだ入れていない」のか「載っていない」のかを取り違えないようにする。
  */
 
+/**
+ * 見出しの文字を、セルの幅で切る入れ物。
+ *
+ * 切るのは**中身だけ**。セルそのものを `overflow-hidden` にすると、
+ * 境目をまたいで置いた列幅のつまみまで切り取られて掴めなくなる。
+ */
+function Clip({ children }: { children: ReactNode }) {
+  return <span className="block overflow-hidden text-ellipsis">{children}</span>;
+}
+
 /** 選んだデータソースの値。目立たせて、他と見分けられるようにする */
 const HIT = "bg-primary/15";
 
@@ -44,8 +54,11 @@ function ValueCell({
   if (!v) return <span className="text-muted-foreground">—</span>;
   return (
     <span
-      className={cn("inline-block w-full px-1", sourceId && v.sourceId === sourceId && HIT)}
-      title={v.note ?? undefined}
+      className={cn(
+        "block overflow-hidden px-1 text-ellipsis",
+        sourceId && v.sourceId === sourceId && HIT,
+      )}
+      title={v.note ?? v.text}
     >
       {v.text}
     </span>
@@ -125,14 +138,21 @@ function Matrix({
     return [...byRegion.values()].map((r) => ({ ...r, groups: [...r.groups.values()] }));
   }, [columns, parentHeader]);
 
-  /** いちばん値の多いセルに合わせて行数を決める。最低1行 */
+  /**
+   * いちばん値の多いセルに合わせて行数を決める。最低1行。
+   *
+   * **数えるのは見えている列だけ。**畳んだ列まで数えると、
+   * 何も出ていないのに空の行が何本も残って、表が間延びする
+   */
   const rowCount = useMemo(() => {
     let n = 1;
     for (const c of columns) {
+      if (foldedRegions.has(c.regionId)) continue;
+      if (parentHeader && foldedParents.has(c.parentKey)) continue;
       for (const v of versions) n = Math.max(n, (cells[`${c.key}/${v.id}`] ?? []).length);
     }
     return n;
-  }, [columns, versions, cells]);
+  }, [columns, versions, cells, foldedRegions, foldedParents, parentHeader]);
 
   const toggle = (set: Set<string>, put: (next: Set<string>) => void, id: string) => {
     const next = new Set(set);
@@ -150,7 +170,21 @@ function Matrix({
   const regionCols = (r: (typeof regions)[number]) =>
     r.groups.reduce((n, g) => n + g.columns.length, 0);
 
-  const TH = "border-border border px-2 py-1";
+  /*
+    畳んだ列の幅。**地域名が1行で収まるだけ**取る。
+    足りないと見出しが折り返し、その行だけ背が高くなって段がそろわない
+  */
+  const FOLDED_WIDTH = 116;
+  /*
+    どの段も同じ高さにする。
+    `h-8` で最低の高さをそろえ、`whitespace-nowrap` で折り返しを止める。
+    畳んだときは中身の無いセルが並ぶので、これが無いと薄い帯になって並びが崩れる
+  */
+  /*
+    セルそのものは**はみ出しを切らない。**切ると、境目をまたいで置いた
+    つまみまで切り取られて掴めなくなる。長い文字は中の `Clip` で切る
+  */
+  const TH = "border-border h-8 border px-2 py-1 whitespace-nowrap";
 
   /*
     **幅を持つのは、実際に描いている列だけ。**
@@ -162,12 +196,12 @@ function Matrix({
   const sizing: { key: string; width: number }[] = [{ key: "head", width: 96 }];
   for (const r of regions) {
     if (foldedRegions.has(r.id)) {
-      sizing.push({ key: `fold:${r.id}`, width: 72 });
+      sizing.push({ key: `fold:${r.id}`, width: FOLDED_WIDTH });
       continue;
     }
     for (const g of r.groups) {
       if (foldedParents.has(g.key)) {
-        sizing.push({ key: `fold:${g.key}`, width: 72 });
+        sizing.push({ key: `fold:${g.key}`, width: FOLDED_WIDTH });
         continue;
       }
       for (const c of g.columns) {
@@ -279,10 +313,13 @@ function Matrix({
                   key={r.id}
                   colSpan={regionSpan(r)}
                   className={cn(TH, "relative text-left font-medium")}
+                  title={r.name}
                 >
-                  {foldButton(!foldedRegions.has(r.id), r.name, () =>
-                    toggle(foldedRegions, setFoldedRegions, r.id),
-                  )}
+                  <Clip>
+                    {foldButton(!foldedRegions.has(r.id), r.name, () =>
+                      toggle(foldedRegions, setFoldedRegions, r.id),
+                    )}
+                  </Clip>
                   {cols.handle(keyOfRegion(r), `${r.name} ${m.table.resize}`)}
                 </th>
               ))}
@@ -305,10 +342,13 @@ function Matrix({
                         key={g.key}
                         colSpan={groupSpan(g)}
                         className={cn(TH, "relative text-left font-medium")}
+                        title={g.label}
                       >
-                        {foldButton(!foldedParents.has(g.key), g.label, () =>
-                          toggle(foldedParents, setFoldedParents, g.key),
-                        )}
+                        <Clip>
+                          {foldButton(!foldedParents.has(g.key), g.label, () =>
+                            toggle(foldedParents, setFoldedParents, g.key),
+                          )}
+                        </Clip>
                         {cols.handle(keyOfGroup(g), `${g.label} ${m.table.resize}`)}
                       </th>
                     ))
@@ -340,7 +380,7 @@ function Matrix({
                           className={cn(TH, "relative text-left font-medium")}
                           title={`${c.parentLabel}（${c.countryName}）`}
                         >
-                          {c.label}
+                          <Clip>{c.label}</Clip>
                           {cols.handle(keyOfColumn(c), `${c.label} ${m.table.resize}`)}
                         </th>
                       ))
@@ -401,7 +441,7 @@ function Matrix({
                           versions.map((v) => (
                             <td
                               key={`${c.key}/${v.id}`}
-                              className="border-border overflow-hidden border px-1 py-1 font-mono text-ellipsis whitespace-nowrap"
+                              className="border-border h-8 border px-1 py-1 font-mono whitespace-nowrap"
                             >
                               <ValueCell
                                 values={cells[`${c.key}/${v.id}`] ?? []}

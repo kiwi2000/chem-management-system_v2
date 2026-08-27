@@ -168,7 +168,12 @@ export function ResizeHandle({
       aria-orientation="vertical"
       aria-label={label}
       tabIndex={0}
-      className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none select-none"
+      /*
+        **境目をまたいで置く。**内側だけに置くと、目に見えている線をねらったとき
+        半分が隣の列に外れて掴めない。幅も6pxでは細いので、指でもねらえる太さにする。
+        隣のセルの上に重ねるので、前に出しておく
+      */
+      className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute top-0 -right-1.5 z-20 h-full w-3 cursor-col-resize touch-none select-none"
       onPointerDown={(e) => {
         e.preventDefault();
         e.currentTarget.setPointerCapture(e.pointerId);
