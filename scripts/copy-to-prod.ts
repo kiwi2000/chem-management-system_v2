@@ -391,6 +391,231 @@ async function main() {
   }
   if (missing > 0) log(`  対応する法文物質名が本番に無く、飛ばしたリンク: ${missing} 件`);
 
+  // --- 10 表示順 -------------------------------------------------------------
+  /*
+    **並び順はあとから変わる。**画面で行を引いて動かせるようにしたので、
+    法令や国を作り直さなくても番号だけが変わる。コードで突き合わせて写す。
+    ここだけは「足す」ではなく**書き換え**になる（並びはローカルが正）
+  */
+  log("");
+  const wantRegion = new Map(
+    (await L.region.findMany({ select: { codeNormalized: true, displayOrder: true } })).map((x) => [
+      x.codeNormalized,
+      x.displayOrder,
+    ]),
+  );
+  const pRegionRows = await P.region.findMany({
+    select: { id: true, codeNormalized: true, displayOrder: true },
+  });
+  const regionDiff = pRegionRows.filter(
+    (x) => wantRegion.has(x.codeNormalized) && wantRegion.get(x.codeNormalized) !== x.displayOrder,
+  );
+  if (write) {
+    for (const row of regionDiff) {
+      await P.region.update({
+        where: { id: row.id },
+        data: { displayOrder: wantRegion.get(row.codeNormalized)! },
+      });
+    }
+  }
+
+  const wantCountry = new Map(
+    (await L.country.findMany({ select: { codeNormalized: true, displayOrder: true } })).map(
+      (x) => [x.codeNormalized, x.displayOrder],
+    ),
+  );
+  const pCountryRows = await P.country.findMany({
+    select: { id: true, codeNormalized: true, displayOrder: true },
+  });
+  const countryDiff = pCountryRows.filter(
+    (x) =>
+      wantCountry.has(x.codeNormalized) && wantCountry.get(x.codeNormalized) !== x.displayOrder,
+  );
+  if (write) {
+    for (const row of countryDiff) {
+      await P.country.update({
+        where: { id: row.id },
+        data: { displayOrder: wantCountry.get(row.codeNormalized)! },
+      });
+    }
+  }
+
+  const wantLaw = new Map(
+    (await L.law.findMany({ select: { codeNormalized: true, displayOrder: true } })).map((x) => [
+      x.codeNormalized,
+      x.displayOrder,
+    ]),
+  );
+  const pLawRows = await P.law.findMany({
+    select: { id: true, codeNormalized: true, displayOrder: true },
+  });
+  const lawDiff = pLawRows.filter(
+    (x) => wantLaw.has(x.codeNormalized) && wantLaw.get(x.codeNormalized) !== x.displayOrder,
+  );
+  if (write) {
+    for (const row of lawDiff) {
+      await P.law.update({
+        where: { id: row.id },
+        data: { displayOrder: wantLaw.get(row.codeNormalized)! },
+      });
+    }
+  }
+
+  /* 区分のコードは法令の中でしか決まらないので、法令のコードと組にして突き合わせる */
+  const lCatRows = await L.regulationCategory.findMany({
+    select: {
+      id: true,
+      codeNormalized: true,
+      displayOrder: true,
+      law: { select: { codeNormalized: true } },
+    },
+  });
+  const pCatRows = await P.regulationCategory.findMany({
+    select: {
+      id: true,
+      codeNormalized: true,
+      displayOrder: true,
+      law: { select: { codeNormalized: true } },
+    },
+  });
+  const catKey = (x: { codeNormalized: string; law: { codeNormalized: string } }) =>
+    `${x.law.codeNormalized}/${x.codeNormalized}`;
+  const wantCat = new Map(lCatRows.map((x) => [catKey(x), x.displayOrder]));
+  const catDiff = pCatRows.filter(
+    (x) => wantCat.has(catKey(x)) && wantCat.get(catKey(x)) !== x.displayOrder,
+  );
+  if (write) {
+    for (const row of catDiff) {
+      await P.regulationCategory.update({
+        where: { id: row.id },
+        data: { displayOrder: wantCat.get(catKey(row))! },
+      });
+    }
+  }
+  for (const [label, n] of [
+    ["地域    ", regionDiff.length],
+    ["国      ", countryDiff.length],
+    ["法令    ", lawDiff.length],
+    ["規制区分", catDiff.length],
+  ] as const) {
+    log(`  ${label} 表示順が違う ${n} 件${write && n > 0 ? "（直しました）" : ""}`);
+  }
+
+  // --- 11 見本の製品 ---------------------------------------------------------
+  /*
+    バージョンの差を見るための製品（`VS-`）。組成と、そこから作った展開・判定まで写す。
+    **本番で判定し直さない。**やり直すと、本番で人が確定した判定まで消えてしまう
+  */
+  log("");
+  const sample = await L.product.findMany({
+    where: { codeNormalized: { startsWith: "VS-" }, deletedAt: null },
+    select: { id: true, code: true, codeNormalized: true },
+  });
+  const pSampleCode = new Set(
+    (
+      await P.product.findMany({
+        where: { codeNormalized: { startsWith: "VS-" } },
+        select: { codeNormalized: true },
+      })
+    ).map((x) => x.codeNormalized),
+  );
+  const newSample = sample.filter((x) => !pSampleCode.has(x.codeNormalized));
+  if (newSample.length === 0) {
+    log("  見本の製品  足すものはありません");
+  } else if (!write) {
+    log(`  見本の製品  ${newSample.map((x) => x.code).join(" ")} を足す予定`);
+  } else {
+    const ids = newSample.map((x) => x.id);
+    /*
+      ローカルの物質id → 本番の物質id。
+      **コードで引き、駄目ならCASで引く。**同じ物質でも
+      両側で別々にコードが付いていることがある（トルエンなど20件）。
+      CAS でも引けないものが組成に出てきたら、そこで止める
+      （黙って空にすると、組成の行が「物質でも原材料でもない」ものになる）
+    */
+    const pSubstRows = await P.substance.findMany({
+      where: { deletedAt: null },
+      select: { id: true, codeNormalized: true, casNormalized: true, isCasRepresentative: true },
+    });
+    const pByCode = new Map(pSubstRows.map((x) => [x.codeNormalized, x.id]));
+    const pByCas = new Map(
+      pSubstRows
+        .filter((x) => x.isCasRepresentative && x.casNormalized)
+        .map((x) => [x.casNormalized!, x.id]),
+    );
+    const substOf = new Map(
+      (
+        await L.substance.findMany({
+          select: { id: true, codeNormalized: true, casNormalized: true },
+        })
+      ).flatMap((x) => {
+        const hit =
+          pByCode.get(x.codeNormalized) ??
+          (x.casNormalized ? pByCas.get(x.casNormalized) : undefined);
+        return hit ? [[x.id, hit] as [string, string]] : [];
+      }),
+    );
+    /** ローカルの区分id → 本番の区分id */
+    const pCatById = new Map(pCatRows.map((x) => [catKey(x), x.id]));
+    const catOf = new Map(
+      lCatRows.flatMap((x) => {
+        const hit = pCatById.get(catKey(x));
+        return hit ? [[x.id, hit] as [string, string]] : [];
+      }),
+    );
+
+    await P.product.createMany({
+      data: await L.product.findMany({ where: { id: { in: ids } } }),
+      skipDuplicates: true,
+    });
+    const lines = await L.compositionLine.findMany({ where: { parentProductId: { in: ids } } });
+    const lost = lines.filter((x) => x.substanceId && !substOf.has(x.substanceId));
+    if (lost.length > 0) {
+      throw new Error(`本番に見つからない物質が組成にあります: ${lost.length} 行`);
+    }
+    await P.compositionLine.createMany({
+      data: lines.map((x) => ({
+        ...x,
+        substanceId: x.substanceId ? substOf.get(x.substanceId)! : null,
+      })),
+      skipDuplicates: true,
+    });
+    await P.productExpansion.createMany({
+      data: await L.productExpansion.findMany({ where: { productId: { in: ids } } }),
+      skipDuplicates: true,
+    });
+    const exLines = await L.productExpansionLine.findMany({ where: { productId: { in: ids } } });
+    await P.productExpansionLine.createMany({
+      data: exLines.map((x) => ({
+        ...x,
+        substanceId: x.substanceId ? (substOf.get(x.substanceId) ?? null) : null,
+      })),
+      skipDuplicates: true,
+    });
+    const judge = await L.productJudgement.findMany({ where: { productId: { in: ids } } });
+    const kept = judge.filter((x) => catOf.has(x.categoryId));
+    await P.productJudgement.createMany({
+      data: kept.map((x) => ({ ...x, categoryId: catOf.get(x.categoryId)! })),
+      skipDuplicates: true,
+    });
+    const hits = await L.productJudgementHit.findMany({
+      where: { judgementId: { in: kept.map((x) => x.id) } },
+    });
+    await P.productJudgementHit.createMany({
+      data: hits.map((x) => ({
+        ...x,
+        statutorySubstanceId: x.statutorySubstanceId
+          ? (prodSubOf.get(localKey.get(x.statutorySubstanceId) ?? "") ?? null)
+          : null,
+      })),
+      skipDuplicates: true,
+    });
+    log(
+      `  見本の製品  ${newSample.map((x) => x.code).join(" ")}` +
+        `（組成 ${lines.length} 行 / 展開 ${exLines.length} 行 / 判定 ${kept.length} 件）`,
+    );
+  }
+
   log("\n終わりました。");
   await L.$disconnect();
   await P.$disconnect();
