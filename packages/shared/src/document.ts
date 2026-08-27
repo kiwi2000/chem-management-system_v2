@@ -145,7 +145,7 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
       { key: "category", labelJa: "規制区分", labelEn: "Category" },
       { key: "officialNumber", labelJa: "番号", labelEn: "Number" },
       { key: "statutoryName", labelJa: "法文物質名", labelEn: "Statutory name" },
-      { key: "verdict", labelJa: "該否", labelEn: "Verdict" },
+      { key: "verdict", labelJa: "該非", labelEn: "Verdict" },
       { key: "needsReview", labelJa: "要確認", labelEn: "Needs review" },
     ],
   },
