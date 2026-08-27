@@ -175,8 +175,11 @@ function leafColumns(
         categoryId,
         label,
         categoryIds: new Set([categoryId]),
-        // 区分名は長くなりがち。切れても読めるところで止める（触れれば全文が出る）
-        width: Math.min(224, Math.max(112, labelWidth(label) + 20)),
+        /*
+          区分まで分けると、中身が「分類＋番号＋法文物質名」の字になる。
+          見出しの長さだけで決めると狭すぎるので、下限を広めに取る（幅は引いて変えられる）
+        */
+        width: Math.min(280, Math.max(180, labelWidth(label) + 20)),
       });
     }
     groups.push({ regionId, label: region.label, expanded: true, span: categories.length });
@@ -566,12 +569,50 @@ function RegulationMark({
         `${pickStatutoryName(locale, h.lawNameOriginal, h.lawNameJa, h.lawNameEn)} › ${pickStatutoryName(locale, h.categoryNameOriginal, h.categoryNameJa, h.categoryNameEn)}`,
     )
     .join("\n");
+  /*
+    区分まで分けている列は、**何に当たったのかを字で出す**。
+    分類＋番号＋法文物質名。分類は名前を持たない受け皿もあるので、無ければ詰める。
+    印だけでは、同じ区分の中のどの号に当たったのかが分からない。
+
+    地域でまとめている列は件数のまま。区分がいくつも重なるので、
+    ここに字を並べると1つの列に何行も入ってしまう。
+  */
+  if (!expanded) {
+    return (
+      <span
+        title={title}
+        className={cn("tabular-nums", needsReview ? "text-destructive font-medium" : "")}
+      >
+        {hits.length}
+      </span>
+    );
+  }
+  const labels = hits.flatMap((h) =>
+    h.statutory.map((sub) =>
+      [
+        sub.classNameOriginal
+          ? pickStatutoryName(locale, sub.classNameOriginal, sub.classNameJa, sub.classNameEn)
+          : "",
+        sub.officialNumber ?? "",
+        pickStatutoryName(locale, sub.nameOriginal, sub.nameJa, sub.nameEn),
+      ]
+        .filter(Boolean)
+        .join(" "),
+    ),
+  );
   return (
     <span
       title={title}
-      className={cn("tabular-nums", needsReview ? "text-destructive font-medium" : "")}
+      className={cn("block text-left text-xs", needsReview ? "text-destructive" : "")}
     >
-      {expanded ? "●" : hits.length}
+      {/* 名前が取れないのは、区分そのものでまとめて当たったとき */}
+      {labels.length === 0
+        ? "●"
+        : labels.map((t) => (
+            <span key={t} className="block">
+              {t}
+            </span>
+          ))}
     </span>
   );
 }

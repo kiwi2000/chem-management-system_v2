@@ -367,6 +367,22 @@ export interface AggregateContributionDto {
  * まとめ表の行に添える「この CAS が効いている規制区分」。
  * 下の判定表と向きが逆（あちらは区分ごと、こちらは CAS ごと）。
  */
+/**
+ * 当たった法文物質名の1件ぶん。**組成の表に「何に当たったか」を出すために要る。**
+ * 印だけでは、同じ区分の中のどの号に当たったのかが分からない。
+ */
+export interface RowStatutoryDto {
+  /** 分類。名前を持たない受け皿のときは null（表では詰めて出す） */
+  classNameJa: string | null;
+  classNameEn: string | null;
+  classNameOriginal: string | null;
+  /** 法令が付けている番号 */
+  officialNumber: string | null;
+  nameJa: string | null;
+  nameEn: string | null;
+  nameOriginal: string;
+}
+
 export interface RowRegulationDto {
   categoryId: string;
   /** 地域（国内・国際など）。まとめて1列にするときの単位 */
@@ -382,6 +398,11 @@ export interface RowRegulationDto {
   categoryNameJa: string | null;
   categoryNameEn: string | null;
   categoryNameOriginal: string;
+  /**
+   * この CAS が当たった法文物質名。区分そのものでまとめて当たったときは空。
+   * 並びは法文物質名の並び順
+   */
+  statutory: RowStatutoryDto[];
   /** その区分の判定に確認が残っているか */
   needsReview: boolean;
 }

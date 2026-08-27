@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import type { RowRegulationDto } from "@/lib/types";
+import type { RowRegulationDto, RowStatutoryDto } from "@/lib/types";
 
 /**
  * CASごとに「どの規制区分に効いているか」を引く。
@@ -19,7 +19,7 @@ export async function regulationsByCas(
     select: {
       categoryId: true,
       needsReview: true,
-      hits: { select: { contributions: true } },
+      hits: { select: { contributions: true, statutorySubstanceId: true } },
       category: {
         select: {
           nameJa: true,
@@ -46,6 +46,32 @@ export async function regulationsByCas(
     },
   });
 
+  /*
+    当たった法文物質名の中身は、判定の結果に id しか残っていないので引き直す。
+    **区分そのものでまとめて当たったときは id が空**なので、その場合は名前が出ない
+  */
+  const subIds = [
+    ...new Set(rows.flatMap((r) => r.hits.map((h) => h.statutorySubstanceId).filter((x) => !!x))),
+  ] as string[];
+  const subs =
+    subIds.length === 0
+      ? []
+      : await prisma.statutorySubstance.findMany({
+          where: { id: { in: subIds } },
+          select: {
+            id: true,
+            officialNumber: true,
+            nameJa: true,
+            nameEn: true,
+            nameOriginal: true,
+            displayOrder: true,
+            regulationClass: {
+              select: { nameJa: true, nameEn: true, nameOriginal: true },
+            },
+          },
+        });
+  const subOf = new Map(subs.map((x) => [x.id, x]));
+
   /** CAS → 効いている区分。同じ区分に複数の法文物質名で当たっても1つにまとめる */
   const byCas = new Map<string, Map<string, RowRegulationDto>>();
   for (const r of rows) {
@@ -55,7 +81,22 @@ export async function regulationsByCas(
         if (!c.cas) continue;
         const seen = byCas.get(c.cas) ?? new Map<string, RowRegulationDto>();
         const region = r.category.law.country.region;
+        // 同じ区分に別の号でも当たることがあるので、消さずに足していく
+        const statutory: RowStatutoryDto[] = [...(seen.get(r.categoryId)?.statutory ?? [])];
+        const sub = h.statutorySubstanceId ? subOf.get(h.statutorySubstanceId) : undefined;
+        if (sub && !statutory.some((x) => x.nameOriginal === sub.nameOriginal)) {
+          statutory.push({
+            classNameJa: sub.regulationClass.nameJa,
+            classNameEn: sub.regulationClass.nameEn,
+            classNameOriginal: sub.regulationClass.nameOriginal,
+            officialNumber: sub.officialNumber,
+            nameJa: sub.nameJa,
+            nameEn: sub.nameEn,
+            nameOriginal: sub.nameOriginal,
+          });
+        }
         seen.set(r.categoryId, {
+          statutory,
           categoryId: r.categoryId,
           regionId: region.id,
           regionNameJa: region.nameJa,
