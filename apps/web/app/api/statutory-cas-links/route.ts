@@ -11,7 +11,13 @@ export const dynamic = "force-dynamic";
  * GET /api/statutory-cas-links — ある法文物質名に結び付いたCASの一覧。
  *
  * 1件の法文物質名に付くCASは知れた数なので、ページ送りはしない。
- * ?versionId を省いたときは現在版を見る。
+ *
+ * **バージョン × データソースの組を1つだけ見る。**インベントリの中身と同じ決めかたで、
+ * どちらも表の上のプルダウンで選ぶ。省いたときはバージョンが現在のもの、
+ * データソースは絞らない。
+ *
+ * 「使用」は**絞る前の全データソース**で解く。選んでいないデータソースに
+ * 優先度の高い行があれば、いま見ている行は採られていない
  */
 export async function GET(req: Request) {
   const actor = await requirePermission("REGULATION_VIEW");
@@ -26,16 +32,20 @@ export async function GET(req: Request) {
   const version = versionId
     ? await prisma.linkSetVersion.findFirst({ where: { id: versionId, deletedAt: null } })
     : await prisma.linkSetVersion.findFirst({ where: { isCurrent: true, deletedAt: null } });
-  // 版が1つも無ければ書きようが無い。空で返し、画面には登録を促す文言を出す
+  // バージョンが1つも無ければ書きようが無い。空で返し、画面には登録を促す文言を出す
   if (!version) return Response.json({ items: [], total: 0, page: 1, pageSize: 0, version: null });
 
-  const items = await listCasLinks(version.id, statutorySubstanceId);
+  const all = await listCasLinks(version.id, statutorySubstanceId);
+  const sourceId = params.get("sourceId");
+  const items = sourceId ? all.filter((l) => l.sourceId === sourceId) : all;
+
   return Response.json({
     items,
     total: items.length,
     page: 1,
     pageSize: items.length,
     version: { id: version.id, code: version.code, isCurrent: version.isCurrent },
+    sourceId,
   });
 }
 

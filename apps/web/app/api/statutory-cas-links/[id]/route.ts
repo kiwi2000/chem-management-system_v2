@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** PUT /api/statutory-cas-links/[id] — 直す。版と法文物質名は動かさない */
+/** PUT /api/statutory-cas-links/[id] — 直す。バージョンと法文物質名は動かさない */
 export async function PUT(req: Request, { params }: Ctx) {
   const actor = await requirePermission("REGULATION_EDIT");
   if (actor instanceof Response) return actor;

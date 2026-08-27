@@ -65,9 +65,9 @@ async function main() {
   console.log(`物質名を ${names.size} 件読み込みました`);
 
   const version = await prisma.linkSetVersion.findFirst({ where: { isCurrent: true } });
-  if (!version) throw new Error("現在版がありません");
+  if (!version) throw new Error("現在のバージョンがありません");
 
-  // リンクに出てくるCAS（現在版のぶん）
+  // リンクに出てくるCAS（現在のバージョンのぶん）
   const linked = await prisma.statutoryCasLink.findMany({
     where: { versionId: version.id },
     select: { casNumber: true, casNormalized: true },

@@ -27,7 +27,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
   }
 
   /*
-    いま判定に使っている法規制の版。**どの版で判定したかが分からないと、
+    いま判定に使っている法規制のバージョン。**どのバージョンで判定したかが分からないと、
     出た結果を人に見せられない。**左ペインの下に出す
   */
   const version = await prisma.linkSetVersion.findFirst({

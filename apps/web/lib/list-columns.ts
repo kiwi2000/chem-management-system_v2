@@ -253,3 +253,29 @@ export const LINK_VERSION_SOURCE_COLUMNS: QueryColumn[] = [
   { key: "note", kind: "text", field: "note", caseInsensitive: true },
   { key: "loadedAt", kind: "date", field: "loadedAt" },
 ];
+
+export const INVENTORY_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  { key: "nameOriginal", kind: "text", field: "nameOriginal", caseInsensitive: true },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  { key: "countryId", kind: "enum", field: "countryId" },
+  // 地域は国の1つ上。インベントリそのものは持っていないので、国をたどって絞る（法令と同じ）
+  { key: "regionId", kind: "enum", field: "regionId", nested: "country" },
+  { key: "numberLabel", kind: "text", field: "numberLabel", caseInsensitive: true },
+  { key: "numberShown", kind: "enum", field: "numberShown", booleanEnum: true },
+  { key: "numberOrder", kind: "number", field: "numberOrder" },
+];
+
+/**
+ * インベントリの中身。
+ *
+ * **バージョン・データソース・インベントリは、ここには置かない。**
+ * どれも表の上のプルダウンと URL で決まるもので、API 側が条件に足す。
+ * フィルターに二重に置くと、同じことを決める操作が2か所になる
+ */
+export const INVENTORY_ROW_COLUMNS: QueryColumn[] = [
+  { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
+  { key: "value", kind: "text", field: "value", caseInsensitive: true },
+  { key: "updatedAt", kind: "date", field: "updatedAt" },
+];

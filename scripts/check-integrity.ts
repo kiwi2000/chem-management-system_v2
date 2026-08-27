@@ -17,7 +17,7 @@ async function main() {
     return;
   }
 
-  console.log(`版 ${report.versionCode} を調べました`);
+  console.log(`バージョン ${report.versionCode} を調べました`);
   console.log(`  換算係数が無い「CAS × 金属等」: ${report.totals.missingConversionFactor}件`);
   console.log(`  元素マスタに無い金属等        : ${report.totals.unknownConversionTarget}件`);
 

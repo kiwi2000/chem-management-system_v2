@@ -1,0 +1,306 @@
+import { prisma } from "@/lib/db";
+
+/**
+ * 物質1件を、**バージョンを横に並べて**見るための組み立て。
+ *
+ * インベントリの番号と、当たっている法規制を同じ形の表で出す。
+ * 見たいのは「前のバージョンから変わったかどうか」なので、
+ * **現在のバージョンと、その1つ前**の2つだけを並べる。
+ *
+ * 列は `地域 › 種類 › バージョン` の3段。地域でまとめて畳めるようにするため、
+ * 種類には必ず地域と国を持たせる。
+ *
+ * セルには値が複数入ることがある（1つのCASに番号が2つ付くインベントリ、
+ * 同じ区分の別々の法文物質名）。**行に割って**出すので、
+ * ここでは配列のまま返し、並べ方は画面側が決める。
+ *
+ * 値には**どのデータソースから来たか**を持たせる。
+ * 画面で選んだデータソースのぶんを目立たせるために使う。
+ */
+
+/** 表の1つの列。地域と国は、列をまとめて畳むための手がかり */
+export interface MatrixColumn {
+  key: string;
+  /** 見出し（番号としての呼び名、または規制区分の名前） */
+  label: string;
+  /** 1つ上のまとまり（法令、またはインベントリ）。段を畳むための鍵 */
+  parentKey: string;
+  /** そのまとまりの名前 */
+  parentLabel: string;
+  countryId: string;
+  countryName: string;
+  regionId: string;
+  regionName: string;
+  /** 物質の画面に番号として出している種類か。トグルで絞るのに使う */
+  shown: boolean;
+}
+
+/** セルの中身1つぶん */
+export interface MatrixValue {
+  /** 画面に出す文字（番号、または法令上の番号） */
+  text: string;
+  /** 補足（法文物質名など）。無ければ null */
+  note: string | null;
+  sourceId: string;
+}
+
+export interface SubstanceMatrix {
+  /** 左から新しい順。現在のバージョンが先頭 */
+  versions: { id: string; code: string; isCurrent: boolean }[];
+  /** 並べたバージョンに載っているデータソース。優先度の高い順、重複なし */
+  sources: { id: string; code: string }[];
+  inventory: { columns: MatrixColumn[]; cells: Record<string, MatrixValue[]> };
+  regulation: { columns: MatrixColumn[]; cells: Record<string, MatrixValue[]> };
+}
+
+/** セルの鍵。列 × バージョン で1つ */
+const cellKey = (columnKey: string, versionId: string) => `${columnKey}/${versionId}`;
+
+/**
+ * 現在のバージョンと、その1つ前を返す。
+ * 「1つ前」はコードの並びで決める（現在のバージョンの決め方と同じ規則）。
+ */
+async function twoVersions() {
+  const all = await prisma.linkSetVersion.findMany({
+    where: { deletedAt: null },
+    orderBy: { codeNormalized: "desc" },
+    select: { id: true, code: true, isCurrent: true },
+  });
+  if (all.length === 0) return [];
+  const at = all.findIndex((v) => v.isCurrent);
+  const i = at < 0 ? 0 : at;
+  // 現在のものと、その次に古いもの。現在が最後なら1つだけ
+  return all.slice(i, i + 2);
+}
+
+export async function buildSubstanceMatrix(casNormalized: string | null): Promise<SubstanceMatrix> {
+  const empty: SubstanceMatrix = {
+    versions: [],
+    sources: [],
+    inventory: { columns: [], cells: {} },
+    regulation: { columns: [], cells: {} },
+  };
+  if (!casNormalized) return empty;
+
+  const versions = await twoVersions();
+  if (versions.length === 0) return empty;
+  const versionIds = versions.map((v) => v.id);
+
+  /*
+    データソースは**並べたバージョンに載っているものだけ**。
+
+    並び（＝画面の既定）は**先頭のバージョン、つまり現在のバージョンの優先度**で決める。
+    バージョンをまたいで若い番号を拾うと、過去のバージョンでだけ1位だったものが
+    先頭に来てしまい、いま効いているものと食い違う。
+    先頭のバージョンに載っていないものは、その後ろに並べる。
+  */
+  const vs = await prisma.linkVersionSource.findMany({
+    where: { versionId: { in: versionIds } },
+    orderBy: { priority: "asc" },
+    select: { versionId: true, sourceId: true, priority: true, source: { select: { code: true } } },
+  });
+  const head = versions[0]!.id;
+  /** 先頭のバージョンでの優先度。載っていなければ後ろへ回す */
+  const rank = new Map<string, number>();
+  const codeOf = new Map<string, string>();
+  for (const r of vs) {
+    codeOf.set(r.sourceId, r.source.code);
+    if (r.versionId !== head) continue;
+    rank.set(r.sourceId, r.priority);
+  }
+  const rankOf = (id: string) => rank.get(id) ?? Number.MAX_SAFE_INTEGER;
+  const sources = [...codeOf.entries()]
+    .map(([id, code]) => ({ id, code }))
+    .sort((a, b) => rankOf(a.id) - rankOf(b.id) || a.code.localeCompare(b.code));
+
+  // --- インベントリ ---------------------------------------------------------
+  const inventories = await prisma.inventory.findMany({
+    where: { deletedAt: null },
+    orderBy: { numberOrder: "asc" },
+    select: {
+      id: true,
+      nameJa: true,
+      nameOriginal: true,
+      numberLabel: true,
+      numberShown: true,
+      country: {
+        select: {
+          id: true,
+          nameJa: true,
+          regionId: true,
+          region: { select: { nameJa: true } },
+        },
+      },
+    },
+  });
+
+  const invColumns: MatrixColumn[] = inventories.map((i) => ({
+    key: `inv:${i.id}`,
+    // 呼び名を付けていないインベントリは、名前をそのまま見出しにする
+    label: i.numberLabel ?? i.nameJa ?? i.nameOriginal,
+    parentKey: `inv:${i.id}`,
+    parentLabel: i.nameJa ?? i.nameOriginal,
+    countryId: i.country.id,
+    countryName: i.country.nameJa,
+    regionId: i.country.regionId,
+    regionName: i.country.region.nameJa,
+    shown: i.numberShown && i.numberLabel !== null,
+  }));
+
+  /*
+    **地域でまとめる。**画面は地域で列を畳むので、同じ地域が離れて並ぶと1つに畳めない。
+    地域どうしの順は、その地域が初めて出てくる並び順（`numberOrder`）に従う
+  */
+  const invRegionFirst = new Map<string, number>();
+  for (const c of invColumns) {
+    if (!invRegionFirst.has(c.regionId)) invRegionFirst.set(c.regionId, invRegionFirst.size);
+  }
+  invColumns.sort(
+    (a, b) => (invRegionFirst.get(a.regionId) ?? 0) - (invRegionFirst.get(b.regionId) ?? 0),
+  );
+
+  const invRows = await prisma.inventoryRow.findMany({
+    where: { casNormalized, versionId: { in: versionIds } },
+    select: { inventoryId: true, versionId: true, sourceId: true, value: true },
+  });
+  const invCells: Record<string, MatrixValue[]> = {};
+  for (const r of invRows) {
+    const k = cellKey(`inv:${r.inventoryId}`, r.versionId);
+    (invCells[k] ??= []).push({ text: r.value, note: null, sourceId: r.sourceId });
+  }
+
+  // --- 法規制 ---------------------------------------------------------------
+  /*
+    **当たっている区分だけを列にする。**登録されている区分をすべて並べると、
+    ほとんどがハイフンの表になって、変わったところが埋もれる。
+    非該当で確定させたリンク（`excluded`）は当たっていないので外す
+  */
+  const links = await prisma.statutoryCasLink.findMany({
+    where: { casNormalized, versionId: { in: versionIds }, excluded: false },
+    select: {
+      versionId: true,
+      sourceId: true,
+      statutorySubstance: {
+        select: {
+          officialNumber: true,
+          nameJa: true,
+          nameOriginal: true,
+          deletedAt: true,
+          regulationClass: {
+            select: {
+              // 分類は名前を持たないことがある（区分を分けないときの受け皿）
+              nameJa: true,
+              nameOriginal: true,
+              category: {
+                select: {
+                  id: true,
+                  nameJa: true,
+                  nameOriginal: true,
+                  displayOrder: true,
+                  deletedAt: true,
+                  law: {
+                    select: {
+                      id: true,
+                      nameJa: true,
+                      nameOriginal: true,
+                      displayOrder: true,
+                      country: {
+                        select: {
+                          id: true,
+                          nameJa: true,
+                          regionId: true,
+                          region: { select: { nameJa: true } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const regColumns = new Map<string, MatrixColumn & { lawOrder: number; catOrder: number }>();
+  const regCells: Record<string, MatrixValue[]> = {};
+  for (const l of links) {
+    const s = l.statutorySubstance;
+    if (s.deletedAt) continue;
+    const c = s.regulationClass.category;
+    if (c.deletedAt) continue;
+    const key = `cat:${c.id}`;
+    if (!regColumns.has(key)) {
+      regColumns.set(key, {
+        key,
+        label: c.nameJa ?? c.nameOriginal,
+        parentKey: `law:${c.law.id}`,
+        parentLabel: c.law.nameJa ?? c.law.nameOriginal,
+        countryId: c.law.country.id,
+        countryName: c.law.country.nameJa,
+        regionId: c.law.country.regionId,
+        regionName: c.law.country.region.nameJa,
+        // 法規制はトグルの対象外。常に出す
+        shown: true,
+        lawOrder: c.law.displayOrder,
+        catOrder: c.displayOrder,
+      });
+    }
+    /*
+      出すのは **分類 → 番号 → 法文物質名**。
+      分類は名前を持たないことがある（区分を分けないときの受け皿）ので、
+      名前が入っているときだけ添える。番号を持たない法文物質名もあるので、
+      無いものは飛ばして詰める
+    */
+    const cls = s.regulationClass;
+    const parts = [
+      cls.nameOriginal === null ? null : (cls.nameJa ?? cls.nameOriginal),
+      s.officialNumber,
+      s.nameJa ?? s.nameOriginal,
+    ].filter((v): v is string => v !== null && v !== "");
+
+    const k = cellKey(key, l.versionId);
+    (regCells[k] ??= []).push({
+      text: parts.join(" "),
+      note: null,
+      sourceId: l.sourceId,
+    });
+  }
+
+  /** 優先度の高いデータソースから並べる。同じなら文字の順で落ち着かせる */
+  const sortValues = (cells: Record<string, MatrixValue[]>) => {
+    for (const list of Object.values(cells)) {
+      list.sort((a, b) => rankOf(a.sourceId) - rankOf(b.sourceId) || a.text.localeCompare(b.text));
+    }
+  };
+  sortValues(invCells);
+  sortValues(regCells);
+
+  /*
+    **地域でまとめてから、法令・区分の順に並べる。**
+    画面は地域で列を畳むので、同じ地域が離れて並ぶと1つに畳めない。
+    地域どうしの順は、その地域が初めて出てくる法令の順に従う（国内が先、など）
+  */
+  const regionFirst = new Map<string, number>();
+  for (const c of [...regColumns.values()].sort((a, b) => a.lawOrder - b.lawOrder)) {
+    if (!regionFirst.has(c.regionId)) regionFirst.set(c.regionId, regionFirst.size);
+  }
+
+  return {
+    versions,
+    sources,
+    inventory: { columns: invColumns, cells: invCells },
+    regulation: {
+      columns: [...regColumns.values()]
+        .sort(
+          (a, b) =>
+            (regionFirst.get(a.regionId) ?? 0) - (regionFirst.get(b.regionId) ?? 0) ||
+            a.lawOrder - b.lawOrder ||
+            a.catOrder - b.catOrder,
+        )
+        .map(({ lawOrder: _l, catOrder: _c, ...rest }) => rest),
+      cells: regCells,
+    },
+  };
+}

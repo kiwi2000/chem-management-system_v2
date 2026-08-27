@@ -21,7 +21,6 @@ interface Draft extends NameDraft, ThresholdDraft {
   displayOrder: number;
   interactionGroup: string;
   rank: string;
-  numberLabel: string;
   note: string;
 }
 
@@ -58,7 +57,6 @@ export function RegulationCategoryForm({
     displayOrder: initial?.displayOrder ?? 0,
     interactionGroup: initial?.interactionGroup ?? "",
     rank: initial?.rank === undefined || initial?.rank === null ? "" : String(initial.rank),
-    numberLabel: initial?.numberLabel ?? "",
     note: initial?.note ?? "",
   }));
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +86,6 @@ export function RegulationCategoryForm({
             displayOrder: Number(draft.displayOrder) || 0,
             interactionGroup: draft.interactionGroup || null,
             rank: draft.rank === "" ? null : Number(draft.rank),
-            numberLabel: draft.numberLabel || null,
             note: draft.note || null,
           }),
         },
@@ -192,21 +189,6 @@ export function RegulationCategoryForm({
               />
             </Field>
           </div>
-
-          <Field
-            label={m.regulationCategories.numberLabel}
-            htmlFor="cat-number-label"
-            hint={m.regulationCategories.numberLabelHint}
-            className="w-72"
-          >
-            <Input
-              id="cat-number-label"
-              maxLength={100}
-              value={draft.numberLabel}
-              onChange={(e) => setDraft({ ...draft, numberLabel: e.target.value })}
-              placeholder={m.regulationCategories.numberLabelExample}
-            />
-          </Field>
 
           <Field label={m.regulationCategories.note} htmlFor="cat-note">
             <Input

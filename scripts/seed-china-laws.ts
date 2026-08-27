@@ -63,7 +63,7 @@ async function main() {
   if (!version) throw new Error("現在のバージョンが決まっていません");
 
   const sections = [...new Set(items.map((i) => i.section))];
-  console.log(`原文 ${items.length}件 / 区分 ${sections.length}件  版 ${version.code}\n`);
+  console.log(`原文 ${items.length}件 / 区分 ${sections.length}件  バージョン ${version.code}\n`);
 
   for (const section of sections) {
     if (UNTOUCHED.has(section)) continue;
@@ -91,7 +91,7 @@ async function main() {
       id はこちらで振る。先に振っておけば、リンクをまとめて作れる
     */
     /*
-      **原文そのものに序号の重複がある。**危険化学品目録（2015版）では
+      **原文そのものに序号の重複がある。**危険化学品目録（2015バージョン）では
       718・1851・2009 が2回ずつ使われている（原文の誤植）。
       番号は原文どおり残し、コードの側に枝番を付けて通す
     */

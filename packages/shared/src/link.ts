@@ -14,7 +14,7 @@ const optionalNote = (m: Messages) =>
 
 /**
  * 情報源（LOLI・CHRIP・自社データなど）。
- * どの版でどの順に読むかは版の側で決めるので、ここには優先度を持たせない。
+ * どのバージョンでどの順に読むかはバージョンの側で決めるので、ここには優先度を持たせない。
  */
 export const sourceSchema = (m: Messages) =>
   z.object({
@@ -28,8 +28,8 @@ export const sourceSchema = (m: Messages) =>
   });
 
 /**
- * 版（いつ時点のデータか）。
- * 現在版の切り替えは専用の操作で行うので、ここには含めない。
+ * バージョン（いつ時点のデータか）。
+ * 現在のバージョンの切り替えは専用の操作で行うので、ここには含めない。
  */
 export const linkSetVersionSchema = (m: Messages) =>
   z.object({
@@ -54,7 +54,7 @@ export const linkVersionSourceSchema = (m: Messages) =>
 /**
  * 法文物質名とCAS番号の結び付き。
  *
- * どの版のどのデータソースに書くかまで含めて1件。
+ * どのバージョンのどのデータソースに書くかまで含めて1件。
  * 「非該当」（excluded）は、優先度が上のデータソースが下位の内容を打ち消すためのもので、
  * 行が無いこと（＝何も分からない）とは別物。
  */

@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * POST /api/link-versions/[id]/current — この版を現在版にする。
+ * POST /api/link-versions/[id]/current — このバージョンを現在のバージョンにする。
  *
- * 現在版はシステム全体で1件だけ。テーブル側にも「is_current が真の行は1件」という
+ * 現在のバージョンはシステム全体で1件だけ。テーブル側にも「is_current が真の行は1件」という
  * 制約を張ってあるので、外してから立てる順で1つのまとまりとして書き換える。
  */
 export async function POST(_req: Request, { params }: Ctx) {

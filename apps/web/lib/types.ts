@@ -217,38 +217,6 @@ export interface MatchedProductDto {
   hitsWithheld: boolean;
 }
 
-/**
- * 「各種番号」に出す一覧の設定（システム→設定）。
- * 呼び名が入っている区分だけが、物質の詳細に番号として出る。
- */
-/** 区分を指し示すのに要る名前。設定画面はこれを並べて出す */
-interface CategoryRef {
-  categoryId: string;
-  lawNameJa: string | null;
-  lawNameEn: string | null;
-  lawNameOriginal: string;
-  countryNameJa: string;
-  countryNameEn: string | null;
-  categoryNameJa: string | null;
-  categoryNameEn: string | null;
-  categoryNameOriginal: string;
-  /** 番号が入っている法文物質名の数 */
-  numberCount: number;
-  /** どんな番号が入っているかの例。3件まで */
-  samples: string[];
-}
-
-/** いま「各種番号」として出している1件。並びは配列の順そのもの */
-export interface NumberLabelDto extends CategoryRef {
-  /** 番号としての呼び名。そのまま物質の画面の見出しになる */
-  numberLabel: string;
-}
-
-/** これから足せる区分。番号が1件も入っていないものは出てこない */
-export interface NumberLabelChoiceDto extends CategoryRef {
-  lawId: string;
-}
-
 export interface ListResponse<T> {
   items: T[];
   total: number;
@@ -520,11 +488,6 @@ export interface RegulationCategoryDto {
   interactionGroup: string | null;
   rank: number | null;
   displayOrder: number;
-  /**
-   * 番号のリストとしての呼び名（「官報公示整理番号」「EC番号」など）。
-   * 入っていれば、この区分の番号が物質の画面に並ぶ
-   */
-  numberLabel: string | null;
   note: string | null;
   /** 配下の法文物質名の数（表示名のない分類のぶんも含む） */
   substanceCount: number;
@@ -561,7 +524,7 @@ export interface StatutorySubstanceDto {
   effectiveTo: string | null;
   displayOrder: number;
   note: string | null;
-  /** 現在版で結ばれているCASの数 */
+  /** 現在のバージョンで結ばれているCASの数 */
   casCount: number;
 }
 
@@ -583,7 +546,7 @@ export interface StatutoryCasLinkDto {
   note: string | null;
   /** 優先度で解いた結果、このCASの答えとして採られている行か */
   used: boolean;
-  /** データソースがこの版に並んでいない。優先度が決まらないので採られることがない */
+  /** データソースがこのバージョンに並んでいない。優先度が決まらないので採られることがない */
   orphan: boolean;
 }
 
@@ -639,6 +602,44 @@ export interface NewsDto {
   editable: boolean;
 }
 
+/**
+ * インベントリ（各国の既存化学物質インベントリ）。
+ * 中身はバージョンごとに分かれるので、件数は**現在のバージョンのぶん**を返す。
+ */
+export interface InventoryDto {
+  id: string;
+  code: string;
+  countryId: string;
+  countryNameJa: string;
+  countryNameEn: string | null;
+  nameOriginal: string;
+  nameJa: string | null;
+  nameEn: string | null;
+  /** 番号としての呼び名。物質の画面の見出しになる */
+  numberLabel: string | null;
+  numberOrder: number;
+  /** 物質の画面に番号を出すか。呼び名が空のときは立てても出せない */
+  numberShown: boolean;
+  /** 現在のバージョンに入っている行の数 */
+  rowCount: number;
+  updatedAt: string;
+}
+
+/** インベントリの1行。現在のバージョンのものだけを扱う */
+export interface InventoryRowDto {
+  id: string;
+  sourceId: string;
+  sourceCode: string;
+  /** バージョンの優先度で解いた結果、この行が採られているか（同じCASで1つだけ立つ） */
+  used: boolean;
+  casNumber: string;
+  /** 画面にそのまま出す値。番号か、番号を持たないインベントリの「該当」 */
+  value: string;
+  updatedAt: string;
+  /** このCASを持つ物質（物理FKは無く、正規化CASで突き合わせた結果） */
+  matchedSubstance: { id: string; code: string; nameJa: string; nameEn: string | null } | null;
+}
+
 /** 元素。法文物質名の「換算先」で選ぶ */
 export interface ElementDto {
   symbol: string;
@@ -647,7 +648,7 @@ export interface ElementDto {
   nameEn: string;
 }
 
-/** 情報源（LOLI・CHRIP・自社データなど）。どの版で使うかは版の側で決める */
+/** 情報源（LOLI・CHRIP・自社データなど）。どのバージョンで使うかはバージョンの側で決める */
 export interface SourceDto {
   id: string;
   code: string;

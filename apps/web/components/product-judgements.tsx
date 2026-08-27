@@ -67,8 +67,8 @@ export function ProductJudgements({
   productId: string;
   canEdit: boolean;
   /**
-   * この判定に使った法規制の版。
-   * **どの版で出した結果かが分からないと、印刷して人に渡せない。**
+   * この判定に使った法規制のバージョン。
+   * **どのバージョンで出した結果かが分からないと、印刷して人に渡せない。**
    */
   version: string | null;
 }) {

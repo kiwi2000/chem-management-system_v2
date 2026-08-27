@@ -20,7 +20,7 @@ interface Props {
   user: Pick<MeDto, "id" | "email" | "displayName" | "permissions" | "canEdit" | "isAdmin">;
   /** アバターの更新日時。変わると画像を取り直す */
   avatarVersion: number;
-  /** いま判定に使っている法規制の版。無ければ出さない */
+  /** いま判定に使っている法規制のバージョン。無ければ出さない */
   version: { code: string; nameJa: string | null } | null;
   children: ReactNode;
 }
@@ -73,8 +73,8 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
       </div>
       <SidebarNav permissions={user.permissions} onNavigate={() => setDrawerOpen(false)} />
       {/*
-        いま判定に使っている法規制の版。**操作ではないので、いちばん下に置く。**
-        「どの版で判定した結果を見ているか」が常に分かるようにするためのもの
+        いま判定に使っている法規制のバージョン。**操作ではないので、いちばん下に置く。**
+        「どのバージョンで判定した結果を見ているか」が常に分かるようにするためのもの
       */}
       {version && (
         <div className="text-muted-foreground mt-auto border-t px-4 py-2 text-xs">

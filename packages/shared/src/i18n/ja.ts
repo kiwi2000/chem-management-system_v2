@@ -23,7 +23,7 @@ export const ja = {
     submitConfirm: (n: number) => `選択した ${n} 件の承認を申請しますか？`,
     publishConfirm: (n: number) => `選択した ${n} 件を発行しますか？`,
     rejectReason: "却下の理由（任意）",
-    approvalHistory: "承認の履歴",
+    approvalHistory: "承認履歴",
     noApprovalHistory: "履歴はありません",
     actionDone: (updated: number, requested: number) =>
       `${requested} 件のうち ${updated} 件を変更しました`,
@@ -81,6 +81,7 @@ export const ja = {
     products: "製品 / 原材料",
     regions: "地域・国",
     laws: "法規制",
+    inventories: "インベントリ",
     externalDb: "外部データベース",
     elements: "元素",
     metalFactors: "金属換算係数",
@@ -96,7 +97,7 @@ export const ja = {
 
   shell: {
     openMenu: "メニューを開く",
-    linkVersion: "法規制の版",
+    linkVersion: "法規制のバージョン",
     closeMenu: "メニューを閉じる",
     signOut: "ログアウト",
     readOnly: "参照のみ",
@@ -479,10 +480,6 @@ export const ja = {
     bounds: { EXCLUSIVE: "<", INCLUSIVE: "≤" },
     /** 閾値の式の真ん中に置く言葉 */
     content: "含有率（重量%）",
-    numberLabel: "番号としての呼び名",
-    numberLabelHint:
-      "入れると、この区分は番号のリストとして扱われます。配下の法文物質名の番号が、物質の画面に並びます。空欄なら番号のリストではありません",
-    numberLabelExample: "例: 官報公示整理番号",
     interactionGroup: "兼ね合いグループ",
     interactionHint: "同じグループでは、rank の小さいほうだけを表示します（空欄なら常に出す）",
     rank: "rank",
@@ -531,6 +528,8 @@ export const ja = {
     duplicate: "同じバージョン・同じデータソースに、そのCAS番号は既に登録されています",
     noVersion: "バージョンがまだありません。「外部データベース」で先に作ってください",
     orphan: "このデータソースは、このバージョンに並んでいません。判定には使われません",
+    currentVersion: "現在",
+    noSourceInVersion: "このバージョンにデータソースがありません",
     usedHint: "優先度がいちばん高いデータソースの1件だけが採られます",
     prevSubstance: "前の法文物質名",
     nextSubstance: "次の法文物質名",
@@ -637,7 +636,7 @@ export const ja = {
       sunflower: "クリーム色の地に山吹色。明るい配色",
       rose: "少し濃いピンクを基調にした配色",
       lavender: "淡い紫を基調にした配色",
-      midnight: "濃紺の暗い配色。ダークの青版",
+      midnight: "濃紺の暗い配色。ダークの青バージョン",
       contrast: "白黒をはっきりさせ、枠線を強く出す",
     },
     background: "背景",
@@ -845,22 +844,65 @@ export const ja = {
     noMatchedProducts: "この区分に当たる製品はありません。",
   },
 
-  numberLabels: {
-    title: "物質に出す番号",
-    lead: "その国の名簿が物質に振っている番号です（日本なら化審法番号・安衛法番号、EUならEC番号、米国ならTSCAの番号）。物質には入力せず、ここで選んだ一覧から自動で引いて、物質の詳細に「各種番号」として出します。呼び名がそのまま見出しになり、並べた順に出ます。",
-    shownCount: (n: number) => `${n} 件を出しています`,
-    country: "国・地域",
-    samples: "入っている番号",
-    label: "呼び名",
-    order: "並び",
-    moveUp: "上へ",
-    moveDown: "下へ",
-    empty: "まだ1件も設定されていません。下から足してください。",
-    pickLaw: "法律を選ぶ",
-    pickCategory: "規制区分を選ぶ",
-    blankLabel:
-      "呼び名が空の行があります。物質の画面で見出しが空になるので、入れてから保存してください。",
-    count: (n: number) => `（${n}件）`,
+  /**
+   * インベントリ（各国の既存化学物質の目録）。
+   * 判定には使わない。「そのインベントリでの番号」を物質の画面に出すためのもの
+   */
+  inventories: {
+    title: "インベントリ",
+    description:
+      "各国が持つ既存化学物質の目録です。CAS番号と、そのインベントリがその物質に振っている番号の対応を持ちます。ここで「番号として出す」にしたインベントリの番号が、物質の詳細に「各種番号」として並びます。",
+    versionNote: (code: string) => `件数は、現在のバージョン（${code}）のものです`,
+    source: "データソース",
+    used: "採用",
+    usedYes: "採られています",
+    usedNo: "優先度の高いデータソースに同じCASの行があるため、採られていません",
+    usedHint: "優先度がいちばん高いデータソースの1件だけが採られます",
+    noCurrentVersion: "現在のバージョンが決まっていません。先に決めてください",
+    code: "コード",
+    country: "国",
+    nameOriginal: "原文の名称",
+    nameJa: "名称（日本語）",
+    nameEn: "名称（英語）",
+    numberLabel: "番号としての呼び名",
+    numberLabelHint: "物質の画面で見出しになります（例: 化審法番号）",
+    numberShown: "番号として出す",
+    numberShownHint: "外しても呼び名は残ります。また出したくなったときに付け直さずに済みます",
+    numberOrder: "並び",
+    numberOrderHint: "物質の画面に出す順。小さいほうが上",
+    rowCount: "件数",
+    empty: "インベントリが登録されていません",
+    editTitle: "インベントリの設定",
+    labelRequiredToShow:
+      "呼び名を入れてください。空のままだと、物質の画面に見出しの無い番号が並びます",
+
+    /** インベントリの中身 */
+    rows: "該当物質",
+    rowsTitle: (name: string) => `${name}該当物質`,
+    casNumber: "CAS番号",
+    value: "値",
+    valueHint: "番号（例: (5)-3714）。番号を持たないインベントリでは「該当」のような文字",
+    matchedSubstance: "登録されている物質",
+    rowsEmpty: "このバージョンとデータソースには、該当する物質がありません",
+    newRow: "行の追加",
+    editRow: "行の編集",
+    duplicateRow: "このバージョンに、同じCASと同じ値の行がすでにあります",
+    warnUnknownCas:
+      "このCAS番号の物質は登録されていません（インベントリの行だけ先に持つことはできます）",
+    deleteConfirm: (label: string) => `「${label}」を削除しますか？`,
+    deleteNote: "インベントリの行は取り消せません。消した記録はアクセス記録に残ります",
+  },
+
+  /** 物質1件を、バージョンを横に並べて見る表 */
+  substanceMatrix: {
+    region: "地域",
+    /** 畳んでいることは矢印の向きで分かるので、件数だけを出す */
+    folded: (n: number) => `${n} 件`,
+    showAllInventories: "すべてのインベントリを出す",
+    inventoryTitle: "インベントリ番号",
+    inventoryEmpty: "インベントリが登録されていません",
+    regulationTitle: "該当法規",
+    regulationEmpty: "当たっている法規制はありません",
   },
 
   settings: {

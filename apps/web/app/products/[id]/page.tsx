@@ -36,7 +36,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       orderBy: [{ displayOrder: "asc" }, { key: "asc" }],
       include: PROPERTY_DEF_COUNT,
     }),
-    // 判定に使っている法規制の版。見出しに添える
+    // 判定に使っている法規制のバージョン。見出しに添える
     prisma.linkSetVersion.findFirst({
       where: { isCurrent: true, deletedAt: null },
       select: { code: true },

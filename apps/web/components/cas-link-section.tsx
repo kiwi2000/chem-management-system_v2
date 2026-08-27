@@ -13,11 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { VersionSourcePicker, type VersionSource } from "@/components/version-source-picker";
 import type {
   ApiError,
-  LinkSetVersionDto,
   ListResponse,
-  SourceDto,
   StatutoryCasLinkDto,
   StatutorySubstanceDto,
 } from "@/lib/types";
@@ -42,7 +41,7 @@ interface Draft {
 }
 const EMPTY: Draft = { casNumber: "", sourceId: "", excluded: false, note: "" };
 
-/** サーバーが返す一覧。どの版を見ているかも一緒に返る */
+/** サーバーが返す一覧。どのバージョンを見ているかも一緒に返る */
 interface CasLinkResponse extends ListResponse<StatutoryCasLinkDto> {
   version: { id: string; code: string; isCurrent: boolean } | null;
 }
@@ -54,20 +53,22 @@ interface CasLinkResponse extends ListResponse<StatutoryCasLinkDto> {
  * 直せばよいか分からなくなるため。「使用」の印が付いている行が、
  * 優先度で解いた結果として実際に採られているもの。
  *
- * 版は普段いじらない（既定は現在版）。過去の版を直したいときだけ切り替える。
+ * バージョンとデータソースは普段いじらない（既定は現在のバージョンと、
+ * そのバージョンで優先度がいちばん高いデータソース）。
+ * 過去のものを見たいときだけ切り替える。
  */
 export function CasLinkSection({
   substance,
-  versionId,
-  onVersionChange,
+  picked,
+  onPickedChange,
   slideDir,
   onShown,
 }: {
   substance: StatutorySubstanceDto;
-  /** 見ている版。null なら現在版 */
-  versionId: string | null;
-  /** 版の切り替えは親が持つ。法文物質名を移っても選んだ版を保つため */
-  onVersionChange: (id: string) => void;
+  /** 見ているバージョンとデータソース。null なら現在のバージョン */
+  picked: VersionSource | null;
+  /** 切り替えは親が持つ。法文物質名を移っても選んだ組を保つため */
+  onPickedChange: (next: VersionSource) => void;
   slideDir: SlideDir;
   /** 新しい法文物質名の中身を出し終えた合図。見出しはこれに合わせて切り替わる */
   onShown?: () => void;
@@ -79,8 +80,6 @@ export function CasLinkSection({
   /** いま画面に出している法文物質名。渡されたものとずれているあいだは前の中身のまま */
   const [shownId, setShownId] = useState<string | null>(null);
   const [data, setData] = useState<CasLinkResponse | null>(null);
-  const [sources, setSources] = useState<SourceDto[]>([]);
-  const [versions, setVersions] = useState<LinkSetVersionDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -151,23 +150,6 @@ export function CasLinkSection({
         ),
       },
       {
-        key: "sourceCode",
-        header: m.casLinks.source,
-        kind: "text",
-        width: 86,
-        sortable: false,
-        filterable: false,
-        className: "font-mono text-xs",
-        render: (r) => (
-          <span
-            className={cn(r.orphan && "text-muted-foreground line-through")}
-            title={r.orphan ? m.casLinks.orphan : undefined}
-          >
-            {r.sourceCode}
-          </span>
-        ),
-      },
-      {
         key: "used",
         header: m.casLinks.used,
         kind: "enum",
@@ -201,23 +183,10 @@ export function CasLinkSection({
     DEFAULT_STATE,
   );
 
-  /** 選択肢は件数が知れているので全部引いておく */
-  const loadChoices = useCallback(async () => {
-    const [s, v] = await Promise.all([
-      fetch("/api/sources?size=200").catch(() => null),
-      fetch("/api/link-versions?size=200").catch(() => null),
-    ]);
-    if (s?.ok) setSources(((await s.json()) as ListResponse<SourceDto>).items);
-    if (v?.ok) setVersions(((await v.json()) as ListResponse<LinkSetVersionDto>).items);
-  }, []);
-
-  useEffect(() => {
-    void loadChoices();
-  }, [loadChoices]);
-
-  const fetchLinks = useCallback(async (substanceId: string, version: string | null) => {
+  const fetchLinks = useCallback(async (substanceId: string, vs: VersionSource | null) => {
     const params = new URLSearchParams({ statutorySubstanceId: substanceId });
-    if (version) params.set("versionId", version);
+    if (vs?.versionId) params.set("versionId", vs.versionId);
+    if (vs?.sourceId) params.set("sourceId", vs.sourceId);
     const res = await fetch(`/api/statutory-cas-links?${params.toString()}`).catch(() => null);
     if (!res) return null;
     if (!res.ok) {
@@ -233,12 +202,12 @@ export function CasLinkSection({
   */
   useEffect(() => {
     if (!ready) return;
-    const key = `${substance.id}/${versionId ?? ""}`;
+    const key = `${substance.id}/${picked?.versionId ?? ""}/${picked?.sourceId ?? ""}`;
     if (lastKey.current === key) return;
     lastKey.current = key;
     let alive = true;
     void (async () => {
-      const body = await fetchLinks(substance.id, versionId);
+      const body = await fetchLinks(substance.id, picked);
       if (!alive) return;
       setData(body ?? { items: [], total: 0, page: 1, pageSize: 0, version: null });
       setShownId(substance.id);
@@ -248,18 +217,18 @@ export function CasLinkSection({
     return () => {
       alive = false;
     };
-  }, [ready, substance.id, versionId, fetchLinks]);
+  }, [ready, substance.id, picked, fetchLinks]);
 
   /** 保存・削除のあとの取り直し。法文物質名は変わらないので中身は消さない */
   const reload = useCallback(async () => {
-    const body = await fetchLinks(substance.id, versionId);
+    const body = await fetchLinks(substance.id, picked);
     if (body) setData(body);
-  }, [fetchLinks, substance.id, versionId]);
+  }, [fetchLinks, substance.id, picked]);
 
   function startNew() {
     setError(null);
-    // データソースは1つしか無ければ選ぶまでもない
-    setDraft({ ...EMPTY, sourceId: sources.length === 1 ? sources[0]!.id : "" });
+    // 入る先は、表の上で選んでいるバージョンとデータソース
+    setDraft({ ...EMPTY, sourceId: picked?.sourceId ?? "" });
     setEditingId("new");
   }
 
@@ -289,7 +258,8 @@ export function CasLinkSection({
           body: JSON.stringify({
             versionId: version.id,
             statutorySubstanceId: substance.id,
-            sourceId: draft.sourceId,
+            // データソースは表の上で選んだもの。入力欄には出さない
+            sourceId: picked?.sourceId ?? draft.sourceId,
             casNumber: draft.casNumber,
             excluded: draft.excluded,
             note: draft.note || null,
@@ -325,7 +295,7 @@ export function CasLinkSection({
   }
 
   const version = data?.version ?? null;
-  const canSave = draft.casNumber.trim() !== "" && draft.sourceId !== "" && version !== null;
+  const canSave = draft.casNumber.trim() !== "" && !!picked?.sourceId && version !== null;
 
   return (
     <section key={shownId ?? "empty"} className={cn("space-y-3", slideClass(slideDir))}>
@@ -366,23 +336,6 @@ export function CasLinkSection({
               <option value="1">{m.casLinks.notApplicable}</option>
             </select>
           </div>
-          <div className="w-44 space-y-1">
-            <Label htmlFor="cl-source">{m.casLinks.source}</Label>
-            <select
-              id="cl-source"
-              value={draft.sourceId}
-              onChange={(e) => setDraft({ ...draft, sourceId: e.target.value })}
-              className={`${SELECT_CLASS} w-full`}
-            >
-              <option value="">{m.casLinks.selectSource}</option>
-              {sources.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code}
-                  {s.note ? ` — ${s.note}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
           <div className="min-w-56 flex-1 space-y-1">
             <Label htmlFor="cl-note">{m.casLinks.note}</Label>
             <Input
@@ -419,27 +372,17 @@ export function CasLinkSection({
         onDeleteSelected={onDeleteSelected}
         showFilters={false}
         showPager={false}
-        create={editable && !editingId && version ? { onClick: startNew } : undefined}
+        // データソースが決まらないと、足しても入れる先がない
+        create={
+          editable && !editingId && version && picked?.sourceId ? { onClick: startNew } : undefined
+        }
         headerActions={
-          <div className="flex items-center gap-2">
-            {/* 版は普段いじらない。過去の版を直したいときだけ切り替える */}
-            <Label htmlFor="cl-version" className="text-muted-foreground text-xs">
-              {m.casLinks.version}
-            </Label>
-            <select
-              id="cl-version"
-              value={version?.id ?? ""}
-              onChange={(e) => onVersionChange(e.target.value)}
-              className={SELECT_CLASS}
-            >
-              {versions.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.code}
-                </option>
-              ))}
-            </select>
-            <span className="text-muted-foreground text-xs">{m.casLinks.usedHint}</span>
-          </div>
+          /* インベントリの中身と同じ並び・同じ順（バージョン → データソース） */
+          <VersionSourcePicker
+            value={picked}
+            onChange={onPickedChange}
+            hint={m.casLinks.usedHint}
+          />
         }
         // 編集は行の右端の鉛筆から
         rowAction={

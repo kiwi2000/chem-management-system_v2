@@ -53,8 +53,8 @@ export async function PUT(req: Request, { params }: Ctx) {
 
 /**
  * DELETE /api/sources/[id] — 論理削除。
- * どこかの版で使われているもの、リンクが1件でも来ているものは消せない。
- * 消すと、その版の判定が黙って変わってしまうため。
+ * どこかのバージョンで使われているもの、リンクが1件でも来ているものは消せない。
+ * 消すと、そのバージョンの判定が黙って変わってしまうため。
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const actor = await requirePermission("REGULATION_EDIT");

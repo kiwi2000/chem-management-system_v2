@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { ApprovalHistory } from "@/components/approval-history";
 import { PublishActions } from "@/components/publish-actions";
 import { SubstanceForm } from "@/components/substance-form";
+import { SubstanceMatrixSection } from "@/components/substance-matrix";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { PROPERTY_DEF_COUNT, toPropertyDefDto } from "@/lib/property-def-service";
 import { getAppSettings } from "@/lib/settings";
+import { buildSubstanceMatrix } from "@/lib/substance-matrix";
 import { listNumbers } from "@/lib/substance-numbers";
 import {
   SUBSTANCE_INCLUDE,
@@ -42,8 +44,14 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
 
   if (!item) notFound();
   const canEdit = actor ? canEditSubstance(actor, item) : false;
-  // 各種番号はインベントリから引く。物質が決まってからでないと引けないのでここで取る
-  const numbers = await listNumbers(item.casNormalized);
+  /*
+    各種番号と、バージョンを横に並べた表。
+    どちらもCASをたどって引くので、物質が決まってからでないと取れない
+  */
+  const [numbers, matrix] = await Promise.all([
+    listNumbers(item.casNormalized),
+    buildSubstanceMatrix(item.casNormalized),
+  ]);
 
   return (
     <div className={PAGE_SHELL_STACKED}>
@@ -65,6 +73,8 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
         canEdit={canEdit}
         numbers={numbers}
       />
+
+      <SubstanceMatrixSection data={matrix} />
 
       <ApprovalHistory entity="substance" entityId={item.id} />
     </div>

@@ -34,7 +34,7 @@ export interface IntegrityIssue {
 }
 
 export interface IntegrityReport {
-  /** どの版について調べたか */
+  /** どのバージョンについて調べたか */
   versionCode: string;
   checkedAt: string;
   issues: IntegrityIssue[];
@@ -43,7 +43,7 @@ export interface IntegrityReport {
 }
 
 /**
- * いまの版について調べる。
+ * いまのバージョンについて調べる。
  *
  * **「金属等つき × CASリンクあり」なら、換算係数は必ず要る。**
  * 無いものは欠陥として全部挙げる。

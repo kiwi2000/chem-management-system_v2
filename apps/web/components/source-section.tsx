@@ -36,7 +36,7 @@ const CELL_INPUT = "h-7 w-full text-sm";
 /**
  * 情報源（LOLI・CHRIP・自社データなど）。
  *
- * ここは「どんな情報源があるか」だけ。どの版でどの順に読むかは版の側で決める。
+ * ここは「どんな情報源があるか」だけ。どのバージョンでどの順に読むかはバージョンの側で決める。
  * 件数が少ないので、別のフォームを開かずに表の行のまま書き換える。
  */
 export function SourceSection({ onChanged }: { onChanged?: () => void }) {

@@ -20,6 +20,7 @@ export * from "./extract-rule";
 export * from "./law";
 export * from "./link";
 export * from "./i18n";
+export * from "./inventory";
 export * from "./metal-factor";
 export * from "./news";
 export * from "./permissions";

@@ -6,7 +6,7 @@
  *
  * 普段は組成を保存したときに自動で判定し直される。これを使うのは、
  *   - はじめて導入するとき
- *   - 法令の版・閾値・CASの紐づけを入れ替えたとき（**判定の前提が変わる**）
+ *   - 法令のバージョン・閾値・CASの紐づけを入れ替えたとき（**判定の前提が変わる**）
  *   - 判定のしかたを直したとき
  *
  * **前の判定は行ごと消える。**確認済みの状態も上書きも残らない。
@@ -24,7 +24,7 @@ async function main() {
     select: { id: true, code: true, nameJa: true },
   });
   if (!version) throw new Error("現在のバージョンが決まっていません");
-  console.log(`版: ${version.code} ${version.nameJa ?? ""}`);
+  console.log(`バージョン: ${version.code} ${version.nameJa ?? ""}`);
 
   const rules = await loadRules(version.id);
   const factors = await loadFactors();

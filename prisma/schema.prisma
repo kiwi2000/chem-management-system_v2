@@ -1010,8 +1010,8 @@ model Feedback {
 //
 // 判定に使う値の置き場所を1か所に定めてある:
 // - 閾値は**法文物質名**が持つ。区分の閾値はひな型で、作成時に複写するだけ（判定では読まない）
-// - リンクは**法文物質名 ↔ CAS**。版で管理するのはこのリンクだけで、
-//   閾値や区分の増減は版に含まれない（法改正は新しい区分などを別に登録して表す）
+// - リンクは**法文物質名 ↔ CAS**。バージョンで管理するのはこのリンクだけで、
+//   閾値や区分の増減はバージョンに含まれない（法改正は新しい区分などを別に登録して表す）
 //
 // 名称はどの段も 原文・原文の言語・日本語・英語 の4列で持つ。
 // 一覧の並べ替え・絞り込みに使うため、子テーブルには出さない（CLAUDE.md §4）。
@@ -1239,19 +1239,6 @@ model RegulationCategory {
   interactionGroup String? @map("interaction_group") @db.VarChar(50)
   rank             Int?
 
-  /**
-   * 番号のリストとしての呼び名（「官報公示整理番号」「EC番号」など）。
-   * 入っていればこの区分は番号のリストで、配下の法文物質名の official_number を
-   * 物質の画面に出す。空なら番号のリストではない
-   */
-  numberLabel String? @map("number_label")
-  /**
-   * 物質の画面に出すときの並び順。**法令の並びとは別に決める。**
-   * よく引く番号（化審法番号・EC番号・TSCA番号など）を上に置くため。
-   * 出さない区分では使わない
-   */
-  numberOrder Int     @default(0) @map("number_order")
-
   note String?
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -1267,7 +1254,6 @@ model RegulationCategory {
   @@unique([lawId, codeNormalized])
   @@index([lawId, displayOrder])
   @@index([interactionGroup, rank])
-  @@index([numberLabel])
   @@map("regulation_categories")
 }
 
@@ -1360,7 +1346,7 @@ model StatutorySubstance {
   upperBound     ThresholdBound @map("upper_bound")
 
   /**
-   * 参考情報。**判定には使わない**（どの一覧を使うかは版と、登録してある区分で決まる）
+   * 参考情報。**判定には使わない**（どの一覧を使うかはバージョンと、登録してある区分で決まる）
    */
   effectiveFrom DateTime? @map("effective_from") @db.Date
   effectiveTo   DateTime? @map("effective_to") @db.Date
@@ -1386,8 +1372,8 @@ model StatutorySubstance {
 }
 
 /**
- * 版。管理する対象は **CASリンクだけ**。
- * 「現在版」を明示的に指定する（作っただけでは切り替わらない）。
+ * バージョン。管理する対象は **CASリンクだけ**。
+ * 「現在のバージョン」を明示的に指定する（作っただけでは切り替わらない）。
  * 制約は migration の部分ユニーク索引で持つ（Prisma では条件付きの一意制約を書けない）
  */
 /**
@@ -1421,15 +1407,16 @@ model LinkSetVersion {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  sources LinkVersionSource[]
-  links   StatutoryCasLink[]
+  sources       LinkVersionSource[]
+  links         StatutoryCasLink[]
+  inventoryRows InventoryRow[]
 
   @@map("link_set_versions")
 }
 
 /**
  * データソース（USER / LOLI / CHRIP など）。
- * 優先度はここには持たない。版ごとに決まるため LinkVersionSource が持つ
+ * 優先度はここには持たない。バージョンごとに決まるため LinkVersionSource が持つ
  */
 /**
  * データソース種別（LOLI・CHRIP・自社データなど）。
@@ -1451,14 +1438,15 @@ model Source {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  versions LinkVersionSource[]
-  links    StatutoryCasLink[]
+  versions      LinkVersionSource[]
+  links         StatutoryCasLink[]
+  inventoryRows InventoryRow[]
 
   @@map("sources")
 }
 
 /**
- * 版ごとのデータソースと優先度。
+ * バージョンごとのデータソースと優先度。
  * 判定は優先度の高いものから順に当て、**最初に見つかったリンクで確定する**
  */
 model LinkVersionSource {
@@ -1495,7 +1483,7 @@ model LinkVersionSource {
 }
 
 /**
- * 法文物質名と CAS番号 のつながり。版で管理するのはこの表だけ。
+ * 法文物質名と CAS番号 のつながり。バージョンで管理するのはこの表だけ。
  * CAS番号を持たない物質（ポリマー・UVCB・企業秘密物質）は、
  * 物質側に入れた独自コードで結ぶ。突合はどちらも cas_normalized で行う。
  */
@@ -1559,12 +1547,12 @@ model Element {
 }
 
 /**
- * 各国のインベントリ（既存化学物質名簿）。
+ * 各国のインベントリ（既存化学物質の目録）。
  *
  * **規制区分としては持たない。**
  * 判定は登録されている区分をすべて見に行くので、インベントリを区分として入れると
  * どの製品もすべてのインベントリに「該当」してしまう。
- * インベントリは「載っているか」と「その名簿での番号」を持つだけのもので、
+ * インベントリは「載っているか」と「そのインベントリでの番号」を持つだけのもので、
  * 含有率と閾値で当たりを決める規制とは性質が違う。
  */
 model Inventory {
@@ -1586,13 +1574,21 @@ model Inventory {
   displayOrder Int  @default(0) @map("display_order")
 
   /**
-   * 物質の画面に出すときの見出し。入っていなければ出さない
+   * 物質の画面に出すときの見出し
    */
   numberLabel   String? @map("number_label")
   /**
    * 出す順。法令の並びとは別に決める
    */
   numberOrder   Int     @default(0) @map("number_order")
+  /**
+   * このインベントリの番号を、物質の画面に出すか。
+   *
+   * **呼び名とは別に持つ。**出すのをやめても呼び名は残しておきたいため
+   * （消してしまうと、また出したくなったときに付け直すことになる）。
+   * 呼び名が空のときは、立っていても出せない
+   */
+  numberShown   Boolean @default(false) @map("number_shown")
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
@@ -1608,30 +1604,50 @@ model Inventory {
 }
 
 /**
- * 名簿の1行。**加工済みの値を持つ。**
+ * インベントリの1行。**加工済みの値を持つ。**
  *
  * インベントリは他の法規制とは別に取り込むもので、
  * 番号の取り出し（正規表現）は取り込みスクリプトが受け持つ。
  * ここに入るのは仕上がった値——番号か、「該当」のような文字。
  *
- * 1つの物質に複数の番号が付く名簿（EINECS・KECI）では、番号の数だけ行ができる。
+ * 1つの物質に複数の番号が付くインベントリ（EINECS・KECI）では、番号の数だけ行ができる。
+ *
+ * **バージョンとデータソースを持つ。**持ちかたは `StatutoryCasLink` と同じ。
+ * 列の中身が違うだけで、仕組みは他の法規制データと揃えてある。
+ *
+ *   バージョン         … インベントリは改訂される。「いつ時点のもので見たか」が残らないと
+ *                判定の跡をたどれない
+ *   データソース … 同じインベントリを別々のところから取れる。どちらを採るかは
+ *                バージョンごとの優先度（`LinkVersionSource`）で決める
+ *
+ * インベントリそのもの（`Inventory`）はバージョンを持たない——改訂されるのは中身であって、
+ * 「ENCS」というインベントリの存在ではないため。
  */
 model InventoryRow {
   id          String @id @default(cuid())
+  versionId   String @map("version_id")
+  sourceId    String @map("source_id")
   inventoryId String @map("inventory_id")
 
   casNumber     String @map("cas_number") @db.VarChar(20)
   casNormalized String @map("cas_normalized") @db.VarChar(20)
   /**
-   * 画面にそのまま出す値。番号（`(5)-3714`）か、番号を持たない名簿の「該当」
+   * 画面にそのまま出す値。番号（`(5)-3714`）か、番号を持たないインベントリの「該当」
    */
   value         String
 
-  inventory Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
 
-  // 物質の画面は CAS から引く
-  @@unique([inventoryId, casNormalized, value])
-  @@index([casNormalized])
+  version   LinkSetVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  source    Source         @relation(fields: [sourceId], references: [id])
+  inventory Inventory      @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, sourceId, inventoryId, casNormalized, value])
+  // 物質の画面は「現在のバージョン × CAS」で引く
+  @@index([versionId, casNormalized])
   @@index([inventoryId])
   @@map("inventory_rows")
 }

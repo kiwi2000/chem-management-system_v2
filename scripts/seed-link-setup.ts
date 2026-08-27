@@ -5,9 +5,9 @@
  * まっさらな環境（本番など）ではこちらを先に流す。
  * 既にあるものは触らない。何度流しても結果は同じ。
  *
- *   node --env-file=.env node_modules/tsx/dist/cli.mjs scripts/seed-link-setup.ts [版コード]
+ *   node --env-file=.env node_modules/tsx/dist/cli.mjs scripts/seed-link-setup.ts [バージョンコード]
  *
- * 版コードを省くと 2026Q3。
+ * バージョンコードを省くと 2026Q3。
  */
 import { PrismaClient } from "@prisma/client";
 
@@ -40,16 +40,16 @@ async function main() {
     console.log(`バージョン ${version.code} を作りました`);
   }
 
-  // 現在版はシステム全体で1件だけ。まだ誰も立っていなければ、これを立てる
+  // 現在のバージョンはシステム全体で1件だけ。まだ誰も立っていなければ、これを立てる
   const current = await prisma.linkSetVersion.findFirst({ where: { isCurrent: true } });
   if (!current) {
     await prisma.linkSetVersion.update({
       where: { id: version.id },
       data: { isCurrent: true },
     });
-    console.log(`バージョン ${version.code} を現在版にしました`);
+    console.log(`バージョン ${version.code} を現在のバージョンにしました`);
   } else {
-    console.log(`現在版は ${current.code} です（変えません）`);
+    console.log(`現在のバージョンは ${current.code} です（変えません）`);
   }
 
   const link = await prisma.linkVersionSource.findFirst({

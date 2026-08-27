@@ -84,7 +84,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 
 /**
  * DELETE /api/statutory-substances/[id] — 論理削除。
- * CASリンクは版に属するので、ここでは触らない（版の側で入れ直す）。
+ * CASリンクはバージョンに属するので、ここでは触らない（バージョンの側で入れ直す）。
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const actor = await requirePermission("REGULATION_EDIT");

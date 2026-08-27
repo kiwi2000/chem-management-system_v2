@@ -9,6 +9,7 @@ import {
   type TableState,
 } from "@chem/shared";
 import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -117,8 +118,15 @@ export function LawTreeSection({
             </button>
           ) : (
             // 法令にぶら下がっていることを縦線で示す。区分が続いても親を見失わない
-            <span className="border-border text-muted-foreground ml-2 border-l pl-3 text-xs">
-              {r.category.code}
+            <span className="border-border ml-2 border-l pl-3 text-xs">
+              {/* 押すと法文物質名の一覧へ移る。インベントリのコードと同じ形 */}
+              <Link
+                href={`/categories/${r.category.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="underline underline-offset-2"
+              >
+                {r.category.code}
+              </Link>
             </span>
           ),
       },

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** PUT /api/link-versions/[id] — 名前と備考。現在版の切り替えは別の口で行う */
+/** PUT /api/link-versions/[id] — 名前と備考。現在のバージョンの切り替えは別の口で行う */
 export async function PUT(req: Request, { params }: Ctx) {
   const actor = await requirePermission("REGULATION_EDIT");
   if (actor instanceof Response) return actor;
@@ -59,7 +59,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 
 /**
  * DELETE /api/link-versions/[id] — 論理削除。
- * 現在版は消せない。判定に使う版が無くなってしまうため。
+ * 現在のバージョンは消せない。判定に使うバージョンが無くなってしまうため。
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const actor = await requirePermission("REGULATION_EDIT");

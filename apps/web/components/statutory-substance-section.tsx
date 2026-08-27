@@ -8,6 +8,7 @@ import {
   type TableState,
 } from "@chem/shared";
 import { Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -85,14 +86,14 @@ export function StatutorySubstanceSection({
 }: {
   languages: LanguageDto[];
   category: RegulationCategoryDto | null;
-  /** 区分が入れ替わったときに滑らせる向き */
-  slideDir: SlideDir;
+  /** 区分が入れ替わったときに滑らせる向き。1画面1段のときは要らない */
+  slideDir?: SlideDir;
   /** 新しい区分の中身を画面に出したときに呼ぶ。見出しはこれに合わせて切り替わる */
   onShown?: () => void;
   /** いま対象CASを見ている法文物質名 */
   selectedId?: string | null;
-  /** 行を1回押したとき。親はここから対象CASの段へ降りる */
-  onSelect?: (substance: StatutorySubstanceDto, siblings: StatutorySubstanceDto[]) => void;
+  /** 行を1回押したとき。親はここから対象CASの画面へ移る */
+  onSelect?: (substance: StatutorySubstanceDto) => void;
 }) {
   const { m, locale } = useI18n();
   const { can } = useMe();
@@ -137,7 +138,16 @@ export function StatutorySubstanceSection({
         kind: "text",
         width: 110,
         className: "font-mono text-xs",
-        render: (s) => s.code,
+        // 押すと対象CASへ移る。インベントリのコードと同じ形
+        render: (s) => (
+          <Link
+            href={`/statutory-substances/${s.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="underline underline-offset-2"
+          >
+            {s.code}
+          </Link>
+        ),
       },
       {
         key: "nameJa",
@@ -497,7 +507,7 @@ export function StatutorySubstanceSection({
   return (
     // 見出し（法令名・区分名・件数）は上に固定された見出しが受け持つので、ここには置かない。
     // key を区分ごとに変えて、出来上がった表がまるごと横から滑り込むようにする
-    <section key={shownId ?? "empty"} className={cn("space-y-3", slideClass(slideDir))}>
+    <section key={shownId ?? "empty"} className={cn("space-y-3", slideClass(slideDir ?? null))}>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -755,7 +765,7 @@ export function StatutorySubstanceSection({
         rowAction={editable ? { onClick: startEdit } : undefined}
         hintText={m.statutorySubstances.rowHint}
         selectedKey={selectedId ?? null}
-        onRowSelect={onSelect ? (s) => onSelect(s, data?.items ?? []) : undefined}
+        onRowSelect={onSelect}
         create={
           editable && !editingId ? { onClick: startNew, disabled: !activeClassId } : undefined
         }

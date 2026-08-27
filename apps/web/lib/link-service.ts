@@ -82,7 +82,7 @@ export function toLinkVersionSourceDto(
  * 同じCASでもデータソースの数だけ行が出る。まとめてしまうと、
  * どのデータソースを直せばよいかが分からなくなるため。
  *
- * 「使用」は優先度で解いた結果。CASごとに、その版で優先度がいちばん高い
+ * 「使用」は優先度で解いた結果。CASごとに、そのバージョンで優先度がいちばん高い
  * データソースの行だけが採られる。非該当（excluded）が採られたときは、
  * それより下位に該当の行があっても当たらない。
  */
@@ -116,7 +116,7 @@ export async function listCasLinks(
   const nameByCas = new Map(reps.map((r) => [r.casNormalized ?? "", r]));
 
   const rank = new Map(order.map((o) => [o.sourceId, o.priority]));
-  /** 版に並んでいないデータソースは、いつまでも採られない。並びも末尾に置く */
+  /** バージョンに並んでいないデータソースは、いつまでも採られない。並びも末尾に置く */
   const rankOf = (sourceId: string) => rank.get(sourceId) ?? Number.MAX_SAFE_INTEGER;
 
   // CASごとに、いちばん優先度の高い行を1つだけ「使用」にする

@@ -9,11 +9,11 @@
  *   SGN     … 通し番号が無いので、官報公示整理番号そのもので突き合わせる
  *
  * 取り出しかたは `scripts/sql/` の同名のSQLを参照。
- * 同じ版・同じデータソースへの取り込みは**入れ替え**なので、先に消してから入れる。
+ * 同じバージョン・同じデータソースへの取り込みは**入れ替え**なので、先に消してから入れる。
  *
- *   node --env-file=.env node_modules/tsx/dist/cli.mjs scripts/seed-cas-links.ts [版コード] [区分コード...]
+ *   node --env-file=.env node_modules/tsx/dist/cli.mjs scripts/seed-cas-links.ts [バージョンコード] [区分コード...]
  *
- * 版コードを省くと 2026Q3。区分コードを省くと全部。データソースは LOLI 固定。
+ * バージョンコードを省くと 2026Q3。区分コードを省くと全部。データソースは LOLI 固定。
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -638,7 +638,7 @@ async function run(job: Job, versionId: string, sourceId: string, append = false
     }
   }
 
-  // この版・このデータソース・この区分ぶんは入れ替え。前の中身は残さない
+  // このバージョン・このデータソース・この区分ぶんは入れ替え。前の中身は残さない
   // **ただし append のときは消さない。**同じ区分の2本目だから
   const removed = append
     ? { count: 0 }

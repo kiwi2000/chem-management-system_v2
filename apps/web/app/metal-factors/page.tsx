@@ -255,7 +255,6 @@ export default function MetalFactorsPage() {
                   value={form.casNumber}
                   onChange={(e) => setForm({ ...form, casNumber: e.target.value })}
                   className="w-44 font-mono"
-                  placeholder="7439-92-1"
                 />
                 {/* 注記は無いが、隣の欄と高さをそろえるため場所だけ空けておく */}
                 <p className="min-h-4 text-xs" />

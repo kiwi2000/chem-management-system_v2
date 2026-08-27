@@ -1,18 +1,23 @@
 /**
- * 各国のインベントリ（既存化学物質名簿）を取り込む。
+ * 各国のインベントリ（既存化学物質の目録）を取り込む。
  *
  *   npx tsx scripts/seed-inventories.ts <TSV>          下見
  *   npx tsx scripts/seed-inventories.ts <TSV> --write  書き込む
+ *
+ * **現在のバージョン × LOLI に入れる。**インベントリの行は CASリンクと同じく
+ * バージョンとデータソースの管理下にあり、どちらも決まっていないと入れられない。
+ * 入れ替えるのも**そのバージョン・そのデータソースのぶんだけ**で、
+ * 過去のバージョンと、他のところから取ったぶんには手を触れない。
  *
  * TSV は `scripts/sql/loli-inventories.sql` で取り出す（list_id / cas / data の3列）。
  *
  * **規制区分としては入れない。**
  * 判定は登録されている区分をすべて見に行くので、インベントリを区分として入れると
  * どの製品もすべてのインベントリに「該当」してしまう。
- * インベントリは「載っているか」と「その名簿での番号」を持つだけのもの。
+ * インベントリは「載っているか」と「そのインベントリでの番号」を持つだけのもの。
  *
  * **加工してから入れる。**
- * 行が持つのは仕上がった値——番号（`(5)-3714`）か、番号を持たない名簿の「該当」。
+ * 行が持つのは仕上がった値——番号（`(5)-3714`）か、番号を持たないインベントリの「該当」。
  * 取り出しは取り込みのときに1回で済み、画面は出すだけになる。
  *
  * 取り出しかたは、この表（`INVENTORIES`）の正規表現で決める。
@@ -21,7 +26,7 @@
  *
  * **1行から複数の番号が取れることがある**（EINECS・KECI）。その数だけ行を作る。
  *
- * 名簿ごとに**入れ替える**（前の行を消してから入れる）。
+ * インベントリごとに**入れ替える**（前の行を消してから入れる）。
  * 足すだけにすると、LOLI から消えた物質が残り続ける。
  */
 import { createReadStream } from "node:fs";
@@ -30,6 +35,9 @@ import { applyExtract, normalizeCas, normalizeCode } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
+
+/** 取り込み元。CASリンクと同じデータソースの表を使う */
+const SOURCE_CODE = "LOLI";
 
 interface InventoryDef {
   listId: number;
@@ -44,14 +52,14 @@ interface InventoryDef {
    * null なら番号を取り出さない（載っているかどうかだけ）
    */
   matchPattern: string | null;
-  /** 表示の書き方。`$1` などが使える。番号を持たない名簿は固定の文字 */
+  /** 表示の書き方。`$1` などが使える。番号を持たないインベントリは固定の文字 */
   displayFormat: string;
   /** 物質の画面に出すときの見出し。null なら出さない */
   numberLabel: string | null;
 }
 
 /**
- * 取り込む名簿と、番号の取り出しかたの既定値。
+ * 取り込むインベントリと、番号の取り出しかたの既定値。
  *
  * 正規表現は `Data` の文字列に当てる。実データを見て決めてある
  * （どんな文字列かは docs/LOLI取り込み記録_インベントリ.md）。
@@ -79,7 +87,7 @@ const INVENTORIES: InventoryDef[] = [
     nameLang: "JA",
     nameJa: "ISHL（安衛法）",
     nameEn: "Industrial Safety and Health Law Substances (ISHL)",
-    // 中身は ENCS と同じ番号。安衛法の名簿としての在否を見るために別に持つ
+    // 中身は ENCS と同じ番号。安衛法のインベントリとしての在否を見るために別に持つ
     matchPattern: "\\((\\d+)\\)-(\\d+)",
     displayFormat: "($1)-$2",
     numberLabel: "安衛法番号",
@@ -108,7 +116,7 @@ const INVENTORIES: InventoryDef[] = [
     /*
       TSCA は番号を持たない（CAS番号そのものが識別子）。
       かわりに **ACTIVE / INACTIVE** を出す。
-      INACTIVE は「名簿には載っているが、いま商業流通していない」という意味なので、
+      INACTIVE は「インベントリには載っているが、いま商業流通していない」という意味なので、
       一律「該当」と出すと、そのまま輸出できるように読まれてしまう。
     */
     matchPattern: "\\((ACTIVE|INACTIVE)\\)",
@@ -264,9 +272,25 @@ async function main() {
   const write = process.argv.includes("--write");
   if (!path || path.startsWith("--")) throw new Error("TSVのパスを渡してください");
 
+  /*
+    バージョンとデータソースは、CASリンクの取り込みと同じ決めかた。
+    現在のバージョンが立っていなければ入れる先が決まらないので、そこで止める
+  */
+  const version = await prisma.linkSetVersion.findFirst({
+    where: { isCurrent: true, deletedAt: null },
+    select: { id: true, code: true },
+  });
+  if (!version) throw new Error("現在のバージョンが決まっていません");
+  const source = await prisma.source.findFirst({
+    where: { codeNormalized: SOURCE_CODE, deletedAt: null },
+    select: { id: true, code: true },
+  });
+  if (!source) throw new Error(`データソース ${SOURCE_CODE} がありません`);
+  console.log(`${version.code} × ${source.code} に取り込みます`);
+
   await ensureCountries(write);
 
-  /** LOLI の一覧番号 → こちらの名簿の id */
+  /** LOLI の一覧番号 → こちらのインベントリの id */
   const idOfList = new Map<number, string>();
   for (const [i, def] of INVENTORIES.entries()) {
     const country = await prisma.country.findFirst({
@@ -295,6 +319,8 @@ async function main() {
           displayOrder: i,
           numberLabel: def.numberLabel,
           numberOrder: i,
+          // 呼び名を決めてあるものは、そのまま物質の画面に出す
+          numberShown: def.numberLabel !== null,
         },
         select: { id: true },
       });
@@ -302,15 +328,23 @@ async function main() {
     if (inv) idOfList.set(def.listId, inv.id);
   }
 
-  // 入れ替える。足すだけにすると、LOLI から消えた物質が残り続ける
+  /*
+    入れ替える。足すだけにすると、LOLI から消えた物質が残り続ける。
+    **消すのはこのバージョン・このデータソースのぶんだけ。**
+    過去のバージョンと、他のところから取ったぶんには手を触れない
+  */
   if (write && idOfList.size > 0) {
     const removed = await prisma.inventoryRow.deleteMany({
-      where: { inventoryId: { in: [...idOfList.values()] } },
+      where: {
+        versionId: version.id,
+        sourceId: source.id,
+        inventoryId: { in: [...idOfList.values()] },
+      },
     });
     if (removed.count > 0) console.log(`  前の行 ${removed.count}件を消しました`);
   }
 
-  /** 名簿ごとの取り出しかた。行を読むたびに引く */
+  /** インベントリごとの取り出しかた。行を読むたびに引く */
   const ruleOf = new Map(
     INVENTORIES.map((d) => [d.listId, { pattern: d.matchPattern, format: d.displayFormat }]),
   );
@@ -325,7 +359,12 @@ async function main() {
   const flush = async () => {
     if (buffer.length === 0) return;
     // 同じ物質に同じ値が2度書かれている資料がある。一意制約で弾かれるので飛ばす
-    if (write) await prisma.inventoryRow.createMany({ data: buffer, skipDuplicates: true });
+    if (write) {
+      await prisma.inventoryRow.createMany({
+        data: buffer.map((b) => ({ ...b, versionId: version.id, sourceId: source.id })),
+        skipDuplicates: true,
+      });
+    }
     buffer = [];
   };
 

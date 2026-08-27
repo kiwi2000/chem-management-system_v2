@@ -254,7 +254,7 @@ async function main() {
     where: { isCurrent: true },
     select: { id: true, code: true },
   });
-  if (!version) throw new Error("現在版がありません");
+  if (!version) throw new Error("現在のバージョンがありません");
 
   const source = await prisma.source.findFirst({
     where: { codeNormalized: normalizeCode("LOLI") },
@@ -262,7 +262,7 @@ async function main() {
   });
   if (!source) throw new Error("データソース LOLI がありません");
 
-  console.log(`国: ${country.nameJa} / 版: ${version.code}`);
+  console.log(`国: ${country.nameJa} / バージョン: ${version.code}`);
   const tally = { laws: 0, categories: 0, classes: 0, substances: 0, links: 0, skipped: 0 };
 
   for (const [lawIndex, lawDef] of LAWS.entries()) {

@@ -3,6 +3,7 @@
 import type { Messages, Permission } from "@chem/shared";
 import {
   ArrowDownUp,
+  BookMarked,
   BookOpen,
   Download,
   ChevronRight,
@@ -70,7 +71,16 @@ const ITEMS: NavItem[] = [
         needs: "REGULATION_VIEW",
         match: ["/laws", "/categories"],
       },
-      // 外から取り込むCASの対応データ。版・情報源・取込・差分をここで扱う
+      // 各国の既存化学物質の目録。判定には使わず、物質に出す番号の出どころになる。
+      // 法規制と同じくバージョン・データソースの管理下にあるので、法令のすぐ下に置く
+      {
+        href: "/inventories",
+        key: "inventories",
+        icon: BookMarked,
+        needs: "REGULATION_VIEW",
+        match: ["/inventories"],
+      },
+      // 外から取り込むCASの対応データ。バージョン・情報源・取込・差分をここで扱う
       // （自社で作ったぶんも、システムの外で管理するものなので同じ扱い）
       {
         href: "/external-db",
