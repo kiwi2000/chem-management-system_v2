@@ -52,7 +52,7 @@ export function MultiSelect({
         aria-label={ariaLabel}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="border-input bg-background flex h-9 w-64 items-center justify-between gap-2 rounded-none border px-3 text-sm disabled:opacity-50"
+        className="border-input bg-background flex h-9 w-64 items-center justify-between gap-2 rounded-none border px-3 text-sm disabled:bg-input/50 disabled:cursor-not-allowed"
       >
         <span className={values.length === 0 ? "text-muted-foreground" : undefined}>
           {values.length === 0 ? placeholder : values.join("、")}
