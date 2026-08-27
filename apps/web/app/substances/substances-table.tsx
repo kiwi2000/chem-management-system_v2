@@ -8,6 +8,7 @@ import {
   type TableState,
 } from "@chem/shared";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -35,6 +36,8 @@ interface Props {
 
 export function SubstancesTable({ approvalRequired, scope, title, reloadToken, onChanged }: Props) {
   const { m, locale } = useI18n();
+  /* 帳票の相手として選ばれに来ているか（製品の一覧と同じ） */
+  const pickFor = useSearchParams().get("pickFor");
   const { can } = useMe();
   const editable = can("SUBSTANCE_EDIT");
 
@@ -52,7 +55,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         // 押すと詳細へ移る。インベントリ・法規制のコードと同じ形
         render: (r) => (
           <Link
-            href={`/substances/${r.id}`}
+            href={pickFor ? `/documents/${pickFor}/${r.id}` : `/substances/${r.id}`}
             onClick={(e) => e.stopPropagation()}
             className="underline underline-offset-2"
           >
@@ -171,7 +174,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
     ];
     // 上の表は公開済しか並ばないので、状態の列は出さない（全部同じ値になるため）
     return scope === "working" ? cols : cols.filter((c) => c.key !== "publishState");
-  }, [m, locale, scope]);
+  }, [m, locale, scope, pickFor]);
 
   // 1画面に表が2つあるので、URLのクエリを節ごとに分ける
   const storageKey = `chem.table.substances.${scope}`;
@@ -257,6 +260,21 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         <h2 className="text-lg font-medium">{title}</h2>
       ) : (
         <h1 className="text-2xl font-semibold">{m.substances.title}</h1>
+      )}
+
+      {/*
+        帳票を作る相手を選んでいる最中。**この画面の絞り込みをそのまま使う。**
+        選ぶための画面を別に作ると、こちらに条件が増えたときに向こうが取り残される
+      */}
+      {pickFor && (
+        <Alert>
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+            <span>{m.documents.pickHere}</span>
+            <Link href="/doc-templates" className="text-xs underline">
+              {m.common.cancel}
+            </Link>
+          </AlertDescription>
+        </Alert>
       )}
 
       {error && (

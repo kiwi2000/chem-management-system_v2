@@ -11,9 +11,9 @@ import {
 } from "@chem/shared";
 import { FileText } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
-import { TargetPicker } from "@/components/doc-editor/target-picker";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -86,14 +86,13 @@ const columnKinds = [
 export function DocTemplatesScreen() {
   const { m, locale } = useI18n();
   const { can } = useMe();
+  const router = useRouter();
   const editable = can("ADMIN");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [adding, setAdding] = useState(false);
 
-  /** 帳票を作る相手を探している最中のテンプレート */
-  const [picking, setPicking] = useState<DocumentTemplateDto | null>(null);
   const [data, setData] = useState<ListResponse<DocumentTemplateDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -351,7 +350,14 @@ export function DocTemplatesScreen() {
               className="h-7"
               onClick={(e) => {
                 e.stopPropagation();
-                setPicking(t);
+                /*
+                  **相手は製品・物質の一覧から選ぶ。**
+                  探すための画面を別に作らず、いつも使っている絞り込みを
+                  そのまま使えるようにする（保存した条件も効く）
+                */
+                router.push(
+                  `${t.target === "PRODUCT" ? "/products" : "/substances"}?pickFor=${t.id}`,
+                );
               }}
             >
               <FileText className="size-4" />
@@ -399,15 +405,6 @@ export function DocTemplatesScreen() {
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      )}
-
-      {picking && (
-        <TargetPicker
-          target={picking.target}
-          templateId={picking.id}
-          templateName={picking.nameJa}
-          onClose={() => setPicking(null)}
-        />
       )}
 
       {broken.length > 0 && (

@@ -930,10 +930,8 @@ export const ja = {
     unknownField: "使えない項目",
   },
   documents: {
-    pickTargetFor: (template: string, target: string) =>
-      `「${template}」で作る${target}を選んでください`,
-    searchPlaceholder: "コードか名前で探す",
-    noTarget: "見つかりませんでした",
+    pickHere:
+      "帳票を作る相手を選んでください。コードを押すと帳票が開きます。絞り込みはいつもどおり使えます。",
     make: "この様式で作る",
     lead: "帳票はここか、製品・物質の詳細から作れます。様式（テンプレート）もここで作ります。",
     printHint:

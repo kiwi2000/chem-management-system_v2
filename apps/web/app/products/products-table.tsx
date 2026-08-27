@@ -8,6 +8,7 @@ import {
   type TableState,
 } from "@chem/shared";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { FilterLayoutRow } from "@/components/data-table/filter-panel";
@@ -63,6 +64,11 @@ export function ProductsTable({
   onChanged,
 }: Props) {
   const { m, locale } = useI18n();
+  /*
+    帳票の相手として選ばれに来ているか。テンプレートの一覧から渡ってくる。
+    このときはコードを押すと詳細ではなく帳票へ移る
+  */
+  const pickFor = useSearchParams().get("pickFor");
   const { can } = useMe();
   const editable = can("PRODUCT_EDIT");
 
@@ -102,7 +108,7 @@ export function ProductsTable({
         // 押すと詳細へ移る。物質・インベントリ・法規制のコードと同じ形
         render: (r) => (
           <Link
-            href={`/products/${r.id}`}
+            href={pickFor ? `/documents/${pickFor}/${r.id}` : `/products/${r.id}`}
             onClick={(e) => e.stopPropagation()}
             className="underline underline-offset-2"
           >
@@ -291,7 +297,7 @@ export function ProductsTable({
     ];
     // 上の表は公開済しか並ばないので、状態の列は出さない（全部同じ値になるため）
     return scope === "working" ? cols : cols.filter((c) => c.key !== "publishState");
-  }, [m, locale, modelOptions, useOptions, judgementCategories, scope]);
+  }, [m, locale, modelOptions, useOptions, judgementCategories, scope, pickFor]);
 
   // 組成の節だけは見出しに文言を使うので、ここで組み立てる
   const filterLayout = useMemo<FilterLayoutRow[]>(
@@ -388,6 +394,21 @@ export function ProductsTable({
         <h2 className="text-lg font-medium">{title}</h2>
       ) : (
         <h1 className="text-2xl font-semibold">{m.products.title}</h1>
+      )}
+
+      {/*
+        帳票を作る相手を選んでいる最中。**この画面の絞り込みをそのまま使う。**
+        選ぶための画面を別に作ると、こちらに条件が増えたときに向こうが取り残される
+      */}
+      {pickFor && (
+        <Alert>
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+            <span>{m.documents.pickHere}</span>
+            <Link href="/doc-templates" className="text-xs underline">
+              {m.common.cancel}
+            </Link>
+          </AlertDescription>
+        </Alert>
       )}
 
       {error && (
