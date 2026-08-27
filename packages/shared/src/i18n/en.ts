@@ -187,7 +187,6 @@ export const en: Messages = {
     filterPanel: "Filters",
     compositionSection: "Composition",
     casNumbers: "CAS numbers",
-    casNumbersPlaceholder: "7439-92-1\n1333-86-4",
     savedFilters: "Saved filters",
     save: "Save",
     load: "Load",
@@ -352,7 +351,10 @@ export const en: Messages = {
 
   laws: {
     title: "Laws",
-    rowHint: "Click a row to list the statutory names of that category below",
+    rowHint: "Select a row to list the statutory substances below",
+    sameCountryOnly: "Rows can only be reordered within the same country",
+    sameLawOnly: "Rows can only be reordered within the same law",
+    reorderHint: "Drag the handle on the left to reorder (within one country, or one law)",
     add: "+ Law",
     newTitle: "New law",
     editTitle: "Edit law",

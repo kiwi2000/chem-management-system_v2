@@ -409,6 +409,56 @@ export function LawTreeSection({
     onSelect(null);
   }
 
+  /**
+   * 行を引いて並べ替える。**表示順の数字は打たない。**
+   * 1件ずつ数字を書き換えるのは手間がかかるうえ、
+   * 途中に割り込ませるたびに前後の番号を数え直すことになる。
+   *
+   * 落とせるのは**同じ種類・同じ親の行だけ**。
+   * 法令は同じ国の中、区分は同じ法令の中。並びは 地域 → 国 → 法令 → 区分 で
+   * 決まっているので、それをまたぐ位置へは出られない。
+   */
+  async function onReorder(fromKey: string, toKey: string) {
+    const from = (rows ?? []).find((r) => r.key === fromKey);
+    const to = (rows ?? []).find((r) => r.key === toKey);
+    if (!from || !to || from.key === to.key) return;
+    setError(null);
+
+    if (from.kind === "law" && to.kind === "law") {
+      if (from.law.countryId !== to.law.countryId) {
+        setError(m.laws.sameCountryOnly);
+        return;
+      }
+      await move(`/api/laws/${from.law.id}/move`, to.law.id);
+      return;
+    }
+    if (from.kind === "category" && to.kind === "category") {
+      if (from.law.id !== to.law.id) {
+        setError(m.laws.sameLawOnly);
+        return;
+      }
+      await move(`/api/regulation-categories/${from.category.id}/move`, to.category.id);
+      return;
+    }
+    // 法令の行と区分の行は入れ替えられない（親子なので位置に意味が無い）
+    setError(from.kind === "law" ? m.laws.sameCountryOnly : m.laws.sameLawOnly);
+  }
+
+  async function move(url: string, targetId: string) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetId }),
+    });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      return;
+    }
+    void refresh();
+  }
+
   async function onDeleteSelected(targets: Row[]) {
     setError(null);
     for (const r of targets) {
@@ -500,6 +550,8 @@ export function LawTreeSection({
         emptyMessage={countries.length === 0 ? m.laws.noCountry : m.laws.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
+        // 直せる人にだけ、つまみを出す
+        onReorder={editable ? onReorder : undefined}
         pageSizeOptions={[10, 25, 50, 100]}
         // 左から詰めて並べる。指定しないと画面幅いっぱいに散らばってしまう
         filterLayout={[
@@ -535,7 +587,8 @@ export function LawTreeSection({
               }
             : undefined
         }
-        hintText={m.laws.rowHint}
+        // つまみを出しているときだけ、引けることも添える
+        hintText={editable ? `${m.laws.rowHint}／${m.laws.reorderHint}` : m.laws.rowHint}
         headerActions={
           <div className="flex gap-2">
             {/* 法令の数だけ開け閉めするのは手間なので、まとめて開く・閉じるを置く */}

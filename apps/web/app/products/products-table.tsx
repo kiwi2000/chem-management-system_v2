@@ -206,7 +206,6 @@ export function ProductsTable({
         filterOnly: true,
         sortable: false,
         filterFullWidth: true,
-        filterPlaceholder: m.table.casNumbersPlaceholder,
       },
       {
         key: "judgement",

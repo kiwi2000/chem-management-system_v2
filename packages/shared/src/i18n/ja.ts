@@ -194,7 +194,6 @@ export const ja = {
     filterPanel: "フィルター",
     compositionSection: "組成情報",
     casNumbers: "CAS番号",
-    casNumbersPlaceholder: "7439-92-1\n1333-86-4",
     savedFilters: "保存した条件",
     save: "保存",
     load: "読込",
@@ -361,6 +360,10 @@ export const ja = {
   laws: {
     title: "法令",
     rowHint: "行を押すと、その区分の法文物質名が下に出ます",
+    /** 並べ替えのときに出す断り。表示順は 地域 → 国 → 法令 で決まる */
+    sameCountryOnly: "並べ替えられるのは同じ国の法令どうしだけです",
+    sameLawOnly: "並べ替えられるのは同じ法令の区分どうしだけです",
+    reorderHint: "左端のつまみを引くと並べ替えられます（同じ国・同じ法令の中だけ）",
     add: "＋ 法令",
     newTitle: "法令の追加",
     editTitle: "法令の編集",

@@ -31,6 +31,8 @@ export const CATEGORY_ORDER_BY = [
   { law: { displayOrder: "asc" } },
   { law: { code: "asc" } },
   { displayOrder: "asc" },
+  // 区分の表示順は 0 のまま並んでいるものが多い。最後はコードで決める
+  { code: "asc" },
 ] as const;
 
 /** Prisma の `select` に足すと、下の `lawOrderKey` が使えるようになる */
