@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { writeAudit } from "@/lib/audit";
+import { clientIp } from "@/lib/ip-allow";
 
 /**
  * 組成を見たことを残す。
@@ -42,7 +43,7 @@ async function callerInfo(): Promise<{ ip: string | null; userAgent: string | nu
   try {
     const hdrs = await headers();
     return {
-      ip: hdrs.get("x-forwarded-for") ?? null,
+      ip: clientIp(hdrs.get("x-forwarded-for")),
       userAgent: hdrs.get("user-agent")?.slice(0, 200) ?? null,
     };
   } catch {

@@ -7,6 +7,7 @@ import { cache } from "react";
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
 import { getAppSettings } from "@/lib/settings";
+import { clientIp } from "@/lib/ip-allow";
 
 /**
  * 認証（自前実装・外部サービスに一切依存しない）。
@@ -78,7 +79,7 @@ async function callerInfo(): Promise<{ ip: string | null; userAgent: string | nu
   try {
     const hdrs = await headers();
     return {
-      ip: hdrs.get("x-forwarded-for") ?? null,
+      ip: clientIp(hdrs.get("x-forwarded-for")),
       userAgent: hdrs.get("user-agent")?.slice(0, 200) ?? null,
     };
   } catch {
@@ -181,7 +182,7 @@ export async function createSession(userId: string): Promise<void> {
       tokenHash: hash,
       userId,
       expiresAt,
-      ipAddress: hdrs.get("x-forwarded-for") ?? null,
+      ipAddress: clientIp(hdrs.get("x-forwarded-for")),
       userAgent: hdrs.get("user-agent")?.slice(0, 500) ?? null,
     },
   });

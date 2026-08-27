@@ -5,6 +5,7 @@ import { login, purgeExpiredSessions } from "@/lib/auth";
 import { jsonError } from "@/lib/authz";
 import { syncPreferenceCookies } from "@/lib/preference-cookies";
 import { getServerMessages } from "@/lib/i18n";
+import { clientIp } from "@/lib/ip-allow";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     actorId: result.user.id,
     diff: {
       email: result.user.email,
-      ip: hdrs.get("x-forwarded-for") ?? null,
+      ip: clientIp(hdrs.get("x-forwarded-for")),
       userAgent: hdrs.get("user-agent")?.slice(0, 200) ?? null,
     },
   });
