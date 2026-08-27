@@ -170,7 +170,8 @@ export const DOC_TEMPLATE_COLUMNS: QueryColumn[] = [
   { key: "target", kind: "enum", field: "target" },
   { key: "locale", kind: "enum", field: "locale" },
   { key: "active", kind: "enum", field: "active" },
-  { key: "displayOrder", kind: "number", field: "displayOrder" },
+  { key: "seq", kind: "number", field: "seq" },
+  { key: "createdAt", kind: "date", field: "createdAt" },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 

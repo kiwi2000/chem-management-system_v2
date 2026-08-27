@@ -851,6 +851,8 @@ export const en: Messages = {
    * Not used for assessment — they supply the numbers shown on a substance
    */
   docTemplates: {
+    seq: "No.",
+    createdAt: "Created",
     title: "Documents",
     lead: "Set up a template once, then pick a product or substance to produce the document.",
     add: "+ Template",

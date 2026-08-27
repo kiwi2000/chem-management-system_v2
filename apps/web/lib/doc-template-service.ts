@@ -20,8 +20,9 @@ export const DOC_TEMPLATE_SELECT = {
   content: true,
   locale: true,
   active: true,
-  displayOrder: true,
+  seq: true,
   note: true,
+  createdAt: true,
   updatedAt: true,
 } satisfies Prisma.DocumentTemplateSelect;
 
@@ -50,8 +51,9 @@ export function toDocTemplateDto(row: Row): DocumentTemplateDto {
     blockCount: content.blocks.length,
     locale: row.locale,
     active: row.active,
-    displayOrder: row.displayOrder,
+    seq: row.seq,
     note: row.note,
+    createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
 }

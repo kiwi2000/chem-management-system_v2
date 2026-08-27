@@ -352,7 +352,6 @@ export const documentTemplateSchema = (m: Messages) =>
     target: z.enum(DOCUMENT_TARGETS),
     locale: z.string().trim().min(1, m.validation.required).max(10, m.validation.tooLong(10)),
     active: z.boolean(),
-    displayOrder: z.number().int().min(0).max(9999),
     note: z.string().trim().max(2000, m.validation.tooLong(2000)).nullish(),
   });
 

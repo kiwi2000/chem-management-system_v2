@@ -861,6 +861,8 @@ export const ja = {
    * 判定には使わない。「そのインベントリでの番号」を物質の画面に出すためのもの
    */
   docTemplates: {
+    seq: "通番",
+    createdAt: "作成日時",
     title: "ドキュメント生成",
     lead: "テンプレートを作っておくと、製品や物質を選ぶだけで帳票を作れます。",
     add: "＋ テンプレート",
@@ -876,7 +878,7 @@ export const ja = {
     displayOrder: "表示順",
     note: "備考",
     blocks: "ブロック数",
-    updatedAt: "更新日",
+    updatedAt: "更新日時",
     empty: "テンプレートがありません",
     edit: "中身を編集",
     duplicateCode: (code: string) => `コード「${code}」はすでに使われています`,

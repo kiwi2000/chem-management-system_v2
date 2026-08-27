@@ -24,7 +24,8 @@ import type { ApiError, DocumentTemplateDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 
-const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
+/** 既定は通番の順。作った順に並ぶ */
+const DEFAULT_STATE: TableState = emptyTableState([{ column: "seq", direction: "asc" }]);
 
 interface Draft {
   code: string;
@@ -33,7 +34,6 @@ interface Draft {
   target: DocumentTarget;
   locale: string;
   active: boolean;
-  displayOrder: string;
   note: string;
 }
 const EMPTY: Draft = {
@@ -43,12 +43,23 @@ const EMPTY: Draft = {
   target: "PRODUCT",
   locale: "JA",
   active: true,
-  displayOrder: "0",
   note: "",
 };
 
 /** 表の中の入力欄。行の高さを変えないよう小さめにする */
 const CELL_INPUT = "h-7 w-full text-sm";
+/** 日時。秒までは要らない（一覧で読むのは「いつごろか」） */
+function fmt(iso: string, locale: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString(locale === "en" ? "en-US" : "ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /** 新しい行の目印。保存するまで id が無い */
 const NEW_ID = "__new__";
 
@@ -60,7 +71,8 @@ const columnKinds = [
   { key: "target", kind: "enum" },
   { key: "locale", kind: "enum" },
   { key: "active", kind: "enum" },
-  { key: "displayOrder", kind: "number" },
+  { key: "seq", kind: "number" },
+  { key: "createdAt", kind: "date" },
   { key: "updatedAt", kind: "date" },
 ] satisfies { key: string; kind: ColumnKind }[];
 
@@ -128,7 +140,6 @@ export function DocTemplatesScreen() {
       target: t.target,
       locale: t.locale,
       active: t.active,
-      displayOrder: String(t.displayOrder),
       note: t.note ?? "",
     });
   }
@@ -150,7 +161,6 @@ export function DocTemplatesScreen() {
         target: draft.target,
         locale: draft.locale,
         active: draft.active,
-        displayOrder: Number(draft.displayOrder) || 0,
         note: draft.note || null,
       };
       const res = await fetch(adding ? "/api/doc-templates" : `/api/doc-templates/${editingId}`, {
@@ -189,6 +199,15 @@ export function DocTemplatesScreen() {
 
   const columns: TableColumn<DocumentTemplateDto>[] = useMemo(
     () => [
+      {
+        key: "seq",
+        header: m.docTemplates.seq,
+        kind: "number",
+        width: 64,
+        className: "text-right tabular-nums",
+        // 自動で振るので、打つ欄は出さない
+        render: (t) => (t.id === NEW_ID ? null : t.seq),
+      },
       {
         key: "code",
         header: m.docTemplates.code,
@@ -341,22 +360,20 @@ export function DocTemplatesScreen() {
           ),
       },
       {
-        key: "displayOrder",
-        header: m.docTemplates.displayOrder,
-        kind: "number",
-        width: 80,
-        className: "text-right",
-        render: (t) =>
-          editingRow(t) || t.id === NEW_ID ? (
-            <Input
-              className={CELL_INPUT}
-              value={draft.displayOrder}
-              aria-label={m.docTemplates.displayOrder}
-              onChange={(e) => setDraft({ ...draft, displayOrder: e.target.value })}
-            />
-          ) : (
-            t.displayOrder
-          ),
+        key: "createdAt",
+        header: m.docTemplates.createdAt,
+        kind: "date",
+        width: 132,
+        className: "whitespace-nowrap",
+        render: (t) => (t.id === NEW_ID ? null : fmt(t.createdAt, locale)),
+      },
+      {
+        key: "updatedAt",
+        header: m.docTemplates.updatedAt,
+        kind: "date",
+        width: 132,
+        className: "whitespace-nowrap",
+        render: (t) => (t.id === NEW_ID ? null : fmt(t.updatedAt, locale)),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -14,7 +14,8 @@ import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
-const DEFAULT_STATE = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
+// 既定は通番の順。作った順に並ぶ
+const DEFAULT_STATE = emptyTableState([{ column: "seq", direction: "asc" }]);
 
 /**
  * GET /api/doc-templates — テンプレートの一覧。
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.documentTemplate.findMany({
       where,
-      orderBy: buildOrderBy(DOC_TEMPLATE_COLUMNS, state.sort, { displayOrder: "asc" }),
+      orderBy: buildOrderBy(DOC_TEMPLATE_COLUMNS, state.sort, { seq: "asc" }),
       select: DOC_TEMPLATE_SELECT,
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
@@ -89,7 +90,6 @@ export async function POST(req: Request) {
       target: input.target,
       locale: input.locale,
       active: input.active,
-      displayOrder: input.displayOrder,
       note: input.note ?? null,
       // Json の列なので、こちらの型のまま渡せない
       content: emptyContent() as unknown as object,

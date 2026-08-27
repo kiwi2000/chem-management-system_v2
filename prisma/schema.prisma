@@ -1711,9 +1711,15 @@ model DocumentTemplate {
    */
   locale String @default("JA") @db.VarChar(10)
 
-  active       Boolean @default(true)
-  displayOrder Int     @default(0) @map("display_order")
-  note         String?
+  /**
+   * 通番。**作った順に自動で振る。**
+   * 並べ替えのために数字を打たせない（打ち直しの手間に見合わない）。
+   * 消してもここは飛ぶだけで、詰め直さない（記録から番号をたどれるようにするため）
+   */
+  seq Int @unique @default(autoincrement())
+
+  active Boolean @default(true)
+  note   String?
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
@@ -1723,7 +1729,7 @@ model DocumentTemplate {
 
   documents GeneratedDocument[]
 
-  @@index([target, displayOrder])
+  @@index([target, seq])
   @@map("document_templates")
 }
 

@@ -449,8 +449,10 @@ export interface DocumentTemplateDto {
   blockCount: number;
   locale: string;
   active: boolean;
-  displayOrder: number;
+  /** 作った順の通番。自動で振る（並べ替えのために打たせない） */
+  seq: number;
   note: string | null;
+  createdAt: string;
   updatedAt: string;
 }
 
