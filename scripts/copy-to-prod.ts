@@ -503,22 +503,24 @@ async function main() {
 
   // --- 11 見本の製品 ---------------------------------------------------------
   /*
-    バージョンの差を見るための製品（`VS-`）。組成と、そこから作った展開・判定まで写す。
-    **本番で判定し直さない。**やり直すと、本番で人が確定した判定まで消えてしまう
+    本番にまだ無い製品を写す。組成と、そこから作った展開・判定まで一緒に。
+    **本番で判定し直さない。**やり直すと、本番で人が確定した判定まで消えてしまう。
+
+    **コードで見て、無いものだけ足す。**接頭辞では絞らない。
+    見本の製品は増えるたびに新しい接頭辞が付き（`VS-` `CP-` `MX-` …）、
+    絞り込みを書き足し忘れると、写したつもりのものが黙って抜ける。
+    下見（`--write` なし）でコードが並ぶので、何が行くかは実行前に読める
   */
   log("");
   const sample = await L.product.findMany({
-    where: { codeNormalized: { startsWith: "VS-" }, deletedAt: null },
+    where: { deletedAt: null },
     select: { id: true, code: true, codeNormalized: true },
+    orderBy: { code: "asc" },
   });
-  const pSampleCode = new Set(
-    (
-      await P.product.findMany({
-        where: { codeNormalized: { startsWith: "VS-" } },
-        select: { codeNormalized: true },
-      })
-    ).map((x) => x.codeNormalized),
-  );
+  const pProducts = await P.product.findMany({
+    select: { id: true, codeNormalized: true },
+  });
+  const pSampleCode = new Set(pProducts.map((x) => x.codeNormalized));
   const newSample = sample.filter((x) => !pSampleCode.has(x.codeNormalized));
   if (newSample.length === 0) {
     log("  見本の製品  足すものはありません");
@@ -564,10 +566,46 @@ async function main() {
       }),
     );
 
+    /*
+      作った人・直した人。**idは両側で違う**ので、メールアドレスで引き直す。
+      そのまま持っていくと、本番に無いidを指したまま「作成者」が出せなくなる
+    */
+    const pUserByMail = new Map(
+      (await P.user.findMany({ select: { id: true, email: true } })).map((x) => [x.email, x.id]),
+    );
+    const userOf = new Map(
+      (await L.user.findMany({ select: { id: true, email: true } })).flatMap((x) => {
+        const hit = pUserByMail.get(x.email);
+        return hit ? [[x.id, hit] as [string, string]] : [];
+      }),
+    );
+    const whoOf = (id: string | null) => (id ? (userOf.get(id) ?? null) : null);
+
+    const rows = await L.product.findMany({ where: { id: { in: ids } } });
     await P.product.createMany({
-      data: await L.product.findMany({ where: { id: { in: ids } } }),
+      data: rows.map((x) => ({
+        ...x,
+        createdBy: whoOf(x.createdBy),
+        updatedBy: whoOf(x.updatedBy),
+      })),
       skipDuplicates: true,
     });
+
+    /*
+      原材料として使っている製品。**本番に前からある製品は、idが違う。**
+      （本番の見本は別に投入されたもので、こちらのidとは一致しない）
+      いま写したものは同じidで入るので、そちらはそのまま通る
+    */
+    const pProdByCode = new Map(pProducts.map((x) => [x.codeNormalized, x.id]));
+    const lCodeOf = new Map(sample.map((x) => [x.id, x.codeNormalized]));
+    const justCopied = new Set(ids);
+    function childOf(id: string | null): string | null {
+      if (!id || justCopied.has(id)) return id;
+      const hit = pProdByCode.get(lCodeOf.get(id) ?? "");
+      if (!hit) throw new Error(`本番に見つからない原材料が組成にあります: ${lCodeOf.get(id)}`);
+      return hit;
+    }
+
     const lines = await L.compositionLine.findMany({ where: { parentProductId: { in: ids } } });
     const lost = lines.filter((x) => x.substanceId && !substOf.has(x.substanceId));
     if (lost.length > 0) {
@@ -577,6 +615,7 @@ async function main() {
       data: lines.map((x) => ({
         ...x,
         substanceId: x.substanceId ? substOf.get(x.substanceId)! : null,
+        childProductId: childOf(x.childProductId),
       })),
       skipDuplicates: true,
     });
