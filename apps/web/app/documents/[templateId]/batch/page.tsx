@@ -6,7 +6,7 @@ import { writeAudit } from "@/lib/audit";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { BATCH_MAX, parseBatchIds } from "@/lib/doc-batch";
-import { collectFor } from "@/lib/doc-data";
+import { collectFor, containsComposition } from "@/lib/doc-data";
 import { renderDocument, type RenderedDocument } from "@/lib/doc-render";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 
@@ -56,7 +56,13 @@ export default async function DocumentBatchPage({
   const ids = parseBatchIds(raw);
   const asked = (raw ?? "").split(",").filter(Boolean).length;
 
-  const made: { id: string; code: string; version: string; doc: RenderedDocument }[] = [];
+  const made: {
+    id: string;
+    code: string;
+    version: string;
+    hasComposition: boolean;
+    doc: RenderedDocument;
+  }[] = [];
   const missed: string[] = [];
   for (const id of ids) {
     const data = await collectFor(actor, template.target, id, locale, m);
@@ -68,6 +74,7 @@ export default async function DocumentBatchPage({
       id,
       code: data.code,
       version: data.values.get("doc.version") ?? "",
+      hasComposition: containsComposition(template.content, data.tables),
       doc: renderDocument({
         content: template.content,
         target: template.target,
@@ -85,6 +92,8 @@ export default async function DocumentBatchPage({
           targetRef: x.id,
           targetCode: x.code,
           generatedBy: actor.user.id,
+          content: x.doc as unknown as object,
+          hasComposition: x.hasComposition,
           params: { version: x.version },
         })),
       }),

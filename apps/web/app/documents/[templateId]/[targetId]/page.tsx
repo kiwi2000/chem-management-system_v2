@@ -3,7 +3,7 @@ import { DocumentView } from "@/components/doc-editor/document-view";
 import { writeAudit } from "@/lib/audit";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { collectFor } from "@/lib/doc-data";
+import { collectFor, containsComposition } from "@/lib/doc-data";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { renderDocument } from "@/lib/doc-render";
 import { getMessages, isLocale } from "@chem/shared";
@@ -87,6 +87,9 @@ export default async function DocumentPage({
         targetRef: targetId,
         targetCode: data.code,
         generatedBy: actor.user.id,
+        // 出した紙面をそのまま残す。あとで開いたときに当時の内容が出る
+        content: doc as unknown as object,
+        hasComposition: containsComposition(template.content, data.tables),
         params: { version: data.values.get("doc.version") ?? "" },
       },
     }),

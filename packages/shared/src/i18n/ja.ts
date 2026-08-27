@@ -69,6 +69,9 @@ export const ja = {
   },
 
   nav: {
+    documents: "ドキュメント",
+    documentCreate: "ドキュメント生成",
+    docTemplates: "テンプレート編集",
     system: "システム",
     home: "ホーム",
     news: "お知らせ",
@@ -88,7 +91,6 @@ export const ja = {
     importExport: "データ入出力",
     dataImport: "インポート",
     dataExport: "エクスポート",
-    docTemplates: "ドキュメント生成",
     admin: "管理",
     devOnly: "開発中限定",
     spec: "ユーザーマニュアル",
@@ -145,6 +147,8 @@ export const ja = {
 
   /** 権限の名前と説明（ユーザー管理画面のチェックボックス） */
   permissions: {
+    DOC_TEMPLATE_EDIT: "様式（テンプレート）を編集できる",
+    DOCUMENT_CREATE: "ドキュメントを作れる（自分が作ったものを見られる）",
     PRODUCT_VIEW: "製品を見られる",
     PRODUCT_EDIT: "製品を編集できる",
     COMPOSITION_VIEW: "組成を見られる",
@@ -171,6 +175,7 @@ export const ja = {
     ADMIN: "ユーザーの作成・権限変更・システム設定・監査ログの閲覧",
   },
   permissionGroups: {
+    document: "ドキュメント",
     product: "製品 / 原材料",
     composition: "組成",
     substance: "物質",
@@ -931,6 +936,15 @@ export const ja = {
     unknownField: "使えない項目",
   },
   documents: {
+    generatedAt: "作成日時",
+    template: "様式",
+    targetKind: "種類",
+    targetCode: "対象",
+    hasComposition: "組成あり",
+    version: "バージョン",
+    mine: "自分が作ったドキュメント",
+    noneYet: "まだ作っていません",
+    savedHint: "日時を押すと、出したときの紙面がそのまま開きます（作り直しません）",
     batchMissed: (n: number) => `${n} 件は作れませんでした（見る権限が無いか、消されています）`,
     makeSelected: "選んだものでまとめて生成",
     makeSelectedConfirm: (n: number) => `選んだ ${n} 件の帳票をまとめて作ります`,

@@ -223,6 +223,19 @@ export const DOC_TEMPLATE_COLUMNS: QueryColumn[] = [
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
+/**
+ * 発行済みのドキュメント。
+ * 中身（紙面）では絞れない。JSON なので、条件にすると当たり方が読めない
+ */
+export const DOCUMENT_COLUMNS: QueryColumn[] = [
+  { key: "targetCode", kind: "text", field: "targetCode", caseInsensitive: true },
+  // テンプレートは1対1。たどって絞る
+  { key: "templateCode", kind: "text", field: "code", nested: "template", caseInsensitive: true },
+  { key: "target", kind: "enum", field: "target", nested: "template" },
+  { key: "hasComposition", kind: "enum", field: "hasComposition" },
+  { key: "generatedAt", kind: "date", field: "generatedAt" },
+];
+
 export const REGULATION_CATEGORY_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "nameOriginal", kind: "text", field: "nameOriginal", caseInsensitive: true },

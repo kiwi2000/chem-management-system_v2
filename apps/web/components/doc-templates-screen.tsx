@@ -87,7 +87,7 @@ export function DocTemplatesScreen() {
   const { m, locale } = useI18n();
   const { can } = useMe();
   const router = useRouter();
-  const editable = can("ADMIN");
+  const editable = can("DOC_TEMPLATE_EDIT");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);

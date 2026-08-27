@@ -22,6 +22,14 @@ export const PERMISSIONS = [
   "REGULATION_EDIT",
   // 持ち出し（TSV出力・帳票ダウンロード）
   "DATA_EXPORT",
+  /*
+    ドキュメント。
+    **生成は「様式を見て作り、自分が作ったものを見る」まで。**
+    他人が作ったものは見られない。見せる必要が出たら、そのときに権限を足す
+    （最初から広く見せると、あとで狭めるのが難しい）
+  */
+  "DOC_TEMPLATE_EDIT",
+  "DOCUMENT_CREATE",
   // お知らせ
   "NEWS_POST",
   "NEWS_MANAGE",
@@ -97,6 +105,7 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "inactive", permissions: ["INACTIVE_VIEW", "INACTIVE_EDIT", "APPROVE"] },
   { key: "regulation", permissions: ["REGULATION_VIEW", "REGULATION_EDIT"] },
   { key: "data", permissions: ["DATA_EXPORT"] },
+  { key: "document", permissions: ["DOC_TEMPLATE_EDIT", "DOCUMENT_CREATE"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },
   { key: "system", permissions: ["ADMIN"] },
 ];
@@ -117,6 +126,7 @@ export const PERMISSION_PRESETS: { key: string; permissions: readonly Permission
       "SUBSTANCE_EDIT",
       "REGULATION_VIEW",
       "DATA_EXPORT",
+      "DOCUMENT_CREATE",
       "NEWS_POST",
     ],
   },
@@ -129,6 +139,7 @@ export const PERMISSION_PRESETS: { key: string; permissions: readonly Permission
       "REGULATION_VIEW",
       "REGULATION_EDIT",
       "DATA_EXPORT",
+      "DOCUMENT_CREATE",
     ],
   },
   { key: "admin", permissions: PERMISSIONS },

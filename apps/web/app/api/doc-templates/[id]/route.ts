@@ -11,7 +11,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /** GET /api/doc-templates/[id] — 1件。編集画面が開くときに読む */
 export async function GET(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("PRODUCT_VIEW");
+  const actor = await requirePermission("DOCUMENT_CREATE");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();
@@ -32,7 +32,7 @@ export async function GET(_req: Request, { params }: Ctx) {
  * `content` があればそれだけを、無ければ入れものを直す。
  */
 export async function PATCH(req: Request, { params }: Ctx) {
-  const actor = await requirePermission("ADMIN");
+  const actor = await requirePermission("DOC_TEMPLATE_EDIT");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();
@@ -112,7 +112,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
  * 消すのは印を付けるだけなので、記録から名前をたどれる状態は保たれる
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("ADMIN");
+  const actor = await requirePermission("DOC_TEMPLATE_EDIT");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();

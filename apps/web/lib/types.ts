@@ -456,6 +456,21 @@ export interface DocumentTemplateDto {
   updatedAt: string;
 }
 
+/** 発行済みのドキュメント1件。紙面そのものは一覧には載せない（重いので） */
+export interface GeneratedDocumentDto {
+  id: string;
+  templateCode: string;
+  templateNameJa: string;
+  templateNameEn: string | null;
+  target: DocumentTarget;
+  /** 出した相手のコード。対象が消えても読めるよう、控えたものを出す */
+  targetCode: string;
+  /** 組成が載っているか。開くときに組成の権限を確かめる目印 */
+  hasComposition: boolean;
+  version: string;
+  generatedAt: string;
+}
+
 export interface CompositionAggregateDto {
   /** 重量%の多い順 */
   rows: AggregateRowDto[];

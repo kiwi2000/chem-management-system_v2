@@ -259,3 +259,22 @@ export async function collectFor(
     ? collectForProduct(actor, targetId, locale, m)
     : collectForSubstance(actor, targetId, locale);
 }
+
+/**
+ * その紙面に組成が載っているか。
+ *
+ * **テンプレートが組成の表を置いていて、かつ実際に中身が取れたとき**だけ真。
+ * 組成を見られない人が作ったものには最初から入らないので、
+ * そのぶんは偽になる（開くときに要らぬ制限をかけないため）。
+ */
+export function containsComposition(
+  content: { blocks: { kind: string; table?: string }[] },
+  tables: RenderInput["tables"],
+): boolean {
+  return content.blocks.some(
+    (b) =>
+      b.kind === "table" &&
+      (b.table === "composition" || b.table === "compositionAggregate") &&
+      tables.has(b.table),
+  );
+}

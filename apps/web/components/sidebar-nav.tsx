@@ -7,6 +7,8 @@ import {
   BookOpen,
   Download,
   ChevronRight,
+  FileCog,
+  FilePlus,
   FileText,
   FlaskConical,
   Globe,
@@ -114,7 +116,32 @@ const ITEMS: NavItem[] = [
       },
     ],
   },
-  { href: "/doc-templates", key: "docTemplates", icon: FileText, needs: "DATA_EXPORT" },
+  {
+    /*
+      様式を整えるのと、実際に作るのは別の仕事。
+      **見出しにして下にぶら下げる。**要る権限も違う
+      （様式の編集は DOC_TEMPLATE_EDIT、作るのは DOCUMENT_CREATE）
+    */
+    key: "documents",
+    icon: FileText,
+    needs: "DOCUMENT_CREATE",
+    children: [
+      {
+        href: "/documents",
+        key: "documentCreate",
+        icon: FilePlus,
+        needs: "DOCUMENT_CREATE",
+        match: ["/documents"],
+      },
+      {
+        href: "/doc-templates",
+        key: "docTemplates",
+        icon: FileCog,
+        needs: "DOC_TEMPLATE_EDIT",
+        match: ["/doc-templates"],
+      },
+    ],
+  },
   // お知らせを読むだけならホームで足りる。この画面は投稿・編集のためのものなので、
   // 投稿できる人にだけ見せる（他人の分を編集できる権限は投稿権限を含む）。
   // 日々の作業ではないので、業務の項目の後ろ、システムの手前に置く

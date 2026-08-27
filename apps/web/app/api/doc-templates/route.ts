@@ -25,7 +25,8 @@ const DEFAULT_STATE = emptyTableState([{ column: "seq", direction: "asc" }]);
  * 作り替えられるかどうかは別（POST 以降で見る）。
  */
 export async function GET(req: Request) {
-  const actor = await requirePermission("PRODUCT_VIEW");
+  // 様式を見るのは、作る人の入口。編集は別（DOC_TEMPLATE_EDIT）
+  const actor = await requirePermission("DOCUMENT_CREATE");
   if (actor instanceof Response) return actor;
 
   const state = parseTableState(
@@ -61,7 +62,7 @@ export async function GET(req: Request) {
  * ここでは入れものだけを用意して、すぐ編集へ移れるようにする。
  */
 export async function POST(req: Request) {
-  const actor = await requirePermission("ADMIN");
+  const actor = await requirePermission("DOC_TEMPLATE_EDIT");
   if (actor instanceof Response) return actor;
   const m = await getServerMessages();
 

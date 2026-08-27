@@ -67,6 +67,9 @@ export const en: Messages = {
   },
 
   nav: {
+    documents: "Documents",
+    documentCreate: "Create",
+    docTemplates: "Templates",
     system: "System",
     home: "Home",
     news: "Announcements",
@@ -86,7 +89,6 @@ export const en: Messages = {
     importExport: "Data import and export",
     dataImport: "Import",
     dataExport: "Export",
-    docTemplates: "Documents",
     admin: "Administration",
     devOnly: "Development only",
     spec: "User manual",
@@ -139,6 +141,8 @@ export const en: Messages = {
   },
 
   permissions: {
+    DOC_TEMPLATE_EDIT: "Can edit document templates",
+    DOCUMENT_CREATE: "Can create documents (and see their own)",
     PRODUCT_VIEW: "View products",
     PRODUCT_EDIT: "Edit products",
     COMPOSITION_VIEW: "View compositions",
@@ -165,6 +169,7 @@ export const en: Messages = {
     ADMIN: "Creating users, changing permissions, system settings, audit log",
   },
   permissionGroups: {
+    document: "Documents",
     product: "Products / Materials",
     composition: "Compositions",
     substance: "Substances",
@@ -921,6 +926,15 @@ export const en: Messages = {
     unknownField: "Unavailable field",
   },
   documents: {
+    generatedAt: "Created",
+    template: "Template",
+    targetKind: "Kind",
+    targetCode: "Subject",
+    hasComposition: "Composition",
+    version: "Version",
+    mine: "Documents you created",
+    noneYet: "Nothing yet",
+    savedHint: "Select the date to reopen the document exactly as it was issued",
     batchMissed: (n: number) => `${n} could not be produced (no access, or deleted)`,
     makeSelected: "Create for selected",
     makeSelectedConfirm: (n: number) => `Create documents for the ${n} selected records`,

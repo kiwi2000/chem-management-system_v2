@@ -24,7 +24,7 @@ const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm
 export function DocTemplateEditor({ id }: { id: string }) {
   const { m } = useI18n();
   const { can } = useMe();
-  const editable = can("ADMIN");
+  const editable = can("DOC_TEMPLATE_EDIT");
 
   const [template, setTemplate] = useState<DocumentTemplateDto | null>(null);
   const [content, setContent] = useState<DocumentContent | null>(null);

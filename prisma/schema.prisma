@@ -37,6 +37,8 @@ enum Permission {
   REGULATION_VIEW
   REGULATION_EDIT
   DATA_EXPORT
+  DOC_TEMPLATE_EDIT
+  DOCUMENT_CREATE
   NEWS_POST
   NEWS_MANAGE
   ADMIN
@@ -1753,7 +1755,25 @@ model GeneratedDocument {
   targetCode String @map("target_code") @db.VarChar(50)
 
   /**
-   * 作ったときの条件（バージョンなど）。同じものを作り直すために持つ
+   * 出したときの紙面そのもの（差込を済ませた文字と表の並び）。
+   *
+   * **PDF や HTML ではなく、組み立て終わったデータで持つ。**
+   * 数KBで済むうえ、あとから .docx のような出し先が増えても同じ内容から出せる。
+   * テンプレートを書き換えても、発行済みのものは変わらない。
+   */
+  content Json
+
+  /**
+   * 組成が入っているか。
+   *
+   * **開くときに組成の権限を確かめるための印。**
+   * 作った当時は見られた人でも、あとで権限を外されることがある。
+   * 紙面を保存する以上、開くたびに確かめないと、外した意味がなくなる
+   */
+  hasComposition Boolean @default(false) @map("has_composition")
+
+  /**
+   * 作ったときの条件（バージョンなど）。何を見て出したのかを残す
    */
   params Json?
 
