@@ -177,6 +177,20 @@ function Matrix({
   }
   const cols = useResizableColumns(storageKey, sizing, { shrinkToFit: false });
 
+  /*
+    **上の段からも掴めるようにする。**
+    つまみが最下段（バージョン）にしかないと、高さが1行ぶんしかなく、
+    上の段の境目を引こうとして空振りする。
+    まとまりの右端は、その中の**いちばん右の列**の境目と同じなので、
+    そこにも同じつまみを置く。
+  */
+  const lastVersion = versions[versions.length - 1]!;
+  const keyOfColumn = (c: MatrixColumn) => `${c.key}/${lastVersion.id}`;
+  const keyOfGroup = (g: { key: string; columns: MatrixColumn[] }) =>
+    foldedParents.has(g.key) ? `fold:${g.key}` : keyOfColumn(g.columns[g.columns.length - 1]!);
+  const keyOfRegion = (r: (typeof regions)[number]) =>
+    foldedRegions.has(r.id) ? `fold:${r.id}` : keyOfGroup(r.groups[r.groups.length - 1]!);
+
   if (columns.length === 0) {
     // 列が無ければ畳むものも無い。ボタンは出さない
     return (
@@ -261,10 +275,15 @@ function Matrix({
                 {m.substanceMatrix.region}
               </th>
               {regions.map((r) => (
-                <th key={r.id} colSpan={regionSpan(r)} className={cn(TH, "text-left font-medium")}>
+                <th
+                  key={r.id}
+                  colSpan={regionSpan(r)}
+                  className={cn(TH, "relative text-left font-medium")}
+                >
                   {foldButton(!foldedRegions.has(r.id), r.name, () =>
                     toggle(foldedRegions, setFoldedRegions, r.id),
                   )}
+                  {cols.handle(keyOfRegion(r), `${r.name} ${m.table.resize}`)}
                 </th>
               ))}
             </tr>
@@ -285,11 +304,12 @@ function Matrix({
                       <th
                         key={g.key}
                         colSpan={groupSpan(g)}
-                        className={cn(TH, "text-left font-medium")}
+                        className={cn(TH, "relative text-left font-medium")}
                       >
                         {foldButton(!foldedParents.has(g.key), g.label, () =>
                           toggle(foldedParents, setFoldedParents, g.key),
                         )}
+                        {cols.handle(keyOfGroup(g), `${g.label} ${m.table.resize}`)}
                       </th>
                     ))
                   ),
@@ -317,10 +337,11 @@ function Matrix({
                         <th
                           key={c.key}
                           colSpan={versions.length}
-                          className={cn(TH, "text-left font-medium")}
+                          className={cn(TH, "relative text-left font-medium")}
                           title={`${c.parentLabel}（${c.countryName}）`}
                         >
                           {c.label}
+                          {cols.handle(keyOfColumn(c), `${c.label} ${m.table.resize}`)}
                         </th>
                       ))
                     ),
