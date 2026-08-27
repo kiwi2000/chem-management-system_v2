@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import {
   PUBLISH_STATES,
   emptyTableState,
@@ -8,7 +7,7 @@ import {
   serializeTableState,
   type TableState,
 } from "@chem/shared";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { FilterLayoutRow } from "@/components/data-table/filter-panel";
@@ -64,7 +63,6 @@ export function ProductsTable({
   onChanged,
 }: Props) {
   const { m, locale } = useI18n();
-  const router = useRouter();
   const { can } = useMe();
   const editable = can("PRODUCT_EDIT");
 
@@ -101,7 +99,16 @@ export function ProductsTable({
         // コード20文字が等幅で収まる最小限の幅にする
         width: 104,
         className: "font-mono text-xs",
-        render: (r) => r.code,
+        // 押すと詳細へ移る。物質・インベントリ・法規制のコードと同じ形
+        render: (r) => (
+          <Link
+            href={`/products/${r.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="underline underline-offset-2"
+          >
+            {r.code}
+          </Link>
+        ),
       },
       {
         key: "nameJa",
@@ -414,12 +421,6 @@ export function ProductsTable({
         }
         filterLayout={filterLayout}
         // 行の右端の › で詳細画面へ。編集はその画面の「編集」から行う
-        rowAction={{
-          icon: ChevronRight,
-          label: m.common.detail,
-          busy: true,
-          onClick: (p) => router.push(`/products/${p.id}`),
-        }}
       />
     </div>
   );
