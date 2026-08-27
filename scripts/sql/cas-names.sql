@@ -35,6 +35,9 @@ SET NOCOUNT ON;
 --   4043 4048 4050 4055 4056 4057   化学兵器禁止法
 --   428 635                   米国 EPCRA 313・TSCA 第6条
 --   3614 2459 3611            EU REACH 附属書XIV・XVII・SVHC
+--   1887 1888 7914            韓国 K-REACH 禁止・制限・重点管理
+--   1581 1580 3564            韓国 産業安全保健法・化学物質管理法
+--   2480 2479 9020 6285       韓国 PRTR・POPs法・RoHS
 --
 -- **EU CLP附属書VI は一覧ではなく CasKeys（Annex）から引く**ので、UNION で足す。
 WITH target AS (
@@ -49,7 +52,10 @@ WITH target AS (
         7782, 5605, 5606, 4021,
         4043, 4048, 4050, 4055, 4056, 4057,
         428, 635,
-        3614, 2459, 3611
+        3614, 2459, 3611,
+        1887, 1888, 7914,
+        1581, 1580, 3564,
+        2480, 2479, 9020, 6285
     )
     UNION
     SELECT DISTINCT Cas FROM CasKeys WHERE DataKeyType = 'Annex'

@@ -37,7 +37,11 @@ interface Name {
  * 名前の表。国ごとに1つずつ。**先に書いたものが勝つ**（後から足したもので上書きしない）。
  * 日本のぶんが先。同じCASなら、国内の資料で付いた名前をそのまま使う。
  */
-const NAME_FILES = ["scripts/data/cas-names.tsv", "scripts/data/cas-names-china.tsv"];
+const NAME_FILES = [
+  "scripts/data/cas-names.tsv",
+  "scripts/data/cas-names-china.tsv",
+  "scripts/data/korea-cas-names.tsv",
+];
 
 function loadNames(): Map<string, Name> {
   const map = new Map<string, Name>();
@@ -64,16 +68,16 @@ async function main() {
   const names = loadNames();
   console.log(`物質名を ${names.size} 件読み込みました`);
 
-  const version = await prisma.linkSetVersion.findFirst({ where: { isCurrent: true } });
-  if (!version) throw new Error("現在のバージョンがありません");
-
-  // リンクに出てくるCAS（現在のバージョンのぶん）
+  /*
+    **バージョンは絞らない。**物質マスタはバージョンを持たないので、
+    現在のバージョンだけを見ると、1つ前にしか出てこないCASが取り残される。
+    取り残すと、そのバージョンに切り替えたときにCAS番号だけが並ぶ。
+  */
   const linked = await prisma.statutoryCasLink.findMany({
-    where: { versionId: version.id },
     select: { casNumber: true, casNormalized: true },
     distinct: ["casNormalized"],
   });
-  console.log(`リンクに出てくるCAS: ${linked.length} 種`);
+  console.log(`リンクに出てくるCAS: ${linked.length} 種（全バージョン）`);
 
   // 既に物質マスタにあるCAS
   const existing = await prisma.substance.findMany({
