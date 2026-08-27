@@ -4,12 +4,18 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { LAW_INCLUDE, toLawDto } from "@/lib/law-service";
+import { LAW_ORDER_BY } from "@/lib/law-order";
 import { LAW_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
-const DEFAULT_STATE = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
+/*
+  **並べ替えを選んでいないときの既定は、こちらでは決めない。**
+  `displayOrder` だけで並べると、番号が国ごとに1から振ってあるため国が混ざる
+  （韓国POPs法 50 が化管法 50 に割り込む）。下の `LAW_ORDER_BY` を使う
+*/
+const DEFAULT_STATE = emptyTableState([]);
 
 /** GET /api/laws — 一覧 */
 export async function GET(req: Request) {
@@ -26,7 +32,11 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.law.findMany({
       where,
-      orderBy: buildOrderBy(LAW_COLUMNS, state.sort, { displayOrder: "asc" }),
+      // 選んでいなければ 地域 → 国 → 法令。選んでいればその列で並べる
+      orderBy:
+        state.sort.length === 0
+          ? [...LAW_ORDER_BY]
+          : buildOrderBy(LAW_COLUMNS, state.sort, { displayOrder: "asc" }),
       include: LAW_INCLUDE,
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,

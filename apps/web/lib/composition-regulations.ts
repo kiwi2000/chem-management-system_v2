@@ -34,6 +34,7 @@ export async function regulationsByCas(
               displayOrder: true,
               country: {
                 select: {
+                  displayOrder: true,
                   region: {
                     select: { id: true, nameJa: true, nameEn: true, displayOrder: true },
                   },
@@ -102,7 +103,13 @@ export async function regulationsByCas(
           regionNameJa: region.nameJa,
           regionNameEn: region.nameEn,
           regionOrder: region.displayOrder,
-          categoryOrder: r.category.law.displayOrder * 1000 + r.category.displayOrder,
+          /*
+            並びは国 → 法令 → 区分。地域は列をまとめる単位なので `regionOrder` が持つ。
+            **法令の番号は国ごとに1から振ってある**ので、国を混ぜると割り込みが起きる
+          */
+          categoryOrder:
+            (r.category.law.country.displayOrder * 10000 + r.category.law.displayOrder) * 1000 +
+            r.category.displayOrder,
           lawNameJa: r.category.law.nameJa,
           lawNameEn: r.category.law.nameEn,
           lawNameOriginal: r.category.law.nameOriginal,

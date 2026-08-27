@@ -1,5 +1,6 @@
 import { pickStatutoryName, type Locale } from "@chem/shared";
 import { prisma } from "@/lib/db";
+import { CATEGORY_ORDER_BY } from "@/lib/law-order";
 
 /**
  * 製品の一覧で「該当法規制」を選ぶときの選択肢。
@@ -23,7 +24,8 @@ export async function listJudgementCategoryOptions(
       nameOriginal: true,
       law: { select: { nameJa: true, nameEn: true, nameOriginal: true, displayOrder: true } },
     },
-    orderBy: [{ law: { displayOrder: "asc" } }, { displayOrder: "asc" }],
+    // 並びは判定表と同じ（地域 → 国 → 法令 → 区分）
+    orderBy: [...CATEGORY_ORDER_BY],
   });
 
   return categories.map((c) => ({

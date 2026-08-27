@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { compareLawOrder, lawOrderKey } from "@/lib/law-order";
 
 /**
  * 物質1件を、**バージョンを横に並べて**見るための組み立て。
@@ -203,13 +204,15 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
                       id: true,
                       nameJa: true,
                       nameOriginal: true,
+                      code: true,
                       displayOrder: true,
                       country: {
                         select: {
                           id: true,
                           nameJa: true,
                           regionId: true,
-                          region: { select: { nameJa: true } },
+                          displayOrder: true,
+                          region: { select: { nameJa: true, displayOrder: true } },
                         },
                       },
                     },
@@ -223,7 +226,7 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
     },
   });
 
-  const regColumns = new Map<string, MatrixColumn & { lawOrder: number; catOrder: number }>();
+  const regColumns = new Map<string, MatrixColumn & { order: ReturnType<typeof lawOrderKey> }>();
   const regCells: Record<string, MatrixValue[]> = {};
   for (const l of links) {
     const s = l.statutorySubstance;
@@ -243,8 +246,8 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
         regionName: c.law.country.region.nameJa,
         // 法規制はトグルの対象外。常に出す
         shown: true,
-        lawOrder: c.law.displayOrder,
-        catOrder: c.displayOrder,
+        // 並びは地域 → 国 → 法令 → 区分。法令の番号は国ごとに1から振ってある
+        order: lawOrderKey(c.law, c.displayOrder),
       });
     }
     /*
@@ -280,12 +283,10 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
   /*
     **地域でまとめてから、法令・区分の順に並べる。**
     画面は地域で列を畳むので、同じ地域が離れて並ぶと1つに畳めない。
-    地域どうしの順は、その地域が初めて出てくる法令の順に従う（国内が先、など）
+    地域どうしの順は地域そのものの並び順。**法令の番号からは決めない。**
+    法令の番号は国ごとに1から振ってあるので、そこから地域の順を作ると
+    国が1つ増えるたびに地域の並びが変わってしまう
   */
-  const regionFirst = new Map<string, number>();
-  for (const c of [...regColumns.values()].sort((a, b) => a.lawOrder - b.lawOrder)) {
-    if (!regionFirst.has(c.regionId)) regionFirst.set(c.regionId, regionFirst.size);
-  }
 
   return {
     versions,
@@ -293,13 +294,8 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
     inventory: { columns: invColumns, cells: invCells },
     regulation: {
       columns: [...regColumns.values()]
-        .sort(
-          (a, b) =>
-            (regionFirst.get(a.regionId) ?? 0) - (regionFirst.get(b.regionId) ?? 0) ||
-            a.lawOrder - b.lawOrder ||
-            a.catOrder - b.catOrder,
-        )
-        .map(({ lawOrder: _l, catOrder: _c, ...rest }) => rest),
+        .sort((a, b) => compareLawOrder(a.order, b.order))
+        .map(({ order: _o, ...rest }) => rest),
       cells: regCells,
     },
   };

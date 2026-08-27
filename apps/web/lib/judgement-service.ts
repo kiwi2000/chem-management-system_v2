@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { LAW_ORDER_SELECT, compareLawOrder, lawOrderKey } from "@/lib/law-order";
 import type { MatchedProductDto, ProductJudgementDto } from "@/lib/types";
 
 /**
@@ -40,11 +41,11 @@ export async function toJudgementDtos(
           displayOrder: true,
           law: {
             select: {
-              code: true,
               nameJa: true,
               nameEn: true,
               nameOriginal: true,
-              displayOrder: true,
+              // 並びは地域 → 国 → 法令。国ごとに1から振ってあるので、国まで見ないと決まらない
+              ...LAW_ORDER_SELECT,
             },
           },
         },
@@ -112,14 +113,10 @@ export async function toJudgementDtos(
             .sort((a, b) => maxPct(b) - maxPct(a))
         : [],
       hitsWithheld: !withHits && r.hits.length > 0,
-      // 並びは法令 → 区分の順。画面の法規制と同じ並びにする
-      _order: [r.category.law.displayOrder, r.category.law.code, r.category.displayOrder] as const,
+      // 並びは地域 → 国 → 法令 → 区分。画面の法規制と同じ並びにする
+      _order: lawOrderKey(r.category.law, r.category.displayOrder),
     }))
-    .sort((a, b) => {
-      const [ao, ac, ad] = a._order;
-      const [bo, bc, bd] = b._order;
-      return ao - bo || ac.localeCompare(bc) || ad - bd;
-    })
+    .sort((a, b) => compareLawOrder(a._order, b._order))
     .map(({ _order, ...rest }) => rest);
 }
 
