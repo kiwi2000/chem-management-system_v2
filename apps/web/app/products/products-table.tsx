@@ -8,7 +8,7 @@ import {
   type TableState,
 } from "@chem/shared";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { FilterLayoutRow } from "@/components/data-table/filter-panel";
@@ -16,6 +16,7 @@ import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { batchHref } from "@/lib/doc-batch";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, ProductListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -69,6 +70,7 @@ export function ProductsTable({
     このときはコードを押すと詳細ではなく帳票へ移る
   */
   const pickFor = useSearchParams().get("pickFor");
+  const router = useRouter();
   const { can } = useMe();
   const editable = can("PRODUCT_EDIT");
 
@@ -221,6 +223,15 @@ export function ProductsTable({
         filterFullWidth: true,
       },
       {
+        key: "substanceNames",
+        header: m.table.substanceNames,
+        kind: "list",
+        // CAS番号と同じく組成をたどる。こちらは部分一致で、別名も見る
+        filterOnly: true,
+        sortable: false,
+        filterFullWidth: true,
+      },
+      {
         key: "judgement",
         header: m.judgements.listHeader,
         kind: "enum",
@@ -304,7 +315,7 @@ export function ProductsTable({
     () => [
       // 見出しは1つ目の行にだけ付ける（節の区切りとして使う）
       ...FILTER_LAYOUT.map((keys, i) => (i === 0 ? { title: m.products.basic, keys } : keys)),
-      { title: m.table.compositionSection, keys: ["casNumbers"] },
+      { title: m.table.compositionSection, keys: ["casNumbers", "substanceNames"] },
       { title: m.judgements.title, keys: REGULATION_KEYS },
     ],
     [m],
@@ -429,16 +440,33 @@ export function ProductsTable({
         onReset={reset}
         emptyMessage={m.products.empty}
         create={editable && scope === "published" ? { href: "/products/new" } : undefined}
-        selectable={editable}
-        onDeleteSelected={onDeleteSelected}
+        /*
+          帳票の相手を選びに来ているときは、**誰でも選べる**。
+          選ぶのは消すためではなく、まとめて作るためなので、
+          編集の権限は要らない
+        */
+        selectable={editable || !!pickFor}
+        onDeleteSelected={pickFor ? undefined : onDeleteSelected}
         bulkAction={
-          scope === "working"
+          pickFor
             ? {
-                label: approvalRequired ? m.common.submitSelected : m.common.publishSelected,
-                confirm: approvalRequired ? m.common.submitConfirm : m.common.publishConfirm,
-                run: (rows) => void runBulk(approvalRequired ? "submit" : "publish", rows),
+                label: m.documents.makeSelected,
+                confirm: m.documents.makeSelectedConfirm,
+                run: (rows) =>
+                  router.push(
+                    batchHref(
+                      pickFor,
+                      rows.map((r) => r.id),
+                    ),
+                  ),
               }
-            : undefined
+            : scope === "working"
+              ? {
+                  label: approvalRequired ? m.common.submitSelected : m.common.publishSelected,
+                  confirm: approvalRequired ? m.common.submitConfirm : m.common.publishConfirm,
+                  run: (rows) => void runBulk(approvalRequired ? "submit" : "publish", rows),
+                }
+              : undefined
         }
         filterLayout={filterLayout}
         // 行の右端の › で詳細画面へ。編集はその画面の「編集」から行う

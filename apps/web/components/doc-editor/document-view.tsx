@@ -62,26 +62,35 @@ export function DocumentView({
         </div>
       )}
 
-      {/* 紙面。画面では枠を付け、印刷では枠を消す */}
-      <div className="mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none">
-        {/*
-          横に並ぶものは、編集画面と同じ規則でまとめる（`groupIntoRows`）。
-          別々に組むと、書いたとおりに刷られない
-        */}
-        {groupIntoRows(doc.blocks).map((row, i) =>
-          row.blocks.length === 1 ? (
-            <Block key={i} block={row.blocks[0]!} />
-          ) : (
-            <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
-              {row.blocks.map((b, j) => (
-                <div key={j} style={{ width: `${WIDTH_FRACTION[b.width ?? "full"] * 100}%` }}>
-                  <Block block={b} />
-                </div>
-              ))}
-            </div>
-          ),
-        )}
-      </div>
+      <DocumentSheet doc={doc} />
+    </div>
+  );
+}
+
+/**
+ * 紙面1枚ぶん。画面では枠を付け、印刷では枠を消す。
+ * **まとめて作るときも同じものを使う。**別々に組むと見た目が分かれる
+ */
+export function DocumentSheet({ doc }: { doc: RenderedDocument }) {
+  return (
+    <div className="mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none">
+      {/*
+        横に並ぶものは、編集画面と同じ規則でまとめる（`groupIntoRows`）。
+        別々に組むと、書いたとおりに刷られない
+      */}
+      {groupIntoRows(doc.blocks).map((row, i) =>
+        row.blocks.length === 1 ? (
+          <Block key={i} block={row.blocks[0]!} />
+        ) : (
+          <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
+            {row.blocks.map((b, j) => (
+              <div key={j} style={{ width: `${WIDTH_FRACTION[b.width ?? "full"] * 100}%` }}>
+                <Block block={b} />
+              </div>
+            ))}
+          </div>
+        ),
+      )}
     </div>
   );
 }

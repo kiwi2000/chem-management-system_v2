@@ -194,6 +194,7 @@ export const ja = {
     filterPanel: "フィルター",
     compositionSection: "組成情報",
     casNumbers: "CAS番号",
+    substanceNames: "物質名",
     savedFilters: "保存した条件",
     save: "保存",
     load: "読込",
@@ -930,9 +931,17 @@ export const ja = {
     unknownField: "使えない項目",
   },
   documents: {
+    batchMissed: (n: number) => `${n} 件は作れませんでした（見る権限が無いか、消されています）`,
+    makeSelected: "選んだものでまとめて生成",
+    makeSelectedConfirm: (n: number) => `選んだ ${n} 件の帳票をまとめて作ります`,
+    batchTitle: "まとめて生成",
+    batchCount: (n: number) => `${n} 件`,
+    batchTooMany: (n: number) =>
+      `一度に作れるのは ${n} 件までです。絞り込んでから選び直してください`,
+    batchEmpty: "作る相手が選ばれていません",
     pickHere:
       "帳票を作る相手を選んでください。コードを押すと帳票が開きます。絞り込みはいつもどおり使えます。",
-    make: "この様式で作る",
+    make: "生成",
     lead: "帳票はここか、製品・物質の詳細から作れます。様式（テンプレート）もここで作ります。",
     printHint:
       "PDFにするには、印刷の画面でプリンターを「PDFとして保存」（Microsoft Print to PDF など）に変えてください。",

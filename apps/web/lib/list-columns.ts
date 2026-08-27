@@ -85,6 +85,46 @@ function judgementCategoryCondition(
   return op === "all" ? { AND: each } : { OR: each };
 }
 
+/**
+ * 組成に、その名前の物質が入っているか。
+ *
+ * **CAS番号と違って、部分一致で見る。**名前は覚えかたが人によって違うので、
+ * 完全一致にすると使えない（「鉛」で探して「鉛（別ロット）」が出ないなど）。
+ *
+ * **別名も見る。**社内での呼び方でしか覚えていないことがあるため。
+ * 日本語・英語・別名のどれかに当たれば、その物質を含む製品とみなす。
+ */
+function substanceNameCondition(
+  values: string[],
+  op: "all" | "any",
+): Record<string, unknown> | null {
+  const words = [...new Set(values.map((v) => v.trim()).filter((v) => v !== ""))];
+  if (words.length === 0) return null;
+  const each = words.map((w) => ({
+    compositionLines: {
+      some: {
+        substance: {
+          OR: [
+            { nameJa: { contains: w, mode: "insensitive" as const } },
+            { nameEn: { contains: w, mode: "insensitive" as const } },
+            {
+              aliases: {
+                some: {
+                  OR: [
+                    { nameJa: { contains: w, mode: "insensitive" as const } },
+                    { nameEn: { contains: w, mode: "insensitive" as const } },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  }));
+  return op === "all" ? { AND: each } : { OR: each };
+}
+
 export const PRODUCT_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
@@ -103,6 +143,14 @@ export const PRODUCT_COLUMNS: QueryColumn[] = [
     normalize: normalizeCas,
     relationPath: ["compositionLines", "substance"],
     sortable: false,
+  },
+  // 組成をたどって物質の名前で探す。こちらは部分一致（別名も見る）
+  {
+    key: "substanceNames",
+    kind: "list",
+    field: "nameJa",
+    sortable: false,
+    custom: (f) => (f.kind === "list" ? substanceNameCondition(f.values, f.op) : null),
   },
   { key: "note", kind: "text", field: "note", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },

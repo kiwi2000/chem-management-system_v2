@@ -8,12 +8,13 @@ import {
   type TableState,
 } from "@chem/shared";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { batchHref } from "@/lib/doc-batch";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, SubstanceListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -38,6 +39,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
   const { m, locale } = useI18n();
   /* 帳票の相手として選ばれに来ているか（製品の一覧と同じ） */
   const pickFor = useSearchParams().get("pickFor");
+  const router = useRouter();
   const { can } = useMe();
   const editable = can("SUBSTANCE_EDIT");
 
@@ -295,16 +297,33 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         onReset={reset}
         emptyMessage={m.substances.empty}
         create={editable && scope === "published" ? { href: "/substances/new" } : undefined}
-        selectable={editable}
-        onDeleteSelected={onDeleteSelected}
+        /*
+          帳票の相手を選びに来ているときは、**誰でも選べる**。
+          選ぶのは消すためではなく、まとめて作るためなので、
+          編集の権限は要らない
+        */
+        selectable={editable || !!pickFor}
+        onDeleteSelected={pickFor ? undefined : onDeleteSelected}
         bulkAction={
-          scope === "working"
+          pickFor
             ? {
-                label: approvalRequired ? m.common.submitSelected : m.common.publishSelected,
-                confirm: approvalRequired ? m.common.submitConfirm : m.common.publishConfirm,
-                run: (rows) => void runBulk(approvalRequired ? "submit" : "publish", rows),
+                label: m.documents.makeSelected,
+                confirm: m.documents.makeSelectedConfirm,
+                run: (rows) =>
+                  router.push(
+                    batchHref(
+                      pickFor,
+                      rows.map((r) => r.id),
+                    ),
+                  ),
               }
-            : undefined
+            : scope === "working"
+              ? {
+                  label: approvalRequired ? m.common.submitSelected : m.common.publishSelected,
+                  confirm: approvalRequired ? m.common.submitConfirm : m.common.publishConfirm,
+                  run: (rows) => void runBulk(approvalRequired ? "submit" : "publish", rows),
+                }
+              : undefined
         }
         // 行の右端の › で詳細画面へ。編集はその画面の「編集」から行う
       />

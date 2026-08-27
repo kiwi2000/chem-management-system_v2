@@ -336,17 +336,32 @@ export function DocTemplatesScreen() {
           ),
       },
       {
+        key: "createdAt",
+        header: m.docTemplates.createdAt,
+        kind: "date",
+        width: 132,
+        className: "whitespace-nowrap",
+        render: (t) => (t.id === NEW_ID ? null : fmt(t.createdAt, locale)),
+      },
+      {
+        key: "updatedAt",
+        header: m.docTemplates.updatedAt,
+        kind: "date",
+        width: 132,
+        className: "whitespace-nowrap",
+        render: (t) => (t.id === NEW_ID ? null : fmt(t.updatedAt, locale)),
+      },
+      {
         key: "make",
         header: "",
         kind: "text",
-        width: 132,
+        width: 96,
         sortable: false,
         filterable: false,
         render: (t) =>
           t.id === NEW_ID || !t.active ? null : (
             <Button
               size="sm"
-              variant="outline"
               className="h-7"
               onClick={(e) => {
                 e.stopPropagation();
@@ -364,22 +379,6 @@ export function DocTemplatesScreen() {
               {m.documents.make}
             </Button>
           ),
-      },
-      {
-        key: "createdAt",
-        header: m.docTemplates.createdAt,
-        kind: "date",
-        width: 132,
-        className: "whitespace-nowrap",
-        render: (t) => (t.id === NEW_ID ? null : fmt(t.createdAt, locale)),
-      },
-      {
-        key: "updatedAt",
-        header: m.docTemplates.updatedAt,
-        kind: "date",
-        width: 132,
-        className: "whitespace-nowrap",
-        render: (t) => (t.id === NEW_ID ? null : fmt(t.updatedAt, locale)),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
