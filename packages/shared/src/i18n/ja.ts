@@ -925,6 +925,8 @@ export const ja = {
     unknownField: "使えない項目",
   },
   documents: {
+    printHint:
+      "PDFにするには、印刷の画面でプリンターを「PDFとして保存」（Microsoft Print to PDF など）に変えてください。",
     print: "印刷 / PDF保存",
     unknownFields: "いまの対象では使えない差込項目があり、その部分は空になっています",
     create: "帳票を作る",

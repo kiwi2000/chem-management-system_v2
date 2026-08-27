@@ -12,7 +12,12 @@ import type { RenderBlock, RenderLine, RenderedDocument } from "@/lib/doc-render
  *
  * **PDF はブラウザの印刷に任せる。**サーバーに変換の道具を置かずに済み、
  * 日本語も見ている人の端末のフォントで正しく出る。
- * 「PDFとして保存」も同じ画面から選べる。
+ * 印刷の画面でプリンターを「PDFとして保存」に変えると PDF になるので、
+ * その断りをボタンの横に添える（分かる人だけが使える機能にしない）。
+ *
+ * **保存するときのファイル名は、ページの題名で決まる。**
+ * ここでは触らない。`document.title` を書き換えても Next.js が上書きするので、
+ * 呼ぶ側（`generateMetadata`）で決めている。
  *
  * **紙に出るのは帳票だけ。**上のボタンや知らせは印刷では消える（`no-print`）。
  */
@@ -36,10 +41,13 @@ export function DocumentView({
         <Link href={backHref} className="text-muted-foreground text-xs underline">
           {title}
         </Link>
-        <Button size="sm" onClick={() => window.print()}>
-          <Printer className="size-4" />
-          {m.documents.print}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-muted-foreground text-xs">{m.documents.printHint}</span>
+          <Button size="sm" onClick={() => window.print()}>
+            <Printer className="size-4" />
+            {m.documents.print}
+          </Button>
+        </div>
       </div>
 
       {unknown.length > 0 && (

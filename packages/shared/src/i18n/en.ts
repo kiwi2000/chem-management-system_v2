@@ -915,6 +915,7 @@ export const en: Messages = {
     unknownField: "Unavailable field",
   },
   documents: {
+    printHint: 'For a PDF, change the printer to "Save as PDF" in the print dialog.',
     print: "Print / Save as PDF",
     unknownFields: "Some fields are not available for this target and were left blank",
     create: "Create document",
