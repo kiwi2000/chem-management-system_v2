@@ -66,6 +66,11 @@ export interface JudgeCategory {
   aggregation: Aggregation;
   metalEtc: string | null;
   threshold: Threshold;
+  /**
+   * 閾値が何に対する濃度か。省くと製品全体。
+   * 均質材料あたりなら、当たっても当たらなくても必ず要確認にする
+   */
+  thresholdBasis?: "PRODUCT" | "HOMOGENEOUS_MATERIAL";
 }
 
 /** 金属換算係数。CAS → その中の元素の重量％ */
@@ -104,7 +109,12 @@ export type ReviewReason =
   /** 閾値を入れられていない法文物質名に、当たる物質が入っている */
   | "unfilledThreshold"
   /** 当たった CAS が、法令の名称の条件に合うか外部データベースが確かめよと言っている */
-  | "conditionalLink";
+  | "conditionalLink"
+  /**
+   * 閾値が**均質材料あたり**で決まっている（RoHS など）。
+   * こちらの組成は製品全体でしか持っていないので、当たっても当たらなくても言い切れない
+   */
+  | "homogeneousMaterial";
 
 export interface JudgeHit {
   /** 当たった法文物質名。区分でまとめたときは null（区分そのものが当たった） */
@@ -196,6 +206,14 @@ export function judge(input: JudgeInput): JudgeResult {
 
   const reasons = new Set<ReviewReason>();
   const hits: JudgeHit[] = [];
+
+  /*
+    閾値が**均質材料あたり**で決まっている区分（RoHS など）。
+    こちらの組成は製品全体でしか持っていないので、割れば必ず薄まる。
+    **当たっても当たらなくても言い切れない**ので、先に理由を立てておく。
+    均質材料そのものを原材料として登録し、そちらを判定すれば正しく見られる
+  */
+  if (category.thresholdBasis === "HOMOGENEOUS_MATERIAL") reasons.add("homogeneousMaterial");
 
   // 中身が分からないぶんが残っていれば、言い切れない
   if ((toScaled(input.unknownPct) ?? 0n) > 0n) reasons.add("unknownComposition");

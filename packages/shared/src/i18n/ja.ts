@@ -249,7 +249,7 @@ export const ja = {
   substances: {
     publishState: "状態",
     workingSection: "作業中",
-    title: "物質マスタ",
+    title: "物質",
     newTitle: "物質の新規登録",
     editTitle: "物質の編集",
     detailTitle: "物質の詳細",
@@ -480,6 +480,10 @@ export const ja = {
     bounds: { EXCLUSIVE: "<", INCLUSIVE: "≤" },
     /** 閾値の式の真ん中に置く言葉 */
     content: "含有率（重量%）",
+    thresholdBasis: "閾値の対象",
+    thresholdBasisHint:
+      "この閾値が何に対する濃度か。RoHS のように均質材料あたりで決まるものは「均質材料」にします。その区分は判定を出しても必ず要確認になります",
+    thresholdBases: { PRODUCT: "製品全体", HOMOGENEOUS_MATERIAL: "均質材料あたり" },
     interactionGroup: "兼ね合いグループ",
     interactionHint: "同じグループでは、rank の小さいほうだけを表示します（空欄なら常に出す）",
     rank: "rank",
@@ -827,6 +831,8 @@ export const ja = {
       "この法文物質名は、除外の条件を1つの数値で表せないため閾値を入れていません。条文を読んで判断してください。",
     reasonConditionalLink:
       "外部データベースが、総称から広げてこのCASを結び付けています。法令の名称が炭素数や置換位置で絞っている場合、実際には当てはまらないことがあります。名称と物質を見比べてください。",
+    reasonHomogeneous:
+      "この規制の濃度は均質材料あたりで決まっています。製品全体では薄まるため、この判定だけでは言い切れません。均質材料を原材料として登録し、その原材料の判定を見てください",
     // 一覧の列。狭いので短く
     listHeader: "法規制",
     listReviewHeader: "要確認",

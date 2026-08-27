@@ -8,6 +8,7 @@ import type {
   PropertyDataType,
   PropertyTarget,
   SubstanceStatus,
+  ThresholdBasis,
   ThresholdBound,
 } from "@chem/shared";
 
@@ -488,6 +489,8 @@ export interface RegulationCategoryDto {
   interactionGroup: string | null;
   rank: number | null;
   displayOrder: number;
+  /** 閾値が何に対する濃度か。均質材料あたりなら判定は必ず要確認になる */
+  thresholdBasis: ThresholdBasis;
   note: string | null;
   /** 配下の法文物質名の数（表示名のない分類のぶんも含む） */
   substanceCount: number;

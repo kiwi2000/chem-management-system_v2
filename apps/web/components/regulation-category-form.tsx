@@ -1,5 +1,6 @@
 "use client";
 
+import { THRESHOLD_BASES, type ThresholdBasis } from "@chem/shared";
 import { useState } from "react";
 import {
   DEFAULT_THRESHOLD,
@@ -21,6 +22,7 @@ interface Draft extends NameDraft, ThresholdDraft {
   displayOrder: number;
   interactionGroup: string;
   rank: string;
+  thresholdBasis: ThresholdBasis;
   note: string;
 }
 
@@ -57,6 +59,7 @@ export function RegulationCategoryForm({
     displayOrder: initial?.displayOrder ?? 0,
     interactionGroup: initial?.interactionGroup ?? "",
     rank: initial?.rank === undefined || initial?.rank === null ? "" : String(initial.rank),
+    thresholdBasis: initial?.thresholdBasis ?? "PRODUCT",
     note: initial?.note ?? "",
   }));
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +89,7 @@ export function RegulationCategoryForm({
             displayOrder: Number(draft.displayOrder) || 0,
             interactionGroup: draft.interactionGroup || null,
             rank: draft.rank === "" ? null : Number(draft.rank),
+            thresholdBasis: draft.thresholdBasis,
             note: draft.note || null,
           }),
         },
@@ -189,6 +193,28 @@ export function RegulationCategoryForm({
               />
             </Field>
           </div>
+
+          <Field
+            label={m.regulationCategories.thresholdBasis}
+            htmlFor="cat-basis"
+            hint={m.regulationCategories.thresholdBasisHint}
+            className="w-72"
+          >
+            <select
+              id="cat-basis"
+              value={draft.thresholdBasis}
+              onChange={(e) =>
+                setDraft({ ...draft, thresholdBasis: e.target.value as ThresholdBasis })
+              }
+              className="border-input bg-background h-9 w-full rounded-none border px-2 text-sm"
+            >
+              {THRESHOLD_BASES.map((b) => (
+                <option key={b} value={b}>
+                  {m.regulationCategories.thresholdBases[b]}
+                </option>
+              ))}
+            </select>
+          </Field>
 
           <Field label={m.regulationCategories.note} htmlFor="cat-note">
             <Input

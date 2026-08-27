@@ -584,6 +584,7 @@ export function reasonText(m: M, reason: string): string {
     conditionalExclusion: m.judgements.reasonConditional,
     unfilledThreshold: m.judgements.reasonUnfilled,
     conditionalLink: m.judgements.reasonConditionalLink,
+    homogeneousMaterial: m.judgements.reasonHomogeneous,
   };
   return table[reason] ?? reason;
 }

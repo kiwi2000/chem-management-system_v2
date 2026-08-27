@@ -36,3 +36,13 @@ export function normalizeCas(raw: string): string {
 export function looksLikeCas(normalized: string): boolean {
   return /^\d{2,7}-\d{2}-\d$/.test(normalized);
 }
+
+/**
+ * 閾値が**何に対する濃度か**。
+ *
+ * ほとんどの法令は製品全体に対する重量%だが、RoHS のように
+ * **均質材料あたり**で決まるものがある（ねじのめっき、基板のはんだ など）。
+ * 製品全体で割ると必ず薄まるので、そのままでは違反を見落とす。
+ */
+export const THRESHOLD_BASES = ["PRODUCT", "HOMOGENEOUS_MATERIAL"] as const;
+export type ThresholdBasis = (typeof THRESHOLD_BASES)[number];

@@ -374,6 +374,49 @@ describe("要確認になる場面", () => {
   });
 });
 
+describe("均質材料あたりの閾値（RoHS など）", () => {
+  /*
+    **こちらの組成は製品全体でしか持っていない。**
+    ねじのめっきに鉛が30%入っていても、製品全体では0.05%まで薄まる。
+    そのまま非該当と出すと、**見落とす向きの間違い**になる。
+    当たっても当たらなくても言い切れないので、必ず要確認にする
+  */
+  const homogeneous = {
+    aggregation: "NONE" as const,
+    metalEtc: null,
+    threshold: over("0.1"),
+    thresholdBasis: "HOMOGENEOUS_MATERIAL" as const,
+  };
+  // まとめない区分では、閾値は法文物質名の側が持つ
+  const rohs = [entry({ threshold: over("0.1") })];
+
+  it("閾値を下回って非該当でも、要確認にする", () => {
+    const r = judge(
+      input({ lines: [line("7439-92-1", "0.05")], category: homogeneous, entries: rohs }),
+    );
+    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(r.needsReview).toBe(true);
+    expect(r.reasons).toContain("homogeneousMaterial");
+  });
+
+  it("該当したときも、要確認にする", () => {
+    const r = judge(
+      input({ lines: [line("7439-92-1", "30")], category: homogeneous, entries: rohs }),
+    );
+    expect(r.verdict).toBe("APPLICABLE");
+    expect(r.needsReview).toBe(true);
+    expect(r.reasons).toContain("homogeneousMaterial");
+  });
+
+  it("製品全体あたりの区分では、この理由は付かない", () => {
+    const r = judge(
+      input({ lines: [line("7439-92-1", "0.05")], entries: [entry({ threshold: over("0.1") })] }),
+    );
+    expect(r.reasons).not.toContain("homogeneousMaterial");
+    expect(r.needsReview).toBe(false);
+  });
+});
+
 describe("条件つきで結ばれたCAS", () => {
   /*
     外部データベースが総称から広げて結び付けたCAS。

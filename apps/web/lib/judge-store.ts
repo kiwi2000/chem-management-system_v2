@@ -52,6 +52,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
       id: true,
       aggregation: true,
       metalEtc: true,
+      thresholdBasis: true,
       thresholdLower: true,
       lowerBound: true,
       thresholdUpper: true,
@@ -101,6 +102,8 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
     category: {
       aggregation: c.aggregation,
       metalEtc: c.metalEtc,
+      // 均質材料あたりの区分は、判定を出しても必ず要確認になる
+      thresholdBasis: c.thresholdBasis,
       threshold: {
         lower: c.thresholdLower.toString(),
         lowerBound: c.lowerBound,

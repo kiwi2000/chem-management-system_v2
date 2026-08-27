@@ -62,6 +62,7 @@ export async function PUT(req: Request, { params }: Ctx) {
       lowerBound: v.lowerBound,
       thresholdUpper: v.thresholdUpper,
       upperBound: v.upperBound,
+      thresholdBasis: v.thresholdBasis,
       interactionGroup: v.interactionGroup ?? null,
       rank: v.rank ?? null,
       displayOrder: v.displayOrder,

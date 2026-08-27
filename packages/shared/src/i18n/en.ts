@@ -471,6 +471,13 @@ export const en: Messages = {
     upper: "Upper",
     bounds: { EXCLUSIVE: "<", INCLUSIVE: "≤" },
     content: "content (wt%)",
+    thresholdBasis: "Limit applies to",
+    thresholdBasisHint:
+      "What the limit is a concentration of. Pick per homogeneous material for rules like RoHS. Such a category always needs review, whatever the result",
+    thresholdBases: {
+      PRODUCT: "The whole product",
+      HOMOGENEOUS_MATERIAL: "Each homogeneous material",
+    },
     interactionGroup: "Interaction group",
     interactionHint: "Within a group only the lowest rank is shown (empty means always shown)",
     rank: "Rank",
@@ -815,6 +822,8 @@ export const en: Messages = {
       "No threshold is set for this entry because its exemption cannot be reduced to a single number. Read the text and decide.",
     reasonConditionalLink:
       "The external database linked this CAS by widening from a generic name. Where the statutory name is narrowed by carbon count or substitution position, it may not actually apply. Compare the name with the substance.",
+    reasonHomogeneous:
+      "This limit applies per homogeneous material. Spread over the whole product it always looks lower, so this result alone cannot settle it. Register the homogeneous material as a material and read its own result",
     // Columns in the list. Space is tight, so keep them short
     listHeader: "Regulated",
     listReviewHeader: "Review",

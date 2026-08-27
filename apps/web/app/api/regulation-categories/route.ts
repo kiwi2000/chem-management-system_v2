@@ -94,6 +94,7 @@ export async function POST(req: Request) {
       lowerBound: v.lowerBound,
       thresholdUpper: v.thresholdUpper,
       upperBound: v.upperBound,
+      thresholdBasis: v.thresholdBasis,
       interactionGroup: v.interactionGroup ?? null,
       rank: v.rank ?? null,
       displayOrder: v.displayOrder,
