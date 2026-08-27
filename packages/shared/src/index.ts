@@ -12,6 +12,7 @@ export * from "./composition";
 export * from "./constants";
 export * from "./country";
 export * from "./decimal";
+export * from "./document";
 export * from "./feedback";
 export * from "./group";
 export * from "./language";

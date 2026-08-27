@@ -1030,19 +1030,21 @@ model Feedback {
  */
 /**
  * 閾値が**何に対する濃度か**。
- *
  * ほとんどの法令は製品（または成形品）全体に対する重量%で決まるが、
  * RoHS のように**均質材料あたり**で決まるものがある。
  * ねじのめっき、基板のはんだ、といった分けられない単位ごとに見るもので、
  * 製品全体で割ると必ず薄まり、**違反を見落とす**。
- *
  * こちらの組成は製品全体でしか持っていないので、判定は出せても言い切れない。
  * `HOMOGENEOUS_MATERIAL` の区分は、当たっても当たらなくても必ず要確認にする。
  */
 enum ThresholdBasis {
-  /** 製品全体に対する重量% */
+  /**
+   * 製品全体に対する重量%
+   */
   PRODUCT
-  /** 均質材料に対する重量%。こちらの組成では確かめきれない */
+  /**
+   * 均質材料に対する重量%。こちらの組成では確かめきれない
+   */
   HOMOGENEOUS_MATERIAL
 }
 
@@ -1572,7 +1574,6 @@ model Element {
 
 /**
  * 各国のインベントリ（既存化学物質の目録）。
- *
  * **規制区分としては持たない。**
  * 判定は登録されている区分をすべて見に行くので、インベントリを区分として入れると
  * どの製品もすべてのインベントリに「該当」してしまう。
@@ -1600,19 +1601,18 @@ model Inventory {
   /**
    * 物質の画面に出すときの見出し
    */
-  numberLabel   String? @map("number_label")
+  numberLabel String? @map("number_label")
   /**
    * 出す順。法令の並びとは別に決める
    */
-  numberOrder   Int     @default(0) @map("number_order")
+  numberOrder Int     @default(0) @map("number_order")
   /**
    * このインベントリの番号を、物質の画面に出すか。
-   *
    * **呼び名とは別に持つ。**出すのをやめても呼び名は残しておきたいため
    * （消してしまうと、また出したくなったときに付け直すことになる）。
    * 呼び名が空のときは、立っていても出せない
    */
-  numberShown   Boolean @default(false) @map("number_shown")
+  numberShown Boolean @default(false) @map("number_shown")
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
@@ -1629,21 +1629,16 @@ model Inventory {
 
 /**
  * インベントリの1行。**加工済みの値を持つ。**
- *
  * インベントリは他の法規制とは別に取り込むもので、
  * 番号の取り出し（正規表現）は取り込みスクリプトが受け持つ。
  * ここに入るのは仕上がった値——番号か、「該当」のような文字。
- *
  * 1つの物質に複数の番号が付くインベントリ（EINECS・KECI）では、番号の数だけ行ができる。
- *
  * **バージョンとデータソースを持つ。**持ちかたは `StatutoryCasLink` と同じ。
  * 列の中身が違うだけで、仕組みは他の法規制データと揃えてある。
- *
- *   バージョン         … インベントリは改訂される。「いつ時点のもので見たか」が残らないと
- *                判定の跡をたどれない
- *   データソース … 同じインベントリを別々のところから取れる。どちらを採るかは
- *                バージョンごとの優先度（`LinkVersionSource`）で決める
- *
+ * バージョン         … インベントリは改訂される。「いつ時点のもので見たか」が残らないと
+ * 判定の跡をたどれない
+ * データソース … 同じインベントリを別々のところから取れる。どちらを採るかは
+ * バージョンごとの優先度（`LinkVersionSource`）で決める
  * インベントリそのもの（`Inventory`）はバージョンを持たない——改訂されるのは中身であって、
  * 「ENCS」というインベントリの存在ではないため。
  */
@@ -1674,4 +1669,94 @@ model InventoryRow {
   @@index([versionId, casNormalized])
   @@index([inventoryId])
   @@map("inventory_rows")
+}
+
+/**
+ * テンプレートが1件受け取るもの。
+ * 製品なら組成と判定、物質なら該当法規とインベントリ番号が引ける
+ */
+enum DocumentTarget {
+  PRODUCT
+  SUBSTANCE
+}
+
+/**
+ * ドキュメント生成のテンプレート。
+ * **中身はシステムの中で作る。**Wordファイルを預からないので、
+ * 保存の置き場が要らず、差込項目の打ち間違いも起きない
+ * （項目は一覧から選ぶ。`@chem/shared` の `document.ts`）。
+ * **出す形はここに書かない。**中身は「何を、どの順で出すか」だけで、
+ * HTML にするか .docx にするかは出す側が決める。
+ * 書いてしまうと、出し先が増えるたびにテンプレートを作り直すことになる。
+ */
+model DocumentTemplate {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  nameJa String  @map("name_ja")
+  nameEn String? @map("name_en")
+
+  target DocumentTarget
+
+  /**
+   * ブロックの並び。`@chem/shared` の `DocumentContent`。
+   * **形が変わったときのために、読めるかを毎回確かめてから使う**
+   */
+  content Json
+
+  /**
+   * 出す言語。テンプレートを言語ごとに作って多言語に対応する
+   * （文面そのものを翻訳する仕組みは持たない）
+   */
+  locale String @default("JA") @db.VarChar(10)
+
+  active       Boolean @default(true)
+  displayOrder Int     @default(0) @map("display_order")
+  note         String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  documents GeneratedDocument[]
+
+  @@index([target, displayOrder])
+  @@map("document_templates")
+}
+
+/**
+ * 作った記録。
+ * **中身は残さない。**残すと、あとで権限が変わった人が
+ * 古いファイルを取れてしまう。誰がいつ何に対して作ったかだけを持ち、
+ * 同じものが要るときはもう一度作る
+ */
+model GeneratedDocument {
+  id         String @id @default(cuid())
+  templateId String @map("template_id")
+
+  /**
+   * 製品ID・物質IDなど。表をまたぐので関連は張らない
+   */
+  targetRef  String @map("target_ref")
+  /**
+   * そのときのコード。対象が消えても記録が読めるように控える
+   */
+  targetCode String @map("target_code") @db.VarChar(50)
+
+  /**
+   * 作ったときの条件（バージョンなど）。同じものを作り直すために持つ
+   */
+  params Json?
+
+  generatedBy String?  @map("generated_by")
+  generatedAt DateTime @default(now()) @map("generated_at")
+
+  template DocumentTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([templateId, generatedAt])
+  @@index([targetRef])
+  @@map("generated_documents")
 }
