@@ -397,6 +397,12 @@ export interface AggregateRowDto {
   totalPct: string;
   contributions: AggregateContributionDto[];
   /**
+   * 組成の行に書かれていた備考。
+   * **同じCASに複数の行がまとまったときは、重ならないものを「／」でつなぐ。**
+   * まとめた表だけを出す組成があるので、ここで拾わないと備考が画面から消える
+   */
+  note: string | null;
+  /**
    * この CAS が効いている規制区分。該当したものだけ。
    * **判定し直した結果ではなく、保持してある判定結果から引いている**
    */

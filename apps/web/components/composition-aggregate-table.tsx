@@ -57,6 +57,8 @@ const HEADS: {
     label: (m) => m.composition.contentPct,
     className: "text-right whitespace-nowrap",
   },
+  // 上の組成表を出さない組成があるので、備考はこちらでも受け持つ
+  { key: "note", width: 160, label: (m) => m.composition.note },
 ];
 
 /**
@@ -466,6 +468,7 @@ export function CompositionAggregateTable({
                         )}
                       </td>
                       <td className={cn(CELL, "text-right whitespace-nowrap")}>{row.totalPct}%</td>
+                      <td className={cn(CELL, "text-muted-foreground text-xs")}>{row.note}</td>
                       {leaves.map((c) => {
                         const hit = row.regulations.filter((r) => c.categoryIds.has(r.categoryId));
                         return (

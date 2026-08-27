@@ -418,8 +418,19 @@ export function CompositionEditor({
     まとめた表を下に並べるか。
     **直しているあいだは出さない。**書き換えている途中の値をまとめても意味が無く、
     保存するまで上下が食い違って見えるため。
+
+    直していないときは**必ず出す**。まとめた表にしか「該当法規制」の列が無く、
+    どの成分がどの規制に効いているかは、ここでしか見られない。
   */
-  const showAggregate = canAggregate && !editing;
+  const showAggregate = !editing;
+  /*
+    登録したままの表を出すか。
+
+    **まとめても同じ表になるなら、こちらを出さない。**中身が同じ表を2つ並べても
+    読む手間が増えるだけで、残すなら列の多いまとめた表のほう。
+    備考はまとめた表にも出るので、これで消える情報は無い。
+  */
+  const showRaw = editing || canAggregate;
 
   /** すべて展開の出発点。表に並んでいる、中身を持つ原材料の行 */
   const treeRoots: TreeRoot[] = useMemo(
@@ -510,7 +521,7 @@ export function CompositionEditor({
           <p className="text-muted-foreground text-sm">{m.common.loading}</p>
         ) : rows.length === 0 ? (
           <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
-        ) : (
+        ) : !showRaw ? null : (
           <div ref={cols.scrollerRef} className="overflow-x-auto">
             <table
               {...cols.tableProps}
@@ -758,16 +769,22 @@ export function CompositionEditor({
           切り替えではなく並べるのは、**この2つを見比べたい場面が多い**ため
           （原材料の中に同じCASが散っているとき、上だけ見ても合計が分からない）。
 
-          まとめても同じ表になるなら出さない。同じものを2つ並べても読む手間が増えるだけ。
+          まとめても同じ表になるときは、**上の表のほうを出さない**（`showRaw`）。
+          同じものを2つ並べても読む手間が増えるだけで、列の多いこちらを残す。
         */}
         {showAggregate && (
-          <div className="space-y-2 border-t pt-4">
+          /*
+            上の表を出さないときは、区切り線も小見出しも要らない。
+            まとめる相手がいないのだから「原材料展開・CAS合算」と名乗ると、
+            **何かをまとめた表に見えてしまう**。札の「組成」がそのまま見出しになる
+          */
+          <div className={cn("space-y-2", showRaw && "border-t pt-4")}>
             {/*
               見出しとボタンの置き方は、上の「組成」の見出しと同じにする。
               左端がそろっていないと、2つの表が別のものに見える。
             */}
             <div className="space-y-1">
-              <p className="text-sm font-medium">{m.composition.aggregateTitle}</p>
+              {showRaw && <p className="text-sm font-medium">{m.composition.aggregateTitle}</p>}
               {aggregateKeys.length > 0 && (
                 <ExpandButtons
                   m={m}

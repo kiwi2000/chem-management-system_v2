@@ -49,6 +49,8 @@ interface Bucket {
   fine: bigint;
   /** 寄与元。並べ替えたいので、細かい整数のまま持つ */
   contributions: { code: string; nameJa: string; nameEn: string | null; fine: bigint }[];
+  /** 組成の行の備考。重なりを除いて出す順に持つ */
+  notes: string[];
 }
 
 export async function aggregateComposition(
@@ -110,7 +112,7 @@ export async function aggregateComposition(
       if (!next) continue;
 
       if (line.substance) {
-        addLeaf(line.substance, next);
+        addLeaf(line.substance, next, line.note);
         continue;
       }
       if (!line.childProduct) continue;
@@ -143,6 +145,7 @@ export async function aggregateComposition(
       casNumber: string | null;
     },
     ratio: Ratio,
+    note: string | null,
   ) {
     const casNormalized = substance.casNumber?.trim().toUpperCase() ?? null;
     const key = keyOf(casNormalized, substance.id);
@@ -156,6 +159,7 @@ export async function aggregateComposition(
       nameEn: substance.nameEn,
       fine: 0n,
       contributions: [],
+      notes: [],
     };
     bucket.fine += fine;
     bucket.contributions.push({
@@ -164,6 +168,8 @@ export async function aggregateComposition(
       nameEn: substance.nameEn,
       fine,
     });
+    const trimmed = note?.trim();
+    if (trimmed && !bucket.notes.includes(trimmed)) bucket.notes.push(trimmed);
     buckets.set(key, bucket);
   }
 
@@ -210,6 +216,7 @@ export async function aggregateComposition(
             nameEn: c.nameEn,
             pct: fineToPct(c.fine),
           })),
+        note: b.notes.join("／") || null,
         // 判定は正規化した CAS で紐づいている（表示用の CAS 番号ではない）
         regulations: (b.casNormalized ? regulations.get(b.casNormalized) : undefined) ?? [],
       };
