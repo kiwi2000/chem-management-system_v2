@@ -217,16 +217,72 @@ export const BLOCK_KINDS = [
 ] as const;
 export type BlockKind = (typeof BLOCK_KINDS)[number];
 
+/**
+ * ブロックの幅。
+ *
+ * **入れ子にしない。**「横並び」という入れものを作ると、
+ * その中にまた入れられることになり、並べ替えも中と外で別々に要る。
+ * かわりに1つずつ幅を持たせ、**幅の合計が1に収まるあいだ横に続ける**。
+ * 並びは上から下のままなので、これまでの並べ替えがそのまま使える。
+ */
+export const BLOCK_WIDTHS = ["full", "twoThirds", "half", "third"] as const;
+export type BlockWidth = (typeof BLOCK_WIDTHS)[number];
+
+/** 幅を数で表したもの。行に何個入るかの判断に使う */
+export const WIDTH_FRACTION: Record<BlockWidth, number> = {
+  full: 1,
+  twoThirds: 2 / 3,
+  half: 1 / 2,
+  third: 1 / 3,
+};
+
+interface BlockBase {
+  id: string;
+  /** 省略は全幅。全幅のブロックは必ず1行を占める */
+  width?: BlockWidth;
+}
+
 export type DocumentBlock =
-  | { id: string; kind: "heading"; level: 1 | 2 | 3; lines: RichLine[] }
-  | { id: string; kind: "text"; lines: RichLine[] }
+  | (BlockBase & { kind: "heading"; level: 1 | 2 | 3; lines: RichLine[] })
+  | (BlockBase & { kind: "text"; lines: RichLine[] })
   /** 「ラベル：値」を縦に並べたもの */
-  | { id: string; kind: "fields"; items: { label: string; field: string }[] }
-  | { id: string; kind: "table"; table: DocumentTable; columns: string[]; caption?: string }
-  | { id: string; kind: "divider" }
-  | { id: string; kind: "spacer"; size: "sm" | "md" | "lg" }
-  | { id: string; kind: "pageBreak" }
-  | { id: string; kind: "signature"; label: string };
+  | (BlockBase & { kind: "fields"; items: { label: string; field: string }[] })
+  | (BlockBase & { kind: "table"; table: DocumentTable; columns: string[]; caption?: string })
+  | (BlockBase & { kind: "divider" })
+  | (BlockBase & { kind: "spacer"; size: "sm" | "md" | "lg" })
+  | (BlockBase & { kind: "pageBreak" })
+  | (BlockBase & { kind: "signature"; label: string });
+
+/**
+ * 横に並ぶものをまとめる。**画面と紙面の両方がこれを使う。**
+ * 別々に組むと、編集画面で見えている並びと出てきた紙が食い違う。
+ *
+ * 改ページは必ず1行を占める。途中に挟まると、横並びが分断されて読めなくなる。
+ */
+export function groupIntoRows<T extends { kind: string; width?: BlockWidth }>(
+  blocks: T[],
+): { blocks: T[]; index: number[] }[] {
+  const rows: { blocks: T[]; index: number[] }[] = [];
+  let current: { blocks: T[]; index: number[] } | null = null;
+  let filled = 0;
+
+  blocks.forEach((b, i) => {
+    const w = b.width ?? "full";
+    const frac = WIDTH_FRACTION[w];
+    const alone = w === "full" || b.kind === "pageBreak";
+    // 端数で合計が1をわずかに超えるのを避ける
+    if (alone || current === null || filled + frac > 1.0001) {
+      current = { blocks: [b], index: [i] };
+      rows.push(current);
+      filled = alone ? 1 : frac;
+      return;
+    }
+    current.blocks.push(b);
+    current.index.push(i);
+    filled += frac;
+  });
+  return rows;
+}
 
 /** テンプレートの中身そのもの */
 export interface DocumentContent {

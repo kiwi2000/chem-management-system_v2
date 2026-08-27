@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   EMPTY_DOCUMENT,
   fieldsFor,
+  groupIntoRows,
   isKnownField,
   parseDocumentContent,
   tablesFor,
@@ -108,5 +109,50 @@ describe("対象に合わない差込項目を見つける", () => {
       { id: "2", kind: "fields", items: [{ label: "b", field: "nope" }] },
     ]);
     expect(unknownFields(c, "PRODUCT")).toEqual(["nope"]);
+  });
+});
+
+describe("横に並べる", () => {
+  const b = (kind: string, width?: string) =>
+    ({ kind, width }) as unknown as Parameters<typeof groupIntoRows>[0][number];
+
+  it("幅を指定しなければ、1つずつ1行", () => {
+    const rows = groupIntoRows([b("text"), b("text")]);
+    expect(rows.map((r) => r.blocks.length)).toEqual([1, 1]);
+  });
+
+  it("半分を2つ並べると1行になる", () => {
+    const rows = groupIntoRows([b("text", "half"), b("text", "half")]);
+    expect(rows.map((r) => r.blocks.length)).toEqual([2]);
+  });
+
+  it("3分の1を3つで1行、4つ目は次の行", () => {
+    const rows = groupIntoRows([
+      b("text", "third"),
+      b("text", "third"),
+      b("text", "third"),
+      b("text", "third"),
+    ]);
+    expect(rows.map((r) => r.blocks.length)).toEqual([3, 1]);
+  });
+
+  it("合計が1を超えるところで折り返す", () => {
+    const rows = groupIntoRows([b("text", "twoThirds"), b("text", "half")]);
+    expect(rows.map((r) => r.blocks.length)).toEqual([1, 1]);
+  });
+
+  it("全幅のブロックは、横並びを断ち切る", () => {
+    const rows = groupIntoRows([b("text", "half"), b("text"), b("text", "half")]);
+    expect(rows.map((r) => r.blocks.length)).toEqual([1, 1, 1]);
+  });
+
+  it("改ページは幅を持たせても1行を占める", () => {
+    const rows = groupIntoRows([b("text", "half"), b("pageBreak", "half"), b("text", "half")]);
+    expect(rows.map((r) => r.blocks[0]?.kind)).toEqual(["text", "pageBreak", "text"]);
+  });
+
+  it("元の位置を持ち越す。並べ替えがこの番号で動く", () => {
+    const rows = groupIntoRows([b("text", "half"), b("text", "half"), b("text")]);
+    expect(rows.map((r) => r.index)).toEqual([[0, 1], [2]]);
   });
 });

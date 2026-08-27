@@ -1,4 +1,9 @@
-import { isKnownField, type DocumentBlock, type DocumentContent } from "@chem/shared";
+import {
+  isKnownField,
+  type BlockWidth,
+  type DocumentBlock,
+  type DocumentContent,
+} from "@chem/shared";
 import type { DocumentTable, DocumentTarget, RichLine, RichMark } from "@chem/shared";
 
 /**
@@ -28,15 +33,20 @@ export interface RenderTable {
   rows: string[][];
 }
 
+/** 幅は紙面まで持ち越す。横に並べるかどうかは、出す側が `groupIntoRows` で決める */
+interface RenderBase {
+  width?: BlockWidth;
+}
+
 export type RenderBlock =
-  | { kind: "heading"; level: 1 | 2 | 3; lines: RenderLine[] }
-  | { kind: "text"; lines: RenderLine[] }
-  | { kind: "fields"; items: { label: string; value: string }[] }
-  | { kind: "table"; caption?: string; head: string[]; rows: string[][] }
-  | { kind: "divider" }
-  | { kind: "spacer"; size: "sm" | "md" | "lg" }
-  | { kind: "pageBreak" }
-  | { kind: "signature"; label: string };
+  | (RenderBase & { kind: "heading"; level: 1 | 2 | 3; lines: RenderLine[] })
+  | (RenderBase & { kind: "text"; lines: RenderLine[] })
+  | (RenderBase & { kind: "fields"; items: { label: string; value: string }[] })
+  | (RenderBase & { kind: "table"; caption?: string; head: string[]; rows: string[][] })
+  | (RenderBase & { kind: "divider" })
+  | (RenderBase & { kind: "spacer"; size: "sm" | "md" | "lg" })
+  | (RenderBase & { kind: "pageBreak" })
+  | (RenderBase & { kind: "signature"; label: string });
 
 export interface RenderedDocument {
   orientation: "portrait" | "landscape";
@@ -96,7 +106,10 @@ export function renderDocument(input: RenderInput): RenderedDocument {
   const blocks: RenderBlock[] = [];
 
   for (const b of content.blocks) {
-    blocks.push(...renderBlock(b, target, values, tables, warn));
+    // 幅は組み立て直さず、そのまま持ち越す（横に並べるのは出す側の仕事）
+    for (const out of renderBlock(b, target, values, tables, warn)) {
+      blocks.push(b.width ? { ...out, width: b.width } : out);
+    }
   }
 
   const warnings: string[] = [];

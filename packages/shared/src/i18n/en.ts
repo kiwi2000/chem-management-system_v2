@@ -876,6 +876,9 @@ export const en: Messages = {
     reorderHint: "Drag the handle on the left to reorder",
   },
   docEditor: {
+    width: "Width",
+    widths: { full: "Full", twoThirds: "Two thirds", half: "Half", third: "One third" },
+    widthHint: "Narrow a block and the next one sits beside it, while they fit on one row",
     bold: "Bold",
     italic: "Italic",
     underline: "Underline",

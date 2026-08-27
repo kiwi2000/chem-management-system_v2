@@ -886,6 +886,9 @@ export const ja = {
     reorderHint: "左端のつまみを引くと並べ替えられます",
   },
   docEditor: {
+    width: "幅",
+    widths: { full: "全幅", twoThirds: "3分の2", half: "半分", third: "3分の1" },
+    widthHint: "幅を狭めると、次のブロックが横に並びます（合計が全幅に収まるあいだ）",
     bold: "太字",
     italic: "斜体",
     underline: "下線",

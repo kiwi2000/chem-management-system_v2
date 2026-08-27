@@ -2,8 +2,12 @@
 
 import {
   BLOCK_KINDS,
+  BLOCK_WIDTHS,
+  WIDTH_FRACTION,
   fieldsFor,
+  groupIntoRows,
   tablesFor,
+  type BlockWidth,
   type BlockKind,
   type DocumentBlock,
   type DocumentTable,
@@ -91,249 +95,13 @@ export function BlockList({
     <div className="space-y-3">
       {blocks.length === 0 && <p className="text-muted-foreground text-sm">{m.docEditor.empty}</p>}
 
-      {blocks.map((b, i) => (
-        <div
-          key={b.id}
-          className={cn(
-            "border-input rounded-none border",
-            overIndex === i && dragIndex !== null && "border-primary border-t-2",
-            dragIndex === i && "opacity-50",
-          )}
-          onDragOver={
-            dragIndex === null
-              ? undefined
-              : (e) => {
-                  e.preventDefault();
-                  setOverIndex(i);
-                }
-          }
-          onDrop={
-            dragIndex === null
-              ? undefined
-              : (e) => {
-                  e.preventDefault();
-                  if (dragIndex !== i) move(dragIndex, i - dragIndex);
-                  setDragIndex(null);
-                  setOverIndex(null);
-                }
-          }
-        >
-          <div className="bg-muted/50 flex items-center gap-2 px-2 py-1">
-            <button
-              type="button"
-              draggable
-              aria-label={m.docEditor.reorderHint}
-              title={m.docEditor.reorderHint}
-              className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-              onDragStart={(e) => {
-                setDragIndex(i);
-                e.dataTransfer.effectAllowed = "move";
-                // Firefox は中身が空だと運べない
-                e.dataTransfer.setData("text/plain", String(i));
-              }}
-              onDragEnd={() => {
-                setDragIndex(null);
-                setOverIndex(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-                e.preventDefault();
-                move(i, e.key === "ArrowUp" ? -1 : 1);
-              }}
-            >
-              <GripVertical className="size-4" />
-            </button>
-            <span className="text-sm font-medium">{m.docEditor.blockKinds[b.kind]}</span>
-            <div className="ml-auto">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                aria-label={m.docEditor.remove}
-                title={m.docEditor.remove}
-                onClick={() => remove(i)}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2 p-2">
-            {b.kind === "heading" && (
-              <>
-                <label className="flex items-center gap-2 text-sm">
-                  {m.docEditor.headingLevel}
-                  <select
-                    className={SELECT}
-                    value={b.level}
-                    onChange={(e) =>
-                      replace(i, { ...b, level: Number(e.target.value) as 1 | 2 | 3 })
-                    }
-                  >
-                    <option value={1}>1</option>
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                  </select>
-                </label>
-                <RichEditor
-                  value={b.lines}
-                  target={target}
-                  minHeight="2.5rem"
-                  onChange={(lines) => replace(i, { ...b, lines })}
-                />
-              </>
-            )}
-
-            {b.kind === "text" && (
-              <RichEditor
-                value={b.lines}
-                target={target}
-                onChange={(lines) => replace(i, { ...b, lines })}
-              />
-            )}
-
-            {b.kind === "fields" && (
-              <div className="space-y-2">
-                {b.items.map((it, k) => (
-                  <div key={k} className="flex flex-wrap items-center gap-2">
-                    <Input
-                      className="h-8 w-40"
-                      aria-label={m.docEditor.label}
-                      placeholder={m.docEditor.label}
-                      value={it.label}
-                      onChange={(e) => {
-                        const items = b.items.map((x, j) =>
-                          j === k ? { ...x, label: e.target.value } : x,
-                        );
-                        replace(i, { ...b, items });
-                      }}
-                    />
-                    <select
-                      className={cn(SELECT, "w-56")}
-                      aria-label={m.docEditor.field}
-                      value={it.field}
-                      onChange={(e) => {
-                        const items = b.items.map((x, j) =>
-                          j === k ? { ...x, field: e.target.value } : x,
-                        );
-                        replace(i, { ...b, items });
-                      }}
-                    >
-                      <option value="">—</option>
-                      {fieldsFor(target).map((f) => (
-                        <option key={f.key} value={f.key}>
-                          {locale === "en" ? f.labelEn : f.labelJa}
-                        </option>
-                      ))}
-                    </select>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      aria-label={m.common.delete}
-                      onClick={() => replace(i, { ...b, items: b.items.filter((_, j) => j !== k) })}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    replace(i, { ...b, items: [...b.items, { label: "", field: "" }] })
-                  }
-                >
-                  {m.docEditor.addItem}
-                </Button>
-              </div>
-            )}
-
-            {b.kind === "table" && (
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm">
-                  {m.docEditor.tableSource}
-                  <select
-                    className={cn(SELECT, "w-64")}
-                    value={b.table}
-                    onChange={(e) => {
-                      const table = e.target.value as DocumentTable;
-                      const def = tablesFor(target).find((t) => t.key === table);
-                      // 表を変えたら列も入れ替える。前の表の列は意味を持たない
-                      replace(i, { ...b, table, columns: def?.columns.map((c) => c.key) ?? [] });
-                    }}
-                  >
-                    {tablesFor(target).map((t) => (
-                      <option key={t.key} value={t.key}>
-                        {locale === "en" ? t.labelEn : t.labelJa}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  <span className="text-sm">{m.docEditor.tableColumns}</span>
-                  {(tablesFor(target).find((t) => t.key === b.table)?.columns ?? []).map((c) => (
-                    <label key={c.key} className="flex items-center gap-1 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={b.columns.includes(c.key)}
-                        onChange={(e) => {
-                          const on = e.target.checked;
-                          // 並びは表の定義どおりにそろえる。押した順に並ぶと読みにくい
-                          const all =
-                            tablesFor(target).find((t) => t.key === b.table)?.columns ?? [];
-                          const next = all
-                            .map((x) => x.key)
-                            .filter((k) => (k === c.key ? on : b.columns.includes(k)));
-                          replace(i, { ...b, columns: next });
-                        }}
-                      />
-                      {locale === "en" ? c.labelEn : c.labelJa}
-                    </label>
-                  ))}
-                </div>
-                <Input
-                  className="h-8"
-                  aria-label={m.docEditor.caption}
-                  placeholder={m.docEditor.caption}
-                  value={b.caption ?? ""}
-                  onChange={(e) => replace(i, { ...b, caption: e.target.value || undefined })}
-                />
-              </div>
-            )}
-
-            {b.kind === "spacer" && (
-              <label className="flex items-center gap-2 text-sm">
-                {m.docEditor.spacerSize}
-                <select
-                  className={SELECT}
-                  value={b.size}
-                  onChange={(e) => replace(i, { ...b, size: e.target.value as "sm" | "md" | "lg" })}
-                >
-                  {(["sm", "md", "lg"] as const).map((s) => (
-                    <option key={s} value={s}>
-                      {m.docEditor.spacerSizes[s]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            {b.kind === "signature" && (
-              <Input
-                className="h-8 w-64"
-                aria-label={m.docEditor.label}
-                placeholder={m.docEditor.label}
-                value={b.label}
-                onChange={(e) => replace(i, { ...b, label: e.target.value })}
-              />
-            )}
-
-            {(b.kind === "divider" || b.kind === "pageBreak") && (
-              <p className="text-muted-foreground text-sm">{m.docEditor.blockKinds[b.kind]}</p>
-            )}
-          </div>
+      {/*
+        **編集画面でも、出てくる紙と同じ形に並べる。**
+        幅を選んだのに縦に積んだまま見せると、刷るまで結果が分からない
+      */}
+      {groupIntoRows(blocks).map((row, r) => (
+        <div key={r} className={row.blocks.length > 1 ? "flex items-start gap-3" : undefined}>
+          {row.blocks.map((b, k) => renderBlock(b, row.index[k]!, row.blocks.length > 1))}
         </div>
       ))}
 
@@ -344,6 +112,268 @@ export function BlockList({
           </Button>
         ))}
       </div>
+      <p className="text-muted-foreground text-xs">{m.docEditor.widthHint}</p>
     </div>
   );
+
+  function renderBlock(b: DocumentBlock, i: number, inRow: boolean) {
+    return (
+      <div
+        key={b.id}
+        style={inRow ? { width: `${WIDTH_FRACTION[b.width ?? "full"] * 100}%` } : undefined}
+        className={cn(
+          "border-input rounded-none border",
+          overIndex === i && dragIndex !== null && "border-primary border-t-2",
+          dragIndex === i && "opacity-50",
+        )}
+        onDragOver={
+          dragIndex === null
+            ? undefined
+            : (e) => {
+                e.preventDefault();
+                setOverIndex(i);
+              }
+        }
+        onDrop={
+          dragIndex === null
+            ? undefined
+            : (e) => {
+                e.preventDefault();
+                if (dragIndex !== i) move(dragIndex, i - dragIndex);
+                setDragIndex(null);
+                setOverIndex(null);
+              }
+        }
+      >
+        <div className="bg-muted/50 flex items-center gap-2 px-2 py-1">
+          <button
+            type="button"
+            draggable
+            aria-label={m.docEditor.reorderHint}
+            title={m.docEditor.reorderHint}
+            className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+            onDragStart={(e) => {
+              setDragIndex(i);
+              e.dataTransfer.effectAllowed = "move";
+              // Firefox は中身が空だと運べない
+              e.dataTransfer.setData("text/plain", String(i));
+            }}
+            onDragEnd={() => {
+              setDragIndex(null);
+              setOverIndex(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+              e.preventDefault();
+              move(i, e.key === "ArrowUp" ? -1 : 1);
+            }}
+          >
+            <GripVertical className="size-4" />
+          </button>
+          <span className="text-sm font-medium">{m.docEditor.blockKinds[b.kind]}</span>
+          {/*
+              幅。**改ページは幅を持てない**（必ず1行を占めるので、選ばせると効かない）
+            */}
+          {b.kind !== "pageBreak" && (
+            <select
+              className="border-input ml-2 h-6 rounded-none border bg-transparent px-1 text-xs"
+              aria-label={m.docEditor.width}
+              value={b.width ?? "full"}
+              onChange={(e) => replace(i, { ...b, width: e.target.value as BlockWidth })}
+            >
+              {BLOCK_WIDTHS.map((w) => (
+                <option key={w} value={w}>
+                  {m.docEditor.widths[w]}
+                </option>
+              ))}
+            </select>
+          )}
+          <div className="ml-auto">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              aria-label={m.docEditor.remove}
+              title={m.docEditor.remove}
+              onClick={() => remove(i)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2 p-2">
+          {b.kind === "heading" && (
+            <>
+              <label className="flex items-center gap-2 text-sm">
+                {m.docEditor.headingLevel}
+                <select
+                  className={SELECT}
+                  value={b.level}
+                  onChange={(e) => replace(i, { ...b, level: Number(e.target.value) as 1 | 2 | 3 })}
+                >
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                  <option value={3}>3</option>
+                </select>
+              </label>
+              <RichEditor
+                value={b.lines}
+                target={target}
+                minHeight="2.5rem"
+                onChange={(lines) => replace(i, { ...b, lines })}
+              />
+            </>
+          )}
+
+          {b.kind === "text" && (
+            <RichEditor
+              value={b.lines}
+              target={target}
+              onChange={(lines) => replace(i, { ...b, lines })}
+            />
+          )}
+
+          {b.kind === "fields" && (
+            <div className="space-y-2">
+              {b.items.map((it, k) => (
+                <div key={k} className="flex flex-wrap items-center gap-2">
+                  <Input
+                    className="h-8 w-40"
+                    aria-label={m.docEditor.label}
+                    placeholder={m.docEditor.label}
+                    value={it.label}
+                    onChange={(e) => {
+                      const items = b.items.map((x, j) =>
+                        j === k ? { ...x, label: e.target.value } : x,
+                      );
+                      replace(i, { ...b, items });
+                    }}
+                  />
+                  <select
+                    className={cn(SELECT, "w-56")}
+                    aria-label={m.docEditor.field}
+                    value={it.field}
+                    onChange={(e) => {
+                      const items = b.items.map((x, j) =>
+                        j === k ? { ...x, field: e.target.value } : x,
+                      );
+                      replace(i, { ...b, items });
+                    }}
+                  >
+                    <option value="">—</option>
+                    {fieldsFor(target).map((f) => (
+                      <option key={f.key} value={f.key}>
+                        {locale === "en" ? f.labelEn : f.labelJa}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    aria-label={m.common.delete}
+                    onClick={() => replace(i, { ...b, items: b.items.filter((_, j) => j !== k) })}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => replace(i, { ...b, items: [...b.items, { label: "", field: "" }] })}
+              >
+                {m.docEditor.addItem}
+              </Button>
+            </div>
+          )}
+
+          {b.kind === "table" && (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm">
+                {m.docEditor.tableSource}
+                <select
+                  className={cn(SELECT, "w-64")}
+                  value={b.table}
+                  onChange={(e) => {
+                    const table = e.target.value as DocumentTable;
+                    const def = tablesFor(target).find((t) => t.key === table);
+                    // 表を変えたら列も入れ替える。前の表の列は意味を持たない
+                    replace(i, { ...b, table, columns: def?.columns.map((c) => c.key) ?? [] });
+                  }}
+                >
+                  {tablesFor(target).map((t) => (
+                    <option key={t.key} value={t.key}>
+                      {locale === "en" ? t.labelEn : t.labelJa}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex flex-wrap gap-3">
+                <span className="text-sm">{m.docEditor.tableColumns}</span>
+                {(tablesFor(target).find((t) => t.key === b.table)?.columns ?? []).map((c) => (
+                  <label key={c.key} className="flex items-center gap-1 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={b.columns.includes(c.key)}
+                      onChange={(e) => {
+                        const on = e.target.checked;
+                        // 並びは表の定義どおりにそろえる。押した順に並ぶと読みにくい
+                        const all = tablesFor(target).find((t) => t.key === b.table)?.columns ?? [];
+                        const next = all
+                          .map((x) => x.key)
+                          .filter((k) => (k === c.key ? on : b.columns.includes(k)));
+                        replace(i, { ...b, columns: next });
+                      }}
+                    />
+                    {locale === "en" ? c.labelEn : c.labelJa}
+                  </label>
+                ))}
+              </div>
+              <Input
+                className="h-8"
+                aria-label={m.docEditor.caption}
+                placeholder={m.docEditor.caption}
+                value={b.caption ?? ""}
+                onChange={(e) => replace(i, { ...b, caption: e.target.value || undefined })}
+              />
+            </div>
+          )}
+
+          {b.kind === "spacer" && (
+            <label className="flex items-center gap-2 text-sm">
+              {m.docEditor.spacerSize}
+              <select
+                className={SELECT}
+                value={b.size}
+                onChange={(e) => replace(i, { ...b, size: e.target.value as "sm" | "md" | "lg" })}
+              >
+                {(["sm", "md", "lg"] as const).map((s) => (
+                  <option key={s} value={s}>
+                    {m.docEditor.spacerSizes[s]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {b.kind === "signature" && (
+            <Input
+              className="h-8 w-64"
+              aria-label={m.docEditor.label}
+              placeholder={m.docEditor.label}
+              value={b.label}
+              onChange={(e) => replace(i, { ...b, label: e.target.value })}
+            />
+          )}
+
+          {(b.kind === "divider" || b.kind === "pageBreak") && (
+            <p className="text-muted-foreground text-sm">{m.docEditor.blockKinds[b.kind]}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
 }

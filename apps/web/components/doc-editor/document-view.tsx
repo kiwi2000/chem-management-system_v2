@@ -1,5 +1,6 @@
 "use client";
 
+import { WIDTH_FRACTION, groupIntoRows } from "@chem/shared";
 import { Printer } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -63,9 +64,23 @@ export function DocumentView({
 
       {/* 紙面。画面では枠を付け、印刷では枠を消す */}
       <div className="mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none">
-        {doc.blocks.map((b, i) => (
-          <Block key={i} block={b} />
-        ))}
+        {/*
+          横に並ぶものは、編集画面と同じ規則でまとめる（`groupIntoRows`）。
+          別々に組むと、書いたとおりに刷られない
+        */}
+        {groupIntoRows(doc.blocks).map((row, i) =>
+          row.blocks.length === 1 ? (
+            <Block key={i} block={row.blocks[0]!} />
+          ) : (
+            <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
+              {row.blocks.map((b, j) => (
+                <div key={j} style={{ width: `${WIDTH_FRACTION[b.width ?? "full"] * 100}%` }}>
+                  <Block block={b} />
+                </div>
+              ))}
+            </div>
+          ),
+        )}
       </div>
     </div>
   );
