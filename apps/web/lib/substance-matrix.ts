@@ -1,3 +1,4 @@
+import { pickName, pickStatutoryName, type Locale } from "@chem/shared";
 import { prisma } from "@/lib/db";
 import { compareLawOrder, lawOrderKey } from "@/lib/law-order";
 
@@ -74,7 +75,15 @@ async function twoVersions() {
   return all.slice(i, i + 2);
 }
 
-export async function buildSubstanceMatrix(casNormalized: string | null): Promise<SubstanceMatrix> {
+/**
+ * @param locale 名前をどちらの言語で出すか。
+ *   **画面は見ている人の言語、帳票はテンプレートの言語**で呼ぶ。
+ *   英語の様式を日本語の利用者が出しても、英語で出るのでなければ相手に送れない
+ */
+export async function buildSubstanceMatrix(
+  casNormalized: string | null,
+  locale: Locale = "ja",
+): Promise<SubstanceMatrix> {
   const empty: SubstanceMatrix = {
     versions: [],
     sources: [],
@@ -124,12 +133,14 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
       nameOriginal: true,
       numberLabel: true,
       numberShown: true,
+      nameEn: true,
       country: {
         select: {
           id: true,
           nameJa: true,
+          nameEn: true,
           regionId: true,
-          region: { select: { nameJa: true } },
+          region: { select: { nameJa: true, nameEn: true } },
         },
       },
     },
@@ -138,13 +149,13 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
   const invColumns: MatrixColumn[] = inventories.map((i) => ({
     key: `inv:${i.id}`,
     // 呼び名を付けていないインベントリは、名前をそのまま見出しにする
-    label: i.numberLabel ?? i.nameJa ?? i.nameOriginal,
+    label: i.numberLabel ?? pickName(locale, i.nameJa, i.nameEn) ?? i.nameOriginal,
     parentKey: `inv:${i.id}`,
-    parentLabel: i.nameJa ?? i.nameOriginal,
+    parentLabel: pickName(locale, i.nameJa, i.nameEn) || i.nameOriginal,
     countryId: i.country.id,
-    countryName: i.country.nameJa,
+    countryName: pickName(locale, i.country.nameJa, i.country.nameEn),
     regionId: i.country.regionId,
-    regionName: i.country.region.nameJa,
+    regionName: pickName(locale, i.country.region.nameJa, i.country.region.nameEn),
     shown: i.numberShown && i.numberLabel !== null,
   }));
 
@@ -185,17 +196,20 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
         select: {
           officialNumber: true,
           nameJa: true,
+          nameEn: true,
           nameOriginal: true,
           deletedAt: true,
           regulationClass: {
             select: {
               // 分類は名前を持たないことがある（区分を分けないときの受け皿）
               nameJa: true,
+              nameEn: true,
               nameOriginal: true,
               category: {
                 select: {
                   id: true,
                   nameJa: true,
+                  nameEn: true,
                   nameOriginal: true,
                   displayOrder: true,
                   deletedAt: true,
@@ -203,6 +217,7 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
                     select: {
                       id: true,
                       nameJa: true,
+                      nameEn: true,
                       nameOriginal: true,
                       code: true,
                       displayOrder: true,
@@ -210,9 +225,10 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
                         select: {
                           id: true,
                           nameJa: true,
+                          nameEn: true,
                           regionId: true,
                           displayOrder: true,
-                          region: { select: { nameJa: true, displayOrder: true } },
+                          region: { select: { nameJa: true, nameEn: true, displayOrder: true } },
                         },
                       },
                     },
@@ -237,13 +253,13 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
     if (!regColumns.has(key)) {
       regColumns.set(key, {
         key,
-        label: c.nameJa ?? c.nameOriginal,
+        label: pickName(locale, c.nameJa, c.nameEn) || c.nameOriginal,
         parentKey: `law:${c.law.id}`,
-        parentLabel: c.law.nameJa ?? c.law.nameOriginal,
+        parentLabel: pickName(locale, c.law.nameJa, c.law.nameEn) || c.law.nameOriginal,
         countryId: c.law.country.id,
-        countryName: c.law.country.nameJa,
+        countryName: pickName(locale, c.law.country.nameJa, c.law.country.nameEn),
         regionId: c.law.country.regionId,
-        regionName: c.law.country.region.nameJa,
+        regionName: pickName(locale, c.law.country.region.nameJa, c.law.country.region.nameEn),
         // 法規制はトグルの対象外。常に出す
         shown: true,
         // 並びは地域 → 国 → 法令 → 区分。法令の番号は国ごとに1から振ってある
@@ -258,9 +274,11 @@ export async function buildSubstanceMatrix(casNormalized: string | null): Promis
     */
     const cls = s.regulationClass;
     const parts = [
-      cls.nameOriginal === null ? null : (cls.nameJa ?? cls.nameOriginal),
+      cls.nameOriginal === null
+        ? null
+        : pickStatutoryName(locale, cls.nameOriginal, cls.nameJa, cls.nameEn),
       s.officialNumber,
-      s.nameJa ?? s.nameOriginal,
+      pickStatutoryName(locale, s.nameOriginal, s.nameJa, s.nameEn),
     ].filter((v): v is string => v !== null && v !== "");
 
     const k = cellKey(key, l.versionId);

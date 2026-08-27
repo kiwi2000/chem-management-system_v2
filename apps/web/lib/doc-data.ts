@@ -212,7 +212,8 @@ export async function collectForSubstance(
       **帳票では現在のバージョンだけ。**紙に2つ並べても、
       どちらの数字で判断したのかが読み取れない
       */
-    const matrix = await buildSubstanceMatrix(substance.casNormalized);
+    // 名前もテンプレートの言語で出す（画面は見ている人の言語のまま）
+    const matrix = await buildSubstanceMatrix(substance.casNormalized, locale);
     const head = matrix.versions[0];
     const cellText = (key: string) =>
       head ? (matrix.regulation.cells[`${key}/${head.id}`] ?? []) : [];

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { collectFor } from "@/lib/doc-data";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { renderDocument } from "@/lib/doc-render";
-import { getLocale, getServerMessages } from "@/lib/i18n";
+import { getMessages, isLocale } from "@chem/shared";
 import { PrintOrientation } from "@/components/doc-editor/print-orientation";
 
 /**
@@ -51,13 +51,23 @@ export default async function DocumentPage({
   const actor = await getActor();
   if (!actor) notFound();
 
-  const [m, locale] = await Promise.all([getServerMessages(), getLocale()]);
   const row = await prisma.documentTemplate.findFirst({
     where: { id: templateId, deletedAt: null, active: true },
     select: DOC_TEMPLATE_SELECT,
   });
   if (!row) notFound();
   const template = toDocTemplateDto(row);
+
+  /*
+    **紙面の言葉は、テンプレートに書いてある言語で決める。**
+    読んでいる人の画面の言語ではない。英語の様式は、
+    日本語で使っている人が出しても英語で出るのでなければ、
+    相手に送るものとして使えない。
+    画面の操作欄（印刷ボタンなど）は、読んでいる人の言語のまま。
+  */
+  const lower = template.locale.toLowerCase();
+  const locale = isLocale(lower) ? lower : "ja";
+  const m = getMessages(locale);
 
   // 見る権限は、集める側が対象ごとに判断する（見られないものは null が返る）
   const data = await collectFor(actor, template.target, targetId, locale, m);
