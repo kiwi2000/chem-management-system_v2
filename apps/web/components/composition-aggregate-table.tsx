@@ -44,6 +44,15 @@ const FROZEN = 5;
  */
 const NEAR_MARK = "△";
 
+/**
+ * 判定に確認が残っているものに付ける印。
+ *
+ * これまでは**数字ごと赤くする**だけだったので、
+ * 「当たった7件のうち何件が要確認か」が読めなかった。
+ * 印と件数に分けると、△（含有率不足）と並べても取り違えない
+ */
+const REVIEW_MARK = "※";
+
 /*
   貼り付けた列の背景。**透けさせない。**
   透けると、下を流れていく法規制の列が透けて見える。
@@ -791,17 +800,24 @@ function RegulationMark({
     ここに字を並べると1つの列に何行も入ってしまう。
   */
   if (!expanded) {
-    /* 当たった件数のうしろに、当たっていないぶんを括弧つきの赤字で添える */
+    /*
+      当たった件数のうしろに、**印を付けた件数**を添える。
+      数字ごと赤くしていたころは、何件が要確認なのかが読めなかった
+    */
+    const reviewCount = hits.filter((h) => h.needsReview).length;
     return (
       <span className="tabular-nums">
-        {hits.length > 0 && (
-          <span title={title} className={needsReview ? "text-destructive font-medium" : ""}>
-            {hits.length}
+        {hits.length > 0 && <span title={title}>{hits.length}</span>}
+        {reviewCount > 0 && (
+          <span title={title} className="text-destructive">
+            {" "}
+            {REVIEW_MARK}
+            {reviewCount}
           </span>
         )}
         {near.length > 0 && (
           <span title={nearTitle} className="text-destructive">
-            {hits.length > 0 ? " " : ""}
+            {hits.length > 0 || reviewCount > 0 ? " " : ""}
             {NEAR_MARK}
             {near.length}
           </span>
@@ -809,20 +825,28 @@ function RegulationMark({
       </span>
     );
   }
-  const labels = hits.flatMap((h) => statutoryLabels(h, locale));
+  /* 要確認かどうかは**法文物質名ごと**に持つ。区分をまたいで並ぶことがあるため */
+  const labels = hits.flatMap((h) =>
+    statutoryLabels(h, locale).map((t) => ({ t, review: h.needsReview })),
+  );
   const nearLabels = near.flatMap((h) => statutoryLabels(h, locale));
   return (
     <span className="block text-left text-xs">
       {hits.length > 0 && (
-        <span title={title} className={cn("block", needsReview ? "text-destructive" : "")}>
+        <span title={title} className="block">
           {/* 名前が取れないのは、区分そのものでまとめて当たったとき */}
-          {labels.length === 0
-            ? "●"
-            : labels.map((t) => (
-                <span key={t} className="block">
-                  {t}
-                </span>
-              ))}
+          {labels.length === 0 ? (
+            <span className={needsReview ? "text-destructive" : ""}>
+              {needsReview ? `${REVIEW_MARK} ` : ""}●
+            </span>
+          ) : (
+            labels.map(({ t, review }) => (
+              <span key={t} className={cn("block", review ? "text-destructive" : "")}>
+                {review ? `${REVIEW_MARK} ` : ""}
+                {t}
+              </span>
+            ))
+          )}
         </span>
       )}
       {/*

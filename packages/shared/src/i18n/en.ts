@@ -1216,7 +1216,7 @@ export const en: Messages = {
     nearMissHint:
       "Shows in red the listed substances whose CAS is in the law but whose content is below the threshold. A change in the recipe makes them apply",
     nearMissLegend:
-      "Red: the verdict needs review　△Red: does not apply, content below the threshold",
+      "※Red: the verdict needs review　△Red: does not apply, content below the threshold",
     aggregateName: "Substance name",
     aggregateNoCas: "No CAS",
     aggregateRegulations: "Regulations",
