@@ -18,9 +18,7 @@ const DEFAULT_STATE = emptyTableState([{ column: "numberOrder", direction: "asc"
  * バージョンをまたいで合計すると、どのバージョンにも存在しない数になる。
  */
 export async function GET(req: Request) {
-  const T0 = Date.now();
   const actor = await requirePermission("REGULATION_VIEW");
-  console.log("[調査] 権限", Date.now() - T0);
   if (actor instanceof Response) return actor;
 
   const state = parseTableState(
@@ -30,11 +28,8 @@ export async function GET(req: Request) {
   );
 
   const where = { deletedAt: null, ...buildWhere(INVENTORY_COLUMNS, state.filters) };
-  const T1 = Date.now();
   const version = await currentVersion();
-  console.log("[調査] バージョン", Date.now() - T1);
 
-  const T2 = Date.now();
   const [items, total] = await Promise.all([
     prisma.inventory.findMany({
       where,
@@ -57,13 +52,11 @@ export async function GET(req: Request) {
     }),
     prisma.inventory.count({ where }),
   ]);
-  console.log("[調査] 一覧", Date.now() - T2);
 
   /*
     件数は一覧に出ているインベントリのぶんだけ数える。
     行は全部で95万件あるので、全インベントリぶんを毎回数えると重い
   */
-  const T3 = Date.now();
   const counts = new Map<string, number>();
   if (version && items.length > 0) {
     const grouped = await prisma.inventoryRow.groupBy({
@@ -73,7 +66,6 @@ export async function GET(req: Request) {
     });
     for (const g of grouped) counts.set(g.inventoryId, g._count._all);
   }
-  console.log("[調査] 件数", Date.now() - T3, "合計", Date.now() - T0);
 
   const dto: InventoryDto[] = items.map((i) => ({
     id: i.id,

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+  OPAQUE_MUTED_50,
+  OPAQUE_MUTED_50_HOVER,
   Table,
   TableBody,
   TableCell,
@@ -232,8 +234,12 @@ export function ProductJudgements({
         {items.length === 0 ? (
           <p className="text-muted-foreground text-sm">{m.judgements.empty}</p>
         ) : (
-          // 横に長い表なので、はみ出したら中だけ横に送る（画面全体を横に振らない）
-          <div ref={cols.scrollerRef} className="overflow-x-auto">
+          /*
+            横に長く、行も多くなる表なので、**この箱の中だけで縦横に送る**
+            （画面全体を振らない）。高さを決めておくと、横のスクロールバーが
+            箱の下端に来るので、見出しを見ながら動かせる
+          */
+          <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
             {/*
               table-fixed にして、幅を列の側で決める。
               自動幅だと、法文物質名の長いものが1件あるだけで表全体の形が変わり、
@@ -243,11 +249,14 @@ export function ProductJudgements({
             <Table
               {...cols.tableProps}
               className={cn("table-fixed text-sm", cols.tableProps.className)}
+              // 外側の箱で流すので、表を包む枠は流さない（入れ子にすると見出しを貼り付けられない）
+              containerClassName="overflow-visible"
             >
               <colgroup>{cols.cols()}</colgroup>
-              <TableHeader>
+              {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
+              <TableHeader className="sticky top-0 z-20">
                 {/* 色と枠線は組成の表にそろえる。並べて見るので、別物に見えると困る */}
-                <TableRow className="bg-muted/50 border-y hover:bg-muted/50">
+                <TableRow className={cn(OPAQUE_MUTED_50, OPAQUE_MUTED_50_HOVER, "border-y")}>
                   {HEADS.map(({ key, label, className }) => (
                     <TableHead key={key} className={cn(CELL, "relative h-auto", className)}>
                       {label(m)}

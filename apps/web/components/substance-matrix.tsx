@@ -2,7 +2,7 @@
 
 import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
-import { CELL_CLIP } from "@/components/ui/table";
+import { CELL_CLIP, OPAQUE_MUTED_40, OPAQUE_MUTED_50 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -294,8 +294,12 @@ function Matrix({
           </Button>
         </div>
       </div>
-      {/* 列が多いので、表の中だけ横に流す（画面ごと横に伸ばさない） */}
-      <div ref={cols.scrollerRef} className="overflow-x-auto">
+      {/*
+        列が多いので、表の中だけ横に流す（画面ごと横に伸ばさない）。
+        行も箱の中で送る。そうしないと、横のスクロールバーへ届くころには
+        見出しが画面から消えている
+      */}
+      <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
         <table
           {...cols.tableProps}
           className={cn(
@@ -305,9 +309,10 @@ function Matrix({
           )}
         >
           <colgroup>{cols.cols()}</colgroup>
-          <thead>
+          {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
+          <thead className="sticky top-0 z-20">
             {/* 1段目：地域 */}
-            <tr className="bg-muted/50">
+            <tr className={OPAQUE_MUTED_50}>
               <th className={cn(TH, "sticky left-0 z-10 bg-inherit text-left")}>
                 {m.substanceMatrix.region}
               </th>
@@ -330,7 +335,7 @@ function Matrix({
 
             {/* 2段目：法律。渡されたときだけ出す */}
             {parentHeader && (
-              <tr className="bg-muted/40">
+              <tr className={OPAQUE_MUTED_40}>
                 <th className={cn(TH, "sticky left-0 z-10 bg-inherit text-left")}>
                   {parentHeader}
                 </th>

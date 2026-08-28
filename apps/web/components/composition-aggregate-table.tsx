@@ -4,7 +4,7 @@ import { pickName, pickStatutoryName } from "@chem/shared";
 import { ChevronRight } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CELL_CLIP } from "@/components/ui/table";
+import { CELL_CLIP, OPAQUE_MUTED_40, OPAQUE_MUTED_50 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -25,6 +25,23 @@ import { cn } from "@/lib/utils";
 /** 長い語もセルの中で折り返す。折り返せないものは CELL_CLIP で隠れる */
 const CELL = "border-r px-2 py-1 break-words last:border-r-0";
 
+/**
+ * 左に貼り付ける列の数。CAS・物質ID・物質名・重量%・備考まで（組成そのものの列は全部）。
+ *
+ * 法規制の列は地域を分けるとどこまでも右へ伸びるので、
+ * 横に送ると**いま見ている行がどの物質のものか分からなくなる**。
+ * 貼り付ける幅は合わせて720px。画面が狭いと法規制を見る場所が減るので、
+ * 引いて広げるほうは `frozen` の上限（見えている幅の6割）で止まる。
+ */
+const FROZEN = 5;
+
+/*
+  貼り付けた列の背景。**透けさせない。**
+  透けると、下を流れていく法規制の列が透けて見える。
+  行の色（`bg-muted/40` など）と同じ色を、透けない形で作る
+*/
+const STICKY_PLAIN = "bg-background";
+
 /** 行を指す鍵。CASを持たない物質は自分のコードで区別する */
 const keyOf = (row: { casNumber: string | null; code: string }) => row.casNumber ?? row.code;
 
@@ -35,6 +52,11 @@ interface Props {
   onOpenChange: (next: Set<string>) => void;
   /** 開ける行の鍵。親がボタンを出すかどうかの判断に使う */
   onExpandableChange: (keys: string[]) => void;
+  /**
+   * **CAS は載っているのに当たっていない**法文物質名を、赤字で出すか。
+   * 出すあいだは、そのためだけの区分も列に加わる（切ると元の列に戻る）
+   */
+  showNearMiss?: boolean;
 }
 
 /**
@@ -58,10 +80,10 @@ const HEADS: {
     /*
       **この列に入りうるいちばん長い値が、隠れずに収まる幅。**
       含有率は小数第6位まで持つので、最長は「100.000001%」の87px。
-      左右の余白16pxと、はしたの丸めのぶんを足して104px にする
-      （72px では「23.792%」でもう一杯、88px でも環境によって「%」が欠けた）
+      左右の余白16pxを足すと103px。画面の拡大表示（125%まで）でも欠けないよう、
+      120px を既定にする（72px・88px・104px では環境によって末尾の「%」が欠けた）
     */
-    width: 104,
+    width: 120,
     label: (m) => m.composition.contentPct,
     className: "text-right whitespace-nowrap",
   },
@@ -220,6 +242,7 @@ export function CompositionAggregateTable({
   open,
   onOpenChange,
   onExpandableChange,
+  showNearMiss = false,
 }: Props) {
   const { m, locale } = useI18n();
   const [data, setData] = useState<CompositionAggregateDto | null>(null);
@@ -232,7 +255,14 @@ export function CompositionAggregateTable({
    */
   const [focus, setFocus] = useState<{ categoryId: string; label: string } | null>(null);
 
-  const { leaves, groups } = leafColumns(data?.rows ?? [], openRegions, locale);
+  /*
+    列は**出しているものから作る**。赤字を出しているあいだは、
+    そのためだけに当たっている区分も列に加える。切ると元の列に戻る
+  */
+  const columnRows = (data?.rows ?? []).map((r) => ({
+    regulations: showNearMiss ? [...r.regulations, ...r.nearMiss] : r.regulations,
+  }));
+  const { leaves, groups } = leafColumns(columnRows, openRegions, locale);
   // 列幅は一覧と同じ規則。法規の列は中身で増減するが、鍵が id なので幅は覚えたまま
   const cols = useResizableColumns(
     /*
@@ -240,10 +270,10 @@ export function CompositionAggregateTable({
       含有率の列が狭すぎて「%」が欠けていたのを直したが、
       一度でも幅を引いた人には古い幅が残り、直らなかったため
     */
-    "chem.table.compositionAggregate.v2",
+    "chem.table.compositionAggregate.v3",
     [...HEADS, ...leaves],
     // 規制区分に分けると列が増える。詰めずに、はみ出したぶんは横に送る
-    { shrinkToFit: false },
+    { shrinkToFit: false, frozen: FROZEN },
   );
 
   useEffect(() => {
@@ -356,7 +386,13 @@ export function CompositionAggregateTable({
       {data.rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
       ) : (
-        <div ref={cols.scrollerRef} className="overflow-x-auto">
+        /*
+          **表の箱に高さを決める。**行が多いとき、横のスクロールバーは表のいちばん下に付く。
+          ページを下まで送らないと触れず、そこまで送ると見出しが画面から消えていた。
+          箱の中で行を送る形にすると、見出しは上に貼り付いたまま、
+          スクロールバーも箱の下端にあるので、どちらも見ながら動かせる
+        */
+        <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
           <table
             {...cols.tableProps}
             className={cn(
@@ -379,18 +415,31 @@ export function CompositionAggregateTable({
                 3段目 … 規制区分。押すと**その区分に該当する行だけ**になる（格納ではない）
               組成そのものの列は3段ぶんの高さを取る。
             */}
-            <thead>
-              <tr className="bg-muted/50 border-t text-left">
-                {HEADS.map(({ key, label, className }) => (
-                  <th
-                    key={key}
-                    rowSpan={3}
-                    className={cn(CELL, "relative align-bottom font-medium", className)}
-                  >
-                    {label(m)}
-                    {cols.handle(key, `${label(m)} ${m.table.resize}`)}
-                  </th>
-                ))}
+            {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
+            <thead className="sticky top-0 z-20">
+              <tr className={cn(OPAQUE_MUTED_50, "border-t text-left")}>
+                {HEADS.map(({ key, label, className }, at) => {
+                  const frozen = cols.frozenProps(at);
+                  return (
+                    <th
+                      key={key}
+                      rowSpan={3}
+                      // 貼り付ける列は position が sticky になる。つまみはその中に置ける
+                      className={cn(
+                        CELL,
+                        "align-bottom font-medium",
+                        at < FROZEN ? OPAQUE_MUTED_50 : "relative",
+                        frozen.className,
+                        className,
+                      )}
+                      // 左に貼り付ける見出しは、上と左の両方で貼り付く角なので前に出す
+                      style={frozen.style ? { ...frozen.style, zIndex: 30 } : undefined}
+                    >
+                      {label(m)}
+                      {cols.handle(key, `${label(m)} ${m.table.resize}`)}
+                    </th>
+                  );
+                })}
                 {leaves.length > 0 && (
                   <th colSpan={leaves.length} className={cn(CELL, "text-center font-medium")}>
                     {m.composition.aggregateRegulations}
@@ -398,7 +447,7 @@ export function CompositionAggregateTable({
                 )}
               </tr>
 
-              <tr className="bg-muted/50 text-left">
+              <tr className={cn(OPAQUE_MUTED_50, "text-left")}>
                 {groups.map((g) => (
                   <th
                     key={g.regionId}
@@ -437,7 +486,7 @@ export function CompositionAggregateTable({
               </tr>
 
               {/* 分けている地域が無ければ、3段目そのものを出さない */}
-              <tr className="bg-muted/50 border-b text-left">
+              <tr className={cn(OPAQUE_MUTED_50, "border-b text-left")}>
                 {leaves
                   .filter((c) => c.categoryId !== null)
                   .map((c) => {
@@ -476,15 +525,23 @@ export function CompositionAggregateTable({
                 return (
                   <Fragment key={key}>
                     <tr className="border-b">
-                      <td className={cn(CELL, "font-mono text-xs")}>
+                      <td
+                        className={cn(CELL, STICKY_PLAIN, "font-mono text-xs")}
+                        style={cols.frozenProps(0).style}
+                      >
                         {row.casNumber ?? (
                           <span className="text-muted-foreground font-sans">
                             {m.composition.aggregateNoCas}
                           </span>
                         )}
                       </td>
-                      <td className={cn(CELL, "font-mono text-xs")}>{row.code}</td>
-                      <td className={CELL}>
+                      <td
+                        className={cn(CELL, STICKY_PLAIN, "font-mono text-xs")}
+                        style={cols.frozenProps(1).style}
+                      >
+                        {row.code}
+                      </td>
+                      <td className={cn(CELL, STICKY_PLAIN)} style={cols.frozenProps(2).style}>
                         {many ? (
                           <button
                             type="button"
@@ -507,14 +564,33 @@ export function CompositionAggregateTable({
                           pickName(locale, row.nameJa, row.nameEn)
                         )}
                       </td>
-                      <td className={cn(CELL, "text-right whitespace-nowrap")}>{row.totalPct}%</td>
-                      <td className={cn(CELL, "text-muted-foreground text-xs")}>{row.note}</td>
+                      <td
+                        className={cn(CELL, STICKY_PLAIN, "text-right whitespace-nowrap")}
+                        style={cols.frozenProps(3).style}
+                      >
+                        {row.totalPct}%
+                      </td>
+                      <td
+                        className={cn(
+                          CELL,
+                          STICKY_PLAIN,
+                          cols.frozenProps(4).className,
+                          "text-muted-foreground text-xs",
+                        )}
+                        style={cols.frozenProps(4).style}
+                      >
+                        {row.note}
+                      </td>
                       {leaves.map((c) => {
                         const hit = row.regulations.filter((r) => c.categoryIds.has(r.categoryId));
+                        const near = showNearMiss
+                          ? row.nearMiss.filter((r) => c.categoryIds.has(r.categoryId))
+                          : [];
                         return (
                           <td key={c.key} className={cn(CELL, "text-center")}>
                             <RegulationMark
                               hits={hit}
+                              near={near}
                               expanded={c.categoryId !== null}
                               locale={locale}
                             />
@@ -531,22 +607,46 @@ export function CompositionAggregateTable({
                       shown &&
                       row.contributions.map((c, i) => (
                         <tr key={`${key}-${i}`} className="bg-muted/40 border-b">
-                          <td className={CELL} />
-                          <td className={cn(CELL, "text-muted-foreground pl-6 font-mono text-xs")}>
+                          <td
+                            className={cn(CELL, OPAQUE_MUTED_40)}
+                            style={cols.frozenProps(0).style}
+                          />
+                          <td
+                            className={cn(
+                              CELL,
+                              OPAQUE_MUTED_40,
+                              "text-muted-foreground pl-6 font-mono text-xs",
+                            )}
+                            style={cols.frozenProps(1).style}
+                          >
                             {c.code}
                           </td>
                           {/* まとめる前の名前。代表と同じでも空欄にはしない（空欄は「入っていない」に見える） */}
-                          <td className={cn(CELL, "text-muted-foreground pl-6 text-xs")}>
+                          <td
+                            className={cn(
+                              CELL,
+                              OPAQUE_MUTED_40,
+                              "text-muted-foreground pl-6 text-xs",
+                            )}
+                            style={cols.frozenProps(2).style}
+                          >
                             {pickName(locale, c.nameJa, c.nameEn)}
                           </td>
                           <td
                             className={cn(
                               CELL,
+                              OPAQUE_MUTED_40,
                               "text-muted-foreground text-right text-xs whitespace-nowrap",
                             )}
+                            style={cols.frozenProps(3).style}
                           >
                             {c.pct}%
                           </td>
+                          {/* 備考。ここを抜かすと、右の法規制の列が1つずれる */}
+                          <td
+                            className={cn(CELL, OPAQUE_MUTED_40, cols.frozenProps(4).className)}
+                            style={cols.frozenProps(4).style}
+                          />
                           {leaves.map((c) => (
                             <td key={c.key} className={CELL} />
                           ))}
@@ -559,12 +659,28 @@ export function CompositionAggregateTable({
             {!focus && (
               <tfoot>
                 <tr className="bg-muted/50 border-t">
-                  <td className={cn(CELL, "text-right font-medium")} colSpan={3}>
+                  {/*
+                    合計は3列ぶんをまたぐ。ここは貼り付ける範囲とちょうど同じなので、
+                    1つのセルのまま左に貼り付けられる
+                  */}
+                  <td
+                    className={cn(CELL, OPAQUE_MUTED_50, "text-right font-medium")}
+                    style={cols.frozenProps(0).style}
+                    colSpan={3}
+                  >
                     {m.composition.sumLabel}
                   </td>
-                  <td className={cn(CELL, "text-right font-medium")}>{data.totalPct}%</td>
+                  <td
+                    className={cn(CELL, OPAQUE_MUTED_50, "text-right font-medium")}
+                    style={cols.frozenProps(3).style}
+                  >
+                    {data.totalPct}%
+                  </td>
                   {/* 備考のぶん。ここを抜かすと右端が1列ずれて、最後のセルだけ色が付かない */}
-                  <td className={CELL} />
+                  <td
+                    className={cn(CELL, OPAQUE_MUTED_50, cols.frozenProps(4).className)}
+                    style={cols.frozenProps(4).style}
+                  />
                   {leaves.map((c) => (
                     <td key={c.key} className={CELL} />
                   ))}
@@ -593,21 +709,28 @@ export function CompositionAggregateTable({
  */
 function RegulationMark({
   hits,
+  near,
   expanded,
   locale,
 }: {
   hits: RowRegulationDto[];
+  /** CAS は載っているが当たっていないもの。赤字で添える */
+  near: RowRegulationDto[];
   expanded: boolean;
   locale: ReturnType<typeof useI18n>["locale"];
 }) {
-  if (hits.length === 0) return <span className="text-muted-foreground">—</span>;
+  if (hits.length === 0 && near.length === 0)
+    return <span className="text-muted-foreground">—</span>;
   const needsReview = hits.some((h) => h.needsReview);
-  const title = hits
-    .map(
-      (h) =>
-        `${pickStatutoryName(locale, h.lawNameOriginal, h.lawNameJa, h.lawNameEn)} › ${pickStatutoryName(locale, h.categoryNameOriginal, h.categoryNameJa, h.categoryNameEn)}`,
-    )
-    .join("\n");
+  const pathOf = (list: RowRegulationDto[]) =>
+    list
+      .map(
+        (h) =>
+          `${pickStatutoryName(locale, h.lawNameOriginal, h.lawNameJa, h.lawNameEn)} › ${pickStatutoryName(locale, h.categoryNameOriginal, h.categoryNameJa, h.categoryNameEn)}`,
+      )
+      .join("\n");
+  const title = pathOf(hits);
+  const nearTitle = pathOf(near);
   /*
     区分まで分けている列は、**何に当たったのかを字で出す**。
     分類＋番号＋法文物質名。分類は名前を持たない受け皿もあるので、無ければ詰める。
@@ -617,41 +740,65 @@ function RegulationMark({
     ここに字を並べると1つの列に何行も入ってしまう。
   */
   if (!expanded) {
+    /* 当たった件数のうしろに、当たっていないぶんを括弧つきの赤字で添える */
     return (
-      <span
-        title={title}
-        className={cn("tabular-nums", needsReview ? "text-destructive font-medium" : "")}
-      >
-        {hits.length}
+      <span className="tabular-nums">
+        {hits.length > 0 && (
+          <span title={title} className={needsReview ? "text-destructive font-medium" : ""}>
+            {hits.length}
+          </span>
+        )}
+        {near.length > 0 && (
+          <span title={nearTitle} className="text-destructive">
+            {hits.length > 0 ? " " : ""}({near.length})
+          </span>
+        )}
       </span>
     );
   }
-  const labels = hits.flatMap((h) =>
-    h.statutory.map((sub) =>
-      [
-        sub.classNameOriginal
-          ? pickStatutoryName(locale, sub.classNameOriginal, sub.classNameJa, sub.classNameEn)
-          : "",
-        sub.officialNumber ?? "",
-        pickStatutoryName(locale, sub.nameOriginal, sub.nameJa, sub.nameEn),
-      ]
-        .filter(Boolean)
-        .join(" "),
-    ),
-  );
+  const labels = hits.flatMap((h) => statutoryLabels(h, locale));
+  const nearLabels = near.flatMap((h) => statutoryLabels(h, locale));
   return (
-    <span
-      title={title}
-      className={cn("block text-left text-xs", needsReview ? "text-destructive" : "")}
-    >
-      {/* 名前が取れないのは、区分そのものでまとめて当たったとき */}
-      {labels.length === 0
-        ? "●"
-        : labels.map((t) => (
-            <span key={t} className="block">
-              {t}
-            </span>
-          ))}
+    <span className="block text-left text-xs">
+      {hits.length > 0 && (
+        <span title={title} className={cn("block", needsReview ? "text-destructive" : "")}>
+          {/* 名前が取れないのは、区分そのものでまとめて当たったとき */}
+          {labels.length === 0
+            ? "●"
+            : labels.map((t) => (
+                <span key={t} className="block">
+                  {t}
+                </span>
+              ))}
+        </span>
+      )}
+      {/*
+        当たってはいないが、CAS が載っているもの。**当たったものと見分けが付くよう赤字にする。**
+        含有率が変われば該当するので、気を付ける相手として出す
+      */}
+      {nearLabels.map((t) => (
+        <span key={`near-${t}`} title={nearTitle} className="text-destructive block">
+          {t}
+        </span>
+      ))}
     </span>
+  );
+}
+
+/** 法文物質名の1行ぶんの字。分類＋番号＋名前（分類は無ければ詰める） */
+function statutoryLabels(
+  h: RowRegulationDto,
+  locale: ReturnType<typeof useI18n>["locale"],
+): string[] {
+  return h.statutory.map((sub) =>
+    [
+      sub.classNameOriginal
+        ? pickStatutoryName(locale, sub.classNameOriginal, sub.classNameJa, sub.classNameEn)
+        : "",
+      sub.officialNumber ?? "",
+      pickStatutoryName(locale, sub.nameOriginal, sub.nameJa, sub.nameEn),
+    ]
+      .filter(Boolean)
+      .join(" "),
   );
 }

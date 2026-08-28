@@ -50,12 +50,20 @@ export interface ResizableOptions {
    * false なら幅は変わらず、はみ出したぶんだけ横に送る。
    */
   shrinkToFit?: boolean;
+  /**
+   * 左に貼り付ける列の数（先頭から数える）。
+   *
+   * 横に送っても、いま見ている行がどの物質のものかを見失わないため。
+   * 貼り付ける列の背景は、呼ぶ側で**不透明**にすること。
+   * 0 なら貼り付けない（既定）。
+   */
+  frozen?: number;
 }
 
 export function useResizableColumns(
   storageKey: string,
   columns: ResizableColumn[],
-  { shrinkToFit = true }: ResizableOptions = {},
+  { shrinkToFit = true, frozen = 0 }: ResizableOptions = {},
 ) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const { widthOf, setWidth, setWidths, resetWidths, hasCustomWidths } = useColumnWidths(
@@ -70,6 +78,56 @@ export function useResizableColumns(
     ただし詰めすぎると読めないので、min-width より狭くはしない。
   */
   const minTableWidth = shrinkToFit ? Math.min(sum, MIN_COLUMN_WIDTH * columns.length) : sum;
+
+  /*
+    **左に貼り付ける列。**横に送っても、いま見ている行がどの物質のものかを見失わないため。
+    左からの距離は、前に並ぶ列の幅を足したもの。幅と同じ値から毎回作るので、
+    つまみで幅を変えても一緒に動く（ずれない）。
+  */
+  const frozenLeft: number[] = [];
+  for (let i = 0, at = 0; i < frozen && i < columns.length; i++) {
+    frozenLeft.push(at);
+    at += widthOf(columns[i]!);
+  }
+  const frozenWidth =
+    frozenLeft.length > 0
+      ? frozenLeft[frozenLeft.length - 1]! + widthOf(columns[frozenLeft.length - 1]!)
+      : 0;
+
+  /**
+   * 貼り付ける列に渡す見た目。貼り付けない列には何も返さない。
+   *
+   * 背景は**呼ぶ側で必ず不透明にすること。**透けると、下を流れていく列が見えてしまう。
+   * 境目の線は影で引く。`border-collapse` の表では、線がセルと一緒に動かないため。
+   */
+  const frozenProps = (index: number) => {
+    const left = frozenLeft[index];
+    if (left === undefined) return {};
+    const last = index === frozenLeft.length - 1;
+    return {
+      style: { position: "sticky" as const, left, zIndex: 10 },
+      "data-frozen": last ? "last" : "yes",
+      className: last ? "shadow-[inset_-1px_0_0_0_var(--border)]" : undefined,
+    };
+  };
+
+  /**
+   * 貼り付ける部分を広げすぎて、流れる部分が無くなるのを防ぐ。
+   * 見えている幅の6割までとする（引くとそこで止まる）。
+   */
+  const frozenRoom = (key: string) => {
+    const at = columns.findIndex((c) => c.key === key);
+    if (frozen === 0 || at < 0 || at >= frozen) return Infinity;
+    const el = scrollerRef.current;
+    if (!el) return Infinity;
+    const now = widthOf(columns[at]!);
+    /*
+      **いまの幅より狭くはしない。**画面が狭くて既に6割を超えているとき、
+      広げようと掴んだ瞬間に縮むと、掴んだ場所とカーソルが合わなくなる。
+      ここで止めるのは「これ以上広げること」だけ。狭めるのは今までどおりできる
+    */
+    return Math.max(now, el.clientWidth * 0.6 - frozenWidth + now);
+  };
 
   /** 指定した幅と、実際に描かれる幅の比。ドラッグは画面上の px で動くので戻すのに要る */
   const scale = useCallback(() => {
@@ -123,7 +181,8 @@ export function useResizableColumns(
         label={label}
         current={() => widthOf(col) * scale()}
         onResize={(px) => {
-          const want = px / scale();
+          // 貼り付ける列は、広げすぎると流れる部分が無くなる。そこで止める
+          const want = Math.min(px / scale(), frozenRoom(key));
           if (!neighbor) return setWidth(key, want);
           const delta = want - widthOf(col);
           // 隣を最小幅より狭くはしない。そこで止まる
@@ -144,6 +203,7 @@ export function useResizableColumns(
     resetWidths,
     hasCustomWidths,
     widthOf,
+    frozenProps,
   };
 }
 

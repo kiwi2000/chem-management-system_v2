@@ -11,7 +11,7 @@ import {
   type Ratio,
 } from "@chem/shared";
 import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
-import { regulationsByCas } from "@/lib/composition-regulations";
+import { nearMissByCas, regulationsByCas } from "@/lib/composition-regulations";
 import { prisma } from "@/lib/db";
 import { visibilityWhere } from "@/lib/product-service";
 import type { Actor } from "@/lib/authz";
@@ -196,6 +196,11 @@ export async function aggregateComposition(
     印が付かないことを「かかっていない」と読ませないよう、画面側で断る。
   */
   const regulations = await regulationsByCas(rootProductId);
+  /*
+    当たってはいないが、CAS が載っているもの。含有率が変われば規制を受けるので、
+    画面で切り替えて見られるようにする（既定は出さない）
+  */
+  const nearMiss = await nearMissByCas(rootProductId, casKeys);
 
   const rows = [...buckets.values()]
     .sort((a, b) => compareFine(b.fine, a.fine))
@@ -219,6 +224,7 @@ export async function aggregateComposition(
         note: b.notes.join("／") || null,
         // 判定は正規化した CAS で紐づいている（表示用の CAS 番号ではない）
         regulations: (b.casNormalized ? regulations.get(b.casNormalized) : undefined) ?? [],
+        nearMiss: (b.casNormalized ? nearMiss.get(b.casNormalized) : undefined) ?? [],
       };
     });
 

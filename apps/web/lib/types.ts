@@ -449,6 +449,12 @@ export interface AggregateRowDto {
    * **判定し直した結果ではなく、保持してある判定結果から引いている**
    */
   regulations: RowRegulationDto[];
+  /**
+   * **CAS は載っているのに、いまは当たっていない**法文物質名。
+   * 含有率が足りないだけなので、配合が変われば規制を受ける。
+   * 画面の切り替えを入れたときだけ赤字で出す
+   */
+  nearMiss: RowRegulationDto[];
 }
 
 /**

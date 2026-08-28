@@ -11,10 +11,17 @@ import {
   type AppSettings,
   type TextOperator,
 } from "@chem/shared";
-import { FoldVertical, GripVertical, Pencil, Trash2, UnfoldVertical } from "lucide-react";
+import {
+  FoldVertical,
+  GripVertical,
+  Pencil,
+  Trash2,
+  TriangleAlert,
+  UnfoldVertical,
+} from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompositionAggregateTable } from "@/components/composition-aggregate-table";
-import { CELL_CLIP } from "@/components/ui/table";
+import { CELL_CLIP, OPAQUE_MUTED_50 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import {
   CompositionTreeRows,
@@ -397,6 +404,8 @@ export function CompositionEditor({
    */
   const [aggregateOpen, setAggregateOpen] = useState<Set<string>>(new Set());
   const [aggregateKeys, setAggregateKeys] = useState<string[]>([]);
+  /** 含有率が足りずに当たっていないものを赤字で出すか。既定は出さない */
+  const [showNearMiss, setShowNearMiss] = useState(false);
   /*
     列幅は一覧と同じ規則。
     **原材料内の重量%は、出ているときだけ数に入れる。**
@@ -405,14 +414,14 @@ export function CompositionEditor({
   const extra = editing ? DRAG_HANDLE_WIDTH + ROW_ACTION_WIDTH : 0;
   const cols = useResizableColumns(
     // 版を上げて、覚えている列幅を捨てる（含有率の列を広げた既定で始め直す）
-    "chem.table.composition.v2",
+    "chem.table.composition.v3",
     [
       { key: "elementId", width: 88 },
       { key: "casNumber", width: 96 },
       { key: "elementName", width: 288 },
-      // 含有率は小数第6位まで。「100.000001%」まで隠れずに入る幅にする
-      { key: "contentPct", width: 104 },
-      ...(showWithin ? [{ key: "withinPct", width: 104 }] : []),
+      // 含有率は小数第6位まで。「100.000001%」が、拡大表示でも隠れずに入る幅
+      { key: "contentPct", width: 120 },
+      ...(showWithin ? [{ key: "withinPct", width: 120 }] : []),
       { key: "note", width: 160 },
     ],
     // 下の展開表と同じ規則。並べて見るので、片方だけ詰まると行がずれて見える
@@ -526,7 +535,12 @@ export function CompositionEditor({
         ) : rows.length === 0 ? (
           <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
         ) : !showRaw ? null : (
-          <div ref={cols.scrollerRef} className="overflow-x-auto">
+          /*
+            **箱に高さを決める。**行が多いと、横のスクロールバーが表のいちばん下に付き、
+            そこまでページを送ると見出しが画面から消えていた。
+            箱の中で行を送れば、見出しは上に貼り付いたまま、スクロールバーも下端にある
+          */
+          <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
             <table
               {...cols.tableProps}
               className={cn(
@@ -547,8 +561,9 @@ export function CompositionEditor({
                 {cols.cols()}
                 {editing && <col style={{ width: ROW_ACTION_WIDTH }} />}
               </colgroup>
-              <thead>
-                <tr className="bg-muted/50 border-y text-left">
+              {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
+              <thead className="sticky top-0 z-20">
+                <tr className={cn(OPAQUE_MUTED_50, "border-y text-left")}>
                   {/* 行をつかんで並べ替えるためのつまみ。幅は固定（つまみの大きさで決まる） */}
                   {editing && <th className={cn(CELL, "w-8")} />}
                   <th className={cn(CELL, "relative font-medium")}>
@@ -793,21 +808,39 @@ export function CompositionEditor({
             */}
             <div className="space-y-1">
               {showRaw && <p className="text-sm font-medium">{m.composition.aggregateTitle}</p>}
-              {aggregateKeys.length > 0 && (
-                <ExpandButtons
-                  m={m}
-                  canExpand={!aggregateKeys.every((k) => aggregateOpen.has(k))}
-                  canCollapse={aggregateOpen.size > 0}
-                  onExpand={() => setAggregateOpen(new Set(aggregateKeys))}
-                  onCollapse={() => setAggregateOpen(new Set())}
-                />
-              )}
+              <div className="flex flex-wrap items-center gap-1">
+                {aggregateKeys.length > 0 && (
+                  <ExpandButtons
+                    m={m}
+                    canExpand={!aggregateKeys.every((k) => aggregateOpen.has(k))}
+                    canCollapse={aggregateOpen.size > 0}
+                    onExpand={() => setAggregateOpen(new Set(aggregateKeys))}
+                    onCollapse={() => setAggregateOpen(new Set())}
+                  />
+                )}
+                {/*
+                  含有率が足りずに当たっていないものを、赤字で出すかどうか。
+                  既定は出さない。**当たっているものと混ぜて読ませない**ため
+                */}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={showNearMiss ? "default" : "outline"}
+                  aria-pressed={showNearMiss}
+                  title={m.composition.nearMissHint}
+                  onClick={() => setShowNearMiss((v) => !v)}
+                >
+                  <TriangleAlert className="mr-1 size-3.5" />
+                  {m.composition.nearMissShow}
+                </Button>
+              </div>
             </div>
             <CompositionAggregateTable
               productId={productId}
               open={aggregateOpen}
               onOpenChange={setAggregateOpen}
               onExpandableChange={setAggregateKeys}
+              showNearMiss={showNearMiss}
             />
           </div>
         )}

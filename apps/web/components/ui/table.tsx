@@ -15,9 +15,34 @@ import { cn } from "@/lib/utils";
  */
 export const CELL_CLIP = "[&_tbody_td]:overflow-hidden [&_tfoot_td]:overflow-hidden";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+/*
+  行や見出しの色を、**透けない形**で作ったもの。
+  貼り付ける（sticky）セルに使う。透けていると、下を流れていく列が見えてしまう。
+  もとの `bg-muted/50` `bg-muted/40` と同じ色になるよう混ぜている
+*/
+export const OPAQUE_MUTED_50 = "bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))]";
+export const OPAQUE_MUTED_40 = "bg-[color-mix(in_oklab,var(--muted)_40%,var(--background))]";
+/** 見出しの行に使うとき、乗せても色が変わらないようにする */
+export const OPAQUE_MUTED_50_HOVER =
+  "hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))]";
+
+function Table({
+  className,
+  containerClassName,
+  ...props
+}: React.ComponentProps<"table"> & {
+  /**
+   * 表を包む枠の見た目。既定は横にだけ流す。
+   * **外側で高さを決めて縦にも流したいときは、ここで `overflow-visible` にして
+   * 包む枠のスクロールを止める。**入れ子にすると、見出しを上に貼り付けられない
+   */
+  containerClassName?: string;
+}) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    <div
+      data-slot="table-container"
+      className={cn("relative w-full overflow-x-auto", containerClassName)}
+    >
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", CELL_CLIP, className)}

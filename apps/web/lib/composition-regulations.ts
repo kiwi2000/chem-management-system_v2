@@ -139,3 +139,161 @@ export async function regulationsByCas(
   }
   return out;
 }
+
+/**
+ * 「CAS は載っているのに、いまは当たっていない」法文物質名を CAS ごとに引く。
+ *
+ * **含有率が足りないだけのものを知らせるためのもの。**配合が少し変われば
+ * 規制を受けるので、あらかじめ見えているとよい。
+ *
+ * 判定はここでし直さない。対応表（法文物質名 ↔ CAS）を引いて、
+ * **すでに当たっているものを差し引く**だけにする。
+ *
+ * 拾わないもの
+ *   - **除外の印が立った対応**（[judge-store.ts](judge-store.ts) と同じ扱い）。
+ *     人が調べて当たらないと決めたものなので、知らせても仕方がない
+ *   - 区分そのものでまとめて当たっている区分。中の法文物質名は全部当たっている
+ */
+export async function nearMissByCas(
+  productId: string,
+  casNormalized: string[],
+): Promise<Map<string, RowRegulationDto[]>> {
+  const empty = new Map<string, RowRegulationDto[]>();
+  const cas = [...new Set(casNormalized.filter((c) => c))];
+  if (cas.length === 0) return empty;
+
+  const version = await prisma.linkSetVersion.findFirst({
+    where: { isCurrent: true, deletedAt: null },
+    select: { id: true },
+  });
+  if (!version) return empty;
+
+  const [links, judgements] = await Promise.all([
+    prisma.statutoryCasLink.findMany({
+      where: { versionId: version.id, casNormalized: { in: cas }, excluded: false },
+      select: {
+        casNormalized: true,
+        statutorySubstance: {
+          select: {
+            id: true,
+            officialNumber: true,
+            nameJa: true,
+            nameEn: true,
+            nameOriginal: true,
+            displayOrder: true,
+            deletedAt: true,
+            regulationClass: {
+              select: {
+                nameJa: true,
+                nameEn: true,
+                nameOriginal: true,
+                category: {
+                  select: {
+                    id: true,
+                    nameJa: true,
+                    nameEn: true,
+                    nameOriginal: true,
+                    displayOrder: true,
+                    deletedAt: true,
+                    law: {
+                      select: {
+                        nameJa: true,
+                        nameEn: true,
+                        nameOriginal: true,
+                        displayOrder: true,
+                        country: {
+                          select: {
+                            displayOrder: true,
+                            region: {
+                              select: { id: true, nameJa: true, nameEn: true, displayOrder: true },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.productJudgement.findMany({
+      where: { productId, verdict: "APPLICABLE" },
+      select: { categoryId: true, hits: { select: { statutorySubstanceId: true } } },
+    }),
+  ]);
+
+  /** すでに当たっている法文物質名 */
+  const hitSubstances = new Set<string>();
+  /** 区分そのものでまとめて当たった区分。中身は全部当たり扱いにする */
+  const hitCategories = new Set<string>();
+  for (const j of judgements) {
+    for (const h of j.hits) {
+      if (h.statutorySubstanceId) hitSubstances.add(h.statutorySubstanceId);
+      else hitCategories.add(j.categoryId);
+    }
+  }
+
+  /** CAS → 区分 → その区分で当たっていない法文物質名 */
+  const byCas = new Map<string, Map<string, RowRegulationDto>>();
+  for (const l of links) {
+    const sub = l.statutorySubstance;
+    if (sub.deletedAt) continue;
+    if (hitSubstances.has(sub.id)) continue;
+
+    const cat = sub.regulationClass.category;
+    if (cat.deletedAt || hitCategories.has(cat.id)) continue;
+
+    const region = cat.law.country.region;
+    let cats = byCas.get(l.casNormalized);
+    if (!cats) {
+      cats = new Map();
+      byCas.set(l.casNormalized, cats);
+    }
+    let entry = cats.get(cat.id);
+    if (!entry) {
+      entry = {
+        categoryId: cat.id,
+        regionId: region.id,
+        regionNameJa: region.nameJa,
+        regionNameEn: region.nameEn,
+        regionOrder: region.displayOrder,
+        categoryOrder: cat.law.displayOrder * 1000 + cat.displayOrder,
+        lawNameJa: cat.law.nameJa,
+        lawNameEn: cat.law.nameEn,
+        lawNameOriginal: cat.law.nameOriginal,
+        categoryNameJa: cat.nameJa,
+        categoryNameEn: cat.nameEn,
+        categoryNameOriginal: cat.nameOriginal,
+        statutory: [],
+        // 当たっていないものなので、確認が残っているかは関係ない
+        needsReview: false,
+      };
+      cats.set(cat.id, entry);
+    }
+    // 同じ法文物質名に複数の CAS で結ばれていても1つにする
+    if (entry.statutory.some((x) => x.nameOriginal === sub.nameOriginal)) continue;
+    entry.statutory.push({
+      classNameJa: sub.regulationClass.nameJa,
+      classNameEn: sub.regulationClass.nameEn,
+      classNameOriginal: sub.regulationClass.nameOriginal,
+      officialNumber: sub.officialNumber,
+      nameJa: sub.nameJa,
+      nameEn: sub.nameEn,
+      nameOriginal: sub.nameOriginal,
+    });
+  }
+
+  const out = new Map<string, RowRegulationDto[]>();
+  for (const [c, cats] of byCas) {
+    out.set(
+      c,
+      [...cats.values()].sort(
+        (a, b) => a.regionOrder - b.regionOrder || a.categoryOrder - b.categoryOrder,
+      ),
+    );
+  }
+  return out;
+}

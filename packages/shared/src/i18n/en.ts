@@ -1212,6 +1212,9 @@ export const en: Messages = {
     expandAll: "Expand",
 
     aggregateTitle: "Expanded and combined by CAS",
+    nearMissShow: "Below the threshold",
+    nearMissHint:
+      "Shows in red the listed substances whose CAS is in the law but whose content is below the threshold. A change in the recipe makes them apply",
     aggregateName: "Substance name",
     aggregateNoCas: "No CAS",
     aggregateRegulations: "Regulations",
