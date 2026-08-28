@@ -349,8 +349,6 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">{m.countries.title}</h2>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -369,6 +367,7 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
       )}
 
       <DataTable
+        title={m.countries.title}
         storageKey="chem.table.countries"
         columns={columns}
         rows={rows}

@@ -270,16 +270,6 @@ export function DataSourceSection({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">
-        {m.dataSources.title}
-        {/* どのバージョンの中身を見ているかは間違えやすいので、はっきり出す */}
-        {versionCode && (
-          <span className="bg-primary text-primary-foreground ml-2 rounded px-2 py-0.5 align-middle font-mono text-sm">
-            {versionCode}
-          </span>
-        )}
-      </h2>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -327,6 +317,17 @@ export function DataSourceSection({
       )}
 
       <DataTable
+        title={
+          <>
+            {m.dataSources.title}
+            {/* どのバージョンの中身を見ているかは間違えやすいので、はっきり出す */}
+            {versionCode && (
+              <span className="bg-primary text-primary-foreground ml-2 rounded px-2 py-0.5 align-middle font-mono text-sm">
+                {versionCode}
+              </span>
+            )}
+          </>
+        }
         storageKey="chem.table.dataSources"
         columns={columns}
         rows={items}

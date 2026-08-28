@@ -258,12 +258,6 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
 
   return (
     <div className="w-full space-y-4">
-      {title ? (
-        <h2 className="text-lg font-medium">{title}</h2>
-      ) : (
-        <h1 className="text-2xl font-semibold">{m.substances.title}</h1>
-      )}
-
       {/*
         帳票を作る相手を選んでいる最中。**この画面の絞り込みをそのまま使う。**
         選ぶための画面を別に作ると、こちらに条件が増えたときに向こうが取り残される
@@ -287,6 +281,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
 
       <DataTable
         storageKey={storageKey}
+        title={title ?? m.substances.title}
         columns={columns}
         rows={data?.items ?? null}
         rowKey={(r) => r.id}

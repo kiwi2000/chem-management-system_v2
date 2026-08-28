@@ -246,8 +246,6 @@ export function ElementSection() {
 
   return (
     <div className="w-full space-y-6 p-4 lg:p-6">
-      <h1 className="text-2xl font-semibold">{m.elements.title}</h1>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -258,6 +256,7 @@ export function ElementSection() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div className="w-full shrink-0 space-y-4 lg:max-w-[470px]">
           <DataTable
+            title={m.elements.title}
             storageKey="chem.table.elements"
             columns={columns}
             rows={rows}

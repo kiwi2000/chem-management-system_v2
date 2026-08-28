@@ -504,8 +504,6 @@ export function LawTreeSection({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">{m.laws.title}</h2>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -538,6 +536,7 @@ export function LawTreeSection({
       )}
 
       <DataTable
+        title={m.laws.title}
         storageKey="chem.table.lawTree"
         columns={columns}
         rows={rows}
@@ -626,6 +625,7 @@ export function LawTreeSection({
                 </Button>
                 <Button
                   size="sm"
+                  variant="outline"
                   disabled={!lawId}
                   onClick={() => {
                     if (!lawId) return;

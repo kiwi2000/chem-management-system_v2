@@ -269,8 +269,6 @@ export function RegionSection({ onChanged }: { onChanged?: () => void }) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">{m.regions.title}</h2>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -289,6 +287,7 @@ export function RegionSection({ onChanged }: { onChanged?: () => void }) {
       )}
 
       <DataTable
+        title={m.regions.title}
         storageKey="chem.table.regions"
         columns={columns}
         rows={rows}

@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { AliasList } from "@/components/alias-list";
 import { FieldError } from "@/components/field-error";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,6 +39,9 @@ interface GazetteRow {
   lawKind: GazetteLawKind;
   number: string;
 }
+
+/** 上のバーは form の外に置いてあるので、送り先を名指しするための名前 */
+const FORM_ID = "substance-form";
 
 export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }: Props) {
   const router = useRouter();
@@ -199,20 +201,72 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
         このバーは form の外に置く。中に置くと、押し方によっては送信（保存）と
         受け取られる余地があるため。
       */}
-      {initial && (readOnly ? canEdit : true) && (
-        <div className="flex items-center gap-3">
+      {initial && (
+        <div className="flex flex-wrap items-center gap-2">
+          {/*
+            **上でも下でも同じことができるようにする。**画面が長いので、
+            直し終えて上に戻ったときに、そこで閉じられないと下まで送り直すことになる。
+            編集中は「保存」と「変更を破棄」だけ。**一覧へ戻る口はここでは出さない**
+            （書きかけのまま抜ける道を作らない）
+          */}
           {readOnly ? (
-            <Button type="button" size="sm" onClick={() => setEditing(true)}>
-              <Pencil className="mr-1 size-3.5" />
-              {m.common.edit}
-            </Button>
+            <>
+              {canEdit && (
+                <Button key="edit" type="button" size="sm" onClick={() => setEditing(true)}>
+                  <Pencil className="mr-1 size-3.5" />
+                  {m.common.edit}
+                </Button>
+              )}
+              <Button
+                key="back"
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => router.push("/substances")}
+              >
+                {m.common.back}
+              </Button>
+            </>
           ) : (
-            <Badge variant="secondary">{m.common.editMode}</Badge>
+            <>
+              {/*
+                このバーは form の外にあるので、送る先を自分で呼ぶ。
+                **type="submit" は使わない。**押した節（読むだけ／編集中）で
+                ボタンの中身が入れ替わるとき、ブラウザは押されたままの箱に
+                「送信」の役目を見つけてしまい、「編集」を押しただけで
+                保存が走る。key を分けて箱ごと作り直すのも、そのため
+              */}
+              <Button
+                key="save"
+                type="button"
+                size="sm"
+                disabled={saving}
+                onClick={() => {
+                  const el = document.getElementById(FORM_ID);
+                  if (el instanceof HTMLFormElement) el.requestSubmit();
+                }}
+              >
+                {saving ? m.common.saving : m.common.save}
+              </Button>
+              <Button
+                key="discard"
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  // 書きかけを捨てて、読むだけの状態に戻す
+                  router.refresh();
+                  setEditing(false);
+                }}
+              >
+                {m.common.discard}
+              </Button>
+            </>
           )}
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form id={FORM_ID} onSubmit={onSubmit} className="space-y-4">
         <fieldset disabled={readOnly} className="space-y-4">
           <Card>
             <CardHeader>

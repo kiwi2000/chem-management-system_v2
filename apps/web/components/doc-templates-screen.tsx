@@ -397,7 +397,6 @@ export function DocTemplatesScreen() {
 
   return (
     <div className="w-full space-y-3 p-3 pb-10 lg:p-4 lg:pb-12">
-      <h1 className="text-2xl font-semibold">{m.docTemplates.title}</h1>
       <p className="text-muted-foreground text-sm">{m.docTemplates.lead}</p>
 
       {error && (
@@ -422,6 +421,7 @@ export function DocTemplatesScreen() {
       )}
 
       <DataTable
+        title={m.docTemplates.title}
         storageKey="chem.table.docTemplates"
         columns={columns}
         rows={rows}

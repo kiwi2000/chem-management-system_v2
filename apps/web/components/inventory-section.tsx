@@ -290,16 +290,12 @@ export function InventorySection() {
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <h1 className="text-2xl font-semibold">{m.inventories.title}</h1>
-      <p className="text-muted-foreground text-sm">{m.inventories.description}</p>
       {/*
-        どのバージョンを見ているかは常に出す。バージョンが違えば件数も中身も変わる。
-        ただし引き終わるまでは何も言わない（読み込み中と、バージョンが無いのを混同させない）
+        バージョンが無いときだけ知らせる。**あるときは黙る。**
+        どのバージョンを見ているかは、左下と上の帯に常に出ている
       */}
-      {data !== null && (
-        <p className="text-muted-foreground text-xs">
-          {version ? m.inventories.versionNote(version) : m.inventories.noCurrentVersion}
-        </p>
+      {data !== null && !version && (
+        <p className="text-muted-foreground text-xs">{m.inventories.noCurrentVersion}</p>
       )}
 
       {error && (
@@ -309,6 +305,7 @@ export function InventorySection() {
       )}
 
       <DataTable
+        title={m.inventories.title}
         storageKey="chem.table.inventories"
         columns={columns}
         rows={data?.items ?? null}

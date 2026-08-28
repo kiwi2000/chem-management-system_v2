@@ -10,7 +10,6 @@ export default function OrganisationsPage() {
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
       <div>
-        <h1 className="text-2xl font-semibold">{m.organisations.title}</h1>
         <p className="text-muted-foreground text-sm">{m.organisations.description}</p>
       </div>
       <OrganisationSection />

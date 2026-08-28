@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import { DataSourceSection } from "@/components/data-source-section";
 import { LinkVersionSection } from "@/components/link-version-section";
 import { SourceSection } from "@/components/source-section";
-import { useI18n } from "@/lib/i18n-client";
 
 /**
  * 外部データベース。
@@ -20,7 +19,6 @@ import { useI18n } from "@/lib/i18n-client";
  * （地域・国と同じ「左で選んで右を見る」形）。
  */
 export default function ExternalDbPage() {
-  const { m } = useI18n();
   // 種別を足したら、データソースの選択肢を引き直す
   const [token, setToken] = useState(0);
   const bump = useCallback(() => setToken((v) => v + 1), []);
@@ -30,8 +28,6 @@ export default function ExternalDbPage() {
 
   return (
     <div className="w-full space-y-6 p-4 lg:p-6">
-      <h1 className="text-2xl font-semibold">{m.externalDb.title}</h1>
-
       {/* 種別は2列しかないので、横いっぱいには広げない */}
       <div className="max-w-[444px]">
         <SourceSection onChanged={bump} />

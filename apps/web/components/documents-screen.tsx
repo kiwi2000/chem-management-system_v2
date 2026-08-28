@@ -183,8 +183,6 @@ export function DocumentsScreen() {
 
   return (
     <div className="w-full space-y-4 p-3 pb-10 lg:p-4 lg:pb-12">
-      <h1 className="text-2xl font-semibold">{m.nav.documentCreate}</h1>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>

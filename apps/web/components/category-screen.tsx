@@ -54,12 +54,16 @@ export function CategoryScreen({
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
       {/* いまどこにいるか。メニューの項目名から始める */}
+      {/*
+        規制区分だけの画面は無く、法律の画面から直接ここへ来る。
+        法律と区分を別の段にすると、途中に開けない段ができてしまうので、
+        「化審法・第二種特定化学物質」のように1つにまとめる
+      */}
       <Breadcrumbs
         items={[
           { label: m.nav.laws },
           { label: m.laws.title, href: "/laws" },
-          { label: lawName || law.code, href: "/laws" },
-          { label: catName || category.code },
+          { label: `${lawName || law.code}・${catName || category.code}` },
         ]}
       />
       <div className="flex flex-wrap items-center gap-3">

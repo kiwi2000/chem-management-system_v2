@@ -2,7 +2,7 @@
 
 import { activeFilterCount, type ColumnFilter, type TableState } from "@chem/shared";
 import { ChevronDown, ChevronRight, FilterX, GripVertical } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
@@ -73,6 +73,10 @@ export function FilterPanel<T>({
   columnsChanged,
 }: Props<T>) {
   const { m } = useI18n();
+  /**
+   * フィルターの詳細欄。**画面を開いたときは必ず閉じている。**
+   * 前回開いていたかは覚えない。開けたままだと表の見える行が減るため
+   */
   const [open, setOpen] = useState(false);
   /** 出す列を選ぶ欄。フィルターとは別に開け閉めする */
   const [columnsOpen, setColumnsOpen] = useState(false);
@@ -80,15 +84,8 @@ export function FilterPanel<T>({
   const [dragAt, setDragAt] = useState<number | null>(null);
   const [overAt, setOverAt] = useState<number | null>(null);
 
-  useEffect(() => {
-    setOpen(window.localStorage.getItem(storageKey) === "1");
-  }, [storageKey]);
-
   function toggle() {
-    setOpen((v) => {
-      window.localStorage.setItem(storageKey, v ? "0" : "1");
-      return !v;
-    });
+    setOpen((v) => !v);
   }
 
   const filterCount = activeFilterCount(state);

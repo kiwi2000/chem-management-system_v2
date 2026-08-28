@@ -151,8 +151,6 @@ export default function NewsListPage() {
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <h1 className="text-2xl font-semibold">{m.news.title}</h1>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -160,6 +158,7 @@ export default function NewsListPage() {
       )}
 
       <DataTable
+        title={m.news.title}
         storageKey="chem.table.news"
         columns={columns}
         rows={data?.items ?? null}

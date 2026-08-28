@@ -250,8 +250,6 @@ export function LinkVersionSection({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">{m.linkVersions.title}</h2>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -259,6 +257,7 @@ export function LinkVersionSection({
       )}
 
       <DataTable
+        title={m.linkVersions.title}
         storageKey="chem.table.linkVersions"
         columns={columns}
         rows={rows}

@@ -219,7 +219,13 @@ export function ProductForm({
   function sectionAction(sec: Section) {
     if (wizard || !canEdit) return null;
     return isEditing(sec) ? (
-      <Badge variant="secondary">{m.common.editMode}</Badge>
+      // 節が長いので、見出しの側でもやめられるようにする（下まで送らずに済む）
+      <span className="flex flex-wrap items-center gap-2">
+        <Badge variant="secondary">{m.common.editMode}</Badge>
+        <Button type="button" size="sm" variant="outline" onClick={() => discard(sec)}>
+          {m.common.discard}
+        </Button>
+      </span>
     ) : (
       <Button type="button" size="sm" variant="outline" onClick={() => tryEdit(sec)}>
         <Pencil className="mr-1 size-3.5" />

@@ -362,6 +362,7 @@ export function OrganisationSection() {
       )}
 
       <DataTable
+        title={m.organisations.title}
         storageKey={STORAGE_KEY}
         columns={columns}
         rows={data?.items ?? null}

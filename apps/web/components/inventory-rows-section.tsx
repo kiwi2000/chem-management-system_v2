@@ -353,7 +353,7 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
             <VersionSourcePicker
               value={picked}
               onChange={setPicked}
-              hint={m.inventories.usedHint}
+              mergedLabel={m.casLinks.merged}
             />
           </div>
         }

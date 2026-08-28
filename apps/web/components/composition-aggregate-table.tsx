@@ -4,6 +4,7 @@ import { pickName, pickStatutoryName } from "@chem/shared";
 import { ChevronRight } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CELL_CLIP } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -21,7 +22,8 @@ import { cn } from "@/lib/utils";
  * 寄与元が複数ある行だけ押して開ける。名称は、そのCASの代表物質から取っている。
  */
 
-const CELL = "border-r px-2 py-1 last:border-r-0";
+/** 長い語もセルの中で折り返す。折り返せないものは CELL_CLIP で隠れる */
+const CELL = "border-r px-2 py-1 break-words last:border-r-0";
 
 /** 行を指す鍵。CASを持たない物質は自分のコードで区別する */
 const keyOf = (row: { casNumber: string | null; code: string }) => row.casNumber ?? row.code;
@@ -53,7 +55,13 @@ const HEADS: {
   { key: "name", width: 256, label: (m) => m.composition.aggregateName },
   {
     key: "contentPct",
-    width: 72,
+    /*
+      **この列に入りうるいちばん長い値が、隠れずに収まる幅。**
+      含有率は小数第6位まで持つので、最長は「100.000001%」の87px。
+      左右の余白16pxと、はしたの丸めのぶんを足して104px にする
+      （72px では「23.792%」でもう一杯、88px でも環境によって「%」が欠けた）
+    */
+    width: 104,
     label: (m) => m.composition.contentPct,
     className: "text-right whitespace-nowrap",
   },
@@ -71,17 +79,33 @@ const HEADS: {
  * 押すと、その地域の該当区分の数だけ列に分かれ、地域名のあった場所が区分名になる。
  */
 /**
- * 見出しの文字が入るのに要る幅（px）のおよそ。
+ * 見出しの文字が入るのに要る幅（px）。
  *
  * 法規の列は**見出しが地域名や区分名になるので、長さが読むまで分からない**。
- * 決め打ちの幅にすると、短い地域は余り、長い地域は切れる。
+ * 決め打ちの幅にすると、短い地域は余り、長い地域は切れる（「EU加盟国」が
+ * 「EU加…」になっていた）。
  *
- * 実測した値に合わせてある（14px の文字で、日本語1文字＝14px、英数字＝8px）。
+ * 実際に描くのと同じ字で測る。字が読み込まれる前や、画面が無いところでは
+ * 測れないので、そのときは1文字ぶんの目安で数える。**測った値と目安の広いほう**を
+ * 使い、足りずに切れることのないようにする。
  */
+const TEXT_SIZER = (() => {
+  let ctx: CanvasRenderingContext2D | null | undefined;
+  return (label: string): number => {
+    if (typeof document === "undefined") return 0;
+    if (ctx === undefined) {
+      ctx = document.createElement("canvas").getContext("2d");
+      // 見出しの字（太さ500・14px）。表の見出しと同じにする
+      if (ctx) ctx.font = `500 14px ${getComputedStyle(document.body).fontFamily}`;
+    }
+    return ctx ? ctx.measureText(label).width : 0;
+  };
+})();
+
 function labelWidth(label: string): number {
   let px = 0;
-  for (const ch of label) px += /[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? 14 : 8;
-  return px;
+  for (const ch of label) px += /[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? 14 : 9;
+  return Math.ceil(Math.max(px, TEXT_SIZER(label)));
 }
 
 interface LeafColumn {
@@ -160,8 +184,12 @@ function leafColumns(
         categoryId: null,
         label: region.label,
         categoryIds: new Set(region.categories.keys()),
-        // 余白（左右8px）と開閉のつまみ（18px）のぶんを足す
-        width: Math.max(72, labelWidth(region.label) + 34),
+        /*
+          **見出しがちょうど入るだけ**にする。右に余りを作らない。
+          文字のほかに要るのは、左右の余白（8+8）・すきま（4）・開閉の記号（12）。
+          最後の1pxは、はしたの丸めで最後の字が「…」に化けるのを防ぐぶん
+        */
+        width: labelWidth(region.label) + 33,
       });
       groups.push({ regionId, label: region.label, expanded: false, span: 1 });
       continue;
@@ -207,7 +235,12 @@ export function CompositionAggregateTable({
   const { leaves, groups } = leafColumns(data?.rows ?? [], openRegions, locale);
   // 列幅は一覧と同じ規則。法規の列は中身で増減するが、鍵が id なので幅は覚えたまま
   const cols = useResizableColumns(
-    "chem.table.compositionAggregate",
+    /*
+      **末尾の版を上げると、覚えている列幅を捨てて既定から始め直す。**
+      含有率の列が狭すぎて「%」が欠けていたのを直したが、
+      一度でも幅を引いた人には古い幅が残り、直らなかったため
+    */
+    "chem.table.compositionAggregate.v2",
     [...HEADS, ...leaves],
     // 規制区分に分けると列が増える。詰めずに、はみ出したぶんは横に送る
     { shrinkToFit: false },
@@ -326,7 +359,11 @@ export function CompositionAggregateTable({
         <div ref={cols.scrollerRef} className="overflow-x-auto">
           <table
             {...cols.tableProps}
-            className={cn("table-fixed border-collapse text-sm", cols.tableProps.className)}
+            className={cn(
+              "table-fixed border-collapse text-sm",
+              CELL_CLIP,
+              cols.tableProps.className,
+            )}
           >
             <colgroup>{cols.cols()}</colgroup>
             {/*
@@ -526,6 +563,8 @@ export function CompositionAggregateTable({
                     {m.composition.sumLabel}
                   </td>
                   <td className={cn(CELL, "text-right font-medium")}>{data.totalPct}%</td>
+                  {/* 備考のぶん。ここを抜かすと右端が1列ずれて、最後のセルだけ色が付かない */}
+                  <td className={CELL} />
                   {leaves.map((c) => (
                     <td key={c.key} className={CELL} />
                   ))}

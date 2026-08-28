@@ -68,8 +68,9 @@ const ITEMS: NavItem[] = [
     children: [
       { href: "/regions", key: "regions", icon: Globe, needs: "REGULATION_VIEW" },
       {
+        // 見出しの「法規制」と同じ名前にしない。中身は法律の一覧なので、そう呼ぶ
         href: "/laws",
-        key: "laws",
+        key: "lawList",
         icon: Scale,
         needs: "REGULATION_VIEW",
         match: ["/laws", "/categories"],

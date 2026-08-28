@@ -4,12 +4,23 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 中身がセルの外へ出ないようにする決まり。
+ *
+ * 列の幅は決まっているので、長い文字はそのままだと**隣のセルの上に重なって**出る。
+ * 折り返せるものは折り返し、折り返せないもの（数字や日付）は、はみ出たぶんを隠す。
+ *
+ * **見出しの行には掛けない。**列幅を変えるつまみが境目をまたいで置いてあり、
+ * 隠すと掴めなくなる。見出しの文字は、中の入れ物のほうで切る。
+ */
+export const CELL_CLIP = "[&_tbody_td]:overflow-hidden [&_tfoot_td]:overflow-hidden";
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div data-slot="table-container" className="relative w-full overflow-x-auto">
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-full caption-bottom text-sm", CELL_CLIP, className)}
         {...props}
       />
     </div>

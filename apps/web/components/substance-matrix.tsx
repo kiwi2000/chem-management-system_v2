@@ -2,6 +2,7 @@
 
 import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
+import { CELL_CLIP } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -299,6 +300,7 @@ function Matrix({
           {...cols.tableProps}
           className={cn(
             "border-border table-fixed border-collapse border text-xs",
+            CELL_CLIP,
             cols.tableProps.className,
           )}
         >

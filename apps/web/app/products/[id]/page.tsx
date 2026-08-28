@@ -1,5 +1,7 @@
+import { pickName } from "@chem/shared";
 import { notFound } from "next/navigation";
 import { ApprovalHistory } from "@/components/approval-history";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PublishActions } from "@/components/publish-actions";
 import { ProductForm } from "@/components/product-form";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
@@ -7,7 +9,7 @@ import { getActor } from "@/lib/authz";
 import { ProductJudgements } from "@/components/product-judgements";
 import { canEditComposition, canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
-import { getServerMessages } from "@/lib/i18n";
+import { getLocale, getServerMessages } from "@/lib/i18n";
 import { PRODUCT_INCLUDE, canEditProduct, toDetail, visibilityWhere } from "@/lib/product-service";
 import { PROPERTY_DEF_COUNT, toPropertyDefDto } from "@/lib/property-def-service";
 import { getAppSettings } from "@/lib/settings";
@@ -24,8 +26,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const actor = await getActor();
   if (!actor) notFound();
 
-  const [m, settings, item, defs, linkVersion] = await Promise.all([
+  const [m, locale, settings, item, defs, linkVersion] = await Promise.all([
     getServerMessages(),
+    getLocale(),
     getAppSettings(),
     prisma.product.findFirst({
       where: { id, deletedAt: null, ...visibilityWhere(actor) },
@@ -47,6 +50,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className={PAGE_SHELL_STACKED}>
+      <Breadcrumbs
+        items={[
+          { label: m.nav.products, href: "/products" },
+          { label: pickName(locale, item.nameJa, item.nameEn) || item.code },
+        ]}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{m.products.detailTitle}</h1>
         <div className="flex flex-wrap items-center gap-3">

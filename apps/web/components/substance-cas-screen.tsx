@@ -64,8 +64,11 @@ export function SubstanceCasScreen({
         items={[
           { label: m.nav.laws },
           { label: m.laws.title, href: "/laws" },
-          { label: lawName || law.code, href: "/laws" },
-          { label: catName || category.code, href: `/categories/${category.id}` },
+          // 規制区分だけの画面は無いので、法律と区分は1つにまとめる（区分の画面へ移る）
+          {
+            label: `${lawName || law.code}・${catName || category.code}`,
+            href: `/categories/${category.id}`,
+          },
           { label: subName || substance.code },
         ]}
       />

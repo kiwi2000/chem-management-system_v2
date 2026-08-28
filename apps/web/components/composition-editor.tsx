@@ -14,6 +14,7 @@ import {
 import { FoldVertical, GripVertical, Pencil, Trash2, UnfoldVertical } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompositionAggregateTable } from "@/components/composition-aggregate-table";
+import { CELL_CLIP } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import {
   CompositionTreeRows,
@@ -67,7 +68,8 @@ interface Row {
   note: string;
 }
 
-const CELL = "border-r px-2 py-1 last:border-r-0";
+/** 長い語もセルの中で折り返す。折り返せないものは CELL_CLIP で隠れる */
+const CELL = "border-r px-2 py-1 break-words last:border-r-0";
 
 function toRow(l: CompositionLineDto, index: number): Row | null {
   if (!l.element) return null;
@@ -402,13 +404,15 @@ export function CompositionEditor({
   */
   const extra = editing ? DRAG_HANDLE_WIDTH + ROW_ACTION_WIDTH : 0;
   const cols = useResizableColumns(
-    "chem.table.composition",
+    // 版を上げて、覚えている列幅を捨てる（含有率の列を広げた既定で始め直す）
+    "chem.table.composition.v2",
     [
       { key: "elementId", width: 88 },
       { key: "casNumber", width: 96 },
       { key: "elementName", width: 288 },
-      { key: "contentPct", width: 72 },
-      ...(showWithin ? [{ key: "withinPct", width: 72 }] : []),
+      // 含有率は小数第6位まで。「100.000001%」まで隠れずに入る幅にする
+      { key: "contentPct", width: 104 },
+      ...(showWithin ? [{ key: "withinPct", width: 104 }] : []),
       { key: "note", width: 160 },
     ],
     // 下の展開表と同じ規則。並べて見るので、片方だけ詰まると行がずれて見える
@@ -525,7 +529,11 @@ export function CompositionEditor({
           <div ref={cols.scrollerRef} className="overflow-x-auto">
             <table
               {...cols.tableProps}
-              className={cn("table-fixed border-collapse text-sm", cols.tableProps.className)}
+              className={cn(
+                "table-fixed border-collapse text-sm",
+                CELL_CLIP,
+                cols.tableProps.className,
+              )}
               // 直しているときだけ出る前後の列のぶんを足す
               style={{ width: (cols.tableProps.style.width ?? 0) + extra }}
             >
@@ -912,7 +920,7 @@ export function CompositionEditor({
               ) : (
                 <>
                   <div className="max-h-64 overflow-y-auto rounded-md border">
-                    <table className="w-full border-collapse text-sm">
+                    <table className={cn("w-full border-collapse text-sm", CELL_CLIP)}>
                       <thead>
                         <tr className="bg-muted/50 border-b text-left">
                           <th className={cn(CELL, "w-8 text-center")}>

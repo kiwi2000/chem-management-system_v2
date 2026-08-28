@@ -118,6 +118,11 @@ interface Props<T> {
   /** 行を押すと何が起きるかを、操作の並びの右端に一言で出す */
   hintText?: string;
   /** 「1ページの件数」に出す選択肢。件数の少ない表では小さい値だけにする */
+  /**
+   * 画面（または節）の名前。**操作の行の左端に置く。**
+   * 見出しだけで1行使うと、そのぶん表が下へ押されて読める行が減る
+   */
+  title?: ReactNode;
   /** 指定しなければ、その人の設定（`個人設定 → 1ページの件数`）に従う */
   pageSizeOptions?: readonly number[];
   /**
@@ -145,6 +150,9 @@ interface Props<T> {
 
 /** 罫線。セルの右側に薄い線を引く（最後の列は引かない） */
 const CELL_BORDER = "border-r last:border-r-0";
+
+/** 表の名前。**どの画面でも同じ大きさ**にする（画面ごとに違うと落ち着かない） */
+export const TABLE_TITLE = "mr-1 text-xl font-semibold";
 /** チェックボックス列。左右の余白を詰めて中央に置く */
 const SELECT_CELL = "px-0 text-center";
 
@@ -175,6 +183,7 @@ export function DataTable<T>({
   headerActions,
   rowAction,
   hintText,
+  title,
   pageSizeOptions,
   showPager = true,
   rowClassName,
@@ -405,8 +414,9 @@ export function DataTable<T>({
    * フィルターと同じ1行に置くので、行が2段になって空白の帯ができることがない。
    */
   const actions =
-    create || selectable || bulkAction || headerActions ? (
+    title || create || selectable || bulkAction || headerActions ? (
       <div className="flex flex-wrap items-center gap-2">
+        {title && <h2 className={TABLE_TITLE}>{title}</h2>}
         {create && (
           <Button
             size="icon"

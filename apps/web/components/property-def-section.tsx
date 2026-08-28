@@ -227,7 +227,6 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-muted-foreground text-sm">{hint}</p>
       </div>
 
@@ -350,6 +349,7 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
       </Card>
 
       <DataTable
+        title={title}
         storageKey={storageKey}
         columns={columns}
         rows={data?.items ?? null}

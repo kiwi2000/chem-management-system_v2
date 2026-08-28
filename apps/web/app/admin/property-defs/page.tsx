@@ -13,7 +13,6 @@ export default function PropertyDefsPage() {
   return (
     <div className="w-full space-y-8 p-4 lg:p-6">
       <div>
-        <h1 className="text-2xl font-semibold">{m.propertyDefs.title}</h1>
         <p className="text-muted-foreground text-sm">{m.propertyDefs.description}</p>
       </div>
 

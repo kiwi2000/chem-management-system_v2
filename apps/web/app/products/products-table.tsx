@@ -400,13 +400,8 @@ export function ProductsTable({
   }
 
   return (
-    <div className="w-full space-y-4 p-4 lg:p-6">
-      {title ? (
-        <h2 className="text-lg font-medium">{title}</h2>
-      ) : (
-        <h1 className="text-2xl font-semibold">{m.products.title}</h1>
-      )}
-
+    // 外側（一覧の画面）が余白を持っているので、ここでは付けない（物質の一覧と同じ）
+    <div className="w-full space-y-4">
       {/*
         帳票を作る相手を選んでいる最中。**この画面の絞り込みをそのまま使う。**
         選ぶための画面を別に作ると、こちらに条件が増えたときに向こうが取り残される
@@ -430,6 +425,7 @@ export function ProductsTable({
 
       <DataTable
         storageKey={storageKey}
+        title={title ?? m.products.title}
         columns={columns}
         rows={data?.items ?? null}
         rowKey={(r) => r.id}

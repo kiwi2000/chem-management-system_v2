@@ -304,7 +304,6 @@ export default function FeedbackPage() {
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <h1 className="text-2xl font-semibold">フィードバック</h1>
       <p className="text-muted-foreground text-sm">
         使ってみて気づいたことを書き留めておく場所です。不具合・要望・質問のどれでもかまいません。
         表の左上の ＋ を押すと書く欄が開きます。書いたものを直すときは、行の右端の ✎
@@ -442,6 +441,7 @@ export default function FeedbackPage() {
       )}
 
       <DataTable
+        title="フィードバック"
         storageKey={STORAGE_KEY}
         columns={columns}
         rows={data?.items ?? null}

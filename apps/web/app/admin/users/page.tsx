@@ -193,8 +193,6 @@ export default function UsersPage() {
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <h1 className="text-2xl font-semibold">{m.users.title}</h1>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -202,6 +200,7 @@ export default function UsersPage() {
       )}
 
       <DataTable
+        title={m.users.title}
         storageKey="chem.table.users"
         columns={columns}
         rows={data?.items ?? null}

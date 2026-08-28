@@ -220,7 +220,6 @@ export default function AccessLogPage() {
     <div className="w-full space-y-4 p-4 lg:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">{m.accessLog.title}</h1>
           <p className="text-muted-foreground mt-1 text-sm">{m.accessLog.lead}</p>
         </div>
         <Button
@@ -245,6 +244,7 @@ export default function AccessLogPage() {
       )}
 
       <DataTable
+        title={m.accessLog.title}
         storageKey={STORAGE_KEY}
         columns={columns}
         rows={data?.items ?? null}

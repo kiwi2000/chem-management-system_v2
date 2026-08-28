@@ -188,10 +188,7 @@ export function GroupSection({ kind, title, hint, storageKey }: Props) {
 
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <p className="text-muted-foreground text-sm">{hint}</p>
-      </div>
+      <p className="text-muted-foreground text-sm">{hint}</p>
 
       {error && (
         <Alert variant="destructive">
@@ -269,6 +266,7 @@ export function GroupSection({ kind, title, hint, storageKey }: Props) {
       </Card>
 
       <DataTable
+        title={title}
         storageKey={storageKey}
         columns={columns}
         rows={data?.items ?? null}

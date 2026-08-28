@@ -202,8 +202,6 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">{m.sources.title}</h2>
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -222,6 +220,7 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
       )}
 
       <DataTable
+        title={m.sources.title}
         storageKey="chem.table.sources"
         columns={columns}
         rows={rows}
