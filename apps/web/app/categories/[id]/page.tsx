@@ -9,7 +9,7 @@ import { countSubstancesByCategory, toCategoryDto } from "@/lib/law-service";
 /**
  * 規制区分の法文物質名。
  *
- * 法令の一覧で区分のコードを押すと、ここへ移る。
+ * 法律の一覧で区分のコードを押すと、ここへ移る。
  * 区分そのものはここで引いて渡す（画面が開いた直後に見出しを出せるようにするため）。
  */
 export default async function CategoryPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,8 +26,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
   if (!row) notFound();
 
   /*
-    同じ法令の区分を並び順で引き、前後を求める。
-    **法令はまたがない。**隣の法令へ滑り込むと、いまどこにいるか分からなくなる
+    同じ法律の区分を並び順で引き、前後を求める。
+    **法律はまたがない。**隣の法律へ滑り込むと、いまどこにいるか分からなくなる
   */
   const siblings = await prisma.regulationCategory.findMany({
     where: { lawId: row.lawId, deletedAt: null },

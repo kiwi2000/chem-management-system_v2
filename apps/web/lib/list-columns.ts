@@ -202,7 +202,7 @@ export const LAW_COLUMNS: QueryColumn[] = [
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "countryId", kind: "enum", field: "countryId" },
-  // 地域は国の1つ上。法令そのものは持っていないので、国をたどって絞る
+  // 地域は国の1つ上。法律そのものは持っていないので、国をたどって絞る
   { key: "regionId", kind: "enum", field: "regionId", nested: "country" },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
 ];
@@ -297,6 +297,15 @@ export const GROUP_COLUMNS: QueryColumn[] = [
   { key: "activeFlag", kind: "enum", field: "activeFlag", booleanEnum: true },
 ];
 
+/** 組織（会社・事業所）。項目は表に出さないので、ここには入れない */
+export const ORGANISATION_COLUMNS: QueryColumn[] = [
+  { key: "code", kind: "text", field: "code", caseInsensitive: true },
+  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  { key: "displayOrder", kind: "number", field: "displayOrder" },
+  { key: "activeFlag", kind: "enum", field: "activeFlag", booleanEnum: true },
+];
+
 export const PROPERTY_DEF_COLUMNS: QueryColumn[] = [
   // 用途は節ごとに固定（画面には出さないが、節から必ず条件として送られる）
   { key: "target", kind: "enum", field: "target" },
@@ -337,7 +346,7 @@ export const INVENTORY_COLUMNS: QueryColumn[] = [
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "countryId", kind: "enum", field: "countryId" },
-  // 地域は国の1つ上。インベントリそのものは持っていないので、国をたどって絞る（法令と同じ）
+  // 地域は国の1つ上。インベントリそのものは持っていないので、国をたどって絞る（法律と同じ）
   { key: "regionId", kind: "enum", field: "regionId", nested: "country" },
   { key: "numberLabel", kind: "text", field: "numberLabel", caseInsensitive: true },
   { key: "numberShown", kind: "enum", field: "numberShown", booleanEnum: true },

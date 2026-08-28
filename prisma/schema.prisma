@@ -191,6 +191,11 @@ model User {
    */
   preferredBackground   String?   @map("preferred_background")
   /**
+   * 1ページの件数の好み。`15,25,50,100|50` の形（選択肢｜既定）。
+   * 画面の高さも読みたい量も人によって違うので、決め打ちにしない
+   */
+  preferredPageSizes    String?   @map("preferred_page_sizes")
+  /**
    * 組織の所属。1人1つ。null=未所属
    */
   orgGroupId            String?   @map("org_group_id")
@@ -198,6 +203,11 @@ model User {
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
+  /**
+   * 所属する会社。1人1つ。null=未設定。
+   * **所属（部署）とは別に持つ。**部署の無い人でも会社は決まるため
+   */
+  organisationId        String?   @map("organisation_id")
   activeFlag            Boolean   @default(true) @map("active_flag")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
@@ -207,12 +217,106 @@ model User {
   permissions  UserPermission[]
   savedFilters SavedFilter[]
   news         News[]
+  passkeys     Passkey[]
   orgGroup     Group?           @relation("UserOrgGroup", fields: [orgGroupId], references: [id])
   newsGroup    Group?           @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
+  organisation Organisation?    @relation(fields: [organisationId], references: [id])
 
   @@index([orgGroupId])
   @@index([newsGroupId])
+  @@index([organisationId])
   @@map("users")
+}
+
+/**
+ * パスキー（WebAuthn）。**端末そのものが鍵になる。**
+ * 保存するのは公開鍵だけ。秘密の鍵は端末から出てこないので、
+ * この表が丸ごと漏れても、それだけでは誰も入れない。
+ * **偽サイトに引っかからない。**鍵は登録したドメインに縛られていて、
+ * そっくりの偽ログイン画面では署名が出ない。
+ * 認証アプリの6桁は打ち込めてしまうので、ここが本質的な差になる。
+ * 1人が複数の端末を登録できる。1台失くしても、別の端末から入り直せる。
+ */
+model Passkey {
+  id String @id @default(cuid())
+
+  userId       String  @map("user_id")
+  /**
+   * 端末が付けた鍵の名前（base64url）。ログインのときはこれで人を引く
+   */
+  credentialId String  @unique @map("credential_id")
+  /**
+   * 公開鍵。署名を確かめるのに使う
+   */
+  publicKey    Bytes   @map("public_key")
+  /**
+   * 端末が数える使用回数。**戻ったり据え置かれたら、鍵の複製を疑う**
+   * （数えない端末もあるので、0のままなら見ない）
+   */
+  counter      BigInt  @default(0)
+  /**
+   * 内蔵か、USBか、スマートフォンか。次に出すときの案内に使う
+   */
+  transports   String?
+
+  /**
+   * 本人が付ける名前（「会社のPC」など）。どれを消すか選べるようにするため
+   */
+  deviceLabel String    @map("device_label")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("passkeys")
+}
+
+/**
+ * 組織（会社・事業所）。**帳票に載せる差出人の情報を置く。**
+ * 持つ項目は決めない。会社名・住所・電話・登録番号・担当窓口…と、
+ * 業種や提出先によって求められるものが違うので、**項目名も値も打ってもらう**。
+ * 列を決め打ちすると、必ず「その列に無いもの」が出てきて、備考に押し込むことになる。
+ * 取引先（提出先）はここに入れない。件数も寿命も違うので、必要になったら別に持つ。
+ */
+model Organisation {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  nameJa       String    @map("name_ja")
+  nameEn       String?   @map("name_en")
+  displayOrder Int       @default(0) @map("display_order")
+  activeFlag   Boolean   @default(true) @map("active_flag")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  items   OrganisationItem[]
+  members User[]
+
+  @@index([displayOrder])
+  @@map("organisations")
+}
+
+/**
+ * 組織の項目。**項目名も値も自由入力。**
+ * 帳票からは項目名で引く（`org.item.会社名` のように）。
+ * そのため同じ組織の中で項目名は重ならないようにする
+ */
+model OrganisationItem {
+  id             String @id @default(cuid())
+  organisationId String @map("organisation_id")
+  label          String
+  value          String
+  displayOrder   Int    @default(0) @map("display_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, label])
+  @@index([organisationId, displayOrder])
+  @@map("organisation_items")
 }
 
 /**
@@ -266,17 +370,28 @@ model UserPermission {
  * Cookie には推測不能なトークンのみを入れ、DBにはその SHA-256 ハッシュだけを保存する。
  */
 model Session {
-  id         String   @id @default(cuid())
-  tokenHash  String   @unique @map("token_hash")
-  userId     String   @map("user_id")
-  expiresAt  DateTime @map("expires_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique @map("token_hash")
+  userId      String    @map("user_id")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  lastSeenAt  DateTime  @default(now()) @map("last_seen_at")
   /**
    * 監査用（どの端末からのセッションか）
    */
-  ipAddress  String?  @map("ip_address")
-  userAgent  String?  @map("user_agent")
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+  /**
+   * 切れた日時。**切るときに行を消さず、印を付けるだけにする。**
+   * 消してしまうと「なぜ切れたのか」が残らず、
+   * ログイン画面で「一定時間操作がなかったため」としか言えなくなる
+   */
+  endedAt     DateTime? @map("ended_at")
+  /**
+   * 切れた理由。settings（設定が変わった）/ expired（期限切れ）/
+   * idle（放置）/ logout（自分で出た）
+   */
+  endedReason String?   @map("ended_reason")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1756,7 +1871,6 @@ model GeneratedDocument {
 
   /**
    * 出したときの紙面そのもの（差込を済ませた文字と表の並び）。
-   *
    * **PDF や HTML ではなく、組み立て終わったデータで持つ。**
    * 数KBで済むうえ、あとから .docx のような出し先が増えても同じ内容から出せる。
    * テンプレートを書き換えても、発行済みのものは変わらない。
@@ -1765,7 +1879,6 @@ model GeneratedDocument {
 
   /**
    * 組成が入っているか。
-   *
    * **開くときに組成の権限を確かめるための印。**
    * 作った当時は見られた人でも、あとで権限を外されることがある。
    * 紙面を保存する以上、開くたびに確かめないと、外した意味がなくなる

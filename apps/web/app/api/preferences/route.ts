@@ -2,10 +2,14 @@ import {
   BACKGROUND_COOKIE,
   HEADER_STRONG_COOKIE,
   LOCALE_COOKIE,
+  PAGE_SIZE_COOKIE,
   THEME_COOKIE,
+  formatPageSizePrefs,
   isBackground,
   isLocale,
   isTheme,
+  parsePageSizeList,
+  parsePageSizePrefs,
 } from "@chem/shared";
 import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth";
@@ -35,12 +39,14 @@ export async function PUT(req: Request) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  const { locale, theme, headerStrong, background, displayName } = (body ?? {}) as {
+  const { locale, theme, headerStrong, background, displayName, pageSizes } = (body ?? {}) as {
     locale?: unknown;
     theme?: unknown;
     headerStrong?: unknown;
     background?: unknown;
     displayName?: unknown;
+    /** 1ページの件数の好み。`15,25,50,100|50` の形 */
+    pageSizes?: unknown;
   };
 
   if (locale !== undefined && !isLocale(locale)) {
@@ -55,6 +61,22 @@ export async function PUT(req: Request) {
   if (background !== undefined && !isBackground(background)) {
     return jsonError(400, "validation_error", m.errors.validation);
   }
+  /*
+    件数の好み。**読める形かどうかだけを見る。**
+    中身の直しは `parsePageSizePrefs` に任せ、しまう形はそこで整えたものにする
+  */
+  let pageSizeValue: string | undefined;
+  if (pageSizes !== undefined) {
+    if (typeof pageSizes !== "string") {
+      return jsonError(400, "validation_error", m.errors.validation);
+    }
+    const [listPart] = pageSizes.split("|");
+    if (parsePageSizeList(listPart ?? "") === null) {
+      return jsonError(400, "validation_error", m.errors.validation);
+    }
+    pageSizeValue = formatPageSizePrefs(parsePageSizePrefs(pageSizes));
+  }
+
   // 表示名は空欄を認めない。前後の空白だけの入力も弾く
   let trimmedName: string | undefined;
   if (displayName !== undefined) {
@@ -75,6 +97,7 @@ export async function PUT(req: Request) {
     store.set(HEADER_STRONG_COOKIE, headerStrong ? "1" : "0", cookieOptions);
   }
   if (isBackground(background)) store.set(BACKGROUND_COOKIE, background, cookieOptions);
+  if (pageSizeValue !== undefined) store.set(PAGE_SIZE_COOKIE, pageSizeValue, cookieOptions);
 
   const user = await getSessionUser().catch(() => null);
   // 表示名は本人のアカウントを書き換えるので、ログインしていないと変更できない
@@ -89,6 +112,7 @@ export async function PUT(req: Request) {
         ...(isTheme(theme) ? { preferredTheme: theme } : {}),
         ...(typeof headerStrong === "boolean" ? { preferredHeaderStrong: headerStrong } : {}),
         ...(isBackground(background) ? { preferredBackground: background } : {}),
+        ...(pageSizeValue !== undefined ? { preferredPageSizes: pageSizeValue } : {}),
         ...(trimmedName !== undefined ? { displayName: trimmedName } : {}),
       },
     });

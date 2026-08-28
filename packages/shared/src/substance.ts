@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Messages } from "./i18n/ja";
 
-/** 官報公示整理番号の法令区分。化審法の番号が通称 MITI番号 */
+/** 官報公示整理番号の法律区分。化審法の番号が通称 MITI番号 */
 export const GAZETTE_LAW_KINDS = ["CSCL", "ISHA", "OTHER"] as const;
 export type GazetteLawKind = (typeof GAZETTE_LAW_KINDS)[number];
 

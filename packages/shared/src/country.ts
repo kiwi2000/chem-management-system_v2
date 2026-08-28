@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { Messages } from "./i18n/ja";
 
 /**
- * 国。法令の持ち主になる単位で、地域（アジア・欧州など）の配下に置く。
+ * 国。法律の持ち主になる単位で、地域（アジア・欧州など）の配下に置く。
  * EU・EAEU のような国家連合や、国際条約のように国でないものもここに入れる。
  */
 export const countrySchema = (m: Messages) =>

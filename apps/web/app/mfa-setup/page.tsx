@@ -1,6 +1,7 @@
 "use client";
 
 import { MfaSection } from "@/components/mfa-section";
+import { PasskeySection } from "@/components/passkey-section";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useI18n } from "@/lib/i18n-client";
 
@@ -27,6 +28,8 @@ export default function MfaSetupPage() {
         <AlertDescription>{m.mfaSetup.why}</AlertDescription>
       </Alert>
       <MfaSection />
+      {/* パスキーでも済む。どちらか一方を登録すれば先へ進める */}
+      <PasskeySection />
     </div>
   );
 }

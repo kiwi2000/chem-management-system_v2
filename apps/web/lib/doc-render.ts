@@ -1,5 +1,7 @@
 import {
+  compileReplacement,
   isKnownField,
+  passesFilter,
   type BlockWidth,
   type DocumentBlock,
   type DocumentContent,
@@ -45,6 +47,7 @@ export type RenderBlock =
   | (RenderBase & { kind: "table"; caption?: string; head: string[]; rows: string[][] })
   | (RenderBase & { kind: "divider" })
   | (RenderBase & { kind: "spacer"; size: "sm" | "md" | "lg" })
+  | (RenderBase & { kind: "rowBreak" })
   | (RenderBase & { kind: "pageBreak" })
   | (RenderBase & { kind: "signature"; label: string });
 
@@ -149,13 +152,37 @@ function renderBlock(
       const src = tables.get(b.table);
       // データが取れない表は、見出しだけの枠を出さずに丸ごと省く
       if (!src) return [];
-      const cols = src.columns.filter((c) => b.columns.includes(c.key));
+      /*
+        **並びはテンプレートが決める。**表の定義の順ではなく、選んだ並びで出す。
+        定義に無い列（表を変えたあとの残り）は落とす
+      */
+      const byKey = new Map(src.columns.map((c) => [c.key, c]));
+      const cols = b.columns.flatMap((k) => {
+        const c = byKey.get(k);
+        return c ? [c] : [];
+      });
+
+      // 絞り込み。条件が複数あるときは、すべてに当てはまる行だけを出す
+      const filters = b.filters ?? [];
+      const kept = src.rows.filter((r) => filters.every((f) => passesFilter(r[f.column] ?? "", f)));
+
+      /*
+        置き換え。**読めない形は当てずに素通りさせる。**
+        打っている途中の半端な正規表現で紙面が壊れると、直しようがない
+      */
+      const rules = (b.replacements ?? []).flatMap((r) => {
+        const re = compileReplacement(r);
+        return re ? [{ column: r.column, re, to: r.replacement }] : [];
+      });
+      const apply = (columnKey: string, cell: string) =>
+        rules.reduce((acc, r) => (r.column === columnKey ? acc.replace(r.re, r.to) : acc), cell);
+
       return [
         {
           kind: "table",
           ...(b.caption ? { caption: b.caption } : {}),
           head: cols.map((c) => c.label),
-          rows: src.rows.map((r) => cols.map((c) => r[c.key] ?? "")),
+          rows: kept.map((r) => cols.map((c) => apply(c.key, r[c.key] ?? ""))),
         },
       ];
     }
@@ -163,6 +190,9 @@ function renderBlock(
       return [{ kind: "divider" }];
     case "spacer":
       return [{ kind: "spacer", size: b.size }];
+    case "rowBreak":
+      // 紙には何も出さない。横並びを切るためだけのもの
+      return [{ kind: "rowBreak" }];
     case "pageBreak":
       return [{ kind: "pageBreak" }];
     case "signature":

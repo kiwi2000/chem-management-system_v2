@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 const DEFAULT_STATE = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
-/** GET /api/regulation-categories — 一覧（法令で絞る） */
+/** GET /api/regulation-categories — 一覧（法律で絞る） */
 export async function GET(req: Request) {
   const actor = await requirePermission("REGULATION_VIEW");
   if (actor instanceof Response) return actor;

@@ -3,6 +3,7 @@ import type { User as AppUser } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { hasPasskey } from "@/lib/passkey";
 import { PENDING_PATH, pendingStep } from "@/lib/pending-step";
 import { getAppSettings } from "@/lib/settings";
 
@@ -55,7 +56,8 @@ export async function getActor(): Promise<Actor | null> {
  * ここで止める。**画面側の誘導だけに任せると、URL を直に打てば素通りできてしまう。
  *
  * `allowPending` を渡せるのは、**その用事を済ませるために要るものだけ。**
- * 増やすと門の意味が無くなるので、`authz-coverage.test.ts` が数を見張っている。
+ * 増やすと、済ませずに使い回せる道ができてしまうので、
+ * `authz-coverage.test.ts` が数を見張っている。
  */
 export async function requireUser(opts?: { allowPending?: boolean }): Promise<Actor | Response> {
   const actor = await getActor();
@@ -64,7 +66,10 @@ export async function requireUser(opts?: { allowPending?: boolean }): Promise<Ac
     return jsonError(401, "unauthorized", m.errors.unauthorized);
   }
   if (!opts?.allowPending) {
-    const step = pendingStep(actor.user, await getAppSettings());
+    const step = pendingStep(
+      { ...actor.user, hasPasskey: await hasPasskey(actor.user.id) },
+      await getAppSettings(),
+    );
     if (step) {
       const m = await getServerMessages();
       // 行き先を添える。画面側はこれを見て、済ませる画面へ送る

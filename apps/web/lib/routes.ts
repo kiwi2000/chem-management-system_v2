@@ -21,5 +21,13 @@ export const NONCE_HEADER = "x-nonce";
  * セッションが切れたときに送る先。
  * `expired=1` が付いていると、Cookie が残っていても middleware がログイン画面を通す
  * （付けないと「Cookie あり → ホームへ」と堂々巡りになる）。
+ *
+ * **なぜ切れたのかで文言を変える。**放置による自動ログアウトと、
+ * 設定が変わって切られた場合とでは、次にすることが違う。
+ * ひとまとめに「一定時間操作がなかったため」と出すと、
+ * 何もしていないのに放置したと言われることになる。
  */
 export const EXPIRED_LOGIN_URL = "/login?expired=1";
+
+/** 放置による自動ログアウト。理由が分かっているときだけこちらを使う */
+export const IDLE_LOGIN_URL = "/login?expired=1&reason=idle";

@@ -21,6 +21,8 @@ import { UserAvatar } from "@/components/user-avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { MfaSection } from "@/components/mfa-section";
+import { PageSizeSection } from "@/components/page-size-section";
+import { PasskeySection } from "@/components/passkey-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -522,7 +524,9 @@ export function PreferencesForm({
         </CardContent>
       </Card>
 
+      <PageSizeSection />
       <MfaSection />
+      <PasskeySection />
     </div>
   );
 }

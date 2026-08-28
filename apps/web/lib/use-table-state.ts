@@ -1,12 +1,14 @@
 "use client";
 
 import {
+  DEFAULT_PAGE_SIZE,
   parseTableState,
   serializeTableState,
   type ColumnKind,
   type TableState,
 } from "@chem/shared";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePageSizePrefs } from "@/lib/page-size-prefs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
@@ -61,11 +63,31 @@ export function useTableState(
 
   const hasUrlState = ownParams.size > 0;
 
+  /*
+    1ページの件数は、**画面の決め打ちよりその人の設定を先に見る。**
+    画面ごとの数は「この表はこれくらい」という目安でしかなく、
+    実際に何行が読みやすいかは、使う人の画面の高さで決まる。
+
+    **しまうときは画面の既定と比べる**（`write` の `fallback`）。
+    そうしないと、その人の既定と画面の既定が違うときに `size` が省かれ、
+    サーバーが画面の既定で数えてしまう
+  */
+  const prefs = usePageSizePrefs();
+  /*
+    **画面が件数を決めているなら、そちらを立てる。**
+    「件数が知れているので全部出す」といった表は、人の好みで切ってはいけない
+    （ページ送りを置いていないので、切れたぶんに手が届かなくなる）
+  */
+  const wantsPreferred = fallback.pageSize === DEFAULT_PAGE_SIZE;
   const state = useMemo(
-    () => parseTableState(ownParams, columnDefs, fallback),
+    () =>
+      parseTableState(ownParams, columnDefs, {
+        ...fallback,
+        pageSize: wantsPreferred ? prefs.defaultSize : fallback.pageSize,
+      }),
     // fallback は呼び出し側で毎回作られる可能性があるため、依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ownParams, columnDefs],
+    [ownParams, columnDefs, prefs.defaultSize, wantsPreferred],
   );
 
   /** 他の表のクエリを残したまま、この表のぶんだけ書き換える */

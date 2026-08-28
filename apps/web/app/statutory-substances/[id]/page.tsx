@@ -27,7 +27,15 @@ export default async function StatutorySubstancePage({
       regulationClass: {
         select: {
           category: {
-            select: { id: true, code: true, nameOriginal: true, nameJa: true, nameEn: true },
+            select: {
+              id: true,
+              code: true,
+              nameOriginal: true,
+              nameJa: true,
+              nameEn: true,
+              // パンくずに法律まで出すため、親も一緒に引く
+              law: { select: { code: true, nameOriginal: true, nameJa: true, nameEn: true } },
+            },
           },
         },
       },
@@ -54,6 +62,7 @@ export default async function StatutorySubstancePage({
     <SubstanceCasScreen
       substance={toStatutorySubstanceDto(row)}
       category={row.regulationClass.category}
+      law={row.regulationClass.category.law}
       prev={neighbour(siblings[at - 1])}
       next={neighbour(siblings[at + 1])}
     />

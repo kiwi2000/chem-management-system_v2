@@ -60,7 +60,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 
 /**
  * DELETE /api/regions/[id] — 論理削除。
- * 国や法令から使われているものは消せない（親を失った行ができてしまうため）。
+ * 国や法律から使われているものは消せない（親を失った行ができてしまうため）。
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const actor = await requirePermission("REGULATION_EDIT");
@@ -71,7 +71,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const existing = await prisma.region.findFirst({ where: { id, deletedAt: null } });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
 
-  // 法令は国にぶら下がるので、地域を守るには国の数だけ見ればよい
+  // 法律は国にぶら下がるので、地域を守るには国の数だけ見ればよい
   const countries = await prisma.country.count({ where: { regionId: id, deletedAt: null } });
   if (countries > 0) return jsonError(409, "referenced", m.regions.inUseByCountries(countries));
 

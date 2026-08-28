@@ -9,8 +9,8 @@ import { CATEGORY_ORDER_BY } from "@/lib/law-order";
  * 登録されているだけで1件も判定していない区分を並べると、選んでも必ず0件になり、
  * 「当たっていない」のか「まだ調べていない」のかが分からなくなる。
  *
- * 名前は「法令 › 区分」。区分名だけでは、どの法令のものか分からないものがある
- * （第1類物質・第一種指定化学物質など、似た名前が別の法令に並ぶ）。
+ * 名前は「法律 › 区分」。区分名だけでは、どの法律のものか分からないものがある
+ * （第1類物質・第一種指定化学物質など、似た名前が別の法律に並ぶ）。
  */
 export async function listJudgementCategoryOptions(
   locale: Locale,
@@ -24,7 +24,7 @@ export async function listJudgementCategoryOptions(
       nameOriginal: true,
       law: { select: { nameJa: true, nameEn: true, nameOriginal: true, displayOrder: true } },
     },
-    // 並びは判定表と同じ（地域 → 国 → 法令 → 区分）
+    // 並びは判定表と同じ（地域 → 国 → 法律 → 区分）
     orderBy: [...CATEGORY_ORDER_BY],
   });
 

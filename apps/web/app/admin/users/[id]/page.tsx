@@ -1,6 +1,6 @@
 "use client";
 
-import { describePasswordPolicy, expandPermissions, type Permission } from "@chem/shared";
+import { describePasswordPolicy, expandPermissions, pickName, type Permission } from "@chem/shared";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
@@ -20,6 +20,7 @@ import { passwordProblem } from "@/lib/password-check";
 import { usePasswordPolicy } from "@/lib/use-password-policy";
 import type { ApiError, MeDto, UserSummaryDto } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
+import { useOrganisations } from "@/lib/use-organisations";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,7 +35,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [orgGroupId, setOrgGroupId] = useState("");
   const [newsGroupId, setNewsGroupId] = useState("");
+  const [organisationId, setOrganisationId] = useState("");
   const groups = useGroups();
+  const organisations = useOrganisations();
   const [editing, setEditing] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   // どの項目が悪いのかを、その欄の下に出す
@@ -63,6 +66,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setActiveFlag(u.activeFlag);
     setPermissions(u.permissions);
     setOrgGroupId(u.orgGroupId ?? "");
+    setOrganisationId(u.organisationId ?? "");
     setNewsGroupId(u.newsGroupId ?? "");
     if (meRes.ok) setMe((await meRes.json()) as MeDto);
   }, [id, m]);
@@ -89,6 +93,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           permissions,
           activeFlag,
           orgGroupId: orgGroupId || null,
+          organisationId: organisationId || null,
           newsGroupId: newsGroupId || null,
         }),
       });
@@ -103,6 +108,26 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     } finally {
       setSaving(false);
     }
+  }
+
+  /**
+   * パスキーの全消し。端末を失くした人の救済のためにある。
+   * 2要素認証の強制解除と同じ役目
+   */
+  async function onResetPasskeys() {
+    if (!confirm(m.passkey.adminResetConfirm)) return;
+    setError(null);
+    setNotice(null);
+    const res = await fetch(`/api/admin/users/${id}/passkeys`, { method: "DELETE" });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      return;
+    }
+    const { count } = (await res.json()) as { count: number };
+    setNotice(m.passkey.adminResetDone(count));
+    void load();
   }
 
   /**
@@ -206,6 +231,26 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="max-w-md"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="organisation">{m.users.organisation}</Label>
+                {/* 会社は所属（部署）とは別。部署の無い人でも会社は決まる */}
+                <select
+                  id="organisation"
+                  value={organisationId}
+                  onChange={(e) => setOrganisationId(e.target.value)}
+                  className="border-input bg-background h-9 max-w-xs rounded-none border px-2 text-sm"
+                >
+                  <option value="">{m.groups.none}</option>
+                  {(organisations ?? [])
+                    .filter((o) => o.activeFlag || o.id === organisationId)
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {pickName(locale, o.nameJa, o.nameEn)}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="orgGroup">{m.users.orgGroup}</Label>
@@ -321,6 +366,33 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           >
             {m.mfa.adminReset}
           </Button>
+          {/* 認証アプリを登録していない人には、外すものが無いことを添える */}
+          {item.mfaMethod !== "totp" && (
+            <p className="text-muted-foreground text-xs">{m.mfa.notEnabledHere}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{m.passkey.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm">
+            <span className="text-muted-foreground">{m.passkey.registered} </span>
+            <span className="font-medium">{m.passkey.deviceCount(item.passkeyCount)}</span>
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={item.passkeyCount === 0}
+            onClick={() => void onResetPasskeys()}
+          >
+            {m.passkey.adminReset}
+          </Button>
+          {item.passkeyCount === 0 && (
+            <p className="text-muted-foreground text-xs">{m.passkey.noneHere}</p>
+          )}
         </CardContent>
       </Card>
 

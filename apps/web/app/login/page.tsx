@@ -1,8 +1,8 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
+import { passkeySupported, signWithPasskey } from "@/lib/passkey-client";
 import type { ApiError } from "@/lib/types";
 
 /**
@@ -18,11 +19,44 @@ import type { ApiError } from "@/lib/types";
  */
 function ExpiredNotice() {
   const { m } = useI18n();
-  const expired = useSearchParams().get("expired") === "1";
-  if (!expired) return null;
+  const params = useSearchParams();
+  const shown = params.get("expired") === "1";
+  /*
+    なぜ切れたのかはサーバーが覚えている（セッションの行に印が付く）。
+    画面側では分からないので聞きに行く。
+    放置だけは画面側で分かっているので、URLに付いてくるぶんを先に使い、
+    答えを待つあいだの空白を作らない
+  */
+  const [reason, setReason] = useState<string | null>(
+    params.get("reason") === "idle" ? "idle" : null,
+  );
+
+  useEffect(() => {
+    if (!shown || reason === "idle") return;
+    let alive = true;
+    void (async () => {
+      const res = await fetch("/api/auth/session-end").catch(() => null);
+      if (!res?.ok || !alive) return;
+      const body = (await res.json()) as { reason: string | null };
+      if (alive && body.reason) setReason(body.reason);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [shown, reason]);
+
+  if (!shown) return null;
+  const text =
+    reason === "idle"
+      ? m.login.sessionIdle
+      : reason === "settings"
+        ? m.login.sessionSettingsChanged
+        : reason === "expired"
+          ? m.login.sessionTimedOut
+          : m.login.sessionExpired;
   return (
     <Alert variant="destructive">
-      <AlertDescription>{m.login.sessionExpired}</AlertDescription>
+      <AlertDescription>{text}</AlertDescription>
     </Alert>
   );
 }
@@ -37,6 +71,48 @@ export default function LoginPage() {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // パスキーが使える端末かは、画面が出てから調べる（サーバー側では分からない）
+  const [canPasskey, setCanPasskey] = useState(false);
+
+  useEffect(() => setCanPasskey(passkeySupported()), []);
+
+  /**
+   * パスキーで入る。
+   * **メールアドレスもパスワードも打たない。**端末が誰の鍵かを覚えている
+   */
+  async function signInWithPasskey() {
+    setError(null);
+    setLoading(true);
+    try {
+      const optRes = await fetch("/api/auth/passkey/login", { method: "POST" });
+      if (!optRes.ok) {
+        setError(m.login.failed);
+        return;
+      }
+      const outcome = await signWithPasskey(await optRes.json());
+      if (!outcome.ok) {
+        // やめただけなら何も言わない。壊れたように見せない
+        if (outcome.reason === "cancelled") return;
+        setError(outcome.reason === "unsupported" ? m.passkey.unsupported : m.passkey.failed);
+        return;
+      }
+      const res = await fetch("/api/auth/passkey/login", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(outcome.value),
+      });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => null)) as ApiError | null;
+        setError(b?.error.message ?? m.login.failed);
+        return;
+      }
+      const body = (await res.json()) as { mustChangePassword: boolean };
+      // パスワードのときと同じ理由で、読み込み直して入る
+      window.location.assign(body.mustChangePassword ? "/change-password" : "/");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -186,6 +262,26 @@ export default function LoginPage() {
                 </Button>
               </div>
             </form>
+
+            {/*
+              パスキーは別の入りかたなので、フォームの外に置く。
+              中に入れると Enter で誤って押されうる。
+              使える端末のときだけ出す（無い端末に押せないボタンを見せない）
+            */}
+            {canPasskey && (
+              <div className="mt-4 border-t pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 w-full"
+                  disabled={loading}
+                  onClick={() => void signInWithPasskey()}
+                >
+                  <KeyRound className="size-4" />
+                  {m.passkey.signIn}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

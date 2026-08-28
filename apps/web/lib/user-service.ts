@@ -1,5 +1,5 @@
 import { expandPermissions, type MfaMethod, type Permission } from "@chem/shared";
-import type { Group, User } from "@prisma/client";
+import type { Group, Organisation, User } from "@prisma/client";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
@@ -13,6 +13,8 @@ export type UserWithPermissions = User & {
   permissions: { permission: Permission }[];
   orgGroup?: Pick<Group, "id" | "nameJa" | "nameEn"> | null;
   newsGroup?: Pick<Group, "id" | "nameJa" | "nameEn"> | null;
+  organisation?: Pick<Organisation, "id" | "nameJa" | "nameEn"> | null;
+  _count?: { passkeys: number };
 };
 
 /** 一覧・詳細で毎回同じものを読むので共通化する */
@@ -20,6 +22,8 @@ export const USER_INCLUDE = {
   permissions: { select: { permission: true } },
   orgGroup: { select: { id: true, nameJa: true, nameEn: true } },
   newsGroup: { select: { id: true, nameJa: true, nameEn: true } },
+  organisation: { select: { id: true, nameJa: true, nameEn: true } },
+  _count: { select: { passkeys: true } },
 } as const;
 
 export function toUserSummary(u: UserWithPermissions) {
@@ -38,6 +42,11 @@ export function toUserSummary(u: UserWithPermissions) {
     newsGroupId: u.newsGroupId,
     newsGroupName: u.newsGroup?.nameJa ?? null,
     newsGroupNameEn: u.newsGroup?.nameEn ?? null,
+    organisationId: u.organisationId,
+    organisationName: u.organisation?.nameJa ?? null,
+    organisationNameEn: u.organisation?.nameEn ?? null,
+    // パスキーの数。2要素認証と同じく、入口の守りとして管理者に見せる
+    passkeyCount: u._count?.passkeys ?? 0,
   };
 }
 
@@ -52,7 +61,11 @@ export async function resolveGroups(
   orgGroupId: string | null,
   newsGroupId: string | null,
   wantedPermissions: Permission[],
-): Promise<{ orgGroupId: string | null; newsGroupId: string | null } | Response> {
+  organisationId: string | null = null,
+): Promise<
+  | { orgGroupId: string | null; newsGroupId: string | null; organisationId: string | null }
+  | Response
+> {
   const m = await getServerMessages();
   const canPost = expandPermissions(wantedPermissions).includes("NEWS_POST");
   const news = canPost ? newsGroupId : null;
@@ -71,7 +84,15 @@ export async function resolveGroups(
       return jsonError(400, "validation_error", m.errors.validation);
     }
   }
-  return { orgGroupId, newsGroupId: news };
+  // 会社も同じように確かめる。消された会社のidが残ると、帳票の差出人が空になる
+  if (organisationId) {
+    const org = await prisma.organisation.findFirst({
+      where: { id: organisationId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!org) return jsonError(400, "validation_error", m.errors.validation);
+  }
+  return { orgGroupId, newsGroupId: news, organisationId };
 }
 
 /** 権限を指定の集合に置き換える（含意を展開したうえで差分だけ書く） */

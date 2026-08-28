@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { ApprovalHistory } from "@/components/approval-history";
-import { CreateDocument } from "@/components/doc-editor/create-document";
 import { PublishActions } from "@/components/publish-actions";
 import { SubstanceForm } from "@/components/substance-form";
 import { SubstanceMatrixSection } from "@/components/substance-matrix";
@@ -59,7 +58,6 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{m.substances.detailTitle}</h1>
         <div className="flex flex-wrap items-center gap-3">
-          <CreateDocument target="SUBSTANCE" targetId={item.id} />
           <PublishActions
             entity="substances"
             id={item.id}

@@ -207,6 +207,11 @@ export default function FeedbackPage() {
 
   const [data, setData] = useState<ListResponse<FeedbackDto> | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  /*
+    書く欄は**押されてから出す。**常に出しておくと、読みに来ただけの人にも
+    空の欄が居座り、下の一覧が押し下げられる
+  */
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -271,6 +276,7 @@ export default function FeedbackPage() {
         return;
       }
       setForm({ ...EMPTY_FORM });
+      setOpen(false);
       void load();
     } finally {
       setSaving(false);
@@ -288,7 +294,10 @@ export default function FeedbackPage() {
         setError(body?.error.message ?? m.errors.deleteFailed);
         break;
       }
-      if (form.id === f.id) setForm({ ...EMPTY_FORM });
+      if (form.id === f.id) {
+        setForm({ ...EMPTY_FORM });
+        setOpen(false);
+      }
     }
     void load();
   }
@@ -298,7 +307,8 @@ export default function FeedbackPage() {
       <h1 className="text-2xl font-semibold">フィードバック</h1>
       <p className="text-muted-foreground text-sm">
         使ってみて気づいたことを書き留めておく場所です。不具合・要望・質問のどれでもかまいません。
-        行をダブルクリックすると上のフォームに読み込まれ、内容やステータスを直せます。
+        表の左上の ＋ を押すと書く欄が開きます。書いたものを直すときは、行の右端の ✎
+        を押してください。
       </p>
 
       {error && (
@@ -307,125 +317,129 @@ export default function FeedbackPage() {
         </Alert>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{form.id ? "編集" : "新規登録"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fb-title">タイトル</Label>
-              <Input
-                id="fb-title"
-                required
-                maxLength={200}
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="一覧のフィルターを開いたまま画面を移ると条件が消える"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fb-body">内容</Label>
-              <textarea
-                id="fb-body"
-                required
-                rows={5}
-                maxLength={5000}
-                value={form.body}
-                onChange={(e) => setForm({ ...form, body: e.target.value })}
-                className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
-                placeholder="どの画面で、何をしたら、どうなったかを書いてください"
-              />
-            </div>
-
-            {form.id !== "" && (
+      {open && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{form.id ? "編集" : "新規登録"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fb-reply">返事</Label>
-                <textarea
-                  id="fb-reply"
-                  rows={3}
-                  maxLength={5000}
-                  value={form.reply}
-                  onChange={(e) => setForm({ ...form, reply: e.target.value })}
-                  className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
-                  placeholder="書いた人に伝えたいこと。直したか、直さないか、いつごろになるか"
+                <Label htmlFor="fb-title">タイトル</Label>
+                <Input
+                  id="fb-title"
+                  required
+                  maxLength={200}
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="一覧のフィルターを開いたまま画面を移ると条件が消える"
                 />
-                <p className="text-muted-foreground text-xs">
-                  書くと、一覧の「返事」に出ます。空にすると返事を取り消せます
-                </p>
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fb-kind">種別</Label>
-                <select
-                  id="fb-kind"
-                  value={form.kind}
-                  onChange={(e) => setForm({ ...form, kind: e.target.value as FeedbackKind })}
-                  className={cn(SELECT_CLASS, "block w-32")}
-                >
-                  {FEEDBACK_KINDS.map((k) => (
-                    <option key={k} value={k}>
-                      {FEEDBACK_KIND_LABELS[k]}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fb-priority">重要度</Label>
-                <select
-                  id="fb-priority"
-                  value={form.priority}
-                  onChange={(e) =>
-                    setForm({ ...form, priority: e.target.value as FeedbackPriority })
-                  }
-                  className={cn(SELECT_CLASS, "block w-24")}
-                >
-                  {FEEDBACK_PRIORITIES.map((p) => (
-                    <option key={p} value={p}>
-                      {FEEDBACK_PRIORITY_LABELS[p]}
-                    </option>
-                  ))}
-                </select>
+                <Label htmlFor="fb-body">内容</Label>
+                <textarea
+                  id="fb-body"
+                  required
+                  rows={5}
+                  maxLength={5000}
+                  value={form.body}
+                  onChange={(e) => setForm({ ...form, body: e.target.value })}
+                  className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
+                  placeholder="どの画面で、何をしたら、どうなったかを書いてください"
+                />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="fb-status">ステータス</Label>
-                <select
-                  id="fb-status"
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value as FeedbackStatus })}
-                  className={cn(SELECT_CLASS, "block w-32")}
-                >
-                  {FEEDBACK_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {FEEDBACK_STATUS_LABELS[s]}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {form.id !== "" && (
+                <div className="space-y-2">
+                  <Label htmlFor="fb-reply">返事</Label>
+                  <textarea
+                    id="fb-reply"
+                    rows={3}
+                    maxLength={5000}
+                    value={form.reply}
+                    onChange={(e) => setForm({ ...form, reply: e.target.value })}
+                    className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
+                    placeholder="書いた人に伝えたいこと。直したか、直さないか、いつごろになるか"
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    書くと、一覧の「返事」に出ます。空にすると返事を取り消せます
+                  </p>
+                </div>
+              )}
 
-              <div className="flex items-end gap-2">
-                <Button type="submit" disabled={saving}>
-                  {saving ? m.common.saving : m.common.save}
-                </Button>
-                {form.id !== "" && (
+              <div className="flex flex-wrap gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fb-kind">種別</Label>
+                  <select
+                    id="fb-kind"
+                    value={form.kind}
+                    onChange={(e) => setForm({ ...form, kind: e.target.value as FeedbackKind })}
+                    className={cn(SELECT_CLASS, "block w-32")}
+                  >
+                    {FEEDBACK_KINDS.map((k) => (
+                      <option key={k} value={k}>
+                        {FEEDBACK_KIND_LABELS[k]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fb-priority">重要度</Label>
+                  <select
+                    id="fb-priority"
+                    value={form.priority}
+                    onChange={(e) =>
+                      setForm({ ...form, priority: e.target.value as FeedbackPriority })
+                    }
+                    className={cn(SELECT_CLASS, "block w-24")}
+                  >
+                    {FEEDBACK_PRIORITIES.map((p) => (
+                      <option key={p} value={p}>
+                        {FEEDBACK_PRIORITY_LABELS[p]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fb-status">ステータス</Label>
+                  <select
+                    id="fb-status"
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value as FeedbackStatus })}
+                    className={cn(SELECT_CLASS, "block w-32")}
+                  >
+                    {FEEDBACK_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {FEEDBACK_STATUS_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-end gap-2">
+                  <Button type="submit" disabled={saving}>
+                    {saving ? m.common.saving : m.common.save}
+                  </Button>
+                  {/* やめたら欄ごと引っ込める。開いたままだと書きかけに見える */}
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setForm({ ...EMPTY_FORM })}
+                    onClick={() => {
+                      setForm({ ...EMPTY_FORM });
+                      setOpen(false);
+                    }}
                   >
                     {m.common.discard}
                   </Button>
-                )}
+                </div>
               </div>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       <DataTable
         storageKey={STORAGE_KEY}
@@ -438,6 +452,17 @@ export default function FeedbackPage() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage="まだ投稿がありません"
+        // ＋ で書く欄が開く。書いている最中は出さない（法文物質名などと同じ形）
+        create={
+          open
+            ? undefined
+            : {
+                onClick: () => {
+                  setForm({ ...EMPTY_FORM });
+                  setOpen(true);
+                },
+              }
+        }
         selectable
         onDeleteSelected={onDeleteSelected}
         // 行を押したら全文を出す。表では3行で切っているため
@@ -455,6 +480,7 @@ export default function FeedbackPage() {
               status: f.status,
               reply: f.reply ?? "",
             });
+            setOpen(true);
             window.scrollTo({ top: 0, behavior: "smooth" });
           },
         }}

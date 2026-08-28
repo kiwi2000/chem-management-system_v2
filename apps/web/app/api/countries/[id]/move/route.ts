@@ -15,7 +15,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * 別の地域の国の隣へ落としても、その位置には出られない。
  * 地域をまたいで動かしたいときは、国の「地域」を直す。
  *
- * ここを入れ替えると、法令の表でもその国の法令がまとまって動く。
+ * ここを入れ替えると、法律の表でもその国の法律がまとまって動く。
  */
 export async function POST(req: Request, { params }: Ctx) {
   const actor = await requirePermission("REGULATION_EDIT");

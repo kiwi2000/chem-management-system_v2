@@ -38,3 +38,21 @@ describe("済ませていない用事", () => {
     }
   });
 });
+
+describe("パスキーも「済んだ」に入る", () => {
+  const base = { mustChangePassword: false, mfaMethod: "none" };
+
+  it("必須でも、パスキーを登録していれば通す", () => {
+    expect(pendingStep({ ...base, hasPasskey: true }, { mfaRequired: true })).toBeNull();
+  });
+
+  it("パスキーが無ければ、これまでどおり登録へ送る", () => {
+    expect(pendingStep({ ...base, hasPasskey: false }, { mfaRequired: true })).toBe("setUpMfa");
+  });
+
+  it("パスキーがあっても、初期パスワードの変更のほうが先", () => {
+    expect(
+      pendingStep({ ...base, mustChangePassword: true, hasPasskey: true }, { mfaRequired: true }),
+    ).toBe("changePassword");
+  });
+});

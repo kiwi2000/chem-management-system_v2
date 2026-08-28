@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { EXPIRED_LOGIN_URL } from "@/lib/routes";
+import { IDLE_LOGIN_URL } from "@/lib/routes";
 
 /**
  * 操作が無いまま時間が過ぎたら、自分からログイン画面へ出ていく。
@@ -116,7 +116,7 @@ export function IdleGuard({
       // 出ていく前にサーバー側のセッションも消す（Cookie だけ残っても意味が無い）
       void fetch("/api/auth/logout", { method: "POST" })
         .catch(() => {})
-        .finally(() => window.location.replace(EXPIRED_LOGIN_URL));
+        .finally(() => window.location.replace(IDLE_LOGIN_URL));
     };
 
     /** 出ているあいだだけ秒を刻む。それ以外の時間はタイマーを持たない */

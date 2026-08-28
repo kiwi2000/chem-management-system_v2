@@ -10,11 +10,11 @@ type Ctx = { params: Promise<{ id: string }> };
  * POST /api/regulation-categories/[id]/move — 並べ替え。
  * body: { targetId } … その区分の位置へ移す。
  *
- * 法令の並べ替え（`/api/laws/[id]/move`）と同じ考えかた。
+ * 法律の並べ替え（`/api/laws/[id]/move`）と同じ考えかた。
  * **表示順の数字は打たず、並んでいる順そのものが表示順になる。**
  *
- * **同じ法令の中だけ。**区分は法令にぶら下がっているので、
- * 別の法令の区分の隣へは出られない。
+ * **同じ法律の中だけ。**区分は法律にぶら下がっているので、
+ * 別の法律の区分の隣へは出られない。
  */
 export async function POST(req: Request, { params }: Ctx) {
   const actor = await requirePermission("REGULATION_EDIT");

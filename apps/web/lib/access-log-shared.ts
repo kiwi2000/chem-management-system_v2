@@ -13,6 +13,8 @@ export const SIGNIN_ACTIONS = [
   */
   "mfa_enable",
   "mfa_disable",
+  "passkey_add",
+  "passkey_remove",
 ];
 
 /** データが外へ出る出来事。出力・取込みを作ったらここに並ぶ */

@@ -40,7 +40,7 @@ const CELL_INPUT = "h-7 w-full text-sm";
 const CELL_SELECT = "border-input bg-background h-7 w-full rounded-md border px-1 text-sm";
 
 /**
- * 国。法令の持ち主になる単位で、地域の配下に置く。
+ * 国。法律の持ち主になる単位で、地域の配下に置く。
  * 地域と同じ画面に並べ、地域と同じく**表の行のまま**書き換える。
  *
  * `regionsVersion` は地域の側で追加・削除が起きたときに増える。選択肢を引き直す合図に使う。
@@ -283,7 +283,7 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
     }
   }
 
-  /** 確認は共通テーブル側で出す。法令から使われているものはサーバーが 409 で断る */
+  /** 確認は共通テーブル側で出す。法律から使われているものはサーバーが 409 で断る */
   /**
    * 行を引いて並べ替える。**同じ地域の中だけ。**
    * 表は地域ごとにまとまって並ぶので、別の地域の隣へは出られない
@@ -385,7 +385,7 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
         onReorder={editable ? onReorder : undefined}
         hintText={editable ? m.countries.reorderHint : undefined}
         // 件数が少ないので、1ページの件数も小さい値だけにする
-        pageSizeOptions={[10, 25, 50, 100]}
+        pageSizeOptions={[15, 25, 50, 100]}
         // 件数が少ないので絞り込みは出さない（並べ替えは見出しで行う）
         showFilters={false}
         // 案内の文言は出さない（この表では「詳細」ではなく編集を開くため）

@@ -17,7 +17,7 @@ interface Draft extends NameDraft {
   note: string;
 }
 
-/** 法令の入力欄。項目が多いので行の中では直さず、表の上に開く */
+/** 法律の入力欄。項目が多いので行の中では直さず、表の上に開く */
 export function LawForm({
   languages,
   countries,

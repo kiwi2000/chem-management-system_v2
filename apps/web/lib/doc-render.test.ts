@@ -136,7 +136,7 @@ describe("表", () => {
     ],
   ]);
 
-  it("選んだ列だけを、表の定義の順で出す", () => {
+  it("選んだ列を、選んだ並びで出す", () => {
     const out = run(
       [{ id: "1", kind: "table", table: "composition", columns: ["contentPct", "casNumber"] }],
       {},
@@ -144,12 +144,116 @@ describe("表", () => {
     );
     expect(out.blocks[0]).toEqual({
       kind: "table",
-      head: ["CAS番号", "重量%"],
+      head: ["重量%", "CAS番号"],
       rows: [
-        ["7439-92-1", "0.5"],
-        ["7440-50-8", ""],
+        ["0.5", "7439-92-1"],
+        ["", "7440-50-8"],
       ],
     });
+  });
+
+  it("表を変えたあとに残った列は、落とす", () => {
+    const out = run(
+      [{ id: "1", kind: "table", table: "composition", columns: ["name", "law"] }],
+      {},
+      tables,
+    );
+    expect(out.blocks[0]).toMatchObject({ head: ["物質名"] });
+  });
+
+  it("行を絞れる", () => {
+    const out = run(
+      [
+        {
+          id: "1",
+          kind: "table",
+          table: "composition",
+          columns: ["name"],
+          filters: [{ column: "contentPct", op: "notEmpty" }],
+        },
+      ],
+      {},
+      tables,
+    );
+    expect(out.blocks[0]).toMatchObject({ rows: [["鉛"]] });
+  });
+
+  it("条件が複数あるときは、すべてに当てはまる行だけ", () => {
+    const out = run(
+      [
+        {
+          id: "1",
+          kind: "table",
+          table: "composition",
+          columns: ["name"],
+          filters: [
+            { column: "casNumber", op: "contains", value: "74" },
+            { column: "name", op: "equals", value: "銅" },
+          ],
+        },
+      ],
+      {},
+      tables,
+    );
+    expect(out.blocks[0]).toMatchObject({ rows: [["銅"]] });
+  });
+
+  it("正規表現で値を置き換えられる", () => {
+    const out = run(
+      [
+        {
+          id: "1",
+          kind: "table",
+          table: "composition",
+          columns: ["casNumber"],
+          replacements: [{ column: "casNumber", pattern: "^(\\d+)-.*$", replacement: "$1" }],
+        },
+      ],
+      {},
+      tables,
+    );
+    expect(out.blocks[0]).toMatchObject({ rows: [["7439"], ["7440"]] });
+  });
+
+  it("置き換えは、指定した列にだけ当たる", () => {
+    const out = run(
+      [
+        {
+          id: "1",
+          kind: "table",
+          table: "composition",
+          columns: ["casNumber", "name"],
+          replacements: [{ column: "name", pattern: "鉛", replacement: "Pb" }],
+        },
+      ],
+      {},
+      tables,
+    );
+    expect(out.blocks[0]).toMatchObject({
+      rows: [
+        ["7439-92-1", "Pb"],
+        ["7440-50-8", "銅"],
+      ],
+    });
+  });
+
+  it("読めない正規表現は当てずに、そのまま出す", () => {
+    const out = run(
+      [
+        {
+          id: "1",
+          kind: "table",
+          table: "composition",
+          columns: ["name"],
+          replacements: [{ column: "name", pattern: "[", replacement: "X" }],
+          filters: [{ column: "name", op: "matches", value: "[" }],
+        },
+      ],
+      {},
+      tables,
+    );
+    // 絞り込みも効かせない。打っている途中で行が消えると直しようがない
+    expect(out.blocks[0]).toMatchObject({ rows: [["鉛"], ["銅"]] });
   });
 
   it("表題を付けられる", () => {

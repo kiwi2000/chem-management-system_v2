@@ -1,9 +1,9 @@
 "use client";
 
 import { pickStatutoryName } from "@chem/shared";
-import Link from "next/link";
 import { useState } from "react";
 import { CasLinkSection } from "@/components/cas-link-section";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PrevNext, type Neighbour } from "@/components/prev-next";
 import type { VersionSource } from "@/components/version-source-picker";
 import { useI18n } from "@/lib/i18n-client";
@@ -27,11 +27,14 @@ interface CategoryRef {
 export function SubstanceCasScreen({
   substance,
   category,
+  law,
   prev,
   next,
 }: {
   substance: StatutorySubstanceDto;
   category: CategoryRef;
+  /** パンくずに出す法律。区分の親 */
+  law: { code: string; nameOriginal: string | null; nameJa: string | null; nameEn: string | null };
   /** 同じ分類の隣の法文物質名。端では null */
   prev: Neighbour | null;
   next: Neighbour | null;
@@ -40,6 +43,7 @@ export function SubstanceCasScreen({
   /** 見ているバージョンとデータソース。インベントリの該当物質と同じ持ちかた */
   const [picked, setPicked] = useState<VersionSource | null>(null);
 
+  const lawName = pickStatutoryName(locale, law.nameOriginal, law.nameJa, law.nameEn);
   const catName = pickStatutoryName(
     locale,
     category.nameOriginal,
@@ -55,11 +59,16 @@ export function SubstanceCasScreen({
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <p className="text-muted-foreground text-sm">
-        <Link href={`/categories/${category.id}`} className="underline underline-offset-2">
-          {catName || category.code}
-        </Link>
-      </p>
+      {/* いまどこにいるか。メニューの項目名から始める */}
+      <Breadcrumbs
+        items={[
+          { label: m.nav.laws },
+          { label: m.laws.title, href: "/laws" },
+          { label: lawName || law.code, href: "/laws" },
+          { label: catName || category.code, href: `/categories/${category.id}` },
+          { label: subName || substance.code },
+        ]}
+      />
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold">{subName || substance.code}</h1>
         {/* 同じ分類の中を順に見ていくための矢印 */}

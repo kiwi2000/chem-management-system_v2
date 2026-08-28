@@ -34,26 +34,26 @@ import { cn } from "@/lib/utils";
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
 /**
- * 法令と、その配下の区分を1つの表にまとめたもの。
+ * 法律と、その配下の区分を1つの表にまとめたもの。
  *
  * 表を2つ並べると場所を食ううえ、どちらが親か目で追いにくい。
- * 法令の行を開くと、その下に区分が字下げして並ぶ形にしてある。
- * 区分は開いた法令のぶんだけ取りに行く（全部まとめて引かない）。
+ * 法律の行を開くと、その下に区分が字下げして並ぶ形にしてある。
+ * 区分は開いた法律のぶんだけ取りに行く（全部まとめて引かない）。
  */
 
-/** 表に流す行。法令と区分が混ざるので、種別を持たせて描き分ける */
+/** 表に流す行。法律と区分が混ざるので、種別を持たせて描き分ける */
 type Row =
   | { kind: "law"; key: string; law: LawDto }
   | { kind: "category"; key: string; law: LawDto; category: RegulationCategoryDto };
 
 /**
  * 選んだ区分と、その周辺。
- * 見出しに法令名を出し、［‹ ›］で前後の区分へ移るので、法令と兄弟も一緒に渡す。
+ * 見出しに法律名を出し、［‹ ›］で前後の区分へ移るので、法律と兄弟も一緒に渡す。
  */
 export interface CategorySelection {
   law: LawDto;
   category: RegulationCategoryDto;
-  /** 同じ法令の区分（表示順）。前後移動はこの中だけで、法令はまたがない */
+  /** 同じ法律の区分（表示順）。前後移動はこの中だけで、法律はまたがない */
   siblings: RegulationCategoryDto[];
 }
 
@@ -73,9 +73,9 @@ export function LawTreeSection({
 
   const [countries, setCountries] = useState<CountryDto[]>([]);
   const [data, setData] = useState<ListResponse<LawDto> | null>(null);
-  /** 開いている法令。値はその法令の区分（取りに行くまでは undefined） */
+  /** 開いている法律。値はその法律の区分（取りに行くまでは undefined） */
   const [open, setOpen] = useState<Map<string, RegulationCategoryDto[] | undefined>>(new Map());
-  /** いま選んでいる法令。区分の追加先になる */
+  /** いま選んでいる法律。区分の追加先になる */
   const [lawId, setLawId] = useState<string | null>(null);
 
   const [editing, setEditing] = useState<
@@ -117,7 +117,7 @@ export function LawTreeSection({
               {r.law.code}
             </button>
           ) : (
-            // 法令にぶら下がっていることを縦線で示す。区分が続いても親を見失わない
+            // 法律にぶら下がっていることを縦線で示す。区分が続いても親を見失わない
             <span className="border-border ml-2 border-l pl-3 text-xs">
               {/* 押すと法文物質名の一覧へ移る。インベントリのコードと同じ形 */}
               <Link
@@ -146,12 +146,12 @@ export function LawTreeSection({
               ),
       },
       {
-        // 国の1つ上。大きい単位から並べると、どのあたりの法令かを追いやすい
+        // 国の1つ上。大きい単位から並べると、どのあたりの法律かを追いやすい
         key: "regionId",
         header: m.laws.region,
         kind: "enum",
         width: 100,
-        // 地域は国の表から拾う（法令の一覧に地域そのものは持っていない）
+        // 地域は国の表から拾う（法律の一覧に地域そのものは持っていない）
         options: [...new Map(countries.map((c) => [c.regionId, c])).values()].map((c) => ({
           value: c.regionId,
           label: pickName(locale, c.regionNameJa, c.regionNameEn),
@@ -190,7 +190,7 @@ export function LawTreeSection({
             : "",
       },
       {
-        // 表には出さない、絞り込みだけの列。区分の側を探して法令を絞る
+        // 表には出さない、絞り込みだけの列。区分の側を探して法律を絞る
         key: "categoryCode",
         header: m.regulationCategories.code,
         kind: "text",
@@ -266,8 +266,8 @@ export function LawTreeSection({
 
   /*
     区分での絞り込み。
-    区分は法令にぶら下がって出てくるので、法令の一覧を引くだけでは絞れない。
-    先に区分の側を探し、当たった区分を持つ法令だけを残して、その法令を開いておく。
+    区分は法律にぶら下がって出てくるので、法律の一覧を引くだけでは絞れない。
+    先に区分の側を探し、当たった区分を持つ法律だけを残して、その法律を開いておく。
   */
   const categoryQueries = useMemo(() => {
     const byCode = tableState.filters.categoryCode;
@@ -322,7 +322,7 @@ export function LawTreeSection({
     };
   }, [categoryQueries]);
 
-  /** その法令の区分を引くだけ。開いた状態にはしない */
+  /** その法律の区分を引くだけ。開いた状態にはしない */
   const fetchCategories = useCallback(async (id: string) => {
     const res = await fetch(
       `/api/regulation-categories?size=200&f.lawId=in:${id}&sort=displayOrder`,
@@ -331,7 +331,7 @@ export function LawTreeSection({
     return ((await res.json()) as ListResponse<RegulationCategoryDto>).items;
   }, []);
 
-  /** その法令の区分を取りに行って、開いた状態にする */
+  /** その法律の区分を取りに行って、開いた状態にする */
   const loadCategories = useCallback(
     async (id: string) => {
       const items = await fetchCategories(id);
@@ -341,7 +341,7 @@ export function LawTreeSection({
     [fetchCategories],
   );
 
-  /** 全部の法令をまとめて開く。区分はまとめて引く */
+  /** 全部の法律をまとめて開く。区分はまとめて引く */
   async function expandAll() {
     const laws = data?.items ?? [];
     if (laws.length === 0) return;
@@ -357,7 +357,7 @@ export function LawTreeSection({
   }
 
   /*
-    区分が当たった法令は開いた状態にする。
+    区分が当たった法律は開いた状態にする。
     出すのは当たった区分だけ。当たらなかったものを混ぜると、どれが当たりか分からなくなる。
   */
   useEffect(() => {
@@ -405,7 +405,7 @@ export function LawTreeSection({
       if (law) onSelect({ law, category: fresh, siblings: items });
       return;
     }
-    // 選んでいた区分が消えた（削除された・法令を閉じた）
+    // 選んでいた区分が消えた（削除された・法律を閉じた）
     onSelect(null);
   }
 
@@ -415,7 +415,7 @@ export function LawTreeSection({
    * 途中に割り込ませるたびに前後の番号を数え直すことになる。
    *
    * 落とせるのは**同じ種類・同じ親の行だけ**。
-   * 法令は同じ国の中、区分は同じ法令の中。並びは 地域 → 国 → 法令 → 区分 で
+   * 法律は同じ国の中、区分は同じ法律の中。並びは 地域 → 国 → 法律 → 区分 で
    * 決まっているので、それをまたぐ位置へは出られない。
    */
   async function onReorder(fromKey: string, toKey: string) {
@@ -440,7 +440,7 @@ export function LawTreeSection({
       await move(`/api/regulation-categories/${from.category.id}/move`, to.category.id);
       return;
     }
-    // 法令の行と区分の行は入れ替えられない（親子なので位置に意味が無い）
+    // 法律の行と区分の行は入れ替えられない（親子なので位置に意味が無い）
     setError(from.kind === "law" ? m.laws.sameCountryOnly : m.laws.sameLawOnly);
   }
 
@@ -477,10 +477,10 @@ export function LawTreeSection({
     void refresh();
   }
 
-  /** 当たった区分を持つ法令。条件が無いときは null（＝絞らない） */
+  /** 当たった区分を持つ法律。条件が無いときは null（＝絞らない） */
   const hitLawIds = hits ? new Set(hits.map((c) => c.lawId)) : null;
 
-  // 法令の行と、開いている法令の区分の行を、順に並べる
+  // 法律の行と、開いている法律の区分の行を、順に並べる
   const rows: Row[] | null =
     data === null || (categoryQueries !== null && hits === null)
       ? null
@@ -552,13 +552,13 @@ export function LawTreeSection({
         onDeleteSelected={onDeleteSelected}
         // 直せる人にだけ、つまみを出す
         onReorder={editable ? onReorder : undefined}
-        pageSizeOptions={[10, 25, 50, 100]}
+        pageSizeOptions={[15, 25, 50, 100]}
         // 左から詰めて並べる。指定しないと画面幅いっぱいに散らばってしまう
         filterLayout={[
           ["code", "nameJa", "countryId"],
           ["categoryCode", "categoryName"],
         ]}
-        // 法令は見出しの行。区分がいくつ続いても、どこまでが1つの法令か分かるようにする
+        // 法律は見出しの行。区分がいくつ続いても、どこまでが1つの法律か分かるようにする
         rowClassName={(r) => (r.kind === "law" ? "bg-muted/60 font-semibold" : undefined)}
         selectedKey={selectedKey}
         onRowSelect={(r) => {
@@ -591,7 +591,7 @@ export function LawTreeSection({
         hintText={editable ? `${m.laws.rowHint}／${m.laws.reorderHint}` : m.laws.rowHint}
         headerActions={
           <div className="flex gap-2">
-            {/* 法令の数だけ開け閉めするのは手間なので、まとめて開く・閉じるを置く */}
+            {/* 法律の数だけ開け閉めするのは手間なので、まとめて開く・閉じるを置く */}
             <Button
               size="icon"
               variant="outline"
@@ -629,7 +629,7 @@ export function LawTreeSection({
                   disabled={!lawId}
                   onClick={() => {
                     if (!lawId) return;
-                    // 追加したものがすぐ見えるよう、その法令を開いておく
+                    // 追加したものがすぐ見えるよう、その法律を開いておく
                     if (!open.has(lawId)) void toggle(lawId);
                     setEditing({ kind: "category", lawId, initial: null });
                   }}

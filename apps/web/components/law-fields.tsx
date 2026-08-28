@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * 法規制マスタの入力欄で繰り返し出てくる部品。
- * 法令・区分・法文物質名で同じ形の欄（名称の4つ組、閾値の4欄）を使うため、ここにまとめる。
+ * 法律・区分・法文物質名で同じ形の欄（名称の4つ組、閾値の4欄）を使うため、ここにまとめる。
  */
 
 export const SELECT_CLASS = "border-input bg-background h-9 w-full rounded-md border px-2 text-sm";
@@ -48,7 +48,7 @@ export interface NameDraft {
 
 /**
  * 名称の4つ組。
- * 原文を必須にしてあるのは、中国や韓国の法令に日本語訳が無いことがあるため。
+ * 原文を必須にしてあるのは、中国や韓国の法律に日本語訳が無いことがあるため。
  * 表示は 日本語 → 英語 → 原文 の順に、あるものを出す。
  */
 export function NameFields({

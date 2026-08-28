@@ -70,10 +70,31 @@ export interface TableState {
  * どれを選択肢に出すかは表ごとに決められる（件数の少ない表では 10 を出し、200 は出さない等）が、
  * URL から来た値の検証はここで行うため、出さない値もここには残しておく。
  */
-export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200] as const;
-/** 選択肢として出す既定。件数の少ない表は自分で指定して差し替える */
-export const DEFAULT_PAGE_SIZE_OPTIONS = [25, 50, 100, 200] as const;
-export const DEFAULT_PAGE_SIZE = 50;
+/**
+ * 1ページの件数として受け取ってよい範囲。
+ *
+ * **決まった数の一覧ではなく、幅で見る。**
+ * 一覧で持っていたときは、そこに無い数（30 など）が黙って既定に落ち、
+ * 選んだのに効かない、という分かりにくい不具合になった。
+ *
+ * 下限は1。少ない数が読みやすい場面もあるので、こちらでは決めない
+ */
+export const PAGE_SIZE_MIN = 1;
+export const PAGE_SIZE_MAX = 500;
+
+/** 選択肢として出す既定。人ごとに変えられる（`preferredPageSizes`） */
+export const DEFAULT_PAGE_SIZE_OPTIONS = [15, 25, 50, 100, 200] as const;
+/**
+ * 何も決めていない人の既定。
+ * **画面に収まる数から始める。**多すぎると、下まで見るのに縦に長く送ることになる。
+ * 増やしたい人は個人設定で変えられる
+ */
+export const DEFAULT_PAGE_SIZE = 15;
+
+/** 1ページの件数として通る数か */
+export function isPageSize(n: unknown): n is number {
+  return typeof n === "number" && Number.isInteger(n) && n >= PAGE_SIZE_MIN && n <= PAGE_SIZE_MAX;
+}
 
 export function emptyTableState(sort: SortRule[] = []): TableState {
   return { sort, filters: {}, page: 1, pageSize: DEFAULT_PAGE_SIZE };
@@ -161,9 +182,7 @@ export function parseTableState(
 
   const page = Math.max(1, Number(params.get("page") ?? "") || 1);
   const sizeRaw = Number(params.get("size") ?? "");
-  const pageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(sizeRaw)
-    ? sizeRaw
-    : fallback.pageSize;
+  const pageSize = isPageSize(sizeRaw) ? sizeRaw : fallback.pageSize;
 
   return {
     sort: sortRaw !== null ? sort : fallback.sort,
@@ -185,7 +204,13 @@ export function serializeTableState(state: TableState, fallback: TableState): UR
     params.set(`${FILTER_PREFIX}${key}`, serializeFilter(f));
   }
   if (state.page > 1) params.set("page", String(state.page));
-  if (state.pageSize !== fallback.pageSize) params.set("size", String(state.pageSize));
+  /*
+    件数だけは**共通の既定**と比べる。呼ぶ側の既定と比べると、
+    画面が「200件出す」つもりでも `size` が省かれ、
+    受け取る側は共通の既定で数えてしまう（実際にそうなっていた）。
+    並べ替えと絞り込みは、画面ごとの既定と比べてよい（URLを短く保つため）
+  */
+  if (state.pageSize !== DEFAULT_PAGE_SIZE) params.set("size", String(state.pageSize));
 
   return params;
 }

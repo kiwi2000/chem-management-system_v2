@@ -1,4 +1,4 @@
-import { DOCUMENT_TABLE_DEFS, pickName, pickStatutoryName } from "@chem/shared";
+import { DOCUMENT_TABLE_DEFS, ORG_ITEM_PREFIX, pickName, pickStatutoryName } from "@chem/shared";
 import type { DocumentTable, DocumentTarget, Locale, Messages } from "@chem/shared";
 import type { Actor } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
@@ -37,18 +37,51 @@ function tableDef(key: DocumentTable, locale: Locale) {
   }));
 }
 
+/**
+ * 作った人の会社と所属。**帳票の差出人になる。**
+ *
+ * テンプレートは会社を名指ししない。出した人の会社が使われる。
+ * そのため**人の代わりに出す（代理発行）には向かない。**必要になったら、そのとき考える。
+ *
+ * 会社の項目は打たれたものをそのまま流す。持っていない項目は空欄になる
+ * （会社ごとに項目が違うので、無いことは誤りではない）。
+ */
+async function orgValues(actor: Actor, locale: Locale): Promise<[string, string][]> {
+  const me = await prisma.user.findUnique({
+    where: { id: actor.user.id },
+    select: {
+      orgGroup: { select: { nameJa: true, nameEn: true } },
+      organisation: {
+        select: {
+          nameJa: true,
+          nameEn: true,
+          items: { select: { label: true, value: true } },
+        },
+      },
+    },
+  });
+  const org = me?.organisation;
+  const out: [string, string][] = [
+    ["org.name", org ? pickName(locale, org.nameJa, org.nameEn) : ""],
+    ["org.group", me?.orgGroup ? pickName(locale, me.orgGroup.nameJa, me.orgGroup.nameEn) : ""],
+  ];
+  for (const it of org?.items ?? []) out.push([`${ORG_ITEM_PREFIX}${it.label}`, it.value]);
+  return out;
+}
+
 /** 共通の項目。どちらの対象でも同じ */
-function commonValues(
+async function commonValues(
   actor: Actor,
   versionCode: string | null,
   locale: Locale,
-): [string, string][] {
+): Promise<[string, string][]> {
   const now = new Date();
   return [
     // 端末の時計ではなくサーバーの時刻。誰が作っても同じ値になる
     ["doc.generatedAt", now.toLocaleString(locale === "en" ? "en-US" : "ja-JP")],
     ["doc.generatedBy", actor.user.displayName ?? actor.user.email],
     ["doc.version", versionCode ?? ""],
+    ...(await orgValues(actor, locale)),
   ];
 }
 
@@ -82,7 +115,7 @@ export async function collectForProduct(
   const hit = judgements.filter((j) => j.verdict === "APPLICABLE");
 
   const values = new Map<string, string>([
-    ...commonValues(actor, version?.code ?? null, locale),
+    ...(await commonValues(actor, version?.code ?? null, locale)),
     ["product.code", product.code],
     ["product.nameJa", product.nameJa],
     ["product.nameEn", product.nameEn ?? ""],
@@ -197,7 +230,7 @@ export async function collectForSubstance(
   });
 
   const values = new Map<string, string>([
-    ...commonValues(actor, version?.code ?? null, locale),
+    ...(await commonValues(actor, version?.code ?? null, locale)),
     ["substance.code", substance.code],
     ["substance.casNumber", substance.casNumber ?? ""],
     ["substance.nameJa", substance.nameJa],

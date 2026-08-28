@@ -73,6 +73,7 @@ export const en: Messages = {
     system: "System",
     home: "Home",
     news: "Announcements",
+    organisations: "Organisations",
     groups: "Groups",
     users: "Users",
     propertyDefs: "Custom properties",
@@ -98,6 +99,9 @@ export const en: Messages = {
   shell: {
     openMenu: "Open menu",
     linkVersion: "Regulation set",
+    noLinkVersion: "No current version",
+    hideHeader: "Hide the top bar",
+    showHeader: "Show the top bar",
     closeMenu: "Close menu",
     signOut: "Sign out",
     readOnly: "Read only",
@@ -118,7 +122,11 @@ export const en: Messages = {
     submitting: "Signing in...",
     failed: "Could not sign in",
     mfaPrompt: "Enter the code from your authenticator app",
-    sessionExpired: "You were signed out after a period of inactivity.",
+    sessionIdle: "You were signed out after a period of inactivity. Please sign in again.",
+    sessionSettingsChanged:
+      "Your account settings changed, so you were signed out. Please sign in again.",
+    sessionTimedOut: "Your session expired, so you were signed out. Please sign in again.",
+    sessionExpired: "Your sign-in has ended. Please sign in again.",
   },
 
   changePassword: {
@@ -190,6 +198,11 @@ export const en: Messages = {
 
   table: {
     filterPanel: "Filters",
+    columnPanel: "Columns",
+    resetColumns: "Reset",
+    columnPanelHint: "Tick to include, drag the handle to reorder",
+    reorderColumn: "Drag to reorder",
+    hiddenCount: (n: number) => `${n} hidden`,
     compositionSection: "Composition",
     casNumbers: "CAS numbers",
     substanceNames: "Substance name",
@@ -538,7 +551,7 @@ export const en: Messages = {
     orphan: "This data source is not listed for this version, so it is never used",
     currentVersion: "current",
     noSourceInVersion: "This set has no sources",
-    usedHint: "Only the row from the highest-priority data source is taken",
+    merged: "Merged",
     prevSubstance: "Previous statutory name",
     nextSubstance: "Next statutory name",
     backToList: "Back to the statutory name list",
@@ -593,6 +606,16 @@ export const en: Messages = {
   },
 
   preferences: {
+    pageSize: "Rows per page",
+    pageSizeLead:
+      "How many rows a table shows. What you list here becomes the choice on every table.",
+    pageSizeChoices: "Choices",
+    pageSizeDefault: "Start with",
+    pageSizeHint: (n: number) =>
+      `Separate with commas or spaces, up to ${n}. They are sorted and saved smallest first.`,
+    pageSizeUnreadable: "Enter at least one number",
+    pageSizeRange: (min: number, max: number) => `Use numbers between ${min} and ${max}`,
+    pageSizeTooMany: (n: number) => `Keep it to ${n} or fewer`,
     title: "Preferences",
     description: "These settings apply only to your own account.",
     profile: "Profile",
@@ -672,6 +695,38 @@ export const en: Messages = {
     saved: "Preferences saved",
   },
 
+  passkey: {
+    title: "Passkeys",
+    lead: "Sign in with your fingerprint, face, or device PIN. No password and no six-digit code.",
+    why: "The key lives on your device and is tied to this site's address. On a look-alike site the key simply does not appear.",
+    add: "Register this device",
+    signIn: "Sign in with a passkey",
+    deviceLabel: "Device name",
+    deviceLabelHint: "Give it a name you will recognise later (e.g. Work laptop)",
+    devicePlaceholder: "Work laptop",
+    registered: "Registered devices",
+    none: "Nothing registered yet",
+    createdAt: "Registered",
+    lastUsedAt: "Last used",
+    neverUsed: "Not used yet",
+    remove: "Remove",
+    confirmRemove: (name: string) =>
+      `Remove "${name}"? You will no longer be able to sign in from it.`,
+    expired: "That took too long. Please start again",
+    failed: "Could not be verified. Please try again",
+    alreadyRegistered: "This device is already registered",
+    cannotRemoveLast:
+      "This is your last passkey. Set up an authenticator app or register another device first",
+    unsupported: "This browser cannot use passkeys. Please use an authenticator app",
+    cancelled: "Registration was cancelled",
+    deviceCount: (n: number) => (n === 0 ? "None" : `${n}`),
+    noneHere: "This user has no passkeys",
+    adminReset: "Remove all passkeys",
+    adminResetConfirm:
+      "Remove every passkey for this user? All their signed-in devices are cut off",
+    adminResetDone: (n: number) => `Removed ${n} passkeys`,
+  },
+
   mfaSetup: {
     title: "Set up two-step sign-in",
     lead: "Other screens stay closed until this is done.",
@@ -704,6 +759,7 @@ export const en: Messages = {
     noSecret: "Press “Set up an authenticator app” first",
     alreadyEnabled: "Already set up",
     cannotDisable: "Two-step sign-in is required here, so it cannot be turned off",
+    notEnabledHere: "This user has not set up an authenticator app",
     adminReset: "Reset two-step sign-in",
     adminResetConfirm:
       "Reset two-step sign-in for this user? All of their signed-in devices will be signed out",
@@ -737,6 +793,8 @@ export const en: Messages = {
     actionLogout: "Signed out",
     actionMfaEnable: "Registered two-step sign-in",
     actionMfaDisable: "Removed two-step sign-in",
+    actionPasskeyAdd: "Registered a passkey",
+    actionPasskeyRemove: "Removed a passkey",
     actionView: "Viewed composition",
     actionViewExpanded: "Viewed full breakdown",
     actionExport: "Exported",
@@ -897,8 +955,11 @@ export const en: Messages = {
   },
   docEditor: {
     width: "Width",
-    widths: { full: "Full", twoThirds: "Two thirds", half: "Half", third: "One third" },
-    widthHint: "Narrow a block and the next one sits beside it, while they fit on one row",
+    widthFull: "Full",
+    widthAuto: "Equal",
+    widthCustom: "Custom (%)",
+    widthHint:
+      'Narrow a block and the next one sits beside it, while the row fits within 100%. "Equal" splits whatever is left in the row between the equal blocks.',
     bold: "Bold",
     italic: "Italic",
     underline: "Underline",
@@ -917,6 +978,7 @@ export const en: Messages = {
       table: "Table",
       divider: "Divider",
       spacer: "Spacer",
+      rowBreak: "Row break",
       pageBreak: "Page break",
       signature: "Signature",
     },
@@ -926,15 +988,43 @@ export const en: Messages = {
     addItem: "+ Add row",
     tableSource: "Table",
     tableColumns: "Columns",
+    moveUp: "Up",
+    moveDown: "Down",
+    tableColumnsHint: "Tick to include, reorder with the arrows. Columns print in this order.",
+    tableFilters: "Keep only rows that match",
+    tableFilterColumn: "Column",
+    tableFilterOp: "Condition",
+    tableFilterValue: "Value",
+    tableAddFilter: "Add condition",
+    tableFilterOps: {
+      contains: "contains",
+      notContains: "does not contain",
+      equals: "equals",
+      notEquals: "does not equal",
+      empty: "is empty",
+      notEmpty: "is not empty",
+      matches: "matches (regex)",
+    },
+    tableReplacements: "Replace printed values",
+    tablePattern: "Find (regex)",
+    tableReplacement: "Replace with",
+    tableAddReplacement: "Add replacement",
+    tableReplacementHint:
+      "Only what is printed changes; the stored data is untouched. Use $1 for a captured group. An unreadable pattern is skipped.",
     caption: "Caption",
     spacerSize: "Height",
     spacerSizes: { sm: "Small", md: "Medium", lg: "Large" },
+    preview: "Preview",
+    previewHide: "Close preview",
+    unsavedOnLeave: "You have unsaved changes. Save or discard them before going back.",
+    previewNote:
+      "Shown with sample values, not real data. To check against real data, produce one from Documents.",
+    tryWithData: "Try with real data",
     orientation: "Orientation",
     orientations: { portrait: "Portrait", landscape: "Landscape" },
     remove: "Remove this block",
     reorderHint: "Drag the handle to reorder blocks",
     empty: 'No blocks yet. Add one from "+ Block".',
-    preview: "Preview",
     unknownField: "Unavailable field",
   },
   documents: {
@@ -1275,6 +1365,9 @@ export const en: Messages = {
 
   users: {
     title: "Users",
+    organisation: "Company",
+    organisationHint:
+      "Printed as the issuer. Documents this person produces carry this company's details",
     orgGroup: "Affiliation",
     orgGroupHint: "One per person",
     newsGroup: "News group",
@@ -1384,6 +1477,33 @@ export const en: Messages = {
       "The CAS number format is not valid (e.g. 7439-92-1). This can be relaxed in the system settings",
   },
 
+  organisations: {
+    title: "Organisations",
+    description:
+      "Company details printed on documents. Beyond name and address, add any item you need. Give each user the company they belong to, and documents they produce carry these details.",
+    code: "Code",
+    nameJa: "Company",
+    nameEn: "Company (EN)",
+    displayOrder: "Order",
+    memberCount: "Members",
+    itemCount: "Items",
+    newTitle: "Add organisation",
+    editTitle: "Edit organisation",
+    items: "Items",
+    itemsHint:
+      "Fill in both the item name and the value. The item name becomes the insertable field in documents.",
+    addItem: "Add item",
+    label: "Item name",
+    value: "Value",
+    labelPlaceholder: "Address",
+    valuePlaceholder: "1-2-3 ...",
+    noItems: "No items yet",
+    empty: "Nothing registered yet",
+    confirmDelete: (n: number) => `Delete the ${n} selected? Members lose their company setting.`,
+    duplicateCode: (code: string) => `The code "${code}" is already used`,
+    inUse: (n: number) => `${n} people belong to this organisation. Change their company first`,
+  },
+
   validation: {
     emailRequired: "Email address is required",
     emailFormat: "Enter a valid email address",
@@ -1417,5 +1537,7 @@ export const en: Messages = {
     thresholdOrder: "The upper value must not be below the lower value",
     namePair: "Fill in both the original name and its language, or leave both empty",
     dateFormat: "Enter the date as YYYY-MM-DD",
+    orgCodeFormat: "Use letters, digits, hyphens and underscores only",
+    duplicateLabel: (s: string) => `The item name "${s}" appears twice`,
   },
 };

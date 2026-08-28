@@ -6,12 +6,12 @@ import type { MatchedProductDto, ProductJudgementDto } from "@/lib/types";
 /**
  * 判定結果を、画面に出せる形に組み立てる。
  *
- * 法令名・区分名・物質名は判定の行に持っていない
+ * 法律名・区分名・物質名は判定の行に持っていない
  * （二重に持つと必ず食い違うため）。ここで引いて足す。
  */
 
 /**
- * その製品の判定を、法令・区分の並び順で返す。
+ * その製品の判定を、法律・区分の並び順で返す。
  *
  * `withHits` が false のときは根拠を伏せる。組成を見られない人に
  * 「何が何％入っているか」を渡すことになるため。
@@ -44,7 +44,7 @@ export async function toJudgementDtos(
               nameJa: true,
               nameEn: true,
               nameOriginal: true,
-              // 並びは地域 → 国 → 法令。国ごとに1から振ってあるので、国まで見ないと決まらない
+              // 並びは地域 → 国 → 法律。国ごとに1から振ってあるので、国まで見ないと決まらない
               ...LAW_ORDER_SELECT,
             },
           },
@@ -113,7 +113,7 @@ export async function toJudgementDtos(
             .sort((a, b) => maxPct(b) - maxPct(a))
         : [],
       hitsWithheld: !withHits && r.hits.length > 0,
-      // 並びは地域 → 国 → 法令 → 区分。画面の法規制と同じ並びにする
+      // 並びは地域 → 国 → 法律 → 区分。画面の法規制と同じ並びにする
       _order: lawOrderKey(r.category.law, r.category.displayOrder),
     }))
     .sort((a, b) => compareLawOrder(a._order, b._order))
@@ -129,7 +129,7 @@ function maxPct(h: { total: string | null; contributions: { pct: string }[] }): 
 /**
  * この区分に当たる製品を出す（法規制の画面からの逆引き）。
  *
- * 「この法令に引っかかる製品はどれか」を、製品を1つずつ開かずに知るためのもの。
+ * 「この法律に引っかかる製品はどれか」を、製品を1つずつ開かずに知るためのもの。
  *
  * 返すのは2種類だけ。
  *

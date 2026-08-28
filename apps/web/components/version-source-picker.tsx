@@ -32,10 +32,16 @@ export function VersionSourcePicker({
   onChange,
   /** 右に添える一言。画面ごとの注意書き */
   hint,
+  /**
+   * 「合算」の名前。渡すと選択肢のいちばん上に出る。
+   * **渡さない画面では出ない。**合算の意味を持たない表もあるため
+   */
+  mergedLabel,
 }: {
   value: VersionSource | null;
   onChange: (next: VersionSource) => void;
   hint?: string;
+  mergedLabel?: string;
 }) {
   const { m } = useI18n();
   const [versions, setVersions] = useState<LinkSetVersionDto[]>([]);
@@ -72,11 +78,16 @@ export function VersionSourcePicker({
         バージョンを切り替えると、いま選んでいるデータソースが
         そのバージョンに無いことがある。無ければ優先度がいちばん高いものへ寄せる
       */
-      const stillThere = items.some((s) => s.sourceId === keep);
+      /*
+        合算を出す画面では、**空のままでよい**（空＝合算）。
+        出さない画面では、優先度がいちばん高いものへ寄せる
+      */
+      const stillThere =
+        items.some((s) => s.sourceId === keep) || (mergedLabel !== undefined && keep === "");
       const next = stillThere ? keep : (items[0]?.sourceId ?? "");
       if (next !== keep) onChange({ versionId, sourceId: next });
     },
-    [onChange],
+    [onChange, mergedLabel],
   );
 
   useEffect(() => {
@@ -116,7 +127,11 @@ export function VersionSourcePicker({
         // このバージョンに1つも並んでいなければ選びようがない
         disabled={sources.length === 0}
       >
-        {sources.length === 0 && <option value="">{m.casLinks.noSourceInVersion}</option>}
+        {/* 合算はいちばん上。ふだん見たいのは、優先度で解いたあとの結果 */}
+        {mergedLabel !== undefined && <option value="">{mergedLabel}</option>}
+        {sources.length === 0 && mergedLabel === undefined && (
+          <option value="">{m.casLinks.noSourceInVersion}</option>
+        )}
         {sources.map((s) => (
           <option key={s.sourceId} value={s.sourceId}>
             {s.sourceCode}

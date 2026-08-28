@@ -233,7 +233,7 @@ export function DocumentsScreen() {
           emptyMessage={m.documents.noneYet}
           selectable
           onDeleteSelected={onDeleteSelected}
-          pageSizeOptions={[10, 25, 50, 100]}
+          pageSizeOptions={[15, 25, 50, 100]}
           hintText={m.documents.savedHint}
         />
       </div>

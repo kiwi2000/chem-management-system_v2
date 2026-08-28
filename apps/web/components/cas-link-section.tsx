@@ -1,6 +1,6 @@
 "use client";
 
-import { emptyTableState, type TableState } from "@chem/shared";
+import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
 import { Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { slideClass, type SlideDir } from "@/components/category-header";
@@ -24,11 +24,18 @@ import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
 
-/** 並びはサーバー側で決まっている（CAS → 優先度）ので、表では並べ替えない */
-const DEFAULT_STATE: TableState = {
-  ...emptyTableState(),
-  pageSize: 200,
-};
+/** 既定はCAS番号の順。ほかの表と同じく、見出しを押せば並べ替えられる */
+/*
+  件数は決め打ちにしない。**サーバー側の既定と揃える必要がある。**
+  片方だけ変えると、選んだ数と出てくる数がずれる（`size` が省かれるため）
+*/
+const DEFAULT_STATE: TableState = emptyTableState([{ column: "casNumber", direction: "asc" }]);
+
+/**
+ * 1ページの件数。
+ * 並べるのは共通で決めてある数だけ（それ以外は受け取り側で弾かれる）
+ */
+const PAGE_SIZES = [15, 25, 50, 100, 200];
 
 const SELECT_CLASS = "border-input bg-background h-8 rounded-none border px-2 text-sm";
 
@@ -91,18 +98,39 @@ export function CasLinkSection({
 
   const onShownRef = useRef(onShown);
   onShownRef.current = onShown;
-  /** 先読みで取り終えた問い合わせ。同じものをもう一度投げないための目印 */
+  /** すでに投げた問い合わせ。同じものをもう一度投げないための目印 */
   const lastKey = useRef<string | null>(null);
+  /**
+   * いま欲しい問い合わせ。届いたものを採るかどうかは**これと突き合わせて**決める。
+   *
+   * 効果の後始末（`alive`）で決めていたときは、
+   * **同じ条件で効果がもう一度動いただけで、飛んでいる問い合わせが捨てられていた。**
+   * 実際に「データソースを USER に切り替えた結果（0件）」が捨てられ、
+   * 1つ前の LOLI の行が画面に残っていた。
+   */
+  const wantKey = useRef<string | null>(null);
 
   const columns = useMemo<TableColumn<StatutoryCasLinkDto>[]>(
     () => [
+      {
+        /*
+          どのデータソースの行かを、いちばん左に出す。
+          「合算」で見ているときは行ごとに出どころが違うので、これが無いと読めない
+        */
+        key: "sourceCode",
+        header: m.casLinks.source,
+        kind: "text",
+        width: 80,
+        sortable: false,
+        filterable: false,
+        className: "text-muted-foreground text-xs",
+        render: (r) => r.sourceCode,
+      },
       {
         key: "casNumber",
         header: m.casLinks.casNumber,
         kind: "text",
         width: 130,
-        sortable: false,
-        filterable: false,
         className: "font-mono text-xs",
         render: (r) => r.casNumber,
       },
@@ -113,8 +141,8 @@ export function CasLinkSection({
         header: m.casLinks.casName,
         kind: "text",
         width: 400,
-        sortable: false,
-        filterable: false,
+        // 日本語名・英語名のどちらでも当たる（サーバー側で両方を見ている）
+        filterPlaceholder: m.casLinks.casName,
         render: (r) => {
           const label =
             (locale === "ja"
@@ -139,8 +167,11 @@ export function CasLinkSection({
         header: m.casLinks.status,
         kind: "enum",
         width: 62,
-        sortable: false,
-        filterable: false,
+        filterLabelHidden: true,
+        options: [
+          { value: "applicable", label: m.casLinks.applicable },
+          { value: "excluded", label: m.casLinks.notApplicable },
+        ],
         className: "text-center text-xs",
         render: (r) => (
           // 非該当は打ち消しの意味なので、色を変えて目に留まるようにする
@@ -154,8 +185,10 @@ export function CasLinkSection({
         header: m.casLinks.used,
         kind: "enum",
         width: 48,
-        sortable: false,
-        filterable: false,
+        options: [
+          { value: "used", label: m.common.yes },
+          { value: "notUsed", label: m.common.no },
+        ],
         className: "text-center",
         // 印が付いている行が、優先度で解いた結果として採られているもの
         render: (r) =>
@@ -168,8 +201,6 @@ export function CasLinkSection({
         header: m.casLinks.note,
         kind: "text",
         width: 240,
-        sortable: false,
-        filterable: false,
         className: "text-muted-foreground text-xs",
         render: (r) => r.note ?? "",
       },
@@ -183,18 +214,24 @@ export function CasLinkSection({
     DEFAULT_STATE,
   );
 
-  const fetchLinks = useCallback(async (substanceId: string, vs: VersionSource | null) => {
-    const params = new URLSearchParams({ statutorySubstanceId: substanceId });
-    if (vs?.versionId) params.set("versionId", vs.versionId);
-    if (vs?.sourceId) params.set("sourceId", vs.sourceId);
-    const res = await fetch(`/api/statutory-cas-links?${params.toString()}`).catch(() => null);
-    if (!res) return null;
-    if (!res.ok) {
-      if (redirectIfUnauthorized(res)) return null;
-      return null;
-    }
-    return (await res.json()) as CasLinkResponse;
-  }, []);
+  const fetchLinks = useCallback(
+    async (substanceId: string, vs: VersionSource | null, query: string) => {
+      const params = new URLSearchParams(query);
+      params.set("statutorySubstanceId", substanceId);
+      if (vs?.versionId) params.set("versionId", vs.versionId);
+      if (vs?.sourceId) params.set("sourceId", vs.sourceId);
+      const res = await fetch(`/api/statutory-cas-links?${params.toString()}`).catch(() => null);
+      if (!res) return null;
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return null;
+        return null;
+      }
+      return (await res.json()) as CasLinkResponse;
+    },
+    [],
+  );
+
+  const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
   /*
     法文物質名が変わったら、中身を取り終えてから画面を入れ替える。
@@ -202,28 +239,26 @@ export function CasLinkSection({
   */
   useEffect(() => {
     if (!ready) return;
-    const key = `${substance.id}/${picked?.versionId ?? ""}/${picked?.sourceId ?? ""}`;
+    const key = `${substance.id}/${picked?.versionId ?? ""}/${picked?.sourceId ?? ""}/${query}`;
     if (lastKey.current === key) return;
     lastKey.current = key;
-    let alive = true;
+    wantKey.current = key;
     void (async () => {
-      const body = await fetchLinks(substance.id, picked);
-      if (!alive) return;
+      const body = await fetchLinks(substance.id, picked, query);
+      // 条件が変わったあとに届いたものは捨てる。**後から投げたものが勝つ**
+      if (wantKey.current !== key) return;
       setData(body ?? { items: [], total: 0, page: 1, pageSize: 0, version: null });
       setShownId(substance.id);
       setEditingId(null);
       onShownRef.current?.();
     })();
-    return () => {
-      alive = false;
-    };
-  }, [ready, substance.id, picked, fetchLinks]);
+  }, [ready, substance.id, picked, query, fetchLinks]);
 
   /** 保存・削除のあとの取り直し。法文物質名は変わらないので中身は消さない */
   const reload = useCallback(async () => {
-    const body = await fetchLinks(substance.id, picked);
+    const body = await fetchLinks(substance.id, picked, query);
     if (body) setData(body);
-  }, [fetchLinks, substance.id, picked]);
+  }, [fetchLinks, substance.id, picked, query]);
 
   function startNew() {
     setError(null);
@@ -370,8 +405,7 @@ export function CasLinkSection({
         emptyMessage={m.casLinks.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
-        showFilters={false}
-        showPager={false}
+        pageSizeOptions={PAGE_SIZES}
         // データソースが決まらないと、足しても入れる先がない
         create={
           editable && !editingId && version && picked?.sourceId ? { onClick: startNew } : undefined
@@ -381,7 +415,7 @@ export function CasLinkSection({
           <VersionSourcePicker
             value={picked}
             onChange={onPickedChange}
-            hint={m.casLinks.usedHint}
+            mergedLabel={m.casLinks.merged}
           />
         }
         // 編集は行の右端の鉛筆から

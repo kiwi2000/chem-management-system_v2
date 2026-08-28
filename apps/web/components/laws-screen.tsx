@@ -5,7 +5,7 @@ import { LawTreeSection, type CategorySelection } from "@/components/law-tree-se
 import type { LanguageDto } from "@/lib/types";
 
 /**
- * 法規制のマスタ（法令 → 区分）。
+ * 法規制のマスタ（法律 → 区分）。
  *
  * **1段につき1画面。**インベントリと同じ形にそろえてある。
  * 区分のコードを押すと法文物質名の一覧へ、そこからさらに対象CASへ移る。
@@ -16,7 +16,7 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
   /*
     **行そのものを押しても移らない。**移るのはコードのリンクから。
     ほかの一覧と揃えてある（行を押す＝選ぶ・下に開く）。
-    法令の行を押すと、その法令の区分が下に出る（`LawTreeSection` の中で持つ）
+    法律の行を押すと、その法律の区分が下に出る（`LawTreeSection` の中で持つ）
   */
   const select = useCallback((_next: CategorySelection | null) => {}, []);
 

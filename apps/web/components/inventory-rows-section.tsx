@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { VersionSourcePicker, type VersionSource } from "@/components/version-source-picker";
 import type { ApiError, InventoryDto, InventoryRowDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -291,11 +292,14 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
 
   return (
     <div className="w-full space-y-4 p-4 lg:p-6">
-      <p className="text-muted-foreground text-sm">
-        <Link href="/inventories" className="underline underline-offset-2">
-          {m.inventories.title}
-        </Link>
-      </p>
+      {/* いまどこにいるか。メニューの項目名から始める */}
+      <Breadcrumbs
+        items={[
+          { label: m.nav.laws },
+          { label: m.inventories.title, href: "/inventories" },
+          { label: name || m.common.loading },
+        ]}
+      />
       <h1 className="text-2xl font-semibold">
         {name ? m.inventories.rowsTitle(name) : m.common.loading}
       </h1>

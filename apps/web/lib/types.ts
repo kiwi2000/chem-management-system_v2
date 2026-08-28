@@ -49,6 +49,26 @@ export interface UserSummaryDto {
   newsGroupId: string | null;
   newsGroupName: string | null;
   newsGroupNameEn: string | null;
+  /** 所属する会社。帳票の差出人になる */
+  organisationId: string | null;
+  organisationName: string | null;
+  organisationNameEn: string | null;
+  /** 登録しているパスキーの数 */
+  passkeyCount: number;
+}
+
+/** 組織（会社・事業所）。帳票に載せる差出人の情報 */
+export interface OrganisationDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  displayOrder: number;
+  activeFlag: boolean;
+  /** 項目名と値。どちらも自由入力 */
+  items: { label: string; value: string }[];
+  /** この会社に属している人の数（消したときの影響を知らせるため） */
+  memberCount: number;
 }
 
 export interface GroupDto {
@@ -143,7 +163,7 @@ export interface AccessStatsDto {
 export interface JudgementHitDto {
   /** 法文物質名。区分そのものが当たったときは空 */
   name: string | null;
-  /** 法令が付けている番号（政令番号など） */
+  /** 法律が付けている番号（政令番号など） */
   officialNumber: string | null;
   /**
    * その値を作ったCASと、それぞれの寄与。まとめたときは複数並ぶ。
@@ -193,7 +213,7 @@ export interface ProductJudgementDto {
  * 法規制の画面から見た「この区分に当たる製品」（逆引き）。
  *
  * 製品の判定（`ProductJudgementDto`）と向きが逆なので、
- * 法令・区分の名前は持たない（見ている区分そのものだから）。
+ * 法律・区分の名前は持たない（見ている区分そのものだから）。
  */
 export interface MatchedProductDto {
   productId: string;
@@ -377,7 +397,7 @@ export interface RowStatutoryDto {
   classNameJa: string | null;
   classNameEn: string | null;
   classNameOriginal: string | null;
-  /** 法令が付けている番号 */
+  /** 法律が付けている番号 */
   officialNumber: string | null;
   nameJa: string | null;
   nameEn: string | null;
@@ -391,7 +411,7 @@ export interface RowRegulationDto {
   regionNameJa: string;
   regionNameEn: string | null;
   regionOrder: number;
-  /** 同じ地域の中での区分の並び。法令 → 区分 の順 */
+  /** 同じ地域の中での区分の並び。法律 → 区分 の順 */
   categoryOrder: number;
   lawNameJa: string | null;
   lawNameEn: string | null;
@@ -508,7 +528,7 @@ export interface RegionDto {
   displayOrder: number;
 }
 
-/** 国。法令の持ち主になる単位で、地域の配下に置く */
+/** 国。法律の持ち主になる単位で、地域の配下に置く */
 export interface CountryDto {
   id: string;
   code: string;
@@ -520,14 +540,14 @@ export interface CountryDto {
   displayOrder: number;
 }
 
-/** 法令。国の配下に置く */
+/** 法律。国の配下に置く */
 export interface LawDto {
   id: string;
   code: string;
   countryId: string;
   countryNameJa: string;
   countryNameEn: string | null;
-  /** 国の1つ上。アジア・欧州など。どのあたりの法令かが一目で分かる */
+  /** 国の1つ上。アジア・欧州など。どのあたりの法律かが一目で分かる */
   regionId: string;
   regionNameJa: string;
   regionNameEn: string | null;

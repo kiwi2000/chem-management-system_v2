@@ -220,10 +220,10 @@ export function RegionSection({ onChanged }: { onChanged?: () => void }) {
     }
   }
 
-  /** 確認は共通テーブル側で出す。国や法令から使われているものはサーバーが 409 で断る */
+  /** 確認は共通テーブル側で出す。国や法律から使われているものはサーバーが 409 で断る */
   /**
    * 行を引いて並べ替える。**表示順の数字は打たない。**
-   * 地域の順は下まで効く（国の表も法令の表も、まとまって動く）。
+   * 地域の順は下まで効く（国の表も法律の表も、まとまって動く）。
    */
   async function onReorder(fromKey: string, toKey: string) {
     setError(null);
@@ -305,7 +305,7 @@ export function RegionSection({ onChanged }: { onChanged?: () => void }) {
         onReorder={editable ? onReorder : undefined}
         hintText={editable ? m.regions.reorderHint : undefined}
         // 件数が少ないので、1ページの件数も小さい値だけにする
-        pageSizeOptions={[10, 25, 50, 100]}
+        pageSizeOptions={[15, 25, 50, 100]}
         // 件数が少ないので絞り込みは出さない（並べ替えは見出しで行う）
         showFilters={false}
         // 案内の文言は出さない（この表では「詳細」ではなく編集を開くため）

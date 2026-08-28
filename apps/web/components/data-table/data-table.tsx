@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  DEFAULT_PAGE_SIZE_OPTIONS,
   parseTableState,
   serializeTableState,
   type ColumnFilter,
@@ -21,7 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -32,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useI18n } from "@/lib/i18n-client";
+import { usePageSizePrefs } from "@/lib/page-size-prefs";
 import { cn } from "@/lib/utils";
 import { FilterPanel, type FilterLayoutRow } from "./filter-panel";
 import {
@@ -42,6 +42,7 @@ import {
   type TableColumn,
 } from "./types";
 import { ResizeHandle } from "./resizable-columns";
+import { applyColumnOrder, useColumnVisibility } from "@/lib/use-column-visibility";
 import { useColumnWidths } from "./use-column-widths";
 
 interface Props<T> {
@@ -117,6 +118,7 @@ interface Props<T> {
   /** 行を押すと何が起きるかを、操作の並びの右端に一言で出す */
   hintText?: string;
   /** 「1ページの件数」に出す選択肢。件数の少ない表では小さい値だけにする */
+  /** 指定しなければ、その人の設定（`個人設定 → 1ページの件数`）に従う */
   pageSizeOptions?: readonly number[];
   /**
    * 行ごとに足す class。親子など、行の種類で見た目を変える表で使う。
@@ -173,7 +175,7 @@ export function DataTable<T>({
   headerActions,
   rowAction,
   hintText,
-  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  pageSizeOptions,
   showPager = true,
   rowClassName,
   selectedKey = null,
@@ -181,8 +183,35 @@ export function DataTable<T>({
   onReorder,
 }: Props<T>) {
   // 表に出す列。フィルター専用の列（組成のCAS番号など）はここから外す
-  const columns = allColumns.filter((c) => !c.filterOnly);
+  const {
+    hidden: hiddenColumns,
+    order: columnOrder,
+    toggle: toggleColumn,
+    moveTo: moveColumn,
+    reset: resetColumns,
+    changed: columnsChanged,
+  } = useColumnVisibility(`${storageKey}.columns`);
+
+  /*
+    表に出す列。**絞り込みにしか使わない列**（`filterOnly`）と、
+    **本人が隠した列**を外す。隠したぶんは端末に覚える
+  */
+  const columns = applyColumnOrder(
+    allColumns.filter((c) => !c.filterOnly && !hiddenColumns.has(c.key)),
+    columnOrder,
+  );
+  /** 出し入れの欄に並べる順。表と同じ並びにしないと、動かした結果が読めない */
+  const orderedForPicker = applyColumnOrder(allColumns, columnOrder);
   const { m } = useI18n();
+  const prefs = usePageSizePrefs();
+  /*
+    並べる件数。**画面ごとの指定があればそれを、無ければその人の設定を使う。**
+    いま選んでいる件数が並びに無いと、選択欄が別の値を指してしまうので足しておく
+  */
+  const sizes = pageSizeOptions ?? prefs.options;
+  const shownSizes = sizes.includes(state.pageSize)
+    ? sizes
+    : [...sizes, state.pageSize].sort((a, b) => a - b);
   const { widthOf, setWidth, setWidths, resetWidths, hasCustomWidths } = useColumnWidths(
     `${storageKey}.widths`,
   );
@@ -329,6 +358,49 @@ export function DataTable<T>({
   const colSpan = columns.length + (selectable ? 1 : 0) + (onReorder ? 1 : 0) + (rowAction ? 1 : 0);
 
   /**
+   * 1ページの件数。上と下の両方に置くので、作り方を1つにまとめる。
+   * **何の数字かを名前で添える。**数だけだと、ページ番号と見分けが付かない
+   */
+  const pageSizeSelect = showPager ? (
+    <label className="flex items-center gap-1 whitespace-nowrap">
+      {m.table.pageSize}
+      <select
+        aria-label={m.table.pageSize}
+        value={state.pageSize}
+        onChange={(e) =>
+          onStateChange((prev) => ({ ...prev, pageSize: Number(e.target.value), page: 1 }))
+        }
+        className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+      >
+        {shownSizes.map((n) => (
+          <option key={n} value={n}>
+            {m.table.perPage(n)}
+          </option>
+        ))}
+      </select>
+    </label>
+  ) : null;
+
+  /*
+    ページ送りは**上にも置く。**行が多いと、めくるためだけに下まで送ることになる。
+    置く場所は操作の行の右端。行を増やすと、そのぶん表が下へ押される。
+    1ページで終わるときは出さない（押す先が無い）
+  */
+  const topPager = showPager ? (
+    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+      {/* 件数も上に置く。下まで送らずに「もっと出す」ができる */}
+      {pageSizeSelect}
+      {totalPages > 1 && (
+        <Pager
+          page={state.page}
+          totalPages={totalPages}
+          onJump={(page) => onStateChange((prev) => ({ ...prev, page }))}
+        />
+      )}
+    </div>
+  ) : null;
+
+  /**
    * 表の操作。左から「新規登録（＋）→ その表だけのボタン → ごみ箱」の順に並べる。
    * フィルターと同じ1行に置くので、行が2段になって空白の帯ができることがない。
    */
@@ -386,10 +458,25 @@ export function DataTable<T>({
   const hint = hintText ? <span className="text-muted-foreground text-xs">{hintText}</span> : null;
 
   return (
-    <div className="space-y-3">
+    /*
+      操作の並びと表の間は詰める。枠を外したぶん、離れて見えてしまう
+    */
+    <div className="space-y-1.5">
       {showFilters ? (
         <FilterPanel
           columns={allColumns}
+          orderedColumns={orderedForPicker}
+          hiddenColumns={hiddenColumns}
+          onToggleColumn={toggleColumn}
+          onMoveColumn={(key, dir) =>
+            moveColumn(
+              columns.map((c) => c.key),
+              key,
+              dir,
+            )
+          }
+          onResetColumns={resetColumns}
+          columnsChanged={columnsChanged}
           state={state}
           defaultState={defaultState}
           onFilterChange={setFilter}
@@ -397,7 +484,7 @@ export function DataTable<T>({
           storageKey={`${storageKey}.filterPanel`}
           filterLayout={filterLayout}
           actions={actions}
-          trailing={hint}
+          trailing={topPager ?? hint}
           currentQuery={serializeTableState(state, defaultState).toString()}
           onLoadQuery={(query) =>
             onStateChange(() =>
@@ -412,10 +499,10 @@ export function DataTable<T>({
         />
       ) : (
         // フィルターを出さない表でも、操作の並びと見た目は同じにする
-        (actions || hint) && (
-          <div className="bg-background flex flex-wrap items-center gap-2 rounded-md border px-3 py-2">
+        (actions || hint || topPager) && (
+          <div className="bg-background flex flex-wrap items-center gap-2">
             {actions}
-            {hint && <div className="ml-auto">{hint}</div>}
+            {(topPager ?? hint) && <div className="ml-auto">{topPager ?? hint}</div>}
           </div>
         )
       )}
@@ -663,22 +750,7 @@ export function DataTable<T>({
         <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm">
           <div className="flex items-center gap-2">
             {showPager && <span>{m.common.totalCount(total)}</span>}
-            {showPager && (
-              <select
-                aria-label={m.table.pageSize}
-                value={state.pageSize}
-                onChange={(e) =>
-                  onStateChange((prev) => ({ ...prev, pageSize: Number(e.target.value), page: 1 }))
-                }
-                className="border-input bg-background h-8 rounded-none border px-1 text-xs"
-              >
-                {pageSizeOptions.map((n) => (
-                  <option key={n} value={n}>
-                    {m.table.perPage(n)}
-                  </option>
-                ))}
-              </select>
-            )}
+            {pageSizeSelect}
             {hasCustomWidths && (
               <Button variant="ghost" size="sm" onClick={resetWidths}>
                 {m.table.resetWidths}
@@ -686,57 +758,11 @@ export function DataTable<T>({
             )}
           </div>
           {showPager && (
-            <div className="flex items-center gap-1">
-              {/*
-                **2ページ以上あるときだけ「最初」「最後」を出す。**
-                1ページで終わる一覧に4つ並べても押すところが無い
-              */}
-              {totalPages > 2 && (
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  title={m.table.firstPage}
-                  aria-label={m.table.firstPage}
-                  disabled={state.page <= 1}
-                  onClick={() => onStateChange((prev) => ({ ...prev, page: 1 }))}
-                >
-                  <ChevronsLeft className="size-4" />
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={state.page <= 1}
-                onClick={() => onStateChange((prev) => ({ ...prev, page: prev.page - 1 }))}
-              >
-                {m.common.prev}
-              </Button>
-              <PageJump
-                page={state.page}
-                totalPages={totalPages}
-                onJump={(page) => onStateChange((prev) => ({ ...prev, page }))}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={state.page >= totalPages}
-                onClick={() => onStateChange((prev) => ({ ...prev, page: prev.page + 1 }))}
-              >
-                {m.common.next}
-              </Button>
-              {totalPages > 2 && (
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  title={m.table.lastPage}
-                  aria-label={m.table.lastPage}
-                  disabled={state.page >= totalPages}
-                  onClick={() => onStateChange((prev) => ({ ...prev, page: totalPages }))}
-                >
-                  <ChevronsRight className="size-4" />
-                </Button>
-              )}
-            </div>
+            <Pager
+              page={state.page}
+              totalPages={totalPages}
+              onJump={(page) => onStateChange((prev) => ({ ...prev, page }))}
+            />
           )}
         </div>
       )}
@@ -744,21 +770,80 @@ export function DataTable<T>({
   );
 }
 
-/** これ以上のページ数になったら、一覧から選ばせない（選択肢が多すぎて探せない） */
-const PAGE_LIST_LIMIT = 100;
+/**
+ * ページ送り。**表の上と下の両方に置く。**
+ * 行が多いと、めくるためだけに下まで送ることになる
+ */
+function Pager({
+  page,
+  totalPages,
+  onJump,
+}: {
+  page: number;
+  totalPages: number;
+  onJump: (page: number) => void;
+}) {
+  const { m } = useI18n();
+  return (
+    <div className="flex items-center gap-1">
+      {/*
+        **2ページ以上あるときだけ「最初」「最後」を出す。**
+        1ページで終わる一覧に4つ並べても押すところが無い
+      */}
+      {totalPages > 2 && (
+        <Button
+          variant="outline"
+          size="icon-sm"
+          title={m.table.firstPage}
+          aria-label={m.table.firstPage}
+          disabled={page <= 1}
+          onClick={() => onJump(1)}
+        >
+          <ChevronsLeft className="size-4" />
+        </Button>
+      )}
+      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onJump(page - 1)}>
+        {m.common.prev}
+      </Button>
+      <PageJump page={page} totalPages={totalPages} onJump={onJump} />
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={page >= totalPages}
+        onClick={() => onJump(page + 1)}
+      >
+        {m.common.next}
+      </Button>
+      {totalPages > 2 && (
+        <Button
+          variant="outline"
+          size="icon-sm"
+          title={m.table.lastPage}
+          aria-label={m.table.lastPage}
+          disabled={page >= totalPages}
+          onClick={() => onJump(totalPages)}
+        >
+          <ChevronsRight className="size-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
 
-/** 何ページ以上で「直接ページを指定する」口を出すか */
-const PAGE_JUMP_FROM = 10;
+/**
+ * 何ページ以上で「直接ページを指定する」口を出すか。
+ * **2ページあれば出す。**「次へ」を押していく代わりに、いつでも数で選べる
+ */
+const PAGE_JUMP_FROM = 2;
 
 /**
  * ページの指定。
  *
- * 数ページなら「次へ」を押していけば着くが、**十数ページを超えると押し切れない。**
- * そこで、ページ数が増えたときだけ指定できるようにする。
+ * 「次へ」を押していくと、離れたページには着けない。
+ * **2ページ以上あれば、数で選べるようにする。**
  *
- * 出しかたは2通り。**100ページまでは一覧から選ぶ**（押すだけで済む）。
- * それより多いときは**打ち込む**。59,849件の物質は1,197ページあり、
- * 一覧にすると選択肢が並びきらず、かえって選べなくなる。
+ * **一覧から選ぶ。**打ち込む形も試したが、
+ * 打ってから確定するまでの手数が増えるだけだった。
  */
 function PageJump({
   page,
@@ -770,58 +855,32 @@ function PageJump({
   onJump: (page: number) => void;
 }) {
   const { m } = useI18n();
-  const [typed, setTyped] = useState("");
 
-  // 少ないうちは今までどおり。押す先が見えているものに、余計な口を足さない
+  /*
+    ページの並びは**ページ数が変わったときだけ作り直す。**
+    数千ページになる表があるので、描き直すたびに作ると重くなる
+  */
+  const pages = useMemo(() => Array.from({ length: totalPages }, (_, i) => i + 1), [totalPages]);
+
+  // 1ページしかないときは、選ばせても行き先が無い
   if (totalPages < PAGE_JUMP_FROM) {
     return <span className="px-1">{m.common.pageOf(page, totalPages)}</span>;
   }
 
-  if (totalPages <= PAGE_LIST_LIMIT) {
-    return (
-      <span className="flex items-center gap-1 px-1">
-        <select
-          aria-label={m.table.jumpToPage}
-          value={page}
-          onChange={(e) => onJump(Number(e.target.value))}
-          className="border-input bg-background h-8 rounded-none border px-1 text-xs"
-        >
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
-        / {totalPages}
-      </span>
-    );
-  }
-
-  /* 打ち込むほう。範囲の外を打たれたら、いちばん近い端に寄せる */
-  function go() {
-    const n = Number(typed);
-    setTyped("");
-    if (!/^\d+$/.test(typed) || n < 1) return;
-    onJump(Math.min(n, totalPages));
-  }
-
   return (
     <span className="flex items-center gap-1 px-1">
-      <input
+      <select
         aria-label={m.table.jumpToPage}
-        value={typed}
-        placeholder={String(page)}
-        inputMode="numeric"
-        onChange={(e) => setTyped(e.target.value.replace(/[^0-9]/g, ""))}
-        onBlur={go}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            go();
-          }
-        }}
-        className="border-input bg-background h-8 w-16 rounded-none border px-1 text-center text-xs"
-      />
+        value={page}
+        onChange={(e) => onJump(Number(e.target.value))}
+        className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+      >
+        {pages.map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
       / {totalPages}
     </span>
   );

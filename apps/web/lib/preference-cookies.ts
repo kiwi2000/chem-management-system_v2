@@ -2,6 +2,7 @@ import {
   BACKGROUND_COOKIE,
   HEADER_STRONG_COOKIE,
   LOCALE_COOKIE,
+  PAGE_SIZE_COOKIE,
   THEME_COOKIE,
   isBackground,
   isLocale,
@@ -20,7 +21,11 @@ export const PREFERENCE_COOKIE_OPTIONS = {
 
 type Preferences = Pick<
   User,
-  "preferredLocale" | "preferredTheme" | "preferredHeaderStrong" | "preferredBackground"
+  | "preferredLocale"
+  | "preferredTheme"
+  | "preferredHeaderStrong"
+  | "preferredBackground"
+  | "preferredPageSizes"
 >;
 
 /**
@@ -53,4 +58,6 @@ export async function syncPreferenceCookies(user: Preferences): Promise<void> {
       : null,
   );
   put(BACKGROUND_COOKIE, isBackground(user.preferredBackground) ? user.preferredBackground : null);
+  // 表が出るたびに問い合わせずに済むよう、件数の好みも写す
+  put(PAGE_SIZE_COOKIE, user.preferredPageSizes);
 }

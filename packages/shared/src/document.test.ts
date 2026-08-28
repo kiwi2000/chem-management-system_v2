@@ -3,6 +3,7 @@ import {
   EMPTY_DOCUMENT,
   fieldsFor,
   groupIntoRows,
+  widthPercent,
   isKnownField,
   parseDocumentContent,
   tablesFor,
@@ -113,8 +114,9 @@ describe("対象に合わない差込項目を見つける", () => {
 });
 
 describe("横に並べる", () => {
-  const b = (kind: string, width?: string) =>
+  const b = (kind: string, width?: unknown) =>
     ({ kind, width }) as unknown as Parameters<typeof groupIntoRows>[0][number];
+  const n = (w: number) => b("text", w);
 
   it("幅を指定しなければ、1つずつ1行", () => {
     const rows = groupIntoRows([b("text"), b("text")]);
@@ -154,5 +156,91 @@ describe("横に並べる", () => {
   it("元の位置を持ち越す。並べ替えがこの番号で動く", () => {
     const rows = groupIntoRows([b("text", "half"), b("text", "half"), b("text")]);
     expect(rows.map((r) => r.index)).toEqual([[0, 1], [2]]);
+  });
+
+  it("昔の名前も、いまの％として読める", () => {
+    expect(widthPercent("full")).toBe(100);
+    expect(widthPercent("half")).toBe(50);
+    expect(widthPercent(undefined)).toBe(100);
+    expect(widthPercent(40)).toBe(40);
+    expect(widthPercent("auto")).toBeNull();
+  });
+
+  it("％で並べられる", () => {
+    const rows = groupIntoRows([n(40), n(40)]);
+    expect(rows.map((r) => r.percents)).toEqual([[40, 40]]);
+  });
+
+  it("100%を超えるところで折り返す", () => {
+    const rows = groupIntoRows([n(60), n(60)]);
+    expect(rows.map((r) => r.blocks.length)).toEqual([1, 1]);
+  });
+});
+
+describe("読めない幅", () => {
+  it("通らない値は落として、全幅として扱う", () => {
+    const c = parseDocumentContent({
+      orientation: "portrait",
+      blocks: [{ id: "a", kind: "text", lines: [], width: 999 }],
+    });
+    expect(c).not.toBeNull();
+    expect(c!.blocks[0]!.width).toBeUndefined();
+  });
+
+  it("使える値はそのまま残る", () => {
+    const c = parseDocumentContent({
+      orientation: "portrait",
+      blocks: [
+        { id: "a", kind: "text", lines: [], width: 40 },
+        { id: "b", kind: "text", lines: [], width: "auto" },
+        { id: "c", kind: "text", lines: [], width: "half" },
+      ],
+    });
+    expect(c!.blocks.map((x) => x.width)).toEqual([40, "auto", "half"]);
+  });
+});
+
+describe("均等", () => {
+  const b = (kind: string, width?: unknown) =>
+    ({ kind, width }) as unknown as Parameters<typeof groupIntoRows>[0][number];
+  const auto = () => b("text", "auto");
+  const n = (w: number) => b("text", w);
+
+  it("均等どうしを等分する", () => {
+    const rows = groupIntoRows([auto(), auto(), auto()]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.percents).toEqual([100 / 3, 100 / 3, 100 / 3]);
+  });
+
+  it("決まっている幅の残りを分け合う", () => {
+    const rows = groupIntoRows([n(40), auto(), auto()]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.percents).toEqual([40, 30, 30]);
+  });
+
+  it("均等が1つなら、残りをすべて取る", () => {
+    const rows = groupIntoRows([n(30), auto()]);
+    expect(rows[0]!.percents).toEqual([30, 70]);
+  });
+
+  it("すでに100%埋まっていたら、均等は次の行へ", () => {
+    const rows = groupIntoRows([n(50), n(50), auto()]);
+    expect(rows.map((r) => r.blocks.length)).toEqual([2, 1]);
+    expect(rows[1]!.percents).toEqual([100]);
+  });
+
+  it("改行は、幅が余っていても横並びを終わらせる", () => {
+    const rows = groupIntoRows([n(30), n(30), b("rowBreak"), n(40), auto()]);
+    expect(rows.map((r) => r.blocks.map((x) => x.kind))).toEqual([
+      ["text", "text"],
+      ["rowBreak"],
+      ["text", "text"],
+    ]);
+    expect(rows[2]!.percents).toEqual([40, 60]);
+  });
+
+  it("全幅は均等の並びも断ち切る", () => {
+    const rows = groupIntoRows([auto(), b("text", 100), auto()]);
+    expect(rows.map((r) => r.blocks.length)).toEqual([1, 1, 1]);
   });
 });

@@ -25,7 +25,7 @@ export interface MatrixColumn {
   key: string;
   /** 見出し（番号としての呼び名、または規制区分の名前） */
   label: string;
-  /** 1つ上のまとまり（法令、またはインベントリ）。段を畳むための鍵 */
+  /** 1つ上のまとまり（法律、またはインベントリ）。段を畳むための鍵 */
   parentKey: string;
   /** そのまとまりの名前 */
   parentLabel: string;
@@ -39,7 +39,7 @@ export interface MatrixColumn {
 
 /** セルの中身1つぶん */
 export interface MatrixValue {
-  /** 画面に出す文字（番号、または法令上の番号） */
+  /** 画面に出す文字（番号、または法律上の番号） */
   text: string;
   /** 補足（法文物質名など）。無ければ null */
   note: string | null;
@@ -262,7 +262,7 @@ export async function buildSubstanceMatrix(
         regionName: pickName(locale, c.law.country.region.nameJa, c.law.country.region.nameEn),
         // 法規制はトグルの対象外。常に出す
         shown: true,
-        // 並びは地域 → 国 → 法令 → 区分。法令の番号は国ごとに1から振ってある
+        // 並びは地域 → 国 → 法律 → 区分。法律の番号は国ごとに1から振ってある
         order: lawOrderKey(c.law, c.displayOrder),
       });
     }
@@ -299,10 +299,10 @@ export async function buildSubstanceMatrix(
   sortValues(regCells);
 
   /*
-    **地域でまとめてから、法令・区分の順に並べる。**
+    **地域でまとめてから、法律・区分の順に並べる。**
     画面は地域で列を畳むので、同じ地域が離れて並ぶと1つに畳めない。
-    地域どうしの順は地域そのものの並び順。**法令の番号からは決めない。**
-    法令の番号は国ごとに1から振ってあるので、そこから地域の順を作ると
+    地域どうしの順は地域そのものの並び順。**法律の番号からは決めない。**
+    法律の番号は国ごとに1から振ってあるので、そこから地域の順を作ると
     国が1つ増えるたびに地域の並びが変わってしまう
   */
 

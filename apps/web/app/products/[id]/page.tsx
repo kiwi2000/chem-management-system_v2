@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { ApprovalHistory } from "@/components/approval-history";
-import { CreateDocument } from "@/components/doc-editor/create-document";
 import { PublishActions } from "@/components/publish-actions";
 import { ProductForm } from "@/components/product-form";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
@@ -51,7 +50,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{m.products.detailTitle}</h1>
         <div className="flex flex-wrap items-center gap-3">
-          <CreateDocument target="PRODUCT" targetId={item.id} />
           <PublishActions
             entity="products"
             id={item.id}

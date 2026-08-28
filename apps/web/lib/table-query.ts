@@ -30,7 +30,7 @@ export interface QueryColumn {
    */
   relationPath?: string[];
   /**
-   * 1対1の関連をたどって絞る（法令 → 国 → 地域 のように）。
+   * 1対1の関連をたどって絞る（法律 → 国 → 地域 のように）。
    * `relation` は「1件でも合う行があるか」を見る1対多用なので、
    * 1対1に使うと Prisma が受け付けない。
    */

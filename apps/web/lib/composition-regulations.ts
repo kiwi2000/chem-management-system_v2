@@ -104,8 +104,8 @@ export async function regulationsByCas(
           regionNameEn: region.nameEn,
           regionOrder: region.displayOrder,
           /*
-            並びは国 → 法令 → 区分。地域は列をまとめる単位なので `regionOrder` が持つ。
-            **法令の番号は国ごとに1から振ってある**ので、国を混ぜると割り込みが起きる
+            並びは国 → 法律 → 区分。地域は列をまとめる単位なので `regionOrder` が持つ。
+            **法律の番号は国ごとに1から振ってある**ので、国を混ぜると割り込みが起きる
           */
           categoryOrder:
             (r.category.law.country.displayOrder * 10000 + r.category.law.displayOrder) * 1000 +
@@ -124,7 +124,7 @@ export async function regulationsByCas(
   }
 
   /*
-    並びは地域 → 法令 → 区分。
+    並びは地域 → 法律 → 区分。
     まとめ表では地域ごとに列をまとめるので、地域が先に来ていないと
     列の並びと中身の並びが食い違う。
   */

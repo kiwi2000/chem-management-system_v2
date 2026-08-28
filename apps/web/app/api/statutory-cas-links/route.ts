@@ -1,11 +1,53 @@
-import { normalizeCas, statutoryCasLinkSchema } from "@chem/shared";
+import {
+  applyFilters,
+  emptyTableState,
+  normalizeCas,
+  parseTableState,
+  statutoryCasLinkSchema,
+  type ColumnKind,
+} from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { listCasLinks } from "@/lib/link-service";
+import type { StatutoryCasLinkDto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * 絞り込み・並べ替えができる列。
+ * データソースは表の上で選ぶので、ここには入れない（二重の入口を作らない）
+ */
+const CAS_LINK_COLUMNS = [
+  { key: "casNumber", kind: "text" },
+  { key: "casName", kind: "text" },
+  { key: "excluded", kind: "enum" },
+  { key: "used", kind: "enum" },
+  { key: "note", kind: "text" },
+] as const satisfies { key: string; kind: ColumnKind }[];
+
+/** 並びはCAS番号の順。ここを変えると、どのデータソースが効いているか追いにくくなる */
+const DEFAULT_STATE = emptyTableState([{ column: "casNumber", direction: "asc" }]);
+
+/** 絞り込みと並べ替えで見る値。画面に出ているものと同じにする */
+function cellOf(l: StatutoryCasLinkDto, column: string): string {
+  switch (column) {
+    case "casNumber":
+      return l.casNumber;
+    case "casName":
+      // 画面は言語で出し分けるが、絞るときはどちらの名前でも当たってほしい
+      return [l.substanceNameJa, l.substanceNameEn].filter(Boolean).join(" ");
+    case "excluded":
+      return l.excluded ? "excluded" : "applicable";
+    case "used":
+      return l.used ? "used" : "notUsed";
+    case "note":
+      return l.note ?? "";
+    default:
+      return "";
+  }
+}
 
 /**
  * GET /api/statutory-cas-links — ある法文物質名に結び付いたCASの一覧。
@@ -37,13 +79,39 @@ export async function GET(req: Request) {
 
   const all = await listCasLinks(version.id, statutorySubstanceId);
   const sourceId = params.get("sourceId");
-  const items = sourceId ? all.filter((l) => l.sourceId === sourceId) : all;
+  /*
+    データソースを名指ししないときは**合算**。
+    全部のデータソースを優先度の順に当てて、CASごとに採られた1行だけを返す。
 
+    ここで全行を返していたときは、下位のデータソースの負けた行まで並び、
+    「いま効いているのはどれか」が読めなかった。
+    1つずつ見たいときは、データソースを選んでもらう
+  */
+  const picked = sourceId ? all.filter((l) => l.sourceId === sourceId) : all.filter((l) => l.used);
+
+  /*
+    絞り込みと並べ替えは**手元で行う。**1つの法文物質名ぶんは1回で引き切っており、
+    条件を変えるたびに引き直す意味がない。条件の書き方はほかの表と同じ
+  */
+  const state = parseTableState(params, CAS_LINK_COLUMNS, DEFAULT_STATE);
+  const filtered = applyFilters(picked, state.filters, cellOf);
+
+  const sort = state.sort[0];
+  const sorted = sort
+    ? [...filtered].sort((a, b) => {
+        const d = (cellOf(a, sort.column) ?? "").localeCompare(cellOf(b, sort.column) ?? "", "ja", {
+          numeric: true,
+        });
+        return sort.direction === "desc" ? -d : d;
+      })
+    : filtered;
+
+  const from = (state.page - 1) * state.pageSize;
   return Response.json({
-    items,
-    total: items.length,
-    page: 1,
-    pageSize: items.length,
+    items: sorted.slice(from, from + state.pageSize),
+    total: sorted.length,
+    page: state.page,
+    pageSize: state.pageSize,
     version: { id: version.id, code: version.code, isCurrent: version.isCurrent },
     sourceId,
   });

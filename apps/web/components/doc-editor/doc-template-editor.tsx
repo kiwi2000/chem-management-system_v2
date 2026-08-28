@@ -1,16 +1,23 @@
 "use client";
 
 import type { DocumentContent } from "@chem/shared";
-import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BlockList } from "@/components/doc-editor/block-list";
+import { DocumentSheet } from "@/components/doc-editor/document-view";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
+import { renderDocument } from "@/lib/doc-render";
+import { sampleTables, sampleValues } from "@/lib/doc-sample";
 import type { ApiError, DocumentTemplateDto } from "@/lib/types";
+import { useOrgItemLabels } from "@/lib/use-doc-fields";
 import { useMe } from "@/lib/use-me";
+import { cn } from "@/lib/utils";
 
 const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm";
 
@@ -24,7 +31,23 @@ const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm
 export function DocTemplateEditor({ id }: { id: string }) {
   const { m } = useI18n();
   const { can } = useMe();
+  const router = useRouter();
   const editable = can("DOC_TEMPLATE_EDIT");
+  // 会社の自由項目。差込項目の一覧に足す
+  const orgItems = useOrgItemLabels();
+  /*
+    プレビュー。**見本の値で出す。**本物を引くと保存が要り、
+    「試しに幅を変えて見る」ができなくなる
+  */
+  const [preview, setPreview] = useState(false);
+  /** 変えぶんを残したまま戻ろうとしたときの知らせ */
+  const [leaveWarning, setLeaveWarning] = useState(false);
+  /*
+    読み込み直し・破棄のたびに増やして、**入力部品を作り直す。**
+    文字を書く部品（TipTap）と幅の選択は、開いたときの値を自分で覚えている。
+    値だけ差し替えても画面は古いままで、破棄したのに元に戻らなかった
+  */
+  const [revision, setRevision] = useState(0);
 
   const [template, setTemplate] = useState<DocumentTemplateDto | null>(null);
   const [content, setContent] = useState<DocumentContent | null>(null);
@@ -45,6 +68,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
     setTemplate(body);
     setContent(body.content);
     setDirty(false);
+    setRevision((v) => v + 1);
   }, [id, m]);
 
   useEffect(() => {
@@ -59,9 +83,33 @@ export function DocTemplateEditor({ id }: { id: string }) {
     return () => window.removeEventListener("beforeunload", onLeave);
   }, [dirty]);
 
+  /** 取消。読み込んだところまで戻す（保存はしない） */
+  function cancelEdits() {
+    setContent(template?.content ?? null);
+    setDirty(false);
+    setError(null);
+    setLeaveWarning(false);
+    setRevision((v) => v + 1);
+  }
+
+  /**
+   * 一覧へ戻る。
+   * **変えぶんが残っているときは移らない。**知らせを出して、
+   * 保存するか取消すかを選んでもらう
+   */
+  function goBack() {
+    if (dirty) {
+      setLeaveWarning(true);
+      return;
+    }
+    router.push("/doc-templates");
+  }
+
   function edit(next: DocumentContent) {
     setContent(next);
     setDirty(true);
+    // 直し始めたら知らせは引っ込める。出しっぱなしだと何の話か分からなくなる
+    setLeaveWarning(false);
   }
 
   async function save() {
@@ -89,6 +137,21 @@ export function DocTemplateEditor({ id }: { id: string }) {
     }
   }
 
+  /*
+    様式の言語で出す。読んでいる人の言語ではない。
+    英語の様式は、日本語で使っている人が見ても英語で出るのが正しい
+  */
+  const sheet = useMemo(() => {
+    if (!template || !content) return null;
+    const locale = template.locale === "en" ? "en" : "ja";
+    return renderDocument({
+      content,
+      target: template.target,
+      values: sampleValues(template.target, orgItems, locale),
+      tables: sampleTables(locale),
+    });
+  }, [template, content, orgItems]);
+
   if (!template || !content) {
     return (
       <div className={PAGE_SHELL_STACKED}>
@@ -105,10 +168,14 @@ export function DocTemplateEditor({ id }: { id: string }) {
 
   return (
     <div className={PAGE_SHELL_STACKED}>
-      {/* 一覧へ戻る小さなリンク。ほかの画面と同じ形 */}
-      <Link href="/doc-templates" className="text-muted-foreground text-xs underline">
-        {m.docTemplates.title}
-      </Link>
+      {/* いまどこにいるか。メニューの項目名から始める */}
+      <Breadcrumbs
+        items={[
+          { label: m.nav.documents },
+          { label: m.docTemplates.title, href: "/doc-templates" },
+          { label: `${template.code} ${template.nameJa}` },
+        ]}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">
@@ -129,17 +196,40 @@ export function DocTemplateEditor({ id }: { id: string }) {
               <option value="landscape">{m.docEditor.orientations.landscape}</option>
             </select>
           </label>
+          <Button size="sm" variant="outline" onClick={() => setPreview((v) => !v)}>
+            <Eye className="size-4" />
+            {preview ? m.docEditor.previewHide : m.docEditor.preview}
+          </Button>
           {editable && (
-            <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
-              {saving ? m.common.saving : m.common.save}
-            </Button>
+            <>
+              <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
+                {saving ? m.common.saving : m.common.save}
+              </Button>
+              {/* 取消は、保存していない変えぶんを捨てて、読み込んだところまで戻す */}
+              <Button size="sm" variant="outline" disabled={saving || !dirty} onClick={cancelEdits}>
+                {m.common.discard}
+              </Button>
+            </>
           )}
+          {/*
+            戻るは**一覧へ移るだけ。**変えぶんが残っているときは、
+            移らずに知らせる。ここで黙って捨てると、書いたものが消える
+          */}
+          <Button size="sm" variant="outline" onClick={goBack}>
+            {m.common.back}
+          </Button>
         </div>
       </div>
 
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {leaveWarning && (
+        <Alert variant="destructive">
+          <AlertDescription>{m.docEditor.unsavedOnLeave}</AlertDescription>
         </Alert>
       )}
 
@@ -158,11 +248,31 @@ export function DocTemplateEditor({ id }: { id: string }) {
         </Alert>
       )}
 
-      <BlockList
-        blocks={content.blocks}
-        target={template.target}
-        onChange={(blocks) => edit({ ...content, blocks })}
-      />
+      {/*
+        プレビューを出しているあいだは左右に並べる。
+        画面が狭いときは縦に積む（横に並べると、どちらも読めない幅になる）
+      */}
+      <div className={cn("gap-4", preview && "lg:grid lg:grid-cols-2 lg:items-start")}>
+        <BlockList
+          key={revision}
+          blocks={content.blocks}
+          target={template.target}
+          orgItems={orgItems}
+          onChange={(blocks) => edit({ ...content, blocks })}
+        />
+
+        {preview && sheet && (
+          <div className="mt-4 lg:sticky lg:top-4 lg:mt-0">
+            <Alert className="mb-2">
+              <AlertDescription>{m.docEditor.previewNote}</AlertDescription>
+            </Alert>
+            {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
+            <div className="bg-muted/40 max-h-[75vh] overflow-auto border p-2">
+              <DocumentSheet doc={sheet} />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

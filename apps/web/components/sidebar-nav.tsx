@@ -3,10 +3,12 @@
 import type { Messages, Permission } from "@chem/shared";
 import {
   ArrowDownUp,
+  Atom,
   BookMarked,
   BookOpen,
-  Download,
+  Building2,
   ChevronRight,
+  Download,
   FileCog,
   FilePlus,
   FileText,
@@ -14,7 +16,6 @@ import {
   Globe,
   Home,
   Link2,
-  Atom,
   Megaphone,
   MessageSquare,
   Package,
@@ -23,11 +24,11 @@ import {
   Settings,
   Sigma,
   Tags,
+  type LucideIcon,
   Upload,
   UserCog,
   Users,
   Wrench,
-  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -74,7 +75,7 @@ const ITEMS: NavItem[] = [
         match: ["/laws", "/categories"],
       },
       // 各国の既存化学物質の目録。判定には使わず、物質に出す番号の出どころになる。
-      // 法規制と同じくバージョン・データソースの管理下にあるので、法令のすぐ下に置く
+      // 法規制と同じくバージョン・データソースの管理下にあるので、法律のすぐ下に置く
       {
         href: "/inventories",
         key: "inventories",
@@ -150,6 +151,14 @@ const ITEMS: NavItem[] = [
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
+  {
+    // 帳票に載せる会社の情報。利用者に会社を割り当てるので、グループ・利用者の手前に置く
+    href: "/admin/organisations",
+    key: "organisations",
+    icon: Building2,
+    needs: "ADMIN",
+    match: ["/admin/organisations"],
+  },
   { href: "/admin/groups", key: "groups", icon: Users, needs: "ADMIN", match: ["/admin/groups"] },
   { href: "/admin/users", key: "users", icon: UserCog, needs: "ADMIN", match: ["/admin/users"] },
   {

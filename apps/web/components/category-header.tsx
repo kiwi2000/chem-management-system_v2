@@ -29,8 +29,8 @@ export function slideClass(dir: SlideDir) {
 /**
  * 選んでいる区分の見出し。画面の上に貼り付いたまま動かない。
  *
- * 左端の小さなつまみを押すと法令の木が降りてくる。スクロールでは降りてこない。
- * 左右の矢印で前後の区分へ移れるが、法令はまたがない（端では灰色になる）。
+ * 左端の小さなつまみを押すと法律の木が降りてくる。スクロールでは降りてこない。
+ * 左右の矢印で前後の区分へ移れるが、法律はまたがない（端では灰色になる）。
  * 区分の編集はここではできない。木の行をダブルクリックして行う。
  */
 export function CategoryHeader({
@@ -84,7 +84,7 @@ export function CategoryHeader({
   return (
     // 上のヘッダー（h-14）のすぐ下に貼り付く。左右の余白いっぱいまで下地を敷く
     <div className="bg-background sticky top-14 z-20 -mx-4 border-b px-4 lg:-mx-6 lg:px-6">
-      {/* つまみ。法令の木を出し入れするためだけのもの。表の左端に揃える */}
+      {/* つまみ。法律の木を出し入れするためだけのもの。表の左端に揃える */}
       <div className="flex">
         <button
           type="button"

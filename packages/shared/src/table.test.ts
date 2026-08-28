@@ -97,8 +97,16 @@ describe("壊れた URL の扱い", () => {
   });
 
   it("ページや件数が不正なら既定に戻す", () => {
-    expect(parse("page=0&size=7").page).toBe(1);
-    expect(parse("page=abc&size=7").pageSize).toBe(FALLBACK.pageSize);
+    expect(parse("page=0").page).toBe(1);
+    expect(parse("size=abc").pageSize).toBe(FALLBACK.pageSize);
+    // 範囲の外（0以下・大きすぎる）は受け取らない
+    expect(parse("size=0").pageSize).toBe(FALLBACK.pageSize);
+    expect(parse("size=9999").pageSize).toBe(FALLBACK.pageSize);
+  });
+
+  it("1以上なら、決まった数でなくても受け取る", () => {
+    expect(parse("size=7").pageSize).toBe(7);
+    expect(parse("size=1").pageSize).toBe(1);
   });
 
   it("並べ替えの指定が無ければ既定の並びを使う", () => {

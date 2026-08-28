@@ -25,7 +25,10 @@ export async function writeAudit(params: {
       身に覚えのない登録に本人と管理者が気づけるようにしておく
     */
     | "mfa_enable"
-    | "mfa_disable";
+    | "mfa_disable"
+    /** パスキーの付け外し。認証アプリと同じく入口の守りが変わる */
+    | "passkey_add"
+    | "passkey_remove";
   actorId?: string;
   diff?: unknown;
 }): Promise<void> {

@@ -64,6 +64,8 @@ export default function AccessLogPage() {
           { value: "logout", label: m.accessLog.actionLogout },
           { value: "mfa_enable", label: m.accessLog.actionMfaEnable },
           { value: "mfa_disable", label: m.accessLog.actionMfaDisable },
+          { value: "passkey_add", label: m.accessLog.actionPasskeyAdd },
+          { value: "passkey_remove", label: m.accessLog.actionPasskeyRemove },
           { value: "view", label: m.accessLog.actionView },
           { value: "export", label: m.accessLog.actionExport },
           { value: "import", label: m.accessLog.actionImport },
@@ -304,6 +306,10 @@ function actionLabel(m: M, r: AccessLogDto): string {
       return m.accessLog.actionMfaEnable;
     case "mfa_disable":
       return m.accessLog.actionMfaDisable;
+    case "passkey_add":
+      return m.accessLog.actionPasskeyAdd;
+    case "passkey_remove":
+      return m.accessLog.actionPasskeyRemove;
     case "export":
       return m.accessLog.actionExport;
     case "import":

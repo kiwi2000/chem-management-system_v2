@@ -2,12 +2,9 @@
 
 import {
   BLOCK_KINDS,
-  BLOCK_WIDTHS,
-  WIDTH_FRACTION,
   fieldsFor,
   groupIntoRows,
   tablesFor,
-  type BlockWidth,
   type BlockKind,
   type DocumentBlock,
   type DocumentTable,
@@ -16,6 +13,8 @@ import {
 import { GripVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { RichEditor } from "@/components/doc-editor/rich-editor";
+import { TableBlockFields } from "@/components/doc-editor/table-block-fields";
+import { WidthSelect } from "@/components/doc-editor/width-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n-client";
@@ -60,10 +59,13 @@ function newBlock(kind: BlockKind, target: DocumentTarget, id: string): Document
 export function BlockList({
   blocks,
   target,
+  orgItems,
   onChange,
 }: {
   blocks: DocumentBlock[];
   target: DocumentTarget;
+  /** 会社の自由項目の名前 */
+  orgItems: string[];
   onChange: (next: DocumentBlock[]) => void;
 }) {
   const { m, locale } = useI18n();
@@ -101,7 +103,9 @@ export function BlockList({
       */}
       {groupIntoRows(blocks).map((row, r) => (
         <div key={r} className={row.blocks.length > 1 ? "flex items-start gap-3" : undefined}>
-          {row.blocks.map((b, k) => renderBlock(b, row.index[k]!, row.blocks.length > 1))}
+          {row.blocks.map((b, k) =>
+            renderBlock(b, row.index[k]!, row.blocks.length > 1 ? row.percents[k]! : null),
+          )}
         </div>
       ))}
 
@@ -116,11 +120,12 @@ export function BlockList({
     </div>
   );
 
-  function renderBlock(b: DocumentBlock, i: number, inRow: boolean) {
+  /** `pct` は、横に並んでいるときだけ入る（その行で実際に使う％） */
+  function renderBlock(b: DocumentBlock, i: number, pct: number | null) {
     return (
       <div
         key={b.id}
-        style={inRow ? { width: `${WIDTH_FRACTION[b.width ?? "full"] * 100}%` } : undefined}
+        style={pct === null ? undefined : { width: `${pct}%` }}
         className={cn(
           "border-input rounded-none border",
           overIndex === i && dragIndex !== null && "border-primary border-t-2",
@@ -172,21 +177,14 @@ export function BlockList({
           </button>
           <span className="text-sm font-medium">{m.docEditor.blockKinds[b.kind]}</span>
           {/*
-              幅。**改ページは幅を持てない**（必ず1行を占めるので、選ばせると効かない）
+              幅。**改ページと改行は幅を持てない**（必ず1行を占めるので、選ばせても効かない）
             */}
-          {b.kind !== "pageBreak" && (
-            <select
-              className="border-input ml-2 h-6 rounded-none border bg-transparent px-1 text-xs"
-              aria-label={m.docEditor.width}
-              value={b.width ?? "full"}
-              onChange={(e) => replace(i, { ...b, width: e.target.value as BlockWidth })}
-            >
-              {BLOCK_WIDTHS.map((w) => (
-                <option key={w} value={w}>
-                  {m.docEditor.widths[w]}
-                </option>
-              ))}
-            </select>
+          {b.kind !== "pageBreak" && b.kind !== "rowBreak" && (
+            <WidthSelect
+              key={b.id}
+              value={b.width}
+              onChange={(width) => replace(i, { ...b, width })}
+            />
           )}
           <div className="ml-auto">
             <Button
@@ -220,6 +218,7 @@ export function BlockList({
               <RichEditor
                 value={b.lines}
                 target={target}
+                orgItems={orgItems}
                 minHeight="2.5rem"
                 onChange={(lines) => replace(i, { ...b, lines })}
               />
@@ -230,6 +229,7 @@ export function BlockList({
             <RichEditor
               value={b.lines}
               target={target}
+              orgItems={orgItems}
               onChange={(lines) => replace(i, { ...b, lines })}
             />
           )}
@@ -262,7 +262,7 @@ export function BlockList({
                     }}
                   >
                     <option value="">—</option>
-                    {fieldsFor(target).map((f) => (
+                    {fieldsFor(target, orgItems).map((f) => (
                       <option key={f.key} value={f.key}>
                         {locale === "en" ? f.labelEn : f.labelJa}
                       </option>
@@ -291,55 +291,12 @@ export function BlockList({
           )}
 
           {b.kind === "table" && (
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm">
-                {m.docEditor.tableSource}
-                <select
-                  className={cn(SELECT, "w-64")}
-                  value={b.table}
-                  onChange={(e) => {
-                    const table = e.target.value as DocumentTable;
-                    const def = tablesFor(target).find((t) => t.key === table);
-                    // 表を変えたら列も入れ替える。前の表の列は意味を持たない
-                    replace(i, { ...b, table, columns: def?.columns.map((c) => c.key) ?? [] });
-                  }}
-                >
-                  {tablesFor(target).map((t) => (
-                    <option key={t.key} value={t.key}>
-                      {locale === "en" ? t.labelEn : t.labelJa}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="flex flex-wrap gap-3">
-                <span className="text-sm">{m.docEditor.tableColumns}</span>
-                {(tablesFor(target).find((t) => t.key === b.table)?.columns ?? []).map((c) => (
-                  <label key={c.key} className="flex items-center gap-1 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={b.columns.includes(c.key)}
-                      onChange={(e) => {
-                        const on = e.target.checked;
-                        // 並びは表の定義どおりにそろえる。押した順に並ぶと読みにくい
-                        const all = tablesFor(target).find((t) => t.key === b.table)?.columns ?? [];
-                        const next = all
-                          .map((x) => x.key)
-                          .filter((k) => (k === c.key ? on : b.columns.includes(k)));
-                        replace(i, { ...b, columns: next });
-                      }}
-                    />
-                    {locale === "en" ? c.labelEn : c.labelJa}
-                  </label>
-                ))}
-              </div>
-              <Input
-                className="h-8"
-                aria-label={m.docEditor.caption}
-                placeholder={m.docEditor.caption}
-                value={b.caption ?? ""}
-                onChange={(e) => replace(i, { ...b, caption: e.target.value || undefined })}
-              />
-            </div>
+            <TableBlockFields
+              block={b}
+              target={target}
+              locale={locale}
+              onChange={(next) => replace(i, next)}
+            />
           )}
 
           {b.kind === "spacer" && (
@@ -369,7 +326,7 @@ export function BlockList({
             />
           )}
 
-          {(b.kind === "divider" || b.kind === "pageBreak") && (
+          {(b.kind === "divider" || b.kind === "pageBreak" || b.kind === "rowBreak") && (
             <p className="text-muted-foreground text-sm">{m.docEditor.blockKinds[b.kind]}</p>
           )}
         </div>

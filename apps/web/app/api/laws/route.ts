@@ -32,7 +32,7 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.law.findMany({
       where,
-      // 表示順のままなら 地域 → 国 → 法令。ほかの列を選んでいればその列で並べる
+      // 表示順のままなら 地域 → 国 → 法律。ほかの列を選んでいればその列で並べる
       orderBy: isNaturalOrder(state.sort)
         ? [...LAW_ORDER_BY]
         : buildOrderBy(LAW_COLUMNS, state.sort, { displayOrder: "asc" }),

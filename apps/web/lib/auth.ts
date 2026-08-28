@@ -207,7 +207,7 @@ export async function logout(): Promise<void> {
       where: { tokenHash: sha256(raw) },
       select: { userId: true },
     });
-    await prisma.session.deleteMany({ where: { tokenHash: sha256(raw) } });
+    await endSessions({ tokenHash: sha256(raw) }, "logout");
     if (session) {
       await writeAudit({
         entity: "users",
@@ -222,9 +222,54 @@ export async function logout(): Promise<void> {
   store.delete(AUTH_POLICY.sessionCookieName);
 }
 
-/** そのユーザーの全セッションを失効（パスワード変更・無効化時に使用） */
+/**
+ * セッションが切れた理由。ログイン画面で何と伝えるかを決める。
+ *
+ *   settings … 利用者の設定が変わった（管理者の変更・パスワード変更など）
+ *   idle     … 一定時間操作が無かった
+ *   expired  … 有効期限が切れた
+ *   logout   … 自分でログアウトした（知らせることは無い）
+ */
+export type SessionEndReason = "settings" | "idle" | "expired" | "logout";
+
+/**
+ * セッションを終わらせる。**行は消さず、印を付けるだけ。**
+ * 消すと「なぜ切れたのか」が残らず、ログイン画面で言い分けられなくなる。
+ * 古くなった行は `purgeExpiredSessions` が後で片付ける。
+ */
+async function endSessions(
+  where: { userId: string } | { tokenHash: string },
+  reason: SessionEndReason,
+): Promise<void> {
+  await prisma.session
+    .updateMany({
+      where: { ...where, endedAt: null },
+      data: { endedAt: new Date(), endedReason: reason },
+    })
+    .catch(() => {});
+}
+
+/**
+ * そのユーザーの全セッションを失効。
+ * 呼ばれるのは**設定が変わったとき**だけ（パスワード変更・権限変更・端末の解除）。
+ */
 export async function revokeAllSessions(userId: string): Promise<void> {
-  await prisma.session.deleteMany({ where: { userId } });
+  await endSessions({ userId }, "settings");
+}
+
+/**
+ * いま持っている Cookie のセッションが、なぜ切れたのか。
+ * **触るだけ。**印を消したり Cookie を捨てたりはしない（呼ぶ側が決める）
+ */
+export async function sessionEndReason(): Promise<SessionEndReason | null> {
+  const store = await cookies();
+  const raw = store.get(AUTH_POLICY.sessionCookieName)?.value;
+  if (!raw) return null;
+  const row = await prisma.session.findUnique({
+    where: { tokenHash: sha256(raw) },
+    select: { endedReason: true },
+  });
+  return (row?.endedReason as SessionEndReason | null) ?? null;
 }
 
 /**
@@ -244,8 +289,10 @@ export const getSessionUser = cache(async function getSessionUser(): Promise<App
     include: { user: true },
   });
   if (!session) return null;
+  // すでに終わっているもの（設定の変更・自分でのログアウト）は通さない
+  if (session.endedAt) return null;
   if (session.expiresAt < new Date()) {
-    await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+    await endSessions({ tokenHash: session.tokenHash }, "expired");
     return null;
   }
   const user = session.user;
@@ -258,7 +305,7 @@ export const getSessionUser = cache(async function getSessionUser(): Promise<App
   const { sessionIdleMinutes } = await getAppSettings();
   const idleMs = Date.now() - session.lastSeenAt.getTime();
   if (idleMs > sessionIdleMinutes * 60_000) {
-    await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+    await endSessions({ tokenHash: session.tokenHash }, "idle");
     return null;
   }
 
@@ -292,6 +339,7 @@ export async function peekIdleRemainMs(): Promise<number | null> {
     include: { user: { select: { deletedAt: true, activeFlag: true } } },
   });
   if (!session) return null;
+  if (session.endedAt) return null;
   if (session.expiresAt < new Date()) return null;
   if (session.user.deletedAt || !session.user.activeFlag) return null;
 
@@ -300,7 +348,21 @@ export async function peekIdleRemainMs(): Promise<number | null> {
   return remain > 0 ? remain : null;
 }
 
-/** 期限切れセッションの掃除（ログイン時などに随時呼ぶ） */
+/**
+ * 古いセッションの掃除（ログイン時などに随時呼ぶ）。
+ *
+ * **すぐには消さない。**切れた理由をログイン画面で伝えるため、しばらく残す。
+ * 消すのは、終わってから（あるいは期限が切れてから）7日を過ぎたものだけ。
+ */
+const KEEP_ENDED_DAYS = 7;
+
 export async function purgeExpiredSessions(): Promise<void> {
-  await prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } }).catch(() => {});
+  const cutoff = new Date(Date.now() - KEEP_ENDED_DAYS * 86400_000);
+  await prisma.session
+    .deleteMany({
+      where: {
+        OR: [{ endedAt: { lt: cutoff } }, { endedAt: null, expiresAt: { lt: cutoff } }],
+      },
+    })
+    .catch(() => {});
 }

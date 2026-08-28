@@ -75,6 +75,7 @@ export const ja = {
     system: "システム",
     home: "ホーム",
     news: "お知らせ",
+    organisations: "組織",
     groups: "グループ管理",
     users: "ユーザー管理",
     propertyDefs: "拡張属性",
@@ -99,7 +100,10 @@ export const ja = {
 
   shell: {
     openMenu: "メニューを開く",
-    linkVersion: "法規制のバージョン",
+    linkVersion: "法規制バージョン",
+    noLinkVersion: "法規制バージョン未設定",
+    hideHeader: "上の帯を隠す",
+    showHeader: "上の帯を出す",
     closeMenu: "メニューを閉じる",
     signOut: "ログアウト",
     readOnly: "参照のみ",
@@ -122,7 +126,13 @@ export const ja = {
     submitting: "ログイン中...",
     failed: "ログインできませんでした",
     mfaPrompt: "認証アプリのコードを入力してください",
-    sessionExpired: "一定時間操作がなかったため、ログアウトしました。",
+    sessionIdle:
+      "一定時間操作がなかったため、ログインの状態が切れました。もう一度ログインしてください。",
+    sessionSettingsChanged:
+      "利用者の設定が変わったため、ログインの状態が切れました。もう一度ログインしてください。",
+    sessionTimedOut:
+      "有効期限が切れたため、ログインの状態が切れました。もう一度ログインしてください。",
+    sessionExpired: "ログインの状態が切れました。もう一度ログインしてください。",
   },
 
   changePassword: {
@@ -197,6 +207,11 @@ export const ja = {
   /** 一覧（共通テーブル）の文言 */
   table: {
     filterPanel: "フィルター",
+    columnPanel: "表示項目",
+    resetColumns: "元に戻す",
+    columnPanelHint: "チェックで出し入れし、つまみを引いて並べ替えます",
+    reorderColumn: "引いて並べ替える",
+    hiddenCount: (n: number) => `${n} 列を隠しています`,
     compositionSection: "組成情報",
     casNumbers: "CAS番号",
     substanceNames: "物質名",
@@ -231,7 +246,7 @@ export const ja = {
     firstPage: "最初のページ",
     lastPage: "最後のページ",
     jumpToPage: "ページを指定",
-    pageSize: "1ページの件数",
+    pageSize: "1ページ件数",
     perPage: (n: number) => `${n} 件`,
     operators: {
       any: "いずれか",
@@ -316,7 +331,7 @@ export const ja = {
   },
 
   regions: {
-    reorderHint: "左端のつまみを引くと並べ替えられます。国と法令もまとめて動きます",
+    reorderHint: "左端のつまみを引くと並べ替えられます。国と法律もまとめて動きます",
     title: "地域",
     newTitle: "地域の追加",
     editTitle: "地域の編集",
@@ -327,7 +342,7 @@ export const ja = {
     empty: "地域が登録されていません",
     deleteConfirm: (name: string) => `「${name}」を削除しますか？`,
     duplicateCode: (code: string) => `地域コード「${code}」は既に使われています`,
-    inUse: (n: number) => `この地域は法令${n}件から使われています。先にその法令を移してください`,
+    inUse: (n: number) => `この地域は法律${n}件から使われています。先にその法律を移してください`,
     revived: "以前に削除した同じコードがあったため、内容を更新して復活させました",
     inUseByCountries: (n: number) =>
       `この地域は国${n}件から使われています。先にその国を移してください`,
@@ -348,7 +363,7 @@ export const ja = {
     noRegion: "先に地域を登録してください",
     deleteConfirm: (name: string) => `「${name}」を削除しますか？`,
     duplicateCode: (code: string) => `国コード「${code}」は既に使われています`,
-    inUse: (n: number) => `この国は法令${n}件から使われています。先にその法令を移してください`,
+    inUse: (n: number) => `この国は法律${n}件から使われています。先にその法律を移してください`,
     revived: "以前に削除した同じコードがあったため、内容を更新して復活させました",
   },
 
@@ -368,17 +383,17 @@ export const ja = {
   },
 
   laws: {
-    title: "法令",
+    title: "法律",
     rowHint:
-      "法令のコードを押すと、その法令の区分が下に出ます。区分のコードを押すと法文物質名の一覧へ移ります",
-    /** 並べ替えのときに出す断り。表示順は 地域 → 国 → 法令 で決まる */
-    sameCountryOnly: "並べ替えられるのは同じ国の法令どうしだけです",
-    sameLawOnly: "並べ替えられるのは同じ法令の区分どうしだけです",
-    reorderHint: "左端のつまみを引くと並べ替えられます（同じ国・同じ法令の中だけ）",
-    add: "＋ 法令",
-    newTitle: "法令の追加",
-    editTitle: "法令の編集",
-    code: "法令コード",
+      "法律のコードを押すと、その法律の区分が下に出ます。区分のコードを押すと法文物質名の一覧へ移ります",
+    /** 並べ替えのときに出す断り。表示順は 地域 → 国 → 法律 で決まる */
+    sameCountryOnly: "並べ替えられるのは同じ国の法律どうしだけです",
+    sameLawOnly: "並べ替えられるのは同じ法律の区分どうしだけです",
+    reorderHint: "左端のつまみを引くと並べ替えられます（同じ国・同じ法律の中だけ）",
+    add: "＋ 法律",
+    newTitle: "法律の追加",
+    editTitle: "法律の編集",
+    code: "法律コード",
     region: "地域",
     country: "国",
     nameOriginal: "原文の名称",
@@ -387,10 +402,10 @@ export const ja = {
     nameEn: "名称（英語）",
     displayOrder: "並び順",
     note: "備考",
-    empty: "法令が登録されていません",
+    empty: "法律が登録されていません",
     noCountry: "先に国を登録してください",
-    duplicateCode: (code: string) => `法令コード「${code}」は既に使われています`,
-    inUse: (n: number) => `この法令は区分${n}件から使われています。先にその区分を消してください`,
+    duplicateCode: (code: string) => `法律コード「${code}」は既に使われています`,
+    inUse: (n: number) => `この法律は区分${n}件から使われています。先にその区分を消してください`,
     revived: "以前に削除した同じコードがあったため、内容を更新して復活させました",
   },
 
@@ -504,12 +519,12 @@ export const ja = {
     displayOrder: "並び順",
     note: "備考",
     empty: "区分が登録されていません",
-    selectLaw: "左で法令を選んでください",
+    selectLaw: "左で法律を選んでください",
     /** 見出しの左右の矢印。隣に区分が無いときのラベル */
     prevCategory: "前の区分",
     nextCategory: "次の区分",
     /** 見出しの上端のつまみ */
-    toggleTree: "法令の一覧を出し入れ",
+    toggleTree: "法律の一覧を出し入れ",
     duplicateCode: (code: string) => `区分コード「${code}」は既に使われています`,
     inUse: (n: number) => `この区分には法文物質名が${n}件あります。先にそちらを消してください`,
   },
@@ -548,7 +563,7 @@ export const ja = {
     orphan: "このデータソースは、このバージョンに並んでいません。判定には使われません",
     currentVersion: "現在",
     noSourceInVersion: "このバージョンにデータソースがありません",
-    usedHint: "優先度がいちばん高いデータソースの1件だけが採られます",
+    merged: "合算",
     prevSubstance: "前の法文物質名",
     nextSubstance: "次の法文物質名",
     backToList: "法文物質名の一覧に戻る",
@@ -560,7 +575,7 @@ export const ja = {
     newTitle: "法文物質名の追加",
     editTitle: "法文物質名の編集",
     code: "コード",
-    officialNumber: "法令上の番号",
+    officialNumber: "法律上の番号",
     officialNumberHint: "政令番号・通し番号など。改正で枝番になるので文字で持ちます",
     nameOriginal: "原文の名称",
     nameLang: "原文の言語",
@@ -603,6 +618,16 @@ export const ja = {
 
   /** 利用者ごとの設定（システム全体の設定とは別） */
   preferences: {
+    pageSize: "1ページの件数",
+    pageSizeLead:
+      "表に並べる行数です。ここで決めた並びが、すべての表の「1ページの件数」の選択肢になります。",
+    pageSizeChoices: "選べる件数",
+    pageSizeDefault: "はじめに出す件数",
+    pageSizeHint: (n: number) =>
+      `カンマや空白で区切って、${n}個まで書けます。小さい順に並べ替えて保存します。`,
+    pageSizeUnreadable: "数を1つ以上書いてください",
+    pageSizeRange: (min: number, max: number) => `${min}〜${max} の数で書いてください`,
+    pageSizeTooMany: (n: number) => `${n}個までにしてください`,
     title: "個人設定",
     description: "この画面の設定は、あなたのアカウントにだけ適用されます。",
     profile: "プロフィール",
@@ -680,6 +705,39 @@ export const ja = {
   },
 
   /** 2要素認証の登録を促す画面。必須なのに未登録の人だけが通る */
+  /** パスキー。端末そのものが鍵になるログインのしかた */
+  passkey: {
+    title: "パスキー",
+    lead: "指紋・顔・端末のPINで入れるようにします。パスワードも6桁の数字も要りません。",
+    why: "鍵は端末の中にあり、この画面のアドレスに結び付いています。そっくりの偽サイトでは、そもそも鍵が出てきません。",
+    add: "この端末を登録する",
+    signIn: "パスキーで入る",
+    deviceLabel: "端末の名前",
+    deviceLabelHint: "あとでどれを消すか選べるように、分かる名前を付けてください（例：会社のPC）",
+    devicePlaceholder: "会社のPC",
+    registered: "登録した端末",
+    none: "まだ登録がありません",
+    createdAt: "登録した日",
+    lastUsedAt: "最後に使った日",
+    neverUsed: "まだ使っていません",
+    remove: "登録を外す",
+    confirmRemove: (name: string) =>
+      `「${name}」の登録を外しますか。この端末では入れなくなります。`,
+    expired: "時間が経ちすぎました。もう一度はじめからやり直してください",
+    failed: "確認できませんでした。もう一度お試しください",
+    alreadyRegistered: "この端末はすでに登録されています",
+    cannotRemoveLast:
+      "これが最後のパスキーです。先に認証アプリを設定するか、別の端末を登録してください",
+    unsupported: "このブラウザではパスキーを使えません。認証アプリをお使いください",
+    cancelled: "登録をやめました",
+    deviceCount: (n: number) => (n === 0 ? "なし" : `${n} 台`),
+    noneHere: "この利用者はパスキーを登録していません",
+    adminReset: "パスキーをすべて外す",
+    adminResetConfirm:
+      "この利用者のパスキーをすべて外しますか。その人のログイン中の端末はすべて切れます",
+    adminResetDone: (n: number) => `${n} 件のパスキーを外しました`,
+  },
+
   mfaSetup: {
     title: "2要素認証の登録",
     lead: "登録が済むまで、ほかの画面は開けません。",
@@ -712,6 +770,7 @@ export const ja = {
     noSecret: "先に「認証アプリを設定する」を押してください",
     alreadyEnabled: "すでに設定されています",
     cannotDisable: "この環境では2要素認証が必須のため、外せません",
+    notEnabledHere: "この利用者は認証アプリを設定していません",
     adminReset: "2要素認証を解除",
     adminResetConfirm:
       "この利用者の2要素認証を解除しますか？ その人のログイン中の端末はすべて切れます",
@@ -746,6 +805,8 @@ export const ja = {
     actionLogout: "ログアウト",
     actionMfaEnable: "2要素認証を登録した",
     actionMfaDisable: "2要素認証を解除した",
+    actionPasskeyAdd: "パスキーを登録した",
+    actionPasskeyRemove: "パスキーを外した",
     actionView: "組成を見た",
     actionViewExpanded: "組成を展開して見た",
     actionExport: "出力した",
@@ -851,11 +912,11 @@ export const ja = {
       "中身の登録されていない原材料が残っています。その分に何が入っているか分かりません。",
     reasonTruncated: "原材料の入れ子が深すぎて、最後まで展開できませんでした。",
     reasonConditional:
-      "法令の除外に、濃度以外の条件が付いています（剤型・着色・用途など）。条件を満たしていれば非該当になります。",
+      "法律の除外に、濃度以外の条件が付いています（剤型・着色・用途など）。条件を満たしていれば非該当になります。",
     reasonUnfilled:
       "この法文物質名は、除外の条件を1つの数値で表せないため閾値を入れていません。条文を読んで判断してください。",
     reasonConditionalLink:
-      "外部データベースが、総称から広げてこのCASを結び付けています。法令の名称が炭素数や置換位置で絞っている場合、実際には当てはまらないことがあります。名称と物質を見比べてください。",
+      "外部データベースが、総称から広げてこのCASを結び付けています。法律の名称が炭素数や置換位置で絞っている場合、実際には当てはまらないことがあります。名称と物質を見比べてください。",
     reasonHomogeneous:
       "この規制の濃度は均質材料あたりで決まっています。製品全体では薄まるため、この判定だけでは言い切れません。均質材料を原材料として登録し、その原材料の判定を見てください",
     // 一覧の列。狭いので短く
@@ -908,8 +969,11 @@ export const ja = {
   },
   docEditor: {
     width: "幅",
-    widths: { full: "全幅", twoThirds: "3分の2", half: "半分", third: "3分の1" },
-    widthHint: "幅を狭めると、次のブロックが横に並びます（合計が全幅に収まるあいだ）",
+    widthFull: "全幅",
+    widthAuto: "均等",
+    widthCustom: "自由(%)",
+    widthHint:
+      "幅を狭めると、次のブロックが横に並びます（合計が100%に収まるあいだ）。「均等」を選ぶと、その行の残りを均等どうしで等分します。",
     bold: "太字",
     italic: "斜体",
     underline: "下線",
@@ -928,6 +992,7 @@ export const ja = {
       table: "表",
       divider: "区切り線",
       spacer: "余白",
+      rowBreak: "改行",
       pageBreak: "改ページ",
       signature: "署名欄",
     },
@@ -937,15 +1002,44 @@ export const ja = {
     addItem: "＋ 行を足す",
     tableSource: "出す表",
     tableColumns: "出す列",
+    moveUp: "上へ",
+    moveDown: "下へ",
+    tableColumnsHint: "チェックで出し入れし、▲▼で並べ替えます。紙面にはこの順で出ます。",
+    tableFilters: "出す行を絞る",
+    tableFilterColumn: "列",
+    tableFilterOp: "条件",
+    tableFilterValue: "値",
+    tableAddFilter: "条件を足す",
+    tableFilterOps: {
+      contains: "を含む",
+      notContains: "を含まない",
+      equals: "と一致",
+      notEquals: "と一致しない",
+      empty: "空",
+      notEmpty: "空でない",
+      matches: "正規表現に一致",
+    },
+    tableReplacements: "出す値を置き換える",
+    tablePattern: "探す（正規表現）",
+    tableReplacement: "置き換える",
+    tableAddReplacement: "置き換えを足す",
+    tableReplacementHint:
+      "紙面に出る文字だけを整えます。登録されている値は変わりません。$1 で括弧の中を差し込めます。読めない書き方のときは、そのまま出ます。",
     caption: "表題",
     spacerSize: "高さ",
     spacerSizes: { sm: "小", md: "中", lg: "大" },
+    previewHide: "プレビューを閉じる",
+    unsavedOnLeave:
+      "保存していない変更があります。「保存」か「変更を破棄」を選んでから戻ってください。",
+    previewNote:
+      "見本の値で出しています。実際の値ではありません。本物のデータで確かめるときは「ドキュメント生成」から作ってください。",
+    tryWithData: "実データで試す",
     orientation: "紙の向き",
     orientations: { portrait: "縦", landscape: "横" },
     remove: "このブロックを消す",
     reorderHint: "つまみを引くと、ブロックを並べ替えられます",
     empty: "ブロックがありません。「＋ ブロック」から足してください",
-    preview: "できあがりを見る",
+    preview: "プレビュー",
     unknownField: "使えない項目",
   },
   documents: {
@@ -1061,7 +1155,7 @@ export const ja = {
       review: "要確認にして警告を出す",
     },
     conditionalLinkModeHint:
-      "外部データベースが総称から広げて結び付けたCASの扱いです。法令の名称が炭素数や置換位置で絞っている場合、実際には当てはまらないことがあります。どちらを選んでも警告は出ます。",
+      "外部データベースが総称から広げて結び付けたCASの扱いです。法律の名称が炭素数や置換位置で絞っている場合、実際には当てはまらないことがあります。どちらを選んでも警告は出ます。",
     sessionSection: "自動ログアウト",
     sessionIdleMinutes: "操作が無いままログアウトするまでの時間（分）",
     mfaRequired: "2要素認証を必須にする",
@@ -1298,6 +1392,9 @@ export const ja = {
 
   users: {
     title: "ユーザー管理",
+    organisation: "所属する会社",
+    organisationHint:
+      "帳票の差出人になります。この人が作ったドキュメントに、この会社の情報が入ります",
     orgGroup: "所属",
     orgGroupHint: "1人につき1つ",
     newsGroup: "ニュースグループ",
@@ -1406,6 +1503,36 @@ export const ja = {
   },
 
   /** 入力チェック（Zodスキーマが使う） */
+  /** 組織（会社・事業所）。帳票に載せる差出人の情報を置く画面 */
+  organisations: {
+    title: "組織",
+    description:
+      "帳票に載せる会社の情報です。会社名や住所のほか、必要な項目を自由に足せます。利用者ごとに「所属する会社」を決めておくと、その人が作った帳票にこの内容が入ります。",
+    code: "コード",
+    nameJa: "会社名",
+    nameEn: "会社名（英語）",
+    displayOrder: "表示順",
+    memberCount: "所属する人",
+    itemCount: "項目",
+    newTitle: "組織の追加",
+    editTitle: "組織の編集",
+    items: "項目",
+    itemsHint:
+      "項目名と値の両方を打ってください。ここで付けた項目名が、そのままドキュメントの差込項目になります。",
+    addItem: "項目を足す",
+    label: "項目名",
+    value: "値",
+    labelPlaceholder: "住所",
+    valuePlaceholder: "東京都千代田区…",
+    noItems: "まだ項目がありません",
+    empty: "まだ登録がありません",
+    confirmDelete: (n: number) =>
+      `選んだ ${n} 件を消します。所属していた人の「会社」は空になります。`,
+    duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
+    inUse: (n: number) =>
+      `この組織には ${n} 人が所属しています。先にその人たちの会社を変えてください`,
+  },
+
   validation: {
     emailRequired: "メールアドレスは必須です",
     emailFormat: "メールアドレスの形式が正しくありません",
@@ -1439,6 +1566,8 @@ export const ja = {
     thresholdOrder: "上限値は下限値以上にしてください",
     namePair: "原文の名称と言語は、両方入力するか両方空にしてください",
     dateFormat: "日付は YYYY-MM-DD の形で入力してください",
+    orgCodeFormat: "英数字・ハイフン・アンダースコアだけで入力してください",
+    duplicateLabel: (s: string) => `項目名「${s}」が重なっています`,
   },
 };
 

@@ -13,10 +13,13 @@ const API_DIR = join(__dirname, "..", "app", "api");
 /** 認証を通さないことが意図的なルート（理由をコメントで残すこと） */
 const ALLOWLIST = new Set([
   "auth/login/route.ts", // ログイン自体。認証前に呼ばれる
+  "auth/passkey/login/route.ts", // ログイン自体。認証前に呼ばれる
   // 自動ログアウトの残り時間を見るだけ。最終操作時刻に触らないため requireUser を通さない
   // （通すと、確かめる行為そのものが延命になってしまう）
   "auth/session-status/route.ts",
   "auth/logout/route.ts", // 未ログインでも安全に空振りする
+  // 直前のログインが切れた理由を1語返すだけ。未ログインの人が読むためのもの
+  "auth/session-end/route.ts",
   "health/route.ts", // 監視・デプロイ確認用。業務データを返さない
   // 表示言語とテーマの切替。ログイン画面でも使うため認証不要。
   // 副作用は Cookie と、ログイン中なら自分の設定だけで、業務データには触れない
@@ -53,7 +56,8 @@ describe("API ルートの認可", () => {
 
   /*
     済ませていない用事（初期パスワードの変更・2要素認証の登録）がある人でも
-    通してよいルート。**増えると門の意味が無くなる**ので、ここで数を固定する。
+    通してよいルート。**増えると、用事を済ませずに使い回せる道ができる**ので、
+    ここで数を固定する。
     足したいときは、なぜその用事の最中に要るのかを書いたうえでここに載せる
   */
   it("用事を飛ばして通せるルートが増えていない", () => {
@@ -66,6 +70,9 @@ describe("API ルートの認可", () => {
       "auth/heartbeat/route.ts", // 放置での自動ログアウト
       "auth/mfa/qr/route.ts", // 用事そのもの（QRコードを絵にする）
       "auth/mfa/route.ts", // 用事そのもの
+      "auth/passkey/[id]/route.ts", // 用事そのもの（登録し直しの途中で外す）
+      "auth/passkey/register/route.ts", // 用事そのもの（パスキーの登録）
+      "auth/passkey/route.ts", // 登録済みの端末を出すだけ
       "me/route.ts", // 画面の枠（利用者名・ログアウト）
       "password-policy/route.ts", // パスワードの決まりを見せるだけ
     ]);

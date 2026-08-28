@@ -73,12 +73,12 @@ function ValueCell({
  *
  * ```
  * 地域        国内                                    ← 畳める
- * 法令        化審法            安衛法                 ← 畳める（parentHeader を渡したときだけ）
+ * 法律        化審法            安衛法                 ← 畳める（parentHeader を渡したときだけ）
  * 区分        第一種特定  …     表示対象物質  …
  * バージョン  2026Q3 2026Q2     2026Q3 2026Q2
  * ```
  *
- * **法令の段は、渡されたときだけ出す。**インベントリでは、種類の名前
+ * **法律の段は、渡されたときだけ出す。**インベントリでは、種類の名前
  * （化審法番号）と親の名前（ENCS（化審法））がほとんど同じことを言うので、
  * 段を足すと同じ言葉が2回並ぶだけになる。
  */
@@ -89,7 +89,7 @@ function Matrix({
   versions,
   sourceId,
   emptyMessage,
-  /** 中段（法令）の見出し。渡さなければ中段そのものを出さない */
+  /** 中段（法律）の見出し。渡さなければ中段そのものを出さない */
   parentHeader,
   /** 列幅を端末に覚えるための鍵。表ごとに分ける */
   storageKey,
@@ -104,14 +104,14 @@ function Matrix({
   storageKey: string;
 }) {
   const { m } = useI18n();
-  /** 畳んでいる地域と法令。既定はすべて開いている */
+  /** 畳んでいる地域と法律。既定はすべて開いている */
   const [foldedRegions, setFoldedRegions] = useState<Set<string>>(new Set());
   const [foldedParents, setFoldedParents] = useState<Set<string>>(new Set());
 
   /**
-   * 地域 → 法令 → 列 の入れ子にする。
+   * 地域 → 法律 → 列 の入れ子にする。
    *
-   * **同じ地域・同じ法令は必ず1つのまとまりにする。**隣り合っているものだけを
+   * **同じ地域・同じ法律は必ず1つのまとまりにする。**隣り合っているものだけを
    * 束ねると、列の並びによっては同じものが2つ3つに割れる。
    * 割れると、畳む印はIDで持っているのに見た目が食い違う。
    */
@@ -252,7 +252,7 @@ function Matrix({
     </button>
   );
 
-  /** 地域も法令も、まとめて開く・閉じる。1つずつ押すのは手間なので */
+  /** 地域も法律も、まとめて開く・閉じる。1つずつ押すのは手間なので */
   const allRegionIds = regions.map((r) => r.id);
   const allGroupKeys = regions.flatMap((r) => r.groups.map((g) => g.key));
   const anyFolded = foldedRegions.size > 0 || foldedParents.size > 0;
@@ -326,7 +326,7 @@ function Matrix({
               ))}
             </tr>
 
-            {/* 2段目：法令。渡されたときだけ出す */}
+            {/* 2段目：法律。渡されたときだけ出す */}
             {parentHeader && (
               <tr className="bg-muted/40">
                 <th className={cn(TH, "sticky left-0 z-10 bg-inherit text-left")}>

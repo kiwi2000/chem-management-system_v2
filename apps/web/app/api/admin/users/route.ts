@@ -67,14 +67,27 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const { email, displayName, permissions, initialPassword, orgGroupId, newsGroupId } = parsed.data;
+  const {
+    email,
+    displayName,
+    permissions,
+    initialPassword,
+    orgGroupId,
+    newsGroupId,
+    organisationId,
+  } = parsed.data;
   const normalized = normalizeEmail(email);
 
   if (await prisma.user.findUnique({ where: { email: normalized } })) {
     return jsonError(409, "email_taken", m.errors.emailTaken);
   }
 
-  const groups = await resolveGroups(orgGroupId ?? null, newsGroupId ?? null, permissions);
+  const groups = await resolveGroups(
+    orgGroupId ?? null,
+    newsGroupId ?? null,
+    permissions,
+    organisationId ?? null,
+  );
   if (groups instanceof Response) return groups;
 
   const created = await prisma.user.create({

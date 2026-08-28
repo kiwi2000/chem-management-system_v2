@@ -1,6 +1,6 @@
 "use client";
 
-import { describePasswordPolicy, expandPermissions, type Permission } from "@chem/shared";
+import { describePasswordPolicy, expandPermissions, pickName, type Permission } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FieldError } from "@/components/field-error";
@@ -16,6 +16,7 @@ import { firstError, summaryError, toFieldErrors, type FieldErrors } from "@/lib
 import { useI18n } from "@/lib/i18n-client";
 import { passwordProblem } from "@/lib/password-check";
 import { usePasswordPolicy } from "@/lib/use-password-policy";
+import { useOrganisations } from "@/lib/use-organisations";
 import type { ApiError } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -28,6 +29,8 @@ export default function NewUserPage() {
   const [initialPassword, setInitialPassword] = useState("");
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [orgGroupId, setOrgGroupId] = useState("");
+  const [organisationId, setOrganisationId] = useState("");
+  const organisations = useOrganisations();
   const [newsGroupId, setNewsGroupId] = useState("");
   const groups = useGroups();
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +61,7 @@ export default function NewUserPage() {
           initialPassword,
           permissions,
           orgGroupId: orgGroupId || null,
+          organisationId: organisationId || null,
           newsGroupId: newsGroupId || null,
         }),
       });
@@ -124,6 +128,26 @@ export default function NewUserPage() {
               />
               <FieldError message={pwProblem ?? fieldError("initialPassword")} />
               <p className="text-muted-foreground text-xs">{describePasswordPolicy(m, policy)}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="organisation">{m.users.organisation}</Label>
+              {/* 会社は所属（部署）とは別。部署の無い人でも会社は決まる */}
+              <select
+                id="organisation"
+                value={organisationId}
+                onChange={(e) => setOrganisationId(e.target.value)}
+                className="border-input bg-background h-9 max-w-xs rounded-none border px-2 text-sm"
+              >
+                <option value="">{m.groups.none}</option>
+                {(organisations ?? [])
+                  .filter((o) => o.activeFlag)
+                  .map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {pickName(locale, o.nameJa, o.nameEn)}
+                    </option>
+                  ))}
+              </select>
+              <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="orgGroup">{m.users.orgGroup}</Label>

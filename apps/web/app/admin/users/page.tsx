@@ -45,6 +45,16 @@ export default function UsersPage() {
         render: (u) => u.displayName ?? "",
       },
       {
+        key: "organisation",
+        header: m.users.organisation,
+        kind: "text",
+        width: 150,
+        sortable: false,
+        filterable: false,
+        className: "text-muted-foreground text-xs",
+        render: (u) => pickName(locale, u.organisationName ?? "", u.organisationNameEn),
+      },
+      {
         key: "orgGroup",
         header: m.users.orgGroup,
         kind: "text",

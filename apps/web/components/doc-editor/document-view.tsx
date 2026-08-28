@@ -1,6 +1,6 @@
 "use client";
 
-import { WIDTH_FRACTION, groupIntoRows } from "@chem/shared";
+import { groupIntoRows } from "@chem/shared";
 import { Printer } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -84,7 +84,7 @@ export function DocumentSheet({ doc }: { doc: RenderedDocument }) {
         ) : (
           <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
             {row.blocks.map((b, j) => (
-              <div key={j} style={{ width: `${WIDTH_FRACTION[b.width ?? "full"] * 100}%` }}>
+              <div key={j} style={{ width: `${row.percents[j]}%` }}>
                 <Block block={b} />
               </div>
             ))}
@@ -205,6 +205,9 @@ function Block({ block: b }: { block: RenderBlock }) {
       return <hr style={{ border: 0, borderTop: "0.4mm solid #000", margin: "4mm 0" }} />;
     case "spacer":
       return <div style={{ height: SPACER[b.size] }} />;
+    case "rowBreak":
+      // 横並びを切るためだけのもの。紙には何も出ない
+      return null;
     case "pageBreak":
       return <div style={{ pageBreakAfter: "always", breakAfter: "page" }} />;
     case "signature":

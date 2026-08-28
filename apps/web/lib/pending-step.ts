@@ -31,10 +31,14 @@ export const PENDING_PATH: Record<PendingStep, string> = {
  * その初期パスワードを知っている人が残ったまま守りを固めることになる。
  */
 export function pendingStep(
-  user: { mustChangePassword: boolean; mfaMethod: string },
+  user: { mustChangePassword: boolean; mfaMethod: string; hasPasskey?: boolean },
   settings: Pick<AppSettings, "mfaRequired">,
 ): PendingStep | null {
   if (user.mustChangePassword) return "changePassword";
-  if (settings.mfaRequired && user.mfaMethod !== "totp") return "setUpMfa";
+  /*
+    **パスキーも済んだうちに入る。**端末を持っていることと、
+    指紋やPINで本人だと確かめることの2つを、それだけで満たすため
+  */
+  if (settings.mfaRequired && user.mfaMethod !== "totp" && !user.hasPasskey) return "setUpMfa";
   return null;
 }

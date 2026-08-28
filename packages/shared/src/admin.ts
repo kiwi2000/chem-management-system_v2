@@ -4,7 +4,7 @@ import type { PasswordPolicy } from "./settings";
 import type { Messages } from "./i18n/ja";
 import { PERMISSIONS } from "./permissions";
 
-/** グループの割り当て。空文字は「未所属」として null に倒す */
+/** グループ・会社の割り当て。空文字は「未設定」として null に倒す */
 const groupId = z
   .string()
   .trim()
@@ -21,6 +21,8 @@ export const userCreateSchema = (m: Messages, policy?: PasswordPolicy) =>
     initialPassword: passwordSchema(m, policy),
     orgGroupId: groupId,
     newsGroupId: groupId,
+    /** 所属する会社。帳票の差出人になる */
+    organisationId: groupId,
   });
 export type UserCreateInput = z.infer<ReturnType<typeof userCreateSchema>>;
 
@@ -32,6 +34,8 @@ export const userUpdateSchema = (_m: Messages) =>
     activeFlag: z.boolean(),
     orgGroupId: groupId,
     newsGroupId: groupId,
+    /** 所属する会社。帳票の差出人になる */
+    organisationId: groupId,
   });
 export type UserUpdateInput = z.infer<ReturnType<typeof userUpdateSchema>>;
 

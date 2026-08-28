@@ -499,7 +499,7 @@ export function StatutorySubstanceSection({
   }
 
   return (
-    // 見出し（法令名・区分名・件数）は上に固定された見出しが受け持つので、ここには置かない。
+    // 見出し（法律名・区分名・件数）は上に固定された見出しが受け持つので、ここには置かない。
     // key を区分ごとに変えて、出来上がった表がまるごと横から滑り込むようにする
     <section key={shownId ?? "empty"} className={cn("space-y-3", slideClass(slideDir ?? null))}>
       {error && (

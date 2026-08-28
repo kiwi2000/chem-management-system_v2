@@ -38,7 +38,7 @@ export function RegulationCategoryForm({
   onCancel,
 }: {
   languages: LanguageDto[];
-  /** どの法令にぶら下げるか */
+  /** どの法律にぶら下げるか */
   lawId: string;
   /** 編集するとき渡す。null なら新規 */
   initial: RegulationCategoryDto | null;

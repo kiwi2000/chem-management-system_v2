@@ -48,6 +48,7 @@ export function RichEditor({
   value,
   onChange,
   target,
+  orgItems,
   placeholder,
   minHeight = "5rem",
 }: {
@@ -55,11 +56,13 @@ export function RichEditor({
   onChange: (lines: RichLine[]) => void;
   /** 差込項目の選択肢を決める。テンプレートの対象 */
   target: DocumentTarget;
+  /** 会社の自由項目の名前。会社ごとに決まるので、静的な一覧には入れられない */
+  orgItems: string[];
   placeholder?: string;
   minHeight?: string;
 }) {
   const { m, locale } = useI18n();
-  const fields = useMemo(() => fieldsFor(target), [target]);
+  const fields = useMemo(() => fieldsFor(target, orgItems), [target, orgItems]);
   const labelOf = useMemo(() => {
     const map = new Map(fields.map((f) => [f.key, locale === "en" ? f.labelEn : f.labelJa]));
     // 対象を変えて使えなくなった項目は、鍵のまま出す。気づけるように

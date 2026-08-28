@@ -53,10 +53,16 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const { displayName, permissions, activeFlag, orgGroupId, newsGroupId } = parsed.data;
+  const { displayName, permissions, activeFlag, orgGroupId, newsGroupId, organisationId } =
+    parsed.data;
   const next = expandPermissions(permissions);
 
-  const groups = await resolveGroups(orgGroupId ?? null, newsGroupId ?? null, next);
+  const groups = await resolveGroups(
+    orgGroupId ?? null,
+    newsGroupId ?? null,
+    next,
+    organisationId ?? null,
+  );
   if (groups instanceof Response) return groups;
 
   // 締め出し防止: 自分自身の管理権限は外せない。管理者が0人になる操作もできない
