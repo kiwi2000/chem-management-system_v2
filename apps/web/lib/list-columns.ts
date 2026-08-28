@@ -197,6 +197,12 @@ export const COUNTRY_COLUMNS: QueryColumn[] = [
 ];
 
 export const LAW_COLUMNS: QueryColumn[] = [
+  /*
+    法律そのものを id で選ぶ。
+    区分での絞り込みは、先に区分を探してから**その区分を持つ法律だけ**を出す。
+    画面の側で切ると、いま出ているページに無い法律が落ちてしまう
+  */
+  { key: "id", kind: "list", field: "id" },
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "nameOriginal", kind: "text", field: "nameOriginal", caseInsensitive: true },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },

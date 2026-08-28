@@ -151,12 +151,25 @@ interface RegionGroup {
   span: number;
 }
 
+/**
+ * 法律のまとまり。**区分名だけでは何の法律か分からない**ので、
+ * 分けた地域の下にもう1段置いて、法律名を出す。
+ * 分けていない地域は、この段も地域名のセルが貫く
+ */
+interface LawGroup {
+  key: string;
+  regionId: string;
+  label: string;
+  /** この法律が占める列の数 */
+  span: number;
+}
+
 /** 出ている行から、法規の列を組み立てる */
 function leafColumns(
   rows: { regulations: RowRegulationDto[] }[],
   openRegions: Set<string>,
   locale: ReturnType<typeof useI18n>["locale"],
-): { leaves: LeafColumn[]; groups: RegionGroup[] } {
+): { leaves: LeafColumn[]; groups: RegionGroup[]; lawGroups: LawGroup[] } {
   /** 地域 → その地域で該当している区分（並び順つき） */
   const regions = new Map<
     string,
@@ -198,6 +211,7 @@ function leafColumns(
 
   const leaves: LeafColumn[] = [];
   const groups: RegionGroup[] = [];
+  const lawGroups: LawGroup[] = [];
   for (const [regionId, region] of [...regions.entries()].sort((a, b) => a[1].order - b[1].order)) {
     if (!openRegions.has(regionId)) {
       leaves.push({
@@ -217,6 +231,15 @@ function leafColumns(
       continue;
     }
     const categories = [...region.categories.entries()].sort((a, b) => a[1].order - b[1].order);
+    /*
+      並びは区分の順（法律 → 区分）なので、同じ法律の区分は必ず隣り合う。
+      隣が同じ法律なら、そのまま1つのセルを横に伸ばす
+    */
+    for (const [categoryId, c] of categories) {
+      const last = lawGroups[lawGroups.length - 1];
+      if (last && last.regionId === regionId && last.label === c.law) last.span += 1;
+      else lawGroups.push({ key: `${regionId}:${categoryId}`, regionId, label: c.law, span: 1 });
+    }
     for (const [categoryId, c] of categories) {
       const label = labelOf(c);
       leaves.push({
@@ -234,7 +257,7 @@ function leafColumns(
     }
     groups.push({ regionId, label: region.label, expanded: true, span: categories.length });
   }
-  return { leaves, groups };
+  return { leaves, groups, lawGroups };
 }
 
 export function CompositionAggregateTable({
@@ -262,7 +285,7 @@ export function CompositionAggregateTable({
   const columnRows = (data?.rows ?? []).map((r) => ({
     regulations: showNearMiss ? [...r.regulations, ...r.nearMiss] : r.regulations,
   }));
-  const { leaves, groups } = leafColumns(columnRows, openRegions, locale);
+  const { leaves, groups, lawGroups } = leafColumns(columnRows, openRegions, locale);
   // 列幅は一覧と同じ規則。法規の列は中身で増減するが、鍵が id なので幅は覚えたまま
   const cols = useResizableColumns(
     /*
@@ -423,7 +446,7 @@ export function CompositionAggregateTable({
                   return (
                     <th
                       key={key}
-                      rowSpan={3}
+                      rowSpan={4}
                       // 貼り付ける列は position が sticky になる。つまみはその中に置ける
                       className={cn(
                         CELL,
@@ -453,7 +476,7 @@ export function CompositionAggregateTable({
                     key={g.regionId}
                     colSpan={g.span}
                     // 分けていない地域は、下の段まで貫いて1つのセルにする
-                    rowSpan={g.expanded ? 1 : 2}
+                    rowSpan={g.expanded ? 1 : 3}
                     className={cn(CELL, "relative p-0 font-medium", g.expanded && "text-center")}
                   >
                     <button
@@ -485,7 +508,26 @@ export function CompositionAggregateTable({
                 ))}
               </tr>
 
-              {/* 分けている地域が無ければ、3段目そのものを出さない */}
+              {/*
+                法律の段。**区分名だけでは何の法律か分からない**ので、区分の1つ上に置く。
+                分けていない地域はこの段も地域名のセルが貫くので、ここには出さない
+              */}
+              {lawGroups.length > 0 && (
+                <tr className={cn(OPAQUE_MUTED_50, "text-left")}>
+                  {lawGroups.map((g) => (
+                    <th
+                      key={g.key}
+                      colSpan={g.span}
+                      className={cn(CELL, "truncate px-2 py-1 text-center font-medium")}
+                      title={g.label}
+                    >
+                      {g.label}
+                    </th>
+                  ))}
+                </tr>
+              )}
+
+              {/* 分けている地域が無ければ、区分の段そのものを出さない */}
               <tr className={cn(OPAQUE_MUTED_50, "border-b text-left")}>
                 {leaves
                   .filter((c) => c.categoryId !== null)

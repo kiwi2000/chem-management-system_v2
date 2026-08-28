@@ -227,43 +227,6 @@ export function LawTreeSection({
     ready,
   } = useTableState("chem.table.lawTree", columns, DEFAULT_STATE);
 
-  const listQuery = useMemo(
-    () => serializeTableState(tableState, DEFAULT_STATE).toString(),
-    [tableState],
-  );
-
-  const load = useCallback(async () => {
-    setError(null);
-    const res = await fetch(`/api/laws?${listQuery}`);
-    if (!res.ok) {
-      if (redirectIfUnauthorized(res)) return null;
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.loadFailed(res.status));
-      setData({ items: [], total: 0, page: 1, pageSize: 50 });
-      return null;
-    }
-    const body = (await res.json()) as ListResponse<LawDto>;
-    setData(body);
-    return body;
-  }, [listQuery, m]);
-
-  useEffect(() => {
-    if (ready) void load();
-  }, [ready, load]);
-
-  useEffect(() => {
-    let alive = true;
-    void (async () => {
-      const res = await fetch("/api/countries?size=200").catch(() => null);
-      if (!res || !res.ok || !alive) return;
-      const body = (await res.json()) as ListResponse<CountryDto>;
-      if (alive) setCountries(body.items);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   /*
     区分での絞り込み。
     区分は法律にぶら下がって出てくるので、法律の一覧を引くだけでは絞れない。
@@ -289,6 +252,63 @@ export function LawTreeSection({
 
   /** 絞り込みに当たった区分。条件が無いときは null（＝絞らない） */
   const [hits, setHits] = useState<RegulationCategoryDto[] | null>(null);
+  /** 当たった区分を持つ法律。条件が無いときは null（＝絞らない） */
+  const hitLawIds = hits ? new Set(hits.map((c) => c.lawId)) : null;
+  /** 絞り込む法律の id。並びを毎回同じにして、引き直しを増やさない */
+  const hitLawKey = hitLawIds ? [...hitLawIds].sort().join("|") : null;
+
+  const listQuery = useMemo(
+    () => serializeTableState(tableState, DEFAULT_STATE).toString(),
+    [tableState],
+  );
+
+  const load = useCallback(async () => {
+    setError(null);
+    const params = new URLSearchParams(listQuery);
+    /*
+      区分で絞っているときは、**当たった法律だけをサーバーに出させる**。
+      画面の側で切ると、いま出ているページに無い法律が落ちてしまい、
+      「1件も無い」と見えてしまう（実際にそうなっていた）
+    */
+    if (hitLawKey !== null) {
+      if (hitLawKey === "") {
+        setData({ items: [], total: 0, page: 1, pageSize: tableState.pageSize });
+        return null;
+      }
+      params.set("f.id", `any:${hitLawKey}`);
+    }
+    const res = await fetch(`/api/laws?${params.toString()}`);
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return null;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.loadFailed(res.status));
+      setData({ items: [], total: 0, page: 1, pageSize: 50 });
+      return null;
+    }
+    const body = (await res.json()) as ListResponse<LawDto>;
+    setData(body);
+    return body;
+    // tableState.pageSize は空の結果を作るときだけ使う（引き直しの合図にはしない）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listQuery, hitLawKey, m]);
+
+  useEffect(() => {
+    // 区分で絞っているあいだは、当たった区分が分かるまで引かない
+    if (ready && !(categoryQueries !== null && hits === null)) void load();
+  }, [ready, load, categoryQueries, hits]);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const res = await fetch("/api/countries?size=200").catch(() => null);
+      if (!res || !res.ok || !alive) return;
+      const body = (await res.json()) as ListResponse<CountryDto>;
+      if (alive) setCountries(body.items);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!categoryQueries) {
@@ -476,9 +496,6 @@ export function LawTreeSection({
     }
     void refresh();
   }
-
-  /** 当たった区分を持つ法律。条件が無いときは null（＝絞らない） */
-  const hitLawIds = hits ? new Set(hits.map((c) => c.lawId)) : null;
 
   // 法律の行と、開いている法律の区分の行を、順に並べる
   const rows: Row[] | null =

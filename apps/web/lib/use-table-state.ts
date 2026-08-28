@@ -102,14 +102,26 @@ export function useTableState(
     [searchParams, isOwn, prefix, pathname],
   );
 
+  /** いま読む側が使う既定の件数。書くときもこれと比べないと、選んだ数が消える */
+  const effectiveSize = wantsPreferred ? prefs.defaultSize : fallback.pageSize;
+
   const write = useCallback(
     (next: TableState) => {
       const own = serializeTableState(next, fallback);
+      /*
+        **その人の既定と違う件数を選んだら、必ず書き残す。**
+        `serializeTableState` は共通の既定（15）と比べて省くので、
+        たとえば既定を10にしている人が15を選ぶと `size` が省かれ、
+        読み直したときに既定の10へ戻ってしまい、**15を選べなくなる**
+      */
+      if (!own.has("size") && next.pageSize !== effectiveSize) {
+        own.set("size", String(next.pageSize));
+      }
       window.localStorage.setItem(storageKey, own.toString());
       router.push(buildUrl(own), { scroll: false });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [buildUrl, router, storageKey],
+    [buildUrl, router, storageKey, effectiveSize],
   );
 
   // 条件なしで開かれたときだけ、前回の条件を復元する（1回だけ）
