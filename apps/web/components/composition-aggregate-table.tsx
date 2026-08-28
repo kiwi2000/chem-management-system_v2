@@ -35,6 +35,15 @@ const CELL = "border-r px-2 py-1 break-words last:border-r-0";
  */
 const FROZEN = 5;
 
+/**
+ * 当たってはいないが、CAS が載っているものに付ける印。
+ *
+ * **赤字だけでは足りない。**この表の赤字には、もとから「確認が残っている」という
+ * 意味がある（下の法規制判定の表と同じ色）。同じ色のまま増やすと、
+ * 「人が見なければいけないもの」と「配合が変われば当たるもの」を取り違える
+ */
+const NEAR_MARK = "△";
+
 /*
   貼り付けた列の背景。**透けさせない。**
   透けると、下を流れていく法規制の列が透けて見える。
@@ -792,7 +801,9 @@ function RegulationMark({
         )}
         {near.length > 0 && (
           <span title={nearTitle} className="text-destructive">
-            {hits.length > 0 ? " " : ""}({near.length})
+            {hits.length > 0 ? " " : ""}
+            {NEAR_MARK}
+            {near.length}
           </span>
         )}
       </span>
@@ -820,7 +831,7 @@ function RegulationMark({
       */}
       {nearLabels.map((t) => (
         <span key={`near-${t}`} title={nearTitle} className="text-destructive block">
-          {t}
+          {NEAR_MARK} {t}
         </span>
       ))}
     </span>
