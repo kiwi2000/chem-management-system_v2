@@ -592,6 +592,12 @@ export function DataTable<T>({
                     )}
                     <ResizeHandle
                       label={`${c.header} ${m.table.resize}`}
+                      /*
+                        いちばん右のセルのつまみは、外へはみ出さないように内側へ寄せる。
+                        はみ出したままだと、表が枠にぴったり収まっていても
+                        そのぶん（6px）幅が余り、**要らない横スクロールバーが出る**
+                      */
+                      last={!neighbor && !rowAction}
                       current={() => widthOf(c) * scale()}
                       onResize={(px) => {
                         const want = px / scale();

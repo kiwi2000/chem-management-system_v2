@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { useColumnWidths } from "./use-column-widths";
 import { MIN_COLUMN_WIDTH } from "./types";
 
@@ -179,6 +180,8 @@ export function useResizableColumns(
     return (
       <ResizeHandle
         label={label}
+        // いちばん右の列だけは、外にはみ出さない置き方にする（下の説明を読むこと）
+        last={!neighbor}
         current={() => widthOf(col) * scale()}
         onResize={(px) => {
           // 貼り付ける列は、広げすぎると流れる部分が無くなる。そこで止める
@@ -213,10 +216,19 @@ export function useResizableColumns(
  */
 export function ResizeHandle({
   label,
+  last = false,
   current,
   onResize,
 }: {
   label: string;
+  /**
+   * いちばん右の列か。
+   *
+   * **右端だけは、外へはみ出さないように内側へ寄せる。**
+   * はみ出したままだと、表が枠にぴったり収まっていても、そのぶん（6px）だけ
+   * 幅が余っていることになり、**要らない横スクロールバーが出る**
+   */
+  last?: boolean;
   current: () => number;
   onResize: (px: number) => void;
 }) {
@@ -233,7 +245,10 @@ export function ResizeHandle({
         半分が隣の列に外れて掴めない。幅も6pxでは細いので、指でもねらえる太さにする。
         隣のセルの上に重ねるので、前に出しておく
       */
-      className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute top-0 -right-1.5 z-20 h-full w-3 cursor-col-resize touch-none select-none"
+      className={cn(
+        "hover:bg-primary/40 focus-visible:bg-primary/40 absolute top-0 z-20 h-full w-3 cursor-col-resize touch-none select-none",
+        last ? "right-0" : "-right-1.5",
+      )}
       onPointerDown={(e) => {
         e.preventDefault();
         e.currentTarget.setPointerCapture(e.pointerId);
