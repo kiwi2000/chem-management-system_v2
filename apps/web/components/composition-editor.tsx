@@ -837,7 +837,9 @@ export function CompositionEditor({
                   表の赤字は2種類ある。**印の有無で意味が変わる**ので、
                   ボタンの隣で意味を並べる。注意書きそのものも同じ赤にする
                 */}
-                <span className="text-destructive text-xs">{m.composition.nearMissLegend}</span>
+                <span className="text-destructive ml-[1em] text-xs">
+                  {m.composition.nearMissLegend}
+                </span>
               </div>
             </div>
             <CompositionAggregateTable
