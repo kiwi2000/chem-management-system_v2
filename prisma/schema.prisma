@@ -1575,6 +1575,16 @@ model Source {
    */
   note String?
 
+  /**
+   * 画面で使う色。`#rrggbb`。
+   *
+   * **データソースごとに1つ。**どのバージョンでも同じ色で出す。
+   * 色が違えば別の出どころだと一目で分かるようにするためのもので、
+   * バージョンごとに変えると、その手がかりが消える。
+   * 決めていなければ空。画面は色を使わない見せかたに落とす
+   */
+  color String? @db.VarChar(7)
+
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")
   updatedAt DateTime  @updatedAt @map("updated_at")

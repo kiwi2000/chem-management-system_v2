@@ -3,6 +3,7 @@
 import { emptyTableState, type TableState } from "@chem/shared";
 import { Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ColorPicker } from "@/components/color-picker";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -72,6 +73,30 @@ export function DataSourceSection({
         render: (r) => r.sourceCode,
       },
       {
+        /*
+          色。**種別そのものの持ちものなので、どのバージョンでも同じ色**になる。
+          ここで変えると、ほかのバージョンの同じ種別も変わる
+        */
+        key: "sourceColor",
+        header: m.sources.color,
+        kind: "text",
+        width: 52,
+        sortable: false,
+        filterable: false,
+        className: "text-center",
+        render: (r) => (
+          <ColorPicker
+            value={r.sourceColor}
+            disabled={!editable}
+            label={m.sources.colorPick}
+            clearLabel={m.sources.colorNone}
+            customLabel={m.sources.colorCustom}
+            locale={locale}
+            onChange={(color) => void saveColor(r, color)}
+          />
+        ),
+      },
+      {
         key: "note",
         header: m.dataSources.note,
         kind: "text",
@@ -138,7 +163,9 @@ export function DataSourceSection({
         ),
       },
     ],
-    [m, locale, editingId, note],
+    // saveColor は毎回作られるが、中身は変わらないので手がかりに入れない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [m, locale, editingId, note, editable, sources],
   );
 
   const { state, setState, reset, ready } = useTableState(
@@ -196,6 +223,42 @@ export function DataSourceSection({
       setAdding(false);
       setForm({ sourceId: "", note: "" });
       void load();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * 色を保存する。**書き換えるのは種別そのもの**（`/api/sources`）で、
+   * バージョン × 種別の行ではない。どのバージョンでも同じ色にするため。
+   *
+   * 保存できたら、いま出している行にもその場で反映する。
+   * 引き直すと、開いている選択の欄が閉じて選んだ手応えが消える
+   */
+  async function saveColor(row: LinkVersionSourceDto, color: string | null) {
+    const type = sources.find((x) => x.id === row.sourceId);
+    if (!type) return;
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/sources/" + row.sourceId, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: type.code, note: type.note, color }),
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      // 同じ種別の行はまとめて塗り替える
+      setItems(
+        (prev) =>
+          prev?.map((r) => (r.sourceId === row.sourceId ? { ...r, sourceColor: color } : r)) ??
+          prev,
+      );
+      setSources((prev) => prev.map((x) => (x.id === row.sourceId ? { ...x, color } : x)));
     } finally {
       setSaving(false);
     }

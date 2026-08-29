@@ -44,6 +44,15 @@ export interface JudgeEntry {
   id: string;
   /** この法文物質名に紐づく CAS（打ち消されたものは除いてある） */
   cas: string[];
+  /**
+   * CAS ごとの、その結び付きを持っているデータソースのID（優先度の順）。
+   *
+   * **判定はデータソースを選ばず、載っているものを全部見る。**
+   * どこから来た結び付きで当たったのかは、あとから引き直すと
+   * バージョンが切り替わったときに答えが変わってしまうので、
+   * 判定した時点のものを結果に残す
+   */
+  sourcesOf?: Record<string, string[]>;
   aggregation: Aggregation;
   /** 元素換算でまとめるときの元素記号 */
   metalEtc: string | null;
@@ -131,7 +140,7 @@ export interface JudgeHit {
    *   まとめない … **個別に閾値を超えた CAS が、すべて並ぶ**
    *   まとめる   … 足し合わせた CAS が、すべて並ぶ（元素換算なら換算後の値）
    */
-  contributions: { cas: string; pct: string }[];
+  contributions: { cas: string; pct: string; sources: string[] }[];
 }
 
 export interface JudgeResult {
@@ -223,11 +232,14 @@ export function judge(input: JudgeInput): JudgeResult {
    * その CAS がいくら効いたかを、まとめかたに従って出す。
    * 換算係数が無いものがあれば、要確認の印を立てる（0 として数えるため）。
    */
+  /** その CAS を結んでいるデータソース。区分でまとめたときは、関わった全部を合わせる */
+  const sourcesOf = (c: string) => [...new Set(entries.flatMap((e) => e.sourcesOf?.[c] ?? []))];
+
   const shareOf = (list: string[], mode: Aggregation, target: string | null) =>
     list.map((c) => {
       const r = pctOf(byCas.get(c) as ExpandedLine, mode, target, factors);
       if (r.missing) reasons.add("missingFactor");
-      return { cas: c, pct: fromScaled(r.pct) };
+      return { cas: c, pct: fromScaled(r.pct), sources: sourcesOf(c) };
     });
 
   /** 閾値と比べる値。合計するときはここを足す */

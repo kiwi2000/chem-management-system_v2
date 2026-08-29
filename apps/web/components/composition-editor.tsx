@@ -16,11 +16,14 @@ import {
   GripVertical,
   Pencil,
   Trash2,
+  Database,
+  GitCompare,
   TriangleAlert,
   UnfoldVertical,
 } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompositionAggregateTable } from "@/components/composition-aggregate-table";
+import { SourceChip, type SourceInfo } from "@/components/source-chip";
 import { CELL_CLIP, OPAQUE_MUTED_50 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import {
@@ -120,7 +123,7 @@ function ExpandButtons({
   onCollapse: () => void;
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       {/* もう全部開いているなら押せない（「閉じる」と揃える） */}
       <Button type="button" size="sm" variant="outline" disabled={!canExpand} onClick={onExpand}>
         <UnfoldVertical className="mr-1 size-3.5" />
@@ -162,6 +165,13 @@ export function CompositionEditor({
   const [errors, setErrors] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  /** 開いたときの内容の印。保存時に添えて送る */
+  const [stamp, setStamp] = useState<string | null>(null);
+  /**
+   * ほかの人が先に保存していたときの知らせ。
+   * **保存は止めていない。**見てから決めてもらうために出す
+   */
+  const [stale, setStale] = useState<{ byName: string | null; at: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
 
   // 追加用の検索
@@ -190,9 +200,10 @@ export function CompositionEditor({
       setRows([]);
       return;
     }
-    const body = (await res.json()) as CompositionResponse & { canEdit: boolean };
+    const body = (await res.json()) as CompositionResponse & { canEdit: boolean; stamp?: string };
     setRows(body.lines.map(toRow).filter((r) => r !== null));
     setCanEdit(body.canEdit);
+    setStamp(body.stamp ?? null);
   }, [productId, m]);
 
   useEffect(() => {
@@ -327,11 +338,12 @@ export function CompositionEditor({
     setPicked(new Set());
   }
 
-  async function onSave() {
+  async function onSave(force = false) {
     if (!rows) return;
     setErrors([]);
     setWarnings([]);
     setNotice(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch(`/api/products/${productId}/composition`, {
@@ -345,8 +357,26 @@ export function CompositionEditor({
             isBalance: r.isBalance,
             note: r.note || null,
           })),
+          stamp: stamp ?? undefined,
+          force: force || undefined,
         }),
       });
+      /*
+        ほかの人が先に保存していた。**入力はそのまま残す。**
+        「このまま保存する」を押されたら force を付けて送り直す
+      */
+      if (res.status === 409) {
+        const body = (await res.json().catch(() => null)) as {
+          error: { code: string; details?: { byName?: string | null; at?: string | null } };
+        } | null;
+        if (body?.error.code === "stale_edit") {
+          setStale({
+            byName: body.error.details?.byName ?? null,
+            at: body.error.details?.at ?? null,
+          });
+          return;
+        }
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as
@@ -356,7 +386,9 @@ export function CompositionEditor({
         );
         return;
       }
-      const body = (await res.json()) as { warnings: string[] };
+      const body = (await res.json()) as { warnings: string[]; stamp?: string };
+      setStale(null);
+      if (body.stamp) setStamp(body.stamp);
       setWarnings(body.warnings);
       setNotice(body.warnings.length > 0 ? m.composition.savedWithWarnings : m.composition.saved);
       onFinishEdit?.();
@@ -406,6 +438,14 @@ export function CompositionEditor({
   const [aggregateKeys, setAggregateKeys] = useState<string[]>([]);
   /** 含有率が足りずに当たっていないものを赤字で出すか。既定は出さない */
   const [showNearMiss, setShowNearMiss] = useState(false);
+  /** データソースの印を出すか。既定は出さない（ふだんは要らないので） */
+  const [showSources, setShowSources] = useState(false);
+  /** 表が読み込んだデータソースの並び。印の意味を並べる札に使う */
+  const [sources, setSources] = useState<SourceInfo[]>([]);
+  /** 前のバージョンとの差分に印を付けるか。既定は付けない */
+  const [showDiff, setShowDiff] = useState(false);
+  /** 比べた相手のバージョン。無ければボタンを押せなくする */
+  const [previous, setPrevious] = useState<string | null>(null);
   /*
     列幅は一覧と同じ規則。
     **原材料内の重量%は、出ているときだけ数に入れる。**
@@ -808,7 +848,7 @@ export function CompositionEditor({
             */}
             <div className="space-y-1">
               {showRaw && <p className="text-sm font-medium">{m.composition.aggregateTitle}</p>}
-              <div className="flex flex-wrap items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {aggregateKeys.length > 0 && (
                   <ExpandButtons
                     m={m}
@@ -822,23 +862,75 @@ export function CompositionEditor({
                   含有率が足りずに当たっていないものを、赤字で出すかどうか。
                   既定は出さない。**当たっているものと混ぜて読ませない**ため
                 */}
+                {/*
+                  押しているときは**背景ではなく字と印を赤の太字**にする。
+                  表に出る印と同じ見た目にして、ボタンと表の印を結び付ける
+                */}
                 <Button
                   type="button"
                   size="sm"
-                  variant={showNearMiss ? "default" : "outline"}
+                  variant="outline"
                   aria-pressed={showNearMiss}
                   title={m.composition.nearMissHint}
                   onClick={() => setShowNearMiss((v) => !v)}
+                  className={cn(
+                    // 触っている間の色（`hover:text-foreground`）に負けるので、そこも赤にする
+                    showNearMiss && "text-destructive hover:text-destructive font-bold",
+                  )}
                 >
                   <TriangleAlert className="mr-1 size-3.5" />
                   {m.composition.nearMissShow}
                 </Button>
                 {/*
-                  表の赤字は2種類ある。**印の有無で意味が変わる**ので、
-                  ボタンの隣で意味を並べる。注意書きそのものも同じ赤にする
+                  データソースの印を出すかどうか。押している間だけ、
+                  **その印が何を指すのかをボタンの右に並べる**。
+                  印は頭文字だけなので、並びを見ないと `C` が CHRIP か CFR か分からない
                 */}
-                <span className="text-destructive ml-[1em] text-xs">
-                  {m.composition.nearMissLegend}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-pressed={showSources}
+                  title={m.composition.sourceHint}
+                  onClick={() => setShowSources((v) => !v)}
+                  className={cn(showSources && "font-bold")}
+                >
+                  <Database className="mr-1 size-3.5" />
+                  {m.composition.sourceShow}
+                </Button>
+                {showSources && sources.length > 0 && (
+                  <span className="ml-[1em] inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                    {sources.map((s) => (
+                      <span key={s.id} className="inline-flex items-center gap-1">
+                        <SourceChip source={s} />
+                        {s.code}
+                      </span>
+                    ))}
+                  </span>
+                )}
+                {/*
+                  前のバージョンとの差分。**比べる相手が無ければ押せない。**
+                  押せてしまうと、差が無いのか比べていないのかが分からない
+                */}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-pressed={showDiff}
+                  disabled={previous === null}
+                  title={previous === null ? m.composition.diffNoPrevious : m.composition.diffHint}
+                  onClick={() => setShowDiff((v) => !v)}
+                  className={cn(showDiff && "text-destructive hover:text-destructive font-bold")}
+                >
+                  <GitCompare className="mr-1 size-3.5" />
+                  {m.composition.diffShow}
+                </Button>
+                {/*
+                  表に出る「※」の意味。**ボタンではない**ので、押せる見た目にしない。
+                  印そのものと同じ赤にして、表と結び付ける
+                */}
+                <span className="text-destructive ml-[0.5em] text-xs">
+                  {m.composition.reviewLegend}
                 </span>
               </div>
             </div>
@@ -848,6 +940,10 @@ export function CompositionEditor({
               onOpenChange={setAggregateOpen}
               onExpandableChange={setAggregateKeys}
               showNearMiss={showNearMiss}
+              showSources={showSources}
+              showDiff={showDiff}
+              onSourcesChange={setSources}
+              onPreviousVersionChange={setPrevious}
             />
           </div>
         )}
@@ -1069,6 +1165,35 @@ export function CompositionEditor({
                   ))}
                 </ul>
               )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/*
+          ほかの人が先に保存していたときの知らせ。
+          **保存は止めていない。**入力はそのまま残っているので、
+          見たうえで「このまま保存する」か、そのまま直し続けるかを選べる
+        */}
+        {stale && (
+          <Alert variant="destructive">
+            <AlertDescription className="space-y-2">
+              <p className="font-medium">{m.errors.staleEdit}</p>
+              <p>
+                {m.errors.staleEditDetail(
+                  stale.byName ?? "ほかの利用者",
+                  stale.at ? new Date(stale.at).toLocaleString(locale) : "-",
+                )}
+              </p>
+              <p>{m.errors.staleEditAsk}</p>
+              <div className="flex gap-2 pt-1">
+                <Button type="button" size="sm" disabled={saving} onClick={() => void onSave(true)}>
+                  {m.errors.staleEditSave}
+                </Button>
+                {/* 押しても閉じるだけ。入力はそのまま残る */}
+                <Button type="button" size="sm" variant="outline" onClick={() => setStale(null)}>
+                  {m.common.cancel}
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}

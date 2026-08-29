@@ -60,7 +60,7 @@ describe("閾値との比較", () => {
     expect(r.verdict).toBe("APPLICABLE");
     expect(r.needsReview).toBe(false);
     expect(r.hits[0]?.total).toBeNull();
-    expect(r.hits[0]?.contributions).toEqual([{ cas: "7439-92-1", pct: "0.2" }]);
+    expect(r.hits[0]?.contributions).toEqual([{ cas: "7439-92-1", pct: "0.2", sources: [] }]);
   });
 
   it("閾値を下回れば非該当", () => {
@@ -258,8 +258,47 @@ describe("まとめないときの、複数の当たり", () => {
     expect(r.verdict).toBe("APPLICABLE");
     // 0.05 の銀は閾値に届かないので入らない
     expect(r.hits[0]?.contributions).toEqual([
-      { cas: "7439-92-1", pct: "0.5" },
-      { cas: "1317-36-8", pct: "0.4" },
+      { cas: "7439-92-1", pct: "0.5", sources: [] },
+      { cas: "1317-36-8", pct: "0.4", sources: [] },
+    ]);
+  });
+
+  /*
+    **どのデータソースの結び付きで当たったのかを、判定した時点で残す。**
+    あとから引き直すと、バージョンやリンクが変わったときに
+    判定と食い違う答えを出してしまう
+  */
+  it("当たった根拠に、その結び付きを持っているデータソースを残す", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.2")],
+        entries: [
+          entry({
+            threshold: over("0.1"),
+            sourcesOf: { "7439-92-1": ["loli", "chrip"] },
+          }),
+        ],
+      }),
+    );
+    expect(r.hits[0]?.contributions).toEqual([
+      { cas: "7439-92-1", pct: "0.2", sources: ["loli", "chrip"] },
+    ]);
+  });
+
+  it("区分でまとめたときは、関わったデータソースを合わせて残す", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.06"), line("1317-36-8", "0.06")],
+        category: { aggregation: "SUM", metalEtc: null, threshold: over("0.1") },
+        entries: [
+          entry({ id: "a", cas: ["7439-92-1"], sourcesOf: { "7439-92-1": ["loli"] } }),
+          entry({ id: "b", cas: ["1317-36-8"], sourcesOf: { "1317-36-8": ["chrip"] } }),
+        ],
+      }),
+    );
+    expect(r.hits[0]?.contributions).toEqual([
+      { cas: "7439-92-1", pct: "0.06", sources: ["loli"] },
+      { cas: "1317-36-8", pct: "0.06", sources: ["chrip"] },
     ]);
   });
 
@@ -285,8 +324,8 @@ describe("まとめないときの、複数の当たり", () => {
     );
     expect(r.hits[0]?.total).toBe("0.12");
     expect(r.hits[0]?.contributions).toEqual([
-      { cas: "7439-92-1", pct: "0.06" },
-      { cas: "1317-36-8", pct: "0.06" },
+      { cas: "7439-92-1", pct: "0.06", sources: [] },
+      { cas: "1317-36-8", pct: "0.06", sources: [] },
     ]);
   });
 

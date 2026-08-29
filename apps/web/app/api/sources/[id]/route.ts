@@ -38,7 +38,13 @@ export async function PUT(req: Request, { params }: Ctx) {
 
   await prisma.source.update({
     where: { id },
-    data: { code: v.code, codeNormalized, note: v.note ?? null, updatedBy: actor.user.id },
+    data: {
+      code: v.code,
+      codeNormalized,
+      note: v.note ?? null,
+      color: v.color ?? null,
+      updatedBy: actor.user.id,
+    },
   });
 
   await writeAudit({

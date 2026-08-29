@@ -65,7 +65,10 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
   const existing = await prisma.linkVersionSource.findUnique({
     where: { id },
-    include: { version: { select: { code: true } }, source: { select: { code: true } } },
+    include: {
+      version: { select: { code: true } },
+      source: { select: { code: true, color: true } },
+    },
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
 

@@ -2,6 +2,62 @@ import { prisma } from "@/lib/db";
 import type { RowRegulationDto, RowStatutoryDto } from "@/lib/types";
 
 /**
+ * いま判定に使っているバージョンのデータソースを、優先度の順に返す。
+ * 印の並び順と、その意味を並べる札に使う。
+ */
+export async function currentSources(): Promise<
+  { id: string; code: string; color: string | null }[]
+> {
+  const version = await prisma.linkSetVersion.findFirst({
+    where: { isCurrent: true, deletedAt: null },
+    select: { id: true },
+  });
+  if (!version) return [];
+  const rows = await prisma.linkVersionSource.findMany({
+    where: { versionId: version.id },
+    orderBy: { priority: "asc" },
+    select: { source: { select: { id: true, code: true, color: true } } },
+  });
+  return rows.map((r) => r.source);
+}
+
+/**
+ * 1つ前のバージョン。コードの並びで、いまのバージョンの手前にあるもの。
+ *
+ * **「前期」は運用の言葉なので、コードの並びで決める。**
+ * 作った日時で決めると、あとから過去ぶんを入れたときに前後が入れ替わる
+ */
+export async function previousVersion(): Promise<{ id: string; code: string } | null> {
+  const now = await prisma.linkSetVersion.findFirst({
+    where: { isCurrent: true, deletedAt: null },
+    select: { code: true },
+  });
+  if (!now) return null;
+  return prisma.linkSetVersion.findFirst({
+    where: { deletedAt: null, code: { lt: now.code } },
+    orderBy: { code: "desc" },
+    select: { id: true, code: true },
+  });
+}
+
+/**
+ * 前のバージョンが持っていた結び付きを、`<法文物質名のID>/<CAS>` の集まりで返す。
+ * ここに無いものが「前期からの差分」になる。
+ */
+async function previousLinks(subIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (subIds.length === 0) return out;
+  const prev = await previousVersion();
+  if (!prev) return out;
+  const links = await prisma.statutoryCasLink.findMany({
+    where: { versionId: prev.id, statutorySubstanceId: { in: subIds }, excluded: false },
+    select: { statutorySubstanceId: true, casNormalized: true },
+  });
+  for (const l of links) out.add(`${l.statutorySubstanceId}/${l.casNormalized}`);
+  return out;
+}
+
+/**
  * CASごとに「どの規制区分に効いているか」を引く。
  *
  * **保持してある判定結果から作る。ここで判定し直さない。**
@@ -72,12 +128,33 @@ export async function regulationsByCas(
           },
         });
   const subOf = new Map(subs.map((x) => [x.id, x]));
+  /*
+    **前のバージョンに無かったものに印を付ける。**
+    これは判定した時点の事実ではなく、2つのバージョンを比べた結果なので、
+    判定結果には残さず、見るたびに比べる
+  */
+  const before = await previousLinks(subIds);
+  const hasPrevious = (await previousVersion()) !== null;
+
+  /*
+    **どのデータソースから来た結び付きなのかは、判定結果に残っていない。**
+    判定はデータソースを選ばず、載っているものを全部見て決めるため。
+    画面に出すには、いま使っているバージョンのリンクを引き直して結び直す。
+
+    優先度の順に並べる。同じ結び付きを2つ以上のデータソースが持っていれば、
+    そのぶんだけ印が並ぶ
+  */
 
   /** CAS → 効いている区分。同じ区分に複数の法文物質名で当たっても1つにまとめる */
   const byCas = new Map<string, Map<string, RowRegulationDto>>();
   for (const r of rows) {
     for (const h of r.hits) {
-      const contributions = (h.contributions ?? []) as { cas: string }[];
+      /*
+        **どのデータソースの結び付きで当たったのかは、判定した時点で残してある。**
+        ここで引き直すと、あとからバージョンやリンクが変わったときに
+        判定と食い違う答えを出してしまう
+      */
+      const contributions = (h.contributions ?? []) as { cas: string; sources?: string[] }[];
       for (const c of contributions) {
         if (!c.cas) continue;
         const seen = byCas.get(c.cas) ?? new Map<string, RowRegulationDto>();
@@ -94,10 +171,15 @@ export async function regulationsByCas(
             nameJa: sub.nameJa,
             nameEn: sub.nameEn,
             nameOriginal: sub.nameOriginal,
+            sourceIds: c.sources ?? [],
+            changed: hasPrevious && !before.has(`${sub.id}/${c.cas}`),
           });
         }
         seen.set(r.categoryId, {
           statutory,
+          // セルの先頭に出す印。中の法文物質名が持つものを重複なしで並べる
+          sourceIds: [...new Set(statutory.flatMap((x) => x.sourceIds))],
+          changed: statutory.some((x) => x.changed),
           categoryId: r.categoryId,
           regionId: region.id,
           regionNameJa: region.nameJa,
@@ -173,6 +255,7 @@ export async function nearMissByCas(
       where: { versionId: version.id, casNormalized: { in: cas }, excluded: false },
       select: {
         casNormalized: true,
+        sourceId: true,
         statutorySubstance: {
           select: {
             id: true,
@@ -225,6 +308,12 @@ export async function nearMissByCas(
     }),
   ]);
 
+  const subIdsForDiff = [
+    ...new Set(links.map((l) => l.statutorySubstance?.id).filter((x) => !!x)),
+  ] as string[];
+  const before = await previousLinks(subIdsForDiff);
+  const hasPrevious = (await previousVersion()) !== null;
+
   /** すでに当たっている法文物質名 */
   const hitSubstances = new Set<string>();
   /** 区分そのものでまとめて当たった区分。中身は全部当たり扱いにする */
@@ -268,13 +357,23 @@ export async function nearMissByCas(
         categoryNameEn: cat.nameEn,
         categoryNameOriginal: cat.nameOriginal,
         statutory: [],
+        sourceIds: [],
+        changed: false,
         // 当たっていないものなので、確認が残っているかは関係ない
         needsReview: false,
       };
       cats.set(cat.id, entry);
     }
+    if (!entry.sourceIds.includes(l.sourceId)) entry.sourceIds.push(l.sourceId);
+    const isNew = hasPrevious && !before.has(`${sub.id}/${l.casNormalized}`);
+    if (isNew) entry.changed = true;
     // 同じ法文物質名に複数の CAS で結ばれていても1つにする
-    if (entry.statutory.some((x) => x.nameOriginal === sub.nameOriginal)) continue;
+    const already = entry.statutory.find((x) => x.nameOriginal === sub.nameOriginal);
+    if (already) {
+      if (!already.sourceIds.includes(l.sourceId)) already.sourceIds.push(l.sourceId);
+      if (isNew) already.changed = true;
+      continue;
+    }
     entry.statutory.push({
       classNameJa: sub.regulationClass.nameJa,
       classNameEn: sub.regulationClass.nameEn,
@@ -283,6 +382,8 @@ export async function nearMissByCas(
       nameJa: sub.nameJa,
       nameEn: sub.nameEn,
       nameOriginal: sub.nameOriginal,
+      sourceIds: [l.sourceId],
+      changed: isNew,
     });
   }
 

@@ -209,8 +209,23 @@ export function DataTable<T>({
     allColumns.filter((c) => !c.filterOnly && !hiddenColumns.has(c.key)),
     columnOrder,
   );
-  /** 出し入れの欄に並べる順。表と同じ並びにしないと、動かした結果が読めない */
-  const orderedForPicker = applyColumnOrder(allColumns, columnOrder);
+  /*
+    出し入れの欄に並べる順。表と同じ並びにしないと、動かした結果が読めない。
+    **絞り込みにしか使わない列はここにも出さない。**表に出ない列なので、
+    チェックを外しても何も変わらず、押しても効かない項目に見える
+  */
+  const orderedForPicker = applyColumnOrder(
+    allColumns.filter((c) => !c.filterOnly),
+    columnOrder,
+  );
+  /*
+    隠している列の数え上げも、欄に出るものだけにする。
+    以前に絞り込み専用の列を外した記録が端末に残っていると、
+    欄に無いものを数えてしまい「隠している 1 件」が消せなくなる
+  */
+  const hiddenForPicker = new Set(
+    orderedForPicker.filter((c) => hiddenColumns.has(c.key)).map((c) => c.key),
+  );
   const { m } = useI18n();
   const prefs = usePageSizePrefs();
   /*
@@ -476,7 +491,7 @@ export function DataTable<T>({
         <FilterPanel
           columns={allColumns}
           orderedColumns={orderedForPicker}
-          hiddenColumns={hiddenColumns}
+          hiddenColumns={hiddenForPicker}
           onToggleColumn={toggleColumn}
           onMoveColumn={(key, dir) =>
             moveColumn(

@@ -81,19 +81,63 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
   // CAS の紐づけは、法文物質名ごとにまとめて引く（1件ずつ引くと問い合わせが爆発する）
   const links = await prisma.statutoryCasLink.findMany({
     where: { versionId, excluded: false },
-    select: { statutorySubstanceId: true, casNormalized: true, note: true },
+    select: {
+      statutorySubstanceId: true,
+      casNormalized: true,
+      note: true,
+      sourceId: true,
+    },
   });
+  /*
+    データソースの優先度。**小さいほど優先。**
+    同じ結び付きを2つ以上のデータソースが持っていても、
+    **効いているのは優先度がいちばん高い1つ**（CASリンク画面の「使用」と同じ）。
+    そこを残す
+  */
+  const order = new Map(
+    (
+      await prisma.linkVersionSource.findMany({
+        where: { versionId },
+        orderBy: { priority: "asc" },
+        select: { sourceId: true },
+      })
+    ).map((v, i) => [v.sourceId, i]),
+  );
+
   const casOf = new Map<string, string[]>();
+  /** 法文物質名 → CAS → その結び付きを持っているデータソース */
+  const sourcesOf = new Map<string, Record<string, string[]>>();
   /** 条件つきで結ばれた CAS。法文物質名ごとに持つ */
   const conditionalOf = new Map<string, string[]>();
   for (const l of links) {
     const list = casOf.get(l.statutorySubstanceId);
     if (list) list.push(l.casNormalized);
     else casOf.set(l.statutorySubstanceId, [l.casNormalized]);
+    const bySub = sourcesOf.get(l.statutorySubstanceId) ?? {};
+    const got = bySub[l.casNormalized];
+    if (got) {
+      if (!got.includes(l.sourceId)) got.push(l.sourceId);
+    } else {
+      bySub[l.casNormalized] = [l.sourceId];
+    }
+    sourcesOf.set(l.statutorySubstanceId, bySub);
     if (l.note?.includes(MARK_CONDITIONAL_LINK)) {
       const c = conditionalOf.get(l.statutorySubstanceId);
       if (c) c.push(l.casNormalized);
       else conditionalOf.set(l.statutorySubstanceId, [l.casNormalized]);
+    }
+  }
+
+  /*
+    **優先度がいちばん高いものだけを残す。**
+    全部並べると「LOLI にも CHRIP にもある」ことは分かるが、
+    「判定に効いたのはどれか」が読めなくなる。
+    どこにあるかを見比べるのは、別の見せかたが受け持つ
+  */
+  for (const bySub of sourcesOf.values()) {
+    for (const [cas, list] of Object.entries(bySub)) {
+      list.sort((a, b) => (order.get(a) ?? 99) - (order.get(b) ?? 99));
+      bySub[cas] = list.slice(0, 1);
     }
   }
 
@@ -115,6 +159,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
       cl.statutorySubstances.map((s) => ({
         id: s.id,
         cas: casOf.get(s.id) ?? [],
+        sourcesOf: sourcesOf.get(s.id) ?? {},
         aggregation: s.aggregation,
         metalEtc: s.metalEtc,
         threshold: {

@@ -8,7 +8,7 @@ import type {
 } from "@/lib/types";
 
 export function toSourceDto(s: Source): SourceDto {
-  return { id: s.id, code: s.code, note: s.note };
+  return { id: s.id, code: s.code, note: s.note, color: s.color };
 }
 
 export function toLinkSetVersionDto(v: LinkSetVersion): LinkSetVersionDto {
@@ -60,7 +60,10 @@ export async function ensureCurrentVersion(actorId: string): Promise<void> {
 
 /** データソース（バージョン × 種別）。画面には両方のコードを出すので、一緒に持たせる */
 export function toLinkVersionSourceDto(
-  row: LinkVersionSource & { version: { code: string }; source: { code: string } },
+  row: LinkVersionSource & {
+    version: { code: string };
+    source: { code: string; color: string | null };
+  },
   linkCount: number,
 ): LinkVersionSourceDto {
   return {
@@ -69,6 +72,7 @@ export function toLinkVersionSourceDto(
     versionCode: row.version.code,
     sourceId: row.sourceId,
     sourceCode: row.source.code,
+    sourceColor: row.source.color,
     priority: row.priority,
     note: row.note,
     loadedAt: row.loadedAt?.toISOString() ?? null,

@@ -11,7 +11,12 @@ import {
   type Ratio,
 } from "@chem/shared";
 import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
-import { nearMissByCas, regulationsByCas } from "@/lib/composition-regulations";
+import {
+  currentSources,
+  nearMissByCas,
+  previousVersion,
+  regulationsByCas,
+} from "@/lib/composition-regulations";
 import { prisma } from "@/lib/db";
 import { visibilityWhere } from "@/lib/product-service";
 import type { Actor } from "@/lib/authz";
@@ -175,7 +180,14 @@ export async function aggregateComposition(
 
   const rootReason = await walk(rootProductId, RATIO_ONE, 0);
   if (rootReason) {
-    return { rows: [], totalPct: "0", blocked, truncated };
+    return {
+      rows: [],
+      totalPct: "0",
+      blocked,
+      truncated,
+      sources: await currentSources(),
+      previousVersion: (await previousVersion())?.code ?? null,
+    };
   }
 
   // まとめた行に出す名称は、そのCASの代表物質から取る
@@ -229,5 +241,13 @@ export async function aggregateComposition(
     });
 
   const total = [...buckets.values()].reduce((acc, b) => acc + b.fine, 0n);
-  return { rows, totalPct: fineToPct(total), blocked, truncated };
+  // 表の印と、その意味を並べる札に使う
+  return {
+    rows,
+    totalPct: fineToPct(total),
+    blocked,
+    truncated,
+    sources: await currentSources(),
+    previousVersion: (await previousVersion())?.code ?? null,
+  };
 }

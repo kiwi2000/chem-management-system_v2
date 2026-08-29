@@ -451,6 +451,10 @@ export const ja = {
     code: "コード",
     note: "説明",
     empty: "データソース種別が登録されていません",
+    color: "色",
+    colorPick: "色を選ぶ",
+    colorNone: "決めていません",
+    colorCustom: "自分で色を作る",
     duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
     revived: "以前に削除した同じコードがあったため、内容を更新して復活させました",
     inUseByVersions: (n: number) =>
@@ -1237,10 +1241,24 @@ export const ja = {
     aggregateTitle: "原材料展開・CAS合算",
     /** CAS番号は法律に載っているが、含有率が足りず当たっていないもの */
     nearMissShow: "含有率不足による非該当",
+    sourceShow: "データソース",
+    reviewLegend: "※ 判定結果要注意",
+    diffShow: "差分あり",
+    cellDetailTitle: "バージョン・データソース別の該当",
+    cellDetailCurrent: "現バージョン",
+    cellDetailPast: "前のバージョン",
+    cellDetailNoSources: "このバージョンにはデータソースがありません",
+    cellDetailHint: "赤字は、そのバージョンで採用された法文物質名です（優先度がいちばん高いもの）",
+    cellDetailOpen: "バージョン・データソース別に見る",
+    diffHint:
+      "前のバージョンには無かった結び付きに「差」の印を付けます。バージョンを上げて新しく当たるようになったものが分かります",
+    diffMark: (version: string) =>
+      version ? `${version} には無かった結び付き` : "前のバージョンには無かった結び付き",
+    diffNoPrevious: "比べる相手のバージョンがありません",
+    sourceHint:
+      "その判定に使われた結び付きが、どのデータソースから来たものかを、セルの先頭に印で出します",
     nearMissHint:
       "CAS番号は法律に載っているのに、含有率が足りず該当していない法文物質名を赤字で出します。配合が変わると該当します",
-    /** 表の赤字が2種類あるので、意味を並べて出す */
-    nearMissLegend: "※赤字：該非判定結果要確認　△赤字：含有率不足による非該当",
     aggregateName: "物質名",
     aggregateNoCas: "CASなし",
     aggregateSubstanceId: "物質ID",
@@ -1464,6 +1482,12 @@ export const ja = {
 
   /** サーバーが返すエラー（APIのレスポンス文言） */
   errors: {
+    /** 他の人が先に保存していたときの知らせ。保存を止めるものではない */
+    staleEdit: "ほかの人がこの内容を更新しています",
+    staleEditDetail: (who: string, at: string) =>
+      `${who} が ${at} に更新しています。あなたが開いたのは、それより前の内容です。`,
+    staleEditAsk: "このまま保存すると、その変更はあなたの内容で置き換わります。",
+    staleEditSave: "このまま保存する",
     publishStateMismatch: (states: string) => `${states}のものは、この操作の対象になりません`,
     pendingResolutionRequired: "承認待のものが残っています。扱いを選んでください",
     approvalRequired: "この種類のデータは承認が必要です",
@@ -1567,6 +1591,7 @@ export const ja = {
     keyFormat: "英小文字で始まり、英小文字・数字・アンダースコアのみ使えます",
     numberFormat: "数値で入力してください",
     elementFormat: "元素記号で入力してください（例: Pb, Cr, Cd）",
+    badColor: "色は #rrggbb の形で指定してください",
     percentRange: "0 より大きく 100 以下で入力してください",
     thresholdOrder: "上限値は下限値以上にしてください",
     namePair: "原文の名称と言語は、両方入力するか両方空にしてください",

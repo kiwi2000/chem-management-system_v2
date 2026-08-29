@@ -441,6 +441,10 @@ export const en: Messages = {
     code: "Code",
     note: "Description",
     empty: "No data source types registered",
+    color: "Colour",
+    colorPick: "Pick a colour",
+    colorNone: "Not set",
+    colorCustom: "Custom colour",
     duplicateCode: (code: string) => `Code "${code}" is already in use`,
     revived: "A deleted entry with the same code was found, so it was restored and updated",
     inUseByVersions: (n: number) =>
@@ -1213,10 +1217,24 @@ export const en: Messages = {
 
     aggregateTitle: "Expanded and combined by CAS",
     nearMissShow: "Below the threshold",
+    sourceShow: "Data source",
+    reviewLegend: "※ Verdict needs attention",
+    diffShow: "Changed",
+    cellDetailTitle: "By version and data source",
+    cellDetailCurrent: "Current version",
+    cellDetailPast: "Earlier version",
+    cellDetailNoSources: "This version has no data sources",
+    cellDetailHint: "Red marks the listed substance adopted in that version (the highest priority)",
+    cellDetailOpen: "View by version and data source",
+    diffHint:
+      "Marks links that the previous version did not have, so you can see what newly applies after a version change",
+    diffMark: (version: string) =>
+      version ? `Not present in ${version}` : "Not present in the previous version",
+    diffNoPrevious: "There is no earlier version to compare with",
+    sourceHint:
+      "Shows at the start of each cell which data source the link behind the verdict came from",
     nearMissHint:
       "Shows in red the listed substances whose CAS is in the law but whose content is below the threshold. A change in the recipe makes them apply",
-    nearMissLegend:
-      "※Red: the verdict needs review　△Red: does not apply, content below the threshold",
     aggregateName: "Substance name",
     aggregateNoCas: "No CAS",
     aggregateRegulations: "Regulations",
@@ -1434,6 +1452,11 @@ export const en: Messages = {
   },
 
   errors: {
+    staleEdit: "Someone else has updated this",
+    staleEditDetail: (who: string, at: string) =>
+      `${who} updated this at ${at}. What you opened is older than that.`,
+    staleEditAsk: "Saving now replaces their changes with yours.",
+    staleEditSave: "Save anyway",
     publishStateMismatch: (states: string) =>
       `This action does not apply to items that are ${states}`,
     pendingResolutionRequired:
@@ -1537,6 +1560,7 @@ export const en: Messages = {
     keyFormat: "Start with a lower-case letter; use lower-case letters, digits and underscores",
     numberFormat: "Enter a number",
     elementFormat: "Enter an element symbol (e.g. Pb, Cr, Cd)",
+    badColor: "Use the form #rrggbb",
     percentRange: "Enter a value greater than 0 and up to 100",
     thresholdOrder: "The upper value must not be below the lower value",
     namePair: "Fill in both the original name and its language, or leave both empty",

@@ -13,6 +13,7 @@ import {
   wouldCreateCycle,
 } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
+import { compositionStamp, staleResponse } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { visibilityWhere } from "@/lib/product-service";
 import { getAppSettings } from "@/lib/settings";
@@ -58,9 +59,12 @@ export async function GET(_req: Request, { params }: Ctx) {
   });
 
   const settings = await getAppSettings();
+  // 画面が持ち帰る印。保存時に添えて送り返してもらう
+  const stamp = await compositionStamp(id);
   return Response.json({
     ...toCompositionResponse(lines, settings, m),
     canEdit: canEditComposition(actor, product),
+    stamp: stamp.stamp,
   });
 }
 
@@ -94,6 +98,20 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const input = parsed.data;
+
+  /*
+    **ほかの人が先に保存していないか。**止めるためではなく、
+    見てから決めてもらうため。「このまま保存する」を押されたら通す
+  */
+  const before = await compositionStamp(id);
+  const stale = staleResponse(m, {
+    sent: input.stamp,
+    now: before.stamp,
+    force: input.force === true,
+    byName: before.byName,
+    at: before.at,
+  });
+  if (stale) return stale;
 
   const settings = await getAppSettings();
   const sum = validateCompositionSum(
@@ -147,5 +165,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     warnings: sum.warnings,
     totalPct: sum.totalPct,
     balancePct: sum.balancePct,
+    // 保存後の印。続けて直せるように返す
+    stamp: (await compositionStamp(id)).stamp,
   });
 }

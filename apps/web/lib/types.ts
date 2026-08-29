@@ -402,6 +402,18 @@ export interface RowStatutoryDto {
   nameJa: string | null;
   nameEn: string | null;
   nameOriginal: string;
+  /**
+   * この結び付きを持っているデータソースのID。優先度の順。
+   * **判定はデータソースを選ばず、載っているものを全部見る**ので、
+   * 2つ以上に載っていれば2つとも入る
+   */
+  sourceIds: string[];
+  /**
+   * **前のバージョンには無かった結び付き。**
+   * バージョンを上げて新しく当たるようになったものを見分けるための印。
+   * 前のバージョンが無ければ、いつでも false（比べる相手がいない）
+   */
+  changed: boolean;
 }
 
 export interface RowRegulationDto {
@@ -424,8 +436,56 @@ export interface RowRegulationDto {
    * 並びは法文物質名の並び順
    */
   statutory: RowStatutoryDto[];
+  /** そのセルに関わったデータソースのID。優先度の順、重複なし */
+  sourceIds: string[];
+  /** 中に1つでも、前のバージョンに無かった結び付きがあるか */
+  changed: boolean;
   /** その区分の判定に確認が残っているか */
   needsReview: boolean;
+}
+
+/**
+ * まとめ表のセルを押したときに出す、1つの CAS × 1つの規制区分の中身。
+ *
+ * **バージョンごとに、そのバージョンのデータソースの並びで返す。**
+ * 並びも顔ぶれもバージョンで変わるので、揃えてしまうと変わったことが見えない
+ */
+export interface CellDetailDto {
+  cas: string;
+  substanceCode: string | null;
+  substanceNameJa: string | null;
+  substanceNameEn: string | null;
+  lawNameJa: string | null;
+  lawNameEn: string | null;
+  lawNameOriginal: string;
+  categoryNameJa: string | null;
+  categoryNameEn: string | null;
+  categoryNameOriginal: string;
+  /** 新しいバージョンが先 */
+  versions: {
+    code: string;
+    isCurrent: boolean;
+    sources: {
+      id: string;
+      code: string;
+      color: string | null;
+      /** そのデータソースが結んでいる法文物質名。空なら「—」を出す */
+      items: CellStatutoryDto[];
+    }[];
+  }[];
+}
+
+/** セルの中身1件。分類＋番号＋法文物質名で出す */
+export interface CellStatutoryDto {
+  classNameJa: string | null;
+  classNameEn: string | null;
+  classNameOriginal: string | null;
+  officialNumber: string | null;
+  nameJa: string | null;
+  nameEn: string | null;
+  nameOriginal: string;
+  /** そのバージョンで、この結び付きが採用されたか（優先度がいちばん高い） */
+  adopted: boolean;
 }
 
 /** CASでまとめた行。合算の結果はこの形で返す */
@@ -513,6 +573,18 @@ export interface CompositionAggregateDto {
   }[];
   /** 深さの上限で打ち切った枝の数 */
   truncated: number;
+  /**
+   * いま判定に使っているバージョンのデータソース。優先度の順。
+   * 表の印と、その意味を並べる札に使う
+   */
+  sources: {
+    id: string;
+    code: string;
+    /** 決めていなければ空。画面は色が無いときの見せかたに落とす */
+    color: string | null;
+  }[];
+  /** 比べた相手のバージョン。無ければ空（差分の印は出ない） */
+  previousVersion: string | null;
 }
 
 /** 言語。法規制の「原文の言語」で選ぶ */
@@ -751,6 +823,8 @@ export interface SourceDto {
   code: string;
   /** 説明。どんなデータで、どこまで載っているか */
   note: string | null;
+  /** 画面で使う色（`#rrggbb`）。決めていなければ空 */
+  color: string | null;
 }
 
 /**
@@ -773,6 +847,8 @@ export interface LinkVersionSourceDto {
   versionCode: string;
   sourceId: string;
   sourceCode: string;
+  /** その種別に決めた色（`#rrggbb`）。決めていなければ空 */
+  sourceColor: string | null;
   /** 小さいほど優先。同じバージョンの中で重複しない */
   priority: number;
   note: string | null;

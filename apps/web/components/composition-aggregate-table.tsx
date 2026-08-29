@@ -1,12 +1,14 @@
 "use client";
 
 import { pickName, pickStatutoryName } from "@chem/shared";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, TriangleAlert } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CELL_CLIP, OPAQUE_MUTED_40, OPAQUE_MUTED_50 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { Button } from "@/components/ui/button";
+import { CellDetailDialog } from "@/components/cell-detail-dialog";
+import { DiffChip, SourceChips, type SourceInfo } from "@/components/source-chip";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, CompositionAggregateDto, RowRegulationDto } from "@/lib/types";
@@ -42,7 +44,9 @@ const FROZEN = 5;
  * 意味がある（下の法規制判定の表と同じ色）。同じ色のまま増やすと、
  * 「人が見なければいけないもの」と「配合が変われば当たるもの」を取り違える
  */
-const NEAR_MARK = "△";
+function NearMark() {
+  return <TriangleAlert className="mr-0.5 inline size-3 align-[-0.1em]" aria-hidden />;
+}
 
 /**
  * 判定に確認が残っているものに付ける印。
@@ -75,6 +79,14 @@ interface Props {
    * 出すあいだは、そのためだけの区分も列に加わる（切ると元の列に戻る）
    */
   showNearMiss?: boolean;
+  /** 判定に使われたデータソースの印を、セルの先頭に出すか */
+  showSources?: boolean;
+  /** 前のバージョンに無かったものに印を付けるか */
+  showDiff?: boolean;
+  /** 比べた相手のバージョンを親へ返す（ボタンの説明に使う） */
+  onPreviousVersionChange?: (code: string | null) => void;
+  /** 読み込んだデータソースの並びを親へ返す（札に出すため） */
+  onSourcesChange?: (sources: SourceInfo[]) => void;
 }
 
 /**
@@ -284,12 +296,21 @@ export function CompositionAggregateTable({
   onOpenChange,
   onExpandableChange,
   showNearMiss = false,
+  showSources = false,
+  showDiff = false,
+  onSourcesChange,
+  onPreviousVersionChange,
 }: Props) {
   const { m, locale } = useI18n();
   const [data, setData] = useState<CompositionAggregateDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** 区分まで分けて見ている地域。地域名を押すたびに出し入れする */
   const [openRegions, setOpenRegions] = useState<Set<string>>(new Set());
+  /**
+   * 押して開いているセル。**区分まで分けた列だけ**開ける。
+   * 地域でまとめた列は区分がいくつも重なっており、どれを見せるか決まらない
+   */
+  const [cell, setCell] = useState<{ cas: string; categoryId: string } | null>(null);
   /**
    * その区分に該当する行だけを見ている、という状態。
    * **区分名を押すと絞る。**押して閉じるのではない（閉じるのは地域名の役目）。
@@ -343,6 +364,15 @@ export function CompositionAggregateTable({
     );
   }, [data, onExpandableChange]);
 
+  // 印の意味を並べる札は親が出す。読み込んだ並びをそのまま渡す
+  useEffect(() => {
+    onSourcesChange?.(data?.sources ?? []);
+  }, [data, onSourcesChange]);
+
+  useEffect(() => {
+    onPreviousVersionChange?.(data?.previousVersion ?? null);
+  }, [data, onPreviousVersionChange]);
+
   if (error) {
     return (
       <Alert variant="destructive">
@@ -386,6 +416,14 @@ export function CompositionAggregateTable({
 
   return (
     <div className="space-y-3">
+      {/* セルを押して開く窓。表の外に描くので、表の横スクロールに切られない */}
+      {cell && (
+        <CellDetailDialog
+          cas={cell.cas}
+          categoryId={cell.categoryId}
+          onClose={() => setCell(null)}
+        />
+      )}
       {/*
        * 開けなかった枝があると、この表は不完全になる。
        * 数字は完成して見えてしまうので、表より先に、目立つ形で伝える。
@@ -646,13 +684,35 @@ export function CompositionAggregateTable({
                         const near = showNearMiss
                           ? row.nearMiss.filter((r) => c.categoryIds.has(r.categoryId))
                           : [];
+                        const openable = c.categoryId !== null && row.casNumber !== null;
                         return (
-                          <td key={c.key} className={cn(CELL, "text-center")}>
+                          <td
+                            key={c.key}
+                            className={cn(CELL, "text-center", openable && "hover:bg-muted/60")}
+                            /*
+                              押すと、その CAS × その区分を
+                              バージョン・データソース別に開く。
+                              **区分まで分けた列だけ**（地域でまとめた列は相手が決まらない）
+                            */
+                            onClick={
+                              openable
+                                ? () =>
+                                    setCell({
+                                      cas: row.casNumber as string,
+                                      categoryId: c.categoryId as string,
+                                    })
+                                : undefined
+                            }
+                            title={openable ? m.composition.cellDetailOpen : undefined}
+                          >
                             <RegulationMark
                               hits={hit}
                               near={near}
                               expanded={c.categoryId !== null}
                               locale={locale}
+                              sources={showSources ? (data.sources ?? []) : []}
+                              showDiff={showDiff}
+                              diffLabel={m.composition.diffMark(data.previousVersion ?? "")}
                             />
                           </td>
                         );
@@ -772,12 +832,24 @@ function RegulationMark({
   near,
   expanded,
   locale,
+  sources,
+  showDiff,
+  diffLabel,
 }: {
   hits: RowRegulationDto[];
   /** CAS は載っているが当たっていないもの。赤字で添える */
   near: RowRegulationDto[];
   expanded: boolean;
   locale: ReturnType<typeof useI18n>["locale"];
+  /**
+   * データソースの並び。空なら印を出さない。
+   * **印は判定に使われた結び付きの出どころ**で、判定した時点のものを出す
+   */
+  sources: SourceInfo[];
+  /** 前のバージョンに無かったものに印を付けるか */
+  showDiff: boolean;
+  /** 差分の印に添える説明 */
+  diffLabel: string;
 }) {
   if (hits.length === 0 && near.length === 0)
     return <span className="text-muted-foreground">—</span>;
@@ -805,8 +877,12 @@ function RegulationMark({
       数字ごと赤くしていたころは、何件が要確認なのかが読めなかった
     */
     const reviewCount = hits.filter((h) => h.needsReview).length;
+    // そのセルに関わったデータソース。重複なく、優先度の順のまま
+    const cellSources = [...new Set([...hits, ...near].flatMap((h) => h.sourceIds))];
     return (
       <span className="tabular-nums">
+        <SourceChips ids={cellSources} sources={sources} />
+        {showDiff && [...hits, ...near].some((h) => h.changed) && <DiffChip label={diffLabel} />}
         {hits.length > 0 && <span title={title}>{hits.length}</span>}
         {reviewCount > 0 && (
           <span title={title} className="text-destructive">
@@ -818,7 +894,7 @@ function RegulationMark({
         {near.length > 0 && (
           <span title={nearTitle} className="text-destructive">
             {hits.length > 0 || reviewCount > 0 ? " " : ""}
-            {NEAR_MARK}
+            <NearMark />
             {near.length}
           </span>
         )}
@@ -827,9 +903,24 @@ function RegulationMark({
   }
   /* 要確認かどうかは**法文物質名ごと**に持つ。区分をまたいで並ぶことがあるため */
   const labels = hits.flatMap((h) =>
-    statutoryLabels(h, locale).map((t) => ({ t, review: h.needsReview })),
+    /*
+      **データソースは法文物質名ごとに持つ。**同じ区分でも、号によって
+      どのデータソースから来た結び付きかが違うことがある
+    */
+    statutoryLabels(h, locale).map((t, i) => ({
+      t,
+      review: h.needsReview,
+      sourceIds: h.statutory[i]?.sourceIds ?? h.sourceIds,
+      changed: h.statutory[i]?.changed ?? h.changed,
+    })),
   );
-  const nearLabels = near.flatMap((h) => statutoryLabels(h, locale));
+  const nearLabels = near.flatMap((h) =>
+    statutoryLabels(h, locale).map((t, i) => ({
+      t,
+      sourceIds: h.statutory[i]?.sourceIds ?? h.sourceIds,
+      changed: h.statutory[i]?.changed ?? h.changed,
+    })),
+  );
   return (
     <span className="block text-left text-xs">
       {hits.length > 0 && (
@@ -837,11 +928,15 @@ function RegulationMark({
           {/* 名前が取れないのは、区分そのものでまとめて当たったとき */}
           {labels.length === 0 ? (
             <span className={needsReview ? "text-destructive" : ""}>
+              <SourceChips ids={hits.flatMap((h) => h.sourceIds)} sources={sources} />
+              {showDiff && hits.some((h) => h.changed) && <DiffChip label={diffLabel} />}
               {needsReview ? `${REVIEW_MARK} ` : ""}●
             </span>
           ) : (
-            labels.map(({ t, review }) => (
+            labels.map(({ t, review, sourceIds, changed }) => (
               <span key={t} className={cn("block", review ? "text-destructive" : "")}>
+                <SourceChips ids={sourceIds} sources={sources} />
+                {showDiff && changed && <DiffChip label={diffLabel} />}
                 {review ? `${REVIEW_MARK} ` : ""}
                 {t}
               </span>
@@ -853,9 +948,12 @@ function RegulationMark({
         当たってはいないが、CAS が載っているもの。**当たったものと見分けが付くよう赤字にする。**
         含有率が変われば該当するので、気を付ける相手として出す
       */}
-      {nearLabels.map((t) => (
+      {nearLabels.map(({ t, sourceIds, changed }) => (
         <span key={`near-${t}`} title={nearTitle} className="text-destructive block">
-          {NEAR_MARK} {t}
+          <SourceChips ids={sourceIds} sources={sources} />
+          {showDiff && changed && <DiffChip label={diffLabel} />}
+          <NearMark />
+          {t}
         </span>
       ))}
     </span>

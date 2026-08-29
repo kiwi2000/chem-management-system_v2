@@ -91,6 +91,13 @@ export const compositionSchema = (m: Messages) =>
     lines: z
       .array(compositionLineSchema(m))
       .max(COMPOSITION_MAX_LINES, m.validation.tooMany(COMPOSITION_MAX_LINES)),
+    /**
+     * 画面を開いたときの印。**他の人の変更を黙って上書きしないため**に使う。
+     * 省いたときは、これまでどおり確かめずに保存する
+     */
+    stamp: z.string().optional(),
+    /** 「このまま保存する」を押したとき。印が食い違っていても通す */
+    force: z.boolean().optional(),
   });
 
 export type CompositionLineInput = z.infer<ReturnType<typeof compositionLineSchema>>;

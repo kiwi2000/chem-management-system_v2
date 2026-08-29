@@ -38,6 +38,7 @@ SET NOCOUNT ON;
 --   1887 1888 7914            韓国 K-REACH 禁止・制限・重点管理
 --   1581 1580 3564            韓国 産業安全保健法・化学物質管理法
 --   2480 2479 9020 6285       韓国 PRTR・POPs法・RoHS
+--   798 664 7711             ストックホルム条約・ロッテルダム条約・水俣条約
 --
 -- **EU CLP附属書VI は一覧ではなく CasKeys（Annex）から引く**ので、UNION で足す。
 WITH target AS (
@@ -55,7 +56,8 @@ WITH target AS (
         3614, 2459, 3611,
         1887, 1888, 7914,
         1581, 1580, 3564,
-        2480, 2479, 9020, 6285
+        2480, 2479, 9020, 6285,
+        798, 664, 7711
     )
     UNION
     SELECT DISTINCT Cas FROM CasKeys WHERE DataKeyType = 'Annex'

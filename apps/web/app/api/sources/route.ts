@@ -63,7 +63,12 @@ export async function POST(req: Request) {
   const live = await prisma.source.findFirst({ where: { codeNormalized, deletedAt: null } });
   if (live) return jsonError(409, "duplicate_source_code", m.sources.duplicateCode(v.code));
 
-  const data = { code: v.code, note: v.note ?? null, updatedBy: actor.user.id };
+  const data = {
+    code: v.code,
+    note: v.note ?? null,
+    color: v.color ?? null,
+    updatedBy: actor.user.id,
+  };
 
   const retired = await prisma.source.findFirst({
     where: { deletedAt: { not: null }, codeNormalized: { startsWith: `${codeNormalized}:` } },

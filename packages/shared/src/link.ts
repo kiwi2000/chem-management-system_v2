@@ -25,6 +25,16 @@ export const sourceSchema = (m: Messages) =>
       .max(CODE_MAX, m.validation.tooLong(CODE_MAX)),
     /** 説明。どんなデータで、どこまで載っているかを書く */
     note: optionalNote(m),
+    /**
+     * 画面で使う色。`#rrggbb` の形だけを通す。
+     * **空も通す。**色を決めていないデータソースがあってよい
+     */
+    color: z
+      .string()
+      .trim()
+      .regex(/^#[0-9a-fA-F]{6}$/, m.validation.badColor)
+      .nullish()
+      .or(z.literal("").transform(() => null)),
   });
 
 /**
