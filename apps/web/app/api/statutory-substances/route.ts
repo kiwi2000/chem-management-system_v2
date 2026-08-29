@@ -96,6 +96,7 @@ export async function POST(req: Request) {
       effectiveFrom: toDate(v.effectiveFrom),
       effectiveTo: toDate(v.effectiveTo),
       displayOrder: v.displayOrder,
+      applicableCondition: v.applicableCondition ?? null,
       note: v.note ?? null,
       createdBy: actor.user.id,
       updatedBy: actor.user.id,

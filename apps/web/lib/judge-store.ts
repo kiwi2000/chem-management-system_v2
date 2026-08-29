@@ -13,9 +13,11 @@ import { getAppSettings } from "@/lib/settings";
 
 /**
  * 備考に付けた目印。閾値を入れるときに書き込んだもの。
- * ここを見て「濃度だけでは決められない」ことを判定へ伝える。
+ * ここを見て「閾値を決められなかった」ことを判定へ伝える。
+ *
+ * **濃度のほかの条件は、備考ではなく「適用条件」の欄で持つ**
+ * （備考には取り込み元の付随情報が入っており、目印では扱いきれないため）
  */
-export const MARK_CONDITIONAL = "【条件つき除外】";
 export const MARK_UNFILLED = "【閾値未設定】";
 
 /**
@@ -65,6 +67,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
             where: { deletedAt: null },
             select: {
               id: true,
+              applicableCondition: true,
               note: true,
               aggregation: true,
               metalEtc: true,
@@ -176,7 +179,12 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
           upper: s.thresholdUpper.toString(),
           upperBound: s.upperBound,
         },
-        conditional: s.note?.includes(MARK_CONDITIONAL) ?? false,
+        /*
+          **適用条件が書いてあれば、当たったときは必ず要確認。**
+          条件は法律の側で決まっているので、
+          どのデータソースから結び付いたか・どのバージョンかでは変わらない
+        */
+        conditional: (s.applicableCondition ?? "").trim() !== "",
         conditionalCas: conditionalOf.get(s.id) ?? [],
         unfilled: s.note?.includes(MARK_UNFILLED) ?? false,
       })),

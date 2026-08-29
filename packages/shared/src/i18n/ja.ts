@@ -600,6 +600,9 @@ export const ja = {
     effectiveHint: "参考情報です。判定には使いません",
     displayOrder: "並び順",
     note: "備考",
+    applicableCondition: "適用条件",
+    applicableConditionHint:
+      "濃度のほかに条件が付くとき、その条件を書きます。用途・剤型・製品の種類で決まるものなど。書いてあると、当たったときに必ず「要確認」が出ます",
     noteHint: "用途や製品の種類で決まるものは判定できないので、ここに文字で残します",
     casCount: "リンク数",
     empty: "法文物質名が登録されていません",

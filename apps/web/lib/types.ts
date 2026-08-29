@@ -706,6 +706,13 @@ export interface StatutorySubstanceDto {
   effectiveFrom: string | null;
   effectiveTo: string | null;
   displayOrder: number;
+  /**
+   * 適用条件。濃度のほかに条件が付くとき、その条件を書く。
+   * **入っていれば、当たったときに必ず要確認になる**（法律の側で決まるので、
+   * データソースやバージョンでは変わらない）
+   */
+  applicableCondition: string | null;
+  /** 参考の覚え書き。判定には使わない */
   note: string | null;
   /** 現在のバージョンで結ばれているCASの数 */
   casCount: number;

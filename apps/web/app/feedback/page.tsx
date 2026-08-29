@@ -18,7 +18,6 @@ import {
 } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
-import { FeedbackPeek } from "@/components/feedback-peek";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -242,7 +241,6 @@ export default function FeedbackPage() {
     開いた瞬間に消えると、何が新しかったのか分からなくなる。
   */
   /** 全文を開いている書き込み。一覧は3行で切っているので、続きはここで読む */
-  const [peek, setPeek] = useState<FeedbackDto | null>(null);
 
   const marked = useRef(false);
   useEffect(() => {
@@ -465,9 +463,6 @@ export default function FeedbackPage() {
         }
         selectable
         onDeleteSelected={onDeleteSelected}
-        // 行を押したら全文を出す。表では3行で切っているため
-        selectedKey={peek?.id ?? null}
-        onRowSelect={(f) => setPeek(f)}
         // 鉛筆で上のフォームに読み込む（システム全体で、鉛筆＝編集に揃えてある）
         rowAction={{
           onClick: (f) => {
@@ -492,7 +487,6 @@ export default function FeedbackPage() {
           ["updatedAt"],
         ]}
       />
-      <FeedbackPeek item={peek} onClose={() => setPeek(null)} />
     </div>
   );
 }

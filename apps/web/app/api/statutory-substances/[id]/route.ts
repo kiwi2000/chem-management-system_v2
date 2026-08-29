@@ -67,6 +67,7 @@ export async function PUT(req: Request, { params }: Ctx) {
       effectiveFrom: toDate(v.effectiveFrom),
       effectiveTo: toDate(v.effectiveTo),
       displayOrder: v.displayOrder,
+      applicableCondition: v.applicableCondition ?? null,
       note: v.note ?? null,
       updatedBy: actor.user.id,
     },

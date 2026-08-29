@@ -258,6 +258,12 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "classId", kind: "enum", field: "classId" },
+  {
+    key: "applicableCondition",
+    kind: "text",
+    field: "applicableCondition",
+    caseInsensitive: true,
+  },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
 ];
 

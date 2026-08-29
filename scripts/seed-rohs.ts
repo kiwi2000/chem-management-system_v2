@@ -39,9 +39,22 @@ interface Restricted {
   limit: string;
   /** 元素としてまとめるならその記号。化合物をまとめて数えるために使う */
   element?: string;
-  /** 適用条件。濃度では表せないもの */
+  /** 覚え書き。こちらが取り込みのときに書いたもの。判定には使わない */
   note: string;
 }
+
+/**
+ * 適用条件。**第4条第1項の但し書きを、条文の言い方で1行だけ書く。**
+ *
+ * 附属書IIIとIVの適用除外は、番号46まであって枝番にも分かれ、全部で80件を超える。
+ * そのまま写すと数万字になり、しかも**物質ではなく用途に対する除外**なので、
+ * 10物質すべてに同じ表を書くことになる。
+ *
+ * 判定でできるのは「条件があると知らせる」ところまで。
+ * どの除外に当たるかは、用途を知っている人が附属書を見て決める
+ */
+const EXEMPTION =
+  "附属書III及び附属書IVに掲げる用途については、同附属書に定める期限まで適用しない（第4条第1項）";
 
 /**
  * 附属書IIの10物質。
@@ -276,6 +289,7 @@ async function main() {
       lowerBound: "EXCLUSIVE" as const,
       thresholdUpper: "100",
       upperBound: "INCLUSIVE" as const,
+      applicableCondition: EXEMPTION,
       note: r.note,
     };
     let sub = await prisma.statutorySubstance.findFirst({

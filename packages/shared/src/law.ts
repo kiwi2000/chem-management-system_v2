@@ -153,6 +153,11 @@ export const statutorySubstanceSchema = (m: Messages) =>
         .nullable()
         .optional()
         .or(z.literal("").transform(() => null)),
+      /**
+       * 適用条件。濃度のほかに条件が付くとき、その条件を書く。
+       * **入っていれば、当たったときに必ず要確認になる**
+       */
+      applicableCondition: optionalText(m, 2000),
       note: optionalText(m, 2000),
     }),
     m,

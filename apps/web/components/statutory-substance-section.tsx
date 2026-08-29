@@ -47,6 +47,7 @@ interface Draft extends NameDraft, ThresholdDraft {
   displayOrder: number;
   effectiveFrom: string;
   effectiveTo: string;
+  applicableCondition: string;
   note: string;
 }
 const EMPTY: Draft = {
@@ -60,6 +61,7 @@ const EMPTY: Draft = {
   displayOrder: 0,
   effectiveFrom: "",
   effectiveTo: "",
+  applicableCondition: "",
   note: "",
 };
 
@@ -160,6 +162,14 @@ export function StatutorySubstanceSection({
         className: "text-muted-foreground font-mono text-xs",
         render: (s) =>
           formatThreshold(s.thresholdLower, s.lowerBound, s.thresholdUpper, s.upperBound),
+      },
+      {
+        key: "applicableCondition",
+        header: m.statutorySubstances.applicableCondition,
+        kind: "text",
+        width: 220,
+        className: "text-muted-foreground text-xs",
+        render: (s) => s.applicableCondition ?? "",
       },
       {
         key: "casCount",
@@ -432,6 +442,7 @@ export function StatutorySubstanceSection({
       displayOrder: s.displayOrder,
       effectiveFrom: s.effectiveFrom ?? "",
       effectiveTo: s.effectiveTo ?? "",
+      applicableCondition: s.applicableCondition ?? "",
       note: s.note ?? "",
     });
     setEditingId(s.id);
@@ -464,6 +475,7 @@ export function StatutorySubstanceSection({
             displayOrder: Number(draft.displayOrder) || 0,
             effectiveFrom: draft.effectiveFrom || null,
             effectiveTo: draft.effectiveTo || null,
+            applicableCondition: draft.applicableCondition || null,
             note: draft.note || null,
           }),
         },
@@ -710,6 +722,19 @@ export function StatutorySubstanceSection({
                   />
                 </Field>
               </div>
+
+              <Field
+                label={m.statutorySubstances.applicableCondition}
+                htmlFor="sub-condition"
+                hint={m.statutorySubstances.applicableConditionHint}
+              >
+                <Input
+                  id="sub-condition"
+                  maxLength={2000}
+                  value={draft.applicableCondition}
+                  onChange={(e) => setDraft({ ...draft, applicableCondition: e.target.value })}
+                />
+              </Field>
 
               <Field
                 label={m.statutorySubstances.note}

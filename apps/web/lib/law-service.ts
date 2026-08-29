@@ -139,6 +139,7 @@ export function toStatutorySubstanceDto(s: SubstanceRow): StatutorySubstanceDto 
     effectiveFrom: toDate(s.effectiveFrom),
     effectiveTo: toDate(s.effectiveTo),
     displayOrder: s.displayOrder,
+    applicableCondition: s.applicableCondition,
     note: s.note,
     casCount: s._count.links,
   };

@@ -29,7 +29,12 @@ import { parseExclusion, sameSubstance } from "./lib/law-threshold";
 const prisma = new PrismaClient();
 
 /** 条件つきで埋めたものに付ける目印。あとから探せるようにする */
-const MARK_CONDITIONAL = "【条件つき除外】";
+/**
+ * 濃度のほかの条件は、**備考ではなく「適用条件」の欄へ書く。**
+ * この欄に何か入っていれば、判定は当たったときに必ず要確認を出す。
+ * 以前は備考にこの目印を書いていたが、備考には取り込み元の付随情報も入るため分けた
+ */
+const CONDITION_PREFIX = "除外には条件が付く: ";
 /** 埋めなかったものに付ける目印 */
 const MARK_UNFILLED = "【閾値未設定】";
 
@@ -53,6 +58,7 @@ async function main() {
       nameJa: true,
       nameOriginal: true,
       note: true,
+      applicableCondition: true,
       thresholdLower: true,
       thresholdUpper: true,
     },
@@ -73,6 +79,8 @@ async function main() {
 
     const notes: string[] = [];
     let fill: number | null = null;
+    /** 適用条件。書き込むのは条件が見つかったときだけ（無いものは触らない） */
+    let condition: string | null = null;
 
     if (e.kind === "list") {
       tally.unfilledList += 1;
@@ -87,7 +95,7 @@ async function main() {
       if (e.condition) {
         tally.conditional += 1;
         // 濃度だけでは決まらない。判定に使う前に、必ず条件を見る
-        notes.push(`${MARK_CONDITIONAL} 除外には条件が付く: ${e.condition}`);
+        condition = `${CONDITION_PREFIX}${e.condition}`;
         if (e.microPct !== null) {
           // 緩いほう（マイクロカプセル）を採ると、該当を見落とす。厳しいほうを入れる
           notes.push(
@@ -100,7 +108,7 @@ async function main() {
     }
 
     const note = appendNotes(s.note, notes);
-    const changed = note !== s.note || fill !== null;
+    const changed = note !== s.note || fill !== null || condition !== s.applicableCondition;
     if (!changed) continue;
 
     if (write) {
@@ -117,6 +125,7 @@ async function main() {
               }
             : {}),
           note,
+          ...(condition === null ? {} : { applicableCondition: condition }),
         },
       });
     }
@@ -135,7 +144,7 @@ async function main() {
 function appendNotes(note: string, lines: string[]): string {
   const kept = note
     .split("\n")
-    .filter((l) => !l.startsWith(MARK_CONDITIONAL) && !l.startsWith(MARK_UNFILLED))
+    .filter((l) => !l.startsWith(MARK_UNFILLED))
     .join("\n")
     .trimEnd();
   return lines.length === 0 ? kept : `${kept}\n${lines.join("\n")}`;

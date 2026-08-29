@@ -1,17 +1,11 @@
 import { normalizeCas, toScaled } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { MARK_CONDITIONAL, MARK_CONDITIONAL_LINK, MARK_UNFILLED } from "@/lib/judge-store";
+import { MARK_CONDITIONAL_LINK, MARK_UNFILLED } from "@/lib/judge-store";
 import { getServerMessages } from "@/lib/i18n";
 import type { CellDetailDto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-/**
- * 「濃度のほかに条件がある」ことを示す備考の印。
- * **判定と同じものを borrow する。**別々に書くと、片方だけ直したときに食い違う
- */
-const CONDITION_MARKS = [MARK_CONDITIONAL, MARK_UNFILLED];
 
 /**
  * GET /api/statutory-cas-links/cell?cas=...&categoryId=...&productId=...
@@ -126,6 +120,7 @@ export async function GET(req: Request) {
     substanceId: string,
     lower: string,
     bound: "INCLUSIVE" | "EXCLUSIVE",
+    applicableCondition: string | null,
     substanceNote: string | null,
     linkNote: string | null,
   ) => {
@@ -134,14 +129,15 @@ export async function GET(req: Request) {
     const hitHere =
       isCurrent && judgement !== null ? wholeCategoryHit || hitSubstances.has(substanceId) : enough;
     /*
-      **要確認も両方のバージョンに付ける。**
-      号やリンクの備考に「濃度のほかに条件がある」「閾値を入れられていない」と
-      書いてあるものは、そのバージョンのデータだけで分かる。
+      **要確認は両方のバージョンに付ける。**
+      法文物質名に適用条件が書いてあれば、当たったときは必ず要確認。
+      条件は法律の側で決まっているので、**バージョンやデータソースでは変わらない。**
 
       製品の側の理由（換算係数が無い・中身が分からない・深すぎて展開しきれない）は
       保存してある判定にしか無いので、現バージョンにだけ乗る
     */
-    const marked = CONDITION_MARKS.some((mark) => (substanceNote ?? "").includes(mark));
+    const marked =
+      (applicableCondition ?? "").trim() !== "" || (substanceNote ?? "").includes(MARK_UNFILLED);
     const linkMarked = (linkNote ?? "").includes(MARK_CONDITIONAL_LINK);
     const savedReview = isCurrent && judgement !== null && judgement.needsReview;
     return {
@@ -184,6 +180,7 @@ export async function GET(req: Request) {
             displayOrder: true,
             thresholdLower: true,
             lowerBound: true,
+            applicableCondition: true,
             note: true,
             regulationClass: {
               select: { nameJa: true, nameEn: true, nameOriginal: true },
@@ -232,6 +229,7 @@ export async function GET(req: Request) {
               l.statutorySubstance.id,
               l.statutorySubstance.thresholdLower.toString(),
               l.statutorySubstance.lowerBound,
+              l.statutorySubstance.applicableCondition,
               l.statutorySubstance.note,
               l.note,
             ),

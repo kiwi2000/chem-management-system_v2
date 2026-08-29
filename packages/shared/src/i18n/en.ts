@@ -589,6 +589,9 @@ export const en: Messages = {
     effectiveHint: "For reference only. Not used for assessment",
     displayOrder: "Order",
     note: "Note",
+    applicableCondition: "Applicable condition",
+    applicableConditionHint:
+      "Conditions beyond concentration - use, form, product type. When filled in, every hit is flagged for review",
     noteHint: "Conditions that depend on use or product type cannot be assessed. Record them here",
     casCount: "Links",
     empty: "No statutory names",

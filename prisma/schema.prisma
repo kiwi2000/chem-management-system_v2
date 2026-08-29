@@ -1492,9 +1492,19 @@ model StatutorySubstance {
   effectiveTo   DateTime? @map("effective_to") @db.Date
 
   /**
-   * 用途や製品の種類で決まるもの（第一種特定の使用用途など）は判定できないため、
-   * ここに文字で残す
+   * **適用条件。**濃度のほかに条件が付く法文物質名に、その条件を書く。
+   * 用途・剤型・製品の種類で決まるもの（RoHS 附属書III の適用除外、
+   * 第一種特定の使用用途など）は、こちらの持っている情報だけでは判定できない。
+   *
+   * **ここに何か入っていれば、当たったときに必ず「要確認」を出す。**
+   * 条件は法律の側で決まっているので、**データソースやバージョンでは変わらない。**
+   *
+   * 備考（`note`）とは分ける。備考には取り込み元の付随情報（EC番号・分類など）が
+   * 入っており、それで要確認を出すと、ほぼ全件が要確認になる
    */
+  applicableCondition String? @map("applicable_condition")
+
+  /** 参考の覚え書き。**判定には使わない** */
   note String?
 
   createdAt DateTime  @default(now()) @map("created_at")
