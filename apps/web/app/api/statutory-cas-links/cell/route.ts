@@ -8,6 +8,12 @@ import type { CellDetailDto } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 /**
+ * バージョンでは変わらない要確認の理由。
+ * 規制区分の測りかたと、その製品の組成で決まるもの
+ */
+const VERSION_FREE = ["homogeneousMaterial", "unknownComposition", "missingFactor", "truncated"];
+
+/**
  * GET /api/statutory-cas-links/cell?cas=...&categoryId=...&productId=...
  *
  * 1つの CAS × 1つの規制区分について、**バージョンごと・データソースごと**に
@@ -75,6 +81,7 @@ export async function GET(req: Request) {
         select: {
           verdict: true,
           needsReview: true,
+          reviewReasons: true,
           hits: { select: { statutorySubstanceId: true } },
         },
       })
@@ -139,7 +146,23 @@ export async function GET(req: Request) {
     const marked =
       (applicableCondition ?? "").trim() !== "" || (substanceNote ?? "").includes(MARK_UNFILLED);
     const linkMarked = (linkNote ?? "").includes(MARK_CONDITIONAL_LINK);
-    const savedReview = isCurrent && judgement !== null && judgement.needsReview;
+    /*
+      保存してある判定に付いている要確認の理由。**バージョンで変わるものと、変わらないものがある。**
+
+      「均質材料あたりで測る」「中身の分からない原材料が残っている」
+      「換算係数が無い」「深すぎて展開しきれない」は、
+      **規制区分の測りかたと、その製品の組成で決まる。**どの版で見ても同じなので両方に出す。
+      前の版に出さないでいたころは、同じ製品・同じ法文物質名なのに
+      現バージョンにだけ「?」が付き、データが変わったように見えていた。
+
+      これ以外（総称から広げた CAS など）は、その版の結び付きしだいなので現バージョンだけ
+    */
+    const reasons = judgement?.reviewReasons ?? [];
+    const sameEveryVersion = reasons.some((r) => VERSION_FREE.includes(r));
+    const savedReview =
+      judgement !== null &&
+      judgement.needsReview &&
+      (sameEveryVersion || (isCurrent && reasons.length === 0));
     return {
       hit: hitHere,
       needsReview: hitHere && (marked || linkMarked || savedReview),

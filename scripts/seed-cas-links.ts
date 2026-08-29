@@ -481,17 +481,6 @@ const JOBS: Job[] = [
     matchBy: "number",
     spec: { kind: "plain" },
   },
-  /*
-    CLP 附属書VI。**一覧に Index番号が入っていない**ので、
-    物質側の別名の番号（`CasKeys` の `Annex`）から引く。4,443種でほぼ全数そろう
-  */
-  {
-    law: "EU-CLP",
-    category: "ANNEX6",
-    tsv: "loli-eu-clp6.tsv",
-    matchBy: "number",
-    spec: { kind: "plain" },
-  },
 ];
 
 /**

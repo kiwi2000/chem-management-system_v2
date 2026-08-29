@@ -1,5 +1,9 @@
 /**
- * EU の法規制（REACH 候補リスト／附属書XIV／附属書XVII、CLP 附属書VI）を入れる。
+ * EU の法規制（REACH 候補リスト／附属書XIV／附属書XVII）を入れる。
+ *
+ * **CLP規則の調和分類（附属書VI 表3）は入れない。**
+ * あれは分類そのものを決めるもので、含有率で該非が決まる規制ではない。
+ * 判定の一覧に混ぜると、性質の違うものが同じ並びに出てしまう
  *
  *   npx tsx scripts/build-eu-data.ts --write   先にデータを作る
  *   npx tsx scripts/seed-eu.ts                 入れる（入れ直し）
@@ -74,23 +78,6 @@ const LAWS: LawDef[] = [
         nameJa: "制限物質（附属書XVII）",
         order: 30,
         note: "REACH 第67条・附属書XVII。用途ごとに条件が付く。番号は附属書の entry 番号。条件の全文は ECHA を見る",
-      },
-    ],
-  },
-  {
-    code: "EU-CLP",
-    nameOriginal:
-      "Regulation (EC) No 1272/2008 on classification, labelling and packaging of substances and mixtures",
-    nameJa: "CLP規則",
-    order: 130,
-    note: "一覧の出どころ: ECHA が配る附属書VI 表3の Excel（annex_vi_clp_table_atpNN_en.xlsx）",
-    categories: [
-      {
-        code: "ANNEX6",
-        name: "Harmonised classification (Annex VI Table 3)",
-        nameJa: "調和分類（附属書VI 表3）",
-        order: 10,
-        note: "CLP 第36条・附属書VI 表3。EU 全域で分類が決められている物質。番号は Index No（001-001-00-9）。**まだ施行されていない改正（ATP）のぶんも含む**ので、採否は note の ATP を見て決める",
       },
     ],
   },

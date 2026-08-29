@@ -51,7 +51,6 @@ const LAW_OF: Record<string, string> = {
   土壌汚染対策法: "JP-SCCA",
   "REACH：高懸念物質（SVHC）": "EU-REACH",
   "REACH：制限物質": "EU-REACH",
-  "EU：CLP調和分類": "EU-CLP",
   "TSCA：化学物質及び混合物の優先度付け、リスク評価並びに規制": "US-TSCA",
   "中国：危険化学品目録（２０１５版）": "CN-HAZCHEM",
   "韓国：化評法( K-REACH)／化管法：有害化学物質、重点管理物質": "KR-KREACH",

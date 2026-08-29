@@ -42,15 +42,6 @@ export interface EuItem {
   note: string;
 }
 
-/** ファイルをそのまま読む。CSV は行に割る前の形が要る */
-function readFile(name: string): string {
-  const path = join(CACHE, name);
-  if (!existsSync(path)) {
-    throw new Error(`${name} がありません。第2章 2-6 の手順で用意してください`);
-  }
-  return readFileSync(path, "utf8");
-}
-
 function read(name: string): string[] {
   const path = join(CACHE, name);
   if (!existsSync(path)) {
@@ -162,84 +153,16 @@ function buildAnnex17(): EuItem[] {
   return out;
 }
 
-/**
- * CLP規則 附属書VI 表3（調和分類）。**Excel で配られている。**
- *
- * ECHA が `annex_vi_clp_table_atpNN_en.xlsx` を置いており、
- * LibreOffice で CSV にしてから読む（第2章 2-6）。
- *
- * 列は `Index No / ATP / CELEX / Chemical Name / EC No / CAS No / …`。
- * **`Index No` が法令の番号**（`001-001-00-9`）で、これを法文物質名の番号にする。
- *
- * `ATP` はその項目を入れた改正の回。**まだ施行されていない回のものも入っている**ので、
- * どの回で入ったかを `note` に残す（採否は使う側が決める）。
- */
-function buildClpAnnex6(): EuItem[] {
-  const text = readFile("annex6.csv");
-  const rows = parseCsv(text);
-  // 3行目が見出し。1〜2行目は但し書き
-  const body = rows.slice(3).filter((r) => r.length > 5 && (r[0] ?? "").trim() !== "");
-  const out: EuItem[] = [];
-  for (const r of body) {
-    const cas = [...new Set([...(r[5] ?? "").matchAll(CAS_RE)].map((m) => m[0]))];
-    out.push({
-      law: "EU-CLP",
-      section: "ANNEX6",
-      number: (r[0] ?? "").trim(),
-      name: withCas((r[3] ?? "").replace(/\s+/g, " ").trim(), r[5] ?? ""),
-      ec: orEmpty((r[4] ?? "").trim()),
-      cas,
-      note: [
-        `ATP ${(r[1] ?? "").trim()}`,
-        (r[2] ?? "").trim() && `CELEX ${(r[2] ?? "").trim()}`,
-        (r[6] ?? "").replace(/\s+/g, " ").trim().slice(0, 200),
-      ]
-        .filter(Boolean)
-        .join(" / "),
-    });
-  }
-  return out;
-}
-
-/** CSV を読む。引用符の中の改行とカンマを守る */
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let quoted = false;
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i]!;
-    if (quoted) {
-      if (ch === '"' && text[i + 1] === '"') {
-        cell += '"';
-        i += 1;
-      } else if (ch === '"') quoted = false;
-      else cell += ch;
-      continue;
-    }
-    if (ch === '"') quoted = true;
-    else if (ch === ",") {
-      row.push(cell);
-      cell = "";
-    } else if (ch === "\n") {
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-    } else if (ch !== "\r") cell += ch;
-  }
-  if (cell !== "" || row.length > 0) {
-    row.push(cell);
-    rows.push(row);
-  }
-  return rows;
-}
-
 function main() {
   const write = process.argv.includes("--write");
-  const all = [...buildSvhc(), ...buildAnnex14(), ...buildAnnex17(), ...buildClpAnnex6()];
+  /*
+    **CLP 附属書VI（調和分類）は作らない。**
+    分類そのものを決めるもので、含有率で該非が決まる規制ではない。
+    判定の一覧に混ぜると、性質の違うものが同じ並びに出てしまう
+  */
+  const all = [...buildSvhc(), ...buildAnnex14(), ...buildAnnex17()];
 
-  for (const s of ["SVHC", "ANNEX14", "ANNEX17", "ANNEX6"]) {
+  for (const s of ["SVHC", "ANNEX14", "ANNEX17"]) {
     const mine = all.filter((i) => i.section === s);
     const withCas = mine.filter((i) => i.cas.length > 0).length;
     const links = mine.reduce((n, i) => n + i.cas.length, 0);

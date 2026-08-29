@@ -7,8 +7,12 @@
  *   ... scripts/seed-mixed-sources.ts --write
  *   ... scripts/seed-mixed-sources.ts --remove --write   入れたものを消す
  *
- * **本番には入れない。**出どころが偽りなので、判定の根拠にならない。
- * 入れたものは備考の印で見分けられるようにしてあり、`--remove` で消せる。
+ * **出どころは偽り。**判定の根拠にはならない。
+ * 入れたものは備考の印（`[検証用の混在データ]`）で見分けられ、`--remove` で消せる。
+ *
+ * 足す先は**同じ規制区分の別の法文物質名**にする。
+ * 無関係な号に付けると、トルエンがアゾ染料の号に当たる、といった
+ * ひと目で嘘と分かる並びになり、見た目の確かめものとして使えない。
  *
  * 作る形は3通り。**画面でこの3つが見分けられるかを確かめる**ためのもの。
  *
@@ -83,17 +87,32 @@ async function main() {
   console.log(`  LOLI が持っている結び付き（製品に入っている CAS ぶん）: ${existing.length} 件`);
   if (existing.length === 0) throw new Error("相手になる結び付きがありません");
 
-  /*
-    「そのデータソースだけが持っている」ぶんの相手。
-    **同じ区分の別の法文物質名**に付け替える。まったく無関係な号に付けると、
-    画面で見たときに嘘だと分かりにくい
-  */
-  const subs = await prisma.statutorySubstance.findMany({
-    where: { deletedAt: null, links: { none: { versionId: version.id } } },
-    select: { id: true },
-    take: 500,
+  /** 法文物質名 → その規制区分。単独ぶんの相手を同じ区分から選ぶために要る */
+  const owners = await prisma.statutorySubstance.findMany({
+    where: { id: { in: [...new Set(existing.map((l) => l.statutorySubstanceId))] } },
+    select: { id: true, regulationClass: { select: { categoryId: true } } },
   });
-  console.log(`  まだ何も結び付いていない法文物質名: ${subs.length} 件`);
+  const categoryOf = new Map(owners.map((o) => [o.id, o.regulationClass.categoryId]));
+
+  /*
+    「そのデータソースだけが持っている」ぶんの相手を探す。
+    **同じ規制区分の、別の法文物質名**で、その CAS がまだ結び付いていないもの
+  */
+  async function sibling(l: (typeof existing)[number]) {
+    const categoryId = categoryOf.get(l.statutorySubstanceId);
+    if (!categoryId) return null;
+    const found = await prisma.statutorySubstance.findFirst({
+      where: {
+        deletedAt: null,
+        regulationClass: { categoryId },
+        id: { not: l.statutorySubstanceId },
+        links: { none: { versionId: version.id, casNormalized: l.casNormalized } },
+      },
+      select: { id: true },
+      orderBy: { displayOrder: "asc" },
+    });
+    return found?.id ?? null;
+  }
 
   let total = 0;
   for (const plan of PLAN) {
@@ -114,11 +133,13 @@ async function main() {
     const both = existing.filter((_, i) => i % step === 0).slice(0, plan.both);
 
     const onlyStep = Math.max(1, Math.floor(existing.length / plan.only));
-    const only = existing
+    const only: { statutorySubstanceId: string; casNumber: string; casNormalized: string }[] = [];
+    for (const l of existing
       .filter((_, i) => i % onlyStep === Math.floor(onlyStep / 2))
-      .slice(0, plan.only)
-      .map((l, i) => ({ ...l, statutorySubstanceId: subs[i]?.id ?? null }))
-      .filter((l) => l.statutorySubstanceId !== null);
+      .slice(0, plan.only)) {
+      const id = await sibling(l);
+      if (id) only.push({ ...l, statutorySubstanceId: id });
+    }
 
     const rows = [
       ...both.map((l) => ({
@@ -128,7 +149,7 @@ async function main() {
         note: `${MARK} LOLI と同じ結び付きを持っている`,
       })),
       ...only.map((l) => ({
-        statutorySubstanceId: l.statutorySubstanceId as string,
+        statutorySubstanceId: l.statutorySubstanceId,
         casNumber: l.casNumber,
         casNormalized: l.casNormalized,
         note: `${MARK} このデータソースだけが持っている`,
