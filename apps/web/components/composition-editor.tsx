@@ -16,6 +16,7 @@ import {
   GripVertical,
   Pencil,
   Trash2,
+  CircleHelp,
   Database,
   GitCompare,
   TriangleAlert,
@@ -40,6 +41,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
 import type {
   ApiError,
   CompositionCandidateDto,
@@ -74,7 +76,6 @@ interface Row {
   kind: "substance" | "product";
   element: CompositionElementDto;
   contentPct: string;
-  isBalance: boolean;
   note: string;
 }
 
@@ -88,7 +89,6 @@ function toRow(l: CompositionLineDto, index: number): Row | null {
     kind: l.childProductId ? "product" : "substance",
     element: l.element,
     contentPct: l.contentPct ?? "",
-    isBalance: l.isBalance,
     note: l.note ?? "",
   };
 }
@@ -214,7 +214,7 @@ export function CompositionEditor({
   const sum = useMemo(
     () =>
       validateCompositionSum(
-        (rows ?? []).map((r) => ({ contentPct: r.contentPct || null, isBalance: r.isBalance })),
+        (rows ?? []).map((r) => ({ contentPct: r.contentPct || null })),
         settings,
         m,
       ),
@@ -255,13 +255,11 @@ export function CompositionEditor({
   function fillToHundred(index: number) {
     setRows((prev) => {
       if (!prev) return prev;
-      const others = prev
-        .filter((_, j) => j !== index)
-        .map((r) => (r.isBalance ? null : r.contentPct || null));
+      const others = prev.filter((_, j) => j !== index).map((r) => r.contentPct || null);
       const rest = SCALED_HUNDRED - sumScaled(others);
       // 他の行だけで100%を超えているときは0にする（負の含有率は無い）
       const value = fromScaled(rest < 0n ? 0n : rest);
-      return prev.map((r, j) => (j === index ? { ...r, contentPct: value, isBalance: false } : r));
+      return prev.map((r, j) => (j === index ? { ...r, contentPct: value } : r));
     });
   }
 
@@ -331,7 +329,6 @@ export function CompositionEditor({
           hasComposition: c.hasComposition,
         },
         contentPct: "",
-        isBalance: false,
         note: "",
       })),
     ]);
@@ -353,8 +350,7 @@ export function CompositionEditor({
           lines: rows.map((r) => ({
             substanceId: r.kind === "substance" ? r.element.id : null,
             childProductId: r.kind === "product" ? r.element.id : null,
-            contentPct: r.isBalance ? null : r.contentPct,
-            isBalance: r.isBalance,
+            contentPct: r.contentPct,
             note: r.note || null,
           })),
           stamp: stamp ?? undefined,
@@ -496,15 +492,8 @@ export function CompositionEditor({
   /** 展開行が結合に使う列の数 */
   const columnCount = (editing ? 7 : 5) + (showWithin ? 1 : 0);
 
-  /**
-   * 表に出す合計。
-   * サーバーが返す totalPct は残部を除いた「入力済み」の合計なので、
-   * そのまま「合計」として出すと 100% にならず、足りないように見えてしまう。
-   */
-  const grandTotalPct = useMemo(
-    () => fromScaled(sumScaled([sum.totalPct, sum.balancePct])),
-    [sum.totalPct, sum.balancePct],
-  );
+  /** 表に出す合計。入力されている含有率をそのまま足す */
+  const grandTotalPct = sum.totalPct;
 
   const alreadyAdded = useMemo(
     () => new Set((rows ?? []).map((r) => `${r.kind}:${r.element.id}`)),
@@ -732,13 +721,7 @@ export function CompositionEditor({
                         {pickName(locale, r.element.nameJa, r.element.nameEn)}
                       </td>
                       <td className={cn(CELL, "text-right")}>
-                        {r.isBalance ? (
-                          <span className="text-muted-foreground text-xs">
-                            {sum.balancePct === null
-                              ? m.composition.balanceAuto
-                              : m.composition.balanceOf(sum.balancePct)}
-                          </span>
-                        ) : editing ? (
+                        {editing ? (
                           <Input
                             aria-label={`${r.element.code} ${m.composition.contentPct}`}
                             inputMode="decimal"
@@ -793,7 +776,7 @@ export function CompositionEditor({
                         tree={tree}
                         path={r.key}
                         ratio={
-                          ratioOfPct((r.isBalance ? sum.balancePct : r.contentPct) || "0") ?? {
+                          ratioOfPct(r.contentPct || "0") ?? {
                             num: 0n,
                             den: 1n,
                           }
@@ -875,7 +858,11 @@ export function CompositionEditor({
                   onClick={() => setShowNearMiss((v) => !v)}
                   className={cn(
                     // 触っている間の色（`hover:text-foreground`）に負けるので、そこも赤にする
-                    showNearMiss && "text-destructive hover:text-destructive font-bold",
+                    showNearMiss &&
+                      cn(
+                        NEAR_MISS_CLASS,
+                        "hover:text-orange-600 dark:hover:text-orange-400 font-bold",
+                      ),
                   )}
                 >
                   <TriangleAlert className="mr-1 size-3.5" />
@@ -929,7 +916,10 @@ export function CompositionEditor({
                   表に出る「※」の意味。**ボタンではない**ので、押せる見た目にしない。
                   印そのものと同じ赤にして、表と結び付ける
                 */}
-                <span className="text-destructive ml-[0.5em] text-xs">
+                <span
+                  className={cn(REVIEW_CLASS, "ml-[0.5em] inline-flex items-center gap-1 text-xs")}
+                >
+                  <CircleHelp className="size-3" />
                   {m.composition.reviewLegend}
                 </span>
               </div>

@@ -1,7 +1,14 @@
 "use client";
 
 import { pickName } from "@chem/shared";
-import { Check, ChevronRight, FoldVertical, TriangleAlert, UnfoldVertical } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  CircleHelp,
+  FoldVertical,
+  TriangleAlert,
+  UnfoldVertical,
+} from "lucide-react";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -183,7 +190,7 @@ export function ProductJudgements({
           </span>
           {review.length > 0 && (
             <Badge variant="secondary" className="gap-1">
-              <TriangleAlert className="size-3" />
+              <CircleHelp className="size-3" />
               {m.judgements.reviewCount(review.length)}
             </Badge>
           )}
@@ -460,7 +467,15 @@ function Warning({
             variant="outline"
             className={j.needsReview ? "text-destructive gap-1" : "text-muted-foreground gap-1"}
           >
-            <TriangleAlert className="size-3" />
+            {/*
+              **要確認と警告で印を分ける。**要確認は「判定が変わるかもしれない」なので
+              「?」、警告は気を付ける相手なので三角。同じ印だと区別が付かない
+            */}
+            {j.needsReview ? (
+              <CircleHelp className="size-3" />
+            ) : (
+              <TriangleAlert className="size-3" />
+            )}
             {j.needsReview ? m.judgements.needsReview : m.judgements.warning}
           </Badge>
           <ul className="text-muted-foreground list-disc space-y-0.5 pl-4 text-xs">

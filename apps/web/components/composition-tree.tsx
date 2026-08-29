@@ -260,10 +260,10 @@ export function CompositionTreeRows({
     return <NoteRow depth={depth} colSpan={colSpan} text={m.composition.expandTooDeep} />;
   }
 
-  const { lines, totalPct, balancePct } = branch.data;
+  const { lines, totalPct } = branch.data;
   // 合計が 100% でない原材料は、下の値を足しても上の行の値にならない。黙って出さない
   const total = toScaled(totalPct);
-  const uneven = balancePct === null && total !== null && total !== SCALED_HUNDRED;
+  const uneven = total !== null && total !== SCALED_HUNDRED;
 
   return (
     <>
@@ -278,7 +278,6 @@ export function CompositionTreeRows({
           parentPath={path}
           ratio={ratio}
           parentName={parentName}
-          balancePct={balancePct}
           depth={depth}
           colSpan={colSpan}
           showWithin={showWithin}
@@ -296,7 +295,6 @@ function TreeRow({
   parentPath,
   ratio,
   parentName,
-  balancePct,
   depth,
   colSpan,
   showWithin,
@@ -308,7 +306,6 @@ function TreeRow({
   parentPath: Path;
   ratio: Ratio;
   parentName: string;
-  balancePct: string | null;
   depth: number;
   colSpan: number;
   showWithin: boolean;
@@ -319,8 +316,7 @@ function TreeRow({
   const element = line.element;
   if (!element) return null;
 
-  // 残部の行は自分では値を持たない。親の組成から計算した値を使う
-  const within = line.isBalance ? balancePct : line.contentPct;
+  const within = line.contentPct;
   const childRatio = within === null ? null : timesPct(ratio, within);
   const name = pickName(locale, element.nameJa, element.nameEn);
 
@@ -354,7 +350,7 @@ function TreeRow({
         {/* 製品全体に対する値。法規制の判定はこちらを使う */}
         <td className={cn(cellClass, "text-right whitespace-nowrap")}>
           {childRatio === null ? (
-            <span className="text-muted-foreground text-xs">{m.composition.balanceAuto}</span>
+            <span className="text-muted-foreground text-xs">—</span>
           ) : (
             `${ratioToPct(childRatio)}%`
           )}

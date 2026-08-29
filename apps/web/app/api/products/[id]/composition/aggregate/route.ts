@@ -5,7 +5,6 @@ import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { visibilityWhere } from "@/lib/product-service";
-import { getAppSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -35,8 +34,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     return jsonError(403, "forbidden", m.composition.withheld);
   }
 
-  const settings = await getAppSettings();
-  const result = await aggregateComposition(actor, id, settings, m);
+  const result = await aggregateComposition(actor, id);
 
   // 見たことを残す。末端まで下ろした表なので、持ち出されたときの重みは1段より大きい
   await recordCompositionView({

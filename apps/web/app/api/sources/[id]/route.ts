@@ -43,6 +43,7 @@ export async function PUT(req: Request, { params }: Ctx) {
       codeNormalized,
       note: v.note ?? null,
       color: v.color ?? null,
+      mark: v.mark ?? null,
       updatedBy: actor.user.id,
     },
   });

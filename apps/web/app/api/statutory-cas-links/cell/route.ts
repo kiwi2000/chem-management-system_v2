@@ -1,13 +1,20 @@
-import { normalizeCas } from "@chem/shared";
+import { normalizeCas, toScaled } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { MARK_CONDITIONAL, MARK_CONDITIONAL_LINK, MARK_UNFILLED } from "@/lib/judge-store";
 import { getServerMessages } from "@/lib/i18n";
 import type { CellDetailDto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/statutory-cas-links/cell?cas=...&categoryId=...
+ * 「濃度のほかに条件がある」ことを示す備考の印。
+ * **判定と同じものを borrow する。**別々に書くと、片方だけ直したときに食い違う
+ */
+const CONDITION_MARKS = [MARK_CONDITIONAL, MARK_UNFILLED];
+
+/**
+ * GET /api/statutory-cas-links/cell?cas=...&categoryId=...&productId=...
  *
  * 1つの CAS × 1つの規制区分について、**バージョンごと・データソースごと**に
  * どの法文物質名に結び付いているかを返す。まとめ表のセルを押したときに開く。
@@ -16,8 +23,9 @@ export const dynamic = "force-dynamic";
  * 前のバージョンには無かったデータソースが増えていることも、逆もある。
  * だからバージョンごとに、そのバージョンの並びで返す。
  *
- * 「採用」は**優先度がいちばん高いものが勝つ**（CASリンク画面の「使用」と同じ）。
- * 同じ法文物質名を2つのデータソースが持っていれば、優先度の高いほうだけが採用になる。
+ * 「採用」は**「規制区分 × CAS」で1つのデータソースだけが勝つ**。
+ * 勝ったデータソースが持っていない号は、下位が持っていても採用しない。
+ * こうしないと、1つの区分の中でデータソースが混ざる。
  */
 export async function GET(req: Request) {
   const actor = await requirePermission("PRODUCT_VIEW");
@@ -27,6 +35,7 @@ export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
   const casRaw = params.get("cas") ?? "";
   const categoryId = params.get("categoryId") ?? "";
+  const productId = params.get("productId") ?? "";
   const cas = normalizeCas(casRaw);
   if (!cas || !categoryId) return jsonError(400, "validation_error", m.errors.validation);
 
@@ -36,7 +45,20 @@ export async function GET(req: Request) {
       nameJa: true,
       nameEn: true,
       nameOriginal: true,
-      law: { select: { nameJa: true, nameEn: true, nameOriginal: true } },
+      law: {
+        select: {
+          nameJa: true,
+          nameEn: true,
+          nameOriginal: true,
+          country: {
+            select: {
+              nameJa: true,
+              nameEn: true,
+              region: { select: { nameJa: true, nameEn: true } },
+            },
+          },
+        },
+      },
     },
   });
   if (!category) return jsonError(404, "not_found", m.errors.notFound);
@@ -48,11 +70,87 @@ export async function GET(req: Request) {
     select: { code: true, casNumber: true, nameJa: true, nameEn: true },
   });
 
+  /*
+    その製品の、その区分の判定。**現バージョンぶんしか無い。**
+    前のバージョンの判定は保存していないので、当たり・要確認・含有率不足の別は
+    現バージョンにだけ付く
+  */
+  const judgement = productId
+    ? await prisma.productJudgement.findFirst({
+        where: { productId, categoryId },
+        select: {
+          verdict: true,
+          needsReview: true,
+          hits: { select: { statutorySubstanceId: true } },
+        },
+      })
+    : null;
+  const hitSubstances = new Set(
+    (judgement?.hits ?? []).map((h) => h.statutorySubstanceId).filter((x) => !!x),
+  );
+  /** 区分そのものでまとめて当たったとき。中の号は全部当たり扱い */
+  const wholeCategoryHit =
+    judgement?.verdict === "APPLICABLE" &&
+    (judgement?.hits ?? []).some((h) => h.statutorySubstanceId === null);
+
   const versions = await prisma.linkSetVersion.findMany({
     where: { deletedAt: null },
     orderBy: { code: "desc" },
     select: { id: true, code: true, isCurrent: true },
   });
+
+  /*
+    **その製品に、このCASがどれだけ入っているか。**
+    含有率が足りているかどうかを、**バージョンによらず同じやりかたで**見るために要る。
+
+    保存してある判定は現バージョンぶんしか無い。それだけで「含有率不足」を決めると、
+    前のバージョンには印が付かず、**同じデータなのに片方だけ隠れて**しまう
+    （2026Q3で消えたように見えて、実際は両方に載っている、という取り違えが起きた）。
+  */
+  const line = productId
+    ? await prisma.productExpansionLine.findFirst({
+        where: { productId, casNormalized: cas },
+        select: { totalPct: true },
+      })
+    : null;
+  const content = toScaled(line?.totalPct?.toString() ?? "0") ?? 0n;
+
+  /**
+   * その号が、この製品でどう扱われるか。
+   *
+   * **含有率が足りているかは、両方のバージョンで同じように見る**（上の注記）。
+   * 「要確認」だけは保存してある判定にしか無いので、現バージョンにだけ付く
+   */
+  const judgementOf = (
+    isCurrent: boolean,
+    substanceId: string,
+    lower: string,
+    bound: "INCLUSIVE" | "EXCLUSIVE",
+    substanceNote: string | null,
+    linkNote: string | null,
+  ) => {
+    const limit = toScaled(lower) ?? 0n;
+    const enough = bound === "INCLUSIVE" ? content >= limit : content > limit;
+    const hitHere =
+      isCurrent && judgement !== null ? wholeCategoryHit || hitSubstances.has(substanceId) : enough;
+    /*
+      **要確認も両方のバージョンに付ける。**
+      号やリンクの備考に「濃度のほかに条件がある」「閾値を入れられていない」と
+      書いてあるものは、そのバージョンのデータだけで分かる。
+
+      製品の側の理由（換算係数が無い・中身が分からない・深すぎて展開しきれない）は
+      保存してある判定にしか無いので、現バージョンにだけ乗る
+    */
+    const marked = CONDITION_MARKS.some((mark) => (substanceNote ?? "").includes(mark));
+    const linkMarked = (linkNote ?? "").includes(MARK_CONDITIONAL_LINK);
+    const savedReview = isCurrent && judgement !== null && judgement.needsReview;
+    return {
+      hit: hitHere,
+      needsReview: hitHere && (marked || linkMarked || savedReview),
+      // 載っているのに当たっていない。含有率が足りない
+      nearMiss: !hitHere,
+    };
+  };
 
   const out: CellDetailDto["versions"] = [];
   for (const v of versions) {
@@ -63,7 +161,7 @@ export async function GET(req: Request) {
     const defs = await prisma.linkVersionSource.findMany({
       where: { versionId: v.id },
       orderBy: { priority: "asc" },
-      select: { source: { select: { id: true, code: true, color: true } } },
+      select: { source: { select: { id: true, code: true, color: true, mark: true } } },
     });
 
     const links = await prisma.statutoryCasLink.findMany({
@@ -75,6 +173,7 @@ export async function GET(req: Request) {
       },
       select: {
         sourceId: true,
+        note: true,
         statutorySubstance: {
           select: {
             id: true,
@@ -83,6 +182,9 @@ export async function GET(req: Request) {
             nameEn: true,
             nameOriginal: true,
             displayOrder: true,
+            thresholdLower: true,
+            lowerBound: true,
+            note: true,
             regulationClass: {
               select: { nameJa: true, nameEn: true, nameOriginal: true },
             },
@@ -92,16 +194,17 @@ export async function GET(req: Request) {
     });
 
     /*
-      **採用は法文物質名ごとに決める。**データソースAが号1を、データソースBが号2を
-      持っていれば、どちらも判定に効いている。同じ号を2つが持っているときだけ、
-      優先度の高いほうが勝つ
+      **採用は「規制区分 × CAS」で1つだけ決める。**判定と同じ決めかた。
+
+      いちばん優先度の高いデータソースが勝ち、そのデータソースの結び付きだけを使う。
+      **勝ったデータソースが持っていない号は、下位が持っていても採用しない。**
+      号ごとに決めると、1つの区分の中でデータソースが混ざってしまう
     */
     const rank = new Map(defs.map((d, i) => [d.source.id, i]));
-    const best = new Map<string, number>();
+    let best: number | null = null;
     for (const l of links) {
       const at = rank.get(l.sourceId) ?? 99;
-      const now = best.get(l.statutorySubstance.id);
-      if (now === undefined || at < now) best.set(l.statutorySubstance.id, at);
+      if (best === null || at < best) best = at;
     }
 
     out.push({
@@ -111,6 +214,7 @@ export async function GET(req: Request) {
         id: d.source.id,
         code: d.source.code,
         color: d.source.color,
+        mark: d.source.mark,
         items: links
           .filter((l) => l.sourceId === d.source.id)
           .sort((a, b) => a.statutorySubstance.displayOrder - b.statutorySubstance.displayOrder)
@@ -122,7 +226,15 @@ export async function GET(req: Request) {
             nameJa: l.statutorySubstance.nameJa,
             nameEn: l.statutorySubstance.nameEn,
             nameOriginal: l.statutorySubstance.nameOriginal,
-            adopted: best.get(l.statutorySubstance.id) === (rank.get(d.source.id) ?? 99),
+            adopted: best !== null && (rank.get(d.source.id) ?? 99) === best,
+            ...judgementOf(
+              v.isCurrent,
+              l.statutorySubstance.id,
+              l.statutorySubstance.thresholdLower.toString(),
+              l.statutorySubstance.lowerBound,
+              l.statutorySubstance.note,
+              l.note,
+            ),
           })),
       })),
     });
@@ -133,6 +245,10 @@ export async function GET(req: Request) {
     substanceCode: substance?.code ?? null,
     substanceNameJa: substance?.nameJa ?? null,
     substanceNameEn: substance?.nameEn ?? null,
+    regionNameJa: category.law.country.region.nameJa,
+    regionNameEn: category.law.country.region.nameEn,
+    countryNameJa: category.law.country.nameJa,
+    countryNameEn: category.law.country.nameEn,
     lawNameJa: category.law.nameJa,
     lawNameEn: category.law.nameEn,
     lawNameOriginal: category.law.nameOriginal,

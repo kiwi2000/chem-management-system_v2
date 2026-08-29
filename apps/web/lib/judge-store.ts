@@ -1,5 +1,6 @@
 import type { ConditionalLinkMode } from "@chem/shared";
 import { prisma } from "@/lib/db";
+import { isAdopted, winningRank } from "@/lib/link-priority";
 import { judge, type ElementFactors, type JudgeEntry, type JudgeResult } from "@/lib/judge-calc";
 import { getAppSettings } from "@/lib/settings";
 
@@ -14,8 +15,8 @@ import { getAppSettings } from "@/lib/settings";
  * 備考に付けた目印。閾値を入れるときに書き込んだもの。
  * ここを見て「濃度だけでは決められない」ことを判定へ伝える。
  */
-const MARK_CONDITIONAL = "【条件つき除外】";
-const MARK_UNFILLED = "【閾値未設定】";
+export const MARK_CONDITIONAL = "【条件つき除外】";
+export const MARK_UNFILLED = "【閾値未設定】";
 
 /**
  * CASリンクの備考に付けた目印（`scripts/seed-cas-links.ts` が書く）。
@@ -24,7 +25,7 @@ const MARK_UNFILLED = "【閾値未設定】";
  * 「法律の名称が定める条件に合致すること」と但し書きを付けたもの。
  * 扱いはシステム設定 `judgment.conditional_link_mode` で決まる（第4章 4-3a）。
  */
-const MARK_CONDITIONAL_LINK = "政令の名称が定める条件に合うかは要確認";
+export const MARK_CONDITIONAL_LINK = "政令の名称が定める条件に合うかは要確認";
 
 /**
  * 判定に使う法律側のひとそろい。
@@ -88,12 +89,8 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
       sourceId: true,
     },
   });
-  /*
-    データソースの優先度。**小さいほど優先。**
-    同じ結び付きを2つ以上のデータソースが持っていても、
-    **効いているのは優先度がいちばん高い1つ**（CASリンク画面の「使用」と同じ）。
-    そこを残す
-  */
+
+  /** データソースの優先度。**小さいほど優先** */
   const order = new Map(
     (
       await prisma.linkVersionSource.findMany({
@@ -104,40 +101,51 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
     ).map((v, i) => [v.sourceId, i]),
   );
 
-  const casOf = new Map<string, string[]>();
-  /** 法文物質名 → CAS → その結び付きを持っているデータソース */
-  const sourcesOf = new Map<string, Record<string, string[]>>();
-  /** 条件つきで結ばれた CAS。法文物質名ごとに持つ */
-  const conditionalOf = new Map<string, string[]>();
-  for (const l of links) {
-    const list = casOf.get(l.statutorySubstanceId);
-    if (list) list.push(l.casNormalized);
-    else casOf.set(l.statutorySubstanceId, [l.casNormalized]);
-    const bySub = sourcesOf.get(l.statutorySubstanceId) ?? {};
-    const got = bySub[l.casNormalized];
-    if (got) {
-      if (!got.includes(l.sourceId)) got.push(l.sourceId);
-    } else {
-      bySub[l.casNormalized] = [l.sourceId];
-    }
-    sourcesOf.set(l.statutorySubstanceId, bySub);
-    if (l.note?.includes(MARK_CONDITIONAL_LINK)) {
-      const c = conditionalOf.get(l.statutorySubstanceId);
-      if (c) c.push(l.casNormalized);
-      else conditionalOf.set(l.statutorySubstanceId, [l.casNormalized]);
+  /** 法文物質名 → その区分。勝ち負けを区分ごとに決めるために要る */
+  const categoryOf = new Map<string, string>();
+  for (const c of categories) {
+    for (const cl of c.classes) {
+      for (const sub of cl.statutorySubstances) categoryOf.set(sub.id, c.id);
     }
   }
 
   /*
-    **優先度がいちばん高いものだけを残す。**
-    全部並べると「LOLI にも CHRIP にもある」ことは分かるが、
-    「判定に効いたのはどれか」が読めなくなる。
-    どこにあるかを見比べるのは、別の見せかたが受け持つ
+    勝つデータソースは「規制区分 × CAS」で1つだけ。
+    決めかたは lib/link-priority.ts にまとめてある（4か所で同じ答えにするため）
   */
-  for (const bySub of sourcesOf.values()) {
-    for (const [cas, list] of Object.entries(bySub)) {
-      list.sort((a, b) => (order.get(a) ?? 99) - (order.get(b) ?? 99));
-      bySub[cas] = list.slice(0, 1);
+  const priced = links.flatMap((l) => {
+    const categoryId = categoryOf.get(l.statutorySubstanceId);
+    return categoryId ? [{ ...l, categoryId }] : [];
+  });
+  const winner = winningRank(priced, order);
+
+  const casOf = new Map<string, string[]>();
+  /** 法文物質名 → CAS → その結び付きを持っているデータソース（勝ったものだけ） */
+  const sourcesOf = new Map<string, Record<string, string[]>>();
+  /** 条件つきで結ばれた CAS。法文物質名ごとに持つ */
+  const conditionalOf = new Map<string, string[]>();
+  for (const l of priced) {
+    // 負けたデータソースの結び付きは、判定でも見ない
+    if (!isAdopted(l, order, winner)) continue;
+
+    const list = casOf.get(l.statutorySubstanceId);
+    if (list) {
+      if (!list.includes(l.casNormalized)) list.push(l.casNormalized);
+    } else {
+      casOf.set(l.statutorySubstanceId, [l.casNormalized]);
+    }
+    const bySub = sourcesOf.get(l.statutorySubstanceId) ?? {};
+    // 勝つのは1つだけなので、ここに並ぶのも1つ
+    bySub[l.casNormalized] = [l.sourceId];
+    sourcesOf.set(l.statutorySubstanceId, bySub);
+
+    if (l.note?.includes(MARK_CONDITIONAL_LINK)) {
+      const c = conditionalOf.get(l.statutorySubstanceId);
+      if (c) {
+        if (!c.includes(l.casNormalized)) c.push(l.casNormalized);
+      } else {
+        conditionalOf.set(l.statutorySubstanceId, [l.casNormalized]);
+      }
     }
   }
 

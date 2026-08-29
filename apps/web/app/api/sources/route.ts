@@ -67,6 +67,7 @@ export async function POST(req: Request) {
     code: v.code,
     note: v.note ?? null,
     color: v.color ?? null,
+    mark: v.mark ?? null,
     updatedBy: actor.user.id,
   };
 

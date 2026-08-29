@@ -197,7 +197,7 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
     items === null
       ? null
       : editingId === NEW_ID
-        ? [{ id: NEW_ID, code: "", note: null, color: null }, ...items]
+        ? [{ id: NEW_ID, code: "", note: null, color: null, mark: null }, ...items]
         : items;
 
   return (

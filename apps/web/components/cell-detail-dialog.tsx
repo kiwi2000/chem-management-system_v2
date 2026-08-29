@@ -1,13 +1,14 @@
 "use client";
 
 import { pickName, pickStatutoryName } from "@chem/shared";
-import { X } from "lucide-react";
+import { CircleHelp, TriangleAlert, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { SourceChip } from "@/components/source-chip";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { HIT_CLASS, NEAR_MISS_CLASS, NOT_ADOPTED_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
 import type { CellDetailDto, CellStatutoryDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -31,10 +32,19 @@ function labelOf(x: CellStatutoryDto, locale: ReturnType<typeof useI18n>["locale
 export function CellDetailDialog({
   cas,
   categoryId,
+  productId,
+  showNearMiss,
   onClose,
 }: {
   cas: string;
   categoryId: string;
+  /** その製品の判定を見て、当たり・要確認・含有率不足を分ける */
+  productId: string;
+  /**
+   * 含有率不足で当たっていないものを出すか。
+   * **表のボタンに従う。**表では隠れているのに窓にだけ出ると、数が合わなく見える
+   */
+  showNearMiss: boolean;
   onClose: () => void;
 }) {
   const { m, locale } = useI18n();
@@ -44,7 +54,7 @@ export function CellDetailDialog({
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const params = new URLSearchParams({ cas, categoryId });
+      const params = new URLSearchParams({ cas, categoryId, productId });
       const res = await fetch(`/api/statutory-cas-links/cell?${params.toString()}`).catch(
         () => null,
       );
@@ -59,7 +69,7 @@ export function CellDetailDialog({
     return () => {
       alive = false;
     };
-  }, [cas, categoryId, m]);
+  }, [cas, categoryId, productId, m]);
 
   // 逃げ道は必ず用意する。表の上に重なるので、閉じられないと詰む
   useEffect(() => {
@@ -94,15 +104,21 @@ export function CellDetailDialog({
                   <span className="text-muted-foreground mx-2 font-mono text-xs">{data.cas}</span>
                   <span>{pickName(locale, data.substanceNameJa, data.substanceNameEn)}</span>
                 </p>
+                {/* 地域 › 国 › 法律 › 規制区分。どこの何の話かを、上から順にたどれるようにする */}
                 <p className="text-muted-foreground mt-0.5 text-xs">
-                  {pickStatutoryName(locale, data.lawNameOriginal, data.lawNameJa, data.lawNameEn)}
-                  {" › "}
-                  {pickStatutoryName(
-                    locale,
-                    data.categoryNameOriginal,
-                    data.categoryNameJa,
-                    data.categoryNameEn,
-                  )}
+                  {[
+                    pickName(locale, data.regionNameJa, data.regionNameEn),
+                    pickName(locale, data.countryNameJa, data.countryNameEn),
+                    pickStatutoryName(locale, data.lawNameOriginal, data.lawNameJa, data.lawNameEn),
+                    pickStatutoryName(
+                      locale,
+                      data.categoryNameOriginal,
+                      data.categoryNameJa,
+                      data.categoryNameEn,
+                    ),
+                  ]
+                    .filter(Boolean)
+                    .join(" › ")}
                 </p>
               </>
             )}
@@ -141,19 +157,55 @@ export function CellDetailDialog({
                         <li key={s.id} className="flex gap-1.5 text-xs">
                           <SourceChip source={s} className="mt-0.5" />
                           <span className="min-w-0 flex-1 break-words">
-                            {s.items.length === 0 ? (
-                              <span className="text-muted-foreground">—</span>
-                            ) : (
-                              s.items.map((x) => (
+                            {(() => {
+                              /*
+                                含有率不足のものは、表のボタンが押されているときだけ出す。
+                                隠すと何も残らないデータソースは「—」になる
+                              */
+                              const items = s.items.filter((x) => showNearMiss || !x.nearMiss);
+                              if (items.length === 0) {
+                                return <span className="text-muted-foreground">—</span>;
+                              }
+                              return items.map((x) => (
                                 <span
                                   key={`${x.officialNumber}/${x.nameOriginal}`}
-                                  /* 採用されたものは赤字。どれが効いたのかを一目で読む */
-                                  className={cn("block", x.adopted && "text-destructive font-bold")}
+                                  /*
+                                    **色は結果、太字は採用。**
+                                    青＝該当、オレンジ＝含有率不足で非該当、黒＝採用されなかった。
+                                    青と三角が同じ行に並ぶと「採用されたのに非該当」に読めるので、
+                                    色を勝ち負けに使わない
+                                  */
+                                  className={cn(
+                                    "block",
+                                    x.adopted && "font-bold",
+                                    x.adopted
+                                      ? x.hit
+                                        ? HIT_CLASS
+                                        : NEAR_MISS_CLASS
+                                      : NOT_ADOPTED_CLASS,
+                                  )}
                                 >
+                                  {/* 印は表と同じもの。?＝要確認、三角＝含有率不足 */}
+                                  {x.needsReview && (
+                                    <CircleHelp
+                                      className={cn(
+                                        "mr-0.5 inline size-3 align-[-0.1em]",
+                                        REVIEW_CLASS,
+                                      )}
+                                    />
+                                  )}
+                                  {x.nearMiss && (
+                                    <TriangleAlert
+                                      className={cn(
+                                        "mr-0.5 inline size-3 align-[-0.1em]",
+                                        NEAR_MISS_CLASS,
+                                      )}
+                                    />
+                                  )}
                                   {labelOf(x, locale)}
                                 </span>
-                              ))
-                            )}
+                              ));
+                            })()}
                           </span>
                         </li>
                       ))}

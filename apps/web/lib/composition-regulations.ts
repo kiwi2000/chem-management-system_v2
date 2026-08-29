@@ -6,7 +6,7 @@ import type { RowRegulationDto, RowStatutoryDto } from "@/lib/types";
  * 印の並び順と、その意味を並べる札に使う。
  */
 export async function currentSources(): Promise<
-  { id: string; code: string; color: string | null }[]
+  { id: string; code: string; color: string | null; mark: string | null }[]
 > {
   const version = await prisma.linkSetVersion.findFirst({
     where: { isCurrent: true, deletedAt: null },
@@ -16,7 +16,7 @@ export async function currentSources(): Promise<
   const rows = await prisma.linkVersionSource.findMany({
     where: { versionId: version.id },
     orderBy: { priority: "asc" },
-    select: { source: { select: { id: true, code: true, color: true } } },
+    select: { source: { select: { id: true, code: true, color: true, mark: true } } },
   });
   return rows.map((r) => r.source);
 }
@@ -308,6 +308,30 @@ export async function nearMissByCas(
     }),
   ]);
 
+  /*
+    **勝つデータソースは「規制区分 × CAS」で1つだけ。**判定と同じ決めかたにする。
+    ここだけ別の決めかたにすると、当たっているものと当たっていないもので
+    データソースの出かたが食い違う
+  */
+  const rank = new Map(
+    (
+      await prisma.linkVersionSource.findMany({
+        where: { versionId: version.id },
+        orderBy: { priority: "asc" },
+        select: { sourceId: true },
+      })
+    ).map((v, i) => [v.sourceId, i]),
+  );
+  const winner = new Map<string, number>();
+  for (const l of links) {
+    const cat = l.statutorySubstance?.regulationClass.category.id;
+    if (!cat) continue;
+    const key = `${cat}/${l.casNormalized}`;
+    const at = rank.get(l.sourceId) ?? 99;
+    const now = winner.get(key);
+    if (now === undefined || at < now) winner.set(key, at);
+  }
+
   const subIdsForDiff = [
     ...new Set(links.map((l) => l.statutorySubstance?.id).filter((x) => !!x)),
   ] as string[];
@@ -334,6 +358,8 @@ export async function nearMissByCas(
 
     const cat = sub.regulationClass.category;
     if (cat.deletedAt || hitCategories.has(cat.id)) continue;
+    // 負けたデータソースの結び付きは出さない（判定でも見ていない）
+    if ((rank.get(l.sourceId) ?? 99) !== winner.get(`${cat.id}/${l.casNormalized}`)) continue;
 
     const region = cat.law.country.region;
     let cats = byCas.get(l.casNormalized);

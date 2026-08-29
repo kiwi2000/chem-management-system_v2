@@ -45,7 +45,6 @@ export function toLineDto(l: LineRow): CompositionLineDto {
     substanceId: l.substanceId,
     childProductId: l.childProductId,
     contentPct: l.contentPct?.toString() ?? null,
-    isBalance: l.isBalance,
     note: l.note,
     element: l.substance
       ? {
@@ -78,11 +77,11 @@ export function toCompositionResponse(
 ): CompositionResponse {
   const items = lines.map(toLineDto);
   const sum = validateCompositionSum(
-    items.map((l) => ({ contentPct: l.contentPct, isBalance: l.isBalance })),
+    items.map((l) => ({ contentPct: l.contentPct })),
     settings,
     m,
   );
-  return { lines: items, totalPct: sum.totalPct, balancePct: sum.balancePct };
+  return { lines: items, totalPct: sum.totalPct };
 }
 
 /**
@@ -195,13 +194,12 @@ export function countUsesOfSubstance(substanceId: string): Promise<number> {
   });
 }
 
-/** 入力から DB に書く行へ。残部の行は含有率を持たない */
+/** 入力から DB に書く行へ */
 export function lineWrites(input: CompositionInput) {
   return input.lines.map((l, i) => ({
     substanceId: l.substanceId ?? null,
     childProductId: l.childProductId ?? null,
-    contentPct: l.isBalance ? null : (l.contentPct ?? null),
-    isBalance: l.isBalance,
+    contentPct: l.contentPct ?? null,
     note: l.note ?? null,
     displayOrder: i + 1,
   }));

@@ -16,15 +16,11 @@ const prisma = new PrismaClient();
 async function main() {
   // アプリ側の関数をそのまま使う。計算が2通りになると必ず食い違う
   const { expandProduct, saveExpansion } = await import("../apps/web/lib/expansion-store");
-  const { getAppSettings } = await import("../apps/web/lib/settings");
-  const { getMessages } = await import("@chem/shared");
 
-  const settings = await getAppSettings();
   /*
     画面からの呼び出しではないので、言語は Cookie から決められない。
     ここで使う文言は合計の検証のエラー文だけで、画面には出ないため日本語で固定する。
   */
-  const m = getMessages("ja");
 
   const products = await prisma.product.findMany({
     where: { deletedAt: null },
@@ -35,7 +31,7 @@ async function main() {
 
   let withUnknown = 0;
   for (const p of products) {
-    const e = await expandProduct(p.id, settings, m);
+    const e = await expandProduct(p.id);
     await saveExpansion(p.id, e);
     if (Number(e.unknownPct) > 0) withUnknown += 1;
   }

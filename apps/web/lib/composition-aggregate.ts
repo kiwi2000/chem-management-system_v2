@@ -5,9 +5,6 @@ import {
   fineToPct,
   ratioToFine,
   timesPct,
-  validateCompositionSum,
-  type AppSettings,
-  type Messages,
   type Ratio,
 } from "@chem/shared";
 import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
@@ -61,8 +58,6 @@ interface Bucket {
 export async function aggregateComposition(
   actor: Actor,
   rootProductId: string,
-  settings: AppSettings,
-  m: Messages,
 ): Promise<CompositionAggregateDto> {
   const buckets = new Map<string, Bucket>();
   const blocked: CompositionAggregateDto["blocked"] = [];
@@ -100,18 +95,8 @@ export async function aggregateComposition(
     const found = await cachedLines(productId);
     if ("reason" in found) return found.reason;
 
-    // 残部の行は自分では値を持たない。その組成から計算した値を使う
-    const sum = validateCompositionSum(
-      found.lines.map((l) => ({
-        contentPct: l.contentPct?.toString() ?? null,
-        isBalance: l.isBalance,
-      })),
-      settings,
-      m,
-    );
-
     for (const line of found.lines) {
-      const within = line.isBalance ? sum.balancePct : (line.contentPct?.toString() ?? null);
+      const within = line.contentPct?.toString() ?? null;
       if (within === null) continue;
       const next = timesPct(ratio, within);
       if (!next) continue;

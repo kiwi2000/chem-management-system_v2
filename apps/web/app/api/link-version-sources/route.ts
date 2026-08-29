@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /** 画面に出すのに要るぶんだけ一緒に引く */
 const INCLUDE = {
   version: { select: { code: true } },
-  source: { select: { code: true, color: true } },
+  source: { select: { code: true, color: true, mark: true } },
 } as const;
 
 /**

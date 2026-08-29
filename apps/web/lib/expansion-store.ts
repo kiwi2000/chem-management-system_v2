@@ -1,4 +1,3 @@
-import type { AppSettings, Messages } from "@chem/shared";
 import { COMPOSITION_MAX_DEPTH } from "@chem/shared";
 import { expandTree, type ExpandedProduct, type LineLoader } from "@/lib/expansion-calc";
 import { prisma } from "@/lib/db";
@@ -30,19 +29,14 @@ const dbLoader: LineLoader = async (productId) => {
   if (lines.length === 0) return null;
   return lines.map((l) => ({
     contentPct: l.contentPct?.toString() ?? null,
-    isBalance: l.isBalance,
     substance: l.substance,
     childProductId: l.childProductId,
   }));
 };
 
 /** 1製品ぶんを展開する。**書き込みはしない。** */
-export function expandProduct(
-  rootProductId: string,
-  settings: AppSettings,
-  m: Messages,
-): Promise<ExpandedProduct> {
-  return expandTree(rootProductId, dbLoader, settings, m);
+export function expandProduct(rootProductId: string): Promise<ExpandedProduct> {
+  return expandTree(rootProductId, dbLoader);
 }
 
 /**
@@ -108,14 +102,10 @@ export async function findAffected(productId: string): Promise<string[]> {
  * 深いところから順に計算する必要はない（親を計算するときに子の組成を
  * その場でたどるので、保存済みの結果には頼っていない）。
  */
-export async function recomputeFrom(
-  productId: string,
-  settings: AppSettings,
-  m: Messages,
-): Promise<number> {
+export async function recomputeFrom(productId: string): Promise<number> {
   const targets = await findAffected(productId);
   for (const id of targets) {
-    await saveExpansion(id, await expandProduct(id, settings, m));
+    await saveExpansion(id, await expandProduct(id));
   }
 
   /*

@@ -7,16 +7,22 @@ export interface SourceInfo {
   code: string;
   /** 決めていなければ空。色が無いときは枠だけで出す */
   color: string | null;
+  /** 印に出す文字。決めていなければコードの頭文字を使う */
+  mark?: string | null;
 }
 
 /**
- * データソースの頭文字。`LOLI` なら `L`。
+ * 印に出す文字。
  *
- * **頭文字はぶつかることがある**（`CHRIP` と `CFR` はどちらも `C`）。
- * 印だけで見分けられないので、**マウスを載せるとコードが出る**ようにし、
+ * 決めていなければコードの頭文字を使う。**頭文字はぶつかる**
+ * （`CHRIP` と `CFR` はどちらも `C`）ので、ぶつかるときは
+ * データソースの画面で文字を決められる。1文字とは限らない。
+ *
+ * どちらにしても**マウスを載せるとコードが出る**ようにし、
  * ボタンで出す札にも並びを全部書く。
  */
-export const initialOf = (code: string) => (code.trim()[0] ?? "?").toUpperCase();
+export const markOf = (s: { code: string; mark?: string | null }) =>
+  s.mark?.trim() || (s.code.trim()[0] ?? "?").toUpperCase();
 
 /**
  * データソースの印。表のセルの先頭と、意味を並べる札の両方で使う。
@@ -29,14 +35,18 @@ export function SourceChip({ source, className }: { source: SourceInfo; classNam
     <span
       title={source.code}
       className={cn(
-        "inline-flex size-4 shrink-0 items-center justify-center rounded-[3px] align-[-0.15em] text-[0.6rem] leading-none font-bold",
+        /*
+          **横は中身で伸ばす。**印は1文字とは限らないので、
+          正方形に決め打つと2文字以上がはみ出す
+        */
+        "inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-[3px] px-0.5 align-[-0.15em] text-[0.6rem] leading-none font-bold",
         // 色を決めていないときは枠だけ。何も出さないと印が消えて位置がずれる
         source.color ? "text-white" : "border-muted-foreground/50 text-muted-foreground border",
         className,
       )}
       style={source.color ? { backgroundColor: source.color } : undefined}
     >
-      {initialOf(source.code)}
+      {markOf(source)}
     </span>
   );
 }

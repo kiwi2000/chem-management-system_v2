@@ -1,4 +1,3 @@
-import { DEFAULT_SETTINGS, getMessages } from "@chem/shared";
 import { describe, expect, it } from "vitest";
 import { expandTree, type ExpandLine, type LineLoader } from "./expansion-calc";
 
@@ -8,8 +7,6 @@ import { expandTree, type ExpandLine, type LineLoader } from "./expansion-calc";
  * ここが狂うと、**判定の土台が全部狂う**。しかも数字が少しずれるだけなので、
  * 画面を見ても気づけない。手で組んだ木で、境目を確かめる。
  */
-const m = getMessages("ja");
-const settings = DEFAULT_SETTINGS;
 
 /** 木を手で組む。製品ID → 組成の行 */
 function loaderOf(tree: Record<string, ExpandLine[]>): LineLoader {
@@ -19,7 +16,6 @@ function loaderOf(tree: Record<string, ExpandLine[]>): LineLoader {
 const sub = (id: string, cas: string | null) => ({ id, casNumber: cas });
 const line = (pct: string | null, x: Partial<ExpandLine> = {}): ExpandLine => ({
   contentPct: pct,
-  isBalance: false,
   substance: null,
   childProductId: null,
   ...x,
@@ -39,8 +35,6 @@ describe("組成の展開", () => {
     const e = await expandTree(
       "P",
       loaderOf({ P: [line("30", { substance: sub("s1", "7439-92-1") })] }),
-      settings,
-      m,
     );
     expect(asMap(e.lines)).toEqual({ "7439-92-1": "30" });
   });
@@ -53,8 +47,6 @@ describe("組成の展開", () => {
         P: [line("5", { childProductId: "M" })],
         M: [line("3", { substance: sub("ag", "7440-22-4") })],
       }),
-      settings,
-      m,
     );
     expect(asMap(e.lines)).toEqual({ "7440-22-4": "0.15" });
   });
@@ -71,8 +63,6 @@ describe("組成の展開", () => {
         A: [line("0.12", { substance: sub("cu-a", "7440-50-8") })],
         B: [line("0.08", { substance: sub("cu-b", "7440-50-8") })],
       }),
-      settings,
-      m,
     );
     // 0.06 + 0.04 = 0.1。仕入先違いで別IDでも、CASが同じなら1行にまとまる
     expect(asMap(e.lines)).toEqual({ "7440-50-8": "0.1" });
@@ -84,25 +74,26 @@ describe("組成の展開", () => {
       loaderOf({
         P: [line("10", { substance: sub("x1", null) }), line("20", { substance: sub("x2", null) })],
       }),
-      settings,
-      m,
     );
     expect(asMap(e.lines)).toEqual({ "sub:x1": "10", "sub:x2": "20" });
   });
 
-  it("残部の行は、同じ階層の残りとして計算する", async () => {
+  /*
+    かつては「残部」の行（含有率を空にして、残りを自動で当てる）があった。
+    やめたので、**含有率を持たない行は何も足さない**。
+    中身が分からないぶんとして扱われる
+  */
+  it("含有率を持たない行は、何も足さない", async () => {
     const e = await expandTree(
       "P",
       loaderOf({
         P: [
           line("30", { substance: sub("a", "1-1-1") }),
-          line(null, { isBalance: true, substance: sub("b", "2-2-2") }),
+          line(null, { substance: sub("b", "2-2-2") }),
         ],
       }),
-      settings,
-      m,
     );
-    expect(asMap(e.lines)).toEqual({ "1-1-1": "30", "2-2-2": "70" });
+    expect(asMap(e.lines)).toEqual({ "1-1-1": "30" });
   });
 
   it("中身が登録されていない原材料は、分からないぶんとして数える", async () => {
@@ -118,8 +109,6 @@ describe("組成の展開", () => {
           line("30", { childProductId: "UNKNOWN" }),
         ],
       }),
-      settings,
-      m,
     );
     expect(asMap(e.lines)).toEqual({ "1-1-1": "70" });
     expect(e.unknownPct).toBe("30");
@@ -136,8 +125,6 @@ describe("組成の展開", () => {
           line("60", { substance: sub("a", "1-1-1") }),
         ],
       }),
-      settings,
-      m,
     );
     // Mが50％、その中の40％が不明 → 製品全体では20％が不明
     expect(e.unknownPct).toBe("20");
@@ -151,8 +138,6 @@ describe("組成の展開", () => {
         P: [line("20", { childProductId: "M" }), line("30", { childProductId: "M" })],
         M: [line("10", { substance: sub("a", "1-1-1") })],
       }),
-      settings,
-      m,
     );
     // 20％の中の10％＝2％、30％の中の10％＝3％。合わせて5％
     expect(asMap(e.lines)).toEqual({ "1-1-1": "5" });
@@ -166,14 +151,12 @@ describe("組成の展開", () => {
         P: [line("0.001", { childProductId: "M" })],
         M: [line("0.5", { substance: sub("a", "1-1-1") })],
       }),
-      settings,
-      m,
     );
     expect(asMap(e.lines)).toEqual({ "1-1-1": "0.000005" });
   });
 
   it("根の製品に組成が無ければ、全部が分からないぶんになる", async () => {
-    const e = await expandTree("P", loaderOf({}), settings, m);
+    const e = await expandTree("P", loaderOf({}));
     expect(e.lines).toEqual([]);
     expect(e.unknownPct).toBe("100");
   });

@@ -1,9 +1,10 @@
 "use client";
 
-import { emptyTableState, type TableState } from "@chem/shared";
+import { emptyTableState, SOURCE_MARK_MAX, type TableState } from "@chem/shared";
 import { Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ColorPicker } from "@/components/color-picker";
+import { SourceChip } from "@/components/source-chip";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -59,6 +60,9 @@ export function DataSourceSection({
   /** 説明だけは行の中で直せる */
   const [editingId, setEditingId] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  /** 印に出す文字。押すと入力欄になる */
+  const [markEditingId, setMarkEditingId] = useState<string | null>(null);
+  const [mark, setMark] = useState("");
 
   const columns = useMemo<TableColumn<LinkVersionSourceDto>[]>(
     () => [
@@ -95,6 +99,58 @@ export function DataSourceSection({
             onChange={(color) => void saveColor(r, color)}
           />
         ),
+      },
+      {
+        /*
+          印に出す文字。**1文字とは限らない。**
+          決めていなければコードの頭文字を使うので、空でも困らない
+        */
+        key: "sourceMark",
+        header: m.sources.mark,
+        kind: "text",
+        width: 96,
+        sortable: false,
+        filterable: false,
+        render: (r) =>
+          r.id === markEditingId ? (
+            <Input
+              // 押してすぐ打てるようにする。もう一度押させると、直すたびに2手かかる
+              autoFocus
+              value={mark}
+              maxLength={SOURCE_MARK_MAX}
+              aria-label={m.sources.mark}
+              onChange={(e) => setMark(e.target.value)}
+              onBlur={() => void saveMark(r)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void saveMark(r);
+                if (e.key === "Escape") setMarkEditingId(null);
+              }}
+              className="h-7 w-full text-sm"
+            />
+          ) : (
+            <button
+              type="button"
+              disabled={!editable}
+              title={m.sources.markEdit}
+              onClick={() => {
+                setMarkEditingId(r.id);
+                setMark(r.sourceMark ?? "");
+              }}
+              className="flex items-center gap-1.5"
+            >
+              <SourceChip
+                source={{
+                  id: r.sourceId,
+                  code: r.sourceCode,
+                  color: r.sourceColor,
+                  mark: r.sourceMark,
+                }}
+              />
+              <span className="text-muted-foreground text-xs">
+                {r.sourceMark ? "" : m.sources.markDefault}
+              </span>
+            </button>
+          ),
       },
       {
         key: "note",
@@ -165,7 +221,7 @@ export function DataSourceSection({
     ],
     // saveColor は毎回作られるが、中身は変わらないので手がかりに入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [m, locale, editingId, note, editable, sources],
+    [m, locale, editingId, note, markEditingId, mark, editable, sources],
   );
 
   const { state, setState, reset, ready } = useTableState(
@@ -244,7 +300,7 @@ export function DataSourceSection({
       const res = await fetch("/api/sources/" + row.sourceId, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: type.code, note: type.note, color }),
+        body: JSON.stringify({ code: type.code, note: type.note, color, mark: type.mark }),
       });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -259,6 +315,36 @@ export function DataSourceSection({
           prev,
       );
       setSources((prev) => prev.map((x) => (x.id === row.sourceId ? { ...x, color } : x)));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** 印に出す文字を保存する。色と同じく、書き換えるのは種別そのもの */
+  async function saveMark(row: LinkVersionSourceDto) {
+    const type = sources.find((x) => x.id === row.sourceId);
+    setMarkEditingId(null);
+    if (!type || (row.sourceMark ?? "") === mark.trim()) return;
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/sources/" + row.sourceId, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: type.code, note: type.note, color: type.color, mark }),
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      const saved = mark.trim() || null;
+      setItems(
+        (prev) =>
+          prev?.map((x) => (x.sourceId === row.sourceId ? { ...x, sourceMark: saved } : x)) ?? prev,
+      );
+      setSources((prev) => prev.map((x) => (x.id === row.sourceId ? { ...x, mark: saved } : x)));
     } finally {
       setSaving(false);
     }

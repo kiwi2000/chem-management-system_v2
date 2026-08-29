@@ -1,7 +1,7 @@
 "use client";
 
 import { pickName, pickStatutoryName } from "@chem/shared";
-import { ChevronRight, TriangleAlert } from "lucide-react";
+import { ChevronRight, CircleHelp, TriangleAlert } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CELL_CLIP, OPAQUE_MUTED_40, OPAQUE_MUTED_50 } from "@/components/ui/table";
@@ -11,6 +11,7 @@ import { CellDetailDialog } from "@/components/cell-detail-dialog";
 import { DiffChip, SourceChips, type SourceInfo } from "@/components/source-chip";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
 import type { ApiError, CompositionAggregateDto, RowRegulationDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -49,13 +50,20 @@ function NearMark() {
 }
 
 /**
- * 判定に確認が残っているものに付ける印。
+ * 判定に確認が残っているものに付ける印。**「?」の丸。**
  *
- * これまでは**数字ごと赤くする**だけだったので、
- * 「当たった7件のうち何件が要確認か」が読めなかった。
- * 印と件数に分けると、△（含有率不足）と並べても取り違えない
+ * 「この判定は変わるかもしれない、正しくないかもしれない」という意味。
+ * 三角は**含有率不足**のほうで使っているので、同じ形にすると取り違える。
+ *
+ * **下の法規制判定の表と同じ印にする。**同じことを2か所で別の印にすると、
+ * 同じものだと分からない。
+ *
+ * 数字ごと赤くしていたころは「当たった7件のうち何件が要確認か」が読めなかった。
+ * 印と件数を分けて出す
  */
-const REVIEW_MARK = "※";
+function ReviewMark() {
+  return <CircleHelp className="mr-0.5 inline size-3 align-[-0.1em]" aria-hidden />;
+}
 
 /*
   貼り付けた列の背景。**透けさせない。**
@@ -421,6 +429,8 @@ export function CompositionAggregateTable({
         <CellDetailDialog
           cas={cell.cas}
           categoryId={cell.categoryId}
+          productId={productId}
+          showNearMiss={showNearMiss}
           onClose={() => setCell(null)}
         />
       )}
@@ -885,14 +895,14 @@ function RegulationMark({
         {showDiff && [...hits, ...near].some((h) => h.changed) && <DiffChip label={diffLabel} />}
         {hits.length > 0 && <span title={title}>{hits.length}</span>}
         {reviewCount > 0 && (
-          <span title={title} className="text-destructive">
+          <span title={title} className={REVIEW_CLASS}>
             {" "}
-            {REVIEW_MARK}
+            <ReviewMark />
             {reviewCount}
           </span>
         )}
         {near.length > 0 && (
-          <span title={nearTitle} className="text-destructive">
+          <span title={nearTitle} className={NEAR_MISS_CLASS}>
             {hits.length > 0 || reviewCount > 0 ? " " : ""}
             <NearMark />
             {near.length}
@@ -927,17 +937,17 @@ function RegulationMark({
         <span title={title} className="block">
           {/* 名前が取れないのは、区分そのものでまとめて当たったとき */}
           {labels.length === 0 ? (
-            <span className={needsReview ? "text-destructive" : ""}>
+            <span className={needsReview ? REVIEW_CLASS : ""}>
               <SourceChips ids={hits.flatMap((h) => h.sourceIds)} sources={sources} />
               {showDiff && hits.some((h) => h.changed) && <DiffChip label={diffLabel} />}
-              {needsReview ? `${REVIEW_MARK} ` : ""}●
+              {needsReview && <ReviewMark />}●
             </span>
           ) : (
             labels.map(({ t, review, sourceIds, changed }) => (
-              <span key={t} className={cn("block", review ? "text-destructive" : "")}>
+              <span key={t} className={cn("block", review ? REVIEW_CLASS : "")}>
                 <SourceChips ids={sourceIds} sources={sources} />
                 {showDiff && changed && <DiffChip label={diffLabel} />}
-                {review ? `${REVIEW_MARK} ` : ""}
+                {review && <ReviewMark />}
                 {t}
               </span>
             ))
@@ -949,7 +959,7 @@ function RegulationMark({
         含有率が変われば該当するので、気を付ける相手として出す
       */}
       {nearLabels.map(({ t, sourceIds, changed }) => (
-        <span key={`near-${t}`} title={nearTitle} className="text-destructive block">
+        <span key={`near-${t}`} title={nearTitle} className={cn("block", NEAR_MISS_CLASS)}>
           <SourceChips ids={sourceIds} sources={sources} />
           {showDiff && changed && <DiffChip label={diffLabel} />}
           <NearMark />

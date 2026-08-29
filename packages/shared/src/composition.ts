@@ -34,8 +34,8 @@ const pctString = z
 
 /**
  * 組成の1行。
- * 構成要素は物質か子製品のどちらか一方、balance（残部）行は含有率を持たない。
- * この2つは形の問題なのでスキーマで見る（存在確認や循環はサーバー側）。
+ * 構成要素は物質か子製品のどちらか一方で、含有率は必ず入れる。
+ * 形の問題なのでスキーマで見る（存在確認や循環はサーバー側）。
  */
 export const compositionLineSchema = (m: Messages) =>
   z
@@ -43,7 +43,6 @@ export const compositionLineSchema = (m: Messages) =>
       substanceId: emptyToNull(z.string().trim().max(50)).optional(),
       childProductId: emptyToNull(z.string().trim().max(50)).optional(),
       contentPct: emptyToNull(pctString).optional(),
-      isBalance: z.boolean(),
       note: emptyToNull(z.string().trim().max(500, m.validation.tooLong(500))).optional(),
     })
     .superRefine((line, ctx) => {
@@ -55,17 +54,6 @@ export const compositionLineSchema = (m: Messages) =>
           path: ["substanceId"],
           message: m.composition.errorPickOne,
         });
-      }
-
-      if (line.isBalance) {
-        if (line.contentPct != null) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["contentPct"],
-            message: m.composition.errorBalanceHasPct,
-          });
-        }
-        return;
       }
 
       if (line.contentPct == null) {
@@ -106,7 +94,6 @@ export type CompositionInput = z.infer<ReturnType<typeof compositionSchema>>;
 /** 合計検証に必要な部分だけ（画面は入力途中の値でも呼べるようにする） */
 export interface SumLine {
   contentPct: string | null;
-  isBalance: boolean;
 }
 
 export interface CompositionSumResult {
@@ -114,10 +101,8 @@ export interface CompositionSumResult {
   errors: string[];
   /** 保存はするが伝える */
   warnings: string[];
-  /** 既知成分（balance行を除く）の合計 */
+  /** 入力されている含有率の合計 */
   totalPct: string;
-  /** balance行に入る値。balance行が無ければ null */
-  balancePct: string | null;
 }
 
 /**
@@ -139,41 +124,15 @@ export function validateCompositionSum(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const balanceLines = lines.filter((l) => l.isBalance);
-  const knownLines = lines.filter((l) => !l.isBalance);
-  const total = sumScaled(knownLines.map((l) => l.contentPct));
+  const total = sumScaled(lines.map((l) => l.contentPct));
   const totalPct = fromScaled(total);
 
   if (lines.length === 0) {
-    return { errors, warnings: [m.composition.warnEmpty], totalPct: "0", balancePct: null };
-  }
-
-  if (balanceLines.length > 1) {
-    errors.push(m.composition.errorBalanceMultiple);
+    return { errors, warnings: [m.composition.warnEmpty], totalPct: "0" };
   }
 
   const epsilon = toScaled(settings.compositionEpsilonPct) ?? 0n;
   const mode = settings.compositionValidationMode;
-
-  if (balanceLines.length > 0) {
-    const balance = SCALED_HUNDRED - total;
-    if (balance < -epsilon) {
-      // 既知成分だけで 100% を超えている。残部に入れる値が無い
-      if (mode === "LENIENT") {
-        warnings.push(m.composition.warnSumOver(totalPct));
-        return { errors, warnings, totalPct, balancePct: "0" };
-      }
-      errors.push(m.composition.errorBalanceNegative(totalPct));
-      return { errors, warnings, totalPct, balancePct: "0" };
-    }
-    // 誤差の範囲で少しだけ超えている場合は 0 に丸める
-    return {
-      errors,
-      warnings,
-      totalPct,
-      balancePct: fromScaled(balance < 0n ? 0n : balance),
-    };
-  }
 
   if (total > SCALED_HUNDRED + epsilon) {
     const message = m.composition.warnSumOver(totalPct);
@@ -184,5 +143,5 @@ export function validateCompositionSum(
     else if (mode === "STANDARD") warnings.push(m.composition.warnSumUnder(totalPct));
   }
 
-  return { errors, warnings, totalPct, balancePct: null };
+  return { errors, warnings, totalPct };
 }

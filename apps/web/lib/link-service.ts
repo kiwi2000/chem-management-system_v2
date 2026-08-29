@@ -8,7 +8,7 @@ import type {
 } from "@/lib/types";
 
 export function toSourceDto(s: Source): SourceDto {
-  return { id: s.id, code: s.code, note: s.note, color: s.color };
+  return { id: s.id, code: s.code, note: s.note, color: s.color, mark: s.mark };
 }
 
 export function toLinkSetVersionDto(v: LinkSetVersion): LinkSetVersionDto {
@@ -62,7 +62,7 @@ export async function ensureCurrentVersion(actorId: string): Promise<void> {
 export function toLinkVersionSourceDto(
   row: LinkVersionSource & {
     version: { code: string };
-    source: { code: string; color: string | null };
+    source: { code: string; color: string | null; mark: string | null };
   },
   linkCount: number,
 ): LinkVersionSourceDto {
@@ -73,6 +73,7 @@ export function toLinkVersionSourceDto(
     sourceId: row.sourceId,
     sourceCode: row.source.code,
     sourceColor: row.source.color,
+    sourceMark: row.source.mark,
     priority: row.priority,
     note: row.note,
     loadedAt: row.loadedAt?.toISOString() ?? null,

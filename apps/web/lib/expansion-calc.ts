@@ -4,9 +4,6 @@ import {
   fineToPct,
   ratioToFine,
   timesPct,
-  validateCompositionSum,
-  type AppSettings,
-  type Messages,
   type Ratio,
 } from "@chem/shared";
 
@@ -32,7 +29,6 @@ export interface ExpandedProduct {
 /** 組成の1行。木をたどるのに要るぶんだけ */
 export interface ExpandLine {
   contentPct: string | null;
-  isBalance: boolean;
   substance: { id: string; casNumber: string | null } | null;
   childProductId: string | null;
 }
@@ -52,8 +48,6 @@ export type LineLoader = (productId: string) => Promise<ExpandLine[] | null>;
 export async function expandTree(
   rootProductId: string,
   load: LineLoader,
-  settings: AppSettings,
-  m: Messages,
 ): Promise<ExpandedProduct> {
   /** 鍵。CAS を持たない物質はまとめようがないので、物質そのものを鍵にする */
   const buckets = new Map<
@@ -97,15 +91,9 @@ export async function expandTree(
       return;
     }
 
-    // 残部の行は自分では値を持たない。その組成から計算した値を使う
-    const sum = validateCompositionSum(
-      lines.map((l) => ({ contentPct: l.contentPct?.toString() ?? null, isBalance: l.isBalance })),
-      settings,
-      m,
-    );
-
     for (const line of lines) {
-      const within = line.isBalance ? sum.balancePct : (line.contentPct?.toString() ?? null);
+      // 含有率はその行が持っている
+      const within = line.contentPct?.toString() ?? null;
       if (within === null) continue;
       const next = timesPct(ratio, within);
       if (!next) continue;

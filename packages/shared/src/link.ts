@@ -12,6 +12,9 @@ const optionalNote = (m: Messages) =>
     .nullable()
     .optional();
 
+/** 印に出す文字の上限。**長いと表のセルが崩れる** */
+export const SOURCE_MARK_MAX = 8;
+
 /**
  * 情報源（LOLI・CHRIP・自社データなど）。
  * どのバージョンでどの順に読むかはバージョンの側で決めるので、ここには優先度を持たせない。
@@ -35,6 +38,16 @@ export const sourceSchema = (m: Messages) =>
       .regex(/^#[0-9a-fA-F]{6}$/, m.validation.badColor)
       .nullish()
       .or(z.literal("").transform(() => null)),
+    /**
+     * 画面の印に出す文字。**1文字とは限らない。**
+     * 空なら、コードの頭文字を使う
+     */
+    mark: z
+      .string()
+      .trim()
+      .max(SOURCE_MARK_MAX, m.validation.tooLong(SOURCE_MARK_MAX))
+      .nullish()
+      .transform((v) => (v ? v : null)),
   });
 
 /**

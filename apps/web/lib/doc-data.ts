@@ -6,7 +6,6 @@ import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import type { RenderInput } from "@/lib/doc-render";
 import { toJudgementDtos } from "@/lib/judgement-service";
-import { getAppSettings } from "@/lib/settings";
 import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
 import { buildSubstanceMatrix } from "@/lib/substance-matrix";
 
@@ -168,7 +167,6 @@ export async function collectForProduct(
       orderBy: { displayOrder: "asc" },
       select: {
         contentPct: true,
-        isBalance: true,
         note: true,
         substance: { select: { code: true, casNumber: true, nameJa: true, nameEn: true } },
         childProduct: { select: { code: true, nameJa: true, nameEn: true } },
@@ -182,14 +180,12 @@ export async function collectForProduct(
         name: l.substance
           ? pickName(locale, l.substance.nameJa, l.substance.nameEn)
           : pickName(locale, l.childProduct?.nameJa, l.childProduct?.nameEn),
-        // 残部の行は数字を持たない。計算した値ではなく、そのことを出す
-        contentPct: l.isBalance ? m.composition.balanceOf("") : (l.contentPct?.toString() ?? ""),
+        contentPct: l.contentPct?.toString() ?? "",
         note: l.note ?? "",
       })),
     });
 
-    const settings = await getAppSettings();
-    const agg = await aggregateComposition(actor, product.id, settings, m);
+    const agg = await aggregateComposition(actor, product.id);
     tables.set("compositionAggregate", {
       columns: tableDef("compositionAggregate", locale),
       rows: agg.rows.map((r) => ({

@@ -15,9 +15,8 @@ const settings = (over: Partial<AppSettings> = {}): AppSettings => ({
   ...over,
 });
 
-const line = (contentPct: string | null, isBalance = false): SumLine => ({
+const line = (contentPct: string | null): SumLine => ({
   contentPct,
-  isBalance,
 });
 
 describe("小数の受け渡し", () => {
@@ -55,7 +54,7 @@ describe("validateCompositionSum", () => {
     expect(r.totalPct).toBe("100");
   });
 
-  describe("残部の行がないとき", () => {
+  describe("合計の検証", () => {
     const lines = [line("60"), line("30")]; // 合計 90%
 
     it("STRICT は足りないとエラー", () => {
@@ -101,40 +100,6 @@ describe("validateCompositionSum", () => {
       );
       expect(r.errors).toEqual([]);
       expect(r.warnings).toEqual([]);
-    });
-  });
-
-  describe("残部の行があるとき", () => {
-    it("100%との差が残部に入る", () => {
-      const r = validateCompositionSum([line("60"), line("15.5"), line(null, true)], settings(), m);
-      expect(r.errors).toEqual([]);
-      expect(r.totalPct).toBe("75.5");
-      expect(r.balancePct).toBe("24.5");
-    });
-
-    it("既知だけで100%を超えていればエラー（残部が負になるため）", () => {
-      const r = validateCompositionSum([line("60"), line("50"), line(null, true)], settings(), m);
-      expect(r.errors).toEqual([m.composition.errorBalanceNegative("110")]);
-      expect(r.balancePct).toBe("0");
-    });
-
-    it("誤差の範囲で超えている分は 0 に丸める", () => {
-      const r = validateCompositionSum(
-        [line("100.005"), line(null, true)],
-        settings({ compositionEpsilonPct: "0.01" }),
-        m,
-      );
-      expect(r.errors).toEqual([]);
-      expect(r.balancePct).toBe("0");
-    });
-
-    it("2件以上あればエラー", () => {
-      const r = validateCompositionSum(
-        [line("60"), line(null, true), line(null, true)],
-        settings(),
-        m,
-      );
-      expect(r.errors).toContain(m.composition.errorBalanceMultiple);
     });
   });
 });

@@ -73,10 +73,7 @@ async function main() {
     先に作らないと「中身が何も分からない」ものとして扱われ、1件も当たらない
   */
   const { expandProduct, saveExpansion } = await import("../apps/web/lib/expansion-store");
-  const { getAppSettings } = await import("../apps/web/lib/settings");
-  const { getMessages } = await import("@chem/shared");
-  const settings = await getAppSettings();
-  const expanded = await expandProduct(product.id, settings, getMessages("ja"));
+  const expanded = await expandProduct(product.id);
   await saveExpansion(product.id, expanded);
 
   const { loadRules, loadFactors, judgeProduct } = await import("../apps/web/lib/judge-store");

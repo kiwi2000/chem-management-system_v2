@@ -115,7 +115,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 
   const settings = await getAppSettings();
   const sum = validateCompositionSum(
-    input.lines.map((l) => ({ contentPct: l.contentPct ?? null, isBalance: l.isBalance })),
+    input.lines.map((l) => ({ contentPct: l.contentPct ?? null })),
     settings,
     m,
   );
@@ -147,7 +147,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     保存より先に失敗したら困るので、保存が済んだあとに回している。
     ここで失敗しても組成の保存は取り消さない（作り直しは後からやり直せる）。
   */
-  const recomputed = await recomputeFrom(id, settings, m).catch((e: unknown) => {
+  const recomputed = await recomputeFrom(id).catch((e: unknown) => {
     console.error("展開結果の作り直しに失敗:", id, e);
     return 0;
   });
@@ -164,7 +164,6 @@ export async function PUT(req: Request, { params }: Ctx) {
     ok: true,
     warnings: sum.warnings,
     totalPct: sum.totalPct,
-    balancePct: sum.balancePct,
     // 保存後の印。続けて直せるように返す
     stamp: (await compositionStamp(id)).stamp,
   });

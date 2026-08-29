@@ -882,13 +882,10 @@ model CompositionLine {
   childProductId  String? @map("child_product_id")
 
   /**
-   * 重量含有率。残部（balance）の行だけ null で、100% との差から算出する
+   * 重量含有率。**必ず入れる。**
+   * かつて「残部」の行だけ空にして 100% との差から出していたが、その扱いはやめた
    */
   contentPct Decimal? @map("content_pct") @db.Decimal(9, 6)
-  /**
-   * 残部の行。1製品につき1件まで（アプリ層で担保）
-   */
-  isBalance  Boolean  @default(false) @map("is_balance")
 
   note         String?
   displayOrder Int     @default(0) @map("display_order")
@@ -1584,6 +1581,14 @@ model Source {
    * 決めていなければ空。画面は色を使わない見せかたに落とす
    */
   color String? @db.VarChar(7)
+
+  /**
+   * 画面の印に出す文字。決めていなければコードの頭文字を使う。
+   *
+   * **頭文字はぶつかる。**`CHRIP` と `CFR` はどちらも `C` になり、
+   * 印だけでは見分けられない。1文字とは限らないので、短い語も入れられる
+   */
+  mark String? @db.VarChar(8)
 
   createdAt DateTime  @default(now()) @map("created_at")
   createdBy String?   @map("created_by")

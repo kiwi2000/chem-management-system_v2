@@ -455,6 +455,9 @@ export const ja = {
     colorPick: "色を選ぶ",
     colorNone: "決めていません",
     colorCustom: "自分で色を作る",
+    mark: "印",
+    markEdit: "印に出す文字を決める",
+    markDefault: "（頭文字）",
     duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
     revived: "以前に削除した同じコードがあったため、内容を更新して復活させました",
     inUseByVersions: (n: number) =>
@@ -1206,7 +1209,6 @@ export const ja = {
     elementId: "ID",
     elementName: "物質名/原材料名",
     casNumber: "CAS",
-    balanceOf: (pct: string) => `${pct}（残部）`,
     dragHint: "つかんで上下に動かすと順番を変えられます（矢印キーでも動かせます）",
     fillHint: "ダブルクリックすると、合計が100%になる値が入ります",
     sumLabel: "合計",
@@ -1214,7 +1216,6 @@ export const ja = {
     /** 重量%の列が2つ並ぶときの、それぞれの副題 */
     pctOfProduct: "製品全体",
     pctWithinMaterial: "原材料内",
-    balanceAuto: "自動補完",
     note: "備考",
     searchPlaceholder: "コード / 名称で検索",
     searching: "検索中...",
@@ -1242,13 +1243,14 @@ export const ja = {
     /** CAS番号は法律に載っているが、含有率が足りず当たっていないもの */
     nearMissShow: "含有率不足による非該当",
     sourceShow: "データソース",
-    reviewLegend: "※ 判定結果要注意",
+    reviewLegend: "適用条件要確認",
     diffShow: "差分あり",
     cellDetailTitle: "バージョン・データソース別の該当",
     cellDetailCurrent: "現バージョン",
     cellDetailPast: "前のバージョン",
     cellDetailNoSources: "このバージョンにはデータソースがありません",
-    cellDetailHint: "赤字は、そのバージョンで採用された法文物質名です（優先度がいちばん高いもの）",
+    cellDetailHint:
+      "太字が、そのバージョンで採用された法文物質名です（優先度がいちばん高いもの）。青は該当、オレンジは含有率が足りず非該当",
     cellDetailOpen: "バージョン・データソース別に見る",
     diffHint:
       "前のバージョンには無かった結び付きに「差」の印を付けます。バージョンを上げて新しく当たるようになったものが分かります",
@@ -1293,11 +1295,7 @@ export const ja = {
     savedWithWarnings: "組成を保存しました。次の点を確認してください",
     /** 保存を止めるもの */
     errorPickOne: "構成要素は物質か原材料のどちらか一方を選んでください",
-    errorPctRequired: "含有率を入力してください（残部の行を除く）",
-    errorBalanceHasPct: "残部の行に含有率は入力できません（自動で決まります）",
-    errorBalanceMultiple: "残部の行は1製品につき1件までです",
-    errorBalanceNegative: (total: string) =>
-      `既知成分だけで100%を超えているため、残部が負になります（合計 ${total}%）`,
+    errorPctRequired: "含有率を入力してください",
     errorSumNot100: (total: string) => `含有率の合計が100%になっていません（合計 ${total}%）`,
     errorDuplicateSubstance: (label: string) => `物質「${label}」が複数の行に指定されています`,
     errorDuplicateProduct: (label: string) => `原材料「${label}」が複数の行に指定されています`,
@@ -1310,7 +1308,7 @@ export const ja = {
     warnEmpty: "組成が空です",
     warnSumOver: (total: string) => `含有率の合計が100%を超えています（合計 ${total}%）`,
     warnSumUnder: (total: string) =>
-      `含有率の合計が100%未満です（合計 ${total}%・未開示や残部があるかもしれません）`,
+      `含有率の合計が100%未満です（合計 ${total}%・未開示のものがあるかもしれません）`,
     /** 参照されているものを消そうとしたとき */
     referencedByProducts: (n: number) => `${n} 件の組成から参照されているため削除できません`,
     usedAsMaterialWarning: (n: number) =>

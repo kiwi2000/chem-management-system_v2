@@ -351,19 +351,16 @@ export interface CompositionLineDto {
   id: string;
   substanceId: string | null;
   childProductId: string | null;
-  /** 残部の行は null。数値は文字列で受け渡す */
+  /** 数値は文字列で受け渡す */
   contentPct: string | null;
-  isBalance: boolean;
   note: string | null;
   element: CompositionElementDto | null;
 }
 
 export interface CompositionResponse {
   lines: CompositionLineDto[];
-  /** 既知成分（残部を除く）の合計 */
+  /** 入力されている含有率の合計 */
   totalPct: string;
-  /** 残部の行に入る値。残部の行が無ければ null */
-  balancePct: string | null;
 }
 
 /**
@@ -455,6 +452,11 @@ export interface CellDetailDto {
   substanceCode: string | null;
   substanceNameJa: string | null;
   substanceNameEn: string | null;
+  /** 地域 › 国 › 法律 › 規制区分 の順に出す */
+  regionNameJa: string;
+  regionNameEn: string | null;
+  countryNameJa: string;
+  countryNameEn: string | null;
   lawNameJa: string | null;
   lawNameEn: string | null;
   lawNameOriginal: string;
@@ -469,6 +471,7 @@ export interface CellDetailDto {
       id: string;
       code: string;
       color: string | null;
+      mark: string | null;
       /** そのデータソースが結んでいる法文物質名。空なら「—」を出す */
       items: CellStatutoryDto[];
     }[];
@@ -486,6 +489,15 @@ export interface CellStatutoryDto {
   nameOriginal: string;
   /** そのバージョンで、この結び付きが採用されたか（優先度がいちばん高い） */
   adopted: boolean;
+  /**
+   * その製品で当たっているか。**現バージョンだけ分かる**
+   * （前のバージョンの判定は保存していない）
+   */
+  hit: boolean;
+  /** 当たっているが、人が見て確かめることが残っている */
+  needsReview: boolean;
+  /** CAS は載っているのに、含有率が足りず当たっていない */
+  nearMiss: boolean;
 }
 
 /** CASでまとめた行。合算の結果はこの形で返す */
@@ -582,6 +594,8 @@ export interface CompositionAggregateDto {
     code: string;
     /** 決めていなければ空。画面は色が無いときの見せかたに落とす */
     color: string | null;
+    /** 印に出す文字。決めていなければコードの頭文字 */
+    mark: string | null;
   }[];
   /** 比べた相手のバージョン。無ければ空（差分の印は出ない） */
   previousVersion: string | null;
@@ -825,6 +839,8 @@ export interface SourceDto {
   note: string | null;
   /** 画面で使う色（`#rrggbb`）。決めていなければ空 */
   color: string | null;
+  /** 印に出す文字。決めていなければコードの頭文字を使う */
+  mark: string | null;
 }
 
 /**
@@ -849,6 +865,8 @@ export interface LinkVersionSourceDto {
   sourceCode: string;
   /** その種別に決めた色（`#rrggbb`）。決めていなければ空 */
   sourceColor: string | null;
+  /** 印に出す文字。決めていなければコードの頭文字 */
+  sourceMark: string | null;
   /** 小さいほど優先。同じバージョンの中で重複しない */
   priority: number;
   note: string | null;

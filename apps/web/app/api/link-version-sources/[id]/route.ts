@@ -67,7 +67,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     where: { id },
     include: {
       version: { select: { code: true } },
-      source: { select: { code: true, color: true } },
+      source: { select: { code: true, color: true, mark: true } },
     },
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
