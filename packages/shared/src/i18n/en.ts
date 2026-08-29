@@ -1244,6 +1244,7 @@ export const en: Messages = {
     aggregateRegulations: "Regulations",
     aggregateSplitByCategory: "split into categories",
     aggregateGroupByRegion: "group by region",
+    aggregateGroupByLaw: "group by law",
     aggregateOnlyThis: "show only matching rows",
     aggregateShowAllRows: "show all rows",
     aggregateFocused: (name: string, n: number) =>

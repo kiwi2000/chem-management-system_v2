@@ -1269,6 +1269,7 @@ export const ja = {
     aggregateRegulations: "該当法規制",
     aggregateSplitByCategory: "規制区分ごとに分ける",
     aggregateGroupByRegion: "地域にまとめる",
+    aggregateGroupByLaw: "法律にまとめる",
     aggregateOnlyThis: "これに該当する行だけを見る",
     aggregateShowAllRows: "すべての行を見る",
     aggregateFocused: (name: string, n: number) =>

@@ -195,17 +195,28 @@ interface RegionGroup {
  * 分けていない地域は、この段も地域名のセルが貫く
  */
 interface LawGroup {
+  /** 開け閉めを覚える鍵。地域＋法律名（法律の id は判定の結果に載っていない） */
   key: string;
   regionId: string;
   label: string;
-  /** この法律が占める列の数 */
+  /** この法律が占める列の数。閉じているときは 1 */
   span: number;
+  /** 閉じているか。閉じると、その法律の区分が1列にまとまる */
+  closed: boolean;
+  /** この法律が受け持つ規制区分の id */
+  categoryIds: Set<string>;
+}
+
+/** 法律の開け閉めを覚える鍵。地域が違えば別ものとして数える */
+function lawKeyOf(regionId: string, law: string) {
+  return `${regionId}::${law}`;
 }
 
 /** 出ている行から、法規の列を組み立てる */
 function leafColumns(
   rows: { regulations: RowRegulationDto[] }[],
   openRegions: Set<string>,
+  closedLaws: Set<string>,
   locale: ReturnType<typeof useI18n>["locale"],
 ): { leaves: LeafColumn[]; groups: RegionGroup[]; lawGroups: LawGroup[] } {
   /** 地域 → その地域で該当している区分（並び順つき） */
@@ -271,29 +282,63 @@ function leafColumns(
     const categories = [...region.categories.entries()].sort((a, b) => a[1].order - b[1].order);
     /*
       並びは区分の順（法律 → 区分）なので、同じ法律の区分は必ず隣り合う。
-      隣が同じ法律なら、そのまま1つのセルを横に伸ばす
+      隣が同じ法律なら、同じまとまりに入れる
     */
-    for (const [categoryId, c] of categories) {
-      const last = lawGroups[lawGroups.length - 1];
-      if (last && last.regionId === regionId && last.label === c.law) last.span += 1;
-      else lawGroups.push({ key: `${regionId}:${categoryId}`, regionId, label: c.law, span: 1 });
+    const laws: { law: string; items: typeof categories }[] = [];
+    for (const entry of categories) {
+      const last = laws[laws.length - 1];
+      if (last && last.law === entry[1].law) last.items.push(entry);
+      else laws.push({ law: entry[1].law, items: [entry] });
     }
-    for (const [categoryId, c] of categories) {
-      const label = labelOf(c);
-      leaves.push({
-        key: `category:${categoryId}`,
+
+    let span = 0;
+    for (const g of laws) {
+      const key = lawKeyOf(regionId, g.law);
+      const categoryIds = new Set(g.items.map(([categoryId]) => categoryId));
+      /*
+        **閉じた法律は1列にまとめる。**地域を閉じたときと同じ扱いで、
+        中身は件数になる。法律が多い地域で、見たいものだけを開いておくため
+      */
+      if (closedLaws.has(key)) {
+        leaves.push({
+          key: `law:${key}`,
+          regionId,
+          categoryId: null,
+          label: g.law,
+          categoryIds,
+          // 見出しがちょうど入るだけ。左右の余白・すきま・開閉の記号のぶんを足す
+          width: labelWidth(g.law) + 33,
+        });
+        lawGroups.push({ key, regionId, label: g.law, span: 1, closed: true, categoryIds });
+        span += 1;
+        continue;
+      }
+      for (const [categoryId, c] of g.items) {
+        const label = labelOf(c);
+        leaves.push({
+          key: `category:${categoryId}`,
+          regionId,
+          categoryId,
+          label,
+          categoryIds: new Set([categoryId]),
+          /*
+            区分まで分けると、中身が「分類＋番号＋法文物質名」の字になる。
+            見出しの長さだけで決めると狭すぎるので、下限を広めに取る（幅は引いて変えられる）
+          */
+          width: Math.min(280, Math.max(180, labelWidth(label) + 20)),
+        });
+      }
+      lawGroups.push({
+        key,
         regionId,
-        categoryId,
-        label,
-        categoryIds: new Set([categoryId]),
-        /*
-          区分まで分けると、中身が「分類＋番号＋法文物質名」の字になる。
-          見出しの長さだけで決めると狭すぎるので、下限を広めに取る（幅は引いて変えられる）
-        */
-        width: Math.min(280, Math.max(180, labelWidth(label) + 20)),
+        label: g.law,
+        span: g.items.length,
+        closed: false,
+        categoryIds,
       });
+      span += g.items.length;
     }
-    groups.push({ regionId, label: region.label, expanded: true, span: categories.length });
+    groups.push({ regionId, label: region.label, expanded: true, span });
   }
   return { leaves, groups, lawGroups };
 }
@@ -314,6 +359,8 @@ export function CompositionAggregateTable({
   const [error, setError] = useState<string | null>(null);
   /** 区分まで分けて見ている地域。地域名を押すたびに出し入れする */
   const [openRegions, setOpenRegions] = useState<Set<string>>(new Set());
+  /** 閉じている法律。**開いているのが既定**で、閉じたものだけを覚える */
+  const [closedLaws, setClosedLaws] = useState<Set<string>>(new Set());
   /**
    * 押して開いているセル。**区分まで分けた列だけ**開ける。
    * 地域でまとめた列は区分がいくつも重なっており、どれを見せるか決まらない
@@ -332,7 +379,7 @@ export function CompositionAggregateTable({
   const columnRows = (data?.rows ?? []).map((r) => ({
     regulations: showNearMiss ? [...r.regulations, ...r.nearMiss] : r.regulations,
   }));
-  const { leaves, groups, lawGroups } = leafColumns(columnRows, openRegions, locale);
+  const { leaves, groups, lawGroups } = leafColumns(columnRows, openRegions, closedLaws, locale);
   // 列幅は一覧と同じ規則。法規の列は中身で増減するが、鍵が id なので幅は覚えたまま
   const cols = useResizableColumns(
     /*
@@ -404,6 +451,22 @@ export function CompositionAggregateTable({
       next.add(regionId);
     }
     setOpenRegions(next);
+  };
+
+  /**
+   * 法律を開け閉めする。閉じると、その法律の区分が1列にまとまる。
+   * **閉じる法律の区分で絞り込んでいたら、絞り込みを外す。**
+   * 列が消えたのに絞り込みだけが残ると、行が減った理由が画面から読み取れない
+   */
+  const toggleLaw = (g: LawGroup) => {
+    const next = new Set(closedLaws);
+    if (next.has(g.key)) {
+      next.delete(g.key);
+    } else {
+      next.add(g.key);
+      if (focus && g.categoryIds.has(focus.categoryId)) setFocus(null);
+    }
+    setClosedLaws(next);
   };
 
   /**
@@ -586,10 +649,34 @@ export function CompositionAggregateTable({
                     <th
                       key={g.key}
                       colSpan={g.span}
-                      className={cn(CELL, "truncate px-2 py-1 text-center font-medium")}
-                      title={g.label}
+                      // 閉じた法律は、下の区分の段まで貫いて1つのセルにする
+                      rowSpan={g.closed ? 2 : 1}
+                      className={cn(CELL, "relative p-0 font-medium")}
                     >
-                      {g.label}
+                      <button
+                        type="button"
+                        onClick={() => toggleLaw(g)}
+                        aria-expanded={!g.closed}
+                        title={
+                          g.closed
+                            ? `${g.label} — ${m.composition.aggregateSplitByCategory}`
+                            : `${g.label} — ${m.composition.aggregateGroupByLaw}`
+                        }
+                        className={cn(
+                          "hover:bg-accent/60 flex w-full items-center gap-1 px-2 py-1",
+                          g.closed ? "text-left" : "justify-center",
+                        )}
+                      >
+                        <ChevronRight
+                          className={cn(
+                            "text-muted-foreground size-3 shrink-0 transition-transform",
+                            !g.closed && "rotate-90",
+                          )}
+                        />
+                        <span className="truncate">{g.label}</span>
+                      </button>
+                      {/* 閉じた法律の列は、ここが幅を変える場所になる */}
+                      {g.closed && cols.handle(`law:${g.key}`, `${g.label} ${m.table.resize}`)}
                     </th>
                   ))}
                 </tr>

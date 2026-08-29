@@ -153,62 +153,73 @@ export function CellDetailDialog({
                     </p>
                   ) : (
                     <ul className="space-y-1.5">
-                      {v.sources.map((s) => (
-                        <li key={s.id} className="flex gap-1.5 text-xs">
-                          <SourceChip source={s} className="mt-0.5" />
-                          <span className="min-w-0 flex-1 break-words">
-                            {(() => {
-                              /*
-                                含有率不足のものは、表のボタンが押されているときだけ出す。
-                                隠すと何も残らないデータソースは「—」になる
-                              */
-                              const items = s.items.filter((x) => showNearMiss || !x.nearMiss);
-                              if (items.length === 0) {
-                                return <span className="text-muted-foreground">—</span>;
-                              }
-                              return items.map((x) => (
+                      {v.sources.map((s) => {
+                        /*
+                          含有率不足のものは、表のボタンが押されているときだけ出す。
+                          隠すと何も残らないデータソースは「—」になる
+                        */
+                        const items = s.items.filter((x) => showNearMiss || !x.nearMiss);
+                        return (
+                          <li key={s.id} className="space-y-0.5 text-xs">
+                            {/*
+                              **印は法文物質名の1行ごとに付ける。**表のセルと同じ付けかた。
+                              データソースごとにまとめて1つだけ付けていたころは、
+                              表と数が合わず、どの行がどのデータのものか読み取りにくかった
+                            */}
+                            {items.length === 0 ? (
+                              <span className="flex gap-1.5">
+                                <SourceChip source={s} className="mt-0.5" />
+                                <span className="text-muted-foreground">—</span>
+                              </span>
+                            ) : (
+                              items.map((x) => (
                                 <span
                                   key={`${x.officialNumber}/${x.nameOriginal}`}
-                                  /*
-                                    **色は結果、太字は採用。**
-                                    青＝該当、オレンジ＝含有率不足で非該当、黒＝採用されなかった。
-                                    青と三角が同じ行に並ぶと「採用されたのに非該当」に読めるので、
-                                    色を勝ち負けに使わない
-                                  */
-                                  className={cn(
-                                    "block",
-                                    x.adopted && "font-bold",
-                                    x.adopted
-                                      ? x.hit
-                                        ? HIT_CLASS
-                                        : NEAR_MISS_CLASS
-                                      : NOT_ADOPTED_CLASS,
-                                  )}
+                                  className="flex gap-1.5"
                                 >
-                                  {/* 印は表と同じもの。?＝要確認、三角＝含有率不足 */}
-                                  {x.needsReview && (
-                                    <CircleHelp
-                                      className={cn(
-                                        "mr-0.5 inline size-3 align-[-0.1em]",
-                                        REVIEW_CLASS,
-                                      )}
-                                    />
-                                  )}
-                                  {x.nearMiss && (
-                                    <TriangleAlert
-                                      className={cn(
-                                        "mr-0.5 inline size-3 align-[-0.1em]",
-                                        NEAR_MISS_CLASS,
-                                      )}
-                                    />
-                                  )}
-                                  {labelOf(x, locale)}
+                                  <SourceChip source={s} className="mt-0.5" />
+                                  <span
+                                    /*
+                                      **色は結果、太字は採用。**
+                                      青＝該当、オレンジ＝含有率不足で非該当、黒＝採用されなかった。
+                                      青と三角が同じ行に並ぶと「採用されたのに非該当」に読めるので、
+                                      色を勝ち負けに使わない
+                                    */
+                                    className={cn(
+                                      "min-w-0 flex-1 break-words",
+                                      x.adopted && "font-bold",
+                                      x.adopted
+                                        ? x.hit
+                                          ? HIT_CLASS
+                                          : NEAR_MISS_CLASS
+                                        : NOT_ADOPTED_CLASS,
+                                    )}
+                                  >
+                                    {/* 印は表と同じもの。?＝要確認、三角＝含有率不足 */}
+                                    {x.needsReview && (
+                                      <CircleHelp
+                                        className={cn(
+                                          "mr-0.5 inline size-3 align-[-0.1em]",
+                                          REVIEW_CLASS,
+                                        )}
+                                      />
+                                    )}
+                                    {x.nearMiss && (
+                                      <TriangleAlert
+                                        className={cn(
+                                          "mr-0.5 inline size-3 align-[-0.1em]",
+                                          NEAR_MISS_CLASS,
+                                        )}
+                                      />
+                                    )}
+                                    {labelOf(x, locale)}
+                                  </span>
                                 </span>
-                              ));
-                            })()}
-                          </span>
-                        </li>
-                      ))}
+                              ))
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </div>
