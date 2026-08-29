@@ -669,3 +669,36 @@ body.cursor-busy * {
     print-color-adjust: exact;
   }
 }
+
+/*
+  行の高さを決めた表。
+
+  一覧（`DataTable`）はセルを自前で組み立てるので、行数の打ち切りを直接あてている。
+  こちらは**手で組んだ表**（判定表・組成表など）向け。セルを1つずつ書き換えずに、
+  表を包む枠の指定だけで同じ高さにそろえる。
+
+  **セルの中の並べ方は変えない。**`display` を上書きすると、
+  アイコンと文字を横に並べているセル（flex）が崩れる。
+  高さの頭打ちと、行送りをそろえることだけをする。
+
+  行送りを 20px に固定するのは、**切れる位置を行の切れ目に合わせる**ため。
+  字の大きさが列ごとに違うままだと、下端で文字が半分だけ見える行ができる。
+*/
+[data-row-lines] td {
+  height: var(--row-h);
+  overflow: hidden;
+  vertical-align: top;
+  line-height: 20px;
+  /*
+    セルに直接書かれた文字は、包む要素が無いので高さを抑えられない。
+    折り返さないことで1行に収め、行の高さが崩れるのを防ぐ
+  */
+  white-space: nowrap;
+}
+
+[data-row-lines] td > * {
+  max-height: calc(var(--row-lines) * 20px);
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: break-word;
+}

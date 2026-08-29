@@ -148,7 +148,12 @@ export function SubstancePeek({
                 : m.substances.statusDiscontinued}
             </Row>
 
-            {item.note && <Row label={m.substances.note}>{item.note}</Row>}
+            {item.note && (
+              <Row label={m.substances.note}>
+                {/* 打った改行のまま出す。項目を並べて書いてあることが多い */}
+                <span className="whitespace-pre-wrap">{item.note}</span>
+              </Row>
+            )}
           </>
         )}
       </div>

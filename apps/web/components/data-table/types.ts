@@ -56,3 +56,19 @@ export const DRAG_COLUMN_WIDTH = 28;
 
 /** 行の右端に置く操作（編集）の列。アイコン1つぶん */
 export const ACTION_COLUMN_WIDTH = 40;
+
+/**
+ * 行の高さを1行ぶん伸ばすときの刻み（px）。
+ * 一覧の本文（text-sm）の行送りに合わせてある。
+ */
+export const ROW_LINE_HEIGHT = 20;
+
+/** セルの上下の余白（px）。`TableCell` の `p-2` の上下ぶん */
+export const ROW_PADDING = 16;
+
+/**
+ * 行の高さの上限（行数）。
+ * これ以上高くすると1画面に数行しか入らず、一覧として見る意味が薄くなる。
+ * 全部を読むならセルにマウスを置くか、詳細を開く
+ */
+export const MAX_ROW_LINES = 12;

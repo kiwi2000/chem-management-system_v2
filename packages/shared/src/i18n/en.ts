@@ -220,6 +220,8 @@ export const en: Messages = {
     resize: "resize column",
     reorder: "drag to reorder",
     resetWidths: "Reset widths",
+    resizeRows: "resize row height",
+    resetRowHeight: "Reset row height",
     selectAll: "Select all on this page",
     selectRow: "Select this row",
     selectedCount: (n: number) => `${n} selected`,

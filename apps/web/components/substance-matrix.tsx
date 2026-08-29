@@ -300,6 +300,8 @@ function Matrix({
         見出しが画面から消えている
       */}
       <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
+        {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
+        {cols.peek}
         <table
           {...cols.tableProps}
           className={cn(

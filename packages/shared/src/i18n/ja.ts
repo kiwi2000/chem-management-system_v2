@@ -229,6 +229,8 @@ export const ja = {
     resize: "列幅を変える",
     reorder: "つかんで並べ替える",
     resetWidths: "列幅を戻す",
+    resizeRows: "行の高さを変える",
+    resetRowHeight: "行の高さを戻す",
     selectAll: "このページをすべて選択",
     selectRow: "この行を選択",
     selectedCount: (n: number) => `${n} 件選択中`,

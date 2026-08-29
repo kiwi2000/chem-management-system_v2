@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useRef, type ReactNode } from "react";
+import { useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { useTablePeek } from "./cell-peek";
 import { useColumnWidths } from "./use-column-widths";
-import { MIN_COLUMN_WIDTH } from "./types";
+import { rowHeightOf, rowLinesOf, useRowLines } from "./use-row-lines";
+import { MIN_COLUMN_WIDTH, ROW_LINE_HEIGHT, ROW_PADDING } from "./types";
 
 /**
  * 手で組んだ表にも、一覧と同じ「列幅をドラッグで変えられる」仕組みを付ける。
@@ -59,17 +61,33 @@ export interface ResizableOptions {
    * 0 なら貼り付けない（既定）。
    */
   frozen?: number;
+  /**
+   * 行の高さを変えるつまみに読ませる名前。
+   * この中では画面の文言を読めないので、呼ぶ側から渡す（`m.table.resizeRows`）。
+   */
+  rowLabel?: string;
 }
 
 export function useResizableColumns(
   storageKey: string,
   columns: ResizableColumn[],
-  { shrinkToFit = true, frozen = 0 }: ResizableOptions = {},
+  { shrinkToFit = true, frozen = 0, rowLabel = "" }: ResizableOptions = {},
 ) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  /*
+    切れているセルは、マウスを置くと中身を全部出す。**一覧と同じ動き。**
+    表を包む枠に付けるだけなので、セルの側は何も変えなくてよい
+  */
+  const peek = useTablePeek<HTMLDivElement>();
+  const scrollerRef = useCallback((el: HTMLDivElement | null) => {
+    inner.current = el;
+    peek.attach(el);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { widthOf, setWidth, setWidths, resetWidths, hasCustomWidths } = useColumnWidths(
     `${storageKey}.widths`,
   );
+  const { rowLines, setRowLines, resetRowLines } = useRowLines(`${storageKey}.rowLines`);
 
   const byKey = new Map(columns.map((c) => [c.key, c]));
   const sum = columns.reduce((acc, c) => acc + widthOf(c), 0);
@@ -119,7 +137,7 @@ export function useResizableColumns(
   const frozenRoom = (key: string) => {
     const at = columns.findIndex((c) => c.key === key);
     if (frozen === 0 || at < 0 || at >= frozen) return Infinity;
-    const el = scrollerRef.current;
+    const el = inner.current;
     if (!el) return Infinity;
     const now = widthOf(columns[at]!);
     /*
@@ -130,9 +148,41 @@ export function useResizableColumns(
     return Math.max(now, el.clientWidth * 0.6 - frozenWidth + now);
   };
 
+  /**
+   * 表を包む枠に渡すもの。行の高さを決めていないときは何も渡さない
+   * （渡さなければ、今までどおり中身なりの高さになる）。
+   */
+  const rowProps =
+    rowLines === null
+      ? {}
+      : {
+          "data-row-lines": rowLines,
+          style: {
+            "--row-h": `${rowHeightOf(rowLines)}px`,
+            "--row-lines": rowLines,
+          } as CSSProperties,
+        };
+
+  /**
+   * 行の高さを変えるつまみ。**表のいちばん左の見出しに置く**
+   * （置く `th` に `relative` を付けること）。両押しで元に戻す。
+   */
+  const rowHandle = () => (
+    <RowResizeHandle
+      label={rowLabel}
+      current={() =>
+        rowLines === null
+          ? measuredRowHeight(inner.current?.querySelector("tbody tr"))
+          : rowHeightOf(rowLines)
+      }
+      onResize={(px) => setRowLines(rowLinesOf(px))}
+      onReset={resetRowLines}
+    />
+  );
+
   /** 指定した幅と、実際に描かれる幅の比。ドラッグは画面上の px で動くので戻すのに要る */
   const scale = useCallback(() => {
-    const el = scrollerRef.current;
+    const el = inner.current;
     if (!el || sum === 0) return 1;
     return Math.max(el.clientWidth, minTableWidth) / sum;
   }, [sum, minTableWidth]);
@@ -199,6 +249,10 @@ export function useResizableColumns(
 
   return {
     scrollerRef,
+    rowProps,
+    rowHandle,
+    /** 吹き出しの置き場所。表を出しているところで1回だけ描くこと */
+    peek: peek.node,
     minTableWidth,
     tableProps,
     cols,
@@ -277,4 +331,75 @@ export function ResizeHandle({
       }}
     />
   );
+}
+
+/**
+ * 行の高さを変えるつまみ。**見出しの下端を下へドラッグする。**
+ *
+ * 列幅のつまみ（`ResizeHandle`）と作りをそろえてある。向きだけが違う。
+ * 動きは1行ぶんずつで、中途半端な高さにはならない
+ * （字の大きさが列ごとに違うので、px で持つと切れる位置がそろわない）。
+ *
+ * **置く `th` に `relative` を付けること**（下端に貼り付くため）。
+ */
+export function RowResizeHandle({
+  label,
+  current,
+  onResize,
+  onReset,
+}: {
+  label: string;
+  /** いまの行の高さ（px） */
+  current: () => number;
+  /** 変えたい高さ（px）。受け取る側で行数に直す */
+  onResize: (px: number) => void;
+  /** 両押しで元に戻す。決めた高さを捨て、中身なりの高さへ */
+  onReset?: () => void;
+}) {
+  const drag = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  return (
+    <div
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label={label}
+      tabIndex={0}
+      /*
+        見出しの下端をまたいで置く。列幅のつまみと重なるのは右端の数pxだけで、
+        あちらが前（z-20）なので、掴み分けられる
+      */
+      className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute -bottom-1 left-0 z-10 h-2 w-full cursor-row-resize touch-none select-none"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        drag.current = { startY: e.clientY, startHeight: current() };
+      }}
+      onPointerMove={(e) => {
+        if (!drag.current) return;
+        onResize(drag.current.startHeight + (e.clientY - drag.current.startY));
+      }}
+      onPointerUp={(e) => {
+        drag.current = null;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }}
+      onDoubleClick={() => onReset?.()}
+      onKeyDown={(e) => {
+        // 1回で1行ぶん。Shift で3行ぶん
+        const step = (e.shiftKey ? 3 : 1) * ROW_LINE_HEIGHT;
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          onResize(current() - step);
+        }
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          onResize(current() + step);
+        }
+      }}
+    />
+  );
+}
+
+/** 中身なりの高さのときに、いまの行の高さを測る。つまみを掴んだ場所からずれないように */
+export function measuredRowHeight(row: HTMLElement | null | undefined) {
+  return row?.getBoundingClientRect().height ?? ROW_LINE_HEIGHT + ROW_PADDING;
 }

@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { useI18n } from "@/lib/i18n-client";
 import { usePageSizePrefs } from "@/lib/page-size-prefs";
+import { useTablePeek } from "@/components/data-table/cell-peek";
 import { cn } from "@/lib/utils";
 import { FilterPanel, type FilterLayoutRow } from "./filter-panel";
 import {
@@ -41,9 +42,10 @@ import {
   SELECT_COLUMN_WIDTH,
   type TableColumn,
 } from "./types";
-import { ResizeHandle } from "./resizable-columns";
+import { measuredRowHeight, ResizeHandle, RowResizeHandle } from "./resizable-columns";
 import { applyColumnOrder, useColumnVisibility } from "@/lib/use-column-visibility";
 import { useColumnWidths } from "./use-column-widths";
+import { rowHeightOf, rowLinesOf, useRowLines } from "./use-row-lines";
 
 interface Props<T> {
   /** 端末に列幅・パネル開閉を覚えるための識別子（画面ごとに一意） */
@@ -239,6 +241,11 @@ export function DataTable<T>({
   const { widthOf, setWidth, setWidths, resetWidths, hasCustomWidths } = useColumnWidths(
     `${storageKey}.widths`,
   );
+  const { rowLines, setRowLines, resetRowLines, hasCustomRowLines } = useRowLines(
+    `${storageKey}.rowLines`,
+  );
+  /** 中身なりの高さのときに、掴んだ時点の高さを測るため */
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
   const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -253,11 +260,30 @@ export function DataTable<T>({
    * チェックボックス列だけは中身が固定サイズなので、伸び縮みさせず px で固定する。
    */
   const scrollerRef = useRef<HTMLDivElement>(null);
+  /* 切れているセルは、マウスを置くと中身を全部出す */
+  const peek = useTablePeek<HTMLDivElement>();
   const selectWidth =
     (selectable ? SELECT_COLUMN_WIDTH : 0) +
     (onReorder ? DRAG_COLUMN_WIDTH : 0) +
     (rowAction ? ACTION_COLUMN_WIDTH : 0);
   const dataSum = columns.reduce((sum, c) => sum + widthOf(c), 0);
+
+  /*
+    行の高さを変えるつまみ。見出しのいちばん左に1つだけ置く（表全体の高さを決めるため）。
+    掴んだ時点の高さは、決めていなければ実際に描かれている高さを測る。
+    そうしないと、掴んだ瞬間に行が飛んで、カーソルと合わなくなる
+  */
+  const rowHandle = (
+    <RowResizeHandle
+      label={m.table.resizeRows}
+      current={() =>
+        rowLines === null
+          ? measuredRowHeight(bodyRef.current?.querySelector("tr"))
+          : rowHeightOf(rowLines)
+      }
+      onResize={(px) => setRowLines(rowLinesOf(px))}
+    />
+  );
   /*
     データ列は合計が 100% になる比率で置く。チェックボックス列は px で固定してあるので、
     合計は表の幅を少しはみ出す形になり、ブラウザが比率を保ったまま詰めてくれる。
@@ -532,7 +558,13 @@ export function DataTable<T>({
         )
       )}
 
-      <div ref={scrollerRef} className="bg-background overflow-x-auto rounded-md border">
+      <div
+        ref={(el) => {
+          scrollerRef.current = el;
+          peek.attach(el);
+        }}
+        className="bg-background overflow-x-auto rounded-md border"
+      >
         {/*
           列幅は比率で指定する。
           合計が表示領域より広いときは全体を同じ割合で詰めるので、
@@ -555,9 +587,14 @@ export function DataTable<T>({
           <TableHeader className="bg-table-head text-table-head-foreground [&_th]:text-inherit">
             <TableRow>
               {/* つかむ場所の列。見出しは要らない */}
-              {onReorder && <TableHead className={cn(CELL_BORDER, SELECT_CELL)} />}
+              {onReorder && (
+                <TableHead className={cn("relative", CELL_BORDER, SELECT_CELL)}>
+                  {rowHandle}
+                </TableHead>
+              )}
               {selectable && (
-                <TableHead className={cn(CELL_BORDER, SELECT_CELL)}>
+                <TableHead className={cn("relative", CELL_BORDER, SELECT_CELL)}>
+                  {!onReorder && rowHandle}
                   {/* 1行しか選べない表では「すべて選択」を出さない */}
                   {!singleSelect && (
                     <input
@@ -580,6 +617,7 @@ export function DataTable<T>({
                 const neighbor = columns[i + 1];
                 return (
                   <TableHead key={c.key} className={cn("relative", CELL_BORDER)}>
+                    {i === 0 && !onReorder && !selectable && rowHandle}
                     {canSort ? (
                       <button
                         type="button"
@@ -634,7 +672,7 @@ export function DataTable<T>({
               {rowAction && <TableHead className={cn(CELL_BORDER, SELECT_CELL)} />}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody ref={bodyRef}>
             {rows === null && (
               <TableRow>
                 <TableCell colSpan={colSpan} className="text-muted-foreground text-center">
@@ -723,32 +761,45 @@ export function DataTable<T>({
                       />
                     </TableCell>
                   )}
-                  {columns.map((c) => (
-                    <TableCell
-                      key={c.key}
-                      className={cn(
-                        c.multiline ? "align-top break-words whitespace-normal" : "truncate",
-                        CELL_BORDER,
-                        c.className,
-                      )}
-                    >
-                      {/* 何行で打ち切るかが指定されていたら、その行数で止めて「…」を出す */}
-                      {c.clampLines ? (
-                        <div
-                          className="overflow-hidden"
-                          style={{
-                            display: "-webkit-box",
-                            WebkitBoxOrient: "vertical",
-                            WebkitLineClamp: c.clampLines,
-                          }}
-                        >
-                          {c.render?.(row)}
-                        </div>
-                      ) : (
-                        c.render?.(row)
-                      )}
-                    </TableCell>
-                  ))}
+                  {columns.map((c) => {
+                    /*
+                      何行で打ち切るか。
+                      列の指定が先で、無ければ利用者が決めた行の高さに従う。
+                      どちらも無ければ打ち切らない（今までどおり中身なりの高さ）
+                    */
+                    const clamp = c.clampLines ?? rowLines;
+                    return (
+                      <TableCell
+                        key={c.key}
+                        // 高さを決めたら、中身によらず同じ高さにする
+                        style={rowLines === null ? undefined : { height: rowHeightOf(rowLines) }}
+                        className={cn(
+                          // 高さを決めたときは、増えた行に続きを流し込むため折り返す
+                          c.multiline || rowLines !== null
+                            ? "align-top break-words whitespace-normal"
+                            : "truncate",
+                          CELL_BORDER,
+                          c.className,
+                        )}
+                      >
+                        {/* 打ち切る行数が決まっていたら、その行数で止めて「…」を出す */}
+                        {clamp ? (
+                          <div
+                            className="overflow-hidden"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitBoxOrient: "vertical",
+                              WebkitLineClamp: clamp,
+                            }}
+                          >
+                            {c.render?.(row)}
+                          </div>
+                        ) : (
+                          c.render?.(row)
+                        )}
+                      </TableCell>
+                    );
+                  })}
                   {rowAction && (
                     <TableCell className={cn(CELL_BORDER, SELECT_CELL)}>
                       <button
@@ -775,9 +826,10 @@ export function DataTable<T>({
           </TableBody>
         </Table>
       </div>
+      {peek.node}
 
-      {/* ページ送りを出さない表でも、幅を変えていれば戻す口だけは残す */}
-      {(showPager || hasCustomWidths) && (
+      {/* ページ送りを出さない表でも、見た目を変えていれば戻す口だけは残す */}
+      {(showPager || hasCustomWidths || hasCustomRowLines) && (
         <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm">
           <div className="flex items-center gap-2">
             {showPager && <span>{m.common.totalCount(total)}</span>}
@@ -785,6 +837,11 @@ export function DataTable<T>({
             {hasCustomWidths && (
               <Button variant="ghost" size="sm" onClick={resetWidths}>
                 {m.table.resetWidths}
+              </Button>
+            )}
+            {hasCustomRowLines && (
+              <Button variant="ghost" size="sm" onClick={resetRowLines}>
+                {m.table.resetRowHeight}
               </Button>
             )}
           </div>

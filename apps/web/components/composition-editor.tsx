@@ -570,6 +570,8 @@ export function CompositionEditor({
             箱の中で行を送れば、見出しは上に貼り付いたまま、スクロールバーも下端にある
           */
           <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
+            {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
+            {cols.peek}
             <table
               {...cols.tableProps}
               className={cn(

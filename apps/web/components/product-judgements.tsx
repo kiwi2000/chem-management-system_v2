@@ -105,7 +105,7 @@ export function ProductJudgements({
     "chem.table.productJudgements",
     [...HEADS, ...(canEdit ? [ACTION_COLUMN] : [])],
     // 幅を詰めない。詰めると製品ごと・画面幅ごとに列の位置が動いて見比べられない
-    { shrinkToFit: false },
+    { shrinkToFit: false, rowLabel: m.table.resizeRows },
   );
 
   const load = useCallback(async () => {
@@ -246,7 +246,9 @@ export function ProductJudgements({
             （画面全体を振らない）。高さを決めておくと、横のスクロールバーが
             箱の下端に来るので、見出しを見ながら動かせる
           */
-          <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
+          <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto" {...cols.rowProps}>
+            {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
+            {cols.peek}
             {/*
               table-fixed にして、幅を列の側で決める。
               自動幅だと、法文物質名の長いものが1件あるだけで表全体の形が変わり、
@@ -264,8 +266,10 @@ export function ProductJudgements({
               <TableHeader className="sticky top-0 z-20">
                 {/* 色と枠線は組成の表にそろえる。並べて見るので、別物に見えると困る */}
                 <TableRow className={cn(OPAQUE_MUTED_50, OPAQUE_MUTED_50_HOVER, "border-y")}>
-                  {HEADS.map(({ key, label, className }) => (
+                  {HEADS.map(({ key, label, className }, i) => (
                     <TableHead key={key} className={cn(CELL, "relative h-auto", className)}>
+                      {/* 行の高さのつまみは、いちばん左の見出しに1つだけ */}
+                      {i === 0 && cols.rowHandle()}
                       {label(m)}
                       {cols.handle(key, `${label(m)} ${m.table.resize}`)}
                     </TableHead>

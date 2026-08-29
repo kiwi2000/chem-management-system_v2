@@ -64,7 +64,10 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
   const [error, setError] = useState<string | null>(null);
   // 列幅は一覧と同じ規則
   // 幅を詰めない。判定表と同じ規則にそろえる
-  const cols = useResizableColumns("chem.table.categoryProducts", HEADS, { shrinkToFit: false });
+  const cols = useResizableColumns("chem.table.categoryProducts", HEADS, {
+    shrinkToFit: false,
+    rowLabel: m.table.resizeRows,
+  });
 
   const load = useCallback(async () => {
     setError(null);
@@ -107,13 +110,17 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
 
   return (
     // 幅は列の側で決める。製品ごとに列の位置がずれると見比べられない
-    <div ref={cols.scrollerRef} className="overflow-x-auto">
+    <div ref={cols.scrollerRef} className="overflow-x-auto" {...cols.rowProps}>
+      {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
+      {cols.peek}
       <Table {...cols.tableProps} className={cn("table-fixed", cols.tableProps.className)}>
         <colgroup>{cols.cols()}</colgroup>
         <TableHeader>
           <TableRow>
-            {HEADS.map(({ key, label, className }) => (
+            {HEADS.map(({ key, label, className }, i) => (
               <TableHead key={key} className={cn("relative", className)}>
+                {/* 行の高さのつまみは、いちばん左の見出しに1つだけ */}
+                {i === 0 && cols.rowHandle()}
                 {label(m)}
                 {cols.handle(key, `${label(m)} ${m.table.resize}`)}
               </TableHead>

@@ -482,6 +482,8 @@ export function CompositionAggregateTable({
           スクロールバーも箱の下端にあるので、どちらも見ながら動かせる
         */
         <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
+          {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
+          {cols.peek}
           <table
             {...cols.tableProps}
             className={cn(
@@ -713,6 +715,11 @@ export function CompositionAggregateTable({
                                     })
                                 : undefined
                             }
+                            /*
+                              このセルは押されたときの動きを自分で持っている。
+                              印を付けて、中身を出すだけの窓が同時に開かないようにする
+                            */
+                            data-cell-click={openable ? "" : undefined}
                             title={openable ? m.composition.cellDetailOpen : undefined}
                           >
                             <RegulationMark
