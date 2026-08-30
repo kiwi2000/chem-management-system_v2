@@ -8,7 +8,6 @@ import {
   type TableState,
 } from "@chem/shared";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { FilterLayoutRow } from "@/components/data-table/filter-panel";
@@ -16,7 +15,6 @@ import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
-import { batchHref, documentHref } from "@/lib/doc-batch";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, ProductListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -65,15 +63,6 @@ export function ProductsTable({
   onChanged,
 }: Props) {
   const { m, locale } = useI18n();
-  /*
-    帳票の相手として選ばれに来ているか。テンプレートの一覧から渡ってくる。
-    このときはコードを押すと詳細ではなく帳票へ移る
-  */
-  const search = useSearchParams();
-  const pickFor = search.get("pickFor");
-  /* 選ばれた差出人・宛先。ここでは中身を見ず、そのまま次へ渡す */
-  const parties = { from: search.get("from"), to: search.get("to") };
-  const router = useRouter();
   const { can } = useMe();
   const editable = can("PRODUCT_EDIT");
 
@@ -113,7 +102,7 @@ export function ProductsTable({
         // 押すと詳細へ移る。物質・インベントリ・法規制のコードと同じ形
         render: (r) => (
           <Link
-            href={pickFor ? documentHref(pickFor, r.id, parties) : `/products/${r.id}`}
+            href={`/products/${r.id}`}
             onClick={(e) => e.stopPropagation()}
             className="underline underline-offset-2"
           >
@@ -311,7 +300,7 @@ export function ProductsTable({
     ];
     // 上の表は公開済しか並ばないので、状態の列は出さない（全部同じ値になるため）
     return scope === "working" ? cols : cols.filter((c) => c.key !== "publishState");
-  }, [m, locale, modelOptions, useOptions, judgementCategories, scope, pickFor]);
+  }, [m, locale, modelOptions, useOptions, judgementCategories, scope]);
 
   // 組成の節だけは見出しに文言を使うので、ここで組み立てる
   const filterLayout = useMemo<FilterLayoutRow[]>(
@@ -405,21 +394,6 @@ export function ProductsTable({
   return (
     // 外側（一覧の画面）が余白を持っているので、ここでは付けない（物質の一覧と同じ）
     <div className="w-full space-y-4">
-      {/*
-        帳票を作る相手を選んでいる最中。**この画面の絞り込みをそのまま使う。**
-        選ぶための画面を別に作ると、こちらに条件が増えたときに向こうが取り残される
-      */}
-      {pickFor && (
-        <Alert>
-          <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-            <span>{m.documents.pickHere}</span>
-            <Link href="/doc-templates" className="text-xs underline">
-              {m.common.cancel}
-            </Link>
-          </AlertDescription>
-        </Alert>
-      )}
-
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -439,34 +413,16 @@ export function ProductsTable({
         onReset={reset}
         emptyMessage={m.products.empty}
         create={editable && scope === "published" ? { href: "/products/new" } : undefined}
-        /*
-          帳票の相手を選びに来ているときは、**誰でも選べる**。
-          選ぶのは消すためではなく、まとめて作るためなので、
-          編集の権限は要らない
-        */
-        selectable={editable || !!pickFor}
-        onDeleteSelected={pickFor ? undefined : onDeleteSelected}
+        selectable={editable}
+        onDeleteSelected={onDeleteSelected}
         bulkAction={
-          pickFor
+          scope === "working"
             ? {
-                label: m.documents.makeSelected,
-                confirm: m.documents.makeSelectedConfirm,
-                run: (rows) =>
-                  router.push(
-                    batchHref(
-                      pickFor,
-                      rows.map((r) => r.id),
-                      parties,
-                    ),
-                  ),
+                label: approvalRequired ? m.common.submitSelected : m.common.publishSelected,
+                confirm: approvalRequired ? m.common.submitConfirm : m.common.publishConfirm,
+                run: (rows) => void runBulk(approvalRequired ? "submit" : "publish", rows),
               }
-            : scope === "working"
-              ? {
-                  label: approvalRequired ? m.common.submitSelected : m.common.publishSelected,
-                  confirm: approvalRequired ? m.common.submitConfirm : m.common.publishConfirm,
-                  run: (rows) => void runBulk(approvalRequired ? "submit" : "publish", rows),
-                }
-              : undefined
+            : undefined
         }
         filterLayout={filterLayout}
         // 詳細へはコードのリンクから移る。編集はその画面の「編集」から行う

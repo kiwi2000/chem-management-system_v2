@@ -1114,6 +1114,9 @@ export const ja = {
   },
   documents: {
     generatedAt: "作成日時",
+    pickHint:
+      "作る相手にチェックを入れて、上の「生成」を押してください。複数選べば、まとめて作れます（Excel・Word の様式は1件ずつ）",
+    chooseTarget: "作る相手を選ぶ",
     fileDownload: "ダウンロード",
     fileHint: "落としたファイルを Excel・Word で開いて、印刷してください。画面では出せません",
     fileNone: "この様式にはファイルが預けられていません。テンプレート編集で預けてください",
@@ -1134,15 +1137,12 @@ export const ja = {
     noneYet: "まだ作っていません",
     savedHint: "日時を押すと、出したときの紙面がそのまま開きます（作り直しません）",
     batchMissed: (n: number) => `${n} 件は作れませんでした（見る権限が無いか、消されています）`,
-    makeSelected: "選んだものでまとめて生成",
     makeSelectedConfirm: (n: number) => `選んだ ${n} 件の帳票をまとめて作ります`,
     batchTitle: "まとめて生成",
     batchCount: (n: number) => `${n} 件`,
     batchTooMany: (n: number) =>
       `一度に作れるのは ${n} 件までです。絞り込んでから選び直してください`,
     batchEmpty: "作る相手が選ばれていません",
-    pickHere:
-      "帳票を作る相手を選んでください。コードを押すと帳票が開きます。絞り込みはいつもどおり使えます。",
     make: "生成",
     printHint:
       "PDFにするには、印刷の画面でプリンターを「PDFとして保存」（Microsoft Print to PDF など）に変えてください。",

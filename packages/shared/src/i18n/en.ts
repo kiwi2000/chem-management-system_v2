@@ -1098,6 +1098,9 @@ export const en: Messages = {
   },
   documents: {
     generatedAt: "Created",
+    pickHint:
+      "Tick the ones to make, then press Make above. Several at once works for on-screen templates",
+    chooseTarget: "Choose what to make it for",
     fileDownload: "Download",
     fileHint: "Open the downloaded file in Excel or Word and print from there",
     fileNone: "No file has been uploaded for this template yet",
@@ -1118,14 +1121,11 @@ export const en: Messages = {
     noneYet: "Nothing yet",
     savedHint: "Select the date to reopen the document exactly as it was issued",
     batchMissed: (n: number) => `${n} could not be produced (no access, or deleted)`,
-    makeSelected: "Create for selected",
     makeSelectedConfirm: (n: number) => `Create documents for the ${n} selected records`,
     batchTitle: "Batch",
     batchCount: (n: number) => `${n} records`,
     batchTooMany: (n: number) => `At most ${n} at a time. Narrow the filter and select again.`,
     batchEmpty: "Nothing selected",
-    pickHere:
-      "Choose what to build the document from. Select a code to open it; the filters work as usual.",
     make: "Create",
     printHint: 'For a PDF, change the printer to "Save as PDF" in the print dialog.',
     print: "Print / Save as PDF",

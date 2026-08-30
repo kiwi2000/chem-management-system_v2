@@ -95,7 +95,7 @@ export default async function DocumentPage({
         href={`/api/document-files/${template.id}/${targetId}${search(from, to, template.usesRecipient)}`}
         title={`${template.code} ${template.nameJa}`}
         ready={template.fileName !== null}
-        backHref={`/doc-templates/${template.id}`}
+        backHref="/documents"
       />
     );
   }
@@ -145,7 +145,7 @@ export default async function DocumentPage({
       <DocumentView
         doc={doc}
         title={`${template.code} ${template.nameJa}`}
-        backHref={`/doc-templates/${template.id}`}
+        backHref="/documents"
         /*
           保存するときのファイル名。**中身が分かる名前にする。**
           テンプレート・対象・日付の3つが揃っていれば、

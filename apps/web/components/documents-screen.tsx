@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { DocTargetPicker } from "@/components/doc-target-picker";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import type {
   GeneratedDocumentDto,
   ListResponse,
 } from "@/lib/types";
+import { batchHref, documentHref } from "@/lib/doc-batch";
 import { useTableState } from "@/lib/use-table-state";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "generatedAt", direction: "desc" }]);
@@ -60,6 +62,12 @@ export function DocumentsScreen() {
   const router = useRouter();
 
   const [templates, setTemplates] = useState<DocumentTemplateDto[] | null>(null);
+  /*
+    選んだ様式。**選ぶと、この画面の中に相手の一覧が出る。**
+    以前は製品・物質の画面へ飛ばしていたが、
+    帳票を作りに来た人を別の画面へ移すと、どこにいるのか分からなくなる
+  */
+  const [pickedId, setPickedId] = useState<string | null>(null);
   /*
     差出人と宛先。**組織から選ぶ。**
     差出人は権限のある人だけが変えられる（既定は自分の会社）
@@ -133,6 +141,8 @@ export function DocumentsScreen() {
     void load();
   }
 
+  const usable = useMemo(() => templates ?? [], [templates]);
+
   const columns: TableColumn<GeneratedDocumentDto>[] = useMemo(
     () => [
       {
@@ -169,6 +179,8 @@ export function DocumentsScreen() {
         kind: "text",
         width: 170,
         className: "font-mono text-xs",
+        // 描きかたを渡さないと空欄になる（共通テーブルは既定の描きかたを持たない）
+        render: (d) => d.targetCode,
       },
       {
         key: "hasComposition",
@@ -194,19 +206,28 @@ export function DocumentsScreen() {
     [m, locale],
   );
 
-  const usable = templates ?? [];
+  const picked = usable.find((t) => t.id === pickedId) ?? null;
 
   /*
-    選んだ相手を、対象を選ぶ画面まで持っていく。
+    差出人と宛先を、作る先へ渡す。
     **宛先を使わない様式には付けない。**付けても捨てられるが、
     URL に出ていると「効いている」と読めてしまう
   */
-  const parties = (t: DocumentTemplateDto) => {
-    const q = new URLSearchParams({ pickFor: t.id });
-    if (t.usesRecipient && recipientId) q.set("to", recipientId);
-    if (senderId) q.set("from", senderId);
-    return q.toString();
-  };
+  const partyParams = (t: DocumentTemplateDto) => ({
+    ...(senderId ? { from: senderId } : {}),
+    ...(t.usesRecipient && recipientId ? { to: recipientId } : {}),
+  });
+
+  /** 選ばれた相手で作る。1件なら1枚、複数ならまとめて */
+  function make(ids: string[]) {
+    if (!picked || ids.length === 0) return;
+    const parties = partyParams(picked);
+    router.push(
+      ids.length === 1
+        ? documentHref(picked.id, ids[0]!, parties)
+        : batchHref(picked.id, ids, parties),
+    );
+  }
 
   return (
     <div className="w-full space-y-4 p-3 pb-10 lg:p-4 lg:pb-12">
@@ -269,12 +290,9 @@ export function DocumentsScreen() {
               <Button
                 key={t.id}
                 size="sm"
-                variant="outline"
-                onClick={() =>
-                  router.push(
-                    `${t.target === "PRODUCT" ? "/products" : "/substances"}?${parties(t)}`,
-                  )
-                }
+                variant={t.id === pickedId ? "default" : "outline"}
+                aria-pressed={t.id === pickedId}
+                onClick={() => setPickedId(t.id === pickedId ? null : t.id)}
               >
                 <FileText className="size-4" />
                 {t.code} {pickName(locale, t.nameJa, t.nameEn)}
@@ -283,6 +301,14 @@ export function DocumentsScreen() {
           </div>
         )}
       </div>
+
+      {/* 中：相手を選んで作る。様式を選ぶまでは出さない */}
+      {picked && (
+        <div className="space-y-2 border-t pt-4">
+          <p className="text-sm font-medium">{m.documents.chooseTarget}</p>
+          <DocTargetPicker key={picked.id} target={picked.target} onMake={make} />
+        </div>
+      )}
 
       {/* 下：自分が作ったもの */}
       <div className="space-y-2 border-t pt-4">

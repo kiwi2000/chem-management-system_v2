@@ -76,7 +76,11 @@ interface Props<T> {
    */
   bulkAction?: {
     label: string;
-    confirm: (n: number) => string;
+    /**
+     * 念押しの文。**省略すると、押してすぐ動く。**
+     * 取り返しの付かないもの（公開・申請）にだけ付ける
+     */
+    confirm?: (n: number) => string;
     run: (rows: T[]) => void | Promise<void>;
   };
   /** フィルターの並びを指定する場合、1行に置く列キーを行ごとに並べる */
@@ -360,7 +364,7 @@ export function DataTable<T>({
   async function runBulkAction() {
     const targets = (rows ?? []).filter((r) => selected.has(rowKey(r)));
     if (targets.length === 0 || !bulkAction) return;
-    if (!confirm(bulkAction.confirm(targets.length))) return;
+    if (bulkAction.confirm && !confirm(bulkAction.confirm(targets.length))) return;
     setDeleting(true);
     try {
       await bulkAction.run(targets);
@@ -473,7 +477,8 @@ export function DataTable<T>({
           </Button>
         )}
         {headerActions}
-        {selectable && (
+        {/* 消せる表にだけ出す。選ぶ目的が「消す」以外の表もある（帳票の相手を選ぶなど） */}
+        {selectable && onDeleteSelected && (
           <Button
             variant="outline"
             size="icon"

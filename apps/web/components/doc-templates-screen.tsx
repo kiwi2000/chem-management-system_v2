@@ -11,9 +11,7 @@ import {
   type DocumentTemplateKind,
   type TableState,
 } from "@chem/shared";
-import { FileText } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -94,7 +92,6 @@ const columnKinds = [
 export function DocTemplatesScreen() {
   const { m, locale } = useI18n();
   const { can } = useMe();
-  const router = useRouter();
   const editable = can("DOC_TEMPLATE_EDIT");
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -415,35 +412,6 @@ export function DocTemplatesScreen() {
         width: 132,
         className: "whitespace-nowrap",
         render: (t) => (t.id === NEW_ID ? null : fmt(t.updatedAt, locale)),
-      },
-      {
-        key: "make",
-        header: "",
-        kind: "text",
-        width: 96,
-        sortable: false,
-        filterable: false,
-        render: (t) =>
-          t.id === NEW_ID || !t.active ? null : (
-            <Button
-              size="sm"
-              className="h-7"
-              onClick={(e) => {
-                e.stopPropagation();
-                /*
-                  **相手は製品・物質の一覧から選ぶ。**
-                  探すための画面を別に作らず、いつも使っている絞り込みを
-                  そのまま使えるようにする（保存した条件も効く）
-                */
-                router.push(
-                  `${t.target === "PRODUCT" ? "/products" : "/substances"}?pickFor=${t.id}`,
-                );
-              }}
-            >
-              <FileText className="size-4" />
-              {m.documents.make}
-            </Button>
-          ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps

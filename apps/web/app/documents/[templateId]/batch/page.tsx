@@ -59,7 +59,7 @@ export default async function DocumentBatchPage({
     黙って空を出さず、断りを出して1件ずつへ戻ってもらう
   */
   if (template.kind !== "BLOCK") {
-    return <BatchNotAvailable backHref={`/doc-templates/${template.id}`} />;
+    return <BatchNotAvailable backHref="/documents" />;
   }
 
   /*
@@ -134,7 +134,7 @@ export default async function DocumentBatchPage({
       <DocumentBatchView
         docs={made}
         title={`${template.code} ${template.nameJa}`}
-        backHref="/doc-templates"
+        backHref="/documents"
         missed={missed.length}
         tooMany={asked > BATCH_MAX ? BATCH_MAX : 0}
       />
