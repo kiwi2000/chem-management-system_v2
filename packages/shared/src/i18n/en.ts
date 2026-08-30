@@ -965,14 +965,15 @@ export const en: Messages = {
       remove: "Remove",
       none: "No file yet. Upload an Excel or Word template",
       notFileKind: "This template is built on screen. Set it to Excel or Word first",
-      lead: "Tags in the uploaded file are filled in when a document is made. Borders, merged cells, headers and logos are kept",
-      tags: "Available tags",
-      tagsHint: "Click to copy, then paste into your Excel or Word file",
-      tagsInFile: "Tags found in the file",
-      unknown: "Unknown tags",
+      lead: "Write {product.code} in a cell or a sentence and the value goes there. Borders, merged cells, headers and logos are kept",
+      tags: "Available fields",
+      tagsHint: "Click to copy, then paste into the cell or place you want it",
+      tagsInFile: "Fields written in this file",
+      unknown: "Not readable as a field",
       unknownHint:
         "These print as written — a typo, or a field this target does not have. Fix them and upload again",
-      rowHint: "A row holding a table tag repeats for every detail line",
+      rowHint:
+        "A row holding a table field ({composition.casNumber} and the like) repeats for every detail line. Write just one row",
       rejects: {
         tooLarge: "The file is too large (5MB max)",
         notZip: "The file could not be read as Excel or Word",
