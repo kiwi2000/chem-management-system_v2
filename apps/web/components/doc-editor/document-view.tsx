@@ -153,10 +153,16 @@ function Block({ block: b }: { block: RenderBlock }) {
 }
 
 function BlockBody({ block: b }: { block: RenderBlock }) {
+  /*
+    字の大きさ。**ブロックの指定が、種類ごとの既定より強い。**
+    中身に大きさを直接書いていると、外側で指定しても効かない
+    （親から受け継ぐ字は、子に書いた指定に負ける）
+  */
+  const fs = (fallback: string) => (b.style?.size ? `${b.style.size}pt` : fallback);
   switch (b.kind) {
     case "heading":
       return (
-        <div style={{ fontSize: HEADING_SIZE[b.level], fontWeight: 700, margin: "0 0 3mm" }}>
+        <div style={{ fontSize: fs(HEADING_SIZE[b.level]), fontWeight: 700, margin: "0 0 3mm" }}>
           {b.lines.map((l, i) => (
             <Line key={i} line={l} />
           ))}
@@ -164,7 +170,7 @@ function BlockBody({ block: b }: { block: RenderBlock }) {
       );
     case "text":
       return (
-        <div style={{ margin: "0 0 3mm", fontSize: "10.5pt", lineHeight: 1.6 }}>
+        <div style={{ margin: "0 0 3mm", fontSize: fs("10.5pt"), lineHeight: 1.6 }}>
           {b.lines.map((l, i) => (
             <Line key={i} line={l} />
           ))}
@@ -172,7 +178,7 @@ function BlockBody({ block: b }: { block: RenderBlock }) {
       );
     case "fields":
       return (
-        <table style={{ margin: "0 0 4mm", borderCollapse: "collapse", fontSize: "10.5pt" }}>
+        <table style={{ margin: "0 0 4mm", borderCollapse: "collapse", fontSize: fs("10.5pt") }}>
           <tbody>
             {b.items.map((it, i) => (
               <tr key={i}>
@@ -199,7 +205,7 @@ function BlockBody({ block: b }: { block: RenderBlock }) {
     */
     case "orgItems":
       return (
-        <div style={{ margin: "0 0 4mm", fontSize: "10.5pt" }}>
+        <div style={{ margin: "0 0 4mm", fontSize: fs("10.5pt") }}>
           {b.items.map((it, i) => (
             <div key={i} style={{ textAlign: it.align, padding: "0.5mm 0" }}>
               {it.label && (
@@ -214,13 +220,15 @@ function BlockBody({ block: b }: { block: RenderBlock }) {
       return (
         <div style={{ margin: "0 0 5mm" }}>
           {b.caption && (
-            <p style={{ margin: "0 0 1mm", fontSize: "10.5pt", fontWeight: 700 }}>{b.caption}</p>
+            <p style={{ margin: "0 0 1mm", fontSize: fs("10.5pt"), fontWeight: 700 }}>
+              {b.caption}
+            </p>
           )}
           <table
             style={{
               width: "100%",
               borderCollapse: "collapse",
-              fontSize: "9pt",
+              fontSize: fs("9pt"),
               // 表が長いと途中で切れる。行の途中では切らない（下の tr で指定）
               pageBreakInside: "auto",
             }}
@@ -259,7 +267,7 @@ function BlockBody({ block: b }: { block: RenderBlock }) {
       return <div style={{ pageBreakAfter: "always", breakAfter: "page" }} />;
     case "signature":
       return (
-        <div style={{ margin: "8mm 0 0", fontSize: "10.5pt" }}>
+        <div style={{ margin: "8mm 0 0", fontSize: fs("10.5pt") }}>
           <span style={{ marginRight: "4mm" }}>{b.label}</span>
           <span
             style={{ display: "inline-block", width: "60mm", borderBottom: "0.3mm solid #000" }}
