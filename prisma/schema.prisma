@@ -227,6 +227,7 @@ model User {
    */
   /**
    * /**
+   * /**
    * 所属する部署。**組織のうち種別が部署のものを指す。**
    * 会社（`organisationId`）とは別に1つだけ持つ
    */
@@ -1864,6 +1865,19 @@ model InventoryRow {
  * テンプレートが1件受け取るもの。
  * 製品なら組成と判定、物質なら該当法規とインベントリ番号が引ける
  */
+/**
+ * 様式の作りかた。
+ * - `BLOCK` … 画面でブロックを積んだもの。中身は `content`
+ * - `XLSX` / `DOCX` … Excel・Word のファイルを預かり、差込札に値を埋めて返す。
+ * **罫線・セル結合・ヘッダー・ロゴがそのまま使えるので、
+ * 取引先から来た調査票の形をそのまま出せる**
+ */
+enum DocumentTemplateKind {
+  BLOCK
+  XLSX
+  DOCX
+}
+
 enum DocumentTarget {
   PRODUCT
   SUBSTANCE
@@ -1888,11 +1902,23 @@ model DocumentTemplate {
 
   target DocumentTarget
 
+  kind DocumentTemplateKind @default(BLOCK)
+
   /**
    * ブロックの並び。`@chem/shared` の `DocumentContent`。
-   * **形が変わったときのために、読めるかを毎回確かめてから使う**
+   * **形が変わったときのために、読めるかを毎回確かめてから使う**。
+   * `kind` が `BLOCK` のときだけ使う
    */
   content Json
+
+  /**
+   * 預かった Excel・Word のファイルそのもの。`kind` が `XLSX` / `DOCX` のとき。
+   * **DBに置く。**添付は1様式に1つ、数百KBなので、
+   * 置き場所を別に用意するほどではない（アバターと同じ考え）
+   */
+  fileData      Bytes?    @map("file_data")
+  fileName      String?   @map("file_name") @db.VarChar(255)
+  fileUpdatedAt DateTime? @map("file_updated_at")
 
   /**
    * 出す言語。テンプレートを言語ごとに作って多言語に対応する

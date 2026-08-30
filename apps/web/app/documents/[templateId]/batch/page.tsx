@@ -1,6 +1,6 @@
 import { getMessages, isLocale, organisationIdsIn } from "@chem/shared";
 import { notFound } from "next/navigation";
-import { DocumentBatchView } from "@/components/doc-editor/document-batch-view";
+import { BatchNotAvailable, DocumentBatchView } from "@/components/doc-editor/document-batch-view";
 import { PrintOrientation } from "@/components/doc-editor/print-orientation";
 import { writeAudit } from "@/lib/audit";
 import { getActor } from "@/lib/authz";
@@ -52,6 +52,15 @@ export default async function DocumentBatchPage({
   const lower = template.locale.toLowerCase();
   const locale = isLocale(lower) ? lower : "ja";
   const m = getMessages(locale);
+
+  /*
+    **預かったファイルの様式は、まとめて作れない。**
+    1枚ずつ別のファイルになるので、続けて刷るという形にできない。
+    黙って空を出さず、断りを出して1件ずつへ戻ってもらう
+  */
+  if (template.kind !== "BLOCK") {
+    return <BatchNotAvailable backHref={`/doc-templates/${template.id}`} />;
+  }
 
   /*
     差出人と宛先。**宛先は「宛先を使う」印の付いた様式でだけ見る。**

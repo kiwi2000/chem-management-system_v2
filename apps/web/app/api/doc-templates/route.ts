@@ -89,6 +89,7 @@ export async function POST(req: Request) {
       nameJa: input.nameJa,
       nameEn: input.nameEn ?? null,
       target: input.target,
+      kind: input.kind,
       locale: input.locale,
       active: input.active,
       usesRecipient: input.usesRecipient,

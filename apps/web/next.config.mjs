@@ -26,6 +26,13 @@ const nextConfig = {
   // （@chem/domain は判定エンジン実装時=S12 に追加する）
   transpilePackages: ["@chem/shared"],
 
+  /*
+    Excel・Word を読み書きする2つは、**まとめずにそのまま動かす。**
+    どちらも Node のしくみ（動的な require）を使っており、
+    まとめると読み込めないファイルが出る
+  */
+  serverExternalPackages: ["exceljs", "jszip"],
+
   // ESLint はリポジトリルートの eslint.config.mjs で `npm run lint` として実行する。
   // next build 内蔵の lint はルート設定を検出できず警告を出すだけなので無効化する。
   eslint: { ignoreDuringBuilds: true },

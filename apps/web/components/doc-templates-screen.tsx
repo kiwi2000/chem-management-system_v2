@@ -2,11 +2,13 @@
 
 import {
   DOCUMENT_TARGETS,
+  DOCUMENT_TEMPLATE_KINDS,
   emptyTableState,
   pickName,
   serializeTableState,
   type ColumnKind,
   type DocumentTarget,
+  type DocumentTemplateKind,
   type TableState,
 } from "@chem/shared";
 import { FileText } from "lucide-react";
@@ -32,6 +34,7 @@ interface Draft {
   nameJa: string;
   nameEn: string;
   target: DocumentTarget;
+  kind: DocumentTemplateKind;
   locale: string;
   active: boolean;
   usesRecipient: boolean;
@@ -42,6 +45,7 @@ const EMPTY: Draft = {
   nameJa: "",
   nameEn: "",
   target: "PRODUCT",
+  kind: "BLOCK",
   locale: "JA",
   active: true,
   usesRecipient: false,
@@ -71,6 +75,7 @@ const columnKinds = [
   { key: "nameJa", kind: "text" },
   { key: "nameEn", kind: "text" },
   { key: "target", kind: "enum" },
+  { key: "kind", kind: "enum" },
   { key: "locale", kind: "enum" },
   { key: "active", kind: "enum" },
   { key: "usesRecipient", kind: "enum" },
@@ -140,6 +145,7 @@ export function DocTemplatesScreen() {
       nameJa: t.nameJa,
       nameEn: t.nameEn ?? "",
       target: t.target,
+      kind: t.kind,
       locale: t.locale,
       active: t.active,
       usesRecipient: t.usesRecipient,
@@ -162,6 +168,7 @@ export function DocTemplatesScreen() {
         nameJa: draft.nameJa,
         nameEn: draft.nameEn || null,
         target: draft.target,
+        kind: draft.kind,
         locale: draft.locale,
         active: draft.active,
         usesRecipient: draft.usesRecipient,
@@ -281,6 +288,30 @@ export function DocTemplatesScreen() {
           ),
       },
       {
+        key: "kind",
+        header: m.docTemplates.kind,
+        kind: "enum",
+        width: 104,
+        options: DOCUMENT_TEMPLATE_KINDS.map((v) => ({ value: v, label: m.docTemplates.kinds[v] })),
+        render: (t) =>
+          editingRow(t) || t.id === NEW_ID ? (
+            <select
+              className="border-input h-7 w-full rounded-none border bg-transparent px-1 text-sm"
+              value={draft.kind}
+              aria-label={m.docTemplates.kind}
+              onChange={(e) => setDraft({ ...draft, kind: e.target.value as DocumentTemplateKind })}
+            >
+              {DOCUMENT_TEMPLATE_KINDS.map((v) => (
+                <option key={v} value={v}>
+                  {m.docTemplates.kinds[v]}
+                </option>
+              ))}
+            </select>
+          ) : (
+            m.docTemplates.kinds[t.kind]
+          ),
+      },
+      {
         key: "blocks",
         header: m.docTemplates.blocks,
         kind: "number",
@@ -289,7 +320,7 @@ export function DocTemplatesScreen() {
         filterable: false,
         className: "text-right",
         render: (t) =>
-          t.id === NEW_ID ? null : (
+          t.id === NEW_ID || t.kind !== "BLOCK" ? null : (
             <span className="tabular-nums">{t.contentBroken ? "—" : t.blockCount}</span>
           ),
       },

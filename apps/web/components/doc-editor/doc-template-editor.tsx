@@ -13,6 +13,7 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { BlockStyleBar } from "@/components/doc-editor/block-style-bar";
+import { TemplateFilePanel } from "@/components/doc-editor/template-file-panel";
 import { renderDocument } from "@/lib/doc-render";
 import { addOrgBlockValues, sampleTables, sampleValues } from "@/lib/doc-sample";
 import type { ApiError, DocumentTemplateDto } from "@/lib/types";
@@ -179,6 +180,9 @@ export function DocTemplateEditor({ id }: { id: string }) {
     );
   }
 
+  /* 預かったファイルの様式は、ブロックも紙の向きも持たない。画面ごと差し替える */
+  const isFile = template.kind !== "BLOCK";
+
   return (
     <div className={PAGE_SHELL_STACKED}>
       {/* いまどこにいるか。メニューの項目名から始める */}
@@ -195,45 +199,54 @@ export function DocTemplateEditor({ id }: { id: string }) {
           {template.code} {template.nameJa}
         </h1>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm">
-            {m.docEditor.orientation}
-            <select
-              className={SELECT}
-              disabled={!editable}
-              value={content.orientation}
-              onChange={(e) =>
-                edit({ ...content, orientation: e.target.value as "portrait" | "landscape" })
-              }
-            >
-              <option value="portrait">{m.docEditor.orientations.portrait}</option>
-              <option value="landscape">{m.docEditor.orientations.landscape}</option>
-            </select>
-          </label>
-          {/*
+          {isFile ? null : (
+            <>
+              <label className="flex items-center gap-2 text-sm">
+                {m.docEditor.orientation}
+                <select
+                  className={SELECT}
+                  disabled={!editable}
+                  value={content.orientation}
+                  onChange={(e) =>
+                    edit({ ...content, orientation: e.target.value as "portrait" | "landscape" })
+                  }
+                >
+                  <option value="portrait">{m.docEditor.orientations.portrait}</option>
+                  <option value="landscape">{m.docEditor.orientations.landscape}</option>
+                </select>
+              </label>
+              {/*
             紙面ぜんたいの字。**各ブロックの既定になる。**
             ブロックの側で選ばれていれば、そちらが勝つ
           */}
-          <label className="flex items-center gap-2 text-sm">
-            {m.docEditor.documentFont}
-            <BlockStyleBar
-              level="document"
-              value={content.style}
-              onChange={(style) => edit({ ...content, style })}
-            />
-          </label>
-          <Button size="sm" variant="outline" onClick={() => setPreview((v) => !v)}>
-            <Eye className="size-4" />
-            {preview ? m.docEditor.previewHide : m.docEditor.preview}
-          </Button>
-          {editable && (
-            <>
-              <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
-                {saving ? m.common.saving : m.common.save}
+              <label className="flex items-center gap-2 text-sm">
+                {m.docEditor.documentFont}
+                <BlockStyleBar
+                  level="document"
+                  value={content.style}
+                  onChange={(style) => edit({ ...content, style })}
+                />
+              </label>
+              <Button size="sm" variant="outline" onClick={() => setPreview((v) => !v)}>
+                <Eye className="size-4" />
+                {preview ? m.docEditor.previewHide : m.docEditor.preview}
               </Button>
-              {/* 取消は、保存していない変えぶんを捨てて、読み込んだところまで戻す */}
-              <Button size="sm" variant="outline" disabled={saving || !dirty} onClick={cancelEdits}>
-                {m.common.discard}
-              </Button>
+              {editable && (
+                <>
+                  <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
+                    {saving ? m.common.saving : m.common.save}
+                  </Button>
+                  {/* 取消は、保存していない変えぶんを捨てて、読み込んだところまで戻す */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={saving || !dirty}
+                    onClick={cancelEdits}
+                  >
+                    {m.common.discard}
+                  </Button>
+                </>
+              )}
             </>
           )}
           {/*
@@ -277,28 +290,37 @@ export function DocTemplateEditor({ id }: { id: string }) {
         プレビューを出しているあいだは左右に並べる。
         画面が狭いときは縦に積む（横に並べると、どちらも読めない幅になる）
       */}
-      <div className={cn("gap-4", preview && "lg:grid lg:grid-cols-2 lg:items-start")}>
-        <BlockList
-          key={revision}
-          blocks={content.blocks}
-          target={template.target}
+      {isFile ? (
+        <TemplateFilePanel
+          template={template}
+          editable={editable}
           orgItems={orgItems}
-          documentFont={content.style?.family}
-          onChange={(blocks) => edit({ ...content, blocks })}
+          onChanged={() => void load()}
         />
+      ) : (
+        <div className={cn("gap-4", preview && "lg:grid lg:grid-cols-2 lg:items-start")}>
+          <BlockList
+            key={revision}
+            blocks={content.blocks}
+            target={template.target}
+            orgItems={orgItems}
+            documentFont={content.style?.family}
+            onChange={(blocks) => edit({ ...content, blocks })}
+          />
 
-        {preview && sheet && (
-          <div className="mt-4 lg:sticky lg:top-4 lg:mt-0">
-            <Alert className="mb-2">
-              <AlertDescription>{m.docEditor.previewNote}</AlertDescription>
-            </Alert>
-            {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
-            <div className="bg-muted/40 max-h-[75vh] overflow-auto border p-2">
-              <DocumentSheet doc={sheet} />
+          {preview && sheet && (
+            <div className="mt-4 lg:sticky lg:top-4 lg:mt-0">
+              <Alert className="mb-2">
+                <AlertDescription>{m.docEditor.previewNote}</AlertDescription>
+              </Alert>
+              {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
+              <div className="bg-muted/40 max-h-[75vh] overflow-auto border p-2">
+                <DocumentSheet doc={sheet} />
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

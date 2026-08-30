@@ -1,4 +1,9 @@
-import type { DocumentContent, DocumentTarget, OrganisationKind } from "@chem/shared";
+import type {
+  DocumentContent,
+  DocumentTarget,
+  DocumentTemplateKind,
+  OrganisationKind,
+} from "@chem/shared";
 import type { MfaMethod } from "@chem/shared";
 import type {
   GazetteLawKind,
@@ -543,9 +548,18 @@ export interface DocumentTemplateDto {
   nameJa: string;
   nameEn: string | null;
   target: DocumentTarget;
+  /** 作りかた。画面でブロックを積む `BLOCK` か、預かった Excel・Word */
+  kind: DocumentTemplateKind;
   content: DocumentContent;
   /** 保存されている中身が、いまの形として読めなかった */
   contentBroken: boolean;
+  /** 預かったファイルの名前。`BLOCK` のときと、まだ預かっていないときは null */
+  fileName: string | null;
+  fileUpdatedAt: string | null;
+  /** ファイルに書かれていた札。1件を開いたときだけ入る */
+  fileTags?: string[];
+  /** そのうち、こちらが知らないもの。埋められないので画面で知らせる */
+  fileUnknown?: string[];
   /** いまの対象では使えない差込項目。対象を変えたあとに出る */
   unknownFields: string[];
   blockCount: number;

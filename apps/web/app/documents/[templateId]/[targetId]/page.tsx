@@ -8,6 +8,7 @@ import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-servic
 import { renderDocument } from "@/lib/doc-render";
 import { getMessages, isLocale, organisationIdsIn } from "@chem/shared";
 import { PrintOrientation } from "@/components/doc-editor/print-orientation";
+import { TemplateFileDownload } from "@/components/doc-editor/template-file-download";
 
 /**
  * できあがった帳票。テンプレート × 対象1件で1枚。
@@ -83,6 +84,22 @@ export default async function DocumentPage({
     organisationIds: organisationIdsIn(template.content),
   };
 
+  /*
+    預かった Excel・Word の様式は、**画面に出さずに落としてもらう。**
+    紙面をこちらで組み立てないので、見せられるものが無い。
+    値を埋めたファイルは、押されたときに作る（作った記録もそのときに残る）
+  */
+  if (template.kind !== "BLOCK") {
+    return (
+      <TemplateFileDownload
+        href={`/api/document-files/${template.id}/${targetId}${search(from, to, template.usesRecipient)}`}
+        title={`${template.code} ${template.nameJa}`}
+        ready={template.fileName !== null}
+        backHref={`/doc-templates/${template.id}`}
+      />
+    );
+  }
+
   // 見る権限は、集める側が対象ごとに判断する（見られないものは null が返る）
   const data = await collectFor(actor, template.target, targetId, locale, m, parties);
   if (!data) notFound();
@@ -137,4 +154,13 @@ export default async function DocumentPage({
       />
     </>
   );
+}
+
+/** 落とす先に付ける、差出人と宛先。印の無い様式に宛先は付けない */
+function search(from: string | undefined, to: string | undefined, usesRecipient: boolean): string {
+  const q = new URLSearchParams();
+  if (from) q.set("from", from);
+  if (usesRecipient && to) q.set("to", to);
+  const s = q.toString();
+  return s ? `?${s}` : "";
 }

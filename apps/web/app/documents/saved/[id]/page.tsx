@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { DocumentView } from "@/components/doc-editor/document-view";
+import { SavedFileNote } from "@/components/doc-editor/saved-file-note";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import type { RenderedDocument } from "@/lib/doc-render";
@@ -44,6 +45,18 @@ export default async function SavedDocumentPage({ params }: { params: Promise<{ 
   // 他人のものは、あることも伝えない
   if (row.generatedBy !== actor.user.id) notFound();
   if (row.hasComposition && !actor.has("COMPOSITION_VIEW")) notFound();
+
+  /*
+    **ファイルの様式で作ったものは、紙面が残っていない。**
+    残せるのはファイルそのものになるが、それは持ち出しになるので置いていない。
+    何を出したかだけを伝える
+  */
+  const saved = row.content as { file?: { name: string } } | null;
+  if (saved && typeof saved === "object" && saved.file) {
+    return (
+      <SavedFileNote title={`${row.template.code} ${row.targetCode}`} name={saved.file.name} />
+    );
+  }
 
   return (
     <DocumentView

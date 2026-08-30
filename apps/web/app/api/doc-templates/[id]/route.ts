@@ -2,6 +2,8 @@ import { documentTemplateSchema, normalizeCode, parseDocumentContent } from "@ch
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { inspectTemplateFile } from "@/lib/doc-fill";
+import { orgItemLabels } from "@/lib/organisation-service";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -21,7 +23,32 @@ export async function GET(_req: Request, { params }: Ctx) {
     select: DOC_TEMPLATE_SELECT,
   });
   if (!row) return jsonError(404, "not_found", m.errors.notFound);
-  return Response.json(toDocTemplateDto(row));
+  const dto = toDocTemplateDto(row);
+
+  /*
+    預かったファイルは、**開くたびに札を数え直す。**
+    保存しておくと、組織の項目が増えたときに「知らない札」の印だけが古くなる
+  */
+  if (row.kind !== "BLOCK") {
+    const file = await prisma.documentTemplate.findUnique({
+      where: { id },
+      select: { fileData: true },
+    });
+    if (file?.fileData) {
+      const orgItems = await orgItemLabels();
+      const found = await inspectTemplateFile(
+        Buffer.from(file.fileData),
+        row.kind,
+        row.target,
+        orgItems,
+      );
+      if (found.ok) {
+        dto.fileTags = found.tags;
+        dto.fileUnknown = found.unknown;
+      }
+    }
+  }
+  return Response.json(dto);
 }
 
 /**
@@ -89,6 +116,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       nameJa: input.nameJa,
       nameEn: input.nameEn ?? null,
       target: input.target,
+      kind: input.kind,
       locale: input.locale,
       active: input.active,
       usesRecipient: input.usesRecipient,

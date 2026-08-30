@@ -222,6 +222,7 @@ export const DOC_TEMPLATE_COLUMNS: QueryColumn[] = [
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "target", kind: "enum", field: "target" },
+  { key: "kind", kind: "enum", field: "kind" },
   { key: "locale", kind: "enum", field: "locale" },
   { key: "active", kind: "enum", field: "active" },
   { key: "seq", kind: "number", field: "seq" },

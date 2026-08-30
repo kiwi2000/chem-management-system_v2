@@ -82,3 +82,21 @@ export function DocumentBatchView({
     </div>
   );
 }
+
+/**
+ * まとめて作れない様式のときの画面。
+ * **理由と戻り道だけを出す。**空の紙面を出すと、作れたのに白紙だったように見える
+ */
+export function BatchNotAvailable({ backHref }: { backHref: string }) {
+  const { m } = useI18n();
+  return (
+    <div className="space-y-3 p-3 lg:p-4">
+      <Alert>
+        <AlertDescription>{m.documents.fileBatch}</AlertDescription>
+      </Alert>
+      <Button size="sm" variant="outline" nativeButton={false} render={<Link href={backHref} />}>
+        {m.common.back}
+      </Button>
+    </div>
+  );
+}

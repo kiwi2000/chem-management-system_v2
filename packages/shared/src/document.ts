@@ -22,6 +22,17 @@ import type { Messages } from "./i18n/ja";
  */
 
 /** テンプレートが何を1件受け取るか */
+/**
+ * 様式の作りかた。
+ *
+ * - `BLOCK` … 画面でブロックを積む。中身はこのファイルの `DocumentContent`
+ * - `XLSX` / `DOCX` … Excel・Word のファイルを預かり、**差込札に値を埋めて返す**。
+ *   罫線・セルの結合・ヘッダー・ロゴがそのまま使えるので、
+ *   取引先から来た調査票の形をそのまま出せる（札の書き方は `doc-tags.ts`）
+ */
+export const DOCUMENT_TEMPLATE_KINDS = ["BLOCK", "XLSX", "DOCX"] as const;
+export type DocumentTemplateKind = (typeof DOCUMENT_TEMPLATE_KINDS)[number];
+
 export const DOCUMENT_TARGETS = ["PRODUCT", "SUBSTANCE"] as const;
 export type DocumentTarget = (typeof DOCUMENT_TARGETS)[number];
 
@@ -695,6 +706,12 @@ export const documentTemplateSchema = (m: Messages) =>
     nameJa: z.string().trim().min(1, m.validation.required).max(200, m.validation.tooLong(200)),
     nameEn: z.string().trim().max(200, m.validation.tooLong(200)).nullish(),
     target: z.enum(DOCUMENT_TARGETS),
+    /**
+     * 作りかた。**あとから変えられる。**
+     * 画面で組んだものを Excel に替えても、ブロックの並びは残しておく
+     * （替え間違えたときに戻せるようにするため）
+     */
+    kind: z.enum(DOCUMENT_TEMPLATE_KINDS),
     locale: z.string().trim().min(1, m.validation.required).max(10, m.validation.tooLong(10)),
     active: z.boolean(),
     /**
