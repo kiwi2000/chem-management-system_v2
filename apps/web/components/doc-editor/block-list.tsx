@@ -6,13 +6,14 @@ import {
   groupIntoRows,
   ORG_NAME_ITEM,
   pickName,
+  type OrgBlockItem,
   tablesFor,
   type BlockKind,
   type DocumentBlock,
   type DocumentTable,
   type DocumentTarget,
 } from "@chem/shared";
-import { GripVertical, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { RichEditor } from "@/components/doc-editor/rich-editor";
 import { TableBlockFields } from "@/components/doc-editor/table-block-fields";
@@ -36,7 +37,7 @@ function newBlock(kind: BlockKind, target: DocumentTarget, id: string): Document
       return { id, kind, items: [] };
     // 組織は選んでもらう。空のまま置いても紙面には何も出ない
     case "org":
-      return { id, kind, organisationId: "", items: [], showLabels: true };
+      return { id, kind, organisationId: "", items: [] };
     case "table": {
       const first = tablesFor(target)[0];
       return {
@@ -308,68 +309,117 @@ export function BlockList({
           {b.kind === "org" && (
             <div className="space-y-2">
               <p className="text-muted-foreground text-xs">{m.docEditor.orgBlockHint}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  className={cn(SELECT, "w-56")}
-                  aria-label={m.docEditor.orgBlockOrganisation}
-                  value={b.organisationId}
-                  onChange={(e) => replace(i, { ...b, organisationId: e.target.value })}
-                >
-                  <option value="">—</option>
-                  {(organisations ?? [])
-                    .filter((o) => o.activeFlag)
-                    .map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {pickName(locale, o.nameJa, o.nameEn)}
-                      </option>
-                    ))}
-                </select>
-                <label className="flex items-center gap-1 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={b.showLabels !== false}
-                    onChange={(e) => replace(i, { ...b, showLabels: e.target.checked })}
-                  />
-                  {m.docEditor.orgBlockShowLabels}
-                </label>
-              </div>
+              <select
+                className={cn(SELECT, "w-56")}
+                aria-label={m.docEditor.orgBlockOrganisation}
+                value={b.organisationId}
+                onChange={(e) => replace(i, { ...b, organisationId: e.target.value })}
+              >
+                <option value="">—</option>
+                {(organisations ?? [])
+                  .filter((o) => o.activeFlag)
+                  .map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {pickName(locale, o.nameJa, o.nameEn)}
+                    </option>
+                  ))}
+              </select>
 
-              {b.items.map((item, k) => (
-                <div key={k} className="flex flex-wrap items-center gap-2">
-                  <select
-                    className={cn(SELECT, "w-56")}
-                    aria-label={m.docEditor.orgBlockItem}
-                    value={item}
-                    onChange={(e) => {
-                      const items = b.items.map((x, j) => (j === k ? e.target.value : x));
-                      replace(i, { ...b, items });
-                    }}
-                  >
-                    <option value="">—</option>
-                    {/* 名称は項目と同じ並びから選ばせる。名前だけの欄を別に作らない */}
-                    <option value={ORG_NAME_ITEM}>{m.docEditor.orgBlockName}</option>
-                    {itemsOf(b.organisationId).map((label) => (
-                      <option key={label} value={label}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    aria-label={m.common.delete}
-                    onClick={() => replace(i, { ...b, items: b.items.filter((_, j) => j !== k) })}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              ))}
+              {b.items.map((it, k) => {
+                const patch = (next: Partial<OrgBlockItem>) =>
+                  replace(i, {
+                    ...b,
+                    items: b.items.map((x, j) => (j === k ? { ...x, ...next } : x)),
+                  });
+                return (
+                  <div key={k} className="flex flex-wrap items-center gap-2">
+                    {/* どの項目を出すか */}
+                    <select
+                      className={cn(SELECT, "w-48")}
+                      aria-label={m.docEditor.orgBlockItem}
+                      value={it.item}
+                      onChange={(e) => patch({ item: e.target.value })}
+                    >
+                      <option value="">—</option>
+                      {/* 名称は項目と同じ並びから選ばせる。名前だけの欄を別に作らない */}
+                      <option value={ORG_NAME_ITEM}>{m.docEditor.orgBlockName}</option>
+                      {itemsOf(b.organisationId).map((label) => (
+                        <option key={label} value={label}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    {/*
+                      紙に出す見出し。**組織側の項目名とは別に持つ。**
+                      空にすれば値だけが出る（宛名や差出人の並びに使う）
+                    */}
+                    <Input
+                      className="h-8 w-40"
+                      aria-label={m.docEditor.orgBlockLabel}
+                      placeholder={m.docEditor.orgBlockLabelPlaceholder}
+                      value={it.label ?? ""}
+                      onChange={(e) => patch({ label: e.target.value })}
+                    />
+                    {/* 行の寄せ。宛名は左、差出人は右、といった置き分けのため */}
+                    <select
+                      className={cn(SELECT, "w-28")}
+                      aria-label={m.docEditor.orgBlockAlign}
+                      value={it.align ?? "left"}
+                      onChange={(e) => patch({ align: e.target.value as OrgBlockItem["align"] })}
+                    >
+                      <option value="left">{m.docEditor.alignLeft}</option>
+                      <option value="center">{m.docEditor.alignCenter}</option>
+                      <option value="right">{m.docEditor.alignRight}</option>
+                    </select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      aria-label={m.organisations.moveUp}
+                      title={m.organisations.moveUp}
+                      disabled={k === 0}
+                      onClick={() => {
+                        const items = [...b.items];
+                        const [moved] = items.splice(k, 1);
+                        if (moved) items.splice(k - 1, 0, moved);
+                        replace(i, { ...b, items });
+                      }}
+                    >
+                      <ChevronUp className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      aria-label={m.organisations.moveDown}
+                      title={m.organisations.moveDown}
+                      disabled={k === b.items.length - 1}
+                      onClick={() => {
+                        const items = [...b.items];
+                        const [moved] = items.splice(k, 1);
+                        if (moved) items.splice(k + 1, 0, moved);
+                        replace(i, { ...b, items });
+                      }}
+                    >
+                      <ChevronDown className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      aria-label={m.common.delete}
+                      onClick={() => replace(i, { ...b, items: b.items.filter((_, j) => j !== k) })}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                );
+              })}
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => replace(i, { ...b, items: [...b.items, ""] })}
+                onClick={() => replace(i, { ...b, items: [...b.items, { item: "" }] })}
               >
                 {m.docEditor.orgBlockAddItem}
               </Button>

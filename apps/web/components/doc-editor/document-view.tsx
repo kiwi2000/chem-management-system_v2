@@ -163,6 +163,23 @@ function Block({ block: b }: { block: RenderBlock }) {
           </tbody>
         </table>
       );
+    /*
+      組織の項目。**行ごとに寄せを持つので、表ではなく行で組む。**
+      表で組むと、左の見出しの幅に引きずられて、右寄せが揃わない
+    */
+    case "orgItems":
+      return (
+        <div style={{ margin: "0 0 4mm", fontSize: "10.5pt" }}>
+          {b.items.map((it, i) => (
+            <div key={i} style={{ textAlign: it.align, padding: "0.5mm 0" }}>
+              {it.label && (
+                <span style={{ marginRight: "3mm", whiteSpace: "nowrap" }}>{it.label}</span>
+              )}
+              {it.value}
+            </div>
+          ))}
+        </div>
+      );
     case "table":
       return (
         <div style={{ margin: "0 0 5mm" }}>

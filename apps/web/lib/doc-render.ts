@@ -1,5 +1,4 @@
 import {
-  ORG_NAME_ITEM,
   orgBlockKey,
   compileReplacement,
   isKnownField,
@@ -46,6 +45,15 @@ export type RenderBlock =
   | (RenderBase & { kind: "heading"; level: 1 | 2 | 3; lines: RenderLine[] })
   | (RenderBase & { kind: "text"; lines: RenderLine[] })
   | (RenderBase & { kind: "fields"; items: { label: string; value: string }[] })
+  /**
+   * 組織の項目。**行ごとに寄せを持つ。**
+   * 「項目の並び」と別にしているのは、宛名や差出人のように
+   * 左・中央・右へ置き分けたいことがあるため
+   */
+  | (RenderBase & {
+      kind: "orgItems";
+      items: { label: string; value: string; align: "left" | "center" | "right" }[];
+    })
   | (RenderBase & { kind: "table"; caption?: string; head: string[]; rows: string[][] })
   | (RenderBase & { kind: "divider" })
   | (RenderBase & { kind: "spacer"; size: "sm" | "md" | "lg" })
@@ -144,13 +152,14 @@ function renderBlock(
     case "org":
       return [
         {
-          kind: "fields",
+          kind: "orgItems",
           items: b.items
-            .filter(Boolean)
-            .map((item) => ({
-              // 名称の行だけは見出しが決まっていないので、項目名を出さない
-              label: b.showLabels === false || item === ORG_NAME_ITEM ? "" : item,
-              value: values.get(orgBlockKey(b.organisationId, item)) ?? "",
+            .filter((it) => it.item)
+            .map((it) => ({
+              // 紙に出す見出しは様式が決める。空なら値だけを出す
+              label: it.label ?? "",
+              value: values.get(orgBlockKey(b.organisationId, it.item)) ?? "",
+              align: it.align ?? "left",
             }))
             // 値の無い項目は出さない。空の行が並ぶと、紙面が間延びする
             .filter((x) => x.value !== ""),

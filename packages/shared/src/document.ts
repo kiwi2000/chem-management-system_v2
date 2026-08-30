@@ -282,6 +282,24 @@ export interface RichMark {
 export type RichSpan =
   ({ kind: "text"; text: string } & RichMark) | ({ kind: "field"; field: string } & RichMark);
 
+/**
+ * 組織ブロックの1行。
+ *
+ * **見出しは紙面の言葉で決める。**組織側の項目名（「担当者」）と、
+ * 紙に出したい言葉（「ご担当」「Attn.」）は別もの。
+ * 組織の項目名を変えると全部の様式が変わってしまうので、様式の側で持つ。
+ *
+ * 置き場所も行ごとに決める。宛名は左、差出人は右、といった置きかたのため
+ */
+export interface OrgBlockItem {
+  /** 組織の項目名。`ORG_NAME_ITEM` は組織の名称そのもの */
+  item: string;
+  /** 紙に出す見出し。**空なら値だけ**を出す */
+  label?: string;
+  /** 行の寄せ。省略は左 */
+  align?: "left" | "center" | "right";
+}
+
 /** 段落1つぶん */
 export interface RichLine {
   spans: RichSpan[];
@@ -449,9 +467,7 @@ export type DocumentBlock =
       /** どの組織か */
       organisationId: string;
       /** 出す項目。並びはこの配列の順 */
-      items: string[];
-      /** 項目名を左に出すか。false なら値だけを縦に並べる */
-      showLabels?: boolean;
+      items: OrgBlockItem[];
     })
   | (BlockBase & {
       kind: "table";
@@ -563,6 +579,16 @@ export function parseDocumentContent(value: unknown): DocumentContent | null {
     */
     const w = (b as DocumentBlock).width;
     if (w !== undefined && !isBlockWidth(w)) delete (b as DocumentBlock).width;
+    /*
+      組織ブロックの**古い形**（項目名を並べただけ）を読めるようにする。
+      作り直させると、保存済みの様式が開けなくなる
+    */
+    if (kind === "org") {
+      const ob = b as { items?: unknown };
+      if (Array.isArray(ob.items)) {
+        ob.items = ob.items.map((x) => (typeof x === "string" ? { item: x } : x));
+      }
+    }
   }
   return v as DocumentContent;
 }

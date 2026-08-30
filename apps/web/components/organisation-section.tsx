@@ -9,7 +9,7 @@ import {
   type OrganisationKind,
   type TableState,
 } from "@chem/shared";
-import { Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -235,6 +235,19 @@ export function OrganisationSection() {
   const setItem = (i: number, patch: Partial<ItemDraft>) =>
     setForm((f) => ({ ...f, items: f.items.map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
 
+  /*
+    項目の並べ替え。**紙面に出る順がこの順になる。**
+    つまみで引く形にはしない。数が少なく、1つずつ動かすほうが狙った位置に置きやすい
+  */
+  const moveItem = (i: number, to: number) =>
+    setForm((f) => {
+      if (to < 0 || to >= f.items.length) return f;
+      const items = [...f.items];
+      const [moved] = items.splice(i, 1);
+      if (moved) items.splice(to, 0, moved);
+      return { ...f, items };
+    });
+
   return (
     <section className="space-y-3">
       {error && (
@@ -374,6 +387,28 @@ export function OrganisationSection() {
                             className="w-96"
                           />
                         </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          title={m.organisations.moveUp}
+                          aria-label={m.organisations.moveUp}
+                          disabled={i === 0}
+                          onClick={() => moveItem(i, i - 1)}
+                        >
+                          <ChevronUp className="size-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          title={m.organisations.moveDown}
+                          aria-label={m.organisations.moveDown}
+                          disabled={i === form.items.length - 1}
+                          onClick={() => moveItem(i, i + 1)}
+                        >
+                          <ChevronDown className="size-4" />
+                        </Button>
                         <Button
                           type="button"
                           variant="ghost"
