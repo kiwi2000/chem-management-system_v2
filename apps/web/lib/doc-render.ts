@@ -1,4 +1,6 @@
 import {
+  ORG_NAME_ITEM,
+  orgBlockKey,
   compileReplacement,
   isKnownField,
   passesFilter,
@@ -135,6 +137,25 @@ function renderBlock(
       ];
     case "text":
       return [{ kind: "text", lines: renderLines(b.lines, values, target, warn) }];
+    /*
+      名指しした組織の項目。**差し込む値は集める側が用意している。**
+      ここでは鍵を組み立てて引くだけ（読み込みの都合を紙面の組み立てに持ち込まない）
+    */
+    case "org":
+      return [
+        {
+          kind: "fields",
+          items: b.items
+            .filter(Boolean)
+            .map((item) => ({
+              // 名称の行だけは見出しが決まっていないので、項目名を出さない
+              label: b.showLabels === false || item === ORG_NAME_ITEM ? "" : item,
+              value: values.get(orgBlockKey(b.organisationId, item)) ?? "",
+            }))
+            // 値の無い項目は出さない。空の行が並ぶと、紙面が間延びする
+            .filter((x) => x.value !== ""),
+        },
+      ];
     case "fields":
       return [
         {

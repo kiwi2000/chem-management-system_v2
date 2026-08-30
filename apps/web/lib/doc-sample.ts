@@ -1,7 +1,12 @@
 import {
   DOCUMENT_TABLE_DEFS,
   ORG_ITEM_PREFIX,
+  ORG_NAME_ITEM,
   fieldsFor,
+  orgBlockKey,
+  organisationIdsIn,
+  pickName,
+  type DocumentContent,
   type DocumentTarget,
   type Locale,
 } from "@chem/shared";
@@ -76,6 +81,33 @@ export function sampleValues(
     out.set(f.key, table[f.key] ?? (locale === "en" ? "Sample" : "見本"));
   }
   return out;
+}
+
+/**
+ * 組織ブロックの値を足す。
+ *
+ * **ここだけは見本ではなく本物を入れる。**
+ * 様式が名指ししている組織は、作る人が誰でも同じものが出る。
+ * 見本の文字を出すと、確かめたい「実際にどう出るか」が分からない
+ */
+export function addOrgBlockValues(
+  values: Map<string, string>,
+  content: DocumentContent,
+  organisations: {
+    id: string;
+    nameJa: string;
+    nameEn: string | null;
+    items: { label: string; value: string }[];
+  }[],
+  locale: Locale,
+): Map<string, string> {
+  for (const id of organisationIdsIn(content)) {
+    const org = organisations.find((o) => o.id === id);
+    if (!org) continue;
+    values.set(orgBlockKey(id, ORG_NAME_ITEM), pickName(locale, org.nameJa, org.nameEn));
+    for (const it of org.items) values.set(orgBlockKey(id, it.label), it.value);
+  }
+  return values;
 }
 
 /** 列の見た目に合わせた見本。数字の列に文字が入ると、幅の目安にならない */

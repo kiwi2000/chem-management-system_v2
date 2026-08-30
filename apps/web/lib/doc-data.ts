@@ -1,6 +1,8 @@
 import {
   DOCUMENT_TABLE_DEFS,
   ORG_ITEM_PREFIX,
+  ORG_NAME_ITEM,
+  orgBlockKey,
   pickName,
   pickStatutoryName,
   RECIPIENT_ITEM_PREFIX,
@@ -61,6 +63,11 @@ function tableDef(key: DocumentTable, locale: Locale) {
 export interface DocParties {
   senderId?: string | null;
   recipientId?: string | null;
+  /**
+   * 様式が名指ししている組織のid（組織ブロック）。
+   * **様式から取り出して渡す。**差出人・宛先とは別で、誰が作っても同じものが出る
+   */
+  organisationIds?: string[];
 }
 
 const ORG_SELECT = {
@@ -115,6 +122,26 @@ async function orgValues(
   return out;
 }
 
+/**
+ * 様式が名指ししている組織。**組織ブロックのために読む。**
+ *
+ * 消された組織を指したままの様式は、値が空になるだけで紙面は出る
+ * （出ないと、どこがおかしいのか分からなくなる）。
+ */
+async function namedOrgValues(ids: string[], locale: Locale): Promise<[string, string][]> {
+  if (ids.length === 0) return [];
+  const rows = await prisma.organisation.findMany({
+    where: { id: { in: ids }, deletedAt: null },
+    select: { id: true, ...ORG_SELECT },
+  });
+  const out: [string, string][] = [];
+  for (const o of rows) {
+    out.push([orgBlockKey(o.id, ORG_NAME_ITEM), pickName(locale, o.nameJa, o.nameEn)]);
+    for (const it of o.items) out.push([orgBlockKey(o.id, it.label), it.value]);
+  }
+  return out;
+}
+
 /** 共通の項目。どちらの対象でも同じ */
 async function commonValues(
   actor: Actor,
@@ -129,6 +156,7 @@ async function commonValues(
     ["doc.generatedBy", actor.user.displayName ?? actor.user.email],
     ["doc.version", versionCode ?? ""],
     ...(await orgValues(actor, locale, parties?.senderId, parties?.recipientId)),
+    ...(await namedOrgValues(parties?.organisationIds ?? [], locale)),
   ];
 }
 

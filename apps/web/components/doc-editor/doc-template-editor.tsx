@@ -13,8 +13,9 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { renderDocument } from "@/lib/doc-render";
-import { sampleTables, sampleValues } from "@/lib/doc-sample";
+import { addOrgBlockValues, sampleTables, sampleValues } from "@/lib/doc-sample";
 import type { ApiError, DocumentTemplateDto } from "@/lib/types";
+import { useOrganisations } from "@/lib/use-organisations";
 import { useOrgItemLabels } from "@/lib/use-doc-fields";
 import { useMe } from "@/lib/use-me";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
   const editable = can("DOC_TEMPLATE_EDIT");
   // 会社の自由項目。差込項目の一覧に足す
   const orgItems = useOrgItemLabels();
+  const organisations = useOrganisations();
   /*
     プレビュー。**見本の値で出す。**本物を引くと保存が要り、
     「試しに幅を変えて見る」ができなくなる
@@ -147,10 +149,20 @@ export function DocTemplateEditor({ id }: { id: string }) {
     return renderDocument({
       content,
       target: template.target,
-      values: sampleValues(template.target, orgItems, locale),
+      /*
+        差込項目は見本の文字。**組織ブロックだけは本物を入れる。**
+        名指しした組織は誰が作っても同じものが出るので、
+        見本の文字にすると、確かめたい「実際にどう出るか」が分からない
+      */
+      values: addOrgBlockValues(
+        sampleValues(template.target, orgItems, locale),
+        content,
+        organisations ?? [],
+        locale,
+      ),
       tables: sampleTables(locale),
     });
-  }, [template, content, orgItems]);
+  }, [template, content, orgItems, organisations]);
 
   if (!template || !content) {
     return (

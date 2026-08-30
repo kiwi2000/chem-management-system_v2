@@ -4,6 +4,8 @@ import {
   BLOCK_KINDS,
   fieldsFor,
   groupIntoRows,
+  ORG_NAME_ITEM,
+  pickName,
   tablesFor,
   type BlockKind,
   type DocumentBlock,
@@ -18,6 +20,7 @@ import { WidthSelect } from "@/components/doc-editor/width-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n-client";
+import { useOrganisations } from "@/lib/use-organisations";
 import { cn } from "@/lib/utils";
 
 const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm";
@@ -31,6 +34,9 @@ function newBlock(kind: BlockKind, target: DocumentTarget, id: string): Document
       return { id, kind, lines: [{ spans: [] }] };
     case "fields":
       return { id, kind, items: [] };
+    // 組織は選んでもらう。空のまま置いても紙面には何も出ない
+    case "org":
+      return { id, kind, organisationId: "", items: [], showLabels: true };
     case "table": {
       const first = tablesFor(target)[0];
       return {
@@ -69,6 +75,15 @@ export function BlockList({
   onChange: (next: DocumentBlock[]) => void;
 }) {
   const { m, locale } = useI18n();
+  /*
+    組織ブロックの選択肢。**一覧はログインしていれば誰でも引ける。**
+    自分の会社・部署も、取引先も同じ表にあるので、ここで分けない
+  */
+  const organisations = useOrganisations();
+  /** その組織が持っている項目名。組織を選び直したら、選べる項目も変わる */
+  const itemsOf = (organisationId: string) =>
+    (organisations ?? []).find((o) => o.id === organisationId)?.items.map((x) => x.label) ?? [];
+
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
@@ -286,6 +301,77 @@ export function BlockList({
                 onClick={() => replace(i, { ...b, items: [...b.items, { label: "", field: "" }] })}
               >
                 {m.docEditor.addItem}
+              </Button>
+            </div>
+          )}
+
+          {b.kind === "org" && (
+            <div className="space-y-2">
+              <p className="text-muted-foreground text-xs">{m.docEditor.orgBlockHint}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  className={cn(SELECT, "w-56")}
+                  aria-label={m.docEditor.orgBlockOrganisation}
+                  value={b.organisationId}
+                  onChange={(e) => replace(i, { ...b, organisationId: e.target.value })}
+                >
+                  <option value="">—</option>
+                  {(organisations ?? [])
+                    .filter((o) => o.activeFlag)
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {pickName(locale, o.nameJa, o.nameEn)}
+                      </option>
+                    ))}
+                </select>
+                <label className="flex items-center gap-1 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={b.showLabels !== false}
+                    onChange={(e) => replace(i, { ...b, showLabels: e.target.checked })}
+                  />
+                  {m.docEditor.orgBlockShowLabels}
+                </label>
+              </div>
+
+              {b.items.map((item, k) => (
+                <div key={k} className="flex flex-wrap items-center gap-2">
+                  <select
+                    className={cn(SELECT, "w-56")}
+                    aria-label={m.docEditor.orgBlockItem}
+                    value={item}
+                    onChange={(e) => {
+                      const items = b.items.map((x, j) => (j === k ? e.target.value : x));
+                      replace(i, { ...b, items });
+                    }}
+                  >
+                    <option value="">—</option>
+                    {/* 名称は項目と同じ並びから選ばせる。名前だけの欄を別に作らない */}
+                    <option value={ORG_NAME_ITEM}>{m.docEditor.orgBlockName}</option>
+                    {itemsOf(b.organisationId).map((label) => (
+                      <option key={label} value={label}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    aria-label={m.common.delete}
+                    onClick={() => replace(i, { ...b, items: b.items.filter((_, j) => j !== k) })}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => replace(i, { ...b, items: [...b.items, ""] })}
+              >
+                {m.docEditor.orgBlockAddItem}
               </Button>
             </div>
           )}

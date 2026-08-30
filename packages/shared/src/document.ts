@@ -99,6 +99,28 @@ export const ORG_ITEM_PREFIX = "org.item.";
 /** 宛先の自由項目につく頭 */
 export const RECIPIENT_ITEM_PREFIX = "to.item.";
 
+/**
+ * 組織ブロックで「組織の名称そのもの」を指す項目名。
+ * **項目名と同じ並びで選ばせる**ので、名前の欄を別に作らない
+ */
+export const ORG_NAME_ITEM = "\u0000name";
+
+/** 組織ブロックが引く値の鍵。組織ごとに違うので id を挟む */
+export function orgBlockKey(organisationId: string, item: string): string {
+  return item === ORG_NAME_ITEM
+    ? `orgOf.${organisationId}.name`
+    : `orgOf.${organisationId}.item.${item}`;
+}
+
+/** テンプレートが名指ししている組織のid。差し込む前に読み込むために要る */
+export function organisationIdsIn(content: DocumentContent): string[] {
+  const out = new Set<string>();
+  for (const b of content.blocks) {
+    if (b.kind === "org" && b.organisationId) out.add(b.organisationId);
+  }
+  return [...out];
+}
+
 /** 項目名から、差込項目1つを組み立てる */
 export function orgItemField(label: string, target: DocumentTarget): DocumentField {
   return {
@@ -270,6 +292,7 @@ export const BLOCK_KINDS = [
   "heading",
   "text",
   "fields",
+  "org",
   "table",
   "divider",
   "spacer",
@@ -412,6 +435,24 @@ export type DocumentBlock =
   | (BlockBase & { kind: "text"; lines: RichLine[] })
   /** 「ラベル：値」を縦に並べたもの */
   | (BlockBase & { kind: "fields"; items: { label: string; field: string }[] })
+  /**
+   * 名指しした組織の項目を並べる。
+   *
+   * **差出人・宛先とは別もの。**あちらは「帳票を作る人／相手」で、
+   * 誰が作るか・誰に出すかで中身が変わる。こちらは**様式に組織を書き込む**もので、
+   * 「問い合わせ先はいつも品質保証部」のように、相手によらず決まっているものを置く。
+   *
+   * `items` に並べるのは項目名。`ORG_NAME_ITEM` だけは組織の名称そのものを指す
+   */
+  | (BlockBase & {
+      kind: "org";
+      /** どの組織か */
+      organisationId: string;
+      /** 出す項目。並びはこの配列の順 */
+      items: string[];
+      /** 項目名を左に出すか。false なら値だけを縦に並べる */
+      showLabels?: boolean;
+    })
   | (BlockBase & {
       kind: "table";
       table: DocumentTable;

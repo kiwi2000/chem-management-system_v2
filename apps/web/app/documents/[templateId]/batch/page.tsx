@@ -1,4 +1,4 @@
-import { getMessages, isLocale } from "@chem/shared";
+import { getMessages, isLocale, organisationIdsIn } from "@chem/shared";
 import { notFound } from "next/navigation";
 import { DocumentBatchView } from "@/components/doc-editor/document-batch-view";
 import { PrintOrientation } from "@/components/doc-editor/print-orientation";
@@ -61,6 +61,8 @@ export default async function DocumentBatchPage({
   const parties = {
     senderId: from ?? null,
     recipientId: template.usesRecipient ? (to ?? null) : null,
+    // 様式が名指ししている組織（組織ブロック）
+    organisationIds: organisationIdsIn(template.content),
   };
 
   const ids = parseBatchIds(raw);

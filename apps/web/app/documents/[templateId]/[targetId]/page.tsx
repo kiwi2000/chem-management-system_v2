@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { collectFor, containsComposition } from "@/lib/doc-data";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { renderDocument } from "@/lib/doc-render";
-import { getMessages, isLocale } from "@chem/shared";
+import { getMessages, isLocale, organisationIdsIn } from "@chem/shared";
 import { PrintOrientation } from "@/components/doc-editor/print-orientation";
 
 /**
@@ -79,6 +79,8 @@ export default async function DocumentPage({
   const parties = {
     senderId: from ?? null,
     recipientId: template.usesRecipient ? (to ?? null) : null,
+    // 様式が名指ししている組織（組織ブロック）
+    organisationIds: organisationIdsIn(template.content),
   };
 
   // 見る権限は、集める側が対象ごとに判断する（見られないものは null が返る）
