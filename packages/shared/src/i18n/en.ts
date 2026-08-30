@@ -1098,6 +1098,10 @@ export const en: Messages = {
   },
   documents: {
     generatedAt: "Created",
+    step1: "1. Choose a template",
+    step2: "2. Choose what to make it for",
+    pickTemplateFirst: "Press one of the templates above to start",
+    pickRowsFirst: "Tick the rows you want, and Make becomes available",
     pickHint:
       "Tick the ones to make, then press Make above. Several at once works for on-screen templates",
     chooseTarget: "Choose what to make it for",

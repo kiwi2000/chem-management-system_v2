@@ -81,6 +81,12 @@ interface Props<T> {
      * 取り返しの付かないもの（公開・申請）にだけ付ける
      */
     confirm?: (n: number) => string;
+    /**
+     * その画面の**主役の操作**か。
+     * 塗りつぶしたボタンで出す（ドキュメント生成の「生成」など、
+     * それを押しに来た人がいる操作は、控えめに置くと見つからない）
+     */
+    primary?: boolean;
     run: (rows: T[]) => void | Promise<void>;
   };
   /** フィルターの並びを指定する場合、1行に置く列キーを行ごとに並べる */
@@ -493,13 +499,14 @@ export function DataTable<T>({
         )}
         {bulkAction && (
           <Button
-            variant="outline"
+            variant={bulkAction.primary ? "default" : "outline"}
             size="sm"
             disabled={selected.size === 0 || deleting}
             onClick={() => void runBulkAction()}
           >
             <CircleCheck className="mr-1 size-3.5" />
             {bulkAction.label}
+            {selected.size > 0 && `（${selected.size}）`}
           </Button>
         )}
         {selected.size > 0 && (

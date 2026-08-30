@@ -155,6 +155,8 @@ export function DocTargetPicker({
         bulkAction={{
           // 念押しは付けない。作るだけで、取り返しの付かないことは起きない
           label: m.documents.make,
+          // この画面の主役。控えめに置くと、押しに来た人が見つけられない
+          primary: true,
           run: (rows) => onMake(rows.map((r) => r.id)),
         }}
         pageSizeOptions={[10, 15, 25, 50]}

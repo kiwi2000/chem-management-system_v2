@@ -239,7 +239,7 @@ export function DocumentsScreen() {
 
       {/* 上：様式を選んで作る */}
       <div className="space-y-2">
-        <p className="text-sm font-medium">{m.documents.chooseTemplate}</p>
+        <p className="text-sm font-medium">{m.documents.step1}</p>
 
         {/*
           差出人と宛先。**選んでから様式を押す。**
@@ -302,13 +302,22 @@ export function DocumentsScreen() {
         )}
       </div>
 
-      {/* 中：相手を選んで作る。様式を選ぶまでは出さない */}
-      {picked && (
-        <div className="space-y-2 border-t pt-4">
-          <p className="text-sm font-medium">{m.documents.chooseTarget}</p>
-          <DocTargetPicker key={picked.id} target={picked.target} onMake={make} />
-        </div>
-      )}
+      {/*
+        中：相手を選んで作る。
+        **様式を選ぶまでは出さない**が、次に何をすればよいかは出しておく
+        （何も起きない画面を見せると、押す場所を探すことになる）
+      */}
+      <div className="space-y-2 border-t pt-4">
+        <p className="text-sm font-medium">{m.documents.step2}</p>
+        {picked ? (
+          <>
+            <p className="text-muted-foreground text-xs">{m.documents.pickRowsFirst}</p>
+            <DocTargetPicker key={picked.id} target={picked.target} onMake={make} />
+          </>
+        ) : (
+          <p className="text-muted-foreground text-sm">{m.documents.pickTemplateFirst}</p>
+        )}
+      </div>
 
       {/* 下：自分が作ったもの */}
       <div className="space-y-2 border-t pt-4">

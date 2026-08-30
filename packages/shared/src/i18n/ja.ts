@@ -1114,6 +1114,10 @@ export const ja = {
   },
   documents: {
     generatedAt: "作成日時",
+    step1: "① 様式を選ぶ",
+    step2: "② 作る相手を選ぶ",
+    pickTemplateFirst: "まず、上の様式を押してください",
+    pickRowsFirst: "作る相手にチェックを入れると、「生成」が押せるようになります",
     pickHint:
       "作る相手にチェックを入れて、上の「生成」を押してください。複数選べば、まとめて作れます（Excel・Word の様式は1件ずつ）",
     chooseTarget: "作る相手を選ぶ",
