@@ -33,7 +33,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [displayName, setDisplayName] = useState("");
   const [activeFlag, setActiveFlag] = useState(true);
   const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [orgGroupId, setOrgGroupId] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
   const [newsGroupId, setNewsGroupId] = useState("");
   const [organisationId, setOrganisationId] = useState("");
   const groups = useGroups();
@@ -65,7 +65,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setDisplayName(u.displayName ?? "");
     setActiveFlag(u.activeFlag);
     setPermissions(u.permissions);
-    setOrgGroupId(u.orgGroupId ?? "");
+    setDepartmentId(u.departmentId ?? "");
     setOrganisationId(u.organisationId ?? "");
     setNewsGroupId(u.newsGroupId ?? "");
     if (meRes.ok) setMe((await meRes.json()) as MeDto);
@@ -92,7 +92,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           displayName: displayName || null,
           permissions,
           activeFlag,
-          orgGroupId: orgGroupId || null,
+          departmentId: departmentId || null,
           organisationId: organisationId || null,
           newsGroupId: newsGroupId || null,
         }),
@@ -253,17 +253,25 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="orgGroup">{m.users.orgGroup}</Label>
-                <GroupSelect
-                  id="orgGroup"
-                  kind="ORG"
-                  groups={groups}
-                  value={orgGroupId}
-                  locale={locale}
-                  noneLabel={m.groups.none}
-                  onChange={setOrgGroupId}
-                />
-                <p className="text-muted-foreground text-xs">{m.users.orgGroupHint}</p>
+                <Label htmlFor="department">{m.users.department}</Label>
+                {/* 組織のうち種別が「部署」のものから選ぶ */}
+                <select
+                  id="department"
+                  value={departmentId}
+                  disabled={!editing}
+                  onChange={(e) => setDepartmentId(e.target.value)}
+                  className="border-input bg-background h-9 w-full rounded-none border px-2 text-sm"
+                >
+                  <option value="">{m.groups.none}</option>
+                  {(organisations ?? [])
+                    .filter((o) => o.kind === "DEPARTMENT" && o.activeFlag)
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {pickName(locale, o.nameJa, o.nameEn)}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-muted-foreground text-xs">{m.users.departmentHint}</p>
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input

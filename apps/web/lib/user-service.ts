@@ -11,7 +11,7 @@ import { getServerMessages } from "@/lib/i18n";
 
 export type UserWithPermissions = User & {
   permissions: { permission: Permission }[];
-  orgGroup?: Pick<Group, "id" | "nameJa" | "nameEn"> | null;
+  department?: Pick<Organisation, "id" | "nameJa" | "nameEn"> | null;
   newsGroup?: Pick<Group, "id" | "nameJa" | "nameEn"> | null;
   organisation?: Pick<Organisation, "id" | "nameJa" | "nameEn"> | null;
   _count?: { passkeys: number };
@@ -20,7 +20,7 @@ export type UserWithPermissions = User & {
 /** 一覧・詳細で毎回同じものを読むので共通化する */
 export const USER_INCLUDE = {
   permissions: { select: { permission: true } },
-  orgGroup: { select: { id: true, nameJa: true, nameEn: true } },
+  department: { select: { id: true, nameJa: true, nameEn: true } },
   newsGroup: { select: { id: true, nameJa: true, nameEn: true } },
   organisation: { select: { id: true, nameJa: true, nameEn: true } },
   _count: { select: { passkeys: true } },
@@ -36,9 +36,9 @@ export function toUserSummary(u: UserWithPermissions) {
     mfaMethod: (u.mfaMethod as MfaMethod) ?? "none",
     lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
     permissions: u.permissions.map((p) => p.permission),
-    orgGroupId: u.orgGroupId,
-    orgGroupName: u.orgGroup?.nameJa ?? null,
-    orgGroupNameEn: u.orgGroup?.nameEn ?? null,
+    departmentId: u.departmentId,
+    departmentName: u.department?.nameJa ?? null,
+    departmentNameEn: u.department?.nameEn ?? null,
     newsGroupId: u.newsGroupId,
     newsGroupName: u.newsGroup?.nameJa ?? null,
     newsGroupNameEn: u.newsGroup?.nameEn ?? null,
@@ -58,41 +58,49 @@ export function toUserSummary(u: UserWithPermissions) {
  *   権限を外したのに分類だけ残ると、投稿できないのに見出しが割り当たった状態になるため
  */
 export async function resolveGroups(
-  orgGroupId: string | null,
+  departmentId: string | null,
   newsGroupId: string | null,
   wantedPermissions: Permission[],
   organisationId: string | null = null,
 ): Promise<
-  | { orgGroupId: string | null; newsGroupId: string | null; organisationId: string | null }
+  | { departmentId: string | null; newsGroupId: string | null; organisationId: string | null }
   | Response
 > {
   const m = await getServerMessages();
   const canPost = expandPermissions(wantedPermissions).includes("NEWS_POST");
   const news = canPost ? newsGroupId : null;
 
-  const ids = [orgGroupId, news].filter((v): v is string => v !== null);
+  if (news) {
+    const found = await prisma.group.findFirst({
+      where: { id: news, deletedAt: null },
+      select: { kind: true },
+    });
+    if (found?.kind !== "NEWS") return jsonError(400, "validation_error", m.errors.validation);
+  }
+
+  /*
+    会社と部署は、どちらも組織。**種別まで確かめる。**
+    消された組織のidが残ると帳票の差出人が空になり、
+    種別が違うものを入れると「部署の欄に取引先」といった並びになる
+  */
+  const wanted: [string | null, "COMPANY" | "DEPARTMENT"][] = [
+    [organisationId, "COMPANY"],
+    [departmentId, "DEPARTMENT"],
+  ];
+  const ids = wanted.map(([id]) => id).filter((v): v is string => v !== null);
   if (ids.length > 0) {
-    const found = await prisma.group.findMany({
+    const found = await prisma.organisation.findMany({
       where: { id: { in: ids }, deletedAt: null },
       select: { id: true, kind: true },
     });
-    const kindOf = new Map(found.map((g) => [g.id, g.kind]));
-    if (orgGroupId && kindOf.get(orgGroupId) !== "ORG") {
-      return jsonError(400, "validation_error", m.errors.validation);
-    }
-    if (news && kindOf.get(news) !== "NEWS") {
-      return jsonError(400, "validation_error", m.errors.validation);
+    const kindOf = new Map(found.map((o) => [o.id, o.kind]));
+    for (const [id, kind] of wanted) {
+      if (id && kindOf.get(id) !== kind) {
+        return jsonError(400, "validation_error", m.errors.validation);
+      }
     }
   }
-  // 会社も同じように確かめる。消された会社のidが残ると、帳票の差出人が空になる
-  if (organisationId) {
-    const org = await prisma.organisation.findFirst({
-      where: { id: organisationId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!org) return jsonError(400, "validation_error", m.errors.validation);
-  }
-  return { orgGroupId, newsGroupId: news, organisationId };
+  return { departmentId, newsGroupId: news, organisationId };
 }
 
 /** 権限を指定の集合に置き換える（含意を展開したうえで差分だけ書く） */

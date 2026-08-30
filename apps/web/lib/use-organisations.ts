@@ -13,7 +13,7 @@ export function useOrganisations(): OrganisationDto[] | null {
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const res = await fetch("/api/admin/organisations?size=200");
+      const res = await fetch("/api/organisations?size=200");
       if (!res.ok) return;
       const body = (await res.json()) as ListResponse<OrganisationDto>;
       if (alive) setItems(body.items);

@@ -16,7 +16,7 @@ import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
-import { batchHref } from "@/lib/doc-batch";
+import { batchHref, documentHref } from "@/lib/doc-batch";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, ProductListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -69,7 +69,10 @@ export function ProductsTable({
     帳票の相手として選ばれに来ているか。テンプレートの一覧から渡ってくる。
     このときはコードを押すと詳細ではなく帳票へ移る
   */
-  const pickFor = useSearchParams().get("pickFor");
+  const search = useSearchParams();
+  const pickFor = search.get("pickFor");
+  /* 選ばれた差出人・宛先。ここでは中身を見ず、そのまま次へ渡す */
+  const parties = { from: search.get("from"), to: search.get("to") };
   const router = useRouter();
   const { can } = useMe();
   const editable = can("PRODUCT_EDIT");
@@ -110,7 +113,7 @@ export function ProductsTable({
         // 押すと詳細へ移る。物質・インベントリ・法規制のコードと同じ形
         render: (r) => (
           <Link
-            href={pickFor ? `/documents/${pickFor}/${r.id}` : `/products/${r.id}`}
+            href={pickFor ? documentHref(pickFor, r.id, parties) : `/products/${r.id}`}
             onClick={(e) => e.stopPropagation()}
             className="underline underline-offset-2"
           >
@@ -453,6 +456,7 @@ export function ProductsTable({
                     batchHref(
                       pickFor,
                       rows.map((r) => r.id),
+                      parties,
                     ),
                   ),
               }

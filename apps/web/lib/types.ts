@@ -1,4 +1,4 @@
-import type { DocumentContent, DocumentTarget } from "@chem/shared";
+import type { DocumentContent, DocumentTarget, OrganisationKind } from "@chem/shared";
 import type { MfaMethod } from "@chem/shared";
 import type {
   GazetteLawKind,
@@ -43,9 +43,9 @@ export interface UserSummaryDto {
   mfaMethod: MfaMethod;
   lastLoginAt: string | null;
   permissions: Permission[];
-  orgGroupId: string | null;
-  orgGroupName: string | null;
-  orgGroupNameEn: string | null;
+  departmentId: string | null;
+  departmentName: string | null;
+  departmentNameEn: string | null;
   newsGroupId: string | null;
   newsGroupName: string | null;
   newsGroupNameEn: string | null;
@@ -61,13 +61,17 @@ export interface UserSummaryDto {
 export interface OrganisationDto {
   id: string;
   code: string;
+  /** 会社・部署・取引先・そのほか */
+  kind: OrganisationKind;
+  /** 種別が「そのほか」のときの呼び名 */
+  kindLabel: string | null;
   nameJa: string;
   nameEn: string | null;
   displayOrder: number;
   activeFlag: boolean;
   /** 項目名と値。どちらも自由入力 */
   items: { label: string; value: string }[];
-  /** この会社に属している人の数（消したときの影響を知らせるため） */
+  /** この組織を会社または部署にしている人の数（消したときの影響を知らせるため） */
   memberCount: number;
 }
 
@@ -547,6 +551,8 @@ export interface DocumentTemplateDto {
   blockCount: number;
   locale: string;
   active: boolean;
+  /** 宛先を差し込む様式か */
+  usesRecipient: boolean;
   /** 作った順の通番。自動で振る（並べ替えのために打たせない） */
   seq: number;
   note: string | null;

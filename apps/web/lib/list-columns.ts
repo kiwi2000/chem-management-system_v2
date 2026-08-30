@@ -312,6 +312,7 @@ export const GROUP_COLUMNS: QueryColumn[] = [
 /** 組織（会社・事業所）。項目は表に出さないので、ここには入れない */
 export const ORGANISATION_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "code", caseInsensitive: true },
+  { key: "kind", kind: "enum", field: "kind" },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "displayOrder", kind: "number", field: "displayOrder" },

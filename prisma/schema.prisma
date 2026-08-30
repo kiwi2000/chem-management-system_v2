@@ -39,6 +39,8 @@ enum Permission {
   DATA_EXPORT
   DOC_TEMPLATE_EDIT
   DOCUMENT_CREATE
+  DOCUMENT_SENDER
+  ORG_EDIT
   NEWS_POST
   NEWS_MANAGE
   ADMIN
@@ -117,6 +119,31 @@ enum SettingValueType {
  * ORG  = 組織の所属（○○部 など）
  * 用途ごとに表を分けず種別で持つのは、管理画面と操作をひとつにまとめられるため。
  */
+/**
+ * 組織の種別。
+ * **会社も部署も取引先も、同じ1つの表に入れる。**
+ * どれも「名前と項目を持ち、帳票に差し込める入れもの」で、作りが変わらない。
+ * 分けて持つと、取引先にだけ住所が書けない、といった食い違いが出る。
+ */
+enum OrganisationKind {
+  /**
+   * 会社。自社も関連会社もこれ
+   */
+  COMPANY
+  /**
+   * 部署
+   */
+  DEPARTMENT
+  /**
+   * 取引先
+   */
+  PARTNER
+  /**
+   * そのほか。呼び名は `kindLabel` に打ってもらう
+   */
+  OTHER
+}
+
 enum GroupKind {
   NEWS
   ORG
@@ -198,7 +225,12 @@ model User {
   /**
    * 組織の所属。1人1つ。null=未所属
    */
-  orgGroupId            String?   @map("org_group_id")
+  /**
+   * /**
+   * 所属する部署。**組織のうち種別が部署のものを指す。**
+   * 会社（`organisationId`）とは別に1つだけ持つ
+   */
+  departmentId          String?   @map("department_id")
   /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
@@ -218,11 +250,11 @@ model User {
   savedFilters SavedFilter[]
   news         News[]
   passkeys     Passkey[]
-  orgGroup     Group?           @relation("UserOrgGroup", fields: [orgGroupId], references: [id])
+  department   Organisation?    @relation("UserDepartment", fields: [departmentId], references: [id])
   newsGroup    Group?           @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
   organisation Organisation?    @relation(fields: [organisationId], references: [id])
 
-  @@index([orgGroupId])
+  @@index([departmentId])
   @@index([newsGroupId])
   @@index([organisationId])
   @@map("users")
@@ -280,8 +312,19 @@ model Passkey {
  * 取引先（提出先）はここに入れない。件数も寿命も違うので、必要になったら別に持つ。
  */
 model Organisation {
-  id           String    @id @default(cuid())
-  code         String    @unique
+  id        String           @id @default(cuid())
+  code      String           @unique
+  /**
+   * 会社・部署・取引先・そのほか。一覧で絞る単位でもある
+   */
+  kind      OrganisationKind @default(COMPANY)
+  /**
+   * `OTHER` のときの呼び名（「工場」「協同組合」など）。
+   * **決まった4つに収まらないものを、そのまま呼べるようにする。**
+   * ほかの種別では使わない
+   */
+  kindLabel String?          @map("kind_label")
+
   nameJa       String    @map("name_ja")
   nameEn       String?   @map("name_en")
   displayOrder Int       @default(0) @map("display_order")
@@ -290,8 +333,15 @@ model Organisation {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  items   OrganisationItem[]
-  members User[]
+  items             OrganisationItem[]
+  /**
+   * この組織を会社として持つ人
+   */
+  members           User[]
+  /**
+   * この組織を部署として持つ人
+   */
+  departmentMembers User[]             @relation("UserDepartment")
 
   @@index([displayOrder])
   @@map("organisations")
@@ -340,7 +390,6 @@ model Group {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  orgMembers  User[] @relation("UserOrgGroup")
   newsMembers User[] @relation("UserNewsGroup")
   news        News[]
 
@@ -1495,16 +1544,16 @@ model StatutorySubstance {
    * **適用条件。**濃度のほかに条件が付く法文物質名に、その条件を書く。
    * 用途・剤型・製品の種類で決まるもの（RoHS 附属書III の適用除外、
    * 第一種特定の使用用途など）は、こちらの持っている情報だけでは判定できない。
-   *
    * **ここに何か入っていれば、当たったときに必ず「要確認」を出す。**
    * 条件は法律の側で決まっているので、**データソースやバージョンでは変わらない。**
-   *
    * 備考（`note`）とは分ける。備考には取り込み元の付随情報（EC番号・分類など）が
    * 入っており、それで要確認を出すと、ほぼ全件が要確認になる
    */
   applicableCondition String? @map("applicable_condition")
 
-  /** 参考の覚え書き。**判定には使わない** */
+  /**
+   * 参考の覚え書き。**判定には使わない**
+   */
   note String?
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -1584,7 +1633,6 @@ model Source {
 
   /**
    * 画面で使う色。`#rrggbb`。
-   *
    * **データソースごとに1つ。**どのバージョンでも同じ色で出す。
    * 色が違えば別の出どころだと一目で分かるようにするためのもので、
    * バージョンごとに変えると、その手がかりが消える。
@@ -1594,7 +1642,6 @@ model Source {
 
   /**
    * 画面の印に出す文字。決めていなければコードの頭文字を使う。
-   *
    * **頭文字はぶつかる。**`CHRIP` と `CFR` はどちらも `C` になり、
    * 印だけでは見分けられない。1文字とは限らないので、短い語も入れられる
    */
@@ -1859,6 +1906,13 @@ model DocumentTemplate {
    * 消してもここは飛ぶだけで、詰め直さない（記録から番号をたどれるようにするため）
    */
   seq Int @unique @default(autoincrement())
+
+  /**
+   * 宛先を差し込む様式か。
+   * **印が付いている様式だけ、作るときに宛先を選ばせる。**
+   * どの様式でも毎回聞くと、宛名の要らない社内文書でも手間が増える
+   */
+  usesRecipient Boolean @default(false) @map("uses_recipient")
 
   active Boolean @default(true)
   note   String?

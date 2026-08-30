@@ -160,6 +160,8 @@ export const ja = {
   permissions: {
     DOC_TEMPLATE_EDIT: "様式（テンプレート）を編集できる",
     DOCUMENT_CREATE: "ドキュメントを作れる（自分が作ったものを見られる）",
+    DOCUMENT_SENDER: "ドキュメントの差出人を選べる（既定は自分の会社）",
+    ORG_EDIT: "組織（会社・部署・取引先）を作れる・直せる",
     PRODUCT_VIEW: "製品を見られる",
     PRODUCT_EDIT: "製品を編集できる",
     COMPOSITION_VIEW: "組成を見られる",
@@ -187,6 +189,7 @@ export const ja = {
   },
   permissionGroups: {
     document: "ドキュメント",
+    organisation: "組織",
     product: "製品 / 原材料",
     composition: "組成",
     substance: "物質",
@@ -967,6 +970,7 @@ export const ja = {
     target: "対象",
     targets: { PRODUCT: "製品", SUBSTANCE: "物質" },
     locale: "言語",
+    usesRecipient: "宛先を使う",
     active: "有効",
     displayOrder: "表示順",
     note: "備考",
@@ -1062,6 +1066,11 @@ export const ja = {
     targetCode: "対象",
     hasComposition: "組成あり",
     version: "バージョン",
+    sender: "差出人",
+    senderDefault: "自分の会社",
+    recipient: "宛先",
+    recipientNone: "宛先なし",
+    recipientHint: "「宛先を使う」印の付いた様式でだけ差し込まれます",
     mine: "自分が作ったドキュメント",
     noneYet: "まだ作っていません",
     savedHint: "日時を押すと、出したときの紙面がそのまま開きます（作り直しません）",
@@ -1419,11 +1428,11 @@ export const ja = {
 
   users: {
     title: "ユーザー管理",
-    organisation: "所属する会社",
+    organisation: "会社",
     organisationHint:
       "帳票の差出人になります。この人が作ったドキュメントに、この会社の情報が入ります",
-    orgGroup: "所属",
-    orgGroupHint: "1人につき1つ",
+    department: "部署",
+    departmentHint: "1人につき1つ。組織のうち種別が「部署」のものから選びます",
     newsGroup: "ニュースグループ",
     newsGroupHint: "投稿したお知らせが、ホームでこの見出しの下に並びます",
     newsGroupDisabled: "「お知らせを投稿できる」を付けると指定できます",
@@ -1540,10 +1549,18 @@ export const ja = {
   organisations: {
     title: "組織",
     description:
-      "帳票に載せる会社の情報です。会社名や住所のほか、必要な項目を自由に足せます。利用者ごとに「所属する会社」を決めておくと、その人が作った帳票にこの内容が入ります。",
+      "会社・部署・取引先を登録しておく場所です。名称のほか、住所や担当者など必要な項目を自由に足せます。ここに入れたものは、ドキュメントの差出人や宛先として使えます。",
     code: "コード",
-    nameJa: "会社名",
-    nameEn: "会社名（英語）",
+    kind: "種別",
+    kindCompany: "会社",
+    kindDepartment: "部署",
+    kindPartner: "取引先",
+    kindOther: "そのほか",
+    kindLabel: "種別の呼び名",
+    kindLabelHint:
+      "「そのほか」を選んだときだけ使います。工場・協同組合など、呼びたい名前を打ってください",
+    nameJa: "名称",
+    nameEn: "名称（英語）",
     displayOrder: "表示順",
     memberCount: "所属する人",
     itemCount: "項目",

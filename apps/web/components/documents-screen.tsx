@@ -18,6 +18,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { useMe } from "@/lib/use-me";
+import { useOrganisations } from "@/lib/use-organisations";
 import type {
   ApiError,
   DocumentTemplateDto,
@@ -58,6 +60,19 @@ export function DocumentsScreen() {
   const router = useRouter();
 
   const [templates, setTemplates] = useState<DocumentTemplateDto[] | null>(null);
+  /*
+    差出人と宛先。**組織から選ぶ。**
+    差出人は権限のある人だけが変えられる（既定は自分の会社）
+  */
+  const { can } = useMe();
+  const canPickSender = can("DOCUMENT_SENDER");
+  const [senderId, setSenderId] = useState("");
+  const [recipientId, setRecipientId] = useState("");
+  const organisations = useOrganisations();
+  const orgOptions = useMemo(
+    () => (organisations ?? []).filter((o) => o.activeFlag),
+    [organisations],
+  );
   const [data, setData] = useState<ListResponse<GeneratedDocumentDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -181,6 +196,18 @@ export function DocumentsScreen() {
 
   const usable = templates ?? [];
 
+  /*
+    選んだ相手を、対象を選ぶ画面まで持っていく。
+    **宛先を使わない様式には付けない。**付けても捨てられるが、
+    URL に出ていると「効いている」と読めてしまう
+  */
+  const parties = (t: DocumentTemplateDto) => {
+    const q = new URLSearchParams({ pickFor: t.id });
+    if (t.usesRecipient && recipientId) q.set("to", recipientId);
+    if (senderId) q.set("from", senderId);
+    return q.toString();
+  };
+
   return (
     <div className="w-full space-y-4 p-3 pb-10 lg:p-4 lg:pb-12">
       {error && (
@@ -192,6 +219,48 @@ export function DocumentsScreen() {
       {/* 上：様式を選んで作る */}
       <div className="space-y-2">
         <p className="text-sm font-medium">{m.documents.chooseTemplate}</p>
+
+        {/*
+          差出人と宛先。**選んでから様式を押す。**
+          宛先は「宛先を使う」印の付いた様式でだけ使われる（印の無い様式では捨てる）。
+          差出人は権限のある人にだけ出す。既定は自分の会社
+        */}
+        <div className="flex flex-wrap items-end gap-3">
+          {canPickSender && (
+            <div className="space-y-1">
+              <span className="text-muted-foreground text-xs">{m.documents.sender}</span>
+              <select
+                aria-label={m.documents.sender}
+                value={senderId}
+                onChange={(e) => setSenderId(e.target.value)}
+                className="border-input bg-background block h-9 w-56 rounded-none border px-2 text-sm"
+              >
+                <option value="">{m.documents.senderDefault}</option>
+                {orgOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {pickName(locale, o.nameJa, o.nameEn)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs">{m.documents.recipient}</span>
+            <select
+              aria-label={m.documents.recipient}
+              value={recipientId}
+              onChange={(e) => setRecipientId(e.target.value)}
+              className="border-input bg-background block h-9 w-56 rounded-none border px-2 text-sm"
+            >
+              <option value="">{m.documents.recipientNone}</option>
+              {orgOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {pickName(locale, o.nameJa, o.nameEn)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         {usable.length === 0 ? (
           <p className="text-muted-foreground text-sm">{m.documents.noTemplate}</p>
         ) : (
@@ -203,7 +272,7 @@ export function DocumentsScreen() {
                 variant="outline"
                 onClick={() =>
                   router.push(
-                    `${t.target === "PRODUCT" ? "/products" : "/substances"}?pickFor=${t.id}`,
+                    `${t.target === "PRODUCT" ? "/products" : "/substances"}?${parties(t)}`,
                   )
                 }
               >

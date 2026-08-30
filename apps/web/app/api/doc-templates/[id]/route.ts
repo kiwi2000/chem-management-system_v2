@@ -91,6 +91,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       target: input.target,
       locale: input.locale,
       active: input.active,
+      usesRecipient: input.usesRecipient,
       note: input.note ?? null,
       updatedBy: actor.user.id,
     },

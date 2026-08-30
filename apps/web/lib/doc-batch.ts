@@ -11,8 +11,34 @@
  */
 export const BATCH_MAX = 100;
 
-export function batchHref(templateId: string, ids: string[]): string {
-  return `/documents/${templateId}/batch?ids=${ids.slice(0, BATCH_MAX).join(",")}`;
+/**
+ * 帳票の相手。**URL で持ち回る。**
+ * 対象を選ぶ画面をまたぐので、選んだ差出人・宛先を落とさないため
+ */
+export interface PartyParams {
+  /** 差出人の組織。既定は作った人の会社 */
+  from?: string | null;
+  /** 宛先の組織 */
+  to?: string | null;
+}
+
+/** `from` `to` を問い合わせ文字列に足す（無いものは付けない） */
+export function partyQuery(q: URLSearchParams, parties?: PartyParams): URLSearchParams {
+  if (parties?.from) q.set("from", parties.from);
+  if (parties?.to) q.set("to", parties.to);
+  return q;
+}
+
+export function batchHref(templateId: string, ids: string[], parties?: PartyParams): string {
+  const q = new URLSearchParams({ ids: ids.slice(0, BATCH_MAX).join(",") });
+  return `/documents/${templateId}/batch?${partyQuery(q, parties)}`;
+}
+
+/** 1件ぶんの行き先 */
+export function documentHref(templateId: string, targetId: string, parties?: PartyParams): string {
+  const q = partyQuery(new URLSearchParams(), parties);
+  const tail = q.toString();
+  return `/documents/${templateId}/${targetId}${tail ? `?${tail}` : ""}`;
 }
 
 /** URL から取り出す。空や重複は落とす */

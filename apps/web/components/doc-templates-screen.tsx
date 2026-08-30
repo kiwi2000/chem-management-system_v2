@@ -34,6 +34,7 @@ interface Draft {
   target: DocumentTarget;
   locale: string;
   active: boolean;
+  usesRecipient: boolean;
   note: string;
 }
 const EMPTY: Draft = {
@@ -43,6 +44,7 @@ const EMPTY: Draft = {
   target: "PRODUCT",
   locale: "JA",
   active: true,
+  usesRecipient: false,
   note: "",
 };
 
@@ -71,6 +73,7 @@ const columnKinds = [
   { key: "target", kind: "enum" },
   { key: "locale", kind: "enum" },
   { key: "active", kind: "enum" },
+  { key: "usesRecipient", kind: "enum" },
   { key: "seq", kind: "number" },
   { key: "createdAt", kind: "date" },
   { key: "updatedAt", kind: "date" },
@@ -139,6 +142,7 @@ export function DocTemplatesScreen() {
       target: t.target,
       locale: t.locale,
       active: t.active,
+      usesRecipient: t.usesRecipient,
       note: t.note ?? "",
     });
   }
@@ -160,6 +164,7 @@ export function DocTemplatesScreen() {
         target: draft.target,
         locale: draft.locale,
         active: draft.active,
+        usesRecipient: draft.usesRecipient,
         note: draft.note || null,
       };
       const res = await fetch(adding ? "/api/doc-templates" : `/api/doc-templates/${editingId}`, {
@@ -333,6 +338,35 @@ export function DocTemplatesScreen() {
             m.common.yes
           ) : (
             m.common.no
+          ),
+      },
+      {
+        /*
+          宛先を差し込む様式か。
+          **印の付いた様式でだけ、作るときに宛先を選ばせる。**
+          どの様式でも毎回聞くと、宛名の要らない社内文書でも手間が増える
+        */
+        key: "usesRecipient",
+        header: m.docTemplates.usesRecipient,
+        kind: "enum",
+        width: 96,
+        sortable: false,
+        options: [
+          { value: "true", label: m.common.yes },
+          { value: "false", label: m.common.no },
+        ],
+        render: (t) =>
+          editingRow(t) || t.id === NEW_ID ? (
+            <input
+              type="checkbox"
+              checked={draft.usesRecipient}
+              aria-label={m.docTemplates.usesRecipient}
+              onChange={(e) => setDraft({ ...draft, usesRecipient: e.target.checked })}
+            />
+          ) : t.usesRecipient ? (
+            m.common.yes
+          ) : (
+            ""
           ),
       },
       {

@@ -1,15 +1,15 @@
 import { duplicateLabels, organisationSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requireAdmin } from "@/lib/authz";
+import { jsonError, requirePermission, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { ORG_INCLUDE, toOrganisationDto } from "@/lib/organisation-service";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/admin/organisations/[id] — 1件 */
+/** GET /api/organisations/[id] — 1件。**見るのは誰でも** */
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const actor = await requireAdmin();
+  const actor = await requireUser();
   if (actor instanceof Response) return actor;
   const { id } = await ctx.params;
   const m = await getServerMessages();
@@ -22,9 +22,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   return Response.json(toOrganisationDto(row));
 }
 
-/** PUT /api/admin/organisations/[id] — 直す。項目はまるごと入れ替える */
+/** PUT /api/organisations/[id] — 直す。項目はまるごと入れ替える */
 export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const actor = await requireAdmin();
+  const actor = await requirePermission("ORG_EDIT");
   if (actor instanceof Response) return actor;
   const { id } = await ctx.params;
   const m = await getServerMessages();
@@ -86,11 +86,11 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
 }
 
 /**
- * DELETE /api/admin/organisations/[id] — 消す（印だけ付ける）。
+ * DELETE /api/organisations/[id] — 消す（印だけ付ける）。
  * **人が属したままでは消せない。**帳票の差出人が黙って空になるため
  */
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const actor = await requireAdmin();
+  const actor = await requirePermission("ORG_EDIT");
   if (actor instanceof Response) return actor;
   const { id } = await ctx.params;
   const m = await getServerMessages();

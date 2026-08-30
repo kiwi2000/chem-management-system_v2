@@ -28,7 +28,7 @@ export default function NewUserPage() {
   const [displayName, setDisplayName] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
   const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [orgGroupId, setOrgGroupId] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
   const [organisationId, setOrganisationId] = useState("");
   const organisations = useOrganisations();
   const [newsGroupId, setNewsGroupId] = useState("");
@@ -60,7 +60,7 @@ export default function NewUserPage() {
           displayName: displayName || null,
           initialPassword,
           permissions,
-          orgGroupId: orgGroupId || null,
+          departmentId: departmentId || null,
           organisationId: organisationId || null,
           newsGroupId: newsGroupId || null,
         }),
@@ -150,17 +150,24 @@ export default function NewUserPage() {
               <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="orgGroup">{m.users.orgGroup}</Label>
-              <GroupSelect
-                id="orgGroup"
-                kind="ORG"
-                groups={groups}
-                value={orgGroupId}
-                locale={locale}
-                noneLabel={m.groups.none}
-                onChange={setOrgGroupId}
-              />
-              <p className="text-muted-foreground text-xs">{m.users.orgGroupHint}</p>
+              <Label htmlFor="department">{m.users.department}</Label>
+              {/* 組織のうち種別が「部署」のものから選ぶ */}
+              <select
+                id="department"
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
+                className="border-input bg-background h-9 w-full rounded-none border px-2 text-sm"
+              >
+                <option value="">{m.groups.none}</option>
+                {(organisations ?? [])
+                  .filter((o) => o.kind === "DEPARTMENT" && o.activeFlag)
+                  .map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {pickName(locale, o.nameJa, o.nameEn)}
+                    </option>
+                  ))}
+              </select>
+              <p className="text-muted-foreground text-xs">{m.users.departmentHint}</p>
             </div>
           </CardContent>
         </Card>

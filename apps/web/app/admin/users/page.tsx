@@ -55,14 +55,14 @@ export default function UsersPage() {
         render: (u) => pickName(locale, u.organisationName ?? "", u.organisationNameEn),
       },
       {
-        key: "orgGroup",
-        header: m.users.orgGroup,
+        key: "department",
+        header: m.users.department,
         kind: "text",
         width: 140,
         sortable: false,
         filterable: false,
         className: "text-muted-foreground text-xs",
-        render: (u) => pickName(locale, u.orgGroupName ?? "", u.orgGroupNameEn),
+        render: (u) => pickName(locale, u.departmentName ?? "", u.departmentNameEn),
       },
       {
         key: "newsGroup",

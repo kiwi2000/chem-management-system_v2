@@ -76,18 +76,28 @@ export const DOCUMENT_FIELDS: DocumentField[] = [
   { key: "substance.note", target: "SUBSTANCE", labelJa: "備考", labelEn: "Note" },
 
   /*
-    作った人の会社と所属。**帳票を出した人から自動で決まる。**
-    どの会社を出すかをテンプレートに持たせていないので、
-    人の代わりに出す（代理発行）には向かない。必要になったら、そのとき考える
+    差出人。**既定は作った人の会社。**
+    `DOCUMENT_SENDER` を持っている人は、作るときに別の組織を選べる
+    （関連会社の名前で出す、代理で出す）
   */
-  { key: "org.name", target: "PRODUCT", labelJa: "会社名", labelEn: "Company" },
-  { key: "org.group", target: "PRODUCT", labelJa: "所属", labelEn: "Department" },
-  { key: "org.name", target: "SUBSTANCE", labelJa: "会社名", labelEn: "Company" },
-  { key: "org.group", target: "SUBSTANCE", labelJa: "所属", labelEn: "Department" },
+  { key: "org.name", target: "PRODUCT", labelJa: "差出人の名称", labelEn: "Sender" },
+  { key: "org.group", target: "PRODUCT", labelJa: "差出人の所属", labelEn: "Sender department" },
+  { key: "org.name", target: "SUBSTANCE", labelJa: "差出人の名称", labelEn: "Sender" },
+  { key: "org.group", target: "SUBSTANCE", labelJa: "差出人の所属", labelEn: "Sender department" },
+
+  /*
+    宛先。**「宛先を使う」印の付いた様式でだけ選ばせる。**
+    印の無い様式に置いても空欄になる（社内文書に宛名は要らない）
+  */
+  { key: "to.name", target: "PRODUCT", labelJa: "宛先の名称", labelEn: "Recipient" },
+  { key: "to.name", target: "SUBSTANCE", labelJa: "宛先の名称", labelEn: "Recipient" },
 ];
 
-/** 会社の自由項目につく頭。この後ろに項目名がそのまま付く */
+/** 差出人の自由項目につく頭。この後ろに項目名がそのまま付く */
 export const ORG_ITEM_PREFIX = "org.item.";
+
+/** 宛先の自由項目につく頭 */
+export const RECIPIENT_ITEM_PREFIX = "to.item.";
 
 /** 項目名から、差込項目1つを組み立てる */
 export function orgItemField(label: string, target: DocumentTarget): DocumentField {
@@ -95,8 +105,18 @@ export function orgItemField(label: string, target: DocumentTarget): DocumentFie
     key: `${ORG_ITEM_PREFIX}${label}`,
     target,
     // 会社ごとに違う言葉なので、訳しようがない。打たれたものをそのまま出す
-    labelJa: label,
-    labelEn: label,
+    labelJa: `差出人の${label}`,
+    labelEn: `Sender: ${label}`,
+  };
+}
+
+/** 宛先の自由項目 */
+export function recipientItemField(label: string, target: DocumentTarget): DocumentField {
+  return {
+    key: `${RECIPIENT_ITEM_PREFIX}${label}`,
+    target,
+    labelJa: `宛先の${label}`,
+    labelEn: `Recipient: ${label}`,
   };
 }
 
@@ -108,6 +128,7 @@ export function fieldsFor(target: DocumentTarget, orgItems: string[] = []): Docu
   return [
     ...DOCUMENT_FIELDS.filter((f) => f.target === target),
     ...orgItems.map((label) => orgItemField(label, target)),
+    ...orgItems.map((label) => recipientItemField(label, target)),
   ];
 }
 
@@ -119,8 +140,9 @@ export function fieldsFor(target: DocumentTarget, orgItems: string[] = []): Docu
  * 一覧を渡したときだけ、そこに無いものを知らせる（テンプレートの点検用）
  */
 export function isKnownField(target: DocumentTarget, key: string, orgItems?: string[]): boolean {
-  if (key.startsWith(ORG_ITEM_PREFIX)) {
-    return orgItems === undefined || orgItems.includes(key.slice(ORG_ITEM_PREFIX.length));
+  for (const prefix of [ORG_ITEM_PREFIX, RECIPIENT_ITEM_PREFIX]) {
+    if (!key.startsWith(prefix)) continue;
+    return orgItems === undefined || orgItems.includes(key.slice(prefix.length));
   }
   return DOCUMENT_FIELDS.some((f) => f.target === target && f.key === key);
 }
@@ -546,6 +568,11 @@ export const documentTemplateSchema = (m: Messages) =>
     target: z.enum(DOCUMENT_TARGETS),
     locale: z.string().trim().min(1, m.validation.required).max(10, m.validation.tooLong(10)),
     active: z.boolean(),
+    /**
+     * 宛先を差し込む様式か。
+     * **印が付いている様式でだけ、作るときに宛先を選ばせる**
+     */
+    usesRecipient: z.boolean(),
     note: z.string().trim().max(2000, m.validation.tooLong(2000)).nullish(),
   });
 

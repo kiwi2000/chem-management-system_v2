@@ -91,6 +91,7 @@ export async function POST(req: Request) {
       target: input.target,
       locale: input.locale,
       active: input.active,
+      usesRecipient: input.usesRecipient,
       note: input.note ?? null,
       // Json の列なので、こちらの型のまま渡せない
       content: emptyContent() as unknown as object,

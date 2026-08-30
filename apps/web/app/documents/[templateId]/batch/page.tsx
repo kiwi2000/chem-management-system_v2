@@ -36,9 +36,9 @@ export default async function DocumentBatchPage({
   searchParams,
 }: {
   params: Promise<{ templateId: string }>;
-  searchParams: Promise<{ ids?: string }>;
+  searchParams: Promise<{ ids?: string; from?: string; to?: string }>;
 }) {
-  const [{ templateId }, { ids: raw }] = await Promise.all([params, searchParams]);
+  const [{ templateId }, { ids: raw, from, to }] = await Promise.all([params, searchParams]);
   const actor = await getActor();
   if (!actor) notFound();
 
@@ -53,6 +53,16 @@ export default async function DocumentBatchPage({
   const locale = isLocale(lower) ? lower : "ja";
   const m = getMessages(locale);
 
+  /*
+    差出人と宛先。**宛先は「宛先を使う」印の付いた様式でだけ見る。**
+    印の無い様式に付いてきても捨てる（URLに書けば効く、という状態を作らない）。
+    差出人を差し替えられるかどうかは、集める側が権限で判断する
+  */
+  const parties = {
+    senderId: from ?? null,
+    recipientId: template.usesRecipient ? (to ?? null) : null,
+  };
+
   const ids = parseBatchIds(raw);
   const asked = (raw ?? "").split(",").filter(Boolean).length;
 
@@ -65,7 +75,7 @@ export default async function DocumentBatchPage({
   }[] = [];
   const missed: string[] = [];
   for (const id of ids) {
-    const data = await collectFor(actor, template.target, id, locale, m);
+    const data = await collectFor(actor, template.target, id, locale, m, parties);
     if (!data) {
       missed.push(id);
       continue;

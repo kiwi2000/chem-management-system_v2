@@ -1,4 +1,10 @@
-import { DOCUMENT_TABLE_DEFS, ORG_ITEM_PREFIX, pickName, pickStatutoryName } from "@chem/shared";
+import {
+  DOCUMENT_TABLE_DEFS,
+  ORG_ITEM_PREFIX,
+  pickName,
+  pickStatutoryName,
+  RECIPIENT_ITEM_PREFIX,
+} from "@chem/shared";
 import type { DocumentTable, DocumentTarget, Locale, Messages } from "@chem/shared";
 import type { Actor } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
@@ -37,34 +43,75 @@ function tableDef(key: DocumentTable, locale: Locale) {
 }
 
 /**
- * 作った人の会社と所属。**帳票の差出人になる。**
+ * 差出人と宛先。
  *
- * テンプレートは会社を名指ししない。出した人の会社が使われる。
- * そのため**人の代わりに出す（代理発行）には向かない。**必要になったら、そのとき考える。
+ * **差出人の既定は、作った人の会社。**`DOCUMENT_SENDER` を持っている人は
+ * 別の組織を選べる（関連会社の名前で出す、代理で出す）。
+ * **所属はいつも作った人のもの。**選んだ組織に「その人の部署」は無いため。
  *
- * 会社の項目は打たれたものをそのまま流す。持っていない項目は空欄になる
- * （会社ごとに項目が違うので、無いことは誤りではない）。
+ * **宛先は、選ばれたときだけ入る。**「宛先を使う」印の付いた様式でだけ選ばせる。
+ *
+ * 組織の項目は打たれたものをそのまま流す。持っていない項目は空欄になる
+ * （組織ごとに項目が違うので、無いことは誤りではない）。
  */
-async function orgValues(actor: Actor, locale: Locale): Promise<[string, string][]> {
+/**
+ * 差出人と宛先。**どちらも組織のID。**
+ * 渡されなければ、差出人は作った人の会社、宛先は無し
+ */
+export interface DocParties {
+  senderId?: string | null;
+  recipientId?: string | null;
+}
+
+const ORG_SELECT = {
+  nameJa: true,
+  nameEn: true,
+  items: { select: { label: true, value: true } },
+} as const;
+
+async function orgValues(
+  actor: Actor,
+  locale: Locale,
+  senderId?: string | null,
+  recipientId?: string | null,
+): Promise<[string, string][]> {
   const me = await prisma.user.findUnique({
     where: { id: actor.user.id },
     select: {
-      orgGroup: { select: { nameJa: true, nameEn: true } },
-      organisation: {
-        select: {
-          nameJa: true,
-          nameEn: true,
-          items: { select: { label: true, value: true } },
-        },
-      },
+      department: { select: { nameJa: true, nameEn: true } },
+      organisation: { select: ORG_SELECT },
     },
   });
-  const org = me?.organisation;
+  /*
+    差し替えた差出人。**権限を持っていない人が渡してきたら見ない。**
+    URL に付ければ誰でも別の会社の名前で出せる、という穴を作らない
+  */
+  const picked =
+    senderId && actor.has("DOCUMENT_SENDER")
+      ? await prisma.organisation.findFirst({
+          where: { id: senderId, deletedAt: null },
+          select: ORG_SELECT,
+        })
+      : null;
+  const org = picked ?? me?.organisation ?? null;
+
+  const to = recipientId
+    ? await prisma.organisation.findFirst({
+        where: { id: recipientId, deletedAt: null },
+        select: ORG_SELECT,
+      })
+    : null;
+
   const out: [string, string][] = [
     ["org.name", org ? pickName(locale, org.nameJa, org.nameEn) : ""],
-    ["org.group", me?.orgGroup ? pickName(locale, me.orgGroup.nameJa, me.orgGroup.nameEn) : ""],
+    [
+      "org.group",
+      me?.department ? pickName(locale, me.department.nameJa, me.department.nameEn) : "",
+    ],
+    ["to.name", to ? pickName(locale, to.nameJa, to.nameEn) : ""],
   ];
   for (const it of org?.items ?? []) out.push([`${ORG_ITEM_PREFIX}${it.label}`, it.value]);
+  for (const it of to?.items ?? []) out.push([`${RECIPIENT_ITEM_PREFIX}${it.label}`, it.value]);
   return out;
 }
 
@@ -73,6 +120,7 @@ async function commonValues(
   actor: Actor,
   versionCode: string | null,
   locale: Locale,
+  parties?: DocParties,
 ): Promise<[string, string][]> {
   const now = new Date();
   return [
@@ -80,7 +128,7 @@ async function commonValues(
     ["doc.generatedAt", now.toLocaleString(locale === "en" ? "en-US" : "ja-JP")],
     ["doc.generatedBy", actor.user.displayName ?? actor.user.email],
     ["doc.version", versionCode ?? ""],
-    ...(await orgValues(actor, locale)),
+    ...(await orgValues(actor, locale, parties?.senderId, parties?.recipientId)),
   ];
 }
 
@@ -89,6 +137,7 @@ export async function collectForProduct(
   productId: string,
   locale: Locale,
   m: Messages,
+  parties?: DocParties,
 ): Promise<DocData | null> {
   const product = await prisma.product.findFirst({
     where: { id: productId, deletedAt: null },
@@ -114,7 +163,7 @@ export async function collectForProduct(
   const hit = judgements.filter((j) => j.verdict === "APPLICABLE");
 
   const values = new Map<string, string>([
-    ...(await commonValues(actor, version?.code ?? null, locale)),
+    ...(await commonValues(actor, version?.code ?? null, locale, parties)),
     ["product.code", product.code],
     ["product.nameJa", product.nameJa],
     ["product.nameEn", product.nameEn ?? ""],
@@ -205,6 +254,7 @@ export async function collectForSubstance(
   actor: Actor,
   substanceId: string,
   locale: Locale,
+  parties?: DocParties,
 ): Promise<DocData | null> {
   const substance = await prisma.substance.findFirst({
     where: { id: substanceId, deletedAt: null, ...substanceVisibility(actor) },
@@ -226,7 +276,7 @@ export async function collectForSubstance(
   });
 
   const values = new Map<string, string>([
-    ...(await commonValues(actor, version?.code ?? null, locale)),
+    ...(await commonValues(actor, version?.code ?? null, locale, parties)),
     ["substance.code", substance.code],
     ["substance.casNumber", substance.casNumber ?? ""],
     ["substance.nameJa", substance.nameJa],
@@ -283,10 +333,11 @@ export async function collectFor(
   targetId: string,
   locale: Locale,
   m: Messages,
+  parties?: DocParties,
 ): Promise<DocData | null> {
   return target === "PRODUCT"
-    ? collectForProduct(actor, targetId, locale, m)
-    : collectForSubstance(actor, targetId, locale);
+    ? collectForProduct(actor, targetId, locale, m, parties)
+    : collectForSubstance(actor, targetId, locale, parties);
 }
 
 /**

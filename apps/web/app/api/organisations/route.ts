@@ -5,7 +5,7 @@ import {
   parseTableState,
 } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requireAdmin } from "@/lib/authz";
+import { jsonError, requirePermission, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { ORGANISATION_COLUMNS } from "@/lib/list-columns";
@@ -16,9 +16,13 @@ export const dynamic = "force-dynamic";
 
 const DEFAULT_STATE = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
-/** GET /api/admin/organisations — 組織の一覧（項目も一緒に返す） */
+/** GET /api/organisations — 組織の一覧（項目も一緒に返す） */
 export async function GET(req: Request) {
-  const actor = await requireAdmin();
+  /*
+    **見るのは誰でも。**帳票の宛先に選ぶために一覧が要る。
+    書き換えだけを ORG_EDIT で守る
+  */
+  const actor = await requireUser();
   if (actor instanceof Response) return actor;
 
   const state = parseTableState(
@@ -47,9 +51,9 @@ export async function GET(req: Request) {
   });
 }
 
-/** POST /api/admin/organisations — 組織の追加 */
+/** POST /api/organisations — 組織の追加 */
 export async function POST(req: Request) {
-  const actor = await requireAdmin();
+  const actor = await requirePermission("ORG_EDIT");
   if (actor instanceof Response) return actor;
   const m = await getServerMessages();
 

@@ -44,10 +44,12 @@ export async function generateMetadata({
 
 export default async function DocumentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ templateId: string; targetId: string }>;
+  searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const { templateId, targetId } = await params;
+  const [{ templateId, targetId }, { from, to }] = await Promise.all([params, searchParams]);
   const actor = await getActor();
   if (!actor) notFound();
 
@@ -69,8 +71,18 @@ export default async function DocumentPage({
   const locale = isLocale(lower) ? lower : "ja";
   const m = getMessages(locale);
 
+  /*
+    差出人と宛先。**宛先は「宛先を使う」印の付いた様式でだけ見る。**
+    印の無い様式に付いてきても捨てる（URLに書けば効く、という状態を作らない）。
+    差出人を差し替えられるかどうかは、集める側が権限で判断する
+  */
+  const parties = {
+    senderId: from ?? null,
+    recipientId: template.usesRecipient ? (to ?? null) : null,
+  };
+
   // 見る権限は、集める側が対象ごとに判断する（見られないものは null が返る）
-  const data = await collectFor(actor, template.target, targetId, locale, m);
+  const data = await collectFor(actor, template.target, targetId, locale, m, parties);
   if (!data) notFound();
 
   const doc = renderDocument({
@@ -90,7 +102,12 @@ export default async function DocumentPage({
         // 出した紙面をそのまま残す。あとで開いたときに当時の内容が出る
         content: doc as unknown as object,
         hasComposition: containsComposition(template.content, data.tables),
-        params: { version: data.values.get("doc.version") ?? "" },
+        params: {
+          version: data.values.get("doc.version") ?? "",
+          // 誰の名前で、誰に宛てて出したか。あとから記録だけで追えるように残す
+          ...(parties.senderId ? { senderId: parties.senderId } : {}),
+          ...(parties.recipientId ? { recipientId: parties.recipientId } : {}),
+        },
       },
     }),
     // 持ち出しの記録。組成が載ることがあるので、閲覧としても残す

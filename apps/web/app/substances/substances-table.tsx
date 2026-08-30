@@ -14,7 +14,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { batchHref } from "@/lib/doc-batch";
+import { batchHref, documentHref } from "@/lib/doc-batch";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, SubstanceListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -38,7 +38,10 @@ interface Props {
 export function SubstancesTable({ approvalRequired, scope, title, reloadToken, onChanged }: Props) {
   const { m, locale } = useI18n();
   /* 帳票の相手として選ばれに来ているか（製品の一覧と同じ） */
-  const pickFor = useSearchParams().get("pickFor");
+  const search = useSearchParams();
+  const pickFor = search.get("pickFor");
+  /* 選ばれた差出人・宛先。ここでは中身を見ず、そのまま次へ渡す */
+  const parties = { from: search.get("from"), to: search.get("to") };
   const router = useRouter();
   const { can } = useMe();
   const editable = can("SUBSTANCE_EDIT");
@@ -57,7 +60,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         // 押すと詳細へ移る。インベントリ・法規制のコードと同じ形
         render: (r) => (
           <Link
-            href={pickFor ? `/documents/${pickFor}/${r.id}` : `/substances/${r.id}`}
+            href={pickFor ? documentHref(pickFor, r.id, parties) : `/substances/${r.id}`}
             onClick={(e) => e.stopPropagation()}
             className="underline underline-offset-2"
           >
@@ -309,6 +312,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
                     batchHref(
                       pickFor,
                       rows.map((r) => r.id),
+                      parties,
                     ),
                   ),
               }

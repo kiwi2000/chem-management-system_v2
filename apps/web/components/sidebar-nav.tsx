@@ -149,17 +149,15 @@ const ITEMS: NavItem[] = [
   // 投稿できる人にだけ見せる（他人の分を編集できる権限は投稿権限を含む）。
   // 日々の作業ではないので、業務の項目の後ろ、システムの手前に置く
   { href: "/news", key: "news", icon: Megaphone, needs: "NEWS_POST" },
+  /*
+    組織（会社・部署・取引先）。**ログインしていれば誰でも見られる。**
+    帳票の宛先に選ぶために引くので、管理の中に置かない。
+    作る・直すには権限が要る（画面の中で出し分ける）
+  */
+  { href: "/organisations", key: "organisations", icon: Building2, match: ["/organisations"] },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
-  {
-    // 帳票に載せる会社の情報。利用者に会社を割り当てるので、グループ・利用者の手前に置く
-    href: "/admin/organisations",
-    key: "organisations",
-    icon: Building2,
-    needs: "ADMIN",
-    match: ["/admin/organisations"],
-  },
   { href: "/admin/groups", key: "groups", icon: Users, needs: "ADMIN", match: ["/admin/groups"] },
   { href: "/admin/users", key: "users", icon: UserCog, needs: "ADMIN", match: ["/admin/users"] },
   {

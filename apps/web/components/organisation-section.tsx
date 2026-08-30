@@ -1,6 +1,14 @@
 "use client";
 
-import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
+import {
+  emptyTableState,
+  kindLabelOf,
+  ORGANISATION_KINDS,
+  pickName,
+  serializeTableState,
+  type OrganisationKind,
+  type TableState,
+} from "@chem/shared";
 import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -13,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { useMe } from "@/lib/use-me";
 import type { ApiError, ListResponse, OrganisationDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 
@@ -27,6 +36,8 @@ interface ItemDraft {
 const EMPTY_FORM = {
   id: "",
   code: "",
+  kind: "COMPANY" as OrganisationKind,
+  kindLabel: "",
   nameJa: "",
   nameEn: "",
   displayOrder: 0,
@@ -35,14 +46,29 @@ const EMPTY_FORM = {
 };
 
 /**
- * 組織（会社・事業所）。
+ * 組織。会社・部署・取引先・そのほかを、種別で見分けて1つの表に置く。
  *
- * **持つ項目を決めない。**会社名・住所・電話・登録番号…と、
+ * **持つ項目を決めない。**名称・住所・電話・登録番号…と、
  * 求められるものが提出先によって違う。項目名も値も打ってもらう。
  * ここで付けた項目名が、そのままドキュメントの差込項目になる。
+ *
+ * **見るのは誰でも。**帳票の宛先に選ぶために引く。
+ * 作る・直す・消すには `ORG_EDIT` が要る
  */
 export function OrganisationSection() {
   const { m, locale } = useI18n();
+  const { can } = useMe();
+  const editable = can("ORG_EDIT");
+  /** 種別の呼び名。画面の言語で出す */
+  const kindNames = useMemo(
+    () => ({
+      COMPANY: m.organisations.kindCompany,
+      DEPARTMENT: m.organisations.kindDepartment,
+      PARTNER: m.organisations.kindPartner,
+      OTHER: m.organisations.kindOther,
+    }),
+    [m],
+  );
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
   /* 書く欄は押されてから出す（フィードバックなどと同じ形） */
@@ -60,6 +86,14 @@ export function OrganisationSection() {
         width: 120,
         className: "font-mono text-xs",
         render: (o) => o.code,
+      },
+      {
+        key: "kind",
+        header: m.organisations.kind,
+        kind: "enum",
+        width: 110,
+        options: ORGANISATION_KINDS.map((k) => ({ value: k, label: kindNames[k] })),
+        render: (o) => kindLabelOf(o.kind, o.kindLabel, kindNames),
       },
       {
         key: "nameJa",
@@ -117,14 +151,14 @@ export function OrganisationSection() {
         ),
       },
     ],
-    [m, locale],
+    [m, locale, kindNames],
   );
 
   const { state, setState, reset, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/organisations?${query}`);
+    const res = await fetch(`/api/organisations?${query}`);
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -150,22 +184,22 @@ export function OrganisationSection() {
     setSaving(true);
     try {
       const editing = form.id !== "";
-      const res = await fetch(
-        editing ? `/api/admin/organisations/${form.id}` : "/api/admin/organisations",
-        {
-          method: editing ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            code: form.code,
-            nameJa: form.nameJa,
-            nameEn: form.nameEn,
-            displayOrder: form.displayOrder,
-            activeFlag: form.activeFlag,
-            // 打ちかけの空行は送らない。項目名が無いものは項目として意味がない
-            items: form.items.filter((x) => x.label.trim() !== ""),
-          }),
-        },
-      );
+      const res = await fetch(editing ? `/api/organisations/${form.id}` : "/api/organisations", {
+        method: editing ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: form.code,
+          kind: form.kind,
+          // 「そのほか」以外では捨てる。種別を変えたときに古い呼び名が残らないように
+          kindLabel: form.kind === "OTHER" ? form.kindLabel : null,
+          nameJa: form.nameJa,
+          nameEn: form.nameEn,
+          displayOrder: form.displayOrder,
+          activeFlag: form.activeFlag,
+          // 打ちかけの空行は送らない。項目名が無いものは項目として意味がない
+          items: form.items.filter((x) => x.label.trim() !== ""),
+        }),
+      });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -183,7 +217,7 @@ export function OrganisationSection() {
   async function onDeleteSelected(targets: OrganisationDto[]) {
     setError(null);
     for (const o of targets) {
-      const res = await fetch(`/api/admin/organisations/${o.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/organisations/${o.id}`, { method: "DELETE" });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -230,6 +264,34 @@ export function OrganisationSection() {
                     className="w-32 font-mono"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="org-kind">{m.organisations.kind}</Label>
+                  <select
+                    id="org-kind"
+                    value={form.kind}
+                    onChange={(e) => setForm({ ...form, kind: e.target.value as OrganisationKind })}
+                    className="border-input bg-background h-9 w-32 rounded-none border px-2 text-sm"
+                  >
+                    {ORGANISATION_KINDS.map((k) => (
+                      <option key={k} value={k}>
+                        {kindNames[k]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {/* 呼び名は「そのほか」のときだけ。ほかの種別では置き場所も取らない */}
+                {form.kind === "OTHER" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="org-kind-label">{m.organisations.kindLabel}</Label>
+                    <Input
+                      id="org-kind-label"
+                      value={form.kindLabel}
+                      maxLength={30}
+                      onChange={(e) => setForm({ ...form, kindLabel: e.target.value })}
+                      className="w-40"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="org-name-ja">{m.organisations.nameJa}</Label>
                   <Input
@@ -373,25 +435,32 @@ export function OrganisationSection() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.organisations.empty}
-        create={open ? undefined : { onClick: startNew }}
-        selectable
-        onDeleteSelected={onDeleteSelected}
+        // 作る・直す・消すは権限のある人だけ。見るのは誰でもできる
+        create={open || !editable ? undefined : { onClick: startNew }}
+        selectable={editable}
+        onDeleteSelected={editable ? onDeleteSelected : undefined}
         // この画面は詳細を別に持たないので、鉛筆で上のフォームに読み込む
-        rowAction={{
-          onClick: (o) => {
-            setForm({
-              id: o.id,
-              code: o.code,
-              nameJa: o.nameJa,
-              nameEn: o.nameEn ?? "",
-              displayOrder: o.displayOrder,
-              activeFlag: o.activeFlag,
-              items: o.items.map((x) => ({ ...x })),
-            });
-            setOpen(true);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          },
-        }}
+        rowAction={
+          editable
+            ? {
+                onClick: (o) => {
+                  setForm({
+                    id: o.id,
+                    code: o.code,
+                    kind: o.kind,
+                    kindLabel: o.kindLabel ?? "",
+                    nameJa: o.nameJa,
+                    nameEn: o.nameEn ?? "",
+                    displayOrder: o.displayOrder,
+                    activeFlag: o.activeFlag,
+                    items: o.items.map((x) => ({ ...x })),
+                  });
+                  setOpen(true);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                },
+              }
+            : undefined
+        }
       />
     </section>
   );

@@ -2,11 +2,23 @@ import { z } from "zod";
 import type { Messages } from "./i18n/ja";
 
 /**
- * 組織（会社・事業所）。帳票に載せる差出人の情報。
+ * 組織。会社・部署・取引先・そのほかを、まとめてここで持つ。
  *
  * **持つ項目は決めない。**会社名・住所・電話・登録番号・担当窓口…と、
  * 業種や提出先によって求められるものが違う。項目名も値も打ってもらう。
+ *
+ * **種別で分けるが、表は分けない。**どれも「名前と項目を持ち、帳票に差し込める入れもの」で
+ * 作りが変わらない。分けて持つと、取引先にだけ住所が書けない、といった食い違いが出る。
  */
+
+/** 組織の種別。`OTHER` だけは呼び名を打ってもらう */
+export const ORGANISATION_KINDS = ["COMPANY", "DEPARTMENT", "PARTNER", "OTHER"] as const;
+export type OrganisationKind = (typeof ORGANISATION_KINDS)[number];
+
+export function isOrganisationKind(v: unknown): v is OrganisationKind {
+  return typeof v === "string" && (ORGANISATION_KINDS as readonly string[]).includes(v);
+}
+
 export const organisationItemSchema = (m: Messages) =>
   z.object({
     label: z.string().trim().min(1, m.validation.required).max(60, m.validation.tooLong(60)),
@@ -29,6 +41,15 @@ export const organisationSchema = (m: Messages) =>
       .transform((v) => (v === "" ? null : v))
       .nullable()
       .optional(),
+    kind: z.enum(ORGANISATION_KINDS),
+    /** 種別が「そのほか」のときの呼び名。ほかの種別では捨てる */
+    kindLabel: z
+      .string()
+      .trim()
+      .max(30, m.validation.tooLong(30))
+      .transform((v) => (v === "" ? null : v))
+      .nullable()
+      .optional(),
     displayOrder: z.number().int().min(0).max(9999),
     activeFlag: z.boolean(),
     /*
@@ -39,6 +60,19 @@ export const organisationSchema = (m: Messages) =>
   });
 
 export type OrganisationInput = z.infer<ReturnType<typeof organisationSchema>>;
+
+/**
+ * 種別の呼び名。**「そのほか」だけは打たれた名前を出す。**
+ * 打たれていなければ、そのまま「そのほか」と出す
+ */
+export function kindLabelOf(
+  kind: OrganisationKind,
+  kindLabel: string | null | undefined,
+  names: Record<OrganisationKind, string>,
+): string {
+  if (kind === "OTHER" && (kindLabel ?? "").trim() !== "") return kindLabel as string;
+  return names[kind];
+}
 
 /** 同じ項目名が2つあると、帳票からどちらが出るか決まらない */
 export function duplicateLabels(items: { label: string }[]): string[] {

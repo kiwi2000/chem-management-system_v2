@@ -57,9 +57,18 @@ function rohs(): DocumentContent {
       kind: "text",
       lines: [mixed(["発行日: ", { field: "doc.generatedAt" }], "right")],
     },
-    { id: id(c, 3), kind: "spacer", size: "md" },
     {
-      id: id(c, 4),
+      /*
+        宛名。**「宛先を使う」印を付けた様式なので、作るときに組織から選ぶ。**
+        選ばなければ空欄のまま出る（社内の控えとして使うこともある）
+      */
+      id: id(c, 3),
+      kind: "text",
+      lines: [mixed([{ field: "to.name" }, " 御中"]), mixed([{ field: "to.item.担当者" }])],
+    },
+    { id: id(c, 4), kind: "spacer", size: "md" },
+    {
+      id: id(c, 5),
       kind: "fields",
       width: 60,
       items: [
@@ -70,7 +79,7 @@ function rohs(): DocumentContent {
       ],
     },
     {
-      id: id(c, 5),
+      id: id(c, 6),
       kind: "fields",
       width: 40,
       items: [
@@ -78,9 +87,9 @@ function rohs(): DocumentContent {
         { label: "作成者", field: "doc.generatedBy" },
       ],
     },
-    { id: id(c, 6), kind: "spacer", size: "md" },
+    { id: id(c, 7), kind: "spacer", size: "md" },
     {
-      id: id(c, 7),
+      id: id(c, 8),
       kind: "text",
       lines: [
         line(
@@ -89,16 +98,16 @@ function rohs(): DocumentContent {
       ],
     },
     {
-      id: id(c, 8),
+      id: id(c, 9),
       kind: "table",
       table: "judgement",
       caption: "RoHS指令に該当した規制区分（空欄のときは該当なし）",
       columns: ["law", "category", "officialNumber", "statutoryName", "needsReview"],
       filters: [{ column: "law", op: "contains", value: "RoHS" }],
     },
-    { id: id(c, 9), kind: "spacer", size: "sm" },
+    { id: id(c, 10), kind: "spacer", size: "sm" },
     {
-      id: id(c, 10),
+      id: id(c, 11),
       kind: "text",
       lines: [
         line("【この証明について】"),
@@ -114,9 +123,9 @@ function rohs(): DocumentContent {
         line("・「要確認」の付いた行は、条文を確認したうえでご判断ください。"),
       ],
     },
-    { id: id(c, 11), kind: "spacer", size: "lg" },
+    { id: id(c, 12), kind: "spacer", size: "lg" },
     {
-      id: id(c, 12),
+      id: id(c, 13),
       kind: "fields",
       width: 60,
       items: [
@@ -124,7 +133,7 @@ function rohs(): DocumentContent {
         { label: "所属", field: "org.group" },
       ],
     },
-    { id: id(c, 13), kind: "signature", width: 40, label: "責任者" },
+    { id: id(c, 14), kind: "signature", width: 40, label: "責任者" },
   ];
   return { orientation: "portrait", blocks };
 }
@@ -146,6 +155,11 @@ function survey(): DocumentContent {
     },
     {
       id: id(c, 2),
+      kind: "text",
+      lines: [mixed([{ field: "to.name" }, " 御中"])],
+    },
+    {
+      id: id(c, 3),
       kind: "fields",
       width: 50,
       items: [
@@ -156,7 +170,7 @@ function survey(): DocumentContent {
       ],
     },
     {
-      id: id(c, 3),
+      id: id(c, 4),
       kind: "fields",
       width: 50,
       items: [
@@ -166,36 +180,36 @@ function survey(): DocumentContent {
         { label: "回答者", field: "doc.generatedBy" },
       ],
     },
-    { id: id(c, 4), kind: "divider" },
+    { id: id(c, 5), kind: "divider" },
     {
-      id: id(c, 5),
+      id: id(c, 6),
       kind: "heading",
       level: 2,
       lines: [line("1. 含有成分（CAS番号でまとめたもの）")],
     },
     {
-      id: id(c, 6),
+      id: id(c, 7),
       kind: "table",
       table: "compositionAggregate",
       columns: ["casNumber", "name", "totalPct", "note"],
     },
-    { id: id(c, 7), kind: "spacer", size: "md" },
+    { id: id(c, 8), kind: "spacer", size: "md" },
     {
-      id: id(c, 8),
+      id: id(c, 9),
       kind: "heading",
       level: 2,
       lines: [line("2. 該当した法規制")],
     },
     {
-      id: id(c, 9),
+      id: id(c, 10),
       kind: "table",
       table: "judgement",
       caption: "該当した規制区分と、当たった法文物質名",
       columns: ["law", "category", "officialNumber", "statutoryName", "needsReview"],
     },
-    { id: id(c, 10), kind: "spacer", size: "sm" },
+    { id: id(c, 11), kind: "spacer", size: "sm" },
     {
-      id: id(c, 11),
+      id: id(c, 12),
       kind: "text",
       lines: [
         line("【回答の前提】"),
@@ -206,9 +220,9 @@ function survey(): DocumentContent {
         ),
       ],
     },
-    { id: id(c, 12), kind: "spacer", size: "md" },
+    { id: id(c, 13), kind: "spacer", size: "md" },
     {
-      id: id(c, 13),
+      id: id(c, 14),
       kind: "fields",
       width: 60,
       items: [
@@ -216,7 +230,7 @@ function survey(): DocumentContent {
         { label: "所属", field: "org.group" },
       ],
     },
-    { id: id(c, 14), kind: "signature", width: 40, label: "回答責任者" },
+    { id: id(c, 15), kind: "signature", width: 40, label: "回答責任者" },
   ];
   return { orientation: "landscape", blocks };
 }
@@ -311,6 +325,7 @@ const TEMPLATES = [
     nameJa: "不使用証明書（RoHS指令）",
     nameEn: "Declaration of non-inclusion (EU RoHS)",
     target: "PRODUCT" as const,
+    usesRecipient: true,
     note: "見本。取引先へ出す証明書。宣言の文言は会社ごとに直して使ってください",
     content: rohs(),
   },
@@ -319,6 +334,7 @@ const TEMPLATES = [
     nameJa: "化学物質含有調査 回答書",
     nameEn: "Chemical content survey reply",
     target: "PRODUCT" as const,
+    usesRecipient: true,
     note: "見本。組成と該当法規を並べた回答書。列が多いので横向き",
     content: survey(),
   },
@@ -327,6 +343,8 @@ const TEMPLATES = [
     nameJa: "法規制情報（SDS 第15項 下書き）",
     nameEn: "Regulatory information (SDS section 15 draft)",
     target: "SUBSTANCE" as const,
+    // 社内で使う下書きなので宛名は置かない
+    usesRecipient: false,
     note: "見本。物質1件ぶん。SDSを書くときの材料",
     content: sds15(),
   },
@@ -362,6 +380,7 @@ async function main() {
         nameEn: t.nameEn,
         target: t.target,
         locale: "JA",
+        usesRecipient: t.usesRecipient,
         note: t.note,
         content: t.content as unknown as object,
       },
@@ -369,6 +388,7 @@ async function main() {
         nameJa: t.nameJa,
         nameEn: t.nameEn,
         target: t.target,
+        usesRecipient: t.usesRecipient,
         note: t.note,
         content: t.content as unknown as object,
       },
