@@ -1,6 +1,6 @@
 "use client";
 
-import type { BlockStyle } from "@chem/shared";
+import { DOCUMENT_FONTS, type BlockStyle, type FontKey } from "@chem/shared";
 import { Bold, Italic, Underline } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
@@ -28,9 +28,12 @@ const NO_COLOR = "#000000";
 export function BlockStyleBar({
   value,
   onChange,
+  defaultFontLabel,
 }: {
   value: BlockStyle | undefined;
   onChange: (next: BlockStyle | undefined) => void;
+  /** 「指定なし」に出す言葉。紙面ぜんたいで何が選ばれているかを見せる */
+  defaultFontLabel?: string;
 }) {
   const { m } = useI18n();
   const st = value ?? {};
@@ -62,6 +65,20 @@ export function BlockStyleBar({
 
   return (
     <div className="flex items-center gap-1">
+      <select
+        aria-label={m.docEditor.font}
+        title={m.docEditor.font}
+        value={st.family ?? ""}
+        onChange={(e) => patch({ family: (e.target.value || undefined) as FontKey | undefined })}
+        className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+      >
+        <option value="">{defaultFontLabel ?? m.docEditor.fontDefault}</option>
+        {DOCUMENT_FONTS.map((f) => (
+          <option key={f.key} value={f.key}>
+            {m.docEditor.fonts[f.key]}
+          </option>
+        ))}
+      </select>
       <select
         aria-label={m.docEditor.fontSize}
         title={m.docEditor.fontSize}

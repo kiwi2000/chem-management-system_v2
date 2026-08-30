@@ -443,6 +443,38 @@ export function passesFilter(cell: string, f: TableFilter): boolean {
 }
 
 /**
+ * 選べる書体。
+ *
+ * **決まったものから選ばせる。**書体名を打たせると、
+ * その字が入っていない機械で刷ったときに別の字になり、行が折り返す位置まで変わる。
+ * ここに並べるのは、日本語版 Windows と macOS のどちらにも入っているものだけ。
+ *
+ * 保存するのは鍵（`gothic` など）。実際の書体の並びは後から差し替えられる
+ */
+export const DOCUMENT_FONTS = [
+  {
+    key: "gothic",
+    stack:
+      '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Meiryo", "MS PGothic", sans-serif',
+  },
+  {
+    key: "mincho",
+    stack: '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "MS PMincho", serif',
+  },
+  {
+    key: "mono",
+    stack: '"Consolas", "MS Gothic", "Osaka-Mono", monospace',
+  },
+] as const;
+
+export type FontKey = (typeof DOCUMENT_FONTS)[number]["key"];
+
+/** 鍵から、実際に当てる書体の並び。知らない鍵は既定（何も当てない） */
+export function fontStack(key: string | undefined): string | undefined {
+  return DOCUMENT_FONTS.find((f) => f.key === key)?.stack;
+}
+
+/**
  * ブロック全体の字。
  *
  * **どの種類のブロックにも付く。**表・項目の並び・組織・署名欄にも、
@@ -452,6 +484,8 @@ export function passesFilter(cell: string, f: TableFilter): boolean {
  * ブロックの指定が土台で、文字ごとの指定が勝つ
  */
 export interface BlockStyle {
+  /** 書体。省略は紙面ぜんたいの指定に従う */
+  family?: FontKey;
   /** ポイント数。省略は紙面の既定 */
   size?: number;
   bold?: boolean;
@@ -572,6 +606,11 @@ export function groupIntoRows<T extends { kind: string; width?: BlockWidth }>(
 export interface DocumentContent {
   /** 出す紙の向き。印刷のCSSに渡す */
   orientation: "portrait" | "landscape";
+  /**
+   * 紙面ぜんたいの字。**各ブロックの既定になる。**
+   * ブロックの側で指定があれば、そちらが勝つ
+   */
+  style?: BlockStyle;
   blocks: DocumentBlock[];
 }
 

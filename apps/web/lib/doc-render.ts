@@ -66,6 +66,8 @@ export type RenderBlock =
 
 export interface RenderedDocument {
   orientation: "portrait" | "landscape";
+  /** 紙面ぜんたいの字。ブロックに指定が無いときの既定になる */
+  style?: BlockStyle;
   blocks: RenderBlock[];
   /** 画面にだけ出す知らせ。紙面には出さない */
   warnings: string[];
@@ -136,7 +138,7 @@ export function renderDocument(input: RenderInput): RenderedDocument {
   const warnings: string[] = [];
   if (unknown.size > 0) warnings.push(`unknownFields:${[...unknown].join(",")}`);
 
-  return { orientation: content.orientation, blocks, warnings };
+  return { orientation: content.orientation, style: content.style, blocks, warnings };
 }
 
 function renderBlock(

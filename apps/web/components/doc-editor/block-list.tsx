@@ -12,6 +12,7 @@ import {
   type DocumentBlock,
   type DocumentTable,
   type DocumentTarget,
+  type FontKey,
 } from "@chem/shared";
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -68,15 +69,20 @@ export function BlockList({
   blocks,
   target,
   orgItems,
+  documentFont,
   onChange,
 }: {
   blocks: DocumentBlock[];
   target: DocumentTarget;
   /** 会社の自由項目の名前 */
   orgItems: string[];
+  /** 紙面ぜんたいで選ばれている書体。ブロック側の「指定なし」に出す */
+  documentFont?: FontKey;
   onChange: (next: DocumentBlock[]) => void;
 }) {
   const { m, locale } = useI18n();
+  /** ブロックで書体を選んでいないときに、何が使われるかを見せる */
+  const defaultFontLabel = documentFont ? m.docEditor.fonts[documentFont] : undefined;
   /*
     組織ブロックの選択肢。**一覧はログインしていれば誰でも引ける。**
     自分の会社・部署も、取引先も同じ表にあるので、ここで分けない
@@ -123,9 +129,7 @@ export function BlockList({
           key={r}
           className={row.blocks.length > 1 ? "flex flex-wrap items-start gap-3" : undefined}
         >
-          {row.blocks.map((b, k) =>
-            renderBlock(b, row.index[k]!, row.blocks.length > 1 ? row.percents[k]! : null),
-          )}
+          {row.blocks.map((b, k) => renderBlock(b, row.index[k]!))}
         </div>
       ))}
 
@@ -140,17 +144,16 @@ export function BlockList({
     </div>
   );
 
-  /** `pct` は、横に並んでいるときだけ入る（その行で実際に使う％） */
-  function renderBlock(b: DocumentBlock, i: number, pct: number | null) {
+  function renderBlock(b: DocumentBlock, i: number) {
     return (
       <div
         key={b.id}
         /*
-          幅は**紙面の割合**。編集の枠はそれに合わせて細くするが、
-          **中の操作欄が入るところで止める。**細くしすぎて選択欄がはみ出すと、
-          直すこともできなくなる（実際にそうなった）。入らないぶんは下へ折り返す
+          **編集の枠は、中身がちょうど入る幅にする。**
+          紙面の割合に合わせて細くしていたころは、細くするほど操作欄がはみ出し、
+          しまいには幅の選択欄にも手が届かなくなった（実際にそうなった）。
+          刷ったときの割合は、右のプレビューで確かめられる
         */
-        style={pct === null ? undefined : { width: `${pct}%`, minWidth: "17rem" }}
         className={cn(
           "border-input rounded-none border",
           overIndex === i && dragIndex !== null && "border-primary border-t-2",
@@ -216,7 +219,11 @@ export function BlockList({
             文章と見出しは、この上に文字ごとの指定を重ねられる（そちらが勝つ）
           */}
           {b.kind !== "pageBreak" && b.kind !== "rowBreak" && b.kind !== "spacer" && (
-            <BlockStyleBar value={b.style} onChange={(style) => replace(i, { ...b, style })} />
+            <BlockStyleBar
+              value={b.style}
+              onChange={(style) => replace(i, { ...b, style })}
+              defaultFontLabel={defaultFontLabel}
+            />
           )}
           <div className="ml-auto">
             <Button

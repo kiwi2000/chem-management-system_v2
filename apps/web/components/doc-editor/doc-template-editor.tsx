@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
+import { BlockStyleBar } from "@/components/doc-editor/block-style-bar";
 import { renderDocument } from "@/lib/doc-render";
 import { addOrgBlockValues, sampleTables, sampleValues } from "@/lib/doc-sample";
 import type { ApiError, DocumentTemplateDto } from "@/lib/types";
@@ -208,6 +209,17 @@ export function DocTemplateEditor({ id }: { id: string }) {
               <option value="landscape">{m.docEditor.orientations.landscape}</option>
             </select>
           </label>
+          {/*
+            紙面ぜんたいの字。**各ブロックの既定になる。**
+            ブロックの側で選ばれていれば、そちらが勝つ
+          */}
+          <label className="flex items-center gap-2 text-sm">
+            {m.docEditor.documentFont}
+            <BlockStyleBar
+              value={content.style}
+              onChange={(style) => edit({ ...content, style })}
+            />
+          </label>
           <Button size="sm" variant="outline" onClick={() => setPreview((v) => !v)}>
             <Eye className="size-4" />
             {preview ? m.docEditor.previewHide : m.docEditor.preview}
@@ -270,6 +282,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
           blocks={content.blocks}
           target={template.target}
           orgItems={orgItems}
+          documentFont={content.style?.family}
           onChange={(blocks) => edit({ ...content, blocks })}
         />
 

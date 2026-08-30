@@ -1,6 +1,6 @@
 "use client";
 
-import { groupIntoRows } from "@chem/shared";
+import { fontStack, groupIntoRows, type BlockStyle } from "@chem/shared";
 import { Printer } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -74,19 +74,26 @@ export function DocumentView({
  */
 export function DocumentSheet({ doc }: { doc: RenderedDocument }) {
   return (
-    <div className="mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none">
+    <div
+      /*
+        紙面ぜんたいの字。**ここに当てて、下へ受け継がせる。**
+        ブロックの側で指定があれば、そちらが勝つ（子の指定は親より強い）
+      */
+      style={styleOf(doc.style)}
+      className="mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none"
+    >
       {/*
         横に並ぶものは、編集画面と同じ規則でまとめる（`groupIntoRows`）。
         別々に組むと、書いたとおりに刷られない
       */}
       {groupIntoRows(doc.blocks).map((row, i) =>
         row.blocks.length === 1 ? (
-          <Block key={i} block={row.blocks[0]!} />
+          <Block key={i} block={row.blocks[0]!} doc={doc.style} />
         ) : (
           <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
             {row.blocks.map((b, j) => (
               <div key={j} style={{ width: `${row.percents[j]}%` }}>
-                <Block block={b} />
+                <Block block={b} doc={doc.style} />
               </div>
             ))}
           </div>
@@ -129,10 +136,10 @@ const SPACER = { sm: "4mm", md: "8mm", lg: "16mm" } as const;
  * **土台として当てる。**文章・見出しの中で文字ごとに指定があれば、そちらが勝つ
  * （子の指定は親より強い、という CSS の並びをそのまま使う）
  */
-function blockStyle(b: RenderBlock): CSSProperties {
-  const st = b.style;
+function styleOf(st: BlockStyle | undefined): CSSProperties {
   if (!st) return {};
   return {
+    ...(fontStack(st.family) ? { fontFamily: fontStack(st.family) } : {}),
     ...(st.size ? { fontSize: `${st.size}pt` } : {}),
     ...(st.bold ? { fontWeight: 700 } : {}),
     ...(st.italic ? { fontStyle: "italic" } : {}),
@@ -141,24 +148,25 @@ function blockStyle(b: RenderBlock): CSSProperties {
   };
 }
 
-function Block({ block: b }: { block: RenderBlock }) {
-  const wrap = blockStyle(b);
+function Block({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | undefined }) {
+  const wrap = styleOf(b.style);
   // 指定が無ければ、余計な入れものを挟まない（紙面の余白が変わらないように）
-  if (Object.keys(wrap).length === 0) return <BlockBody block={b} />;
+  if (Object.keys(wrap).length === 0) return <BlockBody block={b} doc={doc} />;
   return (
     <div style={wrap}>
-      <BlockBody block={b} />
+      <BlockBody block={b} doc={doc} />
     </div>
   );
 }
 
-function BlockBody({ block: b }: { block: RenderBlock }) {
+function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | undefined }) {
   /*
-    字の大きさ。**ブロックの指定が、種類ごとの既定より強い。**
+    字の大きさ。**ブロック → 紙面ぜんたい → 種類ごとの既定**の順に強い。
     中身に大きさを直接書いていると、外側で指定しても効かない
-    （親から受け継ぐ字は、子に書いた指定に負ける）
+    （親から受け継ぐ字は、子に書いた指定に負ける）ので、ここで解く
   */
-  const fs = (fallback: string) => (b.style?.size ? `${b.style.size}pt` : fallback);
+  const size = b.style?.size ?? doc?.size;
+  const fs = (fallback: string) => (size ? `${size}pt` : fallback);
   switch (b.kind) {
     case "heading":
       return (
