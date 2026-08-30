@@ -985,7 +985,8 @@ export const ja = {
       tagsHint: "押すと写せます。Excel・Word の入れたい場所に貼り付けてください",
       tagsInFile: "ファイルにある札",
       unknown: "分からない札",
-      unknownHint: "この札は空欄になります。打ち間違いか、この対象では使えない項目です",
+      unknownHint:
+        "この札は、書いたまま出ます。打ち間違いか、この対象では使えない項目です。直してから預け直してください",
       rowHint: "表の札を置いた行は、明細の数だけ増えます",
       rejects: {
         tooLarge: "ファイルが大きすぎます（5MBまで）",

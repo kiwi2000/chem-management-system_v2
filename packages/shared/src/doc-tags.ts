@@ -27,6 +27,28 @@ import type { Locale } from "./i18n/locales";
 /** 札の切り出し。中に `{}` と改行は入れない（表計算の式と読み違えないため） */
 const TAG_RE = /\{([^{}\r\n]{1,120})\}/g;
 
+/**
+ * 札の頭。**これで始まるものだけを札とみなす。**
+ *
+ * Excel・Word のファイルの中には、こちらとは関わりのない波かっこが元から入っている
+ * （`{EB79DEF2-80B8-…}` のような GUID が workbook.xml などにある）。
+ * 拾ってしまうと「分からない札」として並び、本当の打ち間違いが埋もれる
+ */
+const TAG_HEADS: readonly string[] = [
+  "doc",
+  "product",
+  "substance",
+  "org",
+  "to",
+  ...DOCUMENT_TABLES,
+];
+
+/** 札の形をしているか。頭が知っているものかどうかだけを見る（合っているかは別） */
+export function looksLikeTag(key: string): boolean {
+  const dot = key.indexOf(".");
+  return dot > 0 && TAG_HEADS.includes(key.slice(0, dot));
+}
+
 export type DocTag =
   /** 1つの値 */
   | { kind: "value"; raw: string; key: string }
@@ -40,7 +62,7 @@ export function findTags(text: string): { raw: string; key: string }[] {
   const out: { raw: string; key: string }[] = [];
   for (const mm of text.matchAll(TAG_RE)) {
     const key = (mm[1] ?? "").trim();
-    if (key) out.push({ raw: mm[0], key });
+    if (looksLikeTag(key)) out.push({ raw: mm[0], key });
   }
   return out;
 }

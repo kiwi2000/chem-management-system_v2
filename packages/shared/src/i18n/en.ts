@@ -970,7 +970,8 @@ export const en: Messages = {
       tagsHint: "Click to copy, then paste into your Excel or Word file",
       tagsInFile: "Tags found in the file",
       unknown: "Unknown tags",
-      unknownHint: "These are left blank — a typo, or a field this target does not have",
+      unknownHint:
+        "These print as written — a typo, or a field this target does not have. Fix them and upload again",
       rowHint: "A row holding a table tag repeats for every detail line",
       rejects: {
         tooLarge: "The file is too large (5MB max)",

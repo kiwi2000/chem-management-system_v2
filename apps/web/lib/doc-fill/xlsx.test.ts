@@ -144,3 +144,18 @@ describe("fillXlsx", () => {
     expect(v.richText.map((r) => r.text).join("")).toBe("コード: PR-001");
   });
 });
+
+describe("札ではない波かっこ", () => {
+  it("ファイルに元からある GUID を、札として拾わない", async () => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("調査票");
+    ws.getCell("A1").value = "{EB79DEF2-80B8-43e5-95BD-54CBDDF9020C}";
+    ws.getCell("A2").value = "備考{注}";
+    const file = Buffer.from(await wb.xlsx.writeBuffer());
+    const out = await fillXlsx(input(file, []));
+    const s = await read(out.buffer);
+    expect(out.unknown).toEqual([]);
+    expect(s.cell("A1")).toBe("{EB79DEF2-80B8-43e5-95BD-54CBDDF9020C}");
+    expect(s.cell("A2")).toBe("備考{注}");
+  });
+});
