@@ -46,11 +46,14 @@ type Row = { id: string; code: string; nameJa: string; nameEn: string | null };
 
 export function DocTargetPicker({
   target,
-  onMake,
+  onSelectionChange,
 }: {
   target: "PRODUCT" | "SUBSTANCE";
-  /** 選ばれた相手で作る。1件なら1枚、複数ならまとめて */
-  onMake: (ids: string[]) => void;
+  /**
+   * 選ばれている相手。**作るボタンはこの表の中に置かない。**
+   * 手順の最後（④ 生成）に置くので、選びぶんだけを外へ渡す
+   */
+  onSelectionChange: (ids: string[]) => void;
 }) {
   const { m } = useI18n();
   const isProduct = target === "PRODUCT";
@@ -149,16 +152,10 @@ export function DocTargetPicker({
         emptyMessage={isProduct ? m.products.empty : m.substances.empty}
         /*
           選ぶのは消すためではなく作るため。**編集の権限は要らない。**
-          1件でも複数でも同じ押しかたにする（まとめて作れるかは様式による）
+          何件でも選べる（まとめて作れるかは様式による）
         */
         selectable
-        bulkAction={{
-          // 念押しは付けない。作るだけで、取り返しの付かないことは起きない
-          label: m.documents.make,
-          // この画面の主役。控えめに置くと、押しに来た人が見つけられない
-          primary: true,
-          run: (rows) => onMake(rows.map((r) => r.id)),
-        }}
+        onSelectionChange={(rows) => onSelectionChange(rows.map((r) => r.id))}
         pageSizeOptions={[10, 15, 25, 50]}
         hintText={m.documents.pickHint}
       />

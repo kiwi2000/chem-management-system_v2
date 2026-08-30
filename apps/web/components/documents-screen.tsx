@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import { DocTargetPicker } from "@/components/doc-target-picker";
+import { DocTemplatePicker } from "@/components/doc-template-picker";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -61,13 +62,14 @@ export function DocumentsScreen() {
   const { m, locale } = useI18n();
   const router = useRouter();
 
-  const [templates, setTemplates] = useState<DocumentTemplateDto[] | null>(null);
   /*
     選んだ様式。**選ぶと、この画面の中に相手の一覧が出る。**
     以前は製品・物質の画面へ飛ばしていたが、
     帳票を作りに来た人を別の画面へ移すと、どこにいるのか分からなくなる
   */
-  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [picked, setPicked] = useState<DocumentTemplateDto | null>(null);
+  /** ③で選ばれている相手。④の「生成」で使う */
+  const [targetIds, setTargetIds] = useState<string[]>([]);
   /*
     差出人と宛先。**組織から選ぶ。**
     差出人は権限のある人だけが変えられる（既定は自分の会社）
@@ -90,20 +92,6 @@ export function DocumentsScreen() {
     DEFAULT_STATE,
   );
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
-
-  useEffect(() => {
-    let alive = true;
-    void (async () => {
-      const res = await fetch("/api/doc-templates?size=200").catch(() => null);
-      if (!res || !res.ok || !alive) return;
-      const body = (await res.json()) as ListResponse<DocumentTemplateDto>;
-      // 使えないものは選ばせない
-      if (alive) setTemplates(body.items.filter((t) => t.active));
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   const load = useCallback(async () => {
     setError(null);
@@ -140,8 +128,6 @@ export function DocumentsScreen() {
     }
     void load();
   }
-
-  const usable = useMemo(() => templates ?? [], [templates]);
 
   const columns: TableColumn<GeneratedDocumentDto>[] = useMemo(
     () => [
@@ -206,8 +192,6 @@ export function DocumentsScreen() {
     [m, locale],
   );
 
-  const picked = usable.find((t) => t.id === pickedId) ?? null;
-
   /*
     差出人と宛先を、作る先へ渡す。
     **宛先を使わない様式には付けない。**付けても捨てられるが、
@@ -219,13 +203,13 @@ export function DocumentsScreen() {
   });
 
   /** 選ばれた相手で作る。1件なら1枚、複数ならまとめて */
-  function make(ids: string[]) {
-    if (!picked || ids.length === 0) return;
+  function make() {
+    if (!picked || targetIds.length === 0) return;
     const parties = partyParams(picked);
     router.push(
-      ids.length === 1
-        ? documentHref(picked.id, ids[0]!, parties)
-        : batchHref(picked.id, ids, parties),
+      targetIds.length === 1
+        ? documentHref(picked.id, targetIds[0]!, parties)
+        : batchHref(picked.id, targetIds, parties),
     );
   }
 
@@ -237,86 +221,104 @@ export function DocumentsScreen() {
         </Alert>
       )}
 
-      {/* 上：様式を選んで作る */}
+      {/* ① 様式を選ぶ。表から選ぶ（数が増えても探せるように） */}
       <div className="space-y-2">
         <p className="text-sm font-medium">{m.documents.step1}</p>
+        <DocTemplatePicker
+          selectedId={picked?.id ?? null}
+          onSelect={(t) => {
+            setPicked(t);
+            // 様式が変われば、選んでいた相手も外す（対象そのものが変わる）
+            setTargetIds([]);
+            if (!t.usesRecipient) setRecipientId("");
+          }}
+        />
+      </div>
 
-        {/*
-          差出人と宛先。**選んでから様式を押す。**
-          宛先は「宛先を使う」印の付いた様式でだけ使われる（印の無い様式では捨てる）。
-          差出人は権限のある人にだけ出す。既定は自分の会社
-        */}
-        <div className="flex flex-wrap items-end gap-3">
-          {canPickSender && (
-            <div className="space-y-1">
-              <span className="text-muted-foreground text-xs">{m.documents.sender}</span>
-              <select
-                aria-label={m.documents.sender}
-                value={senderId}
-                onChange={(e) => setSenderId(e.target.value)}
-                className="border-input bg-background block h-9 w-56 rounded-none border px-2 text-sm"
-              >
-                <option value="">{m.documents.senderDefault}</option>
-                {orgOptions.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {pickName(locale, o.nameJa, o.nameEn)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="space-y-1">
-            <span className="text-muted-foreground text-xs">{m.documents.recipient}</span>
-            <select
-              aria-label={m.documents.recipient}
-              value={recipientId}
-              onChange={(e) => setRecipientId(e.target.value)}
-              className="border-input bg-background block h-9 w-56 rounded-none border px-2 text-sm"
-            >
-              <option value="">{m.documents.recipientNone}</option>
-              {orgOptions.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {pickName(locale, o.nameJa, o.nameEn)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        {usable.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{m.documents.noTemplate}</p>
+      {/*
+        ② 差出人と宛先。
+        **宛先を使う様式でだけ聞く。**使わない様式で聞くと、
+        選んでも紙に出ないものを選ばせることになる。
+        差出人は権限のある人にだけ出す（既定は自分の会社）
+      */}
+      <div className="space-y-2 border-t pt-4">
+        <p className="text-sm font-medium">
+          {canPickSender ? m.documents.step2Sender : m.documents.step2}
+        </p>
+        {!picked ? (
+          <p className="text-muted-foreground text-sm">{m.documents.pickTemplateFirst}</p>
         ) : (
-          <div className="flex flex-wrap gap-2">
-            {usable.map((t) => (
-              <Button
-                key={t.id}
-                size="sm"
-                variant={t.id === pickedId ? "default" : "outline"}
-                aria-pressed={t.id === pickedId}
-                onClick={() => setPickedId(t.id === pickedId ? null : t.id)}
-              >
-                <FileText className="size-4" />
-                {t.code} {pickName(locale, t.nameJa, t.nameEn)}
-              </Button>
-            ))}
+          <div className="flex flex-wrap items-end gap-3">
+            {canPickSender && (
+              <div className="space-y-1">
+                <span className="text-muted-foreground text-xs">{m.documents.sender}</span>
+                <select
+                  aria-label={m.documents.sender}
+                  value={senderId}
+                  onChange={(e) => setSenderId(e.target.value)}
+                  className="border-input bg-background block h-9 w-56 rounded-none border px-2 text-sm"
+                >
+                  <option value="">{m.documents.senderDefault}</option>
+                  {orgOptions.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {pickName(locale, o.nameJa, o.nameEn)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {picked.usesRecipient ? (
+              <div className="space-y-1">
+                <span className="text-muted-foreground text-xs">{m.documents.recipient}</span>
+                <select
+                  aria-label={m.documents.recipient}
+                  value={recipientId}
+                  onChange={(e) => setRecipientId(e.target.value)}
+                  className="border-input bg-background block h-9 w-56 rounded-none border px-2 text-sm"
+                >
+                  <option value="">{m.documents.recipientNone}</option>
+                  {orgOptions.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {pickName(locale, o.nameJa, o.nameEn)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">{m.documents.noRecipientNeeded}</p>
+            )}
           </div>
         )}
       </div>
 
-      {/*
-        中：相手を選んで作る。
-        **様式を選ぶまでは出さない**が、次に何をすればよいかは出しておく
-        （何も起きない画面を見せると、押す場所を探すことになる）
-      */}
+      {/* ③ 作る相手。様式で対象（製品か物質か）が決まる */}
       <div className="space-y-2 border-t pt-4">
-        <p className="text-sm font-medium">{m.documents.step2}</p>
+        <p className="text-sm font-medium">{m.documents.step3}</p>
         {picked ? (
-          <>
-            <p className="text-muted-foreground text-xs">{m.documents.pickRowsFirst}</p>
-            <DocTargetPicker key={picked.id} target={picked.target} onMake={make} />
-          </>
+          <DocTargetPicker
+            key={picked.id}
+            target={picked.target}
+            onSelectionChange={setTargetIds}
+          />
         ) : (
           <p className="text-muted-foreground text-sm">{m.documents.pickTemplateFirst}</p>
         )}
+      </div>
+
+      {/* ④ 生成。**手順の最後に、押すためのボタンとして置く** */}
+      <div className="space-y-2 border-t pt-4">
+        <p className="text-sm font-medium">{m.documents.step4}</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button disabled={!picked || targetIds.length === 0} onClick={make}>
+            <FileText className="size-4" />
+            {m.documents.make}
+          </Button>
+          <span className="text-muted-foreground text-sm">
+            {targetIds.length > 0
+              ? m.documents.pickedCount(targetIds.length)
+              : m.documents.pickNoneYet}
+          </span>
+        </div>
       </div>
 
       {/* 下：自分が作ったもの */}

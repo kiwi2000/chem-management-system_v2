@@ -224,7 +224,9 @@ export const DOC_TEMPLATE_COLUMNS: QueryColumn[] = [
   { key: "target", kind: "enum", field: "target" },
   { key: "kind", kind: "enum", field: "kind" },
   { key: "locale", kind: "enum", field: "locale" },
-  { key: "active", kind: "enum", field: "active" },
+  // はい/いいえ の列。真偽値に直さないと、DBに "true" という文字を渡して落ちる
+  { key: "active", kind: "enum", field: "active", booleanEnum: true },
+  { key: "usesRecipient", kind: "enum", field: "usesRecipient", booleanEnum: true },
   { key: "seq", kind: "number", field: "seq" },
   { key: "createdAt", kind: "date", field: "createdAt" },
   { key: "updatedAt", kind: "date", field: "updatedAt" },

@@ -71,6 +71,12 @@ interface Props<T> {
   /** 選択した行の削除。確認はこの部品が出すので、呼び出し側は消す処理だけ書く */
   onDeleteSelected?: (rows: T[]) => void | Promise<void>;
   /**
+   * 選ばれている行が変わったときに知らせる。
+   * **表の外にボタンを置く画面で使う**（ドキュメント生成の「生成」など、
+   * 手順の最後に置きたい操作は、表の道具立ての中では見つけられない）
+   */
+  onSelectionChange?: (rows: T[]) => void;
+  /**
    * 選択した行をまとめて次の状態へ送る操作（申請・発行）。
    * 文言と処理はいつも一組なので、まとめて受ける。渡さなければボタンを出さない。
    */
@@ -188,6 +194,7 @@ export function DataTable<T>({
   selectable = false,
   singleSelect = false,
   onDeleteSelected,
+  onSelectionChange,
   bulkAction,
   filterLayout,
   showFilters = true,
@@ -366,6 +373,15 @@ export function DataTable<T>({
       return next;
     });
   }
+
+  /* 選ばれている行を外へ。**表の中の並びで返す**ので、押した順ではない */
+  const selectedRows = (rows ?? []).filter((r) => selected.has(rowKey(r)));
+  const selectedKeys = selectedRows.map(rowKey).join(",");
+  useEffect(() => {
+    onSelectionChange?.(selectedRows);
+    // 中身が同じなら知らせ直さない（毎回の描き直しで無限に呼ばれる）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKeys]);
 
   async function runBulkAction() {
     const targets = (rows ?? []).filter((r) => selected.has(rowKey(r)));

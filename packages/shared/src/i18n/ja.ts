@@ -1114,8 +1114,15 @@ export const ja = {
   },
   documents: {
     generatedAt: "作成日時",
+    pickTemplateHint: "行を押すと、その様式が選ばれます",
     step1: "① 様式を選ぶ",
-    step2: "② 作る相手を選ぶ",
+    step2: "② 宛先を選ぶ",
+    step2Sender: "② 差出人と宛先を選ぶ",
+    step3: "③ 作る相手を選ぶ",
+    step4: "④ 生成する",
+    noRecipientNeeded: "この様式は宛先を使いません。そのまま次へ進んでください",
+    pickedCount: (n: number) => `${n} 件を選んでいます`,
+    pickNoneYet: "まだ選ばれていません",
     pickTemplateFirst: "まず、上の様式を押してください",
     pickRowsFirst: "作る相手にチェックを入れると、「生成」が押せるようになります",
     pickHint:

@@ -1098,8 +1098,15 @@ export const en: Messages = {
   },
   documents: {
     generatedAt: "Created",
+    pickTemplateHint: "Click a row to choose that template",
     step1: "1. Choose a template",
-    step2: "2. Choose what to make it for",
+    step2: "2. Choose a recipient",
+    step2Sender: "2. Choose sender and recipient",
+    step3: "3. Choose what to make it for",
+    step4: "4. Make it",
+    noRecipientNeeded: "This template does not use a recipient. Go on to the next step",
+    pickedCount: (n: number) => `${n} selected`,
+    pickNoneYet: "Nothing selected yet",
     pickTemplateFirst: "Press one of the templates above to start",
     pickRowsFirst: "Tick the rows you want, and Make becomes available",
     pickHint:
