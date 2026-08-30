@@ -202,6 +202,21 @@ export function DocumentsScreen() {
     ...(t.usesRecipient && recipientId ? { to: recipientId } : {}),
   });
 
+  /*
+    **宛先を持たないテンプレートでは、宛先の段ごと出さない。**
+    選んでも紙に出ないものを聞くと、効いていると読めてしまう。
+    差出人を選べる人には、そのために出す
+  */
+  const asksParties = picked !== null && (picked.usesRecipient || canPickSender);
+
+  /*
+    段の見出し。**出す段だけで番号を数える。**
+    宛先の段を飛ばしたときに ①③④ と並ぶと、抜けたように見える
+  */
+  const stepShown = [true, asksParties, true, true];
+  const step = (n: number, label: string) =>
+    `${"①②③④"[stepShown.slice(0, n).filter(Boolean).length - 1]} ${label}`;
+
   /** 選ばれた相手で作る。1件なら1枚、複数ならまとめて */
   function make() {
     if (!picked || targetIds.length === 0) return;
@@ -221,14 +236,14 @@ export function DocumentsScreen() {
         </Alert>
       )}
 
-      {/* ① 様式を選ぶ。表から選ぶ（数が増えても探せるように） */}
+      {/* ① テンプレートを選ぶ。表から選ぶ（数が増えても探せるように） */}
       <div className="space-y-2">
-        <p className="text-sm font-medium">{m.documents.step1}</p>
+        <p className="text-sm font-medium">{step(1, m.documents.step1)}</p>
         <DocTemplatePicker
           selectedId={picked?.id ?? null}
           onSelect={(t) => {
             setPicked(t);
-            // 様式が変われば、選んでいた相手も外す（対象そのものが変わる）
+            // テンプレートが変われば、選んでいた相手も外す（対象そのものが変わる）
             setTargetIds([]);
             if (!t.usesRecipient) setRecipientId("");
           }}
@@ -237,17 +252,23 @@ export function DocumentsScreen() {
 
       {/*
         ② 差出人と宛先。
-        **宛先を使う様式でだけ聞く。**使わない様式で聞くと、
-        選んでも紙に出ないものを選ばせることになる。
+        **宛先を使うテンプレートでだけ、この段を出す。**
+        使わないテンプレートで聞くと、選んでも紙に出ないものを選ばせることになる。
         差出人は権限のある人にだけ出す（既定は自分の会社）
       */}
-      <div className="space-y-2 border-t pt-4">
-        <p className="text-sm font-medium">
-          {canPickSender ? m.documents.step2Sender : m.documents.step2}
-        </p>
-        {!picked ? (
-          <p className="text-muted-foreground text-sm">{m.documents.pickTemplateFirst}</p>
-        ) : (
+      {asksParties && (
+        <div className="space-y-2 border-t pt-4">
+          <p className="text-sm font-medium">
+            {step(
+              2,
+              // 出る欄に合わせた見出しにする。宛先が無いのに「宛先」と書かない
+              picked?.usesRecipient
+                ? canPickSender
+                  ? m.documents.step2Sender
+                  : m.documents.step2
+                : m.documents.step2SenderOnly,
+            )}
+          </p>
           <div className="flex flex-wrap items-end gap-3">
             {canPickSender && (
               <div className="space-y-1">
@@ -267,7 +288,7 @@ export function DocumentsScreen() {
                 </select>
               </div>
             )}
-            {picked.usesRecipient ? (
+            {picked?.usesRecipient && (
               <div className="space-y-1">
                 <span className="text-muted-foreground text-xs">{m.documents.recipient}</span>
                 <select
@@ -284,20 +305,20 @@ export function DocumentsScreen() {
                   ))}
                 </select>
               </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">{m.documents.noRecipientNeeded}</p>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ③ 作る相手。様式で対象（製品か物質か）が決まる */}
+      {/* ③ 作る相手。テンプレートで対象（製品か物質か）が決まる */}
       <div className="space-y-2 border-t pt-4">
-        <p className="text-sm font-medium">{m.documents.step3}</p>
+        <p className="text-sm font-medium">{step(3, m.documents.step3)}</p>
         {picked ? (
           <DocTargetPicker
             key={picked.id}
             target={picked.target}
+            // Excel・Word はまとめて作れない。選ばせてから断らない
+            single={picked.kind !== "BLOCK"}
             onSelectionChange={setTargetIds}
           />
         ) : (
@@ -307,7 +328,7 @@ export function DocumentsScreen() {
 
       {/* ④ 生成。**手順の最後に、押すためのボタンとして置く** */}
       <div className="space-y-2 border-t pt-4">
-        <p className="text-sm font-medium">{m.documents.step4}</p>
+        <p className="text-sm font-medium">{step(4, m.documents.step4)}</p>
         <div className="flex flex-wrap items-center gap-3">
           <Button disabled={!picked || targetIds.length === 0} onClick={make}>
             <FileText className="size-4" />

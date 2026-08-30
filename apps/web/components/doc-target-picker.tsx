@@ -46,9 +46,16 @@ type Row = { id: string; code: string; nameJa: string; nameEn: string | null };
 
 export function DocTargetPicker({
   target,
+  single = false,
   onSelectionChange,
 }: {
   target: "PRODUCT" | "SUBSTANCE";
+  /**
+   * 1件しか選べない表にするか。
+   * **まとめて作れないテンプレート（Excel・Word）で使う。**
+   * 選ばせてから断ると、選び直しをさせることになる
+   */
+  single?: boolean;
   /**
    * 選ばれている相手。**作るボタンはこの表の中に置かない。**
    * 手順の最後（④ 生成）に置くので、選びぶんだけを外へ渡す
@@ -155,9 +162,10 @@ export function DocTargetPicker({
           何件でも選べる（まとめて作れるかは様式による）
         */
         selectable
+        singleSelect={single}
         onSelectionChange={(rows) => onSelectionChange(rows.map((r) => r.id))}
         pageSizeOptions={[10, 15, 25, 50]}
-        hintText={m.documents.pickHint}
+        hintText={single ? m.documents.pickHintSingle : m.documents.pickHint}
       />
     </div>
   );
