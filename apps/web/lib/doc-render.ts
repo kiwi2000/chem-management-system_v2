@@ -3,6 +3,7 @@ import {
   compileReplacement,
   isKnownField,
   passesFilter,
+  type BlockStyle,
   type BlockWidth,
   type DocumentBlock,
   type DocumentContent,
@@ -39,6 +40,8 @@ export interface RenderTable {
 /** 幅は紙面まで持ち越す。横に並べるかどうかは、出す側が `groupIntoRows` で決める */
 interface RenderBase {
   width?: BlockWidth;
+  /** ブロック全体の字。紙面と編集画面の両方が、これを見て描く */
+  style?: BlockStyle;
 }
 
 export type RenderBlock =
@@ -121,7 +124,12 @@ export function renderDocument(input: RenderInput): RenderedDocument {
   for (const b of content.blocks) {
     // 幅は組み立て直さず、そのまま持ち越す（横に並べるのは出す側の仕事）
     for (const out of renderBlock(b, target, values, tables, warn)) {
-      blocks.push(b.width ? { ...out, width: b.width } : out);
+      // 幅と字は、種類によらず同じように持ち回る
+      blocks.push({
+        ...out,
+        ...(b.width ? { width: b.width } : {}),
+        ...(b.style ? { style: b.style } : {}),
+      });
     }
   }
 

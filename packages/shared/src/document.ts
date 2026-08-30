@@ -442,10 +442,31 @@ export function passesFilter(cell: string, f: TableFilter): boolean {
   }
 }
 
+/**
+ * ブロック全体の字。
+ *
+ * **どの種類のブロックにも付く。**表・項目の並び・組織・署名欄にも、
+ * 大きさや色を決めたいことがある（注記だけ小さく、表題だけ色を変える）。
+ *
+ * 文章と見出しは、この上に**文字ごとの指定**（`RichMark`）を重ねられる。
+ * ブロックの指定が土台で、文字ごとの指定が勝つ
+ */
+export interface BlockStyle {
+  /** ポイント数。省略は紙面の既定 */
+  size?: number;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  /** `#112233`。省略は本文の色 */
+  color?: string;
+}
+
 interface BlockBase {
   id: string;
   /** 省略は全幅。全幅のブロックは必ず1行を占める */
   width?: BlockWidth;
+  /** そのブロックの字。省略は紙面の既定 */
+  style?: BlockStyle;
 }
 
 export type DocumentBlock =

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
+import type { CSSProperties } from "react";
 import type { RenderBlock, RenderLine, RenderedDocument } from "@/lib/doc-render";
 
 /**
@@ -122,7 +123,36 @@ function Line({ line }: { line: RenderLine }) {
 const HEADING_SIZE = { 1: "18pt", 2: "14pt", 3: "12pt" } as const;
 const SPACER = { sm: "4mm", md: "8mm", lg: "16mm" } as const;
 
+/**
+ * ブロック全体に効かせる字。
+ *
+ * **土台として当てる。**文章・見出しの中で文字ごとに指定があれば、そちらが勝つ
+ * （子の指定は親より強い、という CSS の並びをそのまま使う）
+ */
+function blockStyle(b: RenderBlock): CSSProperties {
+  const st = b.style;
+  if (!st) return {};
+  return {
+    ...(st.size ? { fontSize: `${st.size}pt` } : {}),
+    ...(st.bold ? { fontWeight: 700 } : {}),
+    ...(st.italic ? { fontStyle: "italic" } : {}),
+    ...(st.underline ? { textDecoration: "underline" } : {}),
+    ...(st.color ? { color: st.color } : {}),
+  };
+}
+
 function Block({ block: b }: { block: RenderBlock }) {
+  const wrap = blockStyle(b);
+  // 指定が無ければ、余計な入れものを挟まない（紙面の余白が変わらないように）
+  if (Object.keys(wrap).length === 0) return <BlockBody block={b} />;
+  return (
+    <div style={wrap}>
+      <BlockBody block={b} />
+    </div>
+  );
+}
+
+function BlockBody({ block: b }: { block: RenderBlock }) {
   switch (b.kind) {
     case "heading":
       return (

@@ -17,6 +17,7 @@ import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { RichEditor } from "@/components/doc-editor/rich-editor";
 import { TableBlockFields } from "@/components/doc-editor/table-block-fields";
+import { BlockStyleBar } from "@/components/doc-editor/block-style-bar";
 import { WidthSelect } from "@/components/doc-editor/width-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,7 +119,10 @@ export function BlockList({
         幅を選んだのに縦に積んだまま見せると、刷るまで結果が分からない
       */}
       {groupIntoRows(blocks).map((row, r) => (
-        <div key={r} className={row.blocks.length > 1 ? "flex items-start gap-3" : undefined}>
+        <div
+          key={r}
+          className={row.blocks.length > 1 ? "flex flex-wrap items-start gap-3" : undefined}
+        >
           {row.blocks.map((b, k) =>
             renderBlock(b, row.index[k]!, row.blocks.length > 1 ? row.percents[k]! : null),
           )}
@@ -141,7 +145,12 @@ export function BlockList({
     return (
       <div
         key={b.id}
-        style={pct === null ? undefined : { width: `${pct}%` }}
+        /*
+          幅は**紙面の割合**。編集の枠はそれに合わせて細くするが、
+          **中の操作欄が入るところで止める。**細くしすぎて選択欄がはみ出すと、
+          直すこともできなくなる（実際にそうなった）。入らないぶんは下へ折り返す
+        */
+        style={pct === null ? undefined : { width: `${pct}%`, minWidth: "17rem" }}
         className={cn(
           "border-input rounded-none border",
           overIndex === i && dragIndex !== null && "border-primary border-t-2",
@@ -201,6 +210,13 @@ export function BlockList({
               value={b.width}
               onChange={(width) => replace(i, { ...b, width })}
             />
+          )}
+          {/*
+            そのブロック全体の字。**どの種類でも変えられる。**
+            文章と見出しは、この上に文字ごとの指定を重ねられる（そちらが勝つ）
+          */}
+          {b.kind !== "pageBreak" && b.kind !== "rowBreak" && b.kind !== "spacer" && (
+            <BlockStyleBar value={b.style} onChange={(style) => replace(i, { ...b, style })} />
           )}
           <div className="ml-auto">
             <Button
