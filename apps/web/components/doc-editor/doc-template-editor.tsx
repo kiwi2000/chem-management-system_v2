@@ -216,6 +216,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
           <label className="flex items-center gap-2 text-sm">
             {m.docEditor.documentFont}
             <BlockStyleBar
+              level="document"
               value={content.style}
               onChange={(style) => edit({ ...content, style })}
             />

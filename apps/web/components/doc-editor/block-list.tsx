@@ -13,6 +13,7 @@ import {
   type DocumentTable,
   type DocumentTarget,
   type FontKey,
+  DEFAULT_FONT,
 } from "@chem/shared";
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -82,7 +83,8 @@ export function BlockList({
 }) {
   const { m, locale } = useI18n();
   /** ブロックで書体を選んでいないときに、何が使われるかを見せる */
-  const defaultFontLabel = documentFont ? m.docEditor.fonts[documentFont] : undefined;
+  // 紙面ぜんたいで選ばれていなくても、実際に出るのはゴシック。その名前を見せる
+  const defaultFontLabel = m.docEditor.fonts[documentFont ?? DEFAULT_FONT];
   /*
     組織ブロックの選択肢。**一覧はログインしていれば誰でも引ける。**
     自分の会社・部署も、取引先も同じ表にあるので、ここで分けない

@@ -1,6 +1,6 @@
 "use client";
 
-import { DOCUMENT_FONTS, type BlockStyle, type FontKey } from "@chem/shared";
+import { DEFAULT_FONT, DOCUMENT_FONTS, type BlockStyle, type FontKey } from "@chem/shared";
 import { Bold, Italic, Underline } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
@@ -28,10 +28,16 @@ const NO_COLOR = "#000000";
 export function BlockStyleBar({
   value,
   onChange,
+  level = "block",
   defaultFontLabel,
 }: {
   value: BlockStyle | undefined;
   onChange: (next: BlockStyle | undefined) => void;
+  /**
+   * どの段の指定か。
+   * **紙面ぜんたいには「合わせる先」が無い**ので、書体を必ず1つ選ばせる
+   */
+  level?: "document" | "block";
   /** 「指定なし」に出す言葉。紙面ぜんたいで何が選ばれているかを見せる */
   defaultFontLabel?: string;
 }) {
@@ -68,11 +74,14 @@ export function BlockStyleBar({
       <select
         aria-label={m.docEditor.font}
         title={m.docEditor.font}
-        value={st.family ?? ""}
+        value={level === "document" ? (st.family ?? DEFAULT_FONT) : (st.family ?? "")}
         onChange={(e) => patch({ family: (e.target.value || undefined) as FontKey | undefined })}
         className="border-input bg-background h-8 rounded-none border px-1 text-xs"
       >
-        <option value="">{defaultFontLabel ?? m.docEditor.fontDefault}</option>
+        {/* 合わせる先があるのはブロックだけ。紙面ぜんたいはここがいちばん外 */}
+        {level === "block" && (
+          <option value="">{defaultFontLabel ?? m.docEditor.fontDefault}</option>
+        )}
         {DOCUMENT_FONTS.map((f) => (
           <option key={f.key} value={f.key}>
             {m.docEditor.fonts[f.key]}

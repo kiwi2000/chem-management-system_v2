@@ -1,6 +1,6 @@
 "use client";
 
-import { fontStack, groupIntoRows, type BlockStyle } from "@chem/shared";
+import { DEFAULT_FONT, fontStack, groupIntoRows, type BlockStyle } from "@chem/shared";
 import { Printer } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -79,7 +79,8 @@ export function DocumentSheet({ doc }: { doc: RenderedDocument }) {
         紙面ぜんたいの字。**ここに当てて、下へ受け継がせる。**
         ブロックの側で指定があれば、そちらが勝つ（子の指定は親より強い）
       */
-      style={styleOf(doc.style)}
+      /* 選ばれていなければゴシック。刷る機械まかせにすると、人によって字が変わる */
+      style={{ fontFamily: fontStack(DEFAULT_FONT), ...styleOf(doc.style) }}
       className="mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none"
     >
       {/*

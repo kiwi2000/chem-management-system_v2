@@ -447,27 +447,29 @@ export function passesFilter(cell: string, f: TableFilter): boolean {
  *
  * **決まったものから選ばせる。**書体名を打たせると、
  * その字が入っていない機械で刷ったときに別の字になり、行が折り返す位置まで変わる。
- * ここに並べるのは、日本語版 Windows と macOS のどちらにも入っているものだけ。
+ *
+ * **刷るのは利用者のパソコン**なので、そこに入っている書体しか出ない。
+ * ゴシックと明朝は Windows・Mac のどちらにも入っている。
+ * UD の2つは **Windows 10/11 には標準で入っているが Mac には無い**ので、
+ * Mac で開くとゴシック・明朝に落ちる（並びの後ろがそのまま受け皿になる）。
  *
  * 保存するのは鍵（`gothic` など）。実際の書体の並びは後から差し替えられる
  */
+const GOTHIC =
+  '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Meiryo", "MS PGothic", sans-serif';
+const MINCHO = '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "MS PMincho", serif';
+
 export const DOCUMENT_FONTS = [
-  {
-    key: "gothic",
-    stack:
-      '"Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Meiryo", "MS PGothic", sans-serif',
-  },
-  {
-    key: "mincho",
-    stack: '"Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "MS PMincho", serif',
-  },
-  {
-    key: "mono",
-    stack: '"Consolas", "MS Gothic", "Osaka-Mono", monospace',
-  },
+  { key: "gothic", stack: GOTHIC },
+  { key: "mincho", stack: MINCHO },
+  { key: "udGothic", stack: `"BIZ UDPGothic", "BIZ UDPゴシック", ${GOTHIC}` },
+  { key: "udMincho", stack: `"BIZ UDPMincho", "BIZ UDP明朝 Medium", ${MINCHO}` },
 ] as const;
 
 export type FontKey = (typeof DOCUMENT_FONTS)[number]["key"];
+
+/** 紙面ぜんたいで何も選ばれていないときの書体 */
+export const DEFAULT_FONT: FontKey = "gothic";
 
 /** 鍵から、実際に当てる書体の並び。知らない鍵は既定（何も当てない） */
 export function fontStack(key: string | undefined): string | undefined {
