@@ -3,9 +3,13 @@ import { classifyTag, findTags, type DocumentTable, type DocumentTarget } from "
 /**
  * 預かったファイルの中の差込札を、値に置き換える。
  *
- * **見つからない札は空にする。**「？」や札のままを残すと、
- * 書いた文字と見分けが付かず、そのまま取引先へ出てしまう。
- * どの札が分からなかったかは呼んだ側へ返し、画面で知らせる
+ * **知らない札は、書いてあるまま残す。**空にすると、
+ * 打ち間違いが「値の無い項目」と見分けられなくなり、
+ * 空欄のまま取引先へ出る。残しておけば、出す前に気づける。
+ * 相手の様式に元から書いてある波かっこ（「{注}」など）も、これで消えない。
+ *
+ * **値のほうが空なのは、そのまま空にする。**組織に打たれていない項目や、
+ * 見る権限が無くて落ちた表がこれにあたる
  */
 
 export interface FillContext {
@@ -28,14 +32,16 @@ export function fillText(text: string, ctx: FillContext): string {
   let out = text;
   for (const t of tags) {
     const tag = classifyTag(t.key, ctx.target, ctx.orgItems);
-    let value = "";
+    let value: string;
     if (tag.kind === "value") {
       value = ctx.values.get(tag.key) ?? "";
     } else if (tag.kind === "cell") {
       // 明細の行の外に置かれた表の札は、埋めようがないので空にする
       value = ctx.row?.table === tag.table ? (ctx.row.cells[tag.column] ?? "") : "";
     } else {
+      // 知らない札は触らない。どれが分からなかったかだけ控える
       ctx.unknown.add(t.key);
+      continue;
     }
     out = out.split(t.raw).join(value);
   }

@@ -135,10 +135,10 @@ describe("fillDocx", () => {
     expect(texts(head)).toEqual(["PR-001"]);
   });
 
-  it("知らない札は空にして、何が分からなかったかを返す", async () => {
+  it("知らない札はそのまま残し、何が分からなかったかを返す", async () => {
     const file = await docx(P("{product.nosuch}"));
     const out = await fillDocx(input(file, []));
     expect(out.unknown).toEqual(["product.nosuch"]);
-    expect(texts(await bodyOf(out.buffer)).join("")).toBe("");
+    expect(texts(await bodyOf(out.buffer)).join("")).toBe("{product.nosuch}");
   });
 });

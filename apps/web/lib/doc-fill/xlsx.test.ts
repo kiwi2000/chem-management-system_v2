@@ -115,14 +115,15 @@ describe("fillXlsx", () => {
     expect(s.merges).not.toContain("B3:C3");
   });
 
-  it("知らない札は空にして、何が分からなかったかを返す", async () => {
+  it("知らない札はそのまま残し、何が分からなかったかを返す", async () => {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("調査票");
     ws.getCell("A1").value = "担当: {product.nosuch} / {org.item.部署}";
     const file = Buffer.from(await wb.xlsx.writeBuffer());
     const out = await fillXlsx({ ...input(file, []), orgItems: ["部署"] });
     const s = await read(out.buffer);
-    expect(s.cell("A1")).toBe("担当:  / ");
+    // 打ち間違いは残す。空にすると「値が無いだけ」と見分けが付かない
+    expect(s.cell("A1")).toBe("担当: {product.nosuch} / ");
     expect(out.unknown).toEqual(["product.nosuch"]);
   });
 
