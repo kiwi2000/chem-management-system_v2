@@ -118,6 +118,26 @@ async function main() {
       continue;
     }
 
+    /*
+      物質そのものは、**リンクが当たったかに関わらず登録する。**
+      CHRIP がその物質を規制の対象として載せている以上、
+      こちらの区分に当てられなくても「その物質がある」ことは確かで、
+      組成に打つときに探せなければ意味がない
+      （当てられない理由は misses.tsv に残る）
+    */
+    if (!wantSubstance.has(casNormalized)) {
+      const nameJa = (d.nameJa ?? "").trim();
+      const nameEn = (d.nameEn ?? "").trim();
+      // 名前が無いものがある（「-」で埋められている）。その時はCAS番号を名前にする
+      const usableJa = nameJa && nameJa !== "-" ? nameJa : "";
+      const usableEn = nameEn && nameEn !== "-" ? nameEn : "";
+      wantSubstance.set(casNormalized, {
+        casNumber,
+        nameJa: (usableJa || usableEn || casNumber).slice(0, 500),
+        nameEn: usableEn.slice(0, 500) || null,
+      });
+    }
+
     for (const e of d.entries) {
       const law = LAW_OF[e.source];
       if (!law) {
@@ -142,13 +162,6 @@ async function main() {
       }
       for (const id of ids)
         links.set(`${id}|${casNormalized}`, { statutorySubstanceId: id, casNumber, casNormalized });
-      if (!wantSubstance.has(casNormalized)) {
-        wantSubstance.set(casNormalized, {
-          casNumber,
-          nameJa: (d.nameJa ?? d.nameEn ?? casNumber).slice(0, 500),
-          nameEn: d.nameEn?.slice(0, 500) ?? null,
-        });
-      }
     }
   }
 
