@@ -11,7 +11,7 @@
  * **足すだけ。**既にあるものは触らない。何度流しても結果は同じ。
  * 当てられなかったものは捨てず、理由をつけて数える（あとで見直せるように）。
  */
-import { normalizeCas } from "@chem/shared";
+import { looksLikeCas, normalizeCas } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { parseDetail } from "./lib/chrip-detail.mjs";
@@ -22,6 +22,8 @@ const DIR = ".cache/chrip/detail";
 const VERSION_CODE = "2026Q3";
 const SOURCE_CODE = "CHRIP";
 const CODE_PREFIX = "CAS-";
+/** CAS番号を持たない物質に付ける独自コードの頭。CHRIP の物質IDをそのまま使う */
+const OWN_CODE_PREFIX = "CHRIP-";
 
 /**
  * CHRIP の情報源 → 本システムの法律コード。
@@ -105,18 +107,37 @@ async function main() {
     string,
     { casNumber: string; nameJa: string; nameEn: string | null }
   >();
-  const tally = { files: 0, entries: 0, byNum: 0, byName: 0, noLaw: 0, noHit: 0, noCas: 0 };
+  const tally = {
+    files: 0,
+    entries: 0,
+    byNum: 0,
+    byName: 0,
+    noLaw: 0,
+    noHit: 0,
+    noCas: 0,
+    ownCode: 0,
+  };
   const misses: string[] = [];
 
   for (const f of readdirSync(DIR).filter((x) => x.endsWith(".html"))) {
     tally.files++;
     const d = parseDetail(readFileSync(`${DIR}/${f}`, "utf8"));
-    const casNumber = (d.cas ?? "").trim();
+    /*
+      突合の鍵。**CAS番号が無い物質には、独自コードを付ける。**
+      石油留分・アルキル同族体のような UVCB は CHRIP にも CAS が無いが、
+      法規制には載っている。鍵が無いと法文物質名と結べず、
+      組成に打つこともできない（schema の StatutoryCasLink のとおり、
+      突合はどちらも cas_normalized で行う）
+    */
+    const raw = (d.cas ?? "").trim();
+    const hasCas = looksLikeCas(normalizeCas(raw));
+    const casNumber = hasCas ? raw : d.cid ? `${OWN_CODE_PREFIX}${d.cid}` : "";
     const casNormalized = casNumber ? normalizeCas(casNumber) : "";
     if (!casNormalized) {
       tally.noCas++;
       continue;
     }
+    if (!hasCas) tally.ownCode++;
 
     /*
       物質そのものは、**リンクが当たったかに関わらず登録する。**
@@ -197,6 +218,9 @@ async function main() {
     `CAS番号（重複なし）: ${casList.length.toLocaleString()}（うち物質マスタに無い ${newCas.length.toLocaleString()}）`,
   );
   console.log(
+    `  うち独自コード（CAS番号が無い物質）: ${tally.ownCode.toLocaleString()} 件 / 鍵を作れなかった: ${tally.noCas.toLocaleString()} 件`,
+  );
+  console.log(
     `CASリンク: ${links.size.toLocaleString()}（うち未登録 ${newLinks.length.toLocaleString()}）`,
   );
   if (misses.length) writeFileSync(".cache/chrip/misses.tsv", misses.join("\n"));
@@ -211,9 +235,11 @@ async function main() {
     await prisma.substance.createMany({
       data: newCas.map((cas) => {
         const w = wantSubstance.get(cas)!;
+        // 独自コードの物質は、そのコードがそのまま業務キーになる
+        const code = cas.startsWith(OWN_CODE_PREFIX) ? cas : `${CODE_PREFIX}${cas}`;
         return {
-          code: `${CODE_PREFIX}${cas}`.slice(0, 20),
-          codeNormalized: `${CODE_PREFIX}${cas}`.slice(0, 64),
+          code: code.slice(0, 20),
+          codeNormalized: code.slice(0, 64),
           nameJa: w.nameJa,
           nameEn: w.nameEn,
           casNumber: w.casNumber,
