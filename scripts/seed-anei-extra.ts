@@ -111,7 +111,7 @@ const CATEGORIES: CategoryDef[] = [
   },
   {
     code: "SPEC1",
-    name: "第1類物質",
+    name: "特化則 第1類物質",
     order: 50,
     lower: "1",
     prefix: "S1",
@@ -120,7 +120,7 @@ const CATEGORIES: CategoryDef[] = [
   },
   {
     code: "SPEC2",
-    name: "第2類物質",
+    name: "特化則 第2類物質",
     order: 60,
     lower: "1",
     prefix: "S2",
@@ -135,7 +135,7 @@ const CATEGORIES: CategoryDef[] = [
   },
   {
     code: "SPEC3",
-    name: "第3類物質",
+    name: "特化則 第3類物質",
     order: 70,
     lower: "1",
     prefix: "S3",
@@ -144,7 +144,7 @@ const CATEGORIES: CategoryDef[] = [
   },
   {
     code: "SPEC_MGMT",
-    name: "特別管理物質",
+    name: "特化則 特別管理物質",
     order: 80,
     lower: "1",
     prefix: "SPM",
@@ -153,7 +153,7 @@ const CATEGORIES: CategoryDef[] = [
   },
   {
     code: "ORG",
-    name: "有機溶剤",
+    name: "有機則 有機溶剤",
     order: 90,
     lower: "5",
     fixedLower: "5",
