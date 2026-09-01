@@ -51,6 +51,47 @@ export function normalizeNumber(raw) {
 }
 
 /**
+ * 番号のもう1つの書き方。**そのままでは当たらなかったときにだけ試す。**
+ *
+ * こちらの番号を書き換えるのではなく、当てにいく側で言い換える。
+ * 「項」は本当に要る番号もあり（安衛法 `令第16条第1項第1号`）、
+ * 一律に落とすとそちらが外れる。
+ */
+export function altNumbers(normalized, law) {
+  if (!normalized) return [];
+  const out = [];
+
+  /*
+    土壌汚染対策法。CHRIP は**通し番号だけ**で書く。こちらは政令の号
+      3 → 令第1条第3号（クロロエチレン＝塩化ビニル）
+    **法律を限って当てる。**通し番号は他の法令でも出るので、一律には使えない
+  */
+  if (law === "JP-SCCA" && /^\d+$/.test(normalized)) out.push(`令第1条第${normalized}号`);
+
+  /*
+    毒劇法の指定令。CHRIP は**第1項を書き、枝番を「号のN」**と書く。
+    こちらは項を書かず、枝番を号の前に `-` で付ける
+      政令第2条第1項第16号の2 → 令第2条第16-2号
+      政令第1条第26号の9      → 令第1条第26-9号
+  */
+  const pdsca = /^令第(\d+)条(?:第1項)?第(\d+)号の(\d+)$/.exec(normalized);
+  if (pdsca) out.push(`令第${pdsca[1]}条第${pdsca[2]}-${pdsca[3]}号`);
+  const pdsca2 = /^令第(\d+)条第1項第(\d+)号$/.exec(normalized);
+  if (pdsca2) out.push(`令第${pdsca2[1]}条第${pdsca2[2]}号`);
+
+  /*
+    安衛法の省令別表。CHRIP は枝番を「のN」と書く。こちらは `-N`
+      則別表第2の478の2 → 則別表第2の478-2
+  */
+  const isha = /^則別表第(\d+)の(\d+)の(\d+)$/.exec(normalized);
+  if (isha) out.push(`則別表第${isha[1]}の${isha[2]}-${isha[3]}`);
+  const isha2 = /^則別表第(\d+)の(\d+)の(\d+)の(\d+)$/.exec(normalized);
+  if (isha2) out.push(`則別表第${isha2[1]}の${isha2[2]}-${isha2[3]}-${isha2[4]}`);
+
+  return out;
+}
+
+/**
  * 名前の言い換え。番号で当たらないときの手がかり。
  *
  * 法令の原文は全角・旧字が混ざる。**同じ物質を別の字で書いてあるだけ**なので、

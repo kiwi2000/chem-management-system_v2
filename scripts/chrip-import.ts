@@ -15,7 +15,7 @@ import { looksLikeCas, normalizeCas } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { parseDetail } from "./lib/chrip-detail.mjs";
-import { normalizeNumber, normalizeName } from "./lib/chrip-match.mjs";
+import { altNumbers, normalizeNumber, normalizeName } from "./lib/chrip-match.mjs";
 
 const prisma = new PrismaClient();
 const DIR = ".cache/chrip/detail";
@@ -169,6 +169,13 @@ async function main() {
       const num = normalizeNumber(e.fields["政令番号"]);
       const nm = normalizeName(e.fields["政令名称"]);
       let ids = num ? byNum.get(`${law}|${num}`) : undefined;
+      // そのままで当たらなければ、書き方を言い換えて試す
+      if (!ids?.length && num) {
+        for (const alt of altNumbers(num, law)) {
+          ids = byNum.get(`${law}|${alt}`);
+          if (ids?.length) break;
+        }
+      }
       if (ids?.length) tally.byNum++;
       else {
         ids = nm ? byName.get(`${law}|${nm}`) : undefined;
