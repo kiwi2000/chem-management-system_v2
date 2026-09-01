@@ -39,10 +39,14 @@ const SPEC: Record<string, { kind: "orderArticle" | "orderTable"; table: string 
 
 function numberOf(law: string, section: string, num: string): string {
   if (law === "JP-CWCA") {
-    // `3-一` = 別表の第三欄の(1)、`4-一` = 第四欄の(1)。
+    // `一-3-一` = 別表の一の項・第三欄の(1)。
+    // **項まで書かないと一意にならない。**どの項にも第三欄(1)・第四欄(1)がある
     // **算用数字にそろえる。**ほかの法令の番号と書き方を合わせ、LOLI の refno（`01`）とも当たる
-    const [col, n] = num.split("-");
-    return statutoryNumber({ kind: "orderTableColumn", table: col }, String(kanjiCount(n)));
+    const [para, col, n] = num.split("-");
+    return statutoryNumber(
+      { kind: "orderTableColumn", paragraph: String(kanjiCount(para)), table: col },
+      String(kanjiCount(n)),
+    );
   }
   const spec = SPEC[`${law}/${section}`];
   return spec ? statutoryNumber(spec, num) : statutoryNumber({ kind: "plain" }, num);

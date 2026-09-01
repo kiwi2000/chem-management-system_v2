@@ -45,6 +45,8 @@ const prisma = new PrismaClient();
  */
 function numberOf(section: string, num: string, suffix: string): string {
   const n = `${num}${suffix}`;
+  // 別表ではなく**条文が直接名指ししている**もの（令第17条の石綿分析用試料等）は、その条を番号にする
+  if (num.startsWith("令第")) return n;
   switch (section) {
     case "MFG_PERMIT":
       // 令別表第三 第一号（製造許可物質）

@@ -190,6 +190,8 @@ async function buildChemicalWeapons(): Promise<EnvItem[]> {
     if (cols.length < 4) continue;
     const section = CW_SECTIONS[cols[1] ?? ""];
     if (!section) continue;
+    // 第一欄が項の番号（一・二・三）。**同じ欄・同じ枝番が項ごとに出る**ので番号に入れる
+    const para = (cols[0] ?? "").trim();
     // 第三欄が毒性物質、第四欄が原料物質。**どちらも規制の対象**
     for (const [col, kind] of [
       [cols[2]!, "毒性物質"],
@@ -199,7 +201,7 @@ async function buildChemicalWeapons(): Promise<EnvItem[]> {
         out.push({
           law: "JP-CWCA",
           section,
-          number: `${kind === "毒性物質" ? "3" : "4"}-${i.number}`,
+          number: `${para}-${kind === "毒性物質" ? "3" : "4"}-${i.number}`,
           name: toDisplayName(i.name),
           note: `化学兵器禁止法施行令 別表 ${cols[1]} 第${kind === "毒性物質" ? "三" : "四"}欄（${kind}）`,
         });

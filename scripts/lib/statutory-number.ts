@@ -30,7 +30,7 @@ export type SourceKind =
   | "orderTable"
   /** 政令の別表の、号の下の細目。`令別表第3第1号の6` */
   | "orderTableItem"
-  /** 政令の別表の欄。`令別表第3欄(1)`。化学兵器禁止法は欄で毒性物質と原料物質を分ける */
+  /** 政令の別表の項と欄。`令別表第1項第3欄(1)`。化学兵器禁止法は項で区分、欄で毒性物質と原料物質を分ける */
   | "orderTableColumn"
   /** 省令の別表。`則別表第2の1552` */
   | "ordinanceTable"
@@ -43,7 +43,7 @@ export interface NumberSpec {
   table?: string;
   /** 政令の別表で、号の下に細目があるときの号（`1` `2` `3`） */
   item?: string;
-  /** 条の中の項（安衛法の製造禁止は「第16条第1項」） */
+  /** 条の中の項（安衛法の製造禁止は「第16条第1項」）、または別表の項（化学兵器禁止法の `一の項`） */
   paragraph?: string;
 }
 
@@ -67,7 +67,14 @@ export function statutoryNumber(spec: NumberSpec, num: string): string {
     case "orderTableItem":
       return `令別表第${spec.table}第${spec.item}号の${n}`;
     case "orderTableColumn":
-      return `令別表第${spec.table}欄(${n})`;
+      /*
+        項を書かないと番号が一意にならない。化学兵器禁止法の別表は
+        一の項＝特定物質・二の項＝第1種指定物質・三の項＝第2種指定物質で、
+        **どの項にも第三欄(1)・第四欄(1)がある**
+      */
+      return spec.paragraph
+        ? `令別表第${spec.paragraph}項第${spec.table}欄(${n})`
+        : `令別表第${spec.table}欄(${n})`;
     case "ordinanceTable":
       return `則別表第${spec.table}の${n}`;
     case "plain":

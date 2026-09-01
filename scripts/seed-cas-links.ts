@@ -381,7 +381,7 @@ const JOBS: Job[] = [
     matchBy: "number",
     head: true,
     unpad: true,
-    spec: { kind: "orderTableColumn", table: "3" },
+    spec: { kind: "orderTableColumn", paragraph: "1", table: "3" },
   },
   {
     law: "JP-CWCA",
@@ -390,7 +390,7 @@ const JOBS: Job[] = [
     matchBy: "number",
     head: true,
     unpad: true,
-    spec: { kind: "orderTableColumn", table: "4" },
+    spec: { kind: "orderTableColumn", paragraph: "1", table: "4" },
   },
   {
     law: "JP-CWCA",
@@ -399,7 +399,7 @@ const JOBS: Job[] = [
     matchBy: "number",
     head: true,
     unpad: true,
-    spec: { kind: "orderTableColumn", table: "3" },
+    spec: { kind: "orderTableColumn", paragraph: "2", table: "3" },
   },
   {
     law: "JP-CWCA",
@@ -408,7 +408,7 @@ const JOBS: Job[] = [
     matchBy: "number",
     head: true,
     unpad: true,
-    spec: { kind: "orderTableColumn", table: "4" },
+    spec: { kind: "orderTableColumn", paragraph: "2", table: "4" },
   },
   {
     law: "JP-CWCA",
@@ -417,7 +417,7 @@ const JOBS: Job[] = [
     matchBy: "number",
     head: true,
     unpad: true,
-    spec: { kind: "orderTableColumn", table: "3" },
+    spec: { kind: "orderTableColumn", paragraph: "3", table: "3" },
   },
   {
     law: "JP-CWCA",
@@ -426,7 +426,7 @@ const JOBS: Job[] = [
     matchBy: "number",
     head: true,
     unpad: true,
-    spec: { kind: "orderTableColumn", table: "4" },
+    spec: { kind: "orderTableColumn", paragraph: "3", table: "4" },
   },
   /*
     米国。**法令が CAS で規定している**ので、こちらの番号が CAS（第0-2章）。
