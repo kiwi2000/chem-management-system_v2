@@ -209,6 +209,15 @@ export function judge(input: JudgeInput): JudgeResult {
   const markConditionalLink = (e: JudgeEntry, cas: string[]) => {
     if (cas.some((c) => e.conditionalCas?.includes(c))) reasons.add("conditionalLink");
   };
+  /*
+    **適用条件が書いてあれば、当たったときも必ず要確認にする。**
+    濃度で当たっても、条件（用途・形状・候補の一覧に載っているだけ、など）を
+    満たしているかは人にしか分からない。
+    下回ったときだけ見ていると、**当たったときの「?」が出ない**
+  */
+  const markCondition = (e: JudgeEntry) => {
+    if (e.conditional) reasons.add("conditionalExclusion");
+  };
   const byCas = new Map(
     lines.filter((l) => l.casNormalized).map((l) => [l.casNormalized as string, l]),
   );
@@ -293,6 +302,7 @@ export function judge(input: JudgeInput): JudgeResult {
           contributions: shareOf(matched, "NONE", null),
         });
         markConditionalLink(e, matched);
+        markCondition(e);
         continue;
       }
     } else {
@@ -308,6 +318,7 @@ export function judge(input: JudgeInput): JudgeResult {
           contributions: shareOf(present, e.aggregation, e.metalEtc),
         });
         markConditionalLink(e, present);
+        markCondition(e);
         continue;
       }
     }

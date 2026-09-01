@@ -372,7 +372,13 @@ describe("要確認になる場面", () => {
     expect(r.reasons).toContain("conditionalExclusion");
   });
 
-  it("条件つきでも、閾値を超えていれば迷わない（除外の余地が無い）", () => {
+  it("適用条件が書いてあれば、閾値を超えて当たったときも要確認", () => {
+    /*
+      **条件は「除く」ものばかりではない。**
+      「〜に用いる場合に限る」「候補の一覧に載っているだけ」のように、
+      濃度で当たっても該当が確定しないものがある。
+      条件を満たしているかは人にしか分からないので、当たったときも「?」を出す
+    */
     const r = judge(
       input({
         lines: [line("7439-92-1", "0.5")],
@@ -380,7 +386,8 @@ describe("要確認になる場面", () => {
       }),
     );
     expect(r.verdict).toBe("APPLICABLE");
-    expect(r.needsReview).toBe(false);
+    expect(r.needsReview).toBe(true);
+    expect(r.reasons).toContain("conditionalExclusion");
   });
 
   it("条件つきでも、その物質が入っていなければ何も起きない", () => {
