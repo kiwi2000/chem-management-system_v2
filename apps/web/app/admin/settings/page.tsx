@@ -20,6 +20,7 @@ import {
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LanguageSection } from "@/components/language-section";
+import { ScoreSettingsSection } from "@/components/score-settings-section";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -238,6 +239,46 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/*
+          スコアの範囲。**区分に入れられる点数の上限と下限**で、
+          物質のスコア（区分の合計）そのものには上限を置かない
+        */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.score.range}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="score-min">{m.score.rangeMin}</Label>
+                <Input
+                  id="score-min"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={settings.categoryScoreMin}
+                  onChange={(e) => setSettings({ ...settings, categoryScoreMin: e.target.value })}
+                  className="w-28 font-mono"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="score-max">{m.score.rangeMax}</Label>
+                <Input
+                  id="score-max"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={settings.categoryScoreMax}
+                  onChange={(e) => setSettings({ ...settings, categoryScoreMax: e.target.value })}
+                  className="w-28 font-mono"
+                />
+              </div>
+            </div>
+            <p className="text-muted-foreground text-xs">{m.score.rangeHint}</p>
+            <p className="text-muted-foreground text-xs">{m.score.excludedNote}</p>
+          </CardContent>
+        </Card>
+
+        <ScoreSettingsSection />
 
         <Card>
           <CardHeader>

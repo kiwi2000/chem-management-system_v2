@@ -44,6 +44,9 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
     relation: "gazetteNumbers",
     sortable: false,
   },
+  // スコアとランクは計算して書いてある値。並べ替えも絞り込みもそのまま効く
+  { key: "score", kind: "number", field: "score" },
+  { key: "scoreRank", kind: "text", field: "scoreRank" },
   { key: "note", kind: "text", field: "note", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];

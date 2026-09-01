@@ -1,9 +1,11 @@
-import { normalizeCode, regulationCategorySchema } from "@chem/shared";
+import { categoryScoreSchema, normalizeCode, regulationCategorySchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { countSubstancesByCategory } from "@/lib/law-service";
+import { recomputeScoresForCategory } from "@/lib/score-store";
+import { getAppSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,22 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
+
+  /*
+    スコアの範囲はシステム設定で決まる。**画面の作りに関わらずサーバーで確かめる。**
+    範囲を狭めた後に、前から入っていた値がそのまま保存されるのを防ぐ
+  */
+  const { categoryScoreMin, categoryScoreMax } = await getAppSettings();
+  const score = categoryScoreSchema(m, {
+    min: categoryScoreMin,
+    max: categoryScoreMax,
+  }).safeParse(v.score);
+  if (!score.success) {
+    return jsonError(400, "validation_error", m.errors.validation, {
+      fieldErrors: { score: score.error.issues.map((i) => i.message) },
+      formErrors: [],
+    });
+  }
 
   const law = await prisma.law.findFirst({ where: { id: v.lawId, deletedAt: null } });
   if (!law) return jsonError(404, "not_found", m.errors.notFound);
@@ -64,6 +82,7 @@ export async function PUT(req: Request, { params }: Ctx) {
       upperBound: v.upperBound,
       thresholdBasis: v.thresholdBasis,
       judged: v.judged,
+      score: score.data,
       interactionGroup: v.interactionGroup ?? null,
       rank: v.rank ?? null,
       displayOrder: v.displayOrder,
@@ -72,14 +91,23 @@ export async function PUT(req: Request, { params }: Ctx) {
     },
   });
 
+  /*
+    **スコアか「判定に使う」印が変わったら、その区分に当たっている物質を計算し直す。**
+    どちらも合計の中身を変えるため。名前だけを直したときは計算しない
+  */
+  let rescored = 0;
+  if (!existing.score.equals(score.data) || existing.judged !== v.judged) {
+    rescored = await recomputeScoresForCategory(id);
+  }
+
   await writeAudit({
     entity: "regulation_categories",
     entityId: id,
     action: "update",
     actorId: actor.user.id,
-    diff: { code: v.code, nameOriginal: v.nameOriginal, lawId: v.lawId },
+    diff: { code: v.code, nameOriginal: v.nameOriginal, lawId: v.lawId, score: score.data },
   });
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, rescored });
 }
 
 /**

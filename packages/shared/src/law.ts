@@ -96,6 +96,14 @@ export const regulationCategorySchema = (m: Messages) =>
       thresholdBasis: z.enum(THRESHOLD_BASES),
       /** 判定に使うか。外すと、持っているだけで製品の判定には出ない */
       judged: z.boolean(),
+      /**
+       * 人が決める評価点。**物質のスコアはこの合計。**
+       * 入れられる範囲はシステム設定で決まるので、範囲の検査はサーバー側で行う
+       */
+      score: z
+        .string()
+        .trim()
+        .regex(/^-?\d+(\.\d{1,3})?$/, m.validation.numberFormat),
       interactionGroup: optionalText(m, 50),
       rank: z.number().int().min(0).max(999).nullable().optional(),
       note: optionalText(m, 2000),

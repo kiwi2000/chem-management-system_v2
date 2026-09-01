@@ -150,6 +150,25 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
           </div>
         ),
       },
+      /*
+        スコアとランク。**計算して書いてある値なので、ここでは出すだけ。**
+        当たっている規制区分の点数の合計で、製品とは関係しない
+      */
+      {
+        key: "score",
+        header: m.score.substanceScore,
+        kind: "number",
+        width: 90,
+        className: "text-right font-mono tabular-nums",
+        render: (r) => r.score,
+      },
+      {
+        key: "scoreRank",
+        header: m.score.substanceRank,
+        kind: "text",
+        width: 80,
+        render: (r) => r.scoreRank ?? m.score.noRank,
+      },
       {
         key: "note",
         header: m.substances.note,

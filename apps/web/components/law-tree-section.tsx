@@ -6,6 +6,7 @@ import {
   pickName,
   pickStatutoryName,
   serializeTableState,
+  type ScoreRange,
   type TableState,
 } from "@chem/shared";
 import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
@@ -59,10 +60,13 @@ export interface CategorySelection {
 
 export function LawTreeSection({
   languages,
+  scoreRange,
   selected,
   onSelect,
 }: {
   languages: LanguageDto[];
+  /** 区分に入れられるスコアの範囲。システム設定の値をページから渡す */
+  scoreRange: ScoreRange;
   /** 選んでいる区分。閾値のひな型を下の表へ渡すので、idではなく行そのものを扱う */
   selected: RegulationCategoryDto | null;
   onSelect: (selection: CategorySelection | null) => void;
@@ -563,6 +567,7 @@ export function LawTreeSection({
       {editable && editing?.kind === "category" && (
         <RegulationCategoryForm
           languages={languages}
+          scoreRange={scoreRange}
           lawId={editing.lawId}
           initial={editing.initial}
           onSaved={() => {

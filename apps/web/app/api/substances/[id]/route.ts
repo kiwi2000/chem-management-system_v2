@@ -3,6 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { countUsesOfSubstance } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
+import { recomputeScoreForSubstance } from "@/lib/score-store";
 import { getServerMessages } from "@/lib/i18n";
 import { writeApprovalEvent } from "@/lib/publish-service";
 import {
@@ -115,6 +116,14 @@ export async function PUT(req: Request, { params }: Ctx) {
       },
     }),
   ]);
+
+  /*
+    **CAS番号を変えたら、スコアも計算し直す。**当たる規制が入れ替わるため。
+    元のCASのぶんは触らない（そちらに残っている物質のスコアは変わらない）
+  */
+  if (existing.casNormalized !== base.casNormalized) {
+    await recomputeScoreForSubstance(base.casNormalized ?? null);
+  }
 
   /*
    * 代表物質の割り当て。

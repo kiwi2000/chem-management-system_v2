@@ -228,6 +228,7 @@ model User {
   /**
    * /**
    * /**
+   * /**
    * 所属する部署。**組織のうち種別が部署のものを指す。**
    * 会社（`organisationId`）とは別に1つだけ持つ
    */
@@ -465,6 +466,50 @@ model SystemSetting {
   @@map("system_settings")
 }
 
+/**
+ * 物質のスコアを、どの段（ランク）に読み替えるかの表。**システム設定の一部**。
+ * 段の数は決めない。何段でも足せる。
+ * 段の名前は数字でなくてよい（`A` `要注意` など）。
+ * 上下の境目は**値と不等号**で持つ。`0 ≦ x < 30` と `30 ≦ x < 70` のように
+ * 隣どうしで同じ値を使えるようにするため、含む・含まないを段ごとに決められる。
+ * 値が空なら、その側に限りが無い（`x < 30` や `100 ≦ x`）。
+ */
+model SubstanceRankBand {
+  id String @id @default(cuid())
+
+  /**
+   * 画面に出す段の名前。数字でなくてよい
+   */
+  label String @db.VarChar(50)
+
+  /**
+   * 下限。空なら下限なし
+   */
+  lowerValue Decimal?        @map("lower_value") @db.Decimal(12, 3)
+  lowerBound ThresholdBound? @map("lower_bound")
+
+  /**
+   * 上限。空なら上限なし
+   */
+  upperValue Decimal?        @map("upper_value") @db.Decimal(12, 3)
+  upperBound ThresholdBound? @map("upper_bound")
+
+  /**
+   * 並び順。**上から順に当てはめ、最初に合った段を採る**
+   */
+  displayOrder Int @default(0) @map("display_order")
+
+  note String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([displayOrder])
+  @@map("substance_rank_bands")
+}
+
 model AuditLog {
   id       String   @id @default(cuid())
   entity   String
@@ -672,6 +717,24 @@ model Substance {
   nameJa String  @map("name_ja") @db.VarChar(500)
   nameEn String? @map("name_en") @db.VarChar(500)
 
+  /**
+   * 当たっている規制区分のスコアの合計。**製品とは関係のない、物質固有の値**。
+   * 現在のバージョンのCASリンクから計算して書き込む（`lib/score-store.ts`）。
+   * 同じ区分に複数の法文物質名で当たっても1回だけ数える
+   */
+  score Decimal @default(0) @db.Decimal(12, 3)
+
+  /**
+   * スコアを言い換えた段階。対応表はシステム設定（`SubstanceRankBand`）。
+   * どの段にも当てはまらなければ空
+   */
+  scoreRank String? @map("score_rank") @db.VarChar(50)
+
+  /**
+   * スコアを計算した時刻。いつ時点のものかを画面に出すために持つ
+   */
+  scoreAt DateTime? @map("score_at")
+
   status       SubstanceStatus @default(ACTIVE)
   /**
    * 公開の状態。公開済になるまで他の人には見せず、組成の候補にも出さない。
@@ -698,6 +761,8 @@ model Substance {
   @@index([status])
   @@index([nameJa])
   @@index([nameEn])
+  @@index([score])
+  @@index([scoreRank])
   @@map("substances")
 }
 
@@ -1425,7 +1490,6 @@ model RegulationCategory {
 
   /**
    * 判定に使うか。
-   *
    * **候補の一覧を「持つだけ」にできるようにする。**
    * 中環審答申の有害大気汚染物質のように、
    * 含有率で該非が決まるのではなく「該当する可能性がある物質」を並べたものがある。
@@ -1435,10 +1499,18 @@ model RegulationCategory {
   judged Boolean @default(true)
 
   /**
-   * 兼ね合い。同じグループの中で rank の小さい方だけを出す
+   * 兼ね合い。同じグループの中で rank の小さい方だけを出す。
+   * **物質のランク（`Substance.scoreRank`）とは別のもの**
    */
   interactionGroup String? @map("interaction_group") @db.VarChar(50)
   rank             Int?
+
+  /**
+   * 人が決める評価点。**物質のスコアは、当たっている区分のこの値の合計**。
+   * 入れられる範囲はシステム設定で決める（既定 0〜100）。
+   * 判定に使わない区分（`judged = false`）は合計に入れない
+   */
+  score Decimal @default(0) @db.Decimal(9, 3)
 
   note String?
 

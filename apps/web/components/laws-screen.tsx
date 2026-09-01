@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import type { ScoreRange } from "@chem/shared";
 import { LawTreeSection, type CategorySelection } from "@/components/law-tree-section";
 import type { LanguageDto } from "@/lib/types";
 
@@ -12,7 +13,13 @@ import type { LanguageDto } from "@/lib/types";
  * 以前は1ページの中で下へ展開していく作りだったが、
  * いまどの段にいるのかが URL からも分かるようにした。
  */
-export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
+export function LawsScreen({
+  languages,
+  scoreRange,
+}: {
+  languages: LanguageDto[];
+  scoreRange: ScoreRange;
+}) {
   /*
     **行そのものを押しても移らない。**移るのはコードのリンクから。
     ほかの一覧と揃えてある（行を押す＝選ぶ・下に開く）。
@@ -22,7 +29,12 @@ export function LawsScreen({ languages }: { languages: LanguageDto[] }) {
 
   return (
     <div className="w-full p-4 lg:p-6">
-      <LawTreeSection languages={languages} selected={null} onSelect={select} />
+      <LawTreeSection
+        languages={languages}
+        scoreRange={scoreRange}
+        selected={null}
+        onSelect={select}
+      />
     </div>
   );
 }

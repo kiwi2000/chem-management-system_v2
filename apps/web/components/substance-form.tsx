@@ -384,6 +384,29 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                     </div>
                   )}
               </div>
+              {/*
+                スコアとランク。**計算して書いてある値なので、入力欄にしない。**
+                当たっている規制区分の点数の合計で、人が直すものではない。
+                新規登録のときはまだ計算していないので出さない
+              */}
+              {initial && (
+                <div className="flex flex-wrap items-end gap-6 border-t pt-3">
+                  <div>
+                    <p className="text-muted-foreground text-xs">{m.score.substanceScore}</p>
+                    <p className="font-mono text-lg tabular-nums">{initial.score}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">{m.score.substanceRank}</p>
+                    <p className="text-lg">{initial.scoreRank ?? m.score.noRank}</p>
+                  </div>
+                  <p className="text-muted-foreground pb-1 text-xs">
+                    {initial.scoreAt
+                      ? `${m.score.computedAt}: ${new Date(initial.scoreAt).toLocaleString(locale)}`
+                      : m.score.notComputed}
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="note">
                   {m.substances.note}

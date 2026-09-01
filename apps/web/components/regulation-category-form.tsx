@@ -1,6 +1,6 @@
 "use client";
 
-import { THRESHOLD_BASES, type ThresholdBasis } from "@chem/shared";
+import { THRESHOLD_BASES, type ScoreRange, type ThresholdBasis } from "@chem/shared";
 import { useState } from "react";
 import {
   DEFAULT_THRESHOLD,
@@ -24,6 +24,7 @@ interface Draft extends NameDraft, ThresholdDraft {
   rank: string;
   thresholdBasis: ThresholdBasis;
   judged: boolean;
+  score: string;
   note: string;
 }
 
@@ -33,12 +34,15 @@ interface Draft extends NameDraft, ThresholdDraft {
  */
 export function RegulationCategoryForm({
   languages,
+  scoreRange,
   lawId,
   initial,
   onSaved,
   onCancel,
 }: {
   languages: LanguageDto[];
+  /** 区分に入れられるスコアの範囲。システム設定の値をページから渡す */
+  scoreRange: ScoreRange;
   /** どの法律にぶら下げるか */
   lawId: string;
   /** 編集するとき渡す。null なら新規 */
@@ -47,6 +51,8 @@ export function RegulationCategoryForm({
   onCancel: () => void;
 }) {
   const { m, locale } = useI18n();
+  // 範囲は設定で変わるので、入力欄の補足に実際の値を出す
+  const scoreHint = `${m.score.rangeHint}（${scoreRange.min} 〜 ${scoreRange.max}）`;
   const [draft, setDraft] = useState<Draft>(() => ({
     code: initial?.code ?? "",
     nameOriginal: initial?.nameOriginal ?? "",
@@ -63,6 +69,7 @@ export function RegulationCategoryForm({
     thresholdBasis: initial?.thresholdBasis ?? "PRODUCT",
     // 既定は「使う」。持つだけにしたいものだけ外す
     judged: initial?.judged ?? true,
+    score: initial?.score ?? "0",
     note: initial?.note ?? "",
   }));
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +101,7 @@ export function RegulationCategoryForm({
             rank: draft.rank === "" ? null : Number(draft.rank),
             thresholdBasis: draft.thresholdBasis,
             judged: draft.judged,
+            score: draft.score.trim() === "" ? "0" : draft.score.trim(),
             note: draft.note || null,
           }),
         },
@@ -194,6 +202,24 @@ export function RegulationCategoryForm({
                 max={999}
                 value={draft.rank}
                 onChange={(e) => setDraft({ ...draft, rank: e.target.value })}
+              />
+            </Field>
+            {/*
+              スコア。**物質のスコアはこの値の合計**になるので、
+              入れられる範囲はシステム設定で決めてある
+            */}
+            <Field
+              label={m.score.categoryScore}
+              htmlFor="cat-score"
+              hint={scoreHint}
+              className="w-28"
+            >
+              <Input
+                id="cat-score"
+                inputMode="decimal"
+                value={draft.score}
+                onChange={(e) => setDraft({ ...draft, score: e.target.value })}
+                className="font-mono"
               />
             </Field>
           </div>

@@ -264,6 +264,15 @@ export interface SubstanceListItemDto {
   publishState: PublishState;
   nameJa: string;
   nameEn: string | null;
+  /**
+   * 当たっている規制区分のスコアの合計。**計算して書いてある値**なので、
+   * 画面からは書き換えられない。数値は文字列で持つ
+   */
+  score: string;
+  /** スコアから決まる段階。どの段にも当てはまらなければ null */
+  scoreRank: string | null;
+  /** スコアを計算した時刻。まだ一度も計算していなければ null */
+  scoreAt: string | null;
   note: string | null;
   aliasCount: number;
   /** 官報公示整理番号（区分つき）。編集はしないが、保存時にそのまま送り返す */
@@ -696,6 +705,11 @@ export interface RegulationCategoryDto {
    * 候補の一覧（中環審答申の有害大気汚染物質など）を持つためのもの
    */
   judged: boolean;
+  /**
+   * 人が決める評価点。**物質のスコアはこれの合計**。
+   * 数値は文字列で持つ（小数を落とさないため）
+   */
+  score: string;
   note: string | null;
   /** 配下の法文物質名の数（表示名のない分類のぶんも含む） */
   substanceCount: number;

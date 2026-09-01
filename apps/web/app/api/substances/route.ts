@@ -2,6 +2,7 @@ import { emptyTableState, parseTableState, substanceSchema } from "@chem/shared"
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { recomputeScoreForSubstance } from "@/lib/score-store";
 import { getServerMessages } from "@/lib/i18n";
 import { SUBSTANCE_COLUMNS } from "@/lib/list-columns";
 import { listNumbersByCas } from "@/lib/substance-numbers";
@@ -137,6 +138,13 @@ export async function POST(req: Request) {
       await ensureCasRepresentative(prisma, base.casNormalized);
     }
   }
+
+  /*
+    **登録した時点でスコアを付ける。**そのCASに法規制のリンクが既にあれば、
+    新しく登録した物質もその日から当たっている。一覧を開くたびに数えると重いので、
+    ここで1件だけ計算して書いておく
+  */
+  await recomputeScoreForSubstance(base.casNormalized ?? null);
 
   await writeAudit({
     entity: "substances",

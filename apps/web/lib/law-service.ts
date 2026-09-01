@@ -88,6 +88,7 @@ export function toCategoryDto(c: CategoryRow, substanceCount: number): Regulatio
     rank: c.rank,
     thresholdBasis: c.thresholdBasis,
     judged: c.judged,
+    score: c.score.toString(),
     displayOrder: c.displayOrder,
     note: c.note,
     substanceCount,

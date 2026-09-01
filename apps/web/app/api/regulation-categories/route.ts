@@ -1,4 +1,5 @@
 import {
+  categoryScoreSchema,
   emptyTableState,
   normalizeCode,
   parseTableState,
@@ -10,6 +11,7 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { countSubstancesByCategory, ensureDefaultClass, toCategoryDto } from "@/lib/law-service";
 import { REGULATION_CATEGORY_COLUMNS } from "@/lib/list-columns";
+import { getAppSettings } from "@/lib/settings";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -81,6 +83,19 @@ export async function POST(req: Request) {
     return jsonError(409, "duplicate_category_code", m.regulationCategories.duplicateCode(v.code));
   }
 
+  // スコアの範囲はシステム設定で決まる。画面に頼らずサーバーで確かめる
+  const { categoryScoreMin, categoryScoreMax } = await getAppSettings();
+  const score = categoryScoreSchema(m, {
+    min: categoryScoreMin,
+    max: categoryScoreMax,
+  }).safeParse(v.score);
+  if (!score.success) {
+    return jsonError(400, "validation_error", m.errors.validation, {
+      fieldErrors: { score: score.error.issues.map((i) => i.message) },
+      formErrors: [],
+    });
+  }
+
   const created = await prisma.regulationCategory.create({
     data: {
       code: v.code,
@@ -96,6 +111,7 @@ export async function POST(req: Request) {
       upperBound: v.upperBound,
       thresholdBasis: v.thresholdBasis,
       judged: v.judged,
+      score: score.data,
       interactionGroup: v.interactionGroup ?? null,
       rank: v.rank ?? null,
       displayOrder: v.displayOrder,

@@ -55,6 +55,13 @@ export interface AppSettings {
   /** 製品の「用途」で選べる値。並べた順がそのまま表示順になる */
   productUseOptions: string[];
 
+  /**
+   * 規制区分に入れられるスコアの範囲。**数値は文字列で持つ**（小数を落とさないため）。
+   * 範囲の外は保存できない。人が付ける点数なので、決め方は運用側に委ねる
+   */
+  categoryScoreMin: string;
+  categoryScoreMax: string;
+
   /** 物質を公開するのに承認が要るか。false なら「発行」で直接公開できる */
   substanceApprovalRequired: boolean;
   /** 製品を公開するのに承認が要るか。同上 */
@@ -100,6 +107,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   compositionEpsilonPct: "0.001",
   productModelOptions: [],
   productUseOptions: [],
+  categoryScoreMin: "0",
+  categoryScoreMax: "100",
   substanceApprovalRequired: false,
   productApprovalRequired: false,
   sessionIdleMinutes: 10,
@@ -209,6 +218,18 @@ export const SETTING_DEFS: SettingDef[] = [
       return scaled !== null && scaled >= 0n ? raw.trim() : null;
     },
   },
+  {
+    field: "categoryScoreMin",
+    key: "score.category_min",
+    valueType: "NUMBER",
+    parse: (raw) => (toScaled(raw) !== null ? raw.trim() : null),
+  },
+  {
+    field: "categoryScoreMax",
+    key: "score.category_max",
+    valueType: "NUMBER",
+    parse: (raw) => (toScaled(raw) !== null ? raw.trim() : null),
+  },
   boolDef("substanceApprovalRequired", "substance.approval_required"),
   boolDef("productApprovalRequired", "product.approval_required"),
   {
@@ -270,6 +291,13 @@ const epsilonSchema = (m: Messages) =>
       return scaled !== null && scaled <= 10n * 1000000n;
     }, m.settings.epsilonRange);
 
+/** スコアの範囲の端。小数3桁まで。負の値も許す（人が決める点数なので） */
+const scoreBoundSchema = (m: Messages) =>
+  z
+    .string()
+    .trim()
+    .regex(/^-?\d+(\.\d{1,3})?$/, m.validation.numberFormat);
+
 export const settingsSchema = (m: Messages) =>
   z.object({
     casRequired: z.boolean(),
@@ -280,6 +308,8 @@ export const settingsSchema = (m: Messages) =>
     // 1件あたり100文字・全体で200件まで。桁外れの入力で画面が壊れないようにする
     productModelOptions: z.array(z.string().trim().min(1).max(100)).max(200),
     productUseOptions: z.array(z.string().trim().min(1).max(100)).max(200),
+    categoryScoreMin: scoreBoundSchema(m),
+    categoryScoreMax: scoreBoundSchema(m),
     substanceApprovalRequired: z.boolean(),
     productApprovalRequired: z.boolean(),
     passwordMinLength: z
