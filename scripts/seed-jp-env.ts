@@ -159,13 +159,13 @@ const LAWS: LawDef[] = [
       },
       {
         code: "DESIG1",
-        name: "第一種指定物質",
+        name: "第1種指定物質",
         order: 20,
         note: "施行令別表 二の項。製造数量の届出などがかかる",
       },
       {
         code: "DESIG2",
-        name: "第二種指定物質",
+        name: "第2種指定物質",
         order: 30,
         note: "施行令別表 三の項",
       },

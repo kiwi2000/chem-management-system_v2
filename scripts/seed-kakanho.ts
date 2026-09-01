@@ -52,7 +52,7 @@ const threshold = (lower: string) => ({
 const CATEGORIES = [
   {
     code: "C1",
-    name: "第一種指定化学物質",
+    name: "第1種指定化学物質",
     order: 10,
     lower: "1",
     pick: (e: Entry) => e.section === "C1",
@@ -60,7 +60,7 @@ const CATEGORIES = [
   },
   {
     code: "SC1",
-    name: "特定第一種指定化学物質",
+    name: "特定第1種指定化学物質",
     order: 20,
     lower: "0.1",
     pick: (e: Entry) => e.special,
@@ -68,7 +68,7 @@ const CATEGORIES = [
   },
   {
     code: "C2",
-    name: "第二種指定化学物質",
+    name: "第2種指定化学物質",
     order: 30,
     lower: "1",
     pick: (e: Entry) => e.section === "C2",

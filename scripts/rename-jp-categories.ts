@@ -15,7 +15,10 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 /**
- * 安衛法の区分に、どの規則のものかを入れる（2026-09-01・法律の専門家の指摘）。
+ * 区分名をそろえる（2026-09-01・法律の専門家の指摘）。
+ *
+ * ① 安衛法の区分に、どの規則のものかを入れる。
+ * ② 日本の区分に残っていた漢数字を、算用数字にそろえる。
  *
  * **区分名だけでは、どの規則のものか読み分けられない。**
  * 「第1類」は消防法にも毒劇法にもあり、安衛法の中でも有機則に「第1種有機溶剤」がある。
@@ -29,6 +32,20 @@ const RENAMES: { law: string; code: string; name: string }[] = [
   { law: "JP-ISHA", code: "SPEC3", name: "特化則 第3類物質" },
   { law: "JP-ISHA", code: "SPEC_MGMT", name: "特化則 特別管理物質" },
   { law: "JP-ISHA", code: "ORG", name: "有機則 有機溶剤" },
+
+  /*
+    **数字は算用数字にそろえる**（2026-09-01・法律の専門家の指摘）。
+    日本の区分だけ漢数字が残っており、外国の区分（韓国「第1類」、米国「第313条」、
+    中国「第1次」）や、安衛法の「特化則 第1類物質」と混ざっていた。
+    法文物質名では既に算用数字にそろえてある（第3章・第10-2章）ので、区分名も合わせる
+  */
+  { law: "JP-CSCL", code: "C1", name: "第1種特定化学物質" },
+  { law: "JP-CSCL", code: "C2", name: "第2種特定化学物質" },
+  { law: "JP-PRTR", code: "C1", name: "第1種指定化学物質" },
+  { law: "JP-PRTR", code: "SC1", name: "特定第1種指定化学物質" },
+  { law: "JP-PRTR", code: "C2", name: "第2種指定化学物質" },
+  { law: "JP-CWCA", code: "DESIG1", name: "第1種指定物質" },
+  { law: "JP-CWCA", code: "DESIG2", name: "第2種指定物質" },
 ];
 
 async function main() {
