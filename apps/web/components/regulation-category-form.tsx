@@ -23,6 +23,7 @@ interface Draft extends NameDraft, ThresholdDraft {
   interactionGroup: string;
   rank: string;
   thresholdBasis: ThresholdBasis;
+  judged: boolean;
   note: string;
 }
 
@@ -60,6 +61,8 @@ export function RegulationCategoryForm({
     interactionGroup: initial?.interactionGroup ?? "",
     rank: initial?.rank === undefined || initial?.rank === null ? "" : String(initial.rank),
     thresholdBasis: initial?.thresholdBasis ?? "PRODUCT",
+    // 既定は「使う」。持つだけにしたいものだけ外す
+    judged: initial?.judged ?? true,
     note: initial?.note ?? "",
   }));
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +93,7 @@ export function RegulationCategoryForm({
             interactionGroup: draft.interactionGroup || null,
             rank: draft.rank === "" ? null : Number(draft.rank),
             thresholdBasis: draft.thresholdBasis,
+            judged: draft.judged,
             note: draft.note || null,
           }),
         },
@@ -214,6 +218,28 @@ export function RegulationCategoryForm({
                 </option>
               ))}
             </select>
+          </Field>
+
+          {/*
+            判定に出すかどうか。**閾値の基準の隣に置く。**
+            どちらも「この区分が判定でどう扱われるか」を決めるもので、
+            離すと片方だけ直したことに気づけない
+          */}
+          <Field
+            label={m.regulationCategories.judged}
+            htmlFor="cat-judged"
+            hint={m.regulationCategories.judgedHint}
+          >
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                id="cat-judged"
+                type="checkbox"
+                checked={draft.judged}
+                onChange={(e) => setDraft({ ...draft, judged: e.target.checked })}
+                className="size-4"
+              />
+              {m.regulationCategories.judgedLabel}
+            </label>
           </Field>
 
           <Field label={m.regulationCategories.note} htmlFor="cat-note">

@@ -87,6 +87,7 @@ export function toCategoryDto(c: CategoryRow, substanceCount: number): Regulatio
     interactionGroup: c.interactionGroup,
     rank: c.rank,
     thresholdBasis: c.thresholdBasis,
+    judged: c.judged,
     displayOrder: c.displayOrder,
     note: c.note,
     substanceCount,

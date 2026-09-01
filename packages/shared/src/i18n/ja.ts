@@ -522,6 +522,11 @@ export const ja = {
     bounds: { EXCLUSIVE: "<", INCLUSIVE: "≤" },
     /** 閾値の式の真ん中に置く言葉 */
     content: "含有率（重量%）",
+    judged: "判定での扱い",
+    judgedLabel: "この区分を判定に使う",
+    judgedHint:
+      "外すと、法規制の画面には残りますが、製品の判定には出なくなります。「該当する可能性がある物質」の候補一覧など、含有率で該非が決まらないものに使います",
+    judgedOff: "判定に使わない",
     thresholdBasis: "閾値の対象",
     thresholdBasisHint:
       "この閾値が何に対する濃度か。RoHS のように均質材料あたりで決まるものは「均質材料」にします。その区分は判定を出しても必ず要確認になります",

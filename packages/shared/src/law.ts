@@ -94,6 +94,8 @@ export const regulationCategorySchema = (m: Messages) =>
       displayOrder: displayOrder(),
       /** 閾値が何に対する濃度か。均質材料あたりなら必ず要確認になる */
       thresholdBasis: z.enum(THRESHOLD_BASES),
+      /** 判定に使うか。外すと、持っているだけで製品の判定には出ない */
+      judged: z.boolean(),
       interactionGroup: optionalText(m, 50),
       rank: z.number().int().min(0).max(999).nullable().optional(),
       note: optionalText(m, 2000),

@@ -691,6 +691,11 @@ export interface RegulationCategoryDto {
   displayOrder: number;
   /** 閾値が何に対する濃度か。均質材料あたりなら判定は必ず要確認になる */
   thresholdBasis: ThresholdBasis;
+  /**
+   * 判定に使うか。**外すと、持っているだけで製品の判定には出ない。**
+   * 候補の一覧（中環審答申の有害大気汚染物質など）を持つためのもの
+   */
+  judged: boolean;
   note: string | null;
   /** 配下の法文物質名の数（表示名のない分類のぶんも含む） */
   substanceCount: number;

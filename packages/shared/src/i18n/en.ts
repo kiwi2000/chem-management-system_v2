@@ -510,6 +510,11 @@ export const en: Messages = {
     upper: "Upper",
     bounds: { EXCLUSIVE: "<", INCLUSIVE: "≤" },
     content: "content (wt%)",
+    judged: "Use in judgement",
+    judgedLabel: "Judge products against this category",
+    judgedHint:
+      "Turn it off to keep the category on the regulation screens but leave it out of product judgement — for candidate lists that are not decided by content percentage",
+    judgedOff: "Not judged",
     thresholdBasis: "Limit applies to",
     thresholdBasisHint:
       "What the limit is a concentration of. Pick per homogeneous material for rules like RoHS. Such a category always needs review, whatever the result",

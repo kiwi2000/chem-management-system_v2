@@ -50,7 +50,8 @@ export interface CategoryRule {
  */
 export async function loadRules(versionId: string): Promise<CategoryRule[]> {
   const categories = await prisma.regulationCategory.findMany({
-    where: { deletedAt: null },
+    // 「判定に使う」印の付いた区分だけ。印の無いものは、持っているだけで判定に出さない
+    where: { deletedAt: null, judged: true },
     select: {
       id: true,
       aggregation: true,

@@ -1424,6 +1424,17 @@ model RegulationCategory {
   thresholdBasis ThresholdBasis @default(PRODUCT) @map("threshold_basis")
 
   /**
+   * 判定に使うか。
+   *
+   * **候補の一覧を「持つだけ」にできるようにする。**
+   * 中環審答申の有害大気汚染物質のように、
+   * 含有率で該非が決まるのではなく「該当する可能性がある物質」を並べたものがある。
+   * 判定に出すと、ほとんどの製品で該当が並び、本当に効く規制が埋もれる。
+   * 物質の画面では区分として見えるが、製品の判定には出さない、という状態を作る
+   */
+  judged Boolean @default(true)
+
+  /**
    * 兼ね合い。同じグループの中で rank の小さい方だけを出す
    */
   interactionGroup String? @map("interaction_group") @db.VarChar(50)

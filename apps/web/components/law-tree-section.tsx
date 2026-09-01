@@ -172,6 +172,27 @@ export function LawTreeSection({
           r.kind === "law" ? pickName(locale, r.law.countryNameJa, r.law.countryNameEn) : "",
       },
       {
+        /*
+          判定に使わない区分の印。**閾値の隣に置く。**
+          閾値だけを見て「この濃度で該当する」と読まれると取り違える
+        */
+        key: "judged",
+        header: m.regulationCategories.judged,
+        kind: "text",
+        width: 104,
+        sortable: false,
+        filterable: false,
+        className: "text-xs",
+        render: (r) =>
+          r.kind === "category" && !r.category.judged ? (
+            <span className="text-muted-foreground border-input border px-1.5 py-0.5">
+              {m.regulationCategories.judgedOff}
+            </span>
+          ) : (
+            ""
+          ),
+      },
+      {
         key: "threshold",
         header: m.regulationCategories.threshold,
         kind: "text",
