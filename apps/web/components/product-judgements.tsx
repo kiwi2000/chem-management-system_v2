@@ -63,12 +63,19 @@ const HEADS: { key: string; width: number; label: (m: M) => string; className?: 
   { key: "statutoryName", width: 288, label: (m) => m.judgements.statutoryName },
   { key: "content", width: 72, label: (m) => m.judgements.content, className: "text-right" },
   { key: "matchedCas", width: 96, label: (m) => m.judgements.matchedCas },
-  { key: "score", width: 72, label: (m) => m.judgements.score, className: "text-right" },
+  // 見出しの「スコア」がちょうど収まる幅。組成の表とそろえる
+  { key: "score", width: 60, label: (m) => m.judgements.score, className: "text-right" },
   { key: "warning", width: 256, label: (m) => m.judgements.warning },
 ];
 
-/** 操作の列。編集できる人にだけ出るので、列の並びとは別に持つ */
-const ACTION_COLUMN = { key: "actions", width: 96 };
+/**
+ * 操作の列。編集できる人にだけ出るので、列の並びとは別に持つ。
+ *
+ * **「判定修正」を押したときに開く欄が収まる幅にする。**
+ * 押していないあいだはボタン1つぶんで足りるが、開くと根拠の入力欄と
+ * ボタン3つがこの中に入る。狭いままだと文字が切れて読めなかった
+ */
+const ACTION_COLUMN = { key: "actions", width: 224 };
 
 export function ProductJudgements({
   productId,
@@ -104,7 +111,8 @@ export function ProductJudgements({
   const [onlyApplicable, setOnlyApplicable] = useState(true);
   // 列幅は一覧と同じ規則。操作の列は、出るときだけ幅を数に入れる
   const cols = useResizableColumns(
-    "chem.table.productJudgements",
+    // 末尾の版を上げると、覚えている列幅を捨てて既定から始め直す
+    "chem.table.productJudgements.v2",
     [...HEADS, ...(canEdit ? [ACTION_COLUMN] : [])],
     // 幅を詰めない。詰めると製品ごと・画面幅ごとに列の位置が動いて見比べられない
     { shrinkToFit: false, rowLabel: m.table.resizeRows },
@@ -264,8 +272,12 @@ export function ProductJudgements({
               containerClassName="overflow-visible"
             >
               <colgroup>{cols.cols()}</colgroup>
-              {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
-              <TableHeader className="sticky top-0 z-20">
+              {/*
+                見出しは箱の上に貼り付ける。**色は行ではなく `TableHeader` に置く。**
+                行に置くと、枠線を重ねて描く表（`border-collapse: collapse`）では
+                いちばん上の1〜2pxが塗られず、流れていく行がそこから覗く
+              */}
+              <TableHeader className={cn("sticky top-0 z-20", OPAQUE_MUTED_50)}>
                 {/* 色と枠線は組成の表にそろえる。並べて見るので、別物に見えると困る */}
                 <TableRow className={cn(OPAQUE_MUTED_50, OPAQUE_MUTED_50_HOVER, "border-y")}>
                   {HEADS.map(({ key, label, className }, i) => (
@@ -365,7 +377,8 @@ export function ProductJudgements({
                             {editing === j.categoryId ? (
                               <div className="space-y-1">
                                 <Input
-                                  className="h-8 w-56"
+                                  // 列の幅いっぱい。決め打ちにすると列より広くなって切れる
+                                  className="h-8 w-full"
                                   placeholder={m.judgements.notePlaceholder}
                                   value={note}
                                   onChange={(e) => setNote(e.target.value)}

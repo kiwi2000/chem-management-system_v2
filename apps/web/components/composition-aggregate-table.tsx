@@ -33,7 +33,7 @@ const CELL = "border-r px-2 py-1 break-words last:border-r-0";
  *
  * 法規制の列は地域を分けるとどこまでも右へ伸びるので、
  * 横に送ると**いま見ている行がどの物質のものか分からなくなる**。
- * 貼り付ける幅は合わせて792px。画面が狭いと法規制を見る場所が減るので、
+ * 貼り付ける幅は合わせて956px。画面が狭いと法規制を見る場所が減るので、
  * 引いて広げるほうは `frozen` の上限（見えている幅の6割）で止まる。
  */
 const FROZEN = 6;
@@ -131,12 +131,22 @@ const HEADS: {
   */
   {
     key: "score",
-    width: 72,
+    /*
+      **見出しの「スコア」がちょうど収まる幅。**14pxの全角3文字で42px、
+      左右の余白16pxを足して58px。値のほうは短い数字なので、これで足りる。
+      桁の多い点を付けたときは、つまみで引いて広げられる
+    */
+    width: 60,
     label: (m) => m.score.substanceScore,
     className: "text-right whitespace-nowrap",
   },
-  // 上の組成表を出さない組成があるので、備考はこちらでも受け持つ
-  { key: "note", width: 160, label: (m) => m.composition.note },
+  /*
+    上の組成表を出さない組成があるので、備考はこちらでも受け持つ。
+    **2行で切る。**仕入れ先や但し書きが長く入ることがあり、
+    行の高さがそこだけ伸びて表が読みにくくなる。
+    切れたセルは押せば全部出る（`cell-peek`）
+  */
+  { key: "note", width: 320, label: (m) => m.composition.note },
 ];
 
 /**
@@ -395,9 +405,10 @@ export function CompositionAggregateTable({
     /*
       **末尾の版を上げると、覚えている列幅を捨てて既定から始め直す。**
       含有率の列が狭すぎて「%」が欠けていたのを直したが、
-      一度でも幅を引いた人には古い幅が残り、直らなかったため
+      一度でも幅を引いた人には古い幅が残り、直らなかったため。
+      v4 … 備考を広げ、スコアを見出しぶんまで詰めた
     */
-    "chem.table.compositionAggregate.v3",
+    "chem.table.compositionAggregate.v4",
     [...HEADS, ...leaves],
     // 規制区分に分けると列が増える。詰めずに、はみ出したぶんは横に送る
     { shrinkToFit: false, frozen: FROZEN },
@@ -579,8 +590,12 @@ export function CompositionAggregateTable({
                 3段目 … 規制区分。押すと**その区分に該当する行だけ**になる（格納ではない）
               組成そのものの列は3段ぶんの高さを取る。
             */}
-            {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
-            <thead className="sticky top-0 z-20">
+            {/*
+              見出しは箱の上に貼り付ける。**色は行ではなく `thead` に置く。**
+              行に置くと、枠線を重ねて描く表（`border-collapse: collapse`）では
+              いちばん上の1〜2pxが塗られず、流れていく行がそこから覗く
+            */}
+            <thead className={cn("sticky top-0 z-20", OPAQUE_MUTED_50)}>
               <tr className={cn(OPAQUE_MUTED_50, "border-t text-left")}>
                 {HEADS.map(({ key, label, className }, at) => {
                   const frozen = cols.frozenProps(at);
@@ -792,7 +807,7 @@ export function CompositionAggregateTable({
                         )}
                         style={cols.frozenProps(5).style}
                       >
-                        {row.note}
+                        <span className="line-clamp-2">{row.note}</span>
                       </td>
                       {leaves.map((c) => {
                         const hit = row.regulations.filter((r) => c.categoryIds.has(r.categoryId));
