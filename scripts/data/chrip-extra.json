@@ -1014,2953 +1014,601 @@
    ]
   }
  ],
- "voc": [
-  {
-   "cas": "CHRIP-C000-377-45A",
-   "nameJa": "CHRIP-C000-377-45A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C001-381-74A",
-   "nameJa": "CHRIP-C001-381-74A",
-   "nameEn": ""
-  },
-  {
-   "cas": "107-05-1",
-   "nameJa": "３－クロロプロパ－１－エン",
-   "nameEn": "3-Chloroprop-1-ene"
-  },
-  {
-   "cas": "95-48-7",
-   "nameJa": "ｏ－クレゾール",
-   "nameEn": "o-Cresol"
-  },
-  {
-   "cas": "106-44-5",
-   "nameJa": "ｐ－クレゾール",
-   "nameEn": "p-Cresol"
-  },
-  {
-   "cas": "106-46-7",
-   "nameJa": "１，４－ジクロロベンゼン",
-   "nameEn": "1,4-Dichlorobenzene"
-  },
-  {
-   "cas": "111-90-0",
-   "nameJa": "２－（２－エトキシエトキシ）エタノール",
-   "nameEn": "2-(2-Ethoxyethoxy)ethanol"
-  },
-  {
-   "cas": "106-89-8",
-   "nameJa": "２－（クロロメチル）オキシラン",
-   "nameEn": "2-(Chloromethyl)oxirane"
-  },
-  {
-   "cas": "64-17-5",
-   "nameJa": "エタノール",
-   "nameEn": "Ethanol"
-  },
-  {
-   "cas": "111-76-2",
-   "nameJa": "２－ブトキシエタノール",
-   "nameEn": "2-Butoxyethanol"
-  },
-  {
-   "cas": "71-55-6",
-   "nameJa": "１，１，１－トリクロロエタン",
-   "nameEn": "1,1,1-Trichloroethane"
-  },
-  {
-   "cas": "79-00-5",
-   "nameJa": "１，１，２－トリクロロエタン",
-   "nameEn": "1,1,2-Trichloroethane"
-  },
-  {
-   "cas": "95-47-6",
-   "nameJa": "ｏ－キシレン",
-   "nameEn": "o-Xylene"
-  },
-  {
-   "cas": "108-38-3",
-   "nameJa": "ｍ－キシレン",
-   "nameEn": "m-Xylene"
-  },
-  {
-   "cas": "67-64-1",
-   "nameJa": "アセトン",
-   "nameEn": "Acetone"
-  },
-  {
-   "cas": "75-05-8",
-   "nameJa": "アセトニトリル",
-   "nameEn": "Acetonitrile"
-  },
-  {
-   "cas": "107-18-6",
-   "nameJa": "アリルアルコール",
-   "nameEn": "Allyl alcohol"
-  },
-  {
-   "cas": "71-36-3",
-   "nameJa": "１－ブタノール",
-   "nameEn": "1-Butanol"
-  },
-  {
-   "cas": "78-92-2",
-   "nameJa": "ｓｅｃ－ブチル＝アルコール",
-   "nameEn": "Butan-2-ol"
-  },
-  {
-   "cas": "78-83-1",
-   "nameJa": "イソブタノール",
-   "nameEn": "2-Methyl-1-propanol"
-  },
-  {
-   "cas": "75-65-0",
-   "nameJa": "２－メチルプロパン－２－オール",
-   "nameEn": "2-Methylpropan-2-ol"
-  },
-  {
-   "cas": "75-00-3",
-   "nameJa": "塩化エチル",
-   "nameEn": "Ethyl chloride"
-  },
-  {
-   "cas": "141-43-5",
-   "nameJa": "２－アミノエタノール",
-   "nameEn": "Monoethanolamine"
-  },
-  {
-   "cas": "78-59-1",
-   "nameJa": "１，５，５－トリメチル－１－シクロヘキセン－３－オン",
-   "nameEn": "1,5,5-Trimethylcyclohexen-3-one"
-  },
-  {
-   "cas": "98-82-8",
-   "nameJa": "クメン",
-   "nameEn": "Cumene"
-  },
-  {
-   "cas": "78-93-3",
-   "nameJa": "２－ブタノン",
-   "nameEn": "Ethyl methyl ketone"
-  },
-  {
-   "cas": "628-63-7",
-   "nameJa": "酢酸ｎ－ペンチル",
-   "nameEn": "Pentyl acetate"
-  },
-  {
-   "cas": "106-97-8",
-   "nameJa": "ブタン",
-   "nameEn": "Butane"
-  },
-  {
-   "cas": "79-11-8",
-   "nameJa": "クロロ酢酸",
-   "nameEn": "Chloroacetic acid"
-  },
-  {
-   "cas": "110-82-7",
-   "nameJa": "シクロヘキサン",
-   "nameEn": "Cyclohexane"
-  },
-  {
-   "cas": "108-93-0",
-   "nameJa": "シクロヘキサノール",
-   "nameEn": "Cyclohexanol"
-  },
-  {
-   "cas": "74-84-0",
-   "nameJa": "エタン",
-   "nameEn": "Ethane"
-  },
-  {
-   "cas": "107-21-1",
-   "nameJa": "エチレングリコール",
-   "nameEn": "Ethylene glycol"
-  },
-  {
-   "cas": "74-98-6",
-   "nameJa": "プロパン",
-   "nameEn": "Propane"
-  },
-  {
-   "cas": "287-92-3",
-   "nameJa": "シクロペンタン",
-   "nameEn": "Cyclopentane"
-  },
-  {
-   "cas": "60-29-7",
-   "nameJa": "ジエチルエーテル",
-   "nameEn": "Ethane, 1,1'-oxybis"
-  },
-  {
-   "cas": "123-92-2",
-   "nameJa": "酢酸イソペンチル",
-   "nameEn": "Isopentyl acetate"
-  },
-  {
-   "cas": "8052-41-3",
-   "nameJa": "ストッダード溶剤",
-   "nameEn": "Stoddard solvent"
-  },
-  {
-   "cas": "141-78-6",
-   "nameJa": "酢酸エチル",
-   "nameEn": "Ethyl acetate"
-  },
-  {
-   "cas": "106-98-9",
-   "nameJa": "１－ブテン",
-   "nameEn": "1-Butene"
-  },
-  {
-   "cas": "590-18-1",
-   "nameJa": "（Ｚ）－ブタ－２－エン",
-   "nameEn": "(Z)-But-2-ene"
-  },
-  {
-   "cas": "624-64-6",
-   "nameJa": "（Ｅ）－ブタ－２－エン",
-   "nameEn": "(E)-But-2-ene"
-  },
-  {
-   "cas": "123-86-4",
-   "nameJa": "酢酸ブチル",
-   "nameEn": "Butyl acetate"
-  },
-  {
-   "cas": "123-72-8",
-   "nameJa": "ｎ－ブチルアルデヒド",
-   "nameEn": "Butyraldehyde"
-  },
-  {
-   "cas": "108-94-1",
-   "nameJa": "シクロヘキサノン",
-   "nameEn": "Cyclohexanone"
-  },
-  {
-   "cas": "124-18-5",
-   "nameJa": "デカン",
-   "nameEn": "Decane"
-  },
-  {
-   "cas": "25340-17-4",
-   "nameJa": "ジエチルベンゼン",
-   "nameEn": "Diethylbenzene"
-  },
-  {
-   "cas": "591-78-6",
-   "nameJa": "２－ヘキサノン",
-   "nameEn": "Hexan-2-one"
-  },
-  {
-   "cas": "592-41-6",
-   "nameJa": "１－ヘキセン",
-   "nameEn": "1-Hexene"
-  },
-  {
-   "cas": "110-19-0",
-   "nameJa": "酢酸イソブチル",
-   "nameEn": "2-Methylpropyl acetate"
-  },
-  {
-   "cas": "540-84-1",
-   "nameJa": "２，２，４－トリメチルペンタン",
-   "nameEn": "Pentane, 2,2,4-trimethyl-"
-  },
-  {
-   "cas": "79-20-9",
-   "nameJa": "酢酸メチル",
-   "nameEn": "Methyl acetate"
-  },
-  {
-   "cas": "108-10-1",
-   "nameJa": "メチルイソブチルケトン",
-   "nameEn": "Methyl isobutyl ketone"
-  },
-  {
-   "cas": "872-50-4",
-   "nameJa": "１－メチル－２－ピロリドン",
-   "nameEn": "1-Methyl-2-pyrrolidone"
-  },
-  {
-   "cas": "109-66-0",
-   "nameJa": "ペンタン",
-   "nameEn": "Pentane"
-  },
-  {
-   "cas": "107-98-2",
-   "nameJa": "１－メトキシプロパン－２－オール",
-   "nameEn": "1-Methoxypropan-2-ol"
-  },
-  {
-   "cas": "71-23-8",
-   "nameJa": "１－プロパノール",
-   "nameEn": "1-Propanol"
-  },
-  {
-   "cas": "67-63-0",
-   "nameJa": "プロパン－２－オール",
-   "nameEn": "Propan-2-ol"
-  },
-  {
-   "cas": "109-99-9",
-   "nameJa": "テトラヒドロフラン",
-   "nameEn": "Tetrahydrofuran"
-  },
-  {
-   "cas": "99-87-6",
-   "nameJa": "ｐ－シメン",
-   "nameEn": "p-Cymene"
-  },
-  {
-   "cas": "96-33-3",
-   "nameJa": "メチル＝アクリラート",
-   "nameEn": "Methyl acrylate"
-  },
-  {
-   "cas": "108-90-7",
-   "nameJa": "クロロベンゼン",
-   "nameEn": "Chlorobenzene"
-  },
-  {
-   "cas": "108-39-4",
-   "nameJa": "ｍ－クレゾール",
-   "nameEn": "m-Cresol"
-  },
-  {
-   "cas": "142-82-5",
-   "nameJa": "ヘプタン",
-   "nameEn": "Heptane"
-  },
-  {
-   "cas": "591-76-4",
-   "nameJa": "２－メチルヘキサン",
-   "nameEn": "2-methylhexane"
-  },
-  {
-   "cas": "8008-20-6",
-   "nameJa": "灯油",
-   "nameEn": "Kerosine"
-  },
-  {
-   "cas": "107-31-3",
-   "nameJa": "ギ酸メチル",
-   "nameEn": "Methyl formate"
-  },
-  {
-   "cas": "79-10-7",
-   "nameJa": "アクリル酸",
-   "nameEn": "Acrylic acid"
-  },
-  {
-   "cas": "592-27-8",
-   "nameJa": "２－メチルヘプタン",
-   "nameEn": "2-methylheptane"
-  },
-  {
-   "cas": "112-34-5",
-   "nameJa": "２－（２－ブトキシエトキシ）エタノール",
-   "nameEn": "2-(2-Butoxyethoxy)ethanol"
-  },
-  {
-   "cas": "108-65-6",
-   "nameJa": "１－メトキシ－２－プロパノールアセタート",
-   "nameEn": "2-Propanol, 1-methoxy-, acetate"
-  },
-  {
-   "cas": "100-51-6",
-   "nameJa": "ベンジルアルコール",
-   "nameEn": "Benzyl alcohol"
-  },
-  {
-   "cas": "104-76-7",
-   "nameJa": "２－エチルヘキサン－１－オール",
-   "nameEn": "2-Ethylhexan-1-ol"
-  },
-  {
-   "cas": "75-28-5",
-   "nameJa": "イソブタン",
-   "nameEn": "Propane, 2-methyl-"
-  },
-  {
-   "cas": "108-21-4",
-   "nameJa": "イソプロピル＝アセタート",
-   "nameEn": "Isopropyl acetate"
-  },
-  {
-   "cas": "5989-27-5",
-   "nameJa": "（Ｒ）－４－イソプロペニル－１－メチルシクロヘキサ－１－エン",
-   "nameEn": "(R)-4-Isopropenyl-1-methylcyclohex-1-ene"
-  },
-  {
-   "cas": "110-43-0",
-   "nameJa": "２－ヘプタノン",
-   "nameEn": "2-Heptanone"
-  },
-  {
-   "cas": "108-87-2",
-   "nameJa": "メチルシクロヘキサン",
-   "nameEn": "Methylcyclohexane"
-  },
-  {
-   "cas": "111-65-9",
-   "nameJa": "オクタン",
-   "nameEn": "Octane"
-  },
-  {
-   "cas": "109-60-4",
-   "nameJa": "プロパン－１－イル＝アセタート",
-   "nameEn": "Propan-1-yl acetate"
-  },
-  {
-   "cas": "97-88-1",
-   "nameJa": "メタクリル酸ｎ－ブチル",
-   "nameEn": "n-Butyl methacrylate"
-  },
-  {
-   "cas": "115-11-7",
-   "nameJa": "イソブテン",
-   "nameEn": "Isobutene"
-  },
-  {
-   "cas": "95-50-1",
-   "nameJa": "ｏ－ジクロロベンゼン",
-   "nameEn": "o-Dichlorobenzene"
-  },
-  {
-   "cas": "541-73-1",
-   "nameJa": "ｍ－ジクロロベンゼン",
-   "nameEn": "m-Dichlorobenzene"
-  },
-  {
-   "cas": "78-78-4",
-   "nameJa": "イソペンタン　（別名　２－メチルブタン）",
-   "nameEn": "Butane, 2-methyl-"
-  },
-  {
-   "cas": "108-67-8",
-   "nameJa": "１，３，５－トリメチルベンゼン",
-   "nameEn": "1,3,5-Trimethylbenzene"
-  },
-  {
-   "cas": "112-70-9",
-   "nameJa": "トリデシルアルコール",
-   "nameEn": "1-Tridecanol"
-  },
-  {
-   "cas": "111-84-2",
-   "nameJa": "ノナン",
-   "nameEn": "Nonane"
-  },
-  {
-   "cas": "107-83-5",
-   "nameJa": "２－メチルペンタン",
-   "nameEn": "Pentane, 2-methyl-"
-  },
-  {
-   "cas": "96-14-0",
-   "nameJa": "３－メチルペンタン",
-   "nameEn": "3-Methylpentane"
-  },
-  {
-   "cas": "526-73-8",
-   "nameJa": "１，２，３－トリメチルベンゼン",
-   "nameEn": "1,2,3-trimethylbenzene"
-  },
-  {
-   "cas": "64742-47-8",
-   "nameJa": "水素化精製軽質留出物（石油）",
-   "nameEn": "Distillates (petroleum), hydrotreated light"
-  },
-  {
-   "cas": "95-63-6",
-   "nameJa": "１，２，４－トリメチルベンゼン",
-   "nameEn": "1,2,4-Trimethylbenzene"
-  },
-  {
-   "cas": "112-92-5",
-   "nameJa": "オクタデカン－１－オール",
-   "nameEn": "Octadecan-1-ol"
-  },
-  {
-   "cas": "109-59-1",
-   "nameJa": "２－イソプロポキシエタノール",
-   "nameEn": "2-Isopropoxyethanol"
-  },
-  {
-   "cas": "119-64-2",
-   "nameJa": "テトラヒドロナフタリン",
-   "nameEn": "1,2,3,4-Tetrahydronaphthalene"
-  },
-  {
-   "cas": "91-17-8",
-   "nameJa": "デカヒドロナフタレン",
-   "nameEn": "Decahydronaphthalene"
-  },
-  {
-   "cas": "79-92-5",
-   "nameJa": "２，２－ジメチル－３－メチリデンビシクロ［２．２．１］ヘプタン",
-   "nameEn": "2,2-Dimethyl-3-methylidenebicyclo[2.2.1]heptane"
-  },
-  {
-   "cas": "868-77-9",
-   "nameJa": "２－ヒドロキシエチル＝メタクリラート",
-   "nameEn": "2-Hydroxyethyl methacrylate"
-  },
-  {
-   "cas": "637-92-3",
-   "nameJa": "２－エトキシ－２－メチルプロパン",
-   "nameEn": "Propane, 2-ethoxy-2-methyl-"
-  },
-  {
-   "cas": "138-86-3",
-   "nameJa": "４－イソプロペニル－１－メチルシクロヘキサ－１－エン",
-   "nameEn": "4-Isopropenyl-1-methylcyclohex-1-ene"
-  },
-  {
-   "cas": "1319-77-3",
-   "nameJa": "クレゾール",
-   "nameEn": "Cresol"
-  },
-  {
-   "cas": "1330-20-7",
-   "nameJa": "キシレン",
-   "nameEn": "Xylene"
-  },
-  {
-   "cas": "1116-54-7",
-   "nameJa": "２，２’－（ニトロソイミノ）ジエタノール",
-   "nameEn": "2,2'-(Nitrosoimino)diethanol"
-  },
-  {
-   "cas": "493-02-7",
-   "nameJa": "ｔｒａｎｓ－デカヒドロナフタレン",
-   "nameEn": "trans-Decahydronaphthalene"
-  },
-  {
-   "cas": "116-14-3",
-   "nameJa": "テトラフルオロエチレン",
-   "nameEn": "Ethene, tetrafluoro-"
-  },
-  {
-   "cas": "8030-30-6",
-   "nameJa": "ナフサ",
-   "nameEn": "Naphtha"
-  },
-  {
-   "cas": "65996-79-4",
-   "nameJa": "ソルベントナフサ（コール）",
-   "nameEn": "Solvent naphtha (coal)"
-  },
-  {
-   "cas": "97-64-3",
-   "nameJa": "エチル＝ラクタート",
-   "nameEn": "Ethyl lactate"
-  },
-  {
-   "cas": "142-29-0",
-   "nameJa": "シクロペンテン",
-   "nameEn": "Cyclopentene"
-  },
-  {
-   "cas": "592-76-7",
-   "nameJa": "１－ヘプテン",
-   "nameEn": "Hept-1-ene"
-  },
-  {
-   "cas": "96-37-7",
-   "nameJa": "メチルシクロペンタン",
-   "nameEn": "Methylcyclopentane"
-  },
-  {
-   "cas": "1120-21-4",
-   "nameJa": "ウンデカン",
-   "nameEn": "Undecane"
-  },
-  {
-   "cas": "103-65-1",
-   "nameJa": "プロピルベンゼン",
-   "nameEn": "Benzene, propyl-"
-  },
-  {
-   "cas": "79-29-8",
-   "nameJa": "２，３－ジメチルブタン",
-   "nameEn": "2,3-Dimethylbutane"
-  },
-  {
-   "cas": "563-46-2",
-   "nameJa": "２－メチルブタ－１－エン",
-   "nameEn": "2-Methylbut-1-ene"
-  },
-  {
-   "cas": "513-35-9",
-   "nameJa": "２－メチル－２－ブテン",
-   "nameEn": "2-Butene, 2-methyl-"
-  },
-  {
-   "cas": "563-45-1",
-   "nameJa": "３－メチルブタ－１－エン",
-   "nameEn": "3-Methylbut-1-ene"
-  },
-  {
-   "cas": "107-01-7",
-   "nameJa": "２－ブテン",
-   "nameEn": "2-Butene"
-  },
-  {
-   "cas": "75-83-2",
-   "nameJa": "２，２－ジメチルブタン",
-   "nameEn": "2,2-Dimethylbutane"
-  },
-  {
-   "cas": "527-84-4",
-   "nameJa": "ｏ－シメン",
-   "nameEn": "O-cymene"
-  },
-  {
-   "cas": "141-93-5",
-   "nameJa": "ｍ－ジエチルベンゼン",
-   "nameEn": "M-diethylbenzene"
-  },
-  {
-   "cas": "135-01-3",
-   "nameJa": "１，２－ジエチルベンゼン",
-   "nameEn": "1,2-Diethylbenzene"
-  },
-  {
-   "cas": "105-05-5",
-   "nameJa": "ｐ－ジエチルベンゼン",
-   "nameEn": "p-Diethylbenzene"
-  },
-  {
-   "cas": "80-56-8",
-   "nameJa": "ピナ－２－エン",
-   "nameEn": "Pin-2-ene"
-  },
-  {
-   "cas": "104-51-8",
-   "nameJa": "ｎ－ブチルベンゼン",
-   "nameEn": "n-Butylbenzene"
-  },
-  {
-   "cas": "135-98-8",
-   "nameJa": "ｓｅｃ－ブチルベンゼン",
-   "nameEn": "sec-Butylbenzene"
-  },
-  {
-   "cas": "95-13-6",
-   "nameJa": "１Ｈ－インデン",
-   "nameEn": "Indene"
-  },
-  {
-   "cas": "103-44-6",
-   "nameJa": "３－［（ビニルオキシ）メチル］ヘプタン",
-   "nameEn": "3-[(Vinyloxy)methyl]heptane"
-  },
-  {
-   "cas": "538-93-2",
-   "nameJa": "イソブチルベンゼン",
-   "nameEn": "Isobutylbenzene"
-  },
-  {
-   "cas": "585-07-9",
-   "nameJa": "メタクリル酸ｔｅｒｔ－ブチル",
-   "nameEn": "Tert-butyl methacrylate"
-  },
-  {
-   "cas": "1678-91-7",
-   "nameJa": "エチルシクロヘキサン",
-   "nameEn": "Ethyl cyclohexane"
-  },
-  {
-   "cas": "2439-35-2",
-   "nameJa": "２－（ジメチルアミノ）エチル＝アクリラート",
-   "nameEn": "2-(Dimethylamino)ethyl acrylate"
-  },
-  {
-   "cas": "7580-85-0",
-   "nameJa": "２－ｔｅｒｔ－ブトキシエタノール",
-   "nameEn": "2-tert-butoxyethanol"
-  },
-  {
-   "cas": "42152-47-6",
-   "nameJa": "７－メチル－１，６－オクタジエン",
-   "nameEn": "1,6-Octadiene, 7-methyl-"
-  },
-  {
-   "cas": "95-93-2",
-   "nameJa": "１，２，４，５－テトラメチルベンゼン",
-   "nameEn": "1,2,4,5-Tetramethylbenzene"
-  },
-  {
-   "cas": "109-67-1",
-   "nameJa": "ペンタ－１－エン",
-   "nameEn": "Pent-1-ene"
-  },
-  {
-   "cas": "294-62-2",
-   "nameJa": "シクロドデカン",
-   "nameEn": "Cyclododecane"
-  },
-  {
-   "cas": "527-53-7",
-   "nameJa": "１，２，３，５－テトラメチルベンゼン",
-   "nameEn": "1,2,3,5-Tetramethylbenzene"
-  },
-  {
-   "cas": "544-76-3",
-   "nameJa": "ヘキサデカン",
-   "nameEn": "Hexadecane"
-  },
-  {
-   "cas": "622-96-8",
-   "nameJa": "４－エチルトルエン",
-   "nameEn": "4-Ethyltoluene"
-  },
-  {
-   "cas": "627-20-3",
-   "nameJa": "（Ｚ）－ペンタ－２－エン",
-   "nameEn": "(Z)-Pent-2-ene"
-  },
-  {
-   "cas": "629-50-5",
-   "nameJa": "トリデカン",
-   "nameEn": "Tridecane"
-  },
-  {
-   "cas": "629-59-4",
-   "nameJa": "テトラデカン",
-   "nameEn": "Tetradecane"
-  },
-  {
-   "cas": "629-62-9",
-   "nameJa": "ペンタデカン",
-   "nameEn": "Pentadecane"
-  },
-  {
-   "cas": "646-04-8",
-   "nameJa": "（Ｅ）－ペンタ－２－エン",
-   "nameEn": "(E)-Pent-2-ene"
-  },
-  {
-   "cas": "1640-89-7",
-   "nameJa": "-",
-   "nameEn": "Ethylcyclopentane"
-  },
-  {
-   "cas": "2425-77-6",
-   "nameJa": "２－ヘキシルデカン－１－オール",
-   "nameEn": "2-Hexyldecan-1-ol"
-  },
-  {
-   "cas": "18172-67-3",
-   "nameJa": "ピネン",
-   "nameEn": "Bicyclo[3.1.1]heptane, 6,6-dimethyl-2-methylene-, (1S,5S)-"
-  },
-  {
-   "cas": "565-59-3",
-   "nameJa": "２，３－ジメチルペンタン",
-   "nameEn": "2,3-dimethylpentane"
-  },
-  {
-   "cas": "2049-95-8",
-   "nameJa": "ｔｅｒｔ－アミルベンゼン［別名：ｔｅｒｔ－ペンチルベンゼン］",
-   "nameEn": "Tert-pentylbenzene"
-  },
-  {
-   "cas": "7705-14-8",
-   "nameJa": "４－イソプロペニル－１－メチルシクロヘキセン",
-   "nameEn": "4-Isopropenyl-1-methylcyclohexene"
-  },
-  {
-   "cas": "620-14-4",
-   "nameJa": "３－エチルトルエン",
-   "nameEn": "3-Ethyltoluene"
-  },
-  {
-   "cas": "108-08-7",
-   "nameJa": "２，４－ジメチルペンタン",
-   "nameEn": "2,4-dimethylpentane"
-  },
-  {
-   "cas": "496-11-7",
-   "nameJa": "-",
-   "nameEn": "Indan"
-  },
-  {
-   "cas": "591-21-9",
-   "nameJa": "ジメチルシクロヘキサン",
-   "nameEn": "1,3-dimethylcyclohexane"
-  },
-  {
-   "cas": "593-45-3",
-   "nameJa": "オクタデカン",
-   "nameEn": "Octadecane"
-  },
-  {
-   "cas": "589-34-4",
-   "nameJa": "３－メチルヘキサン",
-   "nameEn": "Hexane, 3-methyl-"
-  },
-  {
-   "cas": "763-29-1",
-   "nameJa": "２－メチルペンタ－１－エン",
-   "nameEn": "2-Methylpent-1-ene"
-  },
-  {
-   "cas": "696-29-7",
-   "nameJa": "-",
-   "nameEn": "Isopropylcyclohexane"
-  },
-  {
-   "cas": "3386-33-2",
-   "nameJa": "１－クロロオクタデカン",
-   "nameEn": "1-Chlorooctadecane"
-  },
-  {
-   "cas": "565-75-3",
-   "nameJa": "２，３，４－トリメチルペンタン",
-   "nameEn": "2,3,4-trimethylpentane"
-  },
-  {
-   "cas": "25321-22-6",
-   "nameJa": "ジクロロベンゼン",
-   "nameEn": "Dichlorobenzene"
-  },
-  {
-   "cas": "589-81-1",
-   "nameJa": "３－メチルヘプタン",
-   "nameEn": "3-methylheptane"
-  },
-  {
-   "cas": "589-53-7",
-   "nameJa": "４－メチルヘプタン",
-   "nameEn": "4-methylheptane"
-  },
-  {
-   "cas": "590-35-2",
-   "nameJa": "２，２－ジメチルペンタン",
-   "nameEn": "2,2-dimethylpentane"
-  },
-  {
-   "cas": "562-49-2",
-   "nameJa": "３，３－ジメチルペンタン",
-   "nameEn": "3,3-dimethylpentane"
-  },
-  {
-   "cas": "1678-82-6",
-   "nameJa": "メンタン",
-   "nameEn": "Cyclohexane, 1-methyl-4-(1-methylethyl)-, trans-"
-  },
-  {
-   "cas": "6069-98-3",
-   "nameJa": "メンタン",
-   "nameEn": "Cyclohexane, 1-methyl-4-(1-methylethyl)-, cis-"
-  },
-  {
-   "cas": "629-92-5",
-   "nameJa": "ノナデカン",
-   "nameEn": "Nonadecane"
-  },
-  {
-   "cas": "2452-99-5",
-   "nameJa": "１，２－ジメチルシクロペンタン",
-   "nameEn": "1,2-Dimethylcyclopentane"
-  },
-  {
-   "cas": "2453-00-1",
-   "nameJa": "１，３－ジメチルシクロペンタン",
-   "nameEn": "1,3-Dimethylcyclopentane"
-  },
-  {
-   "cas": "13675-20-2",
-   "nameJa": "ビス（２－エチルヘキシル）＝オキサラート",
-   "nameEn": "Bis(2-ethylhexyl) oxalate"
-  },
-  {
-   "cas": "3877-19-8",
-   "nameJa": "２－メチル－１，２，３，４－テトラヒドロナフタレン",
-   "nameEn": "2-Methyl-1,2,3,4-tetrahydronaphthalene"
-  },
-  {
-   "cas": "99-72-9",
-   "nameJa": "２－（４－メチルフェニル）プロパナール",
-   "nameEn": "2-(4-Methylphenyl)propanal"
-  },
-  {
-   "cas": "700-12-9",
-   "nameJa": "１，２，３，４，５－ペンタメチルベンゼン",
-   "nameEn": "1,2,3,4,5-Pentamethylbenzene"
-  },
-  {
-   "cas": "15890-40-1",
-   "nameJa": "ｒｅｌ－（１Ｒ，３Ｒ）－１，２，３－トリメチルシクロペンタン",
-   "nameEn": "rel-(1R,3R)-1,2,3-Trimethylcyclopentane"
-  },
-  {
-   "cas": "2719-52-0",
-   "nameJa": "（１－メチルブチル）ベンゼン",
-   "nameEn": "(1-Methylbutyl)benzene"
-  },
-  {
-   "cas": "1595-16-0",
-   "nameJa": "４－ｓｅｃ－ブチル－１－メチルベンゼン",
-   "nameEn": "4-sec-Butyl-1-methylbenzene"
-  },
-  {
-   "cas": "1758-85-6",
-   "nameJa": "２，４－ジエチル－１－メチルベンゼン",
-   "nameEn": "2,4-Diethyl-1-methylbenzene"
-  },
-  {
-   "cas": "1758-88-9",
-   "nameJa": "２－エチル－１，４－ジメチルベンゼン",
-   "nameEn": "2-Ethyl-1,4-dimethylbenzene"
-  },
-  {
-   "cas": "2207-01-4",
-   "nameJa": "ジメチルシクロヘキサン",
-   "nameEn": "Cis-1,2-dimethylcyclohexane"
-  },
-  {
-   "cas": "2207-03-6",
-   "nameJa": "ジメチルシクロヘキサン",
-   "nameEn": "Cyclohexane, 1,3-dimethyl-, (1R,3R)-rel-"
-  },
-  {
-   "cas": "2207-04-7",
-   "nameJa": "ジメチルシクロヘキサン",
-   "nameEn": "Trans-1,4-dimethylcyclohexane"
-  },
-  {
-   "cas": "2815-57-8",
-   "nameJa": "１，２，３－トリメチルシクロペンタン",
-   "nameEn": "1,2,3-Trimethylcyclopentane"
-  },
-  {
-   "cas": "2815-58-9",
-   "nameJa": "１，２，４－トリメチルシクロペンタン",
-   "nameEn": "1,2,4-Trimethylcyclopentane"
-  },
-  {
-   "cas": "3971-28-6",
-   "nameJa": "シクロヘキサン－１，３－ジイルジメタノール",
-   "nameEn": "Cyclohexane-1,3-diyldimethanol"
-  },
-  {
-   "cas": "3971-29-7",
-   "nameJa": "シクロヘキサン－１，２－ジイルジメタノール",
-   "nameEn": "Cyclohexane-1,2-diyldimethanol"
-  },
-  {
-   "cas": "611-14-3",
-   "nameJa": "１－エチル－２－メチルベンゼン",
-   "nameEn": "1-Ethyl-2-methylbenzene"
-  },
-  {
-   "cas": "4516-69-2",
-   "nameJa": "１，１，３－トリメチルシクロペンタン",
-   "nameEn": "1,1,3-Trimethylcyclopentane"
-  },
-  {
-   "cas": "6876-23-9",
-   "nameJa": "ｔｒａｎｓ－１，２－ジメチルシクロヘキサン",
-   "nameEn": "trans-1,2-Dimethylcyclohexane"
-  },
-  {
-   "cas": "4706-89-2",
-   "nameJa": "１－イソプロピル－２，４－ジメチルベンゼン",
-   "nameEn": "1-Isopropyl-2,4-dimethylbenzene"
-  },
-  {
-   "cas": "4706-90-5",
-   "nameJa": "１－イソプロピル－３，５－ジメチルベンゼン",
-   "nameEn": "1-Isopropyl-3,5-dimethylbenzene"
-  },
-  {
-   "cas": "1196-58-3",
-   "nameJa": "（１－エチルプロピル）ベンゼン",
-   "nameEn": "(1-Ethylpropyl)benzene"
-  },
-  {
-   "cas": "3236-48-4",
-   "nameJa": "ｔｒａｎｓ－シクロヘキサン－１，４－ジイルジメタノール",
-   "nameEn": "trans-Cyclohexane-1,4-diyldimethanol"
-  },
-  {
-   "cas": "13632-93-4",
-   "nameJa": "１，２－ジエチル－３－メチルベンゼン",
-   "nameEn": "1,2-Diethyl-3-methylbenzene"
-  },
-  {
-   "cas": "13632-94-5",
-   "nameJa": "１，４－ジエチル－２－メチルベンゼン",
-   "nameEn": "1,4-Diethyl-2-methylbenzene"
-  },
-  {
-   "cas": "13632-95-6",
-   "nameJa": "１，３－ジエチル－２－メチルベンゼン",
-   "nameEn": "1,3-Diethyl-2-methylbenzene"
-  },
-  {
-   "cas": "55045-14-2",
-   "nameJa": "４－エチルテトラデカン",
-   "nameEn": "4-Ethyltetradecane"
-  },
-  {
-   "cas": "488-23-3",
-   "nameJa": "１，２，３，４－テトラメチルベンゼン",
-   "nameEn": "1,2,3,4-Tetramethylbenzene"
-  },
-  {
-   "cas": "624-29-3",
-   "nameJa": "ジメチルシクロヘキサン",
-   "nameEn": "Cis-1,4-dimethylcyclohexane"
-  },
-  {
-   "cas": "500-00-5",
-   "nameJa": "１－イソプロピル－４－メチルシクロヘキサ－１－エン",
-   "nameEn": "1-Isopropyl-4-methylcyclohex-1-ene"
-  },
-  {
-   "cas": "13732-80-4",
-   "nameJa": "１，２－ジエチル－４－メチルベンゼン",
-   "nameEn": "1,2-Diethyl-4-methylbenzene"
-  },
-  {
-   "cas": "638-04-0",
-   "nameJa": "ジメチルシクロヘキサン",
-   "nameEn": "Cis-1,3-dimethylcyclohexane"
-  },
-  {
-   "cas": "2613-69-6",
-   "nameJa": "ｒ－１，ｃ－２，ｃ－３－トリメチルシクロペンタン",
-   "nameEn": "r-1,c-2,c-3-Trimethylcyclopentane"
-  },
-  {
-   "cas": "4259-00-1",
-   "nameJa": "１，１，２－トリメチルシクロペンタン",
-   "nameEn": "1,1,2-Trimethylcyclopentane"
-  },
-  {
-   "cas": "52993-54-1",
-   "nameJa": "イソプロピル（メチル）シクロヘキサン",
-   "nameEn": "Isopropyl(methyl)cyclohexane"
-  },
-  {
-   "cas": "52896-90-9",
-   "nameJa": "３－エチル－５－メチルヘプタン",
-   "nameEn": "3-Ethyl-5-methylheptane"
-  },
-  {
-   "cas": "63830-69-3",
-   "nameJa": "（Ｚ）－３－メチルノナ－４－エン",
-   "nameEn": "(Z)-3-Methylnon-4-ene"
-  },
-  {
-   "cas": "54105-67-8",
-   "nameJa": "２，６－ジメチルヘプタデカン",
-   "nameEn": "2,6-Dimethylheptadecane"
-  },
-  {
-   "cas": "62016-18-6",
-   "nameJa": "５－エチル－２－メチルオクタン",
-   "nameEn": "5-Ethyl-2-methyloctane"
-  },
-  {
-   "cas": "62016-37-9",
-   "nameJa": "２，４，６－トリメチルオクタン",
-   "nameEn": "2,4,6-Trimethyloctane"
-  },
-  {
-   "cas": "62108-23-0",
-   "nameJa": "２，５，６－トリメチルデカン",
-   "nameEn": "2,5,6-Trimethyldecane"
-  },
-  {
-   "cas": "62108-26-3",
-   "nameJa": "２，６，８－トリメチルデカン",
-   "nameEn": "2,6,8-Trimethyldecane"
-  },
-  {
-   "cas": "19398-89-1",
-   "nameJa": "（Ｅ）－デカ－４－エン",
-   "nameEn": "(E)-Dec-4-ene"
-  },
-  {
-   "cas": "62185-53-9",
-   "nameJa": "５－イソブチルノナン",
-   "nameEn": "5-Isobutylnonane"
-  },
-  {
-   "cas": "62187-13-7",
-   "nameJa": "（Ｅ）－２，２－ジメチルオクタ－３－エン",
-   "nameEn": "(E)-2,2-Dimethyloct-3-ene"
-  },
-  {
-   "cas": "59643-68-4",
-   "nameJa": "（Ｅ）－３，５－ジメチルヘプタ－３－エン",
-   "nameEn": "(E)-3,5-Dimethylhept-3-ene"
-  },
-  {
-   "cas": "933-98-2",
-   "nameJa": "１－エチル－２，３－ジメチルベンゼン",
-   "nameEn": "1-Ethyl-2,3-dimethylbenzene"
-  },
-  {
-   "cas": "934-74-7",
-   "nameJa": "１－エチル－３，５－ジメチルベンゼン",
-   "nameEn": "1-Ethyl-3,5-dimethylbenzene"
-  },
-  {
-   "cas": "934-80-5",
-   "nameJa": "４－エチル－１，２－ジメチルベンゼン",
-   "nameEn": "4-Ethyl-1,2-dimethylbenzene"
-  },
-  {
-   "cas": "114376-34-0",
-   "nameJa": "５－メチルウンデカン",
-   "nameEn": "5-Methylundecane"
-  },
-  {
-   "cas": "874-41-9",
-   "nameJa": "１－エチル－２，４－ジメチルベンゼン",
-   "nameEn": "1-Ethyl-2,4-dimethylbenzene"
-  },
-  {
-   "cas": "2980-69-0",
-   "nameJa": "４－メチルウンデカン",
-   "nameEn": "4-Methylundecane"
-  },
-  {
-   "cas": "7045-71-8",
-   "nameJa": "２－メチルウンデカン",
-   "nameEn": "2-Methylundecane"
-  },
-  {
-   "cas": "17302-33-9",
-   "nameJa": "６－メチルウンデカン",
-   "nameEn": "6-Methylundecane"
-  },
-  {
-   "cas": "17302-37-3",
-   "nameJa": "２，２－ジメチルデカン",
-   "nameEn": "2,2-Dimethyldecane"
-  },
-  {
-   "cas": "17312-54-8",
-   "nameJa": "３，７－ジメチルデカン",
-   "nameEn": "3,7-Dimethyldecane"
-  },
-  {
-   "cas": "590-66-9",
-   "nameJa": "ジメチルシクロヘキサン",
-   "nameEn": "1,1-dimethylcyclohexane"
-  },
-  {
-   "cas": "1074-17-5",
-   "nameJa": "１－メチル－２－プロピルベンゼン",
-   "nameEn": "1-Methyl-2-propylbenzene"
-  },
-  {
-   "cas": "1074-43-7",
-   "nameJa": "１－メチル－３－プロピルベンゼン",
-   "nameEn": "1-Methyl-3-propylbenzene"
-  },
-  {
-   "cas": "1074-55-1",
-   "nameJa": "１－メチル－４－プロピルベンゼン",
-   "nameEn": "1-Methyl-4-propylbenzene"
-  },
-  {
-   "cas": "16883-48-0",
-   "nameJa": "ｒ－１，ｔ－２，ｃ－４－トリメチルシクロペンタン",
-   "nameEn": "r-1,t-2,c-4-Trimethylcyclopentane"
-  },
-  {
-   "cas": "19902-08-0",
-   "nameJa": "（１Ｒ，５Ｒ）－ピナ－２（１０）－エン",
-   "nameEn": "(1R,5R)-Pin-2(10)-ene"
-  },
-  {
-   "cas": "2870-04-4",
-   "nameJa": "２－エチル－１，３－ジメチルベンゼン",
-   "nameEn": "2-Ethyl-1,3-dimethylbenzene"
-  },
-  {
-   "cas": "17453-94-0",
-   "nameJa": "５－エチルウンデカン",
-   "nameEn": "5-Ethylundecane"
-  },
-  {
-   "cas": "2051-30-1",
-   "nameJa": "２，６－ジメチルオクタン",
-   "nameEn": "2,6-Dimethyloctane"
-  },
-  {
-   "cas": "2847-72-5",
-   "nameJa": "４－メチルデカン",
-   "nameEn": "4-Methyldecane"
-  },
-  {
-   "cas": "638-36-8",
-   "nameJa": "２，６，１０，１４－テトラメチルヘキサデカン",
-   "nameEn": "2,6,10,14-Tetramethylhexadecane"
-  },
-  {
-   "cas": "14676-29-0",
-   "nameJa": "３－エチル－２－メチルヘプタン",
-   "nameEn": "3-Ethyl-2-methylheptane"
-  },
-  {
-   "cas": "14720-74-2",
-   "nameJa": "２，２，４－トリメチルヘプタン",
-   "nameEn": "2,2,4-Trimethylheptane"
-  },
-  {
-   "cas": "14905-56-7",
-   "nameJa": "２，６，１０－トリメチルテトラデカン",
-   "nameEn": "2,6,10-Trimethyltetradecane"
-  },
-  {
-   "cas": "4032-94-4",
-   "nameJa": "２，４－ジメチルオクタン",
-   "nameEn": "2,4-Dimethyloctane"
-  },
-  {
-   "cas": "4050-45-7",
-   "nameJa": "（Ｅ）－ヘキサ－２－エン",
-   "nameEn": "(E)-Hex-2-ene"
-  },
-  {
-   "cas": "4057-42-5",
-   "nameJa": "２，６－ジメチルオクタ－２－エン",
-   "nameEn": "2,6-Dimethyloct-2-ene"
-  },
-  {
-   "cas": "4110-44-5",
-   "nameJa": "３，３－ジメチルオクタン",
-   "nameEn": "3,3-Dimethyloctane"
-  },
-  {
-   "cas": "6418-43-5",
-   "nameJa": "３－メチルヘキサデカン",
-   "nameEn": "3-Methylhexadecane"
-  },
-  {
-   "cas": "6418-44-6",
-   "nameJa": "３－メチルヘプタデカン",
-   "nameEn": "3-Methylheptadecane"
-  },
-  {
-   "cas": "6418-46-8",
-   "nameJa": "３－メチルイコサン",
-   "nameEn": "3-Methylicosane"
-  },
-  {
-   "cas": "15869-89-3",
-   "nameJa": "２，５－ジメチルオクタン",
-   "nameEn": "2,5-Dimethyloctane"
-  },
-  {
-   "cas": "15869-92-8",
-   "nameJa": "３，４－ジメチルオクタン",
-   "nameEn": "3,4-Dimethyloctane"
-  },
-  {
-   "cas": "15869-93-9",
-   "nameJa": "３，５－ジメチルオクタン",
-   "nameEn": "3,5-Dimethyloctane"
-  },
-  {
-   "cas": "15869-94-0",
-   "nameJa": "３，６－ジメチルオクタン",
-   "nameEn": "3,6-Dimethyloctane"
-  },
-  {
-   "cas": "15869-95-1",
-   "nameJa": "４，４－ジメチルオクタン",
-   "nameEn": "4,4-Dimethyloctane"
-  },
-  {
-   "cas": "15869-96-2",
-   "nameJa": "４，５－ジメチルオクタン",
-   "nameEn": "4,5-Dimethyloctane"
-  },
-  {
-   "cas": "2213-23-2",
-   "nameJa": "２，４－ジメチルヘプタン",
-   "nameEn": "2,4-Dimethylheptane"
-  },
-  {
-   "cas": "2216-30-0",
-   "nameJa": "２，５－ジメチルヘプタン",
-   "nameEn": "2,5-Dimethylheptane"
-  },
-  {
-   "cas": "2216-32-2",
-   "nameJa": "４－エチルヘプタン",
-   "nameEn": "4-Ethylheptane"
-  },
-  {
-   "cas": "2216-33-3",
-   "nameJa": "３－メチルオクタン",
-   "nameEn": "3-Methyloctane"
-  },
-  {
-   "cas": "2216-34-4",
-   "nameJa": "４－メチルオクタン",
-   "nameEn": "4-Methyloctane"
-  },
-  {
-   "cas": "764-97-6",
-   "nameJa": "（Ｅ）－ウンデカ－５－エン",
-   "nameEn": "(E)-Undec-5-ene"
-  },
-  {
-   "cas": "6975-98-0",
-   "nameJa": "２－メチルデカン",
-   "nameEn": "2-Methyldecane"
-  },
-  {
-   "cas": "7146-60-3",
-   "nameJa": "２，３－ジメチルオクタン",
-   "nameEn": "2,3-Dimethyloctane"
-  },
-  {
-   "cas": "7154-80-5",
-   "nameJa": "３，３，５－トリメチルヘプタン",
-   "nameEn": "3,3,5-Trimethylheptane"
-  },
-  {
-   "cas": "7225-67-4",
-   "nameJa": "２，２，３，３，５，６，６－ヘプタメチルヘプタン",
-   "nameEn": "2,2,3,3,5,6,6-Heptamethylheptane"
-  },
-  {
-   "cas": "2998-18-7",
-   "nameJa": "ｓｅｃ－ブチル＝メタクリラート",
-   "nameEn": "sec-Butyl methacrylate"
-  },
-  {
-   "cas": "3074-71-3",
-   "nameJa": "２，３－ジメチルヘプタン",
-   "nameEn": "2,3-Dimethylheptane"
-  },
-  {
-   "cas": "4485-13-6",
-   "nameJa": "４－プロピルヘプタ－３－エン",
-   "nameEn": "4-Propylhept-3-ene"
-  },
-  {
-   "cas": "4485-16-9",
-   "nameJa": "４－メチルヘプタ－３－エン",
-   "nameEn": "4-Methylhept-3-ene"
-  },
-  {
-   "cas": "871-83-0",
-   "nameJa": "２－メチルノナン",
-   "nameEn": "2-Methylnonane"
-  },
-  {
-   "cas": "4941-53-1",
-   "nameJa": "ウンデカ－５－エン",
-   "nameEn": "Undec-5-ene"
-  },
-  {
-   "cas": "18435-22-8",
-   "nameJa": "３－メチルテトラデカン",
-   "nameEn": "3-Methyltetradecane"
-  },
-  {
-   "cas": "13151-34-3",
-   "nameJa": "３－メチルデカン",
-   "nameEn": "3-Methyldecane"
-  },
-  {
-   "cas": "13151-35-4",
-   "nameJa": "５－メチルデカン",
-   "nameEn": "5-Methyldecane"
-  },
-  {
-   "cas": "13287-21-3",
-   "nameJa": "６－メチルトリデカン",
-   "nameEn": "6-Methyltridecane"
-  },
-  {
-   "cas": "13287-23-5",
-   "nameJa": "８－メチルヘプタデカン",
-   "nameEn": "8-Methylheptadecane"
-  },
-  {
-   "cas": "16747-28-7",
-   "nameJa": "２，２，３－トリメチルヘキサン",
-   "nameEn": "2,2,3-Trimethylhexane"
-  },
-  {
-   "cas": "16747-30-1",
-   "nameJa": "２，４，４－トリメチルヘキサン",
-   "nameEn": "2,4,4-Trimethylhexane"
-  },
-  {
-   "cas": "17312-82-2",
-   "nameJa": "４，６－ジメチルウンデカン",
-   "nameEn": "4,6-Dimethylundecane"
-  },
-  {
-   "cas": "17301-23-4",
-   "nameJa": "２，６－ジメチルウンデカン",
-   "nameEn": "2,6-Dimethylundecane"
-  },
-  {
-   "cas": "17301-27-8",
-   "nameJa": "２，１０－ジメチルウンデカン",
-   "nameEn": "2,10-Dimethylundecane"
-  },
-  {
-   "cas": "17301-28-9",
-   "nameJa": "３，６－ジメチルウンデカン",
-   "nameEn": "3,6-Dimethylundecane"
-  },
-  {
-   "cas": "17301-30-3",
-   "nameJa": "３，８－ジメチルウンデカン",
-   "nameEn": "3,8-Dimethylundecane"
-  },
-  {
-   "cas": "17301-94-9",
-   "nameJa": "４－メチルノナン",
-   "nameEn": "4-Methylnonane"
-  },
-  {
-   "cas": "17302-23-7",
-   "nameJa": "４，５－ジメチルノナン",
-   "nameEn": "4,5-Dimethylnonane"
-  },
-  {
-   "cas": "17302-27-1",
-   "nameJa": "２，５－ジメチルノナン",
-   "nameEn": "2,5-Dimethylnonane"
-  },
-  {
-   "cas": "17302-28-2",
-   "nameJa": "２，６－ジメチルノナン",
-   "nameEn": "2,6-Dimethylnonane"
-  },
-  {
-   "cas": "17302-32-8",
-   "nameJa": "３，７－ジメチルノナン",
-   "nameEn": "3,7-Dimethylnonane"
-  },
-  {
-   "cas": "17312-63-9",
-   "nameJa": "５－ブチルノナン",
-   "nameEn": "5-Butylnonane"
-  },
-  {
-   "cas": "17312-65-1",
-   "nameJa": "３，３－ジメチルウンデカン",
-   "nameEn": "3,3-Dimethylundecane"
-  },
-  {
-   "cas": "2432-89-5",
-   "nameJa": "ジデシル＝デカンジオアート",
-   "nameEn": "Didecyl decanedioate"
-  },
-  {
-   "cas": "563-16-6",
-   "nameJa": "３，３－ジメチルヘキサン",
-   "nameEn": "3,3-Dimethylhexane"
-  },
-  {
-   "cas": "583-48-2",
-   "nameJa": "３，４－ジメチルヘキサン",
-   "nameEn": "3,4-Dimethylhexane"
-  },
-  {
-   "cas": "584-94-1",
-   "nameJa": "２，３－ジメチルヘキサン",
-   "nameEn": "2,3-Dimethylhexane"
-  },
-  {
-   "cas": "589-43-5",
-   "nameJa": "２，４－ジメチルヘキサン",
-   "nameEn": "2,4-Dimethylhexane"
-  },
-  {
-   "cas": "921-47-1",
-   "nameJa": "２，３，４－トリメチルヘキサン",
-   "nameEn": "2,3,4-Trimethylhexane"
-  },
-  {
-   "cas": "922-28-1",
-   "nameJa": "３，４－ジメチルヘプタン",
-   "nameEn": "3,4-Dimethylheptane"
-  },
-  {
-   "cas": "922-62-3",
-   "nameJa": "（Ｚ）－３－メチルペンタ－２－エン",
-   "nameEn": "(Z)-3-Methylpent-2-ene"
-  },
-  {
-   "cas": "19689-19-1",
-   "nameJa": "デカ－５－エン",
-   "nameEn": "Dec-5-ene"
-  },
-  {
-   "cas": "590-73-8",
-   "nameJa": "２，２－ジメチルヘキサン",
-   "nameEn": "2,2-Dimethylhexane"
-  },
-  {
-   "cas": "592-13-2",
-   "nameJa": "２，５－ジメチルヘキサン",
-   "nameEn": "2,5-Dimethylhexane"
-  },
-  {
-   "cas": "609-26-7",
-   "nameJa": "３－エチル－２－メチルペンタン",
-   "nameEn": "3-Ethyl-2-methylpentane"
-  },
-  {
-   "cas": "25117-24-2",
-   "nameJa": "４－メチルテトラデカン",
-   "nameEn": "4-Methyltetradecane"
-  },
-  {
-   "cas": "21164-95-4",
-   "nameJa": "７，９－ジメチルヘキサデカン",
-   "nameEn": "7,9-Dimethylhexadecane"
-  },
-  {
-   "cas": "17312-80-0",
-   "nameJa": "２，４－ジメチルウンデカン",
-   "nameEn": "2,4-Dimethylundecane"
-  },
-  {
-   "cas": "1071-26-7",
-   "nameJa": "２，２－ジメチルヘプタン",
-   "nameEn": "2,2-Dimethylheptane"
-  },
-  {
-   "cas": "1072-05-5",
-   "nameJa": "２，６－ジメチルヘプタン",
-   "nameEn": "2,6-Dimethylheptane"
-  },
-  {
-   "cas": "1072-16-8",
-   "nameJa": "２，７－ジメチルオクタン",
-   "nameEn": "2,7-Dimethyloctane"
-  },
-  {
-   "cas": "20278-84-6",
-   "nameJa": "２，４，５－トリメチルヘプタン",
-   "nameEn": "2,4,5-Trimethylheptane"
-  },
-  {
-   "cas": "3221-61-2",
-   "nameJa": "２－メチルオクタン",
-   "nameEn": "2-Methyloctane"
-  },
-  {
-   "cas": "617-78-7",
-   "nameJa": "３－エチルペンタン",
-   "nameEn": "3-Ethylpentane"
-  },
-  {
-   "cas": "5881-17-4",
-   "nameJa": "３－エチルオクタン",
-   "nameEn": "3-Ethyloctane"
-  },
-  {
-   "cas": "5911-04-6",
-   "nameJa": "３－メチルノナン",
-   "nameEn": "3-Methylnonane"
-  },
-  {
-   "cas": "15869-80-4",
-   "nameJa": "３－エチルヘプタン",
-   "nameEn": "3-Ethylheptane"
-  },
-  {
-   "cas": "15869-85-9",
-   "nameJa": "５－メチルノナン",
-   "nameEn": "5-Methylnonane"
-  },
-  {
-   "cas": "15869-86-0",
-   "nameJa": "４－エチルオクタン",
-   "nameEn": "4-Ethyloctane"
-  },
-  {
-   "cas": "15869-87-1",
-   "nameJa": "２，２－ジメチルオクタン",
-   "nameEn": "2,2-Dimethyloctane"
-  },
-  {
-   "cas": "7778-85-0",
-   "nameJa": "１，２－ジメトキシプロパン",
-   "nameEn": "1,2-Dimethoxypropane"
-  },
-  {
-   "cas": "495-61-4",
-   "nameJa": "（Ｓ）－１－メチル－４－（６－メチルヘプタ－１，５－ジエン－２－イル）シクロヘキセン",
-   "nameEn": "(S)-1-Methyl-4-(6-methylhepta-1,5-dien-2-yl)cyclohexene"
-  },
-  {
-   "cas": "92-51-3",
-   "nameJa": "-",
-   "nameEn": "Bicyclohexyl"
-  },
-  {
-   "cas": "591-48-0",
-   "nameJa": "-",
-   "nameEn": "3-methylcyclohexene"
-  },
-  {
-   "cas": "591-49-1",
-   "nameJa": "１－メチルシクロヘキセン",
-   "nameEn": "1-Methylcyclohexene"
-  },
-  {
-   "cas": "933-12-0",
-   "nameJa": "-",
-   "nameEn": "3,5,5-trimethylcyclohexene"
-  },
-  {
-   "cas": "1678-93-9",
-   "nameJa": "-",
-   "nameEn": "Butylcyclohexane"
-  },
-  {
-   "cas": "2050-24-0",
-   "nameJa": "１，３－ジエチル－５－メチルベンゼン",
-   "nameEn": "1,3-Diethyl-5-methylbenzene"
-  },
-  {
-   "cas": "2532-58-3",
-   "nameJa": "-",
-   "nameEn": "Cis-1,3-dimethylcyclopentane"
-  },
-  {
-   "cas": "64275-73-6",
-   "nameJa": "-",
-   "nameEn": "(Z)-oct-5-en-1-ol"
-  },
-  {
-   "cas": "279-23-2",
-   "nameJa": "-",
-   "nameEn": "Norbornane"
-  },
-  {
-   "cas": "937-40-6",
-   "nameJa": "Ｎ－メチル－Ｎ－ニトロソ－１－フェニルメタンアミン",
-   "nameEn": "N-Methyl-N-nitroso-1-phenylmethanamine"
-  },
-  {
-   "cas": "3073-66-3",
-   "nameJa": "-",
-   "nameEn": "1,1,3-trimethylcyclohexane"
-  },
-  {
-   "cas": "2040-95-1",
-   "nameJa": "-",
-   "nameEn": "Butylcyclopentane"
-  },
-  {
-   "cas": "2040-96-2",
-   "nameJa": "-",
-   "nameEn": "Propylcyclopentane"
-  },
-  {
-   "cas": "3875-51-2",
-   "nameJa": "-",
-   "nameEn": "Isopropylcyclopentane"
-  },
-  {
-   "cas": "1678-92-8",
-   "nameJa": "-",
-   "nameEn": "Propylcyclohexane"
-  },
-  {
-   "cas": "1638-26-2",
-   "nameJa": "-",
-   "nameEn": "1,1-dimethylcyclopentane"
-  },
-  {
-   "cas": "1685-82-1",
-   "nameJa": "４，６－ジメチルインダン",
-   "nameEn": "4,6-Dimethylindane"
-  },
-  {
-   "cas": "3788-32-7",
-   "nameJa": "-",
-   "nameEn": "Isobutylcyclopentane"
-  },
-  {
-   "cas": "1678-97-3",
-   "nameJa": "-",
-   "nameEn": "1,2,3-trimethylcyclohexane"
-  },
-  {
-   "cas": "14686-14-7",
-   "nameJa": "（Ｅ）－ヘプタ－３－エン",
-   "nameEn": "(E)-Hept-3-ene"
-  },
-  {
-   "cas": "14686-13-6",
-   "nameJa": "（Ｅ）－ヘプタ－２－エン",
-   "nameEn": "(E)-Hept-2-ene"
-  },
-  {
-   "cas": "55045-08-4",
-   "nameJa": "２－メチル－６－プロピルドデカン",
-   "nameEn": "2-Methyl-6-propyldodecane"
-  },
-  {
-   "cas": "1674-10-8",
-   "nameJa": "-",
-   "nameEn": "1,2-dimethylcyclohexene"
-  },
-  {
-   "cas": "1003-64-1",
-   "nameJa": "-",
-   "nameEn": "Ethylidenecyclohexane"
-  },
-  {
-   "cas": "3178-22-1",
-   "nameJa": "-",
-   "nameEn": "Tert-butylcyclohexane"
-  },
-  {
-   "cas": "1678-98-4",
-   "nameJa": "-",
-   "nameEn": "Isobutylcyclohexane"
-  },
-  {
-   "cas": "3054-63-5",
-   "nameJa": "４，９－ジプロピルドデカン",
-   "nameEn": "4,9-Dipropyldodecane"
-  },
-  {
-   "cas": "7058-01-7",
-   "nameJa": "-",
-   "nameEn": "Sec-butylcyclohexane"
-  },
-  {
-   "cas": "74645-98-0",
-   "nameJa": "２，７，１０－トリメチルドデカン",
-   "nameEn": "2,7,10-Trimethyldodecane"
-  },
-  {
-   "cas": "74630-39-0",
-   "nameJa": "４－メチルウンデカ－１－エン",
-   "nameEn": "4-Methylundec-1-ene"
-  },
-  {
-   "cas": "56851-34-4",
-   "nameJa": "５－メチルウンデカ－２－エン",
-   "nameEn": "5-Methylundec-2-ene"
-  },
-  {
-   "cas": "295-17-0",
-   "nameJa": "-",
-   "nameEn": "Cyclotetradecane"
-  },
-  {
-   "cas": "824-22-6",
-   "nameJa": "-",
-   "nameEn": "4-methylindan"
-  },
-  {
-   "cas": "62960-76-3",
-   "nameJa": "（Ｓ，Ｅ）－２，６－ジメチルオクタ－４－エン",
-   "nameEn": "(S,E)-2,6-Dimethyloct-4-ene"
-  },
-  {
-   "cas": "7206-21-5",
-   "nameJa": "（Ｅ）－オクタデカ－５－エン",
-   "nameEn": "(E)-Octadec-5-ene"
-  },
-  {
-   "cas": "7206-19-1",
-   "nameJa": "（Ｅ）－オクタデカ－３－エン",
-   "nameEn": "(E)-Octadec-3-ene"
-  },
-  {
-   "cas": "62338-08-3",
-   "nameJa": "３－エチル－２，５－ジメチルヘキサ－３－エン",
-   "nameEn": "3-Ethyl-2,5-dimethylhex-3-ene"
-  },
-  {
-   "cas": "6443-92-1",
-   "nameJa": "（Ｚ）－ヘプタ－２－エン",
-   "nameEn": "(Z)-Hept-2-ene"
-  },
-  {
-   "cas": "2658-60-8",
-   "nameJa": "シクロヘキサン－１，１－ジイルジメタノール",
-   "nameEn": "Cyclohexane-1,1-diyldimethanol"
-  },
-  {
-   "cas": "7094-26-0",
-   "nameJa": "-",
-   "nameEn": "1,1,2-trimethylcyclohexane"
-  },
-  {
-   "cas": "7480-80-0",
-   "nameJa": "-",
-   "nameEn": "5-methyl-1H-indene"
-  },
-  {
-   "cas": "822-50-4",
-   "nameJa": "-",
-   "nameEn": "Trans-1,2-dimethylcyclopentane"
-  },
-  {
-   "cas": "1759-58-6",
-   "nameJa": "-",
-   "nameEn": "Trans-1,3-dimethylcyclopentane"
-  },
-  {
-   "cas": "1754-00-3",
-   "nameJa": "３，７－ジメチルオクタ－３，６－ジエナール",
-   "nameEn": "3,7-Dimethylocta-3,6-dienal"
-  },
-  {
-   "cas": "64475-85-0",
-   "nameJa": "石油スピリット",
-   "nameEn": "Petroleum spirits"
-  },
-  {
-   "cas": "1331-43-7",
-   "nameJa": "ジエチルシクロヘキサン",
-   "nameEn": "Diethylcyclohexane"
-  },
-  {
-   "cas": "CHRIP-C027-400-18A",
-   "nameJa": "CHRIP-C027-400-18A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C027-532-59A",
-   "nameJa": "CHRIP-C027-532-59A",
-   "nameEn": ""
-  },
-  {
-   "cas": "4912-92-9",
-   "nameJa": "１，１－ジメチルインダン",
-   "nameEn": "1,1-Dimethylindane"
-  },
-  {
-   "cas": "7094-27-1",
-   "nameJa": "１，１，４－トリメチルシクロヘキサン",
-   "nameEn": "1,1,4-Trimethylcyclohexane"
-  },
-  {
-   "cas": "3728-55-0",
-   "nameJa": "１－エチル－３－メチルシクロヘキサン",
-   "nameEn": "1-Ethyl-3-methylcyclohexane"
-  },
-  {
-   "cas": "3728-56-1",
-   "nameJa": "１－エチル－４－メチルシクロヘキサン",
-   "nameEn": "1-Ethyl-4-methylcyclohexane"
-  },
-  {
-   "cas": "874-35-1",
-   "nameJa": "５－メチルインダン",
-   "nameEn": "5-Methylindane"
-  },
-  {
-   "cas": "116502-45-5",
-   "nameJa": "３－メチルヘキサン",
-   "nameEn": "3-Methylhexane"
-  },
-  {
-   "cas": "23758-27-2",
-   "nameJa": "１－メチルシクロヘキサ－２－エン－１－オール",
-   "nameEn": "1-Methylcyclohex-2-en-1-ol"
-  },
-  {
-   "cas": "CHRIP-C033-206-07A",
-   "nameJa": "CHRIP-C033-206-07A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-206-18A",
-   "nameJa": "CHRIP-C033-206-18A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-206-30A",
-   "nameJa": "CHRIP-C033-206-30A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-206-41A",
-   "nameJa": "CHRIP-C033-206-41A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-206-52A",
-   "nameJa": "CHRIP-C033-206-52A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-206-63A",
-   "nameJa": "CHRIP-C033-206-63A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-206-74A",
-   "nameJa": "CHRIP-C033-206-74A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-206-85A",
-   "nameJa": "CHRIP-C033-206-85A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-206-96A",
-   "nameJa": "CHRIP-C033-206-96A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-207-09A",
-   "nameJa": "CHRIP-C033-207-09A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-207-10A",
-   "nameJa": "CHRIP-C033-207-10A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-207-21A",
-   "nameJa": "CHRIP-C033-207-21A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-207-32A",
-   "nameJa": "CHRIP-C033-207-32A",
-   "nameEn": ""
-  },
-  {
-   "cas": "54120-62-6",
-   "nameJa": "エチル－１，２，４－トリメチルベンゼン",
-   "nameEn": "Ethyl-1,2,4-trimethylbenzene"
-  },
-  {
-   "cas": "CHRIP-C033-207-54A",
-   "nameJa": "CHRIP-C033-207-54A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-207-65A",
-   "nameJa": "CHRIP-C033-207-65A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-207-76A",
-   "nameJa": "CHRIP-C033-207-76A",
-   "nameEn": ""
-  },
-  {
-   "cas": "56147-63-8",
-   "nameJa": "２－エチルインダン",
-   "nameEn": "2-Ethylindane"
-  },
-  {
-   "cas": "6682-71-9",
-   "nameJa": "４，７－ジメチルインダン",
-   "nameEn": "4,7-Dimethylindane"
-  },
-  {
-   "cas": "CHRIP-C033-208-01A",
-   "nameJa": "CHRIP-C033-208-01A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-208-12A",
-   "nameJa": "CHRIP-C033-208-12A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-208-23A",
-   "nameJa": "CHRIP-C033-208-23A",
-   "nameEn": ""
-  },
-  {
-   "cas": "3726-47-4",
-   "nameJa": "１－エチル－３－メチルシクロペンタン",
-   "nameEn": "1-Ethyl-3-methylcyclopentane"
-  },
-  {
-   "cas": "930-89-2",
-   "nameJa": "ｃｉｓ－１－エチル－２－メチルシクロペンタン",
-   "nameEn": "cis-1-Ethyl-2-methylcyclopentane"
-  },
-  {
-   "cas": "2613-66-3",
-   "nameJa": "ｃｉｓ－１－エチル－３－メチルシクロペンタン",
-   "nameEn": "cis-1-Ethyl-3-methylcyclopentane"
-  },
-  {
-   "cas": "2613-65-2",
-   "nameJa": "ｔｒａｎｓ－１－エチル－３－メチルシクロペンタン",
-   "nameEn": "trans-1-Ethyl-3-methylcyclopentane"
-  },
-  {
-   "cas": "4126-78-7",
-   "nameJa": "メチルシクロヘプタン",
-   "nameEn": "Methylcycloheptane"
-  },
-  {
-   "cas": "16747-50-5",
-   "nameJa": "１－エチル－１－メチルシクロペンタン",
-   "nameEn": "1-Ethyl-1-methylcyclopentane"
-  },
-  {
-   "cas": "3726-46-3",
-   "nameJa": "１－エチル－２－メチルシクロペンタン",
-   "nameEn": "1-Ethyl-2-methylcyclopentane"
-  },
-  {
-   "cas": "CHRIP-C033-209-03A",
-   "nameJa": "CHRIP-C033-209-03A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-209-14A",
-   "nameJa": "CHRIP-C033-209-14A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-209-25A",
-   "nameJa": "CHRIP-C033-209-25A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-209-36A",
-   "nameJa": "CHRIP-C033-209-36A",
-   "nameEn": ""
-  },
-  {
-   "cas": "7667-60-9",
-   "nameJa": "ｒ－１，ｔ－２，ｔ－４－トリメチルシクロヘキサン",
-   "nameEn": "r-1,t-2,t-4-Trimethylcyclohexane"
-  },
-  {
-   "cas": "4923-78-8",
-   "nameJa": "ｔｒａｎｓ－１－エチル－２－メチルシクロヘキサン",
-   "nameEn": "trans-1-Ethyl-2-methylcyclohexane"
-  },
-  {
-   "cas": "4923-77-7",
-   "nameJa": "ｃｉｓ－１－エチル－２－メチルシクロヘキサン",
-   "nameEn": "cis-1-Ethyl-2-methylcyclohexane"
-  },
-  {
-   "cas": "4926-78-7",
-   "nameJa": "ｃｉｓ－１－エチル－４－メチルシクロヘキサン",
-   "nameEn": "cis-1-Ethyl-4-methylcyclohexane"
-  },
-  {
-   "cas": "54549-80-3",
-   "nameJa": "２－エチル－１，１－ジメチルシクロペンタン",
-   "nameEn": "2-Ethyl-1,1-dimethylcyclopentane"
-  },
-  {
-   "cas": "3728-57-2",
-   "nameJa": "１－メチル－２－プロピルシクロペンタン",
-   "nameEn": "1-Methyl-2-propylcyclopentane"
-  },
-  {
-   "cas": "3868-64-2",
-   "nameJa": "２－メチルオクタヒドロペンタレン",
-   "nameEn": "2-Methyloctahydropentalene"
-  },
-  {
-   "cas": "6236-88-0",
-   "nameJa": "ｔｒａｎｓ－１－エチル－４－メチルシクロヘキサン",
-   "nameEn": "trans-1-Ethyl-4-methylcyclohexane"
-  },
-  {
-   "cas": "7667-59-6",
-   "nameJa": "ｒ－１，ｔ－２，ｃ－４－トリメチルシクロヘキサン",
-   "nameEn": "r-1,t-2,c-4-Trimethylcyclohexane"
-  },
-  {
-   "cas": "CHRIP-C033-210-42A",
-   "nameJa": "CHRIP-C033-210-42A",
-   "nameEn": ""
-  },
-  {
-   "cas": "6783-92-2",
-   "nameJa": "１，１，２，３－テトラメチルシクロヘキサン",
-   "nameEn": "1,1,2,3-tetramethylcyclohexane"
-  },
-  {
-   "cas": "50876-31-8",
-   "nameJa": "ｔｒａｎｓ－１，１，３，５－テトラメチルシクロヘキサン",
-   "nameEn": "trans-1,1,3,5-Tetramethylcyclohexane"
-  },
-  {
-   "cas": "62238-32-8",
-   "nameJa": "ｔｒａｎｓ－１－エチル－１，４－ジメチルシクロヘキサン",
-   "nameEn": "trans-1-Ethyl-1,4-dimethylcyclohexane"
-  },
-  {
-   "cas": "62238-30-6",
-   "nameJa": "ｃｉｓ－１－エチル－１，４－ジメチルシクロヘキサン",
-   "nameEn": "cis-1-Ethyl-1,4-dimethylcyclohexane"
-  },
-  {
-   "cas": "CHRIP-C033-210-97A",
-   "nameJa": "CHRIP-C033-210-97A",
-   "nameEn": ""
-  },
-  {
-   "cas": "7058-05-1",
-   "nameJa": "１－エチル－２，３－ジメチルシクロヘキサン",
-   "nameEn": "1-Ethyl-2,3-dimethylcyclohexane"
-  },
-  {
-   "cas": "3642-13-5",
-   "nameJa": "１，２－ジエチルシクロヘキサン",
-   "nameEn": "1,2-Diethylcyclohexane"
-  },
-  {
-   "cas": "4291-79-6",
-   "nameJa": "１－メチル－２－プロピルシクロヘキサン",
-   "nameEn": "1-Methyl-2-propylcyclohexane"
-  },
-  {
-   "cas": "4291-80-9",
-   "nameJa": "１－メチル－３－プロピルシクロヘキサン",
-   "nameEn": "1-Methyl-3-propylcyclohexane"
-  },
-  {
-   "cas": "2272-03-9",
-   "nameJa": "ブチリデンシクロヘキサン",
-   "nameEn": "Butylidenecyclohexane"
-  },
-  {
-   "cas": "32281-85-9",
-   "nameJa": "２－イソプロピル－１，３－ジメチルシクロペンタン",
-   "nameEn": "2-Isopropyl-1,3-dimethylcyclopentane"
-  },
-  {
-   "cas": "74764-47-9",
-   "nameJa": "１－メチル－１－（２－メチルアリル）シクロペンタン",
-   "nameEn": "1-Methyl-1-(2-methylallyl)cyclopentane"
-  },
-  {
-   "cas": "1005-68-1",
-   "nameJa": "イソペンチルシクロペンタン",
-   "nameEn": "Isopentylcyclopentane"
-  },
-  {
-   "cas": "CHRIP-C033-211-99A",
-   "nameJa": "CHRIP-C033-211-99A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-02A",
-   "nameJa": "CHRIP-C033-212-02A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-13A",
-   "nameJa": "CHRIP-C033-212-13A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-24A",
-   "nameJa": "CHRIP-C033-212-24A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-35A",
-   "nameJa": "CHRIP-C033-212-35A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-46A",
-   "nameJa": "CHRIP-C033-212-46A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-57A",
-   "nameJa": "CHRIP-C033-212-57A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-68A",
-   "nameJa": "CHRIP-C033-212-68A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-79A",
-   "nameJa": "CHRIP-C033-212-79A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-80A",
-   "nameJa": "CHRIP-C033-212-80A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-212-91A",
-   "nameJa": "CHRIP-C033-212-91A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-04A",
-   "nameJa": "CHRIP-C033-213-04A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-15A",
-   "nameJa": "CHRIP-C033-213-15A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-26A",
-   "nameJa": "CHRIP-C033-213-26A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-37A",
-   "nameJa": "CHRIP-C033-213-37A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-48A",
-   "nameJa": "CHRIP-C033-213-48A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-59A",
-   "nameJa": "CHRIP-C033-213-59A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-60A",
-   "nameJa": "CHRIP-C033-213-60A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-71A",
-   "nameJa": "CHRIP-C033-213-71A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-82A",
-   "nameJa": "CHRIP-C033-213-82A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-213-93A",
-   "nameJa": "CHRIP-C033-213-93A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-06A",
-   "nameJa": "CHRIP-C033-214-06A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-17A",
-   "nameJa": "CHRIP-C033-214-17A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-28A",
-   "nameJa": "CHRIP-C033-214-28A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-39A",
-   "nameJa": "CHRIP-C033-214-39A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-40A",
-   "nameJa": "CHRIP-C033-214-40A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-51A",
-   "nameJa": "CHRIP-C033-214-51A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-62A",
-   "nameJa": "CHRIP-C033-214-62A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-73A",
-   "nameJa": "CHRIP-C033-214-73A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-84A",
-   "nameJa": "CHRIP-C033-214-84A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-214-95A",
-   "nameJa": "CHRIP-C033-214-95A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-215-08A",
-   "nameJa": "CHRIP-C033-215-08A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-215-19A",
-   "nameJa": "CHRIP-C033-215-19A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-215-20A",
-   "nameJa": "CHRIP-C033-215-20A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-215-31A",
-   "nameJa": "CHRIP-C033-215-31A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-215-42A",
-   "nameJa": "CHRIP-C033-215-42A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-215-53A",
-   "nameJa": "CHRIP-C033-215-53A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-215-64A",
-   "nameJa": "CHRIP-C033-215-64A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-215-75A",
-   "nameJa": "CHRIP-C033-215-75A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-215-86A",
-   "nameJa": "CHRIP-C033-215-86A",
-   "nameEn": ""
-  },
-  {
-   "cas": "2890-62-2",
-   "nameJa": "１－（１－メチルシクロヘキシル）エタノン",
-   "nameEn": "1-(1-Methylcyclohexyl)ethanone"
-  },
-  {
-   "cas": "18402-82-9",
-   "nameJa": "（Ｅ）－オクタ－３－エン－２－オン",
-   "nameEn": "(E)-Oct-3-en-2-one"
-  },
-  {
-   "cas": "CHRIP-C033-216-11A",
-   "nameJa": "CHRIP-C033-216-11A",
-   "nameEn": ""
-  },
-  {
-   "cas": "39178-69-3",
-   "nameJa": "３－ブチルシクロヘキサノン",
-   "nameEn": "3-Butylcyclohexanone"
-  },
-  {
-   "cas": "CHRIP-C033-216-33A",
-   "nameJa": "CHRIP-C033-216-33A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-216-44A",
-   "nameJa": "CHRIP-C033-216-44A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-216-55A",
-   "nameJa": "CHRIP-C033-216-55A",
-   "nameEn": ""
-  },
-  {
-   "cas": "62237-98-3",
-   "nameJa": "２，２，４－トリメチルデカン",
-   "nameEn": "2,2,4-Trimethyldecane"
-  },
-  {
-   "cas": "62108-32-1",
-   "nameJa": "２，２，３，４，６，６－ヘキサメチルヘプタン",
-   "nameEn": "2,2,3,4,6,6-Hexamethylheptane"
-  },
-  {
-   "cas": "CHRIP-C033-216-88A",
-   "nameJa": "CHRIP-C033-216-88A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-216-99A",
-   "nameJa": "CHRIP-C033-216-99A",
-   "nameEn": ""
-  },
-  {
-   "cas": "2027-12-5",
-   "nameJa": "１－（１－シクロヘキシルエチル）－４－メチルシクロヘキサン",
-   "nameEn": "1-(1-Cyclohexylethyl)-4-methylcyclohexane"
-  },
-  {
-   "cas": "14174-83-5",
-   "nameJa": "ヘキサヒドロ－１Ｈ－ピロリジン－１－オン",
-   "nameEn": "Hexahydro-1H-pyrrolizin-1-one"
-  },
-  {
-   "cas": "73583-56-9",
-   "nameJa": "２，６－ジメチル－７－ニトロヘプタ－２－エン－４－オン",
-   "nameEn": "2,6-Dimethyl-7-nitrohept-2-en-4-one"
-  },
-  {
-   "cas": "CHRIP-C033-217-35A",
-   "nameJa": "CHRIP-C033-217-35A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-217-57A",
-   "nameJa": "CHRIP-C033-217-57A",
-   "nameEn": ""
-  },
-  {
-   "cas": "60813-89-0",
-   "nameJa": "２－（ｓｅｃ－ブチル）－５－メチルチオフェン",
-   "nameEn": "2-(sec-butyl)-5-methylthiophene"
-  },
-  {
-   "cas": "CHRIP-C033-217-79A",
-   "nameJa": "CHRIP-C033-217-79A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-217-80A",
-   "nameJa": "CHRIP-C033-217-80A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-217-91A",
-   "nameJa": "CHRIP-C033-217-91A",
-   "nameEn": ""
-  },
-  {
-   "cas": "16519-24-7",
-   "nameJa": "３－（ヘプチルオキシ）プロパ－１－エン",
-   "nameEn": "3-(Heptyloxy)prop-1-ene"
-  },
-  {
-   "cas": "CHRIP-C033-218-15A",
-   "nameJa": "CHRIP-C033-218-15A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-218-26A",
-   "nameJa": "CHRIP-C033-218-26A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-218-37A",
-   "nameJa": "CHRIP-C033-218-37A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-218-48A",
-   "nameJa": "CHRIP-C033-218-48A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-218-59A",
-   "nameJa": "CHRIP-C033-218-59A",
-   "nameEn": ""
-  },
-  {
-   "cas": "127204-12-0",
-   "nameJa": "２，２，１１，１１－テトラメチルドデカン",
-   "nameEn": "2,2,11,11-Tetramethyldodecane"
-  },
-  {
-   "cas": "CHRIP-C033-218-71A",
-   "nameJa": "CHRIP-C033-218-71A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-218-82A",
-   "nameJa": "CHRIP-C033-218-82A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-218-93A",
-   "nameJa": "CHRIP-C033-218-93A",
-   "nameEn": ""
-  },
-  {
-   "cas": "21293-01-6",
-   "nameJa": "（２Ｚ，４Ｚ）－３，４－ジメチルヘキサ－２，４－ジエン",
-   "nameEn": "(2Z,4Z)-3,4-Dimethylhexa-2,4-diene"
-  },
-  {
-   "cas": "CHRIP-C033-219-28A",
-   "nameJa": "CHRIP-C033-219-28A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-219-39A",
-   "nameJa": "CHRIP-C033-219-39A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-219-40A",
-   "nameJa": "CHRIP-C033-219-40A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-219-51A",
-   "nameJa": "CHRIP-C033-219-51A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-219-62A",
-   "nameJa": "CHRIP-C033-219-62A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-219-73A",
-   "nameJa": "CHRIP-C033-219-73A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-219-84A",
-   "nameJa": "CHRIP-C033-219-84A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-219-95A",
-   "nameJa": "CHRIP-C033-219-95A",
-   "nameEn": ""
-  },
-  {
-   "cas": "866760-27-2",
-   "nameJa": "（Ｚ）－２－メチルテトラデカ－４－エン",
-   "nameEn": "(Z)-2-methyltetradec-4-ene"
-  },
-  {
-   "cas": "CHRIP-C033-220-12A",
-   "nameJa": "CHRIP-C033-220-12A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-220-23A",
-   "nameJa": "CHRIP-C033-220-23A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-220-34A",
-   "nameJa": "CHRIP-C033-220-34A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-220-67A",
-   "nameJa": "CHRIP-C033-220-67A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-220-78A",
-   "nameJa": "CHRIP-C033-220-78A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-220-89A",
-   "nameJa": "CHRIP-C033-220-89A",
-   "nameEn": ""
-  },
-  {
-   "cas": "61142-69-6",
-   "nameJa": "１－エチル－２，４－ジメチルシクロヘキサン",
-   "nameEn": "1-Ethyl-2,4-dimethylcyclohexane"
-  },
-  {
-   "cas": "1679-00-1",
-   "nameJa": "１，４－ジエチルシクロヘキサン",
-   "nameEn": "1,4-Diethylcyclohexane"
-  },
-  {
-   "cas": "489-20-3",
-   "nameJa": "１－イソプロピル－２，３－ジメチルシクロペンタン",
-   "nameEn": "1-Isopropyl-2,3-dimethylcyclopentane"
-  },
-  {
-   "cas": "62238-05-5",
-   "nameJa": "１，２－ジメチル－３－ペンチルシクロプロパン",
-   "nameEn": "1,2-Dimethyl-3-pentylcyclopropane"
-  },
-  {
-   "cas": "CHRIP-C033-221-47A",
-   "nameJa": "CHRIP-C033-221-47A",
-   "nameEn": ""
-  },
-  {
-   "cas": "61208-94-4",
-   "nameJa": "ペンタン－２－イルシクロヘキサン",
-   "nameEn": "Pentan-2-ylcyclohexane"
-  },
-  {
-   "cas": "61141-80-8",
-   "nameJa": "１，２－ジエチル－３－メチルシクロヘキサン",
-   "nameEn": "1,2-Diethyl-3-methylcyclohexane"
-  },
-  {
-   "cas": "41977-32-6",
-   "nameJa": "１，２－ジブチルシクロプロパン",
-   "nameEn": "1,2-Dibutylcyclopropane"
-  },
-  {
-   "cas": "26321-98-2",
-   "nameJa": "ペンタン－３－イルシクロヘキサン",
-   "nameEn": "Pentan-3-ylcyclohexane"
-  },
-  {
-   "cas": "1618-23-1",
-   "nameJa": "２－エチルデカヒドロナフタレン",
-   "nameEn": "2-Ethyldecahydronaphthalene"
-  },
-  {
-   "cas": "CHRIP-C033-222-05A",
-   "nameJa": "CHRIP-C033-222-05A",
-   "nameEn": ""
-  },
-  {
-   "cas": "2958-75-0",
-   "nameJa": "１－メチルデカヒドロナフタレン",
-   "nameEn": "1-Methyldecahydronaphthalene"
-  },
-  {
-   "cas": "4683-94-7",
-   "nameJa": "ｒｅｌ－（２Ｒ，４ａＳ，８ａＳ）－２－メチルデカヒドロナフタレン",
-   "nameEn": "rel-(2R,4aS,8aS)-2-Methyldecahydronaphthalene"
-  },
-  {
-   "cas": "2958-76-1",
-   "nameJa": "２－メチルデカヒドロナフタレン",
-   "nameEn": "2-Methyldecahydronaphthalene"
-  },
-  {
-   "cas": "CHRIP-C033-222-49A",
-   "nameJa": "CHRIP-C033-222-49A",
-   "nameEn": ""
-  },
-  {
-   "cas": "16538-89-9",
-   "nameJa": "ｓｅｃ－ブチルシクロオクタン",
-   "nameEn": "sec-Butylcyclooctane"
-  },
-  {
-   "cas": "CHRIP-C033-222-61A",
-   "nameJa": "CHRIP-C033-222-61A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-222-72A",
-   "nameJa": "CHRIP-C033-222-72A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-222-83A",
-   "nameJa": "CHRIP-C033-222-83A",
-   "nameEn": ""
-  },
-  {
-   "cas": "61142-68-5",
-   "nameJa": "１－ヘキシル－３－メチルシクロペンタン",
-   "nameEn": "1-Hexyl-3-methylcyclopentane"
-  },
-  {
-   "cas": "31124-85-3",
-   "nameJa": "２，２－ジメチルデカヒドロナフタレン",
-   "nameEn": "2,2-Dimethyldecahydronaphthalene"
-  },
-  {
-   "cas": "CHRIP-C033-223-18A",
-   "nameJa": "CHRIP-C033-223-18A",
-   "nameEn": ""
-  },
-  {
-   "cas": "2935-07-1",
-   "nameJa": "ドデカヒドロ－１Ｈ－フェナレン",
-   "nameEn": "Dodecahydro-1H-phenalene"
-  },
-  {
-   "cas": "CHRIP-C033-223-30A",
-   "nameJa": "CHRIP-C033-223-30A",
-   "nameEn": ""
-  },
-  {
-   "cas": "61142-52-7",
-   "nameJa": "１－ブチル－２－ペンチルシクロペンタン",
-   "nameEn": "1-Butyl-2-pentylcyclopentane"
-  },
-  {
-   "cas": "CHRIP-C033-223-52A",
-   "nameJa": "CHRIP-C033-223-52A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-223-74A",
-   "nameJa": "CHRIP-C033-223-74A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-223-85A",
-   "nameJa": "CHRIP-C033-223-85A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-223-96A",
-   "nameJa": "CHRIP-C033-223-96A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-224-09A",
-   "nameJa": "CHRIP-C033-224-09A",
-   "nameEn": ""
-  },
-  {
-   "cas": "41977-42-8",
-   "nameJa": "１－メチル－１－（３－メチルブタン－２－イル）－２－ノニルシクロプロパン",
-   "nameEn": "1-Methyl-1-(3-methylbutan-2-yl)-2-nonylcyclopropane"
-  },
-  {
-   "cas": "CHRIP-C033-224-21A",
-   "nameJa": "CHRIP-C033-224-21A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-224-32A",
-   "nameJa": "CHRIP-C033-224-32A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-224-43A",
-   "nameJa": "CHRIP-C033-224-43A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-224-54A",
-   "nameJa": "CHRIP-C033-224-54A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-224-65A",
-   "nameJa": "CHRIP-C033-224-65A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-224-76A",
-   "nameJa": "CHRIP-C033-224-76A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-224-87A",
-   "nameJa": "CHRIP-C033-224-87A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-224-98A",
-   "nameJa": "CHRIP-C033-224-98A",
-   "nameEn": ""
-  },
-  {
-   "cas": "18970-44-0",
-   "nameJa": "１－エチル－２－イソプロピルベンゼン",
-   "nameEn": "1-Ethyl-2-isopropylbenzene"
-  },
-  {
-   "cas": "16021-20-8",
-   "nameJa": "１－エチル－２－プロピルベンゼン",
-   "nameEn": "1-Ethyl-2-propylbenzene"
-  },
-  {
-   "cas": "CHRIP-C033-225-23A",
-   "nameJa": "CHRIP-C033-225-23A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-225-34A",
-   "nameJa": "CHRIP-C033-225-34A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-225-45A",
-   "nameJa": "CHRIP-C033-225-45A",
-   "nameEn": ""
-  },
-  {
-   "cas": "4218-48-8",
-   "nameJa": "１－エチル－４－イソプロピルベンゼン",
-   "nameEn": "1-Ethyl-4-isopropylbenzene"
-  },
-  {
-   "cas": "CHRIP-C033-225-67A",
-   "nameJa": "CHRIP-C033-225-67A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-225-78A",
-   "nameJa": "CHRIP-C033-225-78A",
-   "nameEn": ""
-  },
-  {
-   "cas": "3674-69-9",
-   "nameJa": "４，５－ジメチルフェナントレン",
-   "nameEn": "4,5-Dimethylphenanthrene"
-  },
-  {
-   "cas": "CHRIP-C033-225-90A",
-   "nameJa": "CHRIP-C033-225-90A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-03A",
-   "nameJa": "CHRIP-C033-226-03A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-14A",
-   "nameJa": "CHRIP-C033-226-14A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-25A",
-   "nameJa": "CHRIP-C033-226-25A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-36A",
-   "nameJa": "CHRIP-C033-226-36A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-47A",
-   "nameJa": "CHRIP-C033-226-47A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-58A",
-   "nameJa": "CHRIP-C033-226-58A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-69A",
-   "nameJa": "CHRIP-C033-226-69A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-70A",
-   "nameJa": "CHRIP-C033-226-70A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-81A",
-   "nameJa": "CHRIP-C033-226-81A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-226-92A",
-   "nameJa": "CHRIP-C033-226-92A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-227-05A",
-   "nameJa": "CHRIP-C033-227-05A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-227-16A",
-   "nameJa": "CHRIP-C033-227-16A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-227-27A",
-   "nameJa": "CHRIP-C033-227-27A",
-   "nameEn": ""
-  },
-  {
-   "cas": "4457-00-5",
-   "nameJa": "ヘキシルシクロペンタン",
-   "nameEn": "Hexylcyclopentane"
-  },
-  {
-   "cas": "CHRIP-C033-255-77A",
-   "nameJa": "CHRIP-C033-255-77A",
-   "nameEn": ""
-  },
-  {
-   "cas": "CHRIP-C033-255-88A",
-   "nameJa": "CHRIP-C033-255-88A",
-   "nameEn": ""
-  },
-  {
-   "cas": "2547-26-4",
-   "nameJa": "-",
-   "nameEn": "-"
-  },
-  {
-   "cas": "1587-04-8",
-   "nameJa": "-",
-   "nameEn": "-"
-  },
-  {
-   "cas": "53172-84-2",
-   "nameJa": "-",
-   "nameEn": "-"
-  },
-  {
-   "cas": "4175-53-5",
-   "nameJa": "-",
-   "nameEn": "-"
-  },
-  {
-   "cas": "17059-48-2",
-   "nameJa": "-",
-   "nameEn": "-"
-  },
-  {
-   "cas": "17057-82-8",
-   "nameJa": "-",
-   "nameEn": "-"
-  },
-  {
-   "cas": "20836-11-7",
-   "nameJa": "-",
-   "nameEn": "-"
-  },
-  {
-   "cas": "40844-26-6",
-   "nameJa": "-",
-   "nameEn": "-"
-  }
- ],
+ "voc": {
+  "number": "法第2条第4項",
+  "name": "大気中に排出され、又は飛散した時に気体である有機化合物（浮遊粒子状物質及びオキシダントの生成の原因とならない物質として政令で定める物質を除く。）",
+  "cas": [
+   "CHRIP-C000-377-45A",
+   "CHRIP-C001-381-74A",
+   "107-05-1",
+   "95-48-7",
+   "106-44-5",
+   "106-46-7",
+   "111-90-0",
+   "106-89-8",
+   "64-17-5",
+   "111-76-2",
+   "71-55-6",
+   "79-00-5",
+   "95-47-6",
+   "108-38-3",
+   "67-64-1",
+   "75-05-8",
+   "107-18-6",
+   "71-36-3",
+   "78-92-2",
+   "78-83-1",
+   "75-65-0",
+   "75-00-3",
+   "141-43-5",
+   "78-59-1",
+   "98-82-8",
+   "78-93-3",
+   "628-63-7",
+   "106-97-8",
+   "79-11-8",
+   "110-82-7",
+   "108-93-0",
+   "74-84-0",
+   "107-21-1",
+   "74-98-6",
+   "287-92-3",
+   "60-29-7",
+   "123-92-2",
+   "8052-41-3",
+   "141-78-6",
+   "106-98-9",
+   "590-18-1",
+   "624-64-6",
+   "123-86-4",
+   "123-72-8",
+   "108-94-1",
+   "124-18-5",
+   "25340-17-4",
+   "591-78-6",
+   "592-41-6",
+   "110-19-0",
+   "540-84-1",
+   "79-20-9",
+   "108-10-1",
+   "872-50-4",
+   "109-66-0",
+   "107-98-2",
+   "71-23-8",
+   "67-63-0",
+   "109-99-9",
+   "99-87-6",
+   "96-33-3",
+   "108-90-7",
+   "108-39-4",
+   "142-82-5",
+   "591-76-4",
+   "8008-20-6",
+   "107-31-3",
+   "79-10-7",
+   "592-27-8",
+   "112-34-5",
+   "108-65-6",
+   "100-51-6",
+   "104-76-7",
+   "75-28-5",
+   "108-21-4",
+   "5989-27-5",
+   "110-43-0",
+   "108-87-2",
+   "111-65-9",
+   "109-60-4",
+   "97-88-1",
+   "115-11-7",
+   "95-50-1",
+   "541-73-1",
+   "78-78-4",
+   "108-67-8",
+   "112-70-9",
+   "111-84-2",
+   "107-83-5",
+   "96-14-0",
+   "526-73-8",
+   "64742-47-8",
+   "95-63-6",
+   "112-92-5",
+   "109-59-1",
+   "119-64-2",
+   "91-17-8",
+   "79-92-5",
+   "868-77-9",
+   "637-92-3",
+   "138-86-3",
+   "1319-77-3",
+   "1330-20-7",
+   "1116-54-7",
+   "493-02-7",
+   "116-14-3",
+   "8030-30-6",
+   "65996-79-4",
+   "97-64-3",
+   "142-29-0",
+   "592-76-7",
+   "96-37-7",
+   "1120-21-4",
+   "103-65-1",
+   "79-29-8",
+   "563-46-2",
+   "513-35-9",
+   "563-45-1",
+   "107-01-7",
+   "75-83-2",
+   "527-84-4",
+   "141-93-5",
+   "135-01-3",
+   "105-05-5",
+   "80-56-8",
+   "104-51-8",
+   "135-98-8",
+   "95-13-6",
+   "103-44-6",
+   "538-93-2",
+   "585-07-9",
+   "1678-91-7",
+   "2439-35-2",
+   "7580-85-0",
+   "42152-47-6",
+   "95-93-2",
+   "109-67-1",
+   "294-62-2",
+   "527-53-7",
+   "544-76-3",
+   "622-96-8",
+   "627-20-3",
+   "629-50-5",
+   "629-59-4",
+   "629-62-9",
+   "646-04-8",
+   "1640-89-7",
+   "2425-77-6",
+   "18172-67-3",
+   "565-59-3",
+   "2049-95-8",
+   "7705-14-8",
+   "620-14-4",
+   "108-08-7",
+   "496-11-7",
+   "591-21-9",
+   "593-45-3",
+   "589-34-4",
+   "763-29-1",
+   "696-29-7",
+   "3386-33-2",
+   "565-75-3",
+   "25321-22-6",
+   "589-81-1",
+   "589-53-7",
+   "590-35-2",
+   "562-49-2",
+   "1678-82-6",
+   "6069-98-3",
+   "629-92-5",
+   "2452-99-5",
+   "2453-00-1",
+   "13675-20-2",
+   "3877-19-8",
+   "99-72-9",
+   "700-12-9",
+   "15890-40-1",
+   "2719-52-0",
+   "1595-16-0",
+   "1758-85-6",
+   "1758-88-9",
+   "2207-01-4",
+   "2207-03-6",
+   "2207-04-7",
+   "2815-57-8",
+   "2815-58-9",
+   "3971-28-6",
+   "3971-29-7",
+   "611-14-3",
+   "4516-69-2",
+   "6876-23-9",
+   "4706-89-2",
+   "4706-90-5",
+   "1196-58-3",
+   "3236-48-4",
+   "13632-93-4",
+   "13632-94-5",
+   "13632-95-6",
+   "55045-14-2",
+   "488-23-3",
+   "624-29-3",
+   "500-00-5",
+   "13732-80-4",
+   "638-04-0",
+   "2613-69-6",
+   "4259-00-1",
+   "52993-54-1",
+   "52896-90-9",
+   "63830-69-3",
+   "54105-67-8",
+   "62016-18-6",
+   "62016-37-9",
+   "62108-23-0",
+   "62108-26-3",
+   "19398-89-1",
+   "62185-53-9",
+   "62187-13-7",
+   "59643-68-4",
+   "933-98-2",
+   "934-74-7",
+   "934-80-5",
+   "114376-34-0",
+   "874-41-9",
+   "2980-69-0",
+   "7045-71-8",
+   "17302-33-9",
+   "17302-37-3",
+   "17312-54-8",
+   "590-66-9",
+   "1074-17-5",
+   "1074-43-7",
+   "1074-55-1",
+   "16883-48-0",
+   "19902-08-0",
+   "2870-04-4",
+   "17453-94-0",
+   "2051-30-1",
+   "2847-72-5",
+   "638-36-8",
+   "14676-29-0",
+   "14720-74-2",
+   "14905-56-7",
+   "4032-94-4",
+   "4050-45-7",
+   "4057-42-5",
+   "4110-44-5",
+   "6418-43-5",
+   "6418-44-6",
+   "6418-46-8",
+   "15869-89-3",
+   "15869-92-8",
+   "15869-93-9",
+   "15869-94-0",
+   "15869-95-1",
+   "15869-96-2",
+   "2213-23-2",
+   "2216-30-0",
+   "2216-32-2",
+   "2216-33-3",
+   "2216-34-4",
+   "764-97-6",
+   "6975-98-0",
+   "7146-60-3",
+   "7154-80-5",
+   "7225-67-4",
+   "2998-18-7",
+   "3074-71-3",
+   "4485-13-6",
+   "4485-16-9",
+   "871-83-0",
+   "4941-53-1",
+   "18435-22-8",
+   "13151-34-3",
+   "13151-35-4",
+   "13287-21-3",
+   "13287-23-5",
+   "16747-28-7",
+   "16747-30-1",
+   "17312-82-2",
+   "17301-23-4",
+   "17301-27-8",
+   "17301-28-9",
+   "17301-30-3",
+   "17301-94-9",
+   "17302-23-7",
+   "17302-27-1",
+   "17302-28-2",
+   "17302-32-8",
+   "17312-63-9",
+   "17312-65-1",
+   "2432-89-5",
+   "563-16-6",
+   "583-48-2",
+   "584-94-1",
+   "589-43-5",
+   "921-47-1",
+   "922-28-1",
+   "922-62-3",
+   "19689-19-1",
+   "590-73-8",
+   "592-13-2",
+   "609-26-7",
+   "25117-24-2",
+   "21164-95-4",
+   "17312-80-0",
+   "1071-26-7",
+   "1072-05-5",
+   "1072-16-8",
+   "20278-84-6",
+   "3221-61-2",
+   "617-78-7",
+   "5881-17-4",
+   "5911-04-6",
+   "15869-80-4",
+   "15869-85-9",
+   "15869-86-0",
+   "15869-87-1",
+   "7778-85-0",
+   "495-61-4",
+   "92-51-3",
+   "591-48-0",
+   "591-49-1",
+   "933-12-0",
+   "1678-93-9",
+   "2050-24-0",
+   "2532-58-3",
+   "64275-73-6",
+   "279-23-2",
+   "937-40-6",
+   "3073-66-3",
+   "2040-95-1",
+   "2040-96-2",
+   "3875-51-2",
+   "1678-92-8",
+   "1638-26-2",
+   "1685-82-1",
+   "3788-32-7",
+   "1678-97-3",
+   "14686-14-7",
+   "14686-13-6",
+   "55045-08-4",
+   "1674-10-8",
+   "1003-64-1",
+   "3178-22-1",
+   "1678-98-4",
+   "3054-63-5",
+   "7058-01-7",
+   "74645-98-0",
+   "74630-39-0",
+   "56851-34-4",
+   "295-17-0",
+   "824-22-6",
+   "62960-76-3",
+   "7206-21-5",
+   "7206-19-1",
+   "62338-08-3",
+   "6443-92-1",
+   "2658-60-8",
+   "7094-26-0",
+   "7480-80-0",
+   "822-50-4",
+   "1759-58-6",
+   "1754-00-3",
+   "64475-85-0",
+   "1331-43-7",
+   "CHRIP-C027-400-18A",
+   "CHRIP-C027-532-59A",
+   "4912-92-9",
+   "7094-27-1",
+   "3728-55-0",
+   "3728-56-1",
+   "874-35-1",
+   "116502-45-5",
+   "23758-27-2",
+   "CHRIP-C033-206-07A",
+   "CHRIP-C033-206-18A",
+   "CHRIP-C033-206-30A",
+   "CHRIP-C033-206-41A",
+   "CHRIP-C033-206-52A",
+   "CHRIP-C033-206-63A",
+   "CHRIP-C033-206-74A",
+   "CHRIP-C033-206-85A",
+   "CHRIP-C033-206-96A",
+   "CHRIP-C033-207-09A",
+   "CHRIP-C033-207-10A",
+   "CHRIP-C033-207-21A",
+   "CHRIP-C033-207-32A",
+   "54120-62-6",
+   "CHRIP-C033-207-54A",
+   "CHRIP-C033-207-65A",
+   "CHRIP-C033-207-76A",
+   "56147-63-8",
+   "6682-71-9",
+   "CHRIP-C033-208-01A",
+   "CHRIP-C033-208-12A",
+   "CHRIP-C033-208-23A",
+   "3726-47-4",
+   "930-89-2",
+   "2613-66-3",
+   "2613-65-2",
+   "4126-78-7",
+   "16747-50-5",
+   "3726-46-3",
+   "CHRIP-C033-209-03A",
+   "CHRIP-C033-209-14A",
+   "CHRIP-C033-209-25A",
+   "CHRIP-C033-209-36A",
+   "7667-60-9",
+   "4923-78-8",
+   "4923-77-7",
+   "4926-78-7",
+   "54549-80-3",
+   "3728-57-2",
+   "3868-64-2",
+   "6236-88-0",
+   "7667-59-6",
+   "CHRIP-C033-210-42A",
+   "6783-92-2",
+   "50876-31-8",
+   "62238-32-8",
+   "62238-30-6",
+   "CHRIP-C033-210-97A",
+   "7058-05-1",
+   "3642-13-5",
+   "4291-79-6",
+   "4291-80-9",
+   "2272-03-9",
+   "32281-85-9",
+   "74764-47-9",
+   "1005-68-1",
+   "CHRIP-C033-211-99A",
+   "CHRIP-C033-212-02A",
+   "CHRIP-C033-212-13A",
+   "CHRIP-C033-212-24A",
+   "CHRIP-C033-212-35A",
+   "CHRIP-C033-212-46A",
+   "CHRIP-C033-212-57A",
+   "CHRIP-C033-212-68A",
+   "CHRIP-C033-212-79A",
+   "CHRIP-C033-212-80A",
+   "CHRIP-C033-212-91A",
+   "CHRIP-C033-213-04A",
+   "CHRIP-C033-213-15A",
+   "CHRIP-C033-213-26A",
+   "CHRIP-C033-213-37A",
+   "CHRIP-C033-213-48A",
+   "CHRIP-C033-213-59A",
+   "CHRIP-C033-213-60A",
+   "CHRIP-C033-213-71A",
+   "CHRIP-C033-213-82A",
+   "CHRIP-C033-213-93A",
+   "CHRIP-C033-214-06A",
+   "CHRIP-C033-214-17A",
+   "CHRIP-C033-214-28A",
+   "CHRIP-C033-214-39A",
+   "CHRIP-C033-214-40A",
+   "CHRIP-C033-214-51A",
+   "CHRIP-C033-214-62A",
+   "CHRIP-C033-214-73A",
+   "CHRIP-C033-214-84A",
+   "CHRIP-C033-214-95A",
+   "CHRIP-C033-215-08A",
+   "CHRIP-C033-215-19A",
+   "CHRIP-C033-215-20A",
+   "CHRIP-C033-215-31A",
+   "CHRIP-C033-215-42A",
+   "CHRIP-C033-215-53A",
+   "CHRIP-C033-215-64A",
+   "CHRIP-C033-215-75A",
+   "CHRIP-C033-215-86A",
+   "2890-62-2",
+   "18402-82-9",
+   "CHRIP-C033-216-11A",
+   "39178-69-3",
+   "CHRIP-C033-216-33A",
+   "CHRIP-C033-216-44A",
+   "CHRIP-C033-216-55A",
+   "62237-98-3",
+   "62108-32-1",
+   "CHRIP-C033-216-88A",
+   "CHRIP-C033-216-99A",
+   "2027-12-5",
+   "14174-83-5",
+   "73583-56-9",
+   "CHRIP-C033-217-35A",
+   "CHRIP-C033-217-57A",
+   "60813-89-0",
+   "CHRIP-C033-217-79A",
+   "CHRIP-C033-217-80A",
+   "CHRIP-C033-217-91A",
+   "16519-24-7",
+   "CHRIP-C033-218-15A",
+   "CHRIP-C033-218-26A",
+   "CHRIP-C033-218-37A",
+   "CHRIP-C033-218-48A",
+   "CHRIP-C033-218-59A",
+   "127204-12-0",
+   "CHRIP-C033-218-71A",
+   "CHRIP-C033-218-82A",
+   "CHRIP-C033-218-93A",
+   "21293-01-6",
+   "CHRIP-C033-219-28A",
+   "CHRIP-C033-219-39A",
+   "CHRIP-C033-219-40A",
+   "CHRIP-C033-219-51A",
+   "CHRIP-C033-219-62A",
+   "CHRIP-C033-219-73A",
+   "CHRIP-C033-219-84A",
+   "CHRIP-C033-219-95A",
+   "866760-27-2",
+   "CHRIP-C033-220-12A",
+   "CHRIP-C033-220-23A",
+   "CHRIP-C033-220-34A",
+   "CHRIP-C033-220-67A",
+   "CHRIP-C033-220-78A",
+   "CHRIP-C033-220-89A",
+   "61142-69-6",
+   "1679-00-1",
+   "489-20-3",
+   "62238-05-5",
+   "CHRIP-C033-221-47A",
+   "61208-94-4",
+   "61141-80-8",
+   "41977-32-6",
+   "26321-98-2",
+   "1618-23-1",
+   "CHRIP-C033-222-05A",
+   "2958-75-0",
+   "4683-94-7",
+   "2958-76-1",
+   "CHRIP-C033-222-49A",
+   "16538-89-9",
+   "CHRIP-C033-222-61A",
+   "CHRIP-C033-222-72A",
+   "CHRIP-C033-222-83A",
+   "61142-68-5",
+   "31124-85-3",
+   "CHRIP-C033-223-18A",
+   "2935-07-1",
+   "CHRIP-C033-223-30A",
+   "61142-52-7",
+   "CHRIP-C033-223-52A",
+   "CHRIP-C033-223-74A",
+   "CHRIP-C033-223-85A",
+   "CHRIP-C033-223-96A",
+   "CHRIP-C033-224-09A",
+   "41977-42-8",
+   "CHRIP-C033-224-21A",
+   "CHRIP-C033-224-32A",
+   "CHRIP-C033-224-43A",
+   "CHRIP-C033-224-54A",
+   "CHRIP-C033-224-65A",
+   "CHRIP-C033-224-76A",
+   "CHRIP-C033-224-87A",
+   "CHRIP-C033-224-98A",
+   "18970-44-0",
+   "16021-20-8",
+   "CHRIP-C033-225-23A",
+   "CHRIP-C033-225-34A",
+   "CHRIP-C033-225-45A",
+   "4218-48-8",
+   "CHRIP-C033-225-67A",
+   "CHRIP-C033-225-78A",
+   "3674-69-9",
+   "CHRIP-C033-225-90A",
+   "CHRIP-C033-226-03A",
+   "CHRIP-C033-226-14A",
+   "CHRIP-C033-226-25A",
+   "CHRIP-C033-226-36A",
+   "CHRIP-C033-226-47A",
+   "CHRIP-C033-226-58A",
+   "CHRIP-C033-226-69A",
+   "CHRIP-C033-226-70A",
+   "CHRIP-C033-226-81A",
+   "CHRIP-C033-226-92A",
+   "CHRIP-C033-227-05A",
+   "CHRIP-C033-227-16A",
+   "CHRIP-C033-227-27A",
+   "4457-00-5",
+   "CHRIP-C033-255-77A",
+   "CHRIP-C033-255-88A",
+   "2547-26-4",
+   "1587-04-8",
+   "53172-84-2",
+   "4175-53-5",
+   "17059-48-2",
+   "17057-82-8",
+   "20836-11-7",
+   "40844-26-6"
+  ]
+ },
  "excluded": [
   {
    "number": "令第2条の2第2号",

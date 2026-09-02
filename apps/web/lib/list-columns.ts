@@ -255,6 +255,8 @@ export const REGULATION_CATEGORY_COLUMNS: QueryColumn[] = [
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "lawId", kind: "enum", field: "lawId" },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
+  // 人が付けた点数。法規制の一覧から「何点以上の区分か」で絞れるようにする
+  { key: "score", kind: "number", field: "score" },
 ];
 
 export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [

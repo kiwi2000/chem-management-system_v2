@@ -250,6 +250,11 @@ export const ja = {
     filterValue2: "値（終わり）",
     all: "すべて",
     firstPage: "最初のページ",
+    /** ページ送りのボタンに出す記号。読み上げには prevPage / nextPage を使う */
+    prevMark: "<",
+    nextMark: ">",
+    prevPage: "前のページ",
+    nextPage: "次のページ",
     lastPage: "最後のページ",
     jumpToPage: "ページを指定",
     pageSize: "1ページ件数",
@@ -910,7 +915,10 @@ export const ja = {
     matchedCas: "該当CAS",
     matchedCategories: "該当法規制",
     hitCount: (n: number) => `${n}件`,
-    content: "含有率",
+    // 組成の表と同じ言葉にそろえる（「含有率」と混ぜない）
+    content: "重量%",
+    /** 区分の行は区分のスコア、法文物質名の行はその行を作った物質のスコア */
+    score: "スコア",
     warning: "警告",
     applicable: "該当",
     notApplicable: "非該当",

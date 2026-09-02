@@ -918,17 +918,30 @@ function Pager({
           <ChevronsLeft className="size-4" />
         </Button>
       )}
-      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onJump(page - 1)}>
-        {m.common.prev}
+      {/*
+        送りのボタンは記号だけにする。**読み上げには言葉を残す**
+        （記号だけでは、耳で聞いている人に何のボタンか分からない）
+      */}
+      <Button
+        variant="outline"
+        size="sm"
+        title={m.table.prevPage}
+        aria-label={m.table.prevPage}
+        disabled={page <= 1}
+        onClick={() => onJump(page - 1)}
+      >
+        {m.table.prevMark}
       </Button>
       <PageJump page={page} totalPages={totalPages} onJump={onJump} />
       <Button
         variant="outline"
         size="sm"
+        title={m.table.nextPage}
+        aria-label={m.table.nextPage}
         disabled={page >= totalPages}
         onClick={() => onJump(page + 1)}
       >
-        {m.common.next}
+        {m.table.nextMark}
       </Button>
       {totalPages > 2 && (
         <Button

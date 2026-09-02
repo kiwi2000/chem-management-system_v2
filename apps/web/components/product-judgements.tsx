@@ -52,7 +52,8 @@ const CELL = "border-r px-2 py-1 last:border-r-0";
  *
  * **判定の列は置かない。該当したものしか並べないため。**
  *
- * 含有率と該当CASは2つで1組。**間に別の列を挟まないこと**（合算かどうかが読めなくなる）。
+ * 重量%と該当CASは2つで1組。**間に別の列を挟まないこと**（合算かどうかが読めなくなる）。
+ * スコアはその右に置く。**CASの隣**なので、どの物質の点数かが読める。
  */
 const HEADS: { key: string; width: number; label: (m: M) => string; className?: string }[] = [
   { key: "law", width: 80, label: (m) => m.judgements.law },
@@ -62,6 +63,7 @@ const HEADS: { key: string; width: number; label: (m: M) => string; className?: 
   { key: "statutoryName", width: 288, label: (m) => m.judgements.statutoryName },
   { key: "content", width: 72, label: (m) => m.judgements.content, className: "text-right" },
   { key: "matchedCas", width: 96, label: (m) => m.judgements.matchedCas },
+  { key: "score", width: 72, label: (m) => m.judgements.score, className: "text-right" },
   { key: "warning", width: 256, label: (m) => m.judgements.warning },
 ];
 
@@ -349,6 +351,12 @@ export function ProductJudgements({
                         </TableCell>
                         <TableCell className={CELL} />
                         <TableCell className={CELL} />
+                        {/* 区分の行には**区分に付けた点数**を出す。物質の点数はこの合計 */}
+                        <TableCell
+                          className={cn(CELL, "text-right align-top font-mono tabular-nums")}
+                        >
+                          {j.categoryScore}
+                        </TableCell>
                         <TableCell className={cn(CELL, "align-top")}>
                           <Warning j={j} m={m} locale={locale} />
                         </TableCell>
@@ -429,6 +437,12 @@ export function ProductJudgements({
                               <OneLine text={h.name ?? m.judgements.categoryItself} />
                             </TableCell>
                             <MatchedCells hit={h} m={m} cellClass={CELL} />
+                            {/* その行を作った物質の点数。合算した行は寄与ぶんの合計 */}
+                            <TableCell
+                              className={cn(CELL, "text-right align-top font-mono tabular-nums")}
+                            >
+                              {h.score ?? ""}
+                            </TableCell>
                             <TableCell className={CELL} />
                             {canEdit && <TableCell className={CELL} />}
                           </TableRow>

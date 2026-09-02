@@ -215,6 +215,17 @@ export function LawTreeSection({
             : "",
       },
       {
+        /* 区分に付けた点数。**閾値の隣に置く。**どちらも判定に効く数字なので並べて読める */
+        key: "score",
+        header: m.score.categoryScore,
+        kind: "number",
+        width: 72,
+        sortable: false,
+        filterable: false,
+        className: "text-right font-mono text-xs",
+        render: (r) => (r.kind === "category" ? r.category.score : ""),
+      },
+      {
         // 表には出さない、絞り込みだけの列。区分の側を探して法律を絞る
         key: "categoryCode",
         header: m.regulationCategories.code,
@@ -226,6 +237,17 @@ export function LawTreeSection({
         key: "categoryName",
         header: m.regulationCategories.title,
         kind: "text",
+        filterOnly: true,
+        width: 0,
+      },
+      {
+        /*
+          スコアでの絞り込み。区分の側を探して、当たった区分を持つ法律だけを残す。
+          数の列なので「30以上」「70未満」のような指定ができる
+        */
+        key: "categoryScore",
+        header: m.score.categoryScore,
+        kind: "number",
         filterOnly: true,
         width: 0,
       },
@@ -260,7 +282,8 @@ export function LawTreeSection({
   const categoryQueries = useMemo(() => {
     const byCode = tableState.filters.categoryCode;
     const byName = tableState.filters.categoryName;
-    if (!byCode && !byName) return null;
+    const byScore = tableState.filters.categoryScore;
+    if (!byCode && !byName && !byScore) return null;
     const build = (filters: TableState["filters"]) =>
       serializeTableState(
         { sort: [{ column: "displayOrder", direction: "asc" }], filters, page: 1, pageSize: 200 },
@@ -268,6 +291,7 @@ export function LawTreeSection({
       ).toString();
     return {
       code: byCode ? build({ code: byCode }) : null,
+      score: byScore ? build({ score: byScore }) : null,
       // 名称は原文・日本語・英語のどれに入っているか決まっていないので、3つとも探して合わせる
       names: byName
         ? [build({ nameOriginal: byName }), build({ nameJa: byName }), build({ nameEn: byName })]
@@ -347,13 +371,19 @@ export function LawTreeSection({
       return ((await res.json()) as ListResponse<RegulationCategoryDto>).items;
     };
     void (async () => {
-      const { code, names } = categoryQueries;
+      const { code, names, score } = categoryQueries;
       let items: RegulationCategoryDto[] = [];
       if (names) {
         const lists = await Promise.all(names.map(fetchOne));
         // 同じ区分が複数の欄で当たることがあるので、idでまとめる
         const byId = new Map(lists.flat().map((c) => [c.id, c]));
         items = [...byId.values()];
+      }
+      if (score) {
+        const byScore = await fetchOne(score);
+        // ほかの条件も指定されていれば、どちらにも当たったものだけ
+        const ids = new Set(byScore.map((c) => c.id));
+        items = names ? items.filter((c) => ids.has(c.id)) : byScore;
       }
       if (code) {
         const byCode = await fetchOne(code);
@@ -598,7 +628,7 @@ export function LawTreeSection({
         // 左から詰めて並べる。指定しないと画面幅いっぱいに散らばってしまう
         filterLayout={[
           ["code", "nameJa", "countryId"],
-          ["categoryCode", "categoryName"],
+          ["categoryCode", "categoryName", "categoryScore"],
         ]}
         // 法律は見出しの行。区分がいくつ続いても、どこまでが1つの法律か分かるようにする
         rowClassName={(r) => (r.kind === "law" ? "bg-muted/60 font-semibold" : undefined)}

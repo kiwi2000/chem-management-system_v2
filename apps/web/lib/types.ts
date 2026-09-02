@@ -181,6 +181,12 @@ export interface JudgementHitDto {
   contributions: { cas: string; pct: string }[];
   /** 合算した含有率。**まとめたときだけ入る**（足していないものを足したように見せない） */
   total: string | null;
+  /**
+   * この行を作った物質のスコア。寄与が複数あるときは合計。
+   * 組成を見られない人には出さないので、`hits` ごと空になる。
+   * **製品の画面でだけ入れる。**区分から製品を逆引きする表では出さないので任意
+   */
+  score?: string;
 }
 
 /**
@@ -191,6 +197,8 @@ export interface JudgementHitDto {
  */
 export interface ProductJudgementDto {
   categoryId: string;
+  /** この規制区分に付けたスコア。物質のスコアはこれの合計 */
+  categoryScore: string;
   lawCode: string;
   lawNameJa: string | null;
   lawNameEn: string | null;
@@ -527,6 +535,11 @@ export interface AggregateRowDto {
   nameJa: string;
   nameEn: string | null;
   totalPct: string;
+  /**
+   * この物質のスコア。当たっている規制区分の点数の合計で、**組成とは関係しない**。
+   * 同じCASの物質は同じ値になる
+   */
+  score: string;
   contributions: AggregateContributionDto[];
   /**
    * 組成の行に書かれていた備考。

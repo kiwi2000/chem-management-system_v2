@@ -1,3 +1,4 @@
+import { fromScaled, normalizeCas, sumScaled } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { LAW_ORDER_SELECT, compareLawOrder, lawOrderKey } from "@/lib/law-order";
@@ -39,6 +40,7 @@ export async function toJudgementDtos(
           nameEn: true,
           nameOriginal: true,
           displayOrder: true,
+          score: true,
           law: {
             select: {
               nameJa: true,
@@ -79,9 +81,35 @@ export async function toJudgementDtos(
   const infoOf = new Map(substances.map((s) => [s.id, s]));
   const userOf = new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
 
+  /*
+    行ごとのスコアを出すために、寄与しているCASの物質スコアを引く。
+    **CAS番号で引く。**判定の根拠はCASで持っており、物質のidは持っていない
+  */
+  const hitCas = withHits
+    ? [
+        ...new Set(
+          rows.flatMap((r) =>
+            r.hits.flatMap((h) =>
+              ((h.contributions ?? []) as { cas: string }[]).map((c) => normalizeCas(c.cas)),
+            ),
+          ),
+        ),
+      ]
+    : [];
+  const scored =
+    hitCas.length === 0
+      ? []
+      : await prisma.substance.findMany({
+          where: { casNormalized: { in: hitCas }, deletedAt: null },
+          select: { casNormalized: true, score: true },
+          distinct: ["casNormalized"],
+        });
+  const scoreOf = new Map(scored.map((x) => [x.casNormalized ?? "", x.score.toString()]));
+
   return rows
     .map((r) => ({
       categoryId: r.categoryId,
+      categoryScore: r.category.score.toString(),
       lawCode: r.category.law.code,
       lawNameJa: r.category.law.nameJa,
       lawNameEn: r.category.law.nameEn,
@@ -102,11 +130,17 @@ export async function toJudgementDtos(
             .map((h) => {
               // 区分そのものが当たったときは、指す法文物質名が無い
               const info = h.statutorySubstanceId ? infoOf.get(h.statutorySubstanceId) : undefined;
+              const contributions = (h.contributions ?? []) as { cas: string; pct: string }[];
               return {
                 name: info ? (info.nameJa ?? info.nameOriginal) : null,
                 officialNumber: info?.officialNumber ?? null,
-                contributions: (h.contributions ?? []) as { cas: string; pct: string }[],
+                contributions,
                 total: h.total?.toString() ?? null,
+                /*
+                  その行を作った物質のスコア。**合算した行は寄与ぶんを足す。**
+                  含有率を足して1行にしている以上、スコアも同じ数え方にそろえる
+                */
+                score: sumScores(contributions.map((c) => scoreOf.get(normalizeCas(c.cas)) ?? "0")),
               };
             })
             // 多いものから。まず何が効いているかを見たい
@@ -118,6 +152,12 @@ export async function toJudgementDtos(
     }))
     .sort((a, b) => compareLawOrder(a._order, b._order))
     .map(({ _order, ...rest }) => rest);
+}
+
+/** スコアの合計。小数を落とさないよう、文字列のまま足す */
+function sumScores(values: string[]): string {
+  if (values.length === 0) return "0";
+  return fromScaled(sumScaled(values));
 }
 
 /** 並べ替えに使う代表値。合計が無いときは、いちばん大きい寄与を見る */

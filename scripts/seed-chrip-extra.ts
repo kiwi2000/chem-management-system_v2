@@ -48,9 +48,11 @@ interface Pending {
   cas: string[];
 }
 interface Voc {
-  cas: string;
-  nameJa: string;
-  nameEn: string;
+  /** 条文の項番号 */
+  number: string;
+  /** 条文の定義文。これが法文物質名になる */
+  name: string;
+  cas: string[];
 }
 interface Excluded {
   number: string;
@@ -136,7 +138,7 @@ async function main() {
 
   const data = JSON.parse(
     readFileSync(join(process.cwd(), "scripts/data/chrip-extra.json"), "utf-8"),
-  ) as { pending: Pending[]; voc: Voc[]; excluded: Excluded[] };
+  ) as { pending: Pending[]; voc: Voc; excluded: Excluded[] };
 
   const version = await prisma.linkSetVersion.findFirst({
     where: { isCurrent: true, deletedAt: null },
@@ -149,15 +151,9 @@ async function main() {
   });
   if (!source) throw new Error(`データソース ${SOURCE_CODE} がありません`);
 
-  // CASリンクは物質マスタにある番号にだけ張れる。名前も物質マスタから取る
-  const master = await prisma.substance.findMany({
-    select: { code: true, casNumber: true, nameJa: true, nameEn: true },
-  });
+  // CASリンクは物質マスタにある番号にだけ張れる
+  const master = await prisma.substance.findMany({ select: { casNumber: true } });
   const known = new Set(master.map((s) => s.casNumber).filter((c): c is string => !!c));
-  const nameOfCode = new Map(master.map((s) => [s.code, s]));
-  const nameOfCas = new Map(
-    master.filter((s) => s.casNumber).map((s) => [s.casNumber!, s] as const),
-  );
 
   async function link(substanceId: string, cas: string[]): Promise<number> {
     const usable = [
@@ -269,32 +265,45 @@ async function main() {
         "法文物質名には物質自身の名前を、番号にはCAS番号を入れている。出どころは CHRIP（NITE）",
     });
   }
+  const vocCode = `JP-APA-VOC-${data.voc.number}`;
   let vocLinked = 0;
-  for (const [i, v] of data.voc.entries()) {
-    if (!write || !vocClass) continue;
-    const sub = nameOfCas.get(v.cas) ?? nameOfCode.get(v.cas);
-    const nameJa = sub?.nameJa || v.nameJa;
-    const id = await upsertSubstance(vocClass, `JP-APA-VOC-${v.cas}`, {
-      officialNumber: v.cas,
-      nameOriginal: nameJa,
+  if (write && vocClass) {
+    const id = await upsertSubstance(vocClass, vocCode, {
+      officialNumber: data.voc.number,
+      nameOriginal: data.voc.name,
       nameLang: "JA",
-      nameJa,
-      nameEn: sub?.nameEn || v.nameEn || null,
-      displayOrder: i + 1,
+      nameJa: data.voc.name,
+      displayOrder: 1,
       aggregation: "NONE",
       thresholdLower: "0",
       lowerBound: "EXCLUSIVE",
       thresholdUpper: "100",
       upperBound: "INCLUSIVE",
       applicableCondition: VOC_CONDITION,
-      note: "出どころ: CHRIP（NITE）。法第2条第4項の定義に当たるとされた物質",
+      note: "出どころ: 大気汚染防止法 第2条第4項（e-Gov）。当たる物質は CHRIP（NITE）による",
     });
-    vocLinked += await link(id, [v.cas]);
+    vocLinked = await link(id, data.voc.cas);
+
+    /*
+      **前に物質1件ずつで作った行を片付ける。**
+      はじめは物質の名前を法文物質名にしていたが、条文の定義文1件に改めた（2026-09-02）。
+      同じ区分に古い行が残ると、同じ物質が二重に当たる
+    */
+    const stale = await prisma.statutorySubstance.findMany({
+      where: { classId: vocClass, NOT: { codeNormalized: normalizeCode(vocCode) } },
+      select: { id: true },
+    });
+    if (stale.length > 0) {
+      const ids = stale.map((r) => r.id);
+      await prisma.statutoryCasLink.deleteMany({ where: { statutorySubstanceId: { in: ids } } });
+      await prisma.statutorySubstance.deleteMany({ where: { id: { in: ids } } });
+      console.log(`  （前の作りの法文物質名 ${stale.length} 件を片付けました）`);
+    }
   }
   console.log(
     `  大気 揮発性有機化合物（VOC）`.padEnd(38) +
-      `法文物質名 ${String(data.voc.length).padStart(3)} 件` +
-      (write ? ` / CAS ${vocLinked} 件` : ""),
+      `法文物質名   1 件（定義文）` +
+      (write ? ` / CAS ${vocLinked} 件` : ` / CAS ${data.voc.cas.length} 件`),
   );
 
   let excClass: string | null = null;

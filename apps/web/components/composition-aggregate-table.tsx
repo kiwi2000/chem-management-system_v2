@@ -29,14 +29,14 @@ import { cn } from "@/lib/utils";
 const CELL = "border-r px-2 py-1 break-words last:border-r-0";
 
 /**
- * 左に貼り付ける列の数。CAS・物質ID・物質名・重量%・備考まで（組成そのものの列は全部）。
+ * 左に貼り付ける列の数。CAS・物質ID・物質名・重量%・スコア・備考まで（組成そのものの列は全部）。
  *
  * 法規制の列は地域を分けるとどこまでも右へ伸びるので、
  * 横に送ると**いま見ている行がどの物質のものか分からなくなる**。
- * 貼り付ける幅は合わせて720px。画面が狭いと法規制を見る場所が減るので、
+ * 貼り付ける幅は合わせて792px。画面が狭いと法規制を見る場所が減るので、
  * 引いて広げるほうは `frozen` の上限（見えている幅の6割）で止まる。
  */
-const FROZEN = 5;
+const FROZEN = 6;
 
 /**
  * 当たってはいないが、CAS が載っているものに付ける印。
@@ -123,6 +123,16 @@ const HEADS: {
     */
     width: 120,
     label: (m) => m.composition.contentPct,
+    className: "text-right whitespace-nowrap",
+  },
+  /*
+    物質のスコア。**重量%の右に置く。**当たっている規制区分の点数の合計で、
+    組成とは関係しない値だが、物質ごとの重みを重量%と並べて読めるようにする
+  */
+  {
+    key: "score",
+    width: 72,
+    label: (m) => m.score.substanceScore,
     className: "text-right whitespace-nowrap",
   },
   // 上の組成表を出さない組成があるので、備考はこちらでも受け持つ
@@ -768,13 +778,19 @@ export function CompositionAggregateTable({
                         {row.totalPct}%
                       </td>
                       <td
+                        className={cn(CELL, STICKY_PLAIN, "text-right font-mono whitespace-nowrap")}
+                        style={cols.frozenProps(4).style}
+                      >
+                        {row.score}
+                      </td>
+                      <td
                         className={cn(
                           CELL,
                           STICKY_PLAIN,
-                          cols.frozenProps(4).className,
+                          cols.frozenProps(5).className,
                           "text-muted-foreground text-xs",
                         )}
-                        style={cols.frozenProps(4).style}
+                        style={cols.frozenProps(5).style}
                       >
                         {row.note}
                       </td>
@@ -866,10 +882,15 @@ export function CompositionAggregateTable({
                           >
                             {c.pct}%
                           </td>
+                          {/* スコアは物質ごとの値。内訳の行では出さない */}
+                          <td
+                            className={cn(CELL, OPAQUE_MUTED_40)}
+                            style={cols.frozenProps(4).style}
+                          />
                           {/* 備考。ここを抜かすと、右の法規制の列が1つずれる */}
                           <td
-                            className={cn(CELL, OPAQUE_MUTED_40, cols.frozenProps(4).className)}
-                            style={cols.frozenProps(4).style}
+                            className={cn(CELL, OPAQUE_MUTED_40, cols.frozenProps(5).className)}
+                            style={cols.frozenProps(5).style}
                           />
                           {leaves.map((c) => (
                             <td key={c.key} className={CELL} />
@@ -900,10 +921,12 @@ export function CompositionAggregateTable({
                   >
                     {data.totalPct}%
                   </td>
+                  {/* スコアのぶん。合計は出さない（物質ごとの値を足しても意味を持たない） */}
+                  <td className={cn(CELL, OPAQUE_MUTED_50)} style={cols.frozenProps(4).style} />
                   {/* 備考のぶん。ここを抜かすと右端が1列ずれて、最後のセルだけ色が付かない */}
                   <td
-                    className={cn(CELL, OPAQUE_MUTED_50, cols.frozenProps(4).className)}
-                    style={cols.frozenProps(4).style}
+                    className={cn(CELL, OPAQUE_MUTED_50, cols.frozenProps(5).className)}
+                    style={cols.frozenProps(5).style}
                   />
                   {leaves.map((c) => (
                     <td key={c.key} className={CELL} />

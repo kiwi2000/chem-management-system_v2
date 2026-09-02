@@ -11,7 +11,9 @@ import type { CompositionLineDto, CompositionResponse } from "@/lib/types";
 
 /** 表示に必要な関連（構成要素のコード・名称・CAS番号） */
 export const COMPOSITION_INCLUDE = {
-  substance: { select: { id: true, code: true, nameJa: true, nameEn: true, casNumber: true } },
+  substance: {
+    select: { id: true, code: true, nameJa: true, nameEn: true, casNumber: true, score: true },
+  },
   childProduct: {
     select: {
       id: true,

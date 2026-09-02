@@ -10,7 +10,9 @@
  *             CHRIP は適用日（令和9年4月1日など）を持っている。
  *             施行日ごとに規制区分を分けて登録するために、番号・名称・裾切値・CASを出す
  *   voc     … 大気汚染防止法の揮発性有機化合物（法第2条第4項）。
- *             条文は物質を名指しせず定義だけを置くので、**法文物質名は物質そのものの名前**にする
+ *             条文は物質を名指しせず定義だけを置くので、
+ *             **法文物質名は条文の定義文そのもの**を1件だけ持ち、そこに全CASをぶら下げる
+ *             （CHRIP の一覧の見せ方と同じ）
  *
  * もとになるのは取り込みが当てられなかった記録 `.cache/chrip/misses.tsv` と、
  * 取得済みの詳細ページ。**新しく取りに行かない。**
@@ -22,6 +24,10 @@ const MISSES = ".cache/chrip/misses.tsv";
 const ALL_CAS = ".cache/chrip/all-cas.json";
 const DETAIL = ".cache/chrip/detail";
 const OUT = "scripts/data/chrip-extra.json";
+
+/** 大気汚染防止法（法そのもの）。揮発性有機化合物の定義はこの第2条第4項 */
+const APA_LAW_ID = "343AC0000000097";
+const VOC_NUMBER = "法第2条第4項";
 
 /** CAS番号を持たない物質に付けた独自コードの頭（scripts/chrip-import.ts と揃える） */
 const OWN_PREFIX = "CHRIP-";
@@ -46,9 +52,11 @@ interface Pending {
 }
 
 interface Voc {
-  cas: string;
-  nameJa: string;
-  nameEn: string;
+  /** 条文の項番号。CHRIP の政令番号と同じ書き方 */
+  number: string;
+  /** 条文の定義文。**e-Gov の条文から取り、CHRIP の記載と一致することを確かめる** */
+  name: string;
+  cas: string[];
 }
 
 interface Excluded {
@@ -81,7 +89,30 @@ function pick(text: string, at: number, label: string): string | null {
   return m ? m[1] : null;
 }
 
-function main() {
+/**
+ * 大気汚染防止法 第2条第4項の定義文を、e-Gov の条文から取る。
+ *
+ * **法文物質名は一次資料から。**CHRIP も同じ文を載せているが、
+ * 出どころは条文の側に置く（`docs/法規制データの作り方.md` 第0章）。
+ */
+async function vocDefinition(): Promise<string> {
+  const path = join(".cache/laws", `${APA_LAW_ID}.xml`);
+  if (!existsSync(path)) {
+    const res = await fetch(`https://laws.e-gov.go.jp/api/1/lawdata/${APA_LAW_ID}`);
+    if (!res.ok) throw new Error(`大気汚染防止法を取れません（${res.status}）`);
+    writeFileSync(path, await res.text(), "utf8");
+  }
+  const xml = readFileSync(path, "utf8");
+  const art = /<Article Num="2">([\s\S]*?)<\/Article>/.exec(xml);
+  if (!art) throw new Error("大気汚染防止法 第2条が見つかりません");
+  const text = art[1]!.replace(/<[^>]+>/g, "");
+  // 「この法律において「揮発性有機化合物」とは、〜をいう。」の〜だけを取る
+  const m = /「揮発性有機化合物」とは、([\s\S]*?)をいう。/.exec(text);
+  if (!m) throw new Error("揮発性有機化合物の定義が見つかりません");
+  return m[1]!.replace(/\s+/g, "");
+}
+
+async function main() {
   const write = process.argv.includes("--write");
 
   const index = JSON.parse(readFileSync(ALL_CAS, "utf-8")) as {
@@ -150,15 +181,30 @@ function main() {
   }
 
   // ── 大気汚染防止法の VOC ──────────────────────────────────────
-  const voc: Voc[] = [];
+  /*
+    **法文物質名は条文の定義文1件。**条文が物質を名指ししていないので、
+    物質ごとに行を立てるのではなく、定義文にすべてのCASをぶら下げる。
+    CHRIP の一覧もこの見せ方をしている
+  */
+  const vocCas: string[] = [];
   const seen = new Set<string>();
-  for (const [law, num, , cas] of rows) {
-    if (law !== "JP-APA" || num !== "法第2条第4項") continue;
+  let vocFromChrip = "";
+  for (const [law, num, name, cas] of rows) {
+    if (law !== "JP-APA" || num !== VOC_NUMBER) continue;
+    if (!vocFromChrip) vocFromChrip = name;
     if (seen.has(cas)) continue;
     seen.add(cas);
-    const n = nameOf.get(cas);
-    voc.push({ cas, nameJa: n?.ja ?? cas, nameEn: n?.en ?? "" });
+    vocCas.push(cas);
   }
+
+  // 定義文は**条文から取る**。CHRIP の記載と食い違えば止める（どちらかが変わった合図）
+  const vocName = await vocDefinition();
+  if (vocFromChrip && !vocName.startsWith(vocFromChrip.slice(0, 20))) {
+    throw new Error(`定義文が CHRIP の記載と合いません:
+  条文 ${vocName}
+  CHRIP ${vocFromChrip}`);
+  }
+  const voc: Voc = { number: VOC_NUMBER, name: vocName, cas: vocCas };
 
   // ── VOC から除かれる物質（令第2条の2）──────────────────────────
   const excluded: Excluded[] = [];
@@ -174,7 +220,9 @@ function main() {
   console.log("安衛法の未施行");
   for (const [k, v] of [...byEra].sort()) console.log(`  ${k} から  ${v} 件`);
   if (noDate) console.log(`  適用日を読めず飛ばした: ${noDate} 件`);
-  console.log(`大気 VOC: ${voc.length} 物質 / 除かれる物質 ${excluded.length} 件`);
+  console.log(
+    `大気 VOC: 法文物質名1件（定義文）に CAS ${voc.cas.length} 件 / 除かれる物質 ${excluded.length} 件`,
+  );
 
   const data = { pending: [...pending.values()], voc, excluded };
   if (!write) {
@@ -185,4 +233,4 @@ function main() {
   console.log(`\n→ ${OUT}`);
 }
 
-main();
+void main();
