@@ -139,6 +139,12 @@ export function useResizableColumns(
     if (frozen === 0 || at < 0 || at >= frozen) return Infinity;
     const el = inner.current;
     if (!el) return Infinity;
+    /*
+      **表が枠に収まっているうちは止めない。**流れる部分が無くなるのを防ぐための
+      決まりなので、そもそも流れていないなら止める理由が無い。
+      右の余りを使い切って表がはみ出したところで、下の6割で止まる
+    */
+    if (el.clientWidth >= sum) return Infinity;
     const now = widthOf(columns[at]!);
     /*
       **いまの幅より狭くはしない。**画面が狭くて既に6割を超えているとき、
@@ -180,12 +186,32 @@ export function useResizableColumns(
     />
   );
 
-  /** 指定した幅と、実際に描かれる幅の比。ドラッグは画面上の px で動くので戻すのに要る */
+  /**
+   * 指定した幅と、実際に描かれる幅の比。ドラッグは画面上の px で動くので戻すのに要る。
+   *
+   * **詰めない表は必ず 1。**幅を px でそのまま指定して描いているので、
+   * 指定と実際が食い違わない。ここで枠の広さから割ると、右が余っているときに
+   * 1より大きくなり、**掴んだ瞬間に列が飛んでいた**
+   */
   const scale = useCallback(() => {
+    if (!shrinkToFit) return 1;
     const el = inner.current;
     if (!el || sum === 0) return 1;
     return Math.max(el.clientWidth, minTableWidth) / sum;
-  }, [sum, minTableWidth]);
+  }, [sum, minTableWidth, shrinkToFit]);
+
+  /**
+   * 表の右に余っている幅。
+   *
+   * 詰めない表は中身の幅で止めるので、列が少ないと右が余る。
+   * **余っているあいだは、広げても隣から取らない。**そのぶん表そのものが伸びる。
+   * 詰める表は必ず枠いっぱいなので、余りは無い。
+   */
+  const roomOnRight = useCallback(() => {
+    if (shrinkToFit) return 0;
+    const el = inner.current;
+    return el ? Math.max(0, el.clientWidth - sum) : 0;
+  }, [sum, shrinkToFit]);
 
   /**
    * `<colgroup>` の中身。
@@ -220,7 +246,10 @@ export function useResizableColumns(
 
   /**
    * 見出しに置くつまみ。**置く `th` に `relative` を付けること**（右端に貼り付くため）。
-   * いちばん右の列は隣が無いので、そのぶんだけ表全体が広がる。
+   *
+   * 広げたぶんは、まず**表の右の余り**から取る（表が伸びる）。
+   * 余りを使い切ってから、隣の列からもらう（合計が変わらないので掴んだ位置がずれない）。
+   * いちばん右の列は隣が無いので、いつでも表全体が広がる。
    */
   const handle = (key: string, label: string): ReactNode => {
     const col = byKey.get(key);
@@ -238,10 +267,20 @@ export function useResizableColumns(
           const want = Math.min(px / scale(), frozenRoom(key));
           if (!neighbor) return setWidth(key, want);
           const delta = want - widthOf(col);
-          // 隣を最小幅より狭くはしない。そこで止まる
-          const room = widthOf(neighbor) - MIN_COLUMN_WIDTH;
-          const move = Math.min(delta, room);
-          setWidths({ [key]: widthOf(col) + move, [neighbor.key]: widthOf(neighbor) - move });
+          /*
+            **右が余っているあいだは、隣から取らない。**表そのものが伸び縮みする。
+            狭めるときも（`delta` が負のときも）ここを通るので、
+            引いたぶんはそのまま余りに戻る
+          */
+          const slack = roomOnRight();
+          if (delta <= slack) return setWidth(key, want);
+          // 余りを使い切ったぶんだけ、隣からもらう。隣を最小幅より狭くはしない
+          const room = Math.max(0, widthOf(neighbor) - MIN_COLUMN_WIDTH);
+          const move = Math.min(delta - slack, room);
+          setWidths({
+            [key]: widthOf(col) + slack + move,
+            [neighbor.key]: widthOf(neighbor) - move,
+          });
         }}
       />
     );
