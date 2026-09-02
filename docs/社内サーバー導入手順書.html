@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>社内サーバー導入手順書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* 最低限のリセット */
+  html { -webkit-text-size-adjust: 100%; }
+  img, svg { max-width: 100%; }
+</style>
+</head>
+<body>
+<style>
+  :root {
+    --ground: #f5f6f9;
+    --surface: #ffffff;
+    --surface-2: #e9ebf2;
+    --ink: #16181f;
+    --ink-2: #454a5c;
+    --ink-3: #6f7488;
+    --line: #d9dce6;
+    --line-strong: #b0b5c6;
+    --accent: #39407a;
+    --accent-quiet: #e2e4f2;
+    --warn: #8a6a1c;
+    --warn-quiet: #f7f0dc;
+    --ok: #2f6b45;
+    --ok-quiet: #e2eee6;
+    --term-bg: #1b1e2b;
+    --term-ink: #e6e8f2;
+    --term-dim: #8b90a8;
+    --measure: 62ch;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f1117;
+      --surface: #171a23;
+      --surface-2: #1f2330;
+      --ink: #e8eaf2;
+      --ink-2: #b2b7c8;
+      --ink-3: #848a9d;
+      --line: #2a2f3d;
+      --line-strong: #3d4354;
+      --accent: #97a0e0;
+      --accent-quiet: #1e2236;
+      --warn: #d9b463;
+      --warn-quiet: #2a2417;
+      --ok: #86c39c;
+      --ok-quiet: #17251c;
+      --term-bg: #0b0d14;
+      --term-ink: #dfe2ee;
+      --term-dim: #7b8098;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1117;
+    --surface: #171a23;
+    --surface-2: #1f2330;
+    --ink: #e8eaf2;
+    --ink-2: #b2b7c8;
+    --ink-3: #848a9d;
+    --line: #2a2f3d;
+    --line-strong: #3d4354;
+    --accent: #97a0e0;
+    --accent-quiet: #1e2236;
+    --warn: #d9b463;
+    --warn-quiet: #2a2417;
+    --ok: #86c39c;
+    --ok-quiet: #17251c;
+    --term-bg: #0b0d14;
+    --term-ink: #dfe2ee;
+    --term-dim: #7b8098;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    font-size: 1rem;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 4vw, 2.5rem) 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2.25rem, 4vw, 3rem);
+  }
+
+  code, kbd, pre, .mono {
+    font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  code {
+    font-size: .85em;
+    background: var(--surface-2);
+    padding: .1em .35em;
+    border-radius: 2px;
+    word-break: break-all;
+  }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+    font-size: .72rem; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent); margin: 0;
+  }
+  h1 {
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-weight: 700; font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.35;
+    margin: .5rem 0 0; text-wrap: balance; letter-spacing: .01em;
+  }
+  .lede { max-width: var(--measure); color: var(--ink-2); margin: 1rem 0 0; }
+  .facts {
+    display: flex; flex-wrap: wrap; gap: .4rem 2rem;
+    margin-top: 1.25rem; padding-top: .9rem; border-top: 1px solid var(--line);
+    color: var(--ink-3); font-size: .84rem;
+  }
+  .facts b { color: var(--ink-2); font-weight: 500; }
+
+  h2 {
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", sans-serif;
+    font-size: 1.45rem; font-weight: 700; line-height: 1.45; margin: 0;
+    padding-bottom: .5rem; border-bottom: 2px solid var(--line-strong);
+  }
+  h3 {
+    font-family: "BIZ UDPGothic", sans-serif;
+    font-size: 1.05rem; font-weight: 700; margin: 0; line-height: 1.55;
+  }
+  p { margin: 0; max-width: var(--measure); }
+
+  /* ---- 手順の背骨 ---- */
+  .steps { display: flex; flex-direction: column; gap: 2rem; }
+  .step { display: grid; grid-template-columns: 3.5rem 1fr; gap: 1.25rem; align-items: start; }
+  .step .no {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.4rem; font-weight: 500; line-height: 1.6;
+    color: var(--accent); text-align: right; white-space: nowrap;
+    border-right: 2px solid var(--line); padding-right: .75rem; padding-top: .1rem;
+  }
+  .step .body { display: flex; flex-direction: column; gap: .85rem; min-width: 0; }
+  .step h3 span.sub { display: block; font-family: "Zen Kaku Gothic New", sans-serif; font-weight: 400; font-size: .84rem; color: var(--ink-3); }
+
+  /* ---- 端末 ---- */
+  pre {
+    margin: 0; background: var(--term-bg); color: var(--term-ink);
+    padding: .95rem 1.1rem; overflow-x: auto; font-size: .82rem; line-height: 1.75;
+    border-radius: 3px;
+  }
+  pre .c { color: var(--term-dim); }
+
+  /* ---- 箱 ---- */
+  .box {
+    border-left: 3px solid var(--line-strong); background: var(--surface);
+    padding: .95rem 1.15rem; display: flex; flex-direction: column; gap: .5rem;
+  }
+  .box.warn { border-left-color: var(--warn); background: var(--warn-quiet); }
+  .box.check { border-left-color: var(--ok); background: var(--ok-quiet); }
+  .box p, .box ul { max-width: none; }
+  .box h4 {
+    margin: 0; font-size: .78rem; letter-spacing: .12em;
+    font-family: "JetBrains Mono", monospace; color: var(--ink-3);
+  }
+  .box.warn h4 { color: var(--warn); }
+  .box.check h4 { color: var(--ok); }
+
+  .scroll { overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  caption { text-align: left; padding: .8rem 1rem; color: var(--ink-3); font-size: .8rem; border-bottom: 1px solid var(--line); }
+  th, td { padding: .55rem .95rem; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-size: .75rem; letter-spacing: .06em; color: var(--ink-3); font-weight: 700; background: var(--surface-2); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-family: "JetBrains Mono", monospace; white-space: nowrap; }
+  td.k { font-family: "JetBrains Mono", monospace; font-size: .8rem; white-space: nowrap; }
+
+  ul, ol { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: .45rem; max-width: var(--measure); }
+  li::marker { color: var(--accent); }
+
+  .final { background: var(--surface); border: 1px solid var(--line-strong); padding: 1.5rem 1.75rem; display: flex; flex-direction: column; gap: 1rem; }
+  .final ul { list-style: none; padding-left: 0; max-width: none; }
+  /* グリッドにすると <code> ごとに別のセルへ落ちて縦1列になる。印は絶対配置で置く */
+  .final li { position: relative; padding-left: 1.8rem; }
+  .final li::before {
+    content: "☐"; position: absolute; left: 0; top: 0;
+    color: var(--accent); font-size: 1.1rem; line-height: 1.85;
+  }
+
+  h4.minor {
+    font-family: "BIZ UDPGothic", sans-serif; font-size: .95rem; font-weight: 700;
+    margin: .4rem 0 0; color: var(--ink);
+  }
+  .dim { color: var(--ink-3); font-size: .85em; }
+
+  /* ---- 構成図 ---- */
+  .figure {
+    border: 1px solid var(--line); background: var(--surface);
+    padding: 1rem; overflow-x: auto;
+  }
+  .figure svg { display: block; width: 100%; min-width: 42rem; height: auto; }
+  .figure .t-title { font-size: 15px; font-weight: 700; fill: var(--ink);
+    font-family: "BIZ UDPGothic", sans-serif; }
+  .figure .t-name { font-size: 13px; font-weight: 700; fill: var(--ink); }
+  .figure .t-sub { font-size: 11px; fill: var(--ink-3); }
+  .figure .t-label { font-size: 12px; font-weight: 700; fill: var(--accent);
+    font-family: "JetBrains Mono", monospace; letter-spacing: .08em; }
+  .figure .t-port { font-size: 11px; fill: var(--ink-2);
+    font-family: "JetBrains Mono", monospace; }
+
+  .foot { border-top: 1px solid var(--line); padding-top: 1.1rem; color: var(--ink-3); font-size: .82rem; }
+  b, strong { font-weight: 700; }
+
+  /* ---- 印刷 ---- */
+  @media print {
+    body { background: #fff; color: #000; font-size: 10.5pt; line-height: 1.7; }
+    .page { max-width: none; padding: 0; gap: 1.4rem; }
+    section { break-inside: auto; }
+    h2 { break-after: avoid; break-before: page; }
+    section:first-of-type h2 { break-before: auto; }
+    h3, h4 { break-after: avoid; }
+    .step, .box, .final, .figure, .scroll { break-inside: avoid; }
+    pre { background: #f4f4f6; color: #111; border: 1px solid #ccc; }
+    pre .c { color: #666; }
+    .box, .final, table, .scroll, .figure { border-color: #999 !important; }
+    thead th { background: #eee; }
+  }
+</style>
+
+<div class="page">
+
+  <header>
+    <p class="eyebrow">導入手順書</p>
+    <h1>化学物質管理システム<br>社内サーバーへの導入</h1>
+    <p class="lede">
+      御社の社内サーバー1台にインストールし、社内LANから使えるようにするまでの手順です。
+      <b>作業はサーバーの管理者権限を持つ方が行います。</b>所要時間はおよそ1時間です。
+      外部のサービスには一切接続しません。
+      <b>0〜9 は Linux（推奨）の手順です。</b>Windows Server に入れる場合は
+      <b>10 に読み替えてください</b>（アプリのプログラムは同じものです）。
+    </p>
+    <div class="facts">
+      <span><b>対象</b> 社内サーバー 1台</span>
+      <span><b>作業者</b> サーバー管理者</span>
+      <span><b>所要</b> 約1時間</span>
+      <span><b>版</b> 2026-09-01</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>0. 導入前の確認</h2>
+
+    <div class="scroll">
+      <table>
+        <caption>ご用意いただくもの</caption>
+        <thead><tr><th>もの</th><th>要件</th></tr></thead>
+        <tbody>
+          <tr><td><b>サーバー</b></td><td>4コア / メモリ8GB / SSD 250GB 以上（推奨は8コア・16GB・NVMe 500GB）。物理でも仮想でも構いません</td></tr>
+          <tr><td><b>OS</b></td><td>Ubuntu Server 24.04 LTS、または RHEL系 9（AlmaLinux / Rocky Linux）</td></tr>
+          <tr><td><b>ネットワーク</b></td><td>社内LANの固定IPアドレス1つ。<b>インターネット接続は必須ではありません</b></td></tr>
+          <tr><td><b>電源</b></td><td>無停電電源装置（UPS）。停電でデータベースが壊れることを防ぎます</td></tr>
+          <tr><td><b>バックアップ先</b></td><td>サーバーとは別の機器（社内NASなど）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <caption>こちらからお渡しするファイル</caption>
+        <thead><tr><th>ファイル</th><th class="num">サイズ</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td class="k">chem-system-(ver).tar.gz</td><td class="num">約 20 MB</td><td>アプリ本体と起動用の設定ファイル。<b>(ver) は、アプリのバージョン</b>（例 <code>chem-system-1.0.0.tar.gz</code>）</td></tr>
+          <tr><td class="k">chem-images-(ver).tar</td><td class="num">約 1.5 GB</td><td>実行に使う Docker イメージ。<b>サーバーがインターネットに繋がらない場合のみ</b>お渡しします</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>1. システムの構成</h2>
+    <p>
+      サーバー1台の中で、<b>3つの入れ物（コンテナ）が役割を分けて動きます。</b>
+      入れ物は Docker が管理し、社内LANに開いているのは<b>入口のひとつだけ</b>です。
+    </p>
+
+    <div class="figure">
+      <svg viewBox="0 0 880 512" role="img" aria-label="サーバー1台の中で Caddy・アプリ・データベースの3つのコンテナが動く構成図" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/>
+          </marker>
+        </defs>
+
+        <!-- 社員のパソコン -->
+        <rect x="14" y="196" width="150" height="88" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="89" y="230" class="t-name" text-anchor="middle">社員のパソコン</text>
+        <text x="89" y="252" class="t-sub" text-anchor="middle">ブラウザ</text>
+        <text x="89" y="271" class="t-sub" text-anchor="middle">（5〜6台）</text>
+
+        <!-- LAN の線 -->
+        <line x1="164" y1="240" x2="228" y2="240" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="196" y="230" class="t-port" text-anchor="middle">HTTPS</text>
+        <text x="196" y="262" class="t-port" text-anchor="middle">443</text>
+
+        <!-- サーバー -->
+        <rect x="230" y="20" width="514" height="472" rx="6" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.5"/>
+        <text x="250" y="46" class="t-title">サーバー 1台</text>
+        <text x="250" y="66" class="t-sub">Ubuntu Server 24.04 LTS ／ 社内LANの固定IP</text>
+
+        <!-- Docker -->
+        <rect x="252" y="82" width="404" height="306" rx="5" fill="var(--ground)" stroke="var(--accent)" stroke-dasharray="5 4"/>
+        <text x="270" y="104" class="t-label">Docker</text>
+
+        <!-- caddy -->
+        <rect x="274" y="118" width="290" height="62" rx="4" fill="var(--accent-quiet)" stroke="var(--accent)"/>
+        <text x="290" y="142" class="t-name">caddy</text>
+        <text x="290" y="163" class="t-sub">社内LANへの入口。HTTPSにする</text>
+
+        <!-- app -->
+        <rect x="274" y="212" width="290" height="62" rx="4" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="290" y="236" class="t-name">app</text>
+        <text x="290" y="257" class="t-sub">画面と判定。Next.js</text>
+
+        <!-- db -->
+        <rect x="274" y="306" width="290" height="62" rx="4" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="290" y="330" class="t-name">db</text>
+        <text x="290" y="351" class="t-sub">PostgreSQL 16</text>
+
+        <!-- 縦の矢印 -->
+        <line x1="330" y1="180" x2="330" y2="206" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="344" y="199" class="t-port">3000</text>
+        <line x1="330" y1="274" x2="330" y2="300" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="344" y="293" class="t-port">5432</text>
+
+        <!-- 保存領域（ボリューム） -->
+        <g>
+          <path d="M584 312 a26 9 0 0 1 52 0 v44 a26 9 0 0 1 -52 0 z" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+          <path d="M584 312 a26 9 0 0 0 52 0" fill="none" stroke="var(--line-strong)"/>
+          <text x="610" y="343" class="t-port" text-anchor="middle">db-data</text>
+        </g>
+        <line x1="564" y1="337" x2="580" y2="337" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+        <!-- バックアップ -->
+        <rect x="252" y="406" width="404" height="62" rx="5" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="270" y="430" class="t-name">バックアップ（毎日3時）</text>
+        <text x="270" y="451" class="t-sub">/var/backups/chem/ に1日1つ。14日で消える</text>
+        <line x1="610" y1="368" x2="610" y2="400" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+        <!-- 社内NAS -->
+        <rect x="768" y="406" width="100" height="62" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="818" y="432" class="t-name" text-anchor="middle">社内NAS</text>
+        <text x="818" y="452" class="t-sub" text-anchor="middle">別の機器へ複製</text>
+        <line x1="660" y1="437" x2="762" y2="437" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
+
+        <!-- 外に出ているポートの注記 -->
+        <text x="576" y="150" class="t-port">443 / 80</text>
+        <text x="576" y="167" class="t-sub">だけ開く</text>
+        <text x="576" y="242" class="t-sub">外に出さない</text>
+        <text x="576" y="258" class="t-sub">（app）</text>
+      </svg>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <caption>それぞれの役目</caption>
+        <thead><tr><th>入れ物</th><th>役目</th><th>社内LANから</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="k">caddy</td>
+            <td>社内LANからの接続を受け、暗号化（HTTPS）して <code>app</code> へ渡します</td>
+            <td><b>見えます</b>（443 / 80）</td>
+          </tr>
+          <tr>
+            <td class="k">app</td>
+            <td>画面の表示と法規制の判定。データが要るときは <code>db</code> に聞きます</td>
+            <td>見えません</td>
+          </tr>
+          <tr>
+            <td class="k">db</td>
+            <td>物質・製品・法規制・操作記録の保管。PostgreSQL 16</td>
+            <td>見えません</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="box">
+      <h4>POINT</h4>
+      <ul>
+        <li><b>外から届くのは caddy だけです。</b><code>app</code> と <code>db</code> はサーバーの中でしか繋がらず、社内LANからも直接は触れません</li>
+        <li><b>データは入れ物の外（<code>db-data</code>）に置いてあります。</b>アプリを新しくして入れ物を作り直しても、中身は消えません</li>
+        <li><b>インターネットへの通信はありません。</b>認証も自前で持っているため、外部のサービスを使いません</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. サーバーの準備</h2>
+    <div class="steps">
+
+      <div class="step">
+        <div class="no">1</div>
+        <div class="body">
+          <h3>サーバーの用意<span class="sub">OSのインストールまでは済ませておいてください</span></h3>
+          <p>
+            この手順書は、<b>次の状態から始めます。</b>
+            サーバー本体の調達とOSのインストールの方法は、この手順書では扱いません。
+          </p>
+          <div class="scroll">
+            <table>
+              <caption>始めるときの状態</caption>
+              <thead><tr><th>項目</th><th>そろえておくこと</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><b>OS</b></td>
+                  <td>Ubuntu Server 24.04 LTS（最小構成で構いません）、または RHEL系 9。<b>デスクトップ環境は要りません</b></td>
+                </tr>
+                <tr>
+                  <td><b>ネットワーク</b></td>
+                  <td>社内LANの<b>固定IPアドレス</b>が付いていること。DHCPで変わると、社員のパソコンから開けなくなります</td>
+                </tr>
+                <tr>
+                  <td><b>接続</b></td>
+                  <td>SSHで入れること。鍵での接続にし、<b>パスワードでの接続は止めておく</b>ことをおすすめします</td>
+                </tr>
+                <tr>
+                  <td><b>時刻</b></td>
+                  <td>時刻が合っていること（<code>timedatectl</code> で確認）。操作記録の時刻とバックアップの時間に影響します</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 class="minor">作業に使うユーザー</h4>
+          <div class="scroll">
+            <table>
+              <thead><tr><th>ユーザー</th><th>役目</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><b>導入作業をする人</b><br><span class="dim">1つ。例 <code>chemadmin</code></span></td>
+                  <td>
+                    <b><code>sudo</code> が使える一般ユーザー</b>を1つ用意します。
+                    このユーザーでログインして、以降の作業をすべて行います。
+                    手順3で <code>docker</code> グループにも入れます
+                  </td>
+                </tr>
+                <tr>
+                  <td><b><code>root</code></b></td>
+                  <td>
+                    <b>直接ログインしては使いません。</b>必要なときだけ <code>sudo</code> を通します。
+                    誤った操作でOSごと壊すことを防ぐためです
+                  </td>
+                </tr>
+                <tr>
+                  <td><b>システムの中で使われるもの</b></td>
+                  <td>
+                    アプリとデータベースは Docker の中で動き、<b>OSのユーザーは作りません。</b>
+                    システムを使う人（社員）のアカウントは、OSではなく<b>アプリの中</b>で管理します
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 class="minor">ディレクトリの構成</h4>
+          <div class="scroll">
+            <table>
+              <caption>導入したあと、サーバーの中はこうなります</caption>
+              <thead><tr><th>場所</th><th>中身</th><th>消えると</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="k">/opt/chem/</td>
+                  <td>アプリ一式。展開したファイルと起動用の設定が入ります</td>
+                  <td>お渡ししたファイルから戻せます</td>
+                </tr>
+                <tr>
+                  <td class="k">/opt/chem/.env.prod</td>
+                  <td><b>データベースのパスワードを書く設定ファイル。</b>このファイルだけは外に出さないでください</td>
+                  <td><b>戻せません。</b>控えを別に保管してください</td>
+                </tr>
+                <tr>
+                  <td class="k">/opt/chem/scripts/</td>
+                  <td>バックアップなどの補助スクリプト</td>
+                  <td>お渡ししたファイルから戻せます</td>
+                </tr>
+                <tr>
+                  <td class="k">/var/lib/docker/volumes/</td>
+                  <td><b>データベースの中身（db-data）。</b>Docker が管理します。直接さわらないでください</td>
+                  <td><b>バックアップから戻します</b></td>
+                </tr>
+                <tr>
+                  <td class="k">/var/backups/chem/</td>
+                  <td>毎日のバックアップ。14日より古いものは自動で消えます</td>
+                  <td>社内NASの複製から戻します</td>
+                </tr>
+                <tr>
+                  <td class="k">/var/log/chem-backup.log</td>
+                  <td>バックアップが動いた記録</td>
+                  <td>差し支えありません</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="box warn">
+            <h4>IMPORTANT</h4>
+            <p>
+              <b>守るべきものは2つだけです。</b>
+              <code>/opt/chem/.env.prod</code>（設定）と、データベースの中身（毎日のバックアップ）。
+              この2つがあれば、サーバーが壊れても新しい機械で同じ状態に戻せます。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">2</div>
+        <div class="body">
+          <h3>OSの更新<span class="sub">Ubuntu Server 24.04 の例</span></h3>
+<pre><span class="c"># パッケージを最新にし、セキュリティ更新を自動で当てる設定にします</span>
+sudo apt update &amp;&amp; sudo apt -y upgrade
+sudo apt -y install unattended-upgrades</pre>
+          <p>RHEL系の場合は <code>sudo dnf -y update</code> と <code>sudo dnf -y install dnf-automatic</code> です。</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">3</div>
+        <div class="body">
+          <h3>Docker の導入<span class="sub">アプリとデータベースはこの上で動きます</span></h3>
+<pre><span class="c"># インターネットに繋がる場合</span>
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+<span class="c"># ここで一度ログインし直します（グループの変更を反映するため）</span></pre>
+          <div class="box">
+            <h4>OFFLINE</h4>
+            <p>
+              インターネットに繋がらないサーバーでは、OSの提供元から
+              <code>docker-ce</code> のパッケージを別途入手して導入してください。
+              Ubuntu なら <code>docker.io</code> パッケージ（OSの標準リポジトリ）でも動きます。
+            </p>
+          </div>
+<pre><span class="c"># 入ったことの確認。バージョンが2つとも表示されればOK</span>
+docker --version
+docker compose version</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">4</div>
+        <div class="body">
+          <h3>通信の入口の制限<span class="sub">社内LANからだけ入れるようにします</span></h3>
+<pre><span class="c"># 社内LANが 192.168.10.0/24 の場合の例。自社の範囲に読み替えてください</span>
+sudo ufw allow from 192.168.10.0/24 to any port 443 proto tcp
+sudo ufw allow from 192.168.10.0/24 to any port 80 proto tcp
+sudo ufw allow 22/tcp
+sudo ufw enable</pre>
+          <div class="box warn">
+            <h4>CAUTION</h4>
+            <p>
+              <b>インターネットに向けて 80 / 443 を開けないでください。</b>
+              このシステムは社内LANの中だけで使う前提で作ってあります。
+              外部から使う必要がある場合は、VPN経由にしてください。
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>3. アプリの配置と起動</h2>
+    <div class="steps">
+
+      <div class="step">
+        <div class="no">5</div>
+        <div class="body">
+          <h3>ファイルの展開</h3>
+<pre>sudo mkdir -p /opt/chem &amp;&amp; sudo chown $USER /opt/chem
+tar xzf chem-system-(ver).tar.gz -C /opt/chem
+cd /opt/chem</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">6</div>
+        <div class="body">
+          <h3>設定ファイルの作成<span class="sub">データベースのパスワードを決めます</span></h3>
+<pre>cp .env.prod.example .env.prod
+openssl rand -base64 24        <span class="c"># 出てきた文字列を控えます</span>
+nano .env.prod                 <span class="c"># DB_PASSWORD= の右側に貼り付けます</span></pre>
+          <div class="box warn">
+            <h4>IMPORTANT</h4>
+            <p>
+              <b><code>DB_PASSWORD</code> は必ず変更してください。</b>
+              この値は最初の起動でデータベースに焼き付きます。あとから変えるには
+              データベースを作り直すことになります。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">7</div>
+        <div class="body">
+          <h3>起動<span class="sub">初回は10〜20分かかります</span></h3>
+<pre><span class="c"># インターネットに繋がる場合（その場でイメージを組み立てます）</span>
+docker compose -f compose.prod.yml --env-file .env.prod up -d --build</pre>
+          <div class="box">
+            <h4>OFFLINE</h4>
+            <p>お渡しした Docker イメージのファイルから読み込みます。</p>
+<pre>docker load -i chem-images-(ver).tar
+docker compose -f compose.prod.yml --env-file .env.prod up -d</pre>
+          </div>
+<pre><span class="c"># 3つとも running になっていれば起動しています</span>
+docker compose -f compose.prod.yml --env-file .env.prod ps</pre>
+          <div class="box check">
+            <h4>CHECK</h4>
+            <p><code>db</code> / <code>app</code> / <code>caddy</code> の3つが <code>running</code> と表示されること。</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 最初の管理者の作成</h2>
+    <div class="steps">
+
+      <div class="step">
+        <div class="no">8</div>
+        <div class="body">
+          <h3>最初の管理者の作成</h3>
+<pre>docker compose -f compose.prod.yml --env-file .env.prod exec app \
+  npx tsx scripts/set-password.ts admin@example.co.jp 'ここに強いパスワード' --create</pre>
+          <p>
+            メールアドレスは御社のものに読み替えてください。
+            <b>この1人だけコマンドで作ります。</b>2人目からは管理画面から追加できます。
+          </p>
+          <div class="box warn">
+            <h4>CAUTION</h4>
+            <p>
+              コマンドに書いたパスワードは端末の履歴に残ります。実行後に
+              <code>history -c</code> で消してください。
+              このパスワードは<b>初回ログイン時に変更を求められます。</b>
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>5. 社内パソコンからの接続</h2>
+    <div class="steps">
+
+      <div class="step">
+        <div class="no">9</div>
+        <div class="body">
+          <h3>ブラウザからの接続</h3>
+          <p>
+            社内のパソコンから <code>https://<i>サーバーのIPアドレス</i>/</code> を開きます。
+            ログイン画面が出れば、ここまでは成功です。
+          </p>
+          <div class="box warn">
+            <h4>証明書の警告について</h4>
+            <p>
+              初回は<b>「この接続ではプライバシーが保護されません」という警告</b>が出ます。
+              社内専用のため、システムが自分で作った証明書を使っているためです。<b>通信は暗号化されています。</b>
+              警告を消すには、次の手順でサーバーの証明書を各パソコンに登録してください。
+            </p>
+          </div>
+<pre><span class="c"># サーバーで実行して、証明書のファイルを取り出します</span>
+docker compose -f compose.prod.yml --env-file .env.prod exec caddy \
+  cat /data/caddy/pki/authorities/local/root.crt &gt; chem-root.crt</pre>
+          <p>
+            取り出した <code>chem-root.crt</code> を各パソコンに配り、
+            Windows では「信頼されたルート証明機関」に取り込みます。
+            台数が多い場合はグループポリシーで配布できます。
+          </p>
+          <div class="box">
+            <h4>社内のドメイン名を使う場合</h4>
+            <p>
+              社内DNSに <code>chem.<i>社内ドメイン</i></code> のような名前を登録しておくと、
+              IPアドレスではなく名前で開けます。設定ファイル <code>deploy/Caddyfile</code> の
+              先頭にあるコメントに、書き換え方を記載しています。
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>6. 毎日のバックアップの設定</h2>
+    <div class="steps">
+
+      <div class="step">
+        <div class="no">10</div>
+        <div class="body">
+          <h3>自動バックアップの設定<span class="sub">これは必ず設定してください</span></h3>
+<pre>chmod +x /opt/chem/scripts/backup-db.sh
+crontab -e</pre>
+          <p>開いたファイルの最後に、次の1行を足して保存します（毎日 深夜3時）。</p>
+<pre>0 3 * * * /opt/chem/scripts/backup-db.sh &gt;&gt; /var/log/chem-backup.log 2&gt;&amp;1</pre>
+          <p>
+            <code>/var/backups/chem/</code> に、圧縮したファイルが1日1つ増えます。
+            <b>14日より古いものは自動で消えます。</b>
+          </p>
+          <div class="box warn">
+            <h4>IMPORTANT</h4>
+            <p>
+              <b>サーバーとは別の機器へ複製してください。</b>同じサーバーの中だけに置いていると、
+              サーバーが壊れたときにデータも一緒に失われます。
+              社内NASへ毎日コピーする設定を、あわせてお願いします。
+            </p>
+          </div>
+          <div class="box check">
+            <h4>CHECK</h4>
+            <p>その場で1回動かして、ファイルができることを確かめます。</p>
+<pre>/opt/chem/scripts/backup-db.sh
+ls -lh /var/backups/chem/</pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>7. 導入完了の確認</h2>
+    <div class="final">
+      <p>次のすべてができていれば、導入は完了です。</p>
+      <ul>
+        <li><code>docker compose ... ps</code> で3つとも <code>running</code> になっている</li>
+        <li>社内のパソコンから <code>https://<i>サーバーのIP</i>/</code> でログインできる</li>
+        <li>バックアップのファイルが <code>/var/backups/chem/</code> にできている</li>
+        <li>サーバーを再起動しても、自動でアプリが立ち上がる（<code>sudo reboot</code> で確認）</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>8. 導入後の運用</h2>
+
+    <div class="scroll">
+      <table>
+        <caption>定期的にお願いすること</caption>
+        <thead><tr><th>いつ</th><th>すること</th><th>やりかた</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>毎日</td><td>バックアップの確認</td>
+            <td>前日のファイルができているか。cronが動いていれば自動です</td>
+          </tr>
+          <tr>
+            <td>毎月</td><td>ディスクの空きを見る</td>
+            <td><code>df -h</code>。使用率80%を超えたらご連絡ください</td>
+          </tr>
+          <tr>
+            <td>年1回</td><td>操作記録の整理</td>
+            <td>管理画面の「操作記録」から古い分を削除します。自動では消えません</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>アプリの更新</h3>
+<pre>cd /opt/chem
+<span class="c"># 念のため、先にバックアップを取ります</span>
+./scripts/backup-db.sh
+<span class="c"># 新しいファイルを展開してから</span>
+docker compose -f compose.prod.yml --env-file .env.prod up -d --build</pre>
+    <p>
+      データベースの構造が変わる場合も、<b>起動時に自動で適用されます。</b>
+      作業中は1〜3分ほどアプリが止まります。
+    </p>
+
+    <h3>バックアップからの復元</h3>
+<pre>gunzip -c /var/backups/chem/chem_<i>日付</i>.sql.gz | \
+  docker compose -f compose.prod.yml --env-file .env.prod exec -T db \
+  psql -U chem chem</pre>
+  </section>
+
+  <section>
+    <h2>9. うまくいかないとき</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>症状</th><th>見るところ</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>ブラウザで開けない</td>
+            <td>サーバーで <code>docker compose ... ps</code>。3つとも running か。次にファイアウォール（<code>sudo ufw status</code>）で、そのパソコンのIPが許可されているか</td>
+          </tr>
+          <tr>
+            <td>「データベースに接続できません」と出る</td>
+            <td><code>docker compose ... logs db</code>。<code>.env.prod</code> の <code>DB_PASSWORD</code> を後から変えていないか</td>
+          </tr>
+          <tr>
+            <td>ログインできない</td>
+            <td>5回続けて間違えると一時的にロックされます。15分待つか、手順8のコマンドでパスワードを出し直してください</td>
+          </tr>
+          <tr>
+            <td>動きが遅い</td>
+            <td><code>free -h</code> でメモリの空き、<code>df -h</code> でディスクの空きを確認してください</td>
+          </tr>
+          <tr>
+            <td>アプリの記録を見たい</td>
+            <td><code>docker compose -f compose.prod.yml --env-file .env.prod logs -f app</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="box">
+      <h4>SUPPORT</h4>
+      <p>
+        解決しない場合は、<b>実行したコマンドと、画面に出たメッセージ</b>をそのままお送りください。
+        <code>docker compose -f compose.prod.yml --env-file .env.prod logs --tail 200 app</code>
+        の出力もあわせていただけると、原因を絞り込めます。
+      </p>
+    </div>
+  </section>
+
+
+  <section>
+    <h2>10. Windows Server への導入 <span class="count">Linux の代わりに</span></h2>
+    <p>
+      ここまでは Linux での手順です。<b>Windows Server に入れる場合は、この節に読み替えてください。</b>
+      <b>アプリのプログラムは1行も変わりません。</b>変わるのは、入れ物（Docker）の代わりに
+      <b>3つを Windows のサービスとして常駐させる</b>ところです。
+    </p>
+
+    <div class="box warn">
+      <h4>IMPORTANT</h4>
+      <p>
+        <b>仮想化（Hyper-V・WSL2・Docker）は使いません。</b>
+        Windows Server 2019 / 2022 / 2025 のいずれかで、管理者権限が要ります。
+        <b>この構成は Linux 版ほどの運用実績がありません。</b>
+        どちらでもよい場合は Linux 版をお勧めします。
+      </p>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <caption>Linux 版との対応</caption>
+        <thead><tr><th>役目</th><th>Linux 版</th><th>Windows Server 版</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>データベース</td>
+            <td class="k">db コンテナ</td>
+            <td>PostgreSQL 16 を直接インストール（サービスとして常駐）</td>
+          </tr>
+          <tr>
+            <td>アプリ</td>
+            <td class="k">app コンテナ</td>
+            <td>Node.js で直接動かし、<code>nssm</code> でサービス登録</td>
+          </tr>
+          <tr>
+            <td>入口（HTTPS）</td>
+            <td class="k">caddy コンテナ</td>
+            <td>Caddy の Windows 版をサービス登録</td>
+          </tr>
+          <tr>
+            <td>自動起動・再起動</td>
+            <td>Docker が受け持つ</td>
+            <td>Windows のサービスが受け持つ</td>
+          </tr>
+          <tr>
+            <td>バックアップ</td>
+            <td class="k">backup-db.sh（cron）</td>
+            <td class="k">backup-db.ps1（タスクスケジューラ）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="no">W1</div>
+        <div class="body">
+          <h3>必要なソフトの導入<span class="sub">いずれも公式のインストーラーがあります</span></h3>
+          <div class="scroll">
+            <table>
+              <thead><tr><th>ソフト</th><th>版</th><th>入れ方</th></tr></thead>
+              <tbody>
+                <tr><td><b>Node.js</b></td><td>22 LTS（20以上）</td><td>公式の MSI。<b>PATH に通す</b>にチェック</td></tr>
+                <tr><td><b>PostgreSQL</b></td><td>16</td><td>公式インストーラー。<b>文字コードは UTF-8</b>。ポートは 5432 のまま</td></tr>
+                <tr><td><b>Caddy</b></td><td>2 系</td><td>公式サイトの Windows 版（<code>caddy.exe</code> 1本）を <code>C:\chem\caddy\</code> に置く</td></tr>
+                <tr><td><b>NSSM</b></td><td>2.24 以降</td><td>アプリと Caddy をサービスにするための道具。<code>nssm.exe</code> 1本</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="box warn">
+            <h4>CAUTION</h4>
+            <p>
+              PostgreSQL のインストール時に決める <b>postgres のパスワードは控えておいてください。</b>
+              このあと業務用のユーザーを作るのに使います。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">W2</div>
+        <div class="body">
+          <h3>データベースの作成</h3>
+<pre><span class="c"># PowerShell を管理者で開いて実行します</span>
+$bin = "C:\Program Files\PostgreSQL\16\bin"
+$env:PGPASSWORD = "&lt;インストール時に決めた postgres のパスワード&gt;"
+
+<span class="c"># 業務用のユーザーとデータベースを作ります</span>
+&amp; "$bin\psql.exe" -h 127.0.0.1 -U postgres -c "CREATE USER chem WITH PASSWORD '&lt;強いパスワード&gt;';"
+&amp; "$bin\psql.exe" -h 127.0.0.1 -U postgres -c "CREATE DATABASE chem OWNER chem ENCODING 'UTF8';"</pre>
+          <div class="box warn">
+            <h4>IMPORTANT</h4>
+            <p>
+              <b>ホストは <code>127.0.0.1</code> と書いてください。</b>
+              <code>localhost</code> と書くと IPv6 側に解決されて繋がらないことがあります。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">W3</div>
+        <div class="body">
+          <h3>ファイルの配置と設定</h3>
+<pre><span class="c"># お渡ししたファイルを C:\chem に展開します</span>
+Expand-Archive -Path chem-system-(ver).zip -DestinationPath C:\chem
+cd C:\chem</pre>
+          <p>
+            <code>C:\chem\.env</code> を作り、次の1行を書きます（<b>このファイルは外に出さないでください</b>）。
+          </p>
+<pre>DATABASE_URL="postgresql://chem:&lt;W2で決めたパスワード&gt;@127.0.0.1:5432/chem?schema=public"</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">W4</div>
+        <div class="body">
+          <h3>組み立て<span class="sub">10〜20分かかります</span></h3>
+<pre>cd C:\chem
+npm ci
+npx prisma generate
+npm run build
+npx prisma migrate deploy   <span class="c"># データベースの表を作ります</span></pre>
+          <div class="box check">
+            <h4>CHECK</h4>
+            <p>
+              <code>npx prisma migrate deploy</code> が
+              <code>All migrations have been successfully applied.</code> で終わること。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">W5</div>
+        <div class="body">
+          <h3>最初の管理者の作成</h3>
+<pre>cd C:\chem
+npx tsx scripts/set-password.ts admin@example.co.jp '&lt;強いパスワード&gt;' --create</pre>
+          <p>
+            Linux 版の手順8と同じです。<b>この1人だけコマンドで作ります。</b>
+            実行後、<code>Clear-History</code> で履歴を消してください。
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">W6</div>
+        <div class="body">
+          <h3>サービスへの登録<span class="sub">電源を入れると自動で立ち上がるようにします</span></h3>
+<pre><span class="c"># アプリ本体</span>
+nssm install chem-app "C:\Program Files\nodejs\npm.cmd" "run start -w apps/web"
+nssm set chem-app AppDirectory C:\chem
+nssm set chem-app Start SERVICE_AUTO_START
+nssm set chem-app AppEnvironmentExtra NODE_ENV=production
+
+<span class="c"># 入口（HTTPS）</span>
+nssm install chem-caddy C:\chem\caddy\caddy.exe "run --config C:\chem\deploy\Caddyfile"
+nssm set chem-caddy Start SERVICE_AUTO_START
+
+nssm start chem-app
+nssm start chem-caddy</pre>
+          <div class="box check">
+            <h4>CHECK</h4>
+<pre>Get-Service chem-app, chem-caddy, postgresql-x64-16 |
+  Select-Object Name, Status, StartType</pre>
+            <p>3つとも <code>Running</code> / <code>Automatic</code> になっていること。</p>
+          </div>
+          <div class="box warn">
+            <h4>HTTPS は必須です</h4>
+            <p>
+              ログインの記録は<b>HTTPS のときだけ保たれる作り</b>になっています。
+              <code>http://</code> のまま使うと、ログインしても画面を移るたびに切れます。
+              Caddy を必ず通してください（証明書の扱いは Linux 版の手順9と同じです）。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">W7</div>
+        <div class="body">
+          <h3>通信の入口の制限</h3>
+<pre><span class="c"># 社内LANが 192.168.10.0/24 の場合の例</span>
+New-NetFirewallRule -DisplayName "chem HTTPS" -Direction Inbound -Protocol TCP `
+  -LocalPort 443 -RemoteAddress 192.168.10.0/24 -Action Allow
+
+<span class="c"># データベースは外に出しません（既定で閉じていますが、念のため確認）</span>
+Get-NetFirewallRule -Direction Inbound |
+  Where-Object { $_.Enabled -eq 'True' } |
+  Get-NetFirewallPortFilter | Where-Object { $_.LocalPort -eq 5432 }</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="no">W8</div>
+        <div class="body">
+          <h3>毎日のバックアップの設定</h3>
+<pre><span class="c"># 毎日3時。パスワードは .env から読むので、ここには書きません</span>
+schtasks /Create /TN "chem-backup" /SC DAILY /ST 03:00 /RU SYSTEM `
+  /TR "powershell -NoProfile -ExecutionPolicy Bypass -File C:\chem\scripts\backup-db.ps1"</pre>
+          <div class="box check">
+            <h4>CHECK</h4>
+            <p>その場で1回動かして、ファイルができることを確かめます。</p>
+<pre>powershell -NoProfile -ExecutionPolicy Bypass -File C:\chem\scripts\backup-db.ps1
+Get-ChildItem C:\backups\chem</pre>
+          </div>
+          <div class="box warn">
+            <h4>IMPORTANT</h4>
+            <p>
+              <b>サーバーとは別の機器へ複製してください。</b>
+              <code>backup-db.ps1</code> の末尾に、社内NASへコピーする例をコメントで書いてあります。
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <h3>Windows Server ならではの注意</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>項目</th><th>すること</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>Windows Update</b></td>
+            <td>再起動の時間帯を業務時間の外に設定してください。サービスは自動起動なので、再起動しても復帰します</td>
+          </tr>
+          <tr>
+            <td><b>ウイルス対策</b></td>
+            <td>
+              <code>C:\chem</code> と PostgreSQL のデータ領域を<b>リアルタイム検査の対象外</b>にすることを検討してください。
+              データベースの書き込みが遅くなることがあります
+            </td>
+          </tr>
+          <tr>
+            <td><b>文字コード</b></td>
+            <td>データベースは <b>UTF-8</b> で作ってください。既定のままだと日本語が化けます</td>
+          </tr>
+          <tr>
+            <td><b>アプリの記録</b></td>
+            <td>
+              <code>nssm set chem-app AppStdout C:\chem\logs\app.log</code> のように出力先を決めておくと、
+              困ったときに追えます
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>更新のしかた</h3>
+<pre>cd C:\chem
+powershell -File scripts\backup-db.ps1   <span class="c"># 先にバックアップ</span>
+nssm stop chem-app
+<span class="c"># 新しいファイルを展開してから</span>
+npm ci
+npx prisma generate
+npm run build
+npx prisma migrate deploy
+nssm start chem-app</pre>
+    <p>
+      <b>組み立ての最中はアプリを止めてください。</b>動かしたまま作り直すと、
+      作りかけのファイルを読んで動かなくなることがあります。
+    </p>
+  </section>
+
+  <p class="foot">
+    この手順書はサーバー1台構成を対象としています。
+    利用者が20名を超える、または製品が数万件に達する見込みがある場合は、事前にご相談ください。
+  </p>
+
+</div>
+</body>
+</html>
