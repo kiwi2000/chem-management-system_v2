@@ -29,7 +29,7 @@ const prisma = new PrismaClient();
 
 /** 位取りの漢数字。`十` `百` は入れない（出てきたら読まないため） */
 const DIGIT: Record<string, string> = {
-  "〇": "0",
+  〇: "0",
   一: "1",
   二: "2",
   三: "3",

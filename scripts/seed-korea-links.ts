@@ -31,6 +31,9 @@ const CAS_SHAPE = /^\d{2,7}-\d{2}-\d$/;
 const SETS: { tsv: string; law: string; category: string }[] = [
   { tsv: "kreach-prohibited", law: "KR-KREACH", category: "PROHIBITED" },
   { tsv: "kreach-restricted", law: "KR-KREACH", category: "RESTRICTED" },
+  { tsv: "kreach-toxic-acute", law: "KR-KREACH", category: "TOXIC_ACUTE" },
+  { tsv: "kreach-toxic-chronic", law: "KR-KREACH", category: "TOXIC_CHRONIC" },
+  { tsv: "kreach-toxic-eco", law: "KR-KREACH", category: "TOXIC_ECO" },
   { tsv: "kreach-priority", law: "KR-KREACH", category: "PRIORITY" },
   { tsv: "isha-ban", law: "KR-ISHA", category: "MFG_BAN" },
   { tsv: "isha-permit", law: "KR-ISHA", category: "MFG_PERMIT" },

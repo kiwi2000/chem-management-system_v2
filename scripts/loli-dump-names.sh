@@ -44,6 +44,7 @@ dump() { # 1=SQL 2=出力名
 echo "物質名"
 dump cas-names.sql       cas-names
 dump cas-names-china.sql cas-names-china
+dump korea-cas-names.sql korea-cas-names
 
 echo
 echo "取り出しました。取り込みは scripts/seed-substances-from-links.ts"

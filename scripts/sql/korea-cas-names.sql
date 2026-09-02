@@ -23,6 +23,7 @@ FROM CasNames n
 LEFT JOIN ja ON ja.Cas = n.Cas AND ja.rn = 1
 WHERE n.Cas IN (
   SELECT Cas FROM ListData
-  WHERE ListID IN (1887, 1888, 7914, 1581, 1580, 3564, 2480, 2479, 9020, 6285)
+  WHERE ListID IN (1887, 1888, 7914, 1581, 1580, 3564, 2480, 2479, 9020, 6285,
+                   10266, 10267, 10268)
 )
 ORDER BY n.Cas;

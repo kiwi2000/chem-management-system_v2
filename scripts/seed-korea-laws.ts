@@ -81,6 +81,38 @@ const LAWS: LawDef[] = [
         nameOriginal: "제한물질",
         note: "特定の用途での製造・輸入・使用が制限される。用途は条文で決まるため、判定では見ていない",
       },
+      /*
+        有害化学物質（유독물질）は、告示が**有害性の種類ごとに**指定する。
+        同じ号が急性・慢性・生態のうち複数に載ることがあり、閾値もそれぞれ違う。
+        1つの区分にまとめると閾値を1つしか持てないので、3つに分ける。
+
+        **区分の名前は英語のまま原語欄にも入れている。**この3つは
+        情報源が英語でしか名前を持たず、韓国語の言い回しを当てると造語になるため。
+      */
+      {
+        tsv: "kreach-toxic-acute",
+        code: "TOXIC_ACUTE",
+        nameJa: "急性毒性物質（人の健康）",
+        nameEn: "Acute toxic substances for human health",
+        nameOriginal: "Acute Toxic Substances for Human Health",
+        note: "有害化学物質のうち、人の健康への急性の有害性で指定されたもの",
+      },
+      {
+        tsv: "kreach-toxic-chronic",
+        code: "TOXIC_CHRONIC",
+        nameJa: "慢性毒性物質（人の健康）",
+        nameEn: "Chronic toxic substances for human health",
+        nameOriginal: "Chronic Toxic Substances for Human Health",
+        note: "有害化学物質のうち、人の健康への慢性の有害性で指定されたもの",
+      },
+      {
+        tsv: "kreach-toxic-eco",
+        code: "TOXIC_ECO",
+        nameJa: "生態毒性物質",
+        nameEn: "Ecological toxic substances",
+        nameOriginal: "Ecological Toxic Substances",
+        note: "有害化学物質のうち、生態への有害性で指定されたもの",
+      },
       {
         tsv: "kreach-priority",
         code: "PRIORITY",

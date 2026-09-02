@@ -55,7 +55,7 @@ const LAW_OF: Record<string, string> = {
   "REACH：制限物質": "EU-REACH",
   "TSCA：化学物質及び混合物の優先度付け、リスク評価並びに規制": "US-TSCA",
   "中国：危険化学品目録（２０１５版）": "CN-HAZCHEM",
-  "韓国：化評法( K-REACH)／化管法：有害化学物質、重点管理物質": "KR-KREACH",
+  // 韓国は項目名が違う（政令番号ではなくNIER番号）。scripts/seed-chrip-korea.ts が入れる
 };
 
 async function main() {

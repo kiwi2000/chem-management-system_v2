@@ -9,6 +9,9 @@
 #
 #   1887 K-REACH 禁止物質      code   （`06-4-14` の形）
 #   1888 K-REACH 制限物質      code
+#  10266 K-REACH 急性毒性物質  refno   （`97-1-442` の形）
+#  10267 K-REACH 慢性毒性物質  refno
+#  10268 K-REACH 生態毒性物質  refno
 #   7914 K-REACH 重点管理物質  refno
 #   1581 ISHA 製造等禁止物質   refno
 #   1580 ISHA 許可対象物質     refno
@@ -20,6 +23,10 @@
 #
 # **`1887` と `1888` は `code` を使う。**`refno` は 2026Q3 で足された欄で、
 # 2026Q2 には無い。同じ番号を書き直したものなので、両版にある `code` で結ぶ。
+#
+# **有害化学物質（10266〜10268）は `refno` を使う。**`code` は `1997-1-0442`、
+# `refno` は `97-1-442` で、告示の番号は後者の書き方。この3つは 2026Q3 で
+# 足された一覧なので、`refno` が無い版を気にしなくてよい。
 #
 # 出すのは2種類。
 #
@@ -33,6 +40,9 @@
 #   1581 製造等禁止    1%（一部 2%・5%）    同上
 #   1887 K-REACH禁止   0.005% 〜 50%        種類の記載なし
 #   1888 K-REACH制限   0.009% / 0.1% / 1%   同上
+#  10266 急性毒性      0.1% 〜 25%          mixture cut-off
+#  10267 慢性毒性      同上                 同上
+#  10268 生態毒性      同上                 同上
 #   2479 PRTR第2類     >=0.1 / >=1.0 % w/w  cut-off value
 #   2480 PRTR第1類     同上
 #   3564 CCA事故備え   0.1% 〜 98%          種類の記載なし
@@ -122,6 +132,9 @@ echo "K-REACH（化学物質登録評価法）"
 dump kreach-prohibited 1887 code
 dump kreach-restricted 1888 code
 dump kreach-priority   7914 refno
+dump kreach-toxic-acute   10266 refno
+dump kreach-toxic-chronic 10267 refno
+dump kreach-toxic-eco     10268 refno
 
 echo "ISHA（産業安全保健法）"
 dump isha-ban          1581 refno
