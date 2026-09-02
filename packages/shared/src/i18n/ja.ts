@@ -530,7 +530,7 @@ export const ja = {
     judged: "判定での扱い",
     judgedLabel: "この区分を判定に使う",
     judgedHint:
-      "外すと、法規制の画面には残りますが、製品の判定には出なくなります。「該当する可能性がある物質」の候補一覧など、重量%で該非が決まらないものに使います",
+      "外すと、法規制の画面には残りますが、製品の判定には出なくなります。「該当する可能性がある物質」の候補一覧など、含有率で該非が決まらないものに使います",
     judgedOff: "判定に使わない",
     thresholdBasis: "閾値の対象",
     thresholdBasisHint:
@@ -1242,7 +1242,7 @@ export const ja = {
     casFormatEnforced: "CAS番号の形（例: 7439-92-1）を強制する",
     casFormatEnforcedHint:
       "外すと形が違っても警告だけで保存できます。暫定の管理番号を入れる運用なら外してください",
-    compositionSection: "組成の合計チェック",
+    compositionSection: "組成の含有率チェック",
     validationMode: "合計が100%でないときの扱い",
     validationModes: {
       STRICT: "厳しい（100%でなければ保存しない）",
@@ -1338,8 +1338,8 @@ export const ja = {
 
     // CASでまとめた組成
     aggregateTitle: "原材料展開・CAS合算",
-    /** CAS番号は法律に載っているが、重量%が足りず当たっていないもの */
-    nearMissShow: "重量%が足りず非該当",
+    /** CAS番号は法律に載っているが、含有率が足りず当たっていないもの */
+    nearMissShow: "含有率不足による非該当",
     sourceShow: "データソース",
     reviewLegend: "適用条件要確認",
     diffShow: "差分あり",
@@ -1348,7 +1348,7 @@ export const ja = {
     cellDetailPast: "前のバージョン",
     cellDetailNoSources: "このバージョンにはデータソースがありません",
     cellDetailHint:
-      "太字が、そのバージョンで採用された法文物質名です（優先度がいちばん高いもの）。青は該当、オレンジは重量%が足りず非該当",
+      "太字が、そのバージョンで採用された法文物質名です（優先度がいちばん高いもの）。青は該当、オレンジは含有率が足りず非該当",
     cellDetailOpen: "バージョン・データソース別に見る",
     diffHint:
       "前のバージョンには無かった結び付きに「差」の印を付けます。バージョンを上げて新しく当たるようになったものが分かります",
@@ -1358,7 +1358,7 @@ export const ja = {
     sourceHint:
       "その判定に使われた結び付きが、どのデータソースから来たものかを、セルの先頭に印で出します",
     nearMissHint:
-      "CAS番号は法律に載っているのに、重量%が足りず該当していない法文物質名を赤字で出します。配合が変わると該当します",
+      "CAS番号は法律に載っているのに、含有率が足りず該当していない法文物質名を赤字で出します。配合が変わると該当します",
     aggregateName: "物質名",
     aggregateNoCas: "CASなし",
     aggregateSubstanceId: "物質ID",

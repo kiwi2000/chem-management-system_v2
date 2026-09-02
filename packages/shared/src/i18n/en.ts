@@ -1217,7 +1217,7 @@ export const en: Messages = {
     casFormatEnforced: "Require the CAS format (e.g. 7439-92-1)",
     casFormatEnforcedHint:
       "Turn this off to save other formats with a warning only — useful for provisional in-house numbers",
-    compositionSection: "Composition total checks",
+    compositionSection: "Composition percentage checks",
     validationMode: "When the total is not 100%",
     validationModes: {
       STRICT: "Strict (refuse to save unless the total is 100%)",
