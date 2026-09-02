@@ -50,7 +50,7 @@ export interface SubstanceMatrix {
   /** 左から新しい順。現在のバージョンが先頭 */
   versions: { id: string; code: string; isCurrent: boolean }[];
   /** 並べたバージョンに載っているデータソース。優先度の高い順、重複なし */
-  sources: { id: string; code: string }[];
+  sources: { id: string; code: string; color: string | null }[];
   inventory: { columns: MatrixColumn[]; cells: Record<string, MatrixValue[]> };
   regulation: { columns: MatrixColumn[]; cells: Record<string, MatrixValue[]> };
 }
@@ -107,20 +107,28 @@ export async function buildSubstanceMatrix(
   const vs = await prisma.linkVersionSource.findMany({
     where: { versionId: { in: versionIds } },
     orderBy: { priority: "asc" },
-    select: { versionId: true, sourceId: true, priority: true, source: { select: { code: true } } },
+    select: {
+      versionId: true,
+      sourceId: true,
+      priority: true,
+      // 色は選んだデータソースを見分けるために使う（決めていなければ空）
+      source: { select: { code: true, color: true } },
+    },
   });
   const head = versions[0]!.id;
   /** 先頭のバージョンでの優先度。載っていなければ後ろへ回す */
   const rank = new Map<string, number>();
   const codeOf = new Map<string, string>();
+  const colorOf = new Map<string, string | null>();
   for (const r of vs) {
     codeOf.set(r.sourceId, r.source.code);
+    colorOf.set(r.sourceId, r.source.color);
     if (r.versionId !== head) continue;
     rank.set(r.sourceId, r.priority);
   }
   const rankOf = (id: string) => rank.get(id) ?? Number.MAX_SAFE_INTEGER;
   const sources = [...codeOf.entries()]
-    .map(([id, code]) => ({ id, code }))
+    .map(([id, code]) => ({ id, code, color: colorOf.get(id) ?? null }))
     .sort((a, b) => rankOf(a.id) - rankOf(b.id) || a.code.localeCompare(b.code));
 
   // --- インベントリ ---------------------------------------------------------

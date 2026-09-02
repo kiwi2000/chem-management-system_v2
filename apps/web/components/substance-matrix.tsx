@@ -40,26 +40,36 @@ function Clip({ children }: { children: ReactNode }) {
   return <span className="block overflow-hidden text-ellipsis">{children}</span>;
 }
 
-/** 選んだデータソースの値。目立たせて、他と見分けられるようにする */
+/** 色を決めていないデータソースを選んだとき。無色では選んだことが伝わらない */
 const HIT = "bg-primary/15";
+
+/**
+ * 選んだデータソースの値を塗る色。
+ *
+ * **そのデータソースの色を薄めて敷く。**複数選べるので、1つの色でまとめて
+ * 塗ると、どの出どころの値なのかが読めなくなる。
+ * 色を決めていないデータソースは、今までどおりの目立たせ方に落とす。
+ */
+const tintOf = (color: string) => `color-mix(in oklab, ${color} 20%, transparent)`;
 
 function ValueCell({
   values,
   row,
-  sourceId,
+  picked,
 }: {
   values: MatrixValue[];
   row: number;
-  sourceId: string | null;
+  /** 選んでいるデータソース。id → 色（色を決めていなければ空） */
+  picked: Map<string, string | null>;
 }) {
   const v = values[row];
   if (!v) return <span className="text-muted-foreground">—</span>;
+  const hit = picked.has(v.sourceId);
+  const color = hit ? picked.get(v.sourceId) : null;
   return (
     <span
-      className={cn(
-        "block overflow-hidden px-1 text-ellipsis",
-        sourceId && v.sourceId === sourceId && HIT,
-      )}
+      className={cn("block overflow-hidden px-1 text-ellipsis", hit && !color && HIT)}
+      style={color ? { backgroundColor: tintOf(color) } : undefined}
       title={v.note ?? v.text}
     >
       {v.text}
@@ -88,7 +98,7 @@ function Matrix({
   columns,
   cells,
   versions,
-  sourceId,
+  picked,
   emptyMessage,
   /** 中段（法律）の見出し。渡さなければ中段そのものを出さない */
   parentHeader,
@@ -99,7 +109,7 @@ function Matrix({
   columns: MatrixColumn[];
   cells: Record<string, MatrixValue[]>;
   versions: SubstanceMatrix["versions"];
-  sourceId: string | null;
+  picked: Map<string, string | null>;
   emptyMessage: string;
   parentHeader?: string;
   storageKey: string;
@@ -456,7 +466,7 @@ function Matrix({
                               <ValueCell
                                 values={cells[`${c.key}/${v.id}`] ?? []}
                                 row={row}
-                                sourceId={sourceId}
+                                picked={picked}
                               />
                             </td>
                           )),
@@ -480,8 +490,18 @@ function Matrix({
  */
 export function SubstanceMatrixSection({ data }: { data: SubstanceMatrix }) {
   const { m } = useI18n();
-  /** 目立たせるデータソース。押すとすぐ切り替わる */
-  const [sourceId, setSourceId] = useState<string | null>(data.sources[0]?.id ?? null);
+  /**
+   * 目立たせるデータソース。**はじめは何も選ばない。**
+   * 勝手に1つ選んでおくと、その出どころだけが答えに見える。
+   * **いくつでも選べる。**出どころを見比べるための画面なので、
+   * 1つに絞ると比べられない。
+   */
+  const [pickedIds, setPickedIds] = useState<Set<string>>(new Set());
+  const picked = useMemo(
+    () =>
+      new Map(data.sources.filter((s) => pickedIds.has(s.id)).map((s) => [s.id, s.color] as const)),
+    [pickedIds, data.sources],
+  );
   /** インベントリを全部出すか、番号として出しているものだけにするか */
   const [allInventories, setAllInventories] = useState(false);
 
@@ -502,17 +522,33 @@ export function SubstanceMatrixSection({ data }: { data: SubstanceMatrix }) {
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-muted-foreground text-xs">{m.inventories.source}</span>
-          {/* ボタンを並べる。押した瞬間に色が変わり、表の目立たせ方が切り替わる */}
-          {data.sources.map((s) => (
-            <Button
-              key={s.id}
-              size="sm"
-              variant={s.id === sourceId ? "default" : "outline"}
-              onClick={() => setSourceId(s.id)}
-            >
-              {s.code}
-            </Button>
-          ))}
+          {/*
+            ボタンを並べる。押すとそのデータソースの色になり、表の値にも同じ色が敷かれる。
+            もう一度押すと外れる
+          */}
+          {data.sources.map((s) => {
+            const on = pickedIds.has(s.id);
+            return (
+              <Button
+                key={s.id}
+                size="sm"
+                aria-pressed={on}
+                // 色を決めているものは、その色で。決めていなければ既定の塗り
+                variant={on && !s.color ? "default" : "outline"}
+                className={cn(on && s.color && "border-transparent text-white hover:text-white")}
+                style={on && s.color ? { backgroundColor: s.color } : undefined}
+                onClick={() =>
+                  setPickedIds((prev) => {
+                    const next = new Set(prev);
+                    if (!next.delete(s.id)) next.add(s.id);
+                    return next;
+                  })
+                }
+              >
+                {s.code}
+              </Button>
+            );
+          })}
           <label className="text-muted-foreground ml-2 flex items-center gap-1 text-xs">
             <input
               type="checkbox"
@@ -528,7 +564,7 @@ export function SubstanceMatrixSection({ data }: { data: SubstanceMatrix }) {
           columns={invColumns}
           cells={data.inventory.cells}
           versions={data.versions}
-          sourceId={sourceId}
+          picked={picked}
           emptyMessage={m.substanceMatrix.inventoryEmpty}
           storageKey="chem.table.substanceInventory"
         />
@@ -537,7 +573,7 @@ export function SubstanceMatrixSection({ data }: { data: SubstanceMatrix }) {
           columns={data.regulation.columns}
           cells={data.regulation.cells}
           versions={data.versions}
-          sourceId={sourceId}
+          picked={picked}
           emptyMessage={m.substanceMatrix.regulationEmpty}
           parentHeader={m.laws.title}
           storageKey="chem.table.substanceRegulation"
