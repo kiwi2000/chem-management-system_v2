@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import {
   OPAQUE_MUTED_50,
   OPAQUE_MUTED_50_HOVER,
+  STICKY_HEAD_LINES,
   Table,
   TableBody,
   TableCell,
@@ -277,7 +278,7 @@ export function ProductJudgements({
                 行に置くと、枠線を重ねて描く表（`border-collapse: collapse`）では
                 いちばん上の1〜2pxが塗られず、流れていく行がそこから覗く
               */}
-              <TableHeader className={cn("sticky top-0 z-20", OPAQUE_MUTED_50)}>
+              <TableHeader className={cn("sticky top-0 z-20", OPAQUE_MUTED_50, STICKY_HEAD_LINES)}>
                 {/* 色と枠線は組成の表にそろえる。並べて見るので、別物に見えると困る */}
                 <TableRow className={cn(OPAQUE_MUTED_50, OPAQUE_MUTED_50_HOVER, "border-y")}>
                   {HEADS.map(({ key, label, className }, i) => (

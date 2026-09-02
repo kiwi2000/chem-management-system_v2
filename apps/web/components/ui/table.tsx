@@ -26,6 +26,21 @@ export const OPAQUE_MUTED_40 = "bg-[color-mix(in_oklab,var(--muted)_40%,var(--ba
 export const OPAQUE_MUTED_50_HOVER =
   "hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--background))]";
 
+/*
+  **貼り付ける見出しの枠線は、影で引く。**
+
+  枠線を重ねて描く表（`border-collapse: collapse`）では、線をセルではなく
+  **表そのものが描く。**見出しを貼り付けて動かすと、線だけが元の場所に残り、
+  スクロール中は見出しの枠が消えてしまう。影ならセルと一緒に動く。
+
+  `thead` に付けると上下の線、その中の `th` に付けると縦の区切りになる。
+  行のいちばん右には引かない（表の外側の線になってしまう）。
+*/
+export const STICKY_HEAD_LINES = [
+  "shadow-[inset_0_1px_0_0_var(--border),inset_0_-1px_0_0_var(--border)]",
+  "[&_th:not(:last-child)]:shadow-[inset_-1px_0_0_0_var(--border)]",
+].join(" ");
+
 function Table({
   className,
   containerClassName,

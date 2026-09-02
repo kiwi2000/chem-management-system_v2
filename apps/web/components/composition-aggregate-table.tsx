@@ -4,7 +4,12 @@ import { pickName, pickStatutoryName } from "@chem/shared";
 import { ChevronRight, CircleHelp, TriangleAlert } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CELL_CLIP, OPAQUE_MUTED_40, OPAQUE_MUTED_50 } from "@/components/ui/table";
+import {
+  CELL_CLIP,
+  OPAQUE_MUTED_40,
+  OPAQUE_MUTED_50,
+  STICKY_HEAD_LINES,
+} from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { Button } from "@/components/ui/button";
 import { CellDetailDialog } from "@/components/cell-detail-dialog";
@@ -595,7 +600,7 @@ export function CompositionAggregateTable({
               行に置くと、枠線を重ねて描く表（`border-collapse: collapse`）では
               いちばん上の1〜2pxが塗られず、流れていく行がそこから覗く
             */}
-            <thead className={cn("sticky top-0 z-20", OPAQUE_MUTED_50)}>
+            <thead className={cn("sticky top-0 z-20", OPAQUE_MUTED_50, STICKY_HEAD_LINES)}>
               <tr className={cn(OPAQUE_MUTED_50, "border-t text-left")}>
                 {HEADS.map(({ key, label, className }, at) => {
                   const frozen = cols.frozenProps(at);
