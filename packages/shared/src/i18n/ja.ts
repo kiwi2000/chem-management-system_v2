@@ -1345,7 +1345,7 @@ export const ja = {
     diffShow: "差分あり",
     cellDetailTitle: "バージョン・データソース別の該当",
     cellDetailCurrent: "現バージョン",
-    cellDetailPast: "前のバージョン",
+    cellDetailPast: "前バージョン",
     cellDetailNoSources: "このバージョンにはデータソースがありません",
     cellDetailHint:
       "太字が、そのバージョンで採用された法文物質名です（優先度がいちばん高いもの）。青は該当、オレンジは含有率が足りず非該当",
