@@ -513,7 +513,7 @@ export const en: Messages = {
     lower: "Lower",
     upper: "Upper",
     bounds: { EXCLUSIVE: "<", INCLUSIVE: "≤" },
-    content: "content (wt%)",
+    content: "weight %",
     judged: "Use in judgement",
     judgedLabel: "Judge products against this category",
     judgedHint:
@@ -1217,7 +1217,7 @@ export const en: Messages = {
     casFormatEnforced: "Require the CAS format (e.g. 7439-92-1)",
     casFormatEnforcedHint:
       "Turn this off to save other formats with a warning only — useful for provisional in-house numbers",
-    compositionSection: "Composition percentage checks",
+    compositionSection: "Composition total checks",
     validationMode: "When the total is not 100%",
     validationModes: {
       STRICT: "Strict (refuse to save unless the total is 100%)",
@@ -1363,8 +1363,8 @@ export const en: Messages = {
     saved: "Composition saved",
     savedWithWarnings: "Composition saved. Please check the following",
     errorPickOne: "Choose either a substance or a raw material, not both",
-    errorPctRequired: "Enter a content percentage",
-    errorSumNot100: (total: string) => `The percentages do not add up to 100% (total ${total}%)`,
+    errorPctRequired: "Enter a weight %",
+    errorSumNot100: (total: string) => `The total does not come to 100% (total ${total}%)`,
     errorDuplicateSubstance: (label: string) => `The substance "${label}" appears on several lines`,
     errorDuplicateProduct: (label: string) =>
       `The raw material "${label}" appears on several lines`,
@@ -1375,9 +1375,9 @@ export const en: Messages = {
     errorCycle:
       "This would create a cycle: one of the raw materials leads back to this product itself",
     warnEmpty: "The composition is empty",
-    warnSumOver: (total: string) => `The percentages add up to more than 100% (total ${total}%)`,
+    warnSumOver: (total: string) => `The total comes to more than 100% (total ${total}%)`,
     warnSumUnder: (total: string) =>
-      `The percentages add up to less than 100% (total ${total}% — undisclosed or remainder)`,
+      `The total comes to less than 100% (total ${total}% — undisclosed or remainder)`,
     referencedByProducts: (n: number) =>
       `Cannot delete: it is used in ${n} composition${n === 1 ? "" : "s"}`,
     usedAsMaterialWarning: (n: number) =>
