@@ -31,12 +31,13 @@ const CAS_SHAPE = /^\d{2,7}-\d{2}-\d$/;
 const SETS: { tsv: string; law: string; category: string }[] = [
   { tsv: "kreach-prohibited", law: "KR-KREACH", category: "PROHIBITED" },
   { tsv: "kreach-restricted", law: "KR-KREACH", category: "RESTRICTED" },
-  { tsv: "kreach-toxic-acute", law: "KR-KREACH", category: "TOXIC_ACUTE" },
-  { tsv: "kreach-toxic-chronic", law: "KR-KREACH", category: "TOXIC_CHRONIC" },
-  { tsv: "kreach-toxic-eco", law: "KR-KREACH", category: "TOXIC_ECO" },
   { tsv: "kreach-priority", law: "KR-KREACH", category: "PRIORITY" },
   { tsv: "isha-ban", law: "KR-ISHA", category: "MFG_BAN" },
   { tsv: "isha-permit", law: "KR-ISHA", category: "MFG_PERMIT" },
+  // 毒性物質は化管法の指定（禁止・制限は化評法第27条）
+  { tsv: "kreach-toxic-acute", law: "KR-CCA", category: "TOXIC_ACUTE" },
+  { tsv: "kreach-toxic-chronic", law: "KR-CCA", category: "TOXIC_CHRONIC" },
+  { tsv: "kreach-toxic-eco", law: "KR-CCA", category: "TOXIC_ECO" },
   { tsv: "cca-accident", law: "KR-CCA", category: "ACCIDENT" },
   { tsv: "prtr-c1", law: "KR-PRTR", category: "GROUP1" },
   { tsv: "prtr-c2", law: "KR-PRTR", category: "GROUP2" },

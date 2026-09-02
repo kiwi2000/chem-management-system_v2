@@ -81,38 +81,6 @@ const LAWS: LawDef[] = [
         nameOriginal: "제한물질",
         note: "特定の用途での製造・輸入・使用が制限される。用途は条文で決まるため、判定では見ていない",
       },
-      /*
-        有害化学物質（유독물질）は、告示が**有害性の種類ごとに**指定する。
-        同じ号が急性・慢性・生態のうち複数に載ることがあり、閾値もそれぞれ違う。
-        1つの区分にまとめると閾値を1つしか持てないので、3つに分ける。
-
-        **区分の名前は英語のまま原語欄にも入れている。**この3つは
-        情報源が英語でしか名前を持たず、韓国語の言い回しを当てると造語になるため。
-      */
-      {
-        tsv: "kreach-toxic-acute",
-        code: "TOXIC_ACUTE",
-        nameJa: "急性毒性物質（人の健康）",
-        nameEn: "Acute toxic substances for human health",
-        nameOriginal: "Acute Toxic Substances for Human Health",
-        note: "有害化学物質のうち、人の健康への急性の有害性で指定されたもの",
-      },
-      {
-        tsv: "kreach-toxic-chronic",
-        code: "TOXIC_CHRONIC",
-        nameJa: "慢性毒性物質（人の健康）",
-        nameEn: "Chronic toxic substances for human health",
-        nameOriginal: "Chronic Toxic Substances for Human Health",
-        note: "有害化学物質のうち、人の健康への慢性の有害性で指定されたもの",
-      },
-      {
-        tsv: "kreach-toxic-eco",
-        code: "TOXIC_ECO",
-        nameJa: "生態毒性物質",
-        nameEn: "Ecological toxic substances",
-        nameOriginal: "Ecological Toxic Substances",
-        note: "有害化学物質のうち、生態への有害性で指定されたもの",
-      },
       {
         tsv: "kreach-priority",
         code: "PRIORITY",
@@ -157,6 +125,42 @@ const LAWS: LawDef[] = [
     nameOriginal: "화학물질관리법",
     displayOrder: 30,
     categories: [
+      /*
+        毒性物質（유독물질）は**化管法が指定する。**禁止物質・制限物質は
+        化評法（K-REACH）第27条の指定で、化管法はそれを引いているだけ。
+        毒性物質だけが化管法そのものの告示（環境部長官の指定）。
+
+        告示は**有害性の種類ごとに**指定し、同じ号が急性・慢性・生態のうち
+        複数に載ることがある。閾値もそれぞれ違うので、1つの区分にまとめると
+        閾値を1つしか持てない。3つに分ける。
+
+        **区分の名前は英語のまま原語欄にも入れている。**この3つは
+        情報源が英語でしか名前を持たず、韓国語の言い回しを当てると造語になるため。
+      */
+      {
+        tsv: "kreach-toxic-acute",
+        code: "TOXIC_ACUTE",
+        nameJa: "急性毒性物質（人の健康）",
+        nameEn: "Acute toxic substances for human health",
+        nameOriginal: "Acute Toxic Substances for Human Health",
+        note: "毒性物質のうち、人の健康への急性の有害性で指定されたもの",
+      },
+      {
+        tsv: "kreach-toxic-chronic",
+        code: "TOXIC_CHRONIC",
+        nameJa: "慢性毒性物質（人の健康）",
+        nameEn: "Chronic toxic substances for human health",
+        nameOriginal: "Chronic Toxic Substances for Human Health",
+        note: "毒性物質のうち、人の健康への慢性の有害性で指定されたもの",
+      },
+      {
+        tsv: "kreach-toxic-eco",
+        code: "TOXIC_ECO",
+        nameJa: "生態毒性物質",
+        nameEn: "Ecological toxic substances",
+        nameOriginal: "Ecological Toxic Substances",
+        note: "毒性物質のうち、生態への有害性で指定されたもの",
+      },
       {
         tsv: "cca-accident",
         code: "ACCIDENT",
@@ -331,20 +335,26 @@ function readCasNames(): Map<string, { ja: string; en: string }> {
 /**
  * `値/単位/種類` を閾値に直す。
  *
- * 数値のときだけ閾値にする。`>=` が付いていれば以上（境界を含む）、
- * 付いていなければ超（含まない）。数値でないものは備考に回す。
+ * 数値のときだけ閾値にする。数値でないものは備考に回す。
+ *
+ * **境界は含む（`INCLUSIVE`）。**韓国の指定告示は含有量の基準を
+ * 「〜% 以上（이상）」と書く。外部データベースは `>=25` と書く一覧と
+ * `25`（種類だけ `mixture cut-off`）と書く一覧が混ざっているが、
+ * **どちらも同じ告示の値**なので、書き方の違いで読み分けない。
+ *
+ * 2026-09-02 に直した。それまで `>=` の無いものを超（含まない）として
+ * 読んでいたが、**告示より狭く当ててしまう。**
+ * 韓国RoHS だけは別（最大許容濃度なので、超えたら該当。この関数は通さない）。
  */
 function readThreshold(raw: string | undefined, fallback: string) {
-  const none = { lower: fallback, bound: "EXCLUSIVE" as const, note: null as string | null };
+  // 既定が `0` のときは「裾切値なし＝0を超えれば該当」。それ以外は告示の値
+  const bound = fallback === "0" ? ("EXCLUSIVE" as const) : ("INCLUSIVE" as const);
+  const none = { lower: fallback, bound, note: null as string | null };
   if (!raw) return none;
   const [value = "", unit = "", type = ""] = raw.split("/");
-  const m = /^(>=)?\s*([\d.]+)$/.exec(value.trim());
+  const m = /^(?:>=)?\s*([\d.]+)$/.exec(value.trim());
   if (m && unit.includes("%")) {
-    return {
-      lower: m[2],
-      bound: m[1] ? ("INCLUSIVE" as const) : ("EXCLUSIVE" as const),
-      note: null,
-    };
+    return { lower: m[1], bound: "INCLUSIVE" as const, note: null };
   }
   // 数値でないもの。重点管理は選ばれた理由、POPs は条約の附属書
   if (/^present$/i.test(value.trim())) {

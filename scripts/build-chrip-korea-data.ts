@@ -22,9 +22,9 @@
  *
  * 同じ物質が禁止物質と有害化学物質の両方に載ることがある（上はその例）。
  *
- * ## 有害化学物質（Toxic Substances）を3つに分ける
+ * ## 毒性物質（Toxic Substances）を3つに分ける
  *
- * 有害化学物質は、有害性の種類ごとに閾値が違う。頭に付く語がその種類を表す。
+ * 毒性物質は、有害性の種類ごとに閾値が違う。頭に付く語がその種類を表す。
  *
  *   Acutely:      人の健康への急性の有害性   → TOXIC_ACUTE
  *   Chronically:  人の健康への慢性の有害性   → TOXIC_CHRONIC
@@ -54,7 +54,12 @@ const CATEGORY_OF: Record<string, { law: string; category: string }> = {
   "Substances requiring preparation for accidents": { law: "KR-CCA", category: "ACCIDENT" },
 };
 
-/** 有害化学物質の頭に付く語 → 規制区分 */
+/**
+ * 毒性物質の頭に付く語 → 規制区分。
+ *
+ * 毒性物質（유독물질）は**化管法（`KR-CCA`）の指定。**禁止物質・制限物質は
+ * 化評法（K-REACH）第27条の指定で、化管法はそれを引いているだけ。
+ */
 const PREFIX_OF: Record<string, string> = {
   Acutely: "TOXIC_ACUTE",
   Chronically: "TOXIC_CHRONIC",
@@ -123,7 +128,7 @@ function main() {
           skipped.push(`${f}\t頭の語が無い\t${number}\t${range ?? ""}`);
           continue;
         }
-        targets = split.map((s) => ({ law: "KR-KREACH", category: s.category, lower: s.lower }));
+        targets = split.map((s) => ({ law: "KR-CCA", category: s.category, lower: s.lower }));
       } else {
         const to = CATEGORY_OF[label];
         if (!to) {

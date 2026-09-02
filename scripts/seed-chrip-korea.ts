@@ -60,7 +60,7 @@ const LAWS: Record<string, { nameJa: string; nameEn: string; order: number }> = 
 
 /**
  * 規制区分。CHRIP の「カテゴリ」がそのまま区分になる。
- * 有害化学物質だけは、有害性の種類ごとに閾値が違うので3つに分ける。
+ * 毒性物質だけは、有害性の種類ごとに閾値が違うので3つに分ける。
  *
  * **名前は英語のまま原語欄にも入れている。**CHRIP は韓国の区分名を
  * 英語でしか持たず、韓国語を当てると造語になるため。
@@ -83,19 +83,19 @@ const CATEGORIES: Record<string, { nameJa: string; nameEn: string; order: number
       nameJa: "急性毒性物質（人の健康）",
       nameEn: "Acute toxic substances for human health",
       order: 30,
-      note: "有害化学物質のうち、人の健康への急性の有害性で指定されたもの",
+      note: "毒性物質のうち、人の健康への急性の有害性で指定されたもの",
     },
     TOXIC_CHRONIC: {
       nameJa: "慢性毒性物質（人の健康）",
       nameEn: "Chronic toxic substances for human health",
       order: 40,
-      note: "有害化学物質のうち、人の健康への慢性の有害性で指定されたもの",
+      note: "毒性物質のうち、人の健康への慢性の有害性で指定されたもの",
     },
     TOXIC_ECO: {
       nameJa: "生態毒性物質",
       nameEn: "Ecological toxic substances",
       order: 50,
-      note: "有害化学物質のうち、生態への有害性で指定されたもの",
+      note: "毒性物質のうち、生態への有害性で指定されたもの",
     },
     PRIORITY: {
       nameJa: "重点管理物質",
