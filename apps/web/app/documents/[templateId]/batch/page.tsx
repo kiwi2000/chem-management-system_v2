@@ -6,7 +6,7 @@ import { writeAudit } from "@/lib/audit";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { BATCH_MAX, parseBatchIds } from "@/lib/doc-batch";
-import { collectFor, containsComposition } from "@/lib/doc-data";
+import { collectFor, containsComposition, resolveOrgChoices } from "@/lib/doc-data";
 import { renderDocument, type RenderedDocument } from "@/lib/doc-render";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 
@@ -36,9 +36,9 @@ export default async function DocumentBatchPage({
   searchParams,
 }: {
   params: Promise<{ templateId: string }>;
-  searchParams: Promise<{ ids?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ ids?: string; from?: string; to?: string; org?: string | string[] }>;
 }) {
-  const [{ templateId }, { ids: raw, from, to }] = await Promise.all([params, searchParams]);
+  const [{ templateId }, { ids: raw, from, to, org }] = await Promise.all([params, searchParams]);
   const actor = await getActor();
   if (!actor) notFound();
 
@@ -67,11 +67,13 @@ export default async function DocumentBatchPage({
     印の無い様式に付いてきても捨てる（URLに書けば効く、という状態を作らない）。
     差出人を差し替えられるかどうかは、集める側が権限で判断する
   */
+  // 生成するときに選んだ組織を、様式の組織ブロックへ書き込む（様式で決めてあるものは変えない）
+  const content = await resolveOrgChoices(template.content, org);
   const parties = {
     senderId: from ?? null,
     recipientId: template.usesRecipient ? (to ?? null) : null,
-    // 様式が名指ししている組織（組織ブロック）
-    organisationIds: organisationIdsIn(template.content),
+    // 様式が名指ししている組織と、生成するときに選んだ組織（組織ブロック）
+    organisationIds: organisationIdsIn(content),
   };
 
   const ids = parseBatchIds(raw);
@@ -95,9 +97,9 @@ export default async function DocumentBatchPage({
       id,
       code: data.code,
       version: data.values.get("doc.version") ?? "",
-      hasComposition: containsComposition(template.content, data.tables),
+      hasComposition: containsComposition(content, data.tables),
       doc: renderDocument({
-        content: template.content,
+        content,
         target: template.target,
         values: data.values,
         tables: data.tables,

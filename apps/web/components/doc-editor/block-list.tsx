@@ -2,21 +2,25 @@
 
 import {
   BLOCK_KINDS,
+  DEFAULT_FONT,
   fieldsFor,
   groupIntoRows,
   ORG_NAME_ITEM,
+  ORGANISATION_KINDS,
+  orgBlockMode,
   pickName,
-  type OrgBlockItem,
   tablesFor,
   type BlockKind,
   type DocumentBlock,
   type DocumentTable,
   type DocumentTarget,
   type FontKey,
-  DEFAULT_FONT,
+  type OrganisationKind,
+  type OrgBlockItem,
+  type OrgBlockMode,
 } from "@chem/shared";
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { RichEditor } from "@/components/doc-editor/rich-editor";
 import { TableBlockFields } from "@/components/doc-editor/table-block-fields";
 import { BlockStyleBar } from "@/components/doc-editor/block-style-bar";
@@ -91,8 +95,28 @@ export function BlockList({
   */
   const organisations = useOrganisations();
   /** その組織が持っている項目名。組織を選び直したら、選べる項目も変わる */
-  const itemsOf = (organisationId: string) =>
-    (organisations ?? []).find((o) => o.id === organisationId)?.items.map((x) => x.label) ?? [];
+  /** 種別の呼び名。画面の言語で出す */
+  const kindNames = useMemo(
+    () => ({
+      COMPANY: m.organisations.kindCompany,
+      DEPARTMENT: m.organisations.kindDepartment,
+      PARTNER: m.organisations.kindPartner,
+      OTHER: m.organisations.kindOther,
+    }),
+    [m],
+  );
+  /*
+    組織ブロックで選べる項目名。**組織を決めてあればその組織の項目、
+    決めていなければ候補になる組織すべての項目名を重複なしで並べる**
+    （生成するときにどれが選ばれても、様式で並べた項目が引ける）
+  */
+  const itemsFor = (b: { organisationId: string; organisationKind?: OrganisationKind }) => {
+    const all = organisations ?? [];
+    const pool = b.organisationId
+      ? all.filter((o) => o.id === b.organisationId)
+      : all.filter((o) => o.activeFlag && (!b.organisationKind || o.kind === b.organisationKind));
+    return [...new Set(pool.flatMap((o) => o.items.map((x) => x.label)))];
+  };
 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -334,21 +358,64 @@ export function BlockList({
           {b.kind === "org" && (
             <div className="space-y-2">
               <p className="text-muted-foreground text-xs">{m.docEditor.orgBlockHint}</p>
-              <select
-                className={cn(SELECT, "w-56")}
-                aria-label={m.docEditor.orgBlockOrganisation}
-                value={b.organisationId}
-                onChange={(e) => replace(i, { ...b, organisationId: e.target.value })}
-              >
-                <option value="">—</option>
-                {(organisations ?? [])
-                  .filter((o) => o.activeFlag)
-                  .map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {pickName(locale, o.nameJa, o.nameEn)}
-                    </option>
-                  ))}
-              </select>
+              {/*
+                組織の決めかた。**様式で決めるか、種別だけ決めるか、生成するときに選ぶか。**
+                「組織を決めておく」に切り替えたときは先頭の組織を入れておく
+                （空のままだと「生成するときに選ぶ」と区別が付かない）
+              */}
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  className={cn(SELECT, "w-64")}
+                  aria-label={m.docEditor.orgBlockMode}
+                  value={orgBlockMode(b)}
+                  onChange={(e) => {
+                    const mode = e.target.value as OrgBlockMode;
+                    const first = (organisations ?? []).find((o) => o.activeFlag)?.id ?? "";
+                    replace(i, {
+                      ...b,
+                      organisationId: mode === "fixed" ? first : "",
+                      organisationKind:
+                        mode === "kind" ? (b.organisationKind ?? "COMPANY") : undefined,
+                    });
+                  }}
+                >
+                  <option value="any">{m.docEditor.orgBlockModeAny}</option>
+                  <option value="kind">{m.docEditor.orgBlockModeKind}</option>
+                  <option value="fixed">{m.docEditor.orgBlockModeFixed}</option>
+                </select>
+                {orgBlockMode(b) === "kind" && (
+                  <select
+                    className={cn(SELECT, "w-40")}
+                    aria-label={m.docEditor.orgBlockKind}
+                    value={b.organisationKind ?? "COMPANY"}
+                    onChange={(e) =>
+                      replace(i, { ...b, organisationKind: e.target.value as OrganisationKind })
+                    }
+                  >
+                    {ORGANISATION_KINDS.map((k) => (
+                      <option key={k} value={k}>
+                        {kindNames[k]}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {orgBlockMode(b) === "fixed" && (
+                  <select
+                    className={cn(SELECT, "w-56")}
+                    aria-label={m.docEditor.orgBlockOrganisation}
+                    value={b.organisationId}
+                    onChange={(e) => replace(i, { ...b, organisationId: e.target.value })}
+                  >
+                    {(organisations ?? [])
+                      .filter((o) => o.activeFlag || o.id === b.organisationId)
+                      .map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {pickName(locale, o.nameJa, o.nameEn)}
+                        </option>
+                      ))}
+                  </select>
+                )}
+              </div>
 
               {b.items.map((it, k) => {
                 const patch = (next: Partial<OrgBlockItem>) =>
@@ -368,7 +435,7 @@ export function BlockList({
                       <option value="">—</option>
                       {/* 名称は項目と同じ並びから選ばせる。名前だけの欄を別に作らない */}
                       <option value={ORG_NAME_ITEM}>{m.docEditor.orgBlockName}</option>
-                      {itemsOf(b.organisationId).map((label) => (
+                      {itemsFor(b).map((label) => (
                         <option key={label} value={label}>
                           {label}
                         </option>

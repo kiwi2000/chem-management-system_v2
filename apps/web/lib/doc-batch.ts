@@ -20,12 +20,15 @@ export interface PartyParams {
   from?: string | null;
   /** 宛先の組織 */
   to?: string | null;
+  /** 組織ブロックで選んだ組織。`<ブロックid>:<組織id>` の並び */
+  org?: string[];
 }
 
 /** `from` `to` を問い合わせ文字列に足す（無いものは付けない） */
 export function partyQuery(q: URLSearchParams, parties?: PartyParams): URLSearchParams {
   if (parties?.from) q.set("from", parties.from);
   if (parties?.to) q.set("to", parties.to);
+  for (const v of parties?.org ?? []) q.append("org", v);
   return q;
 }
 

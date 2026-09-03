@@ -1,11 +1,15 @@
 import {
+  applyOrgChoices,
   DOCUMENT_TABLE_DEFS,
+  openOrgBlocks,
   ORG_ITEM_PREFIX,
   ORG_NAME_ITEM,
   orgBlockKey,
+  parseOrgChoices,
   pickName,
   pickStatutoryName,
   RECIPIENT_ITEM_PREFIX,
+  type DocumentContent,
 } from "@chem/shared";
 import type { DocumentTable, DocumentTarget, Locale, Messages } from "@chem/shared";
 import type { Actor } from "@/lib/authz";
@@ -128,6 +132,36 @@ async function orgValues(
   for (const it of org?.items ?? []) out.push([`${ORG_ITEM_PREFIX}${it.label}`, it.value]);
   for (const it of to?.items ?? []) out.push([`${RECIPIENT_ITEM_PREFIX}${it.label}`, it.value]);
   return out;
+}
+
+/**
+ * 生成するときに選んだ組織を、様式へ書き込む。
+ *
+ * **URL に書かれた組織は、そのまま信じない。**消された組織、様式が決めた種別と
+ * 違う組織は捨てる（種別「取引先」の欄に会社を入れる、という穴を作らない）。
+ * 様式で組織を決めてあるブロックは、何が来ても変えない
+ */
+export async function resolveOrgChoices(
+  content: DocumentContent,
+  raw: string | string[] | undefined,
+): Promise<DocumentContent> {
+  const wanted = parseOrgChoices(raw);
+  const open = openOrgBlocks(content);
+  if (open.length === 0 || wanted.size === 0) return content;
+  const rows = await prisma.organisation.findMany({
+    where: { id: { in: [...new Set(wanted.values())] }, deletedAt: null },
+    select: { id: true, kind: true },
+  });
+  const kindOf = new Map(rows.map((o) => [o.id, o.kind]));
+  const ok = new Map<string, string>();
+  for (const b of open) {
+    const id = wanted.get(b.id);
+    if (!id) continue;
+    const kind = kindOf.get(id);
+    if (!kind || (b.kind && b.kind !== kind)) continue;
+    ok.set(b.id, id);
+  }
+  return applyOrgChoices(content, ok);
 }
 
 /**

@@ -3,6 +3,8 @@
 import {
   DOCUMENT_TARGETS,
   emptyTableState,
+  openOrgBlocks,
+  ORGANISATION_KINDS,
   pickName,
   serializeTableState,
   type ColumnKind,
@@ -82,6 +84,23 @@ export function DocumentsScreen() {
   const orgOptions = useMemo(
     () => (organisations ?? []).filter((o) => o.activeFlag),
     [organisations],
+  );
+  /*
+    組織ブロックのうち、様式で組織を決めていないもの。**ここで選んでもらう。**
+    種別だけ決めてあるブロックはその種別の中から、何も決めていないブロックは
+    種別で絞ってから選ぶ。選ばなければ、そのブロックは空のまま出る
+  */
+  const openBlocks = useMemo(() => (picked ? openOrgBlocks(picked.content) : []), [picked]);
+  const [orgChoices, setOrgChoices] = useState<Record<string, string>>({});
+  const [orgKindFilter, setOrgKindFilter] = useState<Record<string, string>>({});
+  const kindNames = useMemo(
+    () => ({
+      COMPANY: m.organisations.kindCompany,
+      DEPARTMENT: m.organisations.kindDepartment,
+      PARTNER: m.organisations.kindPartner,
+      OTHER: m.organisations.kindOther,
+    }),
+    [m],
   );
   const [data, setData] = useState<ListResponse<GeneratedDocumentDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -200,6 +219,7 @@ export function DocumentsScreen() {
   const partyParams = (t: DocumentTemplateDto) => ({
     ...(senderId ? { from: senderId } : {}),
     ...(t.usesRecipient && recipientId ? { to: recipientId } : {}),
+    org: openBlocks.flatMap((b) => (orgChoices[b.id] ? [`${b.id}:${orgChoices[b.id]}`] : [])),
   });
 
   /*
@@ -207,7 +227,18 @@ export function DocumentsScreen() {
     選んでも紙に出ないものを聞くと、効いていると読めてしまう。
     差出人を選べる人には、そのために出す
   */
-  const asksParties = picked !== null && (picked.usesRecipient || canPickSender);
+  const asksParties =
+    picked !== null && (picked.usesRecipient || canPickSender || openBlocks.length > 0);
+  /** ②の見出し。出る欄だけを並べる（無い欄の名前を書かない） */
+  const step2Label = m.documents.step2Pick(
+    [
+      canPickSender ? m.documents.sender : null,
+      picked?.usesRecipient ? m.documents.recipient : null,
+      openBlocks.length > 0 ? m.documents.orgBlockShort : null,
+    ]
+      .filter((v): v is string => v !== null)
+      .join(locale === "ja" ? "・" : ", "),
+  );
 
   /*
     段の見出し。**出す段だけで番号を数える。**
@@ -246,6 +277,9 @@ export function DocumentsScreen() {
             // テンプレートが変われば、選んでいた相手も外す（対象そのものが変わる）
             setTargetIds([]);
             if (!t.usesRecipient) setRecipientId("");
+            // 組織ブロックはテンプレートごとに違うので、選び直し
+            setOrgChoices({});
+            setOrgKindFilter({});
           }}
         />
       </div>
@@ -258,17 +292,7 @@ export function DocumentsScreen() {
       */}
       {asksParties && (
         <div className="space-y-2 border-t pt-4">
-          <p className="text-sm font-medium">
-            {step(
-              2,
-              // 出る欄に合わせた見出しにする。宛先が無いのに「宛先」と書かない
-              picked?.usesRecipient
-                ? canPickSender
-                  ? m.documents.step2Sender
-                  : m.documents.step2
-                : m.documents.step2SenderOnly,
-            )}
-          </p>
+          <p className="text-sm font-medium">{step(2, step2Label)}</p>
           <div className="flex flex-wrap items-end gap-3">
             {canPickSender && (
               <div className="space-y-1">
@@ -306,7 +330,58 @@ export function DocumentsScreen() {
                 </select>
               </div>
             )}
+            {/* 組織ブロック。様式で決めていないぶんを、紙面の順に聞く */}
+            {openBlocks.map((b, n) => {
+              const kind = b.kind ?? orgKindFilter[b.id] ?? "";
+              return (
+                <div key={b.id} className="space-y-1">
+                  <span className="text-muted-foreground text-xs">
+                    {m.documents.orgBlockChoice(n + 1)}
+                    {b.kind ? `（${kindNames[b.kind]}）` : ""}
+                  </span>
+                  <div className="flex gap-2">
+                    {b.kind === null && (
+                      <select
+                        aria-label={m.docEditor.orgBlockKind}
+                        value={kind}
+                        onChange={(e) => {
+                          setOrgKindFilter({ ...orgKindFilter, [b.id]: e.target.value });
+                          // 種別を変えたら、前に選んだ組織は外す（種別が合わなくなる）
+                          setOrgChoices({ ...orgChoices, [b.id]: "" });
+                        }}
+                        className="border-input bg-background block h-9 w-36 rounded-none border px-2 text-sm"
+                      >
+                        <option value="">{m.documents.orgKindAll}</option>
+                        {ORGANISATION_KINDS.map((k) => (
+                          <option key={k} value={k}>
+                            {kindNames[k]}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <select
+                      aria-label={m.documents.orgBlockChoice(n + 1)}
+                      value={orgChoices[b.id] ?? ""}
+                      onChange={(e) => setOrgChoices({ ...orgChoices, [b.id]: e.target.value })}
+                      className="border-input bg-background block h-9 w-56 rounded-none border px-2 text-sm"
+                    >
+                      <option value="">{m.documents.orgNotChosen}</option>
+                      {orgOptions
+                        .filter((o) => kind === "" || o.kind === kind)
+                        .map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {pickName(locale, o.nameJa, o.nameEn)}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+          {openBlocks.length > 0 && (
+            <p className="text-muted-foreground text-xs">{m.documents.orgNotChosenHint}</p>
+          )}
         </div>
       )}
 

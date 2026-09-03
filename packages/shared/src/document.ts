@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { OrganisationKind } from "./organisation";
 import type { Messages } from "./i18n/ja";
 
 /**
@@ -112,9 +113,11 @@ export const RECIPIENT_ITEM_PREFIX = "to.item.";
 
 /**
  * 組織ブロックで「組織の名称そのもの」を指す項目名。
- * **項目名と同じ並びで選ばせる**ので、名前の欄を別に作らない
+ * **項目名と同じ並びで選ばせる**ので、名前の欄を別に作らない。
+ * 組織の項目名として人が打たない形にしてある（以前は \u0000 を使っていたが、
+ * PostgreSQL の JSON に入らず保存で落ちた）
  */
-export const ORG_NAME_ITEM = "\u0000name";
+export const ORG_NAME_ITEM = "$name$";
 
 /** 組織ブロックが引く値の鍵。組織ごとに違うので id を挟む */
 export function orgBlockKey(organisationId: string, item: string): string {
@@ -130,6 +133,63 @@ export function organisationIdsIn(content: DocumentContent): string[] {
     if (b.kind === "org" && b.organisationId) out.add(b.organisationId);
   }
   return [...out];
+}
+
+/**
+ * 組織ブロックの決めかた。
+ * fixed … 様式で組織を決めてある / kind … 種別だけ決めてあり、組織は生成するときに選ぶ /
+ * any … 種別も組織も生成するときに選ぶ
+ */
+export type OrgBlockMode = "fixed" | "kind" | "any";
+
+export function orgBlockMode(b: {
+  organisationId: string;
+  organisationKind?: OrganisationKind;
+}): OrgBlockMode {
+  if (b.organisationId) return "fixed";
+  return b.organisationKind ? "kind" : "any";
+}
+
+/** 生成するときに組織を選ばせるブロック（様式で決めていないもの）。並びは紙面の順 */
+export function openOrgBlocks(
+  content: DocumentContent,
+): { id: string; kind: OrganisationKind | null }[] {
+  return content.blocks.flatMap((b) =>
+    b.kind === "org" && !b.organisationId ? [{ id: b.id, kind: b.organisationKind ?? null }] : [],
+  );
+}
+
+/**
+ * 生成するときに選んだ組織を URL で持ち回る形。`<ブロックid>:<組織id>` を並べる。
+ * 読めないものは落とす
+ */
+export function parseOrgChoices(raw: string | string[] | undefined): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const v of Array.isArray(raw) ? raw : raw ? [raw] : []) {
+    const at = v.indexOf(":");
+    if (at <= 0 || at === v.length - 1) continue;
+    out.set(v.slice(0, at), v.slice(at + 1));
+  }
+  return out;
+}
+
+export function formatOrgChoices(choices: ReadonlyMap<string, string>): string[] {
+  return [...choices].map(([blockId, orgId]) => `${blockId}:${orgId}`);
+}
+
+/** 選んだ組織をブロックへ書き込む。**様式で決めてあるものは触らない** */
+export function applyOrgChoices(
+  content: DocumentContent,
+  choices: ReadonlyMap<string, string>,
+): DocumentContent {
+  return {
+    ...content,
+    blocks: content.blocks.map((b) => {
+      if (b.kind !== "org" || b.organisationId) return b;
+      const id = choices.get(b.id);
+      return id ? { ...b, organisationId: id } : b;
+    }),
+  };
 }
 
 /** 項目名から、差込項目1つを組み立てる */
@@ -532,8 +592,13 @@ export type DocumentBlock =
    */
   | (BlockBase & {
       kind: "org";
-      /** どの組織か */
+      /**
+       * どの組織か。**空なら様式では決めず、生成するときに選ぶ。**
+       * `organisationKind` があれば、その種別の中から選ばせる
+       */
       organisationId: string;
+      /** 生成するときに選ばせる種別。組織を決めてあるときは見ない */
+      organisationKind?: OrganisationKind;
       /** 出す項目。並びはこの配列の順 */
       items: OrgBlockItem[];
     })

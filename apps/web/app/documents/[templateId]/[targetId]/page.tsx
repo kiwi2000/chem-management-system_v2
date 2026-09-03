@@ -3,10 +3,10 @@ import { DocumentView } from "@/components/doc-editor/document-view";
 import { writeAudit } from "@/lib/audit";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { collectFor, containsComposition } from "@/lib/doc-data";
+import { collectFor, containsComposition, resolveOrgChoices } from "@/lib/doc-data";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { renderDocument } from "@/lib/doc-render";
-import { getMessages, isLocale, organisationIdsIn } from "@chem/shared";
+import { getMessages, isLocale, organisationIdsIn, parseOrgChoices } from "@chem/shared";
 import { PrintOrientation } from "@/components/doc-editor/print-orientation";
 import { TemplateFileDownload } from "@/components/doc-editor/template-file-download";
 
@@ -48,9 +48,9 @@ export default async function DocumentPage({
   searchParams,
 }: {
   params: Promise<{ templateId: string; targetId: string }>;
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; org?: string | string[] }>;
 }) {
-  const [{ templateId, targetId }, { from, to }] = await Promise.all([params, searchParams]);
+  const [{ templateId, targetId }, { from, to, org }] = await Promise.all([params, searchParams]);
   const actor = await getActor();
   if (!actor) notFound();
 
@@ -77,11 +77,13 @@ export default async function DocumentPage({
     印の無い様式に付いてきても捨てる（URLに書けば効く、という状態を作らない）。
     差出人を差し替えられるかどうかは、集める側が権限で判断する
   */
+  // 生成するときに選んだ組織を、様式の組織ブロックへ書き込む（様式で決めてあるものは変えない）
+  const content = await resolveOrgChoices(template.content, org);
   const parties = {
     senderId: from ?? null,
     recipientId: template.usesRecipient ? (to ?? null) : null,
-    // 様式が名指ししている組織（組織ブロック）
-    organisationIds: organisationIdsIn(template.content),
+    // 様式が名指ししている組織と、生成するときに選んだ組織（組織ブロック）
+    organisationIds: organisationIdsIn(content),
   };
 
   /*
@@ -105,7 +107,7 @@ export default async function DocumentPage({
   if (!data) notFound();
 
   const doc = renderDocument({
-    content: template.content,
+    content,
     target: template.target,
     values: data.values,
     tables: data.tables,
@@ -120,12 +122,16 @@ export default async function DocumentPage({
         generatedBy: actor.user.id,
         // 出した紙面をそのまま残す。あとで開いたときに当時の内容が出る
         content: doc as unknown as object,
-        hasComposition: containsComposition(template.content, data.tables),
+        hasComposition: containsComposition(content, data.tables),
         params: {
           version: data.values.get("doc.version") ?? "",
           // 誰の名前で、誰に宛てて出したか。あとから記録だけで追えるように残す
           ...(parties.senderId ? { senderId: parties.senderId } : {}),
           ...(parties.recipientId ? { recipientId: parties.recipientId } : {}),
+          // 組織ブロックで選んだ組織。ブロックid → 組織id
+          ...(parseOrgChoices(org).size
+            ? { organisations: Object.fromEntries(parseOrgChoices(org)) }
+            : {}),
         },
       },
     }),
