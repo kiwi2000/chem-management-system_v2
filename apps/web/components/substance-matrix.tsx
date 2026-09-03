@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
+import { ChevronRight, Database, FoldVertical, UnfoldVertical } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { CELL_CLIP, OPAQUE_MUTED_40 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
@@ -56,23 +56,40 @@ function ValueCell({
   values,
   row,
   picked,
+  showData,
+  open,
 }: {
   values: MatrixValue[];
   row: number;
   /** 選んでいるデータソース。id → 色（色を決めていなければ空） */
   picked: Map<string, string | null>;
+  /** 「ソースデータ」が押されているか。押されていれば文章を2行目に添える */
+  showData: boolean;
+  /** セルを押して全文を出しているか。閉じているときは1行で切る */
+  open: boolean;
 }) {
   const v = values[row];
   if (!v) return <span className="text-muted-foreground">—</span>;
   const hit = picked.has(v.sourceId);
   const color = hit ? picked.get(v.sourceId) : null;
+  const clip = open
+    ? "whitespace-normal break-words"
+    : "overflow-hidden text-ellipsis whitespace-nowrap";
   return (
     <span
-      className={cn("block overflow-hidden px-1 text-ellipsis", hit && !color && HIT)}
+      className={cn("block px-1", hit && !color && HIT)}
       style={color ? { backgroundColor: tintOf(color) } : undefined}
-      title={v.note ?? v.text}
+      title={[v.note ?? v.text, showData ? v.data : null].filter(Boolean).join("\n")}
     >
-      {v.text}
+      <span className={cn("block", clip)}>{v.text}</span>
+      {/* 出どころの文章。名前の下に1行。全文はセルを押して読む */}
+      {showData && v.data && (
+        <span
+          className={cn("text-muted-foreground block font-sans text-[11px] leading-tight", clip)}
+        >
+          {v.data}
+        </span>
+      )}
     </span>
   );
 }
@@ -104,6 +121,8 @@ function Matrix({
   parentHeader,
   /** 列幅を端末に覚えるための鍵。表ごとに分ける */
   storageKey,
+  /** 「ソースデータ」の切り替えを出すか。文章を持つのは法規制のリンクだけ */
+  dataToggle,
 }: {
   title: string;
   columns: MatrixColumn[];
@@ -113,11 +132,23 @@ function Matrix({
   emptyMessage: string;
   parentHeader?: string;
   storageKey: string;
+  dataToggle?: boolean;
 }) {
   const { m } = useI18n();
   /** 畳んでいる地域と法律。既定はすべて開いている */
   const [foldedRegions, setFoldedRegions] = useState<Set<string>>(new Set());
   const [foldedParents, setFoldedParents] = useState<Set<string>>(new Set());
+  /** 「ソースデータ」を押しているか。押すと、出どころの文章をセルの2行目に添える */
+  const [showData, setShowData] = useState(false);
+  /** 押して全文を出しているセル。鍵は 列/バージョン/行 */
+  const [openCells, setOpenCells] = useState<Set<string>>(new Set());
+  const toggleCell = (key: string) =>
+    setOpenCells((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   /**
    * 地域 → 法律 → 列 の入れ子にする。
@@ -299,6 +330,18 @@ function Matrix({
             <FoldVertical className="mr-1 size-3.5" />
             {m.composition.collapseAll}
           </Button>
+          {dataToggle && (
+            <Button
+              size="sm"
+              variant={showData ? "default" : "outline"}
+              aria-pressed={showData}
+              title={m.substanceMatrix.sourceDataHint}
+              onClick={() => setShowData((v) => !v)}
+            >
+              <Database className="mr-1 size-3.5" />
+              {m.substanceMatrix.sourceData}
+            </Button>
+          )}
         </div>
       </div>
       {/*
@@ -467,18 +510,29 @@ function Matrix({
                         <td key={g.key} className={TH} />
                       ) : (
                         g.columns.map((c) =>
-                          versions.map((v) => (
-                            <td
-                              key={`${c.key}/${v.id}`}
-                              className="border-border h-8 border px-1 py-1 font-mono whitespace-nowrap"
-                            >
-                              <ValueCell
-                                values={cells[`${c.key}/${v.id}`] ?? []}
-                                row={row}
-                                picked={picked}
-                              />
-                            </td>
-                          )),
+                          versions.map((v) => {
+                            const cellId = `${c.key}/${v.id}/${row}`;
+                            const open = openCells.has(cellId);
+                            return (
+                              // 押すと全文（名前も文章も折り返して全部）。もう一度押すと1行に戻る
+                              <td
+                                key={`${c.key}/${v.id}`}
+                                className={cn(
+                                  "border-border h-8 cursor-pointer border px-1 py-1 font-mono",
+                                  open ? "whitespace-normal align-top" : "whitespace-nowrap",
+                                )}
+                                onClick={() => toggleCell(cellId)}
+                              >
+                                <ValueCell
+                                  values={cells[`${c.key}/${v.id}`] ?? []}
+                                  row={row}
+                                  picked={picked}
+                                  showData={showData}
+                                  open={open}
+                                />
+                              </td>
+                            );
+                          }),
                         )
                       ),
                     )
@@ -579,6 +633,7 @@ export function SubstanceMatrixSection({ data }: { data: SubstanceMatrix }) {
         />
         <Matrix
           title={m.substanceMatrix.regulationTitle}
+          dataToggle
           columns={data.regulation.columns}
           cells={data.regulation.cells}
           versions={data.versions}

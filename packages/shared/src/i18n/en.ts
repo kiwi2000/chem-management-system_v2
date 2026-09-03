@@ -1218,6 +1218,9 @@ export const en: Messages = {
     inventoryEmpty: "No inventory registered",
     regulationTitle: "Regulations",
     regulationEmpty: "No regulation applies",
+    sourceData: "Source data",
+    sourceDataHint:
+      "Adds what the data source writes about the CAS (the Data column of linked CAS numbers) as a second line in each cell. Click a cell to read it in full",
   },
 
   settings: {

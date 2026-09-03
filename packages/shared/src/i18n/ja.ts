@@ -1243,6 +1243,9 @@ export const ja = {
     inventoryEmpty: "インベントリが登録されていません",
     regulationTitle: "該当法規",
     regulationEmpty: "当たっている法規制はありません",
+    sourceData: "ソースデータ",
+    sourceDataHint:
+      "データソースがそのCASについて書いている文章（対象CASの「データ」）を、セルの2行目に添えます。1行で切れるので、全文はセルを押して読みます",
   },
 
   settings: {

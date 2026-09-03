@@ -44,6 +44,11 @@ export interface MatrixValue {
   /** 補足（法文物質名など）。無ければ null */
   note: string | null;
   sourceId: string;
+  /**
+   * 出どころがそのCASについて書いている文章（CASリンクの「データ」）。
+   * 画面の言語で選んである（日本語訳があれば日本語、無ければ原文）。無ければ null
+   */
+  data: string | null;
 }
 
 export interface SubstanceMatrix {
@@ -186,7 +191,7 @@ export async function buildSubstanceMatrix(
   const invCells: Record<string, MatrixValue[]> = {};
   for (const r of invRows) {
     const k = cellKey(`inv:${r.inventoryId}`, r.versionId);
-    (invCells[k] ??= []).push({ text: r.value, note: null, sourceId: r.sourceId });
+    (invCells[k] ??= []).push({ text: r.value, note: null, sourceId: r.sourceId, data: null });
   }
 
   // --- 法規制 ---------------------------------------------------------------
@@ -200,6 +205,8 @@ export async function buildSubstanceMatrix(
     select: {
       versionId: true,
       sourceId: true,
+      // 出どころの文章。「ソースデータ」を押したときにセルへ添える
+      data: { select: { text: true, textJa: true } },
       statutorySubstance: {
         select: {
           officialNumber: true,
@@ -294,6 +301,7 @@ export async function buildSubstanceMatrix(
       text: parts.join(" "),
       note: null,
       sourceId: l.sourceId,
+      data: l.data ? (locale === "ja" ? (l.data.textJa ?? l.data.text) : l.data.text) : null,
     });
   }
 
