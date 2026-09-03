@@ -89,7 +89,7 @@ export default function ManualStatesPage() {
 
         <Sub title="承認が要らないとき">
           <P>
-            <StateChip tone="draft">作成中</StateChip> →「発行する」→{" "}
+            <StateChip tone="draft">作成中</StateChip> →「公開する」→{" "}
             <StateChip tone="published">公開済</StateChip>
           </P>
           <P>確認の手順が無いぶん早く済みますが、間違いもそのまま出ます。</P>

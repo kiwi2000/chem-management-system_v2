@@ -4,6 +4,7 @@ import { describePasswordPolicy, expandPermissions, pickName, type Permission } 
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
 import { PermissionPicker } from "@/components/permission-picker";
@@ -27,6 +28,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   const router = useRouter();
   const { m, locale } = useI18n();
+  const ask = useConfirm();
 
   const [item, setItem] = useState<UserSummaryDto | null>(null);
   const [me, setMe] = useState<MeDto | null>(null);
@@ -115,7 +117,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
    * 2要素認証の強制解除と同じ役目
    */
   async function onResetPasskeys() {
-    if (!confirm(m.passkey.adminResetConfirm)) return;
+    if (!(await ask({ message: m.passkey.adminResetConfirm, destructive: true }))) return;
     setError(null);
     setNotice(null);
     const res = await fetch(`/api/admin/users/${id}/passkeys`, { method: "DELETE" });
@@ -135,7 +137,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
    * これが無いと、本人が自分の口座から出られなくなる。
    */
   async function onResetMfa() {
-    if (!confirm(m.mfa.adminResetConfirm)) return;
+    if (!(await ask({ message: m.mfa.adminResetConfirm, destructive: true }))) return;
     setError(null);
     setNotice(null);
     const res = await fetch(`/api/admin/users/${id}/mfa`, { method: "DELETE" });

@@ -50,7 +50,6 @@ export function InventorySection() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   /** 「クリア」で戻す先。編集を始めたときの値 */
-  const [original, setOriginal] = useState<Draft>(EMPTY);
 
   const [data, setData] = useState<ListResponse<InventoryDto> | null>(null);
   /** 国の絞り込みの選択肢。打たせずに選ばせるため */
@@ -250,7 +249,6 @@ export function InventorySection() {
       numberShown: i.numberShown,
     };
     setDraft(d);
-    setOriginal(d);
     setEditingId(i.id);
   }
 
@@ -324,9 +322,6 @@ export function InventorySection() {
               </Button>
               <Button size="sm" variant="outline" onClick={stopEdit}>
                 {m.common.cancel}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setDraft(original)}>
-                {m.common.clear}
               </Button>
             </div>
           ) : undefined

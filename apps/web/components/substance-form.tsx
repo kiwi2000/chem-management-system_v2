@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { AliasList } from "@/components/alias-list";
 import { FieldError } from "@/components/field-error";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -229,6 +230,8 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
             </>
           ) : (
             <>
+              {/* 製品・お知らせと同じ印。編集中だと一目で分かるようにする */}
+              <Badge variant="secondary">{m.common.editMode}</Badge>
               {/*
                 このバーは form の外にあるので、送る先を自分で呼ぶ。
                 **type="submit" は使わない。**押した節（読むだけ／編集中）で

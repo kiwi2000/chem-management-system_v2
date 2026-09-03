@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppShellClient } from "@/components/app-shell-client";
+import { ConfirmProvider } from "@/components/confirm-dialog";
 import { canEdit, getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { hasPasskey } from "@/lib/passkey";
@@ -53,21 +54,24 @@ export async function AppShell({ children }: { children: ReactNode }) {
   });
 
   return (
-    <AppShellClient
-      version={version ? { code: version.code, nameJa: version.nameJa } : null}
-      user={{
-        id: actor.user.id,
-        email: actor.user.email,
-        displayName: actor.user.displayName,
-        permissions: actor.permissions,
-        canEdit: canEdit(actor),
-        isAdmin: actor.has("ADMIN"),
-      }}
-      // アバターを差し替えても、URLが同じだとブラウザが古い絵を出し続ける。
-      // 更新日時をURLに乗せて、変わったときだけ取り直させる
-      avatarVersion={actor.user.avatarUpdatedAt?.getTime() ?? 0}
-    >
-      {children}
-    </AppShellClient>
+    // 「消しますか」の窓。どの画面からでも同じ窓で聞けるよう、外枠で1つだけ持つ
+    <ConfirmProvider>
+      <AppShellClient
+        version={version ? { code: version.code, nameJa: version.nameJa } : null}
+        user={{
+          id: actor.user.id,
+          email: actor.user.email,
+          displayName: actor.user.displayName,
+          permissions: actor.permissions,
+          canEdit: canEdit(actor),
+          isAdmin: actor.has("ADMIN"),
+        }}
+        // アバターを差し替えても、URLが同じだとブラウザが古い絵を出し続ける。
+        // 更新日時をURLに乗せて、変わったときだけ取り直させる
+        avatarVersion={actor.user.avatarUpdatedAt?.getTime() ?? 0}
+      >
+        {children}
+      </AppShellClient>
+    </ConfirmProvider>
   );
 }

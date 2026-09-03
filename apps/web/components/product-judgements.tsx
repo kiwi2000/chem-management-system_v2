@@ -16,8 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  OPAQUE_MUTED_50,
-  OPAQUE_MUTED_50_HOVER,
   STICKY_HEAD_LINES,
   Table,
   TableBody,
@@ -61,12 +59,13 @@ const HEADS: { key: string; width: number; label: (m: M) => string; className?: 
   // 区分の行にだけ開閉のつまみが付く。そのぶん少し広く取る
   { key: "category", width: 176, label: (m) => m.judgements.category },
   { key: "number", width: 56, label: (m) => m.judgements.number },
-  { key: "statutoryName", width: 288, label: (m) => m.judgements.statutoryName },
+  // 1280px の画面で表がなるべく収まるよう、長い文字の列は少し詰める（切れた分は押せば読める）
+  { key: "statutoryName", width: 240, label: (m) => m.judgements.statutoryName },
   { key: "content", width: 72, label: (m) => m.judgements.content, className: "text-right" },
   { key: "matchedCas", width: 96, label: (m) => m.judgements.matchedCas },
   // 見出しの「スコア」がちょうど収まる幅。組成の表とそろえる
   { key: "score", width: 60, label: (m) => m.judgements.score, className: "text-right" },
-  { key: "warning", width: 256, label: (m) => m.judgements.warning },
+  { key: "warning", width: 200, label: (m) => m.judgements.warning },
 ];
 
 /**
@@ -113,7 +112,7 @@ export function ProductJudgements({
   // 列幅は一覧と同じ規則。操作の列は、出るときだけ幅を数に入れる
   const cols = useResizableColumns(
     // 末尾の版を上げると、覚えている列幅を捨てて既定から始め直す
-    "chem.table.productJudgements.v2",
+    "chem.table.productJudgements.v3",
     [...HEADS, ...(canEdit ? [ACTION_COLUMN] : [])],
     // 幅を詰めない。詰めると製品ごと・画面幅ごとに列の位置が動いて見比べられない
     { shrinkToFit: false, rowLabel: m.table.resizeRows },
@@ -278,9 +277,14 @@ export function ProductJudgements({
                 行に置くと、枠線を重ねて描く表（`border-collapse: collapse`）では
                 いちばん上の1〜2pxが塗られず、流れていく行がそこから覗く
               */}
-              <TableHeader className={cn("sticky top-0 z-20", OPAQUE_MUTED_50, STICKY_HEAD_LINES)}>
+              <TableHeader
+                className={cn(
+                  "table-head-solid text-table-head-foreground sticky top-0 z-20",
+                  STICKY_HEAD_LINES,
+                )}
+              >
                 {/* 色と枠線は組成の表にそろえる。並べて見るので、別物に見えると困る */}
-                <TableRow className={cn(OPAQUE_MUTED_50, OPAQUE_MUTED_50_HOVER, "border-y")}>
+                <TableRow className="border-y hover:bg-transparent">
                   {HEADS.map(({ key, label, className }, i) => (
                     <TableHead key={key} className={cn(CELL, "relative h-auto", className)}>
                       {/* 行の高さのつまみは、いちばん左の見出しに1つだけ */}

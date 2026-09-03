@@ -31,6 +31,8 @@ export const en: Messages = {
     appName: "Chemical Substance Management",
     save: "Save",
     cancel: "Cancel",
+    confirmTitle: "Confirm",
+    ok: "OK",
     delete: "Delete",
     edit: "Edit",
     detail: "Details",
@@ -953,6 +955,7 @@ export const en: Messages = {
    * Not used for assessment — they supply the numbers shown on a substance
    */
   docTemplates: {
+    fileRemoveConfirm: "Remove the uploaded file? This cannot be undone.",
     seq: "No.",
     createdAt: "Created",
     title: "Templates",

@@ -665,26 +665,22 @@ export function LawTreeSection({
           <div className="flex gap-2">
             {/* 法律の数だけ開け閉めするのは手間なので、まとめて開く・閉じるを置く */}
             <Button
-              size="icon"
+              size="sm"
               variant="outline"
-              className="size-8"
-              title={m.composition.expandAll}
-              aria-label={m.composition.expandAll}
               disabled={expanding || (data?.items.length ?? 0) === 0}
               onClick={() => void expandAll()}
             >
-              <UnfoldVertical className="size-4" />
+              <UnfoldVertical className="mr-1 size-3.5" />
+              {m.composition.expandAll}
             </Button>
             <Button
-              size="icon"
+              size="sm"
               variant="outline"
-              className="size-8"
-              title={m.composition.collapseAll}
-              aria-label={m.composition.collapseAll}
               disabled={open.size === 0}
               onClick={() => setOpen(new Map())}
             >
-              <FoldVertical className="size-4" />
+              <FoldVertical className="mr-1 size-3.5" />
+              {m.composition.collapseAll}
             </Button>
             {editable && !editing && (
               <>

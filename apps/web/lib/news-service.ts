@@ -15,7 +15,7 @@ export function formatDateOnly(d: Date | null): string | null {
 type GroupName = Pick<Group, "id" | "nameJa" | "nameEn" | "displayOrder">;
 
 export type NewsWithAuthor = News & {
-  author: Pick<User, "id" | "displayName" | "email"> & { orgGroup?: GroupName | null };
+  author: Pick<User, "id" | "displayName" | "email"> & { department?: GroupName | null };
   group?: GroupName | null;
 };
 
@@ -27,7 +27,8 @@ export const NEWS_INCLUDE = {
       displayName: true,
       email: true,
       // 一覧に「所属 / 氏名 / 日時」を出すので、投稿者の所属も一緒に読む
-      orgGroup: { select: { id: true, nameJa: true, nameEn: true, displayOrder: true } },
+      // 「所属」は部署（Organisation）。利用者の編集画面で割り当てる
+      department: { select: { id: true, nameJa: true, nameEn: true, displayOrder: true } },
     },
   },
   group: { select: { id: true, nameJa: true, nameEn: true, displayOrder: true } },
@@ -46,8 +47,8 @@ export function toNewsDto(n: NewsWithAuthor, actor: Actor): NewsDto {
     publishUntil: formatDateOnly(n.publishUntil),
     authorId: n.authorId,
     authorName: n.author.displayName ?? n.author.email,
-    authorOrgNameJa: n.author.orgGroup?.nameJa ?? null,
-    authorOrgNameEn: n.author.orgGroup?.nameEn ?? null,
+    authorOrgNameJa: n.author.department?.nameJa ?? null,
+    authorOrgNameEn: n.author.department?.nameEn ?? null,
     groupId: n.groupId,
     groupNameJa: n.group?.nameJa ?? null,
     groupNameEn: n.group?.nameEn ?? null,

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -178,7 +179,8 @@ const SELECT_CELL = "px-0 text-center";
  * 一覧の共通部品。すべてのテーブルはこれを使う。
  *
  * - フィルターは表の外（上のパネル）。表の中に入れると列幅に引きずられるため
- * - 行ごとの操作ボタンは置かない。**チェックして上の削除ボタン**、**ダブルクリックで詳細**
+ * - 削除は**チェックして上の削除ボタン**。詳細へは**先頭列のコードのリンク**、
+ *   行内で直すマスタは**行末の鉛筆**（rowAction）。行のダブルクリックには意味を持たせない
  */
 export function DataTable<T>({
   storageKey,
@@ -246,6 +248,7 @@ export function DataTable<T>({
     orderedForPicker.filter((c) => hiddenColumns.has(c.key)).map((c) => c.key),
   );
   const { m } = useI18n();
+  const ask = useConfirm();
   const prefs = usePageSizePrefs();
   /*
     並べる件数。**画面ごとの指定があればそれを、無ければその人の設定を使う。**
@@ -386,7 +389,7 @@ export function DataTable<T>({
   async function runBulkAction() {
     const targets = (rows ?? []).filter((r) => selected.has(rowKey(r)));
     if (targets.length === 0 || !bulkAction) return;
-    if (bulkAction.confirm && !confirm(bulkAction.confirm(targets.length))) return;
+    if (bulkAction.confirm && !(await ask({ message: bulkAction.confirm(targets.length) }))) return;
     setDeleting(true);
     try {
       await bulkAction.run(targets);
@@ -399,7 +402,8 @@ export function DataTable<T>({
   async function deleteSelected() {
     const targets = visible.filter((r) => selected.has(rowKey(r)));
     if (targets.length === 0 || !onDeleteSelected) return;
-    if (!confirm(m.table.deleteSelectedConfirm(targets.length))) return;
+    if (!(await ask({ message: m.table.deleteSelectedConfirm(targets.length), destructive: true })))
+      return;
     setDeleting(true);
     try {
       await onDeleteSelected(targets);

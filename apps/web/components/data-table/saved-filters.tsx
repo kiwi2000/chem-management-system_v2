@@ -2,6 +2,7 @@
 
 import { Bookmark, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -24,6 +25,7 @@ interface Props {
  */
 export function SavedFilters({ tableKey, currentQuery, onLoad }: Props) {
   const { m } = useI18n();
+  const ask = useConfirm();
   const [items, setItems] = useState<SavedFilterDto[] | null>(null);
   const [openMenu, setOpenMenu] = useState<"save" | "load" | null>(null);
   const [title, setTitle] = useState("");
@@ -66,7 +68,7 @@ export function SavedFilters({ tableKey, currentQuery, onLoad }: Props) {
   }
 
   async function onDelete(f: SavedFilterDto) {
-    if (!window.confirm(m.table.deleteSavedConfirm(f.title))) return;
+    if (!(await ask({ message: m.table.deleteSavedConfirm(f.title), destructive: true }))) return;
     const res = await fetch(`/api/saved-filters/${f.id}`, { method: "DELETE" });
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;

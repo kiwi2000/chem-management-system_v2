@@ -115,7 +115,7 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
       {cols.peek}
       <Table {...cols.tableProps} className={cn("table-fixed", cols.tableProps.className)}>
         <colgroup>{cols.cols()}</colgroup>
-        <TableHeader>
+        <TableHeader className="table-head-solid text-table-head-foreground">
           <TableRow>
             {HEADS.map(({ key, label, className }, i) => (
               <TableHead key={key} className={cn("relative", className)}>

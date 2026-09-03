@@ -2,6 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ interface Item {
  */
 export function PasskeySection() {
   const { m, locale } = useI18n();
+  const ask = useConfirm();
   const [items, setItems] = useState<Item[] | null>(null);
   const [label, setLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +86,8 @@ export function PasskeySection() {
   }
 
   async function remove(it: Item) {
-    if (!confirm(m.passkey.confirmRemove(it.deviceLabel))) return;
+    if (!(await ask({ message: m.passkey.confirmRemove(it.deviceLabel), destructive: true })))
+      return;
     setError(null);
     const res = await fetch(`/api/auth/passkey/${it.id}`, { method: "DELETE" });
     if (!res.ok) {

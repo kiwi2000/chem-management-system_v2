@@ -3,6 +3,7 @@
 import { emptyTableState, SOURCE_MARK_MAX, type TableState } from "@chem/shared";
 import { Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { ColorPicker } from "@/components/color-picker";
 import { SourceChip } from "@/components/source-chip";
 import { DataTable } from "@/components/data-table/data-table";
@@ -45,6 +46,7 @@ export function DataSourceSection({
   reloadToken: number;
 }) {
   const { m, locale } = useI18n();
+  const ask = useConfirm();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -211,7 +213,7 @@ export function DataSourceSection({
             onClick={(e) => {
               e.stopPropagation();
               // 取り込みはこれから作る
-              alert(m.common.underConstruction);
+              void ask({ message: m.common.underConstruction, confirmLabel: m.common.ok });
             }}
           >
             <Upload className="size-3.5" />

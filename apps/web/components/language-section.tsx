@@ -3,6 +3,7 @@
 import { pickName } from "@chem/shared";
 import { Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,11 +43,11 @@ const CELL_INPUT = "h-7 w-full text-sm";
  */
 export function LanguageSection() {
   const { m, locale } = useI18n();
+  const ask = useConfirm();
 
   const [items, setItems] = useState<LanguageDto[] | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
-  const [original, setOriginal] = useState<Draft>(EMPTY);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -72,7 +73,6 @@ export function LanguageSection() {
     setError(null);
     const start = { ...EMPTY, displayOrder: ((items?.length ?? 0) + 1) * 10 };
     setDraft(start);
-    setOriginal(start);
     setEditingId(NEW_ID);
   }
 
@@ -80,7 +80,6 @@ export function LanguageSection() {
     setError(null);
     const d = { code: l.code, nameJa: l.nameJa, nameEn: l.nameEn, displayOrder: l.displayOrder };
     setDraft(d);
-    setOriginal(d);
     setEditingId(l.id);
   }
 
@@ -118,7 +117,8 @@ export function LanguageSection() {
   }
 
   async function remove(l: LanguageDto) {
-    if (!confirm(m.regions.deleteConfirm(pickName(locale, l.nameJa, l.nameEn)))) return;
+    const label = pickName(locale, l.nameJa, l.nameEn);
+    if (!(await ask({ message: m.regions.deleteConfirm(label), destructive: true }))) return;
     setError(null);
     const res = await fetch(`/api/languages/${l.id}`, { method: "DELETE" });
     if (!res.ok) {
@@ -160,9 +160,6 @@ export function LanguageSection() {
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={stopEdit}>
                 {m.common.cancel}
-              </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setDraft(original)}>
-                {m.common.clear}
               </Button>
             </>
           ) : (

@@ -10,6 +10,7 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import {
@@ -92,6 +93,7 @@ export function StatutorySubstanceSection({
   onShown?: () => void;
 }) {
   const { m, locale } = useI18n();
+  const ask = useConfirm();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -377,8 +379,8 @@ export function StatutorySubstanceSection({
     if (!target) return;
     const label = pickStatutoryName(locale, target.nameOriginal, target.nameJa, target.nameEn);
     const last = classes.length === 1;
-    const ask = last ? m.regulationClasses.undivideConfirm : m.regulationClasses.deleteConfirm;
-    if (!confirm(ask(label, target.substanceCount))) return;
+    const text = last ? m.regulationClasses.undivideConfirm : m.regulationClasses.deleteConfirm;
+    if (!(await ask({ message: text(label, target.substanceCount), destructive: true }))) return;
 
     setError(null);
     const res = await fetch(

@@ -227,7 +227,8 @@ export function ProductForm({
         </Button>
       </span>
     ) : (
-      <Button type="button" size="sm" variant="outline" onClick={() => tryEdit(sec)}>
+      // 物質・お知らせ・利用者の「編集」と同じ塗りのボタンにそろえる
+      <Button type="button" size="sm" onClick={() => tryEdit(sec)}>
         <Pencil className="mr-1 size-3.5" />
         {m.common.edit}
       </Button>

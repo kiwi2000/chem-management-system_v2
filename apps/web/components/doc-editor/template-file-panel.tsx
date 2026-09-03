@@ -3,6 +3,7 @@
 import { documentTags, type DocumentTarget, type DocumentTemplateKind } from "@chem/shared";
 import { Download, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -27,6 +28,7 @@ export function TemplateFilePanel({
   onChanged: () => void;
 }) {
   const { m, locale } = useI18n();
+  const ask = useConfirm();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +61,8 @@ export function TemplateFilePanel({
   }
 
   async function remove() {
+    // 預けたファイルはその場で消える（保存で確定する類ではない）ので、消す前に聞く
+    if (!(await ask({ message: m.docTemplates.fileRemoveConfirm, destructive: true }))) return;
     setBusy(true);
     setError(null);
     try {

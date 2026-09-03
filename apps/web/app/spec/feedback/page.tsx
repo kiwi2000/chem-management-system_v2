@@ -32,7 +32,7 @@ export default function ManualFeedbackPage() {
 
       <Section title="直しかた">
         <P>
-          一覧の行をダブルクリックすると、上のフォームに読み込まれます。
+          一覧の行の右端の鉛筆を押すと、上のフォームに読み込まれます。
           内容もステータスも重要度も、そこで直して保存します。
         </P>
         <P>

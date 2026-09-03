@@ -4,6 +4,7 @@ import { emptyTableState, serializeTableState, type TableState } from "@chem/sha
 import { BarChart3, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -32,6 +33,7 @@ const STORAGE_KEY = "chem.table.accessLog";
  */
 export default function AccessLogPage() {
   const { m, locale } = useI18n();
+  const ask = useConfirm();
 
   /** 誰で絞るかの選択肢。人の名前は利用者の表にしかないので、別に引く */
   const [users, setUsers] = useState<UserSummaryDto[]>([]);
@@ -191,7 +193,7 @@ export default function AccessLogPage() {
   }, [ready, load]);
 
   async function remove(body: { ids?: string[]; days?: number }, confirmText: string) {
-    if (!confirm(confirmText)) return;
+    if (!(await ask({ message: confirmText, destructive: true }))) return;
     setError(null);
     const res = await fetch("/api/admin/access-log", {
       method: "DELETE",

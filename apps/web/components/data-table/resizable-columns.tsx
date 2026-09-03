@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useTablePeek } from "./cell-peek";
 import { useColumnWidths } from "./use-column-widths";
@@ -79,14 +79,60 @@ export function useResizableColumns(
     表を包む枠に付けるだけなので、セルの側は何も変えなくてよい
   */
   const peek = useTablePeek<HTMLDivElement>();
+  const observer = useRef<ResizeObserver | null>(null);
+  const [boxWidth, setBoxWidth] = useState(0);
   const scrollerRef = useCallback((el: HTMLDivElement | null) => {
     inner.current = el;
     peek.attach(el);
+    /*
+      箱の幅を測る。**箱が現れた瞬間から。**読み込み中は箱そのものが無い表があるので、
+      useEffect（最初の描画で1回）では測り損ねる
+    */
+    observer.current?.disconnect();
+    observer.current = null;
+    if (el && typeof ResizeObserver !== "undefined") {
+      observer.current = new ResizeObserver(() => setBoxWidth(el.clientWidth));
+      observer.current.observe(el);
+      setBoxWidth(el.clientWidth);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const { widthOf, setWidth, setWidths, resetWidths, hasCustomWidths } = useColumnWidths(
-    `${storageKey}.widths`,
-  );
+  const {
+    widthOf: storedWidthOf,
+    setWidth,
+    setWidths,
+    resetWidths,
+    hasCustomWidths,
+  } = useColumnWidths(`${storageKey}.widths`);
+
+  /*
+    **箱の幅を測っておく。**貼り付ける列の既定の合計が箱の6割を超えると、
+    流れる部分がほとんど無くなり、右の列に手が届かない（ノートPCの 1280px で起きた）。
+    利用者がまだ幅を引いていないときに限り、貼り付ける列を同じ割合で詰めて始める。
+    引いた幅を覚えている人には何もしない（覚えた幅を勝手に変えない）
+  */
+  /*
+    詰めるのは**広い列だけ**（名前・備考のような文字の列）。
+    コードや CAS番号のような狭い列まで同じ割合で詰めると、行を見分ける鍵が先に切れる。
+  */
+  const WIDE = 120;
+  const frozenCols = columns.slice(0, frozen);
+  const frozenDefault = frozenCols.reduce((acc, c) => acc + storedWidthOf(c), 0);
+  const wideDefault = frozenCols
+    .filter((c) => storedWidthOf(c) > WIDE)
+    .reduce((acc, c) => acc + storedWidthOf(c), 0);
+  const over = frozenDefault - boxWidth * 0.6;
+  const squeeze =
+    !hasCustomWidths && frozen > 0 && boxWidth > 0 && over > 0 && wideDefault > 0
+      ? Math.max(0, (wideDefault - over) / wideDefault)
+      : 1;
+  const widthOf = (c: ResizableColumn) => {
+    const w = storedWidthOf(c);
+    if (squeeze === 1 || w <= WIDE) return w;
+    const at = columns.findIndex((x) => x.key === c.key);
+    // 詰めても WIDE より狭くはしない。名前が読めなくなるより、少し流れるほうがまし
+    return at >= 0 && at < frozen ? Math.max(WIDE, Math.round(w * squeeze)) : w;
+  };
   const { rowLines, setRowLines, resetRowLines } = useRowLines(`${storageKey}.rowLines`);
 
   const byKey = new Map(columns.map((c) => [c.key, c]));

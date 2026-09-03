@@ -25,7 +25,7 @@ import {
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompositionAggregateTable } from "@/components/composition-aggregate-table";
 import { SourceChip, type SourceInfo } from "@/components/source-chip";
-import { CELL_CLIP, OPAQUE_MUTED_50 } from "@/components/ui/table";
+import { CELL_CLIP } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import {
   CompositionTreeRows,
@@ -594,7 +594,7 @@ export function CompositionEditor({
               </colgroup>
               {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
               <thead className="sticky top-0 z-20">
-                <tr className={cn(OPAQUE_MUTED_50, "border-y text-left")}>
+                <tr className="table-head-solid text-table-head-foreground border-y text-left">
                   {/* 行をつかんで並べ替えるためのつまみ。幅は固定（つまみの大きさで決まる） */}
                   {editing && <th className={cn(CELL, "w-8")} />}
                   <th className={cn(CELL, "relative font-medium")}>

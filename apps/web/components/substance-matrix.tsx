@@ -2,7 +2,7 @@
 
 import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
-import { CELL_CLIP, OPAQUE_MUTED_40, OPAQUE_MUTED_50 } from "@/components/ui/table";
+import { CELL_CLIP, OPAQUE_MUTED_40 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -275,32 +275,29 @@ function Matrix({
         {/* 他の表と同じ形。見出しから少し離して置く */}
         <div className="flex gap-2">
           <Button
-            size="icon"
+            size="sm"
             variant="outline"
-            className="size-8"
-            title={m.composition.expandAll}
-            aria-label={m.composition.expandAll}
             disabled={!anyFolded}
             onClick={() => {
               setFoldedRegions(new Set());
               setFoldedParents(new Set());
             }}
           >
-            <UnfoldVertical className="size-4" />
+            <UnfoldVertical className="mr-1 size-3.5" />
+            {m.composition.expandAll}
           </Button>
           <Button
-            size="icon"
+            size="sm"
             variant="outline"
-            className="size-8"
-            title={m.composition.collapseAll}
-            aria-label={m.composition.collapseAll}
             disabled={foldedRegions.size === allRegionIds.length}
             onClick={() => {
               setFoldedRegions(new Set(allRegionIds));
-              setFoldedParents(new Set(allGroupKeys));
+              // 法律の段が無い表では、法律を畳んでも開く場所が無い。地域だけ畳む
+              if (parentHeader) setFoldedParents(new Set(allGroupKeys));
             }}
           >
-            <FoldVertical className="size-4" />
+            <FoldVertical className="mr-1 size-3.5" />
+            {m.composition.collapseAll}
           </Button>
         </div>
       </div>
@@ -324,7 +321,7 @@ function Matrix({
           {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
           <thead className="sticky top-0 z-20">
             {/* 1段目：地域 */}
-            <tr className={OPAQUE_MUTED_50}>
+            <tr className="table-head-solid text-table-head-foreground">
               <th className={cn(TH, "sticky left-0 z-10 bg-inherit text-left")}>
                 {m.substanceMatrix.region}
               </th>
@@ -336,9 +333,21 @@ function Matrix({
                   title={r.name}
                 >
                   <Clip>
-                    {foldButton(!foldedRegions.has(r.id), r.name, () =>
-                      toggle(foldedRegions, setFoldedRegions, r.id),
-                    )}
+                    {foldButton(!foldedRegions.has(r.id), r.name, () => {
+                      /*
+                        地域を開くときは、その中の法律も開く。
+                        「格納」で法律まで畳んだあと地域だけ開くと、法律が畳まれたままで
+                        列が出ず、中段の無い表（インベントリ）では開く手段が無かった
+                      */
+                      if (foldedRegions.has(r.id)) {
+                        setFoldedParents((prev) => {
+                          const next = new Set(prev);
+                          for (const g of r.groups) next.delete(g.key);
+                          return next;
+                        });
+                      }
+                      toggle(foldedRegions, setFoldedRegions, r.id);
+                    })}
                   </Clip>
                   {cols.handle(keyOfRegion(r), `${r.name} ${m.table.resize}`)}
                 </th>

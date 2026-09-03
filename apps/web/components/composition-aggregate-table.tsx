@@ -600,8 +600,13 @@ export function CompositionAggregateTable({
               行に置くと、枠線を重ねて描く表（`border-collapse: collapse`）では
               いちばん上の1〜2pxが塗られず、流れていく行がそこから覗く
             */}
-            <thead className={cn("sticky top-0 z-20", OPAQUE_MUTED_50, STICKY_HEAD_LINES)}>
-              <tr className={cn(OPAQUE_MUTED_50, "border-t text-left")}>
+            <thead
+              className={cn(
+                "table-head-solid text-table-head-foreground sticky top-0 z-20",
+                STICKY_HEAD_LINES,
+              )}
+            >
+              <tr className="border-t text-left">
                 {HEADS.map(({ key, label, className }, at) => {
                   const frozen = cols.frozenProps(at);
                   return (
@@ -612,7 +617,7 @@ export function CompositionAggregateTable({
                       className={cn(
                         CELL,
                         "align-bottom font-medium",
-                        at < FROZEN ? OPAQUE_MUTED_50 : "relative",
+                        at < FROZEN ? "table-head-solid" : "relative",
                         frozen.className,
                         className,
                       )}
@@ -631,7 +636,7 @@ export function CompositionAggregateTable({
                 )}
               </tr>
 
-              <tr className={cn(OPAQUE_MUTED_50, "text-left")}>
+              <tr className="text-left">
                 {groups.map((g) => (
                   <th
                     key={g.regionId}
@@ -674,7 +679,7 @@ export function CompositionAggregateTable({
                 分けていない地域はこの段も地域名のセルが貫くので、ここには出さない
               */}
               {lawGroups.length > 0 && (
-                <tr className={cn(OPAQUE_MUTED_50, "text-left")}>
+                <tr className="text-left">
                   {lawGroups.map((g) => (
                     <th
                       key={g.key}
@@ -713,7 +718,7 @@ export function CompositionAggregateTable({
               )}
 
               {/* 分けている地域が無ければ、区分の段そのものを出さない */}
-              <tr className={cn(OPAQUE_MUTED_50, "border-b text-left")}>
+              <tr className="border-b text-left">
                 {leaves
                   .filter((c) => c.categoryId !== null)
                   .map((c) => {
