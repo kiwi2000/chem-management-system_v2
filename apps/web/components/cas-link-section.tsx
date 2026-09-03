@@ -255,6 +255,21 @@ export function CasLinkSection({
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
   /*
+    法文物質名が替わったら1ページ目から。ページ番号は表ごとに覚えているので、
+    前の物質で21ページ目を見ていると、次の物質でも21ページ目（空）から始まってしまう
+  */
+  const shownFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    if (shownFor.current !== null && shownFor.current !== substance.id && state.page !== 1) {
+      setState((prev) => ({ ...prev, page: 1 }));
+    }
+    shownFor.current = substance.id;
+    // state.page は「いま1ページ目でなければ戻す」の判定にしか使わないので依存に入れない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, substance.id]);
+
+  /*
     法文物質名が変わったら、中身を取り終えてから画面を入れ替える。
     先に空にすると、行が届くたびに上からぱらぱら出てきて横の動きが見えなくなる。
   */

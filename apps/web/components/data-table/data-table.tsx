@@ -267,6 +267,15 @@ export function DataTable<T>({
   /** 中身なりの高さのときに、掴んだ時点の高さを測るため */
   const bodyRef = useRef<HTMLTableSectionElement>(null);
   const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+  /*
+    **無いページを指していたら、最後のページへ戻す。**
+    ページ番号は表ごとに覚えているので、別の中身（別の法文物質名など）に切り替えたときや、
+    行を消して件数が減ったときに「21 / 1」のような、空のページを見ていることがあった
+  */
+  useEffect(() => {
+    if (rows === null) return;
+    if (state.page > totalPages) onStateChange((prev) => ({ ...prev, page: totalPages }));
+  }, [rows, state.page, totalPages, onStateChange]);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
