@@ -42,8 +42,8 @@ export default function ExternalDbPage() {
             onChanged={bump}
           />
         </div>
-        {/* 列の合計ぶんだけ。画面が広くても表は広げない */}
-        <div className="min-w-0 flex-1 xl:max-w-[662px]">
+        {/* 右の表は画面の幅いっぱいに。上限を置くと列を広げられない */}
+        <div className="min-w-0 flex-1">
           <DataSourceSection
             versionId={version?.id ?? null}
             versionCode={version?.code ?? null}

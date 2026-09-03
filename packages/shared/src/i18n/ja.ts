@@ -469,7 +469,8 @@ export const ja = {
     colorCustom: "自分で色を作る",
     mark: "印",
     markEdit: "印に出す文字を決める",
-    markDefault: "（頭文字）",
+    markMissing: "未入力（必須）",
+    markFirst: "先に「印」を入れてください（必須です）",
     duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
     revived: "以前に削除した同じコードがあったため、内容を更新して復活させました",
     inUseByVersions: (n: number) =>

@@ -1,6 +1,11 @@
 "use client";
 
-import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
+import {
+  SOURCE_MARK_MAX,
+  emptyTableState,
+  serializeTableState,
+  type TableState,
+} from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -25,10 +30,12 @@ const NEW_ID = "__new__";
 interface Draft {
   code: string;
   note: string;
+  /** 印に出す文字。必須（頭文字で代用しない） */
+  mark: string;
 }
-const EMPTY: Draft = { code: "", note: "" };
+const EMPTY: Draft = { code: "", note: "", mark: "" };
 
-const toDraft = (s: SourceDto): Draft => ({ code: s.code, note: s.note ?? "" });
+const toDraft = (s: SourceDto): Draft => ({ code: s.code, note: s.note ?? "", mark: s.mark ?? "" });
 
 /** 表の中の入力欄。行の高さを変えないよう小さめにする */
 const CELL_INPUT = "h-7 w-full text-sm";
@@ -94,6 +101,27 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
             (s.note ?? "")
           ),
       },
+      {
+        key: "mark",
+        header: m.sources.mark,
+        kind: "text",
+        width: 88,
+        sortable: false,
+        filterable: false,
+        render: (s) =>
+          editing(s) ? (
+            <Input
+              value={draft.mark}
+              required
+              maxLength={SOURCE_MARK_MAX}
+              aria-label={m.sources.mark}
+              onChange={(e) => setDraft({ ...draft, mark: e.target.value })}
+              className={CELL_INPUT}
+            />
+          ) : (
+            (s.mark ?? "")
+          ),
+      },
     ];
   }, [m, editingId, draft]);
 
@@ -156,6 +184,9 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
         body: JSON.stringify({
           code: draft.code,
           note: draft.note || null,
+          // 色はここでは直さない。送らないと消えてしまうので、いまの値をそのまま返す
+          color: data?.items.find((x) => x.id === editingId)?.color ?? null,
+          mark: draft.mark,
         }),
       });
       if (!res.ok) {

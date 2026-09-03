@@ -148,9 +148,10 @@ export function DataSourceSection({
                   mark: r.sourceMark,
                 }}
               />
-              <span className="text-muted-foreground text-xs">
-                {r.sourceMark ? "" : m.sources.markDefault}
-              </span>
+              {/* 印は必須。空のものは赤字で知らせ、押して入れてもらう */}
+              {!r.sourceMark && (
+                <span className="text-destructive text-xs">{m.sources.markMissing}</span>
+              )}
             </button>
           ),
       },
@@ -158,7 +159,7 @@ export function DataSourceSection({
         key: "note",
         header: m.dataSources.note,
         kind: "text",
-        width: 240,
+        width: 320,
         sortable: false,
         filterable: false,
         render: (r) =>
@@ -178,7 +179,7 @@ export function DataSourceSection({
         key: "linkCount",
         header: m.dataSources.linkCount,
         kind: "number",
-        width: 60,
+        width: 88,
         sortable: false,
         filterable: false,
         className: "text-muted-foreground text-right text-xs",
@@ -188,7 +189,7 @@ export function DataSourceSection({
         key: "loadedAt",
         header: m.dataSources.loadedAt,
         kind: "date",
-        width: 90,
+        width: 120,
         sortable: false,
         filterable: false,
         className: "text-muted-foreground text-center text-xs",
@@ -294,6 +295,11 @@ export function DataSourceSection({
    * 引き直すと、開いている選択の欄が閉じて選んだ手応えが消える
    */
   async function saveColor(row: LinkVersionSourceDto, color: string | null) {
+    // 印が必須になったので、無いまま色だけ直すと保存できない。先に印を入れてもらう
+    if (!row.sourceMark) {
+      setError(m.sources.markFirst);
+      return;
+    }
     const type = sources.find((x) => x.id === row.sourceId);
     if (!type) return;
     setError(null);
@@ -325,6 +331,11 @@ export function DataSourceSection({
   /** 印に出す文字を保存する。色と同じく、書き換えるのは種別そのもの */
   async function saveMark(row: LinkVersionSourceDto) {
     const type = sources.find((x) => x.id === row.sourceId);
+    // 空では保存しない（印は必須）。入力欄は開いたままにして、赤字で知らせる
+    if (!mark.trim()) {
+      setError(m.validation.required);
+      return;
+    }
     setMarkEditingId(null);
     if (!type || (row.sourceMark ?? "") === mark.trim()) return;
     setError(null);
@@ -479,7 +490,8 @@ export function DataSourceSection({
             )}
           </>
         }
-        storageKey="chem.table.dataSources"
+        // 末尾の版を上げると、覚えている列幅を捨てて既定から始め直す（既定の幅を広げた）
+        storageKey="chem.table.dataSources.v2"
         columns={columns}
         rows={items}
         rowKey={(r) => r.id}

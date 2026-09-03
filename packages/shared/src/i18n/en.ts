@@ -458,7 +458,8 @@ export const en: Messages = {
     colorCustom: "Custom colour",
     mark: "Mark",
     markEdit: "Set the text shown on the mark",
-    markDefault: "(initial)",
+    markMissing: "Required",
+    markFirst: "Enter the mark first (it is required)",
     duplicateCode: (code: string) => `Code "${code}" is already in use`,
     revived: "A deleted entry with the same code was found, so it was restored and updated",
     inUseByVersions: (n: number) =>

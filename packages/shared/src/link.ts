@@ -39,15 +39,15 @@ export const sourceSchema = (m: Messages) =>
       .nullish()
       .or(z.literal("").transform(() => null)),
     /**
-     * 画面の印に出す文字。**1文字とは限らない。**
-     * 空なら、コードの頭文字を使う
+     * 画面の印に出す文字。**1文字とは限らない。必ず決める。**
+     * 頭文字で代用していたが、`CHRIP` と `CFR` のように頭文字がぶつかるので、
+     * 登録するときに人が決める（2026-09-03）
      */
     mark: z
-      .string()
+      .string({ message: m.validation.required })
       .trim()
-      .max(SOURCE_MARK_MAX, m.validation.tooLong(SOURCE_MARK_MAX))
-      .nullish()
-      .transform((v) => (v ? v : null)),
+      .min(1, m.validation.required)
+      .max(SOURCE_MARK_MAX, m.validation.tooLong(SOURCE_MARK_MAX)),
   });
 
 /**
