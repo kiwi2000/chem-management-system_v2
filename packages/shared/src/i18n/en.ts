@@ -567,6 +567,7 @@ export const en: Messages = {
     notApplicable: "Does not apply",
     source: "Data source",
     used: "In use",
+    data: "Data",
     note: "Note",
     version: "Version",
     empty: "No CAS numbers linked",

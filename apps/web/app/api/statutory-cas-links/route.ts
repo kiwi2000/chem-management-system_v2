@@ -24,6 +24,7 @@ const CAS_LINK_COLUMNS = [
   { key: "casName", kind: "text" },
   { key: "excluded", kind: "enum" },
   { key: "used", kind: "enum" },
+  { key: "data", kind: "text" },
   { key: "note", kind: "text" },
 ] as const satisfies { key: string; kind: ColumnKind }[];
 
@@ -42,6 +43,9 @@ function cellOf(l: StatutoryCasLinkDto, column: string): string {
       return l.excluded ? "excluded" : "applicable";
     case "used":
       return l.used ? "used" : "notUsed";
+    case "data":
+      // 画面は言語で出し分けるが、絞るときは原文・訳のどちらでも当たってほしい
+      return [l.dataJa, l.data].filter(Boolean).join(" ");
     case "note":
       return l.note ?? "";
     default:

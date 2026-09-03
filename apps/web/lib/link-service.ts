@@ -102,7 +102,11 @@ export async function listCasLinks(
     }),
     prisma.statutoryCasLink.findMany({
       where: { versionId, statutorySubstanceId },
-      include: { source: { select: { code: true } } },
+      include: {
+        source: { select: { code: true } },
+        // 出どころの文章。無いリンクのほうが多いので別テーブル
+        data: { select: { text: true, textJa: true } },
+      },
     }),
   ]);
 
@@ -148,6 +152,8 @@ export async function listCasLinks(
       note: l.note,
       used: best.get(l.casNormalized)?.id === l.id,
       orphan: !rank.has(l.sourceId),
+      data: l.data?.text ?? null,
+      dataJa: l.data?.textJa ?? null,
     }))
     .sort(
       (a, b) =>

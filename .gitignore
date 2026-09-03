@@ -32,3 +32,6 @@ coverage/
 
 # 目録の取り出し結果は大きすぎる（60MB超）。取り出し直せるので追わない
 scripts/data/loli-inventories.tsv
+
+# LOLI の ListData.Data の取り出し（60MB 超。scripts/loli-dump-data.sh で作り直せる）
+scripts/data/loli-data-*.tsv

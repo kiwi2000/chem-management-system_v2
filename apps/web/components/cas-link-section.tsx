@@ -197,6 +197,26 @@ export function CasLinkSection({
           ) : null,
       },
       {
+        /*
+          出どころがこのCASについて書いている文章（LOLI の ListData.Data など）。
+          閾値・出典・親の総称までが1本の文字列で入っているので、リンクの意味を読むのに使う。
+          日本語訳があれば画面の言語で出し分け、無ければ原文
+        */
+        key: "data",
+        header: m.casLinks.data,
+        kind: "text",
+        width: 360,
+        filterFullWidth: true,
+        multiline: true,
+        clampLines: 2,
+        className: "text-xs",
+        render: (r) => {
+          const text = (locale === "ja" ? (r.dataJa ?? r.data) : r.data) ?? "";
+          // 全文は浮かせて読めるようにする（2行で切っているため）
+          return <span title={text}>{text}</span>;
+        },
+      },
+      {
         key: "note",
         header: m.casLinks.note,
         kind: "text",
@@ -209,7 +229,8 @@ export function CasLinkSection({
   );
 
   const { state, setState, reset, ready } = useTableState(
-    "chem.table.casLinks",
+    // 「データ」の列を足したので、覚えている幅を捨てる
+    "chem.table.casLinks.v2",
     columns,
     DEFAULT_STATE,
   );

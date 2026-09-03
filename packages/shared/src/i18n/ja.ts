@@ -580,6 +580,7 @@ export const ja = {
     notApplicable: "非該当",
     source: "データソース",
     used: "使用",
+    data: "データ",
     note: "備考",
     version: "バージョン",
     empty: "結び付いたCASがありません",

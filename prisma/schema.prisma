@@ -226,6 +226,7 @@ model User {
    * 組織の所属。1人1つ。null=未所属
    */
   /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -1832,9 +1833,13 @@ model StatutoryCasLink {
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
-  version            LinkSetVersion     @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id])
-  source             Source             @relation(fields: [sourceId], references: [id])
+  version            LinkSetVersion        @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  statutorySubstance StatutorySubstance    @relation(fields: [statutorySubstanceId], references: [id])
+  source             Source                @relation(fields: [sourceId], references: [id])
+  /**
+   * 出どころがこのCASについて書いている文章。無いリンクのほうが多いので別テーブル
+   */
+  data               StatutoryCasLinkData?
 
   @@unique([versionId, statutorySubstanceId, casNormalized, sourceId])
   /**
@@ -1843,6 +1848,32 @@ model StatutoryCasLink {
   @@index([versionId, casNormalized])
   @@index([statutorySubstanceId])
   @@map("statutory_cas_links")
+}
+
+/**
+ * リンク1本に付く、出どころの文章。
+ * LOLI なら `ListData.Data`（「>= 0.3 wt% cut-off value (Attached table, 2-1437, [Toluene])」の類）。
+ * **どのデータソースでも入れられる**が、無いリンクのほうが多いので別テーブルに置き、
+ * 無ければ行を作らない。原文は出どころの言語のまま（LOLI は英語）。
+ * 日本語訳は出どころが持っていれば入れる（LOLI はコンパクト版の `ListData_Translation`）
+ */
+model StatutoryCasLinkData {
+  linkId String  @id @map("link_id")
+  /**
+   * 原文。出どころの言語のまま
+   */
+  text   String
+  /**
+   * 日本語訳。出どころに無ければ null
+   */
+  textJa String? @map("text_ja")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  link StatutoryCasLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@map("statutory_cas_link_data")
 }
 
 /**

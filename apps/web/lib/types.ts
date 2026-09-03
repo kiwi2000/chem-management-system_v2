@@ -788,6 +788,10 @@ export interface StatutoryCasLinkDto {
   used: boolean;
   /** データソースがこのバージョンに並んでいない。優先度が決まらないので採られることがない */
   orphan: boolean;
+  /** 出どころがこのCASについて書いている文章（原文）。無ければ null */
+  data: string | null;
+  /** その日本語訳。出どころに無ければ null */
+  dataJa: string | null;
 }
 
 export interface MetalFactorDto {
