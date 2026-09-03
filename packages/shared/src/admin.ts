@@ -4,12 +4,21 @@ import type { PasswordPolicy } from "./settings";
 import type { Messages } from "./i18n/ja";
 import { PERMISSIONS } from "./permissions";
 
-/** グループ・会社の割り当て。空文字は「未設定」として null に倒す */
+/** グループの割り当て。空文字は「未設定」として null に倒す */
 const groupId = z
   .string()
   .trim()
   .transform((v) => (v === "" ? null : v))
   .nullable()
+  .optional();
+
+/**
+ * 所属する組織のid。**種別を問わず何件でも。**
+ * 省略は「変えない」ではなく「無し」。画面は常に全部を送る
+ */
+const organisationIds = z
+  .array(z.string().trim().min(1))
+  .transform((v) => [...new Set(v)])
   .optional();
 
 /** 管理者によるユーザー作成。初期パスワードを発行し、初回ログイン時に変更を強制する */
@@ -19,10 +28,8 @@ export const userCreateSchema = (m: Messages, policy?: PasswordPolicy) =>
     displayName: z.string().trim().max(200).nullable().optional(),
     permissions: z.array(z.enum(PERMISSIONS)),
     initialPassword: passwordSchema(m, policy),
-    orgGroupId: groupId,
     newsGroupId: groupId,
-    /** 所属する会社。帳票の差出人になる */
-    organisationId: groupId,
+    organisationIds,
   });
 export type UserCreateInput = z.infer<ReturnType<typeof userCreateSchema>>;
 
@@ -32,10 +39,8 @@ export const userUpdateSchema = (_m: Messages) =>
     displayName: z.string().trim().max(200).nullable().optional(),
     permissions: z.array(z.enum(PERMISSIONS)),
     activeFlag: z.boolean(),
-    orgGroupId: groupId,
     newsGroupId: groupId,
-    /** 所属する会社。帳票の差出人になる */
-    organisationId: groupId,
+    organisationIds,
   });
 export type UserUpdateInput = z.infer<ReturnType<typeof userUpdateSchema>>;
 

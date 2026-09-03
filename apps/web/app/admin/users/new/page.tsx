@@ -1,10 +1,11 @@
 "use client";
 
-import { describePasswordPolicy, expandPermissions, pickName, type Permission } from "@chem/shared";
+import { describePasswordPolicy, expandPermissions, type Permission } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
+import { OrganisationPicker } from "@/components/organisation-picker";
 import { PermissionPicker } from "@/components/permission-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -28,8 +29,7 @@ export default function NewUserPage() {
   const [displayName, setDisplayName] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
   const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [departmentId, setDepartmentId] = useState("");
-  const [organisationId, setOrganisationId] = useState("");
+  const [organisationIds, setOrganisationIds] = useState<string[]>([]);
   const organisations = useOrganisations();
   const [newsGroupId, setNewsGroupId] = useState("");
   const groups = useGroups();
@@ -60,8 +60,7 @@ export default function NewUserPage() {
           displayName: displayName || null,
           initialPassword,
           permissions,
-          departmentId: departmentId || null,
-          organisationId: organisationId || null,
+          organisationIds,
           newsGroupId: newsGroupId || null,
         }),
       });
@@ -130,44 +129,14 @@ export default function NewUserPage() {
               <p className="text-muted-foreground text-xs">{describePasswordPolicy(m, policy)}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="organisation">{m.users.organisation}</Label>
-              {/* 会社は所属（部署）とは別。部署の無い人でも会社は決まる */}
-              <select
-                id="organisation"
-                value={organisationId}
-                onChange={(e) => setOrganisationId(e.target.value)}
-                className="border-input bg-background h-9 max-w-xs rounded-none border px-2 text-sm"
-              >
-                <option value="">{m.groups.none}</option>
-                {(organisations ?? [])
-                  .filter((o) => o.activeFlag)
-                  .map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {pickName(locale, o.nameJa, o.nameEn)}
-                    </option>
-                  ))}
-              </select>
+              <Label>{m.users.organisation}</Label>
+              {/* 種別を問わず何件でも。会社・部署の代表は種別と表示順で決まる */}
+              <OrganisationPicker
+                organisations={organisations}
+                value={organisationIds}
+                onChange={setOrganisationIds}
+              />
               <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="department">{m.users.department}</Label>
-              {/* 組織のうち種別が「部署」のものから選ぶ */}
-              <select
-                id="department"
-                value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
-                className="border-input bg-background h-9 w-full rounded-none border px-2 text-sm"
-              >
-                <option value="">{m.groups.none}</option>
-                {(organisations ?? [])
-                  .filter((o) => o.kind === "DEPARTMENT" && o.activeFlag)
-                  .map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {pickName(locale, o.nameJa, o.nameEn)}
-                    </option>
-                  ))}
-              </select>
-              <p className="text-muted-foreground text-xs">{m.users.departmentHint}</p>
             </div>
           </CardContent>
         </Card>

@@ -3,26 +3,34 @@ import type { Group, Organisation, User } from "@prisma/client";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { sortOrganisations } from "@/lib/user-organisations";
 
 /**
  * ユーザーと権限の読み書き。
  * 権限は含意を展開してから保存するので、判定側は単純な所属チェックで済む。
  */
 
+type OrganisationRef = Pick<Organisation, "id" | "kind" | "nameJa" | "nameEn" | "displayOrder">;
+
 export type UserWithPermissions = User & {
   permissions: { permission: Permission }[];
-  department?: Pick<Organisation, "id" | "nameJa" | "nameEn"> | null;
   newsGroup?: Pick<Group, "id" | "nameJa" | "nameEn"> | null;
-  organisation?: Pick<Organisation, "id" | "nameJa" | "nameEn"> | null;
+  /** 所属する組織。種別を問わず何件でも */
+  organisations?: { organisation: OrganisationRef }[];
   _count?: { passkeys: number };
 };
 
 /** 一覧・詳細で毎回同じものを読むので共通化する */
 export const USER_INCLUDE = {
   permissions: { select: { permission: true } },
-  department: { select: { id: true, nameJa: true, nameEn: true } },
   newsGroup: { select: { id: true, nameJa: true, nameEn: true } },
-  organisation: { select: { id: true, nameJa: true, nameEn: true } },
+  organisations: {
+    select: {
+      organisation: {
+        select: { id: true, kind: true, nameJa: true, nameEn: true, displayOrder: true },
+      },
+    },
+  },
   _count: { select: { passkeys: true } },
 } as const;
 
@@ -36,36 +44,31 @@ export function toUserSummary(u: UserWithPermissions) {
     mfaMethod: (u.mfaMethod as MfaMethod) ?? "none",
     lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
     permissions: u.permissions.map((p) => p.permission),
-    departmentId: u.departmentId,
-    departmentName: u.department?.nameJa ?? null,
-    departmentNameEn: u.department?.nameEn ?? null,
     newsGroupId: u.newsGroupId,
     newsGroupName: u.newsGroup?.nameJa ?? null,
     newsGroupNameEn: u.newsGroup?.nameEn ?? null,
-    organisationId: u.organisationId,
-    organisationName: u.organisation?.nameJa ?? null,
-    organisationNameEn: u.organisation?.nameEn ?? null,
+    // 組織の表示順に並べて返す。画面はこの順で出し、先頭が「会社」「部署」の代表になる
+    organisations: sortOrganisations((u.organisations ?? []).map((x) => x.organisation)).map(
+      (o) => ({ id: o.id, kind: o.kind, nameJa: o.nameJa, nameEn: o.nameEn }),
+    ),
     // パスキーの数。2要素認証と同じく、入口の守りとして管理者に見せる
     passkeyCount: u._count?.passkeys ?? 0,
   };
 }
 
 /**
- * グループの割り当てを検証して、そのまま Prisma へ渡せる形にする。
+ * グループ・組織の割り当てを検証する。
  *
  * - 存在しないID・用途が違うID は 400（画面から来ない値でも弾く）
  * - お知らせの分類は「お知らせを投稿できる」人だけが持てる。
  *   権限を外したのに分類だけ残ると、投稿できないのに見出しが割り当たった状態になるため
+ * - 組織は**種別を問わず何件でも**。消された組織のidだけ弾く
  */
 export async function resolveGroups(
-  departmentId: string | null,
   newsGroupId: string | null,
   wantedPermissions: Permission[],
-  organisationId: string | null = null,
-): Promise<
-  | { departmentId: string | null; newsGroupId: string | null; organisationId: string | null }
-  | Response
-> {
+  organisationIds: string[],
+): Promise<{ newsGroupId: string | null; organisationIds: string[] } | Response> {
   const m = await getServerMessages();
   const canPost = expandPermissions(wantedPermissions).includes("NEWS_POST");
   const news = canPost ? newsGroupId : null;
@@ -78,29 +81,32 @@ export async function resolveGroups(
     if (found?.kind !== "NEWS") return jsonError(400, "validation_error", m.errors.validation);
   }
 
-  /*
-    会社と部署は、どちらも組織。**種別まで確かめる。**
-    消された組織のidが残ると帳票の差出人が空になり、
-    種別が違うものを入れると「部署の欄に取引先」といった並びになる
-  */
-  const wanted: [string | null, "COMPANY" | "DEPARTMENT"][] = [
-    [organisationId, "COMPANY"],
-    [departmentId, "DEPARTMENT"],
-  ];
-  const ids = wanted.map(([id]) => id).filter((v): v is string => v !== null);
-  if (ids.length > 0) {
-    const found = await prisma.organisation.findMany({
-      where: { id: { in: ids }, deletedAt: null },
-      select: { id: true, kind: true },
+  if (organisationIds.length > 0) {
+    const found = await prisma.organisation.count({
+      where: { id: { in: organisationIds }, deletedAt: null },
     });
-    const kindOf = new Map(found.map((o) => [o.id, o.kind]));
-    for (const [id, kind] of wanted) {
-      if (id && kindOf.get(id) !== kind) {
-        return jsonError(400, "validation_error", m.errors.validation);
-      }
+    if (found !== organisationIds.length) {
+      return jsonError(400, "validation_error", m.errors.validation);
     }
   }
-  return { departmentId, newsGroupId: news, organisationId };
+  return { newsGroupId: news, organisationIds };
+}
+
+/**
+ * 所属する組織を指定の集合に置き換える。
+ * まるごと入れ替える（画面で外したものがサーバーに伝わらない、を防ぐ）
+ */
+export async function setOrganisations(userId: string, ids: string[]): Promise<void> {
+  await prisma.$transaction([
+    prisma.userOrganisation.deleteMany({ where: { userId } }),
+    ...(ids.length
+      ? [
+          prisma.userOrganisation.createMany({
+            data: ids.map((organisationId) => ({ userId, organisationId })),
+          }),
+        ]
+      : []),
+  ]);
 }
 
 /** 権限を指定の集合に置き換える（含意を展開したうえで差分だけ書く） */

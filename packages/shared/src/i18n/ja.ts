@@ -1516,11 +1516,10 @@ export const ja = {
 
   users: {
     title: "ユーザー管理",
-    organisation: "会社",
+    organisation: "組織",
     organisationHint:
-      "帳票の差出人になります。この人が作ったドキュメントに、この会社の情報が入ります",
-    department: "部署",
-    departmentHint: "1人につき1つ。組織のうち種別が「部署」のものから選びます",
+      "種別を問わず何件でも。帳票の差出人には、このうち種別「会社」の先頭のものが入ります。お知らせの投稿者の所属には「部署」の先頭のものが出ます",
+    noOrganisations: "組織がまだ登録されていません。左メニューの「組織」で登録してください",
     newsGroup: "ニュースグループ",
     newsGroupHint: "投稿したお知らせが、ホームでこの見出しの下に並びます",
     newsGroupDisabled: "「お知らせを投稿できる」を付けると指定できます",

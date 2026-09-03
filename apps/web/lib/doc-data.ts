@@ -12,6 +12,7 @@ import type { Actor } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
+import { pickOrganisation } from "@/lib/user-organisations";
 import type { RenderInput } from "@/lib/doc-render";
 import { toJudgementDtos } from "@/lib/judgement-service";
 import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
@@ -85,10 +86,20 @@ async function orgValues(
   const me = await prisma.user.findUnique({
     where: { id: actor.user.id },
     select: {
-      department: { select: { nameJa: true, nameEn: true } },
-      organisation: { select: ORG_SELECT },
+      organisations: {
+        select: {
+          organisation: { select: { ...ORG_SELECT, id: true, kind: true, displayOrder: true } },
+        },
+      },
     },
   });
+  /*
+    所属は種別を問わず何件でもある。**会社は種別「会社」の先頭、所属は「部署」の先頭**を使う
+    （利用者の編集画面の並びと同じ）
+  */
+  const mine = (me?.organisations ?? []).map((x) => x.organisation);
+  const company = pickOrganisation(mine, "COMPANY");
+  const department = pickOrganisation(mine, "DEPARTMENT");
   /*
     差し替えた差出人。**権限を持っていない人が渡してきたら見ない。**
     URL に付ければ誰でも別の会社の名前で出せる、という穴を作らない
@@ -100,7 +111,7 @@ async function orgValues(
           select: ORG_SELECT,
         })
       : null;
-  const org = picked ?? me?.organisation ?? null;
+  const org = picked ?? company;
 
   const to = recipientId
     ? await prisma.organisation.findFirst({
@@ -111,10 +122,7 @@ async function orgValues(
 
   const out: [string, string][] = [
     ["org.name", org ? pickName(locale, org.nameJa, org.nameEn) : ""],
-    [
-      "org.group",
-      me?.department ? pickName(locale, me.department.nameJa, me.department.nameEn) : "",
-    ],
+    ["org.group", department ? pickName(locale, department.nameJa, department.nameEn) : ""],
     ["to.name", to ? pickName(locale, to.nameJa, to.nameEn) : ""],
   ];
   for (const it of org?.items ?? []) out.push([`${ORG_ITEM_PREFIX}${it.label}`, it.value]);

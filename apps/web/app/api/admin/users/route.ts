@@ -13,7 +13,13 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { USER_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
-import { resolveGroups, setPermissions, toUserSummary, USER_INCLUDE } from "@/lib/user-service";
+import {
+  resolveGroups,
+  setOrganisations,
+  setPermissions,
+  toUserSummary,
+  USER_INCLUDE,
+} from "@/lib/user-service";
 
 export const dynamic = "force-dynamic";
 
@@ -67,27 +73,15 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const {
-    email,
-    displayName,
-    permissions,
-    initialPassword,
-    orgGroupId,
-    newsGroupId,
-    organisationId,
-  } = parsed.data;
+  const { email, displayName, permissions, initialPassword, newsGroupId, organisationIds } =
+    parsed.data;
   const normalized = normalizeEmail(email);
 
   if (await prisma.user.findUnique({ where: { email: normalized } })) {
     return jsonError(409, "email_taken", m.errors.emailTaken);
   }
 
-  const groups = await resolveGroups(
-    orgGroupId ?? null,
-    newsGroupId ?? null,
-    permissions,
-    organisationId ?? null,
-  );
+  const groups = await resolveGroups(newsGroupId ?? null, permissions, organisationIds ?? []);
   if (groups instanceof Response) return groups;
 
   const created = await prisma.user.create({
@@ -96,9 +90,10 @@ export async function POST(req: Request) {
       displayName: displayName ?? null,
       passwordHash: await hashPassword(initialPassword),
       mustChangePassword: true,
-      ...groups,
+      newsGroupId: groups.newsGroupId,
     },
   });
+  await setOrganisations(created.id, groups.organisationIds);
   const granted = await setPermissions(created.id, permissions, actor.user.id);
 
   await writeAudit({

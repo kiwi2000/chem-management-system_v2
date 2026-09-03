@@ -226,40 +226,27 @@ model User {
    * 組織の所属。1人1つ。null=未所属
    */
   /**
-   * /**
-   * /**
-   * /**
-   * /**
-   * 所属する部署。**組織のうち種別が部署のものを指す。**
-   * 会社（`organisationId`）とは別に1つだけ持つ
-   */
-  departmentId          String?   @map("department_id")
-  /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
-  /**
-   * 所属する会社。1人1つ。null=未設定。
-   * **所属（部署）とは別に持つ。**部署の無い人でも会社は決まるため
-   */
-  organisationId        String?   @map("organisation_id")
   activeFlag            Boolean   @default(true) @map("active_flag")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
   deletedAt             DateTime? @map("deleted_at")
 
-  sessions     Session[]
-  permissions  UserPermission[]
-  savedFilters SavedFilter[]
-  news         News[]
-  passkeys     Passkey[]
-  department   Organisation?    @relation("UserDepartment", fields: [departmentId], references: [id])
-  newsGroup    Group?           @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
-  organisation Organisation?    @relation(fields: [organisationId], references: [id])
+  sessions      Session[]
+  permissions   UserPermission[]
+  savedFilters  SavedFilter[]
+  news          News[]
+  passkeys      Passkey[]
+  newsGroup     Group?             @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
+  /**
+   * 所属する組織。**種別を問わず何件でも。**
+   * 帳票の差出人には種別「会社」の先頭、お知らせの所属には「部署」の先頭を使う
+   */
+  organisations UserOrganisation[]
 
-  @@index([departmentId])
   @@index([newsGroupId])
-  @@index([organisationId])
   @@map("users")
 }
 
@@ -336,15 +323,11 @@ model Organisation {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  items             OrganisationItem[]
+  items   OrganisationItem[]
   /**
-   * この組織を会社として持つ人
+   * この組織に所属する人
    */
-  members           User[]
-  /**
-   * この組織を部署として持つ人
-   */
-  departmentMembers User[]             @relation("UserDepartment")
+  members UserOrganisation[]
 
   @@index([displayOrder])
   @@map("organisations")
@@ -370,6 +353,23 @@ model OrganisationItem {
   @@unique([organisationId, label])
   @@index([organisationId, displayOrder])
   @@map("organisation_items")
+}
+
+/**
+ * ユーザーと組織の結び付き。**1人が種別を問わず何件でも持てる。**
+ * 会社1つ・部署1つの2枠に分けていたのをやめた（2026-09-03）。
+ * どれを帳票の差出人・お知らせの所属に使うかは、種別と組織の表示順で決める
+ */
+model UserOrganisation {
+  userId         String @map("user_id")
+  organisationId String @map("organisation_id")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, organisationId])
+  @@index([organisationId])
+  @@map("user_organisations")
 }
 
 /**

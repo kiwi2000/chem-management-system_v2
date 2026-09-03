@@ -48,16 +48,14 @@ export interface UserSummaryDto {
   mfaMethod: MfaMethod;
   lastLoginAt: string | null;
   permissions: Permission[];
-  departmentId: string | null;
-  departmentName: string | null;
-  departmentNameEn: string | null;
   newsGroupId: string | null;
   newsGroupName: string | null;
   newsGroupNameEn: string | null;
-  /** 所属する会社。帳票の差出人になる */
-  organisationId: string | null;
-  organisationName: string | null;
-  organisationNameEn: string | null;
+  /**
+   * 所属する組織。種別を問わず何件でも。組織の表示順に並ぶ。
+   * 帳票の差出人には種別「会社」の先頭、お知らせの所属には「部署」の先頭が使われる
+   */
+  organisations: { id: string; kind: OrganisationKind; nameJa: string; nameEn: string | null }[];
   /** 登録しているパスキーの数 */
   passkeyCount: number;
 }
@@ -76,7 +74,7 @@ export interface OrganisationDto {
   activeFlag: boolean;
   /** 項目名と値。どちらも自由入力 */
   items: { label: string; value: string }[];
-  /** この組織を会社または部署にしている人の数（消したときの影響を知らせるため） */
+  /** この組織に所属する人の数（消したときの影響を知らせるため） */
   memberCount: number;
 }
 

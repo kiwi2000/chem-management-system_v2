@@ -1484,11 +1484,10 @@ export const en: Messages = {
 
   users: {
     title: "Users",
-    organisation: "Company",
+    organisation: "Organisations",
     organisationHint:
-      "Printed as the issuer. Documents this person produces carry this company's details",
-    department: "Department",
-    departmentHint: "One per person, from organisations of kind Department",
+      "Any number, of any kind. The first one of kind Company is printed as the issuer of documents; the first one of kind Department is shown as the author's affiliation on announcements",
+    noOrganisations: "No organisations yet. Register them under Organisations in the menu",
     newsGroup: "News group",
     newsGroupHint: "Announcements this person posts appear under this heading on the home screen",
     newsGroupDisabled: 'Turn on "Post announcements" to choose one',

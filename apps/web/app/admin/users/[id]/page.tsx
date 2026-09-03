@@ -1,12 +1,13 @@
 "use client";
 
-import { describePasswordPolicy, expandPermissions, pickName, type Permission } from "@chem/shared";
+import { describePasswordPolicy, expandPermissions, type Permission } from "@chem/shared";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
+import { OrganisationPicker } from "@/components/organisation-picker";
 import { PermissionPicker } from "@/components/permission-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -35,9 +36,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [displayName, setDisplayName] = useState("");
   const [activeFlag, setActiveFlag] = useState(true);
   const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [departmentId, setDepartmentId] = useState("");
   const [newsGroupId, setNewsGroupId] = useState("");
-  const [organisationId, setOrganisationId] = useState("");
+  const [organisationIds, setOrganisationIds] = useState<string[]>([]);
   const groups = useGroups();
   const organisations = useOrganisations();
   const [editing, setEditing] = useState(false);
@@ -67,8 +67,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setDisplayName(u.displayName ?? "");
     setActiveFlag(u.activeFlag);
     setPermissions(u.permissions);
-    setDepartmentId(u.departmentId ?? "");
-    setOrganisationId(u.organisationId ?? "");
+    setOrganisationIds(u.organisations.map((o) => o.id));
     setNewsGroupId(u.newsGroupId ?? "");
     if (meRes.ok) setMe((await meRes.json()) as MeDto);
   }, [id, m]);
@@ -94,8 +93,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           displayName: displayName || null,
           permissions,
           activeFlag,
-          departmentId: departmentId || null,
-          organisationId: organisationId || null,
+          organisationIds,
           newsGroupId: newsGroupId || null,
         }),
       });
@@ -235,45 +233,15 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="organisation">{m.users.organisation}</Label>
-                {/* 会社は所属（部署）とは別。部署の無い人でも会社は決まる */}
-                <select
-                  id="organisation"
-                  value={organisationId}
-                  onChange={(e) => setOrganisationId(e.target.value)}
-                  className="border-input bg-background h-9 max-w-xs rounded-none border px-2 text-sm"
-                >
-                  <option value="">{m.groups.none}</option>
-                  {(organisations ?? [])
-                    .filter((o) => o.activeFlag || o.id === organisationId)
-                    .map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {pickName(locale, o.nameJa, o.nameEn)}
-                      </option>
-                    ))}
-                </select>
-                <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">{m.users.department}</Label>
-                {/* 組織のうち種別が「部署」のものから選ぶ */}
-                <select
-                  id="department"
-                  value={departmentId}
+                <Label>{m.users.organisation}</Label>
+                {/* 種別を問わず何件でも。会社・部署の代表は種別と表示順で決まる */}
+                <OrganisationPicker
+                  organisations={organisations}
+                  value={organisationIds}
                   disabled={!editing}
-                  onChange={(e) => setDepartmentId(e.target.value)}
-                  className="border-input bg-background h-9 w-full rounded-none border px-2 text-sm"
-                >
-                  <option value="">{m.groups.none}</option>
-                  {(organisations ?? [])
-                    .filter((o) => o.kind === "DEPARTMENT" && o.activeFlag)
-                    .map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {pickName(locale, o.nameJa, o.nameEn)}
-                      </option>
-                    ))}
-                </select>
-                <p className="text-muted-foreground text-xs">{m.users.departmentHint}</p>
+                  onChange={setOrganisationIds}
+                />
+                <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input

@@ -12,7 +12,7 @@ import type { OrganisationDto } from "@/lib/types";
 /** 一覧・詳細で共通に引くもの */
 export const ORG_INCLUDE = {
   items: { orderBy: [{ displayOrder: "asc" }, { label: "asc" }] },
-  _count: { select: { members: true, departmentMembers: true } },
+  _count: { select: { members: true } },
 } satisfies Prisma.OrganisationInclude;
 
 type Row = Prisma.OrganisationGetPayload<{ include: typeof ORG_INCLUDE }>;
@@ -28,8 +28,8 @@ export function toOrganisationDto(row: Row): OrganisationDto {
     displayOrder: row.displayOrder,
     activeFlag: row.activeFlag,
     items: row.items.map((x) => ({ label: x.label, value: x.value })),
-    // この組織を会社・部署にしている人の数。消したときの影響を知らせるため
-    memberCount: row._count.members + row._count.departmentMembers,
+    // この組織に所属する人の数。消したときの影響を知らせるため
+    memberCount: row._count.members,
   };
 }
 

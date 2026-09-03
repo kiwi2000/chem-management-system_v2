@@ -38,7 +38,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const v = parsed.data;
 
-  const inUse = existing._count.orgMembers + existing._count.newsMembers + existing._count.news > 0;
+  const inUse = existing._count.newsMembers + existing._count.news > 0;
   const kind = inUse && v.kind !== existing.kind ? existing.kind : v.kind;
 
   await prisma.group.update({
@@ -78,7 +78,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
 
-  if (existing._count.orgMembers + existing._count.newsMembers + existing._count.news > 0) {
+  if (existing._count.newsMembers + existing._count.news > 0) {
     return jsonError(409, "group_in_use", m.groups.inUse);
   }
 

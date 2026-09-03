@@ -45,24 +45,18 @@ export default function UsersPage() {
         render: (u) => u.displayName ?? "",
       },
       {
-        key: "organisation",
+        // 所属する組織を全部、表示順に並べる（種別を問わず何件でも）
+        key: "organisations",
         header: m.users.organisation,
         kind: "text",
-        width: 150,
+        width: 240,
         sortable: false,
         filterable: false,
         className: "text-muted-foreground text-xs",
-        render: (u) => pickName(locale, u.organisationName ?? "", u.organisationNameEn),
-      },
-      {
-        key: "department",
-        header: m.users.department,
-        kind: "text",
-        width: 140,
-        sortable: false,
-        filterable: false,
-        className: "text-muted-foreground text-xs",
-        render: (u) => pickName(locale, u.departmentName ?? "", u.departmentNameEn),
+        render: (u) =>
+          u.organisations
+            .map((o) => pickName(locale, o.nameJa, o.nameEn))
+            .join(locale === "ja" ? "、" : ", "),
       },
       {
         key: "newsGroup",
@@ -201,7 +195,7 @@ export default function UsersPage() {
 
       <DataTable
         title={m.users.title}
-        storageKey="chem.table.users"
+        storageKey="chem.table.users.v2"
         columns={columns}
         rows={data?.items ?? null}
         rowKey={(u) => u.id}
