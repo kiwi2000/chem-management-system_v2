@@ -16,6 +16,7 @@ import {
   type FeedbackStatus,
   type TableState,
 } from "@chem/shared";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -33,16 +34,15 @@ import { cn } from "@/lib/utils";
 /** 直したものが上に来るほうが追いやすい */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "updatedAt", direction: "desc" }]);
 
-const STORAGE_KEY = "chem.table.feedback";
+/** 「返事」の列を「返信」に変えたので、覚えている幅を捨てる */
+const STORAGE_KEY = "chem.table.feedback.v2";
 
 const EMPTY_FORM = {
-  id: "",
   title: "",
   body: "",
   kind: "BUG" as FeedbackKind,
   priority: "MEDIUM" as FeedbackPriority,
   status: "OPEN" as FeedbackStatus,
-  reply: "",
 };
 
 const SELECT_CLASS = "border-input bg-background h-9 rounded-none border px-2 text-sm";
@@ -58,8 +58,8 @@ const PRIORITY_CLASS: Record<FeedbackPriority, string> = {
  * フィードバック。
  *
  * 開発中に気づいたことを書き留めておくための、簡単な課題管理。
- * 項目が少ないので別画面を作らず、一覧の上のフォームで追加・編集する
- * （金属換算係数の画面と同じ形）。
+ * 項目が少ないので、新しく書くのは一覧の上のフォームで行う。
+ * **書いたものは直さず、返信を重ねる。**やり取りはタイトルから開く詳細で読む。
  *
  * 本番を作るときに、この画面ごとメニューから外す。
  * そのため文言は多言語にせず、日本語のまま書いている。
@@ -95,7 +95,15 @@ export default function FeedbackPage() {
         nullable: false,
         width: 260,
         filterFullWidth: true,
-        render: (r) => <span className={r.unread ? "font-semibold" : undefined}>{r.title}</span>,
+        // 詳細（やり取り）へはここから
+        render: (r) => (
+          <Link
+            href={`/feedback/${r.id}`}
+            className={cn("underline underline-offset-2", r.unread && "font-semibold")}
+          >
+            {r.title}
+          </Link>
+        ),
       },
       {
         key: "kind",
@@ -143,27 +151,27 @@ export default function FeedbackPage() {
         filterFullWidth: true,
         multiline: true,
         // 3行で打ち切る。この幅だと1行30文字ほどなので、90文字あたりまで見える。
-        // 全文は行を開いて読む
+        // 全文は詳細で読む
         clampLines: 3,
         render: (r) => r.body,
       },
       {
-        key: "reply",
-        header: "返事",
+        // いちばん新しい返信と、返信の数。やり取りの全部は詳細で読む
+        key: "lastReply",
+        header: "返信",
         kind: "text",
         width: 280,
         sortable: false,
-        filterFullWidth: true,
+        filterable: false,
         multiline: true,
         clampLines: 3,
-        // 返事が付いていれば、誰がいつ返したかも小さく添える
         render: (r) =>
-          r.reply ? (
+          r.lastReply ? (
             <div className="space-y-0.5">
-              <div>{r.reply}</div>
+              <div>{r.lastReply.body}</div>
               <div className="text-muted-foreground text-xs">
-                {r.repliedByName ?? "—"}
-                {r.repliedAt ? ` ${new Date(r.repliedAt).toLocaleString(locale)}` : ""}
+                {r.lastReply.byName ?? "—"} {new Date(r.lastReply.at).toLocaleString(locale)}
+                {r.replyCount > 1 ? `・全${r.replyCount}件` : ""}
               </div>
             </div>
           ) : (
@@ -240,8 +248,6 @@ export default function FeedbackPage() {
     いま出ている行の未読の印は、印を付ける前の時刻で決まっているので消えない。
     開いた瞬間に消えると、何が新しかったのか分からなくなる。
   */
-  /** 全文を開いている書き込み。一覧は3行で切っているので、続きはここで読む */
-
   const marked = useRef(false);
   useEffect(() => {
     if (!ready || marked.current) return;
@@ -254,18 +260,10 @@ export default function FeedbackPage() {
     setError(null);
     setSaving(true);
     try {
-      const editing = form.id !== "";
-      const res = await fetch(editing ? `/api/feedback/${form.id}` : "/api/feedback", {
-        method: editing ? "PUT" : "POST",
+      const res = await fetch("/api/feedback", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: form.title,
-          body: form.body,
-          kind: form.kind,
-          priority: form.priority,
-          status: form.status,
-          reply: form.reply,
-        }),
+        body: JSON.stringify(form),
       });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -292,10 +290,6 @@ export default function FeedbackPage() {
         setError(body?.error.message ?? m.errors.deleteFailed);
         break;
       }
-      if (form.id === f.id) {
-        setForm({ ...EMPTY_FORM });
-        setOpen(false);
-      }
     }
     void load();
   }
@@ -304,8 +298,8 @@ export default function FeedbackPage() {
     <div className="w-full space-y-4 p-4 lg:p-6">
       <p className="text-muted-foreground text-sm">
         使ってみて気づいたことを書き留めておく場所です。不具合・要望・質問のどれでもかまいません。
-        表の左上の ＋ を押すと書く欄が開きます。書いたものを直すときは、行の右端の ✎
-        を押してください。
+        表の左上の ＋ を押すと書く欄が開きます。書いたものは直せません。言い足すこと・返事は、
+        タイトルを押して開く画面で返信として書いてください。
       </p>
 
       {error && (
@@ -317,7 +311,7 @@ export default function FeedbackPage() {
       {open && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{form.id ? "編集" : "新規登録"}</CardTitle>
+            <CardTitle className="text-base">新規登録</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
@@ -345,25 +339,10 @@ export default function FeedbackPage() {
                   className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
                   placeholder="どの画面で、何をしたら、どうなったかを書いてください"
                 />
+                <p className="text-muted-foreground text-xs">
+                  保存した後は直せません。言い足すことは返信で書けます
+                </p>
               </div>
-
-              {form.id !== "" && (
-                <div className="space-y-2">
-                  <Label htmlFor="fb-reply">返事</Label>
-                  <textarea
-                    id="fb-reply"
-                    rows={3}
-                    maxLength={5000}
-                    value={form.reply}
-                    onChange={(e) => setForm({ ...form, reply: e.target.value })}
-                    className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
-                    placeholder="書いた人に伝えたいこと。直したか、直さないか、いつごろになるか"
-                  />
-                  <p className="text-muted-foreground text-xs">
-                    書くと、一覧の「返事」に出ます。空にすると返事を取り消せます
-                  </p>
-                </div>
-              )}
 
               <div className="flex flex-wrap gap-4">
                 <div className="space-y-2">
@@ -463,29 +442,7 @@ export default function FeedbackPage() {
         }
         selectable
         onDeleteSelected={onDeleteSelected}
-        // 鉛筆で上のフォームに読み込む（システム全体で、鉛筆＝編集に揃えてある）
-        rowAction={{
-          onClick: (f) => {
-            setForm({
-              id: f.id,
-              title: f.title,
-              body: f.body,
-              kind: f.kind,
-              priority: f.priority,
-              status: f.status,
-              reply: f.reply ?? "",
-            });
-            setOpen(true);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          },
-        }}
-        filterLayout={[
-          ["title"],
-          ["body"],
-          ["reply"],
-          ["kind", "priority", "status"],
-          ["updatedAt"],
-        ]}
+        filterLayout={[["title"], ["body"], ["kind", "priority", "status"], ["updatedAt"]]}
       />
     </div>
   );

@@ -229,6 +229,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * 所属する部署。**組織のうち種別が部署のものを指す。**
    * 会社（`organisationId`）とは別に1つだけ持つ
    */
@@ -1214,12 +1215,9 @@ model Feedback {
   status   FeedbackStatus   @default(OPEN)
 
   /**
-   * 書いた人への返事。受け取った側が書く。
-   * 空なら「まだ返していない」。誰がいつ返したかも残す
+   * 返信。書いた内容は直さず、返信を重ねてやり取りする
    */
-  reply     String?   @db.Text
-  repliedBy String?   @map("replied_by")
-  repliedAt DateTime? @map("replied_at")
+  comments FeedbackComment[]
 
   createdBy String?   @map("created_by")
   updatedBy String?   @map("updated_by")
@@ -1231,6 +1229,29 @@ model Feedback {
   @@index([kind])
   @@index([updatedAt])
   @@map("feedbacks")
+}
+
+/**
+ * フィードバックへの返信。
+ * **書いた内容は直さず、返信を重ねる。**元の書き込みにも、どの返信にも
+ * （自分のものにも）返信できる。parentId が null なら元の書き込みへの返信。
+ * 消すと deletedAt が入る。下に返信が残っていれば「削除されました」と場所だけ残す
+ */
+model FeedbackComment {
+  id         String            @id @default(cuid())
+  feedbackId String            @map("feedback_id")
+  feedback   Feedback          @relation(fields: [feedbackId], references: [id])
+  parentId   String?           @map("parent_id")
+  parent     FeedbackComment?  @relation("FeedbackCommentReplies", fields: [parentId], references: [id])
+  replies    FeedbackComment[] @relation("FeedbackCommentReplies")
+  body       String            @db.Text
+
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([feedbackId])
+  @@map("feedback_comments")
 }
 
 // ---------- 法規制 ----------

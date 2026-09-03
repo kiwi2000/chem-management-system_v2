@@ -297,7 +297,6 @@ export const FEEDBACK_COLUMNS: QueryColumn[] = [
   { key: "priority", kind: "enum", field: "priority" },
   { key: "status", kind: "enum", field: "status" },
   { key: "body", kind: "text", field: "body", caseInsensitive: true },
-  { key: "reply", kind: "text", field: "reply", caseInsensitive: true },
   { key: "createdAt", kind: "date", field: "createdAt" },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
