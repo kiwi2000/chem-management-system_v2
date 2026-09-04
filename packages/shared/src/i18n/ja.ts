@@ -82,6 +82,7 @@ export const ja = {
     users: "ユーザー管理",
     propertyDefs: "拡張属性",
     accessLog: "アクセス記録",
+    sessions: "ログイン中のユーザー",
     settings: "設定",
     substances: "物質",
     products: "製品 / 原材料",
@@ -136,6 +137,33 @@ export const ja = {
     sessionTimedOut:
       "有効期限が切れたため、ログインの状態が切れました。もう一度ログインしてください。",
     sessionExpired: "ログインの状態が切れました。もう一度ログインしてください。",
+    sessionMaintenance:
+      "メンテナンスに入ったため、ログインの状態が切れました。終わるまでお待ちください。",
+    sessionAdminEnded: "管理者によってログアウトされました。もう一度ログインしてください。",
+    maintenance:
+      "いまメンテナンス中です。システム管理者以外はログインできません。終わるまでお待ちください。",
+  },
+
+  /** ログイン中の利用者（管理者の画面） */
+  sessions: {
+    title: "ログイン中のユーザー",
+    description:
+      "いまログインしている利用者の一覧です。同じ人が2つの端末から入っていれば2行になります。行を選んで「ログアウトさせる」と、その端末のログインが切れ、相手の画面に理由が出ます。メンテナンスに入る前に、誰が使っているかを確かめるのに使ってください。",
+    email: "メールアドレス",
+    displayName: "表示名",
+    loggedInAt: "ログイン日時",
+    lastSeenAt: "最終操作",
+    expiresAt: "期限",
+    ip: "IPアドレス",
+    device: "端末（ブラウザ）",
+    current: "自分",
+    admin: "管理者",
+    idle: "（放置中）",
+    empty: "ログイン中の利用者はいません",
+    endSelected: "ログアウトさせる",
+    endSelectedConfirm: (n: number) =>
+      `選んだ ${n} 件のログインを切ります。相手の画面には「管理者によってログアウトされました」と出ます`,
+    cannotEndOwn: "自分のログインはここでは切れません。右上の「ログアウト」を使ってください",
   },
 
   changePassword: {
@@ -1306,6 +1334,10 @@ export const ja = {
     rejudgeLast: (when: string) => `判定の最終計算: ${when}`,
     rejudgeNever: "まだ判定を計算していません",
     rejudgeBusy: "すでに判定し直しが走っています",
+    maintenanceSection: "メンテナンス",
+    maintenanceMode: "メンテナンスモード（管理者以外のログインを止める）",
+    maintenanceHint:
+      "入れると、システム管理者以外はログインできなくなり、すでに入っている人も次の操作でログアウトされます（理由が画面に出ます）。データの入れ替えや判定のやり直しのあいだ、途中の状態を見せないために使います。終わったら必ず外してください",
     sessionSection: "自動ログアウト",
     sessionIdleMinutes: "操作が無いままログアウトするまでの時間（分）",
     mfaRequired: "2要素認証を必須にする",
@@ -1659,6 +1691,7 @@ export const ja = {
     cannotDeleteSelf: "自分自身を削除することはできません",
     forbiddenNewsOther: "他の人が投稿したお知らせは編集・削除できません",
     forbidden: "この操作を行う権限がありません",
+    maintenance: "いまメンテナンス中です。システム管理者以外はログインできません",
     duplicateCode: (code: string) => `物質コード「${code}」は既に使われています`,
     duplicateProductCode: (code: string) => `製品コード「${code}」は既に使われています`,
     forbiddenPrivateFlag: "非公開の設定を変えるには「非公開の製品も見られる」権限が必要です",

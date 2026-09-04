@@ -414,6 +414,22 @@ export default function SettingsPage() {
             <AlertDescription>{notice}</AlertDescription>
           </Alert>
         )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.maintenanceSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={settings.maintenanceMode}
+                onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })}
+              />
+              {m.settings.maintenanceMode}
+            </label>
+            <p className="text-muted-foreground text-xs">{m.settings.maintenanceHint}</p>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

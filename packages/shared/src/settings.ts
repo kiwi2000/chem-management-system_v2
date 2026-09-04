@@ -34,6 +34,11 @@ export const CONDITIONAL_LINK_MODES = ["hit", "review"] as const;
 export type ConditionalLinkMode = (typeof CONDITIONAL_LINK_MODES)[number];
 
 export interface AppSettings {
+  /**
+   * メンテナンスモード。**管理者以外はログインできず、入っている人も次の操作で切れる。**
+   * データの入れ替えや判定のやり直しのあいだ、途中の状態を見せないために使う
+   */
+  maintenanceMode: boolean;
   /** CAS番号を必須にする。false なら空欄で登録できる */
   casRequired: boolean;
   /** CAS番号の形（例: 7439-92-1）を強制する。false なら形が違っても警告だけで保存できる */
@@ -100,6 +105,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  maintenanceMode: false,
   casRequired: false,
   casFormatEnforced: false,
   compositionValidationMode: "STANDARD",
@@ -189,6 +195,7 @@ const boolDef = (field: keyof AppSettings, key: string): SettingDef => ({
 });
 
 export const SETTING_DEFS: SettingDef[] = [
+  boolDef("maintenanceMode", "system.maintenance_mode"),
   boolDef("casRequired", "substance.cas_required"),
   boolDef("casFormatEnforced", "substance.cas_format_enforced"),
   {
@@ -300,6 +307,7 @@ const scoreBoundSchema = (m: Messages) =>
 
 export const settingsSchema = (m: Messages) =>
   z.object({
+    maintenanceMode: z.boolean(),
     casRequired: z.boolean(),
     casFormatEnforced: z.boolean(),
     compositionValidationMode: z.enum(COMPOSITION_VALIDATION_MODES),

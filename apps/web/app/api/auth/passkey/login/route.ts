@@ -5,10 +5,11 @@ import {
 } from "@simplewebauthn/server";
 import { headers } from "next/headers";
 import { writeAudit } from "@/lib/audit";
-import { createSession, purgeExpiredSessions } from "@/lib/auth";
+import { createSession, isAdminUser, purgeExpiredSessions } from "@/lib/auth";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { getAppSettings } from "@/lib/settings";
 import { clientIp } from "@/lib/ip-allow";
 import { expectedOrigin, keepChallenge, rpId, takeChallenge } from "@/lib/passkey";
 import { syncPreferenceCookies } from "@/lib/preference-cookies";
@@ -72,6 +73,10 @@ export async function PUT(req: Request) {
   if (user.deletedAt || !user.activeFlag) {
     // 止められているアカウントも、ただの「合いません」で返す（パスワードのときと同じ）
     return jsonError(401, "invalid_credentials", m.errors.invalidCredentials);
+  }
+  // メンテナンス中は管理者しか入れない
+  if ((await getAppSettings()).maintenanceMode && !(await isAdminUser(user.id))) {
+    return jsonError(403, "maintenance", m.errors.maintenance);
   }
 
   let verification;

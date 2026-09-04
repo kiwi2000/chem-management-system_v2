@@ -53,7 +53,11 @@ function ExpiredNotice() {
         ? m.login.sessionSettingsChanged
         : reason === "expired"
           ? m.login.sessionTimedOut
-          : m.login.sessionExpired;
+          : reason === "maintenance"
+            ? m.login.sessionMaintenance
+            : reason === "admin"
+              ? m.login.sessionAdminEnded
+              : m.login.sessionExpired;
   return (
     <Alert variant="destructive">
       <AlertDescription>{text}</AlertDescription>
@@ -73,6 +77,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   // パスキーが使える端末かは、画面が出てから調べる（サーバー側では分からない）
   const [canPasskey, setCanPasskey] = useState(false);
+  /** メンテナンス中か。入れないことを、試す前に知らせる */
+  const [maintenance, setMaintenance] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const res = await fetch("/api/maintenance").catch(() => null);
+      if (!res?.ok) return;
+      const body = (await res.json()) as { on: boolean };
+      if (alive) setMaintenance(body.on);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
   /** パスキーの窓を待っているか。パスワードの「ログイン中」と分けて見せる */
   const [passkeyWaiting, setPasskeyWaiting] = useState(false);
   /** 赤くない知らせ。パスキーをやめた（または無かった）ときの案内 */
@@ -192,6 +210,11 @@ export default function LoginPage() {
         </div>
         <Suspense>
           <ExpiredNotice />
+          {maintenance && (
+            <Alert>
+              <AlertDescription>{m.login.maintenance}</AlertDescription>
+            </Alert>
+          )}
         </Suspense>
         <Card>
           <CardHeader>

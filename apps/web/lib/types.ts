@@ -60,6 +60,24 @@ export interface UserSummaryDto {
   passkeyCount: number;
 }
 
+/** ログイン中の利用者（生きているセッション）1行 */
+export interface SessionDto {
+  id: string;
+  userId: string;
+  email: string;
+  displayName: string | null;
+  isAdmin: boolean;
+  createdAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  /** 見ている本人のセッション */
+  isCurrent: boolean;
+  /** 最終操作から自動ログアウトの時間を過ぎている。次の操作で切れる */
+  idle: boolean;
+}
+
 /** 組織（会社・事業所）。帳票に載せる差出人の情報 */
 export interface OrganisationDto {
   id: string;

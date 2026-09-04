@@ -80,6 +80,7 @@ export const en: Messages = {
     users: "Users",
     propertyDefs: "Custom properties",
     accessLog: "Access records",
+    sessions: "Signed-in users",
     settings: "Settings",
     substances: "Substances",
     products: "Products / Materials",
@@ -130,6 +131,31 @@ export const en: Messages = {
       "Your account settings changed, so you were signed out. Please sign in again.",
     sessionTimedOut: "Your session expired, so you were signed out. Please sign in again.",
     sessionExpired: "Your sign-in has ended. Please sign in again.",
+    sessionMaintenance:
+      "Maintenance has started, so your sign-in has ended. Please wait until it is over.",
+    sessionAdminEnded: "An administrator signed you out. Please sign in again.",
+    maintenance: "The system is under maintenance. Only system administrators can sign in for now.",
+  },
+
+  sessions: {
+    title: "Signed-in users",
+    description:
+      "Everyone who is signed in right now. A person on two devices appears twice. Select rows and press Sign out to end those sign-ins; the person sees why on their sign-in screen. Use it before maintenance to see who is working.",
+    email: "Email",
+    displayName: "Name",
+    loggedInAt: "Signed in",
+    lastSeenAt: "Last activity",
+    expiresAt: "Expires",
+    ip: "IP address",
+    device: "Device (browser)",
+    current: "you",
+    admin: "admin",
+    idle: "(idle)",
+    empty: "Nobody is signed in",
+    endSelected: "Sign out",
+    endSelectedConfirm: (n: number) =>
+      `End ${n} sign-in(s). They will be told an administrator signed them out.`,
+    cannotEndOwn: "You cannot end your own sign-in here. Use Sign out at the top right",
   },
 
   changePassword: {
@@ -1281,6 +1307,10 @@ export const en: Messages = {
     rejudgeBusy: "A re-judgement is already running",
     conditionalLinkModeHint:
       "Applies to CAS the external database linked by widening from a generic name. Where the statutory name is narrowed by carbon count or substitution position, it may not actually apply. Either choice still shows a warning.",
+    maintenanceSection: "Maintenance",
+    maintenanceMode: "Maintenance mode (block sign-in for everyone but administrators)",
+    maintenanceHint:
+      "When on, only system administrators can sign in, and everyone else is signed out at their next action (they see why). Use it while replacing data or re-judging, so nobody sees a half-finished state. Turn it off when done",
     sessionSection: "Automatic sign-out",
     sessionIdleMinutes: "Minutes of inactivity before signing out",
     mfaRequired: "Require two-step sign-in",
@@ -1625,6 +1655,7 @@ export const en: Messages = {
     cannotDeleteSelf: "You cannot delete your own account",
     forbiddenNewsOther: "You cannot edit or delete announcements posted by others",
     forbidden: "You do not have permission to do this",
+    maintenance: "The system is under maintenance. Only system administrators can sign in",
     duplicateCode: (code: string) => `The substance code "${code}" is already in use`,
     duplicateProductCode: (code: string) => `The product code "${code}" is already in use`,
     forbiddenPrivateFlag:

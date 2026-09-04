@@ -301,6 +301,30 @@ export const FEEDBACK_COLUMNS: QueryColumn[] = [
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
+/** ログイン中の利用者。利用者の欄は子テーブル（user）なので絞り込みだけ */
+export const SESSION_COLUMNS: QueryColumn[] = [
+  {
+    key: "email",
+    kind: "text",
+    field: "email",
+    nested: "user",
+    caseInsensitive: true,
+    sortable: false,
+  },
+  {
+    key: "displayName",
+    kind: "text",
+    field: "displayName",
+    nested: "user",
+    caseInsensitive: true,
+    sortable: false,
+  },
+  { key: "createdAt", kind: "date", field: "createdAt" },
+  { key: "lastSeenAt", kind: "date", field: "lastSeenAt" },
+  { key: "expiresAt", kind: "date", field: "expiresAt" },
+  { key: "ipAddress", kind: "text", field: "ipAddress" },
+];
+
 export const USER_COLUMNS: QueryColumn[] = [
   { key: "email", kind: "text", field: "email", caseInsensitive: true },
   { key: "displayName", kind: "text", field: "displayName", caseInsensitive: true },

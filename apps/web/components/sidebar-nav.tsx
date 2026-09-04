@@ -19,6 +19,7 @@ import {
   Megaphone,
   MessageSquare,
   Package,
+  Activity,
   Scale,
   ScrollText,
   Settings,
@@ -174,6 +175,14 @@ const ADMIN_ITEMS: NavItem[] = [
     icon: ScrollText,
     needs: "ADMIN",
     match: ["/admin/access-log"],
+  },
+  {
+    // いま誰が入っているか。メンテナンスの前に見る・切るための画面
+    href: "/admin/sessions",
+    key: "sessions",
+    icon: Activity,
+    needs: "ADMIN",
+    match: ["/admin/sessions"],
   },
   {
     href: "/admin/settings",

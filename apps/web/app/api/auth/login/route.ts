@@ -42,6 +42,9 @@ export async function POST(req: Request) {
     if (result.reason === "locked") {
       return jsonError(423, "locked", m.errors.locked);
     }
+    if (result.reason === "maintenance") {
+      return jsonError(403, "maintenance", m.errors.maintenance);
+    }
     /*
       **止められているアカウントも、ただの「合いません」で返す。**
       ここだけ別の文言・別のコードにすると、そのアドレスが実在することが

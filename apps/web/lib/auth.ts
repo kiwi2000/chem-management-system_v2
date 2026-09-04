@@ -58,7 +58,7 @@ export function safeEqual(a: string, b: string): boolean {
 export interface LoginFailure {
   ok: false;
   /** 画面表示用（アカウントの存在を推測させない共通文言を使う） */
-  reason: "invalid" | "locked" | "inactive" | "mfa_required" | "mfa_invalid";
+  reason: "invalid" | "locked" | "inactive" | "mfa_required" | "mfa_invalid" | "maintenance";
   lockedUntil?: Date;
 }
 export interface LoginSuccess {
@@ -163,12 +163,27 @@ export async function login(
     }
   }
 
+  // メンテナンス中は管理者しか入れない。パスワードが合ってから断る（合っているかは漏らさない）
+  if ((await getAppSettings()).maintenanceMode && !(await isAdminUser(user.id))) {
+    await auditLoginFailure(email, "maintenance", user.id);
+    return { ok: false, reason: "maintenance" };
+  }
+
   await prisma.user.update({
     where: { id: user.id },
     data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() },
   });
   await createSession(user.id);
   return { ok: true, user, mustChangePassword: user.mustChangePassword };
+}
+
+/** システム管理者か。メンテナンス中に入れる人を決めるために引く */
+export async function isAdminUser(userId: string): Promise<boolean> {
+  const row = await prisma.userPermission.findFirst({
+    where: { userId, permission: "ADMIN" },
+    select: { userId: true },
+  });
+  return row !== null;
 }
 
 /** セッション発行＋Cookie設定 */
@@ -230,7 +245,15 @@ export async function logout(): Promise<void> {
  *   expired  … 有効期限が切れた
  *   logout   … 自分でログアウトした（知らせることは無い）
  */
-export type SessionEndReason = "settings" | "idle" | "expired" | "logout";
+export type SessionEndReason =
+  | "settings"
+  | "idle"
+  | "expired"
+  | "logout"
+  /** メンテナンスに入ったので、管理者以外を切った */
+  | "maintenance"
+  /** 管理者が「ログイン中のユーザー」の画面から切った */
+  | "admin";
 
 /**
  * セッションを終わらせる。**行は消さず、印を付けるだけ。**
@@ -255,6 +278,44 @@ async function endSessions(
  */
 export async function revokeAllSessions(userId: string): Promise<void> {
   await endSessions({ userId }, "settings");
+}
+
+/** 管理者が指定のセッションを切る。行は消さず、理由を残す */
+export async function endSessionById(id: string, reason: SessionEndReason): Promise<void> {
+  await prisma.session
+    .updateMany({
+      where: { id, endedAt: null },
+      data: { endedAt: new Date(), endedReason: reason },
+    })
+    .catch(() => {});
+}
+
+/**
+ * メンテナンスに入るとき、管理者以外のセッションをまとめて切る。
+ * 入れないだけでは、すでに入っている人が作業を続けてしまう
+ */
+export async function endNonAdminSessions(): Promise<number> {
+  const admins = await prisma.userPermission.findMany({
+    where: { permission: "ADMIN" },
+    select: { userId: true },
+  });
+  const r = await prisma.session.updateMany({
+    where: { endedAt: null, userId: { notIn: admins.map((a) => a.userId) } },
+    data: { endedAt: new Date(), endedReason: "maintenance" },
+  });
+  return r.count;
+}
+
+/** いまの Cookie が指すセッションの id。自分の行を見分けるために使う */
+export async function currentSessionId(): Promise<string | null> {
+  const store = await cookies();
+  const raw = store.get(AUTH_POLICY.sessionCookieName)?.value;
+  if (!raw) return null;
+  const row = await prisma.session.findUnique({
+    where: { tokenHash: sha256(raw) },
+    select: { id: true },
+  });
+  return row?.id ?? null;
 }
 
 /**
@@ -298,11 +359,20 @@ export const getSessionUser = cache(async function getSessionUser(): Promise<App
   const user = session.user;
   if (user.deletedAt || !user.activeFlag) return null;
 
+  const { sessionIdleMinutes, maintenanceMode } = await getAppSettings();
+  /*
+   * メンテナンス中は管理者以外を通さない。**入れないだけでなく、入っている人も切る。**
+   * 入ったときに切っているが、その後に入った人・切り損ねた人もここで止まる
+   */
+  if (maintenanceMode && !(await isAdminUser(user.id))) {
+    await endSessions({ tokenHash: session.tokenHash }, "maintenance");
+    return null;
+  }
+
   /*
    * 操作が無いまま一定時間が過ぎていたら打ち切る。
    * 席を離れた端末が開いたままになるのを防ぐ。時間はシステム設定で決める。
    */
-  const { sessionIdleMinutes } = await getAppSettings();
   const idleMs = Date.now() - session.lastSeenAt.getTime();
   if (idleMs > sessionIdleMinutes * 60_000) {
     await endSessions({ tokenHash: session.tokenHash }, "idle");

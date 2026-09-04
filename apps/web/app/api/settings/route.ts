@@ -1,5 +1,6 @@
 import { settingsSaveSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
+import { endNonAdminSessions } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { getServerMessages } from "@/lib/i18n";
 import { countPending, resolvePending } from "@/lib/pending-resolution";
@@ -69,11 +70,16 @@ export async function PUT(req: Request) {
   }
 
   await saveAppSettings(next, actor.user.id);
+  // メンテナンスに入った瞬間に、管理者以外を全員ログアウトさせる（入れないだけでは作業が続く）
+  let endedSessions = 0;
+  if (!before.maintenanceMode && next.maintenanceMode) {
+    endedSessions = await endNonAdminSessions();
+  }
   await writeAudit({
     entity: "system_settings",
     action: "update",
     actorId: actor.user.id,
-    diff: next,
+    diff: { ...next, ...(endedSessions > 0 ? { endedSessions } : {}) },
   });
   return Response.json({ ok: true, settings: next });
 }
