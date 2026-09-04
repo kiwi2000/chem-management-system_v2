@@ -76,6 +76,26 @@ function listCondition(col: QueryColumn, f: Extract<ColumnFilter, { kind: "list"
 
 type Where = Record<string, unknown>;
 
+/**
+ * **複数の欄のどれかに当たれば良い**文字の条件。
+ *
+ * 名前を原文・日本語・英語の3つの欄に分けて持ち、画面ではそのうち1つを選んで出す表
+ * （法文物質名など）で使う。1つの欄だけを見ると、画面に出ている名前で絞ったのに
+ * 1件も出ない（原文にしか名前が無い行が素通りする）。
+ *
+ * 「空」はすべての欄が空のとき、「空でない」はどれかに入っているとき
+ */
+export function anyOfTextCondition(
+  fields: string[],
+  f: Extract<ColumnFilter, { kind: "text" }>,
+): Where | null {
+  const each = fields.map((field) =>
+    textCondition({ key: field, kind: "text", field, caseInsensitive: true }, f),
+  );
+  if (each.some((w) => w === null)) return null;
+  return f.op === "empty" ? { AND: each } : { OR: each };
+}
+
 function textCondition(col: QueryColumn, f: Extract<ColumnFilter, { kind: "text" }>): Where | null {
   if (f.op === "empty") return { OR: [{ [col.field]: null }, { [col.field]: "" }] };
   if (f.op === "notEmpty")

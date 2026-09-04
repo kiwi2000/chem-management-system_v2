@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PRODUCT_COLUMNS } from "./list-columns";
+import { PRODUCT_COLUMNS, STATUTORY_SUBSTANCE_COLUMNS } from "./list-columns";
 import { buildWhere } from "./table-query";
 
 /**
@@ -94,5 +94,39 @@ describe("該当法規制の絞り込み", () => {
   it("選んでいなければ絞らない", () => {
     expect(list([], "any")).toEqual({});
     expect(list([""], "any")).toEqual({});
+  });
+});
+
+/**
+ * 法文物質名の絞り込み。画面に出る名前は原文・日本語・英語のどれかなので、
+ * どの欄に入っていても当たらないと「載っていない」ように見える
+ */
+describe("法文物質名の絞り込み", () => {
+  // buildWhere は条件を AND で包むので、法文物質名の条件だけを取り出す
+  const nameWhere = (op: "contains" | "empty" | "notEmpty", value = "") =>
+    (
+      buildWhere(STATUTORY_SUBSTANCE_COLUMNS, { nameJa: { kind: "text", op, value } }) as {
+        AND: Record<string, unknown>[];
+      }
+    ).AND[0];
+
+  it("原文・日本語・英語のどれかに含まれれば当たる", () => {
+    expect(nameWhere("contains", "トルエン")).toEqual({
+      OR: [
+        { nameOriginal: { contains: "トルエン", mode: "insensitive" } },
+        { nameJa: { contains: "トルエン", mode: "insensitive" } },
+        { nameEn: { contains: "トルエン", mode: "insensitive" } },
+      ],
+    });
+  });
+
+  it("「空」は3つとも空のとき", () => {
+    const w = nameWhere("empty") as { AND: unknown[] };
+    expect(w.AND).toHaveLength(3);
+  });
+
+  it("「空でない」はどれかに入っているとき", () => {
+    const w = nameWhere("notEmpty") as { OR: unknown[] };
+    expect(w.OR).toHaveLength(3);
   });
 });

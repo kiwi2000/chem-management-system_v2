@@ -1,5 +1,5 @@
 import { normalizeCas, normalizeCode } from "@chem/shared";
-import type { QueryColumn } from "@/lib/table-query";
+import { anyOfTextCondition, type QueryColumn } from "@/lib/table-query";
 
 /**
  * 製品の一覧で「法規制に当たるか」で絞る。
@@ -263,7 +263,20 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "officialNumber", kind: "text", field: "officialNumber", caseInsensitive: true },
   { key: "nameOriginal", kind: "text", field: "nameOriginal", caseInsensitive: true },
-  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
+  /*
+    画面の「法文物質名」の列。**出しているのは原文・日本語・英語のうち1つ**
+    （pickStatutoryName）なので、絞り込みも3つの欄をまたいで見る。
+    日本語の欄だけを見ていたころは、LOLI から取り込んだ名前（原文の欄にしか無い）が
+    素通りし、「トルエン」と打っても1件も出なかった。並べ替えは日本語の欄のまま
+  */
+  {
+    key: "nameJa",
+    kind: "text",
+    field: "nameJa",
+    caseInsensitive: true,
+    custom: (f) =>
+      f.kind === "text" ? anyOfTextCondition(["nameOriginal", "nameJa", "nameEn"], f) : null,
+  },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "classId", kind: "enum", field: "classId" },
   {
