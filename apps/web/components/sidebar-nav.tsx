@@ -378,8 +378,12 @@ export function SidebarNav({
     );
   };
 
+  /*
+    メニューが長くなったら、この中だけ縦に送る。**下のバージョン・人数の欄は残す。**
+    ペイン全体を送ると、いちばん下の欄が画面の外へ出てしまう
+  */
   return (
-    <nav className="space-y-4 p-3">
+    <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
       {groups.map((g, gi) => (
         // 余白は padding で足す（space-y の margin と打ち消し合わないように）
         <div key={gi} className={cn("space-y-1", g.apart && "pt-6")}>
