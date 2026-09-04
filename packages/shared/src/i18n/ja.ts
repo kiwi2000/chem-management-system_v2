@@ -1357,7 +1357,7 @@ export const ja = {
     /** CAS番号は法律に載っているが、含有率が足りず当たっていないもの */
     nearMissShow: "含有率不足による非該当",
     sourceShow: "データソース",
-    reviewLegend: "適用条件要確認",
+    reviewLegend: "要確認",
     diffShow: "差分あり",
     cellDetailTitle: "バージョン・データソース別の該当",
     cellDetailCurrent: "現バージョン",

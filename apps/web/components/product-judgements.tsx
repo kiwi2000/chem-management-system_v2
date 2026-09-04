@@ -499,9 +499,12 @@ function Warning({
       */}
       {j.reviewReasons.length > 0 && (
         <div className="space-y-1">
-          <Badge
-            variant="outline"
-            className={j.needsReview ? "text-destructive gap-1" : "text-muted-foreground gap-1"}
+          {/* 囲みも太字も付けない。行の幅を食うので、印と色だけで示す */}
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 text-xs",
+              j.needsReview ? "text-destructive" : "text-muted-foreground",
+            )}
           >
             {/*
               **要確認と警告で印を分ける。**要確認は「判定が変わるかもしれない」なので
@@ -513,7 +516,7 @@ function Warning({
               <TriangleAlert className="size-3" />
             )}
             {j.needsReview ? m.judgements.needsReview : m.judgements.warning}
-          </Badge>
+          </span>
           <ul className="text-muted-foreground list-disc space-y-0.5 pl-4 text-xs">
             {j.reviewReasons.map((r) => (
               <li key={r}>{reasonText(m, r)}</li>

@@ -1329,7 +1329,7 @@ export const en: Messages = {
     aggregateTitle: "Expanded and combined by CAS",
     nearMissShow: "Below the threshold",
     sourceShow: "Data source",
-    reviewLegend: "Check the conditions",
+    reviewLegend: "Needs checking",
     diffShow: "Changed",
     cellDetailTitle: "By version and data source",
     cellDetailCurrent: "Current version",
