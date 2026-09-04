@@ -33,6 +33,7 @@ export async function toJudgementDtos(
       decidedAt: true,
       decidedNote: true,
       computedAt: true,
+      versionId: true,
       hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
       category: {
         select: {
@@ -125,6 +126,7 @@ export async function toJudgementDtos(
       decidedAt: r.decidedAt?.toISOString() ?? null,
       decidedNote: r.decidedNote,
       computedAt: r.computedAt.toISOString(),
+      versionId: r.versionId,
       hits: withHits
         ? r.hits
             .map((h) => {

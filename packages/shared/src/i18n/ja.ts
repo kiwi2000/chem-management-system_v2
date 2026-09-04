@@ -913,6 +913,10 @@ export const ja = {
 
   /** 法規制の判定。製品の詳細に出す */
   judgements: {
+    computedAt: (when: string) => `計算 ${when}`,
+    stale: "前提が変わっています",
+    staleHint:
+      "この判定を計算した後に、CASリンク・閾値・法規制バージョンのどれかが変わっています。判定し直すと結果が変わる可能性があります（システム設定の「全製品を判定し直す」）",
     title: "法規制判定",
     summary: (hit: number, total: number) => `${total} 件中 ${hit} 件に該当`,
     reviewCount: (n: number) => `要確認 ${n} 件`,
@@ -1289,6 +1293,19 @@ export const ja = {
     },
     conditionalLinkModeHint:
       "外部データベースが総称から広げて結び付けたCASの扱いです。法律の名称が炭素数や置換位置で絞っている場合、実際には当てはまらないことがあります。どちらを選んでも警告は出ます。",
+    rejudge: "全製品を判定し直す",
+    rejudgeHint:
+      "CASリンク・閾値・法規制バージョン・データソースの優先順位を変えても、判定は自動ではやり直されません（組成を保存したときだけ、その製品と親製品がやり直されます）。法規制側のデータを変えたら、ここで全部をやり直してください。製品が多いと数十分かかります。裏で進むので、この画面を閉じてもかまいません",
+    rejudgeRunning: (done: number, total: number) =>
+      total > 0
+        ? `判定し直しています… ${done.toLocaleString()} / ${total.toLocaleString()} 件`
+        : "判定し直しています…（準備中）",
+    rejudgeDone: (n: number, when: string, version: string) =>
+      `${n.toLocaleString()} 件を判定し直しました（${when}・${version}）`,
+    rejudgeFailed: (reason: string) => `途中で止まりました: ${reason}`,
+    rejudgeLast: (when: string) => `判定の最終計算: ${when}`,
+    rejudgeNever: "まだ判定を計算していません",
+    rejudgeBusy: "すでに判定し直しが走っています",
     sessionSection: "自動ログアウト",
     sessionIdleMinutes: "操作が無いままログアウトするまでの時間（分）",
     mfaRequired: "2要素認証を必須にする",

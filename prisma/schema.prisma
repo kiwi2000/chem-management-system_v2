@@ -227,6 +227,7 @@ model User {
    */
   /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -637,6 +638,12 @@ model ProductJudgement {
   decidedNote String?   @map("decided_note")
 
   computedAt DateTime @default(now()) @map("computed_at")
+  /**
+   * どの法規制バージョンで出した判定か。
+   * **前提が変わったことに気づくため。**現在のバージョンと違えば古い判定。
+   * 以前の判定は持っていないので null（＝いつのものか分からない）
+   */
+  versionId  String?  @map("version_id")
 
   product  Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   category RegulationCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)

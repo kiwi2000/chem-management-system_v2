@@ -20,6 +20,7 @@ import {
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LanguageSection } from "@/components/language-section";
+import { RejudgeSection } from "@/components/rejudge-section";
 import { ScoreSettingsSection } from "@/components/score-settings-section";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -195,6 +196,8 @@ export default function SettingsPage() {
               </select>
               <p className="text-muted-foreground text-xs">{m.settings.conditionalLinkModeHint}</p>
             </div>
+            {/* 法規制側のデータを変えたあとに、全製品の判定をやり直す */}
+            <RejudgeSection />
           </CardContent>
         </Card>
 

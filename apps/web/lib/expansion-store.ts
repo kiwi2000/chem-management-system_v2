@@ -126,7 +126,7 @@ export async function recomputeFrom(productId: string): Promise<number> {
     // 条件つきリンクの扱いも1回だけ読む
     const { conditionalLinkMode } = await getAppSettings();
     for (const id of targets) {
-      await judgeProduct(id, rules, factors, conditionalLinkMode);
+      await judgeProduct(id, rules, factors, conditionalLinkMode, version.id);
     }
   }
 

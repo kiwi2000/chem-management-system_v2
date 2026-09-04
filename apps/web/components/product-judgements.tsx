@@ -92,6 +92,12 @@ export function ProductJudgements({
 }) {
   const { m, locale } = useI18n();
   const [items, setItems] = useState<ProductJudgementDto[] | null>(null);
+  /** いつ・どの前提で出した判定か。前提が変わっていれば古い可能性がある */
+  const [stamp, setStamp] = useState<{
+    computedAt: string | null;
+    versionCode: string | null;
+    stale: boolean;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** いま根拠を書いている区分。null なら誰も書いていない */
   const [editing, setEditing] = useState<string | null>(null);
@@ -129,7 +135,14 @@ export function ProductJudgements({
       setItems([]);
       return;
     }
-    setItems(((await res.json()) as { items: ProductJudgementDto[] }).items);
+    const body = (await res.json()) as {
+      items: ProductJudgementDto[];
+      computedAt: string | null;
+      versionCode: string | null;
+      stale: boolean;
+    };
+    setItems(body.items);
+    setStamp({ computedAt: body.computedAt, versionCode: body.versionCode, stale: body.stale });
   }, [productId, m]);
 
   useEffect(() => {
@@ -190,8 +203,29 @@ export function ProductJudgements({
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 space-y-0">
         <CardTitle className="text-base">
           {m.judgements.title}
-          {version && (
-            <span className="text-muted-foreground ml-2 text-xs font-normal">{version}</span>
+          {/*
+            いつ・どのバージョンで出した判定か。**印刷して人に渡すのに要る。**
+            判定に控えたバージョンがあればそれを、無ければ現在のバージョンを出す
+          */}
+          <span className="text-muted-foreground ml-2 text-xs font-normal">
+            {[
+              stamp?.versionCode ?? version,
+              stamp?.computedAt
+                ? m.judgements.computedAt(new Date(stamp.computedAt).toLocaleString(locale))
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" ・ ")}
+          </span>
+          {/* 前提（CASリンク・閾値・バージョン）が計算より後に変わった。判定し直すと変わりうる */}
+          {stamp?.stale && (
+            <span
+              className="text-destructive ml-2 inline-flex items-center gap-1 text-xs font-normal"
+              title={m.judgements.staleHint}
+            >
+              <TriangleAlert className="size-3" />
+              {m.judgements.stale}
+            </span>
           )}
         </CardTitle>
         <div className="flex flex-wrap items-center gap-2 text-sm">

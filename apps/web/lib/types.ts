@@ -217,6 +217,8 @@ export interface ProductJudgementDto {
   decidedAt: string | null;
   decidedNote: string | null;
   computedAt: string;
+  /** どの法規制バージョンで出したか。以前の判定は控えていないので null */
+  versionId: string | null;
 
   /** 何が何％入っていたから該当なのか。組成を見られない人には空 */
   hits: JudgementHitDto[];

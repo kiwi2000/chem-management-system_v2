@@ -224,8 +224,19 @@ export async function judgeProduct(
    * **全製品をやり直すときは呼ぶ側で1回だけ読んで渡す**（製品ごとに引くと無駄）
    */
   conditionalLinkMode?: ConditionalLinkMode,
+  /** 判定に使う法規制バージョン。省くと現在のもの。結果に控えて「いつの前提か」を示す */
+  versionId?: string,
 ): Promise<{ applicable: number; needsReview: number }> {
   const linkMode = conditionalLinkMode ?? (await getAppSettings()).conditionalLinkMode;
+  const version =
+    versionId ??
+    (
+      await prisma.linkSetVersion.findFirst({
+        where: { isCurrent: true, deletedAt: null },
+        select: { id: true },
+      })
+    )?.id ??
+    null;
   const expansion = await prisma.productExpansion.findUnique({
     where: { productId },
     select: { unknownPct: true, truncated: true },
@@ -271,6 +282,7 @@ export async function judgeProduct(
           source: "SYSTEM",
           needsReview: result.needsReview,
           reviewReasons: result.reasons,
+          versionId: version,
           hits: { create: result.hits.map((h) => ({ ...h, contributions: h.contributions })) },
         },
       }),

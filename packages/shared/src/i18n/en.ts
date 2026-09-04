@@ -899,6 +899,10 @@ export const en: Messages = {
   },
 
   judgements: {
+    computedAt: (when: string) => `computed ${when}`,
+    stale: "Premises have changed",
+    staleHint:
+      "CAS links, thresholds or the regulation version changed after this judgement was computed. Re-judging may change the result (System settings › Re-judge every product)",
     title: "Regulatory judgement",
     summary: (hit: number, total: number) => `${hit} of ${total} apply`,
     reviewCount: (n: number) => `${n} to check`,
@@ -1262,6 +1266,19 @@ export const en: Messages = {
       hit: "Decide applicability as if unconditional, and warn",
       review: "Mark for review, and warn",
     },
+    rejudge: "Re-judge every product",
+    rejudgeHint:
+      "Changing CAS links, thresholds, the regulation version or source priorities does not re-run judgements by itself (only saving a composition re-judges that product and its parents). After changing regulation data, re-judge everything here. Many products can take tens of minutes; it runs in the background, so you may leave this page",
+    rejudgeRunning: (done: number, total: number) =>
+      total > 0
+        ? `Re-judging… ${done.toLocaleString()} / ${total.toLocaleString()}`
+        : "Re-judging… (preparing)",
+    rejudgeDone: (n: number, when: string, version: string) =>
+      `Re-judged ${n.toLocaleString()} products (${when}, ${version})`,
+    rejudgeFailed: (reason: string) => `Stopped part-way: ${reason}`,
+    rejudgeLast: (when: string) => `Judgements last computed: ${when}`,
+    rejudgeNever: "No judgement has been computed yet",
+    rejudgeBusy: "A re-judgement is already running",
     conditionalLinkModeHint:
       "Applies to CAS the external database linked by widening from a generic name. Where the statutory name is narrowed by carbon count or substitution position, it may not actually apply. Either choice still shows a warning.",
     sessionSection: "Automatic sign-out",

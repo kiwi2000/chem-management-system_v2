@@ -47,7 +47,7 @@ async function main() {
   let applicable = 0;
   let review = 0;
   for (const p of products) {
-    const r = await judgeProduct(p.id, rules, factors, conditionalLinkMode);
+    const r = await judgeProduct(p.id, rules, factors, conditionalLinkMode, version.id);
     if (r.applicable > 0) applicable += 1;
     if (r.needsReview > 0) review += 1;
   }
