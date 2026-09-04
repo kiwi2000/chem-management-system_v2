@@ -17,6 +17,7 @@ import { useOutsideClose } from "@/lib/use-outside-close";
 import { ImeInput, ImeTextarea } from "./ime-field";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import type { TableColumn } from "./types";
 
 const selectClass = "border-input bg-background h-8 w-20 shrink-0 rounded-none border px-1 text-xs";
@@ -185,6 +186,34 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
       const all = next.length === 0 || next.length === options.length;
       onChange(all ? undefined : { kind: "enum", values: next });
     };
+
+    /*
+      ボタンの並び。**押すと対象になり、色が決まっていればその色が付く。**
+      データソースの選びかた（物質画面）と同じ形。何も押していなければ絞らない
+    */
+    if (column.filterAsButtons) {
+      return (
+        <div className="flex flex-wrap items-center gap-2">
+          {options.map((o) => {
+            const on = selected.includes(o.value);
+            return (
+              <Button
+                key={o.value}
+                type="button"
+                size="sm"
+                aria-pressed={on}
+                variant={on && !o.color ? "default" : "outline"}
+                className={cn(on && o.color && "border-transparent text-white hover:text-white")}
+                style={on && o.color ? { backgroundColor: o.color } : undefined}
+                onClick={() => toggle(o.value, !on)}
+              >
+                {o.label}
+              </Button>
+            );
+          })}
+        </div>
+      );
+    }
 
     // 選択肢が2つだけの列（有効/無効・はい/いいえ）は、開かずにその場で出す
     if (options.length === 2) {

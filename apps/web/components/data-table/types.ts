@@ -8,8 +8,16 @@ export interface TableColumn<T> {
   kind: ColumnKind;
   /** 表示。省略すると何も出さない（操作列などに使う） */
   render?: (row: T) => ReactNode;
-  /** enum 列の選択肢 */
-  options?: { value: string; label: string }[];
+  /**
+   * enum 列の選択肢。`color` を付けると、ボタン形の絞り込み（filterAsButtons）で
+   * 選んだときにその色で塗る（セッションの状態の緑・黄・赤など）
+   */
+  options?: { value: string; label: string; color?: string }[];
+  /**
+   * enum 列の絞り込みを、開閉する一覧ではなく**押すと対象になるボタンの並び**で出す。
+   * データソースの選びかた（物質画面）と同じ形。選択肢が少なく、色で見分けたい列に使う
+   */
+  filterAsButtons?: boolean;
   sortable?: boolean;
   filterable?: boolean;
   /**

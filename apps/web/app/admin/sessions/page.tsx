@@ -10,7 +10,13 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, SessionDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
-import { cn } from "@/lib/utils";
+
+/** 状態の色。信号と同じ緑・黄・赤。表の丸と絞り込みのボタンで同じ色を使う */
+const STATUS_COLOR = {
+  active: "#22c55e",
+  idle: "#eab308",
+  ended: "#ef4444",
+} as const;
 
 /** 最後に動いた人から。誰がいま使っているかを見る画面なので */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "lastSeenAt", direction: "desc" }]);
@@ -57,10 +63,12 @@ export default function SessionsPage() {
         nullable: false,
         width: 80,
         sortable: false,
+        // 絞り込みはボタンの並び。押すと、表の丸と同じ色が付く
+        filterAsButtons: true,
         options: [
-          { value: "active", label: m.sessions.statusActive },
-          { value: "idle", label: m.sessions.statusIdle },
-          { value: "ended", label: m.sessions.statusEnded },
+          { value: "active", label: m.sessions.statusActive, color: STATUS_COLOR.active },
+          { value: "idle", label: m.sessions.statusIdle, color: STATUS_COLOR.idle },
+          { value: "ended", label: m.sessions.statusEnded, color: STATUS_COLOR.ended },
         ],
         className: "text-center",
         render: (s) => {
@@ -76,14 +84,8 @@ export default function SessionsPage() {
               role="img"
               aria-label={label}
               title={label}
-              className={cn(
-                "inline-block size-3.5 rounded-full",
-                s.status === "active"
-                  ? "bg-green-500"
-                  : s.status === "idle"
-                    ? "bg-yellow-400"
-                    : "bg-red-500",
-              )}
+              className="inline-block size-3.5 rounded-full"
+              style={{ backgroundColor: STATUS_COLOR[s.status] }}
             />
           );
         },
