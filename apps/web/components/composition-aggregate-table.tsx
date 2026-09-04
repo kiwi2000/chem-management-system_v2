@@ -755,7 +755,7 @@ export function CompositionAggregateTable({
                       >
                         <ChevronRight
                           className={cn(
-                            "text-muted-foreground size-3 shrink-0 transition-transform",
+                            "size-3 shrink-0 opacity-80 transition-transform",
                             g.expanded && "rotate-90",
                           )}
                         />
@@ -801,7 +801,7 @@ export function CompositionAggregateTable({
                         >
                           <ChevronRight
                             className={cn(
-                              "text-muted-foreground size-3 shrink-0 transition-transform",
+                              "size-3 shrink-0 opacity-80 transition-transform",
                               !g.closed && "rotate-90",
                             )}
                           />
