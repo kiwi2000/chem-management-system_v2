@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, Settings, X } fr
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
+import { OnlineCount } from "@/components/online-count";
 import { IdleCountdown } from "@/components/idle-countdown";
 import { UserAvatar } from "@/components/user-avatar";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -97,14 +98,18 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
           画面に出ている数字の意味そのものを決める。
           いちばん下に置くぶん、色と大きさで目に留まるようにする
         */
-        <div className="bg-muted/60 mt-auto border-t px-4 py-3">
-          <div className="text-muted-foreground text-xs">{m.shell.linkVersion}</div>
-          <div className="text-primary truncate text-lg leading-tight font-semibold">
-            {version.code}
+        <div className="bg-muted/60 mt-auto flex items-start justify-between gap-3 border-t px-4 py-3">
+          <div className="min-w-0">
+            <div className="text-muted-foreground text-xs">{m.shell.linkVersion}</div>
+            <div className="text-primary truncate text-lg leading-tight font-semibold">
+              {version.code}
+            </div>
+            {version.nameJa && (
+              <div className="text-muted-foreground truncate text-xs">{version.nameJa}</div>
+            )}
           </div>
-          {version.nameJa && (
-            <div className="text-muted-foreground truncate text-xs">{version.nameJa}</div>
-          )}
+          {/* いまログインしている人数。バージョンの右に、同じ形で並べる */}
+          <OnlineCount canOpenSessions={user.isAdmin} />
         </div>
       )}
     </>

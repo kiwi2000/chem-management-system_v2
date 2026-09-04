@@ -105,6 +105,8 @@ export const ja = {
   shell: {
     openMenu: "メニューを開く",
     linkVersion: "法規制バージョン",
+    online: "ログイン中",
+    onlineCount: (n: number) => `${n} 人`,
     noLinkVersion: "法規制バージョン未設定",
     hideHeader: "上の帯を隠す",
     showHeader: "上の帯を出す",
