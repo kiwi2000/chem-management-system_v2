@@ -8,5 +8,9 @@ prisma/migrations/
 *.tsbuildinfo
 scripts/data/
 
+# 作業用の置き場。git 管理外で、体裁を整える対象ではない
+.cache/
+.claude/worktrees/
+
 # Next.js が build のたびに作り直すもの。git にも載せないので、体裁を整える意味がない
 next-env.d.ts

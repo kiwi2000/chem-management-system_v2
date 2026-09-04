@@ -20,6 +20,8 @@ export default tseslint.config(
       "**/*.tsbuildinfo",
       "**/next-env.d.ts", // Next.js の自動生成ファイル
       "docs/**",
+      ".cache/**", // 作業用スクリプトの置き場（git 管理外）
+      ".claude/worktrees/**", // 作業用の別ツリー（本体と同じソースの写し）
     ],
   },
   js.configs.recommended,
