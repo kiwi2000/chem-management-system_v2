@@ -1309,6 +1309,7 @@ export const ja = {
     sourceData: "出典データ",
     sourceDataHint:
       "データソースがそのCASについて書いている文章（対象CASの「出典データ」）を、セルの2行目に添えます。1行で切れるので、全文はセルを押して読みます",
+    overriddenHint: "上位のデータソースの非該当に打ち消されているため、採用されていません",
   },
 
   settings: {

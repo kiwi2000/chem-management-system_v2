@@ -49,6 +49,10 @@ export interface MatrixValue {
    * 画面の言語で選んである（日本語訳があれば日本語、無ければ原文）。無ければ null
    */
   data: string | null;
+  /** 非該当で確定させた結び付き。取り消し線で出し、下位の該当を打ち消す */
+  excluded: boolean;
+  /** 上位のデータソースの非該当に打ち消されて、採用されていない該当 */
+  overridden: boolean;
 }
 
 export interface SubstanceMatrix {
@@ -191,15 +195,23 @@ export async function buildSubstanceMatrix(
   const invCells: Record<string, MatrixValue[]> = {};
   for (const r of invRows) {
     const k = cellKey(`inv:${r.inventoryId}`, r.versionId);
-    (invCells[k] ??= []).push({ text: r.value, note: null, sourceId: r.sourceId, data: null });
+    (invCells[k] ??= []).push({
+      text: r.value,
+      note: null,
+      sourceId: r.sourceId,
+      data: null,
+      excluded: false,
+      overridden: false,
+    });
   }
 
   // --- 法規制 ---------------------------------------------------------------
   /*
-    **当たっている区分だけを列にする。**登録されている区分をすべて並べると、
+    **結び付きのある区分だけを列にする。**登録されている区分をすべて並べると、
     ほとんどがハイフンの表になって、変わったところが埋もれる。
-    非該当で確定させたリンク（`excluded`）は当たっていないので出さない。
-    **上位のデータソースが非該当を持つ区分では、下位の該当も出さない**（打ち消されている）
+    非該当で確定させたリンク（`excluded`）も出す（取り消し線）。
+    **上位のデータソースが非該当を持つ区分では、下位の該当は打ち消されている**ので、
+    採用されていない印を付けて出す。隠すと「LOLI に載っていない」ように読めてしまった
   */
   const links = await prisma.statutoryCasLink.findMany({
     where: { casNormalized, versionId: { in: versionIds } },
@@ -261,8 +273,8 @@ export async function buildSubstanceMatrix(
 
   /*
     バージョン×区分ごとに、非該当を持つデータソースのうちいちばん優先度の高いもの。
-    それより優先度の低いデータソースの該当は、打ち消されているので出さない。
-    同じデータソースの別の号は残す（そのデータソース自身が該当と言っている）
+    それより優先度の低いデータソースの該当は、打ち消されている（採用されていない）。
+    同じデータソースの別の号は生きている（そのデータソース自身が該当と言っている）
   */
   const excludedRank = new Map<string, number>();
   for (const l of links) {
@@ -276,13 +288,12 @@ export async function buildSubstanceMatrix(
   const regColumns = new Map<string, MatrixColumn & { order: ReturnType<typeof lawOrderKey> }>();
   const regCells: Record<string, MatrixValue[]> = {};
   for (const l of links) {
-    if (l.excluded) continue;
     const s = l.statutorySubstance;
     if (s.deletedAt) continue;
     const c = s.regulationClass.category;
     if (c.deletedAt) continue;
     const cut = excludedRank.get(`${l.versionId}/${c.id}`);
-    if (cut !== undefined && rankOf(l.sourceId) > cut) continue;
+    const overridden = !l.excluded && cut !== undefined && rankOf(l.sourceId) > cut;
     const key = `cat:${c.id}`;
     if (!regColumns.has(key)) {
       regColumns.set(key, {
@@ -321,6 +332,8 @@ export async function buildSubstanceMatrix(
       note: null,
       sourceId: l.sourceId,
       data: l.data ? (locale === "ja" ? (l.data.textJa ?? l.data.text) : l.data.text) : null,
+      excluded: l.excluded,
+      overridden,
     });
   }
 

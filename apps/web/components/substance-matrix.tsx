@@ -68,6 +68,7 @@ function ValueCell({
   /** セルを押して全文を出しているか。閉じているときは1行で切る */
   open: boolean;
 }) {
+  const { m } = useI18n();
   const v = values[row];
   if (!v) return <span className="text-muted-foreground">—</span>;
   const hit = picked.has(v.sourceId);
@@ -75,13 +76,27 @@ function ValueCell({
   const clip = open
     ? "whitespace-normal break-words"
     : "overflow-hidden text-ellipsis whitespace-nowrap";
+  /*
+    非該当は取り消し線、打ち消された該当は薄い字。**データはあるが採用されていない**ことを
+    見せる。隠していたころは「LOLI に載っていない」ように読めた
+  */
+  const state = v.excluded
+    ? m.casLinks.notApplicable
+    : v.overridden
+      ? m.substanceMatrix.overriddenHint
+      : null;
   return (
     <span
-      className={cn("block px-1", hit && !color && HIT)}
+      className={cn("block px-1", hit && !color && HIT, v.overridden && "text-muted-foreground")}
       style={color ? { backgroundColor: tintOf(color) } : undefined}
-      title={[v.note ?? v.text, showData ? v.data : null].filter(Boolean).join("\n")}
+      title={[state, v.note ?? v.text, showData ? v.data : null].filter(Boolean).join("\n")}
     >
-      <span className={cn("block", clip)}>{v.text}</span>
+      <span className={cn("block", clip)}>
+        {v.excluded && (
+          <span className="text-muted-foreground mr-1">[{m.casLinks.notApplicable}]</span>
+        )}
+        <span className={cn(v.excluded && "line-through")}>{v.text}</span>
+      </span>
       {/* 出どころの文章。名前の下に1行。全文はセルを押して読む */}
       {showData && v.data && (
         <span

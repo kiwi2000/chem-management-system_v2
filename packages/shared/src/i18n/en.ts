@@ -1280,6 +1280,8 @@ export const en: Messages = {
     regulationTitle: "Regulations",
     regulationEmpty: "No regulation applies",
     sourceData: "Source data",
+    overriddenHint:
+      "Not adopted: overridden by a non-applicable link from a higher-priority source",
     sourceDataHint:
       "Adds what the data source writes about the CAS (the Data column of linked CAS numbers) as a second line in each cell. Click a cell to read it in full",
   },
