@@ -572,6 +572,7 @@ export function CompositionEditor({
           <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
             {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
             {cols.peek}
+            {cols.stickyBar}
             <table
               {...cols.tableProps}
               className={cn(

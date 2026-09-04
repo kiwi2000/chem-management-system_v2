@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useTablePeek } from "./cell-peek";
+import { useStickyScrollbar } from "./sticky-scrollbar";
 import { useColumnWidths } from "./use-column-widths";
 import { rowHeightOf, rowLinesOf, useRowLines } from "./use-row-lines";
 import { MIN_COLUMN_WIDTH, ROW_LINE_HEIGHT, ROW_PADDING } from "./types";
@@ -79,11 +80,14 @@ export function useResizableColumns(
     表を包む枠に付けるだけなので、セルの側は何も変えなくてよい
   */
   const peek = useTablePeek<HTMLDivElement>();
+  /* 縦に長い表でも横に送れるよう、画面の下に貼り付く帯を付ける */
+  const sticky = useStickyScrollbar<HTMLDivElement>();
   const observer = useRef<ResizeObserver | null>(null);
   const [boxWidth, setBoxWidth] = useState(0);
   const scrollerRef = useCallback((el: HTMLDivElement | null) => {
     inner.current = el;
     peek.attach(el);
+    sticky.attach(el);
     /*
       箱の幅を測る。**箱が現れた瞬間から。**読み込み中は箱そのものが無い表があるので、
       useEffect（最初の描画で1回）では測り損ねる
@@ -338,6 +342,8 @@ export function useResizableColumns(
     rowHandle,
     /** 吹き出しの置き場所。表を出しているところで1回だけ描くこと */
     peek: peek.node,
+    /** 画面の下に貼り付く横の帯。peek と同じく、表を出しているところで1回だけ描く */
+    stickyBar: sticky.node,
     minTableWidth,
     tableProps,
     cols,

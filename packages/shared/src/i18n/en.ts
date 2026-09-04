@@ -205,6 +205,7 @@ export const en: Messages = {
   table: {
     filterPanel: "Filters",
     columnPanel: "Columns",
+    scrollSideways: "Scroll sideways",
     resetColumns: "Reset",
     columnPanelHint: "Tick to include, drag the handle to reorder",
     reorderColumn: "Drag to reorder",

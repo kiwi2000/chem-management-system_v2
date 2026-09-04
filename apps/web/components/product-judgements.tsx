@@ -259,6 +259,7 @@ export function ProductJudgements({
           <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto" {...cols.rowProps}>
             {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
             {cols.peek}
+            {cols.stickyBar}
             {/*
               table-fixed にして、幅を列の側で決める。
               自動幅だと、法文物質名の長いものが1件あるだけで表全体の形が変わり、

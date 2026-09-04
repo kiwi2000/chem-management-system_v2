@@ -214,6 +214,7 @@ export const ja = {
   table: {
     filterPanel: "フィルター",
     columnPanel: "表示項目",
+    scrollSideways: "横に送る",
     resetColumns: "元に戻す",
     columnPanelHint: "チェックで出し入れし、つまみを引いて並べ替えます",
     reorderColumn: "引いて並べ替える",

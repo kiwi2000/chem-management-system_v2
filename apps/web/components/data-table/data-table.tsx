@@ -34,6 +34,7 @@ import {
 import { useI18n } from "@/lib/i18n-client";
 import { usePageSizePrefs } from "@/lib/page-size-prefs";
 import { useTablePeek } from "@/components/data-table/cell-peek";
+import { useStickyScrollbar } from "@/components/data-table/sticky-scrollbar";
 import { cn } from "@/lib/utils";
 import { FilterPanel, type FilterLayoutRow } from "./filter-panel";
 import {
@@ -291,6 +292,8 @@ export function DataTable<T>({
   const scrollerRef = useRef<HTMLDivElement>(null);
   /* 切れているセルは、マウスを置くと中身を全部出す */
   const peek = useTablePeek<HTMLDivElement>();
+  /* 1ページの件数が多いとき、上のほうを読んでいても横に送れるよう、画面の下に帯を出す */
+  const sticky = useStickyScrollbar<HTMLDivElement>();
   const selectWidth =
     (selectable ? SELECT_COLUMN_WIDTH : 0) +
     (onReorder ? DRAG_COLUMN_WIDTH : 0) +
@@ -603,6 +606,7 @@ export function DataTable<T>({
         ref={(el) => {
           scrollerRef.current = el;
           peek.attach(el);
+          sticky.attach(el);
         }}
         className="bg-background overflow-x-auto rounded-md border"
       >
@@ -868,6 +872,7 @@ export function DataTable<T>({
         </Table>
       </div>
       {peek.node}
+      {sticky.node}
 
       {/* ページ送りを出さない表でも、見た目を変えていれば戻す口だけは残す */}
       {(showPager || hasCustomWidths || hasCustomRowLines) && (

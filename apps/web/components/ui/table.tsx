@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { useStickyScrollbar } from "@/components/data-table/sticky-scrollbar";
 import { cn } from "@/lib/utils";
 
 /**
@@ -53,8 +54,11 @@ function Table({
    */
   containerClassName?: string;
 }) {
+  // 縦に長い表でも横に送れるよう、画面の下に貼り付く帯を付ける（はみ出していなければ出ない）
+  const sticky = useStickyScrollbar<HTMLDivElement>();
   return (
     <div
+      ref={sticky.attach}
       data-slot="table-container"
       className={cn("relative w-full overflow-x-auto", containerClassName)}
     >
@@ -63,6 +67,7 @@ function Table({
         className={cn("w-full caption-bottom text-sm", CELL_CLIP, className)}
         {...props}
       />
+      {sticky.node}
     </div>
   );
 }

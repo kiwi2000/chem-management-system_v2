@@ -113,6 +113,7 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
     <div ref={cols.scrollerRef} className="overflow-x-auto" {...cols.rowProps}>
       {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
       {cols.peek}
+      {cols.stickyBar}
       <Table {...cols.tableProps} className={cn("table-fixed", cols.tableProps.className)}>
         <colgroup>{cols.cols()}</colgroup>
         <TableHeader className="table-head-solid text-table-head-foreground [&_th]:text-inherit">
