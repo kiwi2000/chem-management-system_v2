@@ -928,7 +928,7 @@ export const ja = {
     notApplicable: "非該当",
     onlyApplicable: "該当のみ表示",
     needsReview: "要確認",
-    needsReviewHint: "適用条件を確認して下さい。",
+    needsReviewHint: "適用条件を確認し、必要があれば該非を変更して下さい。",
     byUser: "人が判断",
     basis: "根拠",
     categoryItself: "（区分の合計）",
