@@ -74,8 +74,14 @@ export interface SessionDto {
   userAgent: string | null;
   /** 見ている本人のセッション */
   isCurrent: boolean;
-  /** 最終操作から自動ログアウトの時間を過ぎている。次の操作で切れる */
-  idle: boolean;
+  /**
+   * 状態。active … 使っている / idle … 最終操作から自動ログアウトの時間を過ぎた（次の操作で切れる）
+   * / ended … 終わった（切れてから7日は残る）
+   */
+  status: "active" | "idle" | "ended";
+  endedAt: string | null;
+  /** 終わった理由。logout / idle / expired / settings / maintenance / admin */
+  endedReason: string | null;
 }
 
 /** 組織（会社・事業所）。帳票に載せる差出人の情報 */

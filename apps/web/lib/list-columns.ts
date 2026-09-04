@@ -301,29 +301,66 @@ export const FEEDBACK_COLUMNS: QueryColumn[] = [
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
-/** ログイン中の利用者。利用者の欄は子テーブル（user）なので絞り込みだけ */
-export const SESSION_COLUMNS: QueryColumn[] = [
-  {
-    key: "email",
-    kind: "text",
-    field: "email",
-    nested: "user",
-    caseInsensitive: true,
-    sortable: false,
-  },
-  {
-    key: "displayName",
-    kind: "text",
-    field: "displayName",
-    nested: "user",
-    caseInsensitive: true,
-    sortable: false,
-  },
-  { key: "createdAt", kind: "date", field: "createdAt" },
-  { key: "lastSeenAt", kind: "date", field: "lastSeenAt" },
-  { key: "expiresAt", kind: "date", field: "expiresAt" },
-  { key: "ipAddress", kind: "text", field: "ipAddress" },
-];
+/**
+ * セッションの状態。**表の列としては持たず、時刻から決める。**
+ *   active … 生きていて、最終操作が自動ログアウトの時間の内
+ *   idle   … 生きているが、最終操作から自動ログアウトの時間を過ぎている（次の操作で切れる）
+ *   ended  … 終わった（自分で・放置・期限・設定変更・メンテナンス・管理者）か、期限が切れた
+ */
+export function sessionStatusCondition(
+  values: string[],
+  now: Date,
+  idleMs: number,
+): Record<string, unknown> | null {
+  const idleCutoff = new Date(now.getTime() - idleMs);
+  const alive = { endedAt: null, expiresAt: { gt: now } };
+  const each: Record<string, unknown>[] = [];
+  for (const v of new Set(values)) {
+    if (v === "active") each.push({ ...alive, lastSeenAt: { gte: idleCutoff } });
+    else if (v === "idle") each.push({ ...alive, lastSeenAt: { lt: idleCutoff } });
+    else if (v === "ended")
+      each.push({ OR: [{ endedAt: { not: null } }, { expiresAt: { lte: now } }] });
+  }
+  if (each.length === 0) return null;
+  return each.length === 1 ? (each[0] as Record<string, unknown>) : { OR: each };
+}
+
+/**
+ * セッション管理。利用者の欄は子テーブル（user）なので絞り込みだけ。
+ * 状態は時刻で決まるので、いま（now）と自動ログアウトの時間を渡して組む
+ */
+export function sessionColumns(now: Date, idleMs: number): QueryColumn[] {
+  return [
+    {
+      key: "status",
+      kind: "enum",
+      field: "endedAt",
+      sortable: false,
+      custom: (f) => (f.kind === "enum" ? sessionStatusCondition(f.values, now, idleMs) : null),
+    },
+    {
+      key: "email",
+      kind: "text",
+      field: "email",
+      nested: "user",
+      caseInsensitive: true,
+      sortable: false,
+    },
+    {
+      key: "displayName",
+      kind: "text",
+      field: "displayName",
+      nested: "user",
+      caseInsensitive: true,
+      sortable: false,
+    },
+    { key: "createdAt", kind: "date", field: "createdAt" },
+    { key: "lastSeenAt", kind: "date", field: "lastSeenAt" },
+    { key: "expiresAt", kind: "date", field: "expiresAt" },
+    { key: "endedAt", kind: "date", field: "endedAt" },
+    { key: "ipAddress", kind: "text", field: "ipAddress" },
+  ];
+}
 
 export const USER_COLUMNS: QueryColumn[] = [
   { key: "email", kind: "text", field: "email", caseInsensitive: true },

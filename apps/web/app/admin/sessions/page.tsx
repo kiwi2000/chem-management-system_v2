@@ -1,6 +1,7 @@
 "use client";
 
 import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
+import { CircleDot, CircleOff, PauseCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -24,8 +25,61 @@ const DEFAULT_STATE: TableState = emptyTableState([{ column: "lastSeenAt", direc
 export default function SessionsPage() {
   const { m, locale } = useI18n();
 
+  /** 状態の言葉。切れた理由もここから引く */
+  const reasonLabel = useCallback(
+    (r: string | null) =>
+      r === "logout"
+        ? m.sessions.reasonLogout
+        : r === "idle"
+          ? m.sessions.reasonIdle
+          : r === "expired"
+            ? m.sessions.reasonExpired
+            : r === "settings"
+              ? m.sessions.reasonSettings
+              : r === "maintenance"
+                ? m.sessions.reasonMaintenance
+                : r === "admin"
+                  ? m.sessions.reasonAdmin
+                  : "",
+    [m],
+  );
+
   const columns = useMemo<TableColumn<SessionDto>[]>(
     () => [
+      {
+        /*
+          状態は先頭に。**文字を読まなくても分かる印**にする。
+          緑の点＝使っている、黄の一時停止＝休止中（次の操作で切れる）、灰の斜線＝終了
+        */
+        key: "status",
+        header: m.sessions.status,
+        kind: "enum",
+        nullable: false,
+        width: 110,
+        sortable: false,
+        options: [
+          { value: "active", label: m.sessions.statusActive },
+          { value: "idle", label: m.sessions.statusIdle },
+          { value: "ended", label: m.sessions.statusEnded },
+        ],
+        render: (s) =>
+          s.status === "active" ? (
+            <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-400">
+              <CircleDot className="size-4" aria-hidden />
+              {m.sessions.statusActive}
+            </span>
+          ) : s.status === "idle" ? (
+            <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+              <PauseCircle className="size-4" aria-hidden />
+              {m.sessions.statusIdle}
+            </span>
+          ) : (
+            <span className="text-muted-foreground inline-flex items-center gap-1">
+              <CircleOff className="size-4" aria-hidden />
+              {m.sessions.statusEnded}
+            </span>
+          ),
+      },
       {
         key: "email",
         header: m.sessions.email,
@@ -78,13 +132,21 @@ export default function SessionsPage() {
         nullable: false,
         width: 165,
         className: "text-xs tabular-nums",
-        render: (s) => (
-          <span className={s.idle ? "text-muted-foreground" : undefined}>
-            {new Date(s.lastSeenAt).toLocaleString(locale)}
-            {/* 自動ログアウトの時間を過ぎている。次の操作で切れるだけで、まだ載っている */}
-            {s.idle && <span className="ml-1">{m.sessions.idle}</span>}
-          </span>
-        ),
+        render: (s) => new Date(s.lastSeenAt).toLocaleString(locale),
+      },
+      {
+        // 終わった日時と理由。生きている行は空
+        key: "endedAt",
+        header: m.sessions.endedAt,
+        kind: "date",
+        width: 230,
+        className: "text-muted-foreground text-xs tabular-nums",
+        render: (s) =>
+          s.endedAt
+            ? `${new Date(s.endedAt).toLocaleString(locale)} ${reasonLabel(s.endedReason)}`
+            : s.status === "ended"
+              ? reasonLabel(s.endedReason)
+              : "",
       },
       {
         key: "expiresAt",
@@ -115,7 +177,7 @@ export default function SessionsPage() {
         render: (s) => s.userAgent ?? "",
       },
     ],
-    [m, locale],
+    [m, locale, reasonLabel],
   );
 
   const { state, setState, reset, ready } = useTableState(
@@ -153,10 +215,10 @@ export default function SessionsPage() {
     return () => window.clearInterval(id);
   }, [ready, load]);
 
-  /** 選んだセッションを切る。確認は共通テーブル側で出す */
+  /** 選んだセッションを切る。確認は共通テーブル側で出す。終わっているものは飛ばす */
   async function endSelected(targets: SessionDto[]) {
     setError(null);
-    for (const s of targets) {
+    for (const s of targets.filter((t) => t.status !== "ended")) {
       const res = await fetch(`/api/admin/sessions/${s.id}`, { method: "DELETE" });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -190,6 +252,8 @@ export default function SessionsPage() {
         onStateChange={setState}
         onReset={reset}
         emptyMessage={m.sessions.empty}
+        // 終わった行は薄く。生きているものと見分けるため
+        rowClassName={(s) => (s.status === "ended" ? "text-muted-foreground" : undefined)}
         selectable
         // 消すのではなく「ログアウトさせる」。ごみ箱ではなく、その言葉のボタンにする
         bulkAction={{
@@ -197,7 +261,12 @@ export default function SessionsPage() {
           confirm: (n) => m.sessions.endSelectedConfirm(n),
           run: endSelected,
         }}
-        filterLayout={[["email", "displayName"], ["ipAddress"], ["createdAt", "lastSeenAt"]]}
+        filterLayout={[
+          ["status"],
+          ["email", "displayName"],
+          ["ipAddress"],
+          ["createdAt", "lastSeenAt", "endedAt"],
+        ]}
       />
     </div>
   );

@@ -2,7 +2,7 @@ import { emptyTableState, parseTableState } from "@chem/shared";
 import { currentSessionId } from "@/lib/auth";
 import { requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { SESSION_COLUMNS } from "@/lib/list-columns";
+import { sessionColumns } from "@/lib/list-columns";
 import { getAppSettings } from "@/lib/settings";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import type { SessionDto } from "@/lib/types";
@@ -12,33 +12,50 @@ export const dynamic = "force-dynamic";
 /** 最後に動いた人から。誰がいま使っているかを見る画面なので */
 const DEFAULT_STATE = emptyTableState([{ column: "lastSeenAt", direction: "desc" }]);
 
+/** 切れたセッションを出しておく日数。行の掃除（purgeExpiredSessions）と同じ */
+const KEEP_ENDED_DAYS = 7;
+
 /**
- * GET /api/admin/sessions — いまログインしている利用者（生きているセッション）。
+ * GET /api/admin/sessions — セッションの一覧。
  *
- * 出すのは**終わっておらず、期限も切れていない**もの。
- * 放置で切れる手前のもの（最終操作から自動ログアウトの時間を過ぎたもの）は
- * 次の操作で切れるだけなのでまだ載っている。`idle` の印を付けて見分ける。
+ * **生きているものと、切れてから7日以内のもの**を出す。
+ * 状態（アクティブ／休止中／終了）は時刻から決めて付ける。
+ * 休止中は、最終操作から自動ログアウトの時間を過ぎたもの（次の操作で切れる）。
  * 管理者だけ。誰がどの端末から入っているかは、それ自体が守るべき情報
  */
 export async function GET(req: Request) {
   const actor = await requireAdmin();
   if (actor instanceof Response) return actor;
 
+  const now = new Date();
+  const settings = await getAppSettings();
+  const idleMs = settings.sessionIdleMinutes * 60_000;
+  const columns = sessionColumns(now, idleMs);
+
   const params = new URL(req.url).searchParams;
   const state = parseTableState(
     params,
-    SESSION_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+    columns.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
-  const now = new Date();
+  const since = new Date(now.getTime() - KEEP_ENDED_DAYS * 86_400_000);
   const where = {
-    AND: [{ endedAt: null, expiresAt: { gt: now } }, buildWhere(SESSION_COLUMNS, state.filters)],
+    AND: [
+      {
+        OR: [
+          { endedAt: null, expiresAt: { gt: now } },
+          { endedAt: { gte: since } },
+          { endedAt: null, expiresAt: { lte: now, gte: since } },
+        ],
+      },
+      buildWhere(columns, state.filters),
+    ],
   };
 
-  const [rows, total, mine, settings] = await Promise.all([
+  const [rows, total, mine] = await Promise.all([
     prisma.session.findMany({
       where,
-      orderBy: buildOrderBy(SESSION_COLUMNS, state.sort, { lastSeenAt: "desc" }),
+      orderBy: buildOrderBy(columns, state.sort, { lastSeenAt: "desc" }),
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
       select: {
@@ -46,6 +63,8 @@ export async function GET(req: Request) {
         createdAt: true,
         lastSeenAt: true,
         expiresAt: true,
+        endedAt: true,
+        endedReason: true,
         ipAddress: true,
         userAgent: true,
         user: {
@@ -60,12 +79,21 @@ export async function GET(req: Request) {
     }),
     prisma.session.count({ where }),
     currentSessionId(),
-    getAppSettings(),
   ]);
 
-  const idleMs = settings.sessionIdleMinutes * 60_000;
+  const statusOf = (s: { endedAt: Date | null; expiresAt: Date; lastSeenAt: Date }) =>
+    s.endedAt !== null || s.expiresAt <= now
+      ? ("ended" as const)
+      : now.getTime() - s.lastSeenAt.getTime() > idleMs
+        ? ("idle" as const)
+        : ("active" as const);
+
   const items: SessionDto[] = rows.map((s) => ({
     id: s.id,
+    status: statusOf(s),
+    endedAt: s.endedAt?.toISOString() ?? null,
+    // 期限切れで終わったものは印が付いていないので、ここで理由を補う
+    endedReason: s.endedReason ?? (s.expiresAt <= now ? "expired" : null),
     userId: s.user.id,
     email: s.user.email,
     displayName: s.user.displayName,
@@ -77,8 +105,6 @@ export async function GET(req: Request) {
     userAgent: s.userAgent,
     // 自分のセッション。切ると自分が追い出されるので、画面で分かるようにする
     isCurrent: s.id === mine,
-    // 最終操作から自動ログアウトの時間を過ぎている。次の操作で切れる
-    idle: now.getTime() - s.lastSeenAt.getTime() > idleMs,
   }));
 
   return Response.json({ items, total, page: state.page, pageSize: state.pageSize });
