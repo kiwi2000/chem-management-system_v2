@@ -941,7 +941,7 @@ export const en: Messages = {
 
   judgements: {
     computedAt: (when: string) => `computed ${when}`,
-    stale: "Premises have changed",
+    stale: "Data has changed. Recomputing may change the result.",
     staleHint:
       "CAS links, thresholds or the regulation version changed after this judgement was computed. Re-judging may change the result (System settings › Re-judge every product)",
     title: "Regulatory judgement",
