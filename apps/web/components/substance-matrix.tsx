@@ -297,7 +297,7 @@ function Matrix({
         className={cn("size-3 shrink-0 transition-transform", open && "rotate-90")}
         aria-hidden
       />
-      {label}
+      <span className="truncate">{label}</span>
     </button>
   );
 
@@ -372,7 +372,8 @@ function Matrix({
           <thead className="sticky top-0 z-20">
             {/* 1段目：地域 */}
             <tr className="table-head-solid text-table-head-foreground">
-              <th className={cn(TH, "sticky left-0 z-10 bg-inherit text-left")}>
+              {/* 貼り付けるセルは自分で塗る。`bg-inherit` では tr の塗り（背景画像）を継げず、白い字が透けて消えていた */}
+              <th className={cn(TH, "table-head-solid sticky left-0 z-10 text-left")}>
                 {m.substanceMatrix.region}
               </th>
               {regions.map((r) => (
@@ -382,23 +383,21 @@ function Matrix({
                   className={cn(TH, "relative text-left font-medium")}
                   title={r.name}
                 >
-                  <Clip>
-                    {foldButton(!foldedRegions.has(r.id), r.name, () => {
-                      /*
+                  {foldButton(!foldedRegions.has(r.id), r.name, () => {
+                    /*
                         地域を開くときは、その中の法律も開く。
                         「格納」で法律まで畳んだあと地域だけ開くと、法律が畳まれたままで
                         列が出ず、中段の無い表（インベントリ）では開く手段が無かった
                       */
-                      if (foldedRegions.has(r.id)) {
-                        setFoldedParents((prev) => {
-                          const next = new Set(prev);
-                          for (const g of r.groups) next.delete(g.key);
-                          return next;
-                        });
-                      }
-                      toggle(foldedRegions, setFoldedRegions, r.id);
-                    })}
-                  </Clip>
+                    if (foldedRegions.has(r.id)) {
+                      setFoldedParents((prev) => {
+                        const next = new Set(prev);
+                        for (const g of r.groups) next.delete(g.key);
+                        return next;
+                      });
+                    }
+                    toggle(foldedRegions, setFoldedRegions, r.id);
+                  })}
                   {cols.handle(keyOfRegion(r), `${r.name} ${m.table.resize}`)}
                 </th>
               ))}
@@ -407,7 +406,7 @@ function Matrix({
             {/* 2段目：法律。渡されたときだけ出す */}
             {parentHeader && (
               <tr className={OPAQUE_MUTED_40}>
-                <th className={cn(TH, "sticky left-0 z-10 bg-inherit text-left")}>
+                <th className={cn(TH, OPAQUE_MUTED_40, "sticky left-0 z-10 text-left")}>
                   {parentHeader}
                 </th>
                 {regions.map((r) =>
@@ -423,11 +422,9 @@ function Matrix({
                         className={cn(TH, "relative text-left font-medium")}
                         title={g.label}
                       >
-                        <Clip>
-                          {foldButton(!foldedParents.has(g.key), g.label, () =>
-                            toggle(foldedParents, setFoldedParents, g.key),
-                          )}
-                        </Clip>
+                        {foldButton(!foldedParents.has(g.key), g.label, () =>
+                          toggle(foldedParents, setFoldedParents, g.key),
+                        )}
                         {cols.handle(keyOfGroup(g), `${g.label} ${m.table.resize}`)}
                       </th>
                     ))
