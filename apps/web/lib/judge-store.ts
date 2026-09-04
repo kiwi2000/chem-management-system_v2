@@ -1,6 +1,6 @@
 import type { ConditionalLinkMode } from "@chem/shared";
 import { prisma } from "@/lib/db";
-import { isAdopted, winningRank } from "@/lib/link-priority";
+import { effectiveLinks } from "@/lib/link-priority";
 import { judge, type ElementFactors, type JudgeEntry, type JudgeResult } from "@/lib/judge-calc";
 import { getAppSettings } from "@/lib/settings";
 
@@ -44,9 +44,9 @@ export interface CategoryRule {
 /**
  * そのバージョンで有効な法律側の決めごとを、区分ごとに組み立てる。
  *
- * CAS の紐づけは**打ち消されたもの（excluded）を除く**。
- * 優先度の高いデータソースが下位を打ち消すための仕組みなので、
- * ここで拾ってしまうと打ち消しが効かない。
+ * CAS の紐づけは、**非該当（excluded）も含めて勝ち負けを決めてから**、非該当を落とす。
+ * 優先度の高いデータソースの非該当は、下位の該当を打ち消すための仕組み。
+ * 先に非該当を除いてしまうと、下位の該当が勝ち上がって打ち消しが効かない（実際に起きた）。
  */
 export async function loadRules(versionId: string): Promise<CategoryRule[]> {
   const categories = await prisma.regulationCategory.findMany({
@@ -85,12 +85,13 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
 
   // CAS の紐づけは、法文物質名ごとにまとめて引く（1件ずつ引くと問い合わせが爆発する）
   const links = await prisma.statutoryCasLink.findMany({
-    where: { versionId, excluded: false },
+    where: { versionId },
     select: {
       statutorySubstanceId: true,
       casNormalized: true,
       note: true,
       sourceId: true,
+      excluded: true,
     },
   });
 
@@ -121,17 +122,15 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
     const categoryId = categoryOf.get(l.statutorySubstanceId);
     return categoryId ? [{ ...l, categoryId }] : [];
   });
-  const winner = winningRank(priced, order);
+  // 勝ったデータソースの、非該当でない結び付きだけ（負けたもの・非該当は判定でも見ない）
+  const effective = effectiveLinks(priced, order);
 
   const casOf = new Map<string, string[]>();
   /** 法文物質名 → CAS → その結び付きを持っているデータソース（勝ったものだけ） */
   const sourcesOf = new Map<string, Record<string, string[]>>();
   /** 条件つきで結ばれた CAS。法文物質名ごとに持つ */
   const conditionalOf = new Map<string, string[]>();
-  for (const l of priced) {
-    // 負けたデータソースの結び付きは、判定でも見ない
-    if (!isAdopted(l, order, winner)) continue;
-
+  for (const l of effective) {
     const list = casOf.get(l.statutorySubstanceId);
     if (list) {
       if (!list.includes(l.casNormalized)) list.push(l.casNormalized);

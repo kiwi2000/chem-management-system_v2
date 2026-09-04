@@ -21,6 +21,12 @@ export interface PriorityLink {
   categoryId: string;
   casNormalized: string;
   sourceId: string;
+  /**
+   * 「非該当」として結んだもの。**勝負には出るが、結果には出ない。**
+   * 優先度の高いデータソースが非該当を持っていれば、そのデータソースが勝ち、
+   * 下位の該当は採られない。これが、上位が下位を打ち消す唯一の手立て
+   */
+  excluded?: boolean;
 }
 
 /**
@@ -42,7 +48,7 @@ export function winningRank(
   return out;
 }
 
-/** その結び付きが採用されるか */
+/** その結び付きが採用されるか（勝ったデータソースのものか）。非該当も勝てば採用される */
 export function isAdopted(
   link: PriorityLink,
   order: Map<string, number>,
@@ -50,4 +56,21 @@ export function isAdopted(
 ): boolean {
   const at = order.get(link.sourceId) ?? Number.MAX_SAFE_INTEGER;
   return winner.get(`${link.categoryId}/${link.casNormalized}`) === at;
+}
+
+/**
+ * 判定に**効く**結び付きだけを返す。
+ *
+ * 勝ったデータソースの結び付きのうち、非該当でないもの。
+ * 非該当は勝負に出して勝たせたうえで落とす。先に落とすと、下位の該当が
+ * 勝ち上がってしまい、非該当で打ち消したつもりが効かない（実際に起きた）。
+ *
+ * 判定・まとめ表・含有率不足・該当法規の表・セルを開く窓は、必ずこれを通す
+ */
+export function effectiveLinks<T extends PriorityLink>(
+  links: T[],
+  order: Map<string, number>,
+): T[] {
+  const winner = winningRank(links, order);
+  return links.filter((l) => !l.excluded && isAdopted(l, order, winner));
 }

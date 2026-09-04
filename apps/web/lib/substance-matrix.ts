@@ -198,13 +198,15 @@ export async function buildSubstanceMatrix(
   /*
     **当たっている区分だけを列にする。**登録されている区分をすべて並べると、
     ほとんどがハイフンの表になって、変わったところが埋もれる。
-    非該当で確定させたリンク（`excluded`）は当たっていないので外す
+    非該当で確定させたリンク（`excluded`）は当たっていないので出さない。
+    **上位のデータソースが非該当を持つ区分では、下位の該当も出さない**（打ち消されている）
   */
   const links = await prisma.statutoryCasLink.findMany({
-    where: { casNormalized, versionId: { in: versionIds }, excluded: false },
+    where: { casNormalized, versionId: { in: versionIds } },
     select: {
       versionId: true,
       sourceId: true,
+      excluded: true,
       // 出どころの文章。「ソースデータ」を押したときにセルへ添える
       data: { select: { text: true, textJa: true } },
       statutorySubstance: {
@@ -257,13 +259,30 @@ export async function buildSubstanceMatrix(
     },
   });
 
+  /*
+    バージョン×区分ごとに、非該当を持つデータソースのうちいちばん優先度の高いもの。
+    それより優先度の低いデータソースの該当は、打ち消されているので出さない。
+    同じデータソースの別の号は残す（そのデータソース自身が該当と言っている）
+  */
+  const excludedRank = new Map<string, number>();
+  for (const l of links) {
+    if (!l.excluded) continue;
+    const key = `${l.versionId}/${l.statutorySubstance.regulationClass.category.id}`;
+    const r = rankOf(l.sourceId);
+    const now = excludedRank.get(key);
+    if (now === undefined || r < now) excludedRank.set(key, r);
+  }
+
   const regColumns = new Map<string, MatrixColumn & { order: ReturnType<typeof lawOrderKey> }>();
   const regCells: Record<string, MatrixValue[]> = {};
   for (const l of links) {
+    if (l.excluded) continue;
     const s = l.statutorySubstance;
     if (s.deletedAt) continue;
     const c = s.regulationClass.category;
     if (c.deletedAt) continue;
+    const cut = excludedRank.get(`${l.versionId}/${c.id}`);
+    if (cut !== undefined && rankOf(l.sourceId) > cut) continue;
     const key = `cat:${c.id}`;
     if (!regColumns.has(key)) {
       regColumns.set(key, {

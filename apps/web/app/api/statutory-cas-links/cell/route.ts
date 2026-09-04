@@ -184,15 +184,16 @@ export async function GET(req: Request) {
     });
 
     const links = await prisma.statutoryCasLink.findMany({
+      // 非該当も引く。勝ち負けに出して、窓では「非該当」と印を付けて出す
       where: {
         versionId: v.id,
         casNormalized: cas,
-        excluded: false,
         statutorySubstance: { deletedAt: null, regulationClass: { categoryId } },
       },
       select: {
         sourceId: true,
         note: true,
+        excluded: true,
         // 出どころの文章。小ウィンドウでは切らずに全部出す
         data: { select: { text: true, textJa: true } },
         statutorySubstance: {
@@ -249,6 +250,7 @@ export async function GET(req: Request) {
             nameEn: l.statutorySubstance.nameEn,
             nameOriginal: l.statutorySubstance.nameOriginal,
             adopted: best !== null && (rank.get(d.source.id) ?? 99) === best,
+            excluded: l.excluded,
             dataText: l.data?.text ?? null,
             dataTextJa: l.data?.textJa ?? null,
             ...judgementOf(
@@ -260,6 +262,8 @@ export async function GET(req: Request) {
               l.statutorySubstance.note,
               l.note,
             ),
+            // 非該当の結び付きは、当たりも含有率不足も無い
+            ...(l.excluded ? { hit: false, needsReview: false, nearMiss: false } : {}),
           })),
       })),
     });

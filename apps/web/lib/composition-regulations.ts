@@ -292,10 +292,12 @@ export async function nearMissByCas(
 
   const [links, judgements] = await Promise.all([
     prisma.statutoryCasLink.findMany({
-      where: { versionId: version.id, casNormalized: { in: cas }, excluded: false },
+      // 非該当も引く。勝ち負けに出したうえで落とす（上位の非該当が下位の該当を打ち消す）
+      where: { versionId: version.id, casNormalized: { in: cas } },
       select: {
         casNormalized: true,
         sourceId: true,
+        excluded: true,
         // 出どころの文章。「データソース」を押したときにセルへ添える
         data: { select: { text: true, textJa: true } },
         statutorySubstance: {
@@ -402,6 +404,8 @@ export async function nearMissByCas(
     if (cat.deletedAt || hitCategories.has(cat.id)) continue;
     // 負けたデータソースの結び付きは出さない（判定でも見ていない）
     if ((rank.get(l.sourceId) ?? 99) !== winner.get(`${cat.id}/${l.casNormalized}`)) continue;
+    // 勝ったのが非該当なら、その CAS はこの区分に当たらない（含有率不足でもない）
+    if (l.excluded) continue;
 
     const region = cat.law.country.region;
     let cats = byCas.get(l.casNormalized);

@@ -518,6 +518,8 @@ export interface CellStatutoryDto {
   nameOriginal: string;
   /** そのバージョンで、この結び付きが採用されたか（優先度がいちばん高い） */
   adopted: boolean;
+  /** 「非該当」として結んだもの。採用されれば、下位の該当を打ち消す */
+  excluded: boolean;
   /**
    * その製品で当たっているか。**現バージョンだけ分かる**
    * （前のバージョンの判定は保存していない）

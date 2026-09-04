@@ -217,7 +217,15 @@ export function CellDetailDialog({
                                         )}
                                       />
                                     )}
-                                    {labelOf(x, locale)}
+                                    {/* 非該当の結び付き。採用されていれば、下位の該当を打ち消している */}
+                                    {x.excluded && (
+                                      <span className="text-muted-foreground mr-1 text-xs">
+                                        [{m.casLinks.notApplicable}]
+                                      </span>
+                                    )}
+                                    <span className={cn(x.excluded && "line-through")}>
+                                      {labelOf(x, locale)}
+                                    </span>
                                     {/* 出どころの文章。ここでは切らずに全部出す（表では1行で切っている） */}
                                     {dataOf(x, locale) && (
                                       <span className="text-muted-foreground block font-normal whitespace-pre-wrap">
