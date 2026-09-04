@@ -124,6 +124,7 @@ export async function GET(req: Request) {
    */
   const judgementOf = (
     isCurrent: boolean,
+    adopted: boolean,
     substanceId: string,
     lower: string,
     bound: "INCLUSIVE" | "EXCLUSIVE",
@@ -133,8 +134,16 @@ export async function GET(req: Request) {
   ) => {
     const limit = toScaled(lower) ?? 0n;
     const enough = bound === "INCLUSIVE" ? content >= limit : content > limit;
+    /*
+      **保存してある判定は、採用されたデータソースのことしか言っていない。**
+      上位の「非該当」が勝つと、下位の LOLI・CHRIP の該当は判定に出てこない。
+      それを「含有率不足」と読んで隠してしまい、載っているのに消えたように見えた。
+      採用されなかったものは、含有率だけで見る（前のバージョンと同じ見かた）
+    */
     const hitHere =
-      isCurrent && judgement !== null ? wholeCategoryHit || hitSubstances.has(substanceId) : enough;
+      isCurrent && judgement !== null && adopted
+        ? wholeCategoryHit || hitSubstances.has(substanceId)
+        : enough;
     /*
       **要確認は両方のバージョンに付ける。**
       法文物質名に適用条件が書いてあれば、当たったときは必ず要確認。
@@ -255,6 +264,7 @@ export async function GET(req: Request) {
             dataTextJa: l.data?.textJa ?? null,
             ...judgementOf(
               v.isCurrent,
+              best !== null && (rank.get(d.source.id) ?? 99) === best,
               l.statutorySubstance.id,
               l.statutorySubstance.thresholdLower.toString(),
               l.statutorySubstance.lowerBound,
