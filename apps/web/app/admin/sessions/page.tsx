@@ -1,7 +1,6 @@
 "use client";
 
 import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
-import { CircleDot, CircleOff, PauseCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -11,6 +10,7 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, SessionDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { cn } from "@/lib/utils";
 
 /** 最後に動いた人から。誰がいま使っているかを見る画面なので */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "lastSeenAt", direction: "desc" }]);
@@ -48,37 +48,45 @@ export default function SessionsPage() {
     () => [
       {
         /*
-          状態は先頭に。**文字を読まなくても分かる印**にする。
-          緑の点＝使っている、黄の一時停止＝休止中（次の操作で切れる）、灰の斜線＝終了
+          状態は先頭に。**信号と同じ、塗りつぶしの丸だけ**で示す。
+          緑＝アクティブ、黄＝休止中（次の操作で切れる）、赤＝終了
         */
         key: "status",
         header: m.sessions.status,
         kind: "enum",
         nullable: false,
-        width: 110,
+        width: 80,
         sortable: false,
         options: [
           { value: "active", label: m.sessions.statusActive },
           { value: "idle", label: m.sessions.statusIdle },
           { value: "ended", label: m.sessions.statusEnded },
         ],
-        render: (s) =>
-          s.status === "active" ? (
-            <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-400">
-              <CircleDot className="size-4" aria-hidden />
-              {m.sessions.statusActive}
-            </span>
-          ) : s.status === "idle" ? (
-            <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
-              <PauseCircle className="size-4" aria-hidden />
-              {m.sessions.statusIdle}
-            </span>
-          ) : (
-            <span className="text-muted-foreground inline-flex items-center gap-1">
-              <CircleOff className="size-4" aria-hidden />
-              {m.sessions.statusEnded}
-            </span>
-          ),
+        className: "text-center",
+        render: (s) => {
+          // 文字は出さない。信号と同じ色の塗りつぶしの丸だけ（言葉はマウスを置いたときと読み上げ用）
+          const label =
+            s.status === "active"
+              ? m.sessions.statusActive
+              : s.status === "idle"
+                ? m.sessions.statusIdle
+                : m.sessions.statusEnded;
+          return (
+            <span
+              role="img"
+              aria-label={label}
+              title={label}
+              className={cn(
+                "inline-block size-3.5 rounded-full",
+                s.status === "active"
+                  ? "bg-green-500"
+                  : s.status === "idle"
+                    ? "bg-yellow-400"
+                    : "bg-red-500",
+              )}
+            />
+          );
+        },
       },
       {
         key: "email",
