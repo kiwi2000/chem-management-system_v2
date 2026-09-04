@@ -208,7 +208,9 @@ export async function createSession(userId: string): Promise<void> {
     secure: process.env.NODE_ENV === "production", // HTTPSのみ
     sameSite: "lax", // CSRF緩和
     path: "/",
-    expires: expiresAt,
+    // 期限を付けない（ブラウザを閉じたら消える）。ログインの寿命は DB 側の
+    // expiresAt と自動ログアウトで決めるので、Cookie に期限を持たせる必要はない。
+    // 期限を付けるとブラウザがディスクに残し、閉じて開き直しても入ったままになる
   });
 }
 
