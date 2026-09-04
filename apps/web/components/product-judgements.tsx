@@ -279,7 +279,8 @@ export function ProductJudgements({
               */}
               <TableHeader
                 className={cn(
-                  "table-head-solid text-table-head-foreground sticky top-0 z-20",
+                  // th は自分の字色を持つ（text-foreground）ので、見出しの字色を継がせる
+                  "table-head-solid text-table-head-foreground sticky top-0 z-20 [&_th]:text-inherit",
                   STICKY_HEAD_LINES,
                 )}
               >
