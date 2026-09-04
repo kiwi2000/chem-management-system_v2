@@ -580,7 +580,7 @@ export const ja = {
     notApplicable: "非該当",
     source: "データソース",
     used: "使用",
-    data: "データ",
+    data: "出典データ",
     note: "備考",
     version: "バージョン",
     empty: "結び付いたCASがありません",
@@ -1239,14 +1239,14 @@ export const ja = {
     region: "地域",
     /** 畳んでいることは矢印の向きで分かるので、件数だけを出す */
     folded: (n: number) => `${n} 件`,
-    showAllInventories: "すべてのインベントリを出す",
+    showAllInventories: "全てのインベントリを表示",
     inventoryTitle: "インベントリ番号",
     inventoryEmpty: "インベントリが登録されていません",
     regulationTitle: "該当法規",
     regulationEmpty: "当たっている法規制はありません",
-    sourceData: "ソースデータ",
+    sourceData: "出典データ",
     sourceDataHint:
-      "データソースがそのCASについて書いている文章（対象CASの「データ」）を、セルの2行目に添えます。1行で切れるので、全文はセルを押して読みます",
+      "データソースがそのCASについて書いている文章（対象CASの「出典データ」）を、セルの2行目に添えます。1行で切れるので、全文はセルを押して読みます",
   },
 
   settings: {

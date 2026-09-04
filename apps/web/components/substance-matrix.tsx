@@ -278,13 +278,20 @@ function Matrix({
     );
   }
 
-  /** 畳んだしるし。矢印の向きで開閉が分かる */
+  /**
+   * 畳んだしるし。矢印の向きで開閉が分かる。
+   * **文字は貼り付けている列の右に貼り付ける。**何列にもまたがるセルを横に送ると、
+   * 左寄せでもセルの左端ごと画面の外へ出てしまう。貼り付けておけば、
+   * その地域・法律の範囲を抜けるまで文字が見えたまま残る
+   */
   const foldButton = (open: boolean, label: string, onClick: () => void) => (
     <button
       type="button"
       onClick={onClick}
       aria-expanded={open}
-      className="hover:text-foreground inline-flex items-center gap-1 text-left"
+      className="hover:text-foreground sticky inline-flex max-w-full items-center gap-1 text-left"
+      // この表で貼り付いているのは先頭の見出し列だけなので、その幅の右へ
+      style={{ left: cols.widthOf(sizing[0]!) + 8 }}
     >
       <ChevronRight
         className={cn("size-3 shrink-0 transition-transform", open && "rotate-90")}

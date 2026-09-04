@@ -731,7 +731,7 @@ export function CompositionAggregateTable({
                     colSpan={g.span}
                     // 分けていない地域は、下の段まで貫いて1つのセルにする
                     rowSpan={g.expanded ? 1 : 3}
-                    className={cn(CELL, "relative p-0 font-medium", g.expanded && "text-center")}
+                    className={cn(CELL, "relative p-0 font-medium")}
                   >
                     <button
                       type="button"
@@ -742,18 +742,25 @@ export function CompositionAggregateTable({
                           ? `${g.label} — ${m.composition.aggregateGroupByRegion}`
                           : `${g.label} — ${m.composition.aggregateSplitByCategory}`
                       }
-                      className={cn(
-                        "hover:bg-accent/60 flex w-full items-center gap-1 px-2 py-1",
-                        g.expanded ? "justify-center" : "text-left",
-                      )}
+                      className="hover:bg-accent/60 block w-full px-2 py-1 text-left"
                     >
-                      <ChevronRight
-                        className={cn(
-                          "text-muted-foreground size-3 shrink-0 transition-transform",
-                          g.expanded && "rotate-90",
-                        )}
-                      />
-                      <span className="truncate">{g.label}</span>
+                      {/*
+                        **文字は貼り付けている列の右に貼り付ける。**何列にもまたがるセルを
+                        横に送ると、左寄せでもセルの左端ごと画面の外へ出てしまう。
+                        貼り付けておけば、その地域の範囲を抜けるまで文字が見えたまま残る
+                      */}
+                      <span
+                        className="sticky inline-flex max-w-full items-center gap-1"
+                        style={{ left: cols.frozenWidth + 8 }}
+                      >
+                        <ChevronRight
+                          className={cn(
+                            "text-muted-foreground size-3 shrink-0 transition-transform",
+                            g.expanded && "rotate-90",
+                          )}
+                        />
+                        <span className="truncate">{g.label}</span>
+                      </span>
                     </button>
                     {/* 分けていない地域の列は、ここが幅を変える場所になる */}
                     {!g.expanded &&
@@ -785,18 +792,21 @@ export function CompositionAggregateTable({
                             ? `${g.label} — ${m.composition.aggregateSplitByCategory}`
                             : `${g.label} — ${m.composition.aggregateGroupByLaw}`
                         }
-                        className={cn(
-                          "hover:bg-accent/60 flex w-full items-center gap-1 px-2 py-1",
-                          g.closed ? "text-left" : "justify-center",
-                        )}
+                        className="hover:bg-accent/60 block w-full px-2 py-1 text-left"
                       >
-                        <ChevronRight
-                          className={cn(
-                            "text-muted-foreground size-3 shrink-0 transition-transform",
-                            !g.closed && "rotate-90",
-                          )}
-                        />
-                        <span className="truncate">{g.label}</span>
+                        {/* 地域と同じく、文字は貼り付けている列の右に貼り付ける */}
+                        <span
+                          className="sticky inline-flex max-w-full items-center gap-1"
+                          style={{ left: cols.frozenWidth + 8 }}
+                        >
+                          <ChevronRight
+                            className={cn(
+                              "text-muted-foreground size-3 shrink-0 transition-transform",
+                              !g.closed && "rotate-90",
+                            )}
+                          />
+                          <span className="truncate">{g.label}</span>
+                        </span>
                       </button>
                       {/* 閉じた法律の列は、ここが幅を変える場所になる */}
                       {g.closed && cols.handle(`law:${g.key}`, `${g.label} ${m.table.resize}`)}

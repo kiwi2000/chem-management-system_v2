@@ -346,6 +346,11 @@ export function useResizableColumns(
     hasCustomWidths,
     widthOf,
     frozenProps,
+    /**
+     * 貼り付けている列の合計の幅。**何列にもまたがる見出しの文字を、この右に貼り付ける**
+     * ために使う（横に送っても、その見出しの文字が見えたまま残る）
+     */
+    frozenWidth,
   };
 }
 
