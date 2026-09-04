@@ -610,17 +610,50 @@
 */
 /*
   スクロールバー。**ブラウザ既定の灰色の帯は、どの配色にも馴染まない。**
-  細くして、つまみはその配色の薄い字色（--muted-foreground）を透かした色にする。
-  溝は塗らない。色は配色の変数から取るので、テーマを替えても浮かない
+  つまみは、その配色の主色（--primary）を明るい端から濃い端へ流したガラス調にする。
+  溝は塗らず、つまみは細い丸い棒として浮かせる。色は配色の変数から取るので、
+  テーマを替えても浮かない。
+
+  Chromium 系は ::-webkit-scrollbar で描く。標準の scrollbar-color を同時に指定すると
+  そちらが優先されて平らな帯に戻るので、標準の指定は ::-webkit-scrollbar を持たない
+  ブラウザ（Firefox）にだけ当てる
 */
 @layer base {
-  /* base 層に置く。上の層（utilities）で「帯を出さない」と決めた要素には負ける */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent) transparent;
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in oklab, var(--primary) 55%, transparent) transparent;
+    }
   }
-  *:hover {
-    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 60%, transparent) transparent;
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    /* 縁を透明にして棒を細く見せる。塗りは縁の内側だけ */
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    background-image: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--primary) 45%, white) 0%,
+      color-mix(in oklab, var(--primary) 70%, transparent) 60%,
+      color-mix(in oklab, var(--primary) 85%, black) 100%
+    );
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, white 35%, transparent);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    border-width: 2px;
+    background-image: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--primary) 55%, white) 0%,
+      color-mix(in oklab, var(--primary) 85%, transparent) 60%,
+      var(--primary) 100%
+    );
   }
 }
 
