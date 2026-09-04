@@ -80,7 +80,7 @@ export const en: Messages = {
     users: "Users",
     propertyDefs: "Custom properties",
     accessLog: "Access records",
-    sessions: "Signed-in users",
+    sessions: "Sessions",
     settings: "Settings",
     substances: "Substances",
     products: "Products / Materials",
@@ -138,9 +138,9 @@ export const en: Messages = {
   },
 
   sessions: {
-    title: "Signed-in users",
+    title: "Sessions",
     description:
-      "Everyone who is signed in right now. A person on two devices appears twice. Select rows and press Sign out to end those sign-ins; the person sees why on their sign-in screen. Use it before maintenance to see who is working.",
+      "A session is one sign-in, from signing in until signing out (or timing out); each device gets its own. Listed here are the sessions alive right now. A person on two devices appears twice. Select rows and press Sign out to end those sign-ins; the person sees why on their sign-in screen. Use it before maintenance to see who is working.",
     email: "Email",
     displayName: "Name",
     loggedInAt: "Signed in",
