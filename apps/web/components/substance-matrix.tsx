@@ -473,7 +473,7 @@ function Matrix({
 
             {/* 4段目：バージョン。左が現在 */}
             <tr className="bg-muted/10">
-              <th className={cn(TH, "sticky left-0 z-10 bg-inherit text-left relative")}>
+              <th className={cn(TH, "bg-background sticky left-0 z-10 text-left")}>
                 {m.casLinks.version}
                 {cols.handle("head", `${m.casLinks.version} ${m.table.resize}`)}
               </th>
@@ -513,7 +513,10 @@ function Matrix({
                 {row === 0 && (
                   <td
                     rowSpan={rowCount}
-                    className={cn(TH, "bg-background sticky left-0 z-10 text-left align-top")}
+                    className={cn(
+                      TH,
+                      "bg-background sticky left-0 z-10 text-left align-top font-bold",
+                    )}
                   >
                     {rowHeader}
                   </td>
