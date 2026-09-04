@@ -120,6 +120,10 @@ export default function LoginPage() {
           ただし**この端末に鍵が無い人**も同じ形で戻ってくる（端末は区別して教えてくれない）ので、
           薄い字で「無ければパスワードで」と添える
         */
+        if (outcome.reason === "timeout") {
+          setPasskeyNotice(m.passkey.timeoutHint);
+          return;
+        }
         if (outcome.reason === "cancelled") {
           setPasskeyNotice(m.passkey.signInCancelledHint);
           return;

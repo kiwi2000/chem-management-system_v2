@@ -78,6 +78,11 @@ export function PasskeySection() {
           setNotice(m.passkey.alreadyOnThisDevice);
           return;
         }
+        // 端末の返事が来ないまま待ちきれなかった。窓が隠れていることが多い
+        if (outcome.reason === "timeout") {
+          setNotice(m.passkey.timeoutHint);
+          return;
+        }
         setError(outcome.reason === "unsupported" ? m.passkey.unsupported : m.passkey.failed);
         return;
       }

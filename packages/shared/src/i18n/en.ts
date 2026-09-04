@@ -774,6 +774,8 @@ export const en: Messages = {
     signInCancelledHint:
       "Could not sign in with a passkey. If this device has none registered, sign in with your password and add one under Preferences",
     cancelledHint: "Registration was cancelled. Press the button again to retry",
+    timeoutHint:
+      'The device did not answer in time, so we stopped waiting. Check whether a "Windows Security" window is hiding behind another window or on another screen, then try again. If no window ever appears, make sure a PIN or face/fingerprint sign-in is set up in Windows Settings › Accounts › Sign-in options',
     alreadyOnThisDevice:
       "This device's key is already registered. A key added from another browser on the same PC is the same key, so you can sign in with it as is",
     deviceLabel: "Device name",
