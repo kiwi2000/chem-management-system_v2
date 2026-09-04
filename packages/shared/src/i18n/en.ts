@@ -912,7 +912,8 @@ export const en: Messages = {
     notApplicable: "Does not apply",
     onlyApplicable: "Applicable only",
     needsReview: "Needs checking",
-    needsReviewHint: "Check the conditions under which this applies, and change the verdict if needed.",
+    needsReviewHint:
+      "Check the conditions under which this applies, and change the verdict if needed.",
     byUser: "Decided by a person",
     basis: "Because",
     categoryItself: "(category total)",
