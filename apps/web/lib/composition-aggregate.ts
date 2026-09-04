@@ -49,6 +49,7 @@ interface Bucket {
   nameEn: string | null;
   /** 代表が決まらないとき（CASを持たない物質）に出すスコア */
   score: string;
+  scoreRank: string | null;
   /** 合算用の細かい整数 */
   fine: bigint;
   /** 寄与元。並べ替えたいので、細かい整数のまま持つ */
@@ -136,6 +137,7 @@ export async function aggregateComposition(
       nameEn: string | null;
       casNumber: string | null;
       score: { toString(): string };
+      scoreRank: string | null;
     },
     ratio: Ratio,
     note: string | null,
@@ -151,6 +153,7 @@ export async function aggregateComposition(
       nameJa: substance.nameJa,
       nameEn: substance.nameEn,
       score: substance.score.toString(),
+      scoreRank: substance.scoreRank,
       fine: 0n,
       contributions: [],
       notes: [],
@@ -186,7 +189,14 @@ export async function aggregateComposition(
       ? []
       : await prisma.substance.findMany({
           where: { casNormalized: { in: casKeys }, isCasRepresentative: true, deletedAt: null },
-          select: { casNormalized: true, code: true, nameJa: true, nameEn: true, score: true },
+          select: {
+            casNormalized: true,
+            code: true,
+            nameJa: true,
+            nameEn: true,
+            score: true,
+            scoreRank: true,
+          },
         });
   const byCas = new Map(representatives.map((r) => [r.casNormalized ?? "", r]));
 
@@ -215,6 +225,7 @@ export async function aggregateComposition(
         totalPct: fineToPct(b.fine),
         // スコアは物質そのものに付く値。CASでまとめた行は代表物質のものを出す
         score: rep?.score.toString() ?? b.score,
+        scoreRank: rep ? rep.scoreRank : b.scoreRank,
         // 内訳も多い順。上の表と並びを揃える
         contributions: b.contributions
           .sort((x, y) => compareFine(y.fine, x.fine))

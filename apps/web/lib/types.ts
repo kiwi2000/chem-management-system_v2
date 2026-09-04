@@ -546,6 +546,8 @@ export interface AggregateRowDto {
    * 同じCASの物質は同じ値になる
    */
   score: string;
+  /** スコアを段に読み替えたランク。どの段にも当てはまらなければ null */
+  scoreRank: string | null;
   contributions: AggregateContributionDto[];
   /**
    * 組成の行に書かれていた備考。

@@ -44,7 +44,7 @@ const CELL = "border-r px-2 py-1 break-words last:border-r-0";
  * 引いて広げるほうは `frozen` の上限（見えている幅の6割）で止まる。
  */
 /** 組成そのものの列（CAS〜備考）の鍵 */
-type HeadKey = "casNumber" | "substanceId" | "name" | "contentPct" | "score" | "note";
+type HeadKey = "casNumber" | "substanceId" | "name" | "contentPct" | "score" | "rank" | "note";
 
 /**
  * 当たってはいないが、CAS が載っているものに付ける印。
@@ -157,6 +157,13 @@ const HEADS: {
     width: 60,
     label: (m) => m.score.substanceScore,
     className: "text-right whitespace-nowrap",
+  },
+  // スコアを段に読み替えたランク。スコアの右に並べる
+  {
+    key: "rank",
+    width: 60,
+    label: (m) => m.score.substanceRank,
+    className: "text-center whitespace-nowrap",
   },
   /*
     上の組成表を出さない組成があるので、備考はこちらでも受け持つ。
@@ -921,6 +928,16 @@ export function CompositionAggregateTable({
                                 {row.score}
                               </td>
                             );
+                          case "rank":
+                            return (
+                              <td
+                                key={h.key}
+                                className={cn(CELL, STICKY_PLAIN, "text-center whitespace-nowrap")}
+                                style={frozen.style}
+                              >
+                                {row.scoreRank ?? m.score.noRank}
+                              </td>
+                            );
                           default:
                             return (
                               <td
@@ -1097,6 +1114,12 @@ export function CompositionAggregateTable({
                           <td
                             className={cn(CELL, OPAQUE_MUTED_50)}
                             style={cols.frozenProps(headAt("score")).style}
+                          />
+                        )}
+                        {headAt("rank") >= 0 && (
+                          <td
+                            className={cn(CELL, OPAQUE_MUTED_50)}
+                            style={cols.frozenProps(headAt("rank")).style}
                           />
                         )}
                         {/* 備考のぶん。ここを抜かすと右端が1列ずれて、最後のセルだけ色が付かない */}
