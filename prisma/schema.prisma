@@ -1184,6 +1184,8 @@ enum FeedbackKind {
   BUG
   REQUEST
   QUESTION
+  TODO
+  IDEA
   OTHER
 }
 

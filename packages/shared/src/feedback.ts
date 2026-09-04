@@ -12,7 +12,7 @@ import type { Messages } from "./i18n/ja";
  * （自分のものにも）返信できる。直せるのは種別・重要度・ステータスだけ。
  */
 
-export const FEEDBACK_KINDS = ["BUG", "REQUEST", "QUESTION", "OTHER"] as const;
+export const FEEDBACK_KINDS = ["BUG", "REQUEST", "QUESTION", "TODO", "IDEA", "OTHER"] as const;
 export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
 
 export const FEEDBACK_PRIORITIES = ["HIGH", "MEDIUM", "LOW"] as const;
@@ -25,6 +25,8 @@ export const FEEDBACK_KIND_LABELS: Record<FeedbackKind, string> = {
   BUG: "不具合",
   REQUEST: "要望",
   QUESTION: "質問",
+  TODO: "ToDo",
+  IDEA: "アイデア",
   OTHER: "その他",
 };
 
