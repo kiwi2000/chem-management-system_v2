@@ -104,7 +104,6 @@ export const en: Messages = {
     openMenu: "Open menu",
     linkVersion: "Regulation set",
     online: "Signed in",
-    onlineCount: (n: number) => `${n}`,
     noLinkVersion: "No current version",
     hideHeader: "Hide the top bar",
     showHeader: "Show the top bar",
