@@ -10,7 +10,8 @@ import { startAuthentication, startRegistration } from "@simplewebauthn/browser"
  */
 
 export type PasskeyOutcome<T> =
-  { ok: true; value: T } | { ok: false; reason: "cancelled" | "unsupported" | "failed" };
+  | { ok: true; value: T }
+  | { ok: false; reason: "cancelled" | "unsupported" | "already" | "failed" };
 
 /** この端末でパスキーを使えるか */
 export function passkeySupported(): boolean {
@@ -26,10 +27,12 @@ export function passkeySupported(): boolean {
   NotAllowedError … 利用者がやめた、または時間切れ
   InvalidStateError … その端末はもう登録済み（登録のときだけ出る）
 */
-function classify(e: unknown): "cancelled" | "unsupported" | "failed" {
+function classify(e: unknown): "cancelled" | "unsupported" | "already" | "failed" {
   const name = (e as { name?: string })?.name;
   if (name === "NotAllowedError" || name === "AbortError") return "cancelled";
   if (name === "NotSupportedError") return "unsupported";
+  // 同じ端末の鍵がもうある。別のブラウザから登録した鍵も、同じPCなら同じ鍵
+  if (name === "InvalidStateError") return "already";
   return "failed";
 }
 

@@ -73,6 +73,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   // パスキーが使える端末かは、画面が出てから調べる（サーバー側では分からない）
   const [canPasskey, setCanPasskey] = useState(false);
+  /** パスキーの窓を待っているか。パスワードの「ログイン中」と分けて見せる */
+  const [passkeyWaiting, setPasskeyWaiting] = useState(false);
+  /** 赤くない知らせ。パスキーをやめた（または無かった）ときの案内 */
+  const [passkeyNotice, setPasskeyNotice] = useState<string | null>(null);
 
   useEffect(() => setCanPasskey(passkeySupported()), []);
 
@@ -82,7 +86,9 @@ export default function LoginPage() {
    */
   async function signInWithPasskey() {
     setError(null);
+    setPasskeyNotice(null);
     setLoading(true);
+    setPasskeyWaiting(true);
     try {
       const optRes = await fetch("/api/auth/passkey/login", { method: "POST" });
       if (!optRes.ok) {
@@ -91,8 +97,15 @@ export default function LoginPage() {
       }
       const outcome = await signWithPasskey(await optRes.json());
       if (!outcome.ok) {
-        // やめただけなら何も言わない。壊れたように見せない
-        if (outcome.reason === "cancelled") return;
+        /*
+          やめただけなら赤い字は出さない。壊れたように見せない。
+          ただし**この端末に鍵が無い人**も同じ形で戻ってくる（端末は区別して教えてくれない）ので、
+          薄い字で「無ければパスワードで」と添える
+        */
+        if (outcome.reason === "cancelled") {
+          setPasskeyNotice(m.passkey.signInCancelledHint);
+          return;
+        }
         setError(outcome.reason === "unsupported" ? m.passkey.unsupported : m.passkey.failed);
         return;
       }
@@ -111,6 +124,7 @@ export default function LoginPage() {
       window.location.assign(body.mustChangePassword ? "/change-password" : "/");
     } finally {
       setLoading(false);
+      setPasskeyWaiting(false);
     }
   }
 
@@ -278,8 +292,14 @@ export default function LoginPage() {
                   onClick={() => void signInWithPasskey()}
                 >
                   <KeyRound className="size-4" />
-                  {m.passkey.signIn}
+                  {passkeyWaiting ? m.passkey.waitingShort : m.passkey.signIn}
                 </Button>
+                {/* 待っているあいだは、ブラウザの窓を見てもらう。窓は別の画面の後ろに出ることがある */}
+                {passkeyWaiting ? (
+                  <p className="text-muted-foreground mt-2 text-xs">{m.passkey.waiting}</p>
+                ) : passkeyNotice ? (
+                  <p className="text-muted-foreground mt-2 text-xs">{passkeyNotice}</p>
+                ) : null}
               </div>
             )}
           </CardContent>

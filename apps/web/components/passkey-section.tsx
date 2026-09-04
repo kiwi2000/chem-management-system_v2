@@ -32,6 +32,8 @@ export function PasskeySection() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [label, setLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
+  /** 赤くない知らせ。やめたとき・登録済みのときに、何が起きたかを伝える */
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // 端末が対応しているかは、画面が出てから調べる（サーバー側では分からない）
   const [supported, setSupported] = useState(true);
@@ -51,6 +53,7 @@ export function PasskeySection() {
 
   async function add() {
     setError(null);
+    setNotice(null);
     setBusy(true);
     try {
       const optRes = await fetch("/api/auth/passkey/register", { method: "POST" });
@@ -62,8 +65,19 @@ export function PasskeySection() {
       }
       const outcome = await createPasskey(await optRes.json());
       if (!outcome.ok) {
-        // やめただけなら赤い文字を出さない。壊れたように見せない
-        if (outcome.reason === "cancelled") return;
+        /*
+          やめただけなら赤い文字は出さない。壊れたように見せない。
+          ただし**何も言わないと、窓が出なかった人は何が起きたか分からない**ので、
+          薄い字で「戻った」ことだけ伝える
+        */
+        if (outcome.reason === "cancelled") {
+          setNotice(m.passkey.cancelledHint);
+          return;
+        }
+        if (outcome.reason === "already") {
+          setNotice(m.passkey.alreadyOnThisDevice);
+          return;
+        }
         setError(outcome.reason === "unsupported" ? m.passkey.unsupported : m.passkey.failed);
         return;
       }
@@ -135,11 +149,18 @@ export function PasskeySection() {
               />
             </div>
             <Button disabled={busy || label.trim() === ""} onClick={() => void add()}>
-              {m.passkey.add}
+              {busy ? m.passkey.waitingShort : m.passkey.add}
             </Button>
           </div>
         )}
-        <p className="text-muted-foreground text-xs">{m.passkey.deviceLabelHint}</p>
+        {/* 待っているあいだは、ブラウザの窓を見てもらう。窓は別の画面の後ろに出ることがある */}
+        {busy ? (
+          <p className="text-muted-foreground text-xs">{m.passkey.waiting}</p>
+        ) : notice ? (
+          <p className="text-muted-foreground text-xs">{notice}</p>
+        ) : (
+          <p className="text-muted-foreground text-xs">{m.passkey.deviceLabelHint}</p>
+        )}
 
         <div className="space-y-2 border-t pt-4">
           <p className="text-sm font-medium">{m.passkey.registered}</p>

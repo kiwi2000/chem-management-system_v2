@@ -731,6 +731,14 @@ export const en: Messages = {
     why: "The key lives on your device and is tied to this site's address. On a look-alike site the key simply does not appear.",
     add: "Register this device",
     signIn: "Sign in with a passkey",
+    waitingShort: "Waiting...",
+    waiting:
+      "Check the passkey prompt from your browser (or Windows). It may have opened behind another window. Closing it brings you back here",
+    signInCancelledHint:
+      "Could not sign in with a passkey. If this device has none registered, sign in with your password and add one under Preferences",
+    cancelledHint: "Registration was cancelled. Press the button again to retry",
+    alreadyOnThisDevice:
+      "This device's key is already registered. A key added from another browser on the same PC is the same key, so you can sign in with it as is",
     deviceLabel: "Device name",
     deviceLabelHint: "Give it a name you will recognise later (e.g. Work laptop)",
     devicePlaceholder: "Work laptop",
