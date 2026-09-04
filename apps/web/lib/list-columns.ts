@@ -459,3 +459,99 @@ export const INVENTORY_ROW_COLUMNS: QueryColumn[] = [
   { key: "value", kind: "text", field: "value", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
+
+/** 法文物質名・法律・区分・分類が持つ名前の3欄。画面には1つを選んで出すので、絞り込みは3つをまたぐ */
+const NAME_FIELDS = ["nameOriginal", "nameJa", "nameEn"];
+
+type Where = Record<string, unknown>;
+/** リンクの行から、法文物質名 → 分類 → 区分 → 法律 と掘る */
+const underSubstance = (w: Where): Where => ({ statutorySubstance: w });
+const underClass = (w: Where): Where => underSubstance({ regulationClass: w });
+const underCategory = (w: Where): Where => underClass({ category: w });
+const underLaw = (w: Where): Where => underCategory({ law: w });
+const wrap = (into: (w: Where) => Where, w: Where | null) => (w ? into(w) : null);
+
+/**
+ * 外部データベースの「対象CAS」の表（`/api/cas-links`）。
+ * 1つのバージョン × 1つのデータソースの全リンクを、法文物質名をまたいで並べる。
+ * バージョンとデータソースは絞り込みの列ではなく、上の表で選んだものが API に付く。
+ * 「採用」と「物質名」はここに無い（採用はページの行だけで決める。物質名は API が先に CAS を集める）
+ */
+export const CAS_LINK_COLUMNS: QueryColumn[] = [
+  {
+    key: "regionId",
+    kind: "enum",
+    field: "regionId",
+    sortable: false,
+    custom: (f) =>
+      f.kind === "enum" && f.values.length > 0
+        ? underLaw({ country: { regionId: { in: f.values } } })
+        : null,
+  },
+  {
+    key: "countryId",
+    kind: "enum",
+    field: "countryId",
+    sortable: false,
+    custom: (f) =>
+      f.kind === "enum" && f.values.length > 0 ? underLaw({ countryId: { in: f.values } }) : null,
+  },
+  {
+    key: "lawName",
+    kind: "text",
+    field: "lawName",
+    sortable: false,
+    custom: (f) => (f.kind === "text" ? wrap(underLaw, anyOfTextCondition(NAME_FIELDS, f)) : null),
+  },
+  {
+    key: "categoryName",
+    kind: "text",
+    field: "categoryName",
+    sortable: false,
+    custom: (f) =>
+      f.kind === "text" ? wrap(underCategory, anyOfTextCondition(NAME_FIELDS, f)) : null,
+  },
+  {
+    key: "className",
+    kind: "text",
+    field: "className",
+    custom: (f) =>
+      f.kind === "text" ? wrap(underClass, anyOfTextCondition(NAME_FIELDS, f)) : null,
+  },
+  {
+    key: "officialNumber",
+    kind: "text",
+    field: "officialNumber",
+    custom: (f) =>
+      f.kind === "text" ? wrap(underSubstance, anyOfTextCondition(["officialNumber"], f)) : null,
+  },
+  {
+    key: "statutoryName",
+    kind: "text",
+    field: "statutoryName",
+    custom: (f) =>
+      f.kind === "text" ? wrap(underSubstance, anyOfTextCondition(NAME_FIELDS, f)) : null,
+  },
+  { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
+  // 物質名（代表物質）。条件は API が先に物質マスタから CAS を集めて付けるので、ここでは何もしない
+  { key: "casName", kind: "text", field: "casNormalized", sortable: false, custom: () => null },
+  { key: "excluded", kind: "enum", field: "excluded", booleanEnum: true },
+  {
+    /*
+      出どころの文章は別テーブル（無いリンクのほうが多い）。
+      「空」は行が無いこと、「空でない」は行があること。それ以外は原文と日本語訳の両方を見る
+    */
+    key: "data",
+    kind: "text",
+    field: "data",
+    sortable: false,
+    custom: (f) => {
+      if (f.kind !== "text") return null;
+      if (f.op === "empty") return { data: null };
+      if (f.op === "notEmpty") return { data: { isNot: null } };
+      return wrap((w) => ({ data: w }), anyOfTextCondition(["text", "textJa"], f));
+    },
+  },
+  { key: "note", kind: "text", field: "note", caseInsensitive: true },
+  { key: "updatedAt", kind: "date", field: "updatedAt" },
+];

@@ -832,6 +832,54 @@ export interface StatutoryCasLinkDto {
   dataJa: string | null;
 }
 
+/**
+ * 外部データベースの「対象CAS」の表の1行（`/api/cas-links`）。
+ * 1つのバージョン × 1つのデータソースの中で、法文物質名をまたいで並べる。
+ * 名前は原文・日本語・英語を全部返し、画面の言語で選ぶ
+ */
+export interface CasLinkRowDto {
+  id: string;
+  versionId: string;
+  sourceId: string;
+  sourceCode: string;
+  regionNameJa: string;
+  regionNameEn: string | null;
+  countryNameJa: string;
+  countryNameEn: string | null;
+  lawId: string;
+  lawCode: string;
+  lawNameOriginal: string;
+  lawNameJa: string | null;
+  lawNameEn: string | null;
+  categoryId: string;
+  categoryCode: string;
+  categoryNameOriginal: string;
+  categoryNameJa: string | null;
+  categoryNameEn: string | null;
+  /** 分類は名前を持たないことがある（区分を分けないときの受け皿） */
+  classNameOriginal: string | null;
+  classNameJa: string | null;
+  classNameEn: string | null;
+  statutorySubstanceId: string;
+  officialNumber: string | null;
+  statutoryNameOriginal: string;
+  statutoryNameJa: string | null;
+  statutoryNameEn: string | null;
+  casNumber: string;
+  casNormalized: string;
+  /** そのCASの代表物質。物質マスタに無ければ null */
+  substanceId: string | null;
+  substanceNameJa: string | null;
+  substanceNameEn: string | null;
+  excluded: boolean;
+  /** 優先度で勝っている行か。そのページの行についてだけ計算している */
+  used: boolean;
+  data: string | null;
+  dataJa: string | null;
+  note: string | null;
+  updatedAt: string;
+}
+
 export interface MetalFactorDto {
   id: string;
   casNumber: string;

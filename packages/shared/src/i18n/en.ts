@@ -599,6 +599,25 @@ export const en: Messages = {
     duplicateCode: (code: string) => `Class code "${code}" is already in use`,
   },
 
+  casLinkTable: {
+    title: "Linked CAS numbers",
+    pickSource:
+      "Select a data source row above to list every linked CAS for that version and data source here",
+    region: "Region",
+    country: "Country",
+    law: "Law",
+    category: "Category",
+    className: "Class",
+    officialNumber: "Official number",
+    statutoryName: "Statutory substance",
+    used: "Used",
+    updatedAt: "Updated",
+    openAll: "See all linked CAS",
+    scopeLaw: "Law",
+    scopeCategory: "Category",
+    clearScope: "Clear scope",
+  },
+
   casLinks: {
     title: "Linked CAS numbers",
     casNumber: "CAS number",

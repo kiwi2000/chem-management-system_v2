@@ -614,6 +614,26 @@ export const ja = {
     duplicateCode: (code: string) => `分類コード「${code}」は既に使われています`,
   },
 
+  /** 外部データベースの「対象CAS」の表（バージョン × データソースの全リンク） */
+  casLinkTable: {
+    title: "対象CAS",
+    pickSource:
+      "上の表でデータソースの行を選ぶと、そのバージョン・データソースの対象CASがここに出ます",
+    region: "地域",
+    country: "国",
+    law: "法律",
+    category: "規制区分",
+    className: "分類",
+    officialNumber: "法律上の番号",
+    statutoryName: "法文物質名",
+    used: "採用",
+    updatedAt: "更新日",
+    openAll: "対象CASをまとめて見る",
+    scopeLaw: "法律",
+    scopeCategory: "規制区分",
+    clearScope: "範囲を外す",
+  },
+
   casLinks: {
     title: "対象CAS",
     casNumber: "CAS番号",

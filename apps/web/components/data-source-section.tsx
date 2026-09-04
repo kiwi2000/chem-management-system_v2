@@ -39,11 +39,17 @@ export function DataSourceSection({
   versionId,
   versionCode,
   reloadToken,
+  onSelect,
+  preferredId,
 }: {
   /** 左で選んでいるバージョン。決まるまでは表を出さない */
   versionId: string | null;
   versionCode: string | null;
   reloadToken: number;
+  /** 選んだ行を親に知らせる（下の対象CASの表がこれで決まる）。無ければ null */
+  onSelect?: (row: LinkVersionSourceDto | null) => void;
+  /** 読み込んだあと、まだ選んでいなければ選ぶ行の id。無ければ優先度がいちばん高いもの */
+  preferredId?: string | null;
 }) {
   const { m, locale } = useI18n();
   const ask = useConfirm();
@@ -263,6 +269,26 @@ export function DataSourceSection({
   useEffect(() => {
     void loadChoices();
   }, [loadChoices, reloadToken]);
+
+  /*
+    読み込んだら、選んでいる行が無ければ望みの行（無ければ優先度1位）を選ぶ。
+    バージョンを替えたときは前の行が無くなるので、同じ道で選び直す。
+    下の対象CASの表は選んだ行で決まるので、何も選ばれていない時間を作らない
+  */
+  useEffect(() => {
+    if (items === null) return;
+    if (selectedId !== null && items.some((r) => r.id === selectedId)) return;
+    const wanted =
+      (preferredId ? items.find((r) => r.id === preferredId) : undefined) ??
+      [...items].sort((a, b) => a.priority - b.priority)[0] ??
+      null;
+    setSelectedId(wanted?.id ?? null);
+  }, [items, selectedId, preferredId]);
+
+  // 選んだ行を親へ
+  useEffect(() => {
+    onSelect?.(items?.find((r) => r.id === selectedId) ?? null);
+  }, [items, selectedId, onSelect]);
 
   async function add() {
     setError(null);

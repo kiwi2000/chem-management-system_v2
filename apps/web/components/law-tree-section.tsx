@@ -9,7 +9,7 @@ import {
   type ScoreRange,
   type TableState,
 } from "@chem/shared";
-import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
+import { ChevronRight, Database, FoldVertical, UnfoldVertical } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -102,24 +102,38 @@ export function LawTreeSection({
         className: "font-mono",
         render: (r) =>
           r.kind === "law" ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                void toggle(r.law.id);
-              }}
-              aria-expanded={open.has(r.law.id)}
-              aria-label={open.has(r.law.id) ? m.common.close : m.common.open}
-              className="hover:text-foreground -ml-1 inline-flex items-center gap-1 text-left"
-            >
-              <ChevronRight
-                className={cn(
-                  "text-muted-foreground size-4 shrink-0 transition-transform",
-                  open.has(r.law.id) && "rotate-90",
-                )}
-              />
-              {r.law.code}
-            </button>
+            <span className="inline-flex items-center gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void toggle(r.law.id);
+                }}
+                aria-expanded={open.has(r.law.id)}
+                aria-label={open.has(r.law.id) ? m.common.close : m.common.open}
+                className="hover:text-foreground -ml-1 inline-flex items-center gap-1 text-left"
+              >
+                <ChevronRight
+                  className={cn(
+                    "text-muted-foreground size-4 shrink-0 transition-transform",
+                    open.has(r.law.id) && "rotate-90",
+                  )}
+                />
+                {r.law.code}
+              </button>
+              {/* この法律の対象CASを、法文物質名をまたいで1つの表で見る（外部データベースの画面） */}
+              <Link
+                href={`/external-db?version=current&scopeLaw=${r.law.id}&scopeLabel=${encodeURIComponent(
+                  r.law.nameJa ?? r.law.nameOriginal,
+                )}`}
+                onClick={(e) => e.stopPropagation()}
+                title={m.casLinkTable.openAll}
+                aria-label={m.casLinkTable.openAll}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Database className="size-3.5" />
+              </Link>
+            </span>
           ) : (
             // 法律にぶら下がっていることを縦線で示す。区分が続いても親を見失わない
             <span className="border-border ml-2 border-l pl-3 text-xs">
