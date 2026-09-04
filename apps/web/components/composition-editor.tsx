@@ -878,11 +878,11 @@ export function CompositionEditor({
                 <Button
                   type="button"
                   size="sm"
-                  variant="outline"
+                  // 押されているときは塗りつぶす（ほかの切り替えと同じ見せかた）
+                  variant={showSources ? "default" : "outline"}
                   aria-pressed={showSources}
                   title={m.composition.sourceHint}
                   onClick={() => setShowSources((v) => !v)}
-                  className={cn(showSources && "font-bold")}
                 >
                   <Database className="mr-1 size-3.5" />
                   {m.composition.sourceShow}
@@ -920,6 +920,7 @@ export function CompositionEditor({
                 */}
                 <span
                   className={cn(REVIEW_CLASS, "ml-[0.5em] inline-flex items-center gap-1 text-xs")}
+                  title={m.judgements.needsReviewHint}
                 >
                   <CircleHelp className="size-3" />
                   {m.composition.reviewLegend}

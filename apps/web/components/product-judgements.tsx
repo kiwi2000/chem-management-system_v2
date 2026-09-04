@@ -505,6 +505,7 @@ function Warning({
               "inline-flex items-center gap-1 text-xs",
               j.needsReview ? "text-destructive" : "text-muted-foreground",
             )}
+            title={j.needsReview ? m.judgements.needsReviewHint : undefined}
           >
             {/*
               **要確認と警告で印を分ける。**要確認は「判定が変わるかもしれない」なので
