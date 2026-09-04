@@ -435,6 +435,11 @@ export interface RowStatutoryDto {
    * 前のバージョンが無ければ、いつでも false（比べる相手がいない）
    */
   changed: boolean;
+  /**
+   * 出どころがそのCASについて書いている文章（CASリンクの「データ」）。
+   * データソースごとに持つ。並びは優先度の順。持たないデータソースは入らない
+   */
+  data: { sourceId: string; text: string; textJa: string | null }[];
 }
 
 export interface RowRegulationDto {
@@ -522,6 +527,9 @@ export interface CellStatutoryDto {
   needsReview: boolean;
   /** CAS は載っているのに、含有率が足りず当たっていない */
   nearMiss: boolean;
+  /** 出どころがそのCASについて書いている文章（CASリンクの「データ」）。無ければ null */
+  dataText: string | null;
+  dataTextJa: string | null;
 }
 
 /** CASでまとめた行。合算の結果はこの形で返す */

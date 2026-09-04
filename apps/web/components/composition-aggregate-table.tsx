@@ -1,23 +1,25 @@
 "use client";
 
 import { pickName, pickStatutoryName } from "@chem/shared";
-import { ChevronRight, CircleHelp, TriangleAlert } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleHelp, TriangleAlert } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  CELL_CLIP,
-  OPAQUE_MUTED_40,
-  OPAQUE_MUTED_50,
-  STICKY_HEAD_LINES,
-} from "@/components/ui/table";
+import { CELL_CLIP, OPAQUE_MUTED_40, OPAQUE_MUTED_50 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CellDetailDialog } from "@/components/cell-detail-dialog";
 import { DiffChip, SourceChips, type SourceInfo } from "@/components/source-chip";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { useColumnVisibility } from "@/lib/use-column-visibility";
 import { NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
-import type { ApiError, CompositionAggregateDto, RowRegulationDto } from "@/lib/types";
+import type {
+  ApiError,
+  CompositionAggregateDto,
+  RowRegulationDto,
+  RowStatutoryDto,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -41,7 +43,8 @@ const CELL = "border-r px-2 py-1 break-words last:border-r-0";
  * 貼り付ける幅は合わせて956px。画面が狭いと法規制を見る場所が減るので、
  * 引いて広げるほうは `frozen` の上限（見えている幅の6割）で止まる。
  */
-const FROZEN = 6;
+/** 組成そのものの列（CAS〜備考）の鍵 */
+type HeadKey = "casNumber" | "substanceId" | "name" | "contentPct" | "score" | "note";
 
 /**
  * 当たってはいないが、CAS が載っているものに付ける印。
@@ -76,6 +79,16 @@ function ReviewMark() {
   行の色（`bg-muted/40` など）と同じ色を、透けない形で作る
 */
 const STICKY_PLAIN = "bg-background";
+
+/*
+  見出しの罫線。**貼り付けた見出しは枠線が描かれない**（`border-collapse` の表で
+  sticky にすると線が消える）ので、影で線を引く。
+  見出しは4段あるので、右だけでなく**下にも**線を引いて、全部のセルを囲う
+*/
+const HEAD_GRID = [
+  "shadow-[inset_0_1px_0_0_var(--border)]",
+  "[&_th]:shadow-[inset_-1px_-1px_0_0_var(--border)]",
+].join(" ");
 
 /** 行を指す鍵。CASを持たない物質は自分のコードで区別する */
 const keyOf = (row: { casNumber: string | null; code: string }) => row.casNumber ?? row.code;
@@ -405,6 +418,21 @@ export function CompositionAggregateTable({
     regulations: showNearMiss ? [...r.regulations, ...r.nearMiss] : r.regulations,
   }));
   const { leaves, groups, lawGroups } = leafColumns(columnRows, openRegions, closedLaws, locale);
+  /*
+    **組成そのものの列（CAS〜備考）は出し入れできる。**隠したぶんは端末に覚える。
+    法規の列は中身で増減するので対象にしない。全部隠すと行が読めなくなるので、最後の1つは残す
+  */
+  const {
+    hidden: hiddenHeads,
+    toggle: toggleHead,
+    reset: resetHeads,
+    changed: headsChanged,
+  } = useColumnVisibility("chem.table.compositionAggregate.v4.columns");
+  const heads = HEADS.filter((h) => !hiddenHeads.has(h.key));
+  const FROZEN = heads.length;
+  /** 出している列の中での位置。貼り付ける列の座標はこれで引く */
+  const headAt = (key: HeadKey) => heads.findIndex((h) => h.key === key);
+  const [headsOpen, setHeadsOpen] = useState(false);
   // 列幅は一覧と同じ規則。法規の列は中身で増減するが、鍵が id なので幅は覚えたまま
   const cols = useResizableColumns(
     /*
@@ -414,7 +442,7 @@ export function CompositionAggregateTable({
       v4 … 備考を広げ、スコアを見出しぶんまで詰めた
     */
     "chem.table.compositionAggregate.v4",
-    [...HEADS, ...leaves],
+    [...heads, ...leaves],
     // 規制区分に分けると列が増える。詰めずに、はみ出したぶんは横に送る
     { shrinkToFit: false, frozen: FROZEN },
   );
@@ -561,6 +589,59 @@ export function CompositionAggregateTable({
         </div>
       )}
 
+      {/* 組成そのものの列（CAS〜備考）の出し入れ。一覧の「表示項目」と同じ言葉・同じ形 */}
+      {data.rows.length > 0 && (
+        <div className="space-y-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setHeadsOpen((v) => !v)}
+            aria-expanded={headsOpen}
+          >
+            {headsOpen ? (
+              <ChevronDown className="mr-1 size-4" />
+            ) : (
+              <ChevronRight className="mr-1 size-4" />
+            )}
+            {m.table.columnPanel}
+            {hiddenHeads.size > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {m.table.hiddenCount(hiddenHeads.size)}
+              </Badge>
+            )}
+          </Button>
+          {headsOpen && (
+            <div className="bg-background space-y-3 rounded-md border p-4">
+              <div className="flex flex-wrap items-center gap-2 border-b pb-3">
+                <span className="text-sm font-medium">{m.table.columnPanel}</span>
+                <Button variant="outline" size="sm" disabled={!headsChanged} onClick={resetHeads}>
+                  {m.table.resetColumns}
+                </Button>
+              </div>
+              <ul className="flex flex-wrap gap-x-6 gap-y-1">
+                {HEADS.map((h) => {
+                  const shown = !hiddenHeads.has(h.key);
+                  // 全部隠すと行が読めなくなる。最後の1つは外させない
+                  const last = shown && heads.length <= 1;
+                  return (
+                    <li key={h.key} className="flex items-center gap-1 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={shown}
+                        disabled={last}
+                        onChange={() => toggleHead(h.key)}
+                      />
+                      <span className={cn(!shown && "text-muted-foreground")}>{h.label(m)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       {data.rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
       ) : (
@@ -576,7 +657,7 @@ export function CompositionAggregateTable({
           <table
             {...cols.tableProps}
             className={cn(
-              "table-fixed border-collapse text-sm",
+              "table-fixed border-collapse border text-sm",
               CELL_CLIP,
               cols.tableProps.className,
             )}
@@ -603,11 +684,11 @@ export function CompositionAggregateTable({
             <thead
               className={cn(
                 "table-head-solid text-table-head-foreground sticky top-0 z-20",
-                STICKY_HEAD_LINES,
+                HEAD_GRID,
               )}
             >
               <tr className="border-t text-left">
-                {HEADS.map(({ key, label, className }, at) => {
+                {heads.map(({ key, label, className }, at) => {
                   const frozen = cols.frozenProps(at);
                   return (
                     <th
@@ -757,68 +838,106 @@ export function CompositionAggregateTable({
                 return (
                   <Fragment key={key}>
                     <tr className="border-b">
-                      <td
-                        className={cn(CELL, STICKY_PLAIN, "font-mono text-xs")}
-                        style={cols.frozenProps(0).style}
-                      >
-                        {row.casNumber ?? (
-                          <span className="text-muted-foreground font-sans">
-                            {m.composition.aggregateNoCas}
-                          </span>
-                        )}
-                      </td>
-                      <td
-                        className={cn(CELL, STICKY_PLAIN, "font-mono text-xs")}
-                        style={cols.frozenProps(1).style}
-                      >
-                        {row.code}
-                      </td>
-                      <td className={cn(CELL, STICKY_PLAIN)} style={cols.frozenProps(2).style}>
-                        {many ? (
-                          <button
-                            type="button"
-                            onClick={() => toggle(key)}
-                            aria-expanded={shown}
-                            aria-label={
-                              shown ? m.composition.collapse : m.composition.aggregateShowSources
-                            }
-                            className="hover:text-foreground -ml-1 inline-flex items-center gap-1 text-left"
-                          >
-                            <ChevronRight
-                              className={cn(
-                                "text-muted-foreground size-4 shrink-0 transition-transform",
-                                shown && "rotate-90",
-                              )}
-                            />
-                            {pickName(locale, row.nameJa, row.nameEn)}
-                          </button>
-                        ) : (
-                          pickName(locale, row.nameJa, row.nameEn)
-                        )}
-                      </td>
-                      <td
-                        className={cn(CELL, STICKY_PLAIN, "text-right whitespace-nowrap")}
-                        style={cols.frozenProps(3).style}
-                      >
-                        {row.totalPct}%
-                      </td>
-                      <td
-                        className={cn(CELL, STICKY_PLAIN, "text-right font-mono whitespace-nowrap")}
-                        style={cols.frozenProps(4).style}
-                      >
-                        {row.score}
-                      </td>
-                      <td
-                        className={cn(
-                          CELL,
-                          STICKY_PLAIN,
-                          cols.frozenProps(5).className,
-                          "text-muted-foreground text-xs",
-                        )}
-                        style={cols.frozenProps(5).style}
-                      >
-                        <span className="line-clamp-2">{row.note}</span>
-                      </td>
+                      {heads.map((h, at) => {
+                        const frozen = cols.frozenProps(at);
+                        switch (h.key) {
+                          case "casNumber":
+                            return (
+                              <td
+                                key={h.key}
+                                className={cn(CELL, STICKY_PLAIN, "font-mono text-xs")}
+                                style={frozen.style}
+                              >
+                                {row.casNumber ?? (
+                                  <span className="text-muted-foreground font-sans">
+                                    {m.composition.aggregateNoCas}
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          case "substanceId":
+                            return (
+                              <td
+                                key={h.key}
+                                className={cn(CELL, STICKY_PLAIN, "font-mono text-xs")}
+                                style={frozen.style}
+                              >
+                                {row.code}
+                              </td>
+                            );
+                          case "name":
+                            return (
+                              <td
+                                key={h.key}
+                                className={cn(CELL, STICKY_PLAIN)}
+                                style={frozen.style}
+                              >
+                                {many ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggle(key)}
+                                    aria-expanded={shown}
+                                    aria-label={
+                                      shown
+                                        ? m.composition.collapse
+                                        : m.composition.aggregateShowSources
+                                    }
+                                    className="hover:text-foreground -ml-1 inline-flex items-center gap-1 text-left"
+                                  >
+                                    <ChevronRight
+                                      className={cn(
+                                        "text-muted-foreground size-4 shrink-0 transition-transform",
+                                        shown && "rotate-90",
+                                      )}
+                                    />
+                                    {pickName(locale, row.nameJa, row.nameEn)}
+                                  </button>
+                                ) : (
+                                  pickName(locale, row.nameJa, row.nameEn)
+                                )}
+                              </td>
+                            );
+                          case "contentPct":
+                            return (
+                              <td
+                                key={h.key}
+                                className={cn(CELL, STICKY_PLAIN, "text-right whitespace-nowrap")}
+                                style={frozen.style}
+                              >
+                                {row.totalPct}%
+                              </td>
+                            );
+                          case "score":
+                            return (
+                              <td
+                                key={h.key}
+                                className={cn(
+                                  CELL,
+                                  STICKY_PLAIN,
+                                  "text-right font-mono whitespace-nowrap",
+                                )}
+                                style={frozen.style}
+                              >
+                                {row.score}
+                              </td>
+                            );
+                          default:
+                            return (
+                              <td
+                                key={h.key}
+                                className={cn(
+                                  CELL,
+                                  STICKY_PLAIN,
+                                  frozen.className,
+                                  "text-muted-foreground text-xs",
+                                )}
+                                style={frozen.style}
+                              >
+                                <span className="line-clamp-2">{row.note}</span>
+                              </td>
+                            );
+                        }
+                      })}
                       {leaves.map((c) => {
                         const hit = row.regulations.filter((r) => c.categoryIds.has(r.categoryId));
                         const near = showNearMiss
@@ -872,51 +991,63 @@ export function CompositionAggregateTable({
                       shown &&
                       row.contributions.map((c, i) => (
                         <tr key={`${key}-${i}`} className="bg-muted/40 border-b">
-                          <td
-                            className={cn(CELL, OPAQUE_MUTED_40)}
-                            style={cols.frozenProps(0).style}
-                          />
-                          <td
-                            className={cn(
-                              CELL,
-                              OPAQUE_MUTED_40,
-                              "text-muted-foreground pl-6 font-mono text-xs",
-                            )}
-                            style={cols.frozenProps(1).style}
-                          >
-                            {c.code}
-                          </td>
-                          {/* まとめる前の名前。代表と同じでも空欄にはしない（空欄は「入っていない」に見える） */}
-                          <td
-                            className={cn(
-                              CELL,
-                              OPAQUE_MUTED_40,
-                              "text-muted-foreground pl-6 text-xs",
-                            )}
-                            style={cols.frozenProps(2).style}
-                          >
-                            {pickName(locale, c.nameJa, c.nameEn)}
-                          </td>
-                          <td
-                            className={cn(
-                              CELL,
-                              OPAQUE_MUTED_40,
-                              "text-muted-foreground text-right text-xs whitespace-nowrap",
-                            )}
-                            style={cols.frozenProps(3).style}
-                          >
-                            {c.pct}%
-                          </td>
-                          {/* スコアは物質ごとの値。内訳の行では出さない */}
-                          <td
-                            className={cn(CELL, OPAQUE_MUTED_40)}
-                            style={cols.frozenProps(4).style}
-                          />
-                          {/* 備考。ここを抜かすと、右の法規制の列が1つずれる */}
-                          <td
-                            className={cn(CELL, OPAQUE_MUTED_40, cols.frozenProps(5).className)}
-                            style={cols.frozenProps(5).style}
-                          />
+                          {heads.map((h, at) => {
+                            const frozen = cols.frozenProps(at);
+                            switch (h.key) {
+                              case "substanceId":
+                                return (
+                                  <td
+                                    key={h.key}
+                                    className={cn(
+                                      CELL,
+                                      OPAQUE_MUTED_40,
+                                      "text-muted-foreground pl-6 font-mono text-xs",
+                                    )}
+                                    style={frozen.style}
+                                  >
+                                    {c.code}
+                                  </td>
+                                );
+                              // まとめる前の名前。代表と同じでも空欄にはしない（空欄は「入っていない」に見える）
+                              case "name":
+                                return (
+                                  <td
+                                    key={h.key}
+                                    className={cn(
+                                      CELL,
+                                      OPAQUE_MUTED_40,
+                                      "text-muted-foreground pl-6 text-xs",
+                                    )}
+                                    style={frozen.style}
+                                  >
+                                    {pickName(locale, c.nameJa, c.nameEn)}
+                                  </td>
+                                );
+                              case "contentPct":
+                                return (
+                                  <td
+                                    key={h.key}
+                                    className={cn(
+                                      CELL,
+                                      OPAQUE_MUTED_40,
+                                      "text-muted-foreground text-right text-xs whitespace-nowrap",
+                                    )}
+                                    style={frozen.style}
+                                  >
+                                    {c.pct}%
+                                  </td>
+                                );
+                              // CAS・スコア・備考は内訳の行では出さない（スコアは物質ごとの値）
+                              default:
+                                return (
+                                  <td
+                                    key={h.key}
+                                    className={cn(CELL, OPAQUE_MUTED_40, frozen.className)}
+                                    style={frozen.style}
+                                  />
+                                );
+                            }
+                          })}
                           {leaves.map((c) => (
                             <td key={c.key} className={CELL} />
                           ))}
@@ -933,26 +1064,55 @@ export function CompositionAggregateTable({
                     合計は3列ぶんをまたぐ。ここは貼り付ける範囲とちょうど同じなので、
                     1つのセルのまま左に貼り付けられる
                   */}
-                  <td
-                    className={cn(CELL, OPAQUE_MUTED_50, "text-right font-medium")}
-                    style={cols.frozenProps(0).style}
-                    colSpan={3}
-                  >
-                    {m.composition.sumLabel}
-                  </td>
-                  <td
-                    className={cn(CELL, OPAQUE_MUTED_50, "text-right font-medium")}
-                    style={cols.frozenProps(3).style}
-                  >
-                    {data.totalPct}%
-                  </td>
-                  {/* スコアのぶん。合計は出さない（物質ごとの値を足しても意味を持たない） */}
-                  <td className={cn(CELL, OPAQUE_MUTED_50)} style={cols.frozenProps(4).style} />
-                  {/* 備考のぶん。ここを抜かすと右端が1列ずれて、最後のセルだけ色が付かない */}
-                  <td
-                    className={cn(CELL, OPAQUE_MUTED_50, cols.frozenProps(5).className)}
-                    style={cols.frozenProps(5).style}
-                  />
+                  {/*
+                    「合計」の札は、CAS・物質ID・物質名のうち出している列をまたぐ。
+                    3つとも隠していれば、重量%の欄に札ごと入れる
+                  */}
+                  {(() => {
+                    const labelSpan = heads.filter((h) =>
+                      ["casNumber", "substanceId", "name"].includes(h.key),
+                    ).length;
+                    return (
+                      <>
+                        {labelSpan > 0 && (
+                          <td
+                            className={cn(CELL, OPAQUE_MUTED_50, "text-right font-medium")}
+                            style={cols.frozenProps(0).style}
+                            colSpan={labelSpan}
+                          >
+                            {m.composition.sumLabel}
+                          </td>
+                        )}
+                        {headAt("contentPct") >= 0 && (
+                          <td
+                            className={cn(CELL, OPAQUE_MUTED_50, "text-right font-medium")}
+                            style={cols.frozenProps(headAt("contentPct")).style}
+                          >
+                            {labelSpan === 0 && `${m.composition.sumLabel} `}
+                            {data.totalPct}%
+                          </td>
+                        )}
+                        {/* スコアのぶん。合計は出さない（物質ごとの値を足しても意味を持たない） */}
+                        {headAt("score") >= 0 && (
+                          <td
+                            className={cn(CELL, OPAQUE_MUTED_50)}
+                            style={cols.frozenProps(headAt("score")).style}
+                          />
+                        )}
+                        {/* 備考のぶん。ここを抜かすと右端が1列ずれて、最後のセルだけ色が付かない */}
+                        {headAt("note") >= 0 && (
+                          <td
+                            className={cn(
+                              CELL,
+                              OPAQUE_MUTED_50,
+                              cols.frozenProps(headAt("note")).className,
+                            )}
+                            style={cols.frozenProps(headAt("note")).style}
+                          />
+                        )}
+                      </>
+                    );
+                  })()}
                   {leaves.map((c) => (
                     <td key={c.key} className={CELL} />
                   ))}
@@ -1064,6 +1224,7 @@ function RegulationMark({
       review: h.needsReview,
       sourceIds: h.statutory[i]?.sourceIds ?? h.sourceIds,
       changed: h.statutory[i]?.changed ?? h.changed,
+      data: dataLine(h.statutory[i]?.data ?? [], locale),
     })),
   );
   const nearLabels = near.flatMap((h) =>
@@ -1071,8 +1232,15 @@ function RegulationMark({
       t,
       sourceIds: h.statutory[i]?.sourceIds ?? h.sourceIds,
       changed: h.statutory[i]?.changed ?? h.changed,
+      data: dataLine(h.statutory[i]?.data ?? [], locale),
     })),
   );
+  /*
+    出どころの文章。**「データソース」を押しているときだけ、名前の下に1行**添える。
+    入りきらない分は「…」で切る。全文はセルを押して出る小ウィンドウで読む
+  */
+  const showData = sources.length > 0;
+  const DATA_LINE = "text-muted-foreground block truncate font-sans text-[11px] leading-tight";
   return (
     <span className="block text-left text-xs">
       {hits.length > 0 && (
@@ -1085,12 +1253,19 @@ function RegulationMark({
               {needsReview && <ReviewMark />}●
             </span>
           ) : (
-            labels.map(({ t, review, sourceIds, changed }) => (
-              <span key={t} className={cn("block", review ? REVIEW_CLASS : "")}>
-                <SourceChips ids={sourceIds} sources={sources} />
-                {showDiff && changed && <DiffChip label={diffLabel} />}
-                {review && <ReviewMark />}
-                {t}
+            labels.map(({ t, review, sourceIds, changed, data }) => (
+              <span key={t} className="block">
+                <span className={cn("block", review ? REVIEW_CLASS : "")}>
+                  <SourceChips ids={sourceIds} sources={sources} />
+                  {showDiff && changed && <DiffChip label={diffLabel} />}
+                  {review && <ReviewMark />}
+                  {t}
+                </span>
+                {showData && data && (
+                  <span className={DATA_LINE} title={data}>
+                    {data}
+                  </span>
+                )}
               </span>
             ))
           )}
@@ -1100,12 +1275,19 @@ function RegulationMark({
         当たってはいないが、CAS が載っているもの。**当たったものと見分けが付くよう赤字にする。**
         含有率が変われば該当するので、気を付ける相手として出す
       */}
-      {nearLabels.map(({ t, sourceIds, changed }) => (
-        <span key={`near-${t}`} title={nearTitle} className={cn("block", NEAR_MISS_CLASS)}>
-          <SourceChips ids={sourceIds} sources={sources} />
-          {showDiff && changed && <DiffChip label={diffLabel} />}
-          <NearMark />
-          {t}
+      {nearLabels.map(({ t, sourceIds, changed, data }) => (
+        <span key={`near-${t}`} className="block">
+          <span title={nearTitle} className={cn("block", NEAR_MISS_CLASS)}>
+            <SourceChips ids={sourceIds} sources={sources} />
+            {showDiff && changed && <DiffChip label={diffLabel} />}
+            <NearMark />
+            {t}
+          </span>
+          {showData && data && (
+            <span className={DATA_LINE} title={data}>
+              {data}
+            </span>
+          )}
         </span>
       ))}
     </span>
@@ -1113,6 +1295,19 @@ function RegulationMark({
 }
 
 /** 法文物質名の1行ぶんの字。分類＋番号＋名前（分類は無ければ詰める） */
+/**
+ * セルに添える出どころの文章。**優先度がいちばん高いデータソースのものを1つ**。
+ * 画面の言語で選ぶ（日本語訳があれば日本語、無ければ原文）
+ */
+function dataLine(
+  data: RowStatutoryDto["data"],
+  locale: ReturnType<typeof useI18n>["locale"],
+): string | null {
+  const d = data[0];
+  if (!d) return null;
+  return locale === "ja" ? (d.textJa ?? d.text) : d.text;
+}
+
 function statutoryLabels(
   h: RowRegulationDto,
   locale: ReturnType<typeof useI18n>["locale"],

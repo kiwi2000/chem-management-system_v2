@@ -58,6 +58,40 @@ async function previousLinks(subIds: string[]): Promise<Set<string>> {
 }
 
 /**
+ * いまのバージョンで、その法文物質名に結ばれたリンクが持つ「データ」の文章。
+ * 鍵は `<法文物質名のID>/<CAS>/<データソースのID>`。文章の無いリンクは入らない
+ */
+async function linkDataOf(
+  subIds: string[],
+): Promise<Map<string, { text: string; textJa: string | null }>> {
+  const out = new Map<string, { text: string; textJa: string | null }>();
+  if (subIds.length === 0) return out;
+  const version = await prisma.linkSetVersion.findFirst({
+    where: { isCurrent: true, deletedAt: null },
+    select: { id: true },
+  });
+  if (!version) return out;
+  const links = await prisma.statutoryCasLink.findMany({
+    where: {
+      versionId: version.id,
+      statutorySubstanceId: { in: subIds },
+      excluded: false,
+      data: { isNot: null },
+    },
+    select: {
+      statutorySubstanceId: true,
+      casNormalized: true,
+      sourceId: true,
+      data: { select: { text: true, textJa: true } },
+    },
+  });
+  for (const l of links) {
+    if (l.data) out.set(`${l.statutorySubstanceId}/${l.casNormalized}/${l.sourceId}`, l.data);
+  }
+  return out;
+}
+
+/**
  * CASごとに「どの規制区分に効いているか」を引く。
  *
  * **保持してある判定結果から作る。ここで判定し直さない。**
@@ -135,6 +169,8 @@ export async function regulationsByCas(
   */
   const before = await previousLinks(subIds);
   const hasPrevious = (await previousVersion()) !== null;
+  // 出どころの文章。「データソース」を押したときにセルへ添える
+  const dataOf = await linkDataOf(subIds);
 
   /*
     **どのデータソースから来た結び付きなのかは、判定結果に残っていない。**
@@ -173,6 +209,10 @@ export async function regulationsByCas(
             nameOriginal: sub.nameOriginal,
             sourceIds: c.sources ?? [],
             changed: hasPrevious && !before.has(`${sub.id}/${c.cas}`),
+            data: (c.sources ?? []).flatMap((sourceId) => {
+              const d = dataOf.get(`${sub.id}/${c.cas}/${sourceId}`);
+              return d ? [{ sourceId, ...d }] : [];
+            }),
           });
         }
         seen.set(r.categoryId, {
@@ -256,6 +296,8 @@ export async function nearMissByCas(
       select: {
         casNormalized: true,
         sourceId: true,
+        // 出どころの文章。「データソース」を押したときにセルへ添える
+        data: { select: { text: true, textJa: true } },
         statutorySubstance: {
           select: {
             id: true,
@@ -397,6 +439,9 @@ export async function nearMissByCas(
     const already = entry.statutory.find((x) => x.nameOriginal === sub.nameOriginal);
     if (already) {
       if (!already.sourceIds.includes(l.sourceId)) already.sourceIds.push(l.sourceId);
+      if (l.data && !already.data.some((d) => d.sourceId === l.sourceId)) {
+        already.data.push({ sourceId: l.sourceId, text: l.data.text, textJa: l.data.textJa });
+      }
       if (isNew) already.changed = true;
       continue;
     }
@@ -410,6 +455,7 @@ export async function nearMissByCas(
       nameOriginal: sub.nameOriginal,
       sourceIds: [l.sourceId],
       changed: isNew,
+      data: l.data ? [{ sourceId: l.sourceId, text: l.data.text, textJa: l.data.textJa }] : [],
     });
   }
 

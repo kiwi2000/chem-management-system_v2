@@ -19,6 +19,11 @@ function labelOf(x: CellStatutoryDto, locale: ReturnType<typeof useI18n>["locale
   return [cls, x.officialNumber, name].filter(Boolean).join(" ");
 }
 
+/** 出どころの文章。画面の言語で選ぶ（日本語訳があれば日本語、無ければ原文） */
+function dataOf(x: CellStatutoryDto, locale: ReturnType<typeof useI18n>["locale"]) {
+  return locale === "ja" ? (x.dataTextJa ?? x.dataText) : x.dataText;
+}
+
 /**
  * まとめ表のセルを押したときに開く窓。
  *
@@ -213,6 +218,12 @@ export function CellDetailDialog({
                                       />
                                     )}
                                     {labelOf(x, locale)}
+                                    {/* 出どころの文章。ここでは切らずに全部出す（表では1行で切っている） */}
+                                    {dataOf(x, locale) && (
+                                      <span className="text-muted-foreground block font-normal whitespace-pre-wrap">
+                                        {dataOf(x, locale)}
+                                      </span>
+                                    )}
                                   </span>
                                 </span>
                               ))

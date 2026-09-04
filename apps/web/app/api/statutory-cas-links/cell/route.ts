@@ -193,6 +193,8 @@ export async function GET(req: Request) {
       select: {
         sourceId: true,
         note: true,
+        // 出どころの文章。小ウィンドウでは切らずに全部出す
+        data: { select: { text: true, textJa: true } },
         statutorySubstance: {
           select: {
             id: true,
@@ -247,6 +249,8 @@ export async function GET(req: Request) {
             nameEn: l.statutorySubstance.nameEn,
             nameOriginal: l.statutorySubstance.nameOriginal,
             adopted: best !== null && (rank.get(d.source.id) ?? 99) === best,
+            dataText: l.data?.text ?? null,
+            dataTextJa: l.data?.textJa ?? null,
             ...judgementOf(
               v.isCurrent,
               l.statutorySubstance.id,
