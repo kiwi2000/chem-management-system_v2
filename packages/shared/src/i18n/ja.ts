@@ -936,10 +936,10 @@ export const ja = {
     decidedBy: (who: string, when: string) => `${who} が ${when} に確認`,
     review: "確認する",
     change: "判定修正",
-    confirm: "このまま確認",
-    changeToNot: "非該当にする",
-    changeToYes: "該当にする",
-    notePlaceholder: "そう判断した根拠（あとで問われたときのために）",
+    confirm: "該当",
+    changeToNot: "非該当",
+    changeToYes: "該当",
+    notePlaceholder: "根拠",
     reasonMissingFactor:
       "換算係数が登録されていないCASがあります。そのぶんは0として数えているので、実際より少なく出ています。",
     reasonUnknown:
