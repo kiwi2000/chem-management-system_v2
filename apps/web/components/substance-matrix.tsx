@@ -123,6 +123,8 @@ function Matrix({
   storageKey,
   /** 「ソースデータ」の切り替えを出すか。文章を持つのは法規制のリンクだけ */
   dataToggle,
+  /** 値の行の左に出す見出し（インベントリは「番号」、法規制は「法文物質名」） */
+  rowHeader,
 }: {
   title: string;
   columns: MatrixColumn[];
@@ -133,6 +135,7 @@ function Matrix({
   parentHeader?: string;
   storageKey: string;
   dataToggle?: boolean;
+  rowHeader: string;
 }) {
   const { m } = useI18n();
   /** 畳んでいる地域と法律。既定はすべて開いている */
@@ -435,7 +438,9 @@ function Matrix({
 
             {/* 3段目：番号の種類（または規制区分） */}
             <tr className="bg-muted/30">
-              <th className={cn(TH, "sticky left-0 z-10 bg-inherit")} />
+              <th className={cn(TH, "bg-background sticky left-0 z-10 text-left")}>
+                {m.substanceMatrix.category}
+              </th>
               {regions.map((r) =>
                 foldedRegions.has(r.id) ? (
                   <th key={r.id} className={cn(TH, "text-muted-foreground")}>
@@ -504,7 +509,15 @@ function Matrix({
           <tbody>
             {Array.from({ length: rowCount }, (_, row) => (
               <tr key={row}>
-                <td className={cn(TH, "bg-background sticky left-0 z-10")} />
+                {/* 行の見出し。値の行をまとめて1つのセルで「番号」と示す */}
+                {row === 0 && (
+                  <td
+                    rowSpan={rowCount}
+                    className={cn(TH, "bg-background sticky left-0 z-10 text-left align-top")}
+                  >
+                    {rowHeader}
+                  </td>
+                )}
                 {regions.map((r) =>
                   foldedRegions.has(r.id) ? (
                     <td key={r.id} className={TH} />
@@ -634,6 +647,7 @@ export function SubstanceMatrixSection({ data }: { data: SubstanceMatrix }) {
           picked={picked}
           emptyMessage={m.substanceMatrix.inventoryEmpty}
           storageKey="chem.table.substanceInventory"
+          rowHeader={m.substanceMatrix.number}
         />
         <Matrix
           title={m.substanceMatrix.regulationTitle}
@@ -645,6 +659,7 @@ export function SubstanceMatrixSection({ data }: { data: SubstanceMatrix }) {
           emptyMessage={m.substanceMatrix.regulationEmpty}
           parentHeader={m.laws.title}
           storageKey="chem.table.substanceRegulation"
+          rowHeader={m.judgements.statutoryName}
         />
       </CardContent>
     </Card>

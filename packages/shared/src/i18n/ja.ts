@@ -1237,6 +1237,9 @@ export const ja = {
   /** 物質1件を、バージョンを横に並べて見る表 */
   substanceMatrix: {
     region: "地域",
+    /** 左の見出し列。区分の段と、値の行に出す */
+    category: "規制区分",
+    number: "番号",
     /** 畳んでいることは矢印の向きで分かるので、件数だけを出す */
     folded: (n: number) => `${n} 件`,
     showAllInventories: "全てのインベントリを表示",

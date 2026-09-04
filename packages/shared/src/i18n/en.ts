@@ -1214,6 +1214,8 @@ export const en: Messages = {
 
   substanceMatrix: {
     region: "Region",
+    category: "Category",
+    number: "Number",
     folded: (n: number) => `${n} columns`,
     showAllInventories: "Show every inventory",
     inventoryTitle: "Inventory numbers",
