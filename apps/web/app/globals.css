@@ -608,6 +608,22 @@
   何も変わらないと、押せたのか読み込み中なのか分からないため、カーソルを砂時計にする。
   次の画面へ移ると一覧が消えるので、その片付けで自動的に外れる。
 */
+/*
+  スクロールバー。**ブラウザ既定の灰色の帯は、どの配色にも馴染まない。**
+  細くして、つまみはその配色の薄い字色（--muted-foreground）を透かした色にする。
+  溝は塗らない。色は配色の変数から取るので、テーマを替えても浮かない
+*/
+@layer base {
+  /* base 層に置く。上の層（utilities）で「帯を出さない」と決めた要素には負ける */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent) transparent;
+  }
+  *:hover {
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 60%, transparent) transparent;
+  }
+}
+
 body.cursor-busy,
 body.cursor-busy * {
   cursor: wait !important;
