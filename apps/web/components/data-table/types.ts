@@ -26,6 +26,12 @@ export interface TableColumn<T> {
   filterFullWidth?: boolean;
   /** フィルターの入力欄に出す入力例 */
   filterPlaceholder?: string;
+  /**
+   * kind="list" で打ち込ませる列の、文字の分けかた。
+   * numeric（既定）は CAS番号向けで数字とハイフン以外を区切りにする。
+   * **名前を打つ列は text にする。**numeric だと文字が全部捨てられて条件にならない
+   */
+  tokens?: "numeric" | "text";
   /** 表には出さず、フィルターの条件としてだけ使う列（組成のCAS番号など） */
   filterOnly?: boolean;
   /** 既定の列幅（px）。利用者がドラッグで変えた幅は端末に記憶される */

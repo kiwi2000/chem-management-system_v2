@@ -235,6 +235,23 @@ export type SavedFilterInput = z.infer<ReturnType<typeof savedFilterSchema>>;
  * 数字とハイフン以外はすべて区切りとみなすので、改行・カンマ・空白のどれで区切ってもよい。
  * CAS番号のように「形が数字とハイフンだけ」の値に使う。
  */
+/**
+ * 文字の一覧を、改行・カンマ・読点・セミコロンで分ける（物質名など）。
+ * **数字以外を捨てる `splitNumericTokens` を名前の欄に使うと、「トルエン」が消えて
+ * 条件が無かったことになる。**空と重複は落とす
+ */
+export function splitTextTokens(raw: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const token of raw.split(/[\n\r,、;；]+/)) {
+    const v = token.trim();
+    if (v === "" || seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
 export function splitNumericTokens(raw: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];

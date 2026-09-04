@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { splitTextTokens } from "./table";
 import {
   activeFilterCount,
   emptyTableState,
@@ -126,5 +127,19 @@ describe("activeFilterCount", () => {
         },
       }),
     ).toBe(2);
+  });
+});
+
+describe("splitTextTokens", () => {
+  it("名前を改行・カンマ・読点・セミコロンで分け、空と重複を落とす", () => {
+    expect(splitTextTokens("トルエン\nbenzene, キシレン、 toluene;トルエン")).toEqual([
+      "トルエン",
+      "benzene",
+      "キシレン",
+      "toluene",
+    ]);
+  });
+  it("数字を含まない文字でも捨てない", () => {
+    expect(splitTextTokens("トルエン")).toEqual(["トルエン"]);
   });
 });

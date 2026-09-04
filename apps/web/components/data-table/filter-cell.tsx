@@ -10,6 +10,7 @@ import {
   type ListOperator,
   type Messages,
   splitNumericTokens,
+  splitTextTokens,
 } from "@chem/shared";
 import { useCallback, useEffect, useState } from "react";
 import { useOutsideClose } from "@/lib/use-outside-close";
@@ -52,12 +53,14 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
   useEffect(() => {
     if (value?.kind === "list") setPickedListOp(value.op);
   }, [value]);
+  // 打った文字の分けかた。CAS番号は数字の並び、名前は行やカンマで分ける
+  const splitTokens = column.tokens === "text" ? splitTextTokens : splitNumericTokens;
   useEffect(() => {
     // 保存した条件の読込・条件のクリアなど、外から変わったときだけ入力欄を合わせる
     setListText((prev) =>
-      splitNumericTokens(prev).join("|") === appliedKey ? prev : appliedKey.split("|").join("\n"),
+      splitTokens(prev).join("|") === appliedKey ? prev : appliedKey.split("|").join("\n"),
     );
-  }, [appliedKey]);
+  }, [appliedKey, splitTokens]);
 
   if (column.kind === "list") {
     const mode = value?.kind === "list" ? value.op : pickedListOp;
@@ -127,7 +130,7 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
     }
 
     const emitList = (raw: string, nextMode: ListOperator) => {
-      const next = splitNumericTokens(raw);
+      const next = splitTokens(raw);
       onChange(next.length > 0 ? { kind: "list", op: nextMode, values: next } : undefined);
     };
     return (

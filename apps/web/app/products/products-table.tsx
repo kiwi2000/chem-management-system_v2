@@ -218,6 +218,8 @@ export function ProductsTable({
         key: "substanceNames",
         header: m.table.substanceNames,
         kind: "list",
+        // 名前を打つ列。数字の区切りで分けると文字が全部消える
+        tokens: "text",
         // CAS番号と同じく組成をたどる。こちらは部分一致で、別名も見る
         filterOnly: true,
         sortable: false,
