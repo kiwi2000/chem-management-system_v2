@@ -52,6 +52,12 @@ export function RejudgeSection() {
     void load();
   }, [load]);
 
+  // 左メニューの「要再計算」から来た人を、この欄まで送る（設定の画面は長い）
+  useEffect(() => {
+    if (window.location.hash !== "#rejudge") return;
+    document.getElementById("rejudge")?.scrollIntoView({ block: "center" });
+  }, []);
+
   // 走っているあいだは 2 秒おきに進み具合を取り直す
   const running = body?.status.running ?? false;
   useEffect(() => {
@@ -94,7 +100,7 @@ export function RejudgeSection() {
             : m.settings.rejudgeNever;
 
   return (
-    <div className="space-y-2 border-t pt-4">
+    <div id="rejudge" className="scroll-mt-24 space-y-2 border-t pt-4">
       <Label>{m.settings.rejudge}</Label>
       <div className="flex flex-wrap items-center gap-3">
         <Button

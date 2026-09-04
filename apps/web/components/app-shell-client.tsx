@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, Settings, X } fr
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
-import { OnlineCount } from "@/components/online-count";
+import { SidebarFooter } from "@/components/sidebar-footer";
 import { IdleCountdown } from "@/components/idle-countdown";
 import { UserAvatar } from "@/components/user-avatar";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -92,26 +92,13 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
         ヘッダーはコードだけで短く、こちらは名前まで出せる。
         メニューを開いている人は、この位置で確かめる癖が付いている
       */}
-      {version && (
-        /*
-          **どのバージョンで判定した結果を見ているか**は、
-          画面に出ている数字の意味そのものを決める。
-          いちばん下に置くぶん、色と大きさで目に留まるようにする
-        */
-        <div className="bg-muted/60 mt-auto flex items-start justify-between gap-3 border-t px-4 py-3">
-          <div className="min-w-0">
-            <div className="text-muted-foreground text-xs">{m.shell.linkVersion}</div>
-            <div className="text-primary truncate text-lg leading-tight font-semibold">
-              {version.code}
-            </div>
-            {version.nameJa && (
-              <div className="text-muted-foreground truncate text-xs">{version.nameJa}</div>
-            )}
-          </div>
-          {/* いまログインしている人数。バージョンの右に、同じ形で並べる */}
-          <OnlineCount canOpenSessions={user.isAdmin} />
-        </div>
-      )}
+      {/*
+        **どのバージョンで判定した結果を見ているか**は、
+        画面に出ている数字の意味そのものを決める。
+        いちばん下に置くぶん、色と大きさで目に留まるようにする。
+        ログイン中の数と、管理者向けの「要再計算」も同じ欄に出す
+      */}
+      {version && <SidebarFooter version={version} isAdmin={user.isAdmin} />}
     </>
   );
 

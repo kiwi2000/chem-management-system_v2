@@ -104,6 +104,9 @@ export const en: Messages = {
     openMenu: "Open menu",
     linkVersion: "Regulation set",
     online: "Signed in",
+    rejudgeNeeded: "Re-judge needed",
+    rejudgeNeededHint:
+      "Regulation data changed after the last full re-judge. Opens System settings › Regulatory judgement",
     noLinkVersion: "No current version",
     hideHeader: "Hide the top bar",
     showHeader: "Show the top bar",

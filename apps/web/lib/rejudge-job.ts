@@ -1,6 +1,7 @@
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
+import { isRejudgeNeeded } from "@/lib/rejudge-needed";
 import { getAppSettings } from "@/lib/settings";
 
 /**
@@ -94,6 +95,7 @@ async function run(actorId: string) {
       actorId,
       diff: { rejudged: products.length, version: version.code, ms: Date.now() - started },
     });
+    await recordFullRejudge(version.id, actorId);
   } catch (e) {
     status.error = e instanceof Error ? e.message : String(e);
     console.error("rejudge failed:", e);
@@ -101,6 +103,70 @@ async function run(actorId: string) {
     status.running = false;
     status.finishedAt = new Date().toISOString();
   }
+}
+
+/**
+ * 最後に全製品を判定し直し終えた時刻の置き場（システム設定の表を借りる）。
+ * 画面の設定項目ではないので SETTING_DEFS には載せない
+ */
+const LAST_FULL_KEY = "judge.last_full_rejudge";
+
+async function recordFullRejudge(versionId: string, actorId: string) {
+  const value = JSON.stringify({ at: new Date().toISOString(), versionId });
+  await prisma.systemSetting.upsert({
+    where: { key: LAST_FULL_KEY },
+    update: { value, updatedBy: actorId },
+    create: { key: LAST_FULL_KEY, value, valueType: "JSON", updatedBy: actorId },
+  });
+}
+
+/**
+ * 最後に全製品を判定し直し終えた時刻。
+ * 記録が無い（この仕組みより前に判定した環境）ときは、
+ * 現在のバージョンの判定のうちいちばん古い計算日時で代える
+ */
+async function lastFullRejudge(
+  versionId: string,
+): Promise<{ at: Date; versionId: string | null } | null> {
+  const row = await prisma.systemSetting.findUnique({
+    where: { key: LAST_FULL_KEY },
+    select: { value: true },
+  });
+  if (row?.value) {
+    try {
+      const parsed = JSON.parse(row.value) as { at?: string; versionId?: string };
+      const at = parsed.at ? new Date(parsed.at) : null;
+      if (at && !Number.isNaN(at.getTime())) {
+        return { at, versionId: parsed.versionId ?? null };
+      }
+    } catch {
+      // 読めない値は無いものとして下へ
+    }
+  }
+  const oldest = await prisma.productJudgement.aggregate({
+    where: { versionId },
+    _min: { computedAt: true },
+  });
+  return oldest._min.computedAt ? { at: oldest._min.computedAt, versionId } : null;
+}
+
+/**
+ * いま「全製品を判定し直す」を押すべきか。左メニューの下の「要再計算」に使う。
+ * 30 秒おきに全管理者から呼ばれるので、集計 5 本の軽い問い合わせに留める
+ */
+export async function rejudgeNeeded(): Promise<boolean> {
+  const version = await prisma.linkSetVersion.findFirst({
+    where: { isCurrent: true, deletedAt: null },
+    select: { id: true },
+  });
+  if (!version) return false;
+  // 走っている最中は、終われば消えるので出さない
+  if (status.running) return false;
+  const [changedAt, lastFull] = await Promise.all([
+    premisesChangedAt(version.id),
+    lastFullRejudge(version.id),
+  ]);
+  return isRejudgeNeeded({ currentVersionId: version.id, changedAt, lastFull });
 }
 
 /**
