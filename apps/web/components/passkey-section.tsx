@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import { createPasskey, passkeySupported } from "@/lib/passkey-client";
+import { createPasskey, fetchPasskeyOptions, passkeySupported } from "@/lib/passkey-client";
 import type { ApiError } from "@/lib/types";
 
 interface Item {
@@ -56,7 +56,11 @@ export function PasskeySection() {
     setNotice(null);
     setBusy(true);
     try {
-      const optRes = await fetch("/api/auth/passkey/register", { method: "POST" });
+      const optRes = await fetchPasskeyOptions("/api/auth/passkey/register");
+      if (!optRes) {
+        setError(m.passkey.noServerReply);
+        return;
+      }
       if (!optRes.ok) {
         if (redirectIfUnauthorized(optRes)) return;
         const b = (await optRes.json().catch(() => null)) as ApiError | null;

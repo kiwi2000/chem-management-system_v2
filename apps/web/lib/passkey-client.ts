@@ -43,6 +43,21 @@ async function withDeadline<T>(run: () => Promise<T>): Promise<T | "timeout"> {
   }
 }
 
+/**
+ * サーバーにお題を取りに行くときの期限。通信を検査するセキュリティ製品が応答を
+ * 止めてしまうと、窓が出ないまま「確認中...」で止まる。そのときは打ち切って伝える
+ */
+export const OPTIONS_FETCH_MS = 30_000;
+
+/** お題を取りに行く。返事が来なければ null（呼び手は「サーバーからの返事が無い」と出す） */
+export async function fetchPasskeyOptions(url: string): Promise<Response | null> {
+  try {
+    return await fetch(url, { method: "POST", signal: AbortSignal.timeout(OPTIONS_FETCH_MS) });
+  } catch {
+    return null;
+  }
+}
+
 /** この端末でパスキーを使えるか */
 export function passkeySupported(): boolean {
   return (

@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
-import { passkeySupported, signWithPasskey } from "@/lib/passkey-client";
+import { fetchPasskeyOptions, passkeySupported, signWithPasskey } from "@/lib/passkey-client";
 import type { ApiError } from "@/lib/types";
 
 /**
@@ -108,7 +108,11 @@ export default function LoginPage() {
     setLoading(true);
     setPasskeyWaiting(true);
     try {
-      const optRes = await fetch("/api/auth/passkey/login", { method: "POST" });
+      const optRes = await fetchPasskeyOptions("/api/auth/passkey/login");
+      if (!optRes) {
+        setError(m.passkey.noServerReply);
+        return;
+      }
       if (!optRes.ok) {
         setError(m.login.failed);
         return;
