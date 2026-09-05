@@ -31,7 +31,13 @@ interface Draft {
 }
 const EMPTY: Draft = { code: "", nameJa: "", nameEn: "", displayOrder: 0 };
 
-const CELL = "border-r px-2 py-1 last:border-r-0";
+/*
+  罫線は**セルが自分の右と下に引く**（border-separate）。
+  隣と共有する collapse だと、貼り付けた見出しの縁で、下を流れる行の罫線が覗いてちらつく
+  （合算表・物質の表と同じ直しかた）。行（tr）の罫線は separate では描かれないので、
+  行に付けたい線は `[&>td]:…` でセルに付ける
+*/
+const CELL = "border-r border-b px-2 py-1 last:border-r-0";
 const CELL_INPUT = "h-7 w-full text-sm";
 
 /**
@@ -177,7 +183,7 @@ export function LanguageSection() {
         </div>
 
         <div className="bg-background max-h-96 overflow-auto rounded-md border">
-          <Table>
+          <Table className="border-separate border-spacing-0">
             <TableHeader className="bg-table-head text-table-head-foreground sticky top-0 [&_th]:text-inherit">
               <TableRow>
                 <TableHead className={cn(CELL, "w-20")}>{m.languages.code}</TableHead>

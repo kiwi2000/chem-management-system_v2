@@ -80,7 +80,13 @@ interface Row {
 }
 
 /** 長い語もセルの中で折り返す。折り返せないものは CELL_CLIP で隠れる */
-const CELL = "border-r px-2 py-1 break-words last:border-r-0";
+/*
+  罫線は**セルが自分の右と下に引く**（border-separate）。
+  隣と共有する collapse だと、貼り付けた見出しの縁で、下を流れる行の罫線が覗いてちらつく
+  （合算表・物質の表と同じ直しかた）。行（tr）の罫線は separate では描かれないので、
+  行に付けたい線は `[&>td]:…` でセルに付ける
+*/
+const CELL = "border-r border-b px-2 py-1 break-words last:border-r-0";
 
 function toRow(l: CompositionLineDto, index: number): Row | null {
   if (!l.element) return null;
@@ -576,7 +582,7 @@ export function CompositionEditor({
             <table
               {...cols.tableProps}
               className={cn(
-                "table-fixed border-collapse text-sm",
+                "table-fixed border-separate border-spacing-0 text-sm",
                 CELL_CLIP,
                 cols.tableProps.className,
               )}
@@ -595,7 +601,7 @@ export function CompositionEditor({
               </colgroup>
               {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
               <thead className="sticky top-0 z-20">
-                <tr className="table-head-solid text-table-head-foreground border-y text-left">
+                <tr className="table-head-solid text-table-head-foreground text-left [&>th]:border-t">
                   {/* 行をつかんで並べ替えるためのつまみ。幅は固定（つまみの大きさで決まる） */}
                   {editing && <th className={cn(CELL, "w-8")} />}
                   <th className={cn(CELL, "relative font-medium")}>
@@ -645,9 +651,11 @@ export function CompositionEditor({
                   <Fragment key={r.key}>
                     <tr
                       className={cn(
-                        "border-b",
                         dragIndex === i && "opacity-40",
-                        overIndex === i && dragIndex !== i && "border-primary border-t-2",
+                        // 落とす先の印。separate では行に線を引けないので、セルの上に引く
+                        overIndex === i &&
+                          dragIndex !== i &&
+                          "[&>td]:border-t-primary [&>td]:border-t-2",
                       )}
                       onDragOver={(e) => {
                         if (dragIndex === null) return;
@@ -795,7 +803,7 @@ export function CompositionEditor({
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-muted/50 border-t">
+                <tr className="bg-muted/50">
                   {/* 合計は数字の真上に来るよう、重量%の1つ手前まで結合する */}
                   <td className={cn(CELL, "text-right font-medium")} colSpan={editing ? 4 : 3}>
                     {m.composition.sumLabel}

@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  STICKY_HEAD_LINES,
   Table,
   TableBody,
   TableCell,
@@ -43,7 +42,13 @@ import type { ApiError, JudgementHitDto, ProductJudgementDto } from "@/lib/types
 export type M = ReturnType<typeof useI18n>["m"];
 
 /** 組成の表と同じ枠線・余白。並べて見るので、見た目をそろえる */
-const CELL = "border-r px-2 py-1 last:border-r-0";
+/*
+  罫線は**セルが自分の右と下に引く**（border-separate）。
+  隣と共有する collapse だと、貼り付けた見出しの縁で、下を流れる行の罫線が覗いてちらつく
+  （合算表・物質の表と同じ直しかた）。行（tr）の罫線は separate では描かれないので、
+  行に付けたい線は `[&>td]:…` でセルに付ける
+*/
+const CELL = "border-r border-b px-2 py-1 last:border-r-0";
 
 /**
  * 列の並びと既定の幅。**見出しと幅を1か所に持つ。**
@@ -302,7 +307,10 @@ export function ProductJudgements({
             */}
             <Table
               {...cols.tableProps}
-              className={cn("table-fixed text-sm", cols.tableProps.className)}
+              className={cn(
+                "table-fixed border-separate border-spacing-0 text-sm",
+                cols.tableProps.className,
+              )}
               // 外側の箱で流すので、表を包む枠は流さない（入れ子にすると見出しを貼り付けられない）
               containerClassName="overflow-visible"
             >
@@ -316,11 +324,10 @@ export function ProductJudgements({
                 className={cn(
                   // th は自分の字色を持つ（text-foreground）ので、見出しの字色を継がせる
                   "table-head-solid text-table-head-foreground sticky top-0 z-20 [&_th]:text-inherit",
-                  STICKY_HEAD_LINES,
                 )}
               >
                 {/* 色と枠線は組成の表にそろえる。並べて見るので、別物に見えると困る */}
-                <TableRow className="border-y hover:bg-transparent">
+                <TableRow className="hover:bg-transparent [&>th]:border-t">
                   {HEADS.map(({ key, label, className }, i) => (
                     <TableHead key={key} className={cn(CELL, "relative h-auto", className)}>
                       {/* 行の高さのつまみは、いちばん左の見出しに1つだけ */}
@@ -343,7 +350,7 @@ export function ProductJudgements({
                   return (
                     <Fragment key={j.categoryId}>
                       {/* 区分の行。中身（法文物質名）は押して開く */}
-                      <TableRow className="border-b">
+                      <TableRow>
                         <TableCell className={cn(CELL, "align-top")}>
                           {pickName(locale, j.lawNameJa ?? j.lawNameOriginal, j.lawNameEn)}
                         </TableCell>
@@ -481,7 +488,7 @@ export function ProductJudgements({
                       {/* 中身。1行＝当たった法文物質名1件 */}
                       {opened &&
                         j.hits.map((h, i) => (
-                          <TableRow key={`${j.categoryId}-${i}`} className="bg-muted/40 border-b">
+                          <TableRow key={`${j.categoryId}-${i}`} className="bg-muted/40">
                             <TableCell className={CELL} />
                             <TableCell className={CELL} />
                             <TableCell className={cn(CELL, "align-top font-mono text-xs")}>
