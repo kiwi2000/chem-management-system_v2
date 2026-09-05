@@ -86,7 +86,8 @@ interface Row {
   （合算表・物質の表と同じ直しかた）。行（tr）の罫線は separate では描かれないので、
   行に付けたい線は `[&>td]:…` でセルに付ける
 */
-const CELL = "border-r border-b px-2 py-1 break-words last:border-r-0";
+// 右端の列の線が表の右の外枠になる。左の外枠は各行の先頭のセルが引く（表の `[&_tr>*:first-child]:border-l`）
+const CELL = "border-r border-b px-2 py-1 break-words";
 
 function toRow(l: CompositionLineDto, index: number): Row | null {
   if (!l.element) return null;
@@ -582,7 +583,7 @@ export function CompositionEditor({
             <table
               {...cols.tableProps}
               className={cn(
-                "table-fixed border-separate border-spacing-0 text-sm",
+                "table-fixed border-separate border-spacing-0 text-sm [&_tr>*:first-child]:border-l",
                 CELL_CLIP,
                 cols.tableProps.className,
               )}

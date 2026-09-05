@@ -48,7 +48,8 @@ export type M = ReturnType<typeof useI18n>["m"];
   （合算表・物質の表と同じ直しかた）。行（tr）の罫線は separate では描かれないので、
   行に付けたい線は `[&>td]:…` でセルに付ける
 */
-const CELL = "border-r border-b px-2 py-1 last:border-r-0";
+// 右端の列の線が表の右の外枠になる。左の外枠は各行の先頭のセルが引く（表の `[&_tr>*:first-child]:border-l`）
+const CELL = "border-r border-b px-2 py-1";
 
 /**
  * 列の並びと既定の幅。**見出しと幅を1か所に持つ。**
@@ -308,7 +309,7 @@ export function ProductJudgements({
             <Table
               {...cols.tableProps}
               className={cn(
-                "table-fixed border-separate border-spacing-0 text-sm",
+                "table-fixed border-separate border-spacing-0 text-sm [&_tr>*:first-child]:border-l",
                 cols.tableProps.className,
               )}
               // 外側の箱で流すので、表を包む枠は流さない（入れ子にすると見出しを貼り付けられない）
