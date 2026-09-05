@@ -1059,8 +1059,19 @@ function PageJump({
     数千ページになる表があるので、描き直すたびに作ると重くなる。
     **多すぎるときは作らない**（下の打ち込み欄に切り替える）
   */
-  const pages = useMemo(
-    () => (totalPages > PAGE_SELECT_MAX ? [] : Array.from({ length: totalPages }, (_, i) => i + 1)),
+  /*
+    選択肢は**要素まで作って持っておく**。同じ要素をそのまま返せば React は中を見に行かない
+    （配列だけ持って毎回 <option> を作り直すと、数千個ぶんの突き合わせが描き直しのたびに走る）
+  */
+  const options = useMemo(
+    () =>
+      totalPages > PAGE_SELECT_MAX
+        ? []
+        : Array.from({ length: totalPages }, (_, i) => (
+            <option key={i + 1} value={i + 1}>
+              {i + 1}
+            </option>
+          )),
     [totalPages],
   );
 
@@ -1086,11 +1097,7 @@ function PageJump({
         onChange={(e) => onJump(Number(e.target.value))}
         className="border-input bg-background h-8 rounded-none border px-1 text-xs"
       >
-        {pages.map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
+        {options}
       </select>
       / {totalPages}
     </span>
