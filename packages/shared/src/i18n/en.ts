@@ -964,7 +964,7 @@ export const en: Messages = {
 
   judgements: {
     computedAt: (when: string) => `computed ${when}`,
-    stale: "Data has changed. Recomputing may change the result.",
+    stale: "Data has changed, so recomputing may change the result.",
     staleHint:
       "CAS links, thresholds or the regulation version changed after this judgement was computed. Re-judging may change the result (System settings › Re-judge every product)",
     title: "Regulatory judgement",
@@ -1438,6 +1438,8 @@ export const en: Messages = {
     cellDetailHint:
       "Bold marks the listed substance adopted in that version (the highest priority). Blue applies, orange is below the threshold",
     cellDetailOpen: "View by version and data source",
+    categoryHit: "Category applies",
+    categoryHitHint: "No specific statutory substance; the category itself applies",
     diffHint:
       "Marks links that the previous version did not have, so you can see what newly applies after a version change",
     diffMark: (version: string) =>

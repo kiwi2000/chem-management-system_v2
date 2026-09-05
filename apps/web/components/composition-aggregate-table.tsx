@@ -33,7 +33,13 @@ import { cn } from "@/lib/utils";
  */
 
 /** 長い語もセルの中で折り返す。折り返せないものは CELL_CLIP で隠れる */
-const CELL = "border-r px-2 py-1 break-words last:border-r-0";
+/*
+  罫線は**セルが自分の右と下に引く**（border-separate）。
+  隣と共有する collapse だと、左に貼り付けた列を横に送ったとき、隠れた列の罫線が
+  貼り付けたセルの縁で覗いてちらついた（物質の表と同じ直しかた）。
+  左端の線は各行の先頭のセルが引く（表の `[&_tr>*:first-child]:border-l`）
+*/
+const CELL = "border-r border-b px-2 py-1 break-words";
 
 /**
  * 左に貼り付ける列の数。CAS・物質ID・物質名・重量%・スコア・備考まで（組成そのものの列は全部）。
@@ -665,7 +671,7 @@ export function CompositionAggregateTable({
           <table
             {...cols.tableProps}
             className={cn(
-              "table-fixed border-collapse border text-sm",
+              "table-fixed border-separate border-spacing-0 text-sm [&_tr>*:first-child]:border-l",
               CELL_CLIP,
               cols.tableProps.className,
             )}
@@ -695,7 +701,7 @@ export function CompositionAggregateTable({
                 HEAD_GRID,
               )}
             >
-              <tr className="border-t text-left">
+              <tr className="text-left">
                 {heads.map(({ key, label, className }, at) => {
                   const frozen = cols.frozenProps(at);
                   return (
@@ -817,7 +823,7 @@ export function CompositionAggregateTable({
               )}
 
               {/* 分けている地域が無ければ、区分の段そのものを出さない */}
-              <tr className="border-b text-left">
+              <tr className="text-left">
                 {leaves
                   .filter((c) => c.categoryId !== null)
                   .map((c) => {
@@ -855,7 +861,7 @@ export function CompositionAggregateTable({
                 const shown = open.has(key);
                 return (
                   <Fragment key={key}>
-                    <tr className="border-b">
+                    <tr>
                       {heads.map((h, at) => {
                         const frozen = cols.frozenProps(at);
                         switch (h.key) {
@@ -1018,7 +1024,7 @@ export function CompositionAggregateTable({
                     {many &&
                       shown &&
                       row.contributions.map((c, i) => (
-                        <tr key={`${key}-${i}`} className="bg-muted/40 border-b">
+                        <tr key={`${key}-${i}`} className="bg-muted/40">
                           {heads.map((h, at) => {
                             const frozen = cols.frozenProps(at);
                             switch (h.key) {
@@ -1087,7 +1093,7 @@ export function CompositionAggregateTable({
             </tbody>
             {!focus && (
               <tfoot>
-                <tr className="bg-muted/50 border-t">
+                <tr className="bg-muted/50">
                   {/*
                     合計は3列ぶんをまたぐ。ここは貼り付ける範囲とちょうど同じなので、
                     1つのセルのまま左に貼り付けられる
@@ -1197,6 +1203,7 @@ function RegulationMark({
   /** 差分の印に添える説明 */
   diffLabel: string;
 }) {
+  const { m } = useI18n();
   if (hits.length === 0 && near.length === 0)
     return <span className="text-muted-foreground">—</span>;
   const needsReview = hits.some((h) => h.needsReview);
@@ -1279,12 +1286,16 @@ function RegulationMark({
     <span className="block text-left text-xs">
       {hits.length > 0 && (
         <span title={title} className="block">
-          {/* 名前が取れないのは、区分そのものでまとめて当たったとき */}
+          {/*
+            名前が取れないのは、区分そのものでまとめて当たったとき（法文物質名の指定が無い）。
+            以前は「●」だけ出していて、何の印か分からなかった
+          */}
           {labels.length === 0 ? (
-            <span className={needsReview ? REVIEW_CLASS : ""}>
+            <span className={needsReview ? REVIEW_CLASS : ""} title={m.composition.categoryHitHint}>
               <SourceChips ids={hits.flatMap((h) => h.sourceIds)} sources={sources} />
               {showDiff && hits.some((h) => h.changed) && <DiffChip label={diffLabel} />}
-              {needsReview && <ReviewMark />}●
+              {needsReview && <ReviewMark />}
+              {m.composition.categoryHit}
             </span>
           ) : (
             labels.map(({ t, review, sourceIds, changed, data }) => (
