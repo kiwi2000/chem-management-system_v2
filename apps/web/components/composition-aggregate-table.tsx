@@ -1287,7 +1287,8 @@ function RegulationMark({
       {hits.length > 0 && (
         <span title={title} className="block">
           {/*
-            名前が取れないのは、区分そのものでまとめて当たったとき（法文物質名の指定が無い）。
+            名前が無いのは、区分全体で合算して判定する設定（aggregation）のとき。
+            判定は法文物質名ごとではなく区分で1つになるので、当たった号を持たない。
             以前は「●」だけ出していて、何の印か分からなかった
           */}
           {labels.length === 0 ? (

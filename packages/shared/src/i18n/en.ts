@@ -1439,7 +1439,8 @@ export const en: Messages = {
       "Bold marks the listed substance adopted in that version (the highest priority). Blue applies, orange is below the threshold",
     cellDetailOpen: "View by version and data source",
     categoryHit: "Category applies",
-    categoryHitHint: "No specific statutory substance; the category itself applies",
+    categoryHitHint:
+      "This category is judged on the summed content of the whole category, not per statutory substance, so no substance name is shown (open the cell for the breakdown)",
     diffHint:
       "Marks links that the previous version did not have, so you can see what newly applies after a version change",
     diffMark: (version: string) =>
