@@ -23,9 +23,6 @@ import { cn } from "@/lib/utils";
 /** 既定は CAS 番号の順。サーバー側の既定と揃える（片方だけ変えると出てくる数がずれる） */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "casNumber", direction: "asc" }]);
 
-/** 1ページの件数。法文物質名の画面の対象CASと同じ */
-const PAGE_SIZES = [15, 25, 50, 100, 200];
-
 /** 区分・法律の画面から来たときの範囲。表の絞り込みとは別に、URL に載せて持ち回る */
 export interface CasLinkScope {
   lawId: string | null;
@@ -361,7 +358,6 @@ export function CasLinkTable({
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
         onReset={reset}
-        pageSizeOptions={PAGE_SIZES}
         emptyMessage={!versionId || !sourceId ? m.casLinkTable.pickSource : m.casLinks.empty}
         headerActions={
           scoped ? (
