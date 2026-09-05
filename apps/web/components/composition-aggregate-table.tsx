@@ -1301,7 +1301,12 @@ function RegulationMark({
           ) : (
             labels.map(({ t, review, sourceIds, changed, data }) => (
               <span key={t} className="block">
-                <span className={cn("block", review ? REVIEW_CLASS : "")}>
+                {/*
+                  長い法文物質名（定義文や REACH の項目名）は2行で切って「…」にする。
+                  1つの区分に何号も並ぶことがあり、全部を出すと行が縦に伸びて表が読めない。
+                  全文はセルを押した小ウィンドウで読む（マウスを置いても浮く）
+                */}
+                <span className={cn("line-clamp-2", review ? REVIEW_CLASS : "")} title={t}>
                   <SourceChips ids={sourceIds} sources={sources} />
                   {showDiff && changed && <DiffChip label={diffLabel} />}
                   {review && <ReviewMark />}
@@ -1323,7 +1328,11 @@ function RegulationMark({
       */}
       {nearLabels.map(({ t, sourceIds, changed, data }) => (
         <span key={`near-${t}`} className="block">
-          <span title={nearTitle} className={cn("block", NEAR_MISS_CLASS)}>
+          <span
+            title={`${t}
+${nearTitle}`}
+            className={cn("line-clamp-2", NEAR_MISS_CLASS)}
+          >
             <SourceChips ids={sourceIds} sources={sources} />
             {showDiff && changed && <DiffChip label={diffLabel} />}
             <NearMark />
