@@ -44,14 +44,29 @@ function orderByOf(sort: SortRule[]) {
       case "className":
         order.push({ statutorySubstance: { regulationClass: { nameOriginal: dir } } });
         break;
-      case "categoryId":
+      // 地域・国・法律・区分は、それぞれの画面と同じ表示順で並べる（名前順だと法律の並びと食い違う）
+      case "categoryName":
         order.push({
           statutorySubstance: { regulationClass: { category: { displayOrder: dir } } },
         });
         break;
-      case "lawId":
+      case "lawName":
         order.push({
           statutorySubstance: { regulationClass: { category: { law: { displayOrder: dir } } } },
+        });
+        break;
+      case "countryId":
+        order.push({
+          statutorySubstance: {
+            regulationClass: { category: { law: { country: { displayOrder: dir } } } },
+          },
+        });
+        break;
+      case "regionId":
+        order.push({
+          statutorySubstance: {
+            regulationClass: { category: { law: { country: { region: { displayOrder: dir } } } } },
+          },
         });
         break;
       default:

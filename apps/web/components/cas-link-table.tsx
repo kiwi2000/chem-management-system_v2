@@ -78,7 +78,7 @@ export function CasLinkTable({
         header: m.casLinkTable.region,
         kind: "enum",
         width: 90,
-        sortable: false,
+
         options: regions.map((r) => ({ value: r.id, label: pickName(locale, r.nameJa, r.nameEn) })),
         className: "text-xs",
         render: (r) => pickName(locale, r.regionNameJa, r.regionNameEn),
@@ -88,7 +88,7 @@ export function CasLinkTable({
         header: m.casLinkTable.country,
         kind: "enum",
         width: 90,
-        sortable: false,
+
         options: countries.map((c) => ({
           value: c.id,
           label: pickName(locale, c.nameJa, c.nameEn),
@@ -101,7 +101,7 @@ export function CasLinkTable({
         header: m.casLinkTable.law,
         kind: "text",
         width: 160,
-        sortable: false,
+
         className: "text-xs",
         render: (r) => (
           <Link href={`/laws`} className="hover:underline" title={r.lawCode}>
@@ -114,7 +114,7 @@ export function CasLinkTable({
         header: m.casLinkTable.category,
         kind: "text",
         width: 180,
-        sortable: false,
+
         className: "text-xs",
         // 押すと区分の画面（法文物質名の一覧）へ。ここで見つけたものを直しに行ける
         render: (r) => (

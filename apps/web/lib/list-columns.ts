@@ -482,7 +482,6 @@ export const CAS_LINK_COLUMNS: QueryColumn[] = [
     key: "regionId",
     kind: "enum",
     field: "regionId",
-    sortable: false,
     custom: (f) =>
       f.kind === "enum" && f.values.length > 0
         ? underLaw({ country: { regionId: { in: f.values } } })
@@ -492,7 +491,6 @@ export const CAS_LINK_COLUMNS: QueryColumn[] = [
     key: "countryId",
     kind: "enum",
     field: "countryId",
-    sortable: false,
     custom: (f) =>
       f.kind === "enum" && f.values.length > 0 ? underLaw({ countryId: { in: f.values } }) : null,
   },
@@ -500,14 +498,12 @@ export const CAS_LINK_COLUMNS: QueryColumn[] = [
     key: "lawName",
     kind: "text",
     field: "lawName",
-    sortable: false,
     custom: (f) => (f.kind === "text" ? wrap(underLaw, anyOfTextCondition(NAME_FIELDS, f)) : null),
   },
   {
     key: "categoryName",
     kind: "text",
     field: "categoryName",
-    sortable: false,
     custom: (f) =>
       f.kind === "text" ? wrap(underCategory, anyOfTextCondition(NAME_FIELDS, f)) : null,
   },
