@@ -31,12 +31,6 @@ import { cn } from "@/lib/utils";
 */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "casNumber", direction: "asc" }]);
 
-/**
- * 1ページの件数。
- * 並べるのは共通で決めてある数だけ（それ以外は受け取り側で弾かれる）
- */
-const PAGE_SIZES = [15, 25, 50, 100, 200];
-
 const SELECT_CLASS = "border-input bg-background h-8 rounded-none border px-2 text-sm";
 
 /** 追加・編集の入力欄 */
@@ -441,7 +435,6 @@ export function CasLinkSection({
         emptyMessage={m.casLinks.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
-        pageSizeOptions={PAGE_SIZES}
         // データソースが決まらないと、足しても入れる先がない
         create={
           editable && !editingId && version && picked?.sourceId ? { onClick: startNew } : undefined
