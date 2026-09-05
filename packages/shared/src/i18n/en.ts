@@ -1757,6 +1757,7 @@ export const en: Messages = {
     title: "Score",
     substanceScore: "Score",
     substanceRank: "Rank",
+    scoreOf: (n: number | string) => `Score ${n}`,
     categoryScore: "Score",
     computedAt: "Calculated at",
     notComputed: "Not calculated",

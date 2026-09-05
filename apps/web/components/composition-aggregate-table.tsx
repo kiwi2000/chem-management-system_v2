@@ -50,7 +50,7 @@ const CELL = "border-r border-b px-2 py-1 break-words";
  * 引いて広げるほうは `frozen` の上限（見えている幅の6割）で止まる。
  */
 /** 組成そのものの列（CAS〜備考）の鍵 */
-type HeadKey = "casNumber" | "substanceId" | "name" | "contentPct" | "score" | "rank" | "note";
+type HeadKey = "casNumber" | "substanceId" | "name" | "contentPct" | "rank" | "note";
 
 /**
  * 当たってはいないが、CAS が載っているものに付ける印。
@@ -150,21 +150,10 @@ const HEADS: {
     className: "text-right whitespace-nowrap",
   },
   /*
-    物質のスコア。**重量%の右に置く。**当たっている規制区分の点数の合計で、
-    組成とは関係しない値だが、物質ごとの重みを重量%と並べて読めるようにする
+    物質のランク。**重量%の右に置く。**当たっている規制区分の点数の合計（スコア）を
+    段に読み替えたもの。スコアの数字そのものは列にせず、ランクにマウスを置くと出す
+    （列が1つ減って、貼り付ける部分が狭くなる）
   */
-  {
-    key: "score",
-    /*
-      **見出しの「スコア」がちょうど収まる幅。**14pxの全角3文字で42px、
-      左右の余白16pxを足して58px。値のほうは短い数字なので、これで足りる。
-      桁の多い点を付けたときは、つまみで引いて広げられる
-    */
-    width: 60,
-    label: (m) => m.score.substanceScore,
-    className: "text-right whitespace-nowrap",
-  },
-  // スコアを段に読み替えたランク。スコアの右に並べる
   {
     key: "rank",
     width: 60,
@@ -931,26 +920,14 @@ export function CompositionAggregateTable({
                                 {row.totalPct}%
                               </td>
                             );
-                          case "score":
-                            return (
-                              <td
-                                key={h.key}
-                                className={cn(
-                                  CELL,
-                                  STICKY_PLAIN,
-                                  "text-right font-mono whitespace-nowrap",
-                                )}
-                                style={frozen.style}
-                              >
-                                {row.score}
-                              </td>
-                            );
                           case "rank":
                             return (
                               <td
                                 key={h.key}
                                 className={cn(CELL, STICKY_PLAIN, "text-center whitespace-nowrap")}
                                 style={frozen.style}
+                                // スコアの数字はここに浮かせる（列としては出さない）
+                                title={m.score.scoreOf(row.score)}
                               >
                                 {row.scoreRank ?? m.score.noRank}
                               </td>
@@ -1126,13 +1103,7 @@ export function CompositionAggregateTable({
                             {data.totalPct}%
                           </td>
                         )}
-                        {/* スコアのぶん。合計は出さない（物質ごとの値を足しても意味を持たない） */}
-                        {headAt("score") >= 0 && (
-                          <td
-                            className={cn(CELL, OPAQUE_MUTED_50)}
-                            style={cols.frozenProps(headAt("score")).style}
-                          />
-                        )}
+                        {/* ランクのぶん。合計は出さない（物質ごとの値を足しても意味を持たない） */}
                         {headAt("rank") >= 0 && (
                           <td
                             className={cn(CELL, OPAQUE_MUTED_50)}

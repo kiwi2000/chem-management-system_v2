@@ -1795,6 +1795,7 @@ export const ja = {
     title: "スコア",
     substanceScore: "スコア",
     substanceRank: "ランク",
+    scoreOf: (n: number | string) => `スコア ${n}`,
     categoryScore: "スコア",
     computedAt: "計算した時刻",
     notComputed: "未計算",
