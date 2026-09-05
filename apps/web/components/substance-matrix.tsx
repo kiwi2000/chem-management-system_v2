@@ -246,6 +246,12 @@ function Matrix({
     つまみまで切り取られて掴めなくなる。長い文字は中の `Clip` で切る
   */
   const TH = "border-border h-8 border px-2 py-1 whitespace-nowrap";
+  /*
+    左に貼り付ける見出しの列は **左端に外枠の線を自分で描く**（下の shadow）。
+    横に送ると、隠れた列の罫線が貼り付けたセルの左の隙間（1px）から覗いて、
+    細い縦線がちらついた。セルの左隣に枠と同じ色の線を置いて隙間を塞ぎ、
+    表の外枠が途切れず続いて見えるようにする
+  */
 
   /*
     **幅を持つのは、実際に描いている列だけ。**
@@ -392,7 +398,12 @@ function Matrix({
             {/* 1段目：地域 */}
             <tr className="table-head-solid text-table-head-foreground">
               {/* 貼り付けるセルは自分で塗る。`bg-inherit` では tr の塗り（背景画像）を継げず、白い字が透けて消えていた */}
-              <th className={cn(TH, "table-head-solid sticky left-0 z-10 text-left")}>
+              <th
+                className={cn(
+                  TH,
+                  "table-head-solid sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left",
+                )}
+              >
                 {m.substanceMatrix.region}
               </th>
               {regions.map((r) => (
@@ -425,7 +436,13 @@ function Matrix({
             {/* 2段目：法律。渡されたときだけ出す */}
             {parentHeader && (
               <tr className={OPAQUE_MUTED_40}>
-                <th className={cn(TH, OPAQUE_MUTED_40, "sticky left-0 z-10 text-left")}>
+                <th
+                  className={cn(
+                    TH,
+                    OPAQUE_MUTED_40,
+                    "sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left",
+                  )}
+                >
                   {parentHeader}
                 </th>
                 {regions.map((r) =>
@@ -454,7 +471,12 @@ function Matrix({
 
             {/* 3段目：番号の種類（または規制区分） */}
             <tr className="bg-muted/30">
-              <th className={cn(TH, "bg-background sticky left-0 z-10 text-left")}>
+              <th
+                className={cn(
+                  TH,
+                  "bg-background sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left",
+                )}
+              >
                 {m.substanceMatrix.category}
               </th>
               {regions.map((r) =>
@@ -489,7 +511,12 @@ function Matrix({
 
             {/* 4段目：バージョン。左が現在 */}
             <tr className="bg-muted/10">
-              <th className={cn(TH, "bg-background sticky left-0 z-10 text-left")}>
+              <th
+                className={cn(
+                  TH,
+                  "bg-background sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left",
+                )}
+              >
                 {m.casLinks.version}
                 {cols.handle("head", `${m.casLinks.version} ${m.table.resize}`)}
               </th>
@@ -531,7 +558,7 @@ function Matrix({
                     rowSpan={rowCount}
                     className={cn(
                       TH,
-                      "bg-background sticky left-0 z-10 text-left align-top font-bold",
+                      "bg-background sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left align-top font-bold",
                     )}
                   >
                     {rowHeader}
