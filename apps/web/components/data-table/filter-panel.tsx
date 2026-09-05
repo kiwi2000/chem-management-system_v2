@@ -133,7 +133,10 @@ export function FilterPanel<T>({
         {/* 掛かっている条件は、フィルターのすぐ後ろ。どのボタンの話かが分かる */}
         {active && (
           <>
-            <Badge variant="secondary">{m.table.filtering}</Badge>
+            {/* 札は掛かっているものの名前にする。並べ替えだけなのに「フィルター中」と出ると条件を探してしまう */}
+            <Badge variant="secondary">
+              {filterCount > 0 ? m.table.filtering : m.table.sorting}
+            </Badge>
             <span className="text-muted-foreground text-sm">
               {filterCount > 0 && m.table.filterCount(filterCount)}
               {filterCount > 0 && sorted && " ・ "}

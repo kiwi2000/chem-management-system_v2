@@ -275,6 +275,7 @@ export const en: Messages = {
     deleteSelected: "Delete selected",
     deleteSelectedConfirm: (n: number) => `Delete the ${n} selected item${n === 1 ? "" : "s"}?`,
     filtering: "Filtered",
+    sorting: "Sorted",
     filterCount: (n: number) => `${n} condition${n === 1 ? "" : "s"}`,
     sortCount: (n: number) => `sorted by ${n} column${n === 1 ? "" : "s"}`,
     clear: "Clear filters",

@@ -286,6 +286,7 @@ export const ja = {
     deleteSelected: "選択した行を削除",
     deleteSelectedConfirm: (n: number) => `選択した ${n} 件を削除しますか？`,
     filtering: "フィルター中",
+    sorting: "並べ替え中",
     filterCount: (n: number) => `条件 ${n} 件`,
     sortCount: (n: number) => `並べ替え ${n} 列`,
     clear: "条件をクリア",
