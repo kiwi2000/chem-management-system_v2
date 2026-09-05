@@ -245,7 +245,13 @@ function Matrix({
     セルそのものは**はみ出しを切らない。**切ると、境目をまたいで置いた
     つまみまで切り取られて掴めなくなる。長い文字は中の `Clip` で切る
   */
-  const TH = "border-border h-8 border px-2 py-1 whitespace-nowrap";
+  /*
+    罫線は**セルが自分の右と下に引く**（border-separate）。
+    隣と共有する collapse だと、左に貼り付けた見出し列を横に送ったとき、
+    隠れた列の罫線が貼り付けたセルの縁で覗いてちらついた（線を重ねて塞ぐと二重線になる）。
+    左端と上端の線は、いちばん左の列・いちばん上の行のセルが引く
+  */
+  const TH = "border-border h-8 border-r border-b px-2 py-1 whitespace-nowrap";
   /*
     左に貼り付ける見出しの列は **左端に外枠の線を自分で描く**（下の shadow）。
     横に送ると、隠れた列の罫線が貼り付けたセルの左の隙間（1px）から覗いて、
@@ -387,7 +393,7 @@ function Matrix({
         <table
           {...cols.tableProps}
           className={cn(
-            "border-border table-fixed border-collapse border text-xs",
+            "border-border table-fixed border-separate border-spacing-0 text-xs",
             CELL_CLIP,
             cols.tableProps.className,
           )}
@@ -401,7 +407,7 @@ function Matrix({
               <th
                 className={cn(
                   TH,
-                  "table-head-solid sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left",
+                  "table-head-solid sticky left-0 z-10 border-t border-l text-left",
                 )}
               >
                 {m.substanceMatrix.region}
@@ -410,7 +416,7 @@ function Matrix({
                 <th
                   key={r.id}
                   colSpan={regionSpan(r)}
-                  className={cn(TH, "relative text-left font-medium")}
+                  className={cn(TH, "relative border-t text-left font-medium")}
                   title={r.name}
                 >
                   {foldButton(!foldedRegions.has(r.id), r.name, () => {
@@ -436,13 +442,7 @@ function Matrix({
             {/* 2段目：法律。渡されたときだけ出す */}
             {parentHeader && (
               <tr className={OPAQUE_MUTED_40}>
-                <th
-                  className={cn(
-                    TH,
-                    OPAQUE_MUTED_40,
-                    "sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left",
-                  )}
-                >
+                <th className={cn(TH, OPAQUE_MUTED_40, "sticky left-0 z-10 border-l text-left")}>
                   {parentHeader}
                 </th>
                 {regions.map((r) =>
@@ -471,12 +471,7 @@ function Matrix({
 
             {/* 3段目：番号の種類（または規制区分） */}
             <tr className="bg-muted/30">
-              <th
-                className={cn(
-                  TH,
-                  "bg-background sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left",
-                )}
-              >
+              <th className={cn(TH, "bg-background sticky left-0 z-10 border-l text-left")}>
                 {m.substanceMatrix.category}
               </th>
               {regions.map((r) =>
@@ -511,12 +506,7 @@ function Matrix({
 
             {/* 4段目：バージョン。左が現在 */}
             <tr className="bg-muted/10">
-              <th
-                className={cn(
-                  TH,
-                  "bg-background sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left",
-                )}
-              >
+              <th className={cn(TH, "bg-background sticky left-0 z-10 border-l text-left")}>
                 {m.casLinks.version}
                 {cols.handle("head", `${m.casLinks.version} ${m.table.resize}`)}
               </th>
@@ -558,7 +548,7 @@ function Matrix({
                     rowSpan={rowCount}
                     className={cn(
                       TH,
-                      "bg-background sticky left-0 z-10 shadow-[inset_1px_0_0_0_var(--border),inset_-1px_0_0_0_var(--border)] text-left align-top font-bold",
+                      "bg-background sticky left-0 z-10 border-l text-left align-top font-bold",
                     )}
                   >
                     {rowHeader}
@@ -581,7 +571,7 @@ function Matrix({
                               <td
                                 key={`${c.key}/${v.id}`}
                                 className={cn(
-                                  "border-border h-8 cursor-pointer border px-1 py-1 font-mono",
+                                  "border-border h-8 cursor-pointer border-r border-b px-1 py-1 font-mono",
                                   open ? "whitespace-normal align-top" : "whitespace-nowrap",
                                 )}
                                 onClick={() => toggleCell(cellId)}
