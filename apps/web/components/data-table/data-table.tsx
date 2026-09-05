@@ -992,6 +992,55 @@ const PAGE_JUMP_FROM = 2;
  * **一覧から選ぶ。**打ち込む形も試したが、
  * 打ってから確定するまでの手数が増えるだけだった。
  */
+/**
+ * ページ番号をプルダウンで選ばせる上限。これを超えたら打ち込み欄にする。
+ * 選択肢は1ページに1つ作るので、上限が無いと数万個の要素になる
+ */
+const PAGE_SELECT_MAX = 200;
+
+/** ページ番号を打ち込んで飛ぶ欄。Enter か欄を離れたときに飛ぶ。範囲の外は端に丸める */
+function PageInput({
+  page,
+  totalPages,
+  onJump,
+}: {
+  page: number;
+  totalPages: number;
+  onJump: (page: number) => void;
+}) {
+  const { m } = useI18n();
+  const [draft, setDraft] = useState(String(page));
+  // 外から（送りのボタンで）ページが変わったら、欄の数字も合わせる
+  useEffect(() => setDraft(String(page)), [page]);
+  const jump = () => {
+    const n = Math.min(totalPages, Math.max(1, Math.floor(Number(draft)) || 1));
+    setDraft(String(n));
+    if (n !== page) onJump(n);
+  };
+  return (
+    <span className="flex items-center gap-1 px-1">
+      <input
+        type="number"
+        inputMode="numeric"
+        min={1}
+        max={totalPages}
+        value={draft}
+        aria-label={m.table.jumpToPage}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={jump}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            jump();
+          }
+        }}
+        className="border-input bg-background h-8 w-20 rounded-none border px-1 text-right text-xs tabular-nums"
+      />
+      / {totalPages.toLocaleString()}
+    </span>
+  );
+}
+
 function PageJump({
   page,
   totalPages,
@@ -1005,13 +1054,26 @@ function PageJump({
 
   /*
     ページの並びは**ページ数が変わったときだけ作り直す。**
-    数千ページになる表があるので、描き直すたびに作ると重くなる
+    数千ページになる表があるので、描き直すたびに作ると重くなる。
+    **多すぎるときは作らない**（下の打ち込み欄に切り替える）
   */
-  const pages = useMemo(() => Array.from({ length: totalPages }, (_, i) => i + 1), [totalPages]);
+  const pages = useMemo(
+    () => (totalPages > PAGE_SELECT_MAX ? [] : Array.from({ length: totalPages }, (_, i) => i + 1)),
+    [totalPages],
+  );
 
   // 1ページしかないときは、選ばせても行き先が無い
   if (totalPages < PAGE_JUMP_FROM) {
     return <span className="px-1">{m.common.pageOf(page, totalPages)}</span>;
+  }
+
+  /*
+    ページが多すぎるときは番号を打ち込む欄にする。
+    プルダウンに1ページ1つの選択肢を作ると、対象CASの一覧（20万行・約2万ページ）で
+    上下2か所に4万個の要素ができ、**表を出すたびに画面が固まった**（実際に起きた）
+  */
+  if (totalPages > PAGE_SELECT_MAX) {
+    return <PageInput page={page} totalPages={totalPages} onJump={onJump} />;
   }
 
   return (
