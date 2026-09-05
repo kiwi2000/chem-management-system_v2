@@ -44,7 +44,23 @@ export default function ExternalDbPage() {
   const onSelectVersion = useCallback((id: string, code: string) => setVersion({ id, code }), []);
 
   const [source, setSource] = useState<LinkVersionSourceDto | null>(null);
-  const onSelectSource = useCallback((row: LinkVersionSourceDto | null) => setSource(row), []);
+  /*
+    選んだバージョン × データソースは URL にも書いておく。
+    版の切り替わりなどで画面が丸ごと読み直されても、同じ組が選ばれた状態に戻る
+    （件数を変えた拍子に USER に戻ってしまい、選び直しになったことがあった）
+  */
+  const onSelectSource = useCallback(
+    (row: LinkVersionSourceDto | null) => {
+      setSource(row);
+      if (!row) return;
+      const next = new URLSearchParams(window.location.search);
+      if (next.get("version") === row.versionId && next.get("source") === row.id) return;
+      next.set("version", row.versionId);
+      next.set("source", row.id);
+      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    },
+    [router, pathname],
+  );
 
   const scope = useMemo<CasLinkScope>(
     () => ({
