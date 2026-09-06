@@ -535,7 +535,11 @@ export const en: Messages = {
     code: "Code",
     current: "Current",
     currentPinned: "Chosen by you",
-    currentAuto: "Chosen automatically (the newest code)",
+    sequence: "Seq.",
+    sequenceHint:
+      "Higher is newer. Ordering, the automatic current version, the previous version and the diff target follow it",
+    duplicateSequence: (n: number) => `Sequence ${n} is already in use`,
+    currentAuto: "Chosen automatically (the highest sequence)",
     empty: "No versions registered",
     makeCurrent: "Make current",
     duplicateCode: (code: string) => `Version code "${code}" is already in use`,

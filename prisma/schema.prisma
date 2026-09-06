@@ -229,6 +229,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -1705,6 +1706,13 @@ model LinkSetVersion {
   nameEn String? @map("name_en") @db.VarChar(200)
 
   /**
+   * 並びの通番。大きいほど新しい。**新旧はコードではなくこれで決める**
+   * （コードは利用者が自由に付ける名前で、文字順が時系列と合うとは限らない）。
+   * 一覧の並び・現在の自動判定・前のバージョン・差分の相手は、すべてこの降順
+   */
+  sequence Int @default(0)
+
+  /**
    * 判定に使うバージョン。システム全体で1件だけ立てられる。
    * バージョンが1件でもあれば、必ずどれかが立つ
    */
@@ -1733,6 +1741,7 @@ model LinkSetVersion {
   linkDiffRuns        StatutoryCasLinkDiffRun[] @relation("LinkDiffRunVersion")
   linkDiffRunsAgainst StatutoryCasLinkDiffRun[] @relation("LinkDiffRunAgainst")
 
+  @@index([sequence])
   @@map("link_set_versions")
 }
 

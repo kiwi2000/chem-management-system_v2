@@ -40,9 +40,29 @@ export async function PUT(req: Request, { params }: Ctx) {
       return jsonError(409, "duplicate_version_code", m.linkVersions.duplicateCode(v.code));
   }
 
+  // 通番を変えるときは、生きているほかの版とぶつからないことを見る
+  if (v.sequence !== undefined && v.sequence !== existing.sequence) {
+    const taken = await prisma.linkSetVersion.findFirst({
+      where: { sequence: v.sequence, deletedAt: null, id: { not: existing.id } },
+      select: { id: true },
+    });
+    if (taken) {
+      return jsonError(
+        409,
+        "duplicate_version_sequence",
+        m.linkVersions.duplicateSequence(v.sequence),
+      );
+    }
+  }
+
   await prisma.linkSetVersion.update({
     where: { id },
-    data: { code: v.code, codeNormalized, updatedBy: actor.user.id },
+    data: {
+      code: v.code,
+      codeNormalized,
+      ...(v.sequence !== undefined ? { sequence: v.sequence } : {}),
+      updatedBy: actor.user.id,
+    },
   });
 
   await ensureCurrentVersion(actor.user.id);

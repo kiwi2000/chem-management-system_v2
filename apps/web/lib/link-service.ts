@@ -12,14 +12,20 @@ export function toSourceDto(s: Source): SourceDto {
 }
 
 export function toLinkSetVersionDto(v: LinkSetVersion): LinkSetVersionDto {
-  return { id: v.id, code: v.code, isCurrent: v.isCurrent, currentPinned: v.currentPinned };
+  return {
+    id: v.id,
+    code: v.code,
+    isCurrent: v.isCurrent,
+    currentPinned: v.currentPinned,
+    sequence: v.sequence,
+  };
 }
 
 /**
  * 現在のバージョンを必ず1つに保つ。
  *
  * 利用者が選んでいれば（currentPinned）それに従い、選んでいなければ
- * **コード順でいちばん新しいもの**を自動で現在にする。一覧の並び（コードの降順）と
+ * **通番がいちばん大きいもの**を自動で現在にする。一覧の並び（通番の降順）と
  * 同じなので、「いちばん上のものが現在」と見たままになる。
  *
  * バージョンを足した・消したあとに毎回呼ぶ。
@@ -33,7 +39,7 @@ export async function ensureCurrentVersion(actorId: string): Promise<void> {
     pinned ??
     (await prisma.linkSetVersion.findFirst({
       where: { deletedAt: null },
-      orderBy: { codeNormalized: "desc" },
+      orderBy: [{ sequence: "desc" }, { codeNormalized: "desc" }],
     }));
 
   if (!target) {

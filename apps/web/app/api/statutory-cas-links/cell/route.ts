@@ -96,7 +96,8 @@ export async function GET(req: Request) {
 
   const versions = await prisma.linkSetVersion.findMany({
     where: { deletedAt: null },
-    orderBy: { code: "desc" },
+    // 新しい版が左。新旧は通番で決める
+    orderBy: [{ sequence: "desc" }, { codeNormalized: "desc" }],
     select: { id: true, code: true, isCurrent: true },
   });
 

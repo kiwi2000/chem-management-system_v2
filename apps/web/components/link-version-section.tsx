@@ -17,7 +17,8 @@ import { useTableState } from "@/lib/use-table-state";
 
 // 件数が知れているので1ページに全部出し、ページ送りは置かない
 const DEFAULT_STATE: TableState = {
-  ...emptyTableState([{ column: "code", direction: "desc" }]),
+  // 新しいものが上。新旧はコードではなく通番で決める
+  ...emptyTableState([{ column: "sequence", direction: "desc" }]),
   pageSize: 200,
 };
 
@@ -49,8 +50,11 @@ export function LinkVersionSection({
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [code, setCode] = useState("");
+  /** 通番。入力欄の文字のまま持ち、保存のときに数にする */
+  const [sequence, setSequence] = useState("");
   /** 「クリア」で戻す先。編集を始めたときの値 */
   const [original, setOriginal] = useState("");
+  const [originalSequence, setOriginalSequence] = useState("");
   const [data, setData] = useState<ListResponse<LinkSetVersionDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -99,6 +103,32 @@ export function LinkVersionSection({
         ),
       },
       {
+        /*
+          通番。大きいほど新しい。並び・現在の自動選択・前のバージョン・差分の相手は
+          この順で決まる（コードの文字順ではない）
+        */
+        key: "sequence",
+        header: m.linkVersions.sequence,
+        kind: "number",
+        width: 64,
+        className: "text-right tabular-nums",
+        render: (v) =>
+          v.id === editingId ? (
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={sequence}
+              aria-label={m.linkVersions.sequence}
+              title={m.linkVersions.sequenceHint}
+              onChange={(e) => setSequence(e.target.value)}
+              className={CELL_INPUT + " text-right"}
+            />
+          ) : (
+            <span title={m.linkVersions.sequenceHint}>{v.sequence}</span>
+          ),
+      },
+      {
         key: "code",
         header: m.linkVersions.code,
         kind: "text",
@@ -121,7 +151,7 @@ export function LinkVersionSection({
     ],
     // makeCurrent は毎回作り直されるが、押したときに読むだけなので依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [m, editingId, code, editable, saving],
+    [m, editingId, code, sequence, editable, saving],
   );
 
   const { state, setState, reset, ready } = useTableState(
@@ -163,6 +193,10 @@ export function LinkVersionSection({
     setError(null);
     setCode("");
     setOriginal("");
+    // 新しい版は末尾（いちばん大きい通番の次）に置く。変えたければその場で打ち替える
+    const next = String(Math.max(0, ...(data?.items ?? []).map((v) => v.sequence)) + 1);
+    setSequence(next);
+    setOriginalSequence(next);
     setEditingId(NEW_ID);
   }
 
@@ -170,12 +204,15 @@ export function LinkVersionSection({
     setError(null);
     setCode(v.code);
     setOriginal(v.code);
+    setSequence(String(v.sequence));
+    setOriginalSequence(String(v.sequence));
     setEditingId(v.id);
   }
 
   function stopEdit() {
     setEditingId(null);
     setCode("");
+    setSequence("");
   }
 
   async function save() {
@@ -186,7 +223,7 @@ export function LinkVersionSection({
       const res = await fetch(creating ? "/api/link-versions" : "/api/link-versions/" + editingId, {
         method: creating ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, sequence: Number(sequence) || undefined }),
       });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -245,7 +282,16 @@ export function LinkVersionSection({
     items === null
       ? null
       : editingId === NEW_ID
-        ? [{ id: NEW_ID, code: "", isCurrent: false, currentPinned: false }, ...items]
+        ? [
+            {
+              id: NEW_ID,
+              code: "",
+              isCurrent: false,
+              currentPinned: false,
+              sequence: Number(sequence) || 0,
+            },
+            ...items,
+          ]
         : items;
 
   return (
@@ -285,7 +331,14 @@ export function LinkVersionSection({
               <Button size="sm" variant="outline" onClick={stopEdit}>
                 {m.common.cancel}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setCode(original)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setCode(original);
+                  setSequence(originalSequence);
+                }}
+              >
                 {m.common.clear}
               </Button>
             </div>

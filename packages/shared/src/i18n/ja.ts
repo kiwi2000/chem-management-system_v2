@@ -546,9 +546,13 @@ export const ja = {
   linkVersions: {
     title: "バージョン",
     code: "コード",
+    sequence: "通番",
+    sequenceHint:
+      "大きいほど新しい。並びと「現在」の自動選択、前のバージョン、差分の相手はこの順で決まります",
+    duplicateSequence: (n: number) => `通番 ${n} は既に使われています`,
     current: "現在",
     currentPinned: "選んだバージョン",
-    currentAuto: "自動で選ばれたバージョン（コード順でいちばん新しいもの）",
+    currentAuto: "自動で選ばれたバージョン（通番がいちばん大きいもの）",
     empty: "バージョンが登録されていません",
     makeCurrent: "現在のバージョンにする",
     duplicateCode: (code: string) => `バージョンコード「${code}」は既に使われています`,

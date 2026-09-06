@@ -61,6 +61,8 @@ export const linkSetVersionSchema = (m: Messages) =>
       .trim()
       .min(1, m.validation.required)
       .max(CODE_MAX, m.validation.tooLong(CODE_MAX)),
+    /** 並びの通番（大きいほど新しい）。省くと末尾（いちばん大きい番号の次）に付く */
+    sequence: z.number().int().min(1).max(1_000_000).optional(),
   });
 
 /**
