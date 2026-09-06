@@ -98,9 +98,9 @@ export default function ExternalDbPage() {
         <SourceSection onChanged={bump} />
       </div>
 
-      {/* バージョンは列が2つだけなので幅を決め打ちし、残りをデータソースに渡す */}
+      {/* バージョンは列が3つだけなので、列幅の合計ぶんに決め打ちし、残りをデータソースに渡す */}
       <div className="flex flex-col gap-8 xl:flex-row xl:items-start">
-        <div className="w-full shrink-0 xl:w-[268px]">
+        <div className="w-full shrink-0 xl:w-[420px]">
           <LinkVersionSection
             selectedId={version?.id ?? null}
             onSelect={onSelectVersion}
