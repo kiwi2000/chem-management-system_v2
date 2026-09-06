@@ -152,13 +152,16 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
       },
       /*
         スコアとランク。**計算して書いてある値なので、ここでは出すだけ。**
-        当たっている規制区分の点数の合計で、製品とは関係しない
+        当たっている規制区分の点数の合計で、製品とは関係しない。
+        列に出すのはランクだけ。スコアの数字はランクにマウスを置くと浮く（合算表と同じ）。
+        スコアで絞る道は残す（絞り込みの欄にだけ出る）
       */
       {
         key: "score",
         header: m.score.substanceScore,
         kind: "number",
         width: 90,
+        filterOnly: true,
         className: "text-right font-mono tabular-nums",
         render: (r) => r.score,
       },
@@ -167,7 +170,9 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         header: m.score.substanceRank,
         kind: "text",
         width: 80,
-        render: (r) => r.scoreRank ?? m.score.noRank,
+        render: (r) => (
+          <span title={m.score.scoreOf(r.score)}>{r.scoreRank ?? m.score.noRank}</span>
+        ),
       },
       {
         key: "note",
