@@ -635,7 +635,7 @@ export const ja = {
     clearScope: "範囲を外す",
     diff: "差分",
     diffOff: "差分なし",
-    diffAgainst: (code: string) => `${code} と比べる`,
+    diffAgainst: (code: string) => `${code} と比較`,
     diffKind: "差分",
     diffAdded: "追加",
     diffRemoved: "削除",
