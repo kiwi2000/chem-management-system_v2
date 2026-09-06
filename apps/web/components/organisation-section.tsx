@@ -154,7 +154,7 @@ export function OrganisationSection() {
     [m, locale, kindNames],
   );
 
-  const { state, setState, reset, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
+  const { state, setState, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
   const load = useCallback(async () => {
@@ -468,7 +468,6 @@ export function OrganisationSection() {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.organisations.empty}
         // 作る・直す・消すは権限のある人だけ。見るのは誰でもできる
         create={open || !editable ? undefined : { onClick: startNew }}

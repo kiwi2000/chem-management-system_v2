@@ -44,7 +44,7 @@ export function DocTemplatePicker({
   onSelect: (template: DocumentTemplateDto) => void;
 }) {
   const { m, locale } = useI18n();
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     "chem.table.docPickTemplate",
     columnKinds,
     DEFAULT_STATE,
@@ -134,7 +134,6 @@ export function DocTemplatePicker({
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.documents.noTemplate}
         // 1つだけ選ぶ。行を押すと選ばれる（チェックは要らない）
         selectedKey={selectedId}

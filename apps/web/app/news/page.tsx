@@ -106,11 +106,7 @@ export default function NewsListPage() {
     [m, locale],
   );
 
-  const { state, setState, reset, ready } = useTableState(
-    "chem.table.news",
-    columns,
-    DEFAULT_STATE,
-  );
+  const { state, setState, ready } = useTableState("chem.table.news", columns, DEFAULT_STATE);
 
   const [data, setData] = useState<ListResponse<NewsDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -167,7 +163,6 @@ export default function NewsListPage() {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.news.empty}
         create={canPost ? { href: "/news/new" } : undefined}
         selectable={canPost}

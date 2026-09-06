@@ -1,7 +1,7 @@
 "use client";
 
 import { activeFilterCount, type ColumnFilter, type TableState } from "@chem/shared";
-import { ChevronDown, ChevronRight, FilterX, GripVertical } from "lucide-react";
+import { ArrowUpDown, ChevronDown, ChevronRight, FilterX, GripVertical, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,10 @@ interface Props<T> {
   /** 既定の状態。並べ替えが既定のままかどうかの判定に使う */
   defaultState: TableState;
   onFilterChange: (key: string, filter: ColumnFilter | undefined) => void;
-  onReset: () => void;
+  /** フィルターだけを外す（並べ替えは残す） */
+  onClearFilters: () => void;
+  /** 並べ替えを既定に戻す（フィルターは残す） */
+  onClearSort: () => void;
   /** 開閉の状態を端末に覚えるためのキー。保存した条件の紐付けにも使う */
   storageKey: string;
   /** いまの状態をクエリ文字列にしたもの（保存する中身） */
@@ -58,7 +61,8 @@ export function FilterPanel<T>({
   state,
   defaultState,
   onFilterChange,
-  onReset,
+  onClearFilters,
+  onClearSort,
   storageKey,
   currentQuery,
   onLoadQuery,
@@ -91,7 +95,6 @@ export function FilterPanel<T>({
   const filterCount = activeFilterCount(state);
   const asKey = (s: TableState) => s.sort.map((r) => `${r.column}:${r.direction}`).join(",");
   const sorted = asKey(state) !== asKey(defaultState);
-  const active = filterCount > 0 || sorted;
 
   const filterable = columns.filter((c) => c.filterable !== false);
   const byKey = new Map(filterable.map((c) => [c.key, c]));
@@ -130,28 +133,39 @@ export function FilterPanel<T>({
           {m.table.filterPanel}
         </Button>
 
-        {/* 掛かっている条件は、フィルターのすぐ後ろ。どのボタンの話かが分かる */}
-        {active && (
-          <>
-            {/* 札は掛かっているものの名前にする。並べ替えだけなのに「フィルター中」と出ると条件を探してしまう */}
-            <Badge variant="secondary">
-              {filterCount > 0
-                ? m.table.filtering
-                : state.sort.length > 0
-                  ? m.table.sorting
-                  : m.table.unsorted}
-            </Badge>
-            <span className="text-muted-foreground text-sm">
-              {filterCount > 0 && m.table.filterCount(filterCount)}
-              {filterCount > 0 && sorted && state.sort.length > 0 && " ・ "}
-              {/* 既定の並びを外して0列のときは「並べ替え 0 列」とは出さない */}
-              {sorted && state.sort.length > 0 && m.table.sortCount(state.sort.length)}
+        {/*
+          掛かっているものは、フィルターのすぐ後ろに「外す」アイコンだけで出す。
+          言葉（「フィルター中」「条件 1 件」「並べ替え 1 列」）と「条件をクリア」のボタンは
+          場所を取るわりに読まれなかったので置かない。押せば外れる、で足りる。
+          フィルターと並べ替えは別々に外せる（片方だけ残したいことが多い）
+        */}
+        {filterCount > 0 && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7"
+            onClick={onClearFilters}
+            aria-label={m.table.clearFilters}
+            title={m.table.clearFilters}
+          >
+            <FilterX className="size-3.5" />
+          </Button>
+        )}
+        {sorted && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7"
+            onClick={onClearSort}
+            aria-label={m.table.clearSort}
+            title={m.table.clearSort}
+          >
+            {/* 並べ替えの印に小さな × を重ねる（FilterX と同じ「外す」の読み） */}
+            <span className="relative inline-flex">
+              <ArrowUpDown className="size-3.5" />
+              <X className="bg-background absolute -right-1.5 -bottom-1 size-2.5 rounded-full" />
             </span>
-            <Button variant="outline" size="sm" onClick={onReset}>
-              <FilterX className="mr-1 size-3.5" />
-              {m.table.clear}
-            </Button>
-          </>
+          </Button>
         )}
 
         {/* 出す列。フィルターと同じ形にして、押したときの動きも揃える */}

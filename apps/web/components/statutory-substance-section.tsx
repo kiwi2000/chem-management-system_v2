@@ -187,7 +187,7 @@ export function StatutorySubstanceSection({
     [m, locale],
   );
 
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     "chem.table.statutorySubstances",
     columns,
     DEFAULT_STATE,
@@ -778,7 +778,6 @@ export function StatutorySubstanceSection({
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={category ? m.statutorySubstances.empty : m.statutorySubstances.selectCategory}
         selectable={editable && !!activeClassId}
         onDeleteSelected={onDeleteSelected}

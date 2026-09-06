@@ -106,7 +106,7 @@ export function GroupSection({ kind, title, hint, storageKey }: Props) {
   );
 
   // 1画面に表が2つあるので、URLのクエリを用途ごとに分ける
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     storageKey,
     columns,
     DEFAULT_STATE,
@@ -275,7 +275,6 @@ export function GroupSection({ kind, title, hint, storageKey }: Props) {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.groups.empty}
         selectable
         onDeleteSelected={onDeleteSelected}

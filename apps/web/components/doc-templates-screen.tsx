@@ -102,7 +102,7 @@ export function DocTemplatesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     "chem.table.docTemplates",
     columnKinds,
     DEFAULT_STATE,
@@ -463,7 +463,6 @@ export function DocTemplatesScreen() {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.docTemplates.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}

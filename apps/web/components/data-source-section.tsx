@@ -233,7 +233,7 @@ export function DataSourceSection({
     [m, locale, editingId, note, markEditingId, mark, editable, sources],
   );
 
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     "chem.table.dataSources",
     columns,
     DEFAULT_STATE,
@@ -525,7 +525,6 @@ export function DataSourceSection({
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.dataSources.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}

@@ -284,7 +284,6 @@ export function LawTreeSection({
   const {
     state: tableState,
     setState,
-    reset,
     ready,
   } = useTableState("chem.table.lawTree", columns, DEFAULT_STATE);
 
@@ -632,7 +631,6 @@ export function LawTreeSection({
         state={tableState}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={countries.length === 0 ? m.laws.noCountry : m.laws.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}

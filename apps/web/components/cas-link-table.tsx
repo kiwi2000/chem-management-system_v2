@@ -408,7 +408,7 @@ export function CasLinkTable({
 
   const fallback = diffMode ? DIFF_DEFAULT_STATE : DEFAULT_STATE;
   // 同じ画面の上の表と URL がぶつからないよう、接頭辞を付ける
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     "chem.table.casLinkTable",
     columns,
     fallback,
@@ -512,7 +512,6 @@ export function CasLinkTable({
         state={state}
         defaultState={fallback}
         onStateChange={setState}
-        onReset={reset}
         // 消えた行は今の版に無いので薄く
         rowClassName={(r) => (r.kind === "removed" ? "opacity-60" : undefined)}
         emptyMessage={

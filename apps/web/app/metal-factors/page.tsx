@@ -108,7 +108,7 @@ export default function MetalFactorsPage() {
     [m, locale, elements],
   );
 
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     "chem.table.metalFactors",
     columns,
     DEFAULT_STATE,
@@ -328,7 +328,6 @@ export default function MetalFactorsPage() {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.metalFactors.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}

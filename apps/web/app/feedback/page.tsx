@@ -210,7 +210,7 @@ export default function FeedbackPage() {
     [locale],
   );
 
-  const { state, setState, reset, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
+  const { state, setState, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
 
   const [data, setData] = useState<ListResponse<FeedbackDto> | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -427,7 +427,6 @@ export default function FeedbackPage() {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage="まだ投稿がありません"
         // ＋ で書く欄が開く。書いている最中は出さない（法文物質名などと同じ形）
         create={

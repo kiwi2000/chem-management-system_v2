@@ -152,7 +152,7 @@ export function LinkVersionSection({
     [m, editingId, code, asOf, editable, saving],
   );
 
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     "chem.table.linkVersions",
     columns,
     DEFAULT_STATE,
@@ -310,7 +310,6 @@ export function LinkVersionSection({
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.linkVersions.empty}
         selectable={editable}
         singleSelect

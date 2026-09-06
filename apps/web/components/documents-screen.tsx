@@ -105,7 +105,7 @@ export function DocumentsScreen() {
   const [data, setData] = useState<ListResponse<GeneratedDocumentDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     "chem.table.documents",
     columnKinds,
     DEFAULT_STATE,
@@ -429,7 +429,6 @@ export function DocumentsScreen() {
           state={state}
           defaultState={DEFAULT_STATE}
           onStateChange={setState}
-          onReset={reset}
           emptyMessage={m.documents.noneYet}
           selectable
           onDeleteSelected={onDeleteSelected}

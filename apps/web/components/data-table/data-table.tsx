@@ -57,10 +57,9 @@ interface Props<T> {
   rowKey: (row: T) => string;
   total: number;
   state: TableState;
-  /** 既定の状態。これと違うときだけ「フィルター中」を出す */
+  /** 既定の状態。並べ替えがこれと違うときだけ「並べ替えを外す」を出す */
   defaultState: TableState;
   onStateChange: (updater: (prev: TableState) => TableState) => void;
-  onReset: () => void;
   emptyMessage: string;
   /** 編集権限があるときだけ true。先頭にチェックボックスの列と削除ボタンを出す */
   selectable?: boolean;
@@ -192,7 +191,6 @@ export function DataTable<T>({
   state,
   defaultState,
   onStateChange,
-  onReset,
   emptyMessage,
   selectable = false,
   singleSelect = false,
@@ -577,7 +575,10 @@ export function DataTable<T>({
           state={state}
           defaultState={defaultState}
           onFilterChange={setFilter}
-          onReset={onReset}
+          onClearFilters={() => onStateChange((prev) => ({ ...prev, filters: {}, page: 1 }))}
+          onClearSort={() =>
+            onStateChange((prev) => ({ ...prev, sort: defaultState.sort, page: 1 }))
+          }
           storageKey={`${storageKey}.filterPanel`}
           filterLayout={filterLayout}
           actions={actions}

@@ -190,11 +190,7 @@ export default function SessionsPage() {
     [m, locale, reasonLabel],
   );
 
-  const { state, setState, reset, ready } = useTableState(
-    "chem.table.sessions",
-    columns,
-    DEFAULT_STATE,
-  );
+  const { state, setState, ready } = useTableState("chem.table.sessions", columns, DEFAULT_STATE);
   const [data, setData] = useState<ListResponse<SessionDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
@@ -260,7 +256,6 @@ export default function SessionsPage() {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.sessions.empty}
         // 終わった行は薄く。生きているものと見分けるため
         rowClassName={(s) => (s.status === "ended" ? "text-muted-foreground" : undefined)}

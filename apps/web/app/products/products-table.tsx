@@ -317,12 +317,7 @@ export function ProductsTable({
 
   // 1画面に表が2つあるので、URLのクエリを節ごとに分ける
   const storageKey = `chem.table.products.${scope}`;
-  const { state, setState, reset, ready } = useTableState(
-    storageKey,
-    columns,
-    DEFAULT_STATE,
-    scope,
-  );
+  const { state, setState, ready } = useTableState(storageKey, columns, DEFAULT_STATE, scope);
 
   const [data, setData] = useState<ListResponse<ProductListItemDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -412,7 +407,6 @@ export function ProductsTable({
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.products.empty}
         create={editable && scope === "published" ? { href: "/products/new" } : undefined}
         selectable={editable}

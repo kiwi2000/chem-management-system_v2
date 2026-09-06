@@ -166,7 +166,7 @@ export default function AccessLogPage() {
     [m, locale, users],
   );
 
-  const { state, setState, reset, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
+  const { state, setState, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
 
   const [data, setData] = useState<ListResponse<AccessLogDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -255,7 +255,6 @@ export default function AccessLogPage() {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.accessLog.empty}
         selectable
         onDeleteSelected={(rows) =>

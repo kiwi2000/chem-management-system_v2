@@ -142,11 +142,7 @@ export default function UsersPage() {
     [m, locale],
   );
 
-  const { state, setState, reset, ready } = useTableState(
-    "chem.table.users",
-    columns,
-    DEFAULT_STATE,
-  );
+  const { state, setState, ready } = useTableState("chem.table.users", columns, DEFAULT_STATE);
 
   const [data, setData] = useState<ListResponse<UserSummaryDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -203,7 +199,6 @@ export default function UsersPage() {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.users.empty}
         create={{ href: "/admin/users/new" }}
         selectable

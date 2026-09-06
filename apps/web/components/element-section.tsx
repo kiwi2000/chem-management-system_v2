@@ -140,11 +140,7 @@ export function ElementSection() {
     ];
   }, [m, editingId, draft]);
 
-  const { state, setState, reset, ready } = useTableState(
-    "chem.table.elements",
-    columns,
-    DEFAULT_STATE,
-  );
+  const { state, setState, ready } = useTableState("chem.table.elements", columns, DEFAULT_STATE);
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
@@ -265,7 +261,6 @@ export function ElementSection() {
             state={state}
             defaultState={DEFAULT_STATE}
             onStateChange={setState}
-            onReset={reset}
             emptyMessage={m.elements.empty}
             selectable={editable}
             onDeleteSelected={onDeleteSelected}

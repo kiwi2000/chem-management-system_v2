@@ -199,12 +199,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
 
   // 1画面に表が2つあるので、URLのクエリを節ごとに分ける
   const storageKey = `chem.table.substances.${scope}`;
-  const { state, setState, reset, ready } = useTableState(
-    storageKey,
-    columns,
-    DEFAULT_STATE,
-    scope,
-  );
+  const { state, setState, ready } = useTableState(storageKey, columns, DEFAULT_STATE, scope);
 
   const [data, setData] = useState<ListResponse<SubstanceListItemDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -293,7 +288,6 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.substances.empty}
         create={editable && scope === "published" ? { href: "/substances/new" } : undefined}
         selectable={editable}

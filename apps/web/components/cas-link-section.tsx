@@ -222,7 +222,7 @@ export function CasLinkSection({
     [m, locale],
   );
 
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     // 「データ」の列を足したので、覚えている幅を捨てる
     "chem.table.casLinks.v2",
     columns,
@@ -431,7 +431,6 @@ export function CasLinkSection({
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.casLinks.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}

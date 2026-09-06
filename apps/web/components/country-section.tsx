@@ -177,11 +177,7 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
     ];
   }, [m, locale, regions, editingId, draft]);
 
-  const { state, setState, reset, ready } = useTableState(
-    "chem.table.countries",
-    columns,
-    DEFAULT_STATE,
-  );
+  const { state, setState, ready } = useTableState("chem.table.countries", columns, DEFAULT_STATE);
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
@@ -376,7 +372,6 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={regions.length === 0 ? m.countries.noRegion : m.countries.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}

@@ -66,7 +66,7 @@ export function DocTargetPicker({
   const isProduct = target === "PRODUCT";
   const defaultState = isProduct ? PRODUCT_STATE : SUBSTANCE_STATE;
 
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     isProduct ? "chem.table.docPickProduct" : "chem.table.docPickSubstance",
     isProduct ? PRODUCT_KINDS : SUBSTANCE_KINDS,
     defaultState,
@@ -155,7 +155,6 @@ export function DocTargetPicker({
         state={state}
         defaultState={defaultState}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={isProduct ? m.products.empty : m.substances.empty}
         /*
           選ぶのは消すためではなく作るため。**編集の権限は要らない。**

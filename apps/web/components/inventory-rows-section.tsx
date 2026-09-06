@@ -147,7 +147,7 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
     ];
   }, [m, locale, editingId, draft]);
 
-  const { state, setState, reset, ready } = useTableState(
+  const { state, setState, ready } = useTableState(
     "chem.table.inventoryRows",
     columns,
     DEFAULT_STATE,
@@ -328,7 +328,6 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
         state={state}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
-        onReset={reset}
         emptyMessage={m.inventories.rowsEmpty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
