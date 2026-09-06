@@ -32,6 +32,9 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-header-button: var(--header-button);
+  --color-header-button-foreground: var(--header-button-foreground);
+  --color-header-button-border: var(--header-button-border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -95,6 +98,13 @@
    */
   --header: var(--background);
   --header-foreground: var(--foreground);
+  /*
+   * トップバーに置く、塗りのあるボタン（ログアウト）。既定は普通の枠線のボタンと同じ。
+   * 濃い帯のときは .header-strong が、帯の色を少し混ぜた白に差し替える
+   */
+  --header-button: var(--background);
+  --header-button-foreground: var(--foreground);
+  --header-button-border: var(--border);
   --table-head: transparent;
   --table-head-foreground: var(--foreground);
   --sidebar-header: var(--sidebar);
@@ -513,6 +523,10 @@
 .header-strong {
   --header: var(--strong);
   --header-foreground: var(--strong-foreground);
+  /* 帯の字色（ほぼ白）に帯の色を少し混ぜる。アイコンのボタン（15%）より白寄り */
+  --header-button: color-mix(in oklab, var(--strong-foreground) 82%, var(--strong));
+  --header-button-foreground: var(--strong);
+  --header-button-border: color-mix(in oklab, var(--strong-foreground) 55%, var(--strong));
   --table-head: var(--strong-head);
   --table-head-foreground: var(--strong-foreground);
   --sidebar-header: var(--strong);

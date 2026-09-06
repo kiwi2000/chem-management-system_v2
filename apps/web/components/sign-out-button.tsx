@@ -21,11 +21,11 @@ export function SignOutButton() {
   }
 
   return (
-    // 背景を持つボタンなので、濃いヘッダーでも文字色は本文色に固定する
+    // 帯の上に置く塗りのあるボタン。濃い帯では帯の色を少し混ぜた白になる（globals.css の --header-button）
     <Button
       variant="outline"
       size="sm"
-      className="text-foreground"
+      className="bg-header-button text-header-button-foreground border-header-button-border hover:bg-header-button hover:text-header-button-foreground hover:brightness-95"
       onClick={() => void signOut()}
       disabled={busy}
     >
