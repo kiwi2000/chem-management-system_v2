@@ -294,7 +294,6 @@ export function CasLinkTable({
         filterLabelHidden: true,
         // 差分モードでは前後2つあるので、絞り込み・並べ替えは出さない
         filterable: !diffMode,
-        sortable: !diffMode,
         options: [
           { value: "false", label: m.casLinks.applicable },
           { value: "true", label: m.casLinks.notApplicable },
@@ -385,7 +384,6 @@ export function CasLinkTable({
         kind: "text",
         width: 200,
         filterable: !diffMode,
-        sortable: !diffMode,
         className: "text-muted-foreground text-xs",
         render: (r) => r.note ?? "",
       },
@@ -395,7 +393,6 @@ export function CasLinkTable({
         kind: "date",
         width: 110,
         filterable: !diffMode,
-        sortable: !diffMode,
         className: "text-muted-foreground text-center text-xs",
         render: (r) => new Date(r.updatedAt).toLocaleDateString(locale),
       },

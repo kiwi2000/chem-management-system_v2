@@ -32,6 +32,18 @@ function orderByOf(sort: SortRule[]) {
       case "casNumber":
         order.push({ casNormalized: dir });
         break;
+      /*
+        該非・出典データ・備考・更新日は今の版の行の値で並べる。
+        削除された行には今の版が無いので、昇順なら末尾・降順なら先頭に集まる
+      */
+      case "excluded":
+      case "note":
+      case "updatedAt":
+        order.push({ currentLink: { [rule.column]: dir } });
+        break;
+      case "data":
+        order.push({ currentLink: { data: { text: dir } } });
+        break;
       case "officialNumber":
         order.push({ statutorySubstance: { officialNumber: dir } });
         break;

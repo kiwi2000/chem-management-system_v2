@@ -35,6 +35,10 @@ function orderByOf(sort: SortRule[]) {
       case "updatedAt":
         order.push({ [rule.column]: dir });
         break;
+      // 出典データは別テーブル。無いリンクは末尾（昇順）か先頭（降順）に集まる
+      case "data":
+        order.push({ data: { text: dir } });
+        break;
       case "officialNumber":
         order.push({ statutorySubstance: { officialNumber: dir } });
         break;
