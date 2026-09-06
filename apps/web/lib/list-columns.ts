@@ -477,7 +477,11 @@ const wrap = (into: (w: Where) => Where, w: Where | null) => (w ? into(w) : null
  * バージョンとデータソースは絞り込みの列ではなく、上の表で選んだものが API に付く。
  * 「採用」と「物質名」はここに無い（採用はページの行だけで決める。物質名は API が先に CAS を集める）
  */
-export const CAS_LINK_COLUMNS: QueryColumn[] = [
+/**
+ * 対象CASの表と、その差分の表で共通の列（法文物質名の側から掘るもの）。
+ * どちらの表の行にも `statutorySubstance` と `casNormalized` がある
+ */
+const CAS_LINK_SCOPE_COLUMNS: QueryColumn[] = [
   {
     key: "regionId",
     kind: "enum",
@@ -531,6 +535,10 @@ export const CAS_LINK_COLUMNS: QueryColumn[] = [
   { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
   // 物質名（代表物質）。条件は API が先に物質マスタから CAS を集めて付けるので、ここでは何もしない
   { key: "casName", kind: "text", field: "casNormalized", sortable: false, custom: () => null },
+];
+
+export const CAS_LINK_COLUMNS: QueryColumn[] = [
+  ...CAS_LINK_SCOPE_COLUMNS,
   { key: "excluded", kind: "enum", field: "excluded", booleanEnum: true },
   {
     /*
@@ -550,4 +558,13 @@ export const CAS_LINK_COLUMNS: QueryColumn[] = [
   },
   { key: "note", kind: "text", field: "note", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
+];
+
+/**
+ * 差分の表（`/api/cas-links/diff`）。共通の列に「種類」が付く。
+ * 該非・出典データ・備考は前後2つあるので、ここでは絞らない（画面でも絞り込みを出さない）
+ */
+export const CAS_LINK_DIFF_COLUMNS: QueryColumn[] = [
+  { key: "kind", kind: "enum", field: "kind" },
+  ...CAS_LINK_SCOPE_COLUMNS,
 ];

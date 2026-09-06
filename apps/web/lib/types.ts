@@ -880,6 +880,37 @@ export interface CasLinkRowDto {
   updatedAt: string;
 }
 
+/** 差分の片側（今の版、または比べた版）の中身 */
+export interface CasLinkSideDto {
+  excluded: boolean;
+  data: string | null;
+  dataJa: string | null;
+  note: string | null;
+  updatedAt: string;
+}
+
+/**
+ * 「対象CAS」の表の差分モードの1行（`/api/cas-links/diff`）。
+ * 通常の行と同じ項目を持ち（該非などは今の版、消えたものは比べた版のもの）、
+ * そのうえで種類と前後の中身を持つ
+ */
+export interface CasLinkDiffRowDto extends CasLinkRowDto {
+  kind: "added" | "removed" | "changed";
+  current: CasLinkSideDto | null;
+  previous: CasLinkSideDto | null;
+}
+
+/** 差分の要約。表の見出しに出す */
+export interface CasLinkDiffRunDto {
+  added: number;
+  removed: number;
+  changed: number;
+  computedAt: string;
+  againstCode: string;
+  /** 比べた版にそのデータソースが並んでいるか。無ければ全部が「増えた」になる */
+  sourceInAgainst: boolean;
+}
+
 export interface MetalFactorDto {
   id: string;
   casNumber: string;

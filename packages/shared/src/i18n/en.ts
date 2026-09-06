@@ -617,6 +617,22 @@ export const en: Messages = {
     scopeLaw: "Law",
     scopeCategory: "Category",
     clearScope: "Clear scope",
+    diff: "Diff",
+    diffOff: "No diff",
+    diffAgainst: (code: string) => `Compare with ${code}`,
+    diffKind: "Diff",
+    diffAdded: "Added",
+    diffRemoved: "Removed",
+    diffChanged: "Changed",
+    diffSummary: (added: number, removed: number, changed: number) =>
+      `+${added.toLocaleString("en-US")} −${removed.toLocaleString("en-US")} ±${changed.toLocaleString("en-US")}`,
+    diffNoSource: (code: string) =>
+      `${code} does not carry this data source, so everything counts as added`,
+    diffBefore: "Before",
+    diffAfter: "After",
+    diffEmpty: "No differences",
+    diffHint:
+      "Compares with another version of the same data source. Only added, removed and changed (status or source data differs) rows are shown",
   },
 
   casLinks: {

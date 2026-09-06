@@ -70,6 +70,19 @@ export default function ExternalDbPage() {
     }),
     [searchParams],
   );
+  // 差分モードで比べる相手。URL に載せ、読み直しても同じ比べかたに戻る
+  const against = searchParams.get("against");
+  const onAgainstChange = useCallback(
+    (id: string | null) => {
+      const next = new URLSearchParams(window.location.search);
+      if (id) next.set("against", id);
+      else next.delete("against");
+      const qs = next.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [router, pathname],
+  );
+
   /** 範囲を外す。URL から範囲の項目だけ取り除く（表の絞り込みは残す） */
   const clearScope = useCallback(() => {
     const next = new URLSearchParams(searchParams.toString());
@@ -114,6 +127,8 @@ export default function ExternalDbPage() {
         sourceCode={source?.sourceCode ?? null}
         scope={scope}
         onClearScope={clearScope}
+        against={against}
+        onAgainstChange={onAgainstChange}
       />
     </div>
   );

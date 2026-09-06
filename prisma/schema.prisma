@@ -228,6 +228,7 @@ model User {
   /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -1680,6 +1681,8 @@ model StatutorySubstance {
   regulationClass RegulationClass    @relation(fields: [classId], references: [id])
   links           StatutoryCasLink[]
 
+  linkDiffs StatutoryCasLinkDiff[]
+
   @@unique([classId, codeNormalized])
   @@index([classId, displayOrder])
   @@map("statutory_substances")
@@ -1724,6 +1727,11 @@ model LinkSetVersion {
   sources       LinkVersionSource[]
   links         StatutoryCasLink[]
   inventoryRows InventoryRow[]
+
+  linkDiffs           StatutoryCasLinkDiff[]    @relation("LinkDiffVersion")
+  linkDiffsAgainst    StatutoryCasLinkDiff[]    @relation("LinkDiffAgainst")
+  linkDiffRuns        StatutoryCasLinkDiffRun[] @relation("LinkDiffRunVersion")
+  linkDiffRunsAgainst StatutoryCasLinkDiffRun[] @relation("LinkDiffRunAgainst")
 
   @@map("link_set_versions")
 }
@@ -1850,13 +1858,18 @@ model StatutoryCasLink {
    */
   data               StatutoryCasLinkData?
 
+  diffAsCurrent  StatutoryCasLinkDiff[] @relation("LinkDiffCurrent")
+  diffAsPrevious StatutoryCasLinkDiff[] @relation("LinkDiffPrevious")
+
   @@unique([versionId, statutorySubstanceId, casNormalized, sourceId])
   /**
    * 判定はここを引く。製品に入っているCASの集合から一気に絞り込む
    */
   @@index([versionId, casNormalized])
   @@index([statutorySubstanceId])
-  /** 外部データベースの画面で、バージョン × データソースの全リンクを一覧にする */
+  /**
+   * 外部データベースの画面で、バージョン × データソースの全リンクを一覧にする
+   */
   @@index([versionId, sourceId])
   @@map("statutory_cas_links")
 }
@@ -1885,6 +1898,68 @@ model StatutoryCasLinkData {
   link StatutoryCasLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
 
   @@map("statutory_cas_link_data")
+}
+
+/// バージョン間の対象CASの差分の種類
+enum LinkDiffKind {
+  ADDED
+  REMOVED
+  CHANGED
+}
+
+/**
+ * 2つのバージョンの対象CASの差分（同じデータソースどうし）。
+ * 外部データベースの「対象CAS」の表で「差分」を押したときに読む。
+ * 突き合わせは「法文物質名 × CAS」。同じものは残さず、増えた・消えた・変わった だけを置く。
+ * リンクが変わっていなければ前回の結果を使う（run の computedAt で見る）
+ */
+model StatutoryCasLinkDiff {
+  id                   String       @id @default(cuid())
+  versionId            String       @map("version_id")
+  againstId            String       @map("against_id")
+  sourceId             String       @map("source_id")
+  statutorySubstanceId String       @map("statutory_substance_id")
+  casNormalized        String       @map("cas_normalized") @db.VarChar(20)
+  kind                 LinkDiffKind
+  /**
+   * 今の版の行。消えたものは無い
+   */
+  currentLinkId        String?      @map("current_link_id")
+  /**
+   * 比べた版の行。増えたものは無い
+   */
+  previousLinkId       String?      @map("previous_link_id")
+  computedAt           DateTime     @default(now()) @map("computed_at")
+
+  version            LinkSetVersion     @relation("LinkDiffVersion", fields: [versionId], references: [id], onDelete: Cascade)
+  against            LinkSetVersion     @relation("LinkDiffAgainst", fields: [againstId], references: [id], onDelete: Cascade)
+  statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id], onDelete: Cascade)
+  currentLink        StatutoryCasLink?  @relation("LinkDiffCurrent", fields: [currentLinkId], references: [id], onDelete: Cascade)
+  previousLink       StatutoryCasLink?  @relation("LinkDiffPrevious", fields: [previousLinkId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, againstId, sourceId, statutorySubstanceId, casNormalized])
+  @@index([versionId, againstId, sourceId, kind])
+  @@map("statutory_cas_link_diffs")
+}
+
+/**
+ * 差分を作った記録。件数の要約と、いつ作ったか（古くなったかを見る）
+ */
+model StatutoryCasLinkDiffRun {
+  id         String   @id @default(cuid())
+  versionId  String   @map("version_id")
+  againstId  String   @map("against_id")
+  sourceId   String   @map("source_id")
+  computedAt DateTime @default(now()) @map("computed_at")
+  added      Int
+  removed    Int
+  changed    Int
+
+  version LinkSetVersion @relation("LinkDiffRunVersion", fields: [versionId], references: [id], onDelete: Cascade)
+  against LinkSetVersion @relation("LinkDiffRunAgainst", fields: [againstId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, againstId, sourceId])
+  @@map("statutory_cas_link_diff_runs")
 }
 
 /**

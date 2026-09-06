@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { PRODUCT_COLUMNS, STATUTORY_SUBSTANCE_COLUMNS } from "./list-columns";
+import {
+  CAS_LINK_DIFF_COLUMNS,
+  PRODUCT_COLUMNS,
+  STATUTORY_SUBSTANCE_COLUMNS,
+} from "./list-columns";
 import { buildWhere } from "./table-query";
 
 /**
@@ -128,5 +132,29 @@ describe("法文物質名の絞り込み", () => {
   it("「空でない」はどれかに入っているとき", () => {
     const w = nameWhere("notEmpty") as { OR: unknown[] };
     expect(w.OR).toHaveLength(3);
+  });
+});
+
+/** 対象CASの差分の表。種類は DB の値で絞り、法文物質名の側の条件は関連をたどる */
+describe("対象CASの差分の絞り込み", () => {
+  it("種類は kind の in で絞る", () => {
+    expect(
+      buildWhere(CAS_LINK_DIFF_COLUMNS, { kind: { kind: "enum", values: ["ADDED", "REMOVED"] } }),
+    ).toEqual({
+      AND: [{ kind: { in: ["ADDED", "REMOVED"] } }],
+    });
+  });
+
+  it("法律の名前は法文物質名 → 分類 → 区分 → 法律 と掘る", () => {
+    const w = buildWhere(CAS_LINK_DIFF_COLUMNS, {
+      lawName: { kind: "text", op: "contains", value: "安衛" },
+    }) as { AND: { statutorySubstance: { regulationClass: { category: { law: unknown } } } }[] };
+    expect(w.AND[0]!.statutorySubstance.regulationClass.category.law).toEqual({
+      OR: [
+        { nameOriginal: { contains: "安衛", mode: "insensitive" } },
+        { nameJa: { contains: "安衛", mode: "insensitive" } },
+        { nameEn: { contains: "安衛", mode: "insensitive" } },
+      ],
+    });
   });
 });
