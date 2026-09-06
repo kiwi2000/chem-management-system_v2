@@ -69,12 +69,12 @@ const cellKey = (columnKey: string, versionId: string) => `${columnKey}/${versio
 
 /**
  * 現在のバージョンと、その1つ前を返す。
- * 「1つ前」は通番の並びで決める（現在のバージョンの決め方と同じ規則）。
+ * 「1つ前」は基準日の並びで決める（現在のバージョンの決め方と同じ規則）。
  */
 async function twoVersions() {
   const all = await prisma.linkSetVersion.findMany({
     where: { deletedAt: null },
-    orderBy: [{ sequence: "desc" }, { codeNormalized: "desc" }],
+    orderBy: [{ asOf: "desc" }, { createdAt: "desc" }],
     select: { id: true, code: true, isCurrent: true },
   });
   if (all.length === 0) return [];

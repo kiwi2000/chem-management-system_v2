@@ -61,8 +61,12 @@ export const linkSetVersionSchema = (m: Messages) =>
       .trim()
       .min(1, m.validation.required)
       .max(CODE_MAX, m.validation.tooLong(CODE_MAX)),
-    /** 並びの通番（大きいほど新しい）。省くと末尾（いちばん大きい番号の次）に付く */
-    sequence: z.number().int().min(1).max(1_000_000).optional(),
+    /** 基準日（YYYY-MM-DD）。そのデータが何時点のものか。省くと今日 */
+    asOf: z
+      .string()
+      .trim()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
   });
 
 /**

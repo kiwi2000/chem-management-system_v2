@@ -424,7 +424,7 @@ export const SOURCE_COLUMNS: QueryColumn[] = [
 ];
 
 export const LINK_VERSION_COLUMNS: QueryColumn[] = [
-  { key: "sequence", kind: "number", field: "sequence" },
+  { key: "asOf", kind: "date", field: "asOf" },
   { key: "code", kind: "text", field: "code", caseInsensitive: true },
   { key: "isCurrent", kind: "enum", field: "isCurrent" },
 ];

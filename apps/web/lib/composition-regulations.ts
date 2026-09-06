@@ -30,13 +30,16 @@ export async function currentSources(): Promise<
 export async function previousVersion(): Promise<{ id: string; code: string } | null> {
   const now = await prisma.linkSetVersion.findFirst({
     where: { isCurrent: true, deletedAt: null },
-    select: { sequence: true },
+    select: { asOf: true, createdAt: true },
   });
   if (!now) return null;
-  // 「前」は通番で決める（コードの文字順ではない）
+  // 「前」は基準日で決める（コードの文字順ではない）。同じ日なら先に登録したもの
   return prisma.linkSetVersion.findFirst({
-    where: { deletedAt: null, sequence: { lt: now.sequence } },
-    orderBy: [{ sequence: "desc" }, { codeNormalized: "desc" }],
+    where: {
+      deletedAt: null,
+      OR: [{ asOf: { lt: now.asOf } }, { asOf: now.asOf, createdAt: { lt: now.createdAt } }],
+    },
+    orderBy: [{ asOf: "desc" }, { createdAt: "desc" }],
     select: { id: true, code: true },
   });
 }

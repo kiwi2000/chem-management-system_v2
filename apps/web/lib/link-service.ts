@@ -11,13 +11,20 @@ export function toSourceDto(s: Source): SourceDto {
   return { id: s.id, code: s.code, note: s.note, color: s.color, mark: s.mark };
 }
 
+/** 基準日の文字（YYYY-MM-DD）を日付にする。時刻を持たない列なので UTC の 0 時に置く。読めなければ今日 */
+export function asOfDate(s: string | undefined): Date {
+  const d = s ? new Date(`${s}T00:00:00.000Z`) : new Date();
+  const ok = Number.isNaN(d.getTime()) ? new Date() : d;
+  return new Date(Date.UTC(ok.getUTCFullYear(), ok.getUTCMonth(), ok.getUTCDate()));
+}
+
 export function toLinkSetVersionDto(v: LinkSetVersion): LinkSetVersionDto {
   return {
     id: v.id,
     code: v.code,
     isCurrent: v.isCurrent,
     currentPinned: v.currentPinned,
-    sequence: v.sequence,
+    asOf: v.asOf.toISOString().slice(0, 10),
   };
 }
 
@@ -25,7 +32,7 @@ export function toLinkSetVersionDto(v: LinkSetVersion): LinkSetVersionDto {
  * 現在のバージョンを必ず1つに保つ。
  *
  * 利用者が選んでいれば（currentPinned）それに従い、選んでいなければ
- * **通番がいちばん大きいもの**を自動で現在にする。一覧の並び（通番の降順）と
+ * **基準日がいちばん新しいもの**を自動で現在にする。一覧の並び（基準日の降順）と
  * 同じなので、「いちばん上のものが現在」と見たままになる。
  *
  * バージョンを足した・消したあとに毎回呼ぶ。
@@ -39,7 +46,7 @@ export async function ensureCurrentVersion(actorId: string): Promise<void> {
     pinned ??
     (await prisma.linkSetVersion.findFirst({
       where: { deletedAt: null },
-      orderBy: [{ sequence: "desc" }, { codeNormalized: "desc" }],
+      orderBy: [{ asOf: "desc" }, { createdAt: "desc" }],
     }));
 
   if (!target) {

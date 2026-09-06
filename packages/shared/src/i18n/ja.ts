@@ -547,13 +547,12 @@ export const ja = {
   linkVersions: {
     title: "バージョン",
     code: "コード",
-    sequence: "通番",
-    sequenceHint:
-      "大きいほど新しい。並びと「現在」の自動選択、前のバージョン、差分の相手はこの順で決まります",
-    duplicateSequence: (n: number) => `通番 ${n} は既に使われています`,
+    asOf: "基準日",
+    asOfHint:
+      "そのデータが何時点のものか。新しい日付ほど新しい版として扱います。並びと「現在」の自動選択、前のバージョン、差分の相手はこの順で決まります",
     current: "現在",
     currentPinned: "選んだバージョン",
-    currentAuto: "自動で選ばれたバージョン（通番がいちばん大きいもの）",
+    currentAuto: "自動で選ばれたバージョン（基準日がいちばん新しいもの）",
     empty: "バージョンが登録されていません",
     makeCurrent: "現在のバージョンにする",
     duplicateCode: (code: string) => `バージョンコード「${code}」は既に使われています`,

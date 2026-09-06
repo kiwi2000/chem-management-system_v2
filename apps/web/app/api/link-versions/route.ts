@@ -8,24 +8,14 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { ensureCurrentVersion, toLinkSetVersionDto } from "@/lib/link-service";
+import { asOfDate, ensureCurrentVersion, toLinkSetVersionDto } from "@/lib/link-service";
 import { LINK_VERSION_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
-/** 次の通番。生きているバージョンのいちばん大きい番号の次 */
-async function nextSequence(): Promise<number> {
-  const top = await prisma.linkSetVersion.aggregate({
-    where: { deletedAt: null },
-    _max: { sequence: true },
-  });
-  return (top._max.sequence ?? 0) + 1;
-}
-
-/** バージョンコードの新しい順（年度が下がっていく形になる） */
-/** 既定は通番の降順（新しいものが上）。コードの文字順では並べない */
-const DEFAULT_STATE = emptyTableState([{ column: "sequence", direction: "desc" }]);
+/** 既定は基準日の降順（新しいものが上）。コードの文字順では並べない */
+const DEFAULT_STATE = emptyTableState([{ column: "asOf", direction: "desc" }]);
 
 /** GET /api/link-versions — 一覧 */
 export async function GET(req: Request) {
@@ -44,7 +34,7 @@ export async function GET(req: Request) {
       where,
       // 現在のバージョンを先頭に寄せたりはしない。切り替えるたびに行が動くと、
       // どれを押したのか分からなくなるため（印だけが移る）
-      orderBy: buildOrderBy(LINK_VERSION_COLUMNS, state.sort, { sequence: "desc" }),
+      orderBy: buildOrderBy(LINK_VERSION_COLUMNS, state.sort, { asOf: "desc" }),
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
     }),
@@ -83,33 +73,18 @@ export async function POST(req: Request) {
   });
   if (live) return jsonError(409, "duplicate_version_code", m.linkVersions.duplicateCode(v.code));
 
-  // 通番。省かれたら末尾（いま生きているものの最大＋1）。指定されたら重複を断る
-  const sequence = v.sequence ?? (await nextSequence());
-  if (v.sequence !== undefined) {
-    const taken = await prisma.linkSetVersion.findFirst({
-      where: { sequence, deletedAt: null },
-      select: { id: true },
-    });
-    if (taken) {
-      return jsonError(
-        409,
-        "duplicate_version_sequence",
-        m.linkVersions.duplicateSequence(sequence),
-      );
-    }
-  }
-
   const created = await prisma.linkSetVersion.create({
     data: {
       code: v.code,
       codeNormalized,
-      sequence,
+      // 基準日。省かれたら今日
+      asOf: asOfDate(v.asOf),
       createdBy: actor.user.id,
       updatedBy: actor.user.id,
     },
   });
 
-  // 1件目なら自動で現在になる。指定が無ければ、より新しいコードのものへ移る
+  // 1件目なら自動で現在になる。指定が無ければ、基準日がより新しいものへ移る
   await ensureCurrentVersion(actor.user.id);
 
   await writeAudit({
