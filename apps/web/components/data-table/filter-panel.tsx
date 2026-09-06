@@ -135,12 +135,17 @@ export function FilterPanel<T>({
           <>
             {/* 札は掛かっているものの名前にする。並べ替えだけなのに「フィルター中」と出ると条件を探してしまう */}
             <Badge variant="secondary">
-              {filterCount > 0 ? m.table.filtering : m.table.sorting}
+              {filterCount > 0
+                ? m.table.filtering
+                : state.sort.length > 0
+                  ? m.table.sorting
+                  : m.table.unsorted}
             </Badge>
             <span className="text-muted-foreground text-sm">
               {filterCount > 0 && m.table.filterCount(filterCount)}
-              {filterCount > 0 && sorted && " ・ "}
-              {sorted && m.table.sortCount(state.sort.length)}
+              {filterCount > 0 && sorted && state.sort.length > 0 && " ・ "}
+              {/* 既定の並びを外して0列のときは「並べ替え 0 列」とは出さない */}
+              {sorted && state.sort.length > 0 && m.table.sortCount(state.sort.length)}
             </span>
             <Button variant="outline" size="sm" onClick={onReset}>
               <FilterX className="mr-1 size-3.5" />
