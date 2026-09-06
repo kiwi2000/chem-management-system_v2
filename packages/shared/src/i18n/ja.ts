@@ -644,13 +644,14 @@ export const ja = {
     diffAdded: "追加",
     diffRemoved: "削除",
     diffChanged: "変更",
+    diffUnchanged: "変更なし",
     diffSummary: (added: number, removed: number, changed: number) =>
       `+${added.toLocaleString("ja-JP")} −${removed.toLocaleString("ja-JP")} ±${changed.toLocaleString("ja-JP")}`,
     diffBefore: "前",
     diffAfter: "後",
     diffEmpty: "差分はありません",
     diffHint:
-      "同じデータソースの別のバージョンと突き合わせます。追加・削除・変更（該非か出典データが違う）だけを出し、同じものは出しません",
+      "同じデータソースの別のバージョンと突き合わせます。追加・削除・変更（該非か出典データが違う）を出します。同じものは、絞り込みで「変更なし」を押したときだけ出ます",
   },
 
   casLinks: {

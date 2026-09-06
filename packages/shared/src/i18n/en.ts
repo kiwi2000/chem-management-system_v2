@@ -628,13 +628,14 @@ export const en: Messages = {
     diffAdded: "Added",
     diffRemoved: "Removed",
     diffChanged: "Changed",
+    diffUnchanged: "Unchanged",
     diffSummary: (added: number, removed: number, changed: number) =>
       `+${added.toLocaleString("en-US")} −${removed.toLocaleString("en-US")} ±${changed.toLocaleString("en-US")}`,
     diffBefore: "Before",
     diffAfter: "After",
     diffEmpty: "No differences",
     diffHint:
-      "Compares with another version of the same data source. Only added, removed and changed (status or source data differs) rows are shown",
+      'Compares with another version of the same data source. Added, removed and changed (status or source data differs) rows are shown; identical rows appear only when you press "Unchanged" in the filter',
   },
 
   casLinks: {

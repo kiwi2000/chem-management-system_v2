@@ -4,7 +4,9 @@ import { prisma } from "@/lib/db";
  * 2つのバージョンの対象CASの差分（同じデータソースどうし）。
  *
  * 突き合わせの鍵は「法文物質名 × CAS」。法文物質名はバージョンをまたいで同じ行を指すので、
- * これで「増えた」「消えた」「変わった」が決まる。
+ * これで「増えた」「消えた」「変わった」が決まる。どちらにもあって同じものは「変更なし」。
+ * 変更なしの行も置くのは、絞り込みのボタンで「変更なし」を押したときにも同じ表で出せるようにするため
+ * （何も押していなければ画面側が除く）。
  * 「変わった」は、該非か出典データの文章（原文。前後の空白は無視）が違うもの。
  * 日本語訳は比べない。訳が付いたかどうかは出どころの都合で、法規制の中身の変化ではない
  * （2026Q2 は訳なし、2026Q3 は訳ありなので、比べると全部が「変わった」になった）。
@@ -51,7 +53,7 @@ export async function ensureDiffRun(
       /*
         突き合わせは DB の中で一気にやる（1行ずつ引くと数十万回になる）。
         両側の版のリンクに出どころの文章を付けて、外部結合で並べる。
-        片側にしか無ければ 増えた／消えた、両方にあって中身が違えば 変わった。同じものは残さない
+        片側にしか無ければ 増えた／消えた、両方にあって中身が違えば 変わった、同じなら 変更なし
       */
       await tx.$executeRaw`
         INSERT INTO "statutory_cas_link_diffs"
@@ -62,7 +64,9 @@ export async function ensureDiffRun(
                COALESCE(c.cas_normalized, p.cas_normalized),
                (CASE WHEN p.id IS NULL THEN 'ADDED'
                      WHEN c.id IS NULL THEN 'REMOVED'
-                     ELSE 'CHANGED' END)::"LinkDiffKind",
+                     WHEN c.excluded <> p.excluded
+                       OR COALESCE(btrim(c.text), '') <> COALESCE(btrim(p.text), '') THEN 'CHANGED'
+                     ELSE 'UNCHANGED' END)::"LinkDiffKind",
                c.id, p.id, now()
         FROM (SELECT l.id, l.statutory_substance_id, l.cas_normalized, l.excluded, d.text
                 FROM "statutory_cas_links" l
@@ -75,9 +79,6 @@ export async function ensureDiffRun(
                WHERE l.version_id = ${againstId} AND l.source_id = ${sourceId}) p
           ON c.statutory_substance_id = p.statutory_substance_id
          AND c.cas_normalized = p.cas_normalized
-        WHERE p.id IS NULL OR c.id IS NULL
-           OR c.excluded <> p.excluded
-           OR COALESCE(btrim(c.text), '') <> COALESCE(btrim(p.text), '')
       `;
       const counts = await tx.statutoryCasLinkDiff.groupBy({
         by: ["kind"],

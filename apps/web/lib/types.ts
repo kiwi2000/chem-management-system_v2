@@ -895,7 +895,7 @@ export interface CasLinkSideDto {
  * そのうえで種類と前後の中身を持つ
  */
 export interface CasLinkDiffRowDto extends CasLinkRowDto {
-  kind: "added" | "removed" | "changed";
+  kind: "added" | "removed" | "changed" | "unchanged";
   current: CasLinkSideDto | null;
   previous: CasLinkSideDto | null;
 }

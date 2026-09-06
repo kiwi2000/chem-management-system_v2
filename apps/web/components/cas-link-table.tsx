@@ -43,6 +43,7 @@ const KIND_CLASS: Record<CasLinkDiffRowDto["kind"], string> = {
   added: "bg-emerald-600 text-white",
   removed: "bg-red-600 text-white",
   changed: "bg-amber-500 text-white",
+  unchanged: "bg-slate-500 text-white",
 };
 
 /** 区分・法律の画面から来たときの範囲。表の絞り込みとは別に、URL に載せて持ち回る */
@@ -143,6 +144,8 @@ export function CasLinkTable({
               { value: "ADDED", label: m.casLinkTable.diffAdded, color: "#059669" },
               { value: "REMOVED", label: m.casLinkTable.diffRemoved, color: "#dc2626" },
               { value: "CHANGED", label: m.casLinkTable.diffChanged, color: "#f59e0b" },
+              // 変更なしは押したときだけ出る（何も押していなければ差分だけ）
+              { value: "UNCHANGED", label: m.casLinkTable.diffUnchanged, color: "#64748b" },
             ],
             className: "text-center",
             render: (r) =>
@@ -157,7 +160,9 @@ export function CasLinkTable({
                     ? m.casLinkTable.diffAdded
                     : r.kind === "removed"
                       ? m.casLinkTable.diffRemoved
-                      : m.casLinkTable.diffChanged}
+                      : r.kind === "changed"
+                        ? m.casLinkTable.diffChanged
+                        : m.casLinkTable.diffUnchanged}
                 </span>
               ) : null,
           },

@@ -19,7 +19,12 @@ const DEFAULT_STATE = emptyTableState([
 /** 物質名で絞るときに集める CAS の上限（対象CASの表と同じ） */
 const CAS_NAME_LIMIT = 2000;
 
-const KIND_OF = { ADDED: "added", REMOVED: "removed", CHANGED: "changed" } as const;
+const KIND_OF = {
+  ADDED: "added",
+  REMOVED: "removed",
+  CHANGED: "changed",
+  UNCHANGED: "unchanged",
+} as const;
 
 /** 並べ替え。差分の行から法文物質名の側へ掘る（対象CASの表と同じ道） */
 function orderByOf(sort: SortRule[]) {
@@ -106,7 +111,8 @@ const sideOf = (l: Side | null): CasLinkSideDto | null =>
 /**
  * GET /api/cas-links/diff — 1つのバージョン × 1つのデータソースの対象CASを、別の版と突き合わせた差分。
  *
- * 外部データベースの「対象CAS」の表の差分モード。行は 増えた・消えた・変わった だけ。
+ * 外部データベースの「規制対象CAS」の表の差分モード。行は 増えた・消えた・変わった。
+ * 「変更なし」の行も表にはあるが、絞り込みで押したときだけ出す（差分を見るのが目的なので）。
  * 差分そのものは `ensureDiffRun` が表に作っておき、ここはそれを絞り込み・並べ替え・ページングして返す。
  * 消えた行は今の版に無いので、比べた版の中身（該非・出典データ）を持たせる
  */
@@ -180,6 +186,8 @@ export async function GET(req: Request) {
     ...scope,
     ...(casScope ? { casNormalized: { in: casScope } } : {}),
     ...buildWhere(CAS_LINK_DIFF_COLUMNS, state.filters),
+    // 種類を絞っていなければ「変更なし」は出さない。押して初めて出る
+    ...(state.filters.kind ? {} : { kind: { not: "UNCHANGED" as const } }),
   };
 
   const [rows, total, source] = await Promise.all([
