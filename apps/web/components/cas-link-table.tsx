@@ -136,12 +136,13 @@ export function CasLinkTable({
             header: m.casLinkTable.diffKind,
             kind: "enum",
             width: 76,
-            filterLabelHidden: true,
+            // 絞り込みは押すボタンにして、印と同じ色を付ける（プルダウンでは気づかれなかった）
+            filterAsButtons: true,
             // 値は DB の種類そのもの（絞り込みはサーバーで見る）
             options: [
-              { value: "ADDED", label: m.casLinkTable.diffAdded },
-              { value: "REMOVED", label: m.casLinkTable.diffRemoved },
-              { value: "CHANGED", label: m.casLinkTable.diffChanged },
+              { value: "ADDED", label: m.casLinkTable.diffAdded, color: "#059669" },
+              { value: "REMOVED", label: m.casLinkTable.diffRemoved, color: "#dc2626" },
+              { value: "CHANGED", label: m.casLinkTable.diffChanged, color: "#f59e0b" },
             ],
             className: "text-center",
             render: (r) =>

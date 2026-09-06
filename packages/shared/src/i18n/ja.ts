@@ -637,18 +637,18 @@ export const ja = {
     diffOff: "差分なし",
     diffAgainst: (code: string) => `${code} と比べる`,
     diffKind: "差分",
-    diffAdded: "増えた",
-    diffRemoved: "消えた",
-    diffChanged: "変わった",
+    diffAdded: "追加",
+    diffRemoved: "削除",
+    diffChanged: "変更",
     diffSummary: (added: number, removed: number, changed: number) =>
       `+${added.toLocaleString("ja-JP")} −${removed.toLocaleString("ja-JP")} ±${changed.toLocaleString("ja-JP")}`,
     diffNoSource: (code: string) =>
-      `${code} にこのデータソースは並んでいないので、全部が「増えた」になります`,
+      `${code} にこのデータソースは並んでいないので、全部が「追加」になります`,
     diffBefore: "前",
     diffAfter: "後",
     diffEmpty: "差分はありません",
     diffHint:
-      "同じデータソースの別のバージョンと突き合わせます。増えた・消えた・変わった（該非か出典データが違う）だけを出し、同じものは出しません",
+      "同じデータソースの別のバージョンと突き合わせます。追加・削除・変更（該非か出典データが違う）だけを出し、同じものは出しません",
   },
 
   casLinks: {
