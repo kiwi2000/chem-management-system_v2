@@ -14,6 +14,14 @@ import { useI18n } from "@/lib/i18n-client";
 import type { MeDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+/*
+  帯の上に置くアイコンのボタン。
+  ghost の既定は「開いているあいだ薄い灰色（bg-muted）」で、色の付いた帯の上では
+  白い四角が浮いて見えた。帯の字色を薄く混ぜた塗りにして、帯になじませる
+*/
+const HEADER_ICON_BUTTON =
+  "text-header-foreground hover:bg-header-foreground/15 hover:text-header-foreground aria-expanded:bg-header-foreground/15 aria-expanded:text-header-foreground";
+
 /** サイドバーの開閉状態は端末ごとに覚えておく */
 const STORAGE_KEY = "chem.sidebar.open";
 /** ヘッダーの開閉も同じように覚える。作業のあいだ閉じたままにしたい人がいる */
@@ -157,6 +165,7 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
             <Button
               variant="ghost"
               size="icon"
+              className={HEADER_ICON_BUTTON}
               onClick={toggle}
               aria-label={open ? m.shell.closeMenu : m.shell.openMenu}
               aria-expanded={open}
@@ -226,6 +235,7 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
               <Button
                 variant="ghost"
                 size="icon"
+                className={HEADER_ICON_BUTTON}
                 title={m.shell.hideHeader}
                 aria-label={m.shell.hideHeader}
                 aria-expanded
@@ -245,7 +255,8 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
           <Button
             variant="outline"
             size="icon-sm"
-            className="bg-background/80 fixed top-1 right-2 z-40 backdrop-blur"
+            // 帯を畳んでいるあいだの出す口。帯と同じ色で塗り、白い四角が浮かないようにする
+            className="bg-header/90 text-header-foreground border-header-foreground/20 hover:bg-header hover:text-header-foreground fixed top-1 right-2 z-40 backdrop-blur"
             title={m.shell.showHeader}
             aria-label={m.shell.showHeader}
             aria-expanded={false}
