@@ -79,7 +79,7 @@ export default function ManualInventoriesPage() {
 
       <Section title="バージョンとデータソース">
         <P>
-          インベントリの該当物質は、<T>法規制の対象CASとまったく同じ仕組み</T>で管理しています。
+          インベントリの該当物質は、<T>規制対象CASとまったく同じ仕組み</T>で管理しています。
         </P>
         <SpecTable
           head={["持ちもの", "意味"]}
@@ -97,7 +97,7 @@ export default function ManualInventoriesPage() {
           はじめは<T>現在のバージョン</T>と、そのバージョンで
           <T>優先度がいちばん高いデータソース</T>が選ばれています。 データソースの選択肢は
           <T>選んだバージョンに並んでいるものだけ</T>が出ます。
-          法規制の対象CASの画面も、同じ場所に同じ順で並んでいます。
+          規制対象CASの画面も、同じ場所に同じ順で並んでいます。
         </P>
         <Sub title="同じCASが2つ以上あるとき">
           <P>

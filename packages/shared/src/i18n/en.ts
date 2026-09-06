@@ -605,7 +605,7 @@ export const en: Messages = {
   },
 
   casLinkTable: {
-    title: "Linked CAS numbers",
+    title: "Regulated CAS numbers",
     pickSource:
       "Select a data source row above to list every linked CAS for that version and data source here",
     region: "Region",
@@ -617,7 +617,7 @@ export const en: Messages = {
     statutoryName: "Statutory substance",
     used: "Used",
     updatedAt: "Updated",
-    openAll: "See all linked CAS",
+    openAll: "See all regulated CAS",
     scopeLaw: "Law",
     scopeCategory: "Category",
     clearScope: "Clear scope",
@@ -638,7 +638,7 @@ export const en: Messages = {
   },
 
   casLinks: {
-    title: "Linked CAS numbers",
+    title: "Regulated CAS numbers",
     casNumber: "CAS number",
     casName: "Substance",
     status: "Applies",

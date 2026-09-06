@@ -621,9 +621,9 @@ export const ja = {
 
   /** 外部データベースの「対象CAS」の表（バージョン × データソースの全リンク） */
   casLinkTable: {
-    title: "対象CAS",
+    title: "規制対象CAS",
     pickSource:
-      "上の表でデータソースの行を選ぶと、そのバージョン・データソースの対象CASがここに出ます",
+      "上の表でデータソースの行を選ぶと、そのバージョン・データソースの規制対象CASがここに出ます",
     region: "地域",
     country: "国",
     law: "法律",
@@ -633,7 +633,7 @@ export const ja = {
     statutoryName: "法文物質名",
     used: "採用",
     updatedAt: "更新日",
-    openAll: "対象CASをまとめて見る",
+    openAll: "規制対象CASをまとめて見る",
     scopeLaw: "法律",
     scopeCategory: "規制区分",
     clearScope: "範囲を外す",
@@ -654,7 +654,7 @@ export const ja = {
   },
 
   casLinks: {
-    title: "対象CAS",
+    title: "規制対象CAS",
     casNumber: "CAS番号",
     casName: "物質名",
     status: "該非",
@@ -1347,7 +1347,7 @@ export const ja = {
     regulationEmpty: "当たっている法規制はありません",
     sourceData: "出典データ",
     sourceDataHint:
-      "データソースがそのCASについて書いている文章（対象CASの「出典データ」）を、セルの2行目に添えます。1行で切れるので、全文はセルを押して読みます",
+      "データソースがそのCASについて書いている文章（規制対象CASの「出典データ」）を、セルの2行目に添えます。1行で切れるので、全文はセルを押して読みます",
     overriddenHint: "上位のデータソースの非該当に打ち消されているため、採用されていません",
   },
 
