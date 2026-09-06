@@ -276,6 +276,7 @@ export const en: Messages = {
     deleteSelectedConfirm: (n: number) => `Delete the ${n} selected item${n === 1 ? "" : "s"}?`,
     filtering: "Filtered",
     sorting: "Sorted",
+    unsorted: "Unsorted",
     filterCount: (n: number) => `${n} condition${n === 1 ? "" : "s"}`,
     sortCount: (n: number) => `sorted by ${n} column${n === 1 ? "" : "s"}`,
     clear: "Clear filters",
@@ -630,8 +631,6 @@ export const en: Messages = {
     diffChanged: "Changed",
     diffSummary: (added: number, removed: number, changed: number) =>
       `+${added.toLocaleString("en-US")} −${removed.toLocaleString("en-US")} ±${changed.toLocaleString("en-US")}`,
-    diffNoSource: (code: string) =>
-      `${code} does not carry this data source, so everything counts as added`,
     diffBefore: "Before",
     diffAfter: "After",
     diffEmpty: "No differences",

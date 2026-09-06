@@ -287,6 +287,7 @@ export const ja = {
     deleteSelectedConfirm: (n: number) => `選択した ${n} 件を削除しますか？`,
     filtering: "フィルター中",
     sorting: "並べ替え中",
+    unsorted: "並べ替えなし",
     filterCount: (n: number) => `条件 ${n} 件`,
     sortCount: (n: number) => `並べ替え ${n} 列`,
     clear: "条件をクリア",
@@ -646,8 +647,6 @@ export const ja = {
     diffChanged: "変更",
     diffSummary: (added: number, removed: number, changed: number) =>
       `+${added.toLocaleString("ja-JP")} −${removed.toLocaleString("ja-JP")} ±${changed.toLocaleString("ja-JP")}`,
-    diffNoSource: (code: string) =>
-      `${code} にこのデータソースは並んでいないので、全部が「追加」になります`,
     diffBefore: "前",
     diffAfter: "後",
     diffEmpty: "差分はありません",

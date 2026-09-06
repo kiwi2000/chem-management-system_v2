@@ -563,11 +563,6 @@ export function CasLinkTable({
                 </span>
               </span>
             )}
-            {run && !run.sourceInAgainst && (
-              <span className="text-muted-foreground text-xs">
-                {m.casLinkTable.diffNoSource(run.againstCode)}
-              </span>
-            )}
           </div>
         }
       />
