@@ -7,7 +7,7 @@ import {
   serializeTableState,
   type TableState,
 } from "@chem/shared";
-import { Check, X } from "lucide-react";
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -46,14 +46,6 @@ const KIND_CLASS: Record<CasLinkDiffRowDto["kind"], string> = {
   unchanged: "bg-slate-500 text-white",
 };
 
-/** 区分・法律の画面から来たときの範囲。表の絞り込みとは別に、URL に載せて持ち回る */
-export interface CasLinkScope {
-  lawId: string | null;
-  categoryId: string | null;
-  /** 画面に出す名前（「化審法・第二種特定化学物質」など）。入口が付けてくる */
-  label: string | null;
-}
-
 /**
  * 表の1行。通常モードは対象CASの行そのまま。
  * 差分モードは同じ項目に、種類と前後の中身が付く
@@ -80,8 +72,6 @@ export function CasLinkTable({
   versionCode,
   sourceId,
   sourceCode,
-  scope,
-  onClearScope,
   against,
   onAgainstChange,
 }: {
@@ -89,8 +79,6 @@ export function CasLinkTable({
   versionCode: string | null;
   sourceId: string | null;
   sourceCode: string | null;
-  scope: CasLinkScope;
-  onClearScope: () => void;
   /** 比べる相手のバージョン。null なら通常の表 */
   against: string | null;
   onAgainstChange: (id: string | null) => void;
@@ -423,14 +411,14 @@ export function CasLinkTable({
   const shownFor = useRef<string | null>(null);
   useEffect(() => {
     if (!ready) return;
-    const key = `${versionId ?? ""}/${sourceId ?? ""}/${diffAgainst ?? ""}/${scope.lawId ?? ""}/${scope.categoryId ?? ""}`;
+    const key = `${versionId ?? ""}/${sourceId ?? ""}/${diffAgainst ?? ""}`;
     if (shownFor.current !== null && shownFor.current !== key && state.page !== 1) {
       setState((prev) => ({ ...prev, page: 1 }));
     }
     shownFor.current = key;
     // state.page は「いま1ページ目でなければ戻す」の判定にしか使わないので依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, versionId, sourceId, diffAgainst, scope.lawId, scope.categoryId]);
+  }, [ready, versionId, sourceId, diffAgainst]);
 
   /** いま欲しい問い合わせ。届いたものはこれと突き合わせ、後から投げたものが勝つ */
   const wantKey = useRef<string | null>(null);
@@ -444,8 +432,6 @@ export function CasLinkTable({
     params.set("versionId", versionId);
     params.set("sourceId", sourceId);
     if (diffAgainst) params.set("againstId", diffAgainst);
-    if (scope.lawId) params.set("lawId", scope.lawId);
-    if (scope.categoryId) params.set("categoryId", scope.categoryId);
     const url = `${diffAgainst ? "/api/cas-links/diff" : "/api/cas-links"}?${params.toString()}`;
     wantKey.current = url;
     void (async () => {
@@ -469,9 +455,8 @@ export function CasLinkTable({
         setData({ items: body.items, total: body.total, run: null });
       }
     })();
-  }, [ready, versionId, sourceId, diffAgainst, scope.lawId, scope.categoryId, query, m]);
+  }, [ready, versionId, sourceId, diffAgainst, query, m]);
 
-  const scoped = scope.lawId !== null || scope.categoryId !== null;
   const run = data?.run ?? null;
 
   return (
@@ -523,16 +508,6 @@ export function CasLinkTable({
         }
         headerActions={
           <div className="flex flex-wrap items-center gap-2">
-            {scoped && (
-              // 区分・法律の画面から来た範囲。押すと外れて、全体の表になる
-              <Button size="sm" variant="secondary" onClick={onClearScope} className="gap-1">
-                <span className="text-muted-foreground">
-                  {scope.categoryId ? m.casLinkTable.scopeCategory : m.casLinkTable.scopeLaw}:
-                </span>
-                {scope.label ?? ""}
-                <X className="size-3.5" aria-label={m.casLinkTable.clearScope} />
-              </Button>
-            )}
             {/*
               比べる相手。同じデータソースの別の版だけが候補。
               選ぶと差分モードになり、「差分なし」に戻すと通常の表

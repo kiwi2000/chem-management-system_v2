@@ -1,8 +1,8 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
-import { CasLinkTable, type CasLinkScope } from "@/components/cas-link-table";
+import { useCallback, useState } from "react";
+import { CasLinkTable } from "@/components/cas-link-table";
 import { DataSourceSection } from "@/components/data-source-section";
 import { LinkVersionSection } from "@/components/link-version-section";
 import { SourceSection } from "@/components/source-section";
@@ -23,8 +23,7 @@ import type { LinkVersionSourceDto } from "@/lib/types";
  * データソースの行を選ぶと下の表がその組の中身になる
  * （地域・国と同じ「左で選んで右を見る」形）。
  *
- * 区分・法律の画面から来たときは URL に範囲（`scopeCategory` / `scopeLaw`）が付いていて、
- * 表がその範囲に絞られる。`version` は id か "current"、`source` はデータソースの行の id
+ * `version` は id か "current"、`source` はデータソースの行の id
  */
 export default function ExternalDbPage() {
   const router = useRouter();
@@ -62,14 +61,6 @@ export default function ExternalDbPage() {
     [router, pathname],
   );
 
-  const scope = useMemo<CasLinkScope>(
-    () => ({
-      lawId: searchParams.get("scopeLaw"),
-      categoryId: searchParams.get("scopeCategory"),
-      label: searchParams.get("scopeLabel"),
-    }),
-    [searchParams],
-  );
   // 差分モードで比べる相手。URL に載せ、読み直しても同じ比べかたに戻る
   const against = searchParams.get("against");
   const onAgainstChange = useCallback(
@@ -82,14 +73,6 @@ export default function ExternalDbPage() {
     },
     [router, pathname],
   );
-
-  /** 範囲を外す。URL から範囲の項目だけ取り除く（表の絞り込みは残す） */
-  const clearScope = useCallback(() => {
-    const next = new URLSearchParams(searchParams.toString());
-    for (const k of ["scopeLaw", "scopeCategory", "scopeLabel"]) next.delete(k);
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname);
-  }, [router, pathname, searchParams]);
 
   return (
     <div className="w-full space-y-6 p-4 lg:p-6">
@@ -125,8 +108,6 @@ export default function ExternalDbPage() {
         versionCode={source ? version?.code || null : null}
         sourceId={source?.sourceId ?? null}
         sourceCode={source?.sourceCode ?? null}
-        scope={scope}
-        onClearScope={clearScope}
         against={against}
         onAgainstChange={onAgainstChange}
       />

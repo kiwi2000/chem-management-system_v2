@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { pickStatutoryName } from "@chem/shared";
 import { useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -41,7 +40,6 @@ export function CategoryScreen({
   next: Neighbour | null;
 }) {
   const { m, locale } = useI18n();
-  const router = useRouter();
   /** 逆引き（この区分に当たる製品）。開いているあいだだけ読む */
   const [productsOpen, setProductsOpen] = useState(false);
 
@@ -75,20 +73,6 @@ export function CategoryScreen({
         {/* 逆引き。区分を見ているときにだけ意味があるので、ここに置く */}
         <Button size="sm" variant="outline" onClick={() => setProductsOpen((v) => !v)}>
           {m.judgements.matchedProducts}
-        </Button>
-        {/* この区分の対象CASを、法文物質名をまたいで1つの表で見る（外部データベースの画面） */}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() =>
-            router.push(
-              `/external-db?version=current&scopeCategory=${category.id}&scopeLabel=${encodeURIComponent(
-                `${lawName || law.code}・${catName || category.code}`,
-              )}`,
-            )
-          }
-        >
-          {m.casLinkTable.openAll}
         </Button>
       </div>
 

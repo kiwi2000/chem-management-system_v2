@@ -118,19 +118,9 @@ export async function GET(req: Request) {
     casScope = reps.map((r) => r.casNormalized).filter((c): c is string => c !== null);
   }
 
-  // 区分・法律の画面から来たときの範囲。表の絞り込みとは別に、URL で持ち回る
-  const lawId = params.get("lawId");
-  const categoryId = params.get("categoryId");
-  const scope = categoryId
-    ? { statutorySubstance: { regulationClass: { categoryId } } }
-    : lawId
-      ? { statutorySubstance: { regulationClass: { category: { lawId } } } }
-      : {};
-
   const where = {
     versionId,
     sourceId,
-    ...scope,
     ...(casScope ? { casNormalized: { in: casScope } } : {}),
     ...buildWhere(CAS_LINK_COLUMNS, state.filters),
   };
