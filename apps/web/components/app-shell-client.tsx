@@ -256,7 +256,7 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
             variant="outline"
             size="icon-sm"
             // 帯を畳んでいるあいだの出す口。帯と同じ色で塗り、白い四角が浮かないようにする
-            className="bg-header/90 text-header-foreground border-header-foreground/20 hover:bg-header hover:text-header-foreground fixed top-1 right-2 z-40 backdrop-blur"
+            className="bg-header/90 text-header-foreground border-header-foreground/20 hover:bg-header hover:text-header-foreground dark:bg-header/90 dark:border-header-foreground/20 dark:hover:bg-header fixed top-1 right-2 z-40 backdrop-blur"
             title={m.shell.showHeader}
             aria-label={m.shell.showHeader}
             aria-expanded={false}
