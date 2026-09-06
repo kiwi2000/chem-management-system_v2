@@ -3,6 +3,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { ensureDiffRun } from "@/lib/cas-link-diff";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { statutoryHierarchyOrderBy } from "@/lib/law-order";
 import { CAS_LINK_DIFF_COLUMNS } from "@/lib/list-columns";
 import { buildWhere } from "@/lib/table-query";
 import type { CasLinkDiffRowDto, CasLinkDiffRunDto, CasLinkSideDto } from "@/lib/types";
@@ -53,29 +54,19 @@ function orderByOf(sort: SortRule[]) {
       case "className":
         order.push({ statutorySubstance: { regulationClass: { nameOriginal: dir } } });
         break;
+      // 地域・国・法律・区分は、それぞれの画面と同じ表示順で並べる（名前順だと法律の並びと食い違う）。
+      // 表示順は親ごとに振ってあるので、押した列だけでなく親から順に見る
       case "categoryName":
-        order.push({
-          statutorySubstance: { regulationClass: { category: { displayOrder: dir } } },
-        });
+        order.push(...statutoryHierarchyOrderBy("category", dir));
         break;
       case "lawName":
-        order.push({
-          statutorySubstance: { regulationClass: { category: { law: { displayOrder: dir } } } },
-        });
+        order.push(...statutoryHierarchyOrderBy("law", dir));
         break;
       case "countryId":
-        order.push({
-          statutorySubstance: {
-            regulationClass: { category: { law: { country: { displayOrder: dir } } } },
-          },
-        });
+        order.push(...statutoryHierarchyOrderBy("country", dir));
         break;
       case "regionId":
-        order.push({
-          statutorySubstance: {
-            regulationClass: { category: { law: { country: { region: { displayOrder: dir } } } } },
-          },
-        });
+        order.push(...statutoryHierarchyOrderBy("region", dir));
         break;
       default:
         break;

@@ -103,3 +103,36 @@ export function compareLawOrder(
   }
   return 0;
 }
+
+/**
+ * 法文物質名から引く表（対象CASなど）で、地域・国・法律・区分の列を押したとき用。
+ *
+ * その列の表示順だけで並べると、**表示順は親ごとに 0 や 1 から振ってある**ので親が混ざる。
+ * 実際に、中国の「優先管理化学品名録」（区分の順 0）が「危険化学品目録」（同じく 0）の
+ * 間に割り込んだ。押した列までの親を上から順に見る。降順は全部の段を逆にする
+ */
+export function statutoryHierarchyOrderBy(
+  level: "region" | "country" | "law" | "category",
+  dir: "asc" | "desc",
+): Record<string, unknown>[] {
+  const viaCategory = (o: Record<string, unknown>) => ({
+    statutorySubstance: { regulationClass: { category: o } },
+  });
+  const rules = [
+    viaCategory({ law: { country: { region: { displayOrder: dir } } } }),
+    viaCategory({ law: { country: { region: { code: dir } } } }),
+  ];
+  if (level !== "region") {
+    rules.push(
+      viaCategory({ law: { country: { displayOrder: dir } } }),
+      viaCategory({ law: { country: { code: dir } } }),
+    );
+  }
+  if (level === "law" || level === "category") {
+    rules.push(viaCategory({ law: { displayOrder: dir } }), viaCategory({ law: { code: dir } }));
+  }
+  if (level === "category") {
+    rules.push(viaCategory({ displayOrder: dir }), viaCategory({ code: dir }));
+  }
+  return rules;
+}
