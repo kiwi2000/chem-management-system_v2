@@ -171,8 +171,9 @@ export function LanguageSection() {
           ) : (
             <Button
               type="button"
+              variant="outline"
               size="icon"
-              className="size-8"
+              className="text-primary border-primary/40 hover:bg-primary/10 hover:text-primary size-8"
               title={m.table.create}
               aria-label={m.table.create}
               onClick={startNew}

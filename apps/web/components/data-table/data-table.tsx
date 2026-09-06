@@ -501,9 +501,11 @@ export function DataTable<T>({
       <div className="flex flex-wrap items-center gap-2">
         {title && <h2 className={TABLE_TITLE}>{title}</h2>}
         {create && (
+          // 塗りつぶしの主色は表の頭で目立ちすぎたので、枠線だけの主色にする
           <Button
+            variant="outline"
             size="icon"
-            className="size-8"
+            className="text-primary border-primary/40 hover:bg-primary/10 hover:text-primary size-8"
             title={create.label ?? m.table.create}
             aria-label={create.label ?? m.table.create}
             disabled={create.disabled}
