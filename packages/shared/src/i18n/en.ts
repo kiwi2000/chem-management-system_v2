@@ -366,6 +366,21 @@ export const en: Messages = {
       "This substance is currently the representative for its CAS number. Deactivating it would leave a discontinued name on the combined row. Choose which substance takes over.",
     casSuccessorAuto: "Decide automatically (the oldest active one)",
     casRepresentativeMake: "Make this substance the representative",
+    casRepresentativeShort: "Rep.",
+    casRepresentativeYes: "Representative",
+    casRepresentativeNo: "Not the representative",
+    casRepresentativeIs: "Representative for this CAS number",
+    casRepresentativeOther: "Representative for this CAS number:",
+    casRepresentativeKept:
+      "This substance is the representative. It cannot be unset; making another substance the representative switches it over",
+    casRepresentativeSwitchConfirm: (current: string) =>
+      `The current representative is ${current}. Saving will make this substance the representative instead. Continue?`,
+    casRepresentativeSetConfirm:
+      "Saving will make this substance the representative for its CAS number. Continue?",
+    casRepresentativeSwitchOk: "Switch",
+    casRepresentativePending: (current: string) =>
+      `On save, the representative switches from ${current} to this substance`,
+    casRepresentativePendingNew: "On save, this substance becomes the representative",
     warnSameCas: (codes: string) => `Other substances already use this CAS number: ${codes}`,
     warnCasFormat: "The CAS number does not look like the usual format (e.g. 7439-92-1)",
     savedWithWarnings: "Saved. Please check the following",

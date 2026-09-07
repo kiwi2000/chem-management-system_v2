@@ -1,10 +1,12 @@
 "use client";
 
 import { pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
-import { Pencil } from "lucide-react";
+import { Pencil, Star } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AliasList } from "@/components/alias-list";
+import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +49,7 @@ const FORM_ID = "substance-form";
 export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }: Props) {
   const router = useRouter();
   const { m, locale } = useI18n();
+  const ask = useConfirm();
   // 新規登録は最初から入力できる。既存データは「編集」を押すまで読み取り専用
   const [editing, setEditing] = useState(!initial);
   const readOnly = !canEdit || !editing;
@@ -59,6 +62,10 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
    */
   const [casSiblings, setCasSiblings] = useState<CasSiblingDto[]>([]);
   const [casRepresentative, setCasRepresentative] = useState(initial?.casRepresentative ?? false);
+  /** 「この物質を代表にする」を押して確認した相手（いまの代表）。保存するまで印だけ */
+  const [switchedFrom, setSwitchedFrom] = useState<CasSiblingDto | null>(null);
+  /** いまの代表（同じCASの他の物質のうち代表のもの）。自分が代表なら無い */
+  const currentRepresentative = casSiblings.find((sib) => sib.isCasRepresentative) ?? null;
   /** 代表を降りるときの後任。無効にする操作でだけ聞く */
   const [successorId, setSuccessorId] = useState("");
   /** 後任になれるのは、有効なものだけ（廃番品を代表にしても同じ問題が起きる） */
@@ -91,6 +98,27 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
       clearTimeout(timer);
     };
   }, [casNumber, initial?.id]);
+  /*
+   * 代表を外す操作は無い（外すと合算した行に出す名前が無くなる）。
+   * 別の物質を代表にするときだけ、いまの代表を示して確かめてから切り替える。
+   * 実際に切り替わるのは保存したとき
+   */
+  async function pickAsRepresentative() {
+    const current = currentRepresentative;
+    const label = current
+      ? `${current.code} ${pickName(locale, current.nameJa, current.nameEn)}`
+      : null;
+    const ok = await ask({
+      title: m.substances.casRepresentativeTitle,
+      message: label
+        ? m.substances.casRepresentativeSwitchConfirm(label)
+        : m.substances.casRepresentativeSetConfirm,
+      confirmLabel: m.substances.casRepresentativeSwitchOk,
+    });
+    if (!ok) return;
+    setCasRepresentative(true);
+    setSwitchedFrom(current);
+  }
   const [status, setStatus] = useState(initial?.status ?? "ACTIVE");
   const [note, setNote] = useState(initial?.note ?? "");
   const [mainNameJa, setMainNameJa] = useState(initial?.mainNameJa ?? "");
@@ -258,6 +286,8 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                 variant="outline"
                 onClick={() => {
                   // 書きかけを捨てて、読むだけの状態に戻す
+                  setCasRepresentative(initial?.casRepresentative ?? false);
+                  setSwitchedFrom(null);
                   router.refresh();
                   setEditing(false);
                 }}
@@ -310,6 +340,32 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                   {!settings.casRequired && (
                     <p className="text-muted-foreground text-xs">{m.substances.casHint}</p>
                   )}
+                  {/* 代表かどうか。読むだけのときも出す（一覧の星と同じ意味） */}
+                  {initial && casNumber.trim() !== "" && (
+                    <p className="text-xs">
+                      {casRepresentative ? (
+                        <span className="inline-flex items-center gap-1 font-medium">
+                          <Star className="size-3.5 fill-current" />
+                          {m.substances.casRepresentativeIs}
+                        </span>
+                      ) : currentRepresentative ? (
+                        <span className="text-muted-foreground">
+                          {m.substances.casRepresentativeOther}{" "}
+                          <Link
+                            href={`/substances/${currentRepresentative.id}`}
+                            className="font-mono hover:underline"
+                          >
+                            {currentRepresentative.code}
+                          </Link>{" "}
+                          {pickName(
+                            locale,
+                            currentRepresentative.nameJa,
+                            currentRepresentative.nameEn,
+                          )}
+                        </span>
+                      ) : null}
+                    </p>
+                  )}
                 </div>
                 {/*
                  * 同じCASの物質が他にいるときだけ、代表をどちらにするか聞く。
@@ -335,14 +391,27 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                         </li>
                       ))}
                     </ul>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={casRepresentative}
-                        onChange={(e) => setCasRepresentative(e.target.checked)}
-                      />
-                      {m.substances.casRepresentativeMake}
-                    </label>
+                    {/* 代表を外す操作は無い。別の物質を代表にするときだけ確かめて切り替える */}
+                    {casRepresentative ? (
+                      <p className="text-sm">
+                        {switchedFrom
+                          ? m.substances.casRepresentativePending(
+                              `${switchedFrom.code} ${pickName(locale, switchedFrom.nameJa, switchedFrom.nameEn)}`,
+                            )
+                          : initial?.casRepresentative
+                            ? m.substances.casRepresentativeKept
+                            : m.substances.casRepresentativePendingNew}
+                      </p>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void pickAsRepresentative()}
+                      >
+                        {m.substances.casRepresentativeMake}
+                      </Button>
+                    )}
                   </div>
                 )}
                 {/* 見出しは置かず、チェックの有無をそのまま有効／無効の文言で示す */}

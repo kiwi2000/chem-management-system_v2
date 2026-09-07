@@ -7,6 +7,7 @@ import {
   serializeTableState,
   type TableState,
 } from "@chem/shared";
+import { Star } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -67,6 +68,25 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         width: 104,
         className: "font-mono text-xs",
         render: (r) => r.casNumber ?? "—",
+      },
+      {
+        // 同じCASの物質が複数あるとき、合算した行の名前をどれから取るか（代表）。星で示す
+        key: "casRepresentative",
+        header: m.substances.casRepresentativeShort,
+        kind: "enum",
+        width: 64,
+        className: "text-center",
+        options: [
+          { value: "true", label: m.substances.casRepresentativeYes },
+          { value: "false", label: m.substances.casRepresentativeNo },
+        ],
+        render: (r) =>
+          r.casRepresentative ? (
+            <Star
+              className="mx-auto size-4 fill-current"
+              aria-label={m.substances.casRepresentativeYes}
+            />
+          ) : null,
       },
       {
         key: "nameJa",

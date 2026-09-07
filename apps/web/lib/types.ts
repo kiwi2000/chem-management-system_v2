@@ -291,6 +291,11 @@ export interface SubstanceListItemDto {
   id: string;
   code: string;
   casNumber: string | null;
+  /**
+   * このCAS番号の代表か。同じCASの物質が複数あるとき、合算した行に出す名前を
+   * この物質から取る。CASが無い物質は false
+   */
+  casRepresentative: boolean;
   status: SubstanceStatus;
   /** 公開の状態。公開済になるまで他の人には見えない */
   publishState: PublishState;
@@ -322,8 +327,6 @@ export interface SubstanceDetailDto extends SubstanceListItemDto {
   mainNameEn: string | null;
   subNames: { nameJa: string | null; nameEn: string | null }[];
   properties: PropertyValueDto[];
-  /** このCASを代表する物質か。合算した行に出す名称をこの物質から取る */
-  casRepresentative: boolean;
 }
 
 /** 同じCAS番号の、生きている他の物質。代表を選ばせるときに並べる */

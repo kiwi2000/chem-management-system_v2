@@ -380,6 +380,22 @@ export const ja = {
       "この物質はいまこのCAS番号の代表です。無効にすると、まとめた行に廃番品の名称が出続けてしまいます。代わりに代表になる物質を選んでください。",
     casSuccessorAuto: "自動で決める（有効なものの中でいちばん古いもの）",
     casRepresentativeMake: "この物質を代表にする",
+    /** 一覧の列。塗りつぶした星で示す */
+    casRepresentativeShort: "代表",
+    casRepresentativeYes: "代表",
+    casRepresentativeNo: "代表ではない",
+    casRepresentativeIs: "このCAS番号の代表です",
+    casRepresentativeOther: "このCAS番号の代表:",
+    casRepresentativeKept:
+      "この物質が代表です。代表を外す操作はありません（別の物質を代表にすると、そちらへ切り替わります）",
+    casRepresentativeSwitchConfirm: (current: string) =>
+      `いまの代表は ${current} です。保存すると、代表がこの物質に切り替わります。よろしいですか？`,
+    casRepresentativeSetConfirm:
+      "保存すると、この物質がこのCAS番号の代表になります。よろしいですか？",
+    casRepresentativeSwitchOk: "切り替える",
+    casRepresentativePending: (current: string) =>
+      `保存すると、代表が ${current} からこの物質に切り替わります`,
+    casRepresentativePendingNew: "保存すると、この物質が代表になります",
     warnSameCas: (codes: string) => `同じCAS番号の物質が既にあります: ${codes}`,
     warnCasFormat: "CAS番号が一般的な形（例: 7439-92-1）ではありません",
     savedWithWarnings: "保存しました。次の点を確認してください",

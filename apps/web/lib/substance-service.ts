@@ -63,6 +63,7 @@ export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
     id: s.id,
     code: s.code,
     casNumber: s.casNumber,
+    casRepresentative: s.isCasRepresentative,
     status: s.status,
     publishState: s.publishState,
     nameJa: s.nameJa,
@@ -85,7 +86,6 @@ export function toDetail(s: SubstanceWithRelations): SubstanceDetailDto {
     mainNameJa: s.nameJa,
     mainNameEn: s.nameEn,
     subNames: s.aliases.map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn })),
-    casRepresentative: s.isCasRepresentative,
     properties: s.properties.map((p) => ({
       propertyDefId: p.propertyDefId,
       valueText: p.valueText,

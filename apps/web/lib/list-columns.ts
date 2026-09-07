@@ -32,6 +32,7 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   // コード・CAS は正規化列で突合する（全角や大小文字の違いを吸収するため）
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
+  { key: "casRepresentative", kind: "enum", field: "isCasRepresentative", booleanEnum: true },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "status", kind: "enum", field: "status" },
