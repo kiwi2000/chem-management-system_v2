@@ -29,6 +29,12 @@ export async function GET(req: Request) {
   );
   const where = { deletedAt: null, ...buildWhere(LINK_VERSION_COLUMNS, state.filters) };
 
+  // 現在の版が1つも立っていなければ立て直す（必ずどれかに星が付いている状態にする）
+  const currentCount = await prisma.linkSetVersion.count({
+    where: { deletedAt: null, isCurrent: true },
+  });
+  if (currentCount === 0) await ensureCurrentVersion(actor.user.id);
+
   const [items, total] = await Promise.all([
     prisma.linkSetVersion.findMany({
       where,

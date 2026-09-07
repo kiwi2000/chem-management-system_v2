@@ -71,9 +71,10 @@ export function LinkVersionSection({
           { value: "true", label: m.common.yes },
           { value: "false", label: m.common.no },
         ],
-        // 現在のものだけに印。判定に使われているのが一目で分かるように
+        // 現在のものだけ塗りつぶした星。判定に使われているのが一目で分かるように
         // この欄をそのまま押すと、現在のバージョンがそこへ移る。
-        // 塗りつぶし＝利用者が選んだもの、輪郭だけ＝自動で選ばれたもの
+        // 利用者が選んだか自動で選ばれたかは、星の形では分けない（分けたら
+        // 自動のときにどれも白抜きに見えて「現在が無い」と読まれた）。ホバーの説明で分かる
         render: (v) => (
           <button
             type="button"
@@ -98,7 +99,7 @@ export function LinkVersionSection({
                 "text-muted-foreground/30 enabled:hover:bg-accent enabled:hover:text-foreground",
             )}
           >
-            <Star className={cn("size-4", v.isCurrent && v.currentPinned && "fill-current")} />
+            <Star className={cn("size-4", v.isCurrent && "fill-current")} />
           </button>
         ),
       },
