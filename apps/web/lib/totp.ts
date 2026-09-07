@@ -51,7 +51,11 @@ export function generateTotpSecret(): string {
 }
 
 /** 認証アプリに読み込ませる otpauth URI（QRコード化して使う） */
-export function totpUri(secret: string, account: string, issuer = "化学物質管理システム"): string {
+export function totpUri(
+  secret: string,
+  account: string,
+  issuer = "ケミカルコンプライアンス支援システム",
+): string {
   const enc = encodeURIComponent;
   return `otpauth://totp/${enc(issuer)}:${enc(account)}?secret=${secret}&issuer=${enc(issuer)}&digits=${DIGITS}&period=${PERIOD}`;
 }

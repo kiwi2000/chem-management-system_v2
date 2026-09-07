@@ -28,7 +28,7 @@ export const en: Messages = {
     approvalHistory: "Approval history",
     noApprovalHistory: "No history",
     actionDone: (updated: number, requested: number) => `Changed ${updated} of ${requested}`,
-    appName: "Chemical Substance Management",
+    appName: "Chemical Compliance Support",
     save: "Save",
     cancel: "Cancel",
     confirmTitle: "Confirm",

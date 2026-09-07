@@ -43,7 +43,7 @@ export async function expectedOrigin(): Promise<string> {
 }
 
 /** 見せる名前。認証アプリの一覧に出る */
-export const RP_NAME = "化学物質管理システム";
+export const RP_NAME = "ケミカルコンプライアンス支援システム";
 
 type Kind = "register" | "login";
 const cookieName = (kind: Kind) => (kind === "register" ? REGISTER_COOKIE : LOGIN_COOKIE);

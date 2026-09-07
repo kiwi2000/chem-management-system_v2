@@ -27,7 +27,7 @@ export const ja = {
     noApprovalHistory: "履歴はありません",
     actionDone: (updated: number, requested: number) =>
       `${requested} 件のうち ${updated} 件を変更しました`,
-    appName: "化学物質管理システム",
+    appName: "ケミカルコンプライアンス支援システム",
     save: "保存",
     cancel: "キャンセル",
     confirmTitle: "確認",
