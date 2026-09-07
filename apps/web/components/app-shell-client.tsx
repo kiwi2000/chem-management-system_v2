@@ -162,28 +162,22 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
             headerOpen ? "h-14" : "h-0",
           )}
         >
-          {/*
-            3列の格子。両端の列を同じ幅（1fr）にして、名前を真ん中の列に置くと
-            帯全体のちょうど中央に来る。右の操作類が広くて入りきらない幅では、
-            右の列だけが広がって名前が左へ寄る（重なったり切れたりはしない）
-          */}
-          <header className="bg-header text-header-foreground grid h-14 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b px-4">
+          <header className="bg-header text-header-foreground flex h-14 items-center gap-3 border-b px-4">
             <Button
               variant="ghost"
               size="icon"
-              // 格子の左の列。伸ばさず左端に置く
-              className={cn(HEADER_ICON_BUTTON, "justify-self-start")}
+              className={HEADER_ICON_BUTTON}
               onClick={toggle}
               aria-label={open ? m.shell.closeMenu : m.shell.openMenu}
               aria-expanded={open}
             >
               {open ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
             </Button>
-            {/* 名前は帯の中央。左ペインの頭に置くとペインの幅で切れた */}
-            <Link href="/" className="min-w-0 justify-self-center truncate text-base font-semibold">
+            {/* 名前は帯の左、開閉ボタンの隣。左ペインの頭に置くとペインの幅で切れた */}
+            <Link href="/" className="min-w-0 truncate text-base font-semibold">
               {m.common.appName}
             </Link>
-            <div className="flex items-center gap-3 justify-self-end">
+            <div className="ml-auto flex items-center gap-3">
               {/*
               いま判定に使っている法規制バージョン。**サイドバーの下からここへ移した。**
               下に置くと視線が最後に行くうえ、サイドバーを閉じると消えていた。
@@ -216,12 +210,8 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
                   version={avatarVersion}
                 />
               </Link>
-              {/*
-                濃いヘッダーでも読めるよう、色を変えず薄くするだけにする。
-                中くらいの幅では帯の中央の名前と取り合いになるので、広い画面でだけ出す
-                （名前は右上の顔写真に乗せれば出る）
-              */}
-              <span className="hidden text-sm opacity-75 xl:inline">
+              {/* 濃いヘッダーでも読めるよう、色を変えず薄くするだけにする */}
+              <span className="hidden text-sm opacity-75 sm:inline">
                 {user.displayName ?? user.email}
               </span>
               {user.isAdmin && <Badge variant="secondary">{m.shell.admin}</Badge>}
