@@ -5,12 +5,15 @@
 #   bash scripts/loli-dump-iarc.sh
 #   LOLI_DB=LOLI4_Datafeed_2026Q2 bash scripts/loli-dump-iarc.sh     過去の版
 #
-# **鍵は親（IARC が評価した対象）。**条約と同じで、LOLI は評価対象（「クロム(VI)化合物」など）
+# **鍵は IARC が評価した対象。**条約と同じで、LOLI は評価対象（「クロム(VI)化合物」など）
 # から個々の化合物へ広げ、`As Chromium(VI) compounds [RR-00026-0]` という但し書きを付けている。
-# そのカッコの中を鍵にする。評価対象そのものの行には但し書きが無いので、自分のCASを鍵にする。
+# そのカッコの中を鍵にする。但し書きの無い行は次の2通り。
+#   - `listedunder` がある … IARC がくくり（「Aflatoxins」など）として評価したものの一員。
+#     くくりの名前を鍵にする（`LU|Aflatoxins`）。個々の物質を法文物質名にはしない
+#   - どちらも無い … その物質そのものが評価対象。自分の CAS を鍵にする
 #
-# **`value` はモノグラフの巻と年**（`Monograph 100C [2012]`）。番号ではなく出典なので、
-# 法文物質名の備考に回す（番号は親が CAS のときだけそれを置く。第0-3章・2026-09-07 決定）。
+# **`value` はモノグラフの巻と年**（`Monograph 100C [2012]`）。いちばん新しい巻を
+# 法文物質名の番号に、全部を備考に置く（2026-09-07 決定）。
 #
 # 出るファイル（scripts/data/）。版ごとに別名で置き、両方の版を取り込めるようにする
 #   iarc-<グループ>-<版>.tsv         鍵とCAS
@@ -46,6 +49,7 @@ BASE="
   SELECT d.Cas AS cas,
          r.value('(value)[1]','varchar(200)') AS val,
          r.query('remark').value('.','varchar(4000)') AS rems,
+         LTRIM(RTRIM(r.value('(listedunder)[1]','varchar(300)'))) AS lu,
          r.query('.') AS rowxml
   FROM ListData d
   CROSS APPLY (SELECT CAST(d.XML AS xml)) x(px)
@@ -62,7 +66,9 @@ CHILD="
   WHERE m.value('.','varchar(500)') LIKE 'As %[[]%]'"
 
 PARENT="
-  SELECT b.cas, b.val, b.cas AS k
+  SELECT b.cas, b.val,
+         CASE WHEN b.lu IS NOT NULL AND b.lu <> '' THEN 'LU|' + b.lu ELSE b.cas END AS k,
+         CASE WHEN b.lu IS NOT NULL AND b.lu <> '' THEN b.lu ELSE NULL END AS lunm
   FROM ($BASE) b
   WHERE b.rems NOT LIKE '%As %[[]%]%'"
 
@@ -78,14 +84,16 @@ SELECT DISTINCT k, cas FROM (
   SELECT k, cas FROM ($parent) p
 ) z WHERE k IS NOT NULL AND k <> '' ORDER BY k, cas;" "$out.tsv"
 
-  # 名前。子の但し書きから取り、親そのものは LOLI の代表名（CasNames）で埋める
+  # 名前。子の但し書きから取り、くくりはその名前、親そのものは LOLI の代表名（CasNames）
   run "SET NOCOUNT ON;
 SET QUOTED_IDENTIFIER ON;
 SELECT k, nm FROM (
   SELECT k, nm, ROW_NUMBER() OVER (PARTITION BY k ORDER BY src, nm) AS rn FROM (
     SELECT k, nm, 1 AS src FROM ($child) c WHERE nm <> ''
     UNION ALL
-    SELECT p.k, n.Name AS nm, 2 AS src FROM ($parent) p JOIN CasNames n ON n.Cas = p.cas
+    SELECT p.k, p.lunm AS nm, 1 AS src FROM ($parent) p WHERE p.lunm IS NOT NULL
+    UNION ALL
+    SELECT p.k, n.Name AS nm, 2 AS src FROM ($parent) p JOIN CasNames n ON n.Cas = p.cas WHERE p.lunm IS NULL
   ) u WHERE k IS NOT NULL AND k <> '' AND nm IS NOT NULL AND nm <> ''
 ) w WHERE rn = 1 ORDER BY k;" "$out-name.tsv"
 

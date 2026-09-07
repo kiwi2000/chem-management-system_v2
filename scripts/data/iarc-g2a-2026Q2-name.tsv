@@ -37,17 +37,12 @@
 302-01-2	Hydrazine
 302-17-0	Chloral hydrate
 309-00-2	Aldrin
-315-37-7	Testosterone enanthate
 3165-93-3	Benzenamine, 4-chloro-2-methyl-, hydrochloride
 320-67-2	5-Azacytidine
 333-41-5	Diazinon
-34494-03-6	Glyphosate-sodium
 366-70-1	Procarbazine hydrochloride
-3687-31-8	Arsenic acid (H3AsO4), lead(2+) salt (2:3)
 38641-94-0	Glyphosate isopropylamine salt
-40465-66-5	Glyphosate-ammonium
 409-21-2	Silicon carbide whiskers
-434-07-1	Oxymetholone
 484-20-8	5-Methoxypsoralen
 50-29-3	DDT
 51-75-2	Chlormethine
@@ -73,7 +68,6 @@
 66-27-3	Methyl methanesulfonate
 68-12-2	Dimethylformamide
 684-93-5	N-Methyl-N-nitrosourea
-69254-40-6	Glyphosate-diammonium
 70-25-7	N-Methyl-N'-nitro-N-nitrosoguanidine
 71-55-6	1,1,1-Trichloroethane
 7439-92-1	Lead
@@ -93,7 +87,6 @@
 79-44-7	Dimethylcarbamoyl chloride
 79-94-7	Tetrabromobisphenol A
 8001-58-9	Coal tar creosote
-81591-81-3	N-(Phosphonomethyl)glycine trimethyl sulfonium salt
 88-72-2	2-Nitrotoluene
 90-04-0	Benzenamine, 2-methoxy-
 91-23-6	ortho-Nitroanisole
@@ -104,6 +97,12 @@
 98-07-7	Benzotrichloride
 98-87-3	Benzal chloride
 98-88-4	Benzoyl chloride
+LU|4-chloro-ortho-toluidine	4-chloro-ortho-toluidine
+LU|Androgenic (anabolic) Steroids	Androgenic (anabolic) Steroids
+LU|Glyphosate	Glyphosate
+LU|Polybrominated biphenyls	Polybrominated biphenyls
+LU|combined exposures to .alpha.-Chlorinated toluenes and Benzoyl chloride	combined exposures to .alpha.-Chlorinated toluenes and Benzoyl chloride
+LU|inorganic lead compounds	inorganic lead compounds
 RR-00057-7	Androgenic (anabolic) steroids
 RR-00086-2	Polybrominated biphenyls
 RR-00538-9	Lead, inorganic compounds

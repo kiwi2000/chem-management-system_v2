@@ -11,7 +11,7 @@
  *
  * **CASは外部データベースがすでに展開したものをそのまま使う。**総称からこちらで広げない。
  * **物質マスタに無い CAS は結ばない**（2026-09-07 の指示）。
- * 法文物質名はコード（INT-IARC-<区分>-<鍵>）で引く。番号は空のことがあるので鍵にしない。
+ * 法文物質名はコード（INT-IARC-<区分>-<鍵>）で引く。番号は巻なので鍵にしない。
  */
 import { normalizeCas, normalizeCode } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
