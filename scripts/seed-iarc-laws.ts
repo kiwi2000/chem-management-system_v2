@@ -379,7 +379,12 @@ async function main() {
     let removed = 0;
     if (write && classId) {
       const stale = await prisma.statutorySubstance.findMany({
-        where: { classId, codeNormalized: { notIn: [...codes] } },
+        // CHRIP から作った評価対象（-CH-）は別の取り込み（seed-iarc-chrip-links.ts）のもの。消さない
+        where: {
+          classId,
+          codeNormalized: { notIn: [...codes] },
+          NOT: { codeNormalized: { contains: "-CH-" } },
+        },
         select: { id: true },
       });
       if (stale.length > 0) {
