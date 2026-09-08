@@ -29,6 +29,25 @@ export default function ManualChangesPage() {
         <T>「フィードバック」</T>から書き残してください。直す判断の材料になります。
       </Note>
 
+      <Section title="2026-09-08（3回目）　IARC で外部データベースの名前のまま残っていたものを正式な評価対象に寄せました">
+        <Sub title="直したところ">
+          <P>
+            IARC 発がん性分類で、LOLI の書きかたのまま別に残っていた法文物質名 239 件のうち 171
+            件を、正式な一覧の評価対象に寄せました。 塩や水和物（「〜 hydrochloride」「〜, sodium
+            salt」）は本体の名前で当て、カドミウム塩・クロム酸塩・ニッケル化合物などの個別の物質は
+            「Cadmium and cadmium compounds」「Chromium (VI) compounds」「Nickel
+            compounds」のようなくくりに寄せています。 残った 68
+            件は、有機ヒ素化合物や金属の鉛のように正式な一覧のくくりと中身が合わないもので、LOLI
+            の名前のまま備考にその旨を書いて残しています。
+          </P>
+          <P>
+            あわせて、LOLI
+            の取り出しで「Benzo[a]pyrene」のように名前に角括弧が入る評価対象の鍵を取り違えていたのを直しました。
+            CAS の結び付きは LOLI 2026Q3 9,896 件・LOLI 2026Q2 10,959 件・CHRIP 2026Q3 806 件です。
+          </P>
+        </Sub>
+      </Section>
+
       <Section title="2026-09-08（2回目）　IARC の法文物質名を正式な一覧の名前に作り直しました">
         <Sub title="操作が変わったところ">
           <SpecTable
