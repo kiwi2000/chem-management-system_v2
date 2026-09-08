@@ -63,15 +63,24 @@ export function readOfficial(): OfficialAgent[] {
  * 角括弧を丸括弧に寄せ、括弧の前後の空白と大小をならす
  */
 export function nameKey(en: string): string {
-  return en
-    .toLowerCase()
-    .replace(/\[/g, "(")
-    .replace(/\]/g, ")")
-    .replace(/\s*\(\s*/g, "(")
-    .replace(/\s*\)\s*/g, ")")
-    .replace(/[.,;]+$/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    en
+      .toLowerCase()
+      // 位置の書きかたをそろえる（LOLI は m-/p-/o-、正式一覧は meta-/para-/ortho-）
+      .replace(/(^|[\s,(])m-(?=[a-z])/g, "$1meta-")
+      .replace(/(^|[\s,(])p-(?=[a-z])/g, "$1para-")
+      .replace(/(^|[\s,(])o-(?=[a-z])/g, "$1ortho-")
+      // 綴りの違い（米英）
+      .replace(/fibers/g, "fibres")
+      .replace(/sulphate/g, "sulfate")
+      .replace(/\[/g, "(")
+      .replace(/\]/g, ")")
+      .replace(/\s*\(\s*/g, "(")
+      .replace(/\s*\)\s*/g, ")")
+      .replace(/[.,;]+$/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }
 
 /** 正式な評価対象の法文物質名のコード。名前が長いので指紋にする */
@@ -278,8 +287,8 @@ const KEYWORD_RULES: { group: string; pattern: RegExp; target: string }[] = [
   { group: "3", pattern: /hypochlorite/i, target: "Hypochlorite salts" },
   {
     group: "3",
-    pattern: /bisulfite|metabisulfite|sulfur dioxide/i,
-    target: "Sulfur dioxide and some sulfites, bisulfites and metabisulfites",
+    pattern: /bisulfite|metabisulfite/i,
+    target: "Bisulfites",
   },
   {
     group: "3",
@@ -287,7 +296,6 @@ const KEYWORD_RULES: { group: string; pattern: RegExp; target: string }[] = [
       /sodium fluoride|fluorides inorganic|silicofluoride|fluorosilicic|stannous fluoride|fluorspar/i,
     target: "Fluorides (inorganic, used in drinking-water)",
   },
-  { group: "3", pattern: /diatomaceous/i, target: "Diatomaceous earth, uncalcined" },
   { group: "3", pattern: /silica, amorphous/i, target: "Silica, amorphous" },
   {
     group: "3",
@@ -307,6 +315,14 @@ const KEYWORD_RULES: { group: string; pattern: RegExp; target: string }[] = [
   { group: "3", pattern: /glass filament/i, target: "Glass filament, continuous" },
   { group: "3", pattern: /brilliant blue/i, target: "Brilliant Blue FCF, disodium salt" },
   { group: "3", pattern: /^eosin/i, target: "Eosin" },
+  {
+    group: "3",
+    pattern: /chromium alloy|chromium-containing|cobalt-chromium/i,
+    target: "Chromium, metallic",
+  },
+  { group: "3", pattern: /^mannomustine$/i, target: "Mannomustine dihydrochloride" },
+  { group: "3", pattern: /generic mdi/i, target: "4,4'-Methylenediphenyl diisocyanate" },
+  { group: "2B", pattern: /fuchsin|^magenta/i, target: "Magenta" },
 ];
 
 /** グループごとの索引。名前と CAS の両方から引ける */
