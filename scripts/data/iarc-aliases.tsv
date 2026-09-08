@@ -1,0 +1,40 @@
+# 外部データベース（LOLI・CHRIP）の評価対象を、IARC の正式な一覧の評価対象に手で寄せる表。
+# 列: グループ / 外部DBの鍵（LOLI の RR-… や LU|…）または名前 / 正式な名前（iarc-official.tsv のとおり）
+# 名前や CAS で自動的に当たらない大きなくくりだけ書く。書きかたの違いだけのものは自動で当たる
+1	RR-00625-7	Arsenic and inorganic arsenic compounds
+1	RR-00065-7	Arsenic and inorganic arsenic compounds
+1	LU|Arsenic and arsenic compounds	Arsenic and inorganic arsenic compounds
+1	Arsenic and arsenic compounds	Arsenic and inorganic arsenic compounds
+1	RR-00559-4	Cadmium and cadmium compounds
+1	RR-00557-2	Beryllium and beryllium compounds
+1	LU|Nickel and nickel compounds	Nickel compounds
+1	Nickel and nickel compounds	Nickel compounds
+1	RR-00532-3	Benzidine, dyes metabolized to
+1	LU|Chromium[VI]	Chromium (VI) compounds
+1	RR-04700-7	Plutonium
+1	RR-04712-1	Thorium-232 and its decay products
+1	LU|Radon and its decay products	Radon-222 and its decay products
+1	RR-29040-4	Aristolochic acid
+1	RR-112058-7	Polychlorinated biphenyls, dioxin-like, with a Toxicity Equivalency Factor (TEF) according to WHO (PCBs 77, 81, 105, 114, 118, 123, 126, 156, 157, 167, 169, 189)
+2A	RR-00538-9	Lead compounds, inorganic
+2A	RR-02513-8	Non-arsenical insecticides (occupational exposures in spraying and application of)
+2A	RR-01770-9	Nitrate or nitrite (ingested) under conditions that result in endogenous nitrosation
+2A	RR-14244-9	Nitrate or nitrite (ingested) under conditions that result in endogenous nitrosation
+2A	RR-11985-7	Glyphosate
+2B	RR-04015-3	Chlorophenoxy herbicides
+2B	RR-01622-8	Chlorophenoxy herbicides
+2B	RR-13333-5	Polychlorophenols and their sodium salts (mixed exposures) (see Pentachlorophenol; 2,4,6-Trichlorophenol)
+2B	RR-04061-9	Polychlorophenols and their sodium salts (mixed exposures) (see Pentachlorophenol; 2,4,6-Trichlorophenol)
+2B	LU|Chlorinated paraffins	Chlorinated paraffins of average carbon chain length C12 and average degree of chlorination approximately 60%
+2B	61788-76-9	Chlorinated paraffins of average carbon chain length C12 and average degree of chlorination approximately 60%
+2B	63449-39-8	Chlorinated paraffins of average carbon chain length C12 and average degree of chlorination approximately 60%
+2B	85535-84-8	Chlorinated paraffins of average carbon chain length C12 and average degree of chlorination approximately 60%
+2B	RR-01745-8	Nitrilotriacetic acid and its salts
+3	RR-00612-2	Selenium and selenium compounds
+3	RR-02632-4	Lead compounds, organic
+3	RR-00569-6	Mercury and inorganic mercury compounds
+3	136677-10-6	Polychlorinated dibenzofurans (see 2,3,4,7,8-Pentachlorodibenzofuran)
+3	136677-09-3	Polychlorinated dibenzo-para-dioxins (other than 2,3,7,8-tetrachlorodibenzo-para-dioxin)
+3	9003-56-9	Acrylonitrile-butadiene-styrene copolymers
+3	1308-38-9	Chromium (III) compounds
+3	LU|Zeolites other than erionite	Zeolites other than erionite (clinoptilolite, phillipsite,mordenite, non-fibrous Japanese zeolite, synthetic zeolites)

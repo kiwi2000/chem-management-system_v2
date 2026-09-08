@@ -1,13 +1,14 @@
 /**
  * CHRIP から取った IARC の発がん性評価を、CAS リンクとして入れる（データソース CHRIP）。
+ * 法文物質名は seed-iarc-laws.ts（IARC の正式一覧）。
  *
  *   python scripts/chrip-iarc-extract.py                              先に抜き出す
  *   node --env-file=.env node_modules/tsx/dist/cli.mjs --tsconfig apps/web/tsconfig.json \
  *     scripts/seed-iarc-chrip-links.ts 2026Q3 --write
  *
  * **CHRIP は LOLI を見ずに作る**（データソースは単独で成り立たせる）。
- * ただし法文物質名（IARC の評価対象）は法律の中身なので共通。CHRIP の Agent名称 を
- * 同じグループの法文物質名に英語名で当て、無ければ CHRIP のぶんとして新しく作る
+ * CHRIP の `Agent名称` は正式一覧の書きかたをほぼそのまま写しているので、名前で当たる。
+ * 当たらなければ CAS で当て、それでも無ければ CHRIP の名前で法文物質名を作って結ぶ
  * （コード `INT-IARC-<区分>-CH-<名前の指紋>`）。
  *
  * CHRIP の1件は「その物質（CAS）が、その Agent として、そのグループに評価されている」なので、
@@ -19,16 +20,19 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { normalizeCas, normalizeCode } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
+import {
+  CAS_SHAPE,
+  CATEGORY_OF_GROUP,
+  IARC_LAW,
+  OfficialIndex,
+  officialCode,
+  readOfficial,
+} from "./lib/iarc-official";
 
 const prisma = new PrismaClient();
 
-const LAW = "INT-IARC";
 const SOURCE_CODE = "CHRIP";
-const CAS_SHAPE = /^\d{2,7}-\d{2}-\d$/;
 const DATA_DIR = join(process.cwd(), "scripts/data");
-
-/** CHRIP のグループ → 区分コード */
-const CATEGORY_OF: Record<string, string> = { "1": "G1", "2A": "G2A", "2B": "G2B", "3": "G3" };
 
 interface Row {
   cas: string;
@@ -50,37 +54,6 @@ function readRows(): Row[] {
       rows.push({ cas, group, agent, volume: volume ?? "", year: year ?? "", cid: cid ?? "" });
   }
   return rows;
-}
-
-/** 英語名の突き合わせ用（seed-iarc-laws.ts と同じ寄せかた） */
-function nameKey(en: string): string {
-  return en
-    .toLowerCase()
-    .replace(/\[/g, "(")
-    .replace(/\]/g, ")")
-    .replace(/\s*\(\s*/g, "(")
-    .replace(/\s*\)\s*/g, ")")
-    .replace(/[.,;]+$/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Wikipedia 由来の日本語名（英語名 → 日本語名）。無ければ空 */
-function readNamesJa(): Map<string, string> {
-  const map = new Map<string, string>();
-  let text = "";
-  try {
-    text = readFileSync(join(DATA_DIR, "iarc-names-ja.tsv"), "utf-8");
-  } catch {
-    return map;
-  }
-  for (const line of text.split("\n")) {
-    const row = line.replace(/\r$/, "");
-    if (row === "" || row.startsWith("#")) continue;
-    const [en, ja] = row.split("\t");
-    if (en && ja && !map.has(nameKey(en))) map.set(nameKey(en), ja);
-  }
-  return map;
 }
 
 /** `Sup 7, 58, 100C` → 番号はいちばん後ろ（CHRIP は古い順に並べている）。`Sup 7` は `Suppl. 7` に寄せる */
@@ -125,10 +98,10 @@ async function main() {
   console.log(`  入れ先: ${version.code} × ${source.code}\n`);
 
   const law = await prisma.law.findFirst({
-    where: { codeNormalized: normalizeCode(LAW), deletedAt: null },
+    where: { codeNormalized: normalizeCode(IARC_LAW), deletedAt: null },
     select: { id: true },
   });
-  if (!law) throw new Error(`法令 ${LAW} がありません`);
+  if (!law) throw new Error(`法令 ${IARC_LAW} がありません`);
 
   const master = new Set(
     (
@@ -138,21 +111,13 @@ async function main() {
       })
     ).map((s) => s.casNormalized ?? ""),
   );
-  const masterJa = new Map<string, string>();
-  for (const s of await prisma.substance.findMany({
-    where: { deletedAt: null, isCasRepresentative: true, casNormalized: { not: null } },
-    select: { casNormalized: true, nameJa: true },
-  })) {
-    if (s.casNormalized && s.nameJa && s.nameJa !== s.casNormalized)
-      masterJa.set(s.casNormalized, s.nameJa);
-  }
-  const namesJa = readNamesJa();
+  const official = readOfficial();
 
   const rows = readRows();
   console.log(`  CHRIP の評価: ${rows.length} 件`);
 
   let total = 0;
-  for (const [group, catCode] of Object.entries(CATEGORY_OF)) {
+  for (const [group, catCode] of Object.entries(CATEGORY_OF_GROUP)) {
     const mine = rows.filter((r) => r.group === group);
     if (mine.length === 0) continue;
 
@@ -169,10 +134,11 @@ async function main() {
 
     const existing = await prisma.statutorySubstance.findMany({
       where: { classId: cls.id, deletedAt: null },
-      select: { id: true, nameOriginal: true, displayOrder: true },
+      select: { id: true, codeNormalized: true, displayOrder: true },
     });
-    const idByName = new Map(existing.map((s) => [nameKey(s.nameOriginal), s.id]));
+    const idOf = new Map(existing.map((s) => [s.codeNormalized, s.id]));
     let nextOrder = existing.reduce((m, s) => Math.max(m, s.displayOrder), 0) + 1;
+    const index = new OfficialIndex(official, group);
 
     // Agent ごとにまとめる（同じ Agent に複数の CAS が付く）
     const byAgent = new Map<string, Row[]>();
@@ -192,69 +158,65 @@ async function main() {
       text: string;
     }[] = [];
     for (const [agent, rs] of byAgent) {
-      let id = idByName.get(nameKey(agent)) ?? null;
-      if (id) matched += 1;
-      else {
+      const usable = rs.filter((r) => CAS_SHAPE.test(r.cas) && master.has(normalizeCas(r.cas)));
+      notInMaster += rs.filter(
+        (r) => CAS_SHAPE.test(r.cas) && !master.has(normalizeCas(r.cas)),
+      ).length;
+      if (usable.length === 0) continue;
+
+      const hit = index.resolve(
+        agent,
+        usable.length === 1 ? (usable[0]?.cas ?? null) : null,
+        usable.map((r) => r.cas),
+        agent,
+      );
+      let id: string | undefined;
+      if (hit) {
+        matched += 1;
+        id = idOf.get(normalizeCode(officialCode(catCode, hit.name)));
+        if (!id && write)
+          throw new Error(
+            `正式一覧の法文物質名がありません: ${hit.name}（先に seed-iarc-laws.ts --write）`,
+          );
+      } else {
         created += 1;
-        if (write) {
-          const code = `${LAW}-${catCode}-CH-${createHash("sha1").update(agent).digest("hex").slice(0, 10)}`;
-          const first = rs[0];
-          const nameJa =
-            namesJa.get(nameKey(agent)) ??
-            (rs.length === 1 && first && CAS_SHAPE.test(first.cas)
-              ? (masterJa.get(normalizeCas(first.cas)) ?? null)
-              : null);
-          const found = await prisma.statutorySubstance.findFirst({
-            where: { classId: cls.id, codeNormalized: normalizeCode(code) },
+        const code = `${IARC_LAW}-${catCode}-CH-${createHash("sha1").update(agent).digest("hex").slice(0, 10)}`;
+        id = idOf.get(normalizeCode(code));
+        if (!id && write) {
+          const first = usable[0];
+          const made = await prisma.statutorySubstance.create({
+            data: {
+              code,
+              codeNormalized: normalizeCode(code),
+              classId: cls.id,
+              officialNumber: volumeNumber(first?.volume ?? ""),
+              nameOriginal: agent,
+              nameLang: "EN",
+              nameJa: null,
+              nameEn: agent,
+              displayOrder: nextOrder++,
+              aggregation: "NONE",
+              metalEtc: null,
+              thresholdLower: "0",
+              lowerBound: "EXCLUSIVE",
+              thresholdUpper: "100",
+              upperBound: "INCLUSIVE",
+              note: first?.volume
+                ? `CHRIP の評価対象（IARC の正式一覧に当たらなかったもの）: Volume ${first.volume}${first.year ? `（公表年 ${first.year}）` : ""}`
+                : null,
+            },
             select: { id: true },
           });
-          const payload = {
-            officialNumber: volumeNumber(first?.volume ?? ""),
-            nameOriginal: agent,
-            nameLang: "EN",
-            nameJa,
-            nameEn: agent,
-            aggregation: "NONE" as const,
-            metalEtc: null,
-            thresholdLower: "0",
-            lowerBound: "EXCLUSIVE" as const,
-            thresholdUpper: "100",
-            upperBound: "INCLUSIVE" as const,
-            note: first?.volume
-              ? `IARC モノグラフ: ${first.volume}${first.year ? `（公表年 ${first.year}）` : ""}（CHRIP より）`
-              : null,
-          };
-          if (found) {
-            await prisma.statutorySubstance.update({ where: { id: found.id }, data: payload });
-            id = found.id;
-          } else {
-            const made = await prisma.statutorySubstance.create({
-              data: {
-                ...payload,
-                code,
-                codeNormalized: normalizeCode(code),
-                classId: cls.id,
-                displayOrder: nextOrder++,
-              },
-              select: { id: true },
-            });
-            id = made.id;
-          }
-          idByName.set(nameKey(agent), id);
+          id = made.id;
+          idOf.set(normalizeCode(code), id);
         }
       }
-      for (const r of rs) {
-        if (!CAS_SHAPE.test(r.cas)) continue;
-        const casNormalized = normalizeCas(r.cas);
-        if (!master.has(casNormalized)) {
-          notInMaster += 1;
-          continue;
-        }
-        if (!id) continue;
+      if (!id) continue;
+      for (const r of usable) {
         links.push({
           statutorySubstanceId: id,
           casNumber: r.cas,
-          casNormalized,
+          casNormalized: normalizeCas(r.cas),
           text: `発がん性グループ ${r.group}（Volume ${r.volume || "-"}、公表年 ${r.year || "-"}）`,
         });
       }
@@ -262,7 +224,7 @@ async function main() {
 
     if (write) {
       // この区分ぶんの CHRIP のリンクを入れ替える（LOLI のリンクには触らない）
-      const ids = [...idByName.values()];
+      const ids = [...idOf.values()];
       const old = await prisma.statutoryCasLink.findMany({
         where: { versionId: version.id, sourceId: source.id, statutorySubstanceId: { in: ids } },
         select: { id: true },
@@ -301,12 +263,12 @@ async function main() {
           },
           select: { id: true, statutorySubstanceId: true, casNormalized: true },
         });
-        const idOf = new Map(
+        const linkIdOf = new Map(
           made.map((m) => [`${m.statutorySubstanceId}/${m.casNormalized}`, m.id]),
         );
         await prisma.statutoryCasLinkData.createMany({
           data: chunk.flatMap((l) => {
-            const linkId = idOf.get(`${l.statutorySubstanceId}/${l.casNormalized}`);
+            const linkId = linkIdOf.get(`${l.statutorySubstanceId}/${l.casNormalized}`);
             return linkId ? [{ linkId, text: l.text, textJa: null }] : [];
           }),
           skipDuplicates: true,
@@ -315,8 +277,8 @@ async function main() {
     }
     total += links.length;
     console.log(
-      `  ${LAW}/${catCode}`.padEnd(18) +
-        `Agent ${String(byAgent.size).padStart(4)} 種（既存の法文物質名に当たった ${matched} / CHRIP から作る ${created}）` +
+      `  ${IARC_LAW}/${catCode}`.padEnd(18) +
+        `Agent ${String(byAgent.size).padStart(4)} 種（正式一覧に当たった ${matched} / CHRIP の名前で作る ${created}）` +
         ` / リンク ${String(links.length).padStart(5)} 件` +
         (notInMaster ? ` / マスタに無い CAS ${notInMaster} 件` : ""),
     );
