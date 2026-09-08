@@ -44,6 +44,7 @@ PY
 
 # 1行（row）ごとに、但し書きを1本ずつ分けて見る。
 # 但し書きが `As <名前> [<鍵>]` の形なら子、その行の CAS はその鍵の親に付く。
+# **鍵は最後のカッコ。**名前に `Benzo[a]pyrene` のように角括弧が入るので、最初のカッコを取ると壊れる（2026-09-08 に直した）。
 # 行のどの但し書きもその形でなければ親そのもので、鍵は自分の CAS
 BASE="
   SELECT d.Cas AS cas,
@@ -58,9 +59,11 @@ BASE="
 
 CHILD="
   SELECT b.cas, b.val,
-         SUBSTRING(m.value('.','varchar(500)'), CHARINDEX('[', m.value('.','varchar(500)')) + 1,
-                   CHARINDEX(']', m.value('.','varchar(500)')) - CHARINDEX('[', m.value('.','varchar(500)')) - 1) AS k,
-         LTRIM(RTRIM(SUBSTRING(m.value('.','varchar(500)'), 4, CHARINDEX('[', m.value('.','varchar(500)')) - 4))) AS nm
+         SUBSTRING(m.value('.','varchar(500)'),
+                   LEN(m.value('.','varchar(500)')) - CHARINDEX('[', REVERSE(m.value('.','varchar(500)'))) + 2,
+                   CHARINDEX('[', REVERSE(m.value('.','varchar(500)'))) - CHARINDEX(']', REVERSE(m.value('.','varchar(500)'))) - 1) AS k,
+         LTRIM(RTRIM(SUBSTRING(m.value('.','varchar(500)'), 4,
+                   LEN(m.value('.','varchar(500)')) - CHARINDEX('[', REVERSE(m.value('.','varchar(500)'))) - 3))) AS nm
   FROM ($BASE) b
   CROSS APPLY b.rowxml.nodes('/row/remark') u(m)
   WHERE m.value('.','varchar(500)') LIKE 'As %[[]%]'"

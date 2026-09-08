@@ -91,7 +91,7 @@
 50-00-0	Formaldehyde
 50-18-0	Cyclophosphamide
 50-28-2	Estradiol-17.beta.
-50-32-8	Benzo(a)pyrene
+50-32-8	Benzo[a]pyrene
 505-60-2	Sulfur mustard
 52-24-4	Tris(1-aziridinyl)phosphine sulfide
 53-16-7	Estrone
@@ -299,4 +299,3 @@ RR-56761-3	Human papillomavirus type 56
 RR-56762-4	Human papillomavirus type 58
 RR-56763-5	Human papillomavirus type 59
 RR-64378-7	Leather dust
-a	Benzo

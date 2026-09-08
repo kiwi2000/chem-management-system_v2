@@ -153,15 +153,173 @@ function readAliases(group: string): Map<string, string> {
   return map;
 }
 
+/**
+ * 塩や水和物の書きかたを落として本体の名前にする（`Hydralazine hydrochloride` → `Hydralazine`、
+ * `2,4-Diaminoanisole sulfate` → `2,4-Diaminoanisole`、`Nitrilotriacetic acid, trisodium salt` → `Nitrilotriacetic acid`）。
+ * IARC は本体で評価していることが多く、LOLI は塩ごとに行を持つため
+ */
+export function stripSalt(en: string): string {
+  return en
+    .replace(/\s*\(1:1\)$/i, "")
+    .replace(
+      /,\s*(mono|di|tri)?(sodium|potassium|ammonium|calcium|zinc|lead|barium|strontium)?\s*salts?(,?\s*(mono|di|tri)?hydrate)?$/i,
+      "",
+    )
+    .replace(
+      /\s+(mono|di|tri)?(hydrochloride|sulfate|sulphate|nitrate|acetate|phosphate|hydrate|hexahydrate|heptahydrate|trihydrate|monohydrate)$/i,
+      "",
+    )
+    .replace(/\s+(mono|di|tri)?hydrochloride\s+(mono|di|tri)?hydrate$/i, "")
+    .trim();
+}
+
+/**
+ * 元素などの手がかりで、正式一覧のくくりに寄せる規則。グループごと。
+ * 当てはまっても、その正式な名前がそのグループの一覧に無ければ使わない（グループ違いを防ぐ）。
+ * 有機ヒ素・鉛の金属・アンチモンの三酸化物のように、正式一覧のくくりと中身が合わないものは書かない
+ */
+const KEYWORD_RULES: { group: string; pattern: RegExp; target: string }[] = [
+  { group: "1", pattern: /cadmium/i, target: "Cadmium and cadmium compounds" },
+  { group: "1", pattern: /beryllium/i, target: "Beryllium and beryllium compounds" },
+  { group: "1", pattern: /nickel|pentlandite/i, target: "Nickel compounds" },
+  {
+    group: "1",
+    pattern: /chromat|chromic acid|chromyl|chromium|molybdenum orange|zinc yellow/i,
+    target: "Chromium (VI) compounds",
+  },
+  {
+    group: "1",
+    pattern:
+      /arsenic (pent|tri)oxide|arsenic sulfide|arsenic acid|arsenous acid|arsenate|gallium arsenide|nickel arsenide/i,
+    target: "Arsenic and inorganic arsenic compounds",
+  },
+  { group: "1", pattern: /aflatoxin/i, target: "Aflatoxins" },
+  {
+    group: "1",
+    pattern: /asbestos|actinolite|anthophyllite|tremolite|crocidolite|amosite|chrysotile/i,
+    target:
+      "Asbestos (all forms, including actinolite, amosite, anthophyllite, chrysotile, crocidolite, tremolite)",
+  },
+  { group: "1", pattern: /^benzidine/i, target: "Benzidine" },
+  { group: "1", pattern: /o-toluidine/i, target: "ortho-Toluidine" },
+  {
+    group: "1",
+    pattern: /silica|cristobalite|quartz/i,
+    target: "Silica dust, crystalline, in the form of quartz or cristobalite",
+  },
+  {
+    group: "1",
+    pattern: /sulfuric acid|oleum|sulfur trioxide/i,
+    target: "Acid mists, strong inorganic",
+  },
+  { group: "1", pattern: /radon/i, target: "Radon-222 and its decay products" },
+  { group: "1", pattern: /strontium-90/i, target: "Fission products, including strontium-90" },
+  { group: "1", pattern: /radioiodine/i, target: "Radioiodines, including iodine-131" },
+  { group: "1", pattern: /^opium/i, target: "Opium consumption" },
+  { group: "1", pattern: /aristolochic acid/i, target: "Aristolochic acid" },
+  {
+    group: "1",
+    pattern: /^uranium/i,
+    target:
+      "Uranium, mixture of isotopes (see Radionuclides, alpha-particle-emitting, internally deposited)",
+  },
+  {
+    group: "2A",
+    pattern:
+      /^lead (nitrate|dioxide|oxide|tetraoxide|sulfide|monoxide|carbonate|sulfate|phosphate|chloride)/i,
+    target: "Lead compounds, inorganic",
+  },
+  { group: "2A", pattern: /trivalent antimony/i, target: "Trivalent antimony" },
+  { group: "2A", pattern: /glyphosate/i, target: "Glyphosate" },
+  { group: "2A", pattern: /benzenamine, 4-chloro-2-methyl/i, target: "4-Chloro-ortho-toluidine" },
+  {
+    group: "2B",
+    pattern: /nitrilotriacetic|glycine, n,n-bis\(carboxymethyl\)/i,
+    target: "Nitrilotriacetic acid and its salts",
+  },
+  { group: "2B", pattern: /chlordane/i, target: "Chlordane" },
+  { group: "2B", pattern: /heptachlor/i, target: "Heptachlor" },
+  { group: "2B", pattern: /hexachlorocyclohexane/i, target: "Hexachlorocyclohexanes" },
+  { group: "2B", pattern: /toluene diisocyanate/i, target: "Toluene diisocyanates" },
+  { group: "2B", pattern: /1,3-benzenediamine, 4-methoxy/i, target: "2,4-Diaminoanisole" },
+  {
+    group: "2B",
+    pattern: /3,3'-dimethylbenzidine/i,
+    target: "3,3'-Dimethylbenzidine (ortho-Tolidine)",
+  },
+  {
+    group: "2B",
+    pattern: /(dichlorophenoxy|chloro-2-methylphenoxy|trichlorophenoxy)/i,
+    target: "Chlorophenoxy herbicides",
+  },
+  {
+    group: "2B",
+    pattern: /nickel alloys|nickel-containing steels|metallic nickel/i,
+    target: "Nickel, metallic",
+  },
+  { group: "2B", pattern: /^gasoline/i, target: "Gasoline" },
+  {
+    group: "3",
+    pattern:
+      /chromic|chromite|neochromium|dichromium nickel|perchloric acid, chromium|chromium hydroxide|chromium carbonyl/i,
+    target: "Chromium (III) compounds",
+  },
+  {
+    group: "3",
+    pattern: /^mercuric|mercury and mercury compounds/i,
+    target: "Mercury and inorganic mercury compounds",
+  },
+  {
+    group: "3",
+    pattern: /tetramethyllead|tetraethyllead|organolead/i,
+    target: "Lead compounds, organic",
+  },
+  { group: "3", pattern: /pentavalent antimony/i, target: "Pentavalent antimony" },
+  { group: "3", pattern: /hypochlorite/i, target: "Hypochlorite salts" },
+  {
+    group: "3",
+    pattern: /bisulfite|metabisulfite|sulfur dioxide/i,
+    target: "Sulfur dioxide and some sulfites, bisulfites and metabisulfites",
+  },
+  {
+    group: "3",
+    pattern:
+      /sodium fluoride|fluorides inorganic|silicofluoride|fluorosilicic|stannous fluoride|fluorspar/i,
+    target: "Fluorides (inorganic, used in drinking-water)",
+  },
+  { group: "3", pattern: /diatomaceous/i, target: "Diatomaceous earth, uncalcined" },
+  { group: "3", pattern: /silica, amorphous/i, target: "Silica, amorphous" },
+  {
+    group: "3",
+    pattern: /cobalt\(ii\) compounds/i,
+    target:
+      "Other cobalt(II) compounds (not including Soluble cobalt(II) salts, Cobalt(II) oxide, Cobalt(II,III) oxide, and Cobalt(II) sulfide)",
+  },
+  {
+    group: "3",
+    pattern: /dibenzo-p-dioxin/i,
+    target:
+      "Polychlorinated dibenzo-para-dioxins (other than 2,3,7,8-tetrachlorodibenzo-para-dioxin)",
+  },
+  { group: "3", pattern: /phylloquinone|menadione/i, target: "Vitamin K substances" },
+  { group: "3", pattern: /o-xylene/i, target: "Xylenes" },
+  { group: "3", pattern: /mineral oil, highly/i, target: "Mineral oils, highly-refined" },
+  { group: "3", pattern: /glass filament/i, target: "Glass filament, continuous" },
+  { group: "3", pattern: /brilliant blue/i, target: "Brilliant Blue FCF, disodium salt" },
+  { group: "3", pattern: /^eosin/i, target: "Eosin" },
+];
+
 /** グループごとの索引。名前と CAS の両方から引ける */
 export class OfficialIndex {
   private byName = new Map<string, OfficialAgent>();
   private byLoose = new Map<string, OfficialAgent>();
   private byCas = new Map<string, OfficialAgent[]>();
   private aliases: Map<string, string>;
+  private group: string;
   readonly agents: OfficialAgent[];
 
   constructor(agents: OfficialAgent[], group: string) {
+    this.group = group;
     this.agents = agents.filter((a) => a.group === group);
     this.aliases = readAliases(group);
     for (const a of this.agents) {
@@ -179,6 +337,7 @@ export class OfficialIndex {
    * 外部データベースの評価対象を、正式な評価対象に当てる。
    *   0. 対応表（scripts/data/iarc-aliases.tsv）に書いてある
    *   1. 名前が同じ（書きかたの違いはならしてから比べる。句読点や「and」の有無も無視して再挑戦）
+   *   1b. 塩・水和物の語尾を落として名前で当てる / 1c. 元素などの手がかりの規則（KEYWORD_RULES）
    *   2. 自分の CAS が正式一覧のどれかの CAS に載っている
    *   3. 広げた CAS（子）が最も多く重なる評価対象
    * どれにも当たらなければ null（呼ぶ側が、その外部データベースの名前で作る）
@@ -198,6 +357,16 @@ export class OfficialIndex {
     if (byName) return byName;
     const loose = this.byLoose.get(looseKey(name));
     if (loose) return loose;
+    const stripped = stripSalt(name);
+    if (stripped !== name) {
+      const hit = this.byName.get(nameKey(stripped)) ?? this.byLoose.get(looseKey(stripped));
+      if (hit) return hit;
+    }
+    for (const rule of KEYWORD_RULES) {
+      if (rule.group !== this.group || !rule.pattern.test(name)) continue;
+      const hit = this.byName.get(nameKey(rule.target));
+      if (hit) return hit;
+    }
     if (ownCas) {
       const hit = this.byCas.get(ownCas);
       if (hit?.[0]) return hit[0];
