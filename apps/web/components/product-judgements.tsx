@@ -497,6 +497,12 @@ export function ProductJudgements({
                             </TableCell>
                             <TableCell className={cn(CELL, "align-top")}>
                               <OneLine text={h.name ?? m.judgements.categoryItself} />
+                              {/* 施行前に登録した法文物質名。該非は変えず、何であるかだけ分かるようにする */}
+                              {h.notYetEffective && h.effectiveFrom && (
+                                <Badge variant="outline" className="mt-1">
+                                  {m.judgements.notYetEffective(h.effectiveFrom)}
+                                </Badge>
+                              )}
                             </TableCell>
                             <MatchedCells hit={h} m={m} cellClass={CELL} />
                             {/* その行を作った物質の点数。合算した行は寄与ぶんの合計 */}

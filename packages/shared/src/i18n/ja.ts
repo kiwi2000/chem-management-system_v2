@@ -706,7 +706,8 @@ export const ja = {
     upper: "上限値",
     effectiveFrom: "適用開始日",
     effectiveTo: "適用終了日",
-    effectiveHint: "参考情報です。判定には使いません",
+    effectiveHint:
+      "判定の該非は変えません。適用開始日が今日より後なら、判定の根拠に「施行前」と出ます",
     displayOrder: "並び順",
     note: "備考",
     applicableCondition: "適用条件",
@@ -1040,6 +1041,8 @@ export const ja = {
     byUser: "人が判断",
     basis: "根拠",
     categoryItself: "（区分の合計）",
+    /** 適用開始日がまだ来ていない法文物質名で当たったとき。該非は変えず、印だけ出す */
+    notYetEffective: (from: string) => `施行前（${from} から）`,
     basisWithheld: "根拠は組成に近い情報のため、表示していません。",
     decidedBy: (who: string, when: string) => `${who} が ${when} に確認`,
     review: "確認する",

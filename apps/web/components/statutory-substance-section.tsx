@@ -174,6 +174,16 @@ export function StatutorySubstanceSection({
         render: (s) => s.applicableCondition ?? "",
       },
       {
+        // 施行前に登録した法文物質名を見分けるための列。判定の該非は変えない
+        key: "effectiveFrom",
+        header: m.statutorySubstances.effectiveFrom,
+        kind: "date",
+        width: 110,
+        className: "text-muted-foreground text-center text-xs",
+        render: (s) =>
+          s.effectiveFrom ? new Date(s.effectiveFrom).toLocaleDateString(locale) : "",
+      },
+      {
         key: "casCount",
         header: m.statutorySubstances.casCount,
         kind: "number",

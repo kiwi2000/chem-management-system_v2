@@ -166,6 +166,11 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
               </TableCell>
               <TableCell className={cn(CELL, "align-top")}>
                 {h && <OneLine text={h.name ?? m.judgements.categoryItself} />}
+                {h?.notYetEffective && h.effectiveFrom && (
+                  <Badge variant="outline" className="mt-1">
+                    {m.judgements.notYetEffective(h.effectiveFrom)}
+                  </Badge>
+                )}
                 {first && p.hitsWithheld && (
                   // 空なのか伏せたのかが分からないと、入っていないと読まれてしまう
                   <span className="text-muted-foreground text-xs">

@@ -203,6 +203,14 @@ export interface JudgementHitDto {
   contributions: { cas: string; pct: string }[];
   /** 合算した含有率。**まとめたときだけ入る**（足していないものを足したように見せない） */
   total: string | null;
+  /** 法文物質名の適用開始日（YYYY-MM-DD）。無ければ空 */
+  effectiveFrom: string | null;
+  /**
+   * 適用開始日がまだ来ていない（施行前）。**該非は変えない。**
+   * 施行前に登録した法文物質名で当たったことが分かるように、印だけ出す。
+   * 保存した判定を読むときに今日の日付で決めるので、施行日が来れば印は自然に消える
+   */
+  notYetEffective: boolean;
   /**
    * この行を作った物質のスコア。寄与が複数あるときは合計。
    * 組成を見られない人には出さないので、`hits` ごと空になる。

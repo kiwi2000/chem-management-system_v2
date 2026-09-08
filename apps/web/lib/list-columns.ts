@@ -286,6 +286,7 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
     field: "applicableCondition",
     caseInsensitive: true,
   },
+  { key: "effectiveFrom", kind: "date", field: "effectiveFrom" },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
 ];
 

@@ -70,7 +70,13 @@ export async function toJudgementDtos(
       ? []
       : prisma.statutorySubstance.findMany({
           where: { id: { in: substanceIds } },
-          select: { id: true, nameJa: true, nameOriginal: true, officialNumber: true },
+          select: {
+            id: true,
+            nameJa: true,
+            nameOriginal: true,
+            officialNumber: true,
+            effectiveFrom: true,
+          },
         }),
     actorIds.length === 0
       ? []
@@ -81,6 +87,7 @@ export async function toJudgementDtos(
   ]);
   const infoOf = new Map(substances.map((s) => [s.id, s]));
   const userOf = new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
+  const today = todayInJapan();
 
   /*
     行ごとのスコアを出すために、寄与しているCASの物質スコアを引く。
@@ -138,6 +145,7 @@ export async function toJudgementDtos(
                 officialNumber: info?.officialNumber ?? null,
                 contributions,
                 total: h.total?.toString() ?? null,
+                ...effectiveMark(info?.effectiveFrom ?? null, today),
                 /*
                   その行を作った物質のスコア。**合算した行は寄与ぶんを足す。**
                   含有率を足して1行にしている以上、スコアも同じ数え方にそろえる
@@ -154,6 +162,26 @@ export async function toJudgementDtos(
     }))
     .sort((a, b) => compareLawOrder(a._order, b._order))
     .map(({ _order, ...rest }) => rest);
+}
+
+/**
+ * 今日の日付（YYYY-MM-DD）。**日本の日付で決める。**
+ * サーバーの時計が UTC でも、施行日の朝に「施行前」と出さないため
+ */
+function todayInJapan(): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo" }).format(new Date());
+}
+
+/**
+ * 適用開始日と「施行前」の印。適用開始日は日付だけの列（時刻なし、UTC の 0 時）なので
+ * ISO 文字列の日付部分がそのまま登録した日付になる
+ */
+function effectiveMark(
+  effectiveFrom: Date | null,
+  today: string,
+): { effectiveFrom: string | null; notYetEffective: boolean } {
+  const from = effectiveFrom ? effectiveFrom.toISOString().slice(0, 10) : null;
+  return { effectiveFrom: from, notYetEffective: from !== null && from > today };
 }
 
 /** スコアの合計。小数を落とさないよう、文字列のまま足す */
@@ -223,9 +251,16 @@ export async function toMatchedProducts(
       ? []
       : await prisma.statutorySubstance.findMany({
           where: { id: { in: substanceIds } },
-          select: { id: true, nameJa: true, nameOriginal: true, officialNumber: true },
+          select: {
+            id: true,
+            nameJa: true,
+            nameOriginal: true,
+            officialNumber: true,
+            effectiveFrom: true,
+          },
         });
   const infoOf = new Map(substances.map((s) => [s.id, s]));
+  const today = todayInJapan();
 
   return (
     rows
@@ -251,6 +286,7 @@ export async function toMatchedProducts(
                   officialNumber: info?.officialNumber ?? null,
                   contributions: (h.contributions ?? []) as { cas: string; pct: string }[],
                   total: h.total?.toString() ?? null,
+                  ...effectiveMark(info?.effectiveFrom ?? null, today),
                 };
               })
               .sort((a, b) => maxPct(b) - maxPct(a))

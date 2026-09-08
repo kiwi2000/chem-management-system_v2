@@ -690,7 +690,8 @@ export const en: Messages = {
     upper: "Upper",
     effectiveFrom: "Effective from",
     effectiveTo: "Effective to",
-    effectiveHint: "For reference only. Not used for assessment",
+    effectiveHint:
+      "Does not change the verdict. If the start date is later than today, the basis shows “Not yet in force”",
     displayOrder: "Order",
     note: "Note",
     applicableCondition: "Applicable condition",
@@ -1021,6 +1022,7 @@ export const en: Messages = {
     byUser: "Decided by a person",
     basis: "Because",
     categoryItself: "(category total)",
+    notYetEffective: (from: string) => `Not yet in force (from ${from})`,
     basisWithheld: "The basis is close to composition data, so it is not shown.",
     decidedBy: (who: string, when: string) => `Checked by ${who} on ${when}`,
     review: "Check this",
