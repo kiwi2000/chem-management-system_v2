@@ -5,6 +5,12 @@
  * monographs.iarc.who.int の一覧ページが読み込む JS から抜いたもの）。
  * 法文物質名はこの一覧の評価対象（Agent）で作り、LOLI・CHRIP から取った CAS の
  * 結び付きは、それぞれの名前や CAS でこの評価対象に当てる。
+ *
+ * **刊行済みの巻だけを採る**（2026-09-08 決定）。IARC は評価会合の直後に一覧を更新するが、
+ * モノグラフの巻が出るまでは一覧に「刊行準備中（in_prep）」の印が付く。その印のものは、
+ * 前に刊行済みの巻で評価されていればその評価（`scripts/data/iarc-published.tsv`）に戻し、
+ * 初めての評価なら載せない（アトラジンは第140巻で 2A になったが、刊行までは第73巻の 3 のまま）。
+ * `readOfficial()` はこの決まりを適用した一覧、`readOfficialRaw()` は一覧そのもの。
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -27,6 +33,17 @@ export interface OfficialAgent {
   year: string;
   /** 評価年 */
   yearEval: string;
+  /** いちばん新しい巻が刊行準備中（一覧そのものの印。readOfficial() の結果では常に false） */
+  inPrep: boolean;
+  /** 刊行準備中の見直し（readOfficial() が刊行済みの評価に戻したときに、戻す前の内容を残す） */
+  pending?: PendingEval;
+}
+
+/** 刊行準備中の評価（一覧に出ている最新の評価） */
+export interface PendingEval {
+  group: string;
+  volume: string;
+  yearEval: string;
 }
 
 /** CHRIP・LOLI・正式一覧で共通のグループ → 区分コード */
@@ -37,13 +54,14 @@ export const CATEGORY_OF_GROUP: Record<string, string> = {
   "3": "G3",
 };
 
-export function readOfficial(): OfficialAgent[] {
+/** 一覧そのもの（刊行準備中のものも、一覧に出ている最新のグループのまま） */
+export function readOfficialRaw(): OfficialAgent[] {
   const text = readFileSync(join(DATA_DIR, "iarc-official.tsv"), "utf-8");
   const out: OfficialAgent[] = [];
   for (const line of text.split("\n")) {
     const row = line.replace(/\r$/, "");
     if (row === "" || row.startsWith("#")) continue;
-    const [name, group, cas, volumes, year, yearEval] = row.split("\t");
+    const [name, group, cas, volumes, year, yearEval, inPrep] = row.split("\t");
     if (!name || !group) continue;
     out.push({
       name,
@@ -52,9 +70,71 @@ export function readOfficial(): OfficialAgent[] {
       volumes: (volumes ?? "").split(";").filter(Boolean),
       year: year ?? "",
       yearEval: yearEval ?? "",
+      inPrep: inPrep === "1",
     });
   }
   return out;
+}
+
+type PublishedEval = Pick<OfficialAgent, "group" | "volumes" | "year" | "yearEval">;
+
+/** 刊行済みの評価に戻す表（scripts/data/iarc-published.tsv）。名前 → 刊行済みの評価 */
+function readPublishedOverrides(): Map<string, PublishedEval> {
+  const map = new Map<string, PublishedEval>();
+  const text = readFileSync(join(DATA_DIR, "iarc-published.tsv"), "utf-8");
+  for (const line of text.split("\n")) {
+    const row = line.replace(/\r$/, "");
+    if (row === "" || row.startsWith("#")) continue;
+    const [name, group, volumes, year, yearEval] = row.split("\t");
+    if (!name || !group) continue;
+    map.set(name, {
+      group,
+      volumes: (volumes ?? "").split(";").filter(Boolean),
+      year: year ?? "",
+      yearEval: yearEval ?? "",
+    });
+  }
+  return map;
+}
+
+/**
+ * 刊行済みの巻だけを採った一覧。刊行準備中の評価対象は、
+ *   - 刊行済みの評価が表にあれば、そのグループ・巻・年に戻す（見直しの中身は `pending` に残す）
+ *   - 無ければ落とす（初めての評価。巻が出たら一覧の印が外れて自然に入る）
+ * 表に残っているのに一覧の印が外れたものは、表を直すよう知らせる
+ */
+export function readOfficial(): OfficialAgent[] {
+  const overrides = readPublishedOverrides();
+  const out: OfficialAgent[] = [];
+  for (const a of readOfficialRaw()) {
+    const back = overrides.get(a.name);
+    if (!a.inPrep) {
+      if (back)
+        console.warn(
+          `  注意: ${a.name} は刊行済みになった。scripts/data/iarc-published.tsv から行を消してよい`,
+        );
+      out.push(a);
+      continue;
+    }
+    if (!back) continue;
+    out.push({
+      ...a,
+      ...back,
+      inPrep: false,
+      pending: {
+        group: a.group,
+        volume: a.volumes[a.volumes.length - 1] ?? "",
+        yearEval: a.yearEval,
+      },
+    });
+  }
+  return out;
+}
+
+/** 刊行準備中で載せないもの（readOfficial() から落ちたもの）。件数の報告用 */
+export function droppedInPrep(): OfficialAgent[] {
+  const overrides = readPublishedOverrides();
+  return readOfficialRaw().filter((a) => a.inPrep && !overrides.has(a.name));
 }
 
 /**
@@ -101,7 +181,10 @@ export function officialNote(a: OfficialAgent): string | null {
   const years = [a.yearEval ? `評価年 ${a.yearEval}` : "", a.year ? `公表年 ${a.year}` : ""]
     .filter(Boolean)
     .join("、");
-  return `IARC モノグラフ: ${vols}${years ? `（${years}）` : ""}`;
+  const pending = a.pending
+    ? `。第${a.pending.volume}巻（評価年 ${a.pending.yearEval}）でグループ${a.pending.group}へ見直し中。刊行準備中のため、巻が刊行されるまでは前の評価のまま`
+    : "";
+  return `IARC モノグラフ: ${vols}${years ? `（${years}）` : ""}${pending}`;
 }
 
 /**
@@ -400,5 +483,45 @@ export class OfficialIndex {
       }
     }
     return best;
+  }
+}
+
+/**
+ * 刊行準備中の評価対象の索引。外部データベース（LOLI・CHRIP）は一覧に出ている最新のグループで
+ * 並べているので、グループごとの `OfficialIndex` には当たらない。先にここで引いて、
+ *   - 刊行済みの評価に戻したもの（アトラジン）なら、そのグループの評価対象へ回す
+ *   - 初めての評価（アラクロールなど）なら、刊行まで結ばない
+ * 引っかからなければ undefined（ふつうの評価対象なので、グループごとの索引で当てる）
+ */
+export class PendingIndex {
+  private byName = new Map<string, OfficialAgent | null>();
+  private byCas = new Map<string, OfficialAgent | null>();
+
+  constructor(raw: OfficialAgent[], published: OfficialAgent[]) {
+    const backTo = new Map(published.filter((a) => a.pending).map((a) => [a.name, a]));
+    for (const a of raw) {
+      if (!a.inPrep) continue;
+      const target = backTo.get(a.name) ?? null;
+      this.byName.set(nameKey(a.name), target);
+      this.byName.set(looseKey(a.name), target);
+      for (const c of a.cas) this.byCas.set(c, target);
+    }
+  }
+
+  lookup(
+    name: string,
+    ownCas: string | null,
+    childCas: Iterable<string>,
+  ): { agent: OfficialAgent | null } | undefined {
+    for (const key of [nameKey(name), looseKey(name), nameKey(stripSalt(name))]) {
+      if (this.byName.has(key)) return { agent: this.byName.get(key) ?? null };
+    }
+    if (ownCas && this.byCas.has(ownCas)) return { agent: this.byCas.get(ownCas) ?? null };
+    // 広げた CAS が刊行準備中の評価対象の CAS だけで出来ているとき（LOLI が親の行で持つ単体など）
+    const cs = [...childCas];
+    if (cs.length > 0 && cs.every((c) => this.byCas.has(c))) {
+      return { agent: this.byCas.get(cs[0] ?? "") ?? null };
+    }
+    return undefined;
   }
 }

@@ -7,7 +7,9 @@
 JS の中に {name:"...",group:"2B",cas:["75-07-0"],volume:["36","Sup 7","71"],year:1999,yeareval:1998}
 の形で全件が埋め込まれている（ページの Excel ボタンはこれを書き出しているだけ）。
 group の無い行（「(see …)」の参照行）は出さない。名前の <i>…</i> は落とす。
-出る列: 名前 / グループ / CAS（; 区切り） / 巻（; 区切り、古い順） / 公表年 / 評価年
+出る列: 名前 / グループ / CAS（; 区切り） / 巻（; 区切り、古い順） / 公表年 / 評価年 / 刊行準備中（in_prep なら 1）
+in_prep は「いちばん新しい巻がまだ刊行されていない」印。刊行済みの巻だけを採る決まり（2026-09-08）は
+scripts/lib/iarc-official.ts の readOfficial が scripts/data/iarc-published.tsv と合わせて適用する。ここは一覧のまま
 """
 import io
 import os
@@ -54,6 +56,7 @@ for m in REC.finditer(src):
             ";".join(fields.get("volume", [])),
             fields.get("year", ""),
             fields.get("yeareval", ""),
+            "1" if fields.get("in_prep") == "!0" else "",
         )
     )
 
@@ -77,4 +80,5 @@ by = {}
 for r in rows:
     by[r[1]] = by.get(r[1], 0) + 1
 with_cas = sum(1 for r in rows if r[2])
-print(f"records {len(rows)} by group {by} with CAS {with_cas}")
+in_prep = sum(1 for r in rows if r[6])
+print(f"records {len(rows)} by group {by} with CAS {with_cas} in_prep {in_prep}")

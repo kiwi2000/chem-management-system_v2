@@ -19,8 +19,11 @@
  *
  * **法文物質名は IARC の正式な一覧（List of Classifications）の評価対象そのもの**（2026-09-08 決定。
  * それまでは LOLI や CHRIP の書きかたで作っていて、同じ評価対象が綴り違いで分かれた）。
- * 1,060 件を全部作る。CAS の無い評価対象（職業ばく露・放射線など）も名前は持つが、
- * CAS リンクが付かないので判定には出ない。
+ * CAS の無い評価対象（職業ばく露・放射線など）も名前は持つが、CAS リンクが付かないので判定には出ない。
+ *
+ * **刊行済みの巻だけを採る**（2026-09-08 決定）。一覧で「刊行準備中（in_prep）」の評価対象は、
+ * 前に刊行済みの巻で評価されていればその評価（`scripts/data/iarc-published.tsv`。アトラジンは
+ * 第73巻のグループ3）で作り、初めての評価なら巻が出るまで作らない（lib の readOfficial が適用する）。
  *
  * **番号はモノグラフの巻**（いちばん新しい評価のもの。`100F` / `Suppl. 7`）。
  * 同じ巻に多くの評価対象が載るので一意ではない（番号は区分の中で一意でなくてよい・2026-09-07 決定）。
@@ -29,8 +32,9 @@
  * **日本語名**は、日本語版 Wikipedia の一覧から作った対応表で当て、単体で当たらなければ
  * 物質マスタの代表物質の日本語名で補う。どちらにも無ければ英語のまま。
  *
- * **`--prune`**: 外部データベースの書きかたで作った法文物質名（LOLI 由来・CHRIP 由来）のうち、
- * リンクが1つも残っていないものを消す。リンクの取り込みを先に流し直してから使う。
+ * **`--prune`**: リンクが1つも残っていない法文物質名のうち、外部データベースの書きかたで作ったもの
+ * （LOLI 由来・CHRIP 由来）と、正式一覧の評価対象でいまの一覧に無くなったもの（刊行準備中に戻して
+ * グループが変わった前の行など）を消す。リンクの取り込みを先に流し直してから使う。
  */
 import { basename } from "node:path";
 import { normalizeCas, normalizeCode } from "@chem/shared";
@@ -39,6 +43,7 @@ import {
   CAS_SHAPE,
   CATEGORY_OF_GROUP,
   IARC_LAW,
+  droppedInPrep,
   latestVolume,
   nameKey,
   officialCode,
@@ -184,8 +189,16 @@ async function main() {
   const official = readOfficial();
   const namesJa = readNamesJa();
   const masterJa = await masterNamesJa();
+  const dropped = droppedInPrep();
+  const movedBack = official.filter((a) => a.pending);
   console.log(
     `  正式一覧の評価対象: ${official.length} 件 / 日本語名の対応表: ${namesJa.size} 件（Wikipedia）/ 物質マスタの日本語名: ${masterJa.size} 件`,
+  );
+  console.log(
+    `  刊行準備中のため載せない: ${dropped.length} 件（${dropped.map((a) => a.name).join("、")}）`,
+  );
+  console.log(
+    `  刊行済みの評価に戻した: ${movedBack.length} 件（${movedBack.map((a) => `${a.name} ${a.pending?.group}→${a.group}`).join("、")}）`,
   );
 
   for (const [ci, g] of GROUPS.entries()) {
@@ -253,13 +266,16 @@ async function main() {
       });
     }
 
-    // 外部データベースの書きかたで作った名前（正式一覧に当たらなかったもの）の残り。リンクが無ければ消す
+    // リンクの無い名前の残りを消す。外部データベースの書きかたで作った名前（正式一覧に当たらなかったもの）と、
+    // 正式一覧の評価対象でいまの一覧に無くなったもの（刊行準備中に戻してグループが変わった前の行など）
     let pruned = 0;
     if (write && prune && classId) {
-      const leftovers = await prisma.statutorySubstance.findMany({
-        where: { classId, NOT: { codeNormalized: { contains: "-OF-" } }, links: { none: {} } },
-        select: { id: true },
+      const current = new Set(agents.map((a) => normalizeCode(officialCode(g.code, a.name))));
+      const candidates = await prisma.statutorySubstance.findMany({
+        where: { classId, links: { none: {} } },
+        select: { id: true, codeNormalized: true },
       });
+      const leftovers = candidates.filter((c) => !current.has(c.codeNormalized));
       if (leftovers.length > 0) {
         await prisma.statutorySubstance.deleteMany({
           where: { id: { in: leftovers.map((s) => s.id) } },

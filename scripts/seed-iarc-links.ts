@@ -14,6 +14,11 @@
  * どれにも当たらなければ、LOLI の名前のまま法文物質名を作って結ぶ（取りこぼさない）。
  * **CASは外部データベースがすでに展開したものをそのまま使う。**総称からこちらで広げない。
  * **物質マスタに無い CAS は結ばない**（2026-09-07 の指示）。
+ *
+ * **刊行済みの巻だけを採る**（2026-09-08 決定）。LOLI が刊行準備中の評価（アトラジン 2A など）で
+ * 並べているものは、グループをまたいで刊行済みの評価（アトラジン 3）の法文物質名へ結ぶ。
+ * 刊行済みの評価が無いもの（アラクロールなど初めての評価）は、巻が出るまで結ばない。
+ * 区分をまたぐので、法文物質名は法令ぶんまとめて引き、リンクの入れ替えも法令ぶんまとめて行う。
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -22,10 +27,14 @@ import { normalizeCas, normalizeCode } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
 import {
   CAS_SHAPE,
+  CATEGORY_OF_GROUP,
   IARC_LAW,
+  type OfficialAgent,
   OfficialIndex,
+  PendingIndex,
   officialCode,
   readOfficial,
+  readOfficialRaw,
 } from "./lib/iarc-official";
 import { GROUPS, masterCasSet } from "./seed-iarc-laws";
 
@@ -101,31 +110,42 @@ async function main() {
 
   const master = await masterCasSet();
   const official = readOfficial();
+  const pending = new PendingIndex(readOfficialRaw(), official);
 
-  let total = 0;
-  for (const g of GROUPS) {
-    const subs = await prisma.statutorySubstance.findMany({
-      where: {
+  // 法令の法文物質名を全部（刊行準備中の評価は区分をまたいで回すので、法令ぶんまとめて引く）
+  const subs = await prisma.statutorySubstance.findMany({
+    where: {
+      deletedAt: null,
+      regulationClass: {
         deletedAt: null,
-        regulationClass: {
+        category: {
           deletedAt: null,
-          category: {
-            deletedAt: null,
-            codeNormalized: normalizeCode(g.code),
-            law: { deletedAt: null, codeNormalized: normalizeCode(IARC_LAW) },
-          },
+          law: { deletedAt: null, codeNormalized: normalizeCode(IARC_LAW) },
         },
       },
-      select: {
-        id: true,
-        codeNormalized: true,
-        displayOrder: true,
-        regulationClass: { select: { id: true } },
-      },
-    });
-    const classId = subs[0]?.regulationClass.id ?? null;
-    const idOf = new Map(subs.map((s) => [s.codeNormalized, s.id]));
-    let nextOrder = subs.reduce((m, s) => Math.max(m, s.displayOrder), 0) + 1;
+    },
+    select: {
+      id: true,
+      codeNormalized: true,
+      displayOrder: true,
+      regulationClass: { select: { id: true, category: { select: { codeNormalized: true } } } },
+    },
+  });
+  const idOf = new Map(subs.map((s) => [s.codeNormalized, s.id]));
+  const classOf = new Map<string, string>();
+  const nextOrder = new Map<string, number>();
+  for (const s of subs) {
+    const cat = s.regulationClass.category.codeNormalized;
+    classOf.set(cat, s.regulationClass.id);
+    nextOrder.set(cat, Math.max(nextOrder.get(cat) ?? 0, s.displayOrder + 1));
+  }
+  const idOfAgent = (a: OfficialAgent) =>
+    idOf.get(normalizeCode(officialCode(CATEGORY_OF_GROUP[a.group] ?? a.group, a.name)));
+
+  const seen = new Set<string>();
+  const data: { statutorySubstanceId: string; casNumber: string; casNormalized: string }[] = [];
+  for (const g of GROUPS) {
+    const classId = classOf.get(normalizeCode(g.code)) ?? null;
     const index = new OfficialIndex(official, g.group);
 
     const tsv = TSV_OF[g.code] ?? g.code.toLowerCase();
@@ -141,9 +161,10 @@ async function main() {
 
     let matched = 0;
     let fallback = 0;
+    let movedBack = 0;
+    let unpublished = 0;
     let notInMaster = 0;
-    const seen = new Set<string>();
-    const data: { statutorySubstanceId: string; casNumber: string; casNormalized: string }[] = [];
+    let count = 0;
     for (const [key, cases] of pairs) {
       const usable = cases.filter((c) => CAS_SHAPE.test(c) && master.has(normalizeCas(c)));
       notInMaster += cases.filter((c) => CAS_SHAPE.test(c) && !master.has(normalizeCas(c))).length;
@@ -151,11 +172,25 @@ async function main() {
 
       const loliName = names.get(key)?.[0] ?? key;
       const ownCas = CAS_SHAPE.test(key) ? key : null;
-      const agent = index.resolve(loliName, ownCas, usable, key);
+
+      // 刊行準備中の評価は、刊行済みの評価へ回すか、刊行まで結ばない
+      const pend = pending.lookup(loliName, ownCas, usable);
+      let agent: OfficialAgent | null;
+      if (pend) {
+        if (!pend.agent) {
+          unpublished += 1;
+          continue;
+        }
+        agent = pend.agent;
+        if (agent.group !== g.group) movedBack += 1;
+      } else {
+        agent = index.resolve(loliName, ownCas, usable, key);
+      }
+
       let id: string | undefined;
       if (agent) {
         matched += 1;
-        id = idOf.get(normalizeCode(officialCode(g.code, agent.name)));
+        id = idOfAgent(agent);
         if (!id && write)
           throw new Error(
             `正式一覧の法文物質名がありません: ${agent.name}（先に seed-iarc-laws.ts --write）`,
@@ -165,6 +200,8 @@ async function main() {
         const code = loliCode(g.code, key);
         id = idOf.get(normalizeCode(code));
         if (!id && write && classId) {
+          const order = nextOrder.get(normalizeCode(g.code)) ?? 1;
+          nextOrder.set(normalizeCode(g.code), order + 1);
           const made = await prisma.statutorySubstance.create({
             data: {
               code,
@@ -175,7 +212,7 @@ async function main() {
               nameLang: "EN",
               nameJa: null,
               nameEn: loliName,
-              displayOrder: nextOrder++,
+              displayOrder: order,
               aggregation: "NONE",
               metalEtc: null,
               thresholdLower: "0",
@@ -197,37 +234,40 @@ async function main() {
         if (seen.has(dedup)) continue;
         seen.add(dedup);
         data.push({ statutorySubstanceId: id, casNumber: cas, casNormalized });
+        count += 1;
       }
     }
 
-    if (write) {
-      // その区分ぶんの LOLI のリンクを入れ替える（ほかの区分・版・データソースには触らない）
-      await prisma.statutoryCasLink.deleteMany({
-        where: {
-          versionId: version.id,
-          sourceId: source.id,
-          statutorySubstanceId: { in: [...idOf.values()] },
-        },
-      });
-      for (let i = 0; i < data.length; i += 5000) {
-        await prisma.statutoryCasLink.createMany({
-          data: data
-            .slice(i, i + 5000)
-            .map((d) => ({ ...d, versionId: version.id, sourceId: source.id })),
-          skipDuplicates: true,
-        });
-      }
-    }
-    total += data.length;
     console.log(
       `  ${IARC_LAW}/${g.code}`.padEnd(18) +
         `LOLI の評価対象 ${String(pairs.size).padStart(4)} 種（正式一覧に当たった ${matched} / LOLI の名前で作る ${fallback}）` +
-        ` / リンク ${String(data.length).padStart(6)} 件` +
+        ` / リンク ${String(count).padStart(6)} 件` +
+        (movedBack ? ` / 刊行済みの評価へ回した ${movedBack} 種` : "") +
+        (unpublished ? ` / 刊行前なので結ばない ${unpublished} 種` : "") +
         (notInMaster ? ` / マスタに無い CAS ${notInMaster} 件` : ""),
     );
   }
 
-  console.log(`\n  ${write ? "入れました" : "入れる予定"}：合計 ${total} 件`);
+  if (write) {
+    // 法令ぶんの LOLI のリンクを入れ替える（ほかの法令・版・データソースには触らない）
+    await prisma.statutoryCasLink.deleteMany({
+      where: {
+        versionId: version.id,
+        sourceId: source.id,
+        statutorySubstanceId: { in: [...idOf.values()] },
+      },
+    });
+    for (let i = 0; i < data.length; i += 5000) {
+      await prisma.statutoryCasLink.createMany({
+        data: data
+          .slice(i, i + 5000)
+          .map((d) => ({ ...d, versionId: version.id, sourceId: source.id })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
+  console.log(`\n  ${write ? "入れました" : "入れる予定"}：合計 ${data.length} 件`);
   await prisma.$disconnect();
 }
 
