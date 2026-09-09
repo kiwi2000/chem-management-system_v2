@@ -3,7 +3,9 @@
 # 使い方（VPS上）:
 #   cp .env.prod.example .env.prod   → 値を編集（DB_PASSWORD は必ず変更）
 #   docker compose -f compose.prod.yml --env-file .env.prod up -d --build
-#   docker compose -f compose.prod.yml --env-file .env.prod exec app npx prisma db seed   # 初回のみ
+#   docker compose -f compose.prod.yml --env-file .env.prod exec app npx tsx scripts/set-password.ts <メール> <パスワード> --create
+#   （法規制データは別の手順で投入する。docs/法規制データの作り方.md）
+#   配布物とオフライン用イメージは scripts/package-release.sh で作る
 #
 # セキュリティ設計:
 # - db / app はポートを一切公開しない（外部から到達できるのは Caddy の 80/443 のみ）
@@ -27,6 +29,8 @@ services:
     # ports: なし（アプリコンテナからのみ到達可）
 
   app:
+    # 名前を固定する。オフラインのサーバーでは docker load したこの名前のイメージをそのまま使う（--build 無しで up）
+    image: chem-app:latest
     build:
       context: .
       dockerfile: Dockerfile
