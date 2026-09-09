@@ -236,7 +236,7 @@
 
   <header>
     <p class="eyebrow">導入手順書</p>
-    <h1>化学物質管理システム<br>社内サーバーへの導入</h1>
+    <h1>ケミカルコンプライアンス支援システム<br>社内サーバーへの導入</h1>
     <p class="lede">
       御社の社内サーバー1台にインストールし、社内LANから使えるようにするまでの手順です。
       <b>作業はサーバーの管理者権限を持つ方が行います。</b>所要時間はおよそ1時間です。
@@ -248,7 +248,7 @@
       <span><b>対象</b> 社内サーバー 1台</span>
       <span><b>作業者</b> サーバー管理者</span>
       <span><b>所要</b> 約1時間</span>
-      <span><b>版</b> 2026-09-01</span>
+      <span><b>版</b> 2026-09-09</span>
     </div>
   </header>
 
@@ -333,7 +333,7 @@
 
         <!-- 縦の矢印 -->
         <line x1="330" y1="180" x2="330" y2="206" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
-        <text x="344" y="199" class="t-port">3000</text>
+        <text x="344" y="199" class="t-port">3001</text>
         <line x1="330" y1="274" x2="330" y2="300" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
         <text x="344" y="293" class="t-port">5432</text>
 
@@ -567,6 +567,16 @@ sudo ufw enable</pre>
               外部から使う必要がある場合は、VPN経由にしてください。
             </p>
           </div>
+          <div class="box">
+            <h4>アプリの側でも制限できます（任意）</h4>
+            <p>
+              手順6で作る <code>.env.prod</code> の <code>ALLOWED_IPS</code> に許可する範囲を書くと、
+              アプリ自身も決まった場所からの接続だけを受け付けます。空のままなら制限しません。
+              <code>IP_FILTER_MODE</code> は、まず <code>monitor</code>（記録するだけ）で様子を見て、
+              問題が無ければ <code>enforce</code>（許可外を断る）に切り替えます。
+              締め出されたときは <code>ALLOWED_IPS</code> を空に戻して起動し直します。
+            </p>
+          </div>
         </div>
       </div>
 
@@ -648,7 +658,8 @@ docker compose -f compose.prod.yml --env-file .env.prod ps</pre>
             <p>
               コマンドに書いたパスワードは端末の履歴に残ります。実行後に
               <code>history -c</code> で消してください。
-              このパスワードは<b>初回ログイン時に変更を求められます。</b>
+              このパスワードはログイン後に、画面右上のメニューの「パスワードを変更する」から
+              本人が変えられます（変更を求める仕組みは働きません）。
             </p>
           </div>
         </div>
@@ -691,6 +702,8 @@ docker compose -f compose.prod.yml --env-file .env.prod exec caddy \
               社内DNSに <code>chem.<i>社内ドメイン</i></code> のような名前を登録しておくと、
               IPアドレスではなく名前で開けます。設定ファイル <code>deploy/Caddyfile</code> の
               先頭にあるコメントに、書き換え方を記載しています。
+              <b>パスキー（指紋や顔などでのログイン）を使う予定があるなら、名前で開く必要があります。</b>
+              パスキーの仕組み上、IPアドレスでは登録できません。
             </p>
           </div>
         </div>
@@ -745,6 +758,11 @@ ls -lh /var/backups/chem/</pre>
         <li>バックアップのファイルが <code>/var/backups/chem/</code> にできている</li>
         <li>サーバーを再起動しても、自動でアプリが立ち上がる（<code>sudo reboot</code> で確認）</li>
       </ul>
+      <p>
+        <b>法規制のデータ（法律・規制区分・法文物質名・CAS番号の結び付き）は、この手順では入りません。</b>
+        物質や製品のデータも空の状態です。法規制のデータは導入のときにこちらが投入します。
+        投入が済むまで、判定は動きません。
+      </p>
     </div>
   </section>
 
@@ -784,9 +802,16 @@ docker compose -f compose.prod.yml --env-file .env.prod up -d --build</pre>
     </p>
 
     <h3>バックアップからの復元</h3>
-<pre>gunzip -c /var/backups/chem/chem_<i>日付</i>.sql.gz | \
+    <p>
+      復元は、データベースの中身を<b>バックアップを取った時点の内容に置き換えます</b>。
+      それ以降に入れたものは消えます。先にアプリを止めてから行ってください。
+    </p>
+<pre>cd /opt/chem
+docker compose -f compose.prod.yml --env-file .env.prod stop app
+gunzip -c /var/backups/chem/chem_<i>日付</i>.sql.gz | \
   docker compose -f compose.prod.yml --env-file .env.prod exec -T db \
-  psql -U chem chem</pre>
+  psql -U chem chem
+docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
   </section>
 
   <section>
@@ -986,8 +1011,8 @@ nssm set chem-app AppDirectory C:\chem
 nssm set chem-app Start SERVICE_AUTO_START
 nssm set chem-app AppEnvironmentExtra NODE_ENV=production
 
-<span class="c"># 入口（HTTPS）</span>
-nssm install chem-caddy C:\chem\caddy\caddy.exe "run --config C:\chem\deploy\Caddyfile"
+<span class="c"># 入口（HTTPS）。Docker 用の Caddyfile ではなく、Windows 用の Caddyfile.windows を使います</span>
+nssm install chem-caddy C:\chem\caddy\caddy.exe "run --config C:\chem\deploy\Caddyfile.windows"
 nssm set chem-caddy Start SERVICE_AUTO_START
 
 nssm start chem-app

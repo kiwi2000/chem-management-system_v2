@@ -5,7 +5,8 @@
 #   schtasks /Create /TN "chem-backup" /SC DAILY /ST 03:00 /RU SYSTEM ^
 #     /TR "powershell -NoProfile -ExecutionPolicy Bypass -File C:\chem\scripts\backup-db.ps1"
 #
-# 復元:
+# 復元（--clean 付きで取っているので、いまの中身をバックアップ時点の内容に置き換える。
+# 先にアプリを止める: nssm stop chem-app）:
 #   $env:PGPASSWORD = "<DBのパスワード>"
 #   & "C:\Program Files\PostgreSQL\16\bin\psql.exe" -h 127.0.0.1 -U chem -d chem `
 #     -f C:\backups\chem\chem_20260902_030000.sql
@@ -47,7 +48,7 @@ $zip = "$dump.zip"
 
 # pg_dump は 2>&1 を付けない（native の stderr を ErrorRecord に包むと、
 # 正常終了でも失敗と判定される。Windows PowerShell 5.1 の癖）
-& (Join-Path $PgBin "pg_dump.exe") -h $pgHost -p $pgPort -U $User -d $Database -f $dump
+& (Join-Path $PgBin "pg_dump.exe") --clean --if-exists -h $pgHost -p $pgPort -U $User -d $Database -f $dump
 if ($LASTEXITCODE -ne 0) { throw "pg_dump が失敗しました（終了コード $LASTEXITCODE）" }
 
 Compress-Archive -Path $dump -DestinationPath $zip -Force

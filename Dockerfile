@@ -25,7 +25,8 @@ COPY . .
 RUN npx prisma generate && npm run build -w apps/web
 
 ENV NODE_ENV=production
-EXPOSE 3000
+# apps/web/package.json の start が 3001 で待つ（Caddyfile の reverse_proxy と合わせる）
+EXPOSE 3001
 
 # 起動時にマイグレーションを適用（冪等）してからアプリを開始
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run start -w apps/web"]
