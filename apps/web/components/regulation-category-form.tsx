@@ -24,6 +24,8 @@ interface Draft extends NameDraft, ThresholdDraft {
   rank: string;
   thresholdBasis: ThresholdBasis;
   judged: boolean;
+  effectiveFrom: string;
+  effectiveTo: string;
   score: string;
   note: string;
 }
@@ -69,6 +71,8 @@ export function RegulationCategoryForm({
     thresholdBasis: initial?.thresholdBasis ?? "PRODUCT",
     // 既定は「使う」。持つだけにしたいものだけ外す
     judged: initial?.judged ?? true,
+    effectiveFrom: initial?.effectiveFrom ?? "",
+    effectiveTo: initial?.effectiveTo ?? "",
     score: initial?.score ?? "0",
     note: initial?.note ?? "",
   }));
@@ -101,6 +105,8 @@ export function RegulationCategoryForm({
             rank: draft.rank === "" ? null : Number(draft.rank),
             thresholdBasis: draft.thresholdBasis,
             judged: draft.judged,
+            effectiveFrom: draft.effectiveFrom || null,
+            effectiveTo: draft.effectiveTo || null,
             score: draft.score.trim() === "" ? "0" : draft.score.trim(),
             note: draft.note || null,
           }),
@@ -267,6 +273,31 @@ export function RegulationCategoryForm({
               {m.regulationCategories.judgedLabel}
             </label>
           </Field>
+
+          {/* 新旧の区分を見分ける日付。判定対象日を指定した判定でだけ効く */}
+          <div className="flex flex-wrap items-start gap-3">
+            <Field label={m.regulationCategories.effectiveFrom} htmlFor="cat-from" className="w-40">
+              <Input
+                id="cat-from"
+                type="date"
+                value={draft.effectiveFrom}
+                onChange={(e) => setDraft({ ...draft, effectiveFrom: e.target.value })}
+              />
+            </Field>
+            <Field
+              label={m.regulationCategories.effectiveTo}
+              htmlFor="cat-to"
+              hint={m.regulationCategories.effectiveHint}
+              className="w-40"
+            >
+              <Input
+                id="cat-to"
+                type="date"
+                value={draft.effectiveTo}
+                onChange={(e) => setDraft({ ...draft, effectiveTo: e.target.value })}
+              />
+            </Field>
+          </div>
 
           <Field label={m.regulationCategories.note} htmlFor="cat-note">
             <Input

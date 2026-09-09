@@ -16,6 +16,9 @@ import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
+/** 日付だけの入力（YYYY-MM-DD）を、日付列の値（UTC の 0 時）にする */
+const toDate = (v: string | null | undefined) => (v ? new Date(`${v}T00:00:00.000Z`) : null);
+
 const DEFAULT_STATE = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
 /** GET /api/regulation-categories — 一覧（法律で絞る） */
@@ -111,6 +114,8 @@ export async function POST(req: Request) {
       upperBound: v.upperBound,
       thresholdBasis: v.thresholdBasis,
       judged: v.judged,
+      effectiveFrom: toDate(v.effectiveFrom),
+      effectiveTo: toDate(v.effectiveTo),
       score: score.data,
       interactionGroup: v.interactionGroup ?? null,
       rank: v.rank ?? null,

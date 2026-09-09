@@ -197,6 +197,23 @@ export function LawTreeSection({
           ),
       },
       {
+        // 新旧の区分を見分ける期間。空なら常に効く区分なので何も出さない
+        key: "effective",
+        header: m.regulationCategories.effectivePeriod,
+        kind: "text",
+        width: 150,
+        sortable: false,
+        filterable: false,
+        className: "text-muted-foreground text-xs",
+        render: (r) => {
+          if (r.kind !== "category") return "";
+          const { effectiveFrom, effectiveTo } = r.category;
+          if (!effectiveFrom && !effectiveTo) return "";
+          const d = (v: string | null) => (v ? new Date(v).toLocaleDateString(locale) : "");
+          return `${d(effectiveFrom)}〜${d(effectiveTo)}`;
+        },
+      },
+      {
         key: "threshold",
         header: m.regulationCategories.threshold,
         kind: "text",

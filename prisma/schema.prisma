@@ -1534,6 +1534,15 @@ model RegulationCategory {
   judged Boolean @default(true)
 
   /**
+   * この区分が効く期間。空なら常に効く。
+   * 規制が変わったら区分を丸ごと新しく作って古い区分も残す決まり（2026-09-08）なので、
+   * 新旧の区分をこの日付で見分ける。**判定対象日を指定した判定でだけ使う。**
+   * 保存してある判定（今日のもの）は日付で絞らない
+   */
+  effectiveFrom DateTime? @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+
+  /**
    * 兼ね合い。同じグループの中で rank の小さい方だけを出す。
    * **物質のランク（`Substance.scoreRank`）とは別のもの**
    */

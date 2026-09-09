@@ -9,6 +9,9 @@ import { getAppSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
+/** 日付だけの入力（YYYY-MM-DD）を、日付列の値（UTC の 0 時）にする */
+const toDate = (v: string | null | undefined) => (v ? new Date(`${v}T00:00:00.000Z`) : null);
+
 type Ctx = { params: Promise<{ id: string }> };
 
 /** PUT /api/regulation-categories/[id] */
@@ -82,6 +85,8 @@ export async function PUT(req: Request, { params }: Ctx) {
       upperBound: v.upperBound,
       thresholdBasis: v.thresholdBasis,
       judged: v.judged,
+      effectiveFrom: toDate(v.effectiveFrom),
+      effectiveTo: toDate(v.effectiveTo),
       score: score.data,
       interactionGroup: v.interactionGroup ?? null,
       rank: v.rank ?? null,

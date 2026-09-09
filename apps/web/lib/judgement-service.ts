@@ -1,7 +1,9 @@
 import { fromScaled, normalizeCas, sumScaled } from "@chem/shared";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { computeJudgements, loadFactors, loadRules } from "@/lib/judge-store";
 import { LAW_ORDER_SELECT, compareLawOrder, lawOrderKey } from "@/lib/law-order";
+import { getAppSettings } from "@/lib/settings";
 import type { MatchedProductDto, ProductJudgementDto } from "@/lib/types";
 
 /**
@@ -23,39 +25,111 @@ export async function toJudgementDtos(
 ): Promise<ProductJudgementDto[]> {
   const rows = await prisma.productJudgement.findMany({
     where: { productId },
+    select: JUDGEMENT_SELECT,
+  });
+  return buildJudgementDtos(rows, withHits, todayInJapan());
+}
+
+/** 保存してある判定の読みかた。その場で計算した判定も同じ形に組み立てて、同じ組み立てを通す */
+const JUDGEMENT_SELECT = {
+  categoryId: true,
+  verdict: true,
+  source: true,
+  needsReview: true,
+  reviewReasons: true,
+  decidedBy: true,
+  decidedAt: true,
+  decidedNote: true,
+  computedAt: true,
+  versionId: true,
+  hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
+  category: {
     select: {
-      categoryId: true,
-      verdict: true,
-      source: true,
-      needsReview: true,
-      reviewReasons: true,
-      decidedBy: true,
-      decidedAt: true,
-      decidedNote: true,
-      computedAt: true,
-      versionId: true,
-      hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
-      category: {
+      nameJa: true,
+      nameEn: true,
+      nameOriginal: true,
+      displayOrder: true,
+      score: true,
+      law: {
         select: {
           nameJa: true,
           nameEn: true,
           nameOriginal: true,
-          displayOrder: true,
-          score: true,
-          law: {
-            select: {
-              nameJa: true,
-              nameEn: true,
-              nameOriginal: true,
-              // 並びは地域 → 国 → 法律。国ごとに1から振ってあるので、国まで見ないと決まらない
-              ...LAW_ORDER_SELECT,
-            },
-          },
+          // 並びは地域 → 国 → 法律。国ごとに1から振ってあるので、国まで見ないと決まらない
+          ...LAW_ORDER_SELECT,
         },
       },
     },
-  });
+  },
+} satisfies Prisma.ProductJudgementSelect;
 
+type JudgementRow = Prisma.ProductJudgementGetPayload<{ select: typeof JUDGEMENT_SELECT }>;
+
+/**
+ * 判定対象日を指定して、その場で判定する。**保持しない。**
+ * その日に効いている区分と法文物質名（適用開始日・適用終了日で絞る）だけで、
+ * 現在のバージョンの CAS リンクを使って計算する。「施行前」の印もその日で見る。
+ * 前年度の報告のために 3 月時点で見たい、来年度の改正に備えて 4 月時点で見たい、というときのもの
+ */
+export async function toJudgementDtosAsOf(
+  productId: string,
+  asOf: string,
+  withHits: boolean,
+): Promise<{ items: ProductJudgementDto[]; versionCode: string | null }> {
+  const version = await prisma.linkSetVersion.findFirst({
+    where: { isCurrent: true, deletedAt: null },
+    select: { id: true, code: true },
+  });
+  if (!version) return { items: [], versionCode: null };
+  const [rules, factors, settings] = await Promise.all([
+    loadRules(version.id, asOf),
+    loadFactors(),
+    getAppSettings(),
+  ]);
+  const results = await computeJudgements(productId, rules, factors, settings.conditionalLinkMode);
+  const categories = await prisma.regulationCategory.findMany({
+    where: { id: { in: results.map((r) => r.rule.categoryId) } },
+    select: { id: true, ...JUDGEMENT_SELECT.category.select },
+  });
+  const categoryOf = new Map(categories.map((c) => [c.id, c]));
+  const now = new Date();
+  const rows: JudgementRow[] = results.flatMap(({ rule, result }) => {
+    const found = categoryOf.get(rule.categoryId);
+    if (!found) return [];
+    const { id: _id, ...category } = found;
+    return [
+      {
+        categoryId: rule.categoryId,
+        verdict: result.verdict,
+        source: "SYSTEM" as const,
+        needsReview: result.needsReview,
+        reviewReasons: result.reasons,
+        decidedBy: null,
+        decidedAt: null,
+        decidedNote: null,
+        computedAt: now,
+        versionId: version.id,
+        hits: result.hits.map((h) => ({
+          statutorySubstanceId: h.statutorySubstanceId,
+          total: h.total === null ? null : new Prisma.Decimal(h.total),
+          contributions: h.contributions,
+        })),
+        category,
+      },
+    ];
+  });
+  return { items: await buildJudgementDtos(rows, withHits, asOf), versionCode: version.code };
+}
+
+/**
+ * 判定の行を画面の形に組み立てる。`today` は「施行前」を決める日
+ * （保存してある判定なら今日、判定対象日を指定した判定ならその日）
+ */
+async function buildJudgementDtos(
+  rows: JudgementRow[],
+  withHits: boolean,
+  today: string,
+): Promise<ProductJudgementDto[]> {
   // 名前はまとめて引く。1件ずつ引くと、区分の数だけ問い合わせが増える
   const substanceIds = withHits
     ? [
@@ -87,7 +161,6 @@ export async function toJudgementDtos(
   ]);
   const infoOf = new Map(substances.map((s) => [s.id, s]));
   const userOf = new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
-  const today = todayInJapan();
 
   /*
     行ごとのスコアを出すために、寄与しているCASの物質スコアを引く。

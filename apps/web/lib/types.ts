@@ -765,6 +765,9 @@ export interface RegulationCategoryDto {
    * 候補の一覧（中環審答申の有害大気汚染物質など）を持つためのもの
    */
   judged: boolean;
+  /** この区分が効く期間（YYYY-MM-DD）。空なら常に効く。判定対象日を指定した判定でだけ使う */
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
   /**
    * 人が決める評価点。**物質のスコアはこれの合計**。
    * 数値は文字列で持つ（小数を落とさないため）

@@ -596,6 +596,11 @@ export const ja = {
     judgedHint:
       "外すと、法規制の画面には残りますが、製品の判定には出なくなります。「該当する可能性がある物質」の候補一覧など、含有率で該非が決まらないものに使います",
     judgedOff: "判定に使わない",
+    effectiveFrom: "適用開始日",
+    effectiveTo: "適用終了日",
+    effectiveHint:
+      "空なら常に効きます。規制が変わって区分を新しく作ったとき、古い区分の終了日と新しい区分の開始日を入れておくと、判定対象日を指定した判定でその日の区分だけが使われます",
+    effectivePeriod: "有効期間",
     thresholdBasis: "閾値の対象",
     thresholdBasisHint:
       "この閾値が何に対する濃度か。RoHS のように均質材料あたりで決まるものは「均質材料」にします。その区分は判定を出しても必ず要確認になります",
@@ -1043,6 +1048,11 @@ export const ja = {
     categoryItself: "（区分の合計）",
     /** 適用開始日がまだ来ていない法文物質名で当たったとき。該非は変えず、印だけ出す */
     notYetEffective: (from: string) => `施行前（${from} から）`,
+    asOf: "判定対象日",
+    asOfHint:
+      "日付を入れると、その日に効いている規制区分と法文物質名で判定し直して表示します（保存しません）。空にすると、保存してある判定に戻ります",
+    asOfPreview: (day: string) =>
+      `${day} 時点の規制で計算した判定です。保存していないので、確認や修正はできません。日付を空にすると保存してある判定に戻ります`,
     basisWithheld: "根拠は組成に近い情報のため、表示していません。",
     decidedBy: (who: string, when: string) => `${who} が ${when} に確認`,
     review: "確認する",

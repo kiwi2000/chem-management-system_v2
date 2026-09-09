@@ -2,7 +2,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { toJudgementDtos } from "@/lib/judgement-service";
+import { toJudgementDtos, toJudgementDtosAsOf } from "@/lib/judgement-service";
 import { visibilityWhere } from "@/lib/product-service";
 import { premisesChangedAt } from "@/lib/rejudge-job";
 
@@ -18,7 +18,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * 組成を見られない人には伏せる。伏せたことは画面に伝える
  * （空なのか伏せたのかが分からないと、入っていないと読まれてしまう）。
  */
-export async function GET(_req: Request, { params }: Ctx) {
+export async function GET(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRODUCT_VIEW");
   if (actor instanceof Response) return actor;
   const { id } = await params;
@@ -28,6 +28,28 @@ export async function GET(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
+
+  /*
+    `asOf=YYYY-MM-DD` を付けると、**その日に効いている規制でその場で判定し直す**（保存しない）。
+    前年度の報告のために 3 月時点で見る、改正に備えて 4 月時点で見る、というときのもの
+  */
+  const asOf = new URL(req.url).searchParams.get("asOf");
+  if (asOf) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf) || Number.isNaN(Date.parse(`${asOf}T00:00:00Z`)))
+      return jsonError(400, "validation", m.validation.dateFormat);
+    const { items, versionCode } = await toJudgementDtosAsOf(
+      id,
+      asOf,
+      canViewComposition(actor, product),
+    );
+    return Response.json({
+      items,
+      computedAt: new Date().toISOString(),
+      versionCode,
+      stale: false,
+      asOf,
+    });
+  }
 
   const items = await toJudgementDtos(id, canViewComposition(actor, product));
 

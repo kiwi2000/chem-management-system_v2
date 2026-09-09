@@ -580,6 +580,11 @@ export const en: Messages = {
     judgedHint:
       "Turn it off to keep the category on the regulation screens but leave it out of product judgement — for candidate lists that are not decided by content percentage",
     judgedOff: "Not judged",
+    effectiveFrom: "Effective from",
+    effectiveTo: "Effective to",
+    effectiveHint:
+      "Leave empty for a category that is always in force. When a regulation changes and a new category is created, set the old category's end date and the new one's start date so that an as-of assessment uses only the category in force on that day",
+    effectivePeriod: "In force",
     thresholdBasis: "Limit applies to",
     thresholdBasisHint:
       "What the limit is a concentration of. Pick per homogeneous material for rules like RoHS. Such a category always needs review, whatever the result",
@@ -1023,6 +1028,11 @@ export const en: Messages = {
     basis: "Because",
     categoryItself: "(category total)",
     notYetEffective: (from: string) => `Not yet in force (from ${from})`,
+    asOf: "As of",
+    asOfHint:
+      "Enter a date to re-assess with the categories and statutory names in force on that day (not saved). Clear it to return to the saved assessment",
+    asOfPreview: (day: string) =>
+      `Assessment computed with the regulations in force on ${day}. It is not saved, so it cannot be checked or changed. Clear the date to return to the saved assessment`,
     basisWithheld: "The basis is close to composition data, so it is not shown.",
     decidedBy: (who: string, when: string) => `Checked by ${who} on ${when}`,
     review: "Check this",

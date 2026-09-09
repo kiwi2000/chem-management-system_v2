@@ -84,6 +84,16 @@ export const lawSchema = (m: Messages) =>
     note: optionalText(m, 2000),
   });
 
+/** 日付だけ（YYYY-MM-DD）。空文字は null に読み替える */
+const isoDate = (m: Messages) =>
+  z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, m.validation.dateFormat)
+    .nullable()
+    .optional()
+    .or(z.literal("").transform(() => null));
+
 export const regulationCategorySchema = (m: Messages) =>
   withThresholdOrder(
     z.object({
@@ -96,6 +106,9 @@ export const regulationCategorySchema = (m: Messages) =>
       thresholdBasis: z.enum(THRESHOLD_BASES),
       /** 判定に使うか。外すと、持っているだけで製品の判定には出ない */
       judged: z.boolean(),
+      /** この区分が効く期間。空なら常に効く。判定対象日を指定した判定でだけ使う */
+      effectiveFrom: isoDate(m),
+      effectiveTo: isoDate(m),
       /**
        * 人が決める評価点。**物質のスコアはこの合計。**
        * 入れられる範囲はシステム設定で決まるので、範囲の検査はサーバー側で行う
@@ -148,21 +161,12 @@ export const statutorySubstanceSchema = (m: Messages) =>
       ...nameFields(m),
       ...thresholdFields(m),
       displayOrder: displayOrder(),
-      /** 参考情報。判定には使わない */
-      effectiveFrom: z
-        .string()
-        .trim()
-        .regex(/^\d{4}-\d{2}-\d{2}$/, m.validation.dateFormat)
-        .nullable()
-        .optional()
-        .or(z.literal("").transform(() => null)),
-      effectiveTo: z
-        .string()
-        .trim()
-        .regex(/^\d{4}-\d{2}-\d{2}$/, m.validation.dateFormat)
-        .nullable()
-        .optional()
-        .or(z.literal("").transform(() => null)),
+      /**
+       * 適用開始日・適用終了日。該非は変えない。開始日が今日より後なら判定に「施行前」と出る。
+       * 判定対象日を指定した判定では、その日に効いている行だけを使う
+       */
+      effectiveFrom: isoDate(m),
+      effectiveTo: isoDate(m),
       /**
        * 適用条件。濃度のほかに条件が付くとき、その条件を書く。
        * **入っていれば、当たったときに必ず要確認になる**

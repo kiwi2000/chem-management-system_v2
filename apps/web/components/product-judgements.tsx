@@ -121,6 +121,11 @@ export function ProductJudgements({
    * 外して全部出せるようにしてある。
    */
   const [onlyApplicable, setOnlyApplicable] = useState(true);
+  /**
+   * 判定対象日。入れると、その日に効いている規制でその場で判定し直して出す（保存しない）。
+   * 空なら保存してある判定。判定の確認や修正は、保存してある判定にだけできる
+   */
+  const [asOf, setAsOf] = useState("");
   // 列幅は一覧と同じ規則。操作の列は、出るときだけ幅を数に入れる
   const cols = useResizableColumns(
     // 末尾の版を上げると、覚えている列幅を捨てて既定から始め直す
@@ -132,7 +137,9 @@ export function ProductJudgements({
 
   const load = useCallback(async () => {
     setError(null);
-    const res = await fetch(`/api/products/${productId}/judgements`).catch(() => null);
+    const res = await fetch(
+      `/api/products/${productId}/judgements${asOf ? `?asOf=${asOf}` : ""}`,
+    ).catch(() => null);
     if (!res) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
@@ -149,7 +156,7 @@ export function ProductJudgements({
     };
     setItems(body.items);
     setStamp({ computedAt: body.computedAt, versionCode: body.versionCode, stale: body.stale });
-  }, [productId, m]);
+  }, [productId, asOf, m]);
 
   useEffect(() => {
     void load();
@@ -244,6 +251,16 @@ export function ProductJudgements({
               {m.judgements.reviewCount(review.length)}
             </Badge>
           )}
+          {/* 判定対象日。入れているあいだは、その日の規制でその場で計算した判定に切り替わる */}
+          <label className="flex items-center gap-1 text-xs" title={m.judgements.asOfHint}>
+            <span className="text-muted-foreground">{m.judgements.asOf}</span>
+            <Input
+              type="date"
+              value={asOf}
+              onChange={(e) => setAsOf(e.target.value)}
+              className="h-8 w-36"
+            />
+          </label>
           <Button
             type="button"
             size="sm"
@@ -285,6 +302,11 @@ export function ProductJudgements({
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {asOf && (
+          <Alert>
+            <AlertDescription>{m.judgements.asOfPreview(asOf)}</AlertDescription>
           </Alert>
         )}
 
@@ -423,7 +445,8 @@ export function ProductJudgements({
                         </TableCell>
                         {canEdit && (
                           <TableCell className={cn(CELL, "align-top")}>
-                            {editing === j.categoryId ? (
+                            {/* その場で計算した判定は保存していないので、確認も修正もできない */}
+                            {asOf ? null : editing === j.categoryId ? (
                               <div className="space-y-1">
                                 <Input
                                   // 列の幅いっぱい。決め打ちにすると列より広くなって切れる

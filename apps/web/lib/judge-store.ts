@@ -48,10 +48,18 @@ export interface CategoryRule {
  * 優先度の高いデータソースの非該当は、下位の該当を打ち消すための仕組み。
  * 先に非該当を除いてしまうと、下位の該当が勝ち上がって打ち消しが効かない（実際に起きた）。
  */
-export async function loadRules(versionId: string): Promise<CategoryRule[]> {
+export async function loadRules(
+  versionId: string,
+  /**
+   * 判定対象日（YYYY-MM-DD）。指定すると、その日に効いている区分と法文物質名だけを使う
+   * （適用開始日・適用終了日で絞る。空のものは常に効く）。省くと日付では絞らない
+   */
+  asOf?: string,
+): Promise<CategoryRule[]> {
+  const inForce = asOf ? inForceOn(asOf) : {};
   const categories = await prisma.regulationCategory.findMany({
     // 「判定に使う」印の付いた区分だけ。印の無いものは、持っているだけで判定に出さない
-    where: { deletedAt: null, judged: true },
+    where: { deletedAt: null, judged: true, ...inForce },
     select: {
       id: true,
       aggregation: true,
@@ -65,7 +73,7 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
         where: { deletedAt: null },
         select: {
           statutorySubstances: {
-            where: { deletedAt: null },
+            where: { deletedAt: null, ...inForce },
             select: {
               id: true,
               applicableCondition: true,
@@ -192,6 +200,20 @@ export async function loadRules(versionId: string): Promise<CategoryRule[]> {
   }));
 }
 
+/**
+ * その日に効いている行の条件。区分と法文物質名は同じ2つの日付列を持つ。
+ * 開始日が無い・その日以前、かつ 終了日が無い・その日以後
+ */
+function inForceOn(asOf: string) {
+  const day = new Date(`${asOf}T00:00:00.000Z`);
+  return {
+    AND: [
+      { OR: [{ effectiveFrom: null }, { effectiveFrom: { lte: day } }] },
+      { OR: [{ effectiveTo: null }, { effectiveTo: { gte: day } }] },
+    ],
+  };
+}
+
 /** 金属換算係数を、CAS で引ける形にする */
 export async function loadFactors(): Promise<ElementFactors> {
   const rows = await prisma.metalConversionFactor.findMany({
@@ -205,6 +227,50 @@ export async function loadFactors(): Promise<ElementFactors> {
     out.set(r.casNormalized, list);
   }
   return out;
+}
+
+/**
+ * 1製品を、渡された区分の決めごとで判定する。**保持しない。**
+ * 保存する判定（judgeProduct）と、判定対象日を指定してその場で見る判定の両方がここを通る
+ */
+export async function computeJudgements(
+  productId: string,
+  rules: CategoryRule[],
+  factors: ElementFactors,
+  linkMode: ConditionalLinkMode,
+): Promise<{ rule: CategoryRule; result: JudgeResult }[]> {
+  const expansion = await prisma.productExpansion.findUnique({
+    where: { productId },
+    select: { unknownPct: true, truncated: true },
+  });
+  const lines = await prisma.productExpansionLine.findMany({
+    where: { productId },
+    select: { casNormalized: true, substanceId: true, totalPct: true },
+  });
+
+  /*
+    展開結果がまだ無い製品は、中身が何も分からないのと同じ。
+    「非該当」と言い切らず、全部が分からないぶんとして扱う。
+  */
+  const unknownPct = expansion ? expansion.unknownPct.toString() : "100";
+  const truncated = expansion?.truncated ?? 0;
+
+  return rules.map((rule) => ({
+    rule,
+    result: judge({
+      lines: lines.map((l) => ({
+        casNormalized: l.casNormalized,
+        substanceId: l.substanceId,
+        totalPct: l.totalPct.toString(),
+      })),
+      unknownPct,
+      truncated,
+      category: rule.category,
+      entries: rule.entries,
+      factors,
+      conditionalLinkMode: linkMode,
+    }),
+  }));
 }
 
 /**
@@ -237,38 +303,7 @@ export async function judgeProduct(
       })
     )?.id ??
     null;
-  const expansion = await prisma.productExpansion.findUnique({
-    where: { productId },
-    select: { unknownPct: true, truncated: true },
-  });
-  const lines = await prisma.productExpansionLine.findMany({
-    where: { productId },
-    select: { casNormalized: true, substanceId: true, totalPct: true },
-  });
-
-  /*
-    展開結果がまだ無い製品は、中身が何も分からないのと同じ。
-    「非該当」と言い切らず、全部が分からないぶんとして扱う。
-  */
-  const unknownPct = expansion ? expansion.unknownPct.toString() : "100";
-  const truncated = expansion?.truncated ?? 0;
-
-  const results: { rule: CategoryRule; result: JudgeResult }[] = rules.map((rule) => ({
-    rule,
-    result: judge({
-      lines: lines.map((l) => ({
-        casNormalized: l.casNormalized,
-        substanceId: l.substanceId,
-        totalPct: l.totalPct.toString(),
-      })),
-      unknownPct,
-      truncated,
-      category: rule.category,
-      entries: rule.entries,
-      factors,
-      conditionalLinkMode: linkMode,
-    }),
-  }));
+  const results = await computeJudgements(productId, rules, factors, linkMode);
 
   await prisma.$transaction([
     // 前の判定は、確認済みの状態ごと捨てる

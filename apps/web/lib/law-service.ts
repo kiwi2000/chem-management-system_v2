@@ -69,6 +69,9 @@ export async function countSubstancesByCategory(
   return out;
 }
 
+/** 日付だけの列（時刻なし・UTC の 0 時）を YYYY-MM-DD にする */
+const toDate = (v: Date | null) => (v ? v.toISOString().slice(0, 10) : null);
+
 type CategoryRow = Prisma.RegulationCategoryGetPayload<object>;
 
 export function toCategoryDto(c: CategoryRow, substanceCount: number): RegulationCategoryDto {
@@ -88,6 +91,8 @@ export function toCategoryDto(c: CategoryRow, substanceCount: number): Regulatio
     rank: c.rank,
     thresholdBasis: c.thresholdBasis,
     judged: c.judged,
+    effectiveFrom: toDate(c.effectiveFrom),
+    effectiveTo: toDate(c.effectiveTo),
     score: c.score.toString(),
     displayOrder: c.displayOrder,
     note: c.note,
@@ -122,7 +127,6 @@ export const SUBSTANCE_INCLUDE = {
 type SubstanceRow = Prisma.StatutorySubstanceGetPayload<{ include: typeof SUBSTANCE_INCLUDE }>;
 
 /** 日付は日だけ使うので、時刻を持たない形（YYYY-MM-DD）で渡す */
-const toDate = (v: Date | null) => (v ? v.toISOString().slice(0, 10) : null);
 
 export function toStatutorySubstanceDto(s: SubstanceRow): StatutorySubstanceDto {
   return {
