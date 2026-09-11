@@ -260,11 +260,17 @@ function Card({
     setBoxes((n) => n + 1);
     return () => setBoxes((n) => n - 1);
   }, []);
+  /*
+    **見出しの無い枠は閉じられない。**開け閉めのつまみは見出しに付くので、
+    見出しが無いのに閉じると開く手立てが無い（お知らせの編集画面で欄が全部隠れた。2026-09-11）。
+    見出しが登録されるまでは開いた扱いにする
+  */
+  const shown = !collapsible || titleText === null || open;
   const state = React.useMemo<CardState | null>(
     () =>
       collapsible
         ? {
-            open,
+            open: shown,
             toggle,
             registerTitle,
             registerBox,
@@ -273,7 +279,7 @@ function Card({
             contentHeight: boxes === 0 ? contentHeight : null,
           }
         : null,
-    [collapsible, open, toggle, registerTitle, registerBox, contentHeight, boxes],
+    [collapsible, shown, toggle, registerTitle, registerBox, contentHeight, boxes],
   );
 
   return (
@@ -281,7 +287,7 @@ function Card({
       <div
         data-slot="card"
         data-size={size}
-        data-collapsed={open ? undefined : "true"}
+        data-collapsed={shown ? undefined : "true"}
         className={cn(
           "group/card relative flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
           className,
@@ -293,7 +299,7 @@ function Card({
           カード自身のつまみ。表の箱（ResizableBox）が中にあるときはそちらが同じ場所に出すので出さない。
           見出しが無い（鍵が決まらない）カードにも出さない
         */}
-        {state && open && boxes === 0 && key && (
+        {state && shown && boxes === 0 && key && (
           <EdgeHandle
             label={m.table.resizeHeight}
             current={() => contentRef.current?.getBoundingClientRect().height ?? MIN_HEIGHT}
@@ -332,7 +338,8 @@ function CardTitle({ className, children, ...props }: React.ComponentProps<"div"
   const textRef = React.useRef<HTMLSpanElement | null>(null);
   const register = card?.registerTitle;
 
-  React.useEffect(() => {
+  // 描く前に登録する。描いてから閉じると、開いた中身が一瞬見えてから消える
+  React.useLayoutEffect(() => {
     const text = textRef.current?.textContent?.trim();
     if (register && text) register(text);
   }, [register, children]);
