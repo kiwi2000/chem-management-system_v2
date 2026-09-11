@@ -1,4 +1,4 @@
-import { normalizeCas, normalizeCode } from "@chem/shared";
+import { normalizeCas, normalizeCode, type ColumnFilter } from "@chem/shared";
 import { anyOfTextCondition, type QueryColumn } from "@/lib/table-query";
 
 /**
@@ -129,10 +129,40 @@ function substanceNameCondition(
   return op === "all" ? { AND: each } : { OR: each };
 }
 
+/**
+ * 名称の絞り込みで「別名も含む」にチェックしたときの条件。
+ * 主名称か別名のどれかに当たれば該当。「空白」「空白でない」は主名称だけで見る
+ * （別名は無いのがふつうなので、別名まで見ると意味が変わる）
+ */
+function nameWithAliases(
+  field: "nameJa" | "nameEn",
+  f: Extract<ColumnFilter, { kind: "text" }>,
+): Record<string, unknown> | null {
+  const main = anyOfTextCondition([field], f);
+  if (!main) return null;
+  if (f.op === "empty" || f.op === "notEmpty") return main;
+  return { OR: [main, { aliases: { some: anyOfTextCondition([field], f) } }] };
+}
+
 export const PRODUCT_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  // 「別名も含む」にチェックしたとき、画面が名称の条件をこちらの鍵で送ってくる（2026-09-11 指示）
+  {
+    key: "nameJaWithAliases",
+    kind: "text",
+    field: "nameJa",
+    sortable: false,
+    custom: (f) => (f.kind === "text" ? nameWithAliases("nameJa", f) : null),
+  },
+  {
+    key: "nameEnWithAliases",
+    kind: "text",
+    field: "nameEn",
+    sortable: false,
+    custom: (f) => (f.kind === "text" ? nameWithAliases("nameEn", f) : null),
+  },
   { key: "usableAsMaterial", kind: "enum", field: "usableAsMaterial", booleanEnum: true },
   { key: "status", kind: "enum", field: "status" },
   { key: "publishState", kind: "enum", field: "publishState" },

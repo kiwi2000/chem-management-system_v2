@@ -17,6 +17,8 @@ interface Props<T> {
   /** 既定の状態。並べ替えが既定のままかどうかの判定に使う */
   defaultState: TableState;
   onFilterChange: (key: string, filter: ColumnFilter | undefined) => void;
+  /** 複数の列の条件をまとめて変える（条件を別の鍵へ移すとき） */
+  onFiltersChange: (changes: Record<string, ColumnFilter | undefined>) => void;
   /** フィルターだけを外す（並べ替えは残す） */
   onClearFilters: () => void;
   /** 並べ替えを既定に戻す（フィルターは残す） */
@@ -61,6 +63,7 @@ export function FilterPanel<T>({
   state,
   defaultState,
   onFilterChange,
+  onFiltersChange,
   onClearFilters,
   onClearSort,
   storageKey,
@@ -87,6 +90,47 @@ export function FilterPanel<T>({
   /** 引いている列と、落とそうとしている場所（どちらも出している列の中での番号） */
   const [dragAt, setDragAt] = useState<number | null>(null);
   const [overAt, setOverAt] = useState<number | null>(null);
+  /**
+   * 「別名も含む」のようなチェックを入れている列。まだ値を打っていないあいだは
+   * 条件が無いので、どちらの鍵で送るかをここで覚えておく
+   */
+  const [variantOn, setVariantOn] = useState<Set<string>>(new Set());
+
+  /** 入力欄と、あればその右のチェック。チェックが入っていれば条件を相手の列の鍵で送る */
+  function cell(c: TableColumn<T>) {
+    const variant = c.filterVariant;
+    const useVariant =
+      variant !== undefined && (variantOn.has(c.key) || state.filters[variant.key] !== undefined);
+    const activeKey = useVariant && variant ? variant.key : c.key;
+    return (
+      <>
+        <FilterCell
+          column={c}
+          value={state.filters[activeKey]}
+          onChange={(f) => onFilterChange(activeKey, f)}
+        />
+        {variant && (
+          <label className="flex shrink-0 items-center gap-1 text-xs whitespace-nowrap">
+            <input
+              type="checkbox"
+              checked={useVariant}
+              onChange={(e) => {
+                const next = new Set(variantOn);
+                if (e.target.checked) next.add(c.key);
+                else next.delete(c.key);
+                setVariantOn(next);
+                // 打ってある条件は、そのまま相手の鍵へ移す（消すのと入れるのを1回で）
+                const current = state.filters[activeKey];
+                const to = e.target.checked ? variant.key : c.key;
+                onFiltersChange({ [activeKey]: undefined, [to]: current });
+              }}
+            />
+            {variant.label}
+          </label>
+        )}
+      </>
+    );
+  }
 
   function toggle() {
     setOpen((v) => !v);
@@ -309,11 +353,7 @@ export function FilterPanel<T>({
                         {c.header}
                       </div>
                     )}
-                    <FilterCell
-                      column={c}
-                      value={state.filters[c.key]}
-                      onChange={(f) => onFilterChange(c.key, f)}
-                    />
+                    {cell(c)}
                   </div>
                 ))}
               </div>
@@ -328,11 +368,7 @@ export function FilterPanel<T>({
                       {c.header}
                     </div>
                   )}
-                  <FilterCell
-                    column={c}
-                    value={state.filters[c.key]}
-                    onChange={(f) => onFilterChange(c.key, f)}
-                  />
+                  {cell(c)}
                 </div>
               ))}
             </div>

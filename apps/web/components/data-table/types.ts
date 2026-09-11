@@ -42,6 +42,11 @@ export interface TableColumn<T> {
   tokens?: "numeric" | "text";
   /** 表には出さず、フィルターの条件としてだけ使う列（組成のCAS番号など） */
   filterOnly?: boolean;
+  /**
+   * 入力欄の右に出すチェック。入れると、打った条件を**この列のかわりに `key` の列で送る**
+   * （名称の「別名も含む」など）。相手の列は `filterOnly` かつ `filterable: false` で定義しておく
+   */
+  filterVariant?: { key: string; label: string };
   /** 既定の列幅（px）。利用者がドラッグで変えた幅は端末に記憶される */
   width?: number;
   /** 1セルに複数行を出す（省略記号で切らず、行の高さを伸ばす） */

@@ -116,6 +116,8 @@ export function ProductsTable({
         kind: "text",
         nullable: false,
         filterFullWidth: true,
+        // 右の「別名も含む」にチェックすると、条件は nameJaWithAliases の列で送られる
+        filterVariant: { key: "nameJaWithAliases", label: m.table.includeAliases },
         width: 260,
         render: (r) => (
           <>
@@ -131,9 +133,28 @@ export function ProductsTable({
         header: m.products.nameEn,
         kind: "text",
         filterFullWidth: true,
+        filterVariant: { key: "nameEnWithAliases", label: m.table.includeAliases },
         width: 200,
         className: "text-muted-foreground",
         render: (r) => r.nameEn ?? "",
+      },
+      // 「別名も含む」の受け皿。表にもフィルターの欄にも出さず、状態の読み書きにだけ使う
+      {
+        key: "nameJaWithAliases",
+        header: m.products.nameJa,
+        kind: "text",
+        nullable: false,
+        filterOnly: true,
+        filterable: false,
+        sortable: false,
+      },
+      {
+        key: "nameEnWithAliases",
+        header: m.products.nameEn,
+        kind: "text",
+        filterOnly: true,
+        filterable: false,
+        sortable: false,
       },
       {
         ...boolColumn("usableAsMaterial", m.products.materialShort, (r) => r.usableAsMaterial, {

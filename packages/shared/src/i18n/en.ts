@@ -268,6 +268,7 @@ export const en: Messages = {
     resetWidths: "Reset widths",
     resizeRows: "resize row height",
     resizeHeight: "resize table height (drag the line below; double-click to reset)",
+    includeAliases: "Include aliases",
     resetRowHeight: "Reset row height",
     selectAll: "Select all on this page",
     selectRow: "Select this row",

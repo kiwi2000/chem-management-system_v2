@@ -279,6 +279,8 @@ export const ja = {
     resetWidths: "列幅を戻す",
     resizeRows: "行の高さを変える",
     resizeHeight: "表の高さを変える（下の線をドラッグ。2回押すと戻る）",
+    /** 名称の絞り込みで、主名称に加えて別名も見るか */
+    includeAliases: "別名も含む",
     resetRowHeight: "行の高さを戻す",
     selectAll: "このページをすべて選択",
     selectRow: "この行を選択",

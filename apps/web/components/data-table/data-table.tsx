@@ -438,10 +438,20 @@ export function DataTable<T>({
   }
 
   function setFilter(key: string, filter: ColumnFilter | undefined) {
+    setFilters({ [key]: filter });
+  }
+
+  /**
+   * 複数の列の条件を**1回で**変える（「別名も含む」で条件を別の鍵へ移すときなど）。
+   * 1列ずつ続けて変えると、状態は最後の1回ぶんしか残らない（URL に書く前の値から作り直すため）
+   */
+  function setFilters(changes: Record<string, ColumnFilter | undefined>) {
     onStateChange((prev) => {
       const filters = { ...prev.filters };
-      if (filter) filters[key] = filter;
-      else delete filters[key];
+      for (const [key, filter] of Object.entries(changes)) {
+        if (filter) filters[key] = filter;
+        else delete filters[key];
+      }
       return { ...prev, filters, page: 1 };
     });
   }
@@ -576,6 +586,7 @@ export function DataTable<T>({
           state={state}
           defaultState={defaultState}
           onFilterChange={setFilter}
+          onFiltersChange={setFilters}
           onClearFilters={() => onStateChange((prev) => ({ ...prev, filters: {}, page: 1 }))}
           onClearSort={() =>
             onStateChange((prev) => ({ ...prev, sort: defaultState.sort, page: 1 }))
