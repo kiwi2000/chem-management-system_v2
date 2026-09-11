@@ -21,6 +21,12 @@
  *
  * 元素名は法文物質名の頭から拾う。**元素の欄に書き込むのはここだけ**で、
  * 判定はその欄だけを見る（名前を毎回読み直すと、判定のたびに結果が変わりうる）。
+ *
+ * **条文が「どの号を元素で数えるか」を決めている法律は、名前で推し量らず条文の表で決める**
+ * （`LAW_RULES`）。化管法は令第4条第1項第1号が 25 の号を挙げている（第8章 8-4）。
+ * その法律では、表にある号だけを ELEMENT、それ以外の法文物質名は SUM にする。
+ *
+ *   npx tsx scripts/seed-aggregation.ts --law JP-PRTR --write   1つの法律だけ書き込む
  */
 import { PrismaClient } from "@prisma/client";
 
@@ -56,8 +62,55 @@ const ALIAS: { pattern: RegExp; symbol: string }[] = [
   { pattern: /^ニツケル/, symbol: "Ni" },
 ];
 
+/**
+ * 条文で「元素の質量で数える」と決まっている号。法律コード → 号 → 元素記号。
+ *
+ * 化管法（JP-PRTR）: 令第4条第1項第1号 イ(1)〜(19) と ロ(1)〜(6)。ロの 6 号は特定第一種にも入る。
+ * 番号は「令別表第1の353」の末尾の数。表に無い法文物質名は、その法文物質名としての合計（SUM）
+ */
+const LAW_RULES: Record<string, Map<number, string>> = {
+  "JP-PRTR": new Map<number, string>([
+    // イ
+    [1, "Zn"],
+    [48, "Sb"],
+    [62, "In"],
+    [105, "Ag"],
+    [111, "Cr"],
+    [156, "Co"],
+    [164, "CN"],
+    [272, "Hg"],
+    [274, "Sn"],
+    [276, "Ce"],
+    [277, "Se"],
+    [279, "Tl"],
+    [311, "Te"],
+    [314, "Cu"],
+    [363, "V"],
+    [414, "F"],
+    [458, "B"],
+    [465, "Mn"],
+    [505, "Mo"],
+    // ロ（すべて特定第一種でもある）
+    [99, "Cd"],
+    [112, "Cr"],
+    [353, "Pb"],
+    [355, "Ni"],
+    [378, "As"],
+    [444, "Be"],
+  ]),
+};
+
+/** 「令別表第1の353」→ 353。**別表第一だけ**（第二種の「令別表第2の99」を 99 と読まない）。読めなければ null */
+function itemNumber(officialNumber: string | null): number | null {
+  const m = /別表第1の(\d+)\s*$/.exec(officialNumber ?? "");
+  return m ? Number(m[1]) : null;
+}
+
 async function main() {
   const write = process.argv.includes("--write");
+  const lawArg = process.argv.indexOf("--law");
+  const lawCode = lawArg >= 0 ? (process.argv[lawArg + 1] ?? "").trim().toUpperCase() : null;
+  if (lawArg >= 0 && !lawCode) throw new Error("--law の後に法律コードを書く（例 JP-PRTR）");
 
   const elements = await prisma.element.findMany({
     where: { deletedAt: null },
@@ -73,9 +126,22 @@ async function main() {
   if (!version) throw new Error("現在のバージョンが決まっていません");
 
   const subs = await prisma.statutorySubstance.findMany({
-    where: { deletedAt: null },
-    select: { id: true, nameJa: true, nameOriginal: true, aggregation: true },
+    where: {
+      deletedAt: null,
+      ...(lawCode ? { regulationClass: { category: { law: { codeNormalized: lawCode } } } } : {}),
+    },
+    select: {
+      id: true,
+      nameJa: true,
+      nameOriginal: true,
+      officialNumber: true,
+      aggregation: true,
+      regulationClass: {
+        select: { category: { select: { law: { select: { codeNormalized: true } } } } },
+      },
+    },
   });
+  if (lawCode) console.log(`対象の法律: ${lawCode}`);
 
   const links = await prisma.statutoryCasLink.findMany({
     where: { versionId: version.id, excluded: false },
@@ -94,6 +160,15 @@ async function main() {
 
   for (const s of subs) {
     const name = s.nameJa ?? s.nameOriginal;
+    // 条文の表がある法律は、表だけで決める（名前では推し量らない）
+    const rule = LAW_RULES[s.regulationClass.category.law.codeNormalized];
+    if (rule) {
+      const no = itemNumber(s.officialNumber);
+      const symbol = no === null ? undefined : rule.get(no);
+      if (symbol) asElement.push({ id: s.id, name, symbol });
+      else asSum.push(s.id);
+      continue;
+    }
     const looksElement = /化合物/.test(name) && !NOT_ELEMENT.some((re) => re.test(name));
     // 元素マスタの名前で拾えないものは、法文の書きかたの表で補う
     const symbol = !looksElement
@@ -128,7 +203,9 @@ async function main() {
     }
   }
   console.log(`\n換算係数が足りない「CAS × 元素」: ${missing.size}件（登録済み ${have.size}件）`);
-  console.log("  ※ 係数が無いものは、そのままの値で数える（多めに見積もる＝見落とさない側）");
+  console.log(
+    "  ※ 係数が無い CAS は 0 として数え、その判定には要確認の印が付く（lib/judge-calc.ts）",
+  );
 
   /*
     「化合物」と書いてあるのに元素として拾えなかったもの。
@@ -138,6 +215,7 @@ async function main() {
     （単純合算は多めに出るので、見落としにはならない）。
   */
   const undecided = subs
+    .filter((s) => !LAW_RULES[s.regulationClass.category.law.codeNormalized])
     .map((s) => s.nameJa ?? s.nameOriginal)
     .filter((n) => /化合物/.test(n) && !NOT_ELEMENT.some((re) => re.test(n)))
     .filter(
