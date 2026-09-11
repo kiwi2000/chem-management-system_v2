@@ -1371,7 +1371,7 @@ export const en: Messages = {
     epsilonPctHint: "Totals within this margin count as 100%. Use a value between 0 and 10",
     epsilonRange: "The tolerance must be between 0 and 10",
     judgementSection: "Regulatory judgement",
-    conditionalLinkMode: "How to treat conditionally linked CAS",
+    conditionalLinkMode: "When an applicable condition exists",
     conditionalLinkModes: {
       hit: "Decide applicability as if unconditional, and warn",
       review: "Mark for review, and warn",

@@ -1404,7 +1404,7 @@ export const ja = {
     epsilonPctHint: "この範囲のずれは 100% とみなします。0〜10 の間で指定してください",
     epsilonRange: "許容誤差は 0〜10 の間で入力してください",
     judgementSection: "法規制の判定",
-    conditionalLinkMode: "条件つきで結ばれたCASの扱い",
+    conditionalLinkMode: "適用条件がある場合の扱い",
     conditionalLinkModes: {
       hit: "条件が無いものとして該非を確定し、警告を出す",
       review: "要確認にして警告を出す",
