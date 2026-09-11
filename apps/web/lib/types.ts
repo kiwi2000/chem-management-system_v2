@@ -239,6 +239,10 @@ export interface ProductJudgementDto {
   lawNameJa: string | null;
   lawNameEn: string | null;
   lawNameOriginal: string;
+  /** その国の地域（国内・EU加盟国など）。国の左に、地域ごとに1つのセルで出す */
+  regionCode: string;
+  regionNameJa: string;
+  regionNameEn: string | null;
   /** その法律の国。コードは国ごとにまとめて開閉する鍵 */
   countryCode: string;
   countryNameJa: string;

@@ -62,7 +62,9 @@ const CELL = "border-r border-b px-2 py-1";
  * スコアはその右に置く。**CASの隣**なので、どの物質の点数かが読める。
  */
 const HEADS: { key: string; width: number; label: (m: M) => string; className?: string }[] = [
-  // 国が左端。行は国ごとにまとまっていて、国の行を押すと中（法律・区分）が開く
+  // 地域が左端。地域ごとに1つのセルで、その地域の国の行をまたぐ（2026-09-11 指示）
+  { key: "region", width: 88, label: (m) => m.laws.region },
+  // 行は国ごとにまとまっていて、国の行を押すと中（法律・区分）が開く
   { key: "country", width: 88, label: (m) => m.laws.country },
   { key: "law", width: 80, label: (m) => m.judgements.law },
   // 区分の行にだけ開閉のつまみが付く。そのぶん少し広く取る
@@ -216,7 +218,13 @@ export function ProductJudgements({
     国ごとにまとめる。並びは地域 → 国 → 法律 → 区分なので、隣が同じ国なら同じまとまり。
     国の行に出す件数は、絞り込みに関わらずその国の全区分で数える
   */
-  const countries: { code: string; label: string; items: ProductJudgementDto[] }[] = [];
+  const countries: {
+    code: string;
+    label: string;
+    region: string;
+    regionLabel: string;
+    items: ProductJudgementDto[];
+  }[] = [];
   for (const j of shown) {
     const last = countries[countries.length - 1];
     if (last && last.code === j.countryCode) last.items.push(j);
@@ -224,9 +232,29 @@ export function ProductJudgements({
       countries.push({
         code: j.countryCode,
         label: pickName(locale, j.countryNameJa, j.countryNameEn),
+        region: j.regionCode,
+        regionLabel: pickName(locale, j.regionNameJa, j.regionNameEn),
         items: [j],
       });
   }
+  /** 国が何行ぶんを占めるか。閉じていれば1行、開いていれば区分と開いた法文物質名の行のぶん */
+  const spanOf = (c: (typeof countries)[number]) =>
+    openCountries.has(c.code)
+      ? 1 + c.items.reduce((n, j) => n + 1 + (open.has(j.categoryId) ? j.hits.length : 0), 0)
+      : 1;
+  /*
+    地域の欄は**同じ地域の国をまとめて1つ**にする。並びは地域 → 国なので、
+    隣が同じ地域なら同じまとまり。最初の国の行に置き、その地域の国の行を全部またぐ
+  */
+  const regionSpan = new Map<number, number>();
+  countries.forEach((c, i) => {
+    if (i > 0 && countries[i - 1]!.region === c.region) return;
+    let span = 0;
+    for (let k = i; k < countries.length && countries[k]!.region === c.region; k++) {
+      span += spanOf(countries[k]!);
+    }
+    regionSpan.set(i, span);
+  });
   const countryTotals = new Map<string, { total: number; applicable: number; review: number }>();
   for (const j of items) {
     const t = countryTotals.get(j.countryCode) ?? { total: 0, applicable: 0, review: 0 };
@@ -416,24 +444,28 @@ export function ProductJudgements({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {countries.map((c) => {
+                {countries.map((c, ci) => {
                   const countryOpen = openCountries.has(c.code);
                   const t = countryTotals.get(c.code) ?? { total: 0, applicable: 0, review: 0 };
                   /*
                     国の欄は**その国の行を全部またいで1つ**にする（2026-09-11 指示）。
                     開いているあいだは、区分の行と、開いた区分の法文物質名の行のぶんだけ縦に伸びる
                   */
-                  const span = countryOpen
-                    ? 1 +
-                      c.items.reduce(
-                        (n, j) => n + 1 + (open.has(j.categoryId) ? j.hits.length : 0),
-                        0,
-                      )
-                    : 1;
+                  const span = spanOf(c);
+                  const region = regionSpan.get(ci);
                   return (
                     <Fragment key={`country:${c.code}`}>
                       {/* 国の行。押すと、その国の法律と区分が開く。件数はその国の全区分で数える */}
                       <TableRow className="bg-muted/60">
+                        {/* 地域の欄。その地域の最初の国の行にだけ置き、地域の行を全部またぐ */}
+                        {region !== undefined && (
+                          <TableCell
+                            className={cn(CELL, "bg-muted/60 align-top font-medium")}
+                            rowSpan={region}
+                          >
+                            <OneLine text={c.regionLabel} />
+                          </TableCell>
+                        )}
                         <TableCell
                           className={cn(CELL, "bg-muted/60 align-top font-medium")}
                           rowSpan={span}
@@ -458,7 +490,7 @@ export function ProductJudgements({
                         </TableCell>
                         <TableCell
                           className={cn(CELL, "text-muted-foreground align-top text-xs")}
-                          colSpan={HEADS.length - 1 + (canEdit ? 1 : 0)}
+                          colSpan={HEADS.length - 2 + (canEdit ? 1 : 0)}
                         >
                           {[
                             m.judgements.summary(t.applicable, t.total),
