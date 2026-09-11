@@ -97,8 +97,8 @@ export interface JudgeInput {
   /**
    * 条件つきのCASリンクの扱い（システム設定 `judgment.conditional_link_mode`）。
    *
-   *   hit    … 該当にして、警告だけ出す
-   *   review … 該当にして、要確認を付ける
+   *   hit    … 「要確認」を付けない
+   *   review … 「要確認」を付ける
    *
    * **どちらでも警告は出る。**省くと `review`
    */

@@ -1054,7 +1054,7 @@ export const en: Messages = {
     reasonUnfilled:
       "No threshold is set for this entry because its exemption cannot be reduced to a single number. Read the text and decide.",
     reasonConditionalLink:
-      "The external database linked this CAS by widening from a generic name. Where the statutory name is narrowed by carbon count or substitution position, it may not actually apply. Compare the name with the substance.",
+      "The CAS covers substances outside the statutory name. Compare the name with the substance.",
     reasonHomogeneous:
       "This limit applies per homogeneous material. Spread over the whole product it always looks lower, so this result alone cannot settle it. Register the homogeneous material as a material and read its own result",
     // Columns in the list. Space is tight, so keep them short
@@ -1371,10 +1371,10 @@ export const en: Messages = {
     epsilonPctHint: "Totals within this margin count as 100%. Use a value between 0 and 10",
     epsilonRange: "The tolerance must be between 0 and 10",
     judgementSection: "Regulatory judgement",
-    conditionalLinkMode: "CAS numbers that cannot decide on their own",
+    conditionalLinkMode: "When a CAS covers substances outside the statutory name",
     conditionalLinkModes: {
-      hit: "Applicable, warning only",
-      review: "Applicable, marked for review",
+      hit: "Do not mark for review",
+      review: "Mark for review",
     },
     rejudge: "Re-judge every product",
     rejudgeHint:
@@ -1390,7 +1390,7 @@ export const en: Messages = {
     rejudgeNever: "No judgement has been computed yet",
     rejudgeBusy: "A re-judgement is already running",
     conditionalLinkModeHint:
-      'Some CAS numbers the external database links to a statutory name have not been checked against the name\'s condition (carbon count, substitution position, etc.): the CAS may cover a wider substance than the name (e.g. C10–C16 alkylbenzenes linked to a "C10–C13" name), or CAS that merely look like they fall in range were linked in bulk. A hit through such a CAS is applicable under either choice and shows the warning "check whether the condition is met"; the difference is whether the judgement is marked for review or only warned.',
+      'For CAS numbers linked to a statutory name that also cover substances the name does not define.\nExample: the name is "C10–C13 alkylbenzenes" but the linked CAS stands for "C10–C16 alkylbenzenes", so it includes C14–C16 as well.\nEither choice judges the product applicable; with "mark" the judgement shows "needs review" and the reason, otherwise "warning" and the reason.',
     maintenanceSection: "Maintenance",
     maintenanceMode: "Maintenance mode (block sign-in for everyone but administrators)",
     maintenanceHint:

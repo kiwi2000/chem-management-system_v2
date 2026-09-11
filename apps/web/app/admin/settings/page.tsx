@@ -187,7 +187,7 @@ export default function SettingsPage() {
                     conditionalLinkMode: e.target.value as ConditionalLinkMode,
                   })
                 }
-                className="border-input bg-background h-9 w-full max-w-md rounded-none border px-2 text-sm"
+                className="border-input bg-background h-9 w-64 rounded-none border px-2 text-sm"
               >
                 {CONDITIONAL_LINK_MODES.map((mode) => (
                   <option key={mode} value={mode}>
@@ -195,7 +195,10 @@ export default function SettingsPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-muted-foreground text-xs">{m.settings.conditionalLinkModeHint}</p>
+              {/* 説明は「例）」の前などで改行する（文言側の改行をそのまま出す） */}
+              <p className="text-muted-foreground text-xs whitespace-pre-line">
+                {m.settings.conditionalLinkModeHint}
+              </p>
             </div>
             {/* 法規制側のデータを変えたあとに、全製品の判定をやり直す */}
             <RejudgeSection />
