@@ -245,7 +245,7 @@ export const DOCUMENT_COLUMNS: QueryColumn[] = [
   // テンプレートは1対1。たどって絞る
   { key: "templateCode", kind: "text", field: "code", nested: "template", caseInsensitive: true },
   { key: "target", kind: "enum", field: "target", nested: "template" },
-  { key: "hasComposition", kind: "enum", field: "hasComposition" },
+  { key: "hasComposition", kind: "enum", field: "hasComposition", booleanEnum: true },
   { key: "generatedAt", kind: "date", field: "generatedAt" },
 ];
 
@@ -360,6 +360,15 @@ export function sessionColumns(now: Date, idleMs: number): QueryColumn[] {
       nested: "user",
       caseInsensitive: true,
       sortable: false,
+      // メールは必ずある。「空白」を null で探すと Prisma が受け付けず落ちるので、空文字で見る
+      custom: (f) =>
+        f.kind !== "text"
+          ? null
+          : f.op === "empty"
+            ? { user: { email: "" } }
+            : f.op === "notEmpty"
+              ? { user: { email: { not: "" } } }
+              : null,
     },
     {
       key: "displayName",
@@ -428,7 +437,8 @@ export const SOURCE_COLUMNS: QueryColumn[] = [
 export const LINK_VERSION_COLUMNS: QueryColumn[] = [
   { key: "asOf", kind: "date", field: "asOf" },
   { key: "code", kind: "text", field: "code", caseInsensitive: true },
-  { key: "isCurrent", kind: "enum", field: "isCurrent" },
+  // はい/いいえ の列。真偽値に直さないと "true" という文字を渡して落ちる（2026-09-11 に実際に落ちた）
+  { key: "isCurrent", kind: "enum", field: "isCurrent", booleanEnum: true },
 ];
 
 export const LINK_VERSION_SOURCE_COLUMNS: QueryColumn[] = [
