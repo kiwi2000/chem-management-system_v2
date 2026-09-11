@@ -382,7 +382,7 @@ export function ProductJudgements({
                     setOpen(new Set(openable));
                   }}
                 >
-                  <ChevronDown className="mr-1 size-3.5" />
+                  <ChevronRight className="mr-1 size-3.5" />
                   {m.composition.expandAll}
                 </Button>
               )}
@@ -398,7 +398,7 @@ export function ProductJudgements({
                     setOpenCountries(new Set());
                   }}
                 >
-                  <ChevronRight className="mr-1 size-3.5" />
+                  <ChevronDown className="mr-1 size-3.5" />
                   {m.composition.collapseAll}
                 </Button>
               )}

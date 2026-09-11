@@ -353,7 +353,7 @@ function Matrix({
                 setFoldedParents(new Set());
               }}
             >
-              <ChevronDown className="mr-1 size-3.5" />
+              <ChevronRight className="mr-1 size-3.5" />
               {m.composition.expandAll}
             </Button>
           )}
@@ -368,7 +368,7 @@ function Matrix({
                 if (parentHeader) setFoldedParents(new Set(allGroupKeys));
               }}
             >
-              <ChevronRight className="mr-1 size-3.5" />
+              <ChevronDown className="mr-1 size-3.5" />
               {m.composition.collapseAll}
             </Button>
           )}

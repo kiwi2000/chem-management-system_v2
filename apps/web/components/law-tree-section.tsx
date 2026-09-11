@@ -691,7 +691,7 @@ export function LawTreeSection({
                 disabled={expanding || (data?.items.length ?? 0) === 0}
                 onClick={() => void expandAll()}
               >
-                <ChevronDown className="mr-1 size-3.5" />
+                <ChevronRight className="mr-1 size-3.5" />
                 {m.composition.expandAll}
               </Button>
             )}
@@ -702,7 +702,7 @@ export function LawTreeSection({
                 title={m.composition.collapseAllHint}
                 onClick={() => setOpen(new Map())}
               >
-                <ChevronRight className="mr-1 size-3.5" />
+                <ChevronDown className="mr-1 size-3.5" />
                 {m.composition.collapseAll}
               </Button>
             )}

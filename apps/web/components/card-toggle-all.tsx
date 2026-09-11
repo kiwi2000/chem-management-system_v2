@@ -10,7 +10,7 @@ import { useI18n } from "@/lib/i18n-client";
 
 /**
  * 画面にある枠（見出し付きのカード）を、まとめて開く／閉じるボタン。
- * **状態で出し分ける**（2026-09-12 指示）。全部閉じていれば「∨ 開」だけ、全部開いていれば「＞ 閉」だけ、
+ * **状態で出し分ける**（2026-09-12 指示）。全部閉じていれば「＞ 開」だけ、全部開いていれば「∨ 閉」だけ、
  * 一部だけ開いていれば両方。枠が1つも無い画面では出ない
  */
 export function CardToggleAll() {
@@ -27,7 +27,7 @@ export function CardToggleAll() {
           title={m.composition.expandAllHint}
           onClick={() => setAllCards(true)}
         >
-          <ChevronDown className="mr-1 size-3.5" />
+          <ChevronRight className="mr-1 size-3.5" />
           {m.composition.expandAll}
         </Button>
       )}
@@ -39,7 +39,7 @@ export function CardToggleAll() {
           title={m.composition.collapseAllHint}
           onClick={() => setAllCards(false)}
         >
-          <ChevronRight className="mr-1 size-3.5" />
+          <ChevronDown className="mr-1 size-3.5" />
           {m.composition.collapseAll}
         </Button>
       )}

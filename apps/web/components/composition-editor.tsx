@@ -113,8 +113,8 @@ const ROW_ACTION_WIDTH = 44;
 
 /**
  * まとめて開く／閉じるボタン。表ごとに1つずつ置く。
- * **状態で出し分ける**（2026-09-12 指示）。開けるものが残っていれば「∨ 開」、閉じられるものが
- * あれば「＞ 閉」。一部だけ開いているときは両方出る。
+ * **状態で出し分ける**（2026-09-12 指示）。開けるものが残っていれば「＞ 開」、閉じられるものが
+ * あれば「∨ 閉」。一部だけ開いているときは両方出る。
  *
  * 表が2つ並ぶので、**どちらに効くのかはボタンの置き場所で示す。**
  * 1組を共有して「いま見えているほう」に効かせると、押すまで結果が分からない。
@@ -143,7 +143,7 @@ function ExpandButtons({
           title={m.composition.expandAllHint}
           onClick={onExpand}
         >
-          <ChevronDown className="mr-1 size-3.5" />
+          <ChevronRight className="mr-1 size-3.5" />
           {m.composition.expandAll}
         </Button>
       )}
@@ -155,7 +155,7 @@ function ExpandButtons({
           title={m.composition.collapseAllHint}
           onClick={onCollapse}
         >
-          <ChevronRight className="mr-1 size-3.5" />
+          <ChevronDown className="mr-1 size-3.5" />
           {m.composition.collapseAll}
         </Button>
       )}
