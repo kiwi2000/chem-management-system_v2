@@ -170,7 +170,8 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        {/* 左メニューの「要再計算」からは #rejudge で来る。閉じていても開いて見せる */}
+        <Card id="rejudge">
           <CardHeader>
             <CardTitle className="text-base">{m.settings.judgementSection}</CardTitle>
           </CardHeader>

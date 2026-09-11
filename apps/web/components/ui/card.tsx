@@ -196,6 +196,24 @@ function Card({
     }
   }, [key]);
 
+  /*
+    URL の「#id」で来たら、覚えている状態に関わらず開いて、その場所まで送る。
+    閉じたままだとリンク先が見えない（左メニューの「要再計算」→ システム設定。2026-09-11 指示）。
+    覚えた状態を読む効果より後に置く（同じ描画で後に走らせ、こちらを勝たせる）
+  */
+  const anchorId = props.id;
+  React.useEffect(() => {
+    if (!anchorId) return;
+    const check = () => {
+      if (window.location.hash !== `#${anchorId}`) return;
+      setOpen(true);
+      document.getElementById(anchorId)?.scrollIntoView({ block: "start" });
+    };
+    check();
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, [anchorId]);
+
   const remember = React.useCallback(
     (next: boolean) => {
       if (!key) return;
