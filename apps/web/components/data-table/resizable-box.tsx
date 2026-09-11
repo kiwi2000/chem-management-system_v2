@@ -27,7 +27,7 @@ const KEY_STEP = 24;
  * つまみは箱の中ではなく、箱を包むカードの下辺に置く（利用者が掴みたいのはそこ。2026-09-11）。
  * カードの中に無いときは、箱そのものの下端に置く。
  * 変えた高さは端末に覚える（列幅・行の高さと同じ扱い。見た目の好みなので URL には載せない）。
- * 2回押すと元（画面の 70%）に戻る。矢印キーでも変えられる。
+ * 2回押すと元（既定の高さ）に戻る。矢印キーでも変えられる。
  *
  * 何も変えていないあいだは `max-height`（中身が少なければ箱も低い）。
  * 変えたあとは `height`（決めた高さのまま。中身が少なくても空きができる）。
@@ -37,6 +37,7 @@ const KEY_STEP = 24;
 export function ResizableBox({
   storageKey,
   scrollerRef,
+  defaultMaxHeight = "70vh",
   className,
   children,
   ...rest
@@ -45,6 +46,11 @@ export function ResizableBox({
   storageKey: string;
   /** 中で送る `div` に付ける ref（`useResizableColumns` の `scrollerRef`） */
   scrollerRef?: (el: HTMLDivElement | null) => void;
+  /**
+   * 何も変えていないときの高さの上限（CSS の値）。既定は画面の 70%。
+   * `null` なら上限を決めない（一覧の画面。ページごと送るのが既定で、引いたときだけ箱になる）
+   */
+  defaultMaxHeight?: string | null;
   className?: string;
   children: ReactNode;
 } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children">) {
@@ -135,7 +141,13 @@ export function ResizableBox({
       <div
         ref={setRefs}
         className={cn("overflow-auto", className)}
-        style={height === null ? { maxHeight: "70vh" } : { height }}
+        style={
+          height === null
+            ? defaultMaxHeight
+              ? { maxHeight: defaultMaxHeight }
+              : undefined
+            : { height }
+        }
         {...rest}
       >
         {children}

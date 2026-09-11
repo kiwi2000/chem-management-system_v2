@@ -1059,7 +1059,11 @@ export function CompositionEditor({
                 <p className="text-muted-foreground text-xs">{m.composition.noCandidates}</p>
               ) : (
                 <>
-                  <div className="max-h-64 overflow-y-auto rounded-md border">
+                  <ResizableBox
+                    storageKey="chem.box.compositionCandidates"
+                    defaultMaxHeight="16rem"
+                    className="rounded-md border"
+                  >
                     <table className={cn("w-full border-collapse text-sm", CELL_CLIP)}>
                       <thead>
                         <tr className="bg-muted/50 border-b text-left">
@@ -1133,7 +1137,7 @@ export function CompositionEditor({
                         })}
                       </tbody>
                     </table>
-                  </div>
+                  </ResizableBox>
                   <Button
                     type="button"
                     size="sm"

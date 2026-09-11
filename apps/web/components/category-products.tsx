@@ -20,6 +20,7 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, JudgementHitDto, MatchedProductDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ResizableBox } from "@/components/data-table/resizable-box";
 
 /**
  * この規制区分に当たる製品（逆引き）。
@@ -110,13 +111,21 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
 
   return (
     // 幅は列の側で決める。製品ごとに列の位置がずれると見比べられない
-    <div ref={cols.scrollerRef} className="overflow-x-auto" {...cols.rowProps}>
+    <ResizableBox
+      storageKey="chem.box.categoryProducts"
+      scrollerRef={cols.scrollerRef}
+      {...cols.rowProps}
+    >
       {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
       {cols.peek}
       {cols.stickyBar}
-      <Table {...cols.tableProps} className={cn("table-fixed", cols.tableProps.className)}>
+      <Table
+        {...cols.tableProps}
+        className={cn("table-fixed", cols.tableProps.className)}
+        containerClassName="overflow-visible"
+      >
         <colgroup>{cols.cols()}</colgroup>
-        <TableHeader className="table-head-solid text-table-head-foreground [&_th]:text-inherit">
+        <TableHeader className="table-head-solid text-table-head-foreground sticky top-0 z-10 [&_th]:text-inherit">
           <TableRow>
             {HEADS.map(({ key, label, className }, i) => (
               <TableHead key={key} className={cn("relative", className)}>
@@ -203,6 +212,6 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
           ))}
         </TableBody>
       </Table>
-    </div>
+    </ResizableBox>
   );
 }

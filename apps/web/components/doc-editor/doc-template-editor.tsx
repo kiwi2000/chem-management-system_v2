@@ -21,6 +21,7 @@ import { useOrganisations } from "@/lib/use-organisations";
 import { useOrgItemLabels } from "@/lib/use-doc-fields";
 import { useMe } from "@/lib/use-me";
 import { cn } from "@/lib/utils";
+import { ResizableBox } from "@/components/data-table/resizable-box";
 
 const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm";
 
@@ -314,9 +315,13 @@ export function DocTemplateEditor({ id }: { id: string }) {
                 <AlertDescription>{m.docEditor.previewNote}</AlertDescription>
               </Alert>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
-              <div className="bg-muted/40 max-h-[75vh] overflow-auto border p-2">
+              <ResizableBox
+                storageKey="chem.box.docTemplatePreview"
+                defaultMaxHeight="75vh"
+                className="bg-muted/40 border p-2"
+              >
                 <DocumentSheet doc={sheet} />
-              </div>
+              </ResizableBox>
             </div>
           )}
         </div>

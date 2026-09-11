@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { SPEC_PAGES } from "./spec-pages";
+import { ResizableBox } from "@/components/data-table/resizable-box";
 
 /** 1件の見つかった場所 */
 interface Hit {
@@ -132,7 +133,11 @@ export function ManualSearch() {
       </div>
 
       {q !== "" && (
-        <div className="border-border max-h-96 overflow-y-auto border text-sm">
+        <ResizableBox
+          storageKey="chem.box.manualSearch"
+          defaultMaxHeight="24rem"
+          className="border-border border text-sm"
+        >
           {loading && !entries ? (
             <p className="text-muted-foreground p-2 text-xs">読み込み中…</p>
           ) : hits.length === 0 ? (
@@ -160,7 +165,7 @@ export function ManualSearch() {
               ))}
             </ul>
           )}
-        </div>
+        </ResizableBox>
       )}
     </div>
   );

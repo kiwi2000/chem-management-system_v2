@@ -20,6 +20,7 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, LanguageDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ResizableBox } from "@/components/data-table/resizable-box";
 
 const NEW_ID = "__new__";
 
@@ -183,7 +184,11 @@ export function LanguageSection() {
           )}
         </div>
 
-        <div className="bg-background max-h-96 overflow-auto rounded-md border">
+        <ResizableBox
+          storageKey="chem.box.languages"
+          defaultMaxHeight="24rem"
+          className="bg-background rounded-md border"
+        >
           <Table className="border-separate border-spacing-0">
             <TableHeader className="bg-table-head text-table-head-foreground sticky top-0 [&_th]:text-inherit">
               <TableRow>
@@ -297,7 +302,7 @@ export function LanguageSection() {
               })}
             </TableBody>
           </Table>
-        </div>
+        </ResizableBox>
       </CardContent>
     </Card>
   );

@@ -48,6 +48,7 @@ import { measuredRowHeight, ResizeHandle, RowResizeHandle } from "./resizable-co
 import { applyColumnOrder, useColumnVisibility } from "@/lib/use-column-visibility";
 import { useColumnWidths } from "./use-column-widths";
 import { rowHeightOf, rowLinesOf, useRowLines } from "./use-row-lines";
+import { ResizableBox } from "@/components/data-table/resizable-box";
 
 interface Props<T> {
   /** 端末に列幅・パネル開閉を覚えるための識別子（画面ごとに一意） */
@@ -605,13 +606,16 @@ export function DataTable<T>({
         )
       )}
 
-      <div
-        ref={(el) => {
+      <ResizableBox
+        storageKey={`${storageKey}.box`}
+        // 一覧はページごと送るのが既定。枠の下辺を引いたときだけ、その高さの箱になる
+        defaultMaxHeight={null}
+        scrollerRef={(el) => {
           scrollerRef.current = el;
           peek.attach(el);
           sticky.attach(el);
         }}
-        className="bg-background overflow-x-auto rounded-md border"
+        className="bg-background rounded-md border"
       >
         {/*
           列幅は比率で指定する。
@@ -619,7 +623,12 @@ export function DataTable<T>({
           余白があるのに横スクロールバーが出る、という状態にならない。
           ただし詰めすぎると読めないので、min-width より狭くはしない（そのときだけスクロールする）。
         */}
-        <Table className="table-fixed" style={{ minWidth: minTableWidth }}>
+        <Table
+          className="table-fixed"
+          style={{ minWidth: minTableWidth }}
+          // 箱の高さを決めたときに見出しを上に貼り付けるため、表の側では流さない
+          containerClassName="overflow-visible"
+        >
           <colgroup>
             {onReorder && <col style={{ width: DRAG_COLUMN_WIDTH }} />}
             {selectable && <col style={{ width: SELECT_COLUMN_WIDTH }} />}
@@ -632,7 +641,7 @@ export function DataTable<T>({
             テーマによっては濃い色が敷かれる。中の文字色は table-head-foreground に従わせる。
             th は既定で text-foreground を持つので、打ち消して継承させる。
           */}
-          <TableHeader className="bg-table-head text-table-head-foreground [&_th]:text-inherit">
+          <TableHeader className="table-head-solid text-table-head-foreground sticky top-0 z-10 [&_th]:text-inherit">
             <TableRow>
               {/* つかむ場所の列。見出しは要らない */}
               {onReorder && (
@@ -873,7 +882,7 @@ export function DataTable<T>({
             })}
           </TableBody>
         </Table>
-      </div>
+      </ResizableBox>
       {peek.node}
       {sticky.node}
 
