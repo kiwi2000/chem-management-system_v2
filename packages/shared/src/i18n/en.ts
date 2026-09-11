@@ -1390,7 +1390,7 @@ export const en: Messages = {
     rejudgeNever: "No judgement has been computed yet",
     rejudgeBusy: "A re-judgement is already running",
     conditionalLinkModeHint:
-      'Some CAS numbers cannot decide by themselves whether the statutory name applies. For a name such as "…with a C10–C13 alkyl group", the external database links every CAS that might fall in that range, but the CAS number alone does not tell whether the carbon count really matches. A hit through such a CAS is applicable under either choice and shows the warning "check whether the condition is met". The difference is whether the judgement is marked for review (waiting for a person) or only warned and treated as settled. A statutory name\'s own applicable condition (exemptions by use or form) is separate and always marks the judgement for review.',
+      'Some CAS numbers the external database links to a statutory name have not been checked against the name\'s condition (carbon count, substitution position, etc.): the CAS may cover a wider substance than the name (e.g. C10–C16 alkylbenzenes linked to a "C10–C13" name), or CAS that merely look like they fall in range were linked in bulk. A hit through such a CAS is applicable under either choice and shows the warning "check whether the condition is met"; the difference is whether the judgement is marked for review or only warned.',
     maintenanceSection: "Maintenance",
     maintenanceMode: "Maintenance mode (block sign-in for everyone but administrators)",
     maintenanceHint:
