@@ -681,7 +681,9 @@ export function LawTreeSection({
         headerActions={
           <div className="flex gap-2">
             {/* 法律の数だけ開け閉めするのは手間なので、まとめて開く・閉じるを置く */}
-            {!((data?.items.length ?? 0) > 0 && (data?.items ?? []).every((l) => open.has(l.id))) && (
+            {!(
+              (data?.items.length ?? 0) > 0 && (data?.items ?? []).every((l) => open.has(l.id))
+            ) && (
               <Button
                 size="sm"
                 variant="outline"
