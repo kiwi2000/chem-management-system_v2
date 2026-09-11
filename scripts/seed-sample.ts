@@ -12,6 +12,9 @@
  *  - 同じCAS番号（銅 7440-50-8）を、仕入先違いの別IDで2件。合算の話をするときの材料
  *  - 残部（balance）の行を1つ（基板の積層板）
  *  - 同じ原材料を2か所で使う（難燃剤マスターバッチ、基板、筐体）
+ *  - 金属換算が効く例（MT-GLASS-A / MT-GLASS-B）。酸化鉛 0.105% は鉛として 0.0974% で韓国 RoHS 非該当
+ *    （EU RoHS は適用条件があるので要確認・該当側）、0.12% は 0.111% で該当。**RoHS の鉛に酸化鉛の結び付き（USER）が要る**（LOLI は鉛の同位体しか
+ *    広げていない）。ローカルには 2026-09-11 に足してある。無い環境では USER で足すこと
  *
  * 入れるものには SAMPLE_PREFIXES のコードを付ける。--remove はこれを目印に消すので、
  * 手で作ったデータは巻き込まない。
@@ -53,6 +56,13 @@ const SUBSTANCES: SubstanceSeed[] = [
     note: "仕入先ごとに分けて管理している。SB-CU-A と同じCAS番号",
   },
   { code: "SB-PB", nameJa: "鉛", nameEn: "Lead", cas: "7439-92-1" },
+  {
+    code: "SB-PBO",
+    nameJa: "酸化鉛(II)",
+    nameEn: "Lead(II) oxide",
+    cas: "1317-36-8",
+    note: "金属換算の確認用。鉛として 92.8%（金属換算係数）",
+  },
   { code: "SB-CD", nameJa: "カドミウム", nameEn: "Cadmium", cas: "7440-43-9" },
   { code: "SB-HG", nameJa: "水銀", nameEn: "Mercury", cas: "7439-97-6" },
   { code: "SB-CR6", nameJa: "三酸化クロム", nameEn: "Chromium trioxide", cas: "1333-82-0" },
@@ -216,6 +226,28 @@ const PRODUCTS: ProductSeed[] = [
     ],
   },
   {
+    code: "MT-GLASS-A",
+    nameJa: "ガラス粉（酸化鉛 0.105%）",
+    nameEn: "Glass powder (0.105% lead oxide)",
+    material: true,
+    note: "金属換算の確認用。酸化鉛 0.105% は鉛として 0.0974% なので、韓国 RoHS の鉛（0.1%）に該当しない（換算しなければ該当してしまう）。EU RoHS は適用条件（附属書の適用除外）があるので要確認として該当側に倒れるが、根拠の重量%は換算後の 0.0974% で出る",
+    lines: [
+      { substance: "SB-PBO", pct: "0.105" },
+      { substance: "SB-GF", pct: "99.895" },
+    ],
+  },
+  {
+    code: "MT-GLASS-B",
+    nameJa: "ガラス粉（酸化鉛 0.12%）",
+    nameEn: "Glass powder (0.12% lead oxide)",
+    material: true,
+    note: "金属換算の確認用。酸化鉛 0.12% は鉛として 0.111% なので、RoHS の鉛（0.1%）に該当する。判定の根拠には換算後の 0.1114% が出る",
+    lines: [
+      { substance: "SB-PBO", pct: "0.12" },
+      { substance: "SB-GF", pct: "99.88" },
+    ],
+  },
+  {
     code: "MT-NOSPEC",
     nameJa: "中身未登録の部材",
     nameEn: "Part with no composition on file",
@@ -346,8 +378,8 @@ async function seed() {
           parentProductId: row.id,
           substanceId: "substance" in line ? (substanceIds.get(line.substance) ?? null) : null,
           childProductId: "material" in line ? (productIds.get(line.material) ?? null) : null,
+          // 残部は含有率を空にして表す（isBalance の列は無くなった）
           contentPct: balance ? null : line.pct,
-          isBalance: balance,
           note: line.note ?? null,
           displayOrder: i + 1,
         };
