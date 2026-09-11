@@ -381,7 +381,7 @@ export const ja = {
       "この物質はいまこのCAS番号の代表です。無効にすると、まとめた行に廃番品の名称が出続けてしまいます。代わりに代表になる物質を選んでください。",
     casSuccessorAuto: "自動で決める（有効なものの中でいちばん古いもの）",
     casRepresentativeMake: "この物質を代表にする",
-    /** 一覧の列。塗りつぶした星で示す */
+    /** 一覧の列。✅ で示す */
     casRepresentativeShort: "代表",
     casRepresentativeYes: "代表",
     casRepresentativeNo: "代表ではない",

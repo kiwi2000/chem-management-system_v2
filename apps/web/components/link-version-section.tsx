@@ -1,7 +1,6 @@
 "use client";
 
 import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
-import { Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -99,7 +98,12 @@ export function LinkVersionSection({
                 "text-muted-foreground/30 enabled:hover:bg-accent enabled:hover:text-foreground",
             )}
           >
-            <Star className={cn("size-4", v.isCurrent && "fill-current")} />
+            {/* 現在の版は ✅。現在でない行は何も出さず、押せる場所だけ残す（2026-09-11 指示） */}
+            {v.isCurrent ? (
+              <span role="img" aria-hidden="true">
+                ✅
+              </span>
+            ) : null}
           </button>
         ),
       },
