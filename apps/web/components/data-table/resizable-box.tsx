@@ -103,8 +103,9 @@ export function ResizableBox({
         {children}
       </div>
       {/*
-        下端のつまみ。列幅・行の高さのつまみ（resizable-columns.tsx）と作りをそろえてある。
-        箱の外（下）に置くので、横のスクロールバーと重ならない
+        つまみは**箱の下端の線そのもの**。列幅・行の高さのつまみ（resizable-columns.tsx）と同じく、
+        境目の線をまたいで置き、見た目には線しか無い（掴むと線が色づく）。
+        別に段を作らないので、表の下に余計な帯が出ない
       */}
       <div
         role="separator"
@@ -112,7 +113,7 @@ export function ResizableBox({
         aria-label={m.table.resizeHeight}
         title={m.table.resizeHeight}
         tabIndex={0}
-        className="hover:bg-primary/20 focus-visible:bg-primary/20 group flex h-2.5 w-full cursor-row-resize touch-none select-none items-center justify-center outline-none"
+        className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute -bottom-1 left-0 z-10 h-2 w-full cursor-row-resize touch-none select-none outline-none"
         onPointerDown={(e) => {
           e.preventDefault();
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -138,9 +139,7 @@ export function ResizableBox({
             apply(current() + step);
           }
         }}
-      >
-        <span className="bg-border group-hover:bg-primary/60 h-0.5 w-10 rounded" />
-      </div>
+      />
     </div>
   );
 }
