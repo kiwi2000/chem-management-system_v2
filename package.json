@@ -9,8 +9,9 @@
   "scripts": {
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
-    "test": "npm run test --workspaces --if-present && npm run test:scripts",
+    "test": "npm run test --workspaces --if-present && npm run test:scripts && npm run test:tools",
     "test:scripts": "vitest run --dir scripts",
+    "test:tools": "vitest run --dir tools",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
