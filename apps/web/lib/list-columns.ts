@@ -78,7 +78,8 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   },
   // スコアとランクは計算して書いてある値。並べ替えも絞り込みもそのまま効く
   { key: "score", kind: "number", field: "score" },
-  { key: "scoreRank", kind: "text", field: "scoreRank" },
+  // ランクは設定の段から選ぶ（2026-09-11 指示）。値は段の名前
+  { key: "scoreRank", kind: "enum", field: "scoreRank" },
   { key: "note", kind: "text", field: "note", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];

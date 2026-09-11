@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/db";
 import { getAppSettings } from "@/lib/settings";
 import { SubstancesLists } from "./substances-lists";
 
@@ -8,5 +9,16 @@ import { SubstancesLists } from "./substances-lists";
  */
 export default async function SubstancesPage() {
   const settings = await getAppSettings();
-  return <SubstancesLists approvalRequired={settings.substanceApprovalRequired} />;
+  // ランクの絞り込みの選択肢。設定で決めた段の名前を、段の順に渡す
+  const bands = await prisma.substanceRankBand.findMany({
+    where: { deletedAt: null },
+    orderBy: { displayOrder: "asc" },
+    select: { label: true },
+  });
+  return (
+    <SubstancesLists
+      approvalRequired={settings.substanceApprovalRequired}
+      rankOptions={[...new Set(bands.map((b) => b.label))]}
+    />
+  );
 }

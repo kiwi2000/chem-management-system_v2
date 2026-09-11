@@ -25,6 +25,8 @@ const FILTER_LAYOUT: string[][] = [
   ["casNumber"],
   ["nameJa"],
   ["nameEn"],
+  // スコア・ランク・備考・更新日は横1行（2026-09-11 指示）
+  ["score", "scoreRank", "note", "updatedAt"],
 ];
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
@@ -32,6 +34,8 @@ const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: 
 interface Props {
   /** 公開が承認制か（申請ボタンを出すか、発行ボタンを出すかの判断） */
   approvalRequired: boolean;
+  /** ランクの絞り込みで選べる段の名前（設定の順） */
+  rankOptions: string[];
   /** published=公開済だけ / working=まだ公開されていないもの */
   scope: "published" | "working";
   /** 節の見出し。1つしか出ないときは省く */
@@ -41,7 +45,14 @@ interface Props {
   onChanged: () => void;
 }
 
-export function SubstancesTable({ approvalRequired, scope, title, reloadToken, onChanged }: Props) {
+export function SubstancesTable({
+  approvalRequired,
+  rankOptions,
+  scope,
+  title,
+  reloadToken,
+  onChanged,
+}: Props) {
   const { m, locale } = useI18n();
   const { can } = useMe();
   const editable = can("SUBSTANCE_EDIT");
@@ -226,7 +237,9 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
       {
         key: "scoreRank",
         header: m.score.substanceRank,
-        kind: "text",
+        // 設定で決めた段から選ぶ（2026-09-11 指示）
+        kind: "enum",
+        options: rankOptions.map((label) => ({ value: label, label })),
         width: 80,
         render: (r) => (
           <span title={m.score.scoreOf(r.score)}>{r.scoreRank ?? m.score.noRank}</span>
@@ -253,7 +266,7 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
     ];
     // 上の表は公開済しか並ばないので、状態の列は出さない（全部同じ値になるため）
     return scope === "working" ? cols : cols.filter((c) => c.key !== "publishState");
-  }, [m, locale, scope]);
+  }, [m, locale, scope, rankOptions]);
 
   // 1画面に表が2つあるので、URLのクエリを節ごとに分ける
   const storageKey = `chem.table.substances.${scope}`;

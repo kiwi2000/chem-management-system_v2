@@ -11,7 +11,14 @@ import { SubstancesTable } from "./substances-table";
  * 使えるもの（公開済）を上、まだ使えないもの（作成中・承認待・却下）を下に分ける。
  * 下の表は、未公開のデータを見られる人にだけ出す。
  */
-export function SubstancesLists({ approvalRequired }: { approvalRequired: boolean }) {
+export function SubstancesLists({
+  approvalRequired,
+  rankOptions,
+}: {
+  approvalRequired: boolean;
+  /** ランクの絞り込みで選べる段の名前（設定の順） */
+  rankOptions: string[];
+}) {
   const { m } = useI18n();
   const { can } = useMe();
   const showWorking = can("INACTIVE_VIEW") || can("SUBSTANCE_EDIT") || can("APPROVE");
@@ -25,6 +32,7 @@ export function SubstancesLists({ approvalRequired }: { approvalRequired: boolea
       <SubstancesTable
         scope="published"
         approvalRequired={approvalRequired}
+        rankOptions={rankOptions}
         reloadToken={reloadToken}
         onChanged={onChanged}
       />
@@ -34,6 +42,7 @@ export function SubstancesLists({ approvalRequired }: { approvalRequired: boolea
           scope="working"
           title={m.substances.workingSection}
           approvalRequired={approvalRequired}
+          rankOptions={rankOptions}
           reloadToken={reloadToken}
           onChanged={onChanged}
         />
