@@ -1,14 +1,7 @@
 "use client";
 
 import { pickName } from "@chem/shared";
-import {
-  Check,
-  ChevronRight,
-  CircleHelp,
-  FoldVertical,
-  TriangleAlert,
-  UnfoldVertical,
-} from "lucide-react";
+import { Check, ChevronDown, ChevronRight, CircleHelp, TriangleAlert } from "lucide-react";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -378,6 +371,7 @@ export function ProductJudgements({
                 type="button"
                 size="sm"
                 variant="outline"
+                title={m.composition.expandAllHint}
                 disabled={allCountriesOpen && allLawsOpen && openable.every((id) => open.has(id))}
                 onClick={() => {
                   setOpenCountries(new Set(countries.map((c) => c.code)));
@@ -385,13 +379,14 @@ export function ProductJudgements({
                   setOpen(new Set(openable));
                 }}
               >
-                <UnfoldVertical className="mr-1 size-3.5" />
+                <ChevronDown className="mr-1 size-3.5" />
                 {m.composition.expandAll}
               </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
+                title={m.composition.collapseAllHint}
                 disabled={open.size === 0 && openCountries.size === 0 && openLaws.size === 0}
                 onClick={() => {
                   setOpen(new Set());
@@ -399,7 +394,7 @@ export function ProductJudgements({
                   setOpenCountries(new Set());
                 }}
               >
-                <FoldVertical className="mr-1 size-3.5" />
+                <ChevronRight className="mr-1 size-3.5" />
                 {m.composition.collapseAll}
               </Button>
             </div>
@@ -510,9 +505,7 @@ export function ProductJudgements({
                             type="button"
                             onClick={() => toggleCountry(c.code)}
                             aria-expanded={countryOpen}
-                            aria-label={
-                              countryOpen ? m.composition.collapseAll : m.composition.expandAll
-                            }
+                            aria-label={countryOpen ? m.composition.collapse : m.composition.expand}
                             className="hover:text-foreground -ml-1 flex w-full items-center gap-1 text-left"
                           >
                             <ChevronRight
@@ -553,7 +546,7 @@ export function ProductJudgements({
                                     onClick={() => toggleLaw(l.key)}
                                     aria-expanded={lawOpen}
                                     aria-label={
-                                      lawOpen ? m.composition.collapseAll : m.composition.expandAll
+                                      lawOpen ? m.composition.collapse : m.composition.expand
                                     }
                                     className="hover:text-foreground -ml-1 flex w-full items-center gap-1 text-left"
                                   >
@@ -594,8 +587,8 @@ export function ProductJudgements({
                                               aria-expanded={opened}
                                               aria-label={
                                                 opened
-                                                  ? m.composition.collapseAll
-                                                  : m.composition.expandAll
+                                                  ? m.composition.collapse
+                                                  : m.composition.expand
                                               }
                                               className="hover:text-foreground -ml-1 flex w-full items-center gap-1 text-left"
                                             >

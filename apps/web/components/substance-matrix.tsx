@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Database, FoldVertical, UnfoldVertical } from "lucide-react";
+import { ChevronDown, ChevronRight, Database } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { CELL_CLIP, OPAQUE_MUTED_40 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
@@ -346,18 +346,20 @@ function Matrix({
           <Button
             size="sm"
             variant="outline"
+            title={m.composition.expandAllHint}
             disabled={!anyFolded}
             onClick={() => {
               setFoldedRegions(new Set());
               setFoldedParents(new Set());
             }}
           >
-            <UnfoldVertical className="mr-1 size-3.5" />
+            <ChevronDown className="mr-1 size-3.5" />
             {m.composition.expandAll}
           </Button>
           <Button
             size="sm"
             variant="outline"
+            title={m.composition.collapseAllHint}
             disabled={foldedRegions.size === allRegionIds.length}
             onClick={() => {
               setFoldedRegions(new Set(allRegionIds));
@@ -365,7 +367,7 @@ function Matrix({
               if (parentHeader) setFoldedParents(new Set(allGroupKeys));
             }}
           >
-            <FoldVertical className="mr-1 size-3.5" />
+            <ChevronRight className="mr-1 size-3.5" />
             {m.composition.collapseAll}
           </Button>
           {dataToggle && (

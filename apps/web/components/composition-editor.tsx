@@ -12,15 +12,15 @@ import {
   type TextOperator,
 } from "@chem/shared";
 import {
-  FoldVertical,
-  GripVertical,
-  Pencil,
-  Trash2,
+  ChevronDown,
+  ChevronRight,
   CircleHelp,
   Database,
   GitCompare,
+  GripVertical,
+  Pencil,
+  Trash2,
   TriangleAlert,
-  UnfoldVertical,
 } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompositionAggregateTable } from "@/components/composition-aggregate-table";
@@ -133,18 +133,26 @@ function ExpandButtons({
   return (
     <div className="flex items-center gap-1.5">
       {/* もう全部開いているなら押せない（「閉じる」と揃える） */}
-      <Button type="button" size="sm" variant="outline" disabled={!canExpand} onClick={onExpand}>
-        <UnfoldVertical className="mr-1 size-3.5" />
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        title={m.composition.expandAllHint}
+        disabled={!canExpand}
+        onClick={onExpand}
+      >
+        <ChevronDown className="mr-1 size-3.5" />
         {m.composition.expandAll}
       </Button>
       <Button
         type="button"
         size="sm"
         variant="outline"
+        title={m.composition.collapseAllHint}
         disabled={!canCollapse}
         onClick={onCollapse}
       >
-        <FoldVertical className="mr-1 size-3.5" />
+        <ChevronRight className="mr-1 size-3.5" />
         {m.composition.collapseAll}
       </Button>
     </div>

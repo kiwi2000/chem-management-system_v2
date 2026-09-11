@@ -1,6 +1,6 @@
 "use client";
 
-import { FoldVertical, UnfoldVertical } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -22,20 +22,20 @@ export function CardToggleAll() {
         type="button"
         size="sm"
         variant="outline"
-        title={m.composition.expandAll}
+        title={m.composition.expandAllHint}
         onClick={() => setAllCards(true)}
       >
-        <UnfoldVertical className="mr-1 size-3.5" />
+        <ChevronDown className="mr-1 size-3.5" />
         {m.composition.expandAll}
       </Button>
       <Button
         type="button"
         size="sm"
         variant="outline"
-        title={m.composition.collapseAll}
+        title={m.composition.collapseAllHint}
         onClick={() => setAllCards(false)}
       >
-        <FoldVertical className="mr-1 size-3.5" />
+        <ChevronRight className="mr-1 size-3.5" />
         {m.composition.collapseAll}
       </Button>
     </div>

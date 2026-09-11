@@ -9,7 +9,7 @@ import {
   type ScoreRange,
   type TableState,
 } from "@chem/shared";
-import { ChevronRight, FoldVertical, UnfoldVertical } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -684,19 +684,21 @@ export function LawTreeSection({
             <Button
               size="sm"
               variant="outline"
+              title={m.composition.expandAllHint}
               disabled={expanding || (data?.items.length ?? 0) === 0}
               onClick={() => void expandAll()}
             >
-              <UnfoldVertical className="mr-1 size-3.5" />
+              <ChevronDown className="mr-1 size-3.5" />
               {m.composition.expandAll}
             </Button>
             <Button
               size="sm"
               variant="outline"
+              title={m.composition.collapseAllHint}
               disabled={open.size === 0}
               onClick={() => setOpen(new Map())}
             >
-              <FoldVertical className="mr-1 size-3.5" />
+              <ChevronRight className="mr-1 size-3.5" />
               {m.composition.collapseAll}
             </Button>
             {editable && !editing && (

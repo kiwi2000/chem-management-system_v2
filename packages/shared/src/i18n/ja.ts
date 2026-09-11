@@ -1505,7 +1505,9 @@ export const ja = {
 
     // 原材料の中身を下ろして見せる（展開）
     expand: "中身を見る",
-    expandAll: "展開",
+    /** まとめて開く・閉じるボタン。1文字＋山形の印（∨ 開・＞ 閉）。説明はマウスを乗せたときに出す（2026-09-12 指示） */
+    expandAll: "開",
+    expandAllHint: "すべて開く",
 
     // CASでまとめた組成
     aggregateTitle: "原材料展開・CAS合算",
@@ -1546,7 +1548,8 @@ export const ja = {
     aggregateShowSources: "寄与元を見る",
     aggregateIncomplete: (n: number) =>
       `中身をたどれない原材料が ${n} 件あります。この表はまだ完全ではありません。下の合計も100%に届きません。`,
-    collapseAll: "格納",
+    collapseAll: "閉",
+    collapseAllHint: "すべて閉じる",
     collapse: "閉じる",
     expandedOf: (name: string) => `${name} の中身`,
     /** 換算値に添える、その原材料の中での値 */
