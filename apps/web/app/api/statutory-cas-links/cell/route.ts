@@ -2,7 +2,7 @@ import { normalizeCas, toScaled } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
-import { MARK_CONDITIONAL_LINK, MARK_UNFILLED } from "@/lib/judge-store";
+import { MARK_CONDITIONAL_LINK, MARK_UNFILLED, loadFactors } from "@/lib/judge-store";
 import { getServerMessages } from "@/lib/i18n";
 import type { CellDetailDto } from "@/lib/types";
 
@@ -48,6 +48,8 @@ export async function GET(req: Request) {
       nameOriginal: true,
       aggregation: true,
       metalEtc: true,
+      thresholdLower: true,
+      lowerBound: true,
       law: {
         select: {
           nameJa: true,
@@ -119,6 +121,27 @@ export async function GET(req: Request) {
       })
     : null;
   const content = toScaled(line?.totalPct?.toString() ?? "0") ?? 0n;
+  /*
+    元素換算でまとめる区分・法文物質名は、**判定と同じく「鉛として」何％かで見る。**
+    酸化鉛 0.105％ は鉛としては 0.097％なので、素の含有率で見ると
+    判定（含有率不足）と小窓（該当）が食い違う（実際に起きた。2026-09-11）。
+    係数が無い CAS は判定と同じく 0 として数え、要確認にする
+  */
+  const factors = await loadFactors();
+  const contentAs = (substance: {
+    aggregation: "NONE" | "SUM" | "ELEMENT";
+    metalEtc: string | null;
+  }): { pct: bigint; missing: boolean } => {
+    // 区分でまとめると決めていれば区分の設定、そうでなければ法文物質名の設定（judge-calc と同じ）
+    const effective = category.aggregation !== "NONE" ? category : substance;
+    if (effective.aggregation !== "ELEMENT" || !effective.metalEtc)
+      return { pct: content, missing: false };
+    const found = factors.get(cas)?.find((f) => f.element === effective.metalEtc);
+    const ratio = found ? toScaled(found.ratioPct) : null;
+    if (ratio === null) return { pct: 0n, missing: true };
+    // 係数は重量％なので 100 で割る
+    return { pct: (content * ratio) / (100n * 1000000n), missing: false };
+  };
 
   /**
    * その号が、この製品でどう扱われるか。
@@ -129,15 +152,24 @@ export async function GET(req: Request) {
   const judgementOf = (
     isCurrent: boolean,
     adopted: boolean,
-    substanceId: string,
-    lower: string,
-    bound: "INCLUSIVE" | "EXCLUSIVE",
+    substance: {
+      id: string;
+      thresholdLower: { toString(): string };
+      lowerBound: "INCLUSIVE" | "EXCLUSIVE";
+      aggregation: "NONE" | "SUM" | "ELEMENT";
+      metalEtc: string | null;
+    },
     applicableCondition: string | null,
     substanceNote: string | null,
     linkNote: string | null,
   ) => {
-    const limit = toScaled(lower) ?? 0n;
-    const enough = bound === "INCLUSIVE" ? content >= limit : content > limit;
+    const substanceId = substance.id;
+    // 区分でまとめるときは、閾値も区分のもの（judge-calc と同じ）
+    const byCategory = category.aggregation !== "NONE";
+    const limit = toScaled((byCategory ? category : substance).thresholdLower.toString()) ?? 0n;
+    const bound = byCategory ? category.lowerBound : substance.lowerBound;
+    const { pct: amount, missing: missingFactor } = contentAs(substance);
+    const enough = bound === "INCLUSIVE" ? amount >= limit : amount > limit;
     /*
       **保存してある判定は、採用されたデータソースのことしか言っていない。**
       上位の「非該当」が勝つと、下位の LOLI・CHRIP の該当は判定に出てこない。
@@ -157,7 +189,9 @@ export async function GET(req: Request) {
       保存してある判定にしか無いので、現バージョンにだけ乗る
     */
     const marked =
-      (applicableCondition ?? "").trim() !== "" || (substanceNote ?? "").includes(MARK_UNFILLED);
+      (applicableCondition ?? "").trim() !== "" ||
+      (substanceNote ?? "").includes(MARK_UNFILLED) ||
+      missingFactor;
     const linkMarked = (linkNote ?? "").includes(MARK_CONDITIONAL_LINK);
     /*
       保存してある判定に付いている要確認の理由。**バージョンで変わるものと、変わらないものがある。**
@@ -274,9 +308,7 @@ export async function GET(req: Request) {
             ...judgementOf(
               v.isCurrent,
               best !== null && (rank.get(d.source.id) ?? 99) === best,
-              l.statutorySubstance.id,
-              l.statutorySubstance.thresholdLower.toString(),
-              l.statutorySubstance.lowerBound,
+              l.statutorySubstance,
               l.statutorySubstance.applicableCondition,
               l.statutorySubstance.note,
               l.note,
