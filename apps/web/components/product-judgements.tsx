@@ -285,6 +285,9 @@ export function ProductJudgements({
   }
   const allCountriesOpen = countries.every((c) => openCountries.has(c.code));
   const allLawsOpen = lawKeys.every((k) => openLaws.has(k));
+  /** 国・法律・区分がすべて開いているか（「開」を出さない条件）／どれも開いていないか（「閉」を出さない条件） */
+  const allJudgementOpen = allCountriesOpen && allLawsOpen && openable.every((id) => open.has(id));
+  const noneJudgementOpen = open.size === 0 && openCountries.size === 0 && openLaws.size === 0;
 
   const toggle = (categoryId: string) => {
     const next = new Set(open);
@@ -367,36 +370,38 @@ export function ProductJudgements({
           {/* 「展開」は国と区分の両方を開く。「格納」は両方閉じる。組成の表と同じ形 */}
           {countries.length > 0 && (
             <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                title={m.composition.expandAllHint}
-                disabled={allCountriesOpen && allLawsOpen && openable.every((id) => open.has(id))}
-                onClick={() => {
-                  setOpenCountries(new Set(countries.map((c) => c.code)));
-                  setOpenLaws(new Set(lawKeys));
-                  setOpen(new Set(openable));
-                }}
-              >
-                <ChevronDown className="mr-1 size-3.5" />
-                {m.composition.expandAll}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                title={m.composition.collapseAllHint}
-                disabled={open.size === 0 && openCountries.size === 0 && openLaws.size === 0}
-                onClick={() => {
-                  setOpen(new Set());
-                  setOpenLaws(new Set());
-                  setOpenCountries(new Set());
-                }}
-              >
-                <ChevronRight className="mr-1 size-3.5" />
-                {m.composition.collapseAll}
-              </Button>
+              {!allJudgementOpen && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  title={m.composition.expandAllHint}
+                  onClick={() => {
+                    setOpenCountries(new Set(countries.map((c) => c.code)));
+                    setOpenLaws(new Set(lawKeys));
+                    setOpen(new Set(openable));
+                  }}
+                >
+                  <ChevronDown className="mr-1 size-3.5" />
+                  {m.composition.expandAll}
+                </Button>
+              )}
+              {!noneJudgementOpen && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  title={m.composition.collapseAllHint}
+                  onClick={() => {
+                    setOpen(new Set());
+                    setOpenLaws(new Set());
+                    setOpenCountries(new Set());
+                  }}
+                >
+                  <ChevronRight className="mr-1 size-3.5" />
+                  {m.composition.collapseAll}
+                </Button>
+              )}
             </div>
           )}
         </div>

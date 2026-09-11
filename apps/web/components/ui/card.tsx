@@ -125,27 +125,48 @@ const CardContext = React.createContext<CardState | null>(null);
   画面にある枠の登録簿。上部の帯の「展開」「格納」（card-toggle-all.tsx）が、
   ここに登録してある枠をまとめて開け閉めする。数は「ボタンを出すかどうか」に使う
 */
-const cardListeners = new Set<(open: boolean) => void>();
-const countListeners = new Set<() => void>();
-function notifyCount() {
-  for (const l of countListeners) l();
+interface CardEntry {
+  set: (open: boolean) => void;
+  isOpen: () => boolean;
+}
+const cardEntries = new Set<CardEntry>();
+const stateListeners = new Set<() => void>();
+/** 枠が増減した・開け閉めされたときに、まとめ操作のボタンへ知らせる */
+function notifyState() {
+  for (const l of stateListeners) l();
 }
 
 /** 画面の枠をすべて開く／閉じる */
 export function setAllCards(open: boolean) {
-  for (const l of cardListeners) l(open);
+  for (const e of cardEntries) e.set(open);
 }
 
-/** 画面にある枠の数（ボタンを出すかどうかの判断用） */
-export function useCardCount() {
-  return React.useSyncExternalStore(
+/**
+ * 画面にある枠の数と、全部開いているか。
+ * まとめ操作のボタンは1つで、これを見て「開」「閉」を切り替える（2026-09-12 指示）
+ */
+export function useCardsState(): { count: number; allOpen: boolean; anyOpen: boolean } {
+  const snapshot = React.useSyncExternalStore(
     (cb) => {
-      countListeners.add(cb);
-      return () => countListeners.delete(cb);
+      stateListeners.add(cb);
+      return () => stateListeners.delete(cb);
     },
-    () => cardListeners.size,
-    () => 0,
+    () => {
+      let count = 0;
+      let allOpen = true;
+      let anyOpen = false;
+      for (const e of cardEntries) {
+        count += 1;
+        if (e.isOpen()) anyOpen = true;
+        else allOpen = false;
+      }
+      // 文字列にして、同じ中身なら同じ値と見なされるようにする（毎回新しい object だと描き直しが止まらない）
+      return `${count}:${allOpen}:${anyOpen}`;
+    },
+    () => "0:true:false",
   );
+  const [count, allOpen, anyOpen] = snapshot.split(":");
+  return { count: Number(count), allOpen: allOpen === "true", anyOpen: anyOpen === "true" };
 }
 
 /** 表の箱がカードの中にあることを、カードに知らせる（ResizableBox が呼ぶ） */
@@ -234,19 +255,28 @@ function Card({
   }, [remember]);
 
   // 上部の「展開」「格納」に応じる。見出しの無い（鍵の決まらない）枠は登録しない
+  const openRef = React.useRef(open);
+  openRef.current = open;
   React.useEffect(() => {
     if (!collapsible || !key) return;
-    const listener = (next: boolean) => {
-      remember(next);
-      setOpen(next);
+    const entry: CardEntry = {
+      set: (next: boolean) => {
+        remember(next);
+        setOpen(next);
+      },
+      isOpen: () => openRef.current,
     };
-    cardListeners.add(listener);
-    notifyCount();
+    cardEntries.add(entry);
+    notifyState();
     return () => {
-      cardListeners.delete(listener);
-      notifyCount();
+      cardEntries.delete(entry);
+      notifyState();
     };
   }, [collapsible, key, remember]);
+  // 開け閉めが変わったら、まとめ操作のボタンの「開」「閉」を切り替えさせる
+  React.useEffect(() => {
+    notifyState();
+  }, [open]);
 
   const resize = React.useCallback(
     (px: number) => {

@@ -112,7 +112,9 @@ const DRAG_HANDLE_WIDTH = 32;
 const ROW_ACTION_WIDTH = 44;
 
 /**
- * 「展開」「閉じる」の組。表ごとに1つずつ置く。
+ * まとめて開く／閉じるボタン。表ごとに1つずつ置く。
+ * **状態で出し分ける**（2026-09-12 指示）。開けるものが残っていれば「∨ 開」、閉じられるものが
+ * あれば「＞ 閉」。一部だけ開いているときは両方出る。
  *
  * 表が2つ並ぶので、**どちらに効くのかはボタンの置き場所で示す。**
  * 1組を共有して「いま見えているほう」に効かせると、押すまで結果が分からない。
@@ -133,28 +135,30 @@ function ExpandButtons({
   return (
     <div className="flex items-center gap-1.5">
       {/* もう全部開いているなら押せない（「閉じる」と揃える） */}
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        title={m.composition.expandAllHint}
-        disabled={!canExpand}
-        onClick={onExpand}
-      >
-        <ChevronDown className="mr-1 size-3.5" />
-        {m.composition.expandAll}
-      </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        title={m.composition.collapseAllHint}
-        disabled={!canCollapse}
-        onClick={onCollapse}
-      >
-        <ChevronRight className="mr-1 size-3.5" />
-        {m.composition.collapseAll}
-      </Button>
+      {canExpand && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          title={m.composition.expandAllHint}
+          onClick={onExpand}
+        >
+          <ChevronDown className="mr-1 size-3.5" />
+          {m.composition.expandAll}
+        </Button>
+      )}
+      {canCollapse && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          title={m.composition.collapseAllHint}
+          onClick={onCollapse}
+        >
+          <ChevronRight className="mr-1 size-3.5" />
+          {m.composition.collapseAll}
+        </Button>
+      )}
     </div>
   );
 }

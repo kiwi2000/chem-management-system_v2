@@ -681,26 +681,29 @@ export function LawTreeSection({
         headerActions={
           <div className="flex gap-2">
             {/* 法律の数だけ開け閉めするのは手間なので、まとめて開く・閉じるを置く */}
-            <Button
-              size="sm"
-              variant="outline"
-              title={m.composition.expandAllHint}
-              disabled={expanding || (data?.items.length ?? 0) === 0}
-              onClick={() => void expandAll()}
-            >
-              <ChevronDown className="mr-1 size-3.5" />
-              {m.composition.expandAll}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              title={m.composition.collapseAllHint}
-              disabled={open.size === 0}
-              onClick={() => setOpen(new Map())}
-            >
-              <ChevronRight className="mr-1 size-3.5" />
-              {m.composition.collapseAll}
-            </Button>
+            {!((data?.items.length ?? 0) > 0 && (data?.items ?? []).every((l) => open.has(l.id))) && (
+              <Button
+                size="sm"
+                variant="outline"
+                title={m.composition.expandAllHint}
+                disabled={expanding || (data?.items.length ?? 0) === 0}
+                onClick={() => void expandAll()}
+              >
+                <ChevronDown className="mr-1 size-3.5" />
+                {m.composition.expandAll}
+              </Button>
+            )}
+            {open.size > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                title={m.composition.collapseAllHint}
+                onClick={() => setOpen(new Map())}
+              >
+                <ChevronRight className="mr-1 size-3.5" />
+                {m.composition.collapseAll}
+              </Button>
+            )}
             {editable && !editing && (
               <>
                 <Button

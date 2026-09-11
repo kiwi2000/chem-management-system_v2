@@ -343,33 +343,35 @@ function Matrix({
         <h3 className="text-sm font-medium">{title}</h3>
         {/* 他の表と同じ形。見出しから少し離して置く */}
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            title={m.composition.expandAllHint}
-            disabled={!anyFolded}
-            onClick={() => {
-              setFoldedRegions(new Set());
-              setFoldedParents(new Set());
-            }}
-          >
-            <ChevronDown className="mr-1 size-3.5" />
-            {m.composition.expandAll}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            title={m.composition.collapseAllHint}
-            disabled={foldedRegions.size === allRegionIds.length}
-            onClick={() => {
-              setFoldedRegions(new Set(allRegionIds));
-              // 法律の段が無い表では、法律を畳んでも開く場所が無い。地域だけ畳む
-              if (parentHeader) setFoldedParents(new Set(allGroupKeys));
-            }}
-          >
-            <ChevronRight className="mr-1 size-3.5" />
-            {m.composition.collapseAll}
-          </Button>
+          {anyFolded && (
+            <Button
+              size="sm"
+              variant="outline"
+              title={m.composition.expandAllHint}
+              onClick={() => {
+                setFoldedRegions(new Set());
+                setFoldedParents(new Set());
+              }}
+            >
+              <ChevronDown className="mr-1 size-3.5" />
+              {m.composition.expandAll}
+            </Button>
+          )}
+          {foldedRegions.size < allRegionIds.length && (
+            <Button
+              size="sm"
+              variant="outline"
+              title={m.composition.collapseAllHint}
+              onClick={() => {
+                setFoldedRegions(new Set(allRegionIds));
+                // 法律の段が無い表では、法律を畳んでも開く場所が無い。地域だけ畳む
+                if (parentHeader) setFoldedParents(new Set(allGroupKeys));
+              }}
+            >
+              <ChevronRight className="mr-1 size-3.5" />
+              {m.composition.collapseAll}
+            </Button>
+          )}
           {dataToggle && (
             <Button
               size="sm"
