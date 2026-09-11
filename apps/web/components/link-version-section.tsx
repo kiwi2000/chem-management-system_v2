@@ -1,6 +1,7 @@
 "use client";
 
 import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -44,6 +45,7 @@ export function LinkVersionSection({
   onChanged?: () => void;
 }) {
   const { m } = useI18n();
+  const router = useRouter();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -257,6 +259,13 @@ export function LinkVersionSection({
       }
       void load();
       onChanged?.();
+      /*
+        現在を切り替えたら、画面のほかの場所もその版に合わせる（2026-09-11 指示）。
+        左の表でその版を選んだことにして、右のデータソースと下の規制対象CASを入れ替え、
+        サーバーで描いている上部の「法規制バージョン」も読み直す
+      */
+      onSelect(target.id, target.code);
+      router.refresh();
     } finally {
       setSaving(false);
     }
