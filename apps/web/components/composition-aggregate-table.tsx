@@ -277,7 +277,8 @@ function leafColumns(
       };
       region.categories.set(r.categoryId, {
         order: r.categoryOrder,
-        law: pickStatutoryName(locale, r.lawNameOriginal, r.lawNameJa, r.lawNameEn),
+        // 法律名の前に国を出す
+        law: `${pickName(locale, r.countryNameJa, r.countryNameEn)} › ${pickStatutoryName(locale, r.lawNameOriginal, r.lawNameJa, r.lawNameEn)}`,
         name: pickStatutoryName(locale, r.categoryNameOriginal, r.categoryNameJa, r.categoryNameEn),
       });
       regions.set(r.regionId, region);

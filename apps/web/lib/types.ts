@@ -233,6 +233,9 @@ export interface ProductJudgementDto {
   lawNameJa: string | null;
   lawNameEn: string | null;
   lawNameOriginal: string;
+  /** その法律の国 */
+  countryNameJa: string;
+  countryNameEn: string | null;
   categoryNameJa: string | null;
   categoryNameEn: string | null;
   categoryNameOriginal: string;
@@ -491,6 +494,9 @@ export interface RowRegulationDto {
   lawNameJa: string | null;
   lawNameEn: string | null;
   lawNameOriginal: string;
+  /** その法律の国。見出しに法律名と一緒に出す */
+  countryNameJa: string;
+  countryNameEn: string | null;
   categoryNameJa: string | null;
   categoryNameEn: string | null;
   categoryNameOriginal: string;

@@ -128,6 +128,8 @@ export async function regulationsByCas(
               displayOrder: true,
               country: {
                 select: {
+                  nameJa: true,
+                  nameEn: true,
                   displayOrder: true,
                   region: {
                     select: { id: true, nameJa: true, nameEn: true, displayOrder: true },
@@ -229,6 +231,8 @@ export async function regulationsByCas(
           regionNameJa: region.nameJa,
           regionNameEn: region.nameEn,
           regionOrder: region.displayOrder,
+          countryNameJa: r.category.law.country.nameJa,
+          countryNameEn: r.category.law.country.nameEn,
           /*
             並びは国 → 法律 → 区分。地域は列をまとめる単位なので `regionOrder` が持つ。
             **法律の番号は国ごとに1から振ってある**ので、国を混ぜると割り込みが起きる
@@ -334,6 +338,8 @@ export async function nearMissByCas(
                         displayOrder: true,
                         country: {
                           select: {
+                            nameJa: true,
+                            nameEn: true,
                             displayOrder: true,
                             region: {
                               select: { id: true, nameJa: true, nameEn: true, displayOrder: true },
@@ -425,6 +431,8 @@ export async function nearMissByCas(
         regionNameJa: region.nameJa,
         regionNameEn: region.nameEn,
         regionOrder: region.displayOrder,
+        countryNameJa: cat.law.country.nameJa,
+        countryNameEn: cat.law.country.nameEn,
         categoryOrder: cat.law.displayOrder * 1000 + cat.displayOrder,
         lawNameJa: cat.law.nameJa,
         lawNameEn: cat.law.nameEn,

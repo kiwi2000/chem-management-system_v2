@@ -57,6 +57,15 @@ const JUDGEMENT_SELECT = {
           nameOriginal: true,
           // 並びは地域 → 国 → 法律。国ごとに1から振ってあるので、国まで見ないと決まらない
           ...LAW_ORDER_SELECT,
+          // 国の名前も出す。並びに要る項目は残す
+          country: {
+            select: {
+              nameJa: true,
+              nameEn: true,
+              displayOrder: true,
+              region: { select: { displayOrder: true } },
+            },
+          },
         },
       },
     },
@@ -195,6 +204,8 @@ async function buildJudgementDtos(
       lawNameJa: r.category.law.nameJa,
       lawNameEn: r.category.law.nameEn,
       lawNameOriginal: r.category.law.nameOriginal,
+      countryNameJa: r.category.law.country.nameJa,
+      countryNameEn: r.category.law.country.nameEn,
       categoryNameJa: r.category.nameJa,
       categoryNameEn: r.category.nameEn,
       categoryNameOriginal: r.category.nameOriginal,

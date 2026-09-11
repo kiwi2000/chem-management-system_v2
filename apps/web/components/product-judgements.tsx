@@ -62,6 +62,8 @@ const CELL = "border-r border-b px-2 py-1";
  */
 const HEADS: { key: string; width: number; label: (m: M) => string; className?: string }[] = [
   { key: "law", width: 80, label: (m) => m.judgements.law },
+  // 法律の国
+  { key: "country", width: 56, label: (m) => m.laws.country },
   // 区分の行にだけ開閉のつまみが付く。そのぶん少し広く取る
   { key: "category", width: 176, label: (m) => m.judgements.category },
   { key: "number", width: 56, label: (m) => m.judgements.number },
@@ -129,7 +131,7 @@ export function ProductJudgements({
   // 列幅は一覧と同じ規則。操作の列は、出るときだけ幅を数に入れる
   const cols = useResizableColumns(
     // 末尾の版を上げると、覚えている列幅を捨てて既定から始め直す
-    "chem.table.productJudgements.v3",
+    "chem.table.productJudgements.v4",
     [...HEADS, ...(canEdit ? [ACTION_COLUMN] : [])],
     // 幅を詰めない。詰めると製品ごと・画面幅ごとに列の位置が動いて見比べられない
     { shrinkToFit: false, rowLabel: m.table.resizeRows },
@@ -378,6 +380,9 @@ export function ProductJudgements({
                           {pickName(locale, j.lawNameJa ?? j.lawNameOriginal, j.lawNameEn)}
                         </TableCell>
                         <TableCell className={cn(CELL, "align-top")}>
+                          {pickName(locale, j.countryNameJa, j.countryNameEn)}
+                        </TableCell>
+                        <TableCell className={cn(CELL, "align-top")}>
                           {many ? (
                             <button
                               type="button"
@@ -513,6 +518,7 @@ export function ProductJudgements({
                       {opened &&
                         j.hits.map((h, i) => (
                           <TableRow key={`${j.categoryId}-${i}`} className="bg-muted/40">
+                            <TableCell className={CELL} />
                             <TableCell className={CELL} />
                             <TableCell className={CELL} />
                             <TableCell className={cn(CELL, "align-top font-mono text-xs")}>
