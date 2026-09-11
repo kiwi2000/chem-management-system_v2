@@ -131,6 +131,15 @@ interface Row {
   textJa: string | null;
 }
 
+/**
+ * LOLI の日本語訳の揺れを、条文の言いかたにそろえる。
+ * `(as Pb, …)` が「鉛の量に関して」と「鉛として」の両方で訳されている（同じ行の中でも混ざる）。
+ * 条文は「鉛として」なので、そちらに寄せる（2026-09-11。docs/LOLIデータの気づき.md）
+ */
+function fixJa(ja: string): string {
+  return ja.replace(/の量に関して/g, "として");
+}
+
 /** 取り出したファイルを (一覧ID, 正規化CAS) → 文章 に */
 function readData(version: string): Map<string, Row> {
   const file = join(process.cwd(), "scripts/data", `loli-data-LOLI4_Datafeed_${version}.tsv`);
@@ -142,7 +151,10 @@ function readData(version: string): Map<string, Row> {
     const key = `${listId.trim()}\t${normalizeCas(cas)}`;
     // 同じ一覧・同じCASが複数行あれば最初のものを採る（並びは一覧ID・CAS順）
     if (!out.has(key)) {
-      out.set(key, { text: text.trim(), textJa: ja && ja.trim() !== "NULL" ? ja.trim() : null });
+      out.set(key, {
+        text: text.trim(),
+        textJa: ja && ja.trim() !== "NULL" ? fixJa(ja.trim()) : null,
+      });
     }
   }
   return out;
