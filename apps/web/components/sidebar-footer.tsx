@@ -87,6 +87,8 @@ export function SidebarFooter({
           <div className="text-right">{online}</div>
         )}
       </div>
+      {/* 権利表示。ログイン後は常に見える場所に置く */}
+      <div className="text-muted-foreground mt-2 text-[11px]">{m.common.copyright}</div>
     </div>
   );
 }

@@ -335,6 +335,8 @@ export default function LoginPage() {
             )}
           </CardContent>
         </Card>
+        {/* 権利表示。ログイン前でも見える場所に置く */}
+        <p className="text-muted-foreground mt-6 text-center text-xs">{m.common.copyright}</p>
       </div>
     </main>
   );

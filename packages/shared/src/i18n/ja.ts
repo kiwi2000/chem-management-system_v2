@@ -5,6 +5,8 @@
  */
 export const ja = {
   common: {
+    /** 権利表示。ログイン画面と左メニューの下に出す（2026-09-11 指示。言語によらず同じ） */
+    copyright: "© 2026 CA Japan LLC.",
     publishStates: {
       DRAFT: "作成中",
       PENDING: "承認待",

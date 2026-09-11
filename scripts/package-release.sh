@@ -30,6 +30,7 @@ mkdir -p "$OUT_DIR"
 
 # 配布物に入れるもの。足すときは導入手順書の手順（展開 → 起動 → 管理者作成 → バックアップ）で要るかを考える
 INCLUDE=(
+  NOTICE
   package.json
   package-lock.json
   tsconfig.base.json

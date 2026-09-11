@@ -6,6 +6,7 @@ import type { Messages } from "./ja";
  */
 export const en: Messages = {
   common: {
+    copyright: "© 2026 CA Japan LLC.",
     publishStates: {
       DRAFT: "Draft",
       PENDING: "Awaiting approval",
