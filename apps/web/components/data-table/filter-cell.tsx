@@ -314,7 +314,15 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
           aria-label={`${column.header} ${m.table.filterValue}`}
           type={inputType}
           value={v1}
-          onValueChange={(next) => emit(op, next, v2)}
+          onValueChange={(next) => {
+            /*
+              値を空にしたら条件の種類も既定（「を含む」）に戻す（2026-09-11 指示）。
+              「と一致」のまま残ると、次に一部だけ打ったときに0件になって理由が分からない。
+              条件を先に選んでから値を入れる順序は、値を打つまで pickedOp が残るので保てる
+            */
+            if (next === "") setPickedOp(null);
+            emit(op, next, v2);
+          }}
           className="h-8 min-w-0 flex-1 text-xs"
         />
       )}
