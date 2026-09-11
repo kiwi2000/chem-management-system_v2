@@ -14,7 +14,7 @@ import { DiffChip, SourceChips, type SourceInfo } from "@/components/source-chip
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { useColumnVisibility } from "@/lib/use-column-visibility";
-import { NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
+import { HIT_CLASS, NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
 import type {
   ApiError,
   CompositionAggregateDto,
@@ -1333,10 +1333,14 @@ function RegulationMark({
             以前は「●」だけ出していて、何の印か分からなかった
           */}
           {labels.length === 0 ? (
-            <span className={needsReview ? REVIEW_CLASS : ""} title={m.composition.categoryHitHint}>
+            <span className={HIT_CLASS} title={m.composition.categoryHitHint}>
               <SourceChips ids={hits.flatMap((h) => h.sourceIds)} sources={sources} />
               {showDiff && hits.some((h) => h.changed) && <DiffChip label={diffLabel} />}
-              {needsReview && <ReviewMark />}
+              {needsReview && (
+                <span className={REVIEW_CLASS}>
+                  <ReviewMark />
+                </span>
+              )}
               {m.composition.categoryHit}
             </span>
           ) : (
@@ -1347,10 +1351,19 @@ function RegulationMark({
                   1つの区分に何号も並ぶことがあり、全部を出すと行が縦に伸びて表が読めない。
                   全文はセルを押した小ウィンドウで読む（マウスを置いても浮く）
                 */}
-                <span className={cn("line-clamp-2", review ? REVIEW_CLASS : "")} title={t}>
+                {/*
+                  **色は結果。**該当は青、含有率不足はオレンジ。セルを押して開く小窓と同じ決まり。
+                  要確認は文字色を変えず、赤い「?」の印だけで示す（2026-09-11 指示。
+                  以前は要確認の行だけ赤字にしていて、小窓（青）と色が食い違っていた）
+                */}
+                <span className={cn("line-clamp-2", HIT_CLASS)} title={t}>
                   <SourceChips ids={sourceIds} sources={sources} />
                   {showDiff && changed && <DiffChip label={diffLabel} />}
-                  {review && <ReviewMark />}
+                  {review && (
+                    <span className={REVIEW_CLASS}>
+                      <ReviewMark />
+                    </span>
+                  )}
                   {t}
                 </span>
                 {showData && data && (
