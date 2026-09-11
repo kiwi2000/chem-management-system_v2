@@ -1371,10 +1371,10 @@ export const en: Messages = {
     epsilonPctHint: "Totals within this margin count as 100%. Use a value between 0 and 10",
     epsilonRange: "The tolerance must be between 0 and 10",
     judgementSection: "Regulatory judgement",
-    conditionalLinkMode: "When an applicable condition exists",
+    conditionalLinkMode: "CAS numbers that cannot decide on their own",
     conditionalLinkModes: {
-      hit: "Decide applicability as if unconditional, and warn",
-      review: "Mark for review, and warn",
+      hit: "Applicable, warning only",
+      review: "Applicable, marked for review",
     },
     rejudge: "Re-judge every product",
     rejudgeHint:
@@ -1390,7 +1390,7 @@ export const en: Messages = {
     rejudgeNever: "No judgement has been computed yet",
     rejudgeBusy: "A re-judgement is already running",
     conditionalLinkModeHint:
-      "Applies to CAS the external database linked by widening from a generic name. Where the statutory name is narrowed by carbon count or substitution position, it may not actually apply. Either choice still shows a warning.",
+      'Some CAS numbers cannot decide by themselves whether the statutory name applies. For a name such as "…with a C10–C13 alkyl group", the external database links every CAS that might fall in that range, but the CAS number alone does not tell whether the carbon count really matches. A hit through such a CAS is applicable under either choice and shows the warning "check whether the condition is met". The difference is whether the judgement is marked for review (waiting for a person) or only warned and treated as settled. A statutory name\'s own applicable condition (exemptions by use or form) is separate and always marks the judgement for review.',
     maintenanceSection: "Maintenance",
     maintenanceMode: "Maintenance mode (block sign-in for everyone but administrators)",
     maintenanceHint:
