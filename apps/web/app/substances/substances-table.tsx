@@ -216,6 +216,8 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         key: "score",
         header: m.score.substanceScore,
         kind: "number",
+        // 必ず数字が入る（既定 0）。「空白」「空白でない」は出さない（2026-09-11 指示）
+        nullable: false,
         width: 90,
         filterOnly: true,
         className: "text-right font-mono tabular-nums",

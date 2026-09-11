@@ -236,6 +236,8 @@ export function LawTreeSection({
         key: "score",
         header: m.score.categoryScore,
         kind: "number",
+        // 必ず数字が入る（既定 0）。「空白」「空白でない」は出さない（2026-09-11 指示）
+        nullable: false,
         width: 72,
         sortable: false,
         filterable: false,
