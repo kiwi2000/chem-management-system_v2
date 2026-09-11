@@ -10,15 +10,12 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { EdgeHandle, clampHeight, useRegisterCardBox } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
 /** これより低くはしない。見出しと数行は見えるように */
 const MIN_HEIGHT = 120;
-/** 画面より高くはしない（下端のつまみが画面の外へ出ると戻せない） */
-const MARGIN_BELOW = 40;
-/** 矢印キー1回で動く量（Shift で4倍） */
-const KEY_STEP = 24;
 
 /**
  * 高さを変えられる、中で送る箱。
@@ -58,14 +55,15 @@ export function ResizableBox({
   const { m } = useI18n();
   const [height, setHeight] = useState<number | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null);
-  const drag = useRef<{ startY: number; startHeight: number } | null>(null);
   /** つまみを描く先。包んでいるカード。無ければ箱の下端に描く */
   const [card, setCard] = useState<HTMLElement | null>(null);
+  // カードに「表の箱がある」と知らせる。カードは自分のつまみを出さず、この箱のつまみに任せる
+  useRegisterCardBox();
 
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(storageKey);
-      if (saved) setHeight(clamp(Number(saved)));
+      if (saved) setHeight(clampHeight(Number(saved)));
     } catch {
       // 壊れた値が入っていたら既定の高さで始める
     }
@@ -80,7 +78,7 @@ export function ResizableBox({
 
   const apply = useCallback(
     (px: number) => {
-      const next = clamp(px);
+      const next = clampHeight(px);
       try {
         window.localStorage.setItem(storageKey, String(next));
       } catch {
@@ -111,44 +109,14 @@ export function ResizableBox({
     [scrollerRef],
   );
 
-  /*
-    つまみ。列幅・行の高さのつまみ（resizable-columns.tsx）と同じく、線をまたいで置き、
-    見た目には線しか無い（掴むと線が色づく）
-  */
+  // つまみは共通部品。カードを閉じているあいだは出さない（閉じた札の縁を引いても中身が無い）
   const handle = (
-    <div
-      role="separator"
-      aria-orientation="horizontal"
-      aria-label={m.table.resizeHeight}
-      title={m.table.resizeHeight}
-      tabIndex={0}
-      // カードを閉じているあいだは出さない（閉じた札の縁を引いても中身が無い）
-      className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute -bottom-1 left-0 z-10 h-2 w-full cursor-row-resize touch-none select-none outline-none group-data-[collapsed=true]/card:hidden"
-      onPointerDown={(e) => {
-        e.preventDefault();
-        e.currentTarget.setPointerCapture(e.pointerId);
-        drag.current = { startY: e.clientY, startHeight: current() };
-      }}
-      onPointerMove={(e) => {
-        if (!drag.current) return;
-        apply(drag.current.startHeight + (e.clientY - drag.current.startY));
-      }}
-      onPointerUp={(e) => {
-        drag.current = null;
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      }}
-      onDoubleClick={reset}
-      onKeyDown={(e) => {
-        const step = (e.shiftKey ? 4 : 1) * KEY_STEP;
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          apply(current() - step);
-        }
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          apply(current() + step);
-        }
-      }}
+    <EdgeHandle
+      label={m.table.resizeHeight}
+      current={current}
+      onResize={apply}
+      onReset={reset}
+      className="group-data-[collapsed=true]/card:hidden"
     />
   );
 
@@ -171,10 +139,4 @@ export function ResizableBox({
       {card ? createPortal(handle, card) : handle}
     </div>
   );
-}
-
-function clamp(px: number) {
-  if (!Number.isFinite(px)) return MIN_HEIGHT;
-  const max = typeof window === "undefined" ? 2000 : window.innerHeight - MARGIN_BELOW;
-  return Math.min(Math.max(MIN_HEIGHT, max), Math.max(MIN_HEIGHT, Math.round(px)));
 }
