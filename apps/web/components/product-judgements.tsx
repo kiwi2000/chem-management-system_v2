@@ -419,11 +419,25 @@ export function ProductJudgements({
                 {countries.map((c) => {
                   const countryOpen = openCountries.has(c.code);
                   const t = countryTotals.get(c.code) ?? { total: 0, applicable: 0, review: 0 };
+                  /*
+                    国の欄は**その国の行を全部またいで1つ**にする（2026-09-11 指示）。
+                    開いているあいだは、区分の行と、開いた区分の法文物質名の行のぶんだけ縦に伸びる
+                  */
+                  const span = countryOpen
+                    ? 1 +
+                      c.items.reduce(
+                        (n, j) => n + 1 + (open.has(j.categoryId) ? j.hits.length : 0),
+                        0,
+                      )
+                    : 1;
                   return (
                     <Fragment key={`country:${c.code}`}>
                       {/* 国の行。押すと、その国の法律と区分が開く。件数はその国の全区分で数える */}
                       <TableRow className="bg-muted/60">
-                        <TableCell className={cn(CELL, "align-top font-medium")}>
+                        <TableCell
+                          className={cn(CELL, "bg-muted/60 align-top font-medium")}
+                          rowSpan={span}
+                        >
                           <button
                             type="button"
                             onClick={() => toggleCountry(c.code)}
@@ -460,9 +474,8 @@ export function ProductJudgements({
                           const many = j.hits.length > 0;
                           return (
                             <Fragment key={j.categoryId}>
-                              {/* 区分の行。中身（法文物質名）は押して開く */}
+                              {/* 区分の行。国の欄は上の行が縦にまたいでいるので置かない */}
                               <TableRow>
-                                <TableCell className={CELL} />
                                 <TableCell className={cn(CELL, "align-top")}>
                                   {pickName(locale, j.lawNameJa ?? j.lawNameOriginal, j.lawNameEn)}
                                 </TableCell>
@@ -607,7 +620,6 @@ export function ProductJudgements({
                               {opened &&
                                 j.hits.map((h, i) => (
                                   <TableRow key={`${j.categoryId}-${i}`} className="bg-muted/40">
-                                    <TableCell className={CELL} />
                                     <TableCell className={CELL} />
                                     <TableCell className={CELL} />
                                     <TableCell className={cn(CELL, "align-top font-mono text-xs")}>
