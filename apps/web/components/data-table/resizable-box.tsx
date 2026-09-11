@@ -122,7 +122,8 @@ export function ResizableBox({
       aria-label={m.table.resizeHeight}
       title={m.table.resizeHeight}
       tabIndex={0}
-      className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute -bottom-1 left-0 z-10 h-2 w-full cursor-row-resize touch-none select-none outline-none"
+      // カードを閉じているあいだは出さない（閉じた札の縁を引いても中身が無い）
+      className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute -bottom-1 left-0 z-10 h-2 w-full cursor-row-resize touch-none select-none outline-none group-data-[collapsed=true]/card:hidden"
       onPointerDown={(e) => {
         e.preventDefault();
         e.currentTarget.setPointerCapture(e.pointerId);

@@ -6,7 +6,7 @@ import { CELL_CLIP, OPAQUE_MUTED_40 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { ResizableBox } from "@/components/data-table/resizable-box";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n-client";
 import type { MatrixColumn, MatrixValue, SubstanceMatrix } from "@/lib/substance-matrix";
 import { cn } from "@/lib/utils";
@@ -636,6 +636,9 @@ export function SubstanceMatrixSection({ data }: { data: SubstanceMatrix }) {
       どちらに効いているのか分からなくなる
     */
     <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{m.substanceMatrix.title}</CardTitle>
+      </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-muted-foreground text-xs">{m.inventories.source}</span>

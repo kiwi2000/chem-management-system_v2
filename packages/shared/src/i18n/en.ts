@@ -1330,6 +1330,7 @@ export const en: Messages = {
   },
 
   substanceMatrix: {
+    title: "Regulations and inventory numbers",
     region: "Region",
     category: "Category",
     number: "Number",
