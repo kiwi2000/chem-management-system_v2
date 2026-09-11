@@ -52,6 +52,20 @@ export function EdgeHandle({
   className?: string;
 }) {
   const drag = React.useRef<{ startY: number; startHeight: number } | null>(null);
+  /*
+    **ドラッグ中はページを短くしない。**
+    箱を縮めるとページが短くなる。下まで送っていたときは、ブラウザが送り位置を詰めるので
+    ページごと上へずれ、線がマウスから離れていった（2026-09-11）。
+    掴んだときに、縮められる最大のぶんだけ body の下に余白を足しておき、離したときに消す
+  */
+  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    drag.current = null;
+    document.body.style.paddingBottom = "";
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
   return (
     <div
       role="separator"
@@ -66,16 +80,16 @@ export function EdgeHandle({
       onPointerDown={(e) => {
         e.preventDefault();
         e.currentTarget.setPointerCapture(e.pointerId);
-        drag.current = { startY: e.clientY, startHeight: current() };
+        const startHeight = current();
+        drag.current = { startY: e.clientY, startHeight };
+        document.body.style.paddingBottom = `${Math.max(0, startHeight - MIN_HEIGHT)}px`;
       }}
       onPointerMove={(e) => {
         if (!drag.current) return;
         onResize(drag.current.startHeight + (e.clientY - drag.current.startY));
       }}
-      onPointerUp={(e) => {
-        drag.current = null;
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      }}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
       onDoubleClick={onReset}
       onKeyDown={(e) => {
         const step = (e.shiftKey ? 4 : 1) * KEY_STEP;
@@ -248,8 +262,18 @@ function Card({
   }, []);
   const state = React.useMemo<CardState | null>(
     () =>
-      collapsible ? { open, toggle, registerTitle, registerBox, contentRef, contentHeight } : null,
-    [collapsible, open, toggle, registerTitle, registerBox, contentHeight],
+      collapsible
+        ? {
+            open,
+            toggle,
+            registerTitle,
+            registerBox,
+            contentRef,
+            // 表の箱がある枠は箱が高さを持つ。枠の側で覚えていた高さは効かせない（下に空きができる）
+            contentHeight: boxes === 0 ? contentHeight : null,
+          }
+        : null,
+    [collapsible, open, toggle, registerTitle, registerBox, contentHeight, boxes],
   );
 
   return (
@@ -407,7 +431,8 @@ function CardContent({ className, hidden, style, ...props }: React.ComponentProp
       data-slot="card-content"
       hidden={hidden || (card ? !card.open : false)}
       className={cn("px-(--card-spacing)", sized !== null && "overflow-y-auto", className)}
-      style={sized !== null ? { ...style, height: sized } : style}
+      // 決めた高さは上限。中身が少なければそのぶん低い（箱と同じ決まり）
+      style={sized !== null ? { ...style, maxHeight: sized } : style}
       {...props}
     />
   );

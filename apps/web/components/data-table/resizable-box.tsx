@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type CSSProperties,
   type HTMLAttributes,
   type ReactNode,
   useCallback,
@@ -37,6 +38,7 @@ export function ResizableBox({
   scrollerRef,
   defaultMaxHeight = "70vh",
   className,
+  style,
   children,
   ...rest
 }: {
@@ -50,11 +52,24 @@ export function ResizableBox({
    */
   defaultMaxHeight?: string | null;
   className?: string;
+  /** 行の高さの変数など。高さの指定はこれに重ねる（`rowProps` の style で高さが消えたことがあった） */
+  style?: CSSProperties;
   children: ReactNode;
-} & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children">) {
+} & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children" | "style">) {
   const { m } = useI18n();
   const [height, setHeight] = useState<number | null>(null);
+  /**
+   * 中身が増えたときに、いったん広げた高さ（px）。
+   * 表の見出しを開くなどして行が増えたら、増えたぶんが隠れないよう箱を中身に合わせて広げる
+   * （2026-09-11 指示）。中身が減れば元の高さ（決めた高さ・既定）に戻る。**覚えない**
+   */
+  const [grown, setGrown] = useState<number | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * 中身を包む div。高さの変化はこれで見張る。
+   * `<table>` を直接 ResizeObserver で見ても通知が来ない（ブラウザの仕様）ので、1枚かませる
+   */
+  const contentRef = useRef<HTMLDivElement | null>(null);
   /** つまみを描く先。包んでいるカード。無ければ箱の下端に描く */
   const [card, setCard] = useState<HTMLElement | null>(null);
   // カードに「表の箱がある」と知らせる。カードは自分のつまみを出さず、この箱のつまみに任せる
@@ -68,6 +83,39 @@ export function ResizableBox({
       // 壊れた値が入っていたら既定の高さで始める
     }
   }, [storageKey]);
+
+  // 中身の高さを見張る。増えて箱からはみ出したら箱を広げ、減ったら元に戻す
+  useEffect(() => {
+    const el = boxRef.current;
+    const inner = contentRef.current;
+    if (!el || !inner) return;
+    // 最初は測るだけ（開いた直後の中身は、決めた高さの中で送ればよい）
+    // 中身の高さは包んだ div で測る（箱の scrollHeight は箱より小さくならず、減ったのが分からない）
+    let last = inner.offsetHeight;
+    const check = () => {
+      const content = inner.offsetHeight;
+      const prev = last;
+      last = content;
+      if (content > prev && content > el.clientHeight) {
+        // 枠線と横のスクロールバーのぶんを足す（height は枠線込みの値）
+        setGrown(content + (el.offsetHeight - el.clientHeight));
+      } else if (content < prev) {
+        setGrown(null);
+      }
+    };
+    /*
+      行の増減は DOM の変化（MutationObserver）で拾う。描画が止まっている裏のタブでも届く。
+      文字の折り返しなど DOM が変わらない高さの変化は ResizeObserver で拾う
+    */
+    const mo = new MutationObserver(check);
+    mo.observe(inner, { childList: true, subtree: true });
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(check);
+    ro?.observe(inner);
+    return () => {
+      mo.disconnect();
+      ro?.disconnect();
+    };
+  }, []);
 
   // 包んでいるカードを探す。つまみを絶対位置で置けるよう、カードを位置の基準にする
   useLayoutEffect(() => {
@@ -85,6 +133,8 @@ export function ResizableBox({
         // 覚えられなくても、いまの画面では効かせる
       }
       setHeight(next);
+      // 手で決めたら、自動で広げたぶんは捨てる
+      setGrown(null);
     },
     [storageKey],
   );
@@ -96,6 +146,7 @@ export function ResizableBox({
       // 消せなくても、いまの画面では戻す
     }
     setHeight(null);
+    setGrown(null);
   }, [storageKey]);
 
   /** いまの高さ（px）。既定のままのときは実際に描かれている高さを測る */
@@ -125,16 +176,18 @@ export function ResizableBox({
       <div
         ref={setRefs}
         className={cn("overflow-auto", className)}
-        style={
-          height === null
-            ? defaultMaxHeight
-              ? { maxHeight: defaultMaxHeight }
-              : undefined
-            : { height }
-        }
+        /*
+          決めた高さは**上限**として効かせる（max-height）。中身がそれより少なければ箱はそのぶん低く、
+          表の下に空きができない（製品を変えて開いたら表の下が大きく空いた。2026-09-11 指示）。
+          中身が増えたときに広げた高さ（grown）も同じく上限
+        */
+        style={{
+          ...style,
+          maxHeight: grown ?? height ?? defaultMaxHeight ?? undefined,
+        }}
         {...rest}
       >
-        {children}
+        <div ref={contentRef}>{children}</div>
       </div>
       {card ? createPortal(handle, card) : handle}
     </div>
