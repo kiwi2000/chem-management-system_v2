@@ -5,6 +5,7 @@ import type {
   OrganisationKind,
 } from "@chem/shared";
 import type { MfaMethod } from "@chem/shared";
+import type { AsElementDto } from "@/lib/as-element";
 import type {
   GazetteLawKind,
   GroupKind,
@@ -196,6 +197,11 @@ export interface JudgementHitDto {
   name: string | null;
   /** 法律が付けている番号（政令番号など） */
   officialNumber: string | null;
+  /**
+   * 元素換算でまとめて判定した法文物質名なら、その元素（「鉛として」の鉛）。
+   * 名前の後ろに「（鉛として）」と添える。区分そのものが当たったときや、元素換算でないときは null
+   */
+  asElement: AsElementDto | null;
   /**
    * その値を作ったCASと、それぞれの寄与。まとめたときは複数並ぶ。
    * 「なぜその合計になったのか」を追えるようにするため
@@ -464,6 +470,8 @@ export interface RowStatutoryDto {
   nameJa: string | null;
   nameEn: string | null;
   nameOriginal: string;
+  /** 元素換算でまとめて判定する法文物質名なら、その元素（「鉛として」の鉛）。名前の後ろに添える */
+  asElement: AsElementDto | null;
   /**
    * この結び付きを持っているデータソースのID。優先度の順。
    * **判定はデータソースを選ばず、載っているものを全部見る**ので、

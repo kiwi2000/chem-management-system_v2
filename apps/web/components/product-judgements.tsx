@@ -614,7 +614,7 @@ export function ProductJudgements({
                                       {h.officialNumber ?? ""}
                                     </TableCell>
                                     <TableCell className={cn(CELL, "align-top")}>
-                                      <OneLine text={h.name ?? m.judgements.categoryItself} />
+                                      <OneLine text={hitName(h, locale, m)} />
                                       {/* 施行前に登録した法文物質名。該非は変えず、何であるかだけ分かるようにする */}
                                       {h.notYetEffective && h.effectiveFrom && (
                                         <Badge variant="outline" className="mt-1">
@@ -802,6 +802,21 @@ export function MatchedCells({
  * 行の区切りと見分けが付かず、表そのものが読みにくくなる。
  * 全文は触れれば読める（title）。
  */
+/**
+ * 当たった法文物質名の1行ぶんの字。
+ * 元素換算でまとめて判定したものは、名前の後ろに「（鉛として）」と添える（2026-09-11 指示）。
+ * 区分そのものが当たったときは「（区分の合計）」
+ */
+export function hitName(
+  h: JudgementHitDto,
+  locale: ReturnType<typeof useI18n>["locale"],
+  m: M,
+): string {
+  if (!h.name) return m.judgements.categoryItself;
+  if (!h.asElement) return h.name;
+  return `${h.name} ${m.judgements.asElement(locale === "ja" ? h.asElement.nameJa : h.asElement.nameEn)}`;
+}
+
 export function OneLine({ text }: { text: string }) {
   return (
     <div

@@ -1301,7 +1301,7 @@ function RegulationMark({
       **データソースは法文物質名ごとに持つ。**同じ区分でも、号によって
       どのデータソースから来た結び付きかが違うことがある
     */
-    statutoryLabels(h, locale).map((t, i) => ({
+    statutoryLabels(h, locale, m).map((t, i) => ({
       t,
       review: h.needsReview,
       sourceIds: h.statutory[i]?.sourceIds ?? h.sourceIds,
@@ -1310,7 +1310,7 @@ function RegulationMark({
     })),
   );
   const nearLabels = near.flatMap((h) =>
-    statutoryLabels(h, locale).map((t, i) => ({
+    statutoryLabels(h, locale, m).map((t, i) => ({
       t,
       sourceIds: h.statutory[i]?.sourceIds ?? h.sourceIds,
       changed: h.statutory[i]?.changed ?? h.changed,
@@ -1407,6 +1407,7 @@ function dataLine(
 function statutoryLabels(
   h: RowRegulationDto,
   locale: ReturnType<typeof useI18n>["locale"],
+  m: ReturnType<typeof useI18n>["m"],
 ): string[] {
   return h.statutory.map((sub) =>
     [
@@ -1415,6 +1416,10 @@ function statutoryLabels(
         : "",
       sub.officialNumber ?? "",
       pickStatutoryName(locale, sub.nameOriginal, sub.nameJa, sub.nameEn),
+      // 元素換算でまとめる法文物質名は、名前の後ろに「（鉛として）」と添える（2026-09-11 指示）
+      sub.asElement
+        ? m.judgements.asElement(locale === "ja" ? sub.asElement.nameJa : sub.asElement.nameEn)
+        : "",
     ]
       .filter(Boolean)
       .join(" "),

@@ -1028,6 +1028,7 @@ export const en: Messages = {
     byUser: "Decided by a person",
     basis: "Because",
     categoryItself: "(category total)",
+    asElement: (name: string) => `(as ${name})`,
     notYetEffective: (from: string) => `Not yet in force (from ${from})`,
     asOf: "As of",
     asOfHint:

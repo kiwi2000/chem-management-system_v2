@@ -1,5 +1,6 @@
 import { fromScaled, normalizeCas, sumScaled } from "@chem/shared";
 import { Prisma } from "@prisma/client";
+import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
 import { computeJudgements, loadFactors, loadRules } from "@/lib/judge-store";
 import { LAW_ORDER_SELECT, compareLawOrder, lawOrderKey } from "@/lib/law-order";
@@ -50,6 +51,8 @@ const JUDGEMENT_SELECT = {
       nameOriginal: true,
       displayOrder: true,
       score: true,
+      aggregation: true,
+      metalEtc: true,
       law: {
         select: {
           nameJa: true,
@@ -149,7 +152,7 @@ async function buildJudgementDtos(
       ]
     : [];
   const actorIds = [...new Set(rows.map((r) => r.decidedBy).filter((v) => v !== null))];
-  const [substances, users] = await Promise.all([
+  const [substances, users, elementNames] = await Promise.all([
     substanceIds.length === 0
       ? []
       : prisma.statutorySubstance.findMany({
@@ -160,6 +163,8 @@ async function buildJudgementDtos(
             nameOriginal: true,
             officialNumber: true,
             effectiveFrom: true,
+            aggregation: true,
+            metalEtc: true,
           },
         }),
     actorIds.length === 0
@@ -168,6 +173,8 @@ async function buildJudgementDtos(
           where: { id: { in: actorIds } },
           select: { id: true, displayName: true, email: true },
         }),
+    // 「鉛として」を添えるための元素の名前
+    loadElementNames(),
   ]);
   const infoOf = new Map(substances.map((s) => [s.id, s]));
   const userOf = new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
@@ -229,6 +236,7 @@ async function buildJudgementDtos(
               return {
                 name: info ? (info.nameJa ?? info.nameOriginal) : null,
                 officialNumber: info?.officialNumber ?? null,
+                asElement: info ? asElementOf(elementNames, r.category, info) : null,
                 contributions,
                 total: h.total?.toString() ?? null,
                 ...effectiveMark(info?.effectiveFrom ?? null, today),
@@ -343,10 +351,20 @@ export async function toMatchedProducts(
             nameOriginal: true,
             officialNumber: true,
             effectiveFrom: true,
+            aggregation: true,
+            metalEtc: true,
           },
         });
   const infoOf = new Map(substances.map((s) => [s.id, s]));
   const today = todayInJapan();
+  // 「鉛として」を添えるために、区分のまとめかたと元素の名前も引く
+  const [category, elementNames] = await Promise.all([
+    prisma.regulationCategory.findUniqueOrThrow({
+      where: { id: categoryId },
+      select: { aggregation: true, metalEtc: true },
+    }),
+    loadElementNames(),
+  ]);
 
   return (
     rows
@@ -370,6 +388,7 @@ export async function toMatchedProducts(
                 return {
                   name: info ? (info.nameJa ?? info.nameOriginal) : null,
                   officialNumber: info?.officialNumber ?? null,
+                  asElement: info ? asElementOf(elementNames, category, info) : null,
                   contributions: (h.contributions ?? []) as { cas: string; pct: string }[],
                   total: h.total?.toString() ?? null,
                   ...effectiveMark(info?.effectiveFrom ?? null, today),

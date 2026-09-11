@@ -1,3 +1,4 @@
+import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
 import type { RowRegulationDto, RowStatutoryDto } from "@/lib/types";
 
@@ -120,6 +121,8 @@ export async function regulationsByCas(
           nameEn: true,
           nameOriginal: true,
           displayOrder: true,
+          aggregation: true,
+          metalEtc: true,
           law: {
             select: {
               nameJa: true,
@@ -163,12 +166,15 @@ export async function regulationsByCas(
             nameEn: true,
             nameOriginal: true,
             displayOrder: true,
+            aggregation: true,
+            metalEtc: true,
             regulationClass: {
               select: { nameJa: true, nameEn: true, nameOriginal: true },
             },
           },
         });
   const subOf = new Map(subs.map((x) => [x.id, x]));
+  const elementNames = await loadElementNames();
   /*
     **前のバージョンに無かったものに印を付ける。**
     これは判定した時点の事実ではなく、2つのバージョンを比べた結果なので、
@@ -214,6 +220,7 @@ export async function regulationsByCas(
             nameJa: sub.nameJa,
             nameEn: sub.nameEn,
             nameOriginal: sub.nameOriginal,
+            asElement: asElementOf(elementNames, r.category, sub),
             sourceIds: c.sources ?? [],
             changed: hasPrevious && !before.has(`${sub.id}/${c.cas}`),
             data: (c.sources ?? []).flatMap((sourceId) => {
@@ -319,6 +326,8 @@ export async function nearMissByCas(
             nameOriginal: true,
             displayOrder: true,
             deletedAt: true,
+            aggregation: true,
+            metalEtc: true,
             regulationClass: {
               select: {
                 nameJa: true,
@@ -332,6 +341,8 @@ export async function nearMissByCas(
                     nameOriginal: true,
                     displayOrder: true,
                     deletedAt: true,
+                    aggregation: true,
+                    metalEtc: true,
                     law: {
                       select: {
                         nameJa: true,
@@ -394,6 +405,7 @@ export async function nearMissByCas(
   ] as string[];
   const before = await previousLinks(subIdsForDiff);
   const hasPrevious = (await previousVersion()) !== null;
+  const elementNames = await loadElementNames();
 
   /** すでに当たっている法文物質名 */
   const hitSubstances = new Set<string>();
@@ -473,6 +485,7 @@ export async function nearMissByCas(
       nameJa: sub.nameJa,
       nameEn: sub.nameEn,
       nameOriginal: sub.nameOriginal,
+      asElement: asElementOf(elementNames, cat, sub),
       sourceIds: [l.sourceId],
       changed: isNew,
       data: l.data ? [{ sourceId: l.sourceId, text: l.data.text, textJa: l.data.textJa }] : [],

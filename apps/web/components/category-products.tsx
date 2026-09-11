@@ -5,7 +5,13 @@ import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
-import { MatchedCells, OneLine, reasonText, type M } from "@/components/product-judgements";
+import {
+  MatchedCells,
+  OneLine,
+  hitName,
+  reasonText,
+  type M,
+} from "@/components/product-judgements";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -174,7 +180,7 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
                 {h?.officialNumber ?? ""}
               </TableCell>
               <TableCell className={cn(CELL, "align-top")}>
-                {h && <OneLine text={h.name ?? m.judgements.categoryItself} />}
+                {h && <OneLine text={hitName(h, locale, m)} />}
                 {h?.notYetEffective && h.effectiveFrom && (
                   <Badge variant="outline" className="mt-1">
                     {m.judgements.notYetEffective(h.effectiveFrom)}

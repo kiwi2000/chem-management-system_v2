@@ -1047,6 +1047,8 @@ export const ja = {
     byUser: "人が判断",
     basis: "根拠",
     categoryItself: "（区分の合計）",
+    /** 元素換算でまとめる法文物質名の後ろに添える。「鉛として」 */
+    asElement: (name: string) => `（${name}として）`,
     /** 適用開始日がまだ来ていない法文物質名で当たったとき。該非は変えず、印だけ出す */
     notYetEffective: (from: string) => `施行前（${from} から）`,
     asOf: "判定対象日",
