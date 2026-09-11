@@ -1,5 +1,6 @@
 import { normalizeCas, toScaled } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
+import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
 import { MARK_CONDITIONAL_LINK, MARK_UNFILLED } from "@/lib/judge-store";
 import { getServerMessages } from "@/lib/i18n";
@@ -45,6 +46,8 @@ export async function GET(req: Request) {
       nameJa: true,
       nameEn: true,
       nameOriginal: true,
+      aggregation: true,
+      metalEtc: true,
       law: {
         select: {
           nameJa: true,
@@ -182,6 +185,8 @@ export async function GET(req: Request) {
   };
 
   const out: CellDetailDto["versions"] = [];
+  // 「鉛として」を添えるための元素の名前
+  const elementNames = await loadElementNames();
   for (const v of versions) {
     /*
       そのバージョンのデータソースを、**そのバージョンの優先度の順**に出す。
@@ -218,6 +223,8 @@ export async function GET(req: Request) {
             lowerBound: true,
             applicableCondition: true,
             note: true,
+            aggregation: true,
+            metalEtc: true,
             regulationClass: {
               select: { nameJa: true, nameEn: true, nameOriginal: true },
             },
@@ -259,6 +266,7 @@ export async function GET(req: Request) {
             nameJa: l.statutorySubstance.nameJa,
             nameEn: l.statutorySubstance.nameEn,
             nameOriginal: l.statutorySubstance.nameOriginal,
+            asElement: asElementOf(elementNames, category, l.statutorySubstance),
             adopted: best !== null && (rank.get(d.source.id) ?? 99) === best,
             excluded: l.excluded,
             dataText: l.data?.text ?? null,

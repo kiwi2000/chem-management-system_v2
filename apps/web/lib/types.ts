@@ -569,6 +569,8 @@ export interface CellStatutoryDto {
   nameJa: string | null;
   nameEn: string | null;
   nameOriginal: string;
+  /** 元素換算でまとめて判定する法文物質名なら、その元素（「鉛として」の鉛）。名前の後ろに添える */
+  asElement: AsElementDto | null;
   /** そのバージョンで、この結び付きが採用されたか（優先度がいちばん高い） */
   adopted: boolean;
   /** 「非該当」として結んだもの。採用されれば、下位の該当を打ち消す */

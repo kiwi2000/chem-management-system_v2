@@ -12,11 +12,21 @@ import { HIT_CLASS, NEAR_MISS_CLASS, NOT_ADOPTED_CLASS, REVIEW_CLASS } from "@/l
 import type { CellDetailDto, CellStatutoryDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** 分類＋番号＋法文物質名。分類や番号を持たないものは詰める */
-function labelOf(x: CellStatutoryDto, locale: ReturnType<typeof useI18n>["locale"]) {
+/**
+ * 分類＋番号＋法文物質名。分類や番号を持たないものは詰める。
+ * 元素換算でまとめる法文物質名は、名前の後ろに「（鉛として）」と添える（2026-09-11 指示）
+ */
+function labelOf(
+  x: CellStatutoryDto,
+  locale: ReturnType<typeof useI18n>["locale"],
+  m: ReturnType<typeof useI18n>["m"],
+) {
   const cls = pickStatutoryName(locale, x.classNameOriginal, x.classNameJa, x.classNameEn);
   const name = pickStatutoryName(locale, x.nameOriginal, x.nameJa, x.nameEn);
-  return [cls, x.officialNumber, name].filter(Boolean).join(" ");
+  const element = x.asElement
+    ? m.judgements.asElement(locale === "ja" ? x.asElement.nameJa : x.asElement.nameEn)
+    : "";
+  return [cls, x.officialNumber, name, element].filter(Boolean).join(" ");
 }
 
 /** 出どころの文章。画面の言語で選ぶ（日本語訳があれば日本語、無ければ原文） */
@@ -224,7 +234,7 @@ export function CellDetailDialog({
                                       </span>
                                     )}
                                     <span className={cn(x.excluded && "line-through")}>
-                                      {labelOf(x, locale)}
+                                      {labelOf(x, locale, m)}
                                     </span>
                                     {/* 出どころの文章。ここでは切らずに全部出す（表では1行で切っている） */}
                                     {dataOf(x, locale) && (
