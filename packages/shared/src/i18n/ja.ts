@@ -1467,6 +1467,8 @@ export const ja = {
     title: "組成",
     kindSubstance: "物質",
     kindProduct: "原材料",
+    /** CAS番号を持たない物質のCAS欄 */
+    noCas: "－",
     element: "構成要素",
     elementId: "ID",
     elementName: "物質名/原材料名",

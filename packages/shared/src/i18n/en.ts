@@ -1437,6 +1437,7 @@ export const en: Messages = {
     title: "Composition",
     kindSubstance: "Substance",
     kindProduct: "Raw material",
+    noCas: "—",
     element: "Component",
     elementId: "ID",
     elementName: "Substance / material",

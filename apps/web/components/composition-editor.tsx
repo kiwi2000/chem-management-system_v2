@@ -729,7 +729,11 @@ export function CompositionEditor({
                             <span className="text-muted-foreground font-sans">
                               {m.composition.kindProduct}
                             </span>
-                          ) : null)}
+                          ) : (
+                            <span className="text-muted-foreground font-sans">
+                              {m.composition.noCas}
+                            </span>
+                          ))}
                       </td>
                       <td className={CELL}>
                         {pickName(locale, r.element.nameJa, r.element.nameEn)}
@@ -1124,7 +1128,11 @@ export function CompositionEditor({
                                     <span className="text-muted-foreground font-sans">
                                       {m.composition.kindProduct}
                                     </span>
-                                  ) : null)}
+                                  ) : (
+                                    <span className="text-muted-foreground font-sans">
+                                      {m.composition.noCas}
+                                    </span>
+                                  ))}
                               </td>
                               <td className={CELL}>
                                 {pickName(locale, c.nameJa, c.nameEn)}

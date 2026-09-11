@@ -346,7 +346,9 @@ function TreeRow({
           {element.casNumber ??
             (line.childProductId ? (
               <span className="text-muted-foreground font-sans">{m.composition.kindProduct}</span>
-            ) : null)}
+            ) : (
+              <span className="text-muted-foreground font-sans">{m.composition.noCas}</span>
+            ))}
         </td>
         <td className={cellClass}>{name}</td>
         {/* 製品全体に対する値。法規制の判定はこちらを使う */}
