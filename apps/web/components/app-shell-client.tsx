@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { SidebarFooter } from "@/components/sidebar-footer";
 import { IdleCountdown } from "@/components/idle-countdown";
+import { CardToggleAll } from "@/components/card-toggle-all";
 import { UserAvatar } from "@/components/user-avatar";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Badge } from "@/components/ui/badge";
@@ -178,6 +179,8 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
               {m.common.appName}
             </Link>
             <div className="ml-auto flex items-center gap-3">
+              {/* 画面の枠をまとめて開く／閉じる。枠の無い画面では出ない */}
+              <CardToggleAll />
               {/*
               いま判定に使っている法規制バージョン。**サイドバーの下からここへ移した。**
               下に置くと視線が最後に行くうえ、サイドバーを閉じると消えていた。

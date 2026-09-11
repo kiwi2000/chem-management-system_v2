@@ -107,6 +107,33 @@ interface CardState {
 
 const CardContext = React.createContext<CardState | null>(null);
 
+/*
+  画面にある枠の登録簿。上部の帯の「展開」「格納」（card-toggle-all.tsx）が、
+  ここに登録してある枠をまとめて開け閉めする。数は「ボタンを出すかどうか」に使う
+*/
+const cardListeners = new Set<(open: boolean) => void>();
+const countListeners = new Set<() => void>();
+function notifyCount() {
+  for (const l of countListeners) l();
+}
+
+/** 画面の枠をすべて開く／閉じる */
+export function setAllCards(open: boolean) {
+  for (const l of cardListeners) l(open);
+}
+
+/** 画面にある枠の数（ボタンを出すかどうかの判断用） */
+export function useCardCount() {
+  return React.useSyncExternalStore(
+    (cb) => {
+      countListeners.add(cb);
+      return () => countListeners.delete(cb);
+    },
+    () => cardListeners.size,
+    () => 0,
+  );
+}
+
 /** 表の箱がカードの中にあることを、カードに知らせる（ResizableBox が呼ぶ） */
 export function useRegisterCardBox() {
   const card = React.useContext(CardContext);
@@ -119,7 +146,7 @@ function Card({
   className,
   size = "default",
   collapsible = true,
-  defaultOpen = true,
+  defaultOpen = false,
   storageKey,
   children,
   ...props
@@ -127,7 +154,7 @@ function Card({
   size?: "default" | "sm";
   /** 見出しの「>」で開け閉めできるか。既定はできる */
   collapsible?: boolean;
-  /** 最初に開いているか（覚えている状態があればそちらが勝つ） */
+  /** 最初に開いているか。**既定は閉じる**（2026-09-11 指示。覚えている状態があればそちらが勝つ） */
   defaultOpen?: boolean;
   /** 開け閉めと高さを覚える鍵。省くと「画面のパス＋見出しの文字」 */
   storageKey?: string;
@@ -155,19 +182,39 @@ function Card({
     }
   }, [key]);
 
+  const remember = React.useCallback(
+    (next: boolean) => {
+      if (!key) return;
+      try {
+        window.localStorage.setItem(key, next ? "1" : "0");
+      } catch {
+        // 覚えられなくても、いまの画面では効かせる
+      }
+    },
+    [key],
+  );
+
   const toggle = React.useCallback(() => {
     setOpen((prev) => {
-      const next = !prev;
-      if (key) {
-        try {
-          window.localStorage.setItem(key, next ? "1" : "0");
-        } catch {
-          // 覚えられなくても、いまの画面では効かせる
-        }
-      }
-      return next;
+      remember(!prev);
+      return !prev;
     });
-  }, [key]);
+  }, [remember]);
+
+  // 上部の「展開」「格納」に応じる。見出しの無い（鍵の決まらない）枠は登録しない
+  React.useEffect(() => {
+    if (!collapsible || !key) return;
+    const listener = (next: boolean) => {
+      remember(next);
+      setOpen(next);
+    };
+    cardListeners.add(listener);
+    notifyCount();
+    return () => {
+      cardListeners.delete(listener);
+      notifyCount();
+    };
+  }, [collapsible, key, remember]);
 
   const resize = React.useCallback(
     (px: number) => {
