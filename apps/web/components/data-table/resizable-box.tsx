@@ -5,6 +5,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -22,7 +23,9 @@ const KEY_STEP = 24;
  * 高さを変えられる、中で送る箱。
  *
  * 表を箱の中で送る画面（組成のまとめ表・組成の編集・判定・物質の一覧表）は、
- * 高さを画面の 70% に決めてあった。**箱の下端の線をドラッグすると高さが変わる。**
+ * 高さを画面の 70% に決めてあった。**枠（カード）の下端の線をドラッグすると高さが変わる。**
+ * つまみは箱の中ではなく、箱を包むカードの下辺に置く（利用者が掴みたいのはそこ。2026-09-11）。
+ * カードの中に無いときは、箱そのものの下端に置く。
  * 変えた高さは端末に覚える（列幅・行の高さと同じ扱い。見た目の好みなので URL には載せない）。
  * 2回押すと元（画面の 70%）に戻る。矢印キーでも変えられる。
  *
@@ -48,7 +51,13 @@ export function ResizableBox({
   const { m } = useI18n();
   const [height, setHeight] = useState<number | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{ startY: number; startHeight: number } | null>(null);
+  /**
+   * つまみを置く場所（包んでいるカードの下辺）。包みからの相対位置。
+   * カードの中に無ければ null で、箱の下端に置く
+   */
+  const [edge, setEdge] = useState<{ top: number; left: number; width: number } | null>(null);
 
   useEffect(() => {
     try {
@@ -81,6 +90,35 @@ export function ResizableBox({
     setHeight(null);
   }, [storageKey]);
 
+  /*
+    カードの下辺の位置を測る。箱の高さが変わるたび、カードの中身が変わるたびに測り直す。
+    カードの余白の大きさに頼らないので、どの画面でも同じ部品で済む
+  */
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    const box = boxRef.current;
+    if (!wrap || !box) return;
+    const card = box.closest<HTMLElement>('[data-slot="card"]');
+    if (!card) {
+      setEdge(null);
+      return;
+    }
+    const measure = () => {
+      const w = wrap.getBoundingClientRect();
+      const c = card.getBoundingClientRect();
+      setEdge({ top: c.bottom - w.top, left: c.left - w.left, width: c.width });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(card);
+    ro.observe(box);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [height]);
+
   /** いまの高さ（px）。既定のままのときは実際に描かれている高さを測る */
   const current = () => boxRef.current?.getBoundingClientRect().height ?? MIN_HEIGHT;
 
@@ -93,7 +131,7 @@ export function ResizableBox({
   );
 
   return (
-    <div className="relative">
+    <div ref={wrapRef} className="relative">
       <div
         ref={setRefs}
         className={cn("overflow-auto", className)}
@@ -103,9 +141,9 @@ export function ResizableBox({
         {children}
       </div>
       {/*
-        つまみは**箱の下端の線そのもの**。列幅・行の高さのつまみ（resizable-columns.tsx）と同じく、
-        境目の線をまたいで置き、見た目には線しか無い（掴むと線が色づく）。
-        別に段を作らないので、表の下に余計な帯が出ない
+        つまみは**カードの下辺の線そのもの**。列幅・行の高さのつまみ（resizable-columns.tsx）と同じく、
+        線をまたいで置き、見た目には線しか無い（掴むと線が色づく）。
+        カードの外に出るので、包みの `relative` からの位置で置く
       */}
       <div
         role="separator"
@@ -113,7 +151,11 @@ export function ResizableBox({
         aria-label={m.table.resizeHeight}
         title={m.table.resizeHeight}
         tabIndex={0}
-        className="hover:bg-primary/40 focus-visible:bg-primary/40 absolute -bottom-1 left-0 z-10 h-2 w-full cursor-row-resize touch-none select-none outline-none"
+        className={cn(
+          "hover:bg-primary/40 focus-visible:bg-primary/40 absolute z-10 h-2 cursor-row-resize touch-none select-none outline-none",
+          edge === null && "-bottom-1 left-0 w-full",
+        )}
+        style={edge ? { top: edge.top - 4, left: edge.left, width: edge.width } : undefined}
         onPointerDown={(e) => {
           e.preventDefault();
           e.currentTarget.setPointerCapture(e.pointerId);
