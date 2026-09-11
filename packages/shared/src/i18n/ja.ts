@@ -1529,7 +1529,6 @@ export const ja = {
     nearMissHint:
       "CAS番号は法律に載っているのに、含有率が足りず該当していない法文物質名を赤字で出します。配合が変わると該当します",
     aggregateName: "物質名",
-    aggregateNoCas: "CASなし",
     aggregateSubstanceId: "物質ID",
     aggregateRegulations: "該当法規制",
     aggregateSplitByCategory: "規制区分ごとに分ける",

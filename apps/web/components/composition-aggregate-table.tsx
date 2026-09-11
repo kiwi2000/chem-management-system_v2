@@ -931,9 +931,10 @@ export function CompositionAggregateTable({
                                 className={cn(CELL, STICKY_PLAIN, "font-mono text-xs")}
                                 style={frozen.style}
                               >
+                                {/* CAS番号の無い物質は「－」。組成の表と同じ出しかた（2026-09-11 指示） */}
                                 {row.casNumber ?? (
                                   <span className="text-muted-foreground font-sans">
-                                    {m.composition.aggregateNoCas}
+                                    {m.composition.noCas}
                                   </span>
                                 )}
                               </td>
