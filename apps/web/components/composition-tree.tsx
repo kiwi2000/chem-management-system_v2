@@ -342,9 +342,11 @@ function TreeRow({
           </span>
         </td>
         <td className={cn(cellClass, "font-mono text-xs")}>
-          {element.casNumber ?? (
-            <span className="text-muted-foreground font-sans">{m.composition.kindProduct}</span>
-          )}
+          {/* 「原材料」と出すのは子製品の行だけ。CAS番号を持たない物質は空欄（2026-09-11 指示） */}
+          {element.casNumber ??
+            (line.childProductId ? (
+              <span className="text-muted-foreground font-sans">{m.composition.kindProduct}</span>
+            ) : null)}
         </td>
         <td className={cellClass}>{name}</td>
         {/* 製品全体に対する値。法規制の判定はこちらを使う */}

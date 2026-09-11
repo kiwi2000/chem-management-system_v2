@@ -723,12 +723,13 @@ export function CompositionEditor({
                         )}
                       </td>
                       <td className={cn(CELL, "font-mono text-xs")}>
-                        {r.element.casNumber ?? (
-                          // 原材料にCASは無い。値と紛れないよう淡い文字にする
-                          <span className="text-muted-foreground font-sans">
-                            {m.composition.kindProduct}
-                          </span>
-                        )}
+                        {/* 原材料にCASは無いので淡く「原材料」と出す。CASの無い物質は空欄 */}
+                        {r.element.casNumber ??
+                          (r.kind === "product" ? (
+                            <span className="text-muted-foreground font-sans">
+                              {m.composition.kindProduct}
+                            </span>
+                          ) : null)}
                       </td>
                       <td className={CELL}>
                         {pickName(locale, r.element.nameJa, r.element.nameEn)}
@@ -1118,11 +1119,12 @@ export function CompositionEditor({
                               </td>
                               <td className={cn(CELL, "font-mono text-xs")}>{c.code}</td>
                               <td className={cn(CELL, "font-mono text-xs")}>
-                                {c.casNumber ?? (
-                                  <span className="text-muted-foreground font-sans">
-                                    {m.composition.kindProduct}
-                                  </span>
-                                )}
+                                {c.casNumber ??
+                                  (c.kind === "product" ? (
+                                    <span className="text-muted-foreground font-sans">
+                                      {m.composition.kindProduct}
+                                    </span>
+                                  ) : null)}
                               </td>
                               <td className={CELL}>
                                 {pickName(locale, c.nameJa, c.nameEn)}
