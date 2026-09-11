@@ -247,6 +247,15 @@ interface LawGroup {
   categoryIds: Set<string>;
 }
 
+/** 国のまとまり。地域と法律のあいだの段。押す操作は無く、範囲を示すだけ */
+interface CountryGroup {
+  key: string;
+  regionId: string;
+  label: string;
+  /** この国が占める列の数 */
+  span: number;
+}
+
 /** 法律の開け閉めを覚える鍵。地域が違えば別ものとして数える */
 function lawKeyOf(regionId: string, law: string) {
   return `${regionId}::${law}`;
@@ -258,14 +267,22 @@ function leafColumns(
   openRegions: Set<string>,
   closedLaws: Set<string>,
   locale: ReturnType<typeof useI18n>["locale"],
-): { leaves: LeafColumn[]; groups: RegionGroup[]; lawGroups: LawGroup[] } {
+): {
+  leaves: LeafColumn[];
+  groups: RegionGroup[];
+  countryGroups: CountryGroup[];
+  lawGroups: LawGroup[];
+} {
   /** 地域 → その地域で該当している区分（並び順つき） */
   const regions = new Map<
     string,
     {
       order: number;
       label: string;
-      categories: Map<string, { order: number; law: string; name: string }>;
+      categories: Map<
+        string,
+        { order: number; countryCode: string; country: string; law: string; name: string }
+      >;
     }
   >();
   for (const row of rows) {
@@ -277,8 +294,9 @@ function leafColumns(
       };
       region.categories.set(r.categoryId, {
         order: r.categoryOrder,
-        // 法律名の前に国を出す
-        law: `${pickName(locale, r.countryNameJa, r.countryNameEn)} › ${pickStatutoryName(locale, r.lawNameOriginal, r.lawNameJa, r.lawNameEn)}`,
+        countryCode: r.countryCode,
+        country: pickName(locale, r.countryNameJa, r.countryNameEn),
+        law: pickStatutoryName(locale, r.lawNameOriginal, r.lawNameJa, r.lawNameEn),
         name: pickStatutoryName(locale, r.categoryNameOriginal, r.categoryNameJa, r.categoryNameEn),
       });
       regions.set(r.regionId, region);
@@ -301,6 +319,7 @@ function leafColumns(
 
   const leaves: LeafColumn[] = [];
   const groups: RegionGroup[] = [];
+  const countryGroups: CountryGroup[] = [];
   const lawGroups: LawGroup[] = [];
   for (const [regionId, region] of [...regions.entries()].sort((a, b) => a[1].order - b[1].order)) {
     if (!openRegions.has(regionId)) {
@@ -325,14 +344,35 @@ function leafColumns(
       並びは区分の順（法律 → 区分）なので、同じ法律の区分は必ず隣り合う。
       隣が同じ法律なら、同じまとまりに入れる
     */
-    const laws: { law: string; items: typeof categories }[] = [];
+    const laws: {
+      law: string;
+      countryCode: string;
+      country: string;
+      items: typeof categories;
+    }[] = [];
     for (const entry of categories) {
       const last = laws[laws.length - 1];
-      if (last && last.law === entry[1].law) last.items.push(entry);
-      else laws.push({ law: entry[1].law, items: [entry] });
+      if (last && last.law === entry[1].law && last.countryCode === entry[1].countryCode)
+        last.items.push(entry);
+      else
+        laws.push({
+          law: entry[1].law,
+          countryCode: entry[1].countryCode,
+          country: entry[1].country,
+          items: [entry],
+        });
     }
 
     let span = 0;
+    /** 国ごとの列の数。法律は国の順に並ぶので、隣が同じ国なら同じまとまりに入れる */
+    let country: CountryGroup | null = null;
+    const countTo = (g: (typeof laws)[number], n: number) => {
+      if (country && country.key === `${regionId}::${g.countryCode}`) country.span += n;
+      else {
+        country = { key: `${regionId}::${g.countryCode}`, regionId, label: g.country, span: n };
+        countryGroups.push(country);
+      }
+    };
     for (const g of laws) {
       const key = lawKeyOf(regionId, g.law);
       const categoryIds = new Set(g.items.map(([categoryId]) => categoryId));
@@ -352,6 +392,7 @@ function leafColumns(
         });
         lawGroups.push({ key, regionId, label: g.law, span: 1, closed: true, categoryIds });
         span += 1;
+        countTo(g, 1);
         continue;
       }
       for (const [categoryId, c] of g.items) {
@@ -378,10 +419,11 @@ function leafColumns(
         categoryIds,
       });
       span += g.items.length;
+      countTo(g, g.items.length);
     }
     groups.push({ regionId, label: region.label, expanded: true, span });
   }
-  return { leaves, groups, lawGroups };
+  return { leaves, groups, countryGroups, lawGroups };
 }
 
 export function CompositionAggregateTable({
@@ -420,7 +462,12 @@ export function CompositionAggregateTable({
   const columnRows = (data?.rows ?? []).map((r) => ({
     regulations: showNearMiss ? [...r.regulations, ...r.nearMiss] : r.regulations,
   }));
-  const { leaves, groups, lawGroups } = leafColumns(columnRows, openRegions, closedLaws, locale);
+  const { leaves, groups, countryGroups, lawGroups } = leafColumns(
+    columnRows,
+    openRegions,
+    closedLaws,
+    locale,
+  );
   /*
     **組成そのものの列（CAS〜備考）は出し入れできる。**隠したぶんは端末に覚える。
     法規の列は中身で増減するので対象にしない。全部隠すと行が読めなくなるので、最後の1つは残す
@@ -673,12 +720,14 @@ export function CompositionAggregateTable({
               組成そのものの列は2段ぶんの高さを取る。
             */}
             {/*
-              見出しは3段。
+              見出しは5段。
                 1段目 … 「該当法規制」の見出し
                 2段目 … 地域。**分けても地域名のセルは残す**（横に伸びて、どこまでが
                         その地域かが分かる）。押すと分ける／格納する
-                3段目 … 規制区分。押すと**その区分に該当する行だけ**になる（格納ではない）
-              組成そのものの列は3段ぶんの高さを取る。
+                3段目 … 国。分けた地域だけに出る。押す操作は無い
+                4段目 … 法律。押すとその法律を1列にまとめる
+                5段目 … 規制区分。押すと**その区分に該当する行だけ**になる（格納ではない）
+              組成そのものの列は5段ぶんの高さを取る。
             */}
             {/*
               見出しは箱の上に貼り付ける。**色は行ではなく `thead` に置く。**
@@ -697,7 +746,7 @@ export function CompositionAggregateTable({
                   return (
                     <th
                       key={key}
-                      rowSpan={4}
+                      rowSpan={5}
                       // 貼り付ける列は position が sticky になる。つまみはその中に置ける
                       className={cn(
                         CELL,
@@ -726,8 +775,8 @@ export function CompositionAggregateTable({
                   <th
                     key={g.regionId}
                     colSpan={g.span}
-                    // 分けていない地域は、下の段まで貫いて1つのセルにする
-                    rowSpan={g.expanded ? 1 : 3}
+                    // 分けていない地域は、下の段（国・法律・区分）まで貫いて1つのセルにする
+                    rowSpan={g.expanded ? 1 : 4}
                     className={cn(CELL, "relative p-0 font-medium")}
                   >
                     <button
@@ -765,6 +814,25 @@ export function CompositionAggregateTable({
                   </th>
                 ))}
               </tr>
+
+              {/* 国の段。地域を分けたとき、法律の1つ上に国名を出す。押す操作は無い */}
+              {countryGroups.length > 0 && (
+                <tr className="text-left">
+                  {countryGroups.map((g) => (
+                    <th key={g.key} colSpan={g.span} className={cn(CELL, "p-0 font-medium")}>
+                      <div className="px-2 py-1">
+                        {/* 地域と同じく、文字は貼り付けている列の右に貼り付ける */}
+                        <span
+                          className="sticky inline-block max-w-full truncate"
+                          style={{ left: cols.frozenWidth + 8 }}
+                        >
+                          {g.label}
+                        </span>
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              )}
 
               {/*
                 法律の段。**区分名だけでは何の法律か分からない**ので、区分の1つ上に置く。

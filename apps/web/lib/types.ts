@@ -233,7 +233,8 @@ export interface ProductJudgementDto {
   lawNameJa: string | null;
   lawNameEn: string | null;
   lawNameOriginal: string;
-  /** その法律の国 */
+  /** その法律の国。コードは国ごとにまとめて開閉する鍵 */
+  countryCode: string;
   countryNameJa: string;
   countryNameEn: string | null;
   categoryNameJa: string | null;
@@ -494,7 +495,8 @@ export interface RowRegulationDto {
   lawNameJa: string | null;
   lawNameEn: string | null;
   lawNameOriginal: string;
-  /** その法律の国。見出しに法律名と一緒に出す */
+  /** その法律の国。見出しの、地域と法律のあいだの段に出す */
+  countryCode: string;
   countryNameJa: string;
   countryNameEn: string | null;
   categoryNameJa: string | null;

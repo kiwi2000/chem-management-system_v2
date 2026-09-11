@@ -128,6 +128,7 @@ export async function regulationsByCas(
               displayOrder: true,
               country: {
                 select: {
+                  code: true,
                   nameJa: true,
                   nameEn: true,
                   displayOrder: true,
@@ -231,6 +232,7 @@ export async function regulationsByCas(
           regionNameJa: region.nameJa,
           regionNameEn: region.nameEn,
           regionOrder: region.displayOrder,
+          countryCode: r.category.law.country.code,
           countryNameJa: r.category.law.country.nameJa,
           countryNameEn: r.category.law.country.nameEn,
           /*
@@ -338,6 +340,7 @@ export async function nearMissByCas(
                         displayOrder: true,
                         country: {
                           select: {
+                            code: true,
                             nameJa: true,
                             nameEn: true,
                             displayOrder: true,
@@ -431,6 +434,7 @@ export async function nearMissByCas(
         regionNameJa: region.nameJa,
         regionNameEn: region.nameEn,
         regionOrder: region.displayOrder,
+        countryCode: cat.law.country.code,
         countryNameJa: cat.law.country.nameJa,
         countryNameEn: cat.law.country.nameEn,
         categoryOrder: cat.law.displayOrder * 1000 + cat.displayOrder,

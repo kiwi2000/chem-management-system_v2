@@ -60,6 +60,7 @@ const JUDGEMENT_SELECT = {
           // 国の名前も出す。並びに要る項目は残す
           country: {
             select: {
+              code: true,
               nameJa: true,
               nameEn: true,
               displayOrder: true,
@@ -204,6 +205,7 @@ async function buildJudgementDtos(
       lawNameJa: r.category.law.nameJa,
       lawNameEn: r.category.law.nameEn,
       lawNameOriginal: r.category.law.nameOriginal,
+      countryCode: r.category.law.country.code,
       countryNameJa: r.category.law.country.nameJa,
       countryNameEn: r.category.law.country.nameEn,
       categoryNameJa: r.category.nameJa,
