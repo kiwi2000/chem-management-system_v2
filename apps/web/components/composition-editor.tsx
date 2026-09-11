@@ -27,6 +27,7 @@ import { CompositionAggregateTable } from "@/components/composition-aggregate-ta
 import { SourceChip, type SourceInfo } from "@/components/source-chip";
 import { CELL_CLIP } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
+import { ResizableBox } from "@/components/data-table/resizable-box";
 import {
   CompositionTreeRows,
   ExpandToggle,
@@ -576,7 +577,7 @@ export function CompositionEditor({
             そこまでページを送ると見出しが画面から消えていた。
             箱の中で行を送れば、見出しは上に貼り付いたまま、スクロールバーも下端にある
           */
-          <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
+          <ResizableBox storageKey="chem.box.compositionEditor" scrollerRef={cols.scrollerRef}>
             {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
             {cols.peek}
             {cols.stickyBar}
@@ -818,7 +819,7 @@ export function CompositionEditor({
                 </tr>
               </tfoot>
             </table>
-          </div>
+          </ResizableBox>
         )}
 
         {/*

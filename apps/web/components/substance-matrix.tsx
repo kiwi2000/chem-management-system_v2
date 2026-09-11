@@ -4,6 +4,7 @@ import { ChevronRight, Database, FoldVertical, UnfoldVertical } from "lucide-rea
 import { useMemo, useState, type ReactNode } from "react";
 import { CELL_CLIP, OPAQUE_MUTED_40 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
+import { ResizableBox } from "@/components/data-table/resizable-box";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useI18n } from "@/lib/i18n-client";
@@ -386,7 +387,7 @@ function Matrix({
         行も箱の中で送る。そうしないと、横のスクロールバーへ届くころには
         見出しが画面から消えている
       */}
-      <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
+      <ResizableBox storageKey="chem.box.substanceMatrix" scrollerRef={cols.scrollerRef}>
         {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
         {cols.peek}
         {cols.stickyBar}
@@ -595,7 +596,7 @@ function Matrix({
             ))}
           </tbody>
         </table>
-      </div>
+      </ResizableBox>
     </div>
   );
 }

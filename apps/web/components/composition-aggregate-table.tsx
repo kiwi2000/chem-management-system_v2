@@ -6,6 +6,7 @@ import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CELL_CLIP, OPAQUE_MUTED_40, OPAQUE_MUTED_50 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
+import { ResizableBox } from "@/components/data-table/resizable-box";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CellDetailDialog } from "@/components/cell-detail-dialog";
@@ -701,7 +702,7 @@ export function CompositionAggregateTable({
           箱の中で行を送る形にすると、見出しは上に貼り付いたまま、
           スクロールバーも箱の下端にあるので、どちらも見ながら動かせる
         */
-        <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto">
+        <ResizableBox storageKey="chem.box.compositionAggregate" scrollerRef={cols.scrollerRef}>
           {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
           {cols.peek}
           {cols.stickyBar}
@@ -1200,7 +1201,7 @@ export function CompositionAggregateTable({
               </tfoot>
             )}
           </table>
-        </div>
+        </ResizableBox>
       )}
     </div>
   );

@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
+import { ResizableBox } from "@/components/data-table/resizable-box";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
@@ -362,7 +363,11 @@ export function ProductJudgements({
             （画面全体を振らない）。高さを決めておくと、横のスクロールバーが
             箱の下端に来るので、見出しを見ながら動かせる
           */
-          <div ref={cols.scrollerRef} className="max-h-[70vh] overflow-auto" {...cols.rowProps}>
+          <ResizableBox
+            storageKey="chem.box.productJudgements"
+            scrollerRef={cols.scrollerRef}
+            {...cols.rowProps}
+          >
             {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
             {cols.peek}
             {cols.stickyBar}
@@ -639,7 +644,7 @@ export function ProductJudgements({
                 })}
               </TableBody>
             </Table>
-          </div>
+          </ResizableBox>
         )}
       </CardContent>
     </Card>

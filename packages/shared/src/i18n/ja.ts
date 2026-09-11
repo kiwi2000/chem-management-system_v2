@@ -278,6 +278,7 @@ export const ja = {
     reorder: "つかんで並べ替える",
     resetWidths: "列幅を戻す",
     resizeRows: "行の高さを変える",
+    resizeHeight: "表の高さを変える（下の線をドラッグ。2回押すと戻る）",
     resetRowHeight: "行の高さを戻す",
     selectAll: "このページをすべて選択",
     selectRow: "この行を選択",
