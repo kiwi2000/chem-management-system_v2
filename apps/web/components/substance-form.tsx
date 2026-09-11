@@ -1,7 +1,7 @@
 "use client";
 
 import { pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
-import { Pencil, Star } from "lucide-react";
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -345,7 +345,9 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                     <p className="text-xs">
                       {casRepresentative ? (
                         <span className="inline-flex items-center gap-1 font-medium">
-                          <Star className="size-3.5 fill-current" />
+                          <span role="img" aria-hidden="true">
+                            ✅
+                          </span>
                           {m.substances.casRepresentativeIs}
                         </span>
                       ) : currentRepresentative ? (

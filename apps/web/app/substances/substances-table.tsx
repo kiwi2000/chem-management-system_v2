@@ -7,7 +7,6 @@ import {
   serializeTableState,
   type TableState,
 } from "@chem/shared";
-import { Star } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -82,10 +81,14 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         ],
         render: (r) =>
           r.casRepresentative ? (
-            <Star
-              className="mx-auto size-4 fill-current"
+            // 代表の印は ✅（2026-09-11 指示。星から変えた）
+            <span
+              className="block text-center"
+              role="img"
               aria-label={m.substances.casRepresentativeYes}
-            />
+            >
+              ✅
+            </span>
           ) : null,
       },
       {
