@@ -125,6 +125,8 @@ export function ProductJudgements({
    * 見たい国だけ開く（法律と区分は国の数だけ続くので、閉じておかないと長い）
    */
   const [openCountries, setOpenCountries] = useState<Set<string>>(new Set());
+  /** 開いている法律。鍵は「国コード/法律コード」（同じ法律コードが国をまたぐことはないが、念のため） */
+  const [openLaws, setOpenLaws] = useState<Set<string>>(new Set());
   /**
    * 該当したものだけに絞るか。**既定は絞る。**
    * ふだん見たいのは当たったものだけだが、**非該当に直した判定を戻す口が要る**ので、
@@ -218,30 +220,45 @@ export function ProductJudgements({
     国ごとにまとめる。並びは地域 → 国 → 法律 → 区分なので、隣が同じ国なら同じまとまり。
     国の行に出す件数は、絞り込みに関わらずその国の全区分で数える
   */
+  interface LawGroup {
+    key: string;
+    label: string;
+    items: ProductJudgementDto[];
+  }
   const countries: {
     code: string;
     label: string;
     region: string;
     regionLabel: string;
-    items: ProductJudgementDto[];
+    /** 国の中は法律ごとにまとめる。法律の欄も1つのセルにして、押すと区分が開く（2026-09-11 指示） */
+    laws: LawGroup[];
   }[] = [];
   for (const j of shown) {
+    const lawKey = `${j.countryCode}/${j.lawCode}`;
+    const lawLabel = pickName(locale, j.lawNameJa ?? j.lawNameOriginal, j.lawNameEn);
     const last = countries[countries.length - 1];
-    if (last && last.code === j.countryCode) last.items.push(j);
-    else
+    if (last && last.code === j.countryCode) {
+      const lastLaw = last.laws[last.laws.length - 1];
+      if (lastLaw && lastLaw.key === lawKey) lastLaw.items.push(j);
+      else last.laws.push({ key: lawKey, label: lawLabel, items: [j] });
+    } else
       countries.push({
         code: j.countryCode,
         label: pickName(locale, j.countryNameJa, j.countryNameEn),
         region: j.regionCode,
         regionLabel: pickName(locale, j.regionNameJa, j.regionNameEn),
-        items: [j],
+        laws: [{ key: lawKey, label: lawLabel, items: [j] }],
       });
   }
-  /** 国が何行ぶんを占めるか。閉じていれば1行、開いていれば区分と開いた法文物質名の行のぶん */
-  const spanOf = (c: (typeof countries)[number]) =>
-    openCountries.has(c.code)
-      ? 1 + c.items.reduce((n, j) => n + 1 + (open.has(j.categoryId) ? j.hits.length : 0), 0)
+  const lawKeys = countries.flatMap((c) => c.laws.map((l) => l.key));
+  /** 法律が何行ぶんを占めるか。閉じていれば1行、開いていれば区分と開いた法文物質名の行のぶんが足される */
+  const lawSpanOf = (l: LawGroup) =>
+    openLaws.has(l.key)
+      ? 1 + l.items.reduce((n, j) => n + 1 + (open.has(j.categoryId) ? j.hits.length : 0), 0)
       : 1;
+  /** 国が何行ぶんを占めるか。閉じていれば1行、開いていれば中の法律のぶん */
+  const spanOf = (c: (typeof countries)[number]) =>
+    openCountries.has(c.code) ? 1 + c.laws.reduce((n, l) => n + lawSpanOf(l), 0) : 1;
   /*
     地域の欄は**同じ地域の国をまとめて1つ**にする。並びは地域 → 国なので、
     隣が同じ地域なら同じまとまり。最初の国の行に置き、その地域の国の行を全部またぐ
@@ -263,7 +280,18 @@ export function ProductJudgements({
     if (j.needsReview) t.review += 1;
     countryTotals.set(j.countryCode, t);
   }
+  /** 法律の行に出す件数。国と同じく、絞り込みに関わらずその法律の全区分で数える */
+  const lawTotals = new Map<string, { total: number; applicable: number; review: number }>();
+  for (const j of items) {
+    const key = `${j.countryCode}/${j.lawCode}`;
+    const t = lawTotals.get(key) ?? { total: 0, applicable: 0, review: 0 };
+    t.total += 1;
+    if (j.verdict === "APPLICABLE") t.applicable += 1;
+    if (j.needsReview) t.review += 1;
+    lawTotals.set(key, t);
+  }
   const allCountriesOpen = countries.every((c) => openCountries.has(c.code));
+  const allLawsOpen = lawKeys.every((k) => openLaws.has(k));
 
   const toggle = (categoryId: string) => {
     const next = new Set(open);
@@ -276,6 +304,12 @@ export function ProductJudgements({
     if (next.has(code)) next.delete(code);
     else next.add(code);
     setOpenCountries(next);
+  };
+  const toggleLaw = (key: string) => {
+    const next = new Set(openLaws);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setOpenLaws(next);
   };
 
   return (
@@ -344,9 +378,10 @@ export function ProductJudgements({
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={allCountriesOpen && openable.every((id) => open.has(id))}
+                disabled={allCountriesOpen && allLawsOpen && openable.every((id) => open.has(id))}
                 onClick={() => {
                   setOpenCountries(new Set(countries.map((c) => c.code)));
+                  setOpenLaws(new Set(lawKeys));
                   setOpen(new Set(openable));
                 }}
               >
@@ -357,9 +392,10 @@ export function ProductJudgements({
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={open.size === 0 && openCountries.size === 0}
+                disabled={open.size === 0 && openCountries.size === 0 && openLaws.size === 0}
                 onClick={() => {
                   setOpen(new Set());
+                  setOpenLaws(new Set());
                   setOpenCountries(new Set());
                 }}
               >
@@ -501,185 +537,240 @@ export function ProductJudgements({
                         </TableCell>
                       </TableRow>
                       {countryOpen &&
-                        c.items.map((j) => {
-                          const opened = open.has(j.categoryId);
-                          const many = j.hits.length > 0;
+                        c.laws.map((l) => {
+                          const lawOpen = openLaws.has(l.key);
+                          const lt = lawTotals.get(l.key) ?? { total: 0, applicable: 0, review: 0 };
                           return (
-                            <Fragment key={j.categoryId}>
-                              {/* 区分の行。国の欄は上の行が縦にまたいでいるので置かない */}
-                              <TableRow>
-                                <TableCell className={cn(CELL, "align-top")}>
-                                  {pickName(locale, j.lawNameJa ?? j.lawNameOriginal, j.lawNameEn)}
-                                </TableCell>
-                                <TableCell className={cn(CELL, "align-top")}>
-                                  {many ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => toggle(j.categoryId)}
-                                      aria-expanded={opened}
-                                      aria-label={
-                                        opened ? m.composition.collapseAll : m.composition.expandAll
-                                      }
-                                      className="hover:text-foreground -ml-1 flex w-full items-center gap-1 text-left"
-                                    >
-                                      <ChevronRight
-                                        className={cn(
-                                          "text-muted-foreground size-4 shrink-0 transition-transform",
-                                          opened && "rotate-90",
-                                        )}
-                                      />
-                                      <OneLine
-                                        text={pickName(
-                                          locale,
-                                          j.categoryNameJa ?? j.categoryNameOriginal,
-                                          j.categoryNameEn,
-                                        )}
-                                      />
-                                    </button>
-                                  ) : (
-                                    <OneLine
-                                      text={pickName(
-                                        locale,
-                                        j.categoryNameJa ?? j.categoryNameOriginal,
-                                        j.categoryNameEn,
+                            <Fragment key={`law:${l.key}`}>
+                              {/* 法律の行。国と同じく、押すと中の区分が開く。欄は法律の行を全部またぐ */}
+                              <TableRow className="bg-muted/30">
+                                <TableCell
+                                  className={cn(CELL, "bg-muted/30 align-top font-medium")}
+                                  rowSpan={lawSpanOf(l)}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleLaw(l.key)}
+                                    aria-expanded={lawOpen}
+                                    aria-label={
+                                      lawOpen ? m.composition.collapseAll : m.composition.expandAll
+                                    }
+                                    className="hover:text-foreground -ml-1 flex w-full items-center gap-1 text-left"
+                                  >
+                                    <ChevronRight
+                                      className={cn(
+                                        "text-muted-foreground size-4 shrink-0 transition-transform",
+                                        lawOpen && "rotate-90",
                                       )}
                                     />
-                                  )}
-                                  {/*
+                                    <OneLine text={l.label} />
+                                  </button>
+                                </TableCell>
+                                <TableCell
+                                  className={cn(CELL, "text-muted-foreground align-top text-xs")}
+                                  colSpan={HEADS.length - 3 + (canEdit ? 1 : 0)}
+                                >
+                                  {[
+                                    m.judgements.summary(lt.applicable, lt.total),
+                                    lt.review > 0 ? m.judgements.reviewCount(lt.review) : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ・ ")}
+                                </TableCell>
+                              </TableRow>
+                              {lawOpen &&
+                                l.items.map((j) => {
+                                  const opened = open.has(j.categoryId);
+                                  const many = j.hits.length > 0;
+                                  return (
+                                    <Fragment key={j.categoryId}>
+                                      {/* 区分の行。国と法律の欄は上の行が縦にまたいでいるので置かない */}
+                                      <TableRow>
+                                        <TableCell className={cn(CELL, "align-top")}>
+                                          {many ? (
+                                            <button
+                                              type="button"
+                                              onClick={() => toggle(j.categoryId)}
+                                              aria-expanded={opened}
+                                              aria-label={
+                                                opened
+                                                  ? m.composition.collapseAll
+                                                  : m.composition.expandAll
+                                              }
+                                              className="hover:text-foreground -ml-1 flex w-full items-center gap-1 text-left"
+                                            >
+                                              <ChevronRight
+                                                className={cn(
+                                                  "text-muted-foreground size-4 shrink-0 transition-transform",
+                                                  opened && "rotate-90",
+                                                )}
+                                              />
+                                              <OneLine
+                                                text={pickName(
+                                                  locale,
+                                                  j.categoryNameJa ?? j.categoryNameOriginal,
+                                                  j.categoryNameEn,
+                                                )}
+                                              />
+                                            </button>
+                                          ) : (
+                                            <OneLine
+                                              text={pickName(
+                                                locale,
+                                                j.categoryNameJa ?? j.categoryNameOriginal,
+                                                j.categoryNameEn,
+                                              )}
+                                            />
+                                          )}
+                                          {/*
                             判定の列は置いていない。絞りを外したときだけ、
                             非該当のものにここで印を付ける（印が無い＝該当）。
                           */}
-                                  {j.verdict !== "APPLICABLE" && (
-                                    <Badge variant="secondary" className="mt-0.5">
-                                      {m.judgements.notApplicable}
-                                    </Badge>
-                                  )}
-                                </TableCell>
-                                <TableCell className={CELL} />
-                                {/*
+                                          {j.verdict !== "APPLICABLE" && (
+                                            <Badge variant="secondary" className="mt-0.5">
+                                              {m.judgements.notApplicable}
+                                            </Badge>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className={CELL} />
+                                        {/*
                           閉じているあいだは、中身のかわりに件数を出す。
                           空欄にすると「何にも当たっていない」に見える。
                         */}
-                                <TableCell
-                                  className={cn(CELL, "text-muted-foreground align-top text-xs")}
-                                >
-                                  {many && !opened && m.judgements.hitCount(j.hits.length)}
-                                  {j.hitsWithheld && (
-                                    <span className="block">{m.judgements.basisWithheld}</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className={CELL} />
-                                <TableCell className={CELL} />
-                                {/* 区分の行には**区分に付けた点数**を出す。物質の点数はこの合計 */}
-                                <TableCell
-                                  className={cn(
-                                    CELL,
-                                    "text-right align-top font-mono tabular-nums",
-                                  )}
-                                >
-                                  {j.categoryScore}
-                                </TableCell>
-                                <TableCell className={cn(CELL, "align-top")}>
-                                  <Warning j={j} m={m} locale={locale} />
-                                </TableCell>
-                                {canEdit && (
-                                  <TableCell className={cn(CELL, "align-top")}>
-                                    {/* その場で計算した判定は保存していないので、確認も修正もできない */}
-                                    {asOf ? null : editing === j.categoryId ? (
-                                      <div className="space-y-1">
-                                        <Input
-                                          // 列の幅いっぱい。決め打ちにすると列より広くなって切れる
-                                          className="h-8 w-full"
-                                          placeholder={m.judgements.notePlaceholder}
-                                          value={note}
-                                          onChange={(e) => setNote(e.target.value)}
-                                        />
-                                        <div className="flex flex-wrap gap-1">
-                                          <Button
-                                            size="sm"
-                                            disabled={busy}
-                                            onClick={() => void decide(j.categoryId)}
-                                          >
-                                            <Check className="mr-1 size-3.5" />
-                                            {m.judgements.confirm}
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            disabled={busy}
-                                            onClick={() =>
-                                              void decide(
-                                                j.categoryId,
-                                                j.verdict === "APPLICABLE"
-                                                  ? "NOT_APPLICABLE"
-                                                  : "APPLICABLE",
-                                              )
-                                            }
-                                          >
-                                            {j.verdict === "APPLICABLE"
-                                              ? m.judgements.changeToNot
-                                              : m.judgements.changeToYes}
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => {
-                                              setEditing(null);
-                                              setNote("");
-                                            }}
-                                          >
-                                            {m.common.cancel}
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => {
-                                          setEditing(j.categoryId);
-                                          setNote(j.decidedNote ?? "");
-                                        }}
-                                      >
-                                        {j.needsReview ? m.judgements.review : m.judgements.change}
-                                      </Button>
-                                    )}
-                                  </TableCell>
-                                )}
-                              </TableRow>
+                                        <TableCell
+                                          className={cn(
+                                            CELL,
+                                            "text-muted-foreground align-top text-xs",
+                                          )}
+                                        >
+                                          {many && !opened && m.judgements.hitCount(j.hits.length)}
+                                          {j.hitsWithheld && (
+                                            <span className="block">
+                                              {m.judgements.basisWithheld}
+                                            </span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className={CELL} />
+                                        <TableCell className={CELL} />
+                                        {/* 区分の行には**区分に付けた点数**を出す。物質の点数はこの合計 */}
+                                        <TableCell
+                                          className={cn(
+                                            CELL,
+                                            "text-right align-top font-mono tabular-nums",
+                                          )}
+                                        >
+                                          {j.categoryScore}
+                                        </TableCell>
+                                        <TableCell className={cn(CELL, "align-top")}>
+                                          <Warning j={j} m={m} locale={locale} />
+                                        </TableCell>
+                                        {canEdit && (
+                                          <TableCell className={cn(CELL, "align-top")}>
+                                            {/* その場で計算した判定は保存していないので、確認も修正もできない */}
+                                            {asOf ? null : editing === j.categoryId ? (
+                                              <div className="space-y-1">
+                                                <Input
+                                                  // 列の幅いっぱい。決め打ちにすると列より広くなって切れる
+                                                  className="h-8 w-full"
+                                                  placeholder={m.judgements.notePlaceholder}
+                                                  value={note}
+                                                  onChange={(e) => setNote(e.target.value)}
+                                                />
+                                                <div className="flex flex-wrap gap-1">
+                                                  <Button
+                                                    size="sm"
+                                                    disabled={busy}
+                                                    onClick={() => void decide(j.categoryId)}
+                                                  >
+                                                    <Check className="mr-1 size-3.5" />
+                                                    {m.judgements.confirm}
+                                                  </Button>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    disabled={busy}
+                                                    onClick={() =>
+                                                      void decide(
+                                                        j.categoryId,
+                                                        j.verdict === "APPLICABLE"
+                                                          ? "NOT_APPLICABLE"
+                                                          : "APPLICABLE",
+                                                      )
+                                                    }
+                                                  >
+                                                    {j.verdict === "APPLICABLE"
+                                                      ? m.judgements.changeToNot
+                                                      : m.judgements.changeToYes}
+                                                  </Button>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                      setEditing(null);
+                                                      setNote("");
+                                                    }}
+                                                  >
+                                                    {m.common.cancel}
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => {
+                                                  setEditing(j.categoryId);
+                                                  setNote(j.decidedNote ?? "");
+                                                }}
+                                              >
+                                                {j.needsReview
+                                                  ? m.judgements.review
+                                                  : m.judgements.change}
+                                              </Button>
+                                            )}
+                                          </TableCell>
+                                        )}
+                                      </TableRow>
 
-                              {/* 中身。1行＝当たった法文物質名1件 */}
-                              {opened &&
-                                j.hits.map((h, i) => (
-                                  <TableRow key={`${j.categoryId}-${i}`} className="bg-muted/40">
-                                    <TableCell className={CELL} />
-                                    <TableCell className={CELL} />
-                                    <TableCell className={cn(CELL, "align-top font-mono text-xs")}>
-                                      {h.officialNumber ?? ""}
-                                    </TableCell>
-                                    <TableCell className={cn(CELL, "align-top")}>
-                                      <OneLine text={hitName(h, locale, m)} />
-                                      {/* 施行前に登録した法文物質名。該非は変えず、何であるかだけ分かるようにする */}
-                                      {h.notYetEffective && h.effectiveFrom && (
-                                        <Badge variant="outline" className="mt-1">
-                                          {m.judgements.notYetEffective(h.effectiveFrom)}
-                                        </Badge>
-                                      )}
-                                    </TableCell>
-                                    <MatchedCells hit={h} m={m} cellClass={CELL} />
-                                    {/* その行を作った物質の点数。合算した行は寄与ぶんの合計 */}
-                                    <TableCell
-                                      className={cn(
-                                        CELL,
-                                        "text-right align-top font-mono tabular-nums",
-                                      )}
-                                    >
-                                      {h.score ?? ""}
-                                    </TableCell>
-                                    <TableCell className={CELL} />
-                                    {canEdit && <TableCell className={CELL} />}
-                                  </TableRow>
-                                ))}
+                                      {/* 中身。1行＝当たった法文物質名1件 */}
+                                      {opened &&
+                                        j.hits.map((h, i) => (
+                                          <TableRow
+                                            key={`${j.categoryId}-${i}`}
+                                            className="bg-muted/40"
+                                          >
+                                            <TableCell className={CELL} />
+                                            <TableCell
+                                              className={cn(CELL, "align-top font-mono text-xs")}
+                                            >
+                                              {h.officialNumber ?? ""}
+                                            </TableCell>
+                                            <TableCell className={cn(CELL, "align-top")}>
+                                              <OneLine text={hitName(h, locale, m)} />
+                                              {/* 施行前に登録した法文物質名。該非は変えず、何であるかだけ分かるようにする */}
+                                              {h.notYetEffective && h.effectiveFrom && (
+                                                <Badge variant="outline" className="mt-1">
+                                                  {m.judgements.notYetEffective(h.effectiveFrom)}
+                                                </Badge>
+                                              )}
+                                            </TableCell>
+                                            <MatchedCells hit={h} m={m} cellClass={CELL} />
+                                            {/* その行を作った物質の点数。合算した行は寄与ぶんの合計 */}
+                                            <TableCell
+                                              className={cn(
+                                                CELL,
+                                                "text-right align-top font-mono tabular-nums",
+                                              )}
+                                            >
+                                              {h.score ?? ""}
+                                            </TableCell>
+                                            <TableCell className={CELL} />
+                                            {canEdit && <TableCell className={CELL} />}
+                                          </TableRow>
+                                        ))}
+                                    </Fragment>
+                                  );
+                                })}
                             </Fragment>
                           );
                         })}
