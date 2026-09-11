@@ -19,6 +19,14 @@ import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
+/** フィルターの並び。ここに無い列は、この後ろに2列で並ぶ */
+const FILTER_LAYOUT: string[][] = [
+  ["code", "casRepresentative", "status"],
+  ["casNumber"],
+  ["nameJa"],
+  ["nameEn"],
+];
+
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
 
 interface Props {
@@ -63,7 +71,9 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
       {
         key: "casNumber",
         header: m.substances.casNumber,
-        kind: "text",
+        // 絞り込みは複数まとめて打てる（製品の組成のCAS番号と同じ欄）。列としてはこれまでどおり
+        kind: "list",
+        filterFullWidth: true,
         width: 104,
         className: "font-mono text-xs",
         render: (r) => r.casNumber ?? "—",
@@ -96,6 +106,9 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         header: m.substances.nameJa,
         kind: "text",
         nullable: false,
+        filterFullWidth: true,
+        // 右の「別名も含む」にチェックすると、条件は nameJaWithAliases の列で送られる（製品と同じ）
+        filterVariant: { key: "nameJaWithAliases", label: m.table.includeAliases },
         width: 240,
         render: (r) => (
           <>
@@ -110,9 +123,29 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         key: "nameEn",
         header: m.substances.nameEn,
         kind: "text",
+        filterFullWidth: true,
+        filterVariant: { key: "nameEnWithAliases", label: m.table.includeAliases },
         width: 200,
         className: "text-muted-foreground",
         render: (r) => r.nameEn ?? "",
+      },
+      // 「別名も含む」の受け皿。表にもフィルターの欄にも出さず、状態の読み書きにだけ使う
+      {
+        key: "nameJaWithAliases",
+        header: m.substances.nameJa,
+        kind: "text",
+        nullable: false,
+        filterOnly: true,
+        filterable: false,
+        sortable: false,
+      },
+      {
+        key: "nameEnWithAliases",
+        header: m.substances.nameEn,
+        kind: "text",
+        filterOnly: true,
+        filterable: false,
+        sortable: false,
       },
       {
         key: "status",
@@ -312,6 +345,8 @@ export function SubstancesTable({ approvalRequired, scope, title, reloadToken, o
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
         emptyMessage={m.substances.empty}
+        // CAS番号と名称は行いっぱいに。日本語名と英語名は上下に並べる（製品の並びと同じ）
+        filterLayout={FILTER_LAYOUT}
         create={editable && scope === "published" ? { href: "/substances/new" } : undefined}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}

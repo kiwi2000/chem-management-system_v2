@@ -28,13 +28,44 @@ function judgementCondition(values: string[]): Record<string, unknown> | null {
  * 画面側の列定義とキーを一致させること（一致しない列は黙って無視される）。
  */
 
+/**
+ * 名称の絞り込みで「別名も含む」にチェックしたときの条件。
+ * 主名称か別名のどれかに当たれば該当。「空白」「空白でない」は主名称だけで見る
+ * （別名は無いのがふつうなので、別名まで見ると意味が変わる）
+ */
+function nameWithAliases(
+  field: "nameJa" | "nameEn",
+  f: Extract<ColumnFilter, { kind: "text" }>,
+): Record<string, unknown> | null {
+  const main = anyOfTextCondition([field], f);
+  if (!main) return null;
+  if (f.op === "empty" || f.op === "notEmpty") return main;
+  return { OR: [main, { aliases: { some: anyOfTextCondition([field], f) } }] };
+}
+
 export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   // コード・CAS は正規化列で突合する（全角や大小文字の違いを吸収するため）
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
-  { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
+  // CAS番号は複数まとめて（製品の組成のCAS番号と同じ入力欄。2026-09-11 指示）。値は正規化して完全一致
+  { key: "casNumber", kind: "list", field: "casNormalized", normalize: normalizeCas },
   { key: "casRepresentative", kind: "enum", field: "isCasRepresentative", booleanEnum: true },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
+  // 「別名も含む」にチェックしたときの名称（製品と同じ）
+  {
+    key: "nameJaWithAliases",
+    kind: "text",
+    field: "nameJa",
+    sortable: false,
+    custom: (f) => (f.kind === "text" ? nameWithAliases("nameJa", f) : null),
+  },
+  {
+    key: "nameEnWithAliases",
+    kind: "text",
+    field: "nameEn",
+    sortable: false,
+    custom: (f) => (f.kind === "text" ? nameWithAliases("nameEn", f) : null),
+  },
   { key: "status", kind: "enum", field: "status" },
   { key: "publishState", kind: "enum", field: "publishState" },
   // 官報公示整理番号は子テーブル。番号でフィルターできるが並べ替えはできない
@@ -127,21 +158,6 @@ function substanceNameCondition(
     },
   }));
   return op === "all" ? { AND: each } : { OR: each };
-}
-
-/**
- * 名称の絞り込みで「別名も含む」にチェックしたときの条件。
- * 主名称か別名のどれかに当たれば該当。「空白」「空白でない」は主名称だけで見る
- * （別名は無いのがふつうなので、別名まで見ると意味が変わる）
- */
-function nameWithAliases(
-  field: "nameJa" | "nameEn",
-  f: Extract<ColumnFilter, { kind: "text" }>,
-): Record<string, unknown> | null {
-  const main = anyOfTextCondition([field], f);
-  if (!main) return null;
-  if (f.op === "empty" || f.op === "notEmpty") return main;
-  return { OR: [main, { aliases: { some: anyOfTextCondition([field], f) } }] };
 }
 
 export const PRODUCT_COLUMNS: QueryColumn[] = [
