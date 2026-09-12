@@ -548,23 +548,12 @@ export function CompositionEditor({
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
         <CardTitle className="text-base">{m.composition.title}</CardTitle>
-        {/* 編集を先に置く。展開のボタンは組成の中身によって出たり出なかったりするので、
-          後ろに並べておくと「編集」の位置が動かない */}
         <div className="flex items-center gap-1">
-          {onRequestEdit &&
-            canEdit &&
-            (editing ? (
-              <Badge variant="secondary">{m.common.editMode}</Badge>
-            ) : (
-              <Button type="button" size="sm" variant="outline" onClick={onRequestEdit}>
-                <Pencil className="mr-1 size-3.5" />
-                {m.common.edit}
-              </Button>
-            ))}
           {/*
+            「開」「閉」は行の先頭（他の表と同じ並び。2026-09-12 指示）。
             開くものが無ければ置いても押せないので出さない。
             **ここは登録組成の木だけを操る。**まとめた表は自分の見出しに同じ組を持つ。
-            2つの表が同時に見えているので、どちらに効くのか分からないボタンは置かない。
+            2つの表が同時に見えているので、どちらに効くのか分からないボタンは置かない
           */}
           {showWithin && (
             <ExpandButtons
@@ -575,6 +564,16 @@ export function CompositionEditor({
               onCollapse={() => tree.collapseAll()}
             />
           )}
+          {onRequestEdit &&
+            canEdit &&
+            (editing ? (
+              <Badge variant="secondary">{m.common.editMode}</Badge>
+            ) : (
+              <Button type="button" size="sm" variant="outline" onClick={onRequestEdit}>
+                <Pencil className="mr-1 size-3.5" />
+                {m.common.edit}
+              </Button>
+            ))}
         </div>
       </CardHeader>
 

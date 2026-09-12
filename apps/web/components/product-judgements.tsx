@@ -339,37 +339,9 @@ export function ProductJudgements({
           )}
         </CardTitle>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">
-            {m.judgements.summary(applicable.length, items.length)}
-          </span>
-          {review.length > 0 && (
-            <Badge variant="secondary" className="gap-1">
-              <CircleHelp className="size-3" />
-              {m.judgements.reviewCount(review.length)}
-            </Badge>
-          )}
-          {/* 判定対象日。入れているあいだは、その日の規制でその場で計算した判定に切り替わる */}
-          <label className="flex items-center gap-1 text-xs" title={m.judgements.asOfHint}>
-            <span className="text-muted-foreground">{m.judgements.asOf}</span>
-            <Input
-              type="date"
-              value={asOf}
-              onChange={(e) => setAsOf(e.target.value)}
-              className="h-8 w-36"
-            />
-          </label>
-          <Button
-            type="button"
-            size="sm"
-            variant={onlyApplicable ? "default" : "outline"}
-            aria-pressed={onlyApplicable}
-            onClick={() => setOnlyApplicable(!onlyApplicable)}
-          >
-            {m.judgements.onlyApplicable}
-          </Button>
-          {/* 「展開」は国と区分の両方を開く。「格納」は両方閉じる。組成の表と同じ形 */}
+          {/* 「開」「閉」は行の先頭（他の表と同じ並び。2026-09-12 指示）。国・法律・区分をまとめて開け閉めする */}
           {countries.length > 0 && (
-            <div className="flex items-center gap-1">
+            <div className="mr-auto flex items-center gap-1">
               {!allJudgementOpen && (
                 <Button
                   type="button"
@@ -404,6 +376,34 @@ export function ProductJudgements({
               )}
             </div>
           )}
+          <span className="text-muted-foreground">
+            {m.judgements.summary(applicable.length, items.length)}
+          </span>
+          {review.length > 0 && (
+            <Badge variant="secondary" className="gap-1">
+              <CircleHelp className="size-3" />
+              {m.judgements.reviewCount(review.length)}
+            </Badge>
+          )}
+          {/* 判定対象日。入れているあいだは、その日の規制でその場で計算した判定に切り替わる */}
+          <label className="flex items-center gap-1 text-xs" title={m.judgements.asOfHint}>
+            <span className="text-muted-foreground">{m.judgements.asOf}</span>
+            <Input
+              type="date"
+              value={asOf}
+              onChange={(e) => setAsOf(e.target.value)}
+              className="h-8 w-36"
+            />
+          </label>
+          <Button
+            type="button"
+            size="sm"
+            variant={onlyApplicable ? "default" : "outline"}
+            aria-pressed={onlyApplicable}
+            onClick={() => setOnlyApplicable(!onlyApplicable)}
+          >
+            {m.judgements.onlyApplicable}
+          </Button>
         </div>
       </CardHeader>
 
