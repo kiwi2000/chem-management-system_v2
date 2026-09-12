@@ -1043,7 +1043,6 @@ export const en: Messages = {
     decidedBy: (who: string, when: string) => `Checked by ${who} on ${when}`,
     review: "Check this",
     change: "Edit verdict",
-    confirm: "Applies",
     changeToNot: "Does not apply",
     changeToYes: "Applies",
     notePlaceholder: "Reason",

@@ -697,7 +697,10 @@ export function ProductJudgements({
                                                     onClick={() => void decide(j.categoryId)}
                                                   >
                                                     <Check className="mr-1 size-3.5" />
-                                                    {m.judgements.confirm}
+                                                    {/* いまの判定のまま確認する。札はいまの判定（非該当なら「非該当」） */}
+                                                    {j.verdict === "APPLICABLE"
+                                                      ? m.judgements.changeToYes
+                                                      : m.judgements.changeToNot}
                                                   </Button>
                                                   <Button
                                                     size="sm"

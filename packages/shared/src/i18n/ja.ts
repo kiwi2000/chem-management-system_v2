@@ -1067,7 +1067,6 @@ export const ja = {
     decidedBy: (who: string, when: string) => `${who} が ${when} に確認`,
     review: "確認する",
     change: "判定修正",
-    confirm: "該当",
     changeToNot: "非該当",
     changeToYes: "該当",
     notePlaceholder: "根拠",
