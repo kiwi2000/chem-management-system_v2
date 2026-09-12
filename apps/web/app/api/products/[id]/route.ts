@@ -2,11 +2,12 @@ import { productSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { countUsesAsMaterial } from "@/lib/composition-service";
+import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { writeApprovalEvent } from "@/lib/publish-service";
 import {
-  PRODUCT_INCLUDE,
+  productInclude,
   childWrites,
   normalizeInput,
   canEditProduct,
@@ -28,9 +29,10 @@ export async function GET(_req: Request, { params }: Ctx) {
   if (actor instanceof Response) return actor;
   const { id } = await params;
 
+  const version = await getCurrentVersion();
   const item = await prisma.product.findFirst({
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
-    include: PRODUCT_INCLUDE,
+    include: productInclude(version?.id ?? null),
   });
   if (!item) {
     const m = await getServerMessages();

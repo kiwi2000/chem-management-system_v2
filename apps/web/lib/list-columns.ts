@@ -7,16 +7,20 @@ import { anyOfTextCondition, type QueryColumn } from "@/lib/table-query";
  * 判定は区分ごとに1行ずつ持っており、**当たらなかった区分の行も残る**。
  * そのため「該当なし」は「行が無い」ではなく「該当の行が1つも無い」。
  * 「行そのものが無い」は、まだ一度も判定していないという別の意味になる。
+ *
+ * **見るのは現在の法規制バージョンの行だけ。**判定は版ごとにあるので、
+ * 絞らないと前の版で当たっていたものまで「該当あり」に数える
  */
-function judgementCondition(values: string[]): Record<string, unknown> | null {
-  const hit = { judgements: { some: { verdict: "APPLICABLE" as const } } };
+function judgementCondition(values: string[], versionId: string): Record<string, unknown> | null {
+  const hit = { judgements: { some: { versionId, verdict: "APPLICABLE" as const } } };
   const each: Record<string, unknown>[] = [];
   for (const v of new Set(values)) {
     if (v === "hit") each.push(hit);
     // 判定はしてあるが、どの区分にも当たらなかった
-    else if (v === "none") each.push({ AND: [{ judgements: { some: {} } }, { NOT: hit }] });
-    // まだ一度も判定していない
-    else if (v === "unjudged") each.push({ judgements: { none: {} } });
+    else if (v === "none")
+      each.push({ AND: [{ judgements: { some: { versionId } } }, { NOT: hit }] });
+    // まだ一度も判定していない（この版で）
+    else if (v === "unjudged") each.push({ judgements: { none: { versionId } } });
   }
   if (each.length === 0) return null;
   // 選択肢が複数選ばれたら「どれか」。すべて選ばれた状態は絞らないのと同じ
@@ -91,12 +95,12 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
  * 判定は区分ごとに何行もあるので、それだと確認が残っていても当たってしまう。
  * 「印の付いた行が1つも無い」で見る。
  */
-function reviewCondition(values: string[]): Record<string, unknown> | null {
+function reviewCondition(values: string[], versionId: string): Record<string, unknown> | null {
   const picked = [...new Set(values.map((v) => v === "true"))];
   const only = picked[0];
   // 両方選ばれているのは、絞っていないのと同じ
   if (only === undefined || picked.length > 1) return null;
-  const flagged = { needsReview: true };
+  const flagged = { versionId, needsReview: true };
   return only ? { judgements: { some: flagged } } : { judgements: { none: flagged } };
 }
 
@@ -112,11 +116,12 @@ function reviewCondition(values: string[]): Record<string, unknown> | null {
 function judgementCategoryCondition(
   values: string[],
   op: "all" | "any",
+  versionId: string,
 ): Record<string, unknown> | null {
   const ids = [...new Set(values.filter((v) => v !== ""))];
   if (ids.length === 0) return null;
   const each = ids.map((id) => ({
-    judgements: { some: { categoryId: id, verdict: "APPLICABLE" as const } },
+    judgements: { some: { versionId, categoryId: id, verdict: "APPLICABLE" as const } },
   }));
   return op === "all" ? { AND: each } : { OR: each };
 }
@@ -161,7 +166,45 @@ function substanceNameCondition(
   return op === "all" ? { AND: each } : { OR: each };
 }
 
-export const PRODUCT_COLUMNS: QueryColumn[] = [
+/**
+ * 製品の一覧の列定義。
+ *
+ * **判定に関わる列は、現在の法規制バージョンの行だけを見る**ので、版のIDを受け取って組み立てる。
+ * 版が無ければ（判定のしようがない）判定の条件は何にも当たらない
+ */
+export function productColumns(versionId: string | null): QueryColumn[] {
+  const v = versionId ?? "";
+  return [
+    ...PRODUCT_PLAIN_COLUMNS,
+    // 判定は区分ごとの行を数えて決まるので、共通の組み立てには乗らない
+    {
+      key: "judgement",
+      kind: "enum",
+      field: "judgements",
+      sortable: false,
+      custom: (f) => (f.kind === "enum" ? judgementCondition(f.values, v) : null),
+    },
+    // 当たっている規制区分で絞る。区分のIDが値として来る
+    {
+      key: "judgementCategories",
+      kind: "list",
+      field: "categoryId",
+      sortable: false,
+      custom: (f) => (f.kind === "list" ? judgementCategoryCondition(f.values, f.op, v) : null),
+    },
+    // 「1つでも確認が残っているか」。区分ごとに見るのではない
+    {
+      key: "needsReview",
+      kind: "enum",
+      field: "needsReview",
+      sortable: false,
+      custom: (f) => (f.kind === "enum" ? reviewCondition(f.values, v) : null),
+    },
+  ];
+}
+
+/** 製品の一覧の列のうち、法規制バージョンに依らないもの */
+const PRODUCT_PLAIN_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
@@ -205,30 +248,6 @@ export const PRODUCT_COLUMNS: QueryColumn[] = [
   },
   { key: "note", kind: "text", field: "note", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
-  // 判定は区分ごとの行を数えて決まるので、共通の組み立てには乗らない
-  {
-    key: "judgement",
-    kind: "enum",
-    field: "judgements",
-    sortable: false,
-    custom: (f) => (f.kind === "enum" ? judgementCondition(f.values) : null),
-  },
-  // 当たっている規制区分で絞る。区分のIDが値として来る
-  {
-    key: "judgementCategories",
-    kind: "list",
-    field: "categoryId",
-    sortable: false,
-    custom: (f) => (f.kind === "list" ? judgementCategoryCondition(f.values, f.op) : null),
-  },
-  // 「1つでも確認が残っているか」。区分ごとに見るのではない
-  {
-    key: "needsReview",
-    kind: "enum",
-    field: "needsReview",
-    sortable: false,
-    custom: (f) => (f.kind === "enum" ? reviewCondition(f.values) : null),
-  },
 ];
 
 export const REGION_COLUMNS: QueryColumn[] = [

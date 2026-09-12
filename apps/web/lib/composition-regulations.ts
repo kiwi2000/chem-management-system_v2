@@ -109,8 +109,9 @@ async function linkDataOf(
 export async function regulationsByCas(
   productId: string,
 ): Promise<Map<string, RowRegulationDto[]>> {
+  // 判定は法規制バージョンごとにあるので、現在のバージョンの行だけを見る
   const rows = await prisma.productJudgement.findMany({
-    where: { productId, verdict: "APPLICABLE" },
+    where: { productId, verdict: "APPLICABLE", version: { isCurrent: true, deletedAt: null } },
     select: {
       categoryId: true,
       needsReview: true,
@@ -371,7 +372,7 @@ export async function nearMissByCas(
       },
     }),
     prisma.productJudgement.findMany({
-      where: { productId, verdict: "APPLICABLE" },
+      where: { productId, verdict: "APPLICABLE", versionId: version.id },
       select: { categoryId: true, hits: { select: { statutorySubstanceId: true } } },
     }),
   ]);

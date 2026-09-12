@@ -107,7 +107,7 @@ export const en: Messages = {
     online: "Signed in",
     rejudgeNeeded: "Re-judge needed",
     rejudgeNeededHint:
-      "Regulation data changed after the last full re-judge. Opens System settings › Regulatory judgement",
+      "Regulation data changed, or the regulation version was switched, after the last full re-judge. Opens System settings › Regulatory judgement",
     noLinkVersion: "No current version",
     hideHeader: "Hide the top bar",
     showHeader: "Show the top bar",
@@ -1002,7 +1002,9 @@ export const en: Messages = {
     computedAt: (when: string) => `computed ${when}`,
     stale: "Data has changed, so recomputing may change the result.",
     staleHint:
-      "CAS links, thresholds or the regulation version changed after this judgement was computed. Re-judging may change the result (System settings › Re-judge every product)",
+      "CAS links or thresholds changed after this judgement was computed. Re-judging may change the result (System settings › Re-judge every product)",
+    notJudgedForVersion: (version: string) =>
+      `No judgement exists yet for regulation version ${version}. Judgements made under another version are not applied to this one. Ask a system administrator to run "Re-judge every product".`,
     title: "Regulatory judgement",
     summary: (hit: number, total: number) => `${hit} of ${total} apply`,
     reviewCount: (n: number) => `${n} to check`,
@@ -1057,6 +1059,11 @@ export const en: Messages = {
       "The CAS covers substances outside the statutory name. Compare the name with the substance.",
     reasonHomogeneous:
       "This limit applies per homogeneous material. Spread over the whole product it always looks lower, so this result alone cannot settle it. Register the homogeneous material as a material and read its own result",
+    reasonDecisionDropped:
+      "A person had checked or overridden this earlier, but the basis (matching statutory names and CAS) changed, so that decision was not applied. Please decide again.",
+    droppedDecision: (verdict: string, who: string, when: string) =>
+      `Earlier decision: ${verdict} (${who}, ${when})`,
+    droppedConfirmOnly: "checked only",
     // Columns in the list. Space is tight, so keep them short
     listHeader: "Regulated",
     listReviewHeader: "Review",
@@ -1378,7 +1385,7 @@ export const en: Messages = {
     },
     rejudge: "Re-judge every product",
     rejudgeHint:
-      "Changing CAS links, thresholds, the regulation version or source priorities does not re-run judgements by itself (only saving a composition re-judges that product and its parents). After changing regulation data, re-judge everything here. Many products can take tens of minutes; it runs in the background, so you may leave this page",
+      "Changing CAS links, thresholds or source priorities does not re-run judgements by itself (only saving a composition re-judges that product and its parents). Switching the regulation version also needs a run here: judgements are stored per version, and the earlier version's results are kept. After changing regulation data, re-judge everything here. Many products can take tens of minutes; it runs in the background, so you may leave this page",
     rejudgeRunning: (done: number, total: number) =>
       total > 0
         ? `Re-judging… ${done.toLocaleString()} / ${total.toLocaleString()}`

@@ -18,6 +18,7 @@ import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { pickOrganisation } from "@/lib/user-organisations";
 import type { RenderInput } from "@/lib/doc-render";
+import { getCurrentVersion } from "@/lib/current-version";
 import { toJudgementDtos } from "@/lib/judgement-service";
 import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
 import { buildSubstanceMatrix } from "@/lib/substance-matrix";
@@ -225,11 +226,9 @@ export async function collectForProduct(
   });
   if (!product) return null;
 
-  const version = await prisma.linkSetVersion.findFirst({
-    where: { isCurrent: true, deletedAt: null },
-    select: { code: true },
-  });
-  const judgements = await toJudgementDtos(product.id, true);
+  const version = await getCurrentVersion();
+  // 判定は法規制バージョンごとにあるので、書類に載せるのは現在のバージョンの結果
+  const judgements = version ? await toJudgementDtos(product.id, true, version.id) : [];
   const hit = judgements.filter((j) => j.verdict === "APPLICABLE");
 
   const values = new Map<string, string>([

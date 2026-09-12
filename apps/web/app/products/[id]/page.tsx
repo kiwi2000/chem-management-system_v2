@@ -8,9 +8,10 @@ import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { getActor } from "@/lib/authz";
 import { ProductJudgements } from "@/components/product-judgements";
 import { canEditComposition, canViewComposition } from "@/lib/composition-service";
+import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getLocale, getServerMessages } from "@/lib/i18n";
-import { PRODUCT_INCLUDE, canEditProduct, toDetail, visibilityWhere } from "@/lib/product-service";
+import { canEditProduct, productInclude, toDetail, visibilityWhere } from "@/lib/product-service";
 import { PROPERTY_DEF_COUNT, toPropertyDefDto } from "@/lib/property-def-service";
 import { getAppSettings } from "@/lib/settings";
 
@@ -26,23 +27,20 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const actor = await getActor();
   if (!actor) notFound();
 
-  const [m, locale, settings, item, defs, linkVersion] = await Promise.all([
+  // 判定に使っている法規制のバージョン。見出しに添え、一覧向けの判定の件数もこの版で数える
+  const linkVersion = await getCurrentVersion();
+  const [m, locale, settings, item, defs] = await Promise.all([
     getServerMessages(),
     getLocale(),
     getAppSettings(),
     prisma.product.findFirst({
       where: { id, deletedAt: null, ...visibilityWhere(actor) },
-      include: PRODUCT_INCLUDE,
+      include: productInclude(linkVersion?.id ?? null),
     }),
     prisma.propertyDef.findMany({
       where: { target: "PRODUCT" },
       orderBy: [{ displayOrder: "asc" }, { key: "asc" }],
       include: PROPERTY_DEF_COUNT,
-    }),
-    // 判定に使っている法規制のバージョン。見出しに添える
-    prisma.linkSetVersion.findFirst({
-      where: { isCurrent: true, deletedAt: null },
-      select: { code: true },
     }),
   ]);
 

@@ -1,3 +1,4 @@
+import { getCurrentVersion } from "@/lib/current-version";
 import { getLocale } from "@/lib/i18n";
 import { listJudgementCategoryOptions } from "@/lib/judgement-category-options";
 import { getAppSettings } from "@/lib/settings";
@@ -11,8 +12,12 @@ import { ProductsLists } from "./products-lists";
  * 「該当法規制」の選択肢も、判定を持っている区分だけをここで読んで渡す。
  */
 export default async function ProductsPage() {
-  const [settings, locale] = await Promise.all([getAppSettings(), getLocale()]);
-  const judgementCategories = await listJudgementCategoryOptions(locale);
+  const [settings, locale, version] = await Promise.all([
+    getAppSettings(),
+    getLocale(),
+    getCurrentVersion(),
+  ]);
+  const judgementCategories = await listJudgementCategoryOptions(locale, version?.id ?? null);
   return (
     <ProductsLists
       modelOptions={settings.productModelOptions}

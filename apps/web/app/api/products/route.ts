@@ -3,9 +3,10 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { PRODUCT_COLUMNS } from "@/lib/list-columns";
+import { getCurrentVersion } from "@/lib/current-version";
+import { productColumns } from "@/lib/list-columns";
 import {
-  PRODUCT_LIST_INCLUDE,
+  productListInclude,
   childWrites,
   normalizeInput,
   toListItem,
@@ -27,23 +28,26 @@ export async function GET(req: Request) {
   const actor = await requirePermission("PRODUCT_VIEW");
   if (actor instanceof Response) return actor;
 
+  // 判定の列と絞り込みは、現在の法規制バージョンの行で見る
+  const version = await getCurrentVersion();
+  const columns = productColumns(version?.id ?? null);
   const state = parseTableState(
     new URL(req.url).searchParams,
-    PRODUCT_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+    columns.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
 
   const where = {
     deletedAt: null,
     ...visibilityWhere(actor),
-    ...buildWhere(PRODUCT_COLUMNS, state.filters),
+    ...buildWhere(columns, state.filters),
   };
 
   const [items, total] = await Promise.all([
     prisma.product.findMany({
       where,
-      include: PRODUCT_LIST_INCLUDE,
-      orderBy: buildOrderBy(PRODUCT_COLUMNS, state.sort, { codeNormalized: "asc" }),
+      include: productListInclude(version?.id ?? null),
+      orderBy: buildOrderBy(columns, state.sort, { codeNormalized: "asc" }),
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
     }),

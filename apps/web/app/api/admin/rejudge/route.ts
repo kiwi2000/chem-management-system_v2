@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/authz";
+import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { rejudgeStatus, startRejudge } from "@/lib/rejudge-job";
 
@@ -24,8 +25,11 @@ export async function POST() {
 }
 
 async function body() {
-  // 画面から起こしていない（スクリプトで流した）判定も含めて、いつのものかを見せる
+  // 画面から起こしていない（スクリプトで流した）判定も含めて、いつのものかを見せる。
+  // 判定は法規制バージョンごとにあるので、現在のバージョンの行で見る
+  const version = await getCurrentVersion();
   const last = await prisma.productJudgement.aggregate({
+    where: { versionId: version?.id ?? "" },
     _max: { computedAt: true },
     _min: { computedAt: true },
   });

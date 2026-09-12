@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  CAS_LINK_DIFF_COLUMNS,
-  PRODUCT_COLUMNS,
-  STATUTORY_SUBSTANCE_COLUMNS,
-} from "./list-columns";
+import { CAS_LINK_DIFF_COLUMNS, STATUTORY_SUBSTANCE_COLUMNS, productColumns } from "./list-columns";
 import { buildWhere } from "./table-query";
 
 /**
@@ -16,8 +12,12 @@ import { buildWhere } from "./table-query";
  *   「確認は済んでいる」が、確認の残っている製品まで拾う
  *
  * という、静かに間違った一覧になる。ここで固定しておく。
+ *
+ * 判定は法規制バージョンごとにあるので、**条件には必ず現在の版が入る**。
+ * 入っていないと、前の版で当たっていた製品まで「該当あり」に数える
  */
-const hit = { judgements: { some: { verdict: "APPLICABLE" } } };
+const PRODUCT_COLUMNS = productColumns("v1");
+const hit = { judgements: { some: { versionId: "v1", verdict: "APPLICABLE" } } };
 
 const where = (key: string, values: string[]) =>
   buildWhere(PRODUCT_COLUMNS, { [key]: { kind: "enum", values } });
@@ -29,13 +29,13 @@ describe("法規制の絞り込み", () => {
 
   it("該当なしは「該当の行が1つも無い」。判定していないものは含めない", () => {
     expect(where("judgement", ["none"])).toEqual({
-      AND: [{ AND: [{ judgements: { some: {} } }, { NOT: hit }] }],
+      AND: [{ AND: [{ judgements: { some: { versionId: "v1" } } }, { NOT: hit }] }],
     });
   });
 
   it("未判定は「行そのものが無い」", () => {
     expect(where("judgement", ["unjudged"])).toEqual({
-      AND: [{ judgements: { none: {} } }],
+      AND: [{ judgements: { none: { versionId: "v1" } } }],
     });
   });
 
@@ -56,14 +56,14 @@ describe("法規制の絞り込み", () => {
 describe("要確認の絞り込み", () => {
   it("残っているものは「印の付いた行が1つでもある」", () => {
     expect(where("needsReview", ["true"])).toEqual({
-      AND: [{ judgements: { some: { needsReview: true } } }],
+      AND: [{ judgements: { some: { versionId: "v1", needsReview: true } } }],
     });
   });
 
   it("済んでいるものは「印の付いた行が1つも無い」", () => {
     // some: { needsReview: false } にすると、確認の残っている製品まで拾ってしまう
     expect(where("needsReview", ["false"])).toEqual({
-      AND: [{ judgements: { none: { needsReview: true } } }],
+      AND: [{ judgements: { none: { versionId: "v1", needsReview: true } } }],
     });
   });
 
@@ -75,7 +75,9 @@ describe("要確認の絞り込み", () => {
 describe("該当法規制の絞り込み", () => {
   const list = (values: string[], op: "all" | "any") =>
     buildWhere(PRODUCT_COLUMNS, { judgementCategories: { kind: "list", op, values } });
-  const hit = (id: string) => ({ judgements: { some: { categoryId: id, verdict: "APPLICABLE" } } });
+  const hit = (id: string) => ({
+    judgements: { some: { versionId: "v1", categoryId: id, verdict: "APPLICABLE" } },
+  });
 
   it("いずれかを含む", () => {
     expect(list(["a", "b"], "any")).toEqual({ AND: [{ OR: [hit("a"), hit("b")] }] });
@@ -88,7 +90,11 @@ describe("該当法規制の絞り込み", () => {
   it("非該当は当てにしない（該当だけを見る）", () => {
     // ここが verdict なしになると、「調べたが当たらなかった」ものまで拾ってしまう
     const w = list(["a"], "any") as { AND: { OR: { judgements: { some: unknown } }[] }[] };
-    expect(w.AND[0]?.OR[0]?.judgements.some).toEqual({ categoryId: "a", verdict: "APPLICABLE" });
+    expect(w.AND[0]?.OR[0]?.judgements.some).toEqual({
+      versionId: "v1",
+      categoryId: "a",
+      verdict: "APPLICABLE",
+    });
   });
 
   it("同じ区分を2回選んでも1回として扱う", () => {

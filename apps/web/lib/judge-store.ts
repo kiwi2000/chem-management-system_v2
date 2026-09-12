@@ -2,6 +2,7 @@ import type { ConditionalLinkMode } from "@chem/shared";
 import { prisma } from "@/lib/db";
 import { effectiveLinks } from "@/lib/link-priority";
 import { judge, type ElementFactors, type JudgeEntry, type JudgeResult } from "@/lib/judge-calc";
+import { applyDecision, premiseOf } from "@/lib/judge-decision";
 import { getAppSettings } from "@/lib/settings";
 
 /**
@@ -276,10 +277,13 @@ export async function computeJudgements(
 /**
  * 1製品を、すべての区分について judge し、結果を保持する。
  *
- * **前の判定は行ごと消す。**確認済みの状態も上書きも残さない。
- * 判定をやり直すのは、新しい製品を判定するのと同じこと。
- * 前の確認結果だけが残るのは筋が通らない。
- * 「いつ誰が何をしたか」はアクセス記録の側に残るので、追うことはできる。
+ * **判定の行は法規制バージョンごとに持つ**（2026-09-12 決定）。
+ * 消して作り直すのは、その版の行だけ。別の版の行はそのまま残るので、
+ * 現在のバージョンを切り替えても前の版の結果は消えない。
+ *
+ * **人の判断（確認・上書き）は判定の行とは別に持っていて、前提が同じなら当てはめ直す。**
+ * 前提が変わっていれば当てはめず、要確認にして「判断を外した」と理由に残す
+ * （決めかたは judge-decision.ts）。
  */
 export async function judgeProduct(
   productId: string,
@@ -290,7 +294,7 @@ export async function judgeProduct(
    * **全製品をやり直すときは呼ぶ側で1回だけ読んで渡す**（製品ごとに引くと無駄）
    */
   conditionalLinkMode?: ConditionalLinkMode,
-  /** 判定に使う法規制バージョン。省くと現在のもの。結果に控えて「いつの前提か」を示す */
+  /** 判定に使う法規制バージョン。省くと現在のもの。現在のものが無ければ判定は保存しない */
   versionId?: string,
 ): Promise<{ applicable: number; needsReview: number }> {
   const linkMode = conditionalLinkMode ?? (await getAppSettings()).conditionalLinkMode;
@@ -303,20 +307,40 @@ export async function judgeProduct(
       })
     )?.id ??
     null;
+  if (!version) return { applicable: 0, needsReview: 0 };
   const results = await computeJudgements(productId, rules, factors, linkMode);
 
+  // 人の判断は製品 × 区分で1件。まとめて引いて区分ごとに当てはめる
+  const decisions = new Map(
+    (await prisma.productDecision.findMany({ where: { productId } })).map((d) => [d.categoryId, d]),
+  );
+  const applied = results.map(({ rule, result }) => {
+    const premise = premiseOf(result.hits);
+    return {
+      rule,
+      result,
+      premise,
+      applied: applyDecision(result, premise, decisions.get(rule.categoryId) ?? null),
+    };
+  });
+
   await prisma.$transaction([
-    // 前の判定は、確認済みの状態ごと捨てる
-    prisma.productJudgement.deleteMany({ where: { productId } }),
-    ...results.map(({ rule, result }) =>
+    // その版の前の判定だけ捨てる。別の版のものは残す
+    prisma.productJudgement.deleteMany({ where: { productId, versionId: version } }),
+    ...applied.map(({ rule, result, premise, applied: a }) =>
       prisma.productJudgement.create({
         data: {
           productId,
           categoryId: rule.categoryId,
-          verdict: result.verdict,
-          source: "SYSTEM",
-          needsReview: result.needsReview,
-          reviewReasons: result.reasons,
+          verdict: a.verdict,
+          source: a.source,
+          systemVerdict: result.verdict,
+          premise,
+          needsReview: a.needsReview,
+          reviewReasons: a.reasons,
+          decidedBy: a.decidedBy,
+          decidedAt: a.decidedAt,
+          decidedNote: a.decidedNote,
           versionId: version,
           hits: { create: result.hits.map((h) => ({ ...h, contributions: h.contributions })) },
         },
@@ -325,7 +349,7 @@ export async function judgeProduct(
   ]);
 
   return {
-    applicable: results.filter((r) => r.result.verdict === "APPLICABLE").length,
-    needsReview: results.filter((r) => r.result.needsReview).length,
+    applicable: applied.filter((r) => r.applied.verdict === "APPLICABLE").length,
+    needsReview: applied.filter((r) => r.applied.needsReview).length,
   };
 }

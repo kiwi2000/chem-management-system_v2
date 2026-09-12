@@ -631,10 +631,25 @@ async function main() {
       })),
       skipDuplicates: true,
     });
+    // 人の確認・上書き（製品 × 規制区分）。判定の行より先でも後でもよい
+    const decisions = await L.productDecision.findMany({ where: { productId: { in: ids } } });
+    await P.productDecision.createMany({
+      data: decisions
+        .filter((x) => catOf.has(x.categoryId))
+        .map((x) => ({ ...x, categoryId: catOf.get(x.categoryId)! })),
+      skipDuplicates: true,
+    });
+    // 判定は法規制バージョンごと。本番に無い版の判定は持って行かない（判定し直せば作れる）
     const judge = await L.productJudgement.findMany({ where: { productId: { in: ids } } });
-    const kept = judge.filter((x) => catOf.has(x.categoryId));
+    const kept = judge.filter(
+      (x) => catOf.has(x.categoryId) && version.has(lVersionCode.get(x.versionId) ?? ""),
+    );
     await P.productJudgement.createMany({
-      data: kept.map((x) => ({ ...x, categoryId: catOf.get(x.categoryId)! })),
+      data: kept.map((x) => ({
+        ...x,
+        categoryId: catOf.get(x.categoryId)!,
+        versionId: verOf(x.versionId),
+      })),
       skipDuplicates: true,
     });
     const hits = await L.productJudgementHit.findMany({

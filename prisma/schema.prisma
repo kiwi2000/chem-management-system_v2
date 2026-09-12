@@ -232,6 +232,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -604,22 +605,34 @@ model ProductExpansionLine {
 }
 
 /**
- * 製品ごと・区分ごとの判定結果。**保持する。**
+ * 製品ごと・区分ごと・**法規制バージョンごと**の判定結果。**保持する。**
  * 判定と「人が見たかどうか」を**別々に持つ**。
  * 「答えは何か」と「確認が済んでいるか」は別の話で、混ぜると
  * 「見たけれど答えは変わらない」という結論の置き場所が無くなる。
- * **前提が変わったら、この行ごと作り直す。**
- * 組成が変われば、前の判定も確認済みの状態も上書きも、すべて捨てる。
- * 新しい製品を判定するのと同じ。判定だけやり直して確認結果が残るのは筋が通らない。
- * 「いつ誰が何をしたか」はアクセス記録の側に残るので、追うことはできる。
+ * **判定し直すと、その版の行だけ作り直す**（2026-09-12 決定）。
+ * 別の版の行はそのまま残るので、現在のバージョンを切り替えても前の版の結果は消えない。
+ * 画面や一覧に出すのは現在のバージョンの行だけ。
+ * 人の確認・上書きは、この行ではなく ProductDecision に持つ。
+ * 判定し直したとき、前提（systemVerdict と premise）が同じなら当てはめ直し、
+ * 違えば当てはめずに要確認にする。この行の decided* はその写し（画面に出すため）。
  */
 model ProductJudgement {
   id         String @id @default(cuid())
   productId  String @map("product_id")
   categoryId String @map("category_id")
 
-  verdict JudgementVerdict
-  source  JudgementSource  @default(SYSTEM)
+  verdict       JudgementVerdict
+  source        JudgementSource  @default(SYSTEM)
+  /**
+   * システムが計算した判定（人の上書きを当てはめる前）。
+   * 人の判断をあとの版に引き継いでよいかは、これと premise が同じかで決める
+   */
+  systemVerdict JudgementVerdict @map("system_verdict")
+  /**
+   * 判定の前提の要約。「どの法文物質名に、どのCASで当たったか」を1本の文字列にしたもの
+   * （作りかたは lib/judge-decision.ts）。人の判断を引き継ぐかどうかの比較にだけ使う
+   */
+  premise       String           @default("")
 
   /**
    * 人が見なければ決められない、という印。
@@ -643,21 +656,65 @@ model ProductJudgement {
 
   computedAt DateTime @default(now()) @map("computed_at")
   /**
-   * どの法規制バージョンで出した判定か。
-   * **前提が変わったことに気づくため。**現在のバージョンと違えば古い判定。
-   * 以前の判定は持っていないので null（＝いつのものか分からない）
+   * どの法規制バージョンで出した判定か。版ごとに1行ずつ持つ。
+   * 版を消せば、その版の判定も消える
    */
-  versionId  String?  @map("version_id")
+  versionId  String   @map("version_id")
 
   product  Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   category RegulationCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  version  LinkSetVersion        @relation(fields: [versionId], references: [id], onDelete: Cascade)
   hits     ProductJudgementHit[]
 
-  @@unique([productId, categoryId])
+  @@unique([productId, categoryId, versionId])
   // 一覧で「該当のものだけ」「要確認が残っているものだけ」を絞る
   @@index([categoryId, verdict])
   @@index([needsReview])
+  @@index([versionId])
   @@map("product_judgements")
+}
+
+/**
+ * 判定に対する**人の判断**。製品 × 規制区分で1件。
+ * 「確認した」（判定はそのまま、見たという印）と「判定を変えた」（該当／非該当を人の値にする）の
+ * 2つを、誰が・いつ・何を根拠に、と一緒に持つ。
+ * **判定の行（ProductJudgement）とは別に持つ。**判定の行は判定し直すたびに作り直されるので、
+ * そこに書くと版が変わるたびに消える。人の判断は「製品に入っている物質についての知識」なので、
+ * データソースの版が変わっただけでは変わらない。
+ * **前提が同じあいだだけ効く。**判断したときのシステムの結果（systemVerdict と premise）を
+ * 控えておき、判定し直したときに同じなら当てはめ、違えば当てはめずに要確認にする
+ * （理由 `decisionDropped`）。人が判定表で判断し直すと、新しい前提で上書きされる。
+ * 規制そのものが変わったときは規制区分を新しく作る決まり（2026-09-08）なので、
+ * 区分が変われば自然に効かなくなる。
+ */
+model ProductDecision {
+  id         String @id @default(cuid())
+  productId  String @map("product_id")
+  categoryId String @map("category_id")
+
+  /**
+   * 人が決めた判定。null なら「確認しただけ」（システムの判定をそのまま認めた）
+   */
+  verdict JudgementVerdict?
+
+  /**
+   * 判断したときのシステムの判定と前提。判定の行の systemVerdict / premise と同じ作りかた
+   */
+  systemVerdict JudgementVerdict @map("system_verdict")
+  premise       String
+
+  decidedBy   String   @map("decided_by")
+  decidedAt   DateTime @map("decided_at")
+  /**
+   * そう判断した根拠。監査で問われたときに答えられるようにする
+   */
+  decidedNote String?  @map("decided_note")
+
+  product  Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category RegulationCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, categoryId])
+  @@map("product_decisions")
 }
 
 /**
@@ -930,6 +987,7 @@ model Product {
    * 区分ごとの判定結果。展開結果が変わったら作り直す
    */
   judgements ProductJudgement[]
+  decisions  ProductDecision[]
 
   @@index([nameJa])
   @@index([nameEn])
@@ -1567,6 +1625,7 @@ model RegulationCategory {
   law        Law                @relation(fields: [lawId], references: [id])
   classes    RegulationClass[]
   judgements ProductJudgement[]
+  decisions  ProductDecision[]
 
   @@unique([lawId, codeNormalized])
   @@index([lawId, displayOrder])
@@ -1746,6 +1805,7 @@ model LinkSetVersion {
 
   sources       LinkVersionSource[]
   links         StatutoryCasLink[]
+  judgements    ProductJudgement[]
   inventoryRows InventoryRow[]
 
   linkDiffs           StatutoryCasLinkDiff[]    @relation("LinkDiffVersion")

@@ -15,7 +15,8 @@ import type { MatchedProductDto, ProductJudgementDto } from "@/lib/types";
  */
 
 /**
- * その製品の判定を、法律・区分の並び順で返す。
+ * その製品の判定を、法律・区分の並び順で返す。**その法規制バージョンの行だけ。**
+ * 判定は版ごとに持っているので、絞らないと前の版の結果が混ざる
  *
  * `withHits` が false のときは根拠を伏せる。組成を見られない人に
  * 「何が何％入っているか」を渡すことになるため。
@@ -23,19 +24,53 @@ import type { MatchedProductDto, ProductJudgementDto } from "@/lib/types";
 export async function toJudgementDtos(
   productId: string,
   withHits: boolean,
+  versionId: string,
 ): Promise<ProductJudgementDto[]> {
-  const rows = await prisma.productJudgement.findMany({
-    where: { productId },
-    select: JUDGEMENT_SELECT,
-  });
-  return buildJudgementDtos(rows, withHits, todayInJapan());
+  const [rows, decisions] = await Promise.all([
+    prisma.productJudgement.findMany({
+      where: { productId, versionId },
+      select: JUDGEMENT_SELECT,
+    }),
+    /*
+      前提が変わって当てはめなかった人の判断。**何を外したのかを画面に出す**ため。
+      「以前の判断があった」とだけ言われても、判断し直す人は何を見ればよいか分からない
+    */
+    prisma.productDecision.findMany({
+      where: { productId },
+      select: {
+        categoryId: true,
+        verdict: true,
+        decidedBy: true,
+        decidedAt: true,
+        decidedNote: true,
+      },
+    }),
+  ]);
+  const dropped = new Map(
+    rows
+      .filter((r) => r.reviewReasons.includes("decisionDropped"))
+      .flatMap((r) => {
+        const d = decisions.find((x) => x.categoryId === r.categoryId);
+        return d ? [[r.categoryId, d] as const] : [];
+      }),
+  );
+  return buildJudgementDtos(rows, withHits, todayInJapan(), dropped);
 }
+
+/** 前提が変わって当てはめなかった人の判断（区分ごと） */
+type DroppedDecision = {
+  verdict: "APPLICABLE" | "NOT_APPLICABLE" | null;
+  decidedBy: string;
+  decidedAt: Date;
+  decidedNote: string | null;
+};
 
 /** 保存してある判定の読みかた。その場で計算した判定も同じ形に組み立てて、同じ組み立てを通す */
 const JUDGEMENT_SELECT = {
   categoryId: true,
   verdict: true,
   source: true,
+  systemVerdict: true,
   needsReview: true,
   reviewReasons: true,
   decidedBy: true,
@@ -116,6 +151,7 @@ export async function toJudgementDtosAsOf(
         categoryId: rule.categoryId,
         verdict: result.verdict,
         source: "SYSTEM" as const,
+        systemVerdict: result.verdict,
         needsReview: result.needsReview,
         reviewReasons: result.reasons,
         decidedBy: null,
@@ -132,17 +168,22 @@ export async function toJudgementDtosAsOf(
       },
     ];
   });
-  return { items: await buildJudgementDtos(rows, withHits, asOf), versionCode: version.code };
+  return {
+    items: await buildJudgementDtos(rows, withHits, asOf, new Map()),
+    versionCode: version.code,
+  };
 }
 
 /**
  * 判定の行を画面の形に組み立てる。`today` は「施行前」を決める日
- * （保存してある判定なら今日、判定対象日を指定した判定ならその日）
+ * （保存してある判定なら今日、判定対象日を指定した判定ならその日）。
+ * `dropped` は前提が変わって当てはめなかった人の判断（区分ごと）
  */
 async function buildJudgementDtos(
   rows: JudgementRow[],
   withHits: boolean,
   today: string,
+  dropped: Map<string, DroppedDecision>,
 ): Promise<ProductJudgementDto[]> {
   // 名前はまとめて引く。1件ずつ引くと、区分の数だけ問い合わせが増える
   const substanceIds = withHits
@@ -152,7 +193,12 @@ async function buildJudgementDtos(
         ),
       ]
     : [];
-  const actorIds = [...new Set(rows.map((r) => r.decidedBy).filter((v) => v !== null))];
+  const actorIds = [
+    ...new Set([
+      ...rows.map((r) => r.decidedBy).filter((v) => v !== null),
+      ...[...dropped.values()].map((d) => d.decidedBy),
+    ]),
+  ];
   const [substances, users, elementNames] = await Promise.all([
     substanceIds.length === 0
       ? []
@@ -224,11 +270,13 @@ async function buildJudgementDtos(
       categoryNameOriginal: r.category.nameOriginal,
       verdict: r.verdict,
       source: r.source,
+      systemVerdict: r.systemVerdict,
       needsReview: r.needsReview,
       reviewReasons: r.reviewReasons,
       decidedByName: r.decidedBy ? (userOf.get(r.decidedBy) ?? null) : null,
       decidedAt: r.decidedAt?.toISOString() ?? null,
       decidedNote: r.decidedNote,
+      droppedDecision: droppedOf(dropped.get(r.categoryId), userOf),
       computedAt: r.computedAt.toISOString(),
       versionId: r.versionId,
       hits: withHits
@@ -260,6 +308,20 @@ async function buildJudgementDtos(
     }))
     .sort((a, b) => compareLawOrder(a._order, b._order))
     .map(({ _order, ...rest }) => rest);
+}
+
+/** 当てはめなかった人の判断を、画面の形にする。無ければ null */
+function droppedOf(
+  d: DroppedDecision | undefined,
+  userOf: Map<string, string>,
+): ProductJudgementDto["droppedDecision"] {
+  if (!d) return null;
+  return {
+    verdict: d.verdict,
+    decidedByName: userOf.get(d.decidedBy) ?? null,
+    decidedAt: d.decidedAt.toISOString(),
+    decidedNote: d.decidedNote,
+  };
 }
 
 /**
@@ -319,10 +381,13 @@ export async function toMatchedProducts(
   categoryId: string,
   visibility: Prisma.ProductWhereInput,
   withHits: boolean,
+  /** 現在の法規制バージョン。判定は版ごとにあるので、この版の行だけを見る */
+  versionId: string,
 ): Promise<MatchedProductDto[]> {
   const rows = await prisma.productJudgement.findMany({
     where: {
       categoryId,
+      versionId,
       OR: [{ verdict: "APPLICABLE" }, { needsReview: true }],
       product: { deletedAt: null, ...visibility },
     },

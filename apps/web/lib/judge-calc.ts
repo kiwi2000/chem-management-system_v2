@@ -123,7 +123,12 @@ export type ReviewReason =
    * 閾値が**均質材料あたり**で決まっている（RoHS など）。
    * こちらの組成は製品全体でしか持っていないので、当たっても当たらなくても言い切れない
    */
-  | "homogeneousMaterial";
+  | "homogeneousMaterial"
+  /**
+   * 人の判断（確認・上書き）があったが、前提が変わったので当てはめなかった。
+   * 判定の計算では付かない。judge-decision.ts が判定し直したときに足す
+   */
+  | "decisionDropped";
 
 export interface JudgeHit {
   /** 当たった法文物質名。区分でまとめたときは null（区分そのものが当たった） */

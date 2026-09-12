@@ -76,13 +76,13 @@ export async function GET(req: Request) {
   });
 
   /*
-    その製品の、その区分の判定。**現バージョンぶんしか無い。**
-    前のバージョンの判定は保存していないので、当たり・要確認・含有率不足の別は
-    現バージョンにだけ付く
+    その製品の、その区分の判定。**現バージョンぶんだけを見る。**
+    判定は版ごとに保存しているが、当たり・要確認・含有率不足の別は
+    現バージョンにだけ付ける（ほかの版は含有率から同じやりかたで見る。下を参照）
   */
   const judgement = productId
     ? await prisma.productJudgement.findFirst({
-        where: { productId, categoryId },
+        where: { productId, categoryId, version: { isCurrent: true, deletedAt: null } },
         select: {
           verdict: true,
           needsReview: true,

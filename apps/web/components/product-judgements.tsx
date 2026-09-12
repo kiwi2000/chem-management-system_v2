@@ -101,6 +101,8 @@ export function ProductJudgements({
     computedAt: string | null;
     versionCode: string | null;
     stale: boolean;
+    /** この版の判定は無いが、別の版では判定してある（切り替えたまま判定し直していない） */
+    judgedElsewhere: boolean;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** いま根拠を書いている区分。null なら誰も書いていない */
@@ -158,9 +160,15 @@ export function ProductJudgements({
       computedAt: string | null;
       versionCode: string | null;
       stale: boolean;
+      judgedElsewhere?: boolean;
     };
     setItems(body.items);
-    setStamp({ computedAt: body.computedAt, versionCode: body.versionCode, stale: body.stale });
+    setStamp({
+      computedAt: body.computedAt,
+      versionCode: body.versionCode,
+      stale: body.stale,
+      judgedElsewhere: body.judgedElsewhere ?? false,
+    });
   }, [productId, asOf, m]);
 
   useEffect(() => {
@@ -420,7 +428,15 @@ export function ProductJudgements({
         )}
 
         {items.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{m.judgements.empty}</p>
+          <p className="text-muted-foreground text-sm">
+            {/*
+              判定は法規制バージョンごとに持つ。切り替えた直後はその版の判定がまだ無いので、
+              「まだ判定していない」とは分けて伝える（前の版の結果を出すと取り違える）
+            */}
+            {stamp?.judgedElsewhere && stamp.versionCode
+              ? m.judgements.notJudgedForVersion(stamp.versionCode)
+              : m.judgements.empty}
+          </p>
         ) : (
           /*
             横に長く、行も多くなる表なので、**この箱の中だけで縦横に送る**
@@ -830,6 +846,21 @@ function Warning({
               <li key={r}>{reasonText(m, r)}</li>
             ))}
           </ul>
+          {/* 前提が変わって当てはめなかった以前の判断。何を外したのかが分からないと判断し直せない */}
+          {j.droppedDecision && (
+            <p className="text-muted-foreground pl-4 text-xs">
+              {m.judgements.droppedDecision(
+                j.droppedDecision.verdict === null
+                  ? m.judgements.droppedConfirmOnly
+                  : j.droppedDecision.verdict === "APPLICABLE"
+                    ? m.judgements.applicable
+                    : m.judgements.notApplicable,
+                j.droppedDecision.decidedByName ?? "",
+                new Date(j.droppedDecision.decidedAt).toLocaleString(locale),
+              )}
+              {j.droppedDecision.decidedNote && ` — ${j.droppedDecision.decidedNote}`}
+            </p>
+          )}
         </div>
       )}
       {!j.needsReview && j.decidedByName && (
@@ -971,6 +1002,7 @@ export function reasonText(m: M, reason: string): string {
     unfilledThreshold: m.judgements.reasonUnfilled,
     conditionalLink: m.judgements.reasonConditionalLink,
     homogeneousMaterial: m.judgements.reasonHomogeneous,
+    decisionDropped: m.judgements.reasonDecisionDropped,
   };
   return table[reason] ?? reason;
 }

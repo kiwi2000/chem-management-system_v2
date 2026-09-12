@@ -12,16 +12,29 @@ export interface RejudgeNeededInput {
   currentVersionId: string | null;
   /** 法規制側のデータが最後に変わった時刻。データが無ければ null */
   changedAt: Date | null;
-  /** 最後に全製品を判定し直し終えた時刻と、そのときのバージョン */
-  lastFull: { at: Date; versionId: string | null } | null;
+  /**
+   * 現在のバージョンで最後に全製品を判定し直し終えた時刻。
+   * 記録が無ければ、その版の判定のうちいちばん古い計算日時。その版の判定が無ければ null
+   */
+  lastFull: Date | null;
+  /**
+   * 別の版では判定してあるのに、現在の版の判定が無い製品があるか。
+   * 判定は版ごとに持つので、切り替えただけではその版の判定は作られない（2026-09-12 決定）
+   */
+  missing: boolean;
 }
 
-export function isRejudgeNeeded({ currentVersionId, changedAt, lastFull }: RejudgeNeededInput) {
+export function isRejudgeNeeded({
+  currentVersionId,
+  changedAt,
+  lastFull,
+  missing,
+}: RejudgeNeededInput) {
   if (!currentVersionId) return false;
+  // 切り替えたまま、この版の判定を作っていない製品がある
+  if (missing) return true;
   // 判定し直した記録が無い＝比べようがない。製品も判定も無い新しい環境で騒がない
   if (!lastFull) return false;
-  // 別のバージョンで判定したまま切り替えた
-  if (lastFull.versionId !== null && lastFull.versionId !== currentVersionId) return true;
   if (!changedAt) return false;
-  return changedAt.getTime() > lastFull.at.getTime();
+  return changedAt.getTime() > lastFull.getTime();
 }

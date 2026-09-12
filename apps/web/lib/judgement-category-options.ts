@@ -14,9 +14,12 @@ import { CATEGORY_ORDER_BY } from "@/lib/law-order";
  */
 export async function listJudgementCategoryOptions(
   locale: Locale,
+  /** 現在の法規制バージョン。判定は版ごとにあるので、この版で判定した区分だけを出す */
+  versionId: string | null,
 ): Promise<{ value: string; label: string }[]> {
+  if (!versionId) return [];
   const categories = await prisma.regulationCategory.findMany({
-    where: { deletedAt: null, judgements: { some: {} } },
+    where: { deletedAt: null, judgements: { some: { versionId } } },
     select: {
       id: true,
       nameJa: true,

@@ -1,4 +1,5 @@
 import { jsonError, requirePermission } from "@/lib/authz";
+import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { visibilityWhere } from "@/lib/product-service";
@@ -32,11 +33,20 @@ export async function GET(_req: Request, { params }: Ctx) {
   });
   if (!category) return jsonError(404, "not_found", m.errors.notFound);
 
+  // 判定は法規制バージョンごとにあるので、現在のバージョンの行だけを見る
+  const version = await getCurrentVersion();
   return Response.json({
     /*
       製品ごとの権限ではなく権限そのもので決まる（canViewComposition と同じ規則）。
       ここは製品が複数なので、1件ずつ判断する形は取らない。
     */
-    items: await toMatchedProducts(id, visibilityWhere(actor), actor.has("COMPOSITION_VIEW")),
+    items: version
+      ? await toMatchedProducts(
+          id,
+          visibilityWhere(actor),
+          actor.has("COMPOSITION_VIEW"),
+          version.id,
+        )
+      : [],
   });
 }

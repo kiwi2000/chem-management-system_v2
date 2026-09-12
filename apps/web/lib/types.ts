@@ -254,6 +254,8 @@ export interface ProductJudgementDto {
   verdict: "APPLICABLE" | "NOT_APPLICABLE";
   /** システムが出したか、人が上書きしたか */
   source: "SYSTEM" | "USER";
+  /** システムが計算した判定（人の上書きを当てはめる前）。上書きを戻す口を出すために要る */
+  systemVerdict: "APPLICABLE" | "NOT_APPLICABLE";
   /** 人が見なければ決められない、という印。確認すると消える */
   needsReview: boolean;
   /** なぜ要確認なのか。文言は画面側で付ける */
@@ -262,9 +264,20 @@ export interface ProductJudgementDto {
   decidedByName: string | null;
   decidedAt: string | null;
   decidedNote: string | null;
+  /**
+   * 前提が変わって当てはめなかった人の判断（理由 `decisionDropped` のとき）。
+   * 何を外したのかが分からないと、判断し直す人が何を見ればよいか分からない
+   */
+  droppedDecision: {
+    /** 人が決めていた判定。null なら「確認しただけ」 */
+    verdict: "APPLICABLE" | "NOT_APPLICABLE" | null;
+    decidedByName: string | null;
+    decidedAt: string;
+    decidedNote: string | null;
+  } | null;
   computedAt: string;
-  /** どの法規制バージョンで出したか。以前の判定は控えていないので null */
-  versionId: string | null;
+  /** どの法規制バージョンで出したか。判定は版ごとに持つ */
+  versionId: string;
 
   /** 何が何％入っていたから該当なのか。組成を見られない人には空 */
   hits: JudgementHitDto[];

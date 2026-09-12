@@ -1,5 +1,6 @@
 import { jsonError, requirePermission } from "@/lib/authz";
 import { canViewComposition } from "@/lib/composition-service";
+import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { toJudgementDtos, toJudgementDtosAsOf } from "@/lib/judgement-service";
@@ -51,40 +52,45 @@ export async function GET(req: Request, { params }: Ctx) {
     });
   }
 
-  const items = await toJudgementDtos(id, canViewComposition(actor, product));
+  /*
+    **判定は法規制バージョンごとに持っている。出すのは現在のバージョンの行だけ**（2026-09-12 決定）。
+    現在のバージョンを切り替えただけでは計算し直さないので、その版の行がまだ無いことがある。
+    そのときは空で返し、「この版の判定はまだ無い」と画面で伝える
+    （前の版の結果を出すと、その版の結果のように読まれてしまう。実際に起きた）
+  */
+  const current = await getCurrentVersion();
+  const items = current
+    ? await toJudgementDtos(id, canViewComposition(actor, product), current.id)
+    : [];
 
   /*
     **いつ・どの前提で出した判定か**を添える。
     法規制側のデータを変えても判定は自動でやり直されないので、
     計算日時より後に前提が変わっていれば「古い可能性がある」と画面で伝える
   */
-  const current = await prisma.linkSetVersion.findFirst({
-    where: { isCurrent: true, deletedAt: null },
-    select: { id: true, code: true },
-  });
   const computedAt = items.reduce<string | null>(
     (acc, j) => (acc === null || j.computedAt > acc ? j.computedAt : acc),
     null,
   );
-  const versionIds = [...new Set(items.map((j) => j.versionId))];
-  const judgedVersion =
-    versionIds.length === 1 && versionIds[0]
-      ? await prisma.linkSetVersion.findUnique({
-          where: { id: versionIds[0] },
-          select: { code: true },
-        })
-      : null;
   const changedAt = current ? await premisesChangedAt(current.id) : null;
   const stale =
     items.length > 0 &&
-    (versionIds.some((v) => v !== (current?.id ?? null)) ||
-      (computedAt !== null && changedAt !== null && changedAt.toISOString() > computedAt));
+    computedAt !== null &&
+    changedAt !== null &&
+    changedAt.toISOString() > computedAt;
+  // この版の判定は無いが、別の版では判定してある（＝切り替えたまま判定し直していない）
+  const judgedElsewhere =
+    items.length === 0 &&
+    (await prisma.productJudgement.findFirst({
+      where: { productId: id },
+      select: { id: true },
+    })) !== null;
 
   return Response.json({
     items,
     computedAt,
-    // 判定に使ったバージョン。分からなければ null（以前の判定はバージョンを控えていない）
-    versionCode: judgedVersion?.code ?? null,
+    versionCode: current?.code ?? null,
     stale,
+    judgedElsewhere,
   });
 }

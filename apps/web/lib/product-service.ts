@@ -4,31 +4,49 @@ import type { Actor } from "@/lib/authz";
 import { propertyWrites } from "@/lib/property-values";
 import type { ProductDetailDto, ProductListItemDto } from "@/lib/types";
 
+/**
+ * 一覧に出す判定の引きかた。
+ *
+ * 判定は区分ごと・**法規制バージョンごと**に1行ずつある（当たらなかった区分も残る）。
+ * 一覧に出すのは「いくつ当たったか」と「確認が残っているか」の2つだけなので、
+ * その2つを出せる最小限の項目を、**現在のバージョンの行だけ**から引く。
+ * 根拠（どのCASがいくら効いたか）は組成に近い情報なので、一覧には持ち出さない。
+ * 版が無ければ何も引かない（判定のしようがない）
+ */
+function judgementsInclude(versionId: string | null) {
+  return {
+    where: { versionId: versionId ?? "" },
+    select: { verdict: true, needsReview: true },
+  } satisfies Prisma.Product$judgementsArgs;
+}
+
 /** 一覧に必要な関連（別名は件数だけ使う） */
-export const PRODUCT_LIST_INCLUDE = {
-  _count: { select: { aliases: true } },
-  uses: { orderBy: { displayOrder: "asc" } },
-  /*
-    判定は区分ごとに1行ずつある（当たらなかった区分も残る）。
-    一覧に出すのは「いくつ当たったか」と「確認が残っているか」の2つだけなので、
-    その2つを出せる最小限の項目だけを引く。根拠（どのCASがいくら効いたか）は
-    組成に近い情報なので、一覧には持ち出さない。
-  */
-  judgements: { select: { verdict: true, needsReview: true } },
-} satisfies Prisma.ProductInclude;
+export function productListInclude(versionId: string | null) {
+  return {
+    _count: { select: { aliases: true } },
+    uses: { orderBy: { displayOrder: "asc" } },
+    judgements: judgementsInclude(versionId),
+  } satisfies Prisma.ProductInclude;
+}
 
 /** 詳細取得で必要になる関連 */
-export const PRODUCT_INCLUDE = {
-  _count: { select: { aliases: true } },
-  uses: { orderBy: { displayOrder: "asc" } },
-  aliases: { orderBy: { displayOrder: "asc" } },
-  properties: { include: { def: true } },
-  // 一覧と同じ項目を作るために要る（詳細の判定表は別途 judgement-service が引く）
-  judgements: { select: { verdict: true, needsReview: true } },
-} satisfies Prisma.ProductInclude;
+export function productInclude(versionId: string | null) {
+  return {
+    _count: { select: { aliases: true } },
+    uses: { orderBy: { displayOrder: "asc" } },
+    aliases: { orderBy: { displayOrder: "asc" } },
+    properties: { include: { def: true } },
+    // 一覧と同じ項目を作るために要る（詳細の判定表は別途 judgement-service が引く）
+    judgements: judgementsInclude(versionId),
+  } satisfies Prisma.ProductInclude;
+}
 
-type ProductListRow = Prisma.ProductGetPayload<{ include: typeof PRODUCT_LIST_INCLUDE }>;
-type ProductWithRelations = Prisma.ProductGetPayload<{ include: typeof PRODUCT_INCLUDE }>;
+type ProductListRow = Prisma.ProductGetPayload<{
+  include: ReturnType<typeof productListInclude>;
+}>;
+type ProductWithRelations = Prisma.ProductGetPayload<{
+  include: ReturnType<typeof productInclude>;
+}>;
 
 /**
  * 一覧・詳細に出してよい製品の条件。

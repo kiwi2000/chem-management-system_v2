@@ -12,6 +12,10 @@ import { getAppSettings } from "@/lib/settings";
  * 変更の種類が多く、影響する製品を正しく絞るのは難しいので、
  * 管理者が「全部やり直す」ボタンで一括して更新する。
  *
+ * 判定は法規制バージョンごとに持つ（2026-09-12 決定）。やり直すのは現在の版の行だけで、
+ * 別の版の行はそのまま残る。バージョンを切り替えた直後は、その版の判定が無い製品があるので、
+ * 「要再計算」を出してここへ誘う。
+ *
  * 製品が多いと数十分かかるので、**HTTP の応答を待たせず裏で回す。**
  * 進み具合はこのモジュールの変数で持ち、画面は数秒おきに聞きに来る。
  * サーバーが1台のあいだはこれで足りる（増やすときは DB に持ち替える）。
@@ -121,13 +125,11 @@ async function recordFullRejudge(versionId: string, actorId: string) {
 }
 
 /**
- * 最後に全製品を判定し直し終えた時刻。
- * 記録が無い（この仕組みより前に判定した環境）ときは、
- * 現在のバージョンの判定のうちいちばん古い計算日時で代える
+ * **その版で**最後に全製品を判定し直し終えた時刻。
+ * 記録が無い、または記録が別の版のものなら、その版の判定のうちいちばん古い計算日時で代える
+ * （判定は版ごとに持つので、別の版の記録は当てにならない）。その版の判定が無ければ null
  */
-async function lastFullRejudge(
-  versionId: string,
-): Promise<{ at: Date; versionId: string | null } | null> {
+async function lastFullRejudge(versionId: string): Promise<Date | null> {
   const row = await prisma.systemSetting.findUnique({
     where: { key: LAST_FULL_KEY },
     select: { value: true },
@@ -136,9 +138,7 @@ async function lastFullRejudge(
     try {
       const parsed = JSON.parse(row.value) as { at?: string; versionId?: string };
       const at = parsed.at ? new Date(parsed.at) : null;
-      if (at && !Number.isNaN(at.getTime())) {
-        return { at, versionId: parsed.versionId ?? null };
-      }
+      if (at && !Number.isNaN(at.getTime()) && parsed.versionId === versionId) return at;
     } catch {
       // 読めない値は無いものとして下へ
     }
@@ -147,7 +147,7 @@ async function lastFullRejudge(
     where: { versionId },
     _min: { computedAt: true },
   });
-  return oldest._min.computedAt ? { at: oldest._min.computedAt, versionId } : null;
+  return oldest._min.computedAt;
 }
 
 /**
@@ -162,11 +162,24 @@ export async function rejudgeNeeded(): Promise<boolean> {
   if (!version) return false;
   // 走っている最中は、終われば消えるので出さない
   if (status.running) return false;
-  const [changedAt, lastFull] = await Promise.all([
+  const [changedAt, lastFull, missing] = await Promise.all([
     premisesChangedAt(version.id),
     lastFullRejudge(version.id),
+    // 別の版では判定してあるのに、この版の判定が無い製品（切り替えたまま判定し直していない）
+    prisma.product.count({
+      where: {
+        deletedAt: null,
+        judgements: { some: {} },
+        NOT: { judgements: { some: { versionId: version.id } } },
+      },
+    }),
   ]);
-  return isRejudgeNeeded({ currentVersionId: version.id, changedAt, lastFull });
+  return isRejudgeNeeded({
+    currentVersionId: version.id,
+    changedAt,
+    lastFull,
+    missing: missing > 0,
+  });
 }
 
 /**
