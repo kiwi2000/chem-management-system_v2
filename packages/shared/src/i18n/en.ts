@@ -1161,7 +1161,7 @@ export const en: Messages = {
     size: "Font size",
     sizeDefault: "Default",
     color: "Text colour",
-    insertField: "Insert field",
+    insertField: "Field",
     addBlock: "+ Block",
     blockKinds: {
       heading: "Heading",

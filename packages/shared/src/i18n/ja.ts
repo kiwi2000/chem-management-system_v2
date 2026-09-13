@@ -1189,7 +1189,7 @@ export const ja = {
     size: "文字の大きさ",
     sizeDefault: "既定",
     color: "文字の色",
-    insertField: "差込項目を入れる",
+    insertField: "差込項目",
     addBlock: "＋ ブロック",
     blockKinds: {
       heading: "見出し",
