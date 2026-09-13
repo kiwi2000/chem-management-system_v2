@@ -1,5 +1,5 @@
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requireUser } from "@/lib/authz";
+import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -12,7 +12,7 @@ type Ctx = { params: Promise<{ id: string; cid: string }> };
  * 書いた本人か管理者だけ。返信は直せないので、書き損じはこれで消して書き直す
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requireUser();
+  const actor = await requirePermission("FEEDBACK_EDIT");
   if (actor instanceof Response) return actor;
   const { id, cid } = await params;
   const m = await getServerMessages();

@@ -27,6 +27,8 @@ export async function GET(req: Request) {
   );
   const where = {
     generatedBy: actor.user.id,
+    // 組成（判定の根拠を含む）が載っている帳票は、組成を見られない人には一覧にも出さない
+    ...(actor.has("COMPOSITION_VIEW") ? {} : { hasComposition: false }),
     ...buildWhere(DOCUMENT_COLUMNS, state.filters),
   };
 

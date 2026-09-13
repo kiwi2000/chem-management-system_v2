@@ -43,6 +43,8 @@ enum Permission {
   ORG_EDIT
   NEWS_POST
   NEWS_MANAGE
+  FEEDBACK_VIEW
+  FEEDBACK_EDIT
   ADMIN
 }
 

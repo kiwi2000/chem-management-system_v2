@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { useMe } from "@/lib/use-me";
 import type { ApiError, ListResponse } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,10 @@ const PRIORITY_CLASS: Record<FeedbackPriority, string> = {
  */
 export default function FeedbackPage() {
   const { m, locale } = useI18n();
+
+  // 書ける人（FEEDBACK_EDIT）だけに ＋ と削除を出す。見るだけの人は読むだけ（サーバー側でも弾く）
+  const { can } = useMe();
+  const editable = can("FEEDBACK_EDIT");
 
   const columns = useMemo<TableColumn<FeedbackDto>[]>(
     () => [
@@ -430,7 +435,7 @@ export default function FeedbackPage() {
         emptyMessage="まだ投稿がありません"
         // ＋ で書く欄が開く。書いている最中は出さない（法文物質名などと同じ形）
         create={
-          open
+          open || !editable
             ? undefined
             : {
                 onClick: () => {
@@ -439,8 +444,8 @@ export default function FeedbackPage() {
                 },
               }
         }
-        selectable
-        onDeleteSelected={onDeleteSelected}
+        selectable={editable}
+        onDeleteSelected={editable ? onDeleteSelected : undefined}
         filterLayout={[["title"], ["body"], ["kind", "priority", "status"], ["updatedAt"]]}
       />
     </div>

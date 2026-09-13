@@ -123,7 +123,7 @@ export default async function DocumentPage({
         generatedBy: actor.user.id,
         // 出した紙面をそのまま残す。あとで開いたときに当時の内容が出る
         content: doc as unknown as object,
-        hasComposition: containsComposition(content, data.tables),
+        hasComposition: containsComposition(content, data),
         params: {
           version: data.values.get("doc.version") ?? "",
           // 誰の名前で、誰に宛てて出したか。あとから記録だけで追えるように残す

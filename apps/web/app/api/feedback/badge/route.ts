@@ -1,5 +1,5 @@
 import { isOpenFeedback, FEEDBACK_STATUSES } from "@chem/shared";
-import { requireUser } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ const OPEN_STATUSES = FEEDBACK_STATUSES.filter(isOpenFeedback);
  * 開発中の窓口なので、ログインしていれば誰でも数えられる（権限では絞らない）。
  */
 export async function GET() {
-  const actor = await requireUser();
+  const actor = await requirePermission("FEEDBACK_VIEW");
   if (actor instanceof Response) return actor;
   const { user } = actor;
 

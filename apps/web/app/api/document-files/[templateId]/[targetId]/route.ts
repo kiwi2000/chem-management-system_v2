@@ -91,7 +91,13 @@ export async function GET(
   */
   const hasComposition =
     found.ok &&
-    found.tags.some((t) => t.startsWith("{composition.") || t.startsWith("{compositionAggregate."));
+    found.tags.some(
+      (t) =>
+        t.startsWith("{composition.") ||
+        t.startsWith("{compositionAggregate.") ||
+        // 判定の根拠（法文物質名）が載っていれば、それも組成のうち
+        (t.startsWith("{judgement.") && data.judgementWithBasis),
+    );
 
   const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const name = `${row.code}_${data.code}_${day}${TEMPLATE_EXT[row.kind]}`;

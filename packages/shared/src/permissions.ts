@@ -43,6 +43,13 @@ export const PERMISSIONS = [
   // お知らせ
   "NEWS_POST",
   "NEWS_MANAGE",
+  /*
+    フィードバック（開発中の窓口）。
+    **既定はシステム管理者だけ**（2026-09-13 指示）。見る・書くを分け、
+    テストに協力してもらう人にだけ付ける
+  */
+  "FEEDBACK_VIEW",
+  "FEEDBACK_EDIT",
   // システム管理（ユーザー管理・システム設定・監査ログ）
   "ADMIN",
 ] as const;
@@ -67,6 +74,8 @@ const IMPLIES: Partial<Record<Permission, readonly Permission[]>> = {
   REGULATION_EDIT: ["REGULATION_VIEW"],
   // 他人のお知らせを編集できる人は、自分でも投稿できるものとして扱う
   NEWS_MANAGE: ["NEWS_POST"],
+  // フィードバックを書ける人は、当然それを見られる
+  FEEDBACK_EDIT: ["FEEDBACK_VIEW"],
 };
 
 /** 含意をたどって権限集合を閉じる（保存前・チェックボックス操作時の両方で使う） */
@@ -118,6 +127,7 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "document", permissions: ["DOC_TEMPLATE_EDIT", "DOCUMENT_CREATE", "DOCUMENT_SENDER"] },
   { key: "organisation", permissions: ["ORG_EDIT"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },
+  { key: "feedback", permissions: ["FEEDBACK_VIEW", "FEEDBACK_EDIT"] },
   { key: "system", permissions: ["ADMIN"] },
 ];
 

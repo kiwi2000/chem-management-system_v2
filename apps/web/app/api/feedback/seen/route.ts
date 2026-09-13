@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/authz";
+import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * 開いた直後の画面では未読が見えたまま残る（開いた瞬間に消えると何が新しかったか分からない）。
  */
 export async function POST() {
-  const actor = await requireUser();
+  const actor = await requirePermission("FEEDBACK_VIEW");
   if (actor instanceof Response) return actor;
 
   await prisma.user.update({

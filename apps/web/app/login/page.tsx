@@ -224,7 +224,8 @@ export default function LoginPage() {
             </Alert>
           )}
         </Suspense>
-        <Card>
+        {/* ログインの枠は開け閉めしない（2026-09-13 指示）。閉じると入力欄が消えるだけで意味が無い */}
+        <Card collapsible={false}>
           <CardHeader>
             {/* 説明文は置かず、システム名だけを大きく中央に出す */}
             <CardTitle className="text-center text-xl">{m.common.appName}</CardTitle>

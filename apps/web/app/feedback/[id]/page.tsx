@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { useMe } from "@/lib/use-me";
 import { PAGE_SHELL } from "@/lib/page-shell";
 import type { ApiError } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -85,6 +86,10 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
   }, [load]);
 
   /** 親ごとに子を引けるようにしておく。木の描画はここから辿る */
+  // 書ける人（FEEDBACK_EDIT）だけに返信・状態の変更・削除を出す（サーバー側でも弾く）
+  const { can } = useMe();
+  const editable = can("FEEDBACK_EDIT");
+
   const childrenOf = useMemo(() => {
     const map = new Map<string | null, FeedbackCommentDto[]>();
     for (const c of detail?.comments ?? []) {
@@ -213,7 +218,7 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
             ) : (
               <p className="text-sm whitespace-pre-wrap">{c.body}</p>
             )}
-            {c.body !== null && (
+            {c.body !== null && editable && (
               <div className="flex gap-1">
                 <Button
                   type="button"
@@ -276,66 +281,68 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
             <CardContent className="space-y-4">
               <p className="text-sm whitespace-pre-wrap">{item.body}</p>
 
-              {/* 直せるのはここだけ。本文は直さず、返信で言い足す */}
-              <div className="flex flex-wrap items-end gap-4 border-t pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fb-kind">種別</Label>
-                  <select
-                    id="fb-kind"
-                    value={state.kind}
-                    onChange={(e) => setState({ ...state, kind: e.target.value as FeedbackKind })}
-                    className={cn(SELECT_CLASS, "block w-32")}
+              {/* 直せるのはここだけ。本文は直さず、返信で言い足す。書けない人には出さない */}
+              {editable && (
+                <div className="flex flex-wrap items-end gap-4 border-t pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fb-kind">種別</Label>
+                    <select
+                      id="fb-kind"
+                      value={state.kind}
+                      onChange={(e) => setState({ ...state, kind: e.target.value as FeedbackKind })}
+                      className={cn(SELECT_CLASS, "block w-32")}
+                    >
+                      {FEEDBACK_KINDS.map((k) => (
+                        <option key={k} value={k}>
+                          {FEEDBACK_KIND_LABELS[k]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fb-priority">重要度</Label>
+                    <select
+                      id="fb-priority"
+                      value={state.priority}
+                      onChange={(e) =>
+                        setState({ ...state, priority: e.target.value as FeedbackPriority })
+                      }
+                      className={cn(SELECT_CLASS, "block w-24")}
+                    >
+                      {FEEDBACK_PRIORITIES.map((p) => (
+                        <option key={p} value={p}>
+                          {FEEDBACK_PRIORITY_LABELS[p]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fb-status">ステータス</Label>
+                    <select
+                      id="fb-status"
+                      value={state.status}
+                      onChange={(e) =>
+                        setState({ ...state, status: e.target.value as FeedbackStatus })
+                      }
+                      className={cn(SELECT_CLASS, "block w-32")}
+                    >
+                      {FEEDBACK_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {FEEDBACK_STATUS_LABELS[s]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!stateChanged || savingState}
+                    onClick={saveState}
                   >
-                    {FEEDBACK_KINDS.map((k) => (
-                      <option key={k} value={k}>
-                        {FEEDBACK_KIND_LABELS[k]}
-                      </option>
-                    ))}
-                  </select>
+                    {savingState ? m.common.saving : m.common.save}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fb-priority">重要度</Label>
-                  <select
-                    id="fb-priority"
-                    value={state.priority}
-                    onChange={(e) =>
-                      setState({ ...state, priority: e.target.value as FeedbackPriority })
-                    }
-                    className={cn(SELECT_CLASS, "block w-24")}
-                  >
-                    {FEEDBACK_PRIORITIES.map((p) => (
-                      <option key={p} value={p}>
-                        {FEEDBACK_PRIORITY_LABELS[p]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fb-status">ステータス</Label>
-                  <select
-                    id="fb-status"
-                    value={state.status}
-                    onChange={(e) =>
-                      setState({ ...state, status: e.target.value as FeedbackStatus })
-                    }
-                    className={cn(SELECT_CLASS, "block w-32")}
-                  >
-                    {FEEDBACK_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {FEEDBACK_STATUS_LABELS[s]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={!stateChanged || savingState}
-                  onClick={saveState}
-                >
-                  {savingState ? m.common.saving : m.common.save}
-                </Button>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -344,7 +351,7 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
               <CardTitle className="text-base">
                 返信{item.replyCount > 0 ? `（${item.replyCount}件）` : ""}
               </CardTitle>
-              {replyTo !== null && (
+              {replyTo !== null && editable && (
                 <Button type="button" size="sm" variant="outline" onClick={() => openReply(null)}>
                   <Reply className="mr-1 size-3.5" />
                   この書き込みに返信

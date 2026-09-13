@@ -1,6 +1,6 @@
 import { emptyTableState, feedbackSchema, parseTableState } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requireUser } from "@/lib/authz";
+import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { toFeedbackDtos } from "@/lib/feedback-service";
 import { getServerMessages } from "@/lib/i18n";
@@ -14,10 +14,11 @@ const DEFAULT_STATE = emptyTableState([{ column: "updatedAt", direction: "desc" 
 
 /**
  * GET /api/feedback — 一覧。
- * 開発中の窓口なので、ログインしていれば誰でも読める（権限では絞らない）。
+ * 見られるのは FEEDBACK_VIEW を持つ人だけ（既定はシステム管理者。2026-09-13 指示）。
+ * 見られる人は、他人の書き込みも全部読める（対応の状況を共有する窓口なので）
  */
 export async function GET(req: Request) {
-  const actor = await requireUser();
+  const actor = await requirePermission("FEEDBACK_VIEW");
   if (actor instanceof Response) return actor;
 
   const state = parseTableState(
@@ -50,9 +51,9 @@ export async function GET(req: Request) {
   });
 }
 
-/** POST /api/feedback — 追加 */
+/** POST /api/feedback — 追加。書けるのは FEEDBACK_EDIT を持つ人だけ */
 export async function POST(req: Request) {
-  const actor = await requireUser();
+  const actor = await requirePermission("FEEDBACK_EDIT");
   if (actor instanceof Response) return actor;
   const m = await getServerMessages();
 

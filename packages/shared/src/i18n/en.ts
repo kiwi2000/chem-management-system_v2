@@ -210,6 +210,8 @@ export const en: Messages = {
     DATA_EXPORT: "Export data",
     NEWS_POST: "Post announcements",
     NEWS_MANAGE: "Edit and delete others' announcements",
+    FEEDBACK_VIEW: "View feedback",
+    FEEDBACK_EDIT: "Write feedback (post, reply, change state, delete)",
     ADMIN: "System administration (users, settings, audit log)",
   },
   permissionHints: {
@@ -220,6 +222,9 @@ export const en: Messages = {
     INACTIVE_VIEW:
       "See unpublished data and inactive products in lists and details (creators always see their own)",
     NEWS_POST: "Announcements you posted can be edited and deleted by you",
+    FEEDBACK_VIEW:
+      "Shows Feedback in the left menu and lets you read posts and replies, with unread marks",
+    FEEDBACK_EDIT: "System administrators only by default. Grant it to people helping with testing",
     ADMIN: "Creating users, changing permissions, system settings, audit log",
   },
   permissionGroups: {
@@ -232,6 +237,7 @@ export const en: Messages = {
     regulation: "Regulations",
     data: "Data export",
     news: "Announcements",
+    feedback: "Feedback",
     system: "System",
   },
   permissionPresets: {
@@ -1099,7 +1105,7 @@ export const en: Messages = {
     target: "Target",
     targets: { PRODUCT: "Product", SUBSTANCE: "Substance" },
     kind: "Built as",
-    kinds: { BLOCK: "On screen", XLSX: "Excel", DOCX: "Word" },
+    kinds: { BLOCK: "Screen editor", XLSX: "Excel", DOCX: "Word" },
     file: {
       title: "Uploaded file",
       choose: "Upload a file",

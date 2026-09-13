@@ -98,7 +98,7 @@ export default async function DocumentBatchPage({
       id,
       code: data.code,
       version: data.values.get("doc.version") ?? "",
-      hasComposition: containsComposition(content, data.tables),
+      hasComposition: containsComposition(content, data),
       doc: renderDocument({
         content,
         target: template.target,

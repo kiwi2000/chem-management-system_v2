@@ -221,6 +221,8 @@ export const ja = {
     DATA_EXPORT: "データを出力できる",
     NEWS_POST: "お知らせを投稿できる",
     NEWS_MANAGE: "他人のお知らせも編集・削除できる",
+    FEEDBACK_VIEW: "フィードバックを見られる",
+    FEEDBACK_EDIT: "フィードバックを書ける（投稿・返信・状態の変更・削除）",
     ADMIN: "システム管理（ユーザー・設定・監査ログ）",
   },
   permissionHints: {
@@ -231,6 +233,9 @@ export const ja = {
     INACTIVE_VIEW:
       "未公開のデータと、無効にした製品を一覧・詳細で見られます（作成者は権限が無くても自分のぶんを見られます）",
     NEWS_POST: "自分が投稿したお知らせは編集・削除できます",
+    FEEDBACK_VIEW:
+      "左メニューに「フィードバック」が出て、書き込みと返信を読めます。未読の印も出ます",
+    FEEDBACK_EDIT: "既定ではシステム管理者だけです。テストに協力してもらう人に付けてください",
     ADMIN: "ユーザーの作成・権限変更・システム設定・監査ログの閲覧",
   },
   permissionGroups: {
@@ -243,6 +248,7 @@ export const ja = {
     regulation: "法規制",
     data: "データの持ち出し",
     news: "お知らせ",
+    feedback: "フィードバック",
     system: "システム",
   },
   permissionPresets: {
@@ -1126,7 +1132,7 @@ export const ja = {
     target: "対象",
     targets: { PRODUCT: "製品", SUBSTANCE: "物質" },
     kind: "作りかた",
-    kinds: { BLOCK: "画面で組む", XLSX: "Excel", DOCX: "Word" },
+    kinds: { BLOCK: "画面編集", XLSX: "Excel", DOCX: "Word" },
     file: {
       title: "預けたファイル",
       choose: "ファイルを預ける",
@@ -1135,7 +1141,7 @@ export const ja = {
       remove: "外す",
       none: "まだ預けていません。Excel・Word のテンプレートを預けてください",
       notFileKind:
-        "このテンプレートは画面で組むものです。作りかたを Excel か Word にしてから預けてください",
+        "このテンプレートは画面編集のものです。作りかたを Excel か Word にしてから預けてください",
       lead: "Excel・Word のセルや文の中に {product.code} のように書いておくと、そこへ値が入ります。罫線・セルの結合・ヘッダー・ロゴはそのまま出ます",
       tags: "使える差込項目",
       tagsHint: "押すと写せます。Excel なら入れたいセル、Word なら入れたい場所に貼り付けてください",

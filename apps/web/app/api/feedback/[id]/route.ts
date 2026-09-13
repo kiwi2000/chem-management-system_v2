@@ -1,6 +1,6 @@
 import { feedbackStateSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requireUser } from "@/lib/authz";
+import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { toCommentDtos, toFeedbackDtos } from "@/lib/feedback-service";
 import { getServerMessages } from "@/lib/i18n";
@@ -11,7 +11,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /** GET /api/feedback/[id] — 書き込みと、その返信すべて */
 export async function GET(_req: Request, { params }: Ctx) {
-  const actor = await requireUser();
+  const actor = await requirePermission("FEEDBACK_VIEW");
   if (actor instanceof Response) return actor;
   const { id } = await params;
 
@@ -42,7 +42,7 @@ export async function GET(_req: Request, { params }: Ctx) {
  * ここを本人だけにすると、状態を進められる人がいなくなる。
  */
 export async function PUT(req: Request, { params }: Ctx) {
-  const actor = await requireUser();
+  const actor = await requirePermission("FEEDBACK_EDIT");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();
@@ -79,7 +79,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 
 /** DELETE /api/feedback/[id] — 論理削除 */
 export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requireUser();
+  const actor = await requirePermission("FEEDBACK_EDIT");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();

@@ -200,7 +200,8 @@ const ADMIN_ITEMS: NavItem[] = [
  */
 const DEV_ITEMS: NavItem[] = [
   { href: "/spec", key: "spec", icon: BookOpen },
-  { href: "/feedback", key: "feedback", icon: MessageSquare },
+  // フィードバックは見られる人だけ（既定はシステム管理者。2026-09-13 指示）
+  { href: "/feedback", key: "feedback", icon: MessageSquare, needs: "FEEDBACK_VIEW" },
 ];
 
 function isActive(pathname: string, item: NavItem): boolean {
@@ -234,7 +235,7 @@ export function SidebarNav({
       ? [{ title: m.nav.system, items: adminItems, collapsible: true }]
       : []),
     // 業務のメニューと地続きに見えないよう、上を大きめに空ける
-    { title: m.nav.devOnly, items: DEV_ITEMS, apart: true },
+    { title: m.nav.devOnly, items: DEV_ITEMS.filter(allowed), apart: true },
   ];
 
   /**
@@ -249,10 +250,13 @@ export function SidebarNav({
    * 画面を移るたびに取り直す。見終わって戻ってきたときに印が消えるようにするため
    */
   const [badge, setBadge] = useState<{ unread: number; open: number } | null>(null);
+  const canSeeFeedback = permissions.includes("FEEDBACK_VIEW");
   const loadBadge = useCallback(async () => {
+    // 見られない人は取りに行かない（403 が返るだけで無駄）
+    if (!canSeeFeedback) return;
     const res = await fetch("/api/feedback/badge").catch(() => null);
     if (res?.ok) setBadge((await res.json()) as { unread: number; open: number });
-  }, []);
+  }, [canSeeFeedback]);
   useEffect(() => {
     void loadBadge();
     /*

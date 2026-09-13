@@ -41,6 +41,11 @@ export interface DocData {
   code: string;
   values: RenderInput["values"];
   tables: RenderInput["tables"];
+  /**
+   * 法規制判定の表に根拠（当たった法文物質名）が載っているか。
+   * 載っていれば組成と同じ扱い（組成を見られる人にしか、できあがった帳票を見せない）
+   */
+  judgementWithBasis: boolean;
 }
 
 function tableDef(key: DocumentTable, locale: Locale) {
@@ -324,7 +329,12 @@ export async function collectForProduct(
     });
   }
 
-  return { code: product.code, values, tables };
+  return {
+    code: product.code,
+    values,
+    tables,
+    judgementWithBasis: withHits && hit.some((j) => j.hits.length > 0),
+  };
 }
 
 export async function collectForSubstance(
@@ -400,7 +410,7 @@ export async function collectForSubstance(
     });
   }
 
-  return { code: substance.code, values, tables };
+  return { code: substance.code, values, tables, judgementWithBasis: false };
 }
 
 /** 対象の種類に応じて集める */
@@ -426,12 +436,14 @@ export async function collectFor(
  */
 export function containsComposition(
   content: { blocks: { kind: string; table?: string }[] },
-  tables: RenderInput["tables"],
+  data: Pick<DocData, "tables" | "judgementWithBasis">,
 ): boolean {
   return content.blocks.some(
     (b) =>
       b.kind === "table" &&
-      (b.table === "composition" || b.table === "compositionAggregate") &&
-      tables.has(b.table),
+      ((b.table === "composition" || b.table === "compositionAggregate") && data.tables.has(b.table)
+        ? true
+        : // 判定の根拠（法文物質名）が載っていれば、それも組成のうち
+          b.table === "judgement" && data.judgementWithBasis),
   );
 }

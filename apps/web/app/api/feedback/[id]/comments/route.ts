@@ -1,6 +1,6 @@
 import { feedbackCommentSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requireUser } from "@/lib/authz";
+import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -16,7 +16,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * 未読の印は本体の更新日時で決めているので、返信が付いたことがそこに現れる
  */
 export async function POST(req: Request, { params }: Ctx) {
-  const actor = await requireUser();
+  const actor = await requirePermission("FEEDBACK_EDIT");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();
