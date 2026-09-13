@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
-const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm";
+const SELECT = "border-input h-7 rounded-none border bg-transparent px-2 text-sm";
 
 type TableBlock = Extract<DocumentBlock, { kind: "table" }>;
 
@@ -67,7 +67,7 @@ export function TableBlockFields({
     <div className="space-y-3">
       {/* 表題。紙面でも表の上に出るので、設定もいちばん上に置く */}
       <Input
-        className="h-8"
+        className="h-7"
         aria-label={m.docEditor.caption}
         placeholder={m.docEditor.caption}
         value={b.caption ?? ""}
@@ -195,7 +195,7 @@ export function TableBlockFields({
             {/* 空かどうかを見る条件では、打つ値が無い */}
             {f.op !== "empty" && f.op !== "notEmpty" && (
               <Input
-                className="h-8 w-48"
+                className="h-7 w-48"
                 aria-label={m.docEditor.tableFilterValue}
                 value={f.value ?? ""}
                 onChange={(e) => {
@@ -255,7 +255,7 @@ export function TableBlockFields({
               ))}
             </select>
             <Input
-              className="h-8 w-48 font-mono"
+              className="h-7 w-48 font-mono"
               aria-label={m.docEditor.tablePattern}
               placeholder={m.docEditor.tablePattern}
               value={r.pattern}
@@ -267,7 +267,7 @@ export function TableBlockFields({
             />
             <span className="text-muted-foreground">→</span>
             <Input
-              className="h-8 w-40"
+              className="h-7 w-40"
               aria-label={m.docEditor.tableReplacement}
               placeholder={m.docEditor.tableReplacement}
               value={r.replacement}

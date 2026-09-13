@@ -90,7 +90,7 @@ export function BlockStyleBar({
       title={m.docEditor.font}
       value={level === "document" ? (st.family ?? DEFAULT_FONT) : (st.family ?? "")}
       onChange={(e) => patch({ family: (e.target.value || undefined) as FontKey | undefined })}
-      className="border-input bg-background h-8 w-24 rounded-none border px-1 text-xs"
+      className="border-input bg-background h-7 w-24 rounded-none border px-1 text-xs"
     >
       {/* 合わせる先があるのはブロックだけ。紙面ぜんたいはここがいちばん外 */}
       {level === "block" && <option value="">{defaultFontLabel ?? m.docEditor.fontDefault}</option>}
@@ -122,7 +122,7 @@ export function BlockStyleBar({
           onChange={(size) => patch({ size })}
           label={`${m.docEditor.fontSize} — ${m.docEditor.fontSizeHint}`}
           placeholder={m.docEditor.fontSizeDefault}
-          className="border-input bg-background h-8 w-14 rounded-none border px-1 text-xs"
+          className="border-input bg-background h-7 w-14 rounded-none border px-1 text-xs"
         />
       </span>
       {toggle("bold", Bold, m.docEditor.bold)}
@@ -134,7 +134,7 @@ export function BlockStyleBar({
         title={m.docEditor.fontColor}
         value={st.color ?? NO_COLOR}
         onChange={(e) => patch({ color: e.target.value === NO_COLOR ? undefined : e.target.value })}
-        className="border-input h-8 w-8 cursor-pointer border bg-transparent p-0.5"
+        className="border-input h-7 w-7 cursor-pointer border bg-transparent p-0.5"
       />
       {/* 色を戻す口。色の選択欄そのものからは「指定なし」に戻せない */}
       {st.color && (
@@ -142,7 +142,7 @@ export function BlockStyleBar({
           type="button"
           size="sm"
           variant="ghost"
-          className="h-8 px-1 text-xs"
+          className="h-7 px-1 text-xs"
           onClick={() => patch({ color: undefined })}
         >
           {m.docEditor.fontColorClear}
@@ -175,14 +175,14 @@ export function BlockStyleBar({
                     background: e.target.value === NO_BACKGROUND ? undefined : e.target.value,
                   })
                 }
-                className="border-input h-8 w-8 cursor-pointer border bg-transparent p-0.5"
+                className="border-input h-7 w-7 cursor-pointer border bg-transparent p-0.5"
               />
               {st.background && (
                 <Button
                   type="button"
                   size="sm"
                   variant="ghost"
-                  className="h-8 px-1 text-xs"
+                  className="h-7 px-1 text-xs"
                   onClick={() => patch({ background: undefined })}
                 >
                   {m.docEditor.decorClear}
@@ -201,7 +201,7 @@ export function BlockStyleBar({
                   ...(e.target.value ? {} : { patternColor: undefined }),
                 })
               }
-              className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+              className="border-input bg-background h-7 rounded-none border px-1 text-xs"
             >
               <option value="">{m.docEditor.patterns.none}</option>
               {BLOCK_PATTERNS.map((p) => (
@@ -219,7 +219,7 @@ export function BlockStyleBar({
                 title={m.docEditor.patternColor}
                 value={st.patternColor ?? DEFAULT_PATTERN_COLOR}
                 onChange={(e) => patch({ patternColor: e.target.value })}
-                className="border-input h-8 w-8 cursor-pointer border bg-transparent p-0.5"
+                className="border-input h-7 w-7 cursor-pointer border bg-transparent p-0.5"
               />
             </Small>
           )}
@@ -234,7 +234,7 @@ export function BlockStyleBar({
                   ...(e.target.value ? {} : { borderWidth: undefined, borderColor: undefined }),
                 })
               }
-              className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+              className="border-input bg-background h-7 rounded-none border px-1 text-xs"
             >
               <option value="">{m.docEditor.borders.none}</option>
               {BLOCK_BORDER_STYLES.map((b) => (
@@ -265,7 +265,7 @@ export function BlockStyleBar({
                     if (!Number.isFinite(n)) return;
                     patch({ borderWidth: Math.min(5, Math.max(0.1, n)) });
                   }}
-                  className="border-input bg-background h-8 w-14 rounded-none border px-1 text-xs"
+                  className="border-input bg-background h-7 w-14 rounded-none border px-1 text-xs"
                 />
               </Small>
               <Small label={m.docEditor.borderColor}>
@@ -277,7 +277,7 @@ export function BlockStyleBar({
                   onChange={(e) =>
                     patch({ borderColor: e.target.value === NO_COLOR ? undefined : e.target.value })
                   }
-                  className="border-input h-8 w-8 cursor-pointer border bg-transparent p-0.5"
+                  className="border-input h-7 w-7 cursor-pointer border bg-transparent p-0.5"
                 />
               </Small>
             </>

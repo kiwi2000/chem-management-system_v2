@@ -81,11 +81,11 @@ export function DocumentView({
  */
 export function DocumentSheet({
   doc,
-  highlightId,
+  highlightIds,
 }: {
   doc: RenderedDocument;
-  /** 編集画面で選んでいるブロックの id。そのブロックを赤い細線で囲む（刷るときは渡さない） */
-  highlightId?: string | null;
+  /** 編集画面で選んでいるブロックの id（複数可）。そのブロックを赤い細線で囲む（刷るときは渡さない） */
+  highlightIds?: readonly string[];
 }) {
   return (
     <div
@@ -107,12 +107,12 @@ export function DocumentSheet({
       */}
       {groupIntoRows(doc.blocks).map((row, i) =>
         row.blocks.length === 1 ? (
-          <Block key={i} block={row.blocks[0]!} doc={doc.style} highlightId={highlightId} />
+          <Block key={i} block={row.blocks[0]!} doc={doc.style} highlightIds={highlightIds} />
         ) : (
           <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
             {row.blocks.map((b, j) => (
               <div key={j} style={{ width: `${row.percents[j]}%` }}>
-                <Block block={b} doc={doc.style} highlightId={highlightId} />
+                <Block block={b} doc={doc.style} highlightIds={highlightIds} />
               </div>
             ))}
           </div>
@@ -230,13 +230,13 @@ function marginOf(mg: BlockMargin | undefined): CSSProperties {
 function Block({
   block: b,
   doc,
-  highlightId,
+  highlightIds,
 }: {
   block: RenderBlock;
   doc: BlockStyle | undefined;
-  highlightId?: string | null;
+  highlightIds?: readonly string[];
 }) {
-  const highlighted = highlightId !== undefined && highlightId !== null && b.id === highlightId;
+  const highlighted = !!b.id && !!highlightIds && highlightIds.includes(b.id);
   const wrap: CSSProperties = {
     ...styleOf(b.style),
     ...decorOf(b.style, true),

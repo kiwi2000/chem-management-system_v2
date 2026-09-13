@@ -23,7 +23,7 @@ import { useOrgItemLabels } from "@/lib/use-doc-fields";
 import { useMe } from "@/lib/use-me";
 import { cn } from "@/lib/utils";
 
-const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm";
+const SELECT = "border-input h-7 rounded-none border bg-transparent px-2 text-sm";
 
 /*
   プレビューまわりの好みは端末に覚える（2026-09-13 指示）。
@@ -127,8 +127,11 @@ export function DocTemplateEditor({ id }: { id: string }) {
     setDragging(false);
     remember(SPLIT_KEY, String(split));
   }
-  /** 編集で触っているブロック。プレビューで赤い細線で囲む（2026-09-13 指示） */
-  const [activeId, setActiveId] = useState<string | null>(null);
+  /**
+   * 編集で選んでいるブロック（複数可）。プレビューで赤い細線で囲む（2026-09-13 指示）。
+   * Ctrl を押しながらで足し引き、Shift で範囲。選びかたの決まりは BlockList にある
+   */
+  const [activeIds, setActiveIds] = useState<string[]>([]);
   /** 上の欄（題名と帯）を出しているか。△で閉じて、編集の場所を広く使える（2026-09-13 指示） */
   const [headerOpen, setHeaderOpen] = useState(true);
   /*
@@ -360,7 +363,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
                           min={ZOOM_MIN}
                           max={ZOOM_MAX}
                           step={5}
-                          className="border-input bg-background h-8 w-14 rounded-none border px-1 text-xs"
+                          className="border-input bg-background h-7 w-14 rounded-none border px-1 text-xs"
                         />
                         <span className="text-muted-foreground text-xs">%</span>
                       </span>
@@ -404,7 +407,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
                       aria-label={m.docEditor.preview}
                       title={preview ? m.docEditor.previewHide : m.docEditor.preview}
                       aria-pressed={preview}
-                      className={cn("h-8 w-8", preview && "bg-accent text-foreground")}
+                      className={cn("h-7 w-7", preview && "bg-accent text-foreground")}
                       onClick={togglePreview}
                     >
                       <Eye className="size-4" />
@@ -522,8 +525,8 @@ export function DocTemplateEditor({ id }: { id: string }) {
               target={template.target}
               orgItems={orgItems}
               onChange={(blocks) => edit({ ...content, blocks })}
-              onActivate={setActiveId}
-              activeId={activeId}
+              onActivate={setActiveIds}
+              activeIds={activeIds}
             />
           </div>
 
@@ -561,7 +564,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
                 </p>
                 {/* 紙は上下に my-4 を持つ。注意書きと紙の間を最小にしたいので、直下の上の余白だけ消す。倍率は zoom で紙ごと縮める */}
                 <div className="*:mt-0" style={{ zoom: zoom / 100 }}>
-                  <DocumentSheet doc={sheet} highlightId={activeId} />
+                  <DocumentSheet doc={sheet} highlightIds={activeIds} />
                 </div>
               </div>
             </div>

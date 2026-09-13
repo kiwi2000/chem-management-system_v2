@@ -22,7 +22,7 @@ import {
   type BlockMargin,
 } from "@chem/shared";
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { RichEditor } from "@/components/doc-editor/rich-editor";
 import { TableBlockFields } from "@/components/doc-editor/table-block-fields";
 import { BlockStyleBar } from "@/components/doc-editor/block-style-bar";
@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 /** 余白の高さ（mm）の候補 */
 const SPACER_PRESETS = [2, 4, 6, 8, 10, 15, 20, 30, 40, 50] as const;
 
-const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm";
+const SELECT = "border-input h-7 rounded-none border bg-transparent px-2 text-sm";
 
 /** 新しいブロックの中身。種類ごとの初期値 */
 function newBlock(kind: BlockKind, target: DocumentTarget, id: string): DocumentBlock {
@@ -82,19 +82,51 @@ export function BlockList({
   orgItems,
   onChange,
   onActivate,
-  activeId,
+  activeIds = [],
 }: {
   blocks: DocumentBlock[];
   target: DocumentTarget;
   /** 会社の自由項目の名前 */
   orgItems: string[];
   onChange: (next: DocumentBlock[]) => void;
-  /** 触ったブロックの id を知らせる（null は選択を外す）。プレビューでそのブロックを枠で示すため */
-  onActivate?: (id: string | null) => void;
-  /** いま選んでいるブロック。プレビューの赤い枠と同じ色で、編集側の枠も赤くする（2026-09-13 指示） */
-  activeId?: string | null;
+  /** 選んでいるブロックの id の並びを知らせる（空は選択なし）。プレビューでそのブロックを枠で示すため */
+  onActivate?: (ids: string[]) => void;
+  /** いま選んでいるブロック（複数可）。プレビューの赤い枠と同じ色で、編集側の枠も赤くする（2026-09-13 指示） */
+  activeIds?: readonly string[];
 }) {
   const { m, locale } = useI18n();
+  /** Shift で範囲を選ぶときの起点。最後にふつうに押したブロック */
+  const anchorId = useRef<string | null>(null);
+  /**
+   * 押したブロックをどう選ぶか（2026-09-13 指示：複数選べるように）。
+   * - ふつうに押す: そのブロックだけ。すでにそれだけを選んでいて、欄でないところなら外す
+   * - Ctrl（Mac は ⌘）を押しながら: 足す／外す
+   * - Shift を押しながら: 起点からそこまでの範囲
+   */
+  const pick = (
+    id: string,
+    e: { ctrlKey: boolean; metaKey: boolean; shiftKey: boolean },
+    onControl: boolean,
+  ) => {
+    const cur = activeIds;
+    if (e.shiftKey && anchorId.current) {
+      const a = blocks.findIndex((x) => x.id === anchorId.current);
+      const b = blocks.findIndex((x) => x.id === id);
+      if (a >= 0 && b >= 0) {
+        const [lo, hi] = a < b ? [a, b] : [b, a];
+        onActivate?.(blocks.slice(lo, hi + 1).map((x) => x.id));
+        return;
+      }
+    }
+    if (e.ctrlKey || e.metaKey) {
+      anchorId.current = id;
+      onActivate?.(cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
+      return;
+    }
+    anchorId.current = id;
+    if (!onControl && cur.length === 1 && cur[0] === id) onActivate?.([]);
+    else onActivate?.([id]);
+  };
   /*
     組織ブロックの選択肢。**一覧はログインしていれば誰でも引ける。**
     自分の会社・部署も、取引先も同じ表にあるので、ここで分けない
@@ -189,7 +221,7 @@ export function BlockList({
         className={cn(
           "border-input rounded-none border",
           // 選んでいるブロック。プレビューの赤い枠と対で分かるように、こちらも赤い枠にする
-          activeId === b.id && "border-red-600 ring-1 ring-red-600",
+          activeIds.includes(b.id) && "border-red-600 ring-1 ring-red-600",
           overIndex === i && dragIndex !== null && "border-primary border-t-2",
           dragIndex === i && "opacity-50",
         )}
@@ -203,10 +235,12 @@ export function BlockList({
           const onControl = !!el.closest(
             "input, select, textarea, button, a, [contenteditable], .ProseMirror",
           );
-          if (!onControl && activeId === b.id) onActivate?.(null);
-          else onActivate?.(b.id);
+          pick(b.id, e, onControl);
         }}
-        onFocusCapture={() => onActivate?.(b.id)}
+        // キーで欄に入ったとき。すでに選んでいる中の1つなら、複数の選択を崩さない
+        onFocusCapture={() => {
+          if (!activeIds.includes(b.id)) onActivate?.([b.id]);
+        }}
         onDragOver={
           dragIndex === null
             ? undefined
@@ -352,7 +386,7 @@ export function BlockList({
               {b.items.map((it, k) => (
                 <div key={k} className="flex flex-wrap items-center gap-2">
                   <Input
-                    className="h-8 w-40"
+                    className="h-7 w-40"
                     aria-label={m.docEditor.label}
                     placeholder={m.docEditor.label}
                     value={it.label}
@@ -542,7 +576,7 @@ export function BlockList({
                       空にすれば値だけが出る（宛名や差出人の並びに使う）
                     */}
                     <Input
-                      className="h-8 w-40"
+                      className="h-7 w-40"
                       aria-label={m.docEditor.orgBlockLabel}
                       placeholder={m.docEditor.orgBlockLabelPlaceholder}
                       value={it.label ?? ""}
@@ -645,7 +679,7 @@ export function BlockList({
           {b.kind === "signature" && (
             <div className="flex flex-wrap items-center gap-3">
               <Input
-                className="h-8 w-64"
+                className="h-7 w-64"
                 aria-label={m.docEditor.label}
                 placeholder={m.docEditor.label}
                 value={b.label}
@@ -763,7 +797,7 @@ function MarginInputs({
             max={100}
             step={0.5}
             aria-label={`${label} ${sides[side]}`}
-            className="border-input h-8 w-10 rounded-none border bg-transparent px-1 text-xs"
+            className="border-input h-7 w-10 rounded-none border bg-transparent px-1 text-xs"
             value={value?.[side] ?? ""}
             onChange={(e) => set(side, e.target.value)}
           />
