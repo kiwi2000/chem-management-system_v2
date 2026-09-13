@@ -660,7 +660,18 @@ export type DocumentBlock =
   /** ここで横並びを終える。紙には何も出ない（改ページと違い、紙は変わらない） */
   | (BlockBase & { kind: "rowBreak" })
   | (BlockBase & { kind: "pageBreak" })
-  | (BlockBase & { kind: "signature"; label: string });
+  /**
+   * 署名欄。`labelPosition` はラベルを線の左に置くか上に置くか（省略は左）、
+   * `gap` はラベルと線の間（mm、省略は 4）、`lineWidth` は線の長さ（mm、省略は 60）。
+   * 2026-09-13 指示で決められるようにした
+   */
+  | (BlockBase & {
+      kind: "signature";
+      label: string;
+      labelPosition?: "left" | "above";
+      gap?: number;
+      lineWidth?: number;
+    });
 
 /**
  * 横に並ぶものをまとめる。**画面と紙面の両方がこれを使う。**

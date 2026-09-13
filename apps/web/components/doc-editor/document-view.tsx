@@ -306,15 +306,34 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       return null;
     case "pageBreak":
       return <div style={{ pageBreakAfter: "always", breakAfter: "page" }} />;
-    case "signature":
+    case "signature": {
+      // ラベルの置きかた（線の左／線の上）、ラベルと線の間、線の長さは様式で決められる
+      const gap = `${b.gap ?? 4}mm`;
+      const line = (
+        <span
+          style={{
+            display: "inline-block",
+            width: `${b.lineWidth ?? 60}mm`,
+            maxWidth: "100%",
+            borderBottom: "0.3mm solid #000",
+          }}
+        />
+      );
+      if (b.labelPosition === "above") {
+        return (
+          <div style={{ margin: "8mm 0 0", fontSize: fs("10.5pt") }}>
+            <div style={{ marginBottom: gap }}>{b.label}</div>
+            {line}
+          </div>
+        );
+      }
       return (
-        <div style={{ margin: "8mm 0 0", fontSize: fs("10.5pt") }}>
-          <span style={{ marginRight: "4mm" }}>{b.label}</span>
-          <span
-            style={{ display: "inline-block", width: "60mm", borderBottom: "0.3mm solid #000" }}
-          />
+        <div style={{ margin: "8mm 0 0", fontSize: fs("10.5pt"), whiteSpace: "nowrap" }}>
+          <span style={{ marginRight: gap }}>{b.label}</span>
+          {line}
         </div>
       );
+    }
     default:
       return null;
   }

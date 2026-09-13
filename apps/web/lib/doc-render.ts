@@ -75,7 +75,13 @@ export type RenderBlock =
   | (RenderBase & { kind: "spacer"; size: SpacerSize })
   | (RenderBase & { kind: "rowBreak" })
   | (RenderBase & { kind: "pageBreak" })
-  | (RenderBase & { kind: "signature"; label: string });
+  | (RenderBase & {
+      kind: "signature";
+      label: string;
+      labelPosition?: "left" | "above";
+      gap?: number;
+      lineWidth?: number;
+    });
 
 export interface RenderedDocument {
   orientation: "portrait" | "landscape";
@@ -252,7 +258,15 @@ function renderBlock(
     case "pageBreak":
       return [{ kind: "pageBreak" }];
     case "signature":
-      return [{ kind: "signature", label: b.label }];
+      return [
+        {
+          kind: "signature",
+          label: b.label,
+          ...(b.labelPosition ? { labelPosition: b.labelPosition } : {}),
+          ...(b.gap !== undefined ? { gap: b.gap } : {}),
+          ...(b.lineWidth !== undefined ? { lineWidth: b.lineWidth } : {}),
+        },
+      ];
     default:
       return [];
   }

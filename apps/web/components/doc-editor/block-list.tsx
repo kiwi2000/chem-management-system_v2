@@ -616,13 +616,76 @@ export function BlockList({
           )}
 
           {b.kind === "signature" && (
-            <Input
-              className="h-8 w-64"
-              aria-label={m.docEditor.label}
-              placeholder={m.docEditor.label}
-              value={b.label}
-              onChange={(e) => replace(i, { ...b, label: e.target.value })}
-            />
+            <div className="flex flex-wrap items-center gap-3">
+              <Input
+                className="h-8 w-64"
+                aria-label={m.docEditor.label}
+                placeholder={m.docEditor.label}
+                value={b.label}
+                onChange={(e) => replace(i, { ...b, label: e.target.value })}
+              />
+              {/* ラベルと線の置きかた・間・線の長さ（2026-09-13 指示） */}
+              <label className="flex items-center gap-2 text-sm">
+                {m.docEditor.signatureLabelPosition}
+                <select
+                  className={SELECT}
+                  value={b.labelPosition ?? "left"}
+                  onChange={(e) =>
+                    replace(i, {
+                      ...b,
+                      labelPosition: e.target.value === "above" ? "above" : undefined,
+                    })
+                  }
+                >
+                  <option value="left">{m.docEditor.signatureLabelPositions.left}</option>
+                  <option value="above">{m.docEditor.signatureLabelPositions.above}</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                {m.docEditor.signatureGap}
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  placeholder="4"
+                  className={cn(SELECT, "w-20")}
+                  value={b.gap ?? ""}
+                  onChange={(e) => {
+                    if (e.target.value === "") {
+                      replace(i, { ...b, gap: undefined });
+                      return;
+                    }
+                    const n = Number(e.target.value);
+                    if (!Number.isFinite(n)) return;
+                    replace(i, { ...b, gap: Math.min(100, Math.max(0, n)) });
+                  }}
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                {m.docEditor.signatureLineWidth}
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={5}
+                  max={200}
+                  step={1}
+                  placeholder="60"
+                  className={cn(SELECT, "w-20")}
+                  value={b.lineWidth ?? ""}
+                  onChange={(e) => {
+                    if (e.target.value === "") {
+                      replace(i, { ...b, lineWidth: undefined });
+                      return;
+                    }
+                    const n = Number(e.target.value);
+                    if (!Number.isFinite(n)) return;
+                    replace(i, { ...b, lineWidth: Math.min(200, Math.max(5, n)) });
+                  }}
+                />
+              </label>
+            </div>
           )}
 
           {(b.kind === "divider" || b.kind === "pageBreak" || b.kind === "rowBreak") && (
