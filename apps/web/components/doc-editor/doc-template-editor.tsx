@@ -49,6 +49,17 @@ export function DocTemplateEditor({ id }: { id: string }) {
   /** 上の欄（題名と帯）を出しているか。△で閉じて、編集の場所を広く使える（2026-09-13 指示） */
   const [headerOpen, setHeaderOpen] = useState(true);
   /*
+    開け閉めの途中か。**滑らかに高さを変える**（2026-09-13 指示）ので、その間だけ中身をはみ出させない。
+    ずっと隠していると、帯の中のサイズ候補（下に開く一覧）が切れてしまう
+  */
+  const [headerSliding, setHeaderSliding] = useState(false);
+  function toggleHeader() {
+    setHeaderOpen((v) => !v);
+    setHeaderSliding(true);
+    // transitionend は動きを切っている環境では来ないので、時間で戻す（動きの長さ 200ms より少し長く）
+    window.setTimeout(() => setHeaderSliding(false), 260);
+  }
+  /*
     広い画面では、画面の高さいっぱいを使い、左（ブロック）と右（プレビュー）を別々に送る。
     画面の残りの高さは、上の帯（隠せるので高さが変わる）を測って決める。狭い画面では null（今までどおり）
   */
@@ -234,88 +245,98 @@ export function DocTemplateEditor({ id }: { id: string }) {
         上の欄（題名と帯）。閉じている間は何も出さない（名前は案内の行にある）。
         右端はつまみ（下の行、右に寄せて上に重なる）の分だけ空けておく（2026-09-13 指示）
       */}
-      {headerOpen ? (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 pr-12">
-          <h1 className="text-2xl font-semibold">
-            {template.code} {template.nameJa}
-          </h1>
-          <div className="flex flex-col items-end gap-1">
-            <div className="flex flex-wrap items-end justify-end gap-2">
-              {isFile ? null : (
-                <>
-                  {/* 欄の上に小さく名前。ブロックの見出し行と同じ形（2026-09-13 指示） */}
-                  <Labeled label={m.docEditor.orientationShort}>
-                    <select
-                      className={SELECT}
-                      aria-label={m.docEditor.orientation}
-                      disabled={!editable}
-                      value={content.orientation}
-                      onChange={(e) =>
-                        edit({
-                          ...content,
-                          orientation: e.target.value as "portrait" | "landscape",
-                        })
-                      }
-                    >
-                      <option value="portrait">{m.docEditor.orientations.portrait}</option>
-                      <option value="landscape">{m.docEditor.orientations.landscape}</option>
-                    </select>
-                  </Labeled>
-                  {/*
+      {/* 高さは grid の行で 1fr ⇄ 0fr。中身の高さを測らずに滑らかに開け閉めできる。閉じている間は押せない（inert） */}
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows,margin-top] duration-200 motion-reduce:transition-none",
+          headerOpen ? "mt-2 grid-rows-[1fr]" : "mt-0 grid-rows-[0fr]",
+        )}
+        aria-hidden={!headerOpen}
+        inert={!headerOpen}
+      >
+        <div className={cn("min-h-0", (!headerOpen || headerSliding) && "overflow-hidden")}>
+          <div className="flex flex-wrap items-center justify-between gap-3 pr-12">
+            <h1 className="text-2xl font-semibold">
+              {template.code} {template.nameJa}
+            </h1>
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex flex-wrap items-end justify-end gap-2">
+                {isFile ? null : (
+                  <>
+                    {/* 欄の上に小さく名前。ブロックの見出し行と同じ形（2026-09-13 指示） */}
+                    <Labeled label={m.docEditor.orientationShort}>
+                      <select
+                        className={SELECT}
+                        aria-label={m.docEditor.orientation}
+                        disabled={!editable}
+                        value={content.orientation}
+                        onChange={(e) =>
+                          edit({
+                            ...content,
+                            orientation: e.target.value as "portrait" | "landscape",
+                          })
+                        }
+                      >
+                        <option value="portrait">{m.docEditor.orientations.portrait}</option>
+                        <option value="landscape">{m.docEditor.orientations.landscape}</option>
+                      </select>
+                    </Labeled>
+                    {/*
             紙面ぜんたいの字。**各ブロックの既定になる。**
             ブロックの側で選ばれていれば、そちらが勝つ
           */}
-                  <BlockStyleBar
-                    level="document"
-                    value={content.style}
-                    onChange={(style) => edit({ ...content, style })}
-                    fontLabel={m.docEditor.documentFont}
-                  />
-                  {/*
+                    <BlockStyleBar
+                      level="document"
+                      value={content.style}
+                      onChange={(style) => edit({ ...content, style })}
+                      fontLabel={m.docEditor.documentFont}
+                    />
+                    {/*
                   プレビューの切り替え。太字・斜体と同じマークだけの切り替えボタンにし、
                   押している間は背景を濃くする（2026-09-13 決定）。文言は吹き出しで
                 */}
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="outline"
-                    aria-label={m.docEditor.preview}
-                    title={preview ? m.docEditor.previewHide : m.docEditor.preview}
-                    aria-pressed={preview}
-                    className={cn("h-8 w-8", preview && "bg-accent text-foreground")}
-                    onClick={() => setPreview((v) => !v)}
-                  >
-                    <Eye className="size-4" />
-                  </Button>
-                  {editable && (
-                    <>
-                      <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
-                        {saving ? m.common.saving : m.common.save}
-                      </Button>
-                      {/* 取消は、保存していない変えぶんを捨てて、読み込んだところまで戻す */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={saving || !dirty}
-                        onClick={cancelEdits}
-                      >
-                        {m.common.discard}
-                      </Button>
-                    </>
-                  )}
-                </>
-              )}
-              {/*
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="outline"
+                      aria-label={m.docEditor.preview}
+                      title={preview ? m.docEditor.previewHide : m.docEditor.preview}
+                      aria-pressed={preview}
+                      className={cn("h-8 w-8", preview && "bg-accent text-foreground")}
+                      onClick={() => setPreview((v) => !v)}
+                    >
+                      <Eye className="size-4" />
+                    </Button>
+                    {editable && (
+                      <>
+                        <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
+                          {saving ? m.common.saving : m.common.save}
+                        </Button>
+                        {/* 取消は、保存していない変えぶんを捨てて、読み込んだところまで戻す */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={saving || !dirty}
+                          onClick={cancelEdits}
+                        >
+                          {m.common.discard}
+                        </Button>
+                      </>
+                    )}
+                  </>
+                )}
+                {/*
             戻るは**一覧へ移るだけ。**変えぶんが残っているときは、
             移らずに知らせる。ここで黙って捨てると、書いたものが消える
           */}
-              <Button size="sm" variant="outline" onClick={goBack}>
-                {m.common.back}
-              </Button>
+                <Button size="sm" variant="outline" onClick={goBack}>
+                  {m.common.back}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      ) : null}
+      </div>
       {!isFile && (
         <div className="-mt-2 flex justify-end border-b">
           {/*
@@ -328,7 +349,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
             aria-label={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
             title={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
             className="text-muted-foreground hover:text-foreground bg-background -mb-px flex h-4 w-10 items-center justify-center border border-b-0"
-            onClick={() => setHeaderOpen((v) => !v)}
+            onClick={toggleHeader}
           >
             {headerOpen ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
           </button>
