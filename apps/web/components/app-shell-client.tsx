@@ -20,8 +20,12 @@ import { cn } from "@/lib/utils";
   ghost の既定は「開いているあいだ薄い灰色（bg-muted）」で、色の付いた帯の上では
   白い四角が浮いて見えた。帯の字色を薄く混ぜた塗りにして、帯になじませる
 */
+/**
+ * メニューの開閉。**白いアイコンだけ**で、薄い四角の下地は付けない（2026-09-13 指示）。
+ * 押せることはマウスを乗せたときの濃さで示す。幅はアイコンぶんに詰める
+ */
 const HEADER_ICON_BUTTON =
-  "text-header-foreground hover:bg-header-foreground/15 hover:text-header-foreground aria-expanded:bg-header-foreground/15 aria-expanded:text-header-foreground";
+  "text-header-foreground hover:text-header-foreground aria-expanded:text-header-foreground h-8 w-5 rounded-none bg-transparent hover:bg-transparent aria-expanded:bg-transparent hover:opacity-70";
 
 /** 帯を畳む札。テンプレート編集の上の欄のつまみと同じ形（線にまたがる小さな札）。帯と同じ高さの入れものに入れて下端に掛ける */
 const HEADER_TAB =
@@ -167,7 +171,7 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
             headerOpen ? "h-14" : "h-0",
           )}
         >
-          <header className="bg-header text-header-foreground flex h-14 items-center gap-3 border-b px-4">
+          <header className="bg-header text-header-foreground flex h-14 items-center gap-2 border-b px-3">
             <Button
               variant="ghost"
               size="icon"
