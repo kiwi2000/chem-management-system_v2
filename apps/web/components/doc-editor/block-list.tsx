@@ -82,6 +82,7 @@ export function BlockList({
   orgItems,
   onChange,
   onActivate,
+  activeId,
 }: {
   blocks: DocumentBlock[];
   target: DocumentTarget;
@@ -90,6 +91,8 @@ export function BlockList({
   onChange: (next: DocumentBlock[]) => void;
   /** 触ったブロックの id を知らせる。プレビューでそのブロックを枠で示すため */
   onActivate?: (id: string) => void;
+  /** いま選んでいるブロック。プレビューの赤い枠と同じ色で、編集側の枠も赤くする（2026-09-13 指示） */
+  activeId?: string | null;
 }) {
   const { m, locale } = useI18n();
   /*
@@ -185,6 +188,8 @@ export function BlockList({
         */
         className={cn(
           "border-input rounded-none border",
+          // 選んでいるブロック。プレビューの赤い枠と対で分かるように、こちらも赤い枠にする
+          activeId === b.id && "border-red-600 ring-1 ring-red-600",
           overIndex === i && dragIndex !== null && "border-primary border-t-2",
           dragIndex === i && "opacity-50",
         )}

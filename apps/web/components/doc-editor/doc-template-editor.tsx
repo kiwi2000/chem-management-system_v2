@@ -332,6 +332,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
             orgItems={orgItems}
             onChange={(blocks) => edit({ ...content, blocks })}
             onActivate={setActiveId}
+            activeId={activeId}
           />
 
           {preview && sheet && (
