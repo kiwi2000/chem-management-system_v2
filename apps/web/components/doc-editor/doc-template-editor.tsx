@@ -346,6 +346,25 @@ export function DocTemplateEditor({ id }: { id: string }) {
               <div className="flex flex-wrap items-end justify-end gap-2">
                 {isFile ? null : (
                   <>
+                    {/*
+                      紙面の表示倍率（%）。候補から選ぶか、数を打つ。
+                      紙面の上に置くと縦の場所を食うので、帯の「向き」の左に置く（2026-09-13 指示）
+                    */}
+                    <Labeled label={m.docEditor.previewZoom}>
+                      <span className="flex items-center gap-0.5">
+                        <FontSizeInput
+                          value={zoom}
+                          onChange={changeZoom}
+                          label={m.docEditor.previewZoomHint}
+                          presets={ZOOM_PRESETS}
+                          min={ZOOM_MIN}
+                          max={ZOOM_MAX}
+                          step={5}
+                          className="border-input bg-background h-8 w-14 rounded-none border px-1 text-xs"
+                        />
+                        <span className="text-muted-foreground text-xs">%</span>
+                      </span>
+                    </Labeled>
                     {/* 欄の上に小さく名前。ブロックの見出し行と同じ形（2026-09-13 指示） */}
                     <Labeled label={m.docEditor.orientationShort}>
                       <select
@@ -536,28 +555,10 @@ export function DocTemplateEditor({ id }: { id: string }) {
             <div className={cn("mt-4", framed && "mt-0 min-h-0 overflow-y-auto")}>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
               <div className="bg-muted/40 overflow-x-auto border p-2">
-                <div className="mb-0.5 flex items-end justify-between gap-2">
-                  {/* 表示倍率（%）。候補から選ぶか、数を打つ（2026-09-13 指示） */}
-                  <Labeled label={m.docEditor.previewZoom}>
-                    <span className="flex items-center gap-0.5">
-                      <FontSizeInput
-                        value={zoom}
-                        onChange={changeZoom}
-                        label={m.docEditor.previewZoomHint}
-                        presets={ZOOM_PRESETS}
-                        min={ZOOM_MIN}
-                        max={ZOOM_MAX}
-                        step={5}
-                        className="border-input bg-background h-8 w-14 rounded-none border px-1 text-xs"
-                      />
-                      <span className="text-muted-foreground text-xs">%</span>
-                    </span>
-                  </Labeled>
-                  {/* プレビューは見本の値。灰色の枠の中、紙のすぐ上に赤い細字でひとこと（2026-09-13 指示。幅によらず同じ場所） */}
-                  <p className="text-destructive text-right text-xs font-normal">
-                    {m.docEditor.previewNote}
-                  </p>
-                </div>
+                {/* プレビューは見本の値。灰色の枠の中、紙のすぐ上に赤い細字でひとこと（2026-09-13 指示。幅によらず同じ場所） */}
+                <p className="text-destructive mb-0.5 text-right text-xs font-normal">
+                  {m.docEditor.previewNote}
+                </p>
                 {/* 紙は上下に my-4 を持つ。注意書きと紙の間を最小にしたいので、直下の上の余白だけ消す。倍率は zoom で紙ごと縮める */}
                 <div className="*:mt-0" style={{ zoom: zoom / 100 }}>
                   <DocumentSheet doc={sheet} highlightId={activeId} />
