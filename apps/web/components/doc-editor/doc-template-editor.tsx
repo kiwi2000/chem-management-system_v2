@@ -206,7 +206,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
           {preview && !isFile && (
             <span className="text-destructive text-xs">{m.docEditor.previewNote}</span>
           )}
-          <div className="flex items-end gap-2">
+          <div className="flex flex-wrap items-end justify-end gap-2">
             {isFile ? null : (
               <>
                 {/* 欄の上に小さく名前。ブロックの見出し行と同じ形（2026-09-13 指示） */}

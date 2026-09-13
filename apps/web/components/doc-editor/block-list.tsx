@@ -210,7 +210,7 @@ export function BlockList({
               }
         }
       >
-        <div className="bg-muted/50 flex items-end gap-2 px-2 py-1">
+        <div className="bg-muted/50 flex flex-wrap items-end gap-x-2 gap-y-1 px-2 py-1">
           <button
             type="button"
             draggable
