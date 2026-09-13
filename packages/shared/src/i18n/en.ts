@@ -1167,7 +1167,7 @@ export const en: Messages = {
     blockKinds: {
       heading: "Heading",
       text: "Paragraph",
-      fields: "Field list",
+      fields: "Fields",
       org: "Organisation items",
       table: "Table",
       divider: "Divider",

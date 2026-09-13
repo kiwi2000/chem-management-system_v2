@@ -1196,7 +1196,7 @@ export const ja = {
     blockKinds: {
       heading: "見出し",
       text: "文章",
-      fields: "項目の並び",
+      fields: "項目",
       org: "組織の項目",
       table: "表",
       divider: "区切り線",
