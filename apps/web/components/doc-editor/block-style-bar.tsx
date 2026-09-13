@@ -4,6 +4,7 @@ import {
   BLOCK_BORDER_STYLES,
   BLOCK_PATTERNS,
   DEFAULT_FONT,
+  DEFAULT_FONT_SIZE,
   DOCUMENT_FONTS,
   type BlockBorderStyle,
   type BlockPattern,
@@ -112,16 +113,23 @@ export function BlockStyleBar({
       ) : (
         fontSelect
       )}
-      {/* 大きさは打ち込む欄（候補つき）。決まった段だけだと 13 や 10.5 にできない。上に小さく「サイズ」 */}
+      {/*
+        大きさは打ち込む欄（候補つき）。決まった段だけだと 13 や 10.5 にできない。上に小さく「サイズ」。
+        **紙面ぜんたいの段には「既定」を出さず、固定値（10.5）をそのまま出す**（2026-09-14 決定。
+        いちばん外なので合わせる先が無い）。その値は「指定なし」として保存し、
+        見出しや表が種類ごとの大きさのまま出るようにする。ブロックの段は「既定」のまま
+      */}
       <span className="flex flex-col gap-0.5">
         <span className="text-muted-foreground text-[10px] leading-none">
           {m.docEditor.sizeShort}
         </span>
         <FontSizeInput
-          value={st.size}
-          onChange={(size) => patch({ size })}
+          value={level === "document" ? (st.size ?? DEFAULT_FONT_SIZE) : st.size}
+          onChange={(size) =>
+            patch({ size: level === "document" && size === DEFAULT_FONT_SIZE ? undefined : size })
+          }
           label={`${m.docEditor.fontSize} — ${m.docEditor.fontSizeHint}`}
-          placeholder={m.docEditor.fontSizeDefault}
+          placeholder={level === "document" ? undefined : m.docEditor.fontSizeDefault}
           className="border-input bg-background h-7 w-14 rounded-none border px-1 text-xs"
         />
       </span>

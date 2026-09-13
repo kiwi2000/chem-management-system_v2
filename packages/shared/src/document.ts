@@ -663,6 +663,13 @@ export interface BlockMargin {
   left?: number;
 }
 
+/**
+ * 紙面ぜんたいの字の大きさの既定（pt）。本文（文章・項目など）の大きさ。
+ * いちばん上の欄には「既定」ではなくこの値を出す（2026-09-14 決定）。
+ * この値のままなら「指定なし」と同じ扱いで、見出しや表は種類ごとの大きさのまま
+ */
+export const DEFAULT_FONT_SIZE = 10.5;
+
 /** 新しく置くブロックの余白（mm）。上 0・右 0・下 3・左 0（2026-09-13 決定） */
 export const DEFAULT_BLOCK_MARGIN: Required<BlockMargin> = { top: 0, right: 0, bottom: 3, left: 0 };
 
