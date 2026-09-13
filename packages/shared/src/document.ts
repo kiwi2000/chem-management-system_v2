@@ -535,6 +535,16 @@ export const DOCUMENT_FONTS = [
   { key: "mincho", stack: MINCHO },
   { key: "udGothic", stack: `"BIZ UDPGothic", "BIZ UDPゴシック", ${GOTHIC}` },
   { key: "udMincho", stack: `"BIZ UDPMincho", "BIZ UDP明朝 Medium", ${MINCHO}` },
+  /*
+    2026-09-13 に増やした分。**入っていない機械では後ろの並びに落ちる。**
+    メイリオ・ＭＳ ゴシック・ＭＳ 明朝は Windows に標準で入っている（Mac には無い）。
+    Arial・Times New Roman は Windows・Mac の両方にある。英文の様式向け
+  */
+  { key: "meiryo", stack: `"Meiryo", "メイリオ", ${GOTHIC}` },
+  { key: "msGothic", stack: `"MS Gothic", "ＭＳ ゴシック", "MS PGothic", ${GOTHIC}` },
+  { key: "msMincho", stack: `"MS Mincho", "ＭＳ 明朝", "MS PMincho", ${MINCHO}` },
+  { key: "arial", stack: `Arial, Helvetica, ${GOTHIC}` },
+  { key: "times", stack: `"Times New Roman", Times, ${MINCHO}` },
 ] as const;
 
 export type FontKey = (typeof DOCUMENT_FONTS)[number]["key"];

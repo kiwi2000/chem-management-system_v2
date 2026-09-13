@@ -88,7 +88,8 @@ export function BlockList({
   const { m, locale } = useI18n();
   /** ブロックで書体を選んでいないときに、何が使われるかを見せる */
   // 紙面ぜんたいで選ばれていなくても、実際に出るのはゴシック。その名前を見せる
-  const defaultFontLabel = m.docEditor.fonts[documentFont ?? DEFAULT_FONT];
+  // 「指定なし」には紙面ぜんたいの書体名を添える。名前だけだと同じ書体が2つ並んで見える
+  const defaultFontLabel = m.docEditor.fontFollow(m.docEditor.fonts[documentFont ?? DEFAULT_FONT]);
   /*
     組織ブロックの選択肢。**一覧はログインしていれば誰でも引ける。**
     自分の会社・部署も、取引先も同じ表にあるので、ここで分けない
@@ -275,9 +276,10 @@ export function BlockList({
                   value={b.level}
                   onChange={(e) => replace(i, { ...b, level: Number(e.target.value) as 1 | 2 | 3 })}
                 >
-                  <option value={1}>1</option>
-                  <option value={2}>2</option>
-                  <option value={3}>3</option>
+                  {/* 段は大・中・小。字の大きさそのものは右上の「字の大きさ」で自由に決める */}
+                  <option value={1}>{m.docEditor.headingLevels[1]}</option>
+                  <option value={2}>{m.docEditor.headingLevels[2]}</option>
+                  <option value={3}>{m.docEditor.headingLevels[3]}</option>
                 </select>
               </label>
               <RichEditor

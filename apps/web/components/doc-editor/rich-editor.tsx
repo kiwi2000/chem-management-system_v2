@@ -17,13 +17,13 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { DocFieldNode } from "@/components/doc-editor/field-node";
+import { FontSizeInput } from "@/components/doc-editor/font-size-input";
 import { Button } from "@/components/ui/button";
 import { fromEditor, toEditor, type PmNode } from "@/lib/doc-rich-text";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
 /** 選べる文字の大きさ（ポイント）。刻みを決めておかないと、そろわない紙面になる */
-const SIZES = [9, 10, 11, 12, 14, 16, 18, 24] as const;
 
 /** 選べる色。自由な色は紙に出したときに読めないことがあるので、決め打ちにする */
 const COLORS = [
@@ -202,23 +202,17 @@ function Toolbar({
 
       <span className="bg-border mx-1 h-5 w-px" />
 
-      <select
-        className="border-input h-7 rounded-none border bg-transparent px-1 text-sm"
-        aria-label={m.docEditor.size}
-        value={(editor.getAttributes("textStyle").fontSize as string) ?? ""}
-        onChange={(e) => {
-          const v = e.target.value;
-          if (v) editor.chain().focus().setFontSize(v).run();
+      {/* 選んだ文字の大きさ。打ち込む欄（候補つき）。値は "12pt" の形で持つ */}
+      <FontSizeInput
+        value={parsePt(editor.getAttributes("textStyle").fontSize as string | undefined)}
+        onChange={(n) => {
+          if (n !== undefined) editor.chain().focus().setFontSize(`${n}pt`).run();
           else editor.chain().focus().unsetFontSize().run();
         }}
-      >
-        <option value="">{m.docEditor.sizeDefault}</option>
-        {SIZES.map((s) => (
-          <option key={s} value={`${s}pt`}>
-            {s}
-          </option>
-        ))}
-      </select>
+        label={`${m.docEditor.size} — ${m.docEditor.fontSizeHint}`}
+        placeholder={m.docEditor.sizeDefault}
+        className="border-input h-7 w-16 rounded-none border bg-transparent px-1 text-sm"
+      />
 
       <select
         className="border-input h-7 rounded-none border bg-transparent px-1 text-sm"
@@ -264,4 +258,11 @@ function Toolbar({
       </select>
     </div>
   );
+}
+
+/** "12pt" のような値から数を取り出す。無ければ未指定 */
+function parsePt(v: string | undefined): number | undefined {
+  if (!v) return undefined;
+  const n = Number.parseFloat(v);
+  return Number.isFinite(n) ? n : undefined;
 }

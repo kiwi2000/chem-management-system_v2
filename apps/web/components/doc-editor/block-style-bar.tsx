@@ -2,6 +2,7 @@
 
 import { DEFAULT_FONT, DOCUMENT_FONTS, type BlockStyle, type FontKey } from "@chem/shared";
 import { Bold, Italic, Underline } from "lucide-react";
+import { FontSizeInput } from "@/components/doc-editor/font-size-input";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
@@ -18,9 +19,6 @@ import { cn } from "@/lib/utils";
  * **空の指定は持たない。**何も選んでいない状態は `undefined` に戻し、
  * 保存した様式に「既定と同じ値」が残らないようにする
  */
-
-/** 選べる大きさ（ポイント）。細かすぎると選ぶのが手間なので、よく使うものだけ */
-const SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 24] as const;
 
 /** 色を選ばない状態。`input[type=color]` は空を持てないので、黒を「指定なし」と見なす */
 const NO_COLOR = "#000000";
@@ -88,22 +86,14 @@ export function BlockStyleBar({
           </option>
         ))}
       </select>
-      <select
-        aria-label={m.docEditor.fontSize}
-        title={m.docEditor.fontSize}
-        value={st.size ?? ""}
-        onChange={(e) =>
-          patch({ size: e.target.value === "" ? undefined : Number(e.target.value) })
-        }
-        className="border-input bg-background h-8 rounded-none border px-1 text-xs"
-      >
-        <option value="">{m.docEditor.fontSizeDefault}</option>
-        {SIZES.map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
-      </select>
+      {/* 大きさは打ち込む欄（候補つき）。決まった段だけだと 13 や 10.5 にできない */}
+      <FontSizeInput
+        value={st.size}
+        onChange={(size) => patch({ size })}
+        label={`${m.docEditor.fontSize} — ${m.docEditor.fontSizeHint}`}
+        placeholder={m.docEditor.fontSizeDefault}
+        className="border-input bg-background h-8 w-16 rounded-none border px-1 text-xs"
+      />
       {toggle("bold", Bold, m.docEditor.bold)}
       {toggle("italic", Italic, m.docEditor.italic)}
       {toggle("underline", Underline, m.docEditor.underline)}
