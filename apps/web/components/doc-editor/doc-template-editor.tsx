@@ -1,7 +1,7 @@
 "use client";
 
 import type { DocumentContent } from "@chem/shared";
-import { Eye } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -21,7 +21,6 @@ import { useOrganisations } from "@/lib/use-organisations";
 import { useOrgItemLabels } from "@/lib/use-doc-fields";
 import { useMe } from "@/lib/use-me";
 import { cn } from "@/lib/utils";
-import { ResizableBox } from "@/components/data-table/resizable-box";
 
 const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm";
 
@@ -47,6 +46,32 @@ export function DocTemplateEditor({ id }: { id: string }) {
   const [preview, setPreview] = useState(false);
   /** 編集で触っているブロック。プレビューで赤い細線で囲む（2026-09-13 指示） */
   const [activeId, setActiveId] = useState<string | null>(null);
+  /** 上の欄（題名と帯）を出しているか。△で閉じて、編集の場所を広く使える（2026-09-13 指示） */
+  const [headerOpen, setHeaderOpen] = useState(true);
+  /*
+    広い画面では、画面の高さいっぱいを使い、左（ブロック）と右（プレビュー）を別々に送る。
+    画面の残りの高さは、上の帯（隠せるので高さが変わる）を測って決める。狭い画面では null（今までどおり）
+  */
+  const [frameHeight, setFrameHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const bar = document.querySelector("header")?.parentElement ?? null;
+    const update = () => {
+      if (!window.matchMedia("(min-width: 1024px)").matches) {
+        setFrameHeight(null);
+        return;
+      }
+      const top = bar ? bar.getBoundingClientRect().height : 0;
+      setFrameHeight(Math.max(320, window.innerHeight - top));
+    };
+    update();
+    window.addEventListener("resize", update);
+    const ro = bar && "ResizeObserver" in window ? new ResizeObserver(update) : null;
+    if (bar && ro) ro.observe(bar);
+    return () => {
+      window.removeEventListener("resize", update);
+      ro?.disconnect();
+    };
+  }, []);
   /** 変えぶんを残したまま戻ろうとしたときの知らせ */
   const [leaveWarning, setLeaveWarning] = useState(false);
   /*
@@ -186,8 +211,14 @@ export function DocTemplateEditor({ id }: { id: string }) {
   /* 預かったファイルの様式は、ブロックも紙の向きも持たない。画面ごと差し替える */
   const isFile = template.kind !== "BLOCK";
 
+  /* 広い画面のブロック編集は、画面の高さに収めて左右を別々に送る（預かったファイルの様式は今までどおり） */
+  const framed = frameHeight !== null && !isFile;
+
   return (
-    <div className={PAGE_SHELL_STACKED}>
+    <div
+      className={cn(PAGE_SHELL_STACKED, framed && "flex flex-col overflow-hidden")}
+      style={framed ? { height: frameHeight } : undefined}
+    >
       {/* いまどこにいるか。メニューの項目名から始める */}
       <Breadcrumbs
         items={[
@@ -197,92 +228,116 @@ export function DocTemplateEditor({ id }: { id: string }) {
         ]}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">
-          {template.code} {template.nameJa}
-        </h1>
-        <div className="flex flex-col items-end gap-1">
-          {/*
+      {/* 上の欄（題名と帯）。△でたためる。閉じている間は題名だけ小さく出す */}
+      {headerOpen ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">
+            {template.code} {template.nameJa}
+          </h1>
+          <div className="flex flex-col items-end gap-1">
+            {/*
             プレビューは見本の値。ボタンの上に赤い細字でひとこと（2026-09-13 指示。枠は出さない）。
             画面が狭くてプレビューが下に回るときは、プレビューのすぐ上に出す（下の方を見る）
           */}
-          {preview && !isFile && (
-            <span className="text-destructive hidden text-xs font-normal lg:inline">
-              {m.docEditor.previewNote}
-            </span>
-          )}
-          <div className="flex flex-wrap items-end justify-end gap-2">
-            {isFile ? null : (
-              <>
-                {/* 欄の上に小さく名前。ブロックの見出し行と同じ形（2026-09-13 指示） */}
-                <Labeled label={m.docEditor.orientationShort}>
-                  <select
-                    className={SELECT}
-                    aria-label={m.docEditor.orientation}
-                    disabled={!editable}
-                    value={content.orientation}
-                    onChange={(e) =>
-                      edit({ ...content, orientation: e.target.value as "portrait" | "landscape" })
-                    }
-                  >
-                    <option value="portrait">{m.docEditor.orientations.portrait}</option>
-                    <option value="landscape">{m.docEditor.orientations.landscape}</option>
-                  </select>
-                </Labeled>
-                {/*
+            {preview && !isFile && (
+              <span className="text-destructive hidden text-xs font-normal lg:inline">
+                {m.docEditor.previewNote}
+              </span>
+            )}
+            <div className="flex flex-wrap items-end justify-end gap-2">
+              {isFile ? null : (
+                <>
+                  {/* 欄の上に小さく名前。ブロックの見出し行と同じ形（2026-09-13 指示） */}
+                  <Labeled label={m.docEditor.orientationShort}>
+                    <select
+                      className={SELECT}
+                      aria-label={m.docEditor.orientation}
+                      disabled={!editable}
+                      value={content.orientation}
+                      onChange={(e) =>
+                        edit({
+                          ...content,
+                          orientation: e.target.value as "portrait" | "landscape",
+                        })
+                      }
+                    >
+                      <option value="portrait">{m.docEditor.orientations.portrait}</option>
+                      <option value="landscape">{m.docEditor.orientations.landscape}</option>
+                    </select>
+                  </Labeled>
+                  {/*
             紙面ぜんたいの字。**各ブロックの既定になる。**
             ブロックの側で選ばれていれば、そちらが勝つ
           */}
-                <BlockStyleBar
-                  level="document"
-                  value={content.style}
-                  onChange={(style) => edit({ ...content, style })}
-                  fontLabel={m.docEditor.documentFont}
-                />
-                {/*
+                  <BlockStyleBar
+                    level="document"
+                    value={content.style}
+                    onChange={(style) => edit({ ...content, style })}
+                    fontLabel={m.docEditor.documentFont}
+                  />
+                  {/*
                   プレビューの切り替え。太字・斜体と同じマークだけの切り替えボタンにし、
                   押している間は背景を濃くする（2026-09-13 決定）。文言は吹き出しで
                 */}
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="outline"
-                  aria-label={m.docEditor.preview}
-                  title={preview ? m.docEditor.previewHide : m.docEditor.preview}
-                  aria-pressed={preview}
-                  className={cn("h-8 w-8", preview && "bg-accent text-foreground")}
-                  onClick={() => setPreview((v) => !v)}
-                >
-                  <Eye className="size-4" />
-                </Button>
-                {editable && (
-                  <>
-                    <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
-                      {saving ? m.common.saving : m.common.save}
-                    </Button>
-                    {/* 取消は、保存していない変えぶんを捨てて、読み込んだところまで戻す */}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={saving || !dirty}
-                      onClick={cancelEdits}
-                    >
-                      {m.common.discard}
-                    </Button>
-                  </>
-                )}
-              </>
-            )}
-            {/*
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="outline"
+                    aria-label={m.docEditor.preview}
+                    title={preview ? m.docEditor.previewHide : m.docEditor.preview}
+                    aria-pressed={preview}
+                    className={cn("h-8 w-8", preview && "bg-accent text-foreground")}
+                    onClick={() => setPreview((v) => !v)}
+                  >
+                    <Eye className="size-4" />
+                  </Button>
+                  {editable && (
+                    <>
+                      <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
+                        {saving ? m.common.saving : m.common.save}
+                      </Button>
+                      {/* 取消は、保存していない変えぶんを捨てて、読み込んだところまで戻す */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={saving || !dirty}
+                        onClick={cancelEdits}
+                      >
+                        {m.common.discard}
+                      </Button>
+                    </>
+                  )}
+                </>
+              )}
+              {/*
             戻るは**一覧へ移るだけ。**変えぶんが残っているときは、
             移らずに知らせる。ここで黙って捨てると、書いたものが消える
           */}
-            <Button size="sm" variant="outline" onClick={goBack}>
-              {m.common.back}
-            </Button>
+              <Button size="sm" variant="outline" onClick={goBack}>
+                {m.common.back}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <p className="text-muted-foreground truncate text-sm">
+          {template.code} {template.nameJa}
+        </p>
+      )}
+      {!isFile && (
+        <div className="flex justify-center border-b">
+          <button
+            type="button"
+            aria-expanded={headerOpen}
+            aria-label={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
+            title={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
+            className="text-muted-foreground hover:text-foreground -mb-px flex h-4 w-10 items-center justify-center border border-b-0 bg-transparent"
+            onClick={() => setHeaderOpen((v) => !v)}
+          >
+            {headerOpen ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+          </button>
+        </div>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -323,32 +378,37 @@ export function DocTemplateEditor({ id }: { id: string }) {
           onChanged={() => void load()}
         />
       ) : (
-        <div className={cn("gap-4", preview && "lg:grid lg:grid-cols-2 lg:items-start")}>
-          <BlockList
-            // 会社の項目名が届く前に描いた差込は名前が鍵のまま残るので、届いたら作り直す
-            key={`${revision}-${orgItems.length}`}
-            blocks={content.blocks}
-            target={template.target}
-            orgItems={orgItems}
-            onChange={(blocks) => edit({ ...content, blocks })}
-            onActivate={setActiveId}
-            activeId={activeId}
-          />
+        <div
+          className={cn(
+            "gap-4",
+            // 広い画面では残りの高さいっぱいに広げ、左右をそれぞれ送る（2026-09-13 指示）
+            framed && "grid min-h-0 flex-1 grid-rows-1",
+            framed && (preview ? "grid-cols-2" : "grid-cols-1"),
+          )}
+        >
+          <div className={cn(framed && "min-h-0 overflow-y-auto pr-1")}>
+            <BlockList
+              // 会社の項目名が届く前に描いた差込は名前が鍵のまま残るので、届いたら作り直す
+              key={`${revision}-${orgItems.length}`}
+              blocks={content.blocks}
+              target={template.target}
+              orgItems={orgItems}
+              onChange={(blocks) => edit({ ...content, blocks })}
+              onActivate={setActiveId}
+              activeId={activeId}
+            />
+          </div>
 
           {preview && sheet && (
-            <div className="mt-4 lg:sticky lg:top-4 lg:mt-0">
+            <div className={cn("mt-4", framed && "mt-0 min-h-0 overflow-y-auto")}>
               {/* 狭い画面ではプレビューが下に回るので、その直前に見本の断りを出す */}
               <p className="text-destructive mb-1 text-xs font-normal lg:hidden">
                 {m.docEditor.previewNote}
               </p>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
-              <ResizableBox
-                storageKey="chem.box.docTemplatePreview"
-                defaultMaxHeight="75vh"
-                className="bg-muted/40 border p-2"
-              >
+              <div className="bg-muted/40 border p-2">
                 <DocumentSheet doc={sheet} highlightId={activeId} />
-              </ResizableBox>
+              </div>
             </div>
           )}
         </div>

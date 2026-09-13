@@ -1290,6 +1290,8 @@ export const ja = {
     spacerSize: "高さ（mm）",
     spacerSizeHint: "ミリメートル。候補から選ぶか、1〜200 の数を打ちます",
     previewHide: "プレビューを閉じる",
+    headerCollapse: "上の欄をたたむ",
+    headerExpand: "上の欄を開く",
     previewHighlightNote: "編集で触っているブロックは、プレビューで赤い細線で囲んで示します",
     unsavedOnLeave:
       "保存していない変更があります。「保存」か「変更を破棄」を選んでから戻ってください。",
