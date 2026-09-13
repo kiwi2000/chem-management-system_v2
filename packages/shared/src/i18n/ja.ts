@@ -1296,6 +1296,8 @@ export const ja = {
       "見本の値で出しています。実際の値ではありません。本物のデータで確かめるときは「ドキュメント生成」から作ってください。",
     tryWithData: "実データで試す",
     orientation: "紙の向き",
+    /** 欄の上に小さく出す短い名前 */
+    orientationShort: "向き",
     orientations: { portrait: "縦", landscape: "横" },
     remove: "このブロックを消す",
     reorderHint: "つまみを引くと、ブロックを並べ替えられます",

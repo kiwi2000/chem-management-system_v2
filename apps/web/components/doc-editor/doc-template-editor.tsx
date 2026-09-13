@@ -5,7 +5,7 @@ import { Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { BlockList } from "@/components/doc-editor/block-list";
+import { BlockList, Labeled } from "@/components/doc-editor/block-list";
 import { DocumentSheet } from "@/components/doc-editor/document-view";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -201,13 +201,14 @@ export function DocTemplateEditor({ id }: { id: string }) {
         <h1 className="text-2xl font-semibold">
           {template.code} {template.nameJa}
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-end gap-2">
           {isFile ? null : (
             <>
-              <label className="flex items-center gap-2 text-sm">
-                {m.docEditor.orientation}
+              {/* 欄の上に小さく名前。ブロックの見出し行と同じ形（2026-09-13 指示） */}
+              <Labeled label={m.docEditor.orientationShort}>
                 <select
                   className={SELECT}
+                  aria-label={m.docEditor.orientation}
                   disabled={!editable}
                   value={content.orientation}
                   onChange={(e) =>
@@ -217,19 +218,17 @@ export function DocTemplateEditor({ id }: { id: string }) {
                   <option value="portrait">{m.docEditor.orientations.portrait}</option>
                   <option value="landscape">{m.docEditor.orientations.landscape}</option>
                 </select>
-              </label>
+              </Labeled>
               {/*
             紙面ぜんたいの字。**各ブロックの既定になる。**
             ブロックの側で選ばれていれば、そちらが勝つ
           */}
-              <label className="flex items-center gap-2 text-sm">
-                {m.docEditor.documentFont}
-                <BlockStyleBar
-                  level="document"
-                  value={content.style}
-                  onChange={(style) => edit({ ...content, style })}
-                />
-              </label>
+              <BlockStyleBar
+                level="document"
+                value={content.style}
+                onChange={(style) => edit({ ...content, style })}
+                fontLabel={m.docEditor.documentFont}
+              />
               <Button size="sm" variant="outline" onClick={() => setPreview((v) => !v)}>
                 <Eye className="size-4" />
                 {preview ? m.docEditor.previewHide : m.docEditor.preview}

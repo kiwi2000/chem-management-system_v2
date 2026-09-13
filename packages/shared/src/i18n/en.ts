@@ -1267,6 +1267,7 @@ export const en: Messages = {
       "Shown with sample values, not real data. To check against real data, produce one from Documents.",
     tryWithData: "Try with real data",
     orientation: "Orientation",
+    orientationShort: "Orientation",
     orientations: { portrait: "Portrait", landscape: "Landscape" },
     remove: "Remove this block",
     reorderHint: "Drag the handle to reorder blocks",
