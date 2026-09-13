@@ -220,18 +220,42 @@ export function DocTemplateEditor({ id }: { id: string }) {
       className={cn(PAGE_SHELL, framed && "flex flex-col overflow-hidden")}
       style={framed ? { height: frameHeight } : undefined}
     >
-      {/* いまどこにいるか。メニューの項目名から始める */}
-      <Breadcrumbs
-        items={[
-          { label: m.nav.documents },
-          { label: m.docTemplates.title, href: "/doc-templates" },
-          { label: `${template.code} ${template.nameJa}` },
-        ]}
-      />
+      {/*
+        いまどこにいるか。メニューの項目名から始める。
+        右端に上の欄（題名と帯）をたたむつまみ。**開いても閉じても同じ場所**（2026-09-13 指示）。
+        見た目はいちばん上の帯の開閉ボタンに合わせる。たたんでいる間は、この行の下に線を引いて本文と分ける
+      */}
+      <div
+        className={cn(
+          "flex items-center justify-between gap-2",
+          !isFile && !headerOpen && "border-b pb-1",
+        )}
+      >
+        <Breadcrumbs
+          items={[
+            { label: m.nav.documents },
+            { label: m.docTemplates.title, href: "/doc-templates" },
+            { label: `${template.code} ${template.nameJa}` },
+          ]}
+        />
+        {!isFile && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-expanded={headerOpen}
+            aria-label={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
+            title={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
+            className="bg-header text-header-foreground hover:bg-header/85 hover:text-header-foreground aria-expanded:bg-header aria-expanded:text-header-foreground dark:hover:bg-header/85 -my-1 shrink-0"
+            onClick={() => setHeaderOpen((v) => !v)}
+          >
+            {headerOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+          </Button>
+        )}
+      </div>
 
-      {/* 上の欄（題名と帯）。△でたためる。閉じている間は何も出さない（名前は案内の行にある） */}
+      {/* 上の欄（題名と帯）。閉じている間は何も出さない（名前は案内の行にある）。右はつまみの列を空けておく */}
       {headerOpen ? (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-b pb-1 pr-8">
           <h1 className="text-2xl font-semibold">
             {template.code} {template.nameJa}
           </h1>
@@ -312,30 +336,6 @@ export function DocTemplateEditor({ id }: { id: string }) {
           </div>
         </div>
       ) : null}
-      {!isFile && (
-        <div
-          className={cn(
-            "flex border-b",
-            // 開いているときは帯のすぐ下の真ん中。たたんだときは案内の行の右端に重ねて、その分だけ本文を上げる（2026-09-13 指示）
-            headerOpen ? "justify-center" : "-mt-4 justify-end",
-          )}
-        >
-          {/*
-            上の帯にぴったり付け（間は 0）、本文との間も最小にする（2026-09-13 指示）。
-            たたんだときは題名を出さない（案内の行に同じ名前がある）
-          */}
-          <button
-            type="button"
-            aria-expanded={headerOpen}
-            aria-label={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
-            title={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
-            className="text-muted-foreground hover:text-foreground bg-background -mb-px flex h-4 w-10 items-center justify-center border border-b-0"
-            onClick={() => setHeaderOpen((v) => !v)}
-          >
-            {headerOpen ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-          </button>
-        </div>
-      )}
 
       {error && (
         <Alert variant="destructive" className="mt-2">
