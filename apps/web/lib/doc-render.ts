@@ -9,6 +9,7 @@ import {
   type DocumentContent,
 } from "@chem/shared";
 import type {
+  BlockMargin,
   DocumentTable,
   DocumentTarget,
   HeadingLevel,
@@ -46,9 +47,13 @@ export interface RenderTable {
 
 /** 幅は紙面まで持ち越す。横に並べるかどうかは、出す側が `groupIntoRows` で決める */
 interface RenderBase {
+  /** 元のブロックの id。編集画面のプレビューで、選んでいるブロックを枠で示すために要る */
+  id?: string;
   width?: BlockWidth;
   /** ブロック全体の字。紙面と編集画面の両方が、これを見て描く */
   style?: BlockStyle;
+  /** ブロックの余白（mm）。指定した辺だけ既定を置き換える */
+  margin?: BlockMargin;
 }
 
 export type RenderBlock =
@@ -148,8 +153,10 @@ export function renderDocument(input: RenderInput): RenderedDocument {
       // 幅と字は、種類によらず同じように持ち回る
       blocks.push({
         ...out,
+        id: b.id,
         ...(b.width ? { width: b.width } : {}),
         ...(b.style ? { style: b.style } : {}),
+        ...(b.margin ? { margin: b.margin } : {}),
       });
     }
   }

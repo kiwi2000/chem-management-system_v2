@@ -195,7 +195,6 @@ export const en: Messages = {
   permissions: {
     DOC_TEMPLATE_EDIT: "Can edit document templates",
     DOCUMENT_CREATE: "Can create documents (and see their own)",
-    DOCUMENT_SENDER: "Can choose the document sender (own company by default)",
     ORG_EDIT: "Can create and edit organisations (companies, departments, partners)",
     PRODUCT_VIEW: "View products",
     PRODUCT_EDIT: "Edit products",
@@ -1249,6 +1248,10 @@ export const en: Messages = {
     fieldsValueAligns: { left: "Left", right: "Right" },
     fieldsGap: "Gap between label and value (mm)",
     fieldsGapHint: "Millimetres. Empty means 6mm. Type 0–100",
+    margin: "Margin",
+    marginSides: { top: "T", right: "R", bottom: "B", left: "L" },
+    marginHint:
+      "Block margins in mm: the gap from the page edge or the neighbouring block. Empty sides keep the default",
     signatureLabelPosition: "Label position",
     signatureLabelPositions: { left: "Left of the line", above: "Above the line" },
     signatureGap: "Gap between label and line (mm)",
@@ -1257,6 +1260,7 @@ export const en: Messages = {
     spacerSizeHint: "Millimetres. Pick a preset or type 1–200",
     preview: "Preview",
     previewHide: "Close preview",
+    previewHighlightNote: "The block you are editing is outlined in thin red in the preview",
     unsavedOnLeave: "You have unsaved changes. Save or discard them before going back.",
     previewNote:
       "Shown with sample values, not real data. To check against real data, produce one from Documents.",
@@ -1299,8 +1303,9 @@ export const en: Messages = {
     targetCode: "Subject",
     hasComposition: "Composition",
     version: "Version",
-    sender: "Sender",
-    senderDefault: "My company",
+    pickCompany: "Chosen company",
+    pickDepartment: "Chosen department",
+    pickNone: "None",
     recipient: "Recipient",
     recipientNone: "No recipient",
     recipientHint: "Filled in only on templates marked as using a recipient",

@@ -206,7 +206,6 @@ export const ja = {
   permissions: {
     DOC_TEMPLATE_EDIT: "テンプレートを編集できる",
     DOCUMENT_CREATE: "ドキュメントを作れる（自分が作ったものを見られる）",
-    DOCUMENT_SENDER: "ドキュメントの差出人を選べる（既定は自分の会社）",
     ORG_EDIT: "組織（会社・部署・取引先）を作れる・直せる",
     PRODUCT_VIEW: "製品を見られる",
     PRODUCT_EDIT: "製品を編集できる",
@@ -1278,6 +1277,9 @@ export const ja = {
     fieldsValueAligns: { left: "左", right: "右" },
     fieldsGap: "ラベルと値の間（mm）",
     fieldsGapHint: "ミリメートル。空なら 6mm。0〜100 の数を打ちます",
+    margin: "余白",
+    marginSides: { top: "上", right: "右", bottom: "下", left: "左" },
+    marginHint: "ブロックの余白（mm）。紙の端、または隣のブロックからの間。空の辺は既定のままです",
     signatureLabelPosition: "ラベルの位置",
     signatureLabelPositions: { left: "線の左", above: "線の上" },
     signatureGap: "ラベルと線の間（mm）",
@@ -1285,6 +1287,7 @@ export const ja = {
     spacerSize: "高さ（mm）",
     spacerSizeHint: "ミリメートル。候補から選ぶか、1〜200 の数を打ちます",
     previewHide: "プレビューを閉じる",
+    previewHighlightNote: "編集で触っているブロックは、プレビューで赤い細線で囲んで示します",
     unsavedOnLeave:
       "保存していない変更があります。「保存」か「変更を破棄」を選んでから戻ってください。",
     previewNote:
@@ -1329,8 +1332,9 @@ export const ja = {
     targetCode: "対象",
     hasComposition: "組成あり",
     version: "バージョン",
-    sender: "差出人",
-    senderDefault: "自分の会社",
+    pickCompany: "任意の会社",
+    pickDepartment: "任意の部署",
+    pickNone: "選ばない",
     recipient: "宛先",
     recipientNone: "宛先なし",
     recipientHint: "「宛先を使う」印の付いたテンプレートでだけ差し込まれます",

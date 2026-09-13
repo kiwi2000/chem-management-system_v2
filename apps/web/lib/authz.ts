@@ -1,4 +1,4 @@
-import { canEditAnything, expandPermissions, type Permission } from "@chem/shared";
+import { canEditAnything, expandPermissions, isPermission, type Permission } from "@chem/shared";
 import type { User as AppUser } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -36,8 +36,9 @@ async function loadPermissions(userId: string): Promise<Permission[]> {
     select: { permission: true },
   });
   // 含意（製品を編集できる → 組成を見られる、など）は保存時に閉じているが、
-  // 直接書き込まれた行でも同じ答えになるよう、読むときにも閉じる
-  return expandPermissions(rows.map((r) => r.permission));
+  // 直接書き込まれた行でも同じ答えになるよう、読むときにも閉じる。
+  // DB の enum にだけ残っている古い値（DOCUMENT_SENDER）は無いものとして扱う
+  return expandPermissions(rows.map((r) => r.permission).filter(isPermission));
 }
 
 /**

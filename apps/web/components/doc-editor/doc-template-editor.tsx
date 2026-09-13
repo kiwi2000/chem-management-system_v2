@@ -45,6 +45,8 @@ export function DocTemplateEditor({ id }: { id: string }) {
     「試しに幅を変えて見る」ができなくなる
   */
   const [preview, setPreview] = useState(false);
+  /** 編集で触っているブロック。プレビューで赤い細線で囲む（2026-09-13 指示） */
+  const [activeId, setActiveId] = useState<string | null>(null);
   /** 変えぶんを残したまま戻ろうとしたときの知らせ */
   const [leaveWarning, setLeaveWarning] = useState(false);
   /*
@@ -307,6 +309,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
             orgItems={orgItems}
             documentFont={content.style?.family}
             onChange={(blocks) => edit({ ...content, blocks })}
+            onActivate={setActiveId}
           />
 
           {preview && sheet && (
@@ -320,7 +323,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
                 defaultMaxHeight="75vh"
                 className="bg-muted/40 border p-2"
               >
-                <DocumentSheet doc={sheet} />
+                <DocumentSheet doc={sheet} highlightId={activeId} />
               </ResizableBox>
             </div>
           )}

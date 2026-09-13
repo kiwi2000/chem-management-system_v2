@@ -48,9 +48,17 @@ export default async function DocumentPage({
   searchParams,
 }: {
   params: Promise<{ templateId: string; targetId: string }>;
-  searchParams: Promise<{ from?: string; to?: string; org?: string | string[] }>;
+  searchParams: Promise<{
+    company?: string;
+    department?: string;
+    to?: string;
+    org?: string | string[];
+  }>;
 }) {
-  const [{ templateId, targetId }, { from, to, org }] = await Promise.all([params, searchParams]);
+  const [{ templateId, targetId }, { company, department, to, org }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   // 帳票を作れる人だけ（保存した帳票の画面と同じ）。権限が無ければ、あることも伝えない
   const actor = await getActor();
   if (!actor || !actor.has("DOCUMENT_CREATE")) notFound();
@@ -81,7 +89,8 @@ export default async function DocumentPage({
   // 生成するときに選んだ組織を、様式の組織ブロックへ書き込む（様式で決めてあるものは変えない）
   const content = await resolveOrgChoices(template.content, org);
   const parties = {
-    senderId: from ?? null,
+    companyId: company ?? null,
+    departmentId: department ?? null,
     recipientId: template.usesRecipient ? (to ?? null) : null,
     // 様式が名指ししている組織と、生成するときに選んだ組織（組織ブロック）
     organisationIds: organisationIdsIn(content),
@@ -95,7 +104,7 @@ export default async function DocumentPage({
   if (template.kind !== "BLOCK") {
     return (
       <TemplateFileDownload
-        href={`/api/document-files/${template.id}/${targetId}${search(from, to, template.usesRecipient)}`}
+        href={`/api/document-files/${template.id}/${targetId}${search(company, department, to, template.usesRecipient)}`}
         title={`${template.code} ${template.nameJa}`}
         ready={template.fileName !== null}
         backHref="/documents"
@@ -126,8 +135,9 @@ export default async function DocumentPage({
         hasComposition: containsComposition(content, data),
         params: {
           version: data.values.get("doc.version") ?? "",
-          // 誰の名前で、誰に宛てて出したか。あとから記録だけで追えるように残す
-          ...(parties.senderId ? { senderId: parties.senderId } : {}),
+          // どの会社・部署を選び、誰に宛てて出したか。あとから記録だけで追えるように残す
+          ...(parties.companyId ? { companyId: parties.companyId } : {}),
+          ...(parties.departmentId ? { departmentId: parties.departmentId } : {}),
           ...(parties.recipientId ? { recipientId: parties.recipientId } : {}),
           // 組織ブロックで選んだ組織。ブロックid → 組織id
           ...(parseOrgChoices(org).size
@@ -164,9 +174,15 @@ export default async function DocumentPage({
 }
 
 /** 落とす先に付ける、差出人と宛先。印の無い様式に宛先は付けない */
-function search(from: string | undefined, to: string | undefined, usesRecipient: boolean): string {
+function search(
+  company: string | undefined,
+  department: string | undefined,
+  to: string | undefined,
+  usesRecipient: boolean,
+): string {
   const q = new URLSearchParams();
-  if (from) q.set("from", from);
+  if (company) q.set("company", company);
+  if (department) q.set("department", department);
   if (usesRecipient && to) q.set("to", to);
   const s = q.toString();
   return s ? `?${s}` : "";

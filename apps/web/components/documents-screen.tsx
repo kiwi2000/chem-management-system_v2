@@ -9,6 +9,9 @@ import {
   serializeTableState,
   type ColumnKind,
   type TableState,
+  fieldKeysIn,
+  PICK_COMPANY_KEY,
+  PICK_DEPARTMENT_KEY,
 } from "@chem/shared";
 import { FileText } from "lucide-react";
 import Link from "next/link";
@@ -22,7 +25,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import { useMe } from "@/lib/use-me";
 import { useOrganisations } from "@/lib/use-organisations";
 import type {
   ApiError,
@@ -73,12 +75,11 @@ export function DocumentsScreen() {
   /** ③で選ばれている相手。④の「生成」で使う */
   const [targetIds, setTargetIds] = useState<string[]>([]);
   /*
-    差出人と宛先。**組織から選ぶ。**
-    差出人は権限のある人だけが変えられる（既定は自分の会社）
+    任意の会社・任意の部署と宛先。**組織から選ぶ。**
+    所属する会社・部署は作った人のものが自動で入るので、ここでは聞かない
   */
-  const { can } = useMe();
-  const canPickSender = can("DOCUMENT_SENDER");
-  const [senderId, setSenderId] = useState("");
+  const [companyId, setCompanyId] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
   const [recipientId, setRecipientId] = useState("");
   const organisations = useOrganisations();
   const orgOptions = useMemo(
@@ -91,6 +92,24 @@ export function DocumentsScreen() {
     種別で絞ってから選ぶ。選ばなければ、そのブロックは空のまま出る
   */
   const openBlocks = useMemo(() => (picked ? openOrgBlocks(picked.content) : []), [picked]);
+  /*
+    任意の会社・任意の部署。**様式がその項目を使っているときだけ聞く。**
+    選べるのは種別が合う組織ぜんぶ（自分が所属していなくてもよい。2026-09-13 指示）
+  */
+  const usedKeys = useMemo(
+    () => (picked ? fieldKeysIn(picked.content) : new Set<string>()),
+    [picked],
+  );
+  const asksCompany = usedKeys.has(PICK_COMPANY_KEY);
+  const asksDepartment = usedKeys.has(PICK_DEPARTMENT_KEY);
+  const companyOptions = useMemo(
+    () => orgOptions.filter((o) => o.kind === "COMPANY"),
+    [orgOptions],
+  );
+  const departmentOptions = useMemo(
+    () => orgOptions.filter((o) => o.kind === "DEPARTMENT"),
+    [orgOptions],
+  );
   const [orgChoices, setOrgChoices] = useState<Record<string, string>>({});
   const [orgKindFilter, setOrgKindFilter] = useState<Record<string, string>>({});
   const kindNames = useMemo(
@@ -217,7 +236,8 @@ export function DocumentsScreen() {
     URL に出ていると「効いている」と読めてしまう
   */
   const partyParams = (t: DocumentTemplateDto) => ({
-    ...(senderId ? { from: senderId } : {}),
+    ...(asksCompany && companyId ? { company: companyId } : {}),
+    ...(asksDepartment && departmentId ? { department: departmentId } : {}),
     ...(t.usesRecipient && recipientId ? { to: recipientId } : {}),
     org: openBlocks.flatMap((b) => (orgChoices[b.id] ? [`${b.id}:${orgChoices[b.id]}`] : [])),
   });
@@ -228,11 +248,13 @@ export function DocumentsScreen() {
     差出人を選べる人には、そのために出す
   */
   const asksParties =
-    picked !== null && (picked.usesRecipient || canPickSender || openBlocks.length > 0);
+    picked !== null &&
+    (picked.usesRecipient || asksCompany || asksDepartment || openBlocks.length > 0);
   /** ②の見出し。出る欄だけを並べる（無い欄の名前を書かない） */
   const step2Label = m.documents.step2Pick(
     [
-      canPickSender ? m.documents.sender : null,
+      asksCompany ? m.documents.pickCompany : null,
+      asksDepartment ? m.documents.pickDepartment : null,
       picked?.usesRecipient ? m.documents.recipient : null,
       openBlocks.length > 0 ? m.documents.orgBlockShort : null,
     ]
@@ -294,17 +316,35 @@ export function DocumentsScreen() {
         <div className="space-y-2 border-t pt-4">
           <p className="text-sm font-medium">{step(2, step2Label)}</p>
           <div className="flex flex-wrap items-end gap-3">
-            {canPickSender && (
+            {asksCompany && (
               <div className="space-y-1">
-                <span className="text-muted-foreground text-xs">{m.documents.sender}</span>
+                <span className="text-muted-foreground text-xs">{m.documents.pickCompany}</span>
                 <select
-                  aria-label={m.documents.sender}
-                  value={senderId}
-                  onChange={(e) => setSenderId(e.target.value)}
+                  aria-label={m.documents.pickCompany}
+                  value={companyId}
+                  onChange={(e) => setCompanyId(e.target.value)}
                   className="border-input bg-background block h-9 w-56 rounded-none border px-2 text-sm"
                 >
-                  <option value="">{m.documents.senderDefault}</option>
-                  {orgOptions.map((o) => (
+                  <option value="">{m.documents.pickNone}</option>
+                  {companyOptions.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {pickName(locale, o.nameJa, o.nameEn)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {asksDepartment && (
+              <div className="space-y-1">
+                <span className="text-muted-foreground text-xs">{m.documents.pickDepartment}</span>
+                <select
+                  aria-label={m.documents.pickDepartment}
+                  value={departmentId}
+                  onChange={(e) => setDepartmentId(e.target.value)}
+                  className="border-input bg-background block h-9 w-56 rounded-none border px-2 text-sm"
+                >
+                  <option value="">{m.documents.pickNone}</option>
+                  {departmentOptions.map((o) => (
                     <option key={o.id} value={o.id}>
                       {pickName(locale, o.nameJa, o.nameEn)}
                     </option>

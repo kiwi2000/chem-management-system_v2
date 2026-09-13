@@ -21,6 +21,7 @@ import {
   type OrganisationKind,
   type OrgBlockItem,
   type OrgBlockMode,
+  type BlockMargin,
 } from "@chem/shared";
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -79,6 +80,7 @@ export function BlockList({
   orgItems,
   documentFont,
   onChange,
+  onActivate,
 }: {
   blocks: DocumentBlock[];
   target: DocumentTarget;
@@ -87,6 +89,8 @@ export function BlockList({
   /** 紙面ぜんたいで選ばれている書体。ブロック側の「指定なし」に出す */
   documentFont?: FontKey;
   onChange: (next: DocumentBlock[]) => void;
+  /** 触ったブロックの id を知らせる。プレビューでそのブロックを枠で示すため */
+  onActivate?: (id: string) => void;
 }) {
   const { m, locale } = useI18n();
   /** ブロックで書体を選んでいないときに、何が使われるかを見せる */
@@ -189,6 +193,9 @@ export function BlockList({
           overIndex === i && dragIndex !== null && "border-primary border-t-2",
           dragIndex === i && "opacity-50",
         )}
+        // 押した・打ち込んだブロックを「選んでいる」とみなす。プレビューの赤い枠がそこに付く
+        onMouseDownCapture={() => onActivate?.(b.id)}
+        onFocusCapture={() => onActivate?.(b.id)}
         onDragOver={
           dragIndex === null
             ? undefined
@@ -253,6 +260,16 @@ export function BlockList({
               value={b.style}
               onChange={(style) => replace(i, { ...b, style })}
               defaultFontLabel={defaultFontLabel}
+            />
+          )}
+          {/* 余白（mm）。紙の端や隣のブロックからの間を、辺ごとに決める（2026-09-13 指示） */}
+          {b.kind !== "pageBreak" && b.kind !== "rowBreak" && (
+            <MarginInputs
+              value={b.margin}
+              onChange={(margin) => replace(i, { ...b, margin })}
+              label={m.docEditor.margin}
+              sides={m.docEditor.marginSides}
+              hint={m.docEditor.marginHint}
             />
           )}
           <div className="ml-auto">
@@ -695,4 +712,54 @@ export function BlockList({
       </div>
     );
   }
+}
+
+/**
+ * ブロックの余白（mm）を辺ごとに打つ欄。空なら既定のまま。
+ * 4つとも空になったら余白の指定そのものを外す（保存した様式に空の入れものを残さない）
+ */
+function MarginInputs({
+  value,
+  onChange,
+  label,
+  sides,
+  hint,
+}: {
+  value: BlockMargin | undefined;
+  onChange: (next: BlockMargin | undefined) => void;
+  label: string;
+  sides: { top: string; right: string; bottom: string; left: string };
+  hint: string;
+}) {
+  const set = (side: keyof BlockMargin, raw: string) => {
+    const next: BlockMargin = { ...(value ?? {}) };
+    if (raw === "") delete next[side];
+    else {
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return;
+      next[side] = Math.min(100, Math.max(0, n));
+    }
+    onChange(Object.keys(next).length === 0 ? undefined : next);
+  };
+  return (
+    <div className="flex items-center gap-1 text-xs" title={hint}>
+      <span className="text-muted-foreground">{label}</span>
+      {(["top", "right", "bottom", "left"] as const).map((side) => (
+        <label key={side} className="flex items-center gap-0.5">
+          <span className="text-muted-foreground">{sides[side]}</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            max={100}
+            step={0.5}
+            aria-label={`${label} ${sides[side]}`}
+            className="border-input h-8 w-12 rounded-none border bg-transparent px-1 text-xs"
+            value={value?.[side] ?? ""}
+            onChange={(e) => set(side, e.target.value)}
+          />
+        </label>
+      ))}
+    </div>
+  );
 }

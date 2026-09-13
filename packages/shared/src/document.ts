@@ -88,14 +88,32 @@ export const DOCUMENT_FIELDS: DocumentField[] = [
   { key: "substance.note", target: "SUBSTANCE", labelJa: "備考", labelEn: "Note" },
 
   /*
-    差出人。**既定は作った人の会社。**
-    `DOCUMENT_SENDER` を持っている人は、作るときに別の組織を選べる
-    （関連会社の名前で出す、代理で出す）
+    作った人の会社と部署。**いつも作った人のもの。**
+    （以前は「差出人」と呼び、権限があれば別の会社に差し替えられたが、
+    2026-09-13 指示で「所属する」と「任意の」に分けた）
   */
-  { key: "org.name", target: "PRODUCT", labelJa: "差出人の名称", labelEn: "Sender" },
-  { key: "org.group", target: "PRODUCT", labelJa: "差出人の所属", labelEn: "Sender department" },
-  { key: "org.name", target: "SUBSTANCE", labelJa: "差出人の名称", labelEn: "Sender" },
-  { key: "org.group", target: "SUBSTANCE", labelJa: "差出人の所属", labelEn: "Sender department" },
+  { key: "org.name", target: "PRODUCT", labelJa: "所属する会社名", labelEn: "Your company" },
+  { key: "org.group", target: "PRODUCT", labelJa: "所属部署", labelEn: "Your department" },
+  { key: "org.name", target: "SUBSTANCE", labelJa: "所属する会社名", labelEn: "Your company" },
+  { key: "org.group", target: "SUBSTANCE", labelJa: "所属部署", labelEn: "Your department" },
+  /*
+    任意の会社と部署。**作るときに選ぶ。**自分が所属していない組織も選べる。
+    様式がこの項目を使っているときだけ、作る画面に選ぶ欄が出る
+  */
+  { key: "pick.company", target: "PRODUCT", labelJa: "任意の会社名", labelEn: "Chosen company" },
+  {
+    key: "pick.department",
+    target: "PRODUCT",
+    labelJa: "任意の部署",
+    labelEn: "Chosen department",
+  },
+  { key: "pick.company", target: "SUBSTANCE", labelJa: "任意の会社名", labelEn: "Chosen company" },
+  {
+    key: "pick.department",
+    target: "SUBSTANCE",
+    labelJa: "任意の部署",
+    labelEn: "Chosen department",
+  },
 
   /*
     宛先。**「宛先を使う」印の付いた様式でだけ選ばせる。**
@@ -125,6 +143,28 @@ export function orgBlockKey(organisationId: string, item: string): string {
     ? `orgOf.${organisationId}.name`
     : `orgOf.${organisationId}.item.${item}`;
 }
+
+/**
+ * 様式が使っている差込項目の鍵。文章・見出しの中の差込と、項目の並びの項目を集める。
+ * 「任意の会社名」「任意の部署」を使っているときだけ、作る画面で選ばせるために要る
+ */
+export function fieldKeysIn(content: DocumentContent): Set<string> {
+  const out = new Set<string>();
+  for (const b of content.blocks) {
+    if (b.kind === "heading" || b.kind === "text") {
+      for (const line of b.lines) {
+        for (const s of line.spans) if (s.kind === "field" && s.field) out.add(s.field);
+      }
+    } else if (b.kind === "fields") {
+      for (const it of b.items) if (it.field) out.add(it.field);
+    }
+  }
+  return out;
+}
+
+/** 作るときに選ぶ組織の鍵 */
+export const PICK_COMPANY_KEY = "pick.company";
+export const PICK_DEPARTMENT_KEY = "pick.department";
 
 /** テンプレートが名指ししている組織のid。差し込む前に読み込むために要る */
 export function organisationIdsIn(content: DocumentContent): string[] {
@@ -198,8 +238,8 @@ export function orgItemField(label: string, target: DocumentTarget): DocumentFie
     key: `${ORG_ITEM_PREFIX}${label}`,
     target,
     // 会社ごとに違う言葉なので、訳しようがない。打たれたものをそのまま出す
-    labelJa: `差出人の${label}`,
-    labelEn: `Sender: ${label}`,
+    labelJa: `所属する会社の${label}`,
+    labelEn: `Your company: ${label}`,
   };
 }
 
@@ -590,12 +630,25 @@ export interface BlockStyle {
   color?: string;
 }
 
+/**
+ * ブロックの余白（mm）。**紙の端、または隣のブロックからの間。**
+ * 指定した辺だけ効き、指定しない辺は種類ごとの既定のまま（2026-09-13 指示）
+ */
+export interface BlockMargin {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+}
+
 interface BlockBase {
   id: string;
   /** 省略は全幅。全幅のブロックは必ず1行を占める */
   width?: BlockWidth;
   /** そのブロックの字。省略は紙面の既定 */
   style?: BlockStyle;
+  /** そのブロックの余白。省略は種類ごとの既定 */
+  margin?: BlockMargin;
 }
 
 export type DocumentBlock =

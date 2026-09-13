@@ -1,5 +1,5 @@
-import { expandPermissions, type MfaMethod, type Permission } from "@chem/shared";
-import type { Group, Organisation, User } from "@prisma/client";
+import { expandPermissions, isPermission, type MfaMethod, type Permission } from "@chem/shared";
+import type { Group, Organisation, Permission as DbPermission, User } from "@prisma/client";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
@@ -13,7 +13,8 @@ import { sortOrganisations } from "@/lib/user-organisations";
 type OrganisationRef = Pick<Organisation, "id" | "kind" | "nameJa" | "nameEn" | "displayOrder">;
 
 export type UserWithPermissions = User & {
-  permissions: { permission: Permission }[];
+  /** DB の enum のまま。画面へ出すときに、知らない値（古い DOCUMENT_SENDER）は落とす */
+  permissions: { permission: DbPermission }[];
   newsGroup?: Pick<Group, "id" | "nameJa" | "nameEn"> | null;
   /** 所属する組織。種別を問わず何件でも */
   organisations?: { organisation: OrganisationRef }[];
@@ -43,7 +44,7 @@ export function toUserSummary(u: UserWithPermissions) {
     hasPassword: u.passwordHash !== null,
     mfaMethod: (u.mfaMethod as MfaMethod) ?? "none",
     lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
-    permissions: u.permissions.map((p) => p.permission),
+    permissions: u.permissions.map((p) => p.permission).filter(isPermission),
     newsGroupId: u.newsGroupId,
     newsGroupName: u.newsGroup?.nameJa ?? null,
     newsGroupNameEn: u.newsGroup?.nameEn ?? null,
@@ -116,9 +117,12 @@ export async function setPermissions(
   grantedBy: string,
 ): Promise<Permission[]> {
   const next = expandPermissions(wanted);
+  // DB の enum にだけ残っている古い値は、無いものとして扱う（次の保存で消える）
   const current = (
     await prisma.userPermission.findMany({ where: { userId }, select: { permission: true } })
-  ).map((r) => r.permission);
+  )
+    .map((r) => r.permission)
+    .filter(isPermission);
 
   const toAdd = next.filter((p) => !current.includes(p));
   const toRemove = current.filter((p) => !next.includes(p));

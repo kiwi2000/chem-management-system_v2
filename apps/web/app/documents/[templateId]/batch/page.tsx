@@ -36,9 +36,18 @@ export default async function DocumentBatchPage({
   searchParams,
 }: {
   params: Promise<{ templateId: string }>;
-  searchParams: Promise<{ ids?: string; from?: string; to?: string; org?: string | string[] }>;
+  searchParams: Promise<{
+    ids?: string;
+    company?: string;
+    department?: string;
+    to?: string;
+    org?: string | string[];
+  }>;
 }) {
-  const [{ templateId }, { ids: raw, from, to, org }] = await Promise.all([params, searchParams]);
+  const [{ templateId }, { ids: raw, company, department, to, org }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   // 帳票を作れる人だけ（保存した帳票の画面と同じ）。権限が無ければ、あることも伝えない
   const actor = await getActor();
   if (!actor || !actor.has("DOCUMENT_CREATE")) notFound();
@@ -71,7 +80,8 @@ export default async function DocumentBatchPage({
   // 生成するときに選んだ組織を、様式の組織ブロックへ書き込む（様式で決めてあるものは変えない）
   const content = await resolveOrgChoices(template.content, org);
   const parties = {
-    senderId: from ?? null,
+    companyId: company ?? null,
+    departmentId: department ?? null,
     recipientId: template.usesRecipient ? (to ?? null) : null,
     // 様式が名指ししている組織と、生成するときに選んだ組織（組織ブロック）
     organisationIds: organisationIdsIn(content),

@@ -1,6 +1,13 @@
 "use client";
 
-import { DEFAULT_FONT, fontStack, groupIntoRows, type BlockStyle, spacerMm } from "@chem/shared";
+import {
+  DEFAULT_FONT,
+  fontStack,
+  groupIntoRows,
+  type BlockStyle,
+  spacerMm,
+  type BlockMargin,
+} from "@chem/shared";
 import { Printer } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -72,7 +79,14 @@ export function DocumentView({
  * 紙面1枚ぶん。画面では枠を付け、印刷では枠を消す。
  * **まとめて作るときも同じものを使う。**別々に組むと見た目が分かれる
  */
-export function DocumentSheet({ doc }: { doc: RenderedDocument }) {
+export function DocumentSheet({
+  doc,
+  highlightId,
+}: {
+  doc: RenderedDocument;
+  /** 編集画面で選んでいるブロックの id。そのブロックを赤い細線で囲む（刷るときは渡さない） */
+  highlightId?: string | null;
+}) {
   return (
     <div
       /*
@@ -89,12 +103,12 @@ export function DocumentSheet({ doc }: { doc: RenderedDocument }) {
       */}
       {groupIntoRows(doc.blocks).map((row, i) =>
         row.blocks.length === 1 ? (
-          <Block key={i} block={row.blocks[0]!} doc={doc.style} />
+          <Block key={i} block={row.blocks[0]!} doc={doc.style} highlightId={highlightId} />
         ) : (
           <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
             {row.blocks.map((b, j) => (
               <div key={j} style={{ width: `${row.percents[j]}%` }}>
-                <Block block={b} doc={doc.style} />
+                <Block block={b} doc={doc.style} highlightId={highlightId} />
               </div>
             ))}
           </div>
@@ -156,8 +170,33 @@ function styleOf(st: BlockStyle | undefined): CSSProperties {
   };
 }
 
-function Block({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | undefined }) {
-  const wrap = styleOf(b.style);
+/** 指定した辺の余白だけを CSS にする（mm） */
+function marginOf(mg: BlockMargin | undefined): CSSProperties {
+  if (!mg) return {};
+  return {
+    ...(mg.top !== undefined ? { marginTop: `${mg.top}mm` } : {}),
+    ...(mg.right !== undefined ? { marginRight: `${mg.right}mm` } : {}),
+    ...(mg.bottom !== undefined ? { marginBottom: `${mg.bottom}mm` } : {}),
+    ...(mg.left !== undefined ? { marginLeft: `${mg.left}mm` } : {}),
+  };
+}
+
+function Block({
+  block: b,
+  doc,
+  highlightId,
+}: {
+  block: RenderBlock;
+  doc: BlockStyle | undefined;
+  highlightId?: string | null;
+}) {
+  const highlighted = highlightId !== undefined && highlightId !== null && b.id === highlightId;
+  const wrap: CSSProperties = {
+    ...styleOf(b.style),
+    ...marginOf(b.margin),
+    // 編集画面のプレビューで、選んでいるブロックの場所が分かるように赤い細線で囲む
+    ...(highlighted ? { outline: "0.3mm solid #dc2626", outlineOffset: "0.5mm" } : {}),
+  };
   // 指定が無ければ、余計な入れものを挟まない（紙面の余白が変わらないように）
   if (Object.keys(wrap).length === 0) return <BlockBody block={b} doc={doc} />;
   return (
@@ -175,10 +214,22 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
   */
   const size = b.style?.size ?? doc?.size;
   const fs = (fallback: string) => (size ? `${size}pt` : fallback);
+  /*
+    種類ごとの既定の余白。**余白を指定した辺は、既定を消して指定だけにする。**
+    指定は外側の入れもの（Block）に付くので、ここで既定を残すと足し合わさってしまう
+  */
+  const mt = (fallback: string) => (b.margin?.top !== undefined ? "0" : fallback);
+  const mb = (fallback: string) => (b.margin?.bottom !== undefined ? "0" : fallback);
   switch (b.kind) {
     case "heading":
       return (
-        <div style={{ fontSize: fs(HEADING_SIZE[b.level]), fontWeight: 700, margin: "0 0 3mm" }}>
+        <div
+          style={{
+            fontSize: fs(HEADING_SIZE[b.level]),
+            fontWeight: 700,
+            margin: `0 0 ${mb("3mm")}`,
+          }}
+        >
           {b.lines.map((l, i) => (
             <Line key={i} line={l} />
           ))}
@@ -186,7 +237,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       );
     case "text":
       return (
-        <div style={{ margin: "0 0 3mm", fontSize: fs("10.5pt"), lineHeight: 1.6 }}>
+        <div style={{ margin: `0 0 ${mb("3mm")}`, fontSize: fs("10.5pt"), lineHeight: 1.6 }}>
           {b.lines.map((l, i) => (
             <Line key={i} line={l} />
           ))}
@@ -196,7 +247,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       return (
         <table
           style={{
-            margin: "0 0 4mm",
+            margin: `0 0 ${mb("4mm")}`,
             borderCollapse: "collapse",
             fontSize: fs("10.5pt"),
             // 右寄せのときは枠いっぱいに広げて、値を右端にそろえる
@@ -245,7 +296,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
     */
     case "orgItems":
       return (
-        <div style={{ margin: "0 0 4mm", fontSize: fs("10.5pt") }}>
+        <div style={{ margin: `0 0 ${mb("4mm")}`, fontSize: fs("10.5pt") }}>
           {b.items.map((it, i) => (
             <div key={i} style={{ textAlign: it.align, padding: "0.5mm 0" }}>
               {it.label && (
@@ -258,7 +309,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       );
     case "table":
       return (
-        <div style={{ margin: "0 0 5mm" }}>
+        <div style={{ margin: `0 0 ${mb("5mm")}` }}>
           {b.caption && (
             <p style={{ margin: "0 0 1mm", fontSize: fs("10.5pt"), fontWeight: 700 }}>
               {b.caption}
@@ -297,7 +348,15 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
         </div>
       );
     case "divider":
-      return <hr style={{ border: 0, borderTop: "0.4mm solid #000", margin: "4mm 0" }} />;
+      return (
+        <hr
+          style={{
+            border: 0,
+            borderTop: "0.4mm solid #000",
+            margin: `${mt("4mm")} 0 ${mb("4mm")}`,
+          }}
+        />
+      );
     case "spacer":
       // 高さは mm。古い様式の3段（sm/md/lg）も mm に読み替える
       return <div style={{ height: `${spacerMm(b.size)}mm` }} />;
@@ -321,14 +380,14 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       );
       if (b.labelPosition === "above") {
         return (
-          <div style={{ margin: "8mm 0 0", fontSize: fs("10.5pt") }}>
+          <div style={{ margin: `${mt("8mm")} 0 0`, fontSize: fs("10.5pt") }}>
             <div style={{ marginBottom: gap }}>{b.label}</div>
             {line}
           </div>
         );
       }
       return (
-        <div style={{ margin: "8mm 0 0", fontSize: fs("10.5pt"), whiteSpace: "nowrap" }}>
+        <div style={{ margin: `${mt("8mm")} 0 0`, fontSize: fs("10.5pt"), whiteSpace: "nowrap" }}>
           <span style={{ marginRight: gap }}>{b.label}</span>
           {line}
         </div>

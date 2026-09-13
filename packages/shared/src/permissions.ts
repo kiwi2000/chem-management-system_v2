@@ -31,11 +31,6 @@ export const PERMISSIONS = [
   "DOC_TEMPLATE_EDIT",
   "DOCUMENT_CREATE",
   /*
-    帳票の差出人を選ぶ。
-    **既定は作った人の会社。**関連会社の名前で出す、代理で出す、といった場面のためだけに開ける
-  */
-  "DOCUMENT_SENDER",
-  /*
     組織（会社・部署・取引先）を作る・直す・消す。
     **見るのは権限が要らない。**帳票の宛先に選ぶために、誰でも一覧を引ける必要がある
   */
@@ -124,7 +119,7 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "inactive", permissions: ["INACTIVE_VIEW", "INACTIVE_EDIT", "APPROVE"] },
   { key: "regulation", permissions: ["REGULATION_VIEW", "REGULATION_EDIT"] },
   { key: "data", permissions: ["DATA_EXPORT"] },
-  { key: "document", permissions: ["DOC_TEMPLATE_EDIT", "DOCUMENT_CREATE", "DOCUMENT_SENDER"] },
+  { key: "document", permissions: ["DOC_TEMPLATE_EDIT", "DOCUMENT_CREATE"] },
   { key: "organisation", permissions: ["ORG_EDIT"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },
   { key: "feedback", permissions: ["FEEDBACK_VIEW", "FEEDBACK_EDIT"] },

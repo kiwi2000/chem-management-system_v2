@@ -62,7 +62,8 @@ export async function GET(
 
   const url = new URL(req.url);
   const parties = {
-    senderId: url.searchParams.get("from"),
+    companyId: url.searchParams.get("company"),
+    departmentId: url.searchParams.get("department"),
     // 印の無い様式に付いてきた宛先は捨てる（URLに書けば効く状態を作らない）
     recipientId: row.usesRecipient ? url.searchParams.get("to") : null,
     // 様式が名指ししている組織（組織ブロック）。読めない中身なら名指しなしとみなす
@@ -117,7 +118,8 @@ export async function GET(
         hasComposition,
         params: {
           version: data.values.get("doc.version") ?? "",
-          ...(parties.senderId ? { senderId: parties.senderId } : {}),
+          ...(parties.companyId ? { companyId: parties.companyId } : {}),
+          ...(parties.departmentId ? { departmentId: parties.departmentId } : {}),
           ...(parties.recipientId ? { recipientId: parties.recipientId } : {}),
         },
       },

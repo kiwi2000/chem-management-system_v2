@@ -17,7 +17,9 @@ export const BATCH_MAX = 100;
  */
 export interface PartyParams {
   /** 差出人の組織。既定は作った人の会社 */
-  from?: string | null;
+  /** 任意の会社・任意の部署（組織のID）。様式がその項目を使っているときだけ付く */
+  company?: string | null;
+  department?: string | null;
   /** 宛先の組織 */
   to?: string | null;
   /** 組織ブロックで選んだ組織。`<ブロックid>:<組織id>` の並び */
@@ -26,7 +28,8 @@ export interface PartyParams {
 
 /** `from` `to` を問い合わせ文字列に足す（無いものは付けない） */
 export function partyQuery(q: URLSearchParams, parties?: PartyParams): URLSearchParams {
-  if (parties?.from) q.set("from", parties.from);
+  if (parties?.company) q.set("company", parties.company);
+  if (parties?.department) q.set("department", parties.department);
   if (parties?.to) q.set("to", parties.to);
   for (const v of parties?.org ?? []) q.append("org", v);
   return q;

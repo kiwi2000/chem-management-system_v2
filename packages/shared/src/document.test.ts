@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_DOCUMENT,
+  fieldKeysIn,
   fieldsFor,
+  PICK_COMPANY_KEY,
+  PICK_DEPARTMENT_KEY,
   groupIntoRows,
   widthPercent,
   isKnownField,
@@ -242,5 +245,40 @@ describe("均等", () => {
   it("全幅は均等の並びも断ち切る", () => {
     const rows = groupIntoRows([auto(), b("text", 100), auto()]);
     expect(rows.map((r) => r.blocks.length)).toEqual([1, 1, 1]);
+  });
+});
+
+describe("様式が使っている差込項目", () => {
+  it("文章の中の差込と、項目の並びの項目を集める", () => {
+    const keys = fieldKeysIn(
+      doc([
+        {
+          id: "a",
+          kind: "text",
+          lines: [
+            {
+              spans: [
+                { kind: "text", text: "会社: " },
+                { kind: "field", field: PICK_COMPANY_KEY },
+              ],
+            },
+          ],
+        },
+        {
+          id: "b",
+          kind: "fields",
+          items: [
+            { label: "部署", field: PICK_DEPARTMENT_KEY },
+            { label: "空", field: "" },
+          ],
+        },
+        { id: "c", kind: "divider" },
+      ]),
+    );
+    expect([...keys].sort()).toEqual([PICK_COMPANY_KEY, PICK_DEPARTMENT_KEY].sort());
+  });
+
+  it("使っていなければ空。作る画面で「任意の会社」を聞かない", () => {
+    expect(fieldKeysIn(doc([{ id: "c", kind: "divider" }])).size).toBe(0);
   });
 });

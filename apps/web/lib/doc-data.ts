@@ -10,6 +10,8 @@ import {
   pickStatutoryName,
   RECIPIENT_ITEM_PREFIX,
   type DocumentContent,
+  PICK_COMPANY_KEY,
+  PICK_DEPARTMENT_KEY,
 } from "@chem/shared";
 import type { DocumentTable, DocumentTarget, Locale, Messages } from "@chem/shared";
 import type { Actor } from "@/lib/authz";
@@ -57,23 +59,22 @@ function tableDef(key: DocumentTable, locale: Locale) {
 }
 
 /**
- * 差出人と宛先。
+ * 組織まわりの値。
  *
- * **差出人の既定は、作った人の会社。**`DOCUMENT_SENDER` を持っている人は
- * 別の組織を選べる（関連会社の名前で出す、代理で出す）。
- * **所属はいつも作った人のもの。**選んだ組織に「その人の部署」は無いため。
+ * **所属する会社・所属部署は、いつも作った人のもの。**差し替えられない。
+ * **任意の会社・任意の部署は、作るときに選んだもの。**自分が所属していない組織も選べる
+ * （2026-09-13 指示。以前の「差出人」と「差出人を選べる権限」はこれに置き換えた）。
  *
  * **宛先は、選ばれたときだけ入る。**「宛先を使う」印の付いた様式でだけ選ばせる。
  *
  * 組織の項目は打たれたものをそのまま流す。持っていない項目は空欄になる
  * （組織ごとに項目が違うので、無いことは誤りではない）。
  */
-/**
- * 差出人と宛先。**どちらも組織のID。**
- * 渡されなければ、差出人は作った人の会社、宛先は無し
- */
 export interface DocParties {
-  senderId?: string | null;
+  /** 任意の会社（組織のID）。種別が「会社」でなければ捨てる */
+  companyId?: string | null;
+  /** 任意の部署（組織のID）。種別が「部署」でなければ捨てる */
+  departmentId?: string | null;
   recipientId?: string | null;
   /**
    * 様式が名指ししている組織のid（組織ブロック）。
@@ -91,9 +92,9 @@ const ORG_SELECT = {
 async function orgValues(
   actor: Actor,
   locale: Locale,
-  senderId?: string | null,
-  recipientId?: string | null,
+  parties: DocParties | undefined,
 ): Promise<[string, string][]> {
+  const recipientId = parties?.recipientId;
   const me = await prisma.user.findUnique({
     where: { id: actor.user.id },
     select: {
@@ -109,20 +110,24 @@ async function orgValues(
     （利用者の編集画面の並びと同じ）
   */
   const mine = (me?.organisations ?? []).map((x) => x.organisation);
-  const company = pickOrganisation(mine, "COMPANY");
+  const org = pickOrganisation(mine, "COMPANY");
   const department = pickOrganisation(mine, "DEPARTMENT");
   /*
-    差し替えた差出人。**権限を持っていない人が渡してきたら見ない。**
-    URL に付ければ誰でも別の会社の名前で出せる、という穴を作らない
+    任意の会社・任意の部署。**種別が合わないものは捨てる**
+    （URL に書けば部署の欄に会社が入る、という状態を作らない）。消された組織も捨てる
   */
-  const picked =
-    senderId && actor.has("DOCUMENT_SENDER")
-      ? await prisma.organisation.findFirst({
-          where: { id: senderId, deletedAt: null },
-          select: ORG_SELECT,
-        })
-      : null;
-  const org = picked ?? company;
+  const pickedCompany = parties?.companyId
+    ? await prisma.organisation.findFirst({
+        where: { id: parties.companyId, deletedAt: null, kind: "COMPANY" },
+        select: ORG_SELECT,
+      })
+    : null;
+  const pickedDepartment = parties?.departmentId
+    ? await prisma.organisation.findFirst({
+        where: { id: parties.departmentId, deletedAt: null, kind: "DEPARTMENT" },
+        select: ORG_SELECT,
+      })
+    : null;
 
   const to = recipientId
     ? await prisma.organisation.findFirst({
@@ -134,6 +139,14 @@ async function orgValues(
   const out: [string, string][] = [
     ["org.name", org ? pickName(locale, org.nameJa, org.nameEn) : ""],
     ["org.group", department ? pickName(locale, department.nameJa, department.nameEn) : ""],
+    [
+      PICK_COMPANY_KEY,
+      pickedCompany ? pickName(locale, pickedCompany.nameJa, pickedCompany.nameEn) : "",
+    ],
+    [
+      PICK_DEPARTMENT_KEY,
+      pickedDepartment ? pickName(locale, pickedDepartment.nameJa, pickedDepartment.nameEn) : "",
+    ],
     ["to.name", to ? pickName(locale, to.nameJa, to.nameEn) : ""],
   ];
   for (const it of org?.items ?? []) out.push([`${ORG_ITEM_PREFIX}${it.label}`, it.value]);
@@ -204,7 +217,7 @@ async function commonValues(
     ["doc.generatedAt", now.toLocaleString(locale === "en" ? "en-US" : "ja-JP")],
     ["doc.generatedBy", actor.user.displayName ?? actor.user.email],
     ["doc.version", versionCode ?? ""],
-    ...(await orgValues(actor, locale, parties?.senderId, parties?.recipientId)),
+    ...(await orgValues(actor, locale, parties)),
     ...(await namedOrgValues(parties?.organisationIds ?? [], locale)),
   ];
 }

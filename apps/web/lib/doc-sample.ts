@@ -43,6 +43,8 @@ const SAMPLE_JA: Record<string, string> = {
   "substance.note": "これは見本です",
   "org.name": "見本株式会社",
   "org.group": "見本部",
+  "pick.company": "見本商事株式会社",
+  "pick.department": "見本営業部",
 };
 
 const SAMPLE_EN: Record<string, string> = {
@@ -55,6 +57,8 @@ const SAMPLE_EN: Record<string, string> = {
   "substance.note": "This is a sample",
   "org.name": "Sample Co., Ltd.",
   "org.group": "Sample dept.",
+  "pick.company": "Sample Trading Co., Ltd.",
+  "pick.department": "Sample Sales dept.",
 };
 
 /**
