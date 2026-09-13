@@ -1263,8 +1263,7 @@ export const en: Messages = {
     previewHide: "Close preview",
     previewHighlightNote: "The block you are editing is outlined in thin red in the preview",
     unsavedOnLeave: "You have unsaved changes. Save or discard them before going back.",
-    previewNote:
-      "Shown with sample values, not real data. To check against real data, produce one from Documents.",
+    previewNote: "* Values are samples, not real data.",
     tryWithData: "Try with real data",
     orientation: "Orientation",
     orientationShort: "Orientation",

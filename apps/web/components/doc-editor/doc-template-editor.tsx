@@ -201,63 +201,69 @@ export function DocTemplateEditor({ id }: { id: string }) {
         <h1 className="text-2xl font-semibold">
           {template.code} {template.nameJa}
         </h1>
-        <div className="flex items-end gap-2">
-          {isFile ? null : (
-            <>
-              {/* 欄の上に小さく名前。ブロックの見出し行と同じ形（2026-09-13 指示） */}
-              <Labeled label={m.docEditor.orientationShort}>
-                <select
-                  className={SELECT}
-                  aria-label={m.docEditor.orientation}
-                  disabled={!editable}
-                  value={content.orientation}
-                  onChange={(e) =>
-                    edit({ ...content, orientation: e.target.value as "portrait" | "landscape" })
-                  }
-                >
-                  <option value="portrait">{m.docEditor.orientations.portrait}</option>
-                  <option value="landscape">{m.docEditor.orientations.landscape}</option>
-                </select>
-              </Labeled>
-              {/*
+        <div className="flex flex-col items-end gap-1">
+          {/* プレビューは見本の値。ボタンの上に赤い細字でひとこと（2026-09-13 指示。枠は出さない） */}
+          {preview && !isFile && (
+            <span className="text-destructive text-xs">{m.docEditor.previewNote}</span>
+          )}
+          <div className="flex items-end gap-2">
+            {isFile ? null : (
+              <>
+                {/* 欄の上に小さく名前。ブロックの見出し行と同じ形（2026-09-13 指示） */}
+                <Labeled label={m.docEditor.orientationShort}>
+                  <select
+                    className={SELECT}
+                    aria-label={m.docEditor.orientation}
+                    disabled={!editable}
+                    value={content.orientation}
+                    onChange={(e) =>
+                      edit({ ...content, orientation: e.target.value as "portrait" | "landscape" })
+                    }
+                  >
+                    <option value="portrait">{m.docEditor.orientations.portrait}</option>
+                    <option value="landscape">{m.docEditor.orientations.landscape}</option>
+                  </select>
+                </Labeled>
+                {/*
             紙面ぜんたいの字。**各ブロックの既定になる。**
             ブロックの側で選ばれていれば、そちらが勝つ
           */}
-              <BlockStyleBar
-                level="document"
-                value={content.style}
-                onChange={(style) => edit({ ...content, style })}
-                fontLabel={m.docEditor.documentFont}
-              />
-              <Button size="sm" variant="outline" onClick={() => setPreview((v) => !v)}>
-                <Eye className="size-4" />
-                {preview ? m.docEditor.previewHide : m.docEditor.preview}
-              </Button>
-              {editable && (
-                <>
-                  <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
-                    {saving ? m.common.saving : m.common.save}
-                  </Button>
-                  {/* 取消は、保存していない変えぶんを捨てて、読み込んだところまで戻す */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={saving || !dirty}
-                    onClick={cancelEdits}
-                  >
-                    {m.common.discard}
-                  </Button>
-                </>
-              )}
-            </>
-          )}
-          {/*
+                <BlockStyleBar
+                  level="document"
+                  value={content.style}
+                  onChange={(style) => edit({ ...content, style })}
+                  fontLabel={m.docEditor.documentFont}
+                />
+                <Button size="sm" variant="outline" onClick={() => setPreview((v) => !v)}>
+                  <Eye className="size-4" />
+                  {preview ? m.docEditor.previewHide : m.docEditor.preview}
+                </Button>
+                {editable && (
+                  <>
+                    <Button size="sm" disabled={saving || !dirty} onClick={() => void save()}>
+                      {saving ? m.common.saving : m.common.save}
+                    </Button>
+                    {/* 取消は、保存していない変えぶんを捨てて、読み込んだところまで戻す */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={saving || !dirty}
+                      onClick={cancelEdits}
+                    >
+                      {m.common.discard}
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
+            {/*
             戻るは**一覧へ移るだけ。**変えぶんが残っているときは、
             移らずに知らせる。ここで黙って捨てると、書いたものが消える
           */}
-          <Button size="sm" variant="outline" onClick={goBack}>
-            {m.common.back}
-          </Button>
+            <Button size="sm" variant="outline" onClick={goBack}>
+              {m.common.back}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -302,7 +308,8 @@ export function DocTemplateEditor({ id }: { id: string }) {
       ) : (
         <div className={cn("gap-4", preview && "lg:grid lg:grid-cols-2 lg:items-start")}>
           <BlockList
-            key={revision}
+            // 会社の項目名が届く前に描いた差込は名前が鍵のまま残るので、届いたら作り直す
+            key={`${revision}-${orgItems.length}`}
             blocks={content.blocks}
             target={template.target}
             orgItems={orgItems}
@@ -312,9 +319,6 @@ export function DocTemplateEditor({ id }: { id: string }) {
 
           {preview && sheet && (
             <div className="mt-4 lg:sticky lg:top-4 lg:mt-0">
-              <Alert className="mb-2">
-                <AlertDescription>{m.docEditor.previewNote}</AlertDescription>
-              </Alert>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
               <ResizableBox
                 storageKey="chem.box.docTemplatePreview"
