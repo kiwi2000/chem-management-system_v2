@@ -23,6 +23,10 @@ import { cn } from "@/lib/utils";
 const HEADER_ICON_BUTTON =
   "text-header-foreground hover:bg-header-foreground/15 hover:text-header-foreground aria-expanded:bg-header-foreground/15 aria-expanded:text-header-foreground";
 
+/** 帯を畳む札。テンプレート編集の上の欄のつまみと同じ形（線にまたがる小さな札）。帯と同じ高さの入れものに入れて下端に掛ける */
+const HEADER_TAB =
+  "text-header-foreground border-header-foreground/40 hover:bg-header-foreground/15 flex h-4 w-10 shrink-0 items-center justify-center border border-b-0";
+
 /** サイドバーの開閉状態は端末ごとに覚えておく */
 const STORAGE_KEY = "chem.sidebar.open";
 /** ヘッダーの開閉も同じように覚える。作業のあいだ閉じたままにしたい人がいる */
@@ -234,18 +238,22 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
                 <Settings className="size-4" />
               </Button>
               <SignOutButton />
-              {/* 畳む口。いちばん端に置く（押し間違えても実害が無い並び） */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className={HEADER_ICON_BUTTON}
-                title={m.shell.hideHeader}
-                aria-label={m.shell.hideHeader}
-                aria-expanded
-                onClick={() => toggleHeader(false)}
-              >
-                <ChevronUp className="size-4" />
-              </Button>
+              {/*
+                畳む口。いちばん端に置く（押し間違えても実害が無い並び）。
+                テンプレート編集の上の欄のつまみと同じ、線にまたがる小さな札の形（2026-09-13 指示）。帯の下端に掛ける
+              */}
+              <span className="flex h-14 items-end">
+                <button
+                  type="button"
+                  className={HEADER_TAB}
+                  title={m.shell.hideHeader}
+                  aria-label={m.shell.hideHeader}
+                  aria-expanded
+                  onClick={() => toggleHeader(false)}
+                >
+                  <ChevronUp className="size-3" />
+                </button>
+              </span>
             </div>
           </header>
         </div>
@@ -255,18 +263,17 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
           **画面の右上に浮かせる。**ヘッダーが無い状態でも必ず届く場所
         */}
         {!headerOpen && (
-          <Button
-            variant="outline"
-            size="icon-sm"
-            // 帯を畳んでいるあいだの出す口。帯と同じ色で塗り、白い四角が浮かないようにする
-            className="bg-header/90 text-header-foreground border-header-foreground/20 hover:bg-header hover:text-header-foreground dark:bg-header/90 dark:border-header-foreground/20 dark:hover:bg-header fixed top-1 right-2 z-40 backdrop-blur"
+          <button
+            type="button"
+            // 帯を畳んでいるあいだの出す口。同じ札の形で、画面の上端からぶら下げる。帯と同じ色で塗り、マウスを乗せても薄くしすぎない（白い紙の上で消えて見える）
+            className="bg-header text-header-foreground border-header-foreground/40 hover:bg-header/80 fixed top-0 right-4 z-40 flex h-4 w-10 items-center justify-center border border-t-0"
             title={m.shell.showHeader}
             aria-label={m.shell.showHeader}
             aria-expanded={false}
             onClick={() => toggleHeader(true)}
           >
-            <ChevronDown className="size-4" />
-          </Button>
+            <ChevronDown className="size-3" />
+          </button>
         )}
 
         <main className="min-w-0 flex-1">

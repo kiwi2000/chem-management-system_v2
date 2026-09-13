@@ -216,46 +216,26 @@ export function DocTemplateEditor({ id }: { id: string }) {
 
   return (
     <div
-      // 上の欄（案内・題名・帯）は間を詰める（2026-09-13 指示）。space-y は上下の両方に付いて詰めきれないので、子ごとに mt を書く
-      className={cn(PAGE_SHELL, framed && "flex flex-col overflow-hidden")}
+      // 上の欄（案内・題名・帯）は間を詰める（2026-09-13 指示）。space-y は上下の両方に付いて詰めきれないので、子ごとに mt を書く。
+      // いちばん上の帯と案内の間も、ほかの画面より狭くする
+      className={cn(PAGE_SHELL, "pt-3 lg:pt-3", framed && "flex flex-col overflow-hidden")}
       style={framed ? { height: frameHeight } : undefined}
     >
-      {/*
-        いまどこにいるか。メニューの項目名から始める。
-        右端に上の欄（題名と帯）をたたむつまみ。**開いても閉じても同じ場所**（2026-09-13 指示）。
-        見た目はいちばん上の帯の開閉ボタンに合わせる。たたんでいる間は、この行の下に線を引いて本文と分ける
-      */}
-      <div
-        className={cn(
-          "flex items-center justify-between gap-2",
-          !isFile && !headerOpen && "border-b pb-1",
-        )}
-      >
-        <Breadcrumbs
-          items={[
-            { label: m.nav.documents },
-            { label: m.docTemplates.title, href: "/doc-templates" },
-            { label: `${template.code} ${template.nameJa}` },
-          ]}
-        />
-        {!isFile && (
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-expanded={headerOpen}
-            aria-label={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
-            title={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
-            className="bg-header text-header-foreground hover:bg-header/85 hover:text-header-foreground aria-expanded:bg-header aria-expanded:text-header-foreground dark:hover:bg-header/85 -my-1 shrink-0"
-            onClick={() => setHeaderOpen((v) => !v)}
-          >
-            {headerOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-          </Button>
-        )}
-      </div>
+      {/* いまどこにいるか。メニューの項目名から始める */}
+      <Breadcrumbs
+        items={[
+          { label: m.nav.documents },
+          { label: m.docTemplates.title, href: "/doc-templates" },
+          { label: `${template.code} ${template.nameJa}` },
+        ]}
+      />
 
-      {/* 上の欄（題名と帯）。閉じている間は何も出さない（名前は案内の行にある）。右はつまみの列を空けておく */}
+      {/*
+        上の欄（題名と帯）。閉じている間は何も出さない（名前は案内の行にある）。
+        右端はつまみ（下の行、右に寄せて上に重なる）の分だけ空けておく（2026-09-13 指示）
+      */}
       {headerOpen ? (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-b pb-1 pr-8">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 pr-12">
           <h1 className="text-2xl font-semibold">
             {template.code} {template.nameJa}
           </h1>
@@ -336,6 +316,24 @@ export function DocTemplateEditor({ id }: { id: string }) {
           </div>
         </div>
       ) : null}
+      {!isFile && (
+        <div className="-mt-2 flex justify-end border-b">
+          {/*
+            上の欄をたたむつまみ。線にまたがる小さな札で、**開いても閉じても右端の同じ形**。
+            上の行（開いていれば帯、たたんでいれば案内）に半分重ねて詰める。ただし線はぴったり付けず少し空ける（2026-09-13 指示）
+          */}
+          <button
+            type="button"
+            aria-expanded={headerOpen}
+            aria-label={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
+            title={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
+            className="text-muted-foreground hover:text-foreground bg-background -mb-px flex h-4 w-10 items-center justify-center border border-b-0"
+            onClick={() => setHeaderOpen((v) => !v)}
+          >
+            {headerOpen ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+          </button>
+        </div>
+      )}
 
       {error && (
         <Alert variant="destructive" className="mt-2">
@@ -380,7 +378,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
       ) : (
         <div
           className={cn(
-            "mt-1 gap-4",
+            "mt-2 gap-4",
             // 広い画面では残りの高さいっぱいに広げ、左右をそれぞれ送る（2026-09-13 指示）
             framed && "grid min-h-0 flex-1 grid-rows-1",
             framed && (preview ? "grid-cols-2" : "grid-cols-1"),
@@ -402,9 +400,10 @@ export function DocTemplateEditor({ id }: { id: string }) {
           {preview && sheet && (
             <div className={cn("mt-4", framed && "mt-0 min-h-0 overflow-y-auto")}>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
-              <div className="bg-muted/40 border p-2">
+              {/* 紙は上下に my-4 を持つ。ここでは注意書きと紙の間を最小にしたいので、直下の上の余白だけ消す（2026-09-13 指示） */}
+              <div className="bg-muted/40 border p-2 *:mt-0">
                 {/* プレビューは見本の値。灰色の枠の中、紙のすぐ上に赤い細字でひとこと（2026-09-13 指示。幅によらず同じ場所） */}
-                <p className="text-destructive mb-1 text-right text-xs font-normal">
+                <p className="text-destructive mb-0.5 text-right text-xs font-normal">
                   {m.docEditor.previewNote}
                 </p>
                 <DocumentSheet doc={sheet} highlightId={activeId} />
