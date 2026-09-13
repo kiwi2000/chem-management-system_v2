@@ -1238,6 +1238,8 @@ export const ja = {
     documentFont: "フォント",
     fontSize: "字の大きさ",
     fontSizeDefault: "既定",
+    /** 一覧の「既定」に、戻したときの大きさを添える（2026-09-14 指示。選んだ結果が先に分かるように） */
+    fontSizeDefaultOf: (pt: number) => `既定（${pt}）`,
     fontColor: "字の色",
     fontColorClear: "色を戻す",
     /** 背景・模様・枠線（ブロックの飾り） */

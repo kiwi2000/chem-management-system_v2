@@ -1208,6 +1208,7 @@ export const en: Messages = {
     documentFont: "Font",
     fontSize: "Font size",
     fontSizeDefault: "Default",
+    fontSizeDefaultOf: (pt: number) => `Default (${pt})`,
     fontColor: "Font colour",
     fontColorClear: "Clear colour",
     decor: "Background, pattern, border",

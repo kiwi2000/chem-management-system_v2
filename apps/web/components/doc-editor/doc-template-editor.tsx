@@ -517,6 +517,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
               onChange={(blocks) => edit({ ...content, blocks })}
               onActivate={setActiveIds}
               activeIds={activeIds}
+              docSize={content.style?.size}
             />
           </div>
 

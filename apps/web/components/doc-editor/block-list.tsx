@@ -3,6 +3,7 @@
 import {
   BLOCK_KINDS,
   DEFAULT_BLOCK_MARGIN,
+  DEFAULT_FONT_SIZE,
   effectiveMargin,
   HEADING_LEVELS,
   ownFontSize,
@@ -86,6 +87,7 @@ export function BlockList({
   onChange,
   onActivate,
   activeIds = [],
+  docSize,
 }: {
   blocks: DocumentBlock[];
   target: DocumentTarget;
@@ -96,8 +98,13 @@ export function BlockList({
   onActivate?: (ids: string[]) => void;
   /** いま選んでいるブロック（複数可）。プレビューの赤い枠と同じ色で、編集側の枠も赤くする（2026-09-13 指示） */
   activeIds?: readonly string[];
+  /** 紙面ぜんたいの字の大きさ（pt）。「既定」を選んだときになる値を一覧に添えるために使う */
+  docSize?: number;
 }) {
   const { m, locale } = useI18n();
+  /** そのブロックで実際に使われる大きさ（pt）。紙面と同じ計算 */
+  const sizeOf = (b: DocumentBlock) =>
+    b.style?.size ?? ownFontSize(b) ?? docSize ?? DEFAULT_FONT_SIZE;
   /** Shift で範囲を選ぶときの起点。最後にふつうに押したブロック */
   const anchorId = useRef<string | null>(null);
   /**
@@ -338,6 +345,7 @@ export function BlockList({
               defaultFontLabel={m.docEditor.fontDefaultShort}
               fontLabel={m.docEditor.font}
               defaultSize={ownFontSize(b)}
+              inheritedSize={docSize ?? DEFAULT_FONT_SIZE}
             />
           )}
           {/* 余白（mm）。紙の端や隣のブロックからの間を、辺ごとに決める（2026-09-13 指示） */}
@@ -372,6 +380,7 @@ export function BlockList({
                 target={target}
                 orgItems={orgItems}
                 minHeight="2.5rem"
+                baseSize={sizeOf(b)}
                 onChange={(lines) => replace(i, { ...b, lines })}
               />
             </>
@@ -382,6 +391,7 @@ export function BlockList({
               value={b.lines}
               target={target}
               orgItems={orgItems}
+              baseSize={sizeOf(b)}
               onChange={(lines) => replace(i, { ...b, lines })}
             />
           )}

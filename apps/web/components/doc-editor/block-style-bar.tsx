@@ -4,6 +4,7 @@ import {
   BLOCK_BORDER_STYLES,
   BLOCK_PATTERNS,
   DEFAULT_FONT,
+  DEFAULT_FONT_SIZE,
   DOCUMENT_FONTS,
   type BlockBorderStyle,
   type BlockPattern,
@@ -40,6 +41,7 @@ export function BlockStyleBar({
   defaultFontLabel,
   fontLabel,
   defaultSize,
+  inheritedSize,
 }: {
   value: BlockStyle | undefined;
   onChange: (next: BlockStyle | undefined) => void;
@@ -57,6 +59,11 @@ export function BlockStyleBar({
    * 紙面ぜんたい（10.5）と、見出し（レベルごと）・表（9）で渡す。空にすると指定を外し、また既定の値が出る
    */
   defaultSize?: number;
+  /**
+   * 「既定」を選んだときに実際になる大きさ（pt）。ブロックの段で渡す。
+   * 一覧の項目に「既定（10.5）」のように添えて、選ぶ前に結果が分かるようにする（2026-09-14 指示）
+   */
+  inheritedSize?: number;
 }) {
   const { m } = useI18n();
   const st = value ?? {};
@@ -132,8 +139,12 @@ export function BlockStyleBar({
           onChange={(size) => patch({ size })}
           label={`${m.docEditor.fontSize} — ${m.docEditor.fontSizeHint}`}
           placeholder={defaultSize === undefined ? m.docEditor.fontSizeDefault : undefined}
-          // 見出し・表（既定の値を出している段）でも、一覧から「既定」に戻せるようにしておく
-          resetLabel={level === "block" ? m.docEditor.fontSizeDefault : undefined}
+          // ブロックの段は、一覧の「既定」に戻したときの大きさを添える（見出し・表でも戻せる）
+          resetLabel={
+            level === "block"
+              ? m.docEditor.fontSizeDefaultOf(defaultSize ?? inheritedSize ?? DEFAULT_FONT_SIZE)
+              : undefined
+          }
           className="border-input bg-background h-7 w-14 rounded-none border px-1 text-xs"
         />
       </span>

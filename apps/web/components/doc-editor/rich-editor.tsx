@@ -42,6 +42,7 @@ export function RichEditor({
   orgItems,
   placeholder,
   minHeight = "5rem",
+  baseSize,
 }: {
   value: RichLine[];
   onChange: (lines: RichLine[]) => void;
@@ -51,6 +52,8 @@ export function RichEditor({
   orgItems: string[];
   placeholder?: string;
   minHeight?: string;
+  /** 文字ごとの指定を外したときになる大きさ（pt）＝ブロックの大きさ。一覧の「既定」に添える */
+  baseSize?: number;
 }) {
   const { m, locale } = useI18n();
   const fields = useMemo(() => fieldsFor(target, orgItems), [target, orgItems]);
@@ -114,7 +117,7 @@ export function RichEditor({
 
   return (
     <div className="border-input rounded-none border">
-      <Toolbar editor={editor} fields={fields} locale={locale} m={m} />
+      <Toolbar editor={editor} fields={fields} locale={locale} m={m} baseSize={baseSize} />
       <EditorContent editor={editor} />
     </div>
   );
@@ -125,11 +128,14 @@ function Toolbar({
   fields,
   locale,
   m,
+  baseSize,
 }: {
   editor: Editor;
   fields: ReturnType<typeof fieldsFor>;
   locale: string;
   m: ReturnType<typeof useI18n>["m"];
+  /** 文字ごとの指定を外したときになる大きさ（pt）。一覧の「既定」に添える */
+  baseSize?: number;
 }) {
   const mark = (active: boolean) => cn(TOOL, active && "bg-accent");
   return (
@@ -206,6 +212,7 @@ function Toolbar({
           }}
           label={`${m.docEditor.size} — ${m.docEditor.fontSizeHint}`}
           placeholder={m.docEditor.sizeDefault}
+          resetLabel={baseSize !== undefined ? m.docEditor.fontSizeDefaultOf(baseSize) : undefined}
           className="border-input h-7 w-16 rounded-none border bg-transparent px-1 text-sm"
         />
       </span>
