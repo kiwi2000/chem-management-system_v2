@@ -98,14 +98,19 @@ export function BlockStyleBar({
       ) : (
         fontSelect
       )}
-      {/* 大きさは打ち込む欄（候補つき）。決まった段だけだと 13 や 10.5 にできない */}
-      <FontSizeInput
-        value={st.size}
-        onChange={(size) => patch({ size })}
-        label={`${m.docEditor.fontSize} — ${m.docEditor.fontSizeHint}`}
-        placeholder={m.docEditor.fontSizeDefault}
-        className="border-input bg-background h-8 w-16 rounded-none border px-1 text-xs"
-      />
+      {/* 大きさは打ち込む欄（候補つき）。決まった段だけだと 13 や 10.5 にできない。上に小さく「サイズ」 */}
+      <span className="flex flex-col gap-0.5">
+        <span className="text-muted-foreground text-[10px] leading-none">
+          {m.docEditor.sizeShort}
+        </span>
+        <FontSizeInput
+          value={st.size}
+          onChange={(size) => patch({ size })}
+          label={`${m.docEditor.fontSize} — ${m.docEditor.fontSizeHint}`}
+          placeholder={m.docEditor.fontSizeDefault}
+          className="border-input bg-background h-8 w-16 rounded-none border px-1 text-xs"
+        />
+      </span>
       {toggle("bold", Bold, m.docEditor.bold)}
       {toggle("italic", Italic, m.docEditor.italic)}
       {toggle("underline", Underline, m.docEditor.underline)}

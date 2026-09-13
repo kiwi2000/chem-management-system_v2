@@ -133,7 +133,7 @@ function Toolbar({
 }) {
   const mark = (active: boolean) => cn(TOOL, active && "bg-accent");
   return (
-    <div className="border-input flex flex-wrap items-center gap-1 border-b px-1 py-1">
+    <div className="border-input flex flex-wrap items-end gap-1 border-b px-1 py-1">
       <Button
         type="button"
         size="sm"
@@ -194,16 +194,21 @@ function Toolbar({
       <span className="bg-border mx-1 h-5 w-px" />
 
       {/* 選んだ文字の大きさ。打ち込む欄（候補つき）。値は "12pt" の形で持つ */}
-      <FontSizeInput
-        value={parsePt(editor.getAttributes("textStyle").fontSize as string | undefined)}
-        onChange={(n) => {
-          if (n !== undefined) editor.chain().focus().setFontSize(`${n}pt`).run();
-          else editor.chain().focus().unsetFontSize().run();
-        }}
-        label={`${m.docEditor.size} — ${m.docEditor.fontSizeHint}`}
-        placeholder={m.docEditor.sizeDefault}
-        className="border-input h-7 w-16 rounded-none border bg-transparent px-1 text-sm"
-      />
+      <span className="flex flex-col gap-0.5">
+        <span className="text-muted-foreground text-[10px] leading-none">
+          {m.docEditor.sizeShort}
+        </span>
+        <FontSizeInput
+          value={parsePt(editor.getAttributes("textStyle").fontSize as string | undefined)}
+          onChange={(n) => {
+            if (n !== undefined) editor.chain().focus().setFontSize(`${n}pt`).run();
+            else editor.chain().focus().unsetFontSize().run();
+          }}
+          label={`${m.docEditor.size} — ${m.docEditor.fontSizeHint}`}
+          placeholder={m.docEditor.sizeDefault}
+          className="border-input h-7 w-16 rounded-none border bg-transparent px-1 text-sm"
+        />
+      </span>
 
       {/* 選んだ文字の色。上の帯と同じ色の四角にそろえる（2026-09-13 指示。「既定」が2つ並んで分かりにくかった） */}
       <input

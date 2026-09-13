@@ -1188,6 +1188,8 @@ export const ja = {
     alignRight: "右寄せ",
     size: "文字の大きさ",
     sizeDefault: "既定",
+    /** 欄の上に小さく出す短い名前 */
+    sizeShort: "サイズ",
     color: "文字の色",
     insertField: "差込項目",
     addBlock: "＋ ブロック",

@@ -75,7 +75,7 @@ export function WidthSelect({
           // 打ちかけの半端な値は、いまの幅に戻す
           setTyped(pct === null ? "" : String(pct));
         }}
-        className="border-input h-8 w-14 rounded-none border bg-transparent px-1 text-xs"
+        className="border-input h-8 w-14 rounded-none border bg-transparent px-1 text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
       <button
         type="button"

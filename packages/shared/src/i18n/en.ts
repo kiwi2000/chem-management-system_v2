@@ -1160,6 +1160,7 @@ export const en: Messages = {
     alignRight: "Align right",
     size: "Font size",
     sizeDefault: "Default",
+    sizeShort: "Size",
     color: "Text colour",
     insertField: "Field",
     addBlock: "+ Block",
