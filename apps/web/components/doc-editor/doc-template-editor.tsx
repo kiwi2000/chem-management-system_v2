@@ -2,7 +2,6 @@
 
 import type { DocumentContent } from "@chem/shared";
 import { ChevronDown, ChevronUp, Eye } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BlockList, Labeled } from "@/components/doc-editor/block-list";
@@ -50,7 +49,6 @@ const ZOOM_PRESETS = [50, 75, 100, 125, 150] as const;
 export function DocTemplateEditor({ id }: { id: string }) {
   const { m } = useI18n();
   const { can } = useMe();
-  const router = useRouter();
   const editable = can("DOC_TEMPLATE_EDIT");
   // 会社の自由項目。差込項目の一覧に足す
   const orgItems = useOrgItemLabels();
@@ -222,16 +220,13 @@ export function DocTemplateEditor({ id }: { id: string }) {
   }
 
   /**
-   * 一覧へ戻る。
-   * **変えぶんが残っているときは移らない。**知らせを出して、
-   * 保存するか取消すかを選んでもらう
+   * 案内の行のリンクで一覧へ戻るときの見張り（「戻る」ボタンは無くした。同じ行き先が案内の行にある。2026-09-13 指示）。
+   * **変えぶんが残っているときは移らない。**知らせを出して、保存するか取消すかを選んでもらう
    */
-  function goBack() {
-    if (dirty) {
-      setLeaveWarning(true);
-      return;
-    }
-    router.push("/doc-templates");
+  function guardLeave() {
+    if (!dirty) return true;
+    setLeaveWarning(true);
+    return false;
   }
 
   function edit(next: DocumentContent) {
@@ -325,6 +320,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
           { label: m.docTemplates.title, href: "/doc-templates" },
           { label: `${template.code} ${template.nameJa}` },
         ]}
+        beforeNavigate={guardLeave}
       />
 
       {/*
@@ -430,13 +426,6 @@ export function DocTemplateEditor({ id }: { id: string }) {
                     )}
                   </>
                 )}
-                {/*
-            戻るは**一覧へ移るだけ。**変えぶんが残っているときは、
-            移らずに知らせる。ここで黙って捨てると、書いたものが消える
-          */}
-                <Button size="sm" variant="outline" onClick={goBack}>
-                  {m.common.back}
-                </Button>
               </div>
             </div>
           </div>

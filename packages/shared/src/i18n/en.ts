@@ -1281,7 +1281,7 @@ export const en: Messages = {
     headerCollapse: "Collapse the top bar",
     headerExpand: "Expand the top bar",
     previewHighlightNote: "The block you are editing is outlined in thin red in the preview",
-    unsavedOnLeave: "You have unsaved changes. Save or discard them before going back.",
+    unsavedOnLeave: "You have unsaved changes. Save or discard them before leaving.",
     previewNote: "* Values are samples, not real data.",
     previewZoom: "Zoom",
     previewZoomHint: "Preview zoom (%). Pick a preset or type 25–200",

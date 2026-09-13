@@ -17,7 +17,18 @@ export interface Crumb {
  * **最後は押せない。**いま開いている画面なので、押しても行き先が無い。
  * 押せるものと押せないものを色で分ける。
  */
-export function Breadcrumbs({ items }: { items: Crumb[] }) {
+export function Breadcrumbs({
+  items,
+  beforeNavigate,
+}: {
+  items: Crumb[];
+  /**
+   * リンクを押したときに先に呼ぶ。false を返すと移らない。
+   * 書きかけを黙って捨てたくない画面（テンプレート編集）が使う。
+   * 画面内の移動にはブラウザの「離れますか」の確認が出ないので、ここで止めるしかない
+   */
+  beforeNavigate?: (href: string) => boolean;
+}) {
   if (items.length === 0) return null;
 
   return (
@@ -30,7 +41,13 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
             </span>
           )}
           {c.href && i < items.length - 1 ? (
-            <Link href={c.href} className="underline underline-offset-2">
+            <Link
+              href={c.href}
+              className="underline underline-offset-2"
+              onClick={(e) => {
+                if (beforeNavigate && !beforeNavigate(c.href!)) e.preventDefault();
+              }}
+            >
               {c.label}
             </Link>
           ) : (
