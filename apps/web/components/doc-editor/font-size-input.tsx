@@ -106,6 +106,25 @@ export function FontSizeInput({
           role="listbox"
           className="bg-background border-input absolute top-full left-0 z-20 mt-0.5 max-h-56 w-20 overflow-auto border py-1 text-xs shadow"
         >
+          {/* 「既定」に戻す口。欄を空にしても戻るが、それでは気づけない（本番で指摘。2026-09-13） */}
+          {placeholder && (
+            <li role="option" aria-selected={value === undefined}>
+              <button
+                type="button"
+                className={cn(
+                  "hover:bg-accent text-muted-foreground block w-full px-2 py-0.5 text-left",
+                  value === undefined && "bg-accent",
+                )}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange(undefined);
+                  setOpen(false);
+                }}
+              >
+                {placeholder}
+              </button>
+            </li>
+          )}
           {PRESETS.map((n) => (
             <li key={n} role="option" aria-selected={value === n}>
               <button
