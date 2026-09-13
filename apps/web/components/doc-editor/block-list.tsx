@@ -800,7 +800,7 @@ function MarginInputs({
             max={100}
             step={0.5}
             aria-label={`${label} ${sides[side]}`}
-            className="border-input h-7 w-10 rounded-none border bg-transparent px-1 text-xs"
+            className="border-input h-7 w-10 rounded-none border bg-transparent px-1 text-right text-xs"
             value={value[side]}
             onChange={(e) => set(side, e.target.value)}
           />
