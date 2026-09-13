@@ -26,12 +26,16 @@ import { useState, useMemo } from "react";
 import { RichEditor } from "@/components/doc-editor/rich-editor";
 import { TableBlockFields } from "@/components/doc-editor/table-block-fields";
 import { BlockStyleBar } from "@/components/doc-editor/block-style-bar";
+import { FontSizeInput } from "@/components/doc-editor/font-size-input";
 import { WidthSelect } from "@/components/doc-editor/width-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n-client";
 import { useOrganisations } from "@/lib/use-organisations";
 import { cn } from "@/lib/utils";
+
+/** 余白の高さ（mm）の候補 */
+const SPACER_PRESETS = [2, 4, 6, 8, 10, 15, 20, 30, 40, 50] as const;
 
 const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm";
 
@@ -604,28 +608,19 @@ export function BlockList({
           {b.kind === "spacer" && (
             <label className="flex items-center gap-2 text-sm">
               {m.docEditor.spacerSize}
-              {/* 高さは mm で打ち込む（候補つき）。古い様式の小・中・大は 4・8・16 mm として出る */}
-              <input
-                type="number"
-                inputMode="decimal"
-                list={`spacer-${b.id}`}
-                min={1}
-                max={200}
-                step={0.5}
-                title={m.docEditor.spacerSizeHint}
-                className={cn(SELECT, "w-20")}
+              {/* 高さは mm で打ち込む（▼ で候補）。古い様式の小・中・大は 4・8・16 mm として出る */}
+              <FontSizeInput
                 value={spacerMm(b.size)}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  if (e.target.value === "" || !Number.isFinite(n)) return;
+                onChange={(n) => {
+                  if (n === undefined) return;
                   replace(i, { ...b, size: Math.min(200, Math.max(1, n)) });
                 }}
+                label={m.docEditor.spacerSizeHint}
+                presets={SPACER_PRESETS}
+                min={1}
+                max={200}
+                className={cn(SELECT, "w-20")}
               />
-              <datalist id={`spacer-${b.id}`}>
-                {[2, 4, 6, 8, 10, 15, 20, 30, 40, 50].map((n) => (
-                  <option key={n} value={n} />
-                ))}
-              </datalist>
             </label>
           )}
 

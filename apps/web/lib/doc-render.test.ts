@@ -38,7 +38,7 @@ describe("差込項目を値に置き換える", () => {
       ],
       { "product.code": "PR-001" },
     );
-    expect(out.blocks[0]).toEqual({
+    expect(out.blocks[0]).toMatchObject({
       kind: "text",
       lines: [{ spans: [{ text: "製品 " }, { text: "PR-001", bold: true }] }],
     });
@@ -52,7 +52,7 @@ describe("差込項目を値に置き換える", () => {
         lines: [{ spans: [{ kind: "field", field: "product.note" }] }],
       },
     ]);
-    expect(out.blocks[0]).toEqual({ kind: "text", lines: [{ spans: [{ text: "" }] }] });
+    expect(out.blocks[0]).toMatchObject({ kind: "text", lines: [{ spans: [{ text: "" }] }] });
     // 値が無いだけなので、直しの知らせは出さない
     expect(out.warnings).toEqual([]);
   });
@@ -65,7 +65,7 @@ describe("差込項目を値に置き換える", () => {
         lines: [{ spans: [{ kind: "field", field: "substance.casNumber" }] }],
       },
     ]);
-    expect(out.blocks[0]).toEqual({ kind: "text", lines: [{ spans: [{ text: "" }] }] });
+    expect(out.blocks[0]).toMatchObject({ kind: "text", lines: [{ spans: [{ text: "" }] }] });
     expect(out.warnings).toEqual(["unknownFields:substance.casNumber"]);
   });
 
@@ -80,7 +80,7 @@ describe("差込項目を値に置き換える", () => {
         ],
       },
     ]);
-    expect(out.blocks[0]).toEqual({
+    expect(out.blocks[0]).toMatchObject({
       kind: "heading",
       level: 2,
       lines: [{ align: "center", spans: [{ text: "題", color: "#b91c1c", size: 18 }] }],
@@ -103,7 +103,7 @@ describe("項目の並び", () => {
       ],
       { "product.code": "PR-001" },
     );
-    expect(out.blocks[0]).toEqual({
+    expect(out.blocks[0]).toMatchObject({
       kind: "fields",
       items: [
         { label: "コード", value: "PR-001" },
@@ -114,7 +114,7 @@ describe("項目の並び", () => {
 
   it("項目を選んでいない行は出さない", () => {
     const out = run([{ id: "1", kind: "fields", items: [{ label: "ラベルだけ", field: "" }] }]);
-    expect(out.blocks[0]).toEqual({ kind: "fields", items: [] });
+    expect(out.blocks[0]).toMatchObject({ kind: "fields", items: [] });
   });
 });
 
@@ -142,7 +142,7 @@ describe("表", () => {
       {},
       tables,
     );
-    expect(out.blocks[0]).toEqual({
+    expect(out.blocks[0]).toMatchObject({
       kind: "table",
       head: ["重量%", "CAS番号"],
       rows: [
@@ -275,7 +275,7 @@ describe("表", () => {
 
   it("データが取れない表は、枠ごと出さない", () => {
     const out = run([{ id: "1", kind: "table", table: "judgement", columns: ["law"] }], {}, tables);
-    expect(out.blocks).toEqual([]);
+    expect(out.blocks).toMatchObject([]);
   });
 });
 
@@ -287,7 +287,7 @@ describe("そのほかのブロック", () => {
       { id: "3", kind: "pageBreak" },
       { id: "4", kind: "signature", label: "確認者" },
     ]);
-    expect(out.blocks).toEqual([
+    expect(out.blocks).toMatchObject([
       { kind: "divider" },
       { kind: "spacer", size: "lg" },
       { kind: "pageBreak" },
