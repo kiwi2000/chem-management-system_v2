@@ -3,10 +3,11 @@
 import type { DocumentContent } from "@chem/shared";
 import { ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BlockList, Labeled } from "@/components/doc-editor/block-list";
 import { DocumentSheet } from "@/components/doc-editor/document-view";
+import { FontSizeInput } from "@/components/doc-editor/font-size-input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -23,6 +24,21 @@ import { useMe } from "@/lib/use-me";
 import { cn } from "@/lib/utils";
 
 const SELECT = "border-input h-8 rounded-none border bg-transparent px-2 text-sm";
+
+/*
+  プレビューまわりの好みは端末に覚える（2026-09-13 指示）。
+  開くたびに閉じたり半々に戻ったりすると、使う人が毎回直すことになる
+*/
+const PREVIEW_KEY = "chem.docEditor.preview";
+const SPLIT_KEY = "chem.docEditor.split";
+const ZOOM_KEY = "chem.docEditor.zoom";
+/** 左（ブロック一覧）の幅の割合。これより外には狭くしない（片方が使えない幅になる） */
+const SPLIT_MIN = 0.25;
+const SPLIT_MAX = 0.75;
+/** 紙面の表示倍率（%） */
+const ZOOM_MIN = 25;
+const ZOOM_MAX = 200;
+const ZOOM_PRESETS = [50, 75, 100, 125, 150] as const;
 
 /**
  * テンプレートの中身（ブロックの並び）を編集する画面。
@@ -43,7 +59,74 @@ export function DocTemplateEditor({ id }: { id: string }) {
     プレビュー。**見本の値で出す。**本物を引くと保存が要り、
     「試しに幅を変えて見る」ができなくなる
   */
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(true);
+  /** 左（ブロック一覧）の幅の割合。広い画面で真ん中の線をつまんで変える（2026-09-13 指示） */
+  const [split, setSplit] = useState(0.5);
+  /** 線をつまんでいる間。文字が選択されないようにする */
+  const [dragging, setDragging] = useState(false);
+  /** 紙面の表示倍率（%）。100 で実寸 */
+  const [zoom, setZoom] = useState(100);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    try {
+      const p = window.localStorage.getItem(PREVIEW_KEY);
+      if (p !== null) setPreview(p === "1");
+      const s = Number(window.localStorage.getItem(SPLIT_KEY));
+      if (s >= SPLIT_MIN && s <= SPLIT_MAX) setSplit(s);
+      const z = Number(window.localStorage.getItem(ZOOM_KEY));
+      if (z >= ZOOM_MIN && z <= ZOOM_MAX) setZoom(z);
+    } catch {
+      // 記憶できない環境（保存領域が使えない）では既定のまま
+    }
+  }, []);
+  function remember(key: string, value: string) {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // 同上
+    }
+  }
+  function togglePreview() {
+    setPreview((v) => {
+      remember(PREVIEW_KEY, v ? "0" : "1");
+      return !v;
+    });
+  }
+  function changeSplit(next: number) {
+    const v = Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, next));
+    setSplit(v);
+    remember(SPLIT_KEY, String(v));
+  }
+  function changeZoom(next: number | undefined) {
+    const v = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next ?? 100));
+    setZoom(v);
+    remember(ZOOM_KEY, String(v));
+  }
+  /** 真ん中の線をつまんで動かす。ポインタを捕まえるので、線から外れても追いかける */
+  function onGutterDown(e: React.PointerEvent<HTMLDivElement>) {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // 捕まえられない種類のポインタでも、線の上で動かすぶんには効く
+    }
+    setDragging(true);
+  }
+  function onGutterMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragging || !bodyRef.current) return;
+    const rect = bodyRef.current.getBoundingClientRect();
+    if (rect.width === 0) return;
+    setSplit(Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, (e.clientX - rect.left) / rect.width)));
+  }
+  function onGutterUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragging) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // 同上
+    }
+    setDragging(false);
+    remember(SPLIT_KEY, String(split));
+  }
   /** 編集で触っているブロック。プレビューで赤い細線で囲む（2026-09-13 指示） */
   const [activeId, setActiveId] = useState<string | null>(null);
   /** 上の欄（題名と帯）を出しているか。△で閉じて、編集の場所を広く使える（2026-09-13 指示） */
@@ -303,7 +386,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
                       title={preview ? m.docEditor.previewHide : m.docEditor.preview}
                       aria-pressed={preview}
                       className={cn("h-8 w-8", preview && "bg-accent text-foreground")}
-                      onClick={() => setPreview((v) => !v)}
+                      onClick={togglePreview}
                     >
                       <Eye className="size-4" />
                     </Button>
@@ -398,12 +481,19 @@ export function DocTemplateEditor({ id }: { id: string }) {
         </div>
       ) : (
         <div
+          ref={bodyRef}
           className={cn(
-            "mt-2 gap-4",
-            // 広い画面では残りの高さいっぱいに広げ、左右をそれぞれ送る（2026-09-13 指示）
+            "mt-2",
+            // 広い画面では残りの高さいっぱいに広げ、左右をそれぞれ送る（2026-09-13 指示）。
+            // 列の幅は真ん中の線で決まる（左 : 線 : 右）
             framed && "grid min-h-0 flex-1 grid-rows-1",
-            framed && (preview ? "grid-cols-2" : "grid-cols-1"),
+            dragging && "select-none",
           )}
+          style={
+            framed
+              ? { gridTemplateColumns: preview ? `${split}fr 1rem ${1 - split}fr` : "1fr" }
+              : undefined
+          }
         >
           <div className={cn(framed && "min-h-0 overflow-y-auto pr-1")}>
             <BlockList
@@ -418,16 +508,60 @@ export function DocTemplateEditor({ id }: { id: string }) {
             />
           </div>
 
+          {framed && preview && (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={m.docEditor.splitHandle}
+              title={m.docEditor.splitHandle}
+              // 真ん中の線。つまんで左右の比率を変え、二度押しで半々に戻す（2026-09-13 指示）。
+              // 画面の分割線と同じく、真ん中に短い棒を出して「つまめる」ことを示す
+              className="group flex min-h-0 cursor-col-resize touch-none items-center justify-center"
+              onPointerDown={onGutterDown}
+              onPointerMove={onGutterMove}
+              onPointerUp={onGutterUp}
+              onPointerCancel={onGutterUp}
+              onDoubleClick={() => changeSplit(0.5)}
+            >
+              <div
+                className={cn(
+                  "bg-border group-hover:bg-foreground/40 h-8 w-1 rounded-full",
+                  dragging && "bg-foreground/40",
+                )}
+              />
+            </div>
+          )}
+
           {preview && sheet && (
             <div className={cn("mt-4", framed && "mt-0 min-h-0 overflow-y-auto")}>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
-              {/* 紙は上下に my-4 を持つ。ここでは注意書きと紙の間を最小にしたいので、直下の上の余白だけ消す（2026-09-13 指示） */}
-              <div className="bg-muted/40 border p-2 *:mt-0">
-                {/* プレビューは見本の値。灰色の枠の中、紙のすぐ上に赤い細字でひとこと（2026-09-13 指示。幅によらず同じ場所） */}
-                <p className="text-destructive mb-0.5 text-right text-xs font-normal">
-                  {m.docEditor.previewNote}
-                </p>
-                <DocumentSheet doc={sheet} highlightId={activeId} />
+              <div className="bg-muted/40 overflow-x-auto border p-2">
+                <div className="mb-0.5 flex items-end justify-between gap-2">
+                  {/* 表示倍率（%）。候補から選ぶか、数を打つ（2026-09-13 指示） */}
+                  <Labeled label={m.docEditor.previewZoom}>
+                    <span className="flex items-center gap-0.5">
+                      <FontSizeInput
+                        value={zoom}
+                        onChange={changeZoom}
+                        label={m.docEditor.previewZoomHint}
+                        presets={ZOOM_PRESETS}
+                        min={ZOOM_MIN}
+                        max={ZOOM_MAX}
+                        step={5}
+                        className="border-input bg-background h-8 w-14 rounded-none border px-1 text-xs"
+                      />
+                      <span className="text-muted-foreground text-xs">%</span>
+                    </span>
+                  </Labeled>
+                  {/* プレビューは見本の値。灰色の枠の中、紙のすぐ上に赤い細字でひとこと（2026-09-13 指示。幅によらず同じ場所） */}
+                  <p className="text-destructive text-right text-xs font-normal">
+                    {m.docEditor.previewNote}
+                  </p>
+                </div>
+                {/* 紙は上下に my-4 を持つ。注意書きと紙の間を最小にしたいので、直下の上の余白だけ消す。倍率は zoom で紙ごと縮める */}
+                <div className="*:mt-0" style={{ zoom: zoom / 100 }}>
+                  <DocumentSheet doc={sheet} highlightId={activeId} />
+                </div>
               </div>
             </div>
           )}

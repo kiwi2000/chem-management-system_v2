@@ -1314,6 +1314,9 @@ export const ja = {
     unsavedOnLeave:
       "保存していない変更があります。「保存」か「変更を破棄」を選んでから戻ってください。",
     previewNote: "※値はサンプルで実際のものではありません。",
+    previewZoom: "表示倍率",
+    previewZoomHint: "紙面の表示倍率（%）。候補から選ぶか、25〜200 の数を打ちます",
+    splitHandle: "つまんで左右の幅を変える（二度押しで半々に戻す）",
     tryWithData: "実データで試す",
     orientation: "紙の向き",
     /** 欄の上に小さく出す短い名前 */
