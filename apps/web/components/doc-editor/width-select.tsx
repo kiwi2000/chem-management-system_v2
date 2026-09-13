@@ -4,7 +4,7 @@ import { WIDTH_MAX, WIDTH_MIN, WIDTH_PERCENTS, widthPercent, type BlockWidth } f
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n-client";
 
-const SELECT = "border-input ml-2 h-6 rounded-none border bg-transparent px-1 text-xs";
+const SELECT = "border-input h-8 rounded-none border bg-transparent px-1 text-xs";
 
 /** 一覧に無い％を打つときに選ぶ値 */
 const CUSTOM = "custom";
@@ -89,7 +89,7 @@ export function WidthSelect({
           max={WIDTH_MAX}
           value={typed}
           aria-label={m.docEditor.widthCustom}
-          className="border-input ml-1 h-6 w-14 rounded-none border bg-transparent px-1 text-xs"
+          className="border-input ml-1 h-8 w-14 rounded-none border bg-transparent px-1 text-xs"
           onChange={(e) => {
             setTyped(e.target.value);
             const n = Number(e.target.value);

@@ -235,7 +235,9 @@ export function BlockList({
           >
             <GripVertical className="size-4" />
           </button>
-          <span className="text-sm font-medium">{m.docEditor.blockKinds[b.kind]}</span>
+          <span className="shrink-0 text-sm font-medium whitespace-nowrap">
+            {m.docEditor.blockKinds[b.kind]}
+          </span>
           {/*
             見出しレベル（1〜6）。目次や番号付けで階層を表すためのもので、
             字の大きさを指定していないときの既定の大きさもここで決まる（指定すればそちらが勝つ）。
