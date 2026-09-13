@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
+import { PAGE_SHELL, PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { BlockStyleBar } from "@/components/doc-editor/block-style-bar";
 import { TemplateFilePanel } from "@/components/doc-editor/template-file-panel";
 import { renderDocument } from "@/lib/doc-render";
@@ -216,7 +216,8 @@ export function DocTemplateEditor({ id }: { id: string }) {
 
   return (
     <div
-      className={cn(PAGE_SHELL_STACKED, framed && "flex flex-col overflow-hidden")}
+      // 上の欄（案内・題名・帯）は間を詰める（2026-09-13 指示）。ほかの画面より一段小さい space-y-2
+      className={cn(PAGE_SHELL, "space-y-2", framed && "flex flex-col overflow-hidden")}
       style={framed ? { height: frameHeight } : undefined}
     >
       {/* いまどこにいるか。メニューの項目名から始める */}
@@ -235,15 +236,6 @@ export function DocTemplateEditor({ id }: { id: string }) {
             {template.code} {template.nameJa}
           </h1>
           <div className="flex flex-col items-end gap-1">
-            {/*
-            プレビューは見本の値。ボタンの上に赤い細字でひとこと（2026-09-13 指示。枠は出さない）。
-            画面が狭くてプレビューが下に回るときは、プレビューのすぐ上に出す（下の方を見る）
-          */}
-            {preview && !isFile && (
-              <span className="text-destructive hidden text-xs font-normal lg:inline">
-                {m.docEditor.previewNote}
-              </span>
-            )}
             <div className="flex flex-wrap items-end justify-end gap-2">
               {isFile ? null : (
                 <>
@@ -401,12 +393,12 @@ export function DocTemplateEditor({ id }: { id: string }) {
 
           {preview && sheet && (
             <div className={cn("mt-4", framed && "mt-0 min-h-0 overflow-y-auto")}>
-              {/* 狭い画面ではプレビューが下に回るので、その直前に見本の断りを出す */}
-              <p className="text-destructive mb-1 text-xs font-normal lg:hidden">
-                {m.docEditor.previewNote}
-              </p>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
               <div className="bg-muted/40 border p-2">
+                {/* プレビューは見本の値。灰色の枠の中、紙のすぐ上に赤い細字でひとこと（2026-09-13 指示。幅によらず同じ場所） */}
+                <p className="text-destructive mb-1 text-right text-xs font-normal">
+                  {m.docEditor.previewNote}
+                </p>
                 <DocumentSheet doc={sheet} highlightId={activeId} />
               </div>
             </div>
