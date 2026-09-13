@@ -3,6 +3,8 @@
 import {
   BLOCK_KINDS,
   DEFAULT_FONT,
+  HEADING_LEVELS,
+  spacerMm,
   fieldsFor,
   groupIntoRows,
   ORG_NAME_ITEM,
@@ -13,6 +15,7 @@ import {
   type BlockKind,
   type DocumentBlock,
   type DocumentTable,
+  type HeadingLevel,
   type DocumentTarget,
   type FontKey,
   type OrganisationKind,
@@ -55,7 +58,7 @@ function newBlock(kind: BlockKind, target: DocumentTarget, id: string): Document
       };
     }
     case "spacer":
-      return { id, kind, size: "md" };
+      return { id, kind, size: 8 };
     case "signature":
       return { id, kind, label: "" };
     default:
@@ -270,10 +273,25 @@ export function BlockList({
           {b.kind === "heading" && (
             <>
               {/*
-                見出しの「段」（1〜3）は画面に出さない（2026-09-13 指示）。
-                字の大きさが空のときの既定にしか効かず、大きさは帯で自由に決められるので要らない。
-                保存してある値はそのまま残す（古い様式の既定の大きさが変わらないように）
+                見出しレベル（1〜6）。目次や番号付けで階層を表すためのもので、
+                字の大きさを指定していないときの既定の大きさもここで決まる（指定すればそちらが勝つ）
               */}
+              <label className="flex items-center gap-2 text-sm">
+                {m.docEditor.headingLevel}
+                <select
+                  className={SELECT}
+                  value={b.level}
+                  onChange={(e) =>
+                    replace(i, { ...b, level: Number(e.target.value) as HeadingLevel })
+                  }
+                >
+                  {HEADING_LEVELS.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <RichEditor
                 value={b.lines}
                 target={target}
@@ -346,6 +364,54 @@ export function BlockList({
               >
                 {m.docEditor.addItem}
               </Button>
+              {/* ラベルだけの字と、ラベルと値の間。値の字はブロックの帯で決める（2026-09-13 指示） */}
+              <div className="flex flex-wrap items-center gap-3 border-t pt-2">
+                <span className="text-sm">{m.docEditor.fieldsLabelStyle}</span>
+                <BlockStyleBar
+                  value={b.labelStyle}
+                  onChange={(labelStyle) => replace(i, { ...b, labelStyle })}
+                  defaultFontLabel={m.docEditor.fieldsLabelFollow}
+                />
+                <label className="flex items-center gap-2 text-sm">
+                  {m.docEditor.fieldsValueAlign}
+                  <select
+                    className={SELECT}
+                    value={b.valueAlign ?? "left"}
+                    onChange={(e) =>
+                      replace(i, {
+                        ...b,
+                        valueAlign: e.target.value === "right" ? "right" : undefined,
+                      })
+                    }
+                  >
+                    <option value="left">{m.docEditor.fieldsValueAligns.left}</option>
+                    <option value="right">{m.docEditor.fieldsValueAligns.right}</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  {m.docEditor.fieldsGap}
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={100}
+                    step={0.5}
+                    title={m.docEditor.fieldsGapHint}
+                    placeholder="6"
+                    className={cn(SELECT, "w-20")}
+                    value={b.gap ?? ""}
+                    onChange={(e) => {
+                      if (e.target.value === "") {
+                        replace(i, { ...b, gap: undefined });
+                        return;
+                      }
+                      const n = Number(e.target.value);
+                      if (!Number.isFinite(n)) return;
+                      replace(i, { ...b, gap: Math.min(100, Math.max(0, n)) });
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           )}
 
@@ -524,17 +590,28 @@ export function BlockList({
           {b.kind === "spacer" && (
             <label className="flex items-center gap-2 text-sm">
               {m.docEditor.spacerSize}
-              <select
-                className={SELECT}
-                value={b.size}
-                onChange={(e) => replace(i, { ...b, size: e.target.value as "sm" | "md" | "lg" })}
-              >
-                {(["sm", "md", "lg"] as const).map((s) => (
-                  <option key={s} value={s}>
-                    {m.docEditor.spacerSizes[s]}
-                  </option>
+              {/* 高さは mm で打ち込む（候補つき）。古い様式の小・中・大は 4・8・16 mm として出る */}
+              <input
+                type="number"
+                inputMode="decimal"
+                list={`spacer-${b.id}`}
+                min={1}
+                max={200}
+                step={0.5}
+                title={m.docEditor.spacerSizeHint}
+                className={cn(SELECT, "w-20")}
+                value={spacerMm(b.size)}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (e.target.value === "" || !Number.isFinite(n)) return;
+                  replace(i, { ...b, size: Math.min(200, Math.max(1, n)) });
+                }}
+              />
+              <datalist id={`spacer-${b.id}`}>
+                {[2, 4, 6, 8, 10, 15, 20, 30, 40, 50].map((n) => (
+                  <option key={n} value={n} />
                 ))}
-              </select>
+              </datalist>
             </label>
           )}
 

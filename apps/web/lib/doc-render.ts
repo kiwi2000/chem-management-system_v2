@@ -8,7 +8,14 @@ import {
   type DocumentBlock,
   type DocumentContent,
 } from "@chem/shared";
-import type { DocumentTable, DocumentTarget, RichLine, RichMark } from "@chem/shared";
+import type {
+  DocumentTable,
+  DocumentTarget,
+  HeadingLevel,
+  RichLine,
+  RichMark,
+  SpacerSize,
+} from "@chem/shared";
 
 /**
  * テンプレートと、集めたデータから、紙面の中身を組み立てる。
@@ -45,9 +52,15 @@ interface RenderBase {
 }
 
 export type RenderBlock =
-  | (RenderBase & { kind: "heading"; level: 1 | 2 | 3; lines: RenderLine[] })
+  | (RenderBase & { kind: "heading"; level: HeadingLevel; lines: RenderLine[] })
   | (RenderBase & { kind: "text"; lines: RenderLine[] })
-  | (RenderBase & { kind: "fields"; items: { label: string; value: string }[] })
+  | (RenderBase & {
+      kind: "fields";
+      items: { label: string; value: string }[];
+      labelStyle?: BlockStyle;
+      gap?: number;
+      valueAlign?: "left" | "right";
+    })
   /**
    * 組織の項目。**行ごとに寄せを持つ。**
    * 「項目の並び」と別にしているのは、宛名や差出人のように
@@ -59,7 +72,7 @@ export type RenderBlock =
     })
   | (RenderBase & { kind: "table"; caption?: string; head: string[]; rows: string[][] })
   | (RenderBase & { kind: "divider" })
-  | (RenderBase & { kind: "spacer"; size: "sm" | "md" | "lg" })
+  | (RenderBase & { kind: "spacer"; size: SpacerSize })
   | (RenderBase & { kind: "rowBreak" })
   | (RenderBase & { kind: "pageBreak" })
   | (RenderBase & { kind: "signature"; label: string });
@@ -179,6 +192,9 @@ function renderBlock(
       return [
         {
           kind: "fields",
+          ...(b.labelStyle ? { labelStyle: b.labelStyle } : {}),
+          ...(b.gap !== undefined ? { gap: b.gap } : {}),
+          ...(b.valueAlign ? { valueAlign: b.valueAlign } : {}),
           items: b.items
             // 項目を選んでいない行は、ラベルだけが浮くので出さない
             .filter((it) => it.field)

@@ -1240,6 +1240,7 @@ export const ja = {
     fontSizeDefault: "既定",
     fontColor: "字の色",
     fontColorClear: "色を戻す",
+    headingLevel: "見出しレベル",
     fontSizeHint:
       "ポイント。空なら既定。候補から選ぶか、6〜200 の数を打ちます（10.5 のような半端も可）",
     label: "ラベル",
@@ -1271,8 +1272,14 @@ export const ja = {
     tableReplacementHint:
       "紙面に出る文字だけを整えます。登録されている値は変わりません。$1 で括弧の中を差し込めます。読めない書き方のときは、そのまま出ます。",
     caption: "表題",
-    spacerSize: "高さ",
-    spacerSizes: { sm: "小", md: "中", lg: "大" },
+    fieldsLabelStyle: "ラベルの字",
+    fieldsLabelFollow: "ブロックに合わせる",
+    fieldsValueAlign: "値の寄せ",
+    fieldsValueAligns: { left: "左", right: "右" },
+    fieldsGap: "ラベルと値の間（mm）",
+    fieldsGapHint: "ミリメートル。空なら 6mm。0〜100 の数を打ちます",
+    spacerSize: "高さ（mm）",
+    spacerSizeHint: "ミリメートル。候補から選ぶか、1〜200 の数を打ちます",
     previewHide: "プレビューを閉じる",
     unsavedOnLeave:
       "保存していない変更があります。「保存」か「変更を破棄」を選んでから戻ってください。",

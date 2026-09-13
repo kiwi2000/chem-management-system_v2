@@ -549,6 +549,18 @@ export const DOCUMENT_FONTS = [
 
 export type FontKey = (typeof DOCUMENT_FONTS)[number]["key"];
 
+/** 余白の高さ。mm の数か、古い様式の3段 */
+export type SpacerSize = number | "sm" | "md" | "lg";
+/** 古い3段を mm に読み替える */
+export function spacerMm(size: SpacerSize): number {
+  if (typeof size === "number") return size;
+  return { sm: 4, md: 8, lg: 16 }[size];
+}
+
+/** 見出しレベル。1〜6（2026-09-13 指示で 3 から増やした）。目次で階層を表すのに使う */
+export const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const;
+export type HeadingLevel = (typeof HEADING_LEVELS)[number];
+
 /** 紙面ぜんたいで何も選ばれていないときの書体 */
 export const DEFAULT_FONT: FontKey = "gothic";
 
@@ -587,10 +599,26 @@ interface BlockBase {
 }
 
 export type DocumentBlock =
-  | (BlockBase & { kind: "heading"; level: 1 | 2 | 3; lines: RichLine[] })
+  /**
+   * 見出し。`level` は見出しレベル（1 がいちばん上。目次や番号付けで階層を表すためのもの）。
+   * 字の大きさを指定していないときの既定の大きさもレベルで決まる
+   */
+  | (BlockBase & { kind: "heading"; level: HeadingLevel; lines: RichLine[] })
   | (BlockBase & { kind: "text"; lines: RichLine[] })
   /** 「ラベル：値」を縦に並べたもの */
-  | (BlockBase & { kind: "fields"; items: { label: string; field: string }[] })
+  /**
+   * 項目の並び（「ラベル：値」を縦に並べる）。
+   * `labelStyle` はラベルだけの字（ブロックの字の上に重ねる）、`gap` はラベルと値の間（mm）。
+   * どちらも省略なら、字はブロックのまま・間は 6mm（2026-09-13 指示で足した）
+   */
+  | (BlockBase & {
+      kind: "fields";
+      items: { label: string; field: string }[];
+      labelStyle?: BlockStyle;
+      gap?: number;
+      /** 値の寄せ。右にすると値が右端にそろう（狭い枠で氏名が折れるのを避ける）。省略は左 */
+      valueAlign?: "left" | "right";
+    })
   /**
    * 名指しした組織の項目を並べる。
    *
@@ -624,7 +652,11 @@ export type DocumentBlock =
       replacements?: TableReplacement[];
     })
   | (BlockBase & { kind: "divider" })
-  | (BlockBase & { kind: "spacer"; size: "sm" | "md" | "lg" })
+  /**
+   * 余白。`size` は高さ。**mm の数で持つ**（2026-09-13 指示で自由に打てるようにした）。
+   * 古い様式の "sm" | "md" | "lg" もそのまま読める（4・8・16 mm）
+   */
+  | (BlockBase & { kind: "spacer"; size: SpacerSize })
   /** ここで横並びを終える。紙には何も出ない（改ページと違い、紙は変わらない） */
   | (BlockBase & { kind: "rowBreak" })
   | (BlockBase & { kind: "pageBreak" })

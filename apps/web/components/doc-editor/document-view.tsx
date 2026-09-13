@@ -1,6 +1,6 @@
 "use client";
 
-import { DEFAULT_FONT, fontStack, groupIntoRows, type BlockStyle } from "@chem/shared";
+import { DEFAULT_FONT, fontStack, groupIntoRows, type BlockStyle, spacerMm } from "@chem/shared";
 import { Printer } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -128,8 +128,15 @@ function Line({ line }: { line: RenderLine }) {
   );
 }
 
-const HEADING_SIZE = { 1: "18pt", 2: "14pt", 3: "12pt" } as const;
-const SPACER = { sm: "4mm", md: "8mm", lg: "16mm" } as const;
+/** 見出しレベルごとの既定の大きさ。字の大きさを指定すればそちらが勝つ */
+const HEADING_SIZE = {
+  1: "18pt",
+  2: "16pt",
+  3: "14pt",
+  4: "12pt",
+  5: "11pt",
+  6: "10.5pt",
+} as const;
 
 /**
  * ブロック全体に効かせる字。
@@ -187,7 +194,15 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       );
     case "fields":
       return (
-        <table style={{ margin: "0 0 4mm", borderCollapse: "collapse", fontSize: fs("10.5pt") }}>
+        <table
+          style={{
+            margin: "0 0 4mm",
+            borderCollapse: "collapse",
+            fontSize: fs("10.5pt"),
+            // 右寄せのときは枠いっぱいに広げて、値を右端にそろえる
+            ...(b.valueAlign === "right" ? { width: "100%" } : {}),
+          }}
+        >
           <tbody>
             {b.items.map((it, i) => (
               <tr key={i}>
@@ -195,14 +210,30 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
                   style={{
                     textAlign: "left",
                     fontWeight: 400,
-                    padding: "1mm 6mm 1mm 0",
-                    whiteSpace: "nowrap",
+                    // ラベルと値の間は mm で決められる。省略は 6mm
+                    padding: `1mm ${b.gap ?? 6}mm 1mm 0`,
+                    /*
+                      右寄せのときは値を折らず、狭ければラベルの側を折る（氏名が途中で折れないように）。
+                      左寄せは今までどおりラベルを折らない
+                    */
+                    whiteSpace: b.valueAlign === "right" ? "normal" : "nowrap",
                     verticalAlign: "top",
+                    // ラベルだけの字。ブロックの字の上に重ねる
+                    ...styleOf(b.labelStyle),
                   }}
                 >
                   {it.label}
                 </th>
-                <td style={{ padding: "1mm 0" }}>{it.value}</td>
+                <td
+                  style={{
+                    padding: "1mm 0",
+                    textAlign: b.valueAlign ?? "left",
+                    whiteSpace: b.valueAlign === "right" ? "nowrap" : "normal",
+                    verticalAlign: "top",
+                  }}
+                >
+                  {it.value}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -268,7 +299,8 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
     case "divider":
       return <hr style={{ border: 0, borderTop: "0.4mm solid #000", margin: "4mm 0" }} />;
     case "spacer":
-      return <div style={{ height: SPACER[b.size] }} />;
+      // 高さは mm。古い様式の3段（sm/md/lg）も mm に読み替える
+      return <div style={{ height: `${spacerMm(b.size)}mm` }} />;
     case "rowBreak":
       // 横並びを切るためだけのもの。紙には何も出ない
       return null;
