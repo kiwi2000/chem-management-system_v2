@@ -87,7 +87,7 @@ export function FontSizeInput({
         className={cn(
           className,
           // ▼ の一覧があるので、数の上下の矢印は出さない（2026-09-13 指示）
-          "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+          "text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
         )}
       />
       {/* よく使う値の一覧。押すとその値が入る */}

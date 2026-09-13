@@ -471,7 +471,7 @@ export function BlockList({
                     step={0.5}
                     title={m.docEditor.fieldsGapHint}
                     placeholder="6"
-                    className={cn(SELECT, "w-20")}
+                    className={cn(SELECT, "w-20 text-right")}
                     value={b.gap ?? ""}
                     onChange={(e) => {
                       if (e.target.value === "") {
@@ -674,7 +674,7 @@ export function BlockList({
                 presets={SPACER_PRESETS}
                 min={1}
                 max={200}
-                className={cn(SELECT, "w-20")}
+                className={cn(SELECT, "w-20 text-right")}
               />
             </label>
           )}
@@ -714,7 +714,7 @@ export function BlockList({
                   max={100}
                   step={0.5}
                   placeholder="4"
-                  className={cn(SELECT, "w-20")}
+                  className={cn(SELECT, "w-20 text-right")}
                   value={b.gap ?? ""}
                   onChange={(e) => {
                     if (e.target.value === "") {
@@ -736,7 +736,7 @@ export function BlockList({
                   max={200}
                   step={1}
                   placeholder="60"
-                  className={cn(SELECT, "w-20")}
+                  className={cn(SELECT, "w-20 text-right")}
                   value={b.lineWidth ?? ""}
                   onChange={(e) => {
                     if (e.target.value === "") {

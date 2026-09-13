@@ -273,7 +273,7 @@ export function BlockStyleBar({
                     if (!Number.isFinite(n)) return;
                     patch({ borderWidth: Math.min(5, Math.max(0.1, n)) });
                   }}
-                  className="border-input bg-background h-7 w-14 rounded-none border px-1 text-xs"
+                  className="border-input bg-background h-7 w-14 rounded-none border px-1 text-right text-xs"
                 />
               </Small>
               <Small label={m.docEditor.borderColor}>
