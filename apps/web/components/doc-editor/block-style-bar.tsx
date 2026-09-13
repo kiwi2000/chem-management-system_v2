@@ -132,6 +132,8 @@ export function BlockStyleBar({
           onChange={(size) => patch({ size })}
           label={`${m.docEditor.fontSize} — ${m.docEditor.fontSizeHint}`}
           placeholder={defaultSize === undefined ? m.docEditor.fontSizeDefault : undefined}
+          // 見出し・表（既定の値を出している段）でも、一覧から「既定」に戻せるようにしておく
+          resetLabel={level === "block" ? m.docEditor.fontSizeDefault : undefined}
           className="border-input bg-background h-7 w-14 rounded-none border px-1 text-xs"
         />
       </span>

@@ -26,6 +26,7 @@ export function FontSizeInput({
   min: MIN = 6,
   max: MAX = 200,
   step = 0.5,
+  resetLabel,
 }: {
   /** ポイント（または mm）。未指定は undefined */
   value: number | undefined;
@@ -40,6 +41,11 @@ export function FontSizeInput({
   min?: number;
   max?: number;
   step?: number;
+  /**
+   * 欄に既定の値を出している（空にならない）ときでも、一覧に「既定に戻す」項目を出すための名前。
+   * 見出し・表のブロックで使う（2026-09-14 指示。戻す口を無くさない）
+   */
+  resetLabel?: string;
 }) {
   const PRESETS = presets;
   const [open, setOpen] = useState(false);
@@ -107,7 +113,7 @@ export function FontSizeInput({
           className="bg-background border-input absolute top-full left-0 z-20 mt-0.5 max-h-56 w-20 overflow-auto border py-1 text-xs shadow"
         >
           {/* 「既定」に戻す口。欄を空にしても戻るが、それでは気づけない（本番で指摘。2026-09-13） */}
-          {placeholder && (
+          {(resetLabel ?? placeholder) && (
             <li role="option" aria-selected={value === undefined}>
               <button
                 type="button"
@@ -121,7 +127,7 @@ export function FontSizeInput({
                   setOpen(false);
                 }}
               >
-                {placeholder}
+                {resetLabel ?? placeholder}
               </button>
             </li>
           )}
