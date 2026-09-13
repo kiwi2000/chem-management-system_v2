@@ -76,7 +76,7 @@ export function BlockStyleBar({
       title={m.docEditor.font}
       value={level === "document" ? (st.family ?? DEFAULT_FONT) : (st.family ?? "")}
       onChange={(e) => patch({ family: (e.target.value || undefined) as FontKey | undefined })}
-      className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+      className="border-input bg-background h-8 w-24 rounded-none border px-1 text-xs"
     >
       {/* 合わせる先があるのはブロックだけ。紙面ぜんたいはここがいちばん外 */}
       {level === "block" && <option value="">{defaultFontLabel ?? m.docEditor.fontDefault}</option>}
@@ -108,7 +108,7 @@ export function BlockStyleBar({
           onChange={(size) => patch({ size })}
           label={`${m.docEditor.fontSize} — ${m.docEditor.fontSizeHint}`}
           placeholder={m.docEditor.fontSizeDefault}
-          className="border-input bg-background h-8 w-16 rounded-none border px-1 text-xs"
+          className="border-input bg-background h-8 w-14 rounded-none border px-1 text-xs"
         />
       </span>
       {toggle("bold", Bold, m.docEditor.bold)}

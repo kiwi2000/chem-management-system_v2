@@ -207,7 +207,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
             画面が狭くてプレビューが下に回るときは、プレビューのすぐ上に出す（下の方を見る）
           */}
           {preview && !isFile && (
-            <span className="text-destructive hidden text-xs lg:inline">
+            <span className="text-destructive hidden text-xs font-normal lg:inline">
               {m.docEditor.previewNote}
             </span>
           )}
@@ -338,7 +338,9 @@ export function DocTemplateEditor({ id }: { id: string }) {
           {preview && sheet && (
             <div className="mt-4 lg:sticky lg:top-4 lg:mt-0">
               {/* 狭い画面ではプレビューが下に回るので、その直前に見本の断りを出す */}
-              <p className="text-destructive mb-1 text-xs lg:hidden">{m.docEditor.previewNote}</p>
+              <p className="text-destructive mb-1 text-xs font-normal lg:hidden">
+                {m.docEditor.previewNote}
+              </p>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
               <ResizableBox
                 storageKey="chem.box.docTemplatePreview"

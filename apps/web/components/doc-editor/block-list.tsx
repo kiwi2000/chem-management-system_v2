@@ -226,7 +226,7 @@ export function BlockList({
               }
         }
       >
-        <div className="bg-muted/50 flex flex-wrap items-end gap-x-2 gap-y-1 px-2 py-1">
+        <div className="bg-muted/50 flex flex-wrap items-end gap-x-1.5 gap-y-1 px-2 py-1">
           <button
             type="button"
             draggable
@@ -763,7 +763,7 @@ function MarginInputs({
             max={100}
             step={0.5}
             aria-label={`${label} ${sides[side]}`}
-            className="border-input h-8 w-12 rounded-none border bg-transparent px-1 text-xs"
+            className="border-input h-8 w-10 rounded-none border bg-transparent px-1 text-xs"
             value={value?.[side] ?? ""}
             onChange={(e) => set(side, e.target.value)}
           />
