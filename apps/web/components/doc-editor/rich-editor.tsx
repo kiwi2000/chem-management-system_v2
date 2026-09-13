@@ -23,17 +23,8 @@ import { fromEditor, toEditor, type PmNode } from "@/lib/doc-rich-text";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 
-/** 選べる文字の大きさ（ポイント）。刻みを決めておかないと、そろわない紙面になる */
-
-/** 選べる色。自由な色は紙に出したときに読めないことがあるので、決め打ちにする */
-const COLORS = [
-  { value: "", labelJa: "既定", labelEn: "Default" },
-  { value: "#111827", labelJa: "黒", labelEn: "Black" },
-  { value: "#b91c1c", labelJa: "赤", labelEn: "Red" },
-  { value: "#1d4ed8", labelJa: "青", labelEn: "Blue" },
-  { value: "#15803d", labelJa: "緑", labelEn: "Green" },
-  { value: "#6b7280", labelJa: "灰", labelEn: "Grey" },
-] as const;
+/** 色を選ばない状態。`input[type=color]` は空を持てないので、黒を「指定なし」と見なす（ブロックの帯と同じ） */
+const NO_COLOR = "#000000";
 
 const TOOL = "h-7 px-2";
 
@@ -214,22 +205,30 @@ function Toolbar({
         className="border-input h-7 w-16 rounded-none border bg-transparent px-1 text-sm"
       />
 
-      <select
-        className="border-input h-7 rounded-none border bg-transparent px-1 text-sm"
+      {/* 選んだ文字の色。上の帯と同じ色の四角にそろえる（2026-09-13 指示。「既定」が2つ並んで分かりにくかった） */}
+      <input
+        type="color"
         aria-label={m.docEditor.color}
-        value={((editor.getAttributes("textStyle").color as string) ?? "").toLowerCase()}
+        title={m.docEditor.color}
+        value={((editor.getAttributes("textStyle").color as string) ?? NO_COLOR).toLowerCase()}
         onChange={(e) => {
           const v = e.target.value;
-          if (v) editor.chain().focus().setColor(v).run();
-          else editor.chain().focus().unsetColor().run();
+          if (v === NO_COLOR) editor.chain().focus().unsetColor().run();
+          else editor.chain().focus().setColor(v).run();
         }}
-      >
-        {COLORS.map((c) => (
-          <option key={c.value} value={c.value}>
-            {locale === "en" ? c.labelEn : c.labelJa}
-          </option>
-        ))}
-      </select>
+        className="border-input h-7 w-7 cursor-pointer border bg-transparent p-0.5"
+      />
+      {editor.getAttributes("textStyle").color && (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-7 px-1 text-xs"
+          onClick={() => editor.chain().focus().unsetColor().run()}
+        >
+          {m.docEditor.fontColorClear}
+        </Button>
+      )}
 
       <span className="bg-border mx-1 h-5 w-px" />
 
