@@ -170,12 +170,17 @@ function substanceNameCondition(
  * 製品の一覧の列定義。
  *
  * **判定に関わる列は、現在の法規制バージョンの行だけを見る**ので、版のIDを受け取って組み立てる。
- * 版が無ければ（判定のしようがない）判定の条件は何にも当たらない
+ * 版が無ければ（判定のしようがない）判定の条件は何にも当たらない。
+ *
+ * **組成をたどる絞り込み（CAS番号・物質名）は、組成を見られる人にだけ付ける。**
+ * 「このCASを含む製品」を探せれば、製品を開かなくても組成が分かってしまう。
+ * 列定義に無いキーは絞り込みとして黙って捨てられる
  */
-export function productColumns(versionId: string | null): QueryColumn[] {
+export function productColumns(versionId: string | null, withComposition: boolean): QueryColumn[] {
   const v = versionId ?? "";
   return [
     ...PRODUCT_PLAIN_COLUMNS,
+    ...(withComposition ? PRODUCT_COMPOSITION_COLUMNS : []),
     // 判定は区分ごとの行を数えて決まるので、共通の組み立てには乗らない
     {
       key: "judgement",
@@ -229,6 +234,12 @@ const PRODUCT_PLAIN_COLUMNS: QueryColumn[] = [
   { key: "modelValue", kind: "enum", field: "modelValue" },
   // 用途は子テーブル。「選んだもののどれかを持つ」で絞る
   { key: "uses", kind: "enum", field: "value", relation: "uses", sortable: false },
+  { key: "note", kind: "text", field: "note", caseInsensitive: true },
+  { key: "updatedAt", kind: "date", field: "updatedAt" },
+];
+
+/** 製品の一覧の列のうち、組成をたどるもの。組成を見られる人にだけ付ける */
+const PRODUCT_COMPOSITION_COLUMNS: QueryColumn[] = [
   // 組成をたどって物質のCAS番号で探す。値は完全一致（正規化して突合）
   {
     key: "casNumbers",
@@ -246,8 +257,6 @@ const PRODUCT_PLAIN_COLUMNS: QueryColumn[] = [
     sortable: false,
     custom: (f) => (f.kind === "list" ? substanceNameCondition(f.values, f.op) : null),
   },
-  { key: "note", kind: "text", field: "note", caseInsensitive: true },
-  { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
 export const REGION_COLUMNS: QueryColumn[] = [

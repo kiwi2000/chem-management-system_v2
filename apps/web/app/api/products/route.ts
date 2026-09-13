@@ -28,9 +28,9 @@ export async function GET(req: Request) {
   const actor = await requirePermission("PRODUCT_VIEW");
   if (actor instanceof Response) return actor;
 
-  // 判定の列と絞り込みは、現在の法規制バージョンの行で見る
+  // 判定の列と絞り込みは、現在の法規制バージョンの行で見る。組成をたどる絞り込みは見られる人だけ
   const version = await getCurrentVersion();
-  const columns = productColumns(version?.id ?? null);
+  const columns = productColumns(version?.id ?? null, actor.has("COMPOSITION_VIEW"));
   const state = parseTableState(
     new URL(req.url).searchParams,
     columns.map((c) => ({ key: c.key, kind: c.kind })),

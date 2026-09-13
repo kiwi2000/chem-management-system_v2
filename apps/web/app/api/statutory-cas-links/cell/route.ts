@@ -39,6 +39,14 @@ export async function GET(req: Request) {
   const productId = params.get("productId") ?? "";
   const cas = normalizeCas(casRaw);
   if (!cas || !categoryId) return jsonError(400, "validation_error", m.errors.validation);
+  /*
+    **製品を指定した問い合わせは、組成を見られる人だけ。**
+    返す「当たり」「含有率不足」は、その製品にこの CAS がいくら入っているかから決めるので、
+    製品の組成そのもの。製品を指定しなければ法律側のデータだけなので、誰でもよい
+  */
+  if (productId && !actor.has("COMPOSITION_VIEW")) {
+    return jsonError(403, "forbidden", m.composition.withheld);
+  }
 
   const category = await prisma.regulationCategory.findFirst({
     where: { id: categoryId, deletedAt: null },

@@ -27,10 +27,7 @@ export async function toJudgementDtos(
   versionId: string,
 ): Promise<ProductJudgementDto[]> {
   const [rows, decisions] = await Promise.all([
-    prisma.productJudgement.findMany({
-      where: { productId, versionId },
-      select: JUDGEMENT_SELECT,
-    }),
+    loadJudgementRows({ productId, versionId }, withHits),
     /*
       前提が変わって当てはめなかった人の判断。**何を外したのかを画面に出す**ため。
       「以前の判断があった」とだけ言われても、判断し直す人は何を見ればよいか分からない
@@ -57,6 +54,24 @@ export async function toJudgementDtos(
   return buildJudgementDtos(rows, withHits, todayInJapan(), dropped);
 }
 
+/**
+ * 判定の行を読む。**根拠を伏せる相手には、根拠（hits）を DB からも引かない。**
+ * 引いてから捨てると、開発時のサーバー部品のデバッグ出力など、DTO を通らない経路から
+ * 漏れる余地が残る（実際に開発サーバーの応答に含まれていた。2026-09-13）。
+ * 「根拠があるか」だけは件数で持ち、`hitsWithheld` に使う
+ */
+async function loadJudgementRows(
+  where: Prisma.ProductJudgementWhereInput,
+  withHits: boolean,
+): Promise<JudgementRow[]> {
+  if (withHits) return prisma.productJudgement.findMany({ where, select: JUDGEMENT_SELECT });
+  const rows = await prisma.productJudgement.findMany({
+    where,
+    select: { ...JUDGEMENT_SELECT, hits: false },
+  });
+  return rows.map((r) => ({ ...r, hits: [] }));
+}
+
 /** 前提が変わって当てはめなかった人の判断（区分ごと） */
 type DroppedDecision = {
   verdict: "APPLICABLE" | "NOT_APPLICABLE" | null;
@@ -79,6 +94,8 @@ const JUDGEMENT_SELECT = {
   computedAt: true,
   versionId: true,
   hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
+  // 根拠を伏せるときも「根拠があるか」は要る（伏せたことを画面に伝えるため）
+  _count: { select: { hits: true } },
   category: {
     select: {
       nameJa: true,
@@ -164,6 +181,7 @@ export async function toJudgementDtosAsOf(
           total: h.total === null ? null : new Prisma.Decimal(h.total),
           contributions: h.contributions,
         })),
+        _count: { hits: result.hits.length },
         category,
       },
     ];
@@ -302,7 +320,7 @@ async function buildJudgementDtos(
             // 多いものから。まず何が効いているかを見たい
             .sort((a, b) => maxPct(b) - maxPct(a))
         : [],
-      hitsWithheld: !withHits && r.hits.length > 0,
+      hitsWithheld: !withHits && r._count.hits > 0,
       // 並びは地域 → 国 → 法律 → 区分。画面の法規制と同じ並びにする
       _order: lawOrderKey(r.category.law, r.category.displayOrder),
     }))
@@ -384,23 +402,28 @@ export async function toMatchedProducts(
   /** 現在の法規制バージョン。判定は版ごとにあるので、この版の行だけを見る */
   versionId: string,
 ): Promise<MatchedProductDto[]> {
-  const rows = await prisma.productJudgement.findMany({
-    where: {
-      categoryId,
-      versionId,
-      OR: [{ verdict: "APPLICABLE" }, { needsReview: true }],
-      product: { deletedAt: null, ...visibility },
-    },
-    select: {
-      verdict: true,
-      source: true,
-      needsReview: true,
-      reviewReasons: true,
-      computedAt: true,
-      product: { select: { id: true, code: true, nameJa: true, nameEn: true, status: true } },
-      hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
-    },
-  });
+  const where = {
+    categoryId,
+    versionId,
+    OR: [{ verdict: "APPLICABLE" as const }, { needsReview: true }],
+    product: { deletedAt: null, ...visibility },
+  };
+  const select = {
+    verdict: true,
+    source: true,
+    needsReview: true,
+    reviewReasons: true,
+    computedAt: true,
+    product: { select: { id: true, code: true, nameJa: true, nameEn: true, status: true } },
+    hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
+    _count: { select: { hits: true } },
+  } satisfies Prisma.ProductJudgementSelect;
+  // 根拠を伏せる相手には、根拠を DB からも引かない（toJudgementDtos と同じ理由）
+  const rows: Prisma.ProductJudgementGetPayload<{ select: typeof select }>[] = withHits
+    ? await prisma.productJudgement.findMany({ where, select })
+    : (await prisma.productJudgement.findMany({ where, select: { ...select, hits: false } })).map(
+        (r) => ({ ...r, hits: [] }),
+      );
 
   const substanceIds = withHits
     ? [
@@ -465,7 +488,7 @@ export async function toMatchedProducts(
               })
               .sort((a, b) => maxPct(b) - maxPct(a))
           : [],
-        hitsWithheld: !withHits && r.hits.length > 0,
+        hitsWithheld: !withHits && r._count.hits > 0,
       }))
       /*
         該当したものを先に並べる。それがこの画面の答えだから。

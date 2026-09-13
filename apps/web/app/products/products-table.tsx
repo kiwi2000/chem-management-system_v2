@@ -65,6 +65,8 @@ export function ProductsTable({
   const { m, locale } = useI18n();
   const { can } = useMe();
   const editable = can("PRODUCT_EDIT");
+  // 組成をたどる絞り込み（CAS番号・物質名）は、組成を見られる人にだけ出す（サーバー側も同じ）
+  const withComposition = can("COMPOSITION_VIEW");
 
   const columns = useMemo<TableColumn<ProductListItemDto>[]>(() => {
     /** はい/いいえの列は共通の形。狭くしたいのでアイコンで出す */
@@ -226,26 +228,30 @@ export function ProductsTable({
         sortable: false,
         options: useOptions.map((o) => ({ value: o, label: o })),
       },
-      {
-        key: "casNumbers",
-        header: m.table.casNumbers,
-        kind: "list",
-        // 表には出さない。組成をたどる条件なので並べ替えもできない
-        filterOnly: true,
-        sortable: false,
-        filterFullWidth: true,
-      },
-      {
-        key: "substanceNames",
-        header: m.table.substanceNames,
-        kind: "list",
-        // 名前を打つ列。数字の区切りで分けると文字が全部消える
-        tokens: "text",
-        // CAS番号と同じく組成をたどる。こちらは部分一致で、別名も見る
-        filterOnly: true,
-        sortable: false,
-        filterFullWidth: true,
-      },
+      ...(withComposition
+        ? [
+            {
+              key: "casNumbers",
+              header: m.table.casNumbers,
+              kind: "list" as const,
+              // 表には出さない。組成をたどる条件なので並べ替えもできない
+              filterOnly: true,
+              sortable: false,
+              filterFullWidth: true,
+            },
+            {
+              key: "substanceNames",
+              header: m.table.substanceNames,
+              kind: "list" as const,
+              // 名前を打つ列。数字の区切りで分けると文字が全部消える
+              tokens: "text" as const,
+              // CAS番号と同じく組成をたどる。こちらは部分一致で、別名も見る
+              filterOnly: true,
+              sortable: false,
+              filterFullWidth: true,
+            },
+          ]
+        : []),
       {
         key: "judgement",
         header: m.judgements.listHeader,
@@ -323,17 +329,20 @@ export function ProductsTable({
     ];
     // 上の表は公開済しか並ばないので、状態の列は出さない（全部同じ値になるため）
     return scope === "working" ? cols : cols.filter((c) => c.key !== "publishState");
-  }, [m, locale, modelOptions, useOptions, judgementCategories, scope]);
+  }, [m, locale, modelOptions, useOptions, judgementCategories, scope, withComposition]);
 
   // 組成の節だけは見出しに文言を使うので、ここで組み立てる
   const filterLayout = useMemo<FilterLayoutRow[]>(
     () => [
       // 見出しは1つ目の行にだけ付ける（節の区切りとして使う）
       ...FILTER_LAYOUT.map((keys, i) => (i === 0 ? { title: m.products.basic, keys } : keys)),
-      { title: m.table.compositionSection, keys: ["casNumbers", "substanceNames"] },
+      // 組成の節は、組成を見られる人にだけ
+      ...(withComposition
+        ? [{ title: m.table.compositionSection, keys: ["casNumbers", "substanceNames"] }]
+        : []),
       { title: m.judgements.title, keys: REGULATION_KEYS },
     ],
-    [m],
+    [m, withComposition],
   );
 
   // 1画面に表が2つあるので、URLのクエリを節ごとに分ける

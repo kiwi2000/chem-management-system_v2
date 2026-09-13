@@ -16,6 +16,7 @@ import type { Actor } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
+import { visibilityWhere } from "@/lib/product-service";
 import { pickOrganisation } from "@/lib/user-organisations";
 import type { RenderInput } from "@/lib/doc-render";
 import { getCurrentVersion } from "@/lib/current-version";
@@ -210,8 +211,9 @@ export async function collectForProduct(
   m: Messages,
   parties?: DocParties,
 ): Promise<DocData | null> {
+  // 一覧・詳細で見えない製品（未公開・無効）は、帳票にもしない
   const product = await prisma.product.findFirst({
-    where: { id: productId, deletedAt: null },
+    where: { id: productId, deletedAt: null, ...visibilityWhere(actor) },
     select: {
       id: true,
       code: true,
@@ -227,8 +229,14 @@ export async function collectForProduct(
   if (!product) return null;
 
   const version = await getCurrentVersion();
-  // 判定は法規制バージョンごとにあるので、書類に載せるのは現在のバージョンの結果
-  const judgements = version ? await toJudgementDtos(product.id, true, version.id) : [];
+  /*
+    判定は法規制バージョンごとにあるので、書類に載せるのは現在のバージョンの結果。
+    **根拠（当たった法文物質名）は、組成を見られる人にだけ。**製品の画面と同じ。
+    法文物質名が並べば「この製品にその物質が入っている」と分かる。見られない人の帳票は、
+    区分ごとの該非だけ（番号と法文物質名の欄は空）
+  */
+  const withHits = canViewComposition(actor, product as never);
+  const judgements = version ? await toJudgementDtos(product.id, withHits, version.id) : [];
   const hit = judgements.filter((j) => j.verdict === "APPLICABLE");
 
   const values = new Map<string, string>([

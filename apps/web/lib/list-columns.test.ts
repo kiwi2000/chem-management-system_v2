@@ -16,7 +16,7 @@ import { buildWhere } from "./table-query";
  * 判定は法規制バージョンごとにあるので、**条件には必ず現在の版が入る**。
  * 入っていないと、前の版で当たっていた製品まで「該当あり」に数える
  */
-const PRODUCT_COLUMNS = productColumns("v1");
+const PRODUCT_COLUMNS = productColumns("v1", true);
 const hit = { judgements: { some: { versionId: "v1", verdict: "APPLICABLE" } } };
 
 const where = (key: string, values: string[]) =>
@@ -50,6 +50,23 @@ describe("法規制の絞り込み", () => {
 
   it("知らない値は無視する", () => {
     expect(where("judgement", ["なにか"])).toEqual({});
+  });
+});
+
+describe("組成をたどる絞り込み", () => {
+  it("組成を見られる人には CAS番号・物質名の列がある", () => {
+    const keys = productColumns("v1", true).map((c) => c.key);
+    expect(keys).toContain("casNumbers");
+    expect(keys).toContain("substanceNames");
+  });
+
+  it("組成を見られない人には無く、送られてきても黙って捨てる（このCASを含む製品、が分かってしまう）", () => {
+    const cols = productColumns("v1", false);
+    expect(cols.map((c) => c.key)).not.toContain("casNumbers");
+    expect(cols.map((c) => c.key)).not.toContain("substanceNames");
+    expect(
+      buildWhere(cols, { casNumbers: { kind: "list", op: "any", values: ["7440-31-5"] } }),
+    ).toEqual({});
   });
 });
 

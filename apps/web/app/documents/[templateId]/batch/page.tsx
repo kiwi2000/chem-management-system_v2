@@ -39,8 +39,9 @@ export default async function DocumentBatchPage({
   searchParams: Promise<{ ids?: string; from?: string; to?: string; org?: string | string[] }>;
 }) {
   const [{ templateId }, { ids: raw, from, to, org }] = await Promise.all([params, searchParams]);
+  // 帳票を作れる人だけ（保存した帳票の画面と同じ）。権限が無ければ、あることも伝えない
   const actor = await getActor();
-  if (!actor) notFound();
+  if (!actor || !actor.has("DOCUMENT_CREATE")) notFound();
 
   const row = await prisma.documentTemplate.findFirst({
     where: { id: templateId, deletedAt: null, active: true },
