@@ -234,9 +234,21 @@ export function DocTemplateEditor({ id }: { id: string }) {
                   onChange={(style) => edit({ ...content, style })}
                   fontLabel={m.docEditor.documentFont}
                 />
-                <Button size="sm" variant="outline" onClick={() => setPreview((v) => !v)}>
+                {/*
+                  プレビューの切り替え。太字・斜体と同じマークだけの切り替えボタンにし、
+                  押している間は背景を濃くする（2026-09-13 決定）。文言は吹き出しで
+                */}
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="outline"
+                  aria-label={m.docEditor.preview}
+                  title={preview ? m.docEditor.previewHide : m.docEditor.preview}
+                  aria-pressed={preview}
+                  className={cn("h-8 w-8", preview && "bg-accent text-foreground")}
+                  onClick={() => setPreview((v) => !v)}
+                >
                   <Eye className="size-4" />
-                  {preview ? m.docEditor.previewHide : m.docEditor.preview}
                 </Button>
                 {editable && (
                   <>
