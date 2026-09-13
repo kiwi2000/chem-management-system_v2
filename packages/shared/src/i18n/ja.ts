@@ -1240,8 +1240,6 @@ export const ja = {
     fontSizeDefault: "既定",
     fontColor: "字の色",
     fontColorClear: "色を戻す",
-    headingLevel: "段",
-    headingLevels: { 1: "大", 2: "中", 3: "小" },
     fontSizeHint:
       "ポイント。空なら既定。候補から選ぶか、6〜200 の数を打ちます（10.5 のような半端も可）",
     label: "ラベル",

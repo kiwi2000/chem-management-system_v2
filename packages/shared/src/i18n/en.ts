@@ -1211,8 +1211,6 @@ export const en: Messages = {
     fontSizeDefault: "Default",
     fontColor: "Font colour",
     fontColorClear: "Clear colour",
-    headingLevel: "Level",
-    headingLevels: { 1: "Large", 2: "Medium", 3: "Small" },
     fontSizeHint:
       "Points. Empty means default. Pick a preset or type 6–200 (halves such as 10.5 are fine)",
     label: "Label",

@@ -269,19 +269,11 @@ export function BlockList({
         <div className="space-y-2 p-2">
           {b.kind === "heading" && (
             <>
-              <label className="flex items-center gap-2 text-sm">
-                {m.docEditor.headingLevel}
-                <select
-                  className={SELECT}
-                  value={b.level}
-                  onChange={(e) => replace(i, { ...b, level: Number(e.target.value) as 1 | 2 | 3 })}
-                >
-                  {/* 段は大・中・小。字の大きさそのものは右上の「字の大きさ」で自由に決める */}
-                  <option value={1}>{m.docEditor.headingLevels[1]}</option>
-                  <option value={2}>{m.docEditor.headingLevels[2]}</option>
-                  <option value={3}>{m.docEditor.headingLevels[3]}</option>
-                </select>
-              </label>
+              {/*
+                見出しの「段」（1〜3）は画面に出さない（2026-09-13 指示）。
+                字の大きさが空のときの既定にしか効かず、大きさは帯で自由に決められるので要らない。
+                保存してある値はそのまま残す（古い様式の既定の大きさが変わらないように）
+              */}
               <RichEditor
                 value={b.lines}
                 target={target}
