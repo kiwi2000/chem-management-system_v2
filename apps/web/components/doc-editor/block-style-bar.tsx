@@ -4,7 +4,6 @@ import {
   BLOCK_BORDER_STYLES,
   BLOCK_PATTERNS,
   DEFAULT_FONT,
-  DEFAULT_FONT_SIZE,
   DOCUMENT_FONTS,
   type BlockBorderStyle,
   type BlockPattern,
@@ -40,6 +39,7 @@ export function BlockStyleBar({
   level = "block",
   defaultFontLabel,
   fontLabel,
+  defaultSize,
 }: {
   value: BlockStyle | undefined;
   onChange: (next: BlockStyle | undefined) => void;
@@ -52,6 +52,11 @@ export function BlockStyleBar({
   defaultFontLabel?: string;
   /** フォントの欄の上に小さく出す名前。ブロックの見出し行で使う（紙面ぜんたいの帯は外に名前がある） */
   fontLabel?: string;
+  /**
+   * 指定が無いときに実際に使われる大きさ（pt）。渡すと欄にその値を出し、「既定」は出さない。
+   * 紙面ぜんたい（10.5）と、見出し（レベルごと）・表（9）で渡す。空にすると指定を外し、また既定の値が出る
+   */
+  defaultSize?: number;
 }) {
   const { m } = useI18n();
   const st = value ?? {};
@@ -115,21 +120,18 @@ export function BlockStyleBar({
       )}
       {/*
         大きさは打ち込む欄（候補つき）。決まった段だけだと 13 や 10.5 にできない。上に小さく「サイズ」。
-        **紙面ぜんたいの段には「既定」を出さず、固定値（10.5）をそのまま出す**（2026-09-14 決定。
-        いちばん外なので合わせる先が無い）。その値は「指定なし」として保存し、
-        見出しや表が種類ごとの大きさのまま出るようにする。ブロックの段は「既定」のまま
+        既定の値がある段（紙面ぜんたい 10.5、見出しはレベルごと、表は 9）は「既定」を出さず、
+        その値をそのまま出す（2026-09-14 決定）。ほかのブロックは「既定」＝上の値を引き継ぐ
       */}
       <span className="flex flex-col gap-0.5">
         <span className="text-muted-foreground text-[10px] leading-none">
           {m.docEditor.sizeShort}
         </span>
         <FontSizeInput
-          value={level === "document" ? (st.size ?? DEFAULT_FONT_SIZE) : st.size}
-          onChange={(size) =>
-            patch({ size: level === "document" && size === DEFAULT_FONT_SIZE ? undefined : size })
-          }
+          value={st.size ?? defaultSize}
+          onChange={(size) => patch({ size })}
           label={`${m.docEditor.fontSize} — ${m.docEditor.fontSizeHint}`}
-          placeholder={level === "document" ? undefined : m.docEditor.fontSizeDefault}
+          placeholder={defaultSize === undefined ? m.docEditor.fontSizeDefault : undefined}
           className="border-input bg-background h-7 w-14 rounded-none border px-1 text-xs"
         />
       </span>

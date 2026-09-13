@@ -1,6 +1,6 @@
 "use client";
 
-import type { DocumentContent } from "@chem/shared";
+import { DEFAULT_FONT_SIZE, type DocumentContent } from "@chem/shared";
 import { ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -391,6 +391,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
                       value={content.style}
                       onChange={(style) => edit({ ...content, style })}
                       fontLabel={m.docEditor.documentFont}
+                      defaultSize={DEFAULT_FONT_SIZE}
                     />
                     {/*
                   プレビューの切り替え。太字・斜体と同じマークだけの切り替えボタンにし、

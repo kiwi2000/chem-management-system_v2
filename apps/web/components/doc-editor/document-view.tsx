@@ -2,7 +2,9 @@
 
 import {
   DEFAULT_FONT,
+  DEFAULT_FONT_SIZE,
   effectiveMargin,
+  ownFontSize,
   fontStack,
   groupIntoRows,
   type BlockStyle,
@@ -158,16 +160,6 @@ function Line({ line }: { line: RenderLine }) {
   );
 }
 
-/** 見出しレベルごとの既定の大きさ。字の大きさを指定すればそちらが勝つ */
-const HEADING_SIZE = {
-  1: "18pt",
-  2: "16pt",
-  3: "14pt",
-  4: "12pt",
-  5: "11pt",
-  6: "10.5pt",
-} as const;
-
 /**
  * ブロック全体に効かせる字。
  *
@@ -270,19 +262,23 @@ function Block({
 
 function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | undefined }) {
   /*
-    字の大きさ。**ブロック → 紙面ぜんたい → 種類ごとの既定**の順に強い。
+    字の大きさ。**ブロックの指定 → 種類の既定（見出しはレベル、表は表用） → 紙面ぜんたい → 10.5**の順。
+    編集画面の欄に出ている値と同じ計算にして、見たままが刷られるようにする（2026-09-14 決定）。
     中身に大きさを直接書いていると、外側で指定しても効かない
     （親から受け継ぐ字は、子に書いた指定に負ける）ので、ここで解く
   */
-  const size = b.style?.size ?? doc?.size;
-  const fs = (fallback: string) => (size ? `${size}pt` : fallback);
+  const bodySize = doc?.size ?? DEFAULT_FONT_SIZE;
+  const size = b.style?.size ?? ownFontSize(b) ?? bodySize;
+  const fs = () => `${size}pt`;
+  /** 表の表題は本文の大きさ（中身より一段大きい）。ブロックで指定していればそれ */
+  const captionSize = `${b.style?.size ?? bodySize}pt`;
   // 余白は外側の入れもの（Block）に付く。ここの margin はすべて 0
   switch (b.kind) {
     case "heading":
       return (
         <div
           style={{
-            fontSize: fs(HEADING_SIZE[b.level]),
+            fontSize: fs(),
             fontWeight: 700,
             margin: 0,
           }}
@@ -294,7 +290,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       );
     case "text":
       return (
-        <div style={{ margin: 0, fontSize: fs("10.5pt"), lineHeight: 1.6 }}>
+        <div style={{ margin: 0, fontSize: fs(), lineHeight: 1.6 }}>
           {b.lines.map((l, i) => (
             <Line key={i} line={l} />
           ))}
@@ -306,7 +302,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
           style={{
             margin: 0,
             borderCollapse: "collapse",
-            fontSize: fs("10.5pt"),
+            fontSize: fs(),
             // 右寄せのときは枠いっぱいに広げて、値を右端にそろえる
             ...(b.valueAlign === "right" ? { width: "100%" } : {}),
           }}
@@ -353,7 +349,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
     */
     case "orgItems":
       return (
-        <div style={{ margin: 0, fontSize: fs("10.5pt") }}>
+        <div style={{ margin: 0, fontSize: fs() }}>
           {b.items.map((it, i) => (
             <div key={i} style={{ textAlign: it.align, padding: "0.5mm 0" }}>
               {it.label && (
@@ -368,15 +364,13 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       return (
         <div style={{ margin: 0 }}>
           {b.caption && (
-            <p style={{ margin: "0 0 1mm", fontSize: fs("10.5pt"), fontWeight: 700 }}>
-              {b.caption}
-            </p>
+            <p style={{ margin: "0 0 1mm", fontSize: captionSize, fontWeight: 700 }}>{b.caption}</p>
           )}
           <table
             style={{
               width: "100%",
               borderCollapse: "collapse",
-              fontSize: fs("9pt"),
+              fontSize: fs(),
               // 表が長いと途中で切れる。行の途中では切らない（下の tr で指定）
               pageBreakInside: "auto",
             }}
@@ -437,14 +431,14 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       );
       if (b.labelPosition === "above") {
         return (
-          <div style={{ margin: 0, fontSize: fs("10.5pt") }}>
+          <div style={{ margin: 0, fontSize: fs() }}>
             <div style={{ marginBottom: gap }}>{b.label}</div>
             {line}
           </div>
         );
       }
       return (
-        <div style={{ margin: 0, fontSize: fs("10.5pt"), whiteSpace: "nowrap" }}>
+        <div style={{ margin: 0, fontSize: fs(), whiteSpace: "nowrap" }}>
           <span style={{ marginRight: gap }}>{b.label}</span>
           {line}
         </div>

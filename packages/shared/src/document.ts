@@ -664,11 +664,32 @@ export interface BlockMargin {
 }
 
 /**
- * 紙面ぜんたいの字の大きさの既定（pt）。本文（文章・項目など）の大きさ。
- * いちばん上の欄には「既定」ではなくこの値を出す（2026-09-14 決定）。
- * この値のままなら「指定なし」と同じ扱いで、見出しや表は種類ごとの大きさのまま
+ * 紙面ぜんたいの字の大きさの既定（pt）。本文（文章・項目・署名など）の大きさ。
+ * いちばん上の欄には「既定」ではなくこの値を出し、**そのまま引き継がれる本当の値**として扱う（2026-09-14 決定）
  */
 export const DEFAULT_FONT_SIZE = 10.5;
+/** 見出しレベルごとの大きさ（pt）。紙面ぜんたいの大きさには従わず、ブロックの欄にこの値を既定として出す */
+export const HEADING_SIZES: Record<HeadingLevel, number> = {
+  1: 18,
+  2: 16,
+  3: 14,
+  4: 12,
+  5: 11,
+  6: 10.5,
+};
+/** 表の中身の大きさ（pt）。本文より一段小さい。表のブロックの欄にこの値を既定として出す */
+export const TABLE_FONT_SIZE = 9;
+
+/**
+ * 種類として自分の大きさを持つブロック（見出し・表）の既定（pt）。それ以外は undefined（紙面ぜんたいに従う）。
+ * 編集者の意図（上で 10.5 と決めたのに見出しが 10.5 になっては困る）に合わせ、
+ * 見出しはレベル、表は表用の値を持つ（2026-09-14 決定）。`kind` は紙面に出すときの種類でもよい
+ */
+export function ownFontSize(block: { kind: string; level?: HeadingLevel }): number | undefined {
+  if (block.kind === "heading") return HEADING_SIZES[block.level ?? 2];
+  if (block.kind === "table") return TABLE_FONT_SIZE;
+  return undefined;
+}
 
 /** 新しく置くブロックの余白（mm）。上 0・右 0・下 3・左 0（2026-09-13 決定） */
 export const DEFAULT_BLOCK_MARGIN: Required<BlockMargin> = { top: 0, right: 0, bottom: 3, left: 0 };

@@ -5,6 +5,7 @@ import {
   DEFAULT_BLOCK_MARGIN,
   effectiveMargin,
   HEADING_LEVELS,
+  ownFontSize,
   spacerMm,
   fieldsFor,
   groupIntoRows,
@@ -336,6 +337,7 @@ export function BlockList({
               onChange={(style) => replace(i, { ...b, style })}
               defaultFontLabel={m.docEditor.fontDefaultShort}
               fontLabel={m.docEditor.font}
+              defaultSize={ownFontSize(b)}
             />
           )}
           {/* 余白（mm）。紙の端や隣のブロックからの間を、辺ごとに決める（2026-09-13 指示） */}
