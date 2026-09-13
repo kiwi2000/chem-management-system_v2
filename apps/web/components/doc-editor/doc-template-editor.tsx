@@ -216,8 +216,8 @@ export function DocTemplateEditor({ id }: { id: string }) {
 
   return (
     <div
-      // 上の欄（案内・題名・帯）は間を詰める（2026-09-13 指示）。ほかの画面より一段小さい space-y-2
-      className={cn(PAGE_SHELL, "space-y-2", framed && "flex flex-col overflow-hidden")}
+      // 上の欄（案内・題名・帯）は間を詰める（2026-09-13 指示）。space-y は上下の両方に付いて詰めきれないので、子ごとに mt を書く
+      className={cn(PAGE_SHELL, framed && "flex flex-col overflow-hidden")}
       style={framed ? { height: frameHeight } : undefined}
     >
       {/* いまどこにいるか。メニューの項目名から始める */}
@@ -229,9 +229,9 @@ export function DocTemplateEditor({ id }: { id: string }) {
         ]}
       />
 
-      {/* 上の欄（題名と帯）。△でたためる。閉じている間は題名だけ小さく出す */}
+      {/* 上の欄（題名と帯）。△でたためる。閉じている間は何も出さない（名前は案内の行にある） */}
       {headerOpen ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold">
             {template.code} {template.nameJa}
           </h1>
@@ -311,13 +311,13 @@ export function DocTemplateEditor({ id }: { id: string }) {
             </div>
           </div>
         </div>
-      ) : (
-        <p className="text-muted-foreground truncate text-sm">
-          {template.code} {template.nameJa}
-        </p>
-      )}
+      ) : null}
       {!isFile && (
-        <div className="flex justify-center border-b">
+        <div className={cn("flex justify-center border-b", !headerOpen && "mt-1")}>
+          {/*
+            上の帯にぴったり付け（間は 0）、本文との間も最小にする（2026-09-13 指示）。
+            たたんだときは題名を出さない（案内の行に同じ名前がある）ので、案内のすぐ下に来る
+          */}
           <button
             type="button"
             aria-expanded={headerOpen}
@@ -332,25 +332,25 @@ export function DocTemplateEditor({ id }: { id: string }) {
       )}
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mt-2">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {leaveWarning && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mt-2">
           <AlertDescription>{m.docEditor.unsavedOnLeave}</AlertDescription>
         </Alert>
       )}
 
       {template.contentBroken && (
-        <Alert>
+        <Alert className="mt-2">
           <AlertDescription>{m.docTemplates.contentBroken}</AlertDescription>
         </Alert>
       )}
 
       {template.unknownFields.length > 0 && (
-        <Alert>
+        <Alert className="mt-2">
           <AlertDescription>
             {m.docTemplates.unknownFields(template.unknownFields.length)}
             <span className="block font-mono text-xs">{template.unknownFields.join(" ")}</span>
@@ -363,16 +363,18 @@ export function DocTemplateEditor({ id }: { id: string }) {
         画面が狭いときは縦に積む（横に並べると、どちらも読めない幅になる）
       */}
       {isFile ? (
-        <TemplateFilePanel
-          template={template}
-          editable={editable}
-          orgItems={orgItems}
-          onChanged={() => void load()}
-        />
+        <div className="mt-4">
+          <TemplateFilePanel
+            template={template}
+            editable={editable}
+            orgItems={orgItems}
+            onChanged={() => void load()}
+          />
+        </div>
       ) : (
         <div
           className={cn(
-            "gap-4",
+            "mt-1 gap-4",
             // 広い画面では残りの高さいっぱいに広げ、左右をそれぞれ送る（2026-09-13 指示）
             framed && "grid min-h-0 flex-1 grid-rows-1",
             framed && (preview ? "grid-cols-2" : "grid-cols-1"),
