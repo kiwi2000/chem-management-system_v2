@@ -94,7 +94,11 @@ export function DocumentSheet({
         ブロックの側で指定があれば、そちらが勝つ（子の指定は親より強い）
       */
       /* 選ばれていなければゴシック。刷る機械まかせにすると、人によって字が変わる */
-      style={{ fontFamily: fontStack(DEFAULT_FONT), ...styleOf(doc.style) }}
+      style={{
+        fontFamily: fontStack(DEFAULT_FONT),
+        ...styleOf(doc.style),
+        ...decorOf(doc.style, false),
+      }}
       className="mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none"
     >
       {/*
@@ -170,6 +174,48 @@ function styleOf(st: BlockStyle | undefined): CSSProperties {
   };
 }
 
+/** 背景の模様。薄い線や点を CSS の階調で描く（画像を持たない） */
+function patternOf(kind: NonNullable<BlockStyle["pattern"]>, color: string): CSSProperties {
+  const line = `${color} 0 0.25mm, transparent 0.25mm 2mm`;
+  switch (kind) {
+    case "stripes":
+      return { backgroundImage: `repeating-linear-gradient(0deg, ${line})` };
+    case "verticalStripes":
+      return { backgroundImage: `repeating-linear-gradient(90deg, ${line})` };
+    case "diagonal":
+      return { backgroundImage: `repeating-linear-gradient(45deg, ${line})` };
+    case "dots":
+      return {
+        backgroundImage: `radial-gradient(${color} 0.3mm, transparent 0.35mm)`,
+        backgroundSize: "2mm 2mm",
+      };
+    case "grid":
+      return {
+        backgroundImage: `repeating-linear-gradient(0deg, ${line}), repeating-linear-gradient(90deg, ${line})`,
+      };
+  }
+}
+
+/**
+ * ブロックの飾り（背景色・模様・枠線）。字の指定（styleOf）とは別に、入れものに当てる。
+ * `pad` なら中身に少し余白を取る（紙面ぜんたいの入れものは自分の余白を持つので取らない）。
+ * 背景は刷るときに落とされやすいので、色をそのまま刷るよう指定しておく
+ */
+function decorOf(st: BlockStyle | undefined, pad: boolean): CSSProperties {
+  if (!st) return {};
+  const out: CSSProperties = {};
+  if (st.background) out.backgroundColor = st.background;
+  if (st.pattern) Object.assign(out, patternOf(st.pattern, st.patternColor ?? "#9ca3af"));
+  if (st.borderStyle) {
+    out.border = `${st.borderWidth ?? 0.3}mm ${st.borderStyle} ${st.borderColor ?? "#000"}`;
+  }
+  if (Object.keys(out).length === 0) return {};
+  if (pad) out.padding = "1.5mm 2mm";
+  out.WebkitPrintColorAdjust = "exact";
+  out.printColorAdjust = "exact";
+  return out;
+}
+
 /** 指定した辺の余白だけを CSS にする（mm） */
 function marginOf(mg: BlockMargin | undefined): CSSProperties {
   if (!mg) return {};
@@ -193,6 +239,7 @@ function Block({
   const highlighted = highlightId !== undefined && highlightId !== null && b.id === highlightId;
   const wrap: CSSProperties = {
     ...styleOf(b.style),
+    ...decorOf(b.style, true),
     ...marginOf(b.margin),
     // 編集画面のプレビューで、選んでいるブロックの場所が分かるように赤い細線で囲む
     ...(highlighted ? { outline: "0.3mm solid #dc2626", outlineOffset: "0.5mm" } : {}),

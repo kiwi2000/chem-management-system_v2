@@ -1,7 +1,17 @@
 "use client";
 
-import { DEFAULT_FONT, DOCUMENT_FONTS, type BlockStyle, type FontKey } from "@chem/shared";
-import { Bold, Italic, Underline } from "lucide-react";
+import {
+  BLOCK_BORDER_STYLES,
+  BLOCK_PATTERNS,
+  DEFAULT_FONT,
+  DOCUMENT_FONTS,
+  type BlockBorderStyle,
+  type BlockPattern,
+  type BlockStyle,
+  type FontKey,
+} from "@chem/shared";
+import { Bold, Italic, PaintBucket, Underline } from "lucide-react";
+import { useState } from "react";
 import { FontSizeInput } from "@/components/doc-editor/font-size-input";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
@@ -44,6 +54,10 @@ export function BlockStyleBar({
 }) {
   const { m } = useI18n();
   const st = value ?? {};
+  /** 背景・模様・枠線の欄を出しているか。どれかが決まっていれば最初から出す */
+  const hasDecor = !!(st.background || st.pattern || st.borderStyle);
+  const [decorOpen, setDecorOpen] = useState(hasDecor);
+  const showDecor = decorOpen || hasDecor;
 
   /** 中身が空になったら、指定そのものを外す */
   const patch = (next: Partial<BlockStyle>) => {
@@ -89,7 +103,7 @@ export function BlockStyleBar({
   );
 
   return (
-    <div className="flex items-end gap-1">
+    <div className="flex flex-wrap items-end gap-1">
       {fontLabel ? (
         <span className="flex flex-col gap-0.5">
           <span className="text-muted-foreground text-[10px] leading-none">{fontLabel}</span>
@@ -134,6 +148,157 @@ export function BlockStyleBar({
           {m.docEditor.fontColorClear}
         </Button>
       )}
+      {/* 背景・模様・枠線。押すと欄が出る（いつも出すと帯が長くなりすぎる。2026-09-13 指示） */}
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        aria-label={m.docEditor.decor}
+        title={m.docEditor.decor}
+        aria-pressed={showDecor}
+        className={cn(showDecor && "bg-accent text-foreground")}
+        onClick={() => setDecorOpen((v) => !v)}
+      >
+        <PaintBucket className="size-4" />
+      </Button>
+      {showDecor && (
+        <>
+          <Small label={m.docEditor.background}>
+            <span className="flex items-center gap-0.5">
+              <input
+                type="color"
+                aria-label={m.docEditor.background}
+                title={m.docEditor.background}
+                value={st.background ?? NO_BACKGROUND}
+                onChange={(e) =>
+                  patch({
+                    background: e.target.value === NO_BACKGROUND ? undefined : e.target.value,
+                  })
+                }
+                className="border-input h-8 w-8 cursor-pointer border bg-transparent p-0.5"
+              />
+              {st.background && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-1 text-xs"
+                  onClick={() => patch({ background: undefined })}
+                >
+                  {m.docEditor.decorClear}
+                </Button>
+              )}
+            </span>
+          </Small>
+          <Small label={m.docEditor.pattern}>
+            <select
+              aria-label={m.docEditor.pattern}
+              value={st.pattern ?? ""}
+              onChange={(e) =>
+                patch({
+                  pattern: (e.target.value || undefined) as BlockPattern | undefined,
+                  // 模様をやめたら、模様の色も要らない
+                  ...(e.target.value ? {} : { patternColor: undefined }),
+                })
+              }
+              className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+            >
+              <option value="">{m.docEditor.patterns.none}</option>
+              {BLOCK_PATTERNS.map((p) => (
+                <option key={p} value={p}>
+                  {m.docEditor.patterns[p]}
+                </option>
+              ))}
+            </select>
+          </Small>
+          {st.pattern && (
+            <Small label={m.docEditor.patternColor}>
+              <input
+                type="color"
+                aria-label={m.docEditor.patternColor}
+                title={m.docEditor.patternColor}
+                value={st.patternColor ?? DEFAULT_PATTERN_COLOR}
+                onChange={(e) => patch({ patternColor: e.target.value })}
+                className="border-input h-8 w-8 cursor-pointer border bg-transparent p-0.5"
+              />
+            </Small>
+          )}
+          <Small label={m.docEditor.border}>
+            <select
+              aria-label={m.docEditor.border}
+              value={st.borderStyle ?? ""}
+              onChange={(e) =>
+                patch({
+                  borderStyle: (e.target.value || undefined) as BlockBorderStyle | undefined,
+                  // 枠をやめたら、太さと色も要らない
+                  ...(e.target.value ? {} : { borderWidth: undefined, borderColor: undefined }),
+                })
+              }
+              className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+            >
+              <option value="">{m.docEditor.borders.none}</option>
+              {BLOCK_BORDER_STYLES.map((b) => (
+                <option key={b} value={b}>
+                  {m.docEditor.borders[b]}
+                </option>
+              ))}
+            </select>
+          </Small>
+          {st.borderStyle && (
+            <>
+              <Small label={m.docEditor.borderWidth}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                  aria-label={m.docEditor.borderWidth}
+                  placeholder="0.3"
+                  value={st.borderWidth ?? ""}
+                  onChange={(e) => {
+                    if (e.target.value === "") {
+                      patch({ borderWidth: undefined });
+                      return;
+                    }
+                    const n = Number(e.target.value);
+                    if (!Number.isFinite(n)) return;
+                    patch({ borderWidth: Math.min(5, Math.max(0.1, n)) });
+                  }}
+                  className="border-input bg-background h-8 w-14 rounded-none border px-1 text-xs"
+                />
+              </Small>
+              <Small label={m.docEditor.borderColor}>
+                <input
+                  type="color"
+                  aria-label={m.docEditor.borderColor}
+                  title={m.docEditor.borderColor}
+                  value={st.borderColor ?? NO_COLOR}
+                  onChange={(e) =>
+                    patch({ borderColor: e.target.value === NO_COLOR ? undefined : e.target.value })
+                  }
+                  className="border-input h-8 w-8 cursor-pointer border bg-transparent p-0.5"
+                />
+              </Small>
+            </>
+          )}
+        </>
+      )}
     </div>
+  );
+}
+
+/** 背景を選ばない状態。白を「指定なし」と見なす（背景の色の欄は空を持てない） */
+const NO_BACKGROUND = "#ffffff";
+/** 模様の色を選んでいないときの色（薄い灰色） */
+const DEFAULT_PATTERN_COLOR = "#9ca3af";
+
+/** 欄の上に小さく名前を出す入れもの（ブロックの見出し行と同じ形） */
+function Small({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span className="flex flex-col gap-0.5">
+      <span className="text-muted-foreground text-[10px] leading-none">{label}</span>
+      {children}
+    </span>
   );
 }

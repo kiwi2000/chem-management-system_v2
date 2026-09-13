@@ -628,7 +628,28 @@ export interface BlockStyle {
   underline?: boolean;
   /** `#112233`。省略は本文の色 */
   color?: string;
+  /*
+    ブロックの飾り（2026-09-13 指示）。字ではなく入れものに付く。
+    背景色・背景の模様・枠線。どれかがあれば中身に少し余白を取る
+  */
+  /** 背景色 `#rrggbb` */
+  background?: string;
+  /** 背景の模様。色は patternColor（省略は薄い灰色） */
+  pattern?: BlockPattern;
+  patternColor?: string;
+  /** 枠線の種類。省略は枠なし */
+  borderStyle?: BlockBorderStyle;
+  /** 枠線の太さ（mm）。省略は 0.3 */
+  borderWidth?: number;
+  /** 枠線の色。省略は黒 */
+  borderColor?: string;
 }
+
+export const BLOCK_PATTERNS = ["stripes", "verticalStripes", "diagonal", "dots", "grid"] as const;
+export type BlockPattern = (typeof BLOCK_PATTERNS)[number];
+
+export const BLOCK_BORDER_STYLES = ["solid", "dashed", "dotted", "double"] as const;
+export type BlockBorderStyle = (typeof BLOCK_BORDER_STYLES)[number];
 
 /**
  * ブロックの余白（mm）。**紙の端、または隣のブロックからの間。**
