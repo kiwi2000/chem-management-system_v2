@@ -89,8 +89,8 @@ export function BlockList({
   /** 会社の自由項目の名前 */
   orgItems: string[];
   onChange: (next: DocumentBlock[]) => void;
-  /** 触ったブロックの id を知らせる。プレビューでそのブロックを枠で示すため */
-  onActivate?: (id: string) => void;
+  /** 触ったブロックの id を知らせる（null は選択を外す）。プレビューでそのブロックを枠で示すため */
+  onActivate?: (id: string | null) => void;
   /** いま選んでいるブロック。プレビューの赤い枠と同じ色で、編集側の枠も赤くする（2026-09-13 指示） */
   activeId?: string | null;
 }) {
@@ -193,8 +193,19 @@ export function BlockList({
           overIndex === i && dragIndex !== null && "border-primary border-t-2",
           dragIndex === i && "opacity-50",
         )}
-        // 押した・打ち込んだブロックを「選んでいる」とみなす。プレビューの赤い枠がそこに付く
-        onMouseDownCapture={() => onActivate?.(b.id)}
+        /*
+          押した・打ち込んだブロックを「選んでいる」とみなす。プレビューの赤い枠がそこに付く。
+          選んでいるブロックの余白（欄やボタンでないところ）をもう一度押すと選択を外す（2026-09-13 指示）。
+          欄の中を押したときは外さない（打ち込みの途中で枠が消えないように）
+        */
+        onMouseDownCapture={(e) => {
+          const el = e.target as HTMLElement;
+          const onControl = !!el.closest(
+            "input, select, textarea, button, a, [contenteditable], .ProseMirror",
+          );
+          if (!onControl && activeId === b.id) onActivate?.(null);
+          else onActivate?.(b.id);
+        }}
         onFocusCapture={() => onActivate?.(b.id)}
         onDragOver={
           dragIndex === null
