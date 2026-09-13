@@ -558,13 +558,16 @@ export function DocTemplateEditor({ id }: { id: string }) {
             <div className={cn("mt-4", framed && "mt-0 min-h-0 overflow-y-auto")}>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
               <div className="bg-muted/40 overflow-x-auto border p-2">
-                {/* プレビューは見本の値。灰色の枠の中、紙のすぐ上に赤い細字でひとこと（2026-09-13 指示。幅によらず同じ場所） */}
-                <p className="text-destructive mb-0.5 text-right text-xs font-normal">
-                  {m.docEditor.previewNote}
-                </p>
-                {/* 紙は上下に my-4 を持つ。注意書きと紙の間を最小にしたいので、直下の上の余白だけ消す。倍率は zoom で紙ごと縮める */}
+                {/*
+                  紙は上下に my-4 を持つ。灰色の枠との間を最小にしたいので、直下の上の余白だけ消す。倍率は zoom で紙ごと縮める。
+                  「見本の値」の断りは紙の右上の角に重ねる（行を使わない。2026-09-13 指示）
+                */}
                 <div className="*:mt-0" style={{ zoom: zoom / 100 }}>
-                  <DocumentSheet doc={sheet} highlightIds={activeIds} />
+                  <DocumentSheet
+                    doc={sheet}
+                    highlightIds={activeIds}
+                    cornerNote={m.docEditor.previewNote}
+                  />
                 </div>
               </div>
             </div>

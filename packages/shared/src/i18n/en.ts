@@ -1269,7 +1269,7 @@ export const en: Messages = {
     margin: "Margin",
     marginSides: { top: "T", right: "R", bottom: "B", left: "L" },
     marginHint:
-      "Block margins in mm: the gap from the page edge or the neighbouring block. Empty sides keep the default",
+      "Block margins in mm: the gap from the page edge or the neighbouring block. The values shown are the ones used (new blocks: T0 R0 B3 L0)",
     signatureLabelPosition: "Label position",
     signatureLabelPositions: { left: "Left of the line", above: "Above the line" },
     signatureGap: "Gap between label and line (mm)",

@@ -2,6 +2,8 @@
 
 import {
   BLOCK_KINDS,
+  DEFAULT_BLOCK_MARGIN,
+  effectiveMargin,
   HEADING_LEVELS,
   spacerMm,
   fieldsFor,
@@ -177,7 +179,8 @@ export function BlockList({
   function add(kind: BlockKind) {
     // id は消したり並べ替えたりの目印。中身とは関わらない
     const id = `b${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
-    onChange([...blocks, newBlock(kind, target, id)]);
+    // 余白は4辺とも書き込む。欄に出ている値がそのまま使われる（2026-09-13 決定）
+    onChange([...blocks, { ...newBlock(kind, target, id), margin: { ...DEFAULT_BLOCK_MARGIN } }]);
   }
 
   return (
@@ -338,7 +341,7 @@ export function BlockList({
           {/* 余白（mm）。紙の端や隣のブロックからの間を、辺ごとに決める（2026-09-13 指示） */}
           {b.kind !== "pageBreak" && b.kind !== "rowBreak" && (
             <MarginInputs
-              value={b.margin}
+              value={effectiveMargin(b.kind, b.margin)}
               onChange={(margin) => replace(i, { ...b, margin })}
               label={m.docEditor.margin}
               sides={m.docEditor.marginSides}
@@ -769,21 +772,21 @@ function MarginInputs({
   sides,
   hint,
 }: {
-  value: BlockMargin | undefined;
-  onChange: (next: BlockMargin | undefined) => void;
+  /** いま使っている余白（4辺とも入っている） */
+  value: Required<BlockMargin>;
+  onChange: (next: Required<BlockMargin>) => void;
   label: string;
   sides: { top: string; right: string; bottom: string; left: string };
   hint: string;
 }) {
+  /*
+    欄に出ている値がそのまま使われる（2026-09-13 決定）。空にしたら 0。
+    一度触ったら4辺とも書き込むので、古いブロックもそれ以降は種類ごとの補いを通らない
+  */
   const set = (side: keyof BlockMargin, raw: string) => {
-    const next: BlockMargin = { ...(value ?? {}) };
-    if (raw === "") delete next[side];
-    else {
-      const n = Number(raw);
-      if (!Number.isFinite(n)) return;
-      next[side] = Math.min(100, Math.max(0, n));
-    }
-    onChange(Object.keys(next).length === 0 ? undefined : next);
+    const n = raw === "" ? 0 : Number(raw);
+    if (!Number.isFinite(n)) return;
+    onChange({ ...value, [side]: Math.min(100, Math.max(0, n)) });
   };
   // 欄の上に「上」「下」「左」「右」だけを小さく出す（2026-09-13 指示。左に名前は置かない）
   return (
@@ -798,7 +801,7 @@ function MarginInputs({
             step={0.5}
             aria-label={`${label} ${sides[side]}`}
             className="border-input h-7 w-10 rounded-none border bg-transparent px-1 text-xs"
-            value={value?.[side] ?? ""}
+            value={value[side]}
             onChange={(e) => set(side, e.target.value)}
           />
         </Labeled>

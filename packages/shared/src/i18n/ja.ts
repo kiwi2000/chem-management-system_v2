@@ -1300,7 +1300,8 @@ export const ja = {
     fieldsGapHint: "ミリメートル。空なら 6mm。0〜100 の数を打ちます",
     margin: "余白",
     marginSides: { top: "上", right: "右", bottom: "下", left: "左" },
-    marginHint: "ブロックの余白（mm）。紙の端、または隣のブロックからの間。空の辺は既定のままです",
+    marginHint:
+      "ブロックの余白（mm）。紙の端、または隣のブロックからの間。欄の値がそのまま使われます（新しいブロックは上0・右0・下3・左0）",
     signatureLabelPosition: "ラベルの位置",
     signatureLabelPositions: { left: "線の左", above: "線の上" },
     signatureGap: "ラベルと線の間（mm）",

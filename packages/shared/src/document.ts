@@ -653,7 +653,8 @@ export type BlockBorderStyle = (typeof BLOCK_BORDER_STYLES)[number];
 
 /**
  * ブロックの余白（mm）。**紙の端、または隣のブロックからの間。**
- * 指定した辺だけ効き、指定しない辺は種類ごとの既定のまま（2026-09-13 指示）
+ * 新しく置くブロックには4辺とも値を入れる（欄に出ている値がそのまま使われる。2026-09-13 決定）。
+ * 古い様式のブロックは辺が抜けていることがあり、抜けた辺は `legacyBlockMargin` の値で補う
  */
 export interface BlockMargin {
   top?: number;
@@ -662,13 +663,59 @@ export interface BlockMargin {
   left?: number;
 }
 
+/** 新しく置くブロックの余白（mm）。上 0・右 0・下 3・左 0（2026-09-13 決定） */
+export const DEFAULT_BLOCK_MARGIN: Required<BlockMargin> = { top: 0, right: 0, bottom: 3, left: 0 };
+
+/**
+ * 余白を書いていない（古い）ブロックの余白。
+ * **種類ごとに決め打ちだった頃の値をそのまま使い、保存済みの様式の見た目を変えない。**
+ * 新しいブロックは4辺とも書いてあるので、ここは通らない
+ */
+export function legacyBlockMargin(kind: MarginKind): Required<BlockMargin> {
+  const none = { top: 0, right: 0, bottom: 0, left: 0 };
+  switch (kind) {
+    case "heading":
+    case "text":
+      return { ...none, bottom: 3 };
+    case "fields":
+    case "org":
+    case "orgItems":
+      return { ...none, bottom: 4 };
+    case "table":
+      return { ...none, bottom: 5 };
+    case "divider":
+      return { ...none, top: 4, bottom: 4 };
+    case "signature":
+      return { ...none, top: 8 };
+    default:
+      return none;
+  }
+}
+
+/** 余白の決まりを引く鍵。様式のブロックの種類か、紙面に出すときの種類（組織は "orgItems" になる） */
+export type MarginKind = BlockKind | "orgItems";
+
+/** 実際に使う余白。書いてある辺はその値、書いていない辺は古い決まりの値 */
+export function effectiveMargin(
+  kind: MarginKind,
+  margin: BlockMargin | undefined,
+): Required<BlockMargin> {
+  const legacy = legacyBlockMargin(kind);
+  return {
+    top: margin?.top ?? legacy.top,
+    right: margin?.right ?? legacy.right,
+    bottom: margin?.bottom ?? legacy.bottom,
+    left: margin?.left ?? legacy.left,
+  };
+}
+
 interface BlockBase {
   id: string;
   /** 省略は全幅。全幅のブロックは必ず1行を占める */
   width?: BlockWidth;
   /** そのブロックの字。省略は紙面の既定 */
   style?: BlockStyle;
-  /** そのブロックの余白。省略は種類ごとの既定 */
+  /** そのブロックの余白。新しいブロックは4辺とも入る。抜けた辺は `legacyBlockMargin` */
   margin?: BlockMargin;
 }
 

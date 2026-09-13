@@ -2,6 +2,7 @@
 
 import {
   DEFAULT_FONT,
+  effectiveMargin,
   fontStack,
   groupIntoRows,
   type BlockStyle,
@@ -82,10 +83,13 @@ export function DocumentView({
 export function DocumentSheet({
   doc,
   highlightIds,
+  cornerNote,
 }: {
   doc: RenderedDocument;
   /** 編集画面で選んでいるブロックの id（複数可）。そのブロックを赤い細線で囲む（刷るときは渡さない） */
   highlightIds?: readonly string[];
+  /** 紙の右上の角に重ねる短い断り（編集画面の「見本の値」。刷るときは渡さない） */
+  cornerNote?: string;
 }) {
   return (
     <div
@@ -99,8 +103,16 @@ export function DocumentSheet({
         ...styleOf(doc.style),
         ...decorOf(doc.style, false),
       }}
-      className="mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none"
+      className="relative mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none"
     >
+      {cornerNote && (
+        <p
+          className="text-destructive absolute top-0 right-0 m-0 text-xs font-normal"
+          style={{ top: "3mm", right: "3mm" }}
+        >
+          {cornerNote}
+        </p>
+      )}
       {/*
         横に並ぶものは、編集画面と同じ規則でまとめる（`groupIntoRows`）。
         別々に組むと、書いたとおりに刷られない
@@ -216,14 +228,13 @@ function decorOf(st: BlockStyle | undefined, pad: boolean): CSSProperties {
   return out;
 }
 
-/** 指定した辺の余白だけを CSS にする（mm） */
-function marginOf(mg: BlockMargin | undefined): CSSProperties {
-  if (!mg) return {};
+/** 余白を CSS にする（mm）。4辺とも書く */
+function marginOf(mg: Required<BlockMargin>): CSSProperties {
   return {
-    ...(mg.top !== undefined ? { marginTop: `${mg.top}mm` } : {}),
-    ...(mg.right !== undefined ? { marginRight: `${mg.right}mm` } : {}),
-    ...(mg.bottom !== undefined ? { marginBottom: `${mg.bottom}mm` } : {}),
-    ...(mg.left !== undefined ? { marginLeft: `${mg.left}mm` } : {}),
+    marginTop: `${mg.top}mm`,
+    marginRight: `${mg.right}mm`,
+    marginBottom: `${mg.bottom}mm`,
+    marginLeft: `${mg.left}mm`,
   };
 }
 
@@ -237,15 +248,19 @@ function Block({
   highlightIds?: readonly string[];
 }) {
   const highlighted = !!b.id && !!highlightIds && highlightIds.includes(b.id);
+  // 紙に出ないもの（横並びの区切り・改ページ）は入れものも余白も要らない
+  if (b.kind === "rowBreak" || b.kind === "pageBreak") return <BlockBody block={b} doc={doc} />;
+  /*
+    余白は必ずここ（外側の入れもの）に付ける。中身の側には決め打ちの余白を置かない。
+    書いていない辺は種類ごとに決まっていた頃の値で補う（`effectiveMargin`）ので、古い様式の見た目は変わらない
+  */
   const wrap: CSSProperties = {
     ...styleOf(b.style),
     ...decorOf(b.style, true),
-    ...marginOf(b.margin),
+    ...marginOf(effectiveMargin(b.kind, b.margin)),
     // 編集画面のプレビューで、選んでいるブロックの場所が分かるように赤い細線で囲む
     ...(highlighted ? { outline: "0.3mm solid #dc2626", outlineOffset: "0.5mm" } : {}),
   };
-  // 指定が無ければ、余計な入れものを挟まない（紙面の余白が変わらないように）
-  if (Object.keys(wrap).length === 0) return <BlockBody block={b} doc={doc} />;
   return (
     <div style={wrap}>
       <BlockBody block={b} doc={doc} />
@@ -261,12 +276,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
   */
   const size = b.style?.size ?? doc?.size;
   const fs = (fallback: string) => (size ? `${size}pt` : fallback);
-  /*
-    種類ごとの既定の余白。**余白を指定した辺は、既定を消して指定だけにする。**
-    指定は外側の入れもの（Block）に付くので、ここで既定を残すと足し合わさってしまう
-  */
-  const mt = (fallback: string) => (b.margin?.top !== undefined ? "0" : fallback);
-  const mb = (fallback: string) => (b.margin?.bottom !== undefined ? "0" : fallback);
+  // 余白は外側の入れもの（Block）に付く。ここの margin はすべて 0
   switch (b.kind) {
     case "heading":
       return (
@@ -274,7 +284,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
           style={{
             fontSize: fs(HEADING_SIZE[b.level]),
             fontWeight: 700,
-            margin: `0 0 ${mb("3mm")}`,
+            margin: 0,
           }}
         >
           {b.lines.map((l, i) => (
@@ -284,7 +294,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       );
     case "text":
       return (
-        <div style={{ margin: `0 0 ${mb("3mm")}`, fontSize: fs("10.5pt"), lineHeight: 1.6 }}>
+        <div style={{ margin: 0, fontSize: fs("10.5pt"), lineHeight: 1.6 }}>
           {b.lines.map((l, i) => (
             <Line key={i} line={l} />
           ))}
@@ -294,7 +304,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       return (
         <table
           style={{
-            margin: `0 0 ${mb("4mm")}`,
+            margin: 0,
             borderCollapse: "collapse",
             fontSize: fs("10.5pt"),
             // 右寄せのときは枠いっぱいに広げて、値を右端にそろえる
@@ -343,7 +353,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
     */
     case "orgItems":
       return (
-        <div style={{ margin: `0 0 ${mb("4mm")}`, fontSize: fs("10.5pt") }}>
+        <div style={{ margin: 0, fontSize: fs("10.5pt") }}>
           {b.items.map((it, i) => (
             <div key={i} style={{ textAlign: it.align, padding: "0.5mm 0" }}>
               {it.label && (
@@ -356,7 +366,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       );
     case "table":
       return (
-        <div style={{ margin: `0 0 ${mb("5mm")}` }}>
+        <div style={{ margin: 0 }}>
           {b.caption && (
             <p style={{ margin: "0 0 1mm", fontSize: fs("10.5pt"), fontWeight: 700 }}>
               {b.caption}
@@ -400,7 +410,7 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
           style={{
             border: 0,
             borderTop: "0.4mm solid #000",
-            margin: `${mt("4mm")} 0 ${mb("4mm")}`,
+            margin: 0,
           }}
         />
       );
@@ -427,14 +437,14 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       );
       if (b.labelPosition === "above") {
         return (
-          <div style={{ margin: `${mt("8mm")} 0 0`, fontSize: fs("10.5pt") }}>
+          <div style={{ margin: 0, fontSize: fs("10.5pt") }}>
             <div style={{ marginBottom: gap }}>{b.label}</div>
             {line}
           </div>
         );
       }
       return (
-        <div style={{ margin: `${mt("8mm")} 0 0`, fontSize: fs("10.5pt"), whiteSpace: "nowrap" }}>
+        <div style={{ margin: 0, fontSize: fs("10.5pt"), whiteSpace: "nowrap" }}>
           <span style={{ marginRight: gap }}>{b.label}</span>
           {line}
         </div>
