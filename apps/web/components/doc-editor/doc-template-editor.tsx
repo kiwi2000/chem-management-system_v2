@@ -313,17 +313,23 @@ export function DocTemplateEditor({ id }: { id: string }) {
         </div>
       ) : null}
       {!isFile && (
-        <div className={cn("flex justify-center border-b", !headerOpen && "mt-1")}>
+        <div
+          className={cn(
+            "flex border-b",
+            // 開いているときは帯のすぐ下の真ん中。たたんだときは案内の行の右端に重ねて、その分だけ本文を上げる（2026-09-13 指示）
+            headerOpen ? "justify-center" : "-mt-4 justify-end",
+          )}
+        >
           {/*
             上の帯にぴったり付け（間は 0）、本文との間も最小にする（2026-09-13 指示）。
-            たたんだときは題名を出さない（案内の行に同じ名前がある）ので、案内のすぐ下に来る
+            たたんだときは題名を出さない（案内の行に同じ名前がある）
           */}
           <button
             type="button"
             aria-expanded={headerOpen}
             aria-label={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
             title={headerOpen ? m.docEditor.headerCollapse : m.docEditor.headerExpand}
-            className="text-muted-foreground hover:text-foreground -mb-px flex h-4 w-10 items-center justify-center border border-b-0 bg-transparent"
+            className="text-muted-foreground hover:text-foreground bg-background -mb-px flex h-4 w-10 items-center justify-center border border-b-0"
             onClick={() => setHeaderOpen((v) => !v)}
           >
             {headerOpen ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
