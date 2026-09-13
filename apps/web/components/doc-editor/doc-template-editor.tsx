@@ -307,7 +307,6 @@ export function DocTemplateEditor({ id }: { id: string }) {
             blocks={content.blocks}
             target={template.target}
             orgItems={orgItems}
-            documentFont={content.style?.family}
             onChange={(blocks) => edit({ ...content, blocks })}
             onActivate={setActiveId}
           />

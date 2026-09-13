@@ -28,6 +28,7 @@ export function BlockStyleBar({
   onChange,
   level = "block",
   defaultFontLabel,
+  fontLabel,
 }: {
   value: BlockStyle | undefined;
   onChange: (next: BlockStyle | undefined) => void;
@@ -36,8 +37,10 @@ export function BlockStyleBar({
    * **紙面ぜんたいには「合わせる先」が無い**ので、書体を必ず1つ選ばせる
    */
   level?: "document" | "block";
-  /** 「指定なし」に出す言葉。紙面ぜんたいで何が選ばれているかを見せる */
+  /** 「指定なし」に出す言葉 */
   defaultFontLabel?: string;
+  /** フォントの欄の上に小さく出す名前。ブロックの見出し行で使う（紙面ぜんたいの帯は外に名前がある） */
+  fontLabel?: string;
 }) {
   const { m } = useI18n();
   const st = value ?? {};
@@ -67,25 +70,34 @@ export function BlockStyleBar({
     </Button>
   );
 
+  const fontSelect = (
+    <select
+      aria-label={m.docEditor.font}
+      title={m.docEditor.font}
+      value={level === "document" ? (st.family ?? DEFAULT_FONT) : (st.family ?? "")}
+      onChange={(e) => patch({ family: (e.target.value || undefined) as FontKey | undefined })}
+      className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+    >
+      {/* 合わせる先があるのはブロックだけ。紙面ぜんたいはここがいちばん外 */}
+      {level === "block" && <option value="">{defaultFontLabel ?? m.docEditor.fontDefault}</option>}
+      {DOCUMENT_FONTS.map((f) => (
+        <option key={f.key} value={f.key}>
+          {m.docEditor.fonts[f.key]}
+        </option>
+      ))}
+    </select>
+  );
+
   return (
-    <div className="flex items-center gap-1">
-      <select
-        aria-label={m.docEditor.font}
-        title={m.docEditor.font}
-        value={level === "document" ? (st.family ?? DEFAULT_FONT) : (st.family ?? "")}
-        onChange={(e) => patch({ family: (e.target.value || undefined) as FontKey | undefined })}
-        className="border-input bg-background h-8 rounded-none border px-1 text-xs"
-      >
-        {/* 合わせる先があるのはブロックだけ。紙面ぜんたいはここがいちばん外 */}
-        {level === "block" && (
-          <option value="">{defaultFontLabel ?? m.docEditor.fontDefault}</option>
-        )}
-        {DOCUMENT_FONTS.map((f) => (
-          <option key={f.key} value={f.key}>
-            {m.docEditor.fonts[f.key]}
-          </option>
-        ))}
-      </select>
+    <div className="flex items-end gap-1">
+      {fontLabel ? (
+        <span className="flex flex-col gap-0.5">
+          <span className="text-muted-foreground text-[10px] leading-none">{fontLabel}</span>
+          {fontSelect}
+        </span>
+      ) : (
+        fontSelect
+      )}
       {/* 大きさは打ち込む欄（候補つき）。決まった段だけだと 13 や 10.5 にできない */}
       <FontSizeInput
         value={st.size}

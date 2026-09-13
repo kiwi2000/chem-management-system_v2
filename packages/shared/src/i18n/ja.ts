@@ -1175,8 +1175,8 @@ export const ja = {
     reorderHint: "左端のつまみを引くと並べ替えられます",
   },
   docEditor: {
-    width: "幅",
-    widthFull: "全幅",
+    width: "横幅",
+    widthFull: "100%",
     widthAuto: "均等",
     widthCustom: "自由(%)",
     widthHint:
@@ -1221,8 +1221,8 @@ export const ja = {
     orgBlockAlign: "寄せ",
     font: "フォント",
     fontDefault: "紙面ぜんたいに合わせる",
-    /** ブロックの「指定なし」。紙面ぜんたいで選んだ書体の名前を添える（同じ名前が2つ並ばないように） */
-    fontFollow: (name: string) => `紙面に合わせる（${name}）`,
+    /** ブロックのフォントの「指定なし」（紙面ぜんたいに合わせる） */
+    fontDefaultShort: "既定",
     fonts: {
       gothic: "ゴシック",
       mincho: "明朝",
@@ -1240,6 +1240,8 @@ export const ja = {
     fontColor: "字の色",
     fontColorClear: "色を戻す",
     headingLevel: "見出しレベル",
+    /** 欄の上に小さく出す短い名前 */
+    headingLevelShort: "レベル",
     fontSizeHint:
       "ポイント。空なら既定。候補から選ぶか、6〜200 の数を打ちます（10.5 のような半端も可）",
     label: "ラベル",

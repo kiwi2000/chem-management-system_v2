@@ -2,7 +2,6 @@
 
 import {
   BLOCK_KINDS,
-  DEFAULT_FONT,
   HEADING_LEVELS,
   spacerMm,
   fieldsFor,
@@ -17,7 +16,6 @@ import {
   type DocumentTable,
   type HeadingLevel,
   type DocumentTarget,
-  type FontKey,
   type OrganisationKind,
   type OrgBlockItem,
   type OrgBlockMode,
@@ -78,7 +76,6 @@ export function BlockList({
   blocks,
   target,
   orgItems,
-  documentFont,
   onChange,
   onActivate,
 }: {
@@ -86,17 +83,11 @@ export function BlockList({
   target: DocumentTarget;
   /** 会社の自由項目の名前 */
   orgItems: string[];
-  /** 紙面ぜんたいで選ばれている書体。ブロック側の「指定なし」に出す */
-  documentFont?: FontKey;
   onChange: (next: DocumentBlock[]) => void;
   /** 触ったブロックの id を知らせる。プレビューでそのブロックを枠で示すため */
   onActivate?: (id: string) => void;
 }) {
   const { m, locale } = useI18n();
-  /** ブロックで書体を選んでいないときに、何が使われるかを見せる */
-  // 紙面ぜんたいで選ばれていなくても、実際に出るのはゴシック。その名前を見せる
-  // 「指定なし」には紙面ぜんたいの書体名を添える。名前だけだと同じ書体が2つ並んで見える
-  const defaultFontLabel = m.docEditor.fontFollow(m.docEditor.fonts[documentFont ?? DEFAULT_FONT]);
   /*
     組織ブロックの選択肢。**一覧はログインしていれば誰でも引ける。**
     自分の会社・部署も、取引先も同じ表にあるので、ここで分けない
@@ -215,7 +206,7 @@ export function BlockList({
               }
         }
       >
-        <div className="bg-muted/50 flex items-center gap-2 px-2 py-1">
+        <div className="bg-muted/50 flex items-end gap-2 px-2 py-1">
           <button
             type="button"
             draggable
@@ -242,14 +233,39 @@ export function BlockList({
           </button>
           <span className="text-sm font-medium">{m.docEditor.blockKinds[b.kind]}</span>
           {/*
+            見出しレベル（1〜6）。目次や番号付けで階層を表すためのもので、
+            字の大きさを指定していないときの既定の大きさもここで決まる（指定すればそちらが勝つ）。
+            見出しの名前のすぐ右に置く（2026-09-13 指示）
+          */}
+          {b.kind === "heading" && (
+            <Labeled label={m.docEditor.headingLevelShort}>
+              <select
+                className={SELECT}
+                aria-label={m.docEditor.headingLevel}
+                value={b.level}
+                onChange={(e) =>
+                  replace(i, { ...b, level: Number(e.target.value) as HeadingLevel })
+                }
+              >
+                {HEADING_LEVELS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </Labeled>
+          )}
+          {/*
               幅。**改ページと改行は幅を持てない**（必ず1行を占めるので、選ばせても効かない）
             */}
           {b.kind !== "pageBreak" && b.kind !== "rowBreak" && (
-            <WidthSelect
-              key={b.id}
-              value={b.width}
-              onChange={(width) => replace(i, { ...b, width })}
-            />
+            <Labeled label={m.docEditor.width}>
+              <WidthSelect
+                key={b.id}
+                value={b.width}
+                onChange={(width) => replace(i, { ...b, width })}
+              />
+            </Labeled>
           )}
           {/*
             そのブロック全体の字。**どの種類でも変えられる。**
@@ -259,7 +275,8 @@ export function BlockList({
             <BlockStyleBar
               value={b.style}
               onChange={(style) => replace(i, { ...b, style })}
-              defaultFontLabel={defaultFontLabel}
+              defaultFontLabel={m.docEditor.fontDefaultShort}
+              fontLabel={m.docEditor.font}
             />
           )}
           {/* 余白（mm）。紙の端や隣のブロックからの間を、辺ごとに決める（2026-09-13 指示） */}
@@ -289,26 +306,6 @@ export function BlockList({
         <div className="space-y-2 p-2">
           {b.kind === "heading" && (
             <>
-              {/*
-                見出しレベル（1〜6）。目次や番号付けで階層を表すためのもので、
-                字の大きさを指定していないときの既定の大きさもここで決まる（指定すればそちらが勝つ）
-              */}
-              <label className="flex items-center gap-2 text-sm">
-                {m.docEditor.headingLevel}
-                <select
-                  className={SELECT}
-                  value={b.level}
-                  onChange={(e) =>
-                    replace(i, { ...b, level: Number(e.target.value) as HeadingLevel })
-                  }
-                >
-                  {HEADING_LEVELS.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
               <RichEditor
                 value={b.lines}
                 target={target}
@@ -741,12 +738,11 @@ function MarginInputs({
     }
     onChange(Object.keys(next).length === 0 ? undefined : next);
   };
+  // 欄の上に「上」「下」「左」「右」だけを小さく出す（2026-09-13 指示。左に名前は置かない）
   return (
-    <div className="flex items-center gap-1 text-xs" title={hint}>
-      <span className="text-muted-foreground">{label}</span>
-      {(["top", "right", "bottom", "left"] as const).map((side) => (
-        <label key={side} className="flex items-center gap-0.5">
-          <span className="text-muted-foreground">{sides[side]}</span>
+    <div className="flex items-end gap-1" title={hint}>
+      {(["top", "bottom", "left", "right"] as const).map((side) => (
+        <Labeled key={side} label={sides[side]}>
           <input
             type="number"
             inputMode="decimal"
@@ -758,8 +754,18 @@ function MarginInputs({
             value={value?.[side] ?? ""}
             onChange={(e) => set(side, e.target.value)}
           />
-        </label>
+        </Labeled>
       ))}
     </div>
+  );
+}
+
+/** 欄の上に小さく名前を出す入れもの。見出し行の欄はすべてこの形にそろえる（2026-09-13 指示） */
+export function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span className="flex flex-col gap-0.5">
+      <span className="text-muted-foreground text-[10px] leading-none">{label}</span>
+      {children}
+    </span>
   );
 }

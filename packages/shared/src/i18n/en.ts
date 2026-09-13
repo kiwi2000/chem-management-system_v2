@@ -1148,7 +1148,7 @@ export const en: Messages = {
   },
   docEditor: {
     width: "Width",
-    widthFull: "Full",
+    widthFull: "100%",
     widthAuto: "Equal",
     widthCustom: "Custom (%)",
     widthHint:
@@ -1193,7 +1193,7 @@ export const en: Messages = {
     orgBlockAlign: "Align",
     font: "Font",
     fontDefault: "Follow the document",
-    fontFollow: (name: string) => `Follow the document (${name})`,
+    fontDefaultShort: "Default",
     fonts: {
       gothic: "Gothic",
       mincho: "Mincho",
@@ -1211,6 +1211,7 @@ export const en: Messages = {
     fontColor: "Font colour",
     fontColorClear: "Clear colour",
     headingLevel: "Heading level",
+    headingLevelShort: "Level",
     fontSizeHint:
       "Points. Empty means default. Pick a preset or type 6–200 (halves such as 10.5 are fine)",
     label: "Label",
