@@ -1150,7 +1150,6 @@ export const en: Messages = {
     width: "Width",
     widthFull: "100%",
     widthAuto: "Equal",
-    widthCustom: "Custom (%)",
     widthHint:
       'Narrow a block and the next one sits beside it, while the row fits within 100%. "Equal" splits whatever is left in the row between the equal blocks.',
     bold: "Bold",

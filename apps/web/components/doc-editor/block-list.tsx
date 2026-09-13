@@ -739,7 +739,7 @@ function MarginInputs({
   return (
     <div className="flex items-end gap-1" title={hint}>
       {(["top", "bottom", "left", "right"] as const).map((side) => (
-        <Labeled key={side} label={sides[side]}>
+        <Labeled key={side} label={sides[side]} center>
           <input
             type="number"
             inputMode="decimal"
@@ -758,10 +758,23 @@ function MarginInputs({
 }
 
 /** 欄の上に小さく名前を出す入れもの。見出し行の欄はすべてこの形にそろえる（2026-09-13 指示） */
-export function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+export function Labeled({
+  label,
+  children,
+  center = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  /** 名前を欄の中央にそろえる（余白の 上・下・左・右。2026-09-13 指示） */
+  center?: boolean;
+}) {
   return (
     <span className="flex flex-col gap-0.5">
-      <span className="text-muted-foreground text-[10px] leading-none">{label}</span>
+      <span
+        className={cn("text-muted-foreground text-[10px] leading-none", center && "text-center")}
+      >
+        {label}
+      </span>
       {children}
     </span>
   );

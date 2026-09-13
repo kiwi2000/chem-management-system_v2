@@ -1178,7 +1178,6 @@ export const ja = {
     width: "横幅",
     widthFull: "100%",
     widthAuto: "均等",
-    widthCustom: "自由(%)",
     widthHint:
       "幅を狭めると、次のブロックが横に並びます（合計が100%に収まるあいだ）。「均等」を選ぶと、その行の残りを均等どうしで等分します。",
     bold: "太字",

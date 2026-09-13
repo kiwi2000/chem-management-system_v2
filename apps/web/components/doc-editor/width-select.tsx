@@ -1,35 +1,18 @@
 "use client";
 
 import { WIDTH_MAX, WIDTH_MIN, WIDTH_PERCENTS, widthPercent, type BlockWidth } from "@chem/shared";
-import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n-client";
-
-const SELECT = "border-input h-8 rounded-none border bg-transparent px-1 text-xs";
-
-/** 一覧に無い％を打つときに選ぶ値 */
-const CUSTOM = "custom";
-
-/** 「自由(%)」に切り替えたとき、打ち始める前の値 */
-const CUSTOM_START = 45;
-
-type Mode = "preset" | "auto" | "custom";
-
-function initialMode(value: BlockWidth | undefined): Mode {
-  if (value === "auto") return "auto";
-  const pct = widthPercent(value);
-  return pct !== null && (WIDTH_PERCENTS as readonly number[]).includes(pct) ? "preset" : "custom";
-}
+import { cn } from "@/lib/utils";
 
 /**
- * ブロックの幅を選ぶ。
+ * ブロックの幅（％）。
  *
- * よく使う％を並べ、**均等**と**自由入力**を足してある。
- * 均等はその行の残りを、均等どうしで等分する。
- *
- * **どれを選んでいるかは、この中で覚える。**値から毎回決め直すと、
- * 「均等」から「自由(%)」に切り替えたときに、値がまだ `auto` のままなので
- * 選択が「均等」に戻ってしまう（実際にそうなった）。
- * ブロックごとに1つ置く（呼ぶ側が `key` を付ける）ので、覚えていて困らない。
+ * **数字を打つ欄と、▼ で出るよく使う値の一覧**（2026-09-13 指示。
+ * 「自由(%)」を選んでから別の欄に打つ形をやめ、字の大きさと同じコンボボックスにした）。
+ * 一覧のいちばん下に**均等**がある。均等はその行の残りを、均等どうしで等分する。
+ * 均等のとき欄は空で、薄く「均等」と出る。欄を空にしても均等になる
  */
 export function WidthSelect({
   value,
@@ -40,64 +23,105 @@ export function WidthSelect({
 }) {
   const { m } = useI18n();
   const pct = widthPercent(value);
-  const [mode, setMode] = useState<Mode>(() => initialMode(value));
-  const [typed, setTyped] = useState(() => (pct === null ? String(CUSTOM_START) : String(pct)));
+  const [open, setOpen] = useState(false);
+  /** 打っている途中の文字。範囲の外や空欄でも、打ち直せるように持つ */
+  const [typed, setTyped] = useState(pct === null ? "" : String(pct));
+  const root = useRef<HTMLSpanElement>(null);
 
-  const selected = mode === "auto" ? "auto" : mode === "custom" ? CUSTOM : String(pct ?? 100);
+  // 外から値が変わったら（一覧で選んだなど）欄も合わせる
+  useEffect(() => {
+    setTyped(pct === null ? "" : String(pct));
+  }, [pct]);
+
+  // 外を押したら閉じる
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (root.current && !root.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const pick = (w: BlockWidth) => {
+    onChange(w);
+    setOpen(false);
+  };
 
   return (
-    <>
-      <select
-        className={SELECT}
+    <span ref={root} className="relative inline-flex items-stretch">
+      <input
+        type="number"
+        inputMode="numeric"
+        min={WIDTH_MIN}
+        max={WIDTH_MAX}
+        step={1}
         aria-label={m.docEditor.width}
-        value={selected}
+        title={m.docEditor.widthHint}
+        placeholder={m.docEditor.widthAuto}
+        value={typed}
         onChange={(e) => {
-          const v = e.target.value;
-          if (v === "auto") {
-            setMode("auto");
+          const raw = e.target.value;
+          setTyped(raw);
+          if (raw === "") {
             onChange("auto");
             return;
           }
-          if (v === CUSTOM) {
-            setMode("custom");
-            /*
-              **切り替えたその場で数にする。**`auto` のまま置くと、
-              打ち込むまで幅が均等のままで、選んだものと出ているものが食い違う
-            */
-            const start = pct ?? CUSTOM_START;
-            setTyped(String(start));
-            onChange(start);
-            return;
-          }
-          setMode("preset");
-          onChange(Number(v));
+          const n = Number(raw);
+          // 範囲の外は幅にしない。打っている途中はそのままにしておく
+          if (Number.isInteger(n) && n >= WIDTH_MIN && n <= WIDTH_MAX) onChange(n);
         }}
+        onBlur={() => {
+          // 打ちかけの半端な値は、いまの幅に戻す
+          setTyped(pct === null ? "" : String(pct));
+        }}
+        className="border-input h-8 w-14 rounded-none border bg-transparent px-1 text-xs"
+      />
+      <button
+        type="button"
+        aria-label={`${m.docEditor.width} — ${WIDTH_PERCENTS.map((p) => `${p}%`).join(", ")}, ${m.docEditor.widthAuto}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="border-input text-muted-foreground hover:text-foreground -ml-px flex w-5 items-center justify-center border bg-transparent"
+        onClick={() => setOpen((v) => !v)}
       >
-        {WIDTH_PERCENTS.map((p) => (
-          <option key={p} value={p}>
-            {p === 100 ? m.docEditor.widthFull : `${p}%`}
-          </option>
-        ))}
-        <option value="auto">{m.docEditor.widthAuto}</option>
-        <option value={CUSTOM}>{m.docEditor.widthCustom}</option>
-      </select>
-
-      {mode === "custom" && (
-        <input
-          type="number"
-          min={WIDTH_MIN}
-          max={WIDTH_MAX}
-          value={typed}
-          aria-label={m.docEditor.widthCustom}
-          className="border-input ml-1 h-8 w-14 rounded-none border bg-transparent px-1 text-xs"
-          onChange={(e) => {
-            setTyped(e.target.value);
-            const n = Number(e.target.value);
-            // 範囲の外は幅にしない。打っている途中の空欄も、そのままにしておく
-            if (Number.isInteger(n) && n >= WIDTH_MIN && n <= WIDTH_MAX) onChange(n);
-          }}
-        />
+        <ChevronDown className="size-3" />
+      </button>
+      {open && (
+        <ul
+          role="listbox"
+          className="bg-background border-input absolute top-full left-0 z-20 mt-0.5 w-20 border py-1 text-xs shadow"
+        >
+          {WIDTH_PERCENTS.map((p) => (
+            <li key={p} role="option" aria-selected={pct === p}>
+              <button
+                type="button"
+                className={cn(
+                  "hover:bg-accent block w-full px-2 py-0.5 text-left",
+                  pct === p && "bg-accent",
+                )}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pick(p)}
+              >
+                {p}%
+              </button>
+            </li>
+          ))}
+          <li role="option" aria-selected={value === "auto"}>
+            <button
+              type="button"
+              className={cn(
+                "hover:bg-accent block w-full px-2 py-0.5 text-left",
+                value === "auto" && "bg-accent",
+              )}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => pick("auto")}
+            >
+              {m.docEditor.widthAuto}
+            </button>
+          </li>
+        </ul>
       )}
-    </>
+    </span>
   );
 }
