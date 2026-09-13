@@ -202,9 +202,14 @@ export function DocTemplateEditor({ id }: { id: string }) {
           {template.code} {template.nameJa}
         </h1>
         <div className="flex flex-col items-end gap-1">
-          {/* プレビューは見本の値。ボタンの上に赤い細字でひとこと（2026-09-13 指示。枠は出さない） */}
+          {/*
+            プレビューは見本の値。ボタンの上に赤い細字でひとこと（2026-09-13 指示。枠は出さない）。
+            画面が狭くてプレビューが下に回るときは、プレビューのすぐ上に出す（下の方を見る）
+          */}
           {preview && !isFile && (
-            <span className="text-destructive text-xs">{m.docEditor.previewNote}</span>
+            <span className="text-destructive hidden text-xs lg:inline">
+              {m.docEditor.previewNote}
+            </span>
           )}
           <div className="flex flex-wrap items-end justify-end gap-2">
             {isFile ? null : (
@@ -331,6 +336,8 @@ export function DocTemplateEditor({ id }: { id: string }) {
 
           {preview && sheet && (
             <div className="mt-4 lg:sticky lg:top-4 lg:mt-0">
+              {/* 狭い画面ではプレビューが下に回るので、その直前に見本の断りを出す */}
+              <p className="text-destructive mb-1 text-xs lg:hidden">{m.docEditor.previewNote}</p>
               {/* 紙面そのものは本番と同じ部品で出す。別に組むと見た目が分かれる */}
               <ResizableBox
                 storageKey="chem.box.docTemplatePreview"
