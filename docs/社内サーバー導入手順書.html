@@ -248,7 +248,7 @@
       <span><b>対象</b> 社内サーバー 1台</span>
       <span><b>作業者</b> サーバー管理者</span>
       <span><b>所要</b> 約1時間</span>
-      <span><b>版</b> 2026-09-14</span>
+      <span><b>版</b> 2026-09-15</span>
     </div>
   </header>
 
@@ -1105,8 +1105,156 @@ Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
     <p>
       うまくいかなかったときは、前の版のセットで同じ手順を行えば元の版に戻ります。
       データベースを戻す必要があるときは、更新の直前に取ったバックアップから復元します（<code>scripts\backup-db.ps1</code> の頭にやり方）。
-      法規制データだけを更新する場合の手順は、そのデータと一緒にお渡しします。
+      何を新しくするかで手順が違います。<b>場合ごとの手順は 11 を見てください</b>（法規制データだけの更新は画面から取り込みます）。
     </p>
+  </section>
+
+  <section id="update">
+    <h2>11. 更新の手順 <span class="count">場合ごと</span></h2>
+    <p>
+      導入したあとに何かを新しくするときの手順です。<b>何を新しくするかで手順が違います。</b>
+      お渡しする「更新のご案内」に、どの場合に当たるかを書いてあります。案内が無いときは、届いたファイルの名前で見分けてください。
+    </p>
+    <div class="scroll">
+      <table>
+        <caption>4 つの場合</caption>
+        <thead><tr><th>場合</th><th>届くもの</th><th>アプリが止まる時間</th><th>作業のあとの「判定し直し」</th></tr></thead>
+        <tbody>
+          <tr><td class="k">11-1 プログラムの更新（表は変わらない）</td><td>アプリのセット（<code>chem-system-(ver).tar.gz</code> / <code>chem-install-set-(ver)-win64.zip</code>）</td><td>Linux 1〜3 分（組み立て中は動いています）、Windows 約 1 分</td><td>案内に書いてあるときだけ</td></tr>
+          <tr><td class="k">11-2 プログラムの更新（表が変わる）</td><td>同上。案内に「データベースの表が変わります」と書いてあります</td><td>同上＋表の変更に 1 分ほど</td><td>案内に書いてあるときだけ</td></tr>
+          <tr><td class="k">11-3 データソースの更新（LOLI・CHRIP の新しい版）</td><td>データセット（<code>chem-data-set-(日付).zip</code>）</td><td>止まりません</td><td><b>必ず押す</b></td></tr>
+          <tr><td class="k">11-4 法規制の変更（法律の改正）</td><td>データセット、または規制リスト（<code>.tsv</code>）</td><td>止まりません</td><td><b>必ず押す</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>どの場合にも共通のこと</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>いつ</th><th>すること</th><th>Linux</th><th>Windows Server</th></tr></thead>
+        <tbody>
+          <tr><td class="k">前</td><td>利用者に「何時から何分止まる／判定が一時的に古くなる」と知らせる。判定し直しが走っている最中でないことを確かめる（システム設定 › 法規制の判定）</td><td colspan="2">—</td></tr>
+          <tr><td class="k">前</td><td><b>バックアップを取る</b>（更新に失敗したとき、ここに戻します）</td><td><code>cd /opt/chem &amp;&amp; ./scripts/backup-db.sh</code></td><td><code>update.ps1</code> が自動で取ります。データだけの更新のときは <code>powershell -ExecutionPolicy Bypass -File C:\chem\scripts\backup-db.ps1</code></td></tr>
+          <tr><td class="k">後</td><td>ログインして、ユーザーマニュアルの<b>「変更履歴」の先頭</b>が新しい版になっていることを見る（プログラムの更新のとき）</td><td colspan="2">ブラウザで</td></tr>
+          <tr><td class="k">後</td><td>アプリが動いていることを確かめる</td><td><code>docker compose -f compose.prod.yml --env-file .env.prod ps</code>（3 つとも running）</td><td><code>powershell -ExecutionPolicy Bypass -File C:\chem\scripts\check.ps1</code>（Running と 200）</td></tr>
+          <tr><td class="k">後</td><td>判定し直しが要る場合は、<b>システム設定 › 法規制の判定 › 「全製品を判定し直す」</b>を押し、左のメニューの「要再計算」が消えるまで待つ（数百製品で数分）</td><td colspan="2">ブラウザで（システム管理者）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box warn">
+      <h4>CAUTION</h4>
+      <p>
+        更新は<b>システム管理者</b>が行います。データの取り込み（11-3・11-4）には
+        <b>「データを取り込める」権限</b>が要ります。最初の管理者には付いていないことがあるので、
+        管理 › ユーザーで自分に付けてから始めてください。
+      </p>
+    </div>
+
+    <h3>11-1 プログラムの更新（データベースの表は変わらない）<span class="sub">不具合の修正・小さな機能追加</span></h3>
+    <p>いま入っている記録（製品・判定結果・利用者）はそのまま残ります。判定結果も変わりません。</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>手順</th><th>Linux</th><th>Windows Server</th></tr></thead>
+        <tbody>
+          <tr><td class="k">1 バックアップ</td><td><code>./scripts/backup-db.sh</code></td><td>（update.ps1 が取ります）</td></tr>
+          <tr><td class="k">2 ファイルを置く</td><td><code>cd /opt/chem &amp;&amp; tar -xzf ~/chem-system-(ver).tar.gz --strip-components=1</code></td><td><code>tar -xf C:\chem-install-set-(ver)-win64.zip -C C:\</code> のあと、できたフォルダを <code>C:\chem-install</code> に改名（前のフォルダは消して構いません）</td></tr>
+          <tr><td class="k">3 入れ替え</td><td><code>docker compose -f compose.prod.yml --env-file .env.prod up -d --build</code>（組み立て 10〜20 分。止まるのは最後の 1〜3 分）</td><td><code>powershell -ExecutionPolicy Bypass -File C:\chem-install\scripts\update.ps1</code>（5 分ほど。画面に<b>「データベースの表は変わりません」</b>と出ます）</td></tr>
+          <tr><td class="k">4 確認</td><td colspan="2">上の「共通のこと」の「後」。判定し直しは案内にあるときだけ</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box">
+      <h4>戻すとき</h4>
+      <p>前の版のセットで 2〜3 を行えば元の版に戻ります。データベースは触っていないので、そのままで大丈夫です。</p>
+    </div>
+
+    <h3>11-2 プログラムの更新（データベースの表が変わる）<span class="sub">案内に「表が変わります」とあるとき</span></h3>
+    <p>
+      手順は 11-1 と<b>同じ</b>です。違うのは次の 3 点だけです。
+    </p>
+    <ul>
+      <li><b>バックアップを必ず取ってから</b>始めます（Windows は update.ps1 が最初に取り、失敗したら止まります）。</li>
+      <li>表の変更は<b>自動で当たります</b>。Linux は起動のときに、Windows は update.ps1 の途中（「W4 データベースの表」）で行われ、画面に<b>「データベースの表が変わります」</b>と出ます。</li>
+      <li>いま入っている記録・判定結果は残ります。<b>案内に「判定し直してください」とあるとき</b>だけ、判定し直しを押してください（判定の決まりが変わった版です）。</li>
+    </ul>
+    <div class="box warn">
+      <h4>戻すとき</h4>
+      <p>
+        表が変わったあとは、前の版のプログラムをそのまま戻しても動きません。
+        <b>前の版のセットで入れ替えたあと、1 で取ったバックアップからデータベースを復元</b>してください
+        （手順 8「バックアップからの復元」／ Windows は <code>C:\chem\scripts\backup-db.ps1</code> の頭にやり方）。
+        復元すると、更新のあとに入れた記録は消えます。
+      </p>
+    </div>
+
+    <h3>11-3 データソースの更新<span class="sub">LOLI・CHRIP の新しい版（四半期ごと）</span></h3>
+    <p>
+      プログラムは変えません。届いた<b>データセット</b>を画面から取り込みます。作業中もアプリは止まりません。
+      詳しい画面の説明はユーザーマニュアルの「データを出し入れする」にあります。
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>手順</th><th>すること</th><th>確かめること</th></tr></thead>
+        <tbody>
+          <tr><td class="k">1</td><td>バックアップを取る（上の「共通のこと」）</td><td>ファイルができたこと</td></tr>
+          <tr><td class="k">2</td><td>左メニュー <b>データ入出力 › インポート</b> で <code>chem-data-set-(日付).zip</code> を選び「アップロード」</td><td>種類が<b>「データセット（法規制）」</b>と出ること。違うものと出たら「破棄」して、ファイルを確かめる</td></tr>
+          <tr><td class="k">3</td><td>「インポート」を押す（数分〜十数分。裏で読み、終わると表が出ます）</td><td>件数の表で<b>「バージョン」に追加 1</b>、「結び付き（CAS）」に追加が多数。<b>「読めない」が 0</b> であること</td></tr>
+          <tr><td class="k">4</td><td>「要確認」の行があれば見る（御社が画面で直した法文物質名や結び付きです。届いた値にしたい行だけ「反映する」に印を付ける）</td><td>印を付けていない「要確認」は、いまの値のまま残ります</td></tr>
+          <tr><td class="k">5</td><td>「反映」を押す</td><td>状態が<b>「反映済」</b>、「失敗 0 件」</td></tr>
+          <tr><td class="k">6</td><td>左メニュー <b>法規制 › バージョン</b> で新しい版（例 2026Q4）を選び<b>「現在のバージョンにする」</b></td><td>上の帯の「法規制バージョン」が新しい版になること</td></tr>
+          <tr><td class="k">7</td><td><b>システム設定 › 法規制の判定 › 「全製品を判定し直す」</b></td><td>左メニューの「要再計算」が消えること</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box">
+      <h4>判定結果はどうなるか</h4>
+      <ul>
+        <li>判定結果は<b>版ごと</b>に保存されます。前の版の結果は消えず、製品の画面で版を切り替えて見比べられます。</li>
+        <li>「確認済」「上書き」など<b>人が付けた判断</b>は、当たった法文物質名と CAS の組が前と同じなら新しい版にも引き継がれます。組が変わった製品は<b>「要確認」</b>になり、理由に「判断を外した」と残ります。判定し直しのあと、要確認の製品を見てください。</li>
+        <li>取り込みは<b>足す・直すだけで、消しません</b>。前の版で御社が足した結び付き（データソース USER）はそのまま残り、届いたデータより優先されます。</li>
+      </ul>
+    </div>
+
+    <h3>11-4 法規制の変更<span class="sub">法律の改正・新しい一覧・御社の社内基準</span></h3>
+    <p>
+      改正の内容によって、届くものと見るところが少し違います。取り込みの操作そのものは 11-3 の 2〜5 と同じです。
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>改正の種類</th><th>届くもの・すること</th><th>判定結果の扱い</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="k">(a) 物質が増えただけ</td>
+            <td>データセット。取り込み → 反映 → <b>判定し直し</b>（版の切り替えは不要）</td>
+            <td>増えた物質を含む製品だけ結果が変わります。人の判断は引き継がれます</td>
+          </tr>
+          <tr>
+            <td class="k">(b) 中身が変わった（閾値・区分の移動・削除）</td>
+            <td>データセット。<b>新しい規制区分が足され、古い区分に適用終了日が入ります</b>（古い区分は消しません）。取り込み → 反映 → <b>判定し直し</b></td>
+            <td>新しい区分の結果が新しく作られます。<b>人の判断は区分ごとなので、新しい区分には引き継がれません。</b>判定し直しのあと、その法律の該当を見直してください。古い区分の結果はそのまま残ります</td>
+          </tr>
+          <tr>
+            <td class="k">(c) 御社の社内基準・独自の一覧</td>
+            <td>データ入出力 › エクスポートで「規制リスト」をデータソース USER で出し、行を直して（1 行 = 法文物質名 × CAS）インポート → 反映 → 判定し直し。列名と並びは変えないこと</td>
+            <td>(a)(b) と同じ。中身が変わるときは、画面で新しい区分を作って古い区分に適用終了日を入れてから、新しい区分の名前でリストを作ります</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box warn">
+      <h4>CAUTION</h4>
+      <p>
+        <b>古い規制区分を消さないでください。</b>区分を消すと、その区分の判定結果（確認済の印を含む）も一緒に消えます。
+        古い区分は適用終了日で「もう効いていない」と分かるようにしてあります。
+      </p>
+    </div>
+    <div class="box check">
+      <h4>CHECK</h4>
+      <p>
+        11-3・11-4 が終わったら、代表的な製品を 1〜2 件開き、<b>判定対象日を入れずに</b>該当・非該当が案内どおりになっていることを見てください。
+        変わり目をまたぐ製品は、判定対象日に改正前の日付を入れると前の結果が見られます。
+      </p>
+    </div>
   </section>
 
   <p class="foot">
