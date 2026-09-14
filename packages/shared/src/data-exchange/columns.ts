@@ -85,7 +85,7 @@ export const TABLE_COLUMNS: Record<TableKind, readonly ColumnDef[]> = {
 export function normalizeHeaderName(name: string): string {
   return name
     .replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
-    .replace(/[\s　]/g, "")
+    .replace(/[\s3000]/g, "")
     .replace(/（/g, "(")
     .replace(/）/g, ")")
     .toLowerCase();

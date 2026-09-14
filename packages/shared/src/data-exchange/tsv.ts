@@ -89,7 +89,7 @@ function joinQuotedLines(lines: string[]): { text: string; lineNo: number }[] {
 }
 
 export function parseTable(text: string): ParsedTable {
-  const body = text.replace(/^﻿/, "");
+  const body = text.replace(/^FEFF/, "");
   const physical = body.split("\n");
   const logical = joinQuotedLines(physical).filter((l) => l.text.trim() !== "");
   if (logical.length === 0) return { delimiter: "\t", header: [], rows: [], lineNumbers: [] };
@@ -129,5 +129,5 @@ export function writeTable(
 ): string {
   const lines = [header.map((h) => quoteCell(h, delimiter)).join(delimiter)];
   for (const r of rows) lines.push(r.map((c) => quoteCell(c, delimiter)).join(delimiter));
-  return "﻿" + lines.join("\r\n") + "\r\n";
+  return "FEFF" + lines.join("\r\n") + "\r\n";
 }
