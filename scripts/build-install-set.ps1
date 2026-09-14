@@ -18,7 +18,9 @@
 
 [CmdletBinding()]
 param(
-  [string]$Version = ""
+  [string]$Version = "",
+  # 組み立て済みの app\ をそのまま使い、インストーラー・手順書・zip だけ作り直す（手順書を直したときなど）
+  [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -51,9 +53,16 @@ if ($dirty) {
 }
 
 Step "準備（$stage）"
-if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+if ($SkipBuild -and -not (Test-Path (Join-Path $stage "app\manifest.json"))) { throw "-SkipBuild ですが組み立て済みの app がありません" }
+if (Test-Path $stage) {
+  Get-ChildItem $stage | Where-Object { -not ($SkipBuild -and $_.Name -eq "app") } | Remove-Item -Recurse -Force
+}
 New-Item -ItemType Directory -Force -Path $stage, (Join-Path $stage "app"), (Join-Path $stage "installers"), (Join-Path $stage "scripts"), $cache | Out-Null
 
+if ($SkipBuild) {
+  $manifest = Get-Content (Join-Path $stage "app\manifest.json") -Raw | ConvertFrom-Json
+  Write-Host "    組み立て済みを使います: 版 $($manifest.version) / $($manifest.commit)"
+} else {
 Step "ソースを取り出す（git archive $commit）"
 $archive = Join-Path $out "install-set\app-src.tar"
 & git archive --format=tar -o $archive HEAD -- @include
@@ -89,6 +98,7 @@ try {
   Write-Host "    manifest: 版 $Version / $commit / 表の最終変更 $lastMigration"
 }
 finally { Pop-Location }
+}
 
 Step "インストーラー（無ければ公式サイトから out\installers-cache に落とす）"
 $installers = @(
