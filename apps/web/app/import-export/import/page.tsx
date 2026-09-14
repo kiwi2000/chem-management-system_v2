@@ -1,6 +1,10 @@
-import { UnderConstruction } from "@/components/under-construction";
+import { ImportScreen } from "@/components/import-screen";
+import { ForbiddenNotice } from "@/components/forbidden-notice";
+import { getActor } from "@/lib/authz";
 
-/** まだ作っていない画面。メニューから押せるので、作っていないことだけを伝える */
-export default function Page() {
-  return <UnderConstruction titleKey="dataImport" />;
+/** インポート。ファイルを上げて、取り込みの履歴を見る（決定 0011） */
+export default async function ImportPage() {
+  const actor = await getActor();
+  if (!actor?.has("DATA_IMPORT")) return <ForbiddenNotice />;
+  return <ImportScreen />;
 }

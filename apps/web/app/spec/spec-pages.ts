@@ -12,6 +12,7 @@ export const SPEC_PAGES = [
   { href: "/spec/inventories", label: "インベントリを扱う" },
   { href: "/spec/judgements", label: "法規制の判定を見る" },
   { href: "/spec/documents", label: "ドキュメントを作る" },
+  { href: "/spec/import-export", label: "データを出し入れする" },
   { href: "/spec/lists", label: "探す・絞り込む" },
   { href: "/spec/states", label: "公開までの流れ" },
   { href: "/spec/permissions", label: "だれが何をできるか" },

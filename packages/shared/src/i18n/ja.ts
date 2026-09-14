@@ -1876,6 +1876,156 @@ export const ja = {
   },
 
   /** 入力チェック（Zodスキーマが使う） */
+  /** データ入出力（決定 0011）。インポート＝ファイルを一時領域に読む、反映＝本体に書く */
+  importExport: {
+    importTitle: "インポート",
+    exportTitle: "エクスポート",
+    /** アップロードの欄 */
+    pickFile: "ファイルを選ぶ",
+    upload: "アップロード",
+    uploading: "アップロード中...",
+    fileHint:
+      "受け付けるのは、規制リスト・製品と組成・物質の表（TSV / CSV。1 行目が列名）と、当方が渡すデータセット（JSON / ZIP）です。ファイルの種類は中身から判断して、下に出します。",
+    /** アップロード直後の概要 */
+    detected: "このファイルの内容",
+    detectedKind: "種類",
+    detectedRows: "行数",
+    detectedColumns: "列",
+    /** 「インポート」＝一時領域へ読む */
+    doImport: "インポート",
+    importHint:
+      "「インポート」を押すと、ファイルを読んで本体と突き合わせ、一時領域に入れます。本体のデータはまだ変わりません。",
+    /** 「反映」＝本体へ書く */
+    doApply: "反映",
+    applyConfirm: (n: number) =>
+      `「反映する」に印の付いた ${n} 件を本体に書き込みます。よろしいですか？`,
+    applyHint:
+      "反映すると本体のデータが変わります。法規制の判定は自動では変わらないので、反映のあとにシステム設定の「全製品を判定し直す」を押してください。",
+    discard: "破棄",
+    discardConfirm:
+      "この取り込みを破棄します。一時領域の内容は消えます（本体は変わりません）。よろしいですか？",
+    reread: "読み直す",
+    /** 一覧 */
+    history: "取り込みの履歴",
+    noneYet: "まだ取り込みはありません",
+    fileName: "ファイル",
+    kind: "種類",
+    status: "状態",
+    rows: "行数",
+    createdBy: "アップロードした人",
+    createdAt: "アップロード",
+    appliedAt: "反映",
+    kinds: {
+      DATA_SET: "データセット（法規制）",
+      REGULATION_LIST: "規制リスト",
+      PRODUCTS: "製品と組成",
+      SUBSTANCES: "物質",
+    },
+    statuses: {
+      UPLOADED: "アップロード済",
+      LOADING: "読み取り中",
+      STAGED: "確認待ち",
+      APPLYING: "反映中",
+      DONE: "反映済",
+      FAILED: "失敗",
+      DISCARDED: "破棄",
+    },
+    actions: {
+      ADD: "追加",
+      UPDATE: "更新",
+      UNCHANGED: "変更なし",
+      CONFLICT: "要確認",
+      ERROR: "読めない",
+    },
+    actionHints: {
+      ADD: "本体に無いもの。反映すると足されます",
+      UPDATE: "本体にあって、項目が変わるもの",
+      UNCHANGED: "本体と同じ。何もしません",
+      CONFLICT:
+        "前回の取り込みのあとに、画面で誰かが直したもの。反映すると上書きになるので、既定では反映しません",
+      ERROR: "読めなかった行。理由は右の列に出ます",
+    },
+    rowKinds: {
+      source: "データソース",
+      version: "バージョン",
+      law: "法律",
+      category: "規制区分",
+      class: "分類",
+      substance: "法文物質名",
+      link: "結び付き（CAS）",
+      product: "製品",
+      composition: "組成",
+      substance_master: "物質",
+    } as Record<string, string>,
+    /** 一時領域の表 */
+    staged: "一時領域の内容",
+    seq: "#",
+    rowKind: "種類",
+    action: "動き",
+    keyPath: "鍵（コード）",
+    label: "名前",
+    apply: "反映する",
+    diff: "変わる項目",
+    message: "備考",
+    noRows: "行がありません",
+    showUnchanged: "変更なしも出す",
+    checkAll: "表示中の種類・動きを全部「反映する」に",
+    uncheckAll: "表示中の種類・動きを全部外す",
+    diffArrow: "→",
+    empty: "（空）",
+    /** 進み具合 */
+    progress: (pct: number) => `処理中... ${pct}%`,
+    running: "処理が走っています。終わると表示が変わります",
+    summaryCounts: "件数",
+    notes: "読み取りで気づいたこと",
+    errorsCount: (n: number) => `読めなかった行: ${n}`,
+    applied: "反映した件数",
+    appliedSummary: (applied: number, skipped: number, failed: number) =>
+      `反映 ${applied} 件、飛ばした ${skipped} 件、失敗 ${failed} 件`,
+    rejudgeReminder:
+      "反映が終わりました。判定を直すには、システム設定の「全製品を判定し直す」を押してください。",
+    rejudgeLink: "システム設定を開く",
+    /** エクスポート */
+    exportLead:
+      "書き出したファイルは、そのまま「インポート」で読み戻せます。列の並びや列名は変えないでください。",
+    exportKind: "書き出すもの",
+    exportLaw: "法律",
+    exportSource: "データソース",
+    exportAll: "すべて",
+    exportSources: "データセットに入れるデータソース",
+    download: "ダウンロード",
+    exportKinds: {
+      REGULATION_LIST: "規制リスト（現在のバージョン）",
+      PRODUCTS: "製品と組成",
+      SUBSTANCES: "物質",
+      DATA_SET: "データセット（法規制の写し・JSON）",
+    },
+    exportHints: {
+      REGULATION_LIST:
+        "1 行が「法文物質名 × CAS」。法律とデータソースで絞れます。自分たちで作ったリストを直すときは、データソースを USER にして書き出してください",
+      PRODUCTS: "見られる製品だけ。組成は「非公開の組成も見られる」権限がある人にだけ入ります",
+      SUBSTANCES: "物質マスタの全部。別名は「;」区切り",
+      DATA_SET:
+        "別の環境に法規制データを丸ごと渡すためのもの。データソースを選ぶと、その結び付きだけになります",
+    },
+    errors: {
+      noFile: "ファイルが選ばれていません",
+      tooLarge: "ファイルが大きすぎます（上限 200 MB）",
+      missingColumns: (cols: string[]) => `必須の列がありません: ${cols.join("、")}`,
+      extension: "この種類のファイルは扱えません（.tsv / .csv / .txt / .json / .zip）",
+      notDataSet: "JSON の形が当方のデータセットではありません",
+      empty: "ファイルが空です",
+      zipEmpty: "ZIP の中に読めるファイル（.json / .tsv / .csv / .txt）がありません",
+      unreadable: "ファイルを読めませんでした",
+      running: "この取り込みはいま処理中です",
+      otherRunning: "別の取り込みが処理中です。終わってからやり直してください",
+      alreadyApplied: "反映済のものは破棄できません",
+      badStatus: "いまの状態ではこの操作はできません",
+      fileGone: "ファイルはもう残っていません。アップロードし直してください",
+      nothingToApply: "「反映する」に印の付いた行がありません",
+    },
+  },
+
   /** 組織（会社・事業所）。帳票に載せる差出人の情報を置く画面 */
   organisations: {
     title: "組織",
