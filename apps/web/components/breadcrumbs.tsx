@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Fragment } from "react";
 
@@ -16,6 +18,10 @@ export interface Crumb {
  *
  * **最後は押せない。**いま開いている画面なので、押しても行き先が無い。
  * 押せるものと押せないものを色で分ける。
+ *
+ * **クライアント部品にしてある。**リンクに押したときの処理（beforeNavigate）を付けるため。
+ * サーバー部品のままだと、サーバーで描く画面（製品情報など）から使ったときに
+ * 「関数はクライアント部品に渡せない」で落ちる（2026-09-14 に本番で起きた）
  */
 export function Breadcrumbs({
   items,
