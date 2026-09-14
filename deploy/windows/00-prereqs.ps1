@@ -4,7 +4,7 @@
 #
 # インストールセットの installers\ にある公式インストーラーを使う（インターネットは要らない）:
 #   node-*-x64.msi                  Node.js 22 LTS。PATH に通す
-#   postgresql-16.*-windows-x64.exe PostgreSQL 16。無人で入れる（ポート 5432、サービス postgresql-x64-16、pgAdmin は入れない）
+#   postgresql-16.*-windows-x64-binaries.zip  PostgreSQL 16 の公式バイナリ。展開して initdb・サービス登録（ポート 5432、サービス postgresql-x64-16）
 #   caddy_*_windows_amd64.zip       caddy.exe を C:\chem\caddy\ に置く
 #   nssm-*.zip                      nssm.exe（win64）を C:\chem\nssm\ に置く
 # すでに入っているものは飛ばす。
@@ -45,26 +45,54 @@ if ($node) {
 }
 
 Write-Step "PostgreSQL 16"
+# GUI のインストーラーは使わない（画面の無いセッションでは無人モードでも動かない）。
+# 公式のバイナリ zip から bin / lib / share だけを取り出し、initdb とサービス登録を自分で行う
+# （EDB のインストーラーが中でやっていることと同じ。pgAdmin などは入れない）
+$pgRoot = "C:\Program Files\PostgreSQL\16"
+$pgData = Join-Path $pgRoot "data"
 if (Get-Service $PostgresService -ErrorAction SilentlyContinue) {
   Write-Ok "すでにあります（サービス $PostgresService）"
 } else {
   if (-not $SuperPassword) {
     $SuperPassword = Read-Host -AsSecureString "postgres（管理ユーザー）に付けるパスワード"
   }
-  $exe = Find-Installer "postgresql-16*-windows-x64.exe"
-  Write-Host "    入れています: $(Split-Path -Leaf $exe)（3〜5 分）"
-  $args = @(
-    "--mode", "unattended", "--unattendedmodeui", "none",
-    "--superpassword", (ConvertTo-Plain $SuperPassword),
-    "--serverport", "$PgPort", "--servicename", $PostgresService,
-    "--enable-components", "server,commandlinetools", "--disable-components", "pgAdmin,stackbuilder"
-  )
-  $p = Start-Process $exe -ArgumentList $args -Wait -PassThru
-  if ($p.ExitCode -ne 0) { throw "PostgreSQL のインストールが失敗しました（終了コード $($p.ExitCode)）" }
-  $svc = Get-Service $PostgresService -ErrorAction SilentlyContinue
-  if (-not $svc) { throw "インストール後にサービス $PostgresService が見つかりません" }
-  if ($svc.Status -ne "Running") { Start-Service $PostgresService }
-  Write-Ok "入れました（サービス ${PostgresService}: $((Get-Service $PostgresService).Status)）"
+  $zip = Find-Installer "postgresql-16*-windows-x64-binaries.zip"
+  if (-not (Test-Path (Join-Path $pgRoot "bin\postgres.exe"))) {
+    Write-Host "    展開しています: $(Split-Path -Leaf $zip)（1〜2 分）"
+    $tmp = Join-Path $env:TEMP "pg-unzip"
+    if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $tmp, $pgRoot | Out-Null
+    $tar = Join-Path $env:SystemRoot "System32\tar.exe"
+    & $tar -xf $zip -C $tmp "pgsql/bin" "pgsql/lib" "pgsql/share"
+    if ($LASTEXITCODE -ne 0) { throw "PostgreSQL の zip の展開が失敗しました（終了コード $LASTEXITCODE）" }
+    foreach ($d in @("bin", "lib", "share")) { Move-Item (Join-Path $tmp "pgsql\$d") (Join-Path $pgRoot $d) }
+    Remove-Item $tmp -Recurse -Force
+  }
+  $pgCtl = Join-Path $pgRoot "bin\pg_ctl.exe"
+  if (-not (Test-Path (Join-Path $pgData "PG_VERSION"))) {
+    Write-Host "    initdb（UTF-8 / 照合順序 C / scram-sha-256）"
+    # initdb は管理者権限では動かないが、pg_ctl 経由なら権限を落として実行してくれる。
+    # 権限を落とした側でも書けるよう、data の所有を作業者と NetworkService に付けておく
+    New-Item -ItemType Directory -Force -Path $pgData | Out-Null
+    & icacls $pgData /inheritance:r /grant "${env:USERNAME}:(OI)(CI)F" /grant "NT AUTHORITY\NetworkService:(OI)(CI)F" /grant "BUILTIN\Administrators:(OI)(CI)F" | Out-Null
+    & icacls $pgRoot /grant "NT AUTHORITY\NetworkService:(OI)(CI)RX" | Out-Null
+    $pwFile = Join-Path $env:TEMP "pg-superpw.txt"
+    [IO.File]::WriteAllText($pwFile, (ConvertTo-Plain $SuperPassword) + "`n", (New-Object Text.ASCIIEncoding))
+    try {
+      & $pgCtl initdb -D $pgData -o "-U postgres --pwfile=$pwFile -E UTF8 --locale=C -A scram-sha-256"
+      if ($LASTEXITCODE -ne 0) { throw "initdb が失敗しました（終了コード $LASTEXITCODE）" }
+    } finally { Remove-Item $pwFile -Force -ErrorAction SilentlyContinue }
+    # 記録は data\log に残す（EDB のインストーラーと同じ）
+    Add-Content -Path (Join-Path $pgData "postgresql.conf") -Value "`r`n# chem install`r`nlogging_collector = on`r`nlog_directory = 'log'`r`nport = $PgPort`r`n" -Encoding ascii
+  }
+  Write-Host "    サービス $PostgresService を登録（NetworkService で起動）"
+  & $pgCtl register -N $PostgresService -U "NT AUTHORITY\NetworkService" -D $pgData -S auto -w
+  if ($LASTEXITCODE -ne 0) { throw "サービスの登録が失敗しました（終了コード $LASTEXITCODE）" }
+  Start-Service $PostgresService
+  Start-Sleep -Seconds 3
+  $svc = Get-Service $PostgresService
+  if ($svc.Status -ne "Running") { throw "サービス $PostgresService が起動しません。$pgData\log を確かめてください" }
+  Write-Ok "入れました（サービス ${PostgresService}: $($svc.Status)、$pgRoot）"
 }
 
 Write-Step "Caddy"
