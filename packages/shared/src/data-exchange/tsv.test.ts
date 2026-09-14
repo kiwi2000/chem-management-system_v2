@@ -3,7 +3,7 @@ import { parseTable, quoteCell, writeTable } from "./tsv";
 
 describe("parseTable", () => {
   it("BOM と CRLF を受け付け、タブで区切る", () => {
-    const t = parseTable("FEFF法律\t規制区分\tCAS\r\n化審法\t第一種\t50-00-0\r\n");
+    const t = parseTable("\uFEFF法律\t規制区分\tCAS\r\n化審法\t第一種\t50-00-0\r\n");
     expect(t.delimiter).toBe("\t");
     expect(t.header).toEqual(["法律", "規制区分", "CAS"]);
     expect(t.rows).toEqual([["化審法", "第一種", "50-00-0"]]);
@@ -40,8 +40,8 @@ describe("writeTable", () => {
         [null, 1],
       ],
     );
-    expect(s.startsWith("FEFF")).toBe(true);
-    expect(s).toBe('FEFFa\tb\r\n"x\ty"\t"say ""hi"""\r\n\t1\r\n');
+    expect(s.startsWith("\uFEFF")).toBe(true);
+    expect(s).toBe('\uFEFFa\tb\r\n"x\ty"\t"say ""hi"""\r\n\t1\r\n');
   });
 
   it("書いたものを読むと同じになる", () => {
