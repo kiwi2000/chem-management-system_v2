@@ -1025,6 +1025,14 @@ Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
           </p>
 <pre>certutil -addstore Root root.crt      <span class="c"># 各パソコンで管理者として</span></pre>
           <div class="box warn">
+            <h4>パスキーを使うなら、証明書の登録は必須です</h4>
+            <p>
+              ブラウザは、証明書の警告が出ているページでは<b>パスキーの登録・ログインを一切受け付けません</b>
+              （画面には「登録をやめました」と出ます）。上の登録を済ませ、<b>ブラウザをすべて閉じて開き直してから</b>
+              アドレスバーに警告が無いことを確かめてください。パスワードでのログインは、警告があっても使えます。
+            </p>
+          </div>
+          <div class="box warn">
             <h4>HTTPS は必須です</h4>
             <p>
               ログインの記録は<b>HTTPS のときだけ</b>保たれる作りになっています。
