@@ -36,6 +36,7 @@ INCLUDE=(
   tsconfig.base.json
   .dockerignore
   .env.prod.example
+  .env.windows.example
   Dockerfile
   compose.prod.yml
   deploy

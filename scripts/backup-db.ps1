@@ -1,4 +1,4 @@
-# 業務DBの日次バックアップ（Windows Server 版）。
+﻿# 業務DBの日次バックアップ（Windows Server 版）。
 # Docker を使わず PostgreSQL を直接入れた構成で使う。Linux 版は backup-db.sh。
 #
 # タスクスケジューラへの登録（毎日3時・管理者で）:
