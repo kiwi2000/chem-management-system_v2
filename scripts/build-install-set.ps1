@@ -103,6 +103,7 @@ finally { Pop-Location }
 Step "インストーラー（無ければ公式サイトから out\installers-cache に落とす）"
 $installers = @(
   @{ File = "node-v22.23.2-x64.msi"; Url = "https://nodejs.org/dist/v22.23.2/node-v22.23.2-x64.msi" },
+  @{ File = "vc_redist.x64.exe"; Url = "https://aka.ms/vs/17/release/vc_redist.x64.exe" },
   @{ File = "postgresql-16.10-1-windows-x64-binaries.zip"; Url = "https://get.enterprisedb.com/postgresql/postgresql-16.10-1-windows-x64-binaries.zip" },
   @{ File = "caddy_2.11.4_windows_amd64.zip"; Url = "https://github.com/caddyserver/caddy/releases/download/v2.11.4/caddy_2.11.4_windows_amd64.zip" },
   @{ File = "nssm-2.24.zip"; Url = "https://nssm.cc/release/nssm-2.24.zip" }

@@ -4,6 +4,7 @@
 #
 # インストールセットの installers\ にある公式インストーラーを使う（インターネットは要らない）:
 #   node-*-x64.msi                  Node.js 22 LTS。PATH に通す
+#   vc_redist.x64.exe               Microsoft Visual C++ ランタイム（PostgreSQL の実行に要る）
 #   postgresql-16.*-windows-x64-binaries.zip  PostgreSQL 16 の公式バイナリ。展開して initdb・サービス登録（ポート 5432、サービス postgresql-x64-16）
 #   caddy_*_windows_amd64.zip       caddy.exe を C:\chem\caddy\ に置く
 #   nssm-*.zip                      nssm.exe（win64）を C:\chem\nssm\ に置く
@@ -42,6 +43,20 @@ if ($node) {
   if ($p.ExitCode -ne 0) { throw "Node.js のインストールが失敗しました（終了コード $($p.ExitCode)）" }
   Update-PathFromMachine
   Write-Ok "入れました: $(& node -v)"
+}
+
+Write-Step "Visual C++ ランタイム（PostgreSQL が使う）"
+$vcKey = "HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
+$vc = Get-ItemProperty $vcKey -ErrorAction SilentlyContinue
+if ($vc -and $vc.Installed -eq 1) {
+  Write-Ok "すでにあります: $($vc.Version)"
+} else {
+  $exe = Find-Installer "vc_redist.x64.exe"
+  Write-Host "    入れています: $(Split-Path -Leaf $exe)"
+  $p = Start-Process $exe -ArgumentList @("/install", "/quiet", "/norestart") -Wait -PassThru
+  # 0=入った 1638=もっと新しいものがある 3010=入ったが再起動待ち（そのままで動く）
+  if ($p.ExitCode -notin @(0, 1638, 3010)) { throw "Visual C++ ランタイムのインストールが失敗しました（終了コード $($p.ExitCode)）" }
+  Write-Ok "入れました（終了コード $($p.ExitCode)）"
 }
 
 Write-Step "PostgreSQL 16"
