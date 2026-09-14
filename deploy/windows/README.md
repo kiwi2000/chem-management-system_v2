@@ -1,23 +1,21 @@
-# Windows Server 直置き構成の組み立てスクリプト
+# Windows Server 直置き構成のスクリプト
 
-導入手順書 §10「Windows Server への導入」の「打ち込む」部分を、順番に実行できる形にしたもの。
-手順の説明そのものは手順書を読むこと。ここは順番と確かめかたの覚え書き。
+導入手順書 §10「Windows Server への導入」で使うもの。お客さんにはインストールセット
+（`scripts/build-install-set.ps1` で作る zip）の `scripts\` として同梱され、`C:\chem\deploy\windows\` にも写る。
+手順の説明そのものは手順書を読むこと。ここは部品の一覧。
 
-前提: Node.js 22 LTS（MSI）・PostgreSQL 16（UTF-8 で入れる。postgres のパスワードを控える）・
-`C:\chem\caddy\caddy.exe`・`C:\chem\nssm\nssm.exe` を入れ、配布物の zip を `C:\chem` に展開してある。
+| スクリプト                 | 役目                                                                                                                                                 | 権限   |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `install.ps1`              | 初回の導入をまとめて行う（W1〜W8 を順に呼ぶ）。`-Unattended` で乱数のパスワードを `C:\chem\secrets` に保存（当方の作業者向け。お客さんは画面で打つ） | 管理者 |
+| `update.ps1`               | 更新。版の比較 → バックアップ → 停止 → ファイル入れ替え（robocopy /MIR） → 表の変更 → 起動 → 状態                                                    | 管理者 |
+| `check.ps1`                | 状態をまとめて出す。何も変えない                                                                                                                     | 一般   |
+| `00-prereqs.ps1`           | Node.js / PostgreSQL（無人） / Caddy / NSSM を `installers\` から入れる。入っているものは飛ばす                                                      | 管理者 |
+| `01-create-db.ps1`         | ユーザー chem とデータベース chem（UTF-8 / 照合順序 C）を作る                                                                                        | 一般   |
+| `02-migrate.ps1`           | `prisma migrate status` → `deploy`。`-DumpFile` で pg_dump -Fc を空の DB に流し込む                                                                  | 一般   |
+| `03-install-services.ps1`  | nssm で chem-app / chem-caddy を登録・起動（記録は `C:\chem\logs`、落ちたら再起動、PostgreSQL の後に起動）                                           | 管理者 |
+| `04-firewall.ps1 -LanCidr` | 443 / 80 を LAN からだけ許可。5432 / 3001 が閉じていることを表示                                                                                     | 管理者 |
+| `05-backup-task.ps1`       | タスク chem-backup（毎日 3:00、`scripts\backup-db.ps1`）を登録して 1 回動かす                                                                        | 管理者 |
+| `_common.ps1`              | 共通の部品（.env の読み取り、PATH の読み直し、乱数パスワード、manifest）                                                                             |        |
 
-| 順  | スクリプト                                                                          | 権限   | 確かめかた                                                                  |
-| --- | ----------------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------- |
-| 1   | `01-create-db.ps1`                                                                  | 一般   | 最後に出る表で `UTF8`                                                       |
-| 2   | `.env.windows.example` を `C:\chem\.env` に写し、パスワードを書く                   |        | `check.ps1` に `.env: chem@127.0.0.1:5432/chem`                             |
-| 3   | `02-build.ps1`（別の機械の DB を持ち込むなら `-DumpFile <pg_dump -Fc のファイル>`） | 一般   | `migrate deploy` が「適用なし」または成功、利用者の一覧が出る               |
-| 4   | `03-install-services.ps1`                                                           | 管理者 | 3 つのサービスが Running / Automatic                                        |
-| 5   | `check.ps1`                                                                         | 一般   | `http://127.0.0.1:3001/api/health` と `https://127.0.0.1/api/health` が 200 |
-| 6   | `04-firewall.ps1 -LanCidr <社内 LAN>`                                               | 管理者 | 社員 PC から 443 が通り、5432 が通らない                                    |
-| 7   | `05-backup-task.ps1`                                                                | 管理者 | `C:\backups\chem\chem_*.zip` ができる                                       |
-| 8   | サーバーを再起動して 5 をもう一度                                                   |        | 自動起動の確認                                                              |
-
-社員 PC 側: hosts か社内 DNS でサーバーに名前を付ける（パスキーは IP では登録できない）。
-`%ProgramData%\caddy\pki\authorities\local\root.crt` を「信頼されたルート証明機関」に入れると証明書の警告が消える。
-
-更新: `backup-db.ps1` → `nssm stop chem-app` → 新しい zip を展開 → `02-build.ps1` → `nssm start chem-app`。
+決まり: Windows PowerShell 5.1 で動くこと（`&&` や `?:` を使わない、native の `2>&1` を付けない）。
+ファイルは **UTF-8 BOM 付き**（無いと 5.1 が Shift-JIS として読んで壊れる）。

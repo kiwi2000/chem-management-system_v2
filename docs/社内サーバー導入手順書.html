@@ -248,7 +248,7 @@
       <span><b>対象</b> 社内サーバー 1台</span>
       <span><b>作業者</b> サーバー管理者</span>
       <span><b>所要</b> 約1時間</span>
-      <span><b>版</b> 2026-09-09</span>
+      <span><b>版</b> 2026-09-14</span>
     </div>
   </header>
 
@@ -275,7 +275,7 @@
         <thead><tr><th>ファイル</th><th class="num">サイズ</th><th>説明</th></tr></thead>
         <tbody>
           <tr><td class="k">chem-system-(ver).tar.gz</td><td class="num">約 2 MB</td><td>アプリ本体と起動用の設定ファイル（Linux 用）。<b>(ver) は、アプリのバージョン</b>（例 <code>chem-system-1.0.0.tar.gz</code>）</td></tr>
-          <tr><td class="k">chem-system-(ver).zip</td><td class="num">約 2 MB</td><td>同じ中身の Windows Server 用（手順10で使います）</td></tr>
+          <tr><td class="k">chem-install-set-(ver)-win64.zip</td><td class="num">約 700 MB</td><td>Windows Server 用のインストールセット（手順10で使います）。組み立て済みのアプリと、Node.js・PostgreSQL・Caddy・NSSM のインストーラー、この手順書が入っています。<b>インターネットに繋がらないサーバーでも導入できます</b></td></tr>
           <tr><td class="k">chem-images-(ver).tar</td><td class="num">約 1.5 GB</td><td>実行に使う Docker イメージ。<b>サーバーがインターネットに繋がらない場合のみ</b>お渡しします</td></tr>
         </tbody>
       </table>
@@ -862,6 +862,8 @@ docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
       ここまでは Linux での手順です。<b>Windows Server に入れる場合は、この節に読み替えてください。</b>
       <b>アプリのプログラムは1行も変わりません。</b>変わるのは、入れ物（Docker）の代わりに
       <b>3つを Windows のサービスとして常駐させる</b>ところです。
+      Windows Server 用は<b>インストールセット</b>（組み立て済みのアプリと、必要なソフトの
+      インストーラーを1つにまとめたもの）でお渡しします。<b>サーバーがインターネットに繋がっていなくても導入できます。</b>
     </p>
 
     <div class="box warn">
@@ -882,17 +884,17 @@ docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
           <tr>
             <td>データベース</td>
             <td class="k">db コンテナ</td>
-            <td>PostgreSQL 16 を直接インストール（サービスとして常駐）</td>
+            <td>PostgreSQL 16 を直接インストール（サービス <code>postgresql-x64-16</code>）</td>
           </tr>
           <tr>
             <td>アプリ</td>
             <td class="k">app コンテナ</td>
-            <td>Node.js で直接動かし、<code>nssm</code> でサービス登録</td>
+            <td>Node.js で直接動かし、<code>nssm</code> でサービス登録（サービス <code>chem-app</code>）</td>
           </tr>
           <tr>
             <td>入口（HTTPS）</td>
             <td class="k">caddy コンテナ</td>
-            <td>Caddy の Windows 版をサービス登録</td>
+            <td>Caddy の Windows 版をサービス登録（サービス <code>chem-caddy</code>）</td>
           </tr>
           <tr>
             <td>自動起動・再起動</td>
@@ -904,6 +906,26 @@ docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
             <td class="k">backup-db.sh（cron）</td>
             <td class="k">backup-db.ps1（タスクスケジューラ）</td>
           </tr>
+          <tr>
+            <td>アプリの置き場所</td>
+            <td class="k">/opt/chem</td>
+            <td class="k">C:\chem（設定は C:\chem\.env、記録は C:\chem\logs\）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <caption>インストールセットの中身（chem-install-set-(ver)-win64.zip）</caption>
+        <thead><tr><th>もの</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td class="k">README.txt</td><td>最初に読むもの。順番が書いてあります</td></tr>
+          <tr><td class="k">手順書.html</td><td>この手順書</td></tr>
+          <tr><td class="k">app\</td><td>組み立て済みのアプリ。<b>お客さま側で組み立て（npm）は行いません</b></td></tr>
+          <tr><td class="k">installers\</td><td>Node.js 22 / PostgreSQL 16 / Caddy / NSSM の公式インストーラー</td></tr>
+          <tr><td class="k">scripts\</td><td><code>install.ps1</code>（初回）、<code>update.ps1</code>（更新）、<code>check.ps1</code>（状態の確認）</td></tr>
+          <tr><td class="k">SHA256SUMS.txt</td><td>ファイルが壊れていないかを照らし合わせるためのもの</td></tr>
         </tbody>
       </table>
     </div>
@@ -913,24 +935,13 @@ docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
       <div class="step">
         <div class="no">W1</div>
         <div class="body">
-          <h3>必要なソフトの導入<span class="sub">いずれも公式のインストーラーがあります</span></h3>
-          <div class="scroll">
-            <table>
-              <thead><tr><th>ソフト</th><th>版</th><th>入れ方</th></tr></thead>
-              <tbody>
-                <tr><td><b>Node.js</b></td><td>22 LTS（20以上）</td><td>公式の MSI。<b>PATH に通す</b>にチェック</td></tr>
-                <tr><td><b>PostgreSQL</b></td><td>16</td><td>公式インストーラー。<b>文字コードは UTF-8</b>。ポートは 5432 のまま</td></tr>
-                <tr><td><b>Caddy</b></td><td>2 系</td><td>公式サイトの Windows 版（<code>caddy.exe</code> 1本）を <code>C:\chem\caddy\</code> に置く</td></tr>
-                <tr><td><b>NSSM</b></td><td>2.24 以降</td><td>アプリと Caddy をサービスにするための道具。<code>nssm.exe</code> 1本</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="box warn">
-            <h4>CAUTION</h4>
-            <p>
-              PostgreSQL のインストール時に決める <b>postgres のパスワードは控えておいてください。</b>
-              このあと業務用のユーザーを作るのに使います。
-            </p>
+          <h3>セットの展開<span class="sub">C:\chem-install に置きます</span></h3>
+          <p>お渡しした zip をサーバーにコピーし、管理者の PowerShell で展開します。</p>
+<pre>Expand-Archive -Path C:\chem-install-set-(ver)-win64.zip -DestinationPath C:\
+Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
+          <div class="box check">
+            <h4>CHECK</h4>
+            <p><code>C:\chem-install</code> の下に <code>README.txt</code>・<code>手順書.html</code>・<code>app</code>・<code>installers</code>・<code>scripts</code> があること。</p>
           </div>
         </div>
       </div>
@@ -938,138 +949,101 @@ docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
       <div class="step">
         <div class="no">W2</div>
         <div class="body">
-          <h3>データベースの作成</h3>
-<pre><span class="c"># PowerShell を管理者で開いて実行します</span>
-$bin = "C:\Program Files\PostgreSQL\16\bin"
-$env:PGPASSWORD = "&lt;インストール時に決めた postgres のパスワード&gt;"
-
-<span class="c"># 業務用のユーザーとデータベースを作ります</span>
-&amp; "$bin\psql.exe" -h 127.0.0.1 -U postgres -c "CREATE USER chem WITH PASSWORD '&lt;強いパスワード&gt;';"
-&amp; "$bin\psql.exe" -h 127.0.0.1 -U postgres -c "CREATE DATABASE chem OWNER chem ENCODING 'UTF8';"</pre>
+          <h3>導入の実行<span class="sub">10〜15分かかります</span></h3>
+          <p>
+            管理者の PowerShell で次を実行します。<b>社内LANのアドレス範囲</b>と、
+            <b>最初の管理者（画面にログインする方）のメールアドレス</b>を自分のものに変えてください。
+          </p>
+<pre>powershell -ExecutionPolicy Bypass -File C:\chem-install\scripts\install.ps1 `
+  -LanCidr 192.168.10.0/24 -AdminEmail admin@example.co.jp</pre>
+          <p>途中で<b>3つのパスワードを聞かれます</b>。打った文字は画面に出ず、どこにも記録されません。</p>
+          <div class="scroll">
+            <table>
+              <thead><tr><th>聞かれるもの</th><th>何のパスワードか</th><th>控え</th></tr></thead>
+              <tbody>
+                <tr><td><b>postgres</b></td><td>データベースの管理ユーザー。復元などの保守で使います</td><td>必ず控える</td></tr>
+                <tr><td><b>chem</b></td><td>アプリがデータベースに繋ぐためのもの。<code>C:\chem\.env</code> に書き込まれます</td><td>控える（.env にも残ります）</td></tr>
+                <tr><td><b>最初の管理者</b></td><td>画面にログインするためのもの。ログイン後に画面から変えられます</td><td>本人に渡す</td></tr>
+              </tbody>
+            </table>
+          </div>
           <div class="box warn">
-            <h4>IMPORTANT</h4>
+            <h4>CAUTION</h4>
             <p>
-              <b>ホストは <code>127.0.0.1</code> と書いてください。</b>
-              <code>localhost</code> と書くと IPv6 側に解決されて繋がらないことがあります。
+              パスワードは <b>12文字以上</b>で、<b><code>@</code> <code>/</code> <code>'</code> を含めない</b>でください
+              （設定ファイルの読み取りが崩れます）。
             </p>
           </div>
+          <p>スクリプトは次の順に進みます。画面には <b>W1〜W8</b> の見出しで出ます。</p>
+          <div class="scroll">
+            <table>
+              <thead><tr><th>見出し</th><th>すること</th></tr></thead>
+              <tbody>
+                <tr><td class="k">W1 前提ソフト</td><td>Node.js 22・PostgreSQL 16（ポート 5432、pgAdmin は入れません）・Caddy・NSSM を入れます。入っているものは飛ばします</td></tr>
+                <tr><td class="k">W2 データベース</td><td>業務用のユーザー <code>chem</code> とデータベース <code>chem</code> を <b>UTF-8</b> で作ります</td></tr>
+                <tr><td class="k">W3 アプリの配置</td><td><code>app\</code> を <code>C:\chem</code> に写し、<code>C:\chem\.env</code> を作ります</td></tr>
+                <tr><td class="k">W4 データベースの表</td><td>表を作ります（<code>prisma migrate deploy</code>）</td></tr>
+                <tr><td class="k">W5 最初の管理者</td><td>指定したメールアドレスで、全権限の利用者を1人作ります</td></tr>
+                <tr><td class="k">W6 サービス</td><td><code>chem-app</code> と <code>chem-caddy</code> を登録し、起動します（自動起動・落ちたら再起動）</td></tr>
+                <tr><td class="k">W7 通信の入口</td><td>指定したLANからの 443（HTTPS）と 80（HTTPS へ転送）だけを開けます。データベースは開けません</td></tr>
+                <tr><td class="k">W8 バックアップ</td><td>毎日3時に <code>C:\backups\chem</code> へ取るタスクを登録し、その場で1回取ります</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="box check">
+            <h4>CHECK</h4>
+            <p>
+              最後の「状態」で、<code>chem-app</code>・<code>chem-caddy</code>・<code>postgresql-x64-16</code> が
+              <b>Running / Automatic</b>、<code>https://127.0.0.1/api/health</code> が <b>200</b> と
+              <code>{"ok":true,"db":"up"}</code> であること。
+            </p>
+          </div>
+          <p>
+            途中で止まったら、表示された原因を直してから<b>同じコマンドをもう一度</b>実行してください。
+            済んだところは飛ばします。
+          </p>
         </div>
       </div>
 
       <div class="step">
         <div class="no">W3</div>
         <div class="body">
-          <h3>ファイルの配置と設定</h3>
-<pre><span class="c"># お渡ししたファイルを C:\chem に展開します</span>
-Expand-Archive -Path chem-system-(ver).zip -DestinationPath C:\chem
-cd C:\chem</pre>
+          <h3>社内パソコンからの接続<span class="sub">名前と証明書</span></h3>
           <p>
-            <code>C:\chem\.env</code> を作り、次の1行を書きます（<b>このファイルは外に出さないでください</b>）。
+            サーバーには<b>名前</b>で開くようにしてください（例 <code>chem.example.local</code>）。
+            社内の DNS に登録するか、各パソコンの <code>C:\Windows\System32\drivers\etc\hosts</code> に
+            <code>192.168.10.5 chem.example.local</code> のように1行足します。
+            <b>パスキー（指紋や顔でのログイン）は、IPアドレスでは登録できません。</b>
           </p>
-<pre>DATABASE_URL="postgresql://chem:&lt;W2で決めたパスワード&gt;@127.0.0.1:5432/chem?schema=public"</pre>
+          <p>
+            証明書はサーバーの中で作られます（社内用の認証局）。最初は「この接続は安全ではありません」と出ますが、
+            サーバーの <code>C:\ProgramData\caddy\pki\authorities\local\root.crt</code> を各パソコンの
+            <b>「信頼されたルート証明機関」</b>に入れると消えます（Linux 版の手順9と同じです）。
+          </p>
+<pre>certutil -addstore Root root.crt      <span class="c"># 各パソコンで管理者として</span></pre>
+          <div class="box warn">
+            <h4>HTTPS は必須です</h4>
+            <p>
+              ログインの記録は<b>HTTPS のときだけ</b>保たれる作りになっています。
+              <code>http://</code> や <code>:3001</code> で直接開かず、必ず <code>https://<i>名前</i>/</code> で開いてください。
+            </p>
+          </div>
+          <div class="box check">
+            <h4>CHECK</h4>
+            <p>社内パソコンで <code>https://<i>名前</i>/</code> を開き、W2 で決めた管理者でログインできること。ログイン後、右上の「ユーザーマニュアル」が開くこと。</p>
+          </div>
         </div>
       </div>
 
       <div class="step">
         <div class="no">W4</div>
         <div class="body">
-          <h3>組み立て<span class="sub">10〜20分かかります</span></h3>
-<pre>cd C:\chem
-npm ci
-npx prisma generate
-npm run build
-npx prisma migrate deploy   <span class="c"># データベースの表を作ります</span></pre>
-          <div class="box check">
-            <h4>CHECK</h4>
-            <p>
-              <code>npx prisma migrate deploy</code> が
-              <code>All migrations have been successfully applied.</code> で終わること。
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="step">
-        <div class="no">W5</div>
-        <div class="body">
-          <h3>最初の管理者の作成</h3>
-<pre>cd C:\chem
-npx tsx scripts/set-password.ts admin@example.co.jp '&lt;強いパスワード&gt;' --create</pre>
+          <h3>状態の確認<span class="sub">いつでも使えます</span></h3>
+<pre>powershell -ExecutionPolicy Bypass -File C:\chem\deploy\windows\check.ps1</pre>
           <p>
-            Linux 版の手順8と同じです。<b>この1人だけコマンドで作ります。</b>
-            実行後、<code>Clear-History</code> で履歴を消してください。
+            サービスの状態、アプリの応答、記録の末尾、空き容量をまとめて出します。
+            困ったときは、この出力をそのままお送りください。
           </p>
-        </div>
-      </div>
-
-      <div class="step">
-        <div class="no">W6</div>
-        <div class="body">
-          <h3>サービスへの登録<span class="sub">電源を入れると自動で立ち上がるようにします</span></h3>
-<pre><span class="c"># アプリ本体</span>
-nssm install chem-app "C:\Program Files\nodejs\npm.cmd" "run start -w apps/web"
-nssm set chem-app AppDirectory C:\chem
-nssm set chem-app Start SERVICE_AUTO_START
-nssm set chem-app AppEnvironmentExtra NODE_ENV=production
-
-<span class="c"># 入口（HTTPS）。Docker 用の Caddyfile ではなく、Windows 用の Caddyfile.windows を使います</span>
-nssm install chem-caddy C:\chem\caddy\caddy.exe "run --config C:\chem\deploy\Caddyfile.windows"
-nssm set chem-caddy Start SERVICE_AUTO_START
-
-nssm start chem-app
-nssm start chem-caddy</pre>
-          <div class="box check">
-            <h4>CHECK</h4>
-<pre>Get-Service chem-app, chem-caddy, postgresql-x64-16 |
-  Select-Object Name, Status, StartType</pre>
-            <p>3つとも <code>Running</code> / <code>Automatic</code> になっていること。</p>
-          </div>
-          <div class="box warn">
-            <h4>HTTPS は必須です</h4>
-            <p>
-              ログインの記録は<b>HTTPS のときだけ保たれる作り</b>になっています。
-              <code>http://</code> のまま使うと、ログインしても画面を移るたびに切れます。
-              Caddy を必ず通してください（証明書の扱いは Linux 版の手順9と同じです）。
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="step">
-        <div class="no">W7</div>
-        <div class="body">
-          <h3>通信の入口の制限</h3>
-<pre><span class="c"># 社内LANが 192.168.10.0/24 の場合の例</span>
-New-NetFirewallRule -DisplayName "chem HTTPS" -Direction Inbound -Protocol TCP `
-  -LocalPort 443 -RemoteAddress 192.168.10.0/24 -Action Allow
-
-<span class="c"># データベースは外に出しません（既定で閉じていますが、念のため確認）</span>
-Get-NetFirewallRule -Direction Inbound |
-  Where-Object { $_.Enabled -eq 'True' } |
-  Get-NetFirewallPortFilter | Where-Object { $_.LocalPort -eq 5432 }</pre>
-        </div>
-      </div>
-
-      <div class="step">
-        <div class="no">W8</div>
-        <div class="body">
-          <h3>毎日のバックアップの設定</h3>
-<pre><span class="c"># 毎日3時。パスワードは .env から読むので、ここには書きません</span>
-schtasks /Create /TN "chem-backup" /SC DAILY /ST 03:00 /RU SYSTEM `
-  /TR "powershell -NoProfile -ExecutionPolicy Bypass -File C:\chem\scripts\backup-db.ps1"</pre>
-          <div class="box check">
-            <h4>CHECK</h4>
-            <p>その場で1回動かして、ファイルができることを確かめます。</p>
-<pre>powershell -NoProfile -ExecutionPolicy Bypass -File C:\chem\scripts\backup-db.ps1
-Get-ChildItem C:\backups\chem</pre>
-          </div>
-          <div class="box warn">
-            <h4>IMPORTANT</h4>
-            <p>
-              <b>サーバーとは別の機器へ複製してください。</b>
-              <code>backup-db.ps1</code> の末尾に、社内NASへコピーする例をコメントで書いてあります。
-            </p>
-          </div>
         </div>
       </div>
 
@@ -1092,33 +1066,35 @@ Get-ChildItem C:\backups\chem</pre>
             </td>
           </tr>
           <tr>
-            <td><b>文字コード</b></td>
-            <td>データベースは <b>UTF-8</b> で作ってください。既定のままだと日本語が化けます</td>
+            <td><b>守るべきもの</b></td>
+            <td>
+              <code>C:\chem\.env</code>（設定）と、データベースの中身（毎日のバックアップ <code>C:\backups\chem</code>）。
+              バックアップは<b>別の機器へ複製</b>してください（<code>scripts\backup-db.ps1</code> の末尾に社内NASへコピーする例）
+            </td>
           </tr>
           <tr>
             <td><b>アプリの記録</b></td>
-            <td>
-              <code>nssm set chem-app AppStdout C:\chem\logs\app.log</code> のように出力先を決めておくと、
-              困ったときに追えます
-            </td>
+            <td><code>C:\chem\logs\chem-app.log</code>（10MB で切り替わります）。困ったときに追えます</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <h3>更新のしかた</h3>
-<pre>cd C:\chem
-powershell -File scripts\backup-db.ps1   <span class="c"># 先にバックアップ</span>
-nssm stop chem-app
-<span class="c"># 新しいファイルを展開してから</span>
-npm ci
-npx prisma generate
-npm run build
-npx prisma migrate deploy
-nssm start chem-app</pre>
     <p>
-      <b>組み立ての最中はアプリを止めてください。</b>動かしたまま作り直すと、
-      作りかけのファイルを読んで動かなくなることがあります。
+      新しい版も<b>同じ形のセット</b>でお渡しします。W1 と同じように展開し（前のフォルダは消して構いません）、
+      管理者の PowerShell で次を実行します。5分ほどで終わります。
+    </p>
+<pre>powershell -ExecutionPolicy Bypass -File C:\chem-install\scripts\update.ps1</pre>
+    <p>
+      スクリプトは、いま入っている版と届いた版を比べて<b>データベースの表が変わるかどうか</b>を先に表示し、
+      バックアップを取り、アプリを止め、ファイルを入れ替え、表に足りない変更があれば足し、アプリを起動して状態を出します。
+      <b>設定（.env）・記録・バックアップは残ります。</b>
+    </p>
+    <p>
+      うまくいかなかったときは、前の版のセットで同じ手順を行えば元の版に戻ります。
+      データベースを戻す必要があるときは、更新の直前に取ったバックアップから復元します（<code>scripts\backup-db.ps1</code> の頭にやり方）。
+      法規制データだけを更新する場合の手順は、そのデータと一緒にお渡しします。
     </p>
   </section>
 
