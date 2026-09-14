@@ -139,11 +139,16 @@ SHA256SUMS.txt  ファイルの照合用
 [IO.File]::WriteAllText((Join-Path $stage "README.txt"), $readme, (New-Object Text.UTF8Encoding $true))
 
 Step "SHA256SUMS.txt"
-$sums = Get-ChildItem $stage -Recurse -File | Where-Object { $_.Name -ne "SHA256SUMS.txt" } | ForEach-Object {
-  $rel = $_.FullName.Substring($stage.Length + 1).Replace("\", "/")
-  "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $rel"
+# app\ の中（数万ファイル。深い path は Get-FileHash が読めない）は数えない。
+# app 全体は zip の SHA256（最後に出す）で照らし合わせる
+$targets = @(Get-ChildItem $stage -File | Where-Object { $_.Name -ne "SHA256SUMS.txt" }) +
+  @(Get-ChildItem (Join-Path $stage "installers"), (Join-Path $stage "scripts") -File) +
+  @(Get-Item (Join-Path $stage "app\manifest.json"))
+$sums = foreach ($f in $targets) {
+  $rel = $f.FullName.Substring($stage.Length + 1).Replace("\", "/")
+  "$((Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower())  $rel"
 }
-[IO.File]::WriteAllLines((Join-Path $stage "SHA256SUMS.txt"), $sums, (New-Object Text.UTF8Encoding $false))
+[IO.File]::WriteAllLines((Join-Path $stage "SHA256SUMS.txt"), [string[]]$sums, (New-Object Text.UTF8Encoding $false))
 Write-Host "    $($sums.Count) ファイル"
 
 Step "zip にまとめる（数分）"
@@ -151,5 +156,8 @@ $zip = Join-Path $out "$name.zip"
 if (Test-Path $zip) { Remove-Item $zip }
 & $tar -a -cf $zip -C (Join-Path $out "install-set") $name
 if ($LASTEXITCODE -ne 0) { throw "zip の作成が失敗しました" }
+$zipHash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+[IO.File]::WriteAllText("$zip.sha256", "$zipHash  $name.zip`n", (New-Object Text.UTF8Encoding $false))
 Write-Host ""
 Write-Host "作りました: $zip ($([math]::Round((Get-Item $zip).Length / 1MB, 1)) MB)" -ForegroundColor Green
+Write-Host "SHA256: $zipHash（$zip.sha256 にも書きました）"
