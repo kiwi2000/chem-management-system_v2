@@ -1,7 +1,8 @@
-import { fromScaled, normalizeCas, sumScaled } from "@chem/shared";
+import { rankOf, fromScaled, normalizeCas, sumScaled } from "@chem/shared";
 import { Prisma } from "@prisma/client";
 import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
+import { loadBands } from "@/lib/score-store";
 import { computeJudgements, loadFactors, loadRules } from "@/lib/judge-store";
 import { LAW_ORDER_SELECT, compareLawOrder, lawOrderKey } from "@/lib/law-order";
 import { getAppSettings } from "@/lib/settings";
@@ -268,6 +269,8 @@ async function buildJudgementDtos(
           distinct: ["casNormalized"],
         });
   const scoreOf = new Map(scored.map((x) => [x.casNormalized ?? "", x.score.toString()]));
+  // 画面にはランクを出し、スコアは浮かせて見せる（2026-09-15 指示）。段は物質の一覧と同じ対応表
+  const bands = withHits && hitCas.length > 0 ? await loadBands() : [];
 
   return rows
     .map((r) => ({
@@ -315,6 +318,10 @@ async function buildJudgementDtos(
                   含有率を足して1行にしている以上、スコアも同じ数え方にそろえる
                 */
                 score: sumScores(contributions.map((c) => scoreOf.get(normalizeCas(c.cas)) ?? "0")),
+                scoreRank: rankOf(
+                  sumScores(contributions.map((c) => scoreOf.get(normalizeCas(c.cas)) ?? "0")),
+                  bands,
+                ),
               };
             })
             // 多いものから。まず何が効いているかを見たい

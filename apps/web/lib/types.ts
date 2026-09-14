@@ -223,6 +223,8 @@ export interface JudgementHitDto {
    * **製品の画面でだけ入れる。**区分から製品を逆引きする表では出さないので任意
    */
   score?: string;
+  /** スコアを段に読み替えたもの（システム設定の対応表）。どの段にも当たらなければ null */
+  scoreRank?: string | null;
 }
 
 /**

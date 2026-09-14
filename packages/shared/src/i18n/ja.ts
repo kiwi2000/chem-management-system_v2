@@ -1050,8 +1050,6 @@ export const ja = {
     hitCount: (n: number) => `${n}件`,
     // 組成の表と同じ言葉にそろえる（「含有率」と混ぜない）
     content: "重量%",
-    /** 区分の行は区分のスコア、法文物質名の行はその行を作った物質のスコア */
-    score: "スコア",
     warning: "警告",
     applicable: "該当",
     notApplicable: "非該当",

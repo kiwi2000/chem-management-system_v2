@@ -67,8 +67,8 @@ const HEADS: { key: string; width: number; label: (m: M) => string; className?: 
   { key: "statutoryName", width: 240, label: (m) => m.judgements.statutoryName },
   { key: "content", width: 72, label: (m) => m.judgements.content, className: "text-right" },
   { key: "matchedCas", width: 96, label: (m) => m.judgements.matchedCas },
-  // 見出しの「スコア」がちょうど収まる幅。組成の表とそろえる
-  { key: "score", width: 60, label: (m) => m.judgements.score, className: "text-right" },
+  // ランクを出し、スコアは浮かせて見せる（2026-09-15 指示）。組成の表と同じ
+  { key: "rank", width: 60, label: (m) => m.score.substanceRank, className: "text-center" },
   { key: "warning", width: 200, label: (m) => m.judgements.warning },
 ];
 
@@ -666,15 +666,11 @@ export function ProductJudgements({
                                         </TableCell>
                                         <TableCell className={CELL} />
                                         <TableCell className={CELL} />
-                                        {/* 区分の行には**区分に付けた点数**を出す。物質の点数はこの合計 */}
-                                        <TableCell
-                                          className={cn(
-                                            CELL,
-                                            "text-right align-top font-mono tabular-nums",
-                                          )}
-                                        >
-                                          {j.categoryScore}
-                                        </TableCell>
+                                        {/*
+                                          ランクは物質に付くものなので、区分の行には出さない。
+                                          区分に付けた点数（物質のスコアの元）は法規制の画面で見る
+                                        */}
+                                        <TableCell className={CELL} />
                                         <TableCell className={cn(CELL, "align-top")}>
                                           <Warning j={j} m={m} locale={locale} />
                                         </TableCell>
@@ -772,14 +768,21 @@ export function ProductJudgements({
                                               )}
                                             </TableCell>
                                             <MatchedCells hit={h} m={m} cellClass={CELL} />
-                                            {/* その行を作った物質の点数。合算した行は寄与ぶんの合計 */}
+                                            {/* その行を作った物質のランク。スコア（合算した行は寄与ぶんの合計）は浮かせて見せる */}
                                             <TableCell
                                               className={cn(
                                                 CELL,
-                                                "text-right align-top font-mono tabular-nums",
+                                                "text-center align-top whitespace-nowrap",
                                               )}
+                                              title={
+                                                h.score !== undefined
+                                                  ? m.score.scoreOf(h.score)
+                                                  : undefined
+                                              }
                                             >
-                                              {h.score ?? ""}
+                                              {h.score !== undefined
+                                                ? (h.scoreRank ?? m.score.noRank)
+                                                : ""}
                                             </TableCell>
                                             <TableCell className={CELL} />
                                             {canEdit && <TableCell className={CELL} />}

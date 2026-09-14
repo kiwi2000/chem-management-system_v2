@@ -1028,7 +1028,6 @@ export const en: Messages = {
     matchedCategories: "Regulations",
     hitCount: (n: number) => `${n}`,
     content: "Weight %",
-    score: "Score",
     warning: "Warning",
     applicable: "Applies",
     notApplicable: "Does not apply",

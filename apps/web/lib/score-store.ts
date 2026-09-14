@@ -35,7 +35,7 @@ const SUM_SQL = `
   GROUP BY cas_normalized
 `;
 
-async function loadBands(): Promise<RankBand[]> {
+export async function loadBands(): Promise<RankBand[]> {
   const rows = await prisma.substanceRankBand.findMany({
     where: { deletedAt: null },
     orderBy: { displayOrder: "asc" },
