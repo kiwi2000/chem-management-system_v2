@@ -130,8 +130,11 @@ Write-Host "━━ W5 最初の管理者 ━━" -ForegroundColor Magenta
 if ($AdminEmail) {
   Set-Location $Root
   $npx = Get-NodeCommand "npx.cmd"
-  & $npx tsx scripts/set-password.ts $AdminEmail (ConvertTo-Plain $adminPw) --create
-  if ($LASTEXITCODE -ne 0) { throw "管理者の作成が失敗しました" }
+  $env:DATABASE_URL = Get-DatabaseUrlValue $envFile
+  try {
+    & $npx tsx scripts/set-password.ts $AdminEmail (ConvertTo-Plain $adminPw) --create
+    if ($LASTEXITCODE -ne 0) { throw "管理者の作成が失敗しました" }
+  } finally { $env:DATABASE_URL = $null }
   Write-Ok "$AdminEmail（全権限）"
 } else {
   Write-Warn2 "-AdminEmail が無いので作りません（あとで npx tsx scripts\set-password.ts <メール> <パスワード> --create）"

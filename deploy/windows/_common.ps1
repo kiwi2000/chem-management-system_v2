@@ -10,8 +10,10 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 
-# 展開先（C:\chem）。このファイルは <展開先>\deploy\windows\ にある
+# 導入先（C:\chem）。このファイルが <導入先>\deploy\windows\ にあればそこ、
+# インストールセットの scripts\ にあるときは既定の C:\chem（-Root で変えられる）
 $script:ChemRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+if (-not (Test-Path (Join-Path $script:ChemRoot "apps\web"))) { $script:ChemRoot = "C:\chem" }
 
 function Write-Step([string]$Text) {
   Write-Host ""
@@ -65,6 +67,15 @@ function Read-DatabaseUrl([string]$EnvFile) {
     Port     = $Matches[4]
     Database = $Matches[5]
   }
+}
+
+# .env の DATABASE_URL の値そのもの（引用符なし）。
+# npx tsx の scripts は .env を読まないので、呼ぶ前に $env:DATABASE_URL に入れる（prisma CLI は自分で読む）
+function Get-DatabaseUrlValue([string]$EnvFile) {
+  $line = (Select-String -Path $EnvFile -Pattern '^\s*DATABASE_URL\s*=' | Select-Object -First 1).Line
+  if (-not $line) { throw ".env に DATABASE_URL がありません: $EnvFile" }
+  $v = $line.Substring($line.IndexOf("=") + 1).Trim()
+  return $v.Trim('"').Trim("'")
 }
 
 # SecureString を平文に戻す（PGPASSWORD に入れる間だけ）

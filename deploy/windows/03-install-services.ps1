@@ -63,7 +63,7 @@ function Install-ChemService([string]$Name, [string]$Exe, [string]$Arguments, [s
   Set-Nssm $Name AppRotateOnline 1
   Set-Nssm $Name AppRotateBytes 10485760
   # 落ちたら 5 秒おいて上げ直す
-  Set-Nssm $Name AppExit Default Restart
+  Set-Nssm $Name AppExit @("Default", "Restart")
   Set-Nssm $Name AppRestartDelay 5000
 }
 
@@ -77,6 +77,11 @@ if (Get-Service $PostgresService -ErrorAction SilentlyContinue) {
 Write-Step "chem-caddy（入口・HTTPS）"
 $caddyfile = Join-Path $Root "deploy\Caddyfile.windows"
 Install-ChemService "chem-caddy" $Caddy "run --config `"$caddyfile`"" (Split-Path -Parent $Caddy) "ケミカルコンプライアンス支援システム（入口）"
+# 証明書などの保存場所。サービス（LocalSystem）の既定は C:\Windows\System32\config\systemprofile\AppData\Roaming\Caddy で
+# 見つけにくいので、C:\ProgramData\caddy に固定する（root.crt を配るときに探す場所）
+$caddyHome = Join-Path $env:ProgramData "caddy"
+New-Item -ItemType Directory -Force -Path $caddyHome | Out-Null
+Set-Nssm "chem-caddy" AppEnvironmentExtra @("XDG_DATA_HOME=$env:ProgramData", "XDG_CONFIG_HOME=$env:ProgramData")
 
 Write-Step "起動"
 foreach ($s in @("chem-app", "chem-caddy")) {

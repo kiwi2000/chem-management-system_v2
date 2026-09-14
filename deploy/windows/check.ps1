@@ -43,11 +43,21 @@ function Probe([string]$Url) {
   }
 }
 Probe "http://127.0.0.1:3001/api/health"
-# 入口は内部 CA の証明書なので、ここでは証明書の検証を外して応答だけ見る
-[Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# 入口は内部 CA の証明書なので、ここでは証明書の検証を外して応答だけ見る。
+# Windows PowerShell 5.1 では ScriptBlock のコールバックが別スレッドで動かず「送信時に予期しないエラー」になるので、.NET の型で作る
+if (-not ("ChemTrustAll" -as [type])) {
+  Add-Type @"
+using System.Net; using System.Security.Cryptography.X509Certificates;
+public class ChemTrustAll : ICertificatePolicy {
+  public bool CheckValidationResult(ServicePoint sp, X509Certificate cert, WebRequest req, int problem) { return true; }
+}
+"@
+}
+$savedPolicy = [Net.ServicePointManager]::CertificatePolicy
+[Net.ServicePointManager]::CertificatePolicy = New-Object ChemTrustAll
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
 Probe "https://127.0.0.1/api/health"
-[Net.ServicePointManager]::ServerCertificateValidationCallback = $null
+[Net.ServicePointManager]::CertificatePolicy = $savedPolicy
 
 Write-Step "記録の末尾（$LogLines 行）"
 foreach ($n in @("chem-app", "chem-caddy")) {
@@ -60,6 +70,7 @@ Write-Step "空き容量"
 Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Name -eq $Root.Substring(0, 1) } |
   Select-Object Name, @{n = "FreeGB"; e = { [math]::Round($_.Free / 1GB, 1) } } | Format-Table -AutoSize
 
+# Caddy の保存場所は 03-install-services.ps1 が C:\ProgramData\caddy に固定している（サービスの既定は systemprofile の下で分かりにくい）
 $root = Join-Path $env:ProgramData "caddy\pki\authorities\local\root.crt"
 if (Test-Path $root) {
   Write-Host "内部 CA のルート証明書: $root（社員 PC の「信頼されたルート証明機関」に入れると警告が消えます）"

@@ -16,6 +16,7 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/.next/**",
       "**/dist/**",
+      "out/**", // 配布物の組み立て場所（out/install-set にアプリの写しができる）
       "**/coverage/**",
       "**/*.tsbuildinfo",
       "**/next-env.d.ts", // Next.js の自動生成ファイル

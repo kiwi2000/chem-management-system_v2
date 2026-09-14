@@ -70,5 +70,8 @@ Write-Step "prisma migrate deploy（表を作る／足りない変更を足す�
 Invoke-Checked $npx @("prisma", "migrate", "deploy") "prisma migrate deploy"
 
 Write-Step "利用者の一覧（繋がっていることの確認）"
-& $npx tsx scripts/set-password.ts --list
-if ($LASTEXITCODE -ne 0) { throw "set-password.ts --list が失敗しました" }
+$env:DATABASE_URL = Get-DatabaseUrlValue $envFile
+try {
+  & $npx tsx scripts/set-password.ts --list
+  if ($LASTEXITCODE -ne 0) { throw "set-password.ts --list が失敗しました" }
+} finally { $env:DATABASE_URL = $null }
