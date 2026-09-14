@@ -562,7 +562,6 @@ export const ja = {
     add: "＋ データソース",
     addTitle: "データソースの新規登録",
     sameVersionOnly: "同じバージョンの中でだけ並べ替えられます",
-    importFile: "ファイルを取り込む",
     duplicate: "そのバージョンには、この種別が既に登録されています",
     cannotMove: "バージョンと種別は変えられません。消してから登録し直してください",
     inUseByLinks: (n: number) =>

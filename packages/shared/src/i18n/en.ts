@@ -546,7 +546,6 @@ export const en: Messages = {
     add: "+ Data source",
     addTitle: "Register a data source",
     sameVersionOnly: "Rows can only be reordered within the same version",
-    importFile: "Import a file",
     duplicate: "That version already has this type registered",
     cannotMove: "The version and type cannot be changed. Delete it and register again",
     inUseByLinks: (n: number) =>

@@ -1,9 +1,7 @@
 "use client";
 
 import { emptyTableState, SOURCE_MARK_MAX, type TableState } from "@chem/shared";
-import { Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useConfirm } from "@/components/confirm-dialog";
 import { ColorPicker } from "@/components/color-picker";
 import { SourceChip } from "@/components/source-chip";
 import { DataTable } from "@/components/data-table/data-table";
@@ -52,7 +50,6 @@ export function DataSourceSection({
   preferredId?: string | null;
 }) {
   const { m, locale } = useI18n();
-  const ask = useConfirm();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -200,32 +197,6 @@ export function DataSourceSection({
         filterable: false,
         className: "text-muted-foreground text-center text-xs",
         render: (r) => (r.loadedAt ? new Date(r.loadedAt).toLocaleDateString(locale) : ""),
-      },
-      {
-        // 取り込みは行ごとの操作。見出しは要らないのでアイコンだけ置く
-        key: "import",
-        header: "",
-        kind: "text",
-        width: 56,
-        sortable: false,
-        filterable: false,
-        className: "text-center",
-        render: () => (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="size-7"
-            title={m.dataSources.importFile}
-            aria-label={m.dataSources.importFile}
-            onClick={(e) => {
-              e.stopPropagation();
-              // 取り込みはこれから作る
-              void ask({ message: m.common.underConstruction, confirmLabel: m.common.ok });
-            }}
-          >
-            <Upload className="size-3.5" />
-          </Button>
-        ),
       },
     ],
     // saveColor は毎回作られるが、中身は変わらないので手がかりに入れない
