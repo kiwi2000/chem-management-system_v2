@@ -1028,7 +1028,14 @@ $ curl -s -o /dev/null -w "%{http_code} %{redirect_url}" http://192.168.1.109/
 内部 CA のルート証明書は `C:\ProgramData\caddy\pki\authorities\local\root.crt`（CN=Caddy Local Authority - 2026 ECC Root、
 2036-07-23 まで）にでき、`out/record/chem-lan-root.crt` に取り寄せた。
 社員 PC の hosts への `192.168.1.109 chem.lan` の登録、ルート証明書の登録、`admin@example.co.jp` でのログインは
-管理者権限とパスワードが要るので利用者が行う（W3）。
+管理者権限とパスワードが要るので利用者が行った（W3）。結果:
+
+- hosts に登録 → `https://chem.lan/login` が開き、パスワードでログインできた（Caddy の記録で 192.168.1.207 / Chrome 153 から名前で到達）
+- **ルート証明書を入れる前にパスキーを登録しようとすると「登録をやめました」**（Chrome は証明書エラーのあるページでは
+  WebAuthn を拒む。NotAllowedError）。`certutil -addstore Root chem-lan-root.crt` のあと、Edge はすぐ警告が消えたが
+  Chrome は `chrome://restart` で再起動するまで「保護されていない通信」のままだった
+- 証明書登録・再起動後、**パスキーの登録が通った**（Windows Hello）
+- 手順書 W3 に「パスキーを使うなら証明書の登録は必須。ブラウザを開き直す」を追記（c252429）
 
 ## 4. 見つかった欠陥と直し
 
@@ -1047,7 +1054,7 @@ $ curl -s -o /dev/null -w "%{http_code} %{redirect_url}" http://192.168.1.109/
 
 ## 5. 未実施
 
-- W3（社員 PC からのログイン、パスキー、証明書の登録）: 利用者の操作待ち
+- W3 の残り: 製品一覧・テンプレート編集・ドキュメント生成の一通りの操作確認（ログインとパスキーは済み）
 - 更新のしかた（update.ps1）: 次の版を当てて確かめる
 - サーバー再起動後の自動起動の確認
 - データだけの更新（データセット）: 未作成
