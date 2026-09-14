@@ -44,8 +44,15 @@ $secretsDir = Join-Path $Root "secrets"
 $generated = @{}
 function Get-Secret([string]$Key, [string]$Prompt) {
   if ($Unattended) {
-    $pw = New-RandomPassword 24
-    $generated[$Key] = $pw
+    # やり直しのときは前回作ったものを使う（作り直すと、もう入れたものと食い違う）
+    $f = Join-Path $secretsDir "$Key.txt"
+    if (Test-Path $f) {
+      $pw = (Get-Content $f -Raw).Trim()
+      Write-Warn2 "$Key のパスワードは前回の $f を使います"
+    } else {
+      $pw = New-RandomPassword 24
+      $generated[$Key] = $pw
+    }
     return (ConvertTo-SecureString $pw -AsPlainText -Force)
   }
   return (Read-Host -AsSecureString $Prompt)
