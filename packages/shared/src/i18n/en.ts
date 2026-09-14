@@ -207,6 +207,7 @@ export const en: Messages = {
     REGULATION_VIEW: "View regulations",
     REGULATION_EDIT: "Edit regulations",
     DATA_EXPORT: "Export data",
+    DATA_IMPORT: "Import data",
     NEWS_POST: "Post announcements",
     NEWS_MANAGE: "Edit and delete others' announcements",
     FEEDBACK_VIEW: "View feedback",
@@ -218,6 +219,8 @@ export const en: Messages = {
     PRODUCT_EDIT: "Includes editing compositions: create, change, delete, TSV import",
     REGULATION_EDIT: "Includes metal conversion factors, sources and link versions",
     DATA_EXPORT: "TSV export and document download. Grant only to those who need it",
+    DATA_IMPORT:
+      "Import our data sets or your own tables on the data import/export screen. It rewrites master data, so by default only system administrators",
     INACTIVE_VIEW:
       "See unpublished data and inactive products in lists and details (creators always see their own)",
     NEWS_POST: "Announcements you posted can be edited and deleted by you",
@@ -234,7 +237,7 @@ export const en: Messages = {
     substance: "Substances",
     inactive: "Inactive / unpublished data",
     regulation: "Regulations",
-    data: "Data export",
+    data: "Data import / export",
     news: "Announcements",
     feedback: "Feedback",
     system: "System",

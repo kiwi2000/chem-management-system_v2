@@ -44,8 +44,8 @@ interface NavItem {
   icon: LucideIcon;
   /** 辞書の nav ブロックから文言を引くためのキー */
   key: keyof Messages["nav"];
-  /** この権限が無い人にはメニューを出さない（サーバー側でも別途弾く） */
-  needs?: Permission;
+  /** この権限が無い人にはメニューを出さない（サーバー側でも別途弾く）。並びなら、どれか1つあればよい */
+  needs?: Permission | Permission[];
   /** この接頭辞のパスでも選択中扱いにする（詳細画面など） */
   match?: string[];
   /** 配下に置く項目。字下げして親のすぐ下に並べる */
@@ -103,13 +103,13 @@ const ITEMS: NavItem[] = [
     // 入れると出すで画面が分かれるので、まとめる見出しにして下にぶら下げる
     key: "importExport",
     icon: ArrowDownUp,
-    needs: "DATA_EXPORT",
+    needs: ["DATA_EXPORT", "DATA_IMPORT"],
     children: [
       {
         href: "/import-export/import",
         key: "dataImport",
         icon: Upload,
-        needs: "DATA_EXPORT",
+        needs: "DATA_IMPORT",
       },
       {
         href: "/import-export/export",
@@ -220,7 +220,11 @@ export function SidebarNav({
 }) {
   const pathname = usePathname();
   const { m } = useI18n();
-  const allowed = (item: NavItem) => !item.needs || permissions.includes(item.needs);
+  const allowed = (item: NavItem) =>
+    !item.needs ||
+    (Array.isArray(item.needs)
+      ? item.needs.some((p) => permissions.includes(p))
+      : permissions.includes(item.needs));
 
   const adminItems = ADMIN_ITEMS.filter(allowed);
   const groups: {

@@ -218,6 +218,7 @@ export const ja = {
     REGULATION_VIEW: "法規制を見られる",
     REGULATION_EDIT: "法規制を編集できる",
     DATA_EXPORT: "データを出力できる",
+    DATA_IMPORT: "データを取り込める",
     NEWS_POST: "お知らせを投稿できる",
     NEWS_MANAGE: "他人のお知らせも編集・削除できる",
     FEEDBACK_VIEW: "フィードバックを見られる",
@@ -229,6 +230,8 @@ export const ja = {
     PRODUCT_EDIT: "組成の編集を含みます。登録・変更・削除・TSV取込",
     REGULATION_EDIT: "金属換算係数・情報源・リンクバージョンを含みます",
     DATA_EXPORT: "TSV出力と帳票のダウンロード。持ち出しになるので必要な人だけに",
+    DATA_IMPORT:
+      "データ入出力画面で、当方のデータセットや自分で作った表を取り込めます。本体を書き換えるので、既定はシステム管理者だけです",
     INACTIVE_VIEW:
       "未公開のデータと、無効にした製品を一覧・詳細で見られます（作成者は権限が無くても自分のぶんを見られます）",
     NEWS_POST: "自分が投稿したお知らせは編集・削除できます",
@@ -245,7 +248,7 @@ export const ja = {
     substance: "物質",
     inactive: "無効・未公開のデータ",
     regulation: "法規制",
-    data: "データの持ち出し",
+    data: "データの持ち込み・持ち出し",
     news: "お知らせ",
     feedback: "フィードバック",
     system: "システム",

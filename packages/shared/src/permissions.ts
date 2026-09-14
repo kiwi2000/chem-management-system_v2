@@ -22,6 +22,8 @@ export const PERMISSIONS = [
   "REGULATION_EDIT",
   // 持ち出し（TSV出力・帳票ダウンロード）
   "DATA_EXPORT",
+  // 持ち込み（データ入出力画面からの取り込み。本体を書き換えるので既定はシステム管理者だけ）
+  "DATA_IMPORT",
   /*
     ドキュメント。
     **生成は「様式を見て作り、自分が作ったものを見る」まで。**
@@ -118,7 +120,7 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "substance", permissions: ["SUBSTANCE_VIEW", "SUBSTANCE_EDIT"] },
   { key: "inactive", permissions: ["INACTIVE_VIEW", "INACTIVE_EDIT", "APPROVE"] },
   { key: "regulation", permissions: ["REGULATION_VIEW", "REGULATION_EDIT"] },
-  { key: "data", permissions: ["DATA_EXPORT"] },
+  { key: "data", permissions: ["DATA_EXPORT", "DATA_IMPORT"] },
   { key: "document", permissions: ["DOC_TEMPLATE_EDIT", "DOCUMENT_CREATE"] },
   { key: "organisation", permissions: ["ORG_EDIT"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },

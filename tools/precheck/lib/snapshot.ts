@@ -8,101 +8,19 @@
  * 画面からの「書き出し」ができたら、その出力もこの形にそろえる（`format` で見分ける）。
  */
 import type { PrismaClient } from "@prisma/client";
+import { SNAPSHOT_FORMAT, type Snapshot } from "@chem/shared";
 
-export const SNAPSHOT_FORMAT = "chem-precheck/1";
-
-export interface LinkSnap {
-  version: string;
-  source: string;
-  /** 正規化した CAS。鍵に使う */
-  cas: string;
-  /** 登録されたままの書きかた（表示だけ） */
-  casNumber: string;
-  excluded: boolean;
-  note: string | null;
-  text: string | null;
-  textJa: string | null;
-}
-
-export interface SubstanceSnap {
-  code: string;
-  officialNumber: string | null;
-  nameOriginal: string;
-  nameLang: string;
-  nameJa: string | null;
-  nameEn: string | null;
-  displayOrder: number;
-  thresholdLower: string;
-  lowerBound: string;
-  thresholdUpper: string;
-  upperBound: string;
-  aggregation: string;
-  metalEtc: string | null;
-  effectiveFrom: string | null;
-  effectiveTo: string | null;
-  applicableCondition: string | null;
-  note: string | null;
-  links: LinkSnap[];
-}
-
-export interface ClassSnap {
-  code: string;
-  nameOriginal: string | null;
-  nameLang: string | null;
-  nameJa: string | null;
-  nameEn: string | null;
-  displayOrder: number;
-  interactionGroup: string | null;
-  rank: number | null;
-  note: string | null;
-  substances: SubstanceSnap[];
-}
-
-export interface CategorySnap {
-  code: string;
-  nameOriginal: string;
-  nameLang: string;
-  nameJa: string | null;
-  nameEn: string | null;
-  displayOrder: number;
-  thresholdLower: string;
-  lowerBound: string;
-  thresholdUpper: string;
-  upperBound: string;
-  aggregation: string;
-  metalEtc: string | null;
-  thresholdBasis: string;
-  judged: boolean;
-  effectiveFrom: string | null;
-  effectiveTo: string | null;
-  interactionGroup: string | null;
-  rank: number | null;
-  score: string;
-  note: string | null;
-  classes: ClassSnap[];
-}
-
-export interface LawSnap {
-  code: string;
-  countryCode: string;
-  nameOriginal: string;
-  nameLang: string;
-  nameJa: string | null;
-  nameEn: string | null;
-  displayOrder: number;
-  note: string | null;
-  categories: CategorySnap[];
-}
-
-export interface Snapshot {
-  format: typeof SNAPSHOT_FORMAT;
-  takenAt: string;
-  /** どこから写したか（人が読むためのメモ） */
-  label: string;
-  versions: { code: string; asOf: string; isCurrent: boolean }[];
-  sources: { code: string }[];
-  laws: LawSnap[];
-}
+// 形（型と format の印）は packages/shared/src/data-exchange/snapshot.ts に置き、
+// データ入出力の画面と共有する（決定 0011）。ここは DB から写しを取る部分だけ
+export { SNAPSHOT_FORMAT } from "@chem/shared";
+export type {
+  CategorySnap,
+  ClassSnap,
+  LawSnap,
+  LinkSnap,
+  Snapshot,
+  SubstanceSnap,
+} from "@chem/shared";
 
 const day = (v: Date | null) => (v ? v.toISOString().slice(0, 10) : null);
 

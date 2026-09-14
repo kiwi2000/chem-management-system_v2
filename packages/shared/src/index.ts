@@ -11,6 +11,7 @@ export * from "./background";
 export * from "./composition";
 export * from "./constants";
 export * from "./country";
+export * from "./data-exchange";
 export * from "./decimal";
 export * from "./doc-tags";
 export * from "./document";

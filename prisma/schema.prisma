@@ -37,6 +37,7 @@ enum Permission {
   REGULATION_VIEW
   REGULATION_EDIT
   DATA_EXPORT
+  DATA_IMPORT
   DOC_TEMPLATE_EDIT
   DOCUMENT_CREATE
   DOCUMENT_SENDER
@@ -535,6 +536,100 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([actorId, at])
   @@map("audit_logs")
+}
+
+/** 取り込むファイルの種類。拡張子と中身で判別する（決定 0011） */
+enum ImportKind {
+  DATA_SET // 当方のデータセット（JSON。法律〜CASリンクの木をコード鍵で）
+  REGULATION_LIST // 利用者の規制リスト（TSV。1行 = 法文物質名 × CAS）
+  PRODUCTS // 製品と組成（TSV）
+  SUBSTANCES // 物質（TSV）
+}
+
+/**
+ * 取り込みの進みかた。
+ * UPLOADED → (インポート) LOADING → STAGED → (反映) APPLYING → DONE。途中で FAILED / DISCARDED
+ */
+enum ImportStatus {
+  UPLOADED
+  LOADING
+  STAGED
+  APPLYING
+  DONE
+  FAILED
+  DISCARDED
+}
+
+/** 一時領域の行が本体に対してどうなるか */
+enum ImportAction {
+  ADD // 本体に無い。足す
+  UPDATE // 本体にある。値が違うので更新する
+  UNCHANGED // 本体にあり、同じ。何もしない
+  CONFLICT // 更新だが、前回の取り込みのあとに人が直している。既定では反映しない
+  ERROR // 読めない・必須が無い・対応づけできない。反映しない
+}
+
+/**
+ * 取り込み（決定 0011）。**受け取ったファイルも、下見の結果も、記録も DB に置く。**
+ * 本体の表には「反映」を押すまで触らない。反映前の中身は ImportRow（一時領域）にある。
+ */
+model ImportJob {
+  id       String       @id @default(cuid())
+  kind     ImportKind
+  status   ImportStatus @default(UPLOADED)
+  fileName String       @map("file_name") @db.VarChar(255)
+  fileSize Int          @map("file_size")
+  /** 受け取ったファイルそのもの。反映が終わったら消して軽くする（記録は summary に残る） */
+  fileData Bytes?       @map("file_data")
+  /** 概要・下見の件数・反映の結果（表示専用） */
+  summary  Json?
+  /** 失敗の理由（人に見せる文） */
+  error    String?
+  /** 進み具合（0〜100）。裏で走っている間だけ意味がある */
+  progress Int          @default(0)
+
+  createdBy  String    @map("created_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  stagedAt   DateTime? @map("staged_at")
+  appliedAt  DateTime? @map("applied_at")
+  appliedBy  String?   @map("applied_by")
+
+  rows ImportRow[]
+
+  @@index([status, createdAt])
+  @@map("import_jobs")
+}
+
+/**
+ * 一時領域の 1 行。本体の 1 件（法律・区分・分類・法文物質名・結び付き・製品・組成・物質）に対応する。
+ * payload に書き込みに要る値、diff に「いまの値 → 新しい値」を持つ。apply を外した行は反映しない
+ */
+model ImportRow {
+  id     String       @id @default(cuid())
+  jobId  String       @map("job_id")
+  seq    Int
+  /** law / category / class / substance / link / version / source / product / composition / substance_master */
+  kind   String       @db.VarChar(20)
+  /** コードの道筋（JP-CSCL/CLASS1/…）や製品コード。人が読む鍵 */
+  keyPath String      @map("key_path") @db.VarChar(400)
+  /** 人が読む名前 */
+  label  String       @db.VarChar(500)
+  action ImportAction
+  /** 反映するか。CONFLICT と ERROR は既定で false */
+  apply  Boolean      @default(true)
+  /** 更新のときの項目ごとの差 { field: { current, next } } */
+  diff   Json?
+  /** 書き込みに要る値（読み取った行そのもの） */
+  payload Json
+  /** 説明（食い違いの理由・読めなかった理由） */
+  message String?     @db.VarChar(500)
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, seq])
+  @@index([jobId, kind, action])
+  @@map("import_rows")
 }
 
 /**

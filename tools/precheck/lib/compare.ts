@@ -13,14 +13,17 @@
  *   keep-check … 顧客のものを残すが、判定に効くので人が一度見る
  *   discuss    … 配布物とぶつかる、または鍵が変わる。顧客と相談して決める
  */
-import type {
-  CategorySnap,
-  ClassSnap,
-  LawSnap,
-  LinkSnap,
-  Snapshot,
-  SubstanceSnap,
-} from "./snapshot";
+import {
+  DISPLAY_FIELDS,
+  FIELD_LABELS_JA,
+  JUDGEMENT_FIELDS,
+  type CategorySnap,
+  type ClassSnap,
+  type LawSnap,
+  type LinkSnap,
+  type Snapshot,
+  type SubstanceSnap,
+} from "@chem/shared";
 
 export type Kind = "law" | "category" | "class" | "substance" | "link";
 export type Change = "added" | "removed" | "changed" | "moved";
@@ -63,69 +66,8 @@ export interface Report {
   findings: Finding[];
 }
 
-/** 表示だけの項目 */
-const DISPLAY_FIELDS = new Set([
-  "nameOriginal",
-  "nameLang",
-  "nameJa",
-  "nameEn",
-  "displayOrder",
-  "note",
-  "officialNumber",
-  "countryCode",
-  "casNumber",
-  "text",
-  "textJa",
-]);
-
-/** 判定が変わる項目 */
-const JUDGEMENT_FIELDS = new Set([
-  "thresholdLower",
-  "lowerBound",
-  "thresholdUpper",
-  "upperBound",
-  "aggregation",
-  "metalEtc",
-  "thresholdBasis",
-  "judged",
-  "effectiveFrom",
-  "effectiveTo",
-  "applicableCondition",
-  "interactionGroup",
-  "rank",
-  "score",
-  "excluded",
-]);
-
-/** 項目の日本語名（報告に出す） */
-export const FIELD_LABELS: Record<string, string> = {
-  nameOriginal: "原文の名称",
-  nameLang: "原文の言語",
-  nameJa: "名称（日本語）",
-  nameEn: "名称（英語）",
-  displayOrder: "並び順",
-  note: "備考",
-  officialNumber: "法律上の番号",
-  countryCode: "国",
-  casNumber: "CAS の書きかた",
-  text: "出典データ",
-  textJa: "出典データ（日本語）",
-  thresholdLower: "下限値",
-  lowerBound: "下限の不等号",
-  thresholdUpper: "上限値",
-  upperBound: "上限の不等号",
-  aggregation: "合算",
-  metalEtc: "金属換算",
-  thresholdBasis: "閾値の対象",
-  judged: "判定に使う",
-  effectiveFrom: "適用開始日",
-  effectiveTo: "適用終了日",
-  applicableCondition: "適用条件",
-  interactionGroup: "兼ね合いグループ",
-  rank: "rank",
-  score: "スコア",
-  excluded: "非該当",
-};
+/** 項目の日本語名（報告に出す）。分けかた（DISPLAY_FIELDS / JUDGEMENT_FIELDS）と一緒に shared に置いてある */
+export const FIELD_LABELS: Record<string, string> = FIELD_LABELS_JA;
 
 const str = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
 
