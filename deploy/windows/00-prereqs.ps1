@@ -65,7 +65,8 @@ Write-Step "PostgreSQL 16"
 # （EDB のインストーラーが中でやっていることと同じ。pgAdmin などは入れない）
 $pgRoot = "C:\Program Files\PostgreSQL\16"
 $pgData = Join-Path $pgRoot "data"
-if (Get-Service $PostgresService -ErrorAction SilentlyContinue) {
+$pgSvc = Get-Service $PostgresService -ErrorAction SilentlyContinue
+if ($pgSvc -and $pgSvc.Status -eq "Running") {
   Write-Ok "すでにあります（サービス $PostgresService）"
 } else {
   if (-not $SuperPassword) {
@@ -100,9 +101,15 @@ if (Get-Service $PostgresService -ErrorAction SilentlyContinue) {
     # 記録は data\log に残す（EDB のインストーラーと同じ）
     Add-Content -Path (Join-Path $pgData "postgresql.conf") -Value "`r`n# chem install`r`nlogging_collector = on`r`nlog_directory = 'log'`r`nport = $PgPort`r`n" -Encoding ascii
   }
-  Write-Host "    サービス $PostgresService を登録（NetworkService で起動）"
-  & $pgCtl register -N $PostgresService -U "NT AUTHORITY\NetworkService" -D $pgData -S auto -w
-  if ($LASTEXITCODE -ne 0) { throw "サービスの登録が失敗しました（終了コード $LASTEXITCODE）" }
+  # zip から出したフォルダは TEMP の権限を引きずり、NetworkService が読めない（サービスが Access is denied で
+  # 起動しない）。Program Files の既定の権限（Users は読み取り）に戻してから、NetworkService に data の書き込みを付ける
+  & icacls $pgRoot /reset /T /Q | Out-Null
+  & icacls $pgData /grant "NT AUTHORITY\NetworkService:(OI)(CI)F" /T /Q | Out-Null
+  if (-not (Get-Service $PostgresService -ErrorAction SilentlyContinue)) {
+    Write-Host "    サービス $PostgresService を登録（NetworkService で起動）"
+    & $pgCtl register -N $PostgresService -U "NT AUTHORITY\NetworkService" -D $pgData -S auto -w
+    if ($LASTEXITCODE -ne 0) { throw "サービスの登録が失敗しました（終了コード $LASTEXITCODE）" }
+  }
   Start-Service $PostgresService
   Start-Sleep -Seconds 3
   $svc = Get-Service $PostgresService
