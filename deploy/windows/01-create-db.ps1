@@ -1,9 +1,9 @@
-﻿# 業務用のデータベースとユーザーを作る（導入手順書 §10 W2）。
+﻿# 業務用のデータベースとユーザーを作る（導入手順書 §10）。install.ps1 から呼ばれる。単独でも使える。
 #
 #   powershell -ExecutionPolicy Bypass -File C:\chem\deploy\windows\01-create-db.ps1
 #
 # PostgreSQL 16 をインストールしたあと、一度だけ実行する。管理者権限は要らない。
-# パスワードは画面で打つ（引数にも履歴にも残さない）。
+# パスワードは画面で打つ（引数にも履歴にも残さない）。install.ps1 は SecureString で渡してくる。
 #   1. インストール時に決めた postgres のパスワード
 #   2. これから作る業務用ユーザー chem のパスワード（.env の DATABASE_URL に書くもの）
 #
@@ -17,7 +17,9 @@ param(
   [string]$DbName = "chem",
   [string]$DbUser = "chem",
   [string]$PgHost = "127.0.0.1",
-  [int]$PgPort = 5432
+  [int]$PgPort = 5432,
+  [securestring]$AdminPassword,
+  [securestring]$UserPassword
 )
 
 . (Join-Path $PSScriptRoot "_common.ps1")
@@ -25,16 +27,20 @@ param(
 $psql = Join-Path $PgBin "psql.exe"
 if (-not (Test-Path $psql)) { throw "psql.exe が見つかりません: $psql（-PgBin で場所を指定してください）" }
 
-Write-Step "postgres（管理ユーザー）のパスワード"
-$adminPw = Read-Host -AsSecureString "postgres のパスワード"
-Write-Step "業務用ユーザー $DbUser のパスワード（.env に書くもの。@ と / は使わない）"
-$userPw = Read-Host -AsSecureString "$DbUser のパスワード"
-$userPwPlain = ConvertTo-Plain $userPw
+if (-not $AdminPassword) {
+  Write-Step "postgres（管理ユーザー）のパスワード"
+  $AdminPassword = Read-Host -AsSecureString "postgres のパスワード"
+}
+if (-not $UserPassword) {
+  Write-Step "業務用ユーザー $DbUser のパスワード（.env に書くもの。@ と / は使わない）"
+  $UserPassword = Read-Host -AsSecureString "$DbUser のパスワード"
+}
+$userPwPlain = ConvertTo-Plain $UserPassword
 if ($userPwPlain -match '[@/'']' -or $userPwPlain.Length -lt 12) {
   throw "パスワードは 12 文字以上で、@ / ' を含めないでください"
 }
 
-$env:PGPASSWORD = ConvertTo-Plain $adminPw
+$env:PGPASSWORD = ConvertTo-Plain $AdminPassword
 try {
   $base = @("-h", $PgHost, "-p", $PgPort, "-U", "postgres", "-v", "ON_ERROR_STOP=1", "-tA")
 
@@ -70,7 +76,3 @@ finally {
   $env:PGPASSWORD = $null
   $userPwPlain = $null
 }
-
-Write-Host ""
-Write-Host "次: C:\chem\.env に次の1行を書きます（.env.windows.example を写す）" -ForegroundColor Cyan
-Write-Host "  DATABASE_URL=""postgresql://$DbUser`:<いま決めたパスワード>@$PgHost`:$PgPort/$DbName`?schema=public"""
