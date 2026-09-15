@@ -236,6 +236,8 @@ model User {
    * /**
    * /**
    * /**
+   * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -538,7 +540,9 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-/** 取り込むファイルの種類。拡張子と中身で判別する（決定 0011） */
+/**
+ * 取り込むファイルの種類。拡張子と中身で判別する（決定 0011）
+ */
 enum ImportKind {
   DATA_SET // 当方のデータセット（JSON。法律〜CASリンクの木をコード鍵で）
   REGULATION_LIST // 利用者の規制リスト（TSV。1行 = 法文物質名 × CAS）
@@ -560,7 +564,9 @@ enum ImportStatus {
   DISCARDED
 }
 
-/** 一時領域の行が本体に対してどうなるか */
+/**
+ * 一時領域の行が本体に対してどうなるか
+ */
 enum ImportAction {
   ADD // 本体に無い。足す
   UPDATE // 本体にある。値が違うので更新する
@@ -579,21 +585,29 @@ model ImportJob {
   status   ImportStatus @default(UPLOADED)
   fileName String       @map("file_name") @db.VarChar(255)
   fileSize Int          @map("file_size")
-  /** 受け取ったファイルそのもの。反映が終わったら消して軽くする（記録は summary に残る） */
+  /**
+   * 受け取ったファイルそのもの。反映が終わったら消して軽くする（記録は summary に残る）
+   */
   fileData Bytes?       @map("file_data")
-  /** 概要・下見の件数・反映の結果（表示専用） */
+  /**
+   * 概要・下見の件数・反映の結果（表示専用）
+   */
   summary  Json?
-  /** 失敗の理由（人に見せる文） */
+  /**
+   * 失敗の理由（人に見せる文）
+   */
   error    String?
-  /** 進み具合（0〜100）。裏で走っている間だけ意味がある */
+  /**
+   * 進み具合（0〜100）。裏で走っている間だけ意味がある
+   */
   progress Int          @default(0)
 
-  createdBy  String    @map("created_by")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  stagedAt   DateTime? @map("staged_at")
-  appliedAt  DateTime? @map("applied_at")
-  appliedBy  String?   @map("applied_by")
+  createdBy String    @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  stagedAt  DateTime? @map("staged_at")
+  appliedAt DateTime? @map("applied_at")
+  appliedBy String?   @map("applied_by")
 
   rows ImportRow[]
 
@@ -606,24 +620,38 @@ model ImportJob {
  * payload に書き込みに要る値、diff に「いまの値 → 新しい値」を持つ。apply を外した行は反映しない
  */
 model ImportRow {
-  id     String       @id @default(cuid())
-  jobId  String       @map("job_id")
-  seq    Int
-  /** law / category / class / substance / link / version / source / product / composition / substance_master */
-  kind   String       @db.VarChar(20)
-  /** コードの道筋（JP-CSCL/CLASS1/…）や製品コード。人が読む鍵 */
-  keyPath String      @map("key_path") @db.VarChar(400)
-  /** 人が読む名前 */
-  label  String       @db.VarChar(500)
-  action ImportAction
-  /** 反映するか。CONFLICT と ERROR は既定で false */
-  apply  Boolean      @default(true)
-  /** 更新のときの項目ごとの差 { field: { current, next } } */
-  diff   Json?
-  /** 書き込みに要る値（読み取った行そのもの） */
+  id      String       @id @default(cuid())
+  jobId   String       @map("job_id")
+  seq     Int
+  /**
+   * law / category / class / substance / link / version / source / product / composition / substance_master
+   */
+  kind    String       @db.VarChar(20)
+  /**
+   * コードの道筋（JP-CSCL/CLASS1/…）や製品コード。人が読む鍵
+   */
+  keyPath String       @map("key_path") @db.VarChar(400)
+  /**
+   * 人が読む名前
+   */
+  label   String       @db.VarChar(500)
+  action  ImportAction
+  /**
+   * 反映するか。CONFLICT と ERROR は既定で false
+   */
+  apply   Boolean      @default(true)
+  /**
+   * 更新のときの項目ごとの差 { field: { current, next } }
+   */
+  diff    Json?
+  /**
+   * 書き込みに要る値（読み取った行そのもの）
+   */
   payload Json
-  /** 説明（食い違いの理由・読めなかった理由） */
-  message String?     @db.VarChar(500)
+  /**
+   * 説明（食い違いの理由・読めなかった理由）
+   */
+  message String?      @db.VarChar(500)
 
   job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
@@ -661,6 +689,15 @@ model ProductExpansion {
   truncated  Int     @default(0)
 
   computedAt DateTime @default(now()) @map("computed_at")
+
+  /**
+   * 最後に判定した法規制バージョンと時刻。
+   * 判定の行は「製品にその CAS が入っている法文物質名」ぶんしか無いので（決定 0012）、
+   * 何にも関わらない製品は行が 0 件になる。「判定したのに 0 件」と「まだ判定していない」を
+   * 見分けるために、判定したことをここに残す。切り替えた版で判定していない製品は、これが現在の版と違う
+   */
+  judgedVersionId String?   @map("judged_version_id")
+  judgedAt        DateTime? @map("judged_at")
 
   product Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
   lines   ProductExpansionLine[]
@@ -702,7 +739,10 @@ model ProductExpansionLine {
 }
 
 /**
- * 製品ごと・区分ごと・**法規制バージョンごと**の判定結果。**保持する。**
+ * 製品ごと・**判定の単位ごと**・**法規制バージョンごと**の判定結果。**保持する。**
+ * 判定の単位は「まとめる単位」と同じ（2026-09-15 決定）:
+ * 区分でまとめる区分は区分そのもの（statutorySubstanceId は空文字）、
+ * それ以外は法文物質名（製品にその CAS が入っているものだけ。届かなかったものも非該当として残す）。
  * 判定と「人が見たかどうか」を**別々に持つ**。
  * 「答えは何か」と「確認が済んでいるか」は別の話で、混ぜると
  * 「見たけれど答えは変わらない」という結論の置き場所が無くなる。
@@ -714,9 +754,15 @@ model ProductExpansionLine {
  * 違えば当てはめずに要確認にする。この行の decided* はその写し（画面に出すため）。
  */
 model ProductJudgement {
-  id         String @id @default(cuid())
-  productId  String @map("product_id")
-  categoryId String @map("category_id")
+  id                   String @id @default(cuid())
+  productId            String @map("product_id")
+  categoryId           String @map("category_id")
+  /**
+   * 判定の単位の法文物質名。**区分そのものが単位のときは空文字。**
+   * （null にすると一意キーに使えない。外部キーは張らない: 法文物質名を消しても判定し直すまで
+   * 行は残り、次の判定し直しで消える。根拠の行（hits）と同じ扱い）
+   */
+  statutorySubstanceId String @default("") @map("statutory_substance_id")
 
   verdict       JudgementVerdict
   source        JudgementSource  @default(SYSTEM)
@@ -763,16 +809,18 @@ model ProductJudgement {
   version  LinkSetVersion        @relation(fields: [versionId], references: [id], onDelete: Cascade)
   hits     ProductJudgementHit[]
 
-  @@unique([productId, categoryId, versionId])
+  @@unique([productId, categoryId, statutorySubstanceId, versionId], map: "product_judgements_unit_key")
   // 一覧で「該当のものだけ」「要確認が残っているものだけ」を絞る
   @@index([categoryId, verdict])
   @@index([needsReview])
   @@index([versionId])
+  @@index([statutorySubstanceId])
   @@map("product_judgements")
 }
 
 /**
- * 判定に対する**人の判断**。製品 × 規制区分で1件。
+ * 判定に対する**人の判断**。製品 × 判定の単位（規制区分 × 法文物質名。区分そのものが単位なら
+ * 法文物質名は空文字）で1件（2026-09-15 決定。以前の区分ごとの判断は移行で捨てた）。
  * 「確認した」（判定はそのまま、見たという印）と「判定を変えた」（該当／非該当を人の値にする）の
  * 2つを、誰が・いつ・何を根拠に、と一緒に持つ。
  * **判定の行（ProductJudgement）とは別に持つ。**判定の行は判定し直すたびに作り直されるので、
@@ -785,9 +833,13 @@ model ProductJudgement {
  * 区分が変われば自然に効かなくなる。
  */
 model ProductDecision {
-  id         String @id @default(cuid())
-  productId  String @map("product_id")
-  categoryId String @map("category_id")
+  id                   String @id @default(cuid())
+  productId            String @map("product_id")
+  categoryId           String @map("category_id")
+  /**
+   * 判定の単位の法文物質名。区分そのものが単位のときは空文字（ProductJudgement と同じ）
+   */
+  statutorySubstanceId String @default("") @map("statutory_substance_id")
 
   /**
    * 人が決めた判定。null なら「確認しただけ」（システムの判定をそのまま認めた）
@@ -810,7 +862,7 @@ model ProductDecision {
   product  Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
   category RegulationCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  @@unique([productId, categoryId])
+  @@unique([productId, categoryId, statutorySubstanceId], map: "product_decisions_unit_key")
   @@map("product_decisions")
 }
 
@@ -824,7 +876,7 @@ model ProductJudgementHit {
   judgementId String @map("judgement_id")
 
   /**
-   * 当たった法文物質名。区分そのものでまとめて当たったときは空
+   * 見た法文物質名（判定の行と同じ）。区分そのものが単位のときは空
    */
   statutorySubstanceId String?  @map("statutory_substance_id")
   /**

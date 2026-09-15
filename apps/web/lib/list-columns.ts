@@ -13,14 +13,15 @@ import { anyOfTextCondition, type QueryColumn } from "@/lib/table-query";
  */
 function judgementCondition(values: string[], versionId: string): Record<string, unknown> | null {
   const hit = { judgements: { some: { versionId, verdict: "APPLICABLE" as const } } };
+  // この版で判定したか。判定の行が 0 件でも判定済みのことがあるので、展開結果の記録で見る
+  const judged = { expansion: { is: { judgedVersionId: versionId } } };
   const each: Record<string, unknown>[] = [];
   for (const v of new Set(values)) {
     if (v === "hit") each.push(hit);
     // 判定はしてあるが、どの区分にも当たらなかった
-    else if (v === "none")
-      each.push({ AND: [{ judgements: { some: { versionId } } }, { NOT: hit }] });
+    else if (v === "none") each.push({ AND: [judged, { NOT: hit }] });
     // まだ一度も判定していない（この版で）
-    else if (v === "unjudged") each.push({ judgements: { none: { versionId } } });
+    else if (v === "unjudged") each.push({ NOT: judged });
   }
   if (each.length === 0) return null;
   // 選択肢が複数選ばれたら「どれか」。すべて選ばれた状態は絞らないのと同じ

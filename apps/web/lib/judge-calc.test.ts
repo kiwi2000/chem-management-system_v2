@@ -52,22 +52,37 @@ const line = (cas: string, pct: string) => ({
   totalPct: pct,
 });
 
+/**
+ * 結果の 1 単位目。**判定の単位は法文物質名（区分でまとめる区分だけ区分）**なので、
+ * 法文物質名が 1 つの試験では units[0] がその法文物質名の結果。
+ * 入っていない法文物質名は結果に並ばないので、その場合は「非該当・理由なし」と読む
+ */
+const first = (r: ReturnType<typeof judge>) =>
+  r.units[0] ?? {
+    statutorySubstanceId: null,
+    verdict: "NOT_APPLICABLE" as const,
+    needsReview: false,
+    reasons: [] as string[],
+    total: null,
+    contributions: [] as { cas: string; pct: string; sources: string[] }[],
+  };
+
 describe("閾値との比較", () => {
   it("閾値を超えていれば該当", () => {
     const r = judge(
       input({ lines: [line("7439-92-1", "0.2")], entries: [entry({ threshold: over("0.1") })] }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.needsReview).toBe(false);
-    expect(r.hits[0]?.total).toBeNull();
-    expect(r.hits[0]?.contributions).toEqual([{ cas: "7439-92-1", pct: "0.2", sources: [] }]);
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).needsReview).toBe(false);
+    expect(first(r).total).toBeNull();
+    expect(first(r).contributions).toEqual([{ cas: "7439-92-1", pct: "0.2", sources: [] }]);
   });
 
   it("閾値を下回れば非該当", () => {
     const r = judge(
       input({ lines: [line("7439-92-1", "0.05")], entries: [entry({ threshold: over("0.1") })] }),
     );
-    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
   });
 
   it("境目そのものは該当しない（「以下を除く」なので）", () => {
@@ -75,7 +90,7 @@ describe("閾値との比較", () => {
     const r = judge(
       input({ lines: [line("7439-92-1", "0.1")], entries: [entry({ threshold: over("0.1") })] }),
     );
-    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
   });
 
   it("境目を含む書きかたなら、境目でも該当する", () => {
@@ -88,13 +103,78 @@ describe("閾値との比較", () => {
     const r = judge(
       input({ lines: [line("7439-92-1", "0.1")], entries: [entry({ threshold: t })] }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
+    expect(first(r).verdict).toBe("APPLICABLE");
   });
 
   it("その物質が入っていなければ、何も起きない", () => {
     const r = judge(input({ lines: [line("7440-22-4", "50")] }));
-    expect(r.verdict).toBe("NOT_APPLICABLE");
-    expect(r.hits).toEqual([]);
+    // 入っていない法文物質名は結果に並ばない（区分の法文物質名の数だけ行ができないように）
+    expect(r.units).toEqual([]);
+    expect(r.unit).toBe("substance");
+  });
+});
+
+describe("判定の単位は法文物質名", () => {
+  it("入っているが閾値に届かない法文物質名は、非該当として入っている値を残す", () => {
+    const r = judge(
+      input({ lines: [line("7439-92-1", "0.05")], entries: [entry({ threshold: over("0.1") })] }),
+    );
+    expect(r.units).toHaveLength(1);
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
+    // 「含有率不足」を読めるように、閾値に届かなかった値をそのまま残す
+    expect(first(r).contributions).toEqual([{ cas: "7439-92-1", pct: "0.05", sources: [] }]);
+    expect(first(r).total).toBeNull();
+  });
+
+  it("同じ区分でも、法文物質名ごとに別々の結果になる", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.5"), line("7440-22-4", "0.01")],
+        entries: [
+          entry({ id: "a", cas: ["7439-92-1"], threshold: over("0.1") }),
+          entry({ id: "b", cas: ["7440-22-4"], threshold: over("0.1") }),
+          entry({ id: "c", cas: ["50-00-0"], threshold: over("0.1") }),
+        ],
+      }),
+    );
+    expect(r.unit).toBe("substance");
+    // c は入っていないので並ばない
+    expect(r.units.map((u) => [u.statutorySubstanceId, u.verdict])).toEqual([
+      ["a", "APPLICABLE"],
+      ["b", "NOT_APPLICABLE"],
+    ]);
+  });
+
+  it("区分全体にかかる理由（中身が分からない）は、その区分のどの単位にも付く", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.5"), line("7440-22-4", "0.01")],
+        unknownPct: "30",
+        entries: [
+          entry({ id: "a", cas: ["7439-92-1"], threshold: over("0.1") }),
+          entry({ id: "b", cas: ["7440-22-4"], threshold: over("0.1") }),
+        ],
+      }),
+    );
+    expect(r.units.every((u) => u.reasons.includes("unknownComposition"))).toBe(true);
+    expect(r.units.every((u) => u.needsReview)).toBe(true);
+  });
+
+  it("換算係数が無い理由は、その法文物質名にだけ付く", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "0.5"), line("1317-36-8", "0.5")],
+        entries: [
+          entry({ id: "a", cas: ["7439-92-1"], aggregation: "ELEMENT", metalEtc: "Pb" }),
+          entry({ id: "b", cas: ["1317-36-8"], threshold: over("0.1") }),
+        ],
+        factors: new Map(),
+      }),
+    );
+    const a = r.units.find((u) => u.statutorySubstanceId === "a")!;
+    const b = r.units.find((u) => u.statutorySubstanceId === "b")!;
+    expect(a.reasons).toContain("missingFactor");
+    expect(b.reasons).not.toContain("missingFactor");
   });
 });
 
@@ -108,7 +188,7 @@ describe("法文物質名でのまとめ", () => {
         entries: [entry({ cas: two, aggregation: "NONE", threshold: over("0.1") })],
       }),
     );
-    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
   });
 
   it("まとめれば合計で閾値を超え、該当になる", () => {
@@ -122,8 +202,8 @@ describe("法文物質名でのまとめ", () => {
         entries: [entry({ cas: two, aggregation: "SUM", threshold: over("0.1") })],
       }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.hits[0]?.total).toBe("0.12");
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).total).toBe("0.12");
   });
 
   it("元素換算でまとめると、単純合算とは答えが変わる", () => {
@@ -151,8 +231,8 @@ describe("法文物質名でのまとめ", () => {
         factors,
       }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.hits[0]?.total).toBe("0.115698");
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).total).toBe("0.115698");
   });
 
   it("換算の結果、閾値を下回れば非該当になる", () => {
@@ -172,7 +252,7 @@ describe("法文物質名でのまとめ", () => {
       }),
     );
     // 0.15 の半分で 0.075。0.1 に届かない
-    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
   });
 
   it("換算係数が無ければ 0 として数え、要確認にする", () => {
@@ -195,9 +275,9 @@ describe("法文物質名でのまとめ", () => {
         factors: new Map(),
       }),
     );
-    expect(r.verdict).toBe("NOT_APPLICABLE");
-    expect(r.needsReview).toBe(true);
-    expect(r.reasons).toContain("missingFactor");
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
+    expect(first(r).needsReview).toBe(true);
+    expect(first(r).reasons).toContain("missingFactor");
   });
 });
 
@@ -219,7 +299,7 @@ describe("区分でのまとめ", () => {
       }),
     );
     // 二重に数えれば 0.16 で該当になってしまう。正しくは 0.08 で非該当
-    expect(r.verdict).toBe("NOT_APPLICABLE");
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
   });
 
   it("区分でまとめて閾値を超えれば、区分そのものが当たる", () => {
@@ -230,10 +310,12 @@ describe("区分でのまとめ", () => {
         entries: [entry({ id: "a", cas: ["7439-92-1"] }), entry({ id: "b", cas: ["7440-22-4"] })],
       }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
-    // 区分が当たったので、どの法文物質名かは指さない
-    expect(r.hits[0]?.statutorySubstanceId).toBeNull();
-    expect(r.hits[0]?.total).toBe("0.14");
+    expect(first(r).verdict).toBe("APPLICABLE");
+    // 区分が単位。どの法文物質名かは指さず、結果も 1 件
+    expect(r.unit).toBe("category");
+    expect(r.units).toHaveLength(1);
+    expect(first(r).statutorySubstanceId).toBeNull();
+    expect(first(r).total).toBe("0.14");
   });
 });
 
@@ -255,9 +337,9 @@ describe("まとめないときの、複数の当たり", () => {
         ],
       }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
+    expect(first(r).verdict).toBe("APPLICABLE");
     // 0.05 の銀は閾値に届かないので入らない
-    expect(r.hits[0]?.contributions).toEqual([
+    expect(first(r).contributions).toEqual([
       { cas: "7439-92-1", pct: "0.5", sources: [] },
       { cas: "1317-36-8", pct: "0.4", sources: [] },
     ]);
@@ -280,7 +362,7 @@ describe("まとめないときの、複数の当たり", () => {
         ],
       }),
     );
-    expect(r.hits[0]?.contributions).toEqual([
+    expect(first(r).contributions).toEqual([
       { cas: "7439-92-1", pct: "0.2", sources: ["loli", "chrip"] },
     ]);
   });
@@ -296,7 +378,7 @@ describe("まとめないときの、複数の当たり", () => {
         ],
       }),
     );
-    expect(r.hits[0]?.contributions).toEqual([
+    expect(first(r).contributions).toEqual([
       { cas: "7439-92-1", pct: "0.06", sources: ["loli"] },
       { cas: "1317-36-8", pct: "0.06", sources: ["chrip"] },
     ]);
@@ -310,7 +392,7 @@ describe("まとめないときの、複数の当たり", () => {
       }),
     );
     // ここに 0.9 と出すと、足していないものを足したように読まれる
-    expect(r.hits[0]?.total).toBeNull();
+    expect(first(r).total).toBeNull();
   });
 
   it("まとめるときは、足したCASを全部並べて合計も出す", () => {
@@ -322,8 +404,8 @@ describe("まとめないときの、複数の当たり", () => {
         ],
       }),
     );
-    expect(r.hits[0]?.total).toBe("0.12");
-    expect(r.hits[0]?.contributions).toEqual([
+    expect(first(r).total).toBe("0.12");
+    expect(first(r).contributions).toEqual([
       { cas: "7439-92-1", pct: "0.06", sources: [] },
       { cas: "1317-36-8", pct: "0.06", sources: [] },
     ]);
@@ -337,21 +419,24 @@ describe("まとめないときの、複数の当たり", () => {
         entries: [entry({ id: "a", cas: ["7439-92-1"] }), entry({ id: "b", cas: ["7440-22-4"] })],
       }),
     );
-    expect(r.hits[0]?.contributions.map((c) => c.cas)).toEqual(["7439-92-1", "7440-22-4"]);
-    expect(r.hits[0]?.total).toBe("0.14");
+    expect(first(r).contributions.map((c) => c.cas)).toEqual(["7439-92-1", "7440-22-4"]);
+    expect(first(r).total).toBe("0.14");
   });
 });
 
 describe("要確認になる場面", () => {
   it("中身の分からない原材料が残っていれば、要確認", () => {
-    const r = judge(input({ lines: [line("7440-22-4", "70")], unknownPct: "30" }));
-    expect(r.needsReview).toBe(true);
-    expect(r.reasons).toContain("unknownComposition");
+    // 入っている法文物質名の行に付く（入っていないものは行そのものが無い）
+    const r = judge(
+      input({ lines: [line("7439-92-1", "1"), line("7440-22-4", "69")], unknownPct: "30" }),
+    );
+    expect(first(r).needsReview).toBe(true);
+    expect(first(r).reasons).toContain("unknownComposition");
   });
 
   it("深すぎて展開しきれなければ、要確認", () => {
-    const r = judge(input({ truncated: 1 }));
-    expect(r.reasons).toContain("truncated");
+    const r = judge(input({ lines: [line("7439-92-1", "1")], truncated: 1 }));
+    expect(first(r).reasons).toContain("truncated");
   });
 
   it("条件つきの除外は、閾値を下回っていても該当に倒して要確認にする", () => {
@@ -367,9 +452,9 @@ describe("要確認になる場面", () => {
         entries: [entry({ threshold: over("0.3"), conditional: true })],
       }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.needsReview).toBe(true);
-    expect(r.reasons).toContain("conditionalExclusion");
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).needsReview).toBe(true);
+    expect(first(r).reasons).toContain("conditionalExclusion");
   });
 
   it("適用条件が書いてあれば、閾値を超えて当たったときも要確認", () => {
@@ -385,9 +470,9 @@ describe("要確認になる場面", () => {
         entries: [entry({ threshold: over("0.3"), conditional: true })],
       }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.needsReview).toBe(true);
-    expect(r.reasons).toContain("conditionalExclusion");
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).needsReview).toBe(true);
+    expect(first(r).reasons).toContain("conditionalExclusion");
   });
 
   it("条件つきでも、その物質が入っていなければ何も起きない", () => {
@@ -397,8 +482,8 @@ describe("要確認になる場面", () => {
         entries: [entry({ threshold: over("0.3"), conditional: true })],
       }),
     );
-    expect(r.verdict).toBe("NOT_APPLICABLE");
-    expect(r.needsReview).toBe(false);
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
+    expect(first(r).needsReview).toBe(false);
   });
 
   it("閾値を入れられていないものは、入っていれば該当に倒して要確認", () => {
@@ -408,15 +493,15 @@ describe("要確認になる場面", () => {
         entries: [entry({ threshold: over("50"), unfilled: true })],
       }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.reasons).toContain("unfilledThreshold");
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).reasons).toContain("unfilledThreshold");
   });
 
   it("何も引っかからなければ、非該当で確定", () => {
     const r = judge(input({ lines: [line("7440-22-4", "50")] }));
-    expect(r.verdict).toBe("NOT_APPLICABLE");
-    expect(r.needsReview).toBe(false);
-    expect(r.reasons).toEqual([]);
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
+    expect(first(r).needsReview).toBe(false);
+    expect(first(r).reasons).toEqual([]);
   });
 });
 
@@ -440,26 +525,26 @@ describe("均質材料あたりの閾値（RoHS など）", () => {
     const r = judge(
       input({ lines: [line("7439-92-1", "0.05")], category: homogeneous, entries: rohs }),
     );
-    expect(r.verdict).toBe("NOT_APPLICABLE");
-    expect(r.needsReview).toBe(true);
-    expect(r.reasons).toContain("homogeneousMaterial");
+    expect(first(r).verdict).toBe("NOT_APPLICABLE");
+    expect(first(r).needsReview).toBe(true);
+    expect(first(r).reasons).toContain("homogeneousMaterial");
   });
 
   it("該当したときも、要確認にする", () => {
     const r = judge(
       input({ lines: [line("7439-92-1", "30")], category: homogeneous, entries: rohs }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.needsReview).toBe(true);
-    expect(r.reasons).toContain("homogeneousMaterial");
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).needsReview).toBe(true);
+    expect(first(r).reasons).toContain("homogeneousMaterial");
   });
 
   it("製品全体あたりの区分では、この理由は付かない", () => {
     const r = judge(
       input({ lines: [line("7439-92-1", "0.05")], entries: [entry({ threshold: over("0.1") })] }),
     );
-    expect(r.reasons).not.toContain("homogeneousMaterial");
-    expect(r.needsReview).toBe(false);
+    expect(first(r).reasons).not.toContain("homogeneousMaterial");
+    expect(first(r).needsReview).toBe(false);
   });
 });
 
@@ -480,16 +565,16 @@ describe("条件つきで結ばれたCAS", () => {
 
   it("要確認にする設定なら、該当・警告・要確認", () => {
     const r = withConditionalLink("review");
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.reasons).toContain("conditionalLink");
-    expect(r.needsReview).toBe(true);
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).reasons).toContain("conditionalLink");
+    expect(first(r).needsReview).toBe(true);
   });
 
   it("該非を確定する設定なら、該当・警告。要確認にはしない", () => {
     const r = withConditionalLink("hit");
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.reasons).toContain("conditionalLink");
-    expect(r.needsReview).toBe(false);
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).reasons).toContain("conditionalLink");
+    expect(first(r).needsReview).toBe(false);
   });
 
   it("設定を省くと、要確認にする側", () => {
@@ -499,7 +584,7 @@ describe("条件つきで結ばれたCAS", () => {
         entries: [entry({ conditionalCas: ["7439-92-1"] })],
       }),
     );
-    expect(r.needsReview).toBe(true);
+    expect(first(r).needsReview).toBe(true);
   });
 
   it("条件つきでないCASが当たっただけなら、警告は出ない", () => {
@@ -510,9 +595,9 @@ describe("条件つきで結ばれたCAS", () => {
         conditionalLinkMode: "review",
       }),
     );
-    expect(r.verdict).toBe("APPLICABLE");
-    expect(r.reasons).not.toContain("conditionalLink");
-    expect(r.needsReview).toBe(false);
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(first(r).reasons).not.toContain("conditionalLink");
+    expect(first(r).needsReview).toBe(false);
   });
 
   it("該非を確定する設定でも、ほかの要確認の理由は消さない", () => {
@@ -524,8 +609,8 @@ describe("条件つきで結ばれたCAS", () => {
         conditionalLinkMode: "hit",
       }),
     );
-    expect(r.reasons).toContain("conditionalLink");
-    expect(r.reasons).toContain("unknownComposition");
-    expect(r.needsReview).toBe(true);
+    expect(first(r).reasons).toContain("conditionalLink");
+    expect(first(r).reasons).toContain("unknownComposition");
+    expect(first(r).needsReview).toBe(true);
   });
 });

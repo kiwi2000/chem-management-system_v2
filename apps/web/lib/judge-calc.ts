@@ -6,7 +6,14 @@ import { fromScaled, toScaled } from "@chem/shared";
  * 展開済みの組成（製品 × CAS × 合計含有率）と、法律側の決めごとを受け取って、
  * 該当か非該当かを出す。読み出しと保存は judge-store.ts の側。
  *
- * 判定は2つに分けて返す。
+ * **判定の単位は「まとめる単位」と同じ**（2026-09-15 決定）。
+ *
+ *   区分でまとめる区分     … 区分そのものが 1 つの単位。結果は 1 件
+ *   それ以外               … 法文物質名が単位。製品にその CAS が入っている法文物質名ごとに 1 件
+ *                            （法文物質名でまとめるときも、まとめないときも同じ。まとめないときは
+ *                            CAS ごとに閾値と比べるが、どれかが超えれば**その法文物質名**が該当）
+ *
+ * 単位ごとに 2 つに分けて返す。
  *
  *   verdict     … 該当 ／ 非該当。**必ずどちらか**
  *   needsReview … 人が見なければ決められない、という印。判定とは別に持つ
@@ -130,9 +137,13 @@ export type ReviewReason =
    */
   | "decisionDropped";
 
-export interface JudgeHit {
-  /** 当たった法文物質名。区分でまとめたときは null（区分そのものが当たった） */
+/** 判定の 1 単位（区分そのもの、または法文物質名）の結果 */
+export interface JudgeUnit {
+  /** 法文物質名。区分でまとめたときは null（区分そのものが単位） */
   statutorySubstanceId: string | null;
+  verdict: "APPLICABLE" | "NOT_APPLICABLE";
+  needsReview: boolean;
+  reasons: ReviewReason[];
   /**
    * 合算した含有率。**まとめたときだけ入る。**
    * まとめないときは CAS ごとに別々に比べているので、合計には意味が無い。
@@ -140,19 +151,19 @@ export interface JudgeHit {
    */
   total: string | null;
   /**
-   * 当たった CAS と、それぞれの含有率。
+   * この単位で見た CAS と、それぞれの含有率。
    *
-   *   まとめない … **個別に閾値を超えた CAS が、すべて並ぶ**
-   *   まとめる   … 足し合わせた CAS が、すべて並ぶ（元素換算なら換算後の値）
+   *   該当・まとめない … **個別に閾値を超えた CAS が、すべて並ぶ**
+   *   該当・まとめる   … 足し合わせた CAS が、すべて並ぶ（元素換算なら換算後の値）
+   *   非該当           … 製品に入っている CAS が並ぶ（閾値に届かなかった値。「含有率不足」を読むため）
    */
   contributions: { cas: string; pct: string; sources: string[] }[];
 }
 
 export interface JudgeResult {
-  verdict: "APPLICABLE" | "NOT_APPLICABLE";
-  needsReview: boolean;
-  reasons: ReviewReason[];
-  hits: JudgeHit[];
+  /** 判定の単位。"category" なら units は必ず 1 件 */
+  unit: "category" | "substance";
+  units: JudgeUnit[];
 }
 
 /**
@@ -203,127 +214,144 @@ function pctOf(
  * 1つの区分について判定する。
  *
  * **区分にまとめかたが指定されていたら、法文物質名の指定は見ない。**
- * 区分でまとめるときは、その区分に紐づく CAS を重複なく集めて一度だけ足す。
- * 法文物質名ごとの合計を足し上げると、同じ CAS が2つの法文物質名に
- * 紐づいていたときに二重に数えてしまう。
+ * 区分でまとめるときは、その区分に紐づく CAS を重複なく集めて一度だけ足し、
+ * 区分そのものを 1 つの単位として答える。法文物質名ごとの合計を足し上げると、
+ * 同じ CAS が2つの法文物質名に紐づいていたときに二重に数えてしまう。
+ *
+ * それ以外は法文物質名が単位。**製品にその CAS が入っている法文物質名だけ**が結果に並ぶ
+ * （閾値に届かなかったものも「非該当」として並ぶ。入っていないものは並ばない）。
  */
 export function judge(input: JudgeInput): JudgeResult {
   const { lines, category, entries, factors } = input;
   const linkMode = input.conditionalLinkMode ?? "review";
-  /** 当たった CAS が条件つきなら印を立てる */
-  const markConditionalLink = (e: JudgeEntry, cas: string[]) => {
-    if (cas.some((c) => e.conditionalCas?.includes(c))) reasons.add("conditionalLink");
-  };
-  /*
-    **適用条件が書いてあれば、当たったときも必ず要確認にする。**
-    濃度で当たっても、条件（用途・形状・候補の一覧に載っているだけ、など）を
-    満たしているかは人にしか分からない。
-    下回ったときだけ見ていると、**当たったときの「?」が出ない**
-  */
-  const markCondition = (e: JudgeEntry) => {
-    if (e.conditional) reasons.add("conditionalExclusion");
-  };
   const byCas = new Map(
     lines.filter((l) => l.casNormalized).map((l) => [l.casNormalized as string, l]),
   );
 
-  const reasons = new Set<ReviewReason>();
-  const hits: JudgeHit[] = [];
-
   /*
-    閾値が**均質材料あたり**で決まっている区分（RoHS など）。
-    こちらの組成は製品全体でしか持っていないので、割れば必ず薄まる。
-    **当たっても当たらなくても言い切れない**ので、先に理由を立てておく。
-    均質材料そのものを原材料として登録し、そちらを判定すれば正しく見られる
+    区分全体にかかる理由。どの単位にも同じように付く。
+    **均質材料あたり**の区分（RoHS など）は、製品全体の組成では割れば必ず薄まるので、
+    当たっても当たらなくても言い切れない。均質材料そのものを原材料として登録し、
+    そちらを判定すれば正しく見られる
   */
-  if (category.thresholdBasis === "HOMOGENEOUS_MATERIAL") reasons.add("homogeneousMaterial");
-
+  const common: ReviewReason[] = [];
+  if (category.thresholdBasis === "HOMOGENEOUS_MATERIAL") common.push("homogeneousMaterial");
   // 中身が分からないぶんが残っていれば、言い切れない
-  if ((toScaled(input.unknownPct) ?? 0n) > 0n) reasons.add("unknownComposition");
-  if (input.truncated > 0) reasons.add("truncated");
+  if ((toScaled(input.unknownPct) ?? 0n) > 0n) common.push("unknownComposition");
+  if (input.truncated > 0) common.push("truncated");
 
-  /**
-   * その CAS がいくら効いたかを、まとめかたに従って出す。
-   * 換算係数が無いものがあれば、要確認の印を立てる（0 として数えるため）。
-   */
   /** その CAS を結んでいるデータソース。区分でまとめたときは、関わった全部を合わせる */
   const sourcesOf = (c: string) => [...new Set(entries.flatMap((e) => e.sourcesOf?.[c] ?? []))];
 
-  const shareOf = (list: string[], mode: Aggregation, target: string | null) =>
-    list.map((c) => {
+  /** 1 単位ぶんの計算。理由はこの単位のものだけを集める */
+  const unitOf = (statutorySubstanceId: string | null) => {
+    const reasons = new Set<ReviewReason>(common);
+    const shareOf = (list: string[], mode: Aggregation, target: string | null) =>
+      list.map((c) => {
+        const r = pctOf(byCas.get(c) as ExpandedLine, mode, target, factors);
+        if (r.missing) reasons.add("missingFactor");
+        return { cas: c, pct: fromScaled(r.pct), sources: sourcesOf(c) };
+      });
+    /** 閾値と比べる値。合計するときはここを足す */
+    const valueOf = (c: string, mode: Aggregation, target: string | null) => {
       const r = pctOf(byCas.get(c) as ExpandedLine, mode, target, factors);
       if (r.missing) reasons.add("missingFactor");
-      return { cas: c, pct: fromScaled(r.pct), sources: sourcesOf(c) };
-    });
-
-  /** 閾値と比べる値。合計するときはここを足す */
-  const valueOf = (c: string, mode: Aggregation, target: string | null) => {
-    const r = pctOf(byCas.get(c) as ExpandedLine, mode, target, factors);
-    if (r.missing) reasons.add("missingFactor");
-    return r.pct;
+      return r.pct;
+    };
+    const finish = (
+      verdict: JudgeUnit["verdict"],
+      total: string | null,
+      contributions: JudgeUnit["contributions"],
+    ): JudgeUnit => {
+      // 条件つきのCASリンクは、システム設定が `hit` のとき警告だけ出して要確認にしない
+      const warnOnly =
+        linkMode === "hit" ? new Set<ReviewReason>(["conditionalLink"]) : new Set<ReviewReason>();
+      return {
+        statutorySubstanceId,
+        verdict,
+        needsReview: [...reasons].some((r) => !warnOnly.has(r)),
+        reasons: [...reasons],
+        total,
+        contributions,
+      };
+    };
+    return { reasons, shareOf, valueOf, finish };
   };
 
   if (category.aggregation !== "NONE") {
     // 区分でまとめる。CAS を重複なく集めてから、一度だけ足す
+    const u = unitOf(null);
     const cas = [...new Set(entries.flatMap((e) => e.cas))].filter((c) => byCas.has(c));
     let total = 0n;
-    for (const c of cas) {
-      total += valueOf(c, category.aggregation, category.metalEtc);
-    }
-    if (within(total, category.threshold)) {
-      hits.push({
-        statutorySubstanceId: null,
-        total: fromScaled(total),
-        contributions: shareOf(cas, category.aggregation, category.metalEtc),
-      });
+    for (const c of cas) total += u.valueOf(c, category.aggregation, category.metalEtc);
+    const applicable = cas.length > 0 && within(total, category.threshold);
+    if (applicable) {
       // まとめた中に、条件つき・閾値未設定のものが混ざっていれば要確認
       for (const e of entries) {
         const present = e.cas.filter((c) => byCas.has(c));
         if (present.length === 0) continue;
-        if (e.conditional) reasons.add("conditionalExclusion");
-        if (e.unfilled) reasons.add("unfilledThreshold");
-        markConditionalLink(e, present);
+        if (e.conditional) u.reasons.add("conditionalExclusion");
+        if (e.unfilled) u.reasons.add("unfilledThreshold");
+        if (present.some((c) => e.conditionalCas?.includes(c))) u.reasons.add("conditionalLink");
       }
     }
-    return finish(hits, reasons, linkMode);
+    return {
+      unit: "category",
+      units: [
+        u.finish(
+          applicable ? "APPLICABLE" : "NOT_APPLICABLE",
+          cas.length > 0 ? fromScaled(total) : null,
+          u.shareOf(cas, category.aggregation, category.metalEtc),
+        ),
+      ],
+    };
   }
 
+  const units: JudgeUnit[] = [];
   for (const e of entries) {
     const present = e.cas.filter((c) => byCas.has(c));
+    // 入っていない法文物質名は結果に並べない（並べると区分の法文物質名の数だけ行ができる）
     if (present.length === 0) continue;
+    const u = unitOf(e.id);
+    /** 当たった CAS が条件つきなら印を立てる */
+    const markConditionalLink = (cas: string[]) => {
+      if (cas.some((c) => e.conditionalCas?.includes(c))) u.reasons.add("conditionalLink");
+    };
+    /*
+      **適用条件が書いてあれば、当たったときも必ず要確認にする。**
+      濃度で当たっても、条件（用途・形状・候補の一覧に載っているだけ、など）を
+      満たしているかは人にしか分からない。
+      下回ったときだけ見ていると、**当たったときの「?」が出ない**
+    */
+    const markCondition = () => {
+      if (e.conditional) u.reasons.add("conditionalExclusion");
+    };
 
     if (e.aggregation === "NONE") {
       /*
         まとめない。**CAS ごとに別々に閾値と比べる。**
         1つの法文物質名の中で、複数の CAS がそれぞれ閾値を超えることがあるので、
         当たったものは全部拾う（最初の1件で打ち切ると、残りが見えなくなる）。
+        どれかが超えれば、この法文物質名が該当
       */
-      const matched = present.filter((c) => within(valueOf(c, "NONE", null), e.threshold));
+      const matched = present.filter((c) => within(u.valueOf(c, "NONE", null), e.threshold));
       if (matched.length > 0) {
-        hits.push({
-          statutorySubstanceId: e.id,
-          // 足していないので合計は出さない
-          total: null,
-          contributions: shareOf(matched, "NONE", null),
-        });
-        markConditionalLink(e, matched);
-        markCondition(e);
+        markConditionalLink(matched);
+        markCondition();
+        // 足していないので合計は出さない
+        units.push(u.finish("APPLICABLE", null, u.shareOf(matched, "NONE", null)));
         continue;
       }
     } else {
       // まとめる。足した値ひとつを閾値と比べる
       let total = 0n;
-      for (const c of present) {
-        total += valueOf(c, e.aggregation, e.metalEtc);
-      }
+      for (const c of present) total += u.valueOf(c, e.aggregation, e.metalEtc);
       if (within(total, e.threshold)) {
-        hits.push({
-          statutorySubstanceId: e.id,
-          total: fromScaled(total),
-          contributions: shareOf(present, e.aggregation, e.metalEtc),
-        });
-        markConditionalLink(e, present);
-        markCondition(e);
+        markConditionalLink(present);
+        markCondition();
+        units.push(
+          u.finish("APPLICABLE", fromScaled(total), u.shareOf(present, e.aggregation, e.metalEtc)),
+        );
         continue;
       }
     }
@@ -339,41 +367,21 @@ export function judge(input: JudgeInput): JudgeResult {
       閾値を入れられなかったものも同じ。入っていることだけは分かっているので、
       該当として扱い、人に見てもらう。
     */
+    const aggregated = e.aggregation !== "NONE";
+    const share = u.shareOf(present, e.aggregation, e.metalEtc);
+    const total = aggregated
+      ? fromScaled(share.reduce((sum, x) => sum + (toScaled(x.pct) ?? 0n), 0n))
+      : null;
     if (e.conditional || e.unfilled) {
-      if (e.conditional) reasons.add("conditionalExclusion");
-      if (e.unfilled) reasons.add("unfilledThreshold");
-      const aggregated = e.aggregation !== "NONE";
-      const share = shareOf(present, e.aggregation, e.metalEtc);
-      hits.push({
-        statutorySubstanceId: e.id,
-        total: aggregated
-          ? fromScaled(share.reduce((sum, x) => sum + (toScaled(x.pct) ?? 0n), 0n))
-          : null,
-        contributions: share,
-      });
-      markConditionalLink(e, present);
+      if (e.conditional) u.reasons.add("conditionalExclusion");
+      if (e.unfilled) u.reasons.add("unfilledThreshold");
+      markConditionalLink(present);
+      units.push(u.finish("APPLICABLE", total, share));
+      continue;
     }
+    // 入っているが閾値に届かない。**含有率不足による非該当**として、入っている値を残す
+    units.push(u.finish("NOT_APPLICABLE", total, share));
   }
 
-  return finish(hits, reasons, linkMode);
-}
-
-/**
- * 当たりが1つでもあれば該当。無ければ非該当。
- *
- * **警告（`reasons`）と要確認（`needsReview`）は別。**
- * 条件つきのCASリンクは、システム設定が `hit` のとき警告だけ出して要確認にしない
- */
-function finish(
-  hits: JudgeHit[],
-  reasons: Set<ReviewReason>,
-  linkMode: "hit" | "review",
-): JudgeResult {
-  const warnOnly = linkMode === "hit" ? new Set<ReviewReason>(["conditionalLink"]) : new Set();
-  return {
-    verdict: hits.length > 0 ? "APPLICABLE" : "NOT_APPLICABLE",
-    needsReview: [...reasons].some((r) => !warnOnly.has(r)),
-    reasons: [...reasons],
-    hits,
-  };
+  return { unit: "substance", units };
 }

@@ -8,10 +8,11 @@ import { visibilityWhere } from "@/lib/product-service";
 
 export const dynamic = "force-dynamic";
 
-type Ctx = { params: Promise<{ id: string; categoryId: string }> };
+type Ctx = { params: Promise<{ id: string; judgementId: string }> };
 
 /**
- * PUT /api/products/[id]/judgements/[categoryId] — 確認する／判定を上書きする。
+ * PUT /api/products/[id]/judgements/[judgementId] — 確認する／判定を上書きする。
+ * 相手は判定の行（判定の単位＝区分でまとめる区分は区分、それ以外は法文物質名。2026-09-15 決定）。
  *
  * 操作は2つあるが、どちらも**要確認を OFF にする**。
  *
@@ -22,7 +23,7 @@ type Ctx = { params: Promise<{ id: string; categoryId: string }> };
  * 監査で「なぜ非該当にしたのか」と問われたときに答えられることが、
  * この機能のいちばんの値打ちなので。
  *
- * **記録は判定の行ではなく、製品 × 規制区分の「人の判断」（ProductDecision）に残す**
+ * **記録は判定の行ではなく、製品 × 判定の単位の「人の判断」（ProductDecision）に残す**
  * （2026-09-12 決定）。判定し直したとき、前提（システムの判定と、どの法文物質名に
  * どのCASで当たったか）が同じなら当てはめ直し、違えば当てはめずに要確認にする。
  * 法規制バージョンが変わっただけでは消えず、組成や法律が変われば効かなくなる。
@@ -31,7 +32,7 @@ type Ctx = { params: Promise<{ id: string; categoryId: string }> };
 export async function PUT(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRODUCT_EDIT");
   if (actor instanceof Response) return actor;
-  const { id, categoryId } = await params;
+  const { id, judgementId } = await params;
   const m = await getServerMessages();
 
   const product = await prisma.product.findFirst({
@@ -60,12 +61,12 @@ export async function PUT(req: Request, { params }: Ctx) {
   // 判断できるのは、現在のバージョンで保存してある判定だけ
   const version = await getCurrentVersion();
   if (!version) return jsonError(404, "not_found", m.errors.notFound);
-  const current = await prisma.productJudgement.findUnique({
-    where: {
-      productId_categoryId_versionId: { productId: id, categoryId, versionId: version.id },
-    },
+  const current = await prisma.productJudgement.findFirst({
+    where: { id: judgementId, productId: id, versionId: version.id },
     select: {
       id: true,
+      categoryId: true,
+      statutorySubstanceId: true,
       verdict: true,
       systemVerdict: true,
       premise: true,
@@ -86,10 +87,17 @@ export async function PUT(req: Request, { params }: Ctx) {
   await prisma.$transaction([
     // 人の判断。判定し直しても、前提が同じあいだは引き継がれる
     prisma.productDecision.upsert({
-      where: { productId_categoryId: { productId: id, categoryId } },
+      where: {
+        productId_categoryId_statutorySubstanceId: {
+          productId: id,
+          categoryId: current.categoryId,
+          statutorySubstanceId: current.statutorySubstanceId,
+        },
+      },
       create: {
         productId: id,
-        categoryId,
+        categoryId: current.categoryId,
+        statutorySubstanceId: current.statutorySubstanceId,
         verdict: overridden ? next : null,
         systemVerdict: current.systemVerdict,
         premise: current.premise,
@@ -129,7 +137,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     action: "update",
     actorId: actor.user.id,
     diff: {
-      categoryId,
+      categoryId: current.categoryId,
+      statutorySubstanceId: current.statutorySubstanceId || null,
       from: current.verdict,
       to: next,
       changed,

@@ -16,7 +16,7 @@ import type { ProductDetailDto, ProductListItemDto } from "@/lib/types";
 function judgementsInclude(versionId: string | null) {
   return {
     where: { versionId: versionId ?? "" },
-    select: { verdict: true, needsReview: true },
+    select: { categoryId: true, verdict: true, needsReview: true },
   } satisfies Prisma.Product$judgementsArgs;
 }
 
@@ -26,6 +26,8 @@ export function productListInclude(versionId: string | null) {
     _count: { select: { aliases: true } },
     uses: { orderBy: { displayOrder: "asc" } },
     judgements: judgementsInclude(versionId),
+    // 判定の行が 0 件でも「判定済み」と分かるように、最後に判定した版を見る
+    expansion: { select: { judgedVersionId: true } },
   } satisfies Prisma.ProductInclude;
 }
 
@@ -38,6 +40,7 @@ export function productInclude(versionId: string | null) {
     properties: { include: { def: true } },
     // 一覧と同じ項目を作るために要る（詳細の判定表は別途 judgement-service が引く）
     judgements: judgementsInclude(versionId),
+    expansion: { select: { judgedVersionId: true } },
   } satisfies Prisma.ProductInclude;
 }
 
@@ -83,7 +86,7 @@ export function canEditProduct(
   return actor.has("INACTIVE_EDIT") || target.createdBy === actor.user.id;
 }
 
-export function toListItem(p: ProductListRow): ProductListItemDto {
+export function toListItem(p: ProductListRow, versionId: string | null): ProductListItemDto {
   return {
     id: p.id,
     code: p.code,
@@ -97,16 +100,19 @@ export function toListItem(p: ProductListRow): ProductListItemDto {
     modelValue: p.modelValue,
     uses: p.uses.map((u) => u.value),
     updatedAt: p.updatedAt.toISOString(),
-    // 行が1件も無い＝まだ一度も判定していない（「該当なし」とは別）
-    judged: p.judgements.length > 0,
-    hitCount: p.judgements.filter((j) => j.verdict === "APPLICABLE").length,
+    // この版で判定したか（判定の行が 0 件でも判定済みのことがある。「該当なし」とは別）
+    judged: versionId !== null && p.expansion?.judgedVersionId === versionId,
+    // 当たった区分の数（同じ区分に法文物質名が何件当たっても 1 と数える。2026-09-15 決定）
+    hitCount: new Set(
+      p.judgements.filter((j) => j.verdict === "APPLICABLE").map((j) => j.categoryId),
+    ).size,
     needsReview: p.judgements.some((j) => j.needsReview),
   };
 }
 
-export function toDetail(p: ProductWithRelations): ProductDetailDto {
+export function toDetail(p: ProductWithRelations, versionId: string | null): ProductDetailDto {
   return {
-    ...toListItem(p),
+    ...toListItem(p, versionId),
     aliases: p.aliases.map((a) => ({ nameJa: a.nameJa, nameEn: a.nameEn })),
     properties: p.properties.map((v) => ({
       propertyDefId: v.propertyDefId,

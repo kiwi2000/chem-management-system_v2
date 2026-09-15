@@ -85,6 +85,12 @@ export async function GET(req: Request, { params }: Ctx) {
       where: { productId: id },
       select: { id: true },
     })) !== null;
+  // この版で判定したか（判定の行が 0 件＝どの法規制にも関わらない、のこともある）
+  const expansion = await prisma.productExpansion.findUnique({
+    where: { productId: id },
+    select: { judgedVersionId: true },
+  });
+  const judged = current !== null && expansion?.judgedVersionId === current.id;
 
   return Response.json({
     items,
@@ -92,5 +98,6 @@ export async function GET(req: Request, { params }: Ctx) {
     versionCode: current?.code ?? null,
     stale,
     judgedElsewhere,
+    judged,
   });
 }

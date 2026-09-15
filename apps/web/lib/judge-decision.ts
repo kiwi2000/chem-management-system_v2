@@ -1,15 +1,17 @@
-import type { JudgeResult, ReviewReason } from "@/lib/judge-calc";
+import type { JudgeUnit, ReviewReason } from "@/lib/judge-calc";
 
 /**
  * 判定に対する**人の判断**を、判定し直した結果に当てはめる。**ここはデータベースを知らない。**
  *
- * 人の判断（確認した・判定を変えた）は、判定の行ではなく製品 × 規制区分で別に持つ
- * （schema の ProductDecision）。判定の行は判定し直すたびに作り直すので、そこに置くと
+ * 人の判断（確認した・判定を変えた）は、判定の行ではなく**判定の単位ごと**に別に持つ
+ * （schema の ProductDecision。製品 × 規制区分 × 法文物質名。区分でまとめる区分は製品 × 区分）。
+ * 判定の行は判定し直すたびに作り直すので、そこに置くと
  * 法規制バージョンが変わるたびに消えてしまう。人の判断は「この製品に入っている物質に
  * ついての知識」なので、データソースの版が変わっただけでは変わらない（2026-09-12 決定）。
+ * 判断の単位を区分から判定の単位に変えた（2026-09-15 決定。以前の区分ごとの判断は捨てた）。
  *
  * ただし**前提が同じあいだだけ**引き継ぐ。判断したときのシステムの結果
- * （該当／非該当と、どの法文物質名にどのCASで当たったか）を控えておき、
+ * （該当／非該当と、どのCASで当たったか）を控えておき、
  * 判定し直した結果と見比べて、
  *
  *   同じ … 判断をそのまま当てはめる。要確認は付けない
@@ -44,27 +46,23 @@ export interface AppliedJudgement {
 }
 
 /**
- * 判定の前提の要約。**「どの法文物質名に、どのCASで当たったか」を1本の文字列にする。**
+ * 判定の前提の要約。**「この単位で、どのCASを見たか」を1本の文字列にする。**
  *
- * 並びに依らず同じ文字列になるよう、CAS も法文物質名も並べ替えてからつなぐ
- * （移行 SQL も同じ作りかたで既存の行を埋めているので、形を変えるときは両方直す）。
- * 区分そのものでまとめて当たったときは法文物質名が無いので `*` で表す。
+ * 並びに依らず同じ文字列になるよう、CAS を並べ替えてからつなぐ。
+ * 区分そのものが単位のときは法文物質名が無いので `*` で表す。
  * 含有率は入れない。同じ物質に同じ法文物質名で当たっているなら、量が少し動いても
  * 「この物質は法文物質名の形ではない」という判断は変わらないため
  */
-export function premiseOf(hits: JudgeResult["hits"]): string {
-  return hits
-    .map((h) => {
-      const cas = [...new Set(h.contributions.map((c) => c.cas))].sort();
-      return `${h.statutorySubstanceId ?? "*"}:${cas.join(",")}`;
-    })
-    .sort()
-    .join(";");
+export function premiseOf(
+  unit: Pick<JudgeUnit, "statutorySubstanceId"> & { contributions: { cas: string }[] },
+): string {
+  const cas = [...new Set(unit.contributions.map((c) => c.cas))].sort();
+  return `${unit.statutorySubstanceId ?? "*"}:${cas.join(",")}`;
 }
 
 /** 判断したときと同じ前提か */
 export function samePremise(
-  result: { verdict: JudgeResult["verdict"]; premise: string },
+  result: { verdict: JudgeUnit["verdict"]; premise: string },
   decision: Pick<Decision, "systemVerdict" | "premise">,
 ): boolean {
   return result.verdict === decision.systemVerdict && result.premise === decision.premise;
@@ -78,7 +76,7 @@ export function samePremise(
  *   前提が違う     … システムの結果のまま、要確認にして理由 `decisionDropped` を足す
  */
 export function applyDecision(
-  result: Pick<JudgeResult, "verdict" | "needsReview" | "reasons">,
+  result: Pick<JudgeUnit, "verdict" | "needsReview" | "reasons">,
   premise: string,
   decision: Decision | null,
 ): AppliedJudgement {

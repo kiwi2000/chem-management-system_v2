@@ -1034,6 +1034,8 @@ export const ja = {
     notJudgedForVersion: (version: string) =>
       `法規制バージョン ${version} の判定はまだありません。ほかのバージョンで出した判定は、このバージョンには当てはめません。システム管理者に「全製品を判定し直す」を頼んでください。`,
     title: "法規制判定",
+    /** 判定はしたが、入っている物質がどの法規制にも関わらなかった */
+    noneRelated: "この製品に入っている物質は、どの法規制の法文物質名にも関わりません（該当なし）。",
     summary: (hit: number, total: number) => `${total} 件中 ${hit} 件に該当`,
     reviewCount: (n: number) => `要確認 ${n} 件`,
     empty: "まだ判定していません。組成を登録すると判定されます。",

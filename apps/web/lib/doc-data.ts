@@ -256,6 +256,7 @@ export async function collectForProduct(
   const withHits = canViewComposition(actor, product as never);
   const judgements = version ? await toJudgementDtos(product.id, withHits, version.id) : [];
   const hit = judgements.filter((j) => j.verdict === "APPLICABLE");
+  const hitCategories = new Set(hit.map((j) => j.categoryId)).size;
 
   const values = new Map<string, string>([
     ...(await commonValues(actor, version?.code ?? null, locale, parties)),
@@ -266,7 +267,7 @@ export async function collectForProduct(
     // 用途は複数ある。並びは画面と同じ順で、読点でつなぐ
     ["product.useName", product.uses.map((u) => u.value).join("、")],
     ["product.note", product.note ?? ""],
-    ["product.judgementCount", String(hit.length)],
+    ["product.judgementCount", String(hitCategories)],
   ]);
 
   const tables: RenderInput["tables"] = new Map();
@@ -274,31 +275,24 @@ export async function collectForProduct(
   // --- 法規制判定 -------------------------------------------------------------
   tables.set("judgement", {
     columns: tableDef("judgement", locale),
-    rows: hit.flatMap((j) => {
-      const law = pickStatutoryName(locale, j.lawNameOriginal, j.lawNameJa, j.lawNameEn);
-      const cat = pickStatutoryName(
+    /*
+      判定の単位（当たった法文物質名）ごとに1行。**区分の名前だけでは足りない。**
+      受け取った相手が確かめるのは「どの号か」なので、番号と名前まで出す。
+      根拠を伏せる相手には区分ごとに 1 行（番号と名前は空）
+    */
+    rows: hit.map((j) => ({
+      law: pickStatutoryName(locale, j.lawNameOriginal, j.lawNameJa, j.lawNameEn),
+      category: pickStatutoryName(
         locale,
         j.categoryNameOriginal,
         j.categoryNameJa,
         j.categoryNameEn,
-      );
-      const base = {
-        law,
-        category: cat,
-        verdict: m.judgements.applicable,
-        needsReview: j.needsReview ? m.common.yes : "",
-      };
-      /*
-        当たった法文物質名ごとに1行。**区分の名前だけでは足りない。**
-        受け取った相手が確かめるのは「どの号か」なので、番号と名前まで出す
-      */
-      if (j.hits.length === 0) return [{ ...base, officialNumber: "", statutoryName: "" }];
-      return j.hits.map((h) => ({
-        ...base,
-        officialNumber: h.officialNumber ?? "",
-        statutoryName: h.name ?? "",
-      }));
-    }),
+      ),
+      verdict: m.judgements.applicable,
+      needsReview: j.needsReview ? m.common.yes : "",
+      officialNumber: j.officialNumber ?? "",
+      statutoryName: j.statutoryName ?? "",
+    })),
   });
 
   /*
@@ -346,7 +340,7 @@ export async function collectForProduct(
     code: product.code,
     values,
     tables,
-    judgementWithBasis: withHits && hit.some((j) => j.hits.length > 0),
+    judgementWithBasis: withHits && hit.some((j) => j.statutoryName !== null),
   };
 }
 

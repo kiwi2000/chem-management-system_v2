@@ -8,8 +8,8 @@ import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import {
   MatchedCells,
   OneLine,
-  hitName,
   reasonText,
+  unitName,
   type M,
 } from "@/components/product-judgements";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, JudgementHitDto, MatchedProductDto } from "@/lib/types";
+import type { ApiError, MatchedProductDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ResizableBox } from "@/components/data-table/resizable-box";
 
@@ -34,8 +34,10 @@ import { ResizableBox } from "@/components/data-table/resizable-box";
  * 製品の詳細と向きが逆で、**1つの区分に対して製品が並ぶ**。
  * 「この法律に引っかかるものはどれか」を、製品を1つずつ開かずに知るためのもの。
  *
- * 1行＝当たった法文物質名1件。同じ製品で複数当たれば、その数だけ行が続く。
+ * 1行＝製品 × 判定の単位（法文物質名。区分でまとめる区分は区分そのもの）。
+ * 同じ製品で複数当たれば、その数だけ行が続く。
  * 製品名は2行目からは繰り返さない（同じ製品の続きだと目で追えるように）。
+ * 該非と確認の要否は行（判定の単位）ごと（2026-09-15 決定）。
  *
  * 並ぶのは「該当したもの」と「引っかからないと言い切れていないもの」の2種類。
  * **後者は非該当だが、判断できなかったという意味なので必ず出す。**
@@ -107,13 +109,12 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
     return <p className="text-muted-foreground text-sm">{m.judgements.noMatchedProducts}</p>;
   }
 
-  /** 1行＝法文物質名1件。根拠が無い（伏せられた）製品も1行は出す */
-  type Row = { p: MatchedProductDto; h: JudgementHitDto | null; first: boolean };
-  const rows = items.flatMap<Row>((p) =>
-    p.hits.length === 0
-      ? [{ p, h: null, first: true }]
-      : p.hits.map((h, i) => ({ p, h, first: i === 0 })),
-  );
+  /** 1行＝判定の単位。製品名は同じ製品の最初の行にだけ出す */
+  const rows = items.map((p, i) => ({
+    p,
+    h: p.hits[0] ?? null,
+    first: i === 0 || items[i - 1]!.productId !== p.productId,
+  }));
 
   return (
     // 幅は列の側で決める。製品ごとに列の位置がずれると見比べられない
@@ -146,15 +147,13 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
         <TableBody>
           {rows.map(({ p, h, first }, i) => (
             <TableRow key={`${p.productId}-${i}`}>
-              {/* 判定・コード・名前は、同じ製品の2行目からは繰り返さない */}
+              {/* 判定は行（判定の単位）ごと。コード・名前は、同じ製品の2行目からは繰り返さない */}
               <TableCell className={cn(CELL, "align-top")}>
-                {first && (
-                  <Badge variant={p.verdict === "APPLICABLE" ? "default" : "secondary"}>
-                    {p.verdict === "APPLICABLE"
-                      ? m.judgements.applicable
-                      : m.judgements.notApplicable}
-                  </Badge>
-                )}
+                <Badge variant={p.verdict === "APPLICABLE" ? "default" : "secondary"}>
+                  {p.verdict === "APPLICABLE"
+                    ? m.judgements.applicable
+                    : m.judgements.notApplicable}
+                </Badge>
               </TableCell>
               <TableCell className={cn(CELL, "align-top font-mono text-xs")}>
                 {first && (
@@ -177,16 +176,19 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
                 )}
               </TableCell>
               <TableCell className={cn(CELL, "align-top font-mono text-xs")}>
-                {h?.officialNumber ?? ""}
+                {p.officialNumber ?? ""}
               </TableCell>
               <TableCell className={cn(CELL, "align-top")}>
-                {h && <OneLine text={hitName(h, locale, m)} />}
-                {h?.notYetEffective && h.effectiveFrom && (
+                {/* 根拠を伏せた相手には法文物質名も出ない（製品ごとに 1 行にまとまっている） */}
+                {(p.statutoryName !== null || p.hitsWithheld === false) && (
+                  <OneLine text={unitName(p, locale, m)} />
+                )}
+                {p.notYetEffective && p.effectiveFrom && (
                   <Badge variant="outline" className="mt-1">
-                    {m.judgements.notYetEffective(h.effectiveFrom)}
+                    {m.judgements.notYetEffective(p.effectiveFrom)}
                   </Badge>
                 )}
-                {first && p.hitsWithheld && (
+                {p.hitsWithheld && (
                   // 空なのか伏せたのかが分からないと、入っていないと読まれてしまう
                   <span className="text-muted-foreground text-xs">
                     {m.judgements.basisWithheld}
@@ -195,7 +197,7 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
               </TableCell>
               {h ? <MatchedCells hit={h} m={m} cellClass={CELL} /> : <TableCell colSpan={2} />}
               <TableCell className={cn(CELL, "align-top")}>
-                {first && p.needsReview && (
+                {p.needsReview && (
                   <div className="space-y-1">
                     <Badge variant="outline" className="text-destructive gap-1">
                       <TriangleAlert className="size-3" />
@@ -208,7 +210,7 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
                     </ul>
                   </div>
                 )}
-                {first && p.source === "USER" && (
+                {p.source === "USER" && (
                   <Badge variant="outline" className="mt-1">
                     {m.judgements.byUser}
                   </Badge>

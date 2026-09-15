@@ -1013,6 +1013,8 @@ export const en: Messages = {
     notJudgedForVersion: (version: string) =>
       `No judgement exists yet for regulation version ${version}. Judgements made under another version are not applied to this one. Ask a system administrator to run "Re-judge every product".`,
     title: "Regulatory judgement",
+    noneRelated:
+      "None of the substances in this product relate to any statutory substance (not applicable).",
     summary: (hit: number, total: number) => `${hit} of ${total} apply`,
     reviewCount: (n: number) => `${n} to check`,
     empty: "Not judged yet. Register a composition and it will be judged.",

@@ -27,15 +27,15 @@ describe("法規制の絞り込み", () => {
     expect(where("judgement", ["hit"])).toEqual({ AND: [hit] });
   });
 
-  it("該当なしは「該当の行が1つも無い」。判定していないものは含めない", () => {
+  it("該当なしは「この版で判定したが、該当の行が1つも無い」。判定していないものは含めない", () => {
     expect(where("judgement", ["none"])).toEqual({
-      AND: [{ AND: [{ judgements: { some: { versionId: "v1" } } }, { NOT: hit }] }],
+      AND: [{ AND: [{ expansion: { is: { judgedVersionId: "v1" } } }, { NOT: hit }] }],
     });
   });
 
-  it("未判定は「行そのものが無い」", () => {
+  it("未判定は「この版で判定した記録が無い」（判定の行が 0 件でも判定済みのことがあるため）", () => {
     expect(where("judgement", ["unjudged"])).toEqual({
-      AND: [{ judgements: { none: { versionId: "v1" } } }],
+      AND: [{ NOT: { expansion: { is: { judgedVersionId: "v1" } } } }],
     });
   });
 

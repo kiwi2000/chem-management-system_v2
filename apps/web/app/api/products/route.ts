@@ -55,7 +55,7 @@ export async function GET(req: Request) {
   ]);
 
   return Response.json({
-    items: items.map(toListItem),
+    items: items.map((p) => toListItem(p, version?.id ?? null)),
     total,
     page: state.page,
     pageSize: state.pageSize,

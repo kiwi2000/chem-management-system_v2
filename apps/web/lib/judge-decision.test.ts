@@ -26,20 +26,20 @@ const decision = (x: Partial<Decision> = {}): Decision => ({
 });
 
 describe("premiseOf", () => {
-  it("法文物質名とCASを並べ替えてつなぐ。並びが違っても同じ", () => {
-    const a = premiseOf([hit("s2", ["b", "a"]), hit("s1", ["x"])]);
-    const b = premiseOf([hit("s1", ["x"]), hit("s2", ["a", "b"])]);
-    expect(a).toBe("s1:x;s2:a,b");
+  it("法文物質名とCASをつなぐ。CAS の並びが違っても同じ", () => {
+    const a = premiseOf(hit("s2", ["b", "a"]));
+    const b = premiseOf(hit("s2", ["a", "b"]));
+    expect(a).toBe("s2:a,b");
     expect(b).toBe(a);
   });
 
-  it("区分そのものでまとめて当たったときは * で表す。当たりが無ければ空", () => {
-    expect(premiseOf([hit(null, ["7439-92-1"])])).toBe("*:7439-92-1");
-    expect(premiseOf([])).toBe("");
+  it("区分そのものが単位のときは * で表す。CAS が無ければ空", () => {
+    expect(premiseOf(hit(null, ["7439-92-1"]))).toBe("*:7439-92-1");
+    expect(premiseOf(hit("s1", []))).toBe("s1:");
   });
 
   it("同じCASが重なっても1つに数える", () => {
-    expect(premiseOf([hit("s1", ["a", "a"])])).toBe("s1:a");
+    expect(premiseOf(hit("s1", ["a", "a"]))).toBe("s1:a");
   });
 });
 

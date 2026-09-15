@@ -274,10 +274,15 @@ export async function computeJudgements(
   }));
 }
 
+/** 人の判断の鍵。製品の中では「区分 × 法文物質名」で 1 つ（区分そのものが単位なら法文物質名は空） */
+export const unitKey = (categoryId: string, statutorySubstanceId: string | null) =>
+  `${categoryId}/${statutorySubstanceId ?? ""}`;
+
 /**
  * 1製品を、すべての区分について judge し、結果を保持する。
  *
- * **判定の行は法規制バージョンごとに持つ**（2026-09-12 決定）。
+ * **判定の行は「判定の単位 × 法規制バージョン」ごとに持つ**（2026-09-12 / 2026-09-15 決定）。
+ * 判定の単位はまとめる単位（区分でまとめる区分は区分、それ以外は法文物質名）。
  * 消して作り直すのは、その版の行だけ。別の版の行はそのまま残るので、
  * 現在のバージョンを切り替えても前の版の結果は消えない。
  *
@@ -310,31 +315,46 @@ export async function judgeProduct(
   if (!version) return { applicable: 0, needsReview: 0 };
   const results = await computeJudgements(productId, rules, factors, linkMode);
 
-  // 人の判断は製品 × 区分で1件。まとめて引いて区分ごとに当てはめる
+  // 人の判断は製品 × 判定の単位で1件。まとめて引いて単位ごとに当てはめる
   const decisions = new Map(
-    (await prisma.productDecision.findMany({ where: { productId } })).map((d) => [d.categoryId, d]),
+    (await prisma.productDecision.findMany({ where: { productId } })).map((d) => [
+      unitKey(d.categoryId, d.statutorySubstanceId || null),
+      d,
+    ]),
   );
-  const applied = results.map(({ rule, result }) => {
-    const premise = premiseOf(result.hits);
-    return {
-      rule,
-      result,
-      premise,
-      applied: applyDecision(result, premise, decisions.get(rule.categoryId) ?? null),
-    };
-  });
+  const applied = results.flatMap(({ rule, result }) =>
+    result.units.map((unit) => {
+      const premise = premiseOf(unit);
+      return {
+        rule,
+        unit,
+        premise,
+        applied: applyDecision(
+          unit,
+          premise,
+          decisions.get(unitKey(rule.categoryId, unit.statutorySubstanceId)) ?? null,
+        ),
+      };
+    }),
+  );
 
   await prisma.$transaction([
     // その版の前の判定だけ捨てる。別の版のものは残す
     prisma.productJudgement.deleteMany({ where: { productId, versionId: version } }),
-    ...applied.map(({ rule, result, premise, applied: a }) =>
+    // 判定したことを展開結果に残す（行が 0 件でも「判定済み」と分かるように）
+    prisma.productExpansion.updateMany({
+      where: { productId },
+      data: { judgedVersionId: version, judgedAt: new Date() },
+    }),
+    ...applied.map(({ rule, unit, premise, applied: a }) =>
       prisma.productJudgement.create({
         data: {
           productId,
           categoryId: rule.categoryId,
+          statutorySubstanceId: unit.statutorySubstanceId ?? "",
           verdict: a.verdict,
           source: a.source,
-          systemVerdict: result.verdict,
+          systemVerdict: unit.verdict,
           premise,
           needsReview: a.needsReview,
           reviewReasons: a.reasons,
@@ -342,7 +362,19 @@ export async function judgeProduct(
           decidedAt: a.decidedAt,
           decidedNote: a.decidedNote,
           versionId: version,
-          hits: { create: result.hits.map((h) => ({ ...h, contributions: h.contributions })) },
+          // 根拠。見た CAS が無ければ（区分でまとめる区分に何も入っていない）行は作らない
+          hits: {
+            create:
+              unit.contributions.length > 0
+                ? [
+                    {
+                      statutorySubstanceId: unit.statutorySubstanceId,
+                      total: unit.total,
+                      contributions: unit.contributions,
+                    },
+                  ]
+                : [],
+          },
         },
       }),
     ),

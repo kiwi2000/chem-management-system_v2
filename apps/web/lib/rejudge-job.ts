@@ -165,12 +165,15 @@ export async function rejudgeNeeded(): Promise<boolean> {
   const [changedAt, lastFull, missing] = await Promise.all([
     premisesChangedAt(version.id),
     lastFullRejudge(version.id),
-    // 別の版では判定してあるのに、この版の判定が無い製品（切り替えたまま判定し直していない）
-    prisma.product.count({
+    /*
+      組成があるのに、この版で判定していない製品。切り替えたまま判定し直していないもののほか、
+      判定の持ちかたを変える移行で判定を捨てたあと（2026-09-15）もここに当たる。
+      判定の行は 0 件のこともあるので、展開結果に残した「最後に判定した版」で見る
+    */
+    prisma.productExpansion.count({
       where: {
-        deletedAt: null,
-        judgements: { some: {} },
-        NOT: { judgements: { some: { versionId: version.id } } },
+        product: { deletedAt: null },
+        OR: [{ judgedVersionId: null }, { judgedVersionId: { not: version.id } }],
       },
     }),
   ]);

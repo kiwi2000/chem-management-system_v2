@@ -68,7 +68,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </div>
       </div>
       <ProductForm
-        initial={toDetail(item)}
+        initial={toDetail(item, linkVersion?.id ?? null)}
         defs={defs.map(toPropertyDefDto)}
         modelOptions={settings.productModelOptions}
         useOptions={settings.productUseOptions}

@@ -26,9 +26,11 @@ import type { ApiError, JudgementHitDto, ProductJudgementDto } from "@/lib/types
 /**
  * その製品の法規制判定。
  *
- * 表にする。1行＝「当たった法文物質名」1件。
- * 何に当たったのかを横に並べて読めるほうが、追いやすいため。
- * 当たっていない区分は1行にまとめて出す（番号や物質名は空になる）。
+ * 表にする。**1行＝判定の単位 1 件**（2026-09-15 決定）。判定の単位は「まとめる単位」と同じで、
+ * 区分でまとめる区分は区分そのもの、それ以外は法文物質名（製品にその CAS が入っているものだけ）。
+ * 該当／非該当のラベルと「判定修正」は判定の単位の行に付く。
+ * 法文物質名が単位の区分では、区分の行は国・法律と同じ「n 件中 m 件に該当」の見出しで、
+ * 押すと中の法文物質名の行が開く。
  *
  * 判定（該当／非該当）と「人が見たかどうか」は**別の列**に出す。
  * 確認しても判定が変わらないことは普通にあるので、混ぜない。
@@ -49,7 +51,7 @@ const CELL = "border-r border-b px-2 py-1";
  * 列の並びと既定の幅。**見出しと幅を1か所に持つ。**
  * 別々に書くと、列を足したときに幅だけ古いまま残って気づけない。
  *
- * **判定の列は置かない。該当したものしか並べないため。**
+ * **判定の列は置かない。**既定では該当したものしか並べず、絞りを外したときだけ非該当のラベルを付ける。
  *
  * 重量%と該当CASは2つで1組。**間に別の列を挟まないこと**（合算かどうかが読めなくなる）。
  * スコアはその右に置く。**CASの隣**なので、どの物質の点数かが読める。
@@ -103,14 +105,16 @@ export function ProductJudgements({
     stale: boolean;
     /** この版の判定は無いが、別の版では判定してある（切り替えたまま判定し直していない） */
     judgedElsewhere: boolean;
+    /** この版で判定した（行が 0 件なら、どの法規制にも関わらない製品） */
+    judged: boolean;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** いま根拠を書いている区分。null なら誰も書いていない */
+  /** いま根拠を書いている判定の行（id）。null なら誰も書いていない */
   const [editing, setEditing] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   /**
-   * 中身（法文物質名）を開いている区分。
+   * 中身（法文物質名の行）を開いている区分。
    * **既定は全部閉じる。**当たった区分が何かをまず見せ、
    * 中身は必要なものだけ開く（区分ごとに何行も続くと、何件当たったのか読めない）。
    */
@@ -124,8 +128,9 @@ export function ProductJudgements({
   const [openLaws, setOpenLaws] = useState<Set<string>>(new Set());
   /**
    * 該当したものだけに絞るか。**既定は絞る。**
-   * ふだん見たいのは当たったものだけだが、**非該当に直した判定を戻す口が要る**ので、
-   * 外して全部出せるようにしてある。
+   * ふだん見たいのは当たったものだけだが、**非該当に直した判定を戻す口が要る**のと、
+   * 「入っているが含有率が足りない」法文物質名を確かめたいことがあるので、外して全部出せる
+   * （組成の表の「含有率不足による非該当」と同じもの。2026-09-15 決定）
    */
   const [onlyApplicable, setOnlyApplicable] = useState(true);
   /**
@@ -161,6 +166,7 @@ export function ProductJudgements({
       versionCode: string | null;
       stale: boolean;
       judgedElsewhere?: boolean;
+      judged?: boolean;
     };
     setItems(body.items);
     setStamp({
@@ -168,6 +174,7 @@ export function ProductJudgements({
       versionCode: body.versionCode,
       stale: body.stale,
       judgedElsewhere: body.judgedElsewhere ?? false,
+      judged: body.judged ?? false,
     });
   }, [productId, asOf, m]);
 
@@ -175,11 +182,11 @@ export function ProductJudgements({
     void load();
   }, [load]);
 
-  async function decide(categoryId: string, verdict?: "APPLICABLE" | "NOT_APPLICABLE") {
+  async function decide(judgementId: string, verdict?: "APPLICABLE" | "NOT_APPLICABLE") {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/products/${productId}/judgements/${categoryId}`, {
+      const res = await fetch(`/api/products/${productId}/judgements/${judgementId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ verdict, note: note.trim() || null }),
@@ -214,17 +221,25 @@ export function ProductJudgements({
   const applicable = items.filter((j) => j.verdict === "APPLICABLE");
   const shown = onlyApplicable ? applicable : items;
   const review = shown.filter((j) => j.needsReview);
-  /** 中身を持つ区分。「展開」「格納」を出すかどうかの判断に使う */
-  const openable = shown.filter((j) => j.hits.length > 0).map((j) => j.categoryId);
 
   /*
-    国ごとにまとめる。並びは地域 → 国 → 法律 → 区分なので、隣が同じ国なら同じまとまり。
-    国の行に出す件数は、絞り込みに関わらずその国の全区分で数える
+    国ごとにまとめる。並びは地域 → 国 → 法律 → 区分 → 判定の単位なので、隣が同じなら同じまとまり。
+    国・法律・区分の行に出す件数は、絞り込みに関わらず全部の単位で数える
   */
+  interface CategoryGroup {
+    categoryId: string;
+    label: string;
+    /**
+     * 区分そのものが判定の単位（区分でまとめる区分。根拠を伏せた相手にも区分ごとに 1 行で届く）なら
+     * その 1 行。法文物質名が単位なら、開いたときに並ぶ行
+     */
+    unit: "category" | "substance";
+    items: ProductJudgementDto[];
+  }
   interface LawGroup {
     key: string;
     label: string;
-    items: ProductJudgementDto[];
+    categories: CategoryGroup[];
   }
   const countries: {
     code: string;
@@ -237,25 +252,41 @@ export function ProductJudgements({
   for (const j of shown) {
     const lawKey = `${j.countryCode}/${j.lawCode}`;
     const lawLabel = pickName(locale, j.lawNameJa ?? j.lawNameOriginal, j.lawNameEn);
-    const last = countries[countries.length - 1];
-    if (last && last.code === j.countryCode) {
-      const lastLaw = last.laws[last.laws.length - 1];
-      if (lastLaw && lastLaw.key === lawKey) lastLaw.items.push(j);
-      else last.laws.push({ key: lawKey, label: lawLabel, items: [j] });
-    } else
-      countries.push({
+    const catLabel = pickName(locale, j.categoryNameJa ?? j.categoryNameOriginal, j.categoryNameEn);
+    const unit = j.statutorySubstanceId === null ? "category" : "substance";
+    let country = countries[countries.length - 1];
+    if (!country || country.code !== j.countryCode) {
+      country = {
         code: j.countryCode,
         label: pickName(locale, j.countryNameJa, j.countryNameEn),
         region: j.regionCode,
         regionLabel: pickName(locale, j.regionNameJa, j.regionNameEn),
-        laws: [{ key: lawKey, label: lawLabel, items: [j] }],
-      });
+        laws: [],
+      };
+      countries.push(country);
+    }
+    let law = country.laws[country.laws.length - 1];
+    if (!law || law.key !== lawKey) {
+      law = { key: lawKey, label: lawLabel, categories: [] };
+      country.laws.push(law);
+    }
+    const cat = law.categories[law.categories.length - 1];
+    if (cat && cat.categoryId === j.categoryId) cat.items.push(j);
+    else law.categories.push({ categoryId: j.categoryId, label: catLabel, unit, items: [j] });
   }
   const lawKeys = countries.flatMap((c) => c.laws.map((l) => l.key));
-  /** 法律が何行ぶんを占めるか。閉じていれば1行、開いていれば区分と開いた法文物質名の行のぶんが足される */
+  /** 区分を開いたとき、中に並ぶ行の数。区分そのものが単位なら根拠の行が 1 つ（あれば） */
+  const childrenOf = (g: CategoryGroup) =>
+    g.unit === "category" ? (g.items[0]?.hits.length ? 1 : 0) : g.items.length;
+  /** 中身を持つ区分。「開」「閉」を出すかどうかの判断に使う */
+  const openable = countries
+    .flatMap((c) => c.laws.flatMap((l) => l.categories))
+    .filter((g) => childrenOf(g) > 0)
+    .map((g) => g.categoryId);
+  /** 法律が何行ぶんを占めるか。閉じていれば1行、開いていれば区分と開いた中身の行のぶんが足される */
   const lawSpanOf = (l: LawGroup) =>
     openLaws.has(l.key)
-      ? 1 + l.items.reduce((n, j) => n + 1 + (open.has(j.categoryId) ? j.hits.length : 0), 0)
+      ? 1 + l.categories.reduce((n, g) => n + 1 + (open.has(g.categoryId) ? childrenOf(g) : 0), 0)
       : 1;
   /** 国が何行ぶんを占めるか。閉じていれば1行、開いていれば中の法律のぶん */
   const spanOf = (c: (typeof countries)[number]) =>
@@ -273,24 +304,30 @@ export function ProductJudgements({
     }
     regionSpan.set(i, span);
   });
-  const countryTotals = new Map<string, { total: number; applicable: number; review: number }>();
-  for (const j of items) {
-    const t = countryTotals.get(j.countryCode) ?? { total: 0, applicable: 0, review: 0 };
-    t.total += 1;
-    if (j.verdict === "APPLICABLE") t.applicable += 1;
-    if (j.needsReview) t.review += 1;
-    countryTotals.set(j.countryCode, t);
-  }
-  /** 法律の行に出す件数。国と同じく、絞り込みに関わらずその法律の全区分で数える */
-  const lawTotals = new Map<string, { total: number; applicable: number; review: number }>();
-  for (const j of items) {
-    const key = `${j.countryCode}/${j.lawCode}`;
-    const t = lawTotals.get(key) ?? { total: 0, applicable: 0, review: 0 };
-    t.total += 1;
-    if (j.verdict === "APPLICABLE") t.applicable += 1;
-    if (j.needsReview) t.review += 1;
-    lawTotals.set(key, t);
-  }
+  /** 国・法律・区分の行に出す件数。絞り込みに関わらず、その中の全部の単位で数える */
+  type Totals = { total: number; applicable: number; review: number };
+  const tally = (keyOf: (j: ProductJudgementDto) => string) => {
+    const map = new Map<string, Totals>();
+    for (const j of items) {
+      const key = keyOf(j);
+      const t = map.get(key) ?? { total: 0, applicable: 0, review: 0 };
+      t.total += 1;
+      if (j.verdict === "APPLICABLE") t.applicable += 1;
+      if (j.needsReview) t.review += 1;
+      map.set(key, t);
+    }
+    return map;
+  };
+  const countryTotals = tally((j) => j.countryCode);
+  const lawTotals = tally((j) => `${j.countryCode}/${j.lawCode}`);
+  const categoryTotals = tally((j) => j.categoryId);
+  const summaryText = (t: Totals | undefined) =>
+    [
+      m.judgements.summary(t?.applicable ?? 0, t?.total ?? 0),
+      t && t.review > 0 ? m.judgements.reviewCount(t.review) : null,
+    ]
+      .filter(Boolean)
+      .join(" ・ ");
   const allCountriesOpen = countries.every((c) => openCountries.has(c.code));
   const allLawsOpen = lawKeys.every((k) => openLaws.has(k));
   /** 国・法律・区分がすべて開いているか（「開」を出さない条件）／どれも開いていないか（「閉」を出さない条件） */
@@ -433,9 +470,11 @@ export function ProductJudgements({
               判定は法規制バージョンごとに持つ。切り替えた直後はその版の判定がまだ無いので、
               「まだ判定していない」とは分けて伝える（前の版の結果を出すと取り違える）
             */}
-            {stamp?.judgedElsewhere && stamp.versionCode
-              ? m.judgements.notJudgedForVersion(stamp.versionCode)
-              : m.judgements.empty}
+            {stamp?.judged
+              ? m.judgements.noneRelated
+              : stamp?.judgedElsewhere && stamp.versionCode
+                ? m.judgements.notJudgedForVersion(stamp.versionCode)
+                : m.judgements.empty}
           </p>
         ) : (
           /*
@@ -542,18 +581,12 @@ export function ProductJudgements({
                           className={cn(CELL, "text-muted-foreground align-top text-xs")}
                           colSpan={HEADS.length - 2 + (canEdit ? 1 : 0)}
                         >
-                          {[
-                            m.judgements.summary(t.applicable, t.total),
-                            t.review > 0 ? m.judgements.reviewCount(t.review) : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" ・ ")}
+                          {summaryText(t)}
                         </TableCell>
                       </TableRow>
                       {countryOpen &&
                         c.laws.map((l) => {
                           const lawOpen = openLaws.has(l.key);
-                          const lt = lawTotals.get(l.key) ?? { total: 0, applicable: 0, review: 0 };
                           return (
                             <Fragment key={`law:${l.key}`}>
                               {/* 法律の行。国と同じく、押すと中の区分が開く。欄は法律の行を全部またぐ */}
@@ -584,27 +617,27 @@ export function ProductJudgements({
                                   className={cn(CELL, "text-muted-foreground align-top text-xs")}
                                   colSpan={HEADS.length - 3 + (canEdit ? 1 : 0)}
                                 >
-                                  {[
-                                    m.judgements.summary(lt.applicable, lt.total),
-                                    lt.review > 0 ? m.judgements.reviewCount(lt.review) : null,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" ・ ")}
+                                  {summaryText(lawTotals.get(l.key))}
                                 </TableCell>
                               </TableRow>
                               {lawOpen &&
-                                l.items.map((j) => {
-                                  const opened = open.has(j.categoryId);
-                                  const many = j.hits.length > 0;
+                                l.categories.map((g) => {
+                                  const opened = open.has(g.categoryId);
+                                  const many = childrenOf(g) > 0;
+                                  /*
+                                    区分そのものが判定の単位（区分でまとめる区分・根拠を伏せた相手）なら、
+                                    区分の行にラベルと判定修正を置き、開くと根拠の行が 1 つ出る。
+                                    法文物質名が単位なら、区分の行は件数の見出しで、開くと単位の行が並ぶ
+                                  */
+                                  const own = g.unit === "category" ? g.items[0]! : null;
                                   return (
-                                    <Fragment key={j.categoryId}>
-                                      {/* 区分の行。国と法律の欄は上の行が縦にまたいでいるので置かない */}
+                                    <Fragment key={g.categoryId}>
                                       <TableRow>
                                         <TableCell className={cn(CELL, "align-top")}>
                                           {many ? (
                                             <button
                                               type="button"
-                                              onClick={() => toggle(j.categoryId)}
+                                              onClick={() => toggle(g.categoryId)}
                                               aria-expanded={opened}
                                               aria-label={
                                                 opened
@@ -619,28 +652,13 @@ export function ProductJudgements({
                                                   opened && "rotate-90",
                                                 )}
                                               />
-                                              <OneLine
-                                                text={pickName(
-                                                  locale,
-                                                  j.categoryNameJa ?? j.categoryNameOriginal,
-                                                  j.categoryNameEn,
-                                                )}
-                                              />
+                                              <OneLine text={g.label} />
                                             </button>
                                           ) : (
-                                            <OneLine
-                                              text={pickName(
-                                                locale,
-                                                j.categoryNameJa ?? j.categoryNameOriginal,
-                                                j.categoryNameEn,
-                                              )}
-                                            />
+                                            <OneLine text={g.label} />
                                           )}
-                                          {/*
-                            判定の列は置いていない。絞りを外したときだけ、
-                            非該当のものにここで印を付ける（印が無い＝該当）。
-                          */}
-                                          {j.verdict !== "APPLICABLE" && (
+                                          {/* 区分そのものが単位のときだけ、非該当のラベルをここに付ける（絞りを外したとき） */}
+                                          {own && own.verdict !== "APPLICABLE" && (
                                             <Badge variant="secondary" className="mt-0.5">
                                               {m.judgements.notApplicable}
                                             </Badge>
@@ -648,17 +666,20 @@ export function ProductJudgements({
                                         </TableCell>
                                         <TableCell className={CELL} />
                                         {/*
-                          閉じているあいだは、中身のかわりに件数を出す。
-                          空欄にすると「何にも当たっていない」に見える。
-                        */}
+                                          法文物質名が単位なら、ここは件数の見出し。
+                                          区分そのものが単位なら、閉じているあいだ根拠の件数を出す
+                                          （空欄にすると「何にも当たっていない」に見える）
+                                        */}
                                         <TableCell
                                           className={cn(
                                             CELL,
                                             "text-muted-foreground align-top text-xs",
                                           )}
                                         >
-                                          {many && !opened && m.judgements.hitCount(j.hits.length)}
-                                          {j.hitsWithheld && (
+                                          {own
+                                            ? many && !opened && m.judgements.hitCount(1)
+                                            : summaryText(categoryTotals.get(g.categoryId))}
+                                          {own?.hitsWithheld && (
                                             <span className="block">
                                               {m.judgements.basisWithheld}
                                             </span>
@@ -666,128 +687,120 @@ export function ProductJudgements({
                                         </TableCell>
                                         <TableCell className={CELL} />
                                         <TableCell className={CELL} />
-                                        {/*
-                                          ランクは物質に付くものなので、区分の行には出さない。
-                                          区分に付けた点数（物質のスコアの元）は法規制の画面で見る
-                                        */}
+                                        {/* ランクは物質に付くものなので、区分の行には出さない */}
                                         <TableCell className={CELL} />
                                         <TableCell className={cn(CELL, "align-top")}>
-                                          <Warning j={j} m={m} locale={locale} />
+                                          {own && <Warning j={own} m={m} locale={locale} />}
                                         </TableCell>
                                         {canEdit && (
                                           <TableCell className={cn(CELL, "align-top")}>
-                                            {/* その場で計算した判定は保存していないので、確認も修正もできない */}
-                                            {asOf ? null : editing === j.categoryId ? (
-                                              <div className="space-y-1">
-                                                <Input
-                                                  // 列の幅いっぱい。決め打ちにすると列より広くなって切れる
-                                                  className="h-8 w-full"
-                                                  placeholder={m.judgements.notePlaceholder}
-                                                  value={note}
-                                                  onChange={(e) => setNote(e.target.value)}
-                                                />
-                                                <div className="flex flex-wrap gap-1">
-                                                  <Button
-                                                    size="sm"
-                                                    disabled={busy}
-                                                    onClick={() => void decide(j.categoryId)}
-                                                  >
-                                                    <Check className="mr-1 size-3.5" />
-                                                    {/* いまの判定のまま確認する。札はいまの判定（非該当なら「非該当」） */}
-                                                    {j.verdict === "APPLICABLE"
-                                                      ? m.judgements.changeToYes
-                                                      : m.judgements.changeToNot}
-                                                  </Button>
-                                                  <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    disabled={busy}
-                                                    onClick={() =>
-                                                      void decide(
-                                                        j.categoryId,
-                                                        j.verdict === "APPLICABLE"
-                                                          ? "NOT_APPLICABLE"
-                                                          : "APPLICABLE",
-                                                      )
-                                                    }
-                                                  >
-                                                    {j.verdict === "APPLICABLE"
-                                                      ? m.judgements.changeToNot
-                                                      : m.judgements.changeToYes}
-                                                  </Button>
-                                                  <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => {
-                                                      setEditing(null);
-                                                      setNote("");
-                                                    }}
-                                                  >
-                                                    {m.common.cancel}
-                                                  </Button>
-                                                </div>
-                                              </div>
-                                            ) : (
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => {
-                                                  setEditing(j.categoryId);
-                                                  setNote(j.decidedNote ?? "");
-                                                }}
-                                              >
-                                                {j.needsReview
-                                                  ? m.judgements.review
-                                                  : m.judgements.change}
-                                              </Button>
+                                            {own && (
+                                              <Actions
+                                                j={own}
+                                                m={m}
+                                                asOf={asOf}
+                                                editing={editing}
+                                                note={note}
+                                                busy={busy}
+                                                setEditing={setEditing}
+                                                setNote={setNote}
+                                                decide={decide}
+                                              />
                                             )}
                                           </TableCell>
                                         )}
                                       </TableRow>
 
-                                      {/* 中身。1行＝当たった法文物質名1件 */}
+                                      {/* 中身。区分そのものが単位なら根拠の行、法文物質名が単位なら判定の単位の行 */}
                                       {opened &&
-                                        j.hits.map((h, i) => (
-                                          <TableRow
-                                            key={`${j.categoryId}-${i}`}
-                                            className="bg-muted/40"
-                                          >
-                                            <TableCell className={CELL} />
-                                            <TableCell
-                                              className={cn(CELL, "align-top font-mono text-xs")}
-                                            >
-                                              {h.officialNumber ?? ""}
-                                            </TableCell>
-                                            <TableCell className={cn(CELL, "align-top")}>
-                                              <OneLine text={hitName(h, locale, m)} />
-                                              {/* 施行前に登録した法文物質名。該非は変えず、何であるかだけ分かるようにする */}
-                                              {h.notYetEffective && h.effectiveFrom && (
-                                                <Badge variant="outline" className="mt-1">
-                                                  {m.judgements.notYetEffective(h.effectiveFrom)}
-                                                </Badge>
-                                              )}
-                                            </TableCell>
-                                            <MatchedCells hit={h} m={m} cellClass={CELL} />
-                                            {/* その行を作った物質のランク。スコア（合算した行は寄与ぶんの合計）は浮かせて見せる */}
-                                            <TableCell
-                                              className={cn(
-                                                CELL,
-                                                "text-center align-top whitespace-nowrap",
-                                              )}
-                                              title={
-                                                h.score !== undefined
-                                                  ? m.score.scoreOf(h.score)
-                                                  : undefined
-                                              }
-                                            >
-                                              {h.score !== undefined
-                                                ? (h.scoreRank ?? m.score.noRank)
-                                                : ""}
-                                            </TableCell>
-                                            <TableCell className={CELL} />
-                                            {canEdit && <TableCell className={CELL} />}
-                                          </TableRow>
-                                        ))}
+                                        (own
+                                          ? own.hits.map((h, i) => (
+                                              <TableRow
+                                                key={`${g.categoryId}-${i}`}
+                                                className="bg-muted/40"
+                                              >
+                                                <TableCell className={CELL} />
+                                                <TableCell
+                                                  className={cn(
+                                                    CELL,
+                                                    "align-top font-mono text-xs",
+                                                  )}
+                                                >
+                                                  {h.officialNumber ?? ""}
+                                                </TableCell>
+                                                <TableCell className={cn(CELL, "align-top")}>
+                                                  <OneLine text={hitName(h, locale, m)} />
+                                                </TableCell>
+                                                <MatchedCells hit={h} m={m} cellClass={CELL} />
+                                                <RankCell h={h} m={m} />
+                                                <TableCell className={CELL} />
+                                                {canEdit && <TableCell className={CELL} />}
+                                              </TableRow>
+                                            ))
+                                          : g.items.map((j) => (
+                                              <TableRow key={j.id} className="bg-muted/40">
+                                                <TableCell className={CELL} />
+                                                <TableCell
+                                                  className={cn(
+                                                    CELL,
+                                                    "align-top font-mono text-xs",
+                                                  )}
+                                                >
+                                                  {j.officialNumber ?? ""}
+                                                </TableCell>
+                                                <TableCell className={cn(CELL, "align-top")}>
+                                                  <OneLine text={unitName(j, locale, m)} />
+                                                  {/*
+                                                    判定の列は置いていない。絞りを外したときだけ、
+                                                    非該当のものにここでラベルを付ける（ラベルが無い＝該当）
+                                                  */}
+                                                  {j.verdict !== "APPLICABLE" && (
+                                                    <Badge variant="secondary" className="mt-0.5">
+                                                      {m.judgements.notApplicable}
+                                                    </Badge>
+                                                  )}
+                                                  {/* 施行前に登録した法文物質名。該非は変えず、何であるかだけ分かるようにする */}
+                                                  {j.notYetEffective && j.effectiveFrom && (
+                                                    <Badge variant="outline" className="mt-1">
+                                                      {m.judgements.notYetEffective(
+                                                        j.effectiveFrom,
+                                                      )}
+                                                    </Badge>
+                                                  )}
+                                                </TableCell>
+                                                {j.hits[0] ? (
+                                                  <MatchedCells
+                                                    hit={j.hits[0]}
+                                                    m={m}
+                                                    cellClass={CELL}
+                                                  />
+                                                ) : (
+                                                  <>
+                                                    <TableCell className={CELL} />
+                                                    <TableCell className={CELL} />
+                                                  </>
+                                                )}
+                                                <RankCell h={j.hits[0]} m={m} />
+                                                <TableCell className={cn(CELL, "align-top")}>
+                                                  <Warning j={j} m={m} locale={locale} />
+                                                </TableCell>
+                                                {canEdit && (
+                                                  <TableCell className={cn(CELL, "align-top")}>
+                                                    <Actions
+                                                      j={j}
+                                                      m={m}
+                                                      asOf={asOf}
+                                                      editing={editing}
+                                                      note={note}
+                                                      busy={busy}
+                                                      setEditing={setEditing}
+                                                      setNote={setNote}
+                                                      decide={decide}
+                                                    />
+                                                  </TableCell>
+                                                )}
+                                              </TableRow>
+                                            )))}
                                     </Fragment>
                                   );
                                 })}
@@ -807,7 +820,99 @@ export function ProductJudgements({
 }
 
 /**
- * その区分に添える警告。**確認が残っているかどうかと、誰がいつ確認したか。**
+ * 「確認する」「判定修正」の欄。判定の単位の行（区分そのものが単位なら区分の行）に置く。
+ * その場で計算した判定（判定対象日あり）は保存していないので、確認も修正もできない
+ */
+function Actions({
+  j,
+  m,
+  asOf,
+  editing,
+  note,
+  busy,
+  setEditing,
+  setNote,
+  decide,
+}: {
+  j: ProductJudgementDto;
+  m: M;
+  asOf: string;
+  editing: string | null;
+  note: string;
+  busy: boolean;
+  setEditing: (id: string | null) => void;
+  setNote: (v: string) => void;
+  decide: (judgementId: string, verdict?: "APPLICABLE" | "NOT_APPLICABLE") => Promise<void>;
+}) {
+  if (asOf) return null;
+  if (editing !== j.id) {
+    return (
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => {
+          setEditing(j.id);
+          setNote(j.decidedNote ?? "");
+        }}
+      >
+        {j.needsReview ? m.judgements.review : m.judgements.change}
+      </Button>
+    );
+  }
+  return (
+    <div className="space-y-1">
+      <Input
+        // 列の幅いっぱい。決め打ちにすると列より広くなって切れる
+        className="h-8 w-full"
+        placeholder={m.judgements.notePlaceholder}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+      />
+      <div className="flex flex-wrap gap-1">
+        <Button size="sm" disabled={busy} onClick={() => void decide(j.id)}>
+          <Check className="mr-1 size-3.5" />
+          {/* いまの判定のまま確認する。文言はいまの判定（非該当なら「非該当」） */}
+          {j.verdict === "APPLICABLE" ? m.judgements.changeToYes : m.judgements.changeToNot}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() =>
+            void decide(j.id, j.verdict === "APPLICABLE" ? "NOT_APPLICABLE" : "APPLICABLE")
+          }
+        >
+          {j.verdict === "APPLICABLE" ? m.judgements.changeToNot : m.judgements.changeToYes}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            setEditing(null);
+            setNote("");
+          }}
+        >
+          {m.common.cancel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** その行を作った物質のランク。スコア（合算した行は寄与ぶんの合計）は浮かせて見せる */
+function RankCell({ h, m }: { h: JudgementHitDto | undefined; m: M }) {
+  return (
+    <TableCell
+      className={cn(CELL, "text-center align-top whitespace-nowrap")}
+      title={h?.score !== undefined ? m.score.scoreOf(h.score) : undefined}
+    >
+      {h?.score !== undefined ? (h.scoreRank ?? m.score.noRank) : ""}
+    </TableCell>
+  );
+}
+
+/**
+ * 判定の単位の行に添える警告。**確認が残っているかどうかと、誰がいつ確認したか。**
  *
  * 理由の無い警告は読まれなくなるので、なぜ気になるのかを必ず添える。
  */
@@ -985,6 +1090,17 @@ export function hitName(
   if (!h.name) return m.judgements.categoryItself;
   if (!h.asElement) return h.name;
   return `${h.name} ${m.judgements.asElement(locale === "ja" ? h.asElement.nameJa : h.asElement.nameEn)}`;
+}
+
+/** 判定の単位の行の名前。区分そのものが単位なら「（区分の合計）」、元素換算なら「（鉛として）」を添える */
+export function unitName(
+  j: Pick<ProductJudgementDto, "statutoryName" | "asElement">,
+  locale: ReturnType<typeof useI18n>["locale"],
+  m: M,
+): string {
+  if (!j.statutoryName) return m.judgements.categoryItself;
+  if (!j.asElement) return j.statutoryName;
+  return `${j.statutoryName} ${m.judgements.asElement(locale === "ja" ? j.asElement.nameJa : j.asElement.nameEn)}`;
 }
 
 export function OneLine({ text }: { text: string }) {

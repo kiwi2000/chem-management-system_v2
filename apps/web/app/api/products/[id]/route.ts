@@ -38,7 +38,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     const m = await getServerMessages();
     return jsonError(404, "not_found", m.errors.notFound);
   }
-  return Response.json({ item: toDetail(item) });
+  return Response.json({ item: toDetail(item, version?.id ?? null) });
 }
 
 /** PUT /api/products/[id] — 別名・拡張属性は入れ替えで更新する */

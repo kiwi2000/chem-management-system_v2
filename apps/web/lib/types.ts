@@ -233,10 +233,28 @@ export interface JudgementHitDto {
  * 判定（該当／非該当）と「人が見たかどうか」を**別に持つ**。
  * 根拠は組成そのものに近い情報なので、組成を見られない人には出さない。
  */
+/**
+ * 判定の 1 行。**判定の単位ごと**（区分でまとめる区分は区分そのもの、それ以外は法文物質名。
+ * 2026-09-15 決定）。根拠を伏せる相手には区分ごとに 1 行にまとめてある（法文物質名は null）
+ */
 export interface ProductJudgementDto {
+  /** 判定の行の id。確認・修正はこれを相手にする（その場で計算した判定は `asof:` で始まる仮の値） */
+  id: string;
   categoryId: string;
   /** この規制区分に付けたスコア。物質のスコアはこれの合計 */
   categoryScore: string;
+  /** 判定の単位の法文物質名。区分そのものが単位のとき、または根拠を伏せているときは null */
+  statutorySubstanceId: string | null;
+  /** 法文物質名（法律の言葉のまま）。null は区分そのもの */
+  statutoryName: string | null;
+  /** 法律が付けている番号（政令番号など） */
+  officialNumber: string | null;
+  /** 元素換算でまとめて判定した法文物質名なら、その元素（「鉛として」の鉛） */
+  asElement: AsElementDto | null;
+  /** 法文物質名の適用開始日（YYYY-MM-DD）。無ければ空 */
+  effectiveFrom: string | null;
+  /** 適用開始日がまだ来ていない（施行前）。該非は変えず、印だけ出す */
+  notYetEffective: boolean;
   lawCode: string;
   lawNameJa: string | null;
   lawNameEn: string | null;
@@ -281,14 +299,17 @@ export interface ProductJudgementDto {
   /** どの法規制バージョンで出したか。判定は版ごとに持つ */
   versionId: string;
 
-  /** 何が何％入っていたから該当なのか。組成を見られない人には空 */
+  /**
+   * 根拠。何が何％入っていたか（該当なら当たった CAS、非該当なら入っている CAS）。
+   * 判定の単位ごとに 0〜1 件。組成を見られない人には空
+   */
   hits: JudgementHitDto[];
   /** 根拠を伏せているかどうか。空なのか伏せたのかを、画面で区別するため */
   hitsWithheld: boolean;
 }
 
 /**
- * 法規制の画面から見た「この区分に当たる製品」（逆引き）。
+ * 法規制の画面から見た「この区分に当たる製品」（逆引き）。1 行＝製品 × 判定の単位。
  *
  * 製品の判定（`ProductJudgementDto`）と向きが逆なので、
  * 法律・区分の名前は持たない（見ている区分そのものだから）。
@@ -299,6 +320,13 @@ export interface MatchedProductDto {
   nameJa: string;
   nameEn: string | null;
   status: ProductStatus;
+  /** 判定の単位の法文物質名。区分そのものが単位のとき、または根拠を伏せているときは null */
+  statutorySubstanceId: string | null;
+  statutoryName: string | null;
+  officialNumber: string | null;
+  asElement: AsElementDto | null;
+  effectiveFrom: string | null;
+  notYetEffective: boolean;
   /**
    * 該当か非該当か。
    * **非該当のものも並ぶ。**確認が残っている（引っかからないと言い切れていない）ものは、
