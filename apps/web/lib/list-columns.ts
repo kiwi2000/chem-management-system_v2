@@ -128,6 +128,27 @@ function judgementCategoryCondition(
 }
 
 /**
+ * 選んだ区分に**当たっていない**製品（2026-09-16 指示。不使用証明書の相手を選ぶため）。
+ *
+ * **この版で判定済みのものだけ。**判定していない製品は「当たっていない」とは言えない。
+ * 要確認が残っているかは見ない（指示どおり）。「すべて」なら選んだ区分のどれにも当たらないもの、
+ * 「いずれか」なら少なくとも 1 つの区分に当たらないもの
+ */
+function judgementCategoryNotCondition(
+  values: string[],
+  op: "all" | "any",
+  versionId: string,
+): Record<string, unknown> | null {
+  const ids = [...new Set(values.filter((v) => v !== ""))];
+  if (ids.length === 0) return null;
+  const judged = { expansion: { is: { judgedVersionId: versionId } } };
+  const each = ids.map((id) => ({
+    NOT: { judgements: { some: { versionId, categoryId: id, verdict: "APPLICABLE" as const } } },
+  }));
+  return { AND: [judged, op === "all" ? { AND: each } : { OR: each }] };
+}
+
+/**
  * 組成に、その名前の物質が入っているか。
  *
  * **CAS番号と違って、部分一致で見る。**名前は覚えかたが人によって違うので、
@@ -197,6 +218,14 @@ export function productColumns(versionId: string | null, withComposition: boolea
       field: "categoryId",
       sortable: false,
       custom: (f) => (f.kind === "list" ? judgementCategoryCondition(f.values, f.op, v) : null),
+    },
+    // 当たっていない規制区分で絞る（判定済みのものだけ）
+    {
+      key: "judgementCategoriesNot",
+      kind: "list",
+      field: "categoryId",
+      sortable: false,
+      custom: (f) => (f.kind === "list" ? judgementCategoryNotCondition(f.values, f.op, v) : null),
     },
     // 「1つでも確認が残っているか」。区分ごとに見るのではない
     {

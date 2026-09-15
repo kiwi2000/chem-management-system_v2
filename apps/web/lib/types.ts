@@ -1,4 +1,5 @@
 import type {
+  DocBatchStatusValue,
   DocumentContent,
   DocumentTarget,
   DocumentTemplateKind,
@@ -721,6 +722,25 @@ export interface GeneratedDocumentDto {
   hasComposition: boolean;
   version: string;
   generatedAt: string;
+}
+
+/** まとめて帳票を作る仕事（バックグラウンド処理）の進み具合。自分の仕事だけが見える */
+export interface DocBatchJobDto {
+  id: string;
+  templateCode: string;
+  templateNameJa: string;
+  templateNameEn: string | null;
+  target: DocumentTarget;
+  status: DocBatchStatusValue;
+  /** 作る予定の件数（走り出すまでは頼んだときの数） */
+  total: number;
+  /** 終わった件数（作れなかったぶんも含む） */
+  done: number;
+  /** 作れなかった件数（見る権限が無い・消されている） */
+  missed: number;
+  error: string | null;
+  createdAt: string;
+  finishedAt: string | null;
 }
 
 export interface CompositionAggregateDto {

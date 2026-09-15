@@ -53,6 +53,18 @@ export async function getActor(): Promise<Actor | null> {
 }
 
 /**
+ * 利用者IDから Actor を組み立てる。**バックグラウンド処理用。**
+ * 画面や API の外（まとめて帳票を作る仕事など）で、頼んだ人の権限のまま動くために使う。
+ * 消された・止められた利用者なら null
+ */
+export async function actorOf(userId: string): Promise<Actor | null> {
+  const user = await prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
+  if (!user || !user.activeFlag) return null;
+  const permissions = await loadPermissions(user.id);
+  return { user, permissions, has: (p) => permissions.includes(p) };
+}
+
+/**
  * 認証必須。未認証は 401 Response を返す。
  *
  * **済ませていない用事（初期パスワードの変更・2要素認証の登録）がある人は、

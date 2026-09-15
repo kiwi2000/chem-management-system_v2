@@ -21,6 +21,8 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DocTargetPicker } from "@/components/doc-target-picker";
 import { DocTemplatePicker } from "@/components/doc-template-picker";
 import type { TableColumn } from "@/components/data-table/types";
+import type { ProductListOptions } from "@/components/product-list-columns";
+import type { SubstanceListOptions } from "@/components/substance-list-columns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -28,11 +30,12 @@ import { useI18n } from "@/lib/i18n-client";
 import { useOrganisations } from "@/lib/use-organisations";
 import type {
   ApiError,
+  DocBatchJobDto,
   DocumentTemplateDto,
   GeneratedDocumentDto,
   ListResponse,
 } from "@/lib/types";
-import { batchHref, documentHref } from "@/lib/doc-batch";
+import { documentHref, type DocPickSelection } from "@/lib/doc-batch";
 import { useTableState } from "@/lib/use-table-state";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "generatedAt", direction: "desc" }]);
@@ -45,6 +48,9 @@ const columnKinds = [
   { key: "generatedAt", kind: "date" },
 ] satisfies { key: string; kind: ColumnKind }[];
 
+/** 生成の状況の表。並べ替えも絞り込みも無い（新しい順に 20 件だけ） */
+const JOBS_STATE: TableState = emptyTableState([]);
+
 /** 日時。秒までは要らない（一覧で読むのは「いつごろか」） */
 function fmt(iso: string, locale: string): string {
   return new Date(iso).toLocaleString(locale === "en" ? "en-US" : "ja-JP", {
@@ -56,13 +62,26 @@ function fmt(iso: string, locale: string): string {
   });
 }
 
+const POLL_MS = 2000;
+
 /**
  * ドキュメント生成の画面。
  *
  * 上で**様式を選んで作り**、下に**自分が作ったもの**が並ぶ。
  * 様式そのものを直すのは別の画面（テンプレート編集）で、要る権限も違う。
+ *
+ * 複数を選んだときはバックグラウンド処理に頼み、進み具合を「生成の状況」に出す（2026-09-16）。
+ * 作っているあいだも他の画面で作業できる
  */
-export function DocumentsScreen() {
+export function DocumentsScreen({
+  product,
+  substance,
+}: {
+  /** 相手選びの表に渡す選択肢（製品一覧と同じもの） */
+  product: ProductListOptions;
+  /** 同じく物質一覧の選択肢 */
+  substance: SubstanceListOptions;
+}) {
   const { m, locale } = useI18n();
   const router = useRouter();
 
@@ -73,7 +92,9 @@ export function DocumentsScreen() {
   */
   const [picked, setPicked] = useState<DocumentTemplateDto | null>(null);
   /** ③で選ばれている相手。④の「生成」で使う */
-  const [targetIds, setTargetIds] = useState<string[]>([]);
+  const [selection, setSelection] = useState<DocPickSelection | null>(null);
+  /** 生成を頼んだあと、相手の表を作り直して選択を消すための合図 */
+  const [pickerToken, setPickerToken] = useState(0);
   /*
     任意の会社・任意の部署と宛先。**組織から選ぶ。**
     所属する会社・部署は作った人のものが自動で入るので、ここでは聞かない
@@ -123,6 +144,9 @@ export function DocumentsScreen() {
   );
   const [data, setData] = useState<ListResponse<GeneratedDocumentDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** 生成を頼んだときの知らせ */
+  const [notice, setNotice] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
 
   const { state, setState, ready } = useTableState(
     "chem.table.documents",
@@ -147,6 +171,33 @@ export function DocumentsScreen() {
   useEffect(() => {
     if (ready) void load();
   }, [ready, load]);
+
+  /*
+    生成の状況（まとめて頼んだ仕事）。走っているあいだは数秒おきに聞きに行き、
+    終わったら「自分が作ったドキュメント」も読み直す
+  */
+  const [jobs, setJobs] = useState<DocBatchJobDto[] | null>(null);
+  const running = (jobs ?? []).some((j) => j.status === "QUEUED" || j.status === "RUNNING");
+  const loadJobs = useCallback(async () => {
+    const res = await fetch("/api/documents/batch").catch(() => null);
+    if (!res?.ok) return;
+    const body = (await res.json()) as { items: DocBatchJobDto[] };
+    setJobs(body.items);
+  }, []);
+  useEffect(() => {
+    void loadJobs();
+  }, [loadJobs]);
+  useEffect(() => {
+    if (!running) return;
+    const id = window.setInterval(() => void loadJobs(), POLL_MS);
+    return () => window.clearInterval(id);
+  }, [running, loadJobs]);
+  // 走っていたものが終わったら、できたものを一覧に出す
+  const [wasRunning, setWasRunning] = useState(false);
+  useEffect(() => {
+    if (wasRunning && !running) void load();
+    setWasRunning(running);
+  }, [running, wasRunning, load]);
 
   /**
    * 選んだものを消す。
@@ -230,6 +281,93 @@ export function DocumentsScreen() {
     [m, locale],
   );
 
+  /** 生成の状況の列。進み具合は数字と帯で */
+  const jobColumns: TableColumn<DocBatchJobDto>[] = useMemo(
+    () => [
+      {
+        key: "createdAt",
+        header: m.documents.jobRequestedAt,
+        kind: "date",
+        width: 140,
+        sortable: false,
+        filterable: false,
+        className: "whitespace-nowrap",
+        render: (j) => fmt(j.createdAt, locale),
+      },
+      {
+        key: "template",
+        header: m.documents.template,
+        kind: "text",
+        width: 200,
+        sortable: false,
+        filterable: false,
+        render: (j) => `${j.templateCode} ${pickName(locale, j.templateNameJa, j.templateNameEn)}`,
+      },
+      {
+        key: "target",
+        header: m.documents.targetKind,
+        kind: "text",
+        width: 88,
+        sortable: false,
+        filterable: false,
+        render: (j) => m.docTemplates.targets[j.target],
+      },
+      {
+        key: "progress",
+        header: m.documents.jobProgress,
+        kind: "text",
+        width: 180,
+        sortable: false,
+        filterable: false,
+        render: (j) => {
+          const pct = j.total > 0 ? Math.round((j.done / j.total) * 100) : 0;
+          return (
+            <div className="space-y-1">
+              <div className="text-xs tabular-nums">
+                {j.done} / {j.total}
+                {j.missed > 0 && (
+                  <span className="text-destructive ml-2">{m.documents.jobMissed(j.missed)}</span>
+                )}
+              </div>
+              <div className="bg-muted h-1.5 w-full overflow-hidden rounded">
+                <div
+                  className={j.status === "FAILED" ? "bg-destructive h-full" : "bg-primary h-full"}
+                  style={{ width: `${j.status === "DONE" ? 100 : pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        key: "status",
+        header: m.documents.jobStatus,
+        kind: "text",
+        width: 220,
+        sortable: false,
+        filterable: false,
+        className: "text-xs",
+        render: (j) => (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={j.status === "FAILED" ? "text-destructive" : undefined}>
+              {m.documents.jobStatuses[j.status] ?? j.status}
+            </span>
+            {j.status === "DONE" && j.done - j.missed > 0 && (
+              <Link
+                href={`/documents/batch/${j.id}`}
+                className="text-primary underline underline-offset-2"
+              >
+                {m.documents.jobOpen}
+              </Link>
+            )}
+            {j.error && <span className="text-destructive">{j.error}</span>}
+          </div>
+        ),
+      },
+    ],
+    [m, locale],
+  );
+
   /*
     差出人と宛先を、作る先へ渡す。
     **宛先を使わない様式には付けない。**付けても捨てられるが、
@@ -270,15 +408,51 @@ export function DocumentsScreen() {
   const step = (n: number, label: string) =>
     `${"①②③④"[stepShown.slice(0, n).filter(Boolean).length - 1]} ${label}`;
 
-  /** 選ばれた相手で作る。1件なら1枚、複数ならまとめて */
-  function make() {
-    if (!picked || targetIds.length === 0) return;
+  /** 選ばれている件数（全件のときは絞り込みに当たる数） */
+  const selectedCount =
+    selection === null ? 0 : selection.mode === "ids" ? selection.ids.length : selection.total;
+
+  /**
+   * 選ばれた相手で作る。**1件ならその場で開き、複数ならバックグラウンド処理に頼む。**
+   * 頼んだあとは相手の選択を消し、生成の状況に並べる（終わるまで他の作業ができる）
+   */
+  async function make() {
+    if (!picked || !selection) return;
     const parties = partyParams(picked);
-    router.push(
-      targetIds.length === 1
-        ? documentHref(picked.id, targetIds[0]!, parties)
-        : batchHref(picked.id, targetIds, parties),
-    );
+    if (selection.mode === "ids" && selection.ids.length === 1) {
+      router.push(documentHref(picked.id, selection.ids[0]!, parties));
+      return;
+    }
+    setError(null);
+    setNotice(null);
+    setStarting(true);
+    try {
+      const res = await fetch("/api/documents/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateId: picked.id,
+          selection:
+            selection.mode === "ids"
+              ? { mode: "ids", ids: selection.ids }
+              : { mode: "all", filter: selection.filter },
+          ...parties,
+        }),
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      const body = (await res.json()) as { id: string; total: number };
+      setNotice(m.documents.batchStarted(body.total));
+      setSelection(null);
+      setPickerToken((v) => v + 1);
+      void loadJobs();
+    } finally {
+      setStarting(false);
+    }
   }
 
   return (
@@ -297,7 +471,8 @@ export function DocumentsScreen() {
           onSelect={(t) => {
             setPicked(t);
             // テンプレートが変われば、選んでいた相手も外す（対象そのものが変わる）
-            setTargetIds([]);
+            setSelection(null);
+            setNotice(null);
             if (!t.usesRecipient) setRecipientId("");
             // 組織ブロックはテンプレートごとに違うので、選び直し
             setOrgChoices({});
@@ -425,16 +600,18 @@ export function DocumentsScreen() {
         </div>
       )}
 
-      {/* ③ 作る相手。テンプレートで対象（製品か物質か）が決まる */}
+      {/* ③ 作る相手。テンプレートで対象（製品か物質か）が決まる。表は製品・物質の一覧と同じ */}
       <div className="space-y-2 border-t pt-4">
         <p className="text-sm font-medium">{step(3, m.documents.step3)}</p>
         {picked ? (
           <DocTargetPicker
-            key={picked.id}
+            key={`${picked.id}:${pickerToken}`}
             target={picked.target}
             // Excel・Word はまとめて作れない。選ばせてから断らない
             single={picked.kind !== "BLOCK"}
-            onSelectionChange={setTargetIds}
+            product={product}
+            substance={substance}
+            onSelectionChange={setSelection}
           />
         ) : (
           <p className="text-muted-foreground text-sm">{m.documents.pickTemplateFirst}</p>
@@ -445,17 +622,45 @@ export function DocumentsScreen() {
       <div className="space-y-2 border-t pt-4">
         <p className="text-sm font-medium">{step(4, m.documents.step4)}</p>
         <div className="flex flex-wrap items-center gap-3">
-          <Button disabled={!picked || targetIds.length === 0} onClick={make}>
+          <Button disabled={!picked || !selection || starting} onClick={() => void make()}>
             <FileText className="size-4" />
             {m.documents.make}
           </Button>
           <span className="text-muted-foreground text-sm">
-            {targetIds.length > 0
-              ? m.documents.pickedCount(targetIds.length)
+            {selectedCount > 0
+              ? selection?.mode === "all"
+                ? m.documents.allSelected(selectedCount)
+                : m.documents.pickedCount(selectedCount)
               : m.documents.pickNoneYet}
           </span>
         </div>
+        {notice && (
+          <Alert>
+            <AlertDescription>{notice}</AlertDescription>
+          </Alert>
+        )}
       </div>
+
+      {/* 生成の状況（まとめて頼んだ仕事）。無ければ出さない */}
+      {jobs !== null && jobs.length > 0 && (
+        <div className="space-y-2 border-t pt-4">
+          <p className="text-sm font-medium">{m.documents.jobsTitle}</p>
+          <DataTable
+            storageKey="chem.table.docBatchJobs"
+            columns={jobColumns}
+            rows={jobs}
+            rowKey={(j) => j.id}
+            total={jobs.length}
+            state={JOBS_STATE}
+            defaultState={JOBS_STATE}
+            onStateChange={() => {}}
+            emptyMessage={m.documents.jobsNone}
+            showFilters={false}
+            showPager={false}
+            hintText={m.documents.jobsHint}
+          />
+        </div>
+      )}
 
       {/* 下：自分が作ったもの */}
       <div className="space-y-2 border-t pt-4">

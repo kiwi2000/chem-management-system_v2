@@ -4,7 +4,6 @@ import { Printer } from "lucide-react";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { BATCH_MAX } from "@/lib/doc-batch";
 import type { RenderedDocument } from "@/lib/doc-render";
 import { useI18n } from "@/lib/i18n-client";
 import { DocumentSheet } from "@/components/doc-editor/document-view";
@@ -20,15 +19,12 @@ export function DocumentBatchView({
   title,
   backHref,
   missed,
-  tooMany,
 }: {
   docs: { code: string; doc: RenderedDocument }[];
   title: string;
   backHref: string;
   /** 見る権限が無いなどで作れなかった件数 */
   missed: number;
-  /** 上限を超えて頼まれたときの上限値。0 なら超えていない */
-  tooMany: number;
 }) {
   const { m } = useI18n();
 
@@ -50,13 +46,8 @@ export function DocumentBatchView({
         </div>
       </div>
 
-      {(tooMany > 0 || missed > 0 || docs.length === 0) && (
+      {(missed > 0 || docs.length === 0) && (
         <div className="no-print space-y-2 px-3 lg:px-4">
-          {tooMany > 0 && (
-            <Alert>
-              <AlertDescription>{m.documents.batchTooMany(BATCH_MAX)}</AlertDescription>
-            </Alert>
-          )}
           {missed > 0 && (
             <Alert>
               <AlertDescription>{m.documents.batchMissed(missed)}</AlertDescription>

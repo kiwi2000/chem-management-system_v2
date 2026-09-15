@@ -112,6 +112,10 @@ export const ja = {
     rejudgeNeededHint:
       "法規制のデータが変わってから、または法規制バージョンを切り替えてから、全製品の判定をやり直していません。押すとシステム設定の「法規制の判定」に移ります",
     noLinkVersion: "法規制バージョン未設定",
+    /** まとめて作る帳票が裏で走っているあいだ、左メニューの下に出す印 */
+    docBatchRunning: (n: number) => (n === 1 ? "帳票を生成中" : `帳票を生成中（${n} 件）`),
+    docBatchRunningHint:
+      "まとめて頼んだ帳票の生成が進んでいます。押すとドキュメント生成の画面に移ります",
     hideHeader: "上の帯を隠す",
     showHeader: "上の帯を出す",
     closeMenu: "メニューを閉じる",
@@ -1054,6 +1058,8 @@ export const ja = {
     statutoryName: "法文物質名",
     matchedCas: "該当CAS",
     matchedCategories: "該当法規制",
+    /** 選んだ区分に当たっていない製品で絞る（判定済みのものだけ。2026-09-16） */
+    notMatchedCategories: "非該当の規制区分",
     hitCount: (n: number) => `${n}件`,
     // 組成の表と同じ言葉にそろえる（「含有率」と混ぜない）
     content: "重量%",
@@ -1379,13 +1385,35 @@ export const ja = {
     noneYet: "まだ作っていません",
     savedHint: "日時を押すと、出したときの紙面がそのまま開きます（作り直しません）",
     batchMissed: (n: number) => `${n} 件は作れませんでした（見る権限が無いか、消されています）`,
-    makeSelectedConfirm: (n: number) => `選んだ ${n} 件の帳票をまとめて作ります`,
     batchTitle: "まとめて生成",
     batchCount: (n: number) => `${n} 件`,
-    batchTooMany: (n: number) =>
-      `一度に作れるのは ${n} 件までです。絞り込んでから選び直してください`,
     batchEmpty: "作る相手が選ばれていません",
     make: "生成",
+    /** 相手の選択（ページをまたいで選べる。絞り込みに当たる全件も選べる。2026-09-16） */
+    selectAllMatching: (n: number) => `絞り込みに当たる全 ${n} 件を選ぶ`,
+    allSelected: (n: number) => `絞り込みに当たる全 ${n} 件を選んでいます`,
+    clearSelection: "選択を解除",
+    pickHintAll:
+      "ページを送っても選択は残ります。絞り込んだ全件を相手にするときは「絞り込みに当たる全 n 件を選ぶ」を押してください",
+    /** バックグラウンド処理（まとめて生成） */
+    batchStarted: (n: number) =>
+      `${n} 件の生成を始めました。終わるまで他の画面で作業できます。できたものは下の「生成の状況」と「自分が作ったドキュメント」に並びます`,
+    jobsTitle: "生成の状況",
+    jobsHint: "まとめて頼んだ生成の進み具合です。終わったら「まとめて開く」で 1 回で印刷できます",
+    jobsNone: "まとめて頼んだ生成はまだありません",
+    jobRequestedAt: "頼んだ日時",
+    jobProgress: "進み具合",
+    jobStatus: "状態",
+    jobStatuses: {
+      QUEUED: "待ち",
+      RUNNING: "生成中",
+      DONE: "完了",
+      FAILED: "失敗",
+    } as Record<string, string>,
+    jobMissed: (n: number) => `作れなかった ${n} 件`,
+    jobOpen: "まとめて開く",
+    jobInterrupted: "サーバーが再起動したため途中で止まりました。もう一度生成してください",
+    jobNoAccess: "帳票を作る権限が無くなっているため、作れませんでした",
     printHint:
       "PDFにするには、印刷の画面でプリンターを「PDFとして保存」（Microsoft Print to PDF など）に変えてください。",
     print: "印刷 / PDF保存",

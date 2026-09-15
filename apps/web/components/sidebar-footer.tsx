@@ -24,16 +24,23 @@ export function SidebarFooter({
   const { m } = useI18n();
   const [count, setCount] = useState<number | null>(null);
   const [rejudgeNeeded, setRejudgeNeeded] = useState(false);
+  /** 自分が頼んだ、まとめて作る帳票の仕事が走っている数 */
+  const [docBatch, setDocBatch] = useState(0);
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
       const res = await fetch("/api/sessions/count").catch(() => null);
       if (!res?.ok || !alive) return;
-      const body = (await res.json()) as { sessions: number; rejudgeNeeded: boolean | null };
+      const body = (await res.json()) as {
+        sessions: number;
+        rejudgeNeeded: boolean | null;
+        docBatch?: number;
+      };
       if (!alive) return;
       setCount(body.sessions);
       setRejudgeNeeded(body.rejudgeNeeded === true);
+      setDocBatch(body.docBatch ?? 0);
     };
     void load();
     const id = window.setInterval(() => void load(), 30_000);
@@ -54,6 +61,20 @@ export function SidebarFooter({
 
   return (
     <div className="bg-muted/60 mt-auto border-t px-4 py-3">
+      {/* まとめて作る帳票が裏で走っているあいだの印。どの画面にいても目に入り、押すと生成の画面へ */}
+      {docBatch > 0 && (
+        <Link
+          href="/documents"
+          className="text-primary mb-2 flex items-center gap-1.5 rounded-sm text-xs font-medium hover:opacity-80"
+          title={m.shell.docBatchRunningHint}
+        >
+          <span
+            aria-hidden
+            className="bg-primary inline-block size-2 shrink-0 animate-pulse rounded-full"
+          />
+          {m.shell.docBatchRunning(docBatch)}
+        </Link>
+      )}
       {isAdmin && rejudgeNeeded && (
         <Link
           href="/admin/settings#rejudge"

@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { countRunningFor } from "@/lib/doc-batch-job";
 import { rejudgeNeeded } from "@/lib/rejudge-job";
 import { getAppSettings } from "@/lib/settings";
 
@@ -24,11 +25,13 @@ export async function GET() {
   const now = new Date();
   const { sessionIdleMinutes } = await getAppSettings();
   const activeSince = new Date(now.getTime() - sessionIdleMinutes * 60_000);
-  const [sessions, needed] = await Promise.all([
+  const [sessions, needed, docBatch] = await Promise.all([
     prisma.session.count({
       where: { endedAt: null, expiresAt: { gt: now }, lastSeenAt: { gte: activeSince } },
     }),
     actor.has("ADMIN") ? rejudgeNeeded() : Promise.resolve(null),
+    // 自分が頼んだ、まとめて作る帳票の仕事が走っている数（同じ問い合わせに相乗り）
+    actor.has("DOCUMENT_CREATE") ? countRunningFor(actor.user.id) : Promise.resolve(0),
   ]);
-  return Response.json({ sessions, rejudgeNeeded: needed });
+  return Response.json({ sessions, rejudgeNeeded: needed, docBatch });
 }

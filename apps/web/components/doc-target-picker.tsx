@@ -1,16 +1,24 @@
 "use client";
 
-import {
-  emptyTableState,
-  serializeTableState,
-  type ColumnKind,
-  type TableState,
-} from "@chem/shared";
+import { serializeTableState, type TableState } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import type { FilterLayoutRow } from "@/components/data-table/filter-panel";
 import type { TableColumn } from "@/components/data-table/types";
+import {
+  PRODUCT_DEFAULT_STATE,
+  useProductListColumns,
+  type ProductListOptions,
+} from "@/components/product-list-columns";
+import {
+  SUBSTANCE_DEFAULT_STATE,
+  useSubstanceListColumns,
+  type SubstanceListOptions,
+} from "@/components/substance-list-columns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import type { DocPickSelection } from "@/lib/doc-batch";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, ProductListItemDto, SubstanceListItemDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
@@ -18,35 +26,19 @@ import { useTableState } from "@/lib/use-table-state";
 /**
  * 帳票を作る相手を選ぶ表。
  *
- * **ドキュメント生成の画面の中で選ぶ。**以前は製品・物質の一覧へ飛ばしていたが、
- * 帳票を作りに来た人が別の画面へ移されると、どこにいるのか分からなくなる。
+ * **製品・物質の一覧と同じ列・同じ絞り込み**（2026-09-16 指示）。
+ * 帳票を作る相手を探す条件は一覧と同じでよく、ここだけ簡単にすると
+ * 「一覧で探してからコードで絞り直す」という回り道になっていた。
  *
- * ここに置くのは**探すための最小限**（コード・名称）。
- * 込み入った絞り込みが要るときは、製品・物質の一覧で探してから、
- * そのコードでここを絞る
+ * **選択はページをまたいで残る。**「絞り込みに当たる全件を選ぶ」を押すと、
+ * 表に出ていない行も含めて、いまの絞り込みに当たる全部が相手になる
+ * （その場合は ID ではなく絞り込みの条件を渡し、作る側で引き直す）
  */
-
-const PRODUCT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
-const SUBSTANCE_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
-
-const PRODUCT_KINDS = [
-  { key: "code", kind: "text" },
-  { key: "nameJa", kind: "text" },
-  { key: "nameEn", kind: "text" },
-] satisfies { key: string; kind: ColumnKind }[];
-
-const SUBSTANCE_KINDS = [
-  { key: "code", kind: "text" },
-  { key: "casNumber", kind: "text" },
-  { key: "nameJa", kind: "text" },
-  { key: "nameEn", kind: "text" },
-] satisfies { key: string; kind: ColumnKind }[];
-
-type Row = { id: string; code: string; nameJa: string; nameEn: string | null };
-
 export function DocTargetPicker({
   target,
   single = false,
+  product,
+  substance,
   onSelectionChange,
 }: {
   target: "PRODUCT" | "SUBSTANCE";
@@ -56,32 +48,105 @@ export function DocTargetPicker({
    * 選ばせてから断ると、選び直しをさせることになる
    */
   single?: boolean;
+  product: ProductListOptions;
+  substance: SubstanceListOptions;
   /**
    * 選ばれている相手。**作るボタンはこの表の中に置かない。**
-   * 手順の最後（④ 生成）に置くので、選びぶんだけを外へ渡す
+   * 手順の最後（④ 生成）に置くので、選びぶんだけを外へ渡す。何も選んでいなければ null
    */
-  onSelectionChange: (ids: string[]) => void;
+  onSelectionChange: (selection: DocPickSelection | null) => void;
+}) {
+  return target === "PRODUCT" ? (
+    <ProductPicker single={single} options={product} onSelectionChange={onSelectionChange} />
+  ) : (
+    <SubstancePicker single={single} options={substance} onSelectionChange={onSelectionChange} />
+  );
+}
+
+function ProductPicker({
+  single,
+  options,
+  onSelectionChange,
+}: {
+  single: boolean;
+  options: ProductListOptions;
+  onSelectionChange: (selection: DocPickSelection | null) => void;
 }) {
   const { m } = useI18n();
-  const isProduct = target === "PRODUCT";
-  const defaultState = isProduct ? PRODUCT_STATE : SUBSTANCE_STATE;
-
-  const { state, setState, ready } = useTableState(
-    isProduct ? "chem.table.docPickProduct" : "chem.table.docPickSubstance",
-    isProduct ? PRODUCT_KINDS : SUBSTANCE_KINDS,
-    defaultState,
+  // 公開状態の列も出す（作業中の製品も相手にできる。一覧の下の表と同じ列）
+  const { columns, filterLayout } = useProductListColumns({ ...options, scope: "all" });
+  return (
+    <PickerTable
+      storageKey="chem.table.docPickProduct"
+      endpoint="/api/products"
+      columns={columns}
+      filterLayout={filterLayout}
+      defaultState={PRODUCT_DEFAULT_STATE}
+      emptyMessage={m.products.empty}
+      single={single}
+      onSelectionChange={onSelectionChange}
+    />
   );
+}
+
+function SubstancePicker({
+  single,
+  options,
+  onSelectionChange,
+}: {
+  single: boolean;
+  options: SubstanceListOptions;
+  onSelectionChange: (selection: DocPickSelection | null) => void;
+}) {
+  const { m } = useI18n();
+  const { columns, filterLayout } = useSubstanceListColumns({ ...options, scope: "all" });
+  return (
+    <PickerTable
+      storageKey="chem.table.docPickSubstance"
+      endpoint="/api/substances"
+      columns={columns}
+      filterLayout={filterLayout}
+      defaultState={SUBSTANCE_DEFAULT_STATE}
+      emptyMessage={m.substances.empty}
+      single={single}
+      onSelectionChange={onSelectionChange}
+    />
+  );
+}
+
+/** 製品・物質で共通の、読み込みと選択の持ちかた */
+function PickerTable<T extends ProductListItemDto | SubstanceListItemDto>({
+  storageKey,
+  endpoint,
+  columns,
+  filterLayout,
+  defaultState,
+  emptyMessage,
+  single,
+  onSelectionChange,
+}: {
+  storageKey: string;
+  endpoint: string;
+  columns: TableColumn<T>[];
+  filterLayout: FilterLayoutRow[];
+  defaultState: TableState;
+  emptyMessage: string;
+  single: boolean;
+  onSelectionChange: (selection: DocPickSelection | null) => void;
+}) {
+  const { m } = useI18n();
+  const { state, setState, ready } = useTableState(storageKey, columns, defaultState);
   const query = useMemo(
     () => serializeTableState(state, defaultState).toString(),
     [state, defaultState],
   );
 
-  const [data, setData] = useState<ListResponse<Row> | null>(null);
+  const [data, setData] = useState<ListResponse<T> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
-    const res = await fetch(`/api/${isProduct ? "products" : "substances"}?${query}`);
+    const res = await fetch(`${endpoint}?${query}`);
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -89,55 +154,38 @@ export function DocTargetPicker({
       setData({ items: [], total: 0, page: 1, pageSize: 25 });
       return;
     }
-    const body = (await res.json()) as ListResponse<ProductListItemDto | SubstanceListItemDto>;
-    setData(body as ListResponse<Row>);
-  }, [isProduct, query, m]);
+    setData((await res.json()) as ListResponse<T>);
+  }, [endpoint, query, m]);
 
   useEffect(() => {
     if (ready) void load();
   }, [ready, load]);
 
-  const columns: TableColumn<Row>[] = useMemo(() => {
-    // 中身は列ごとに自分で描く（共通テーブルは既定の描きかたを持たない）
-    const code: TableColumn<Row> = {
-      key: "code",
-      header: isProduct ? m.products.code : m.substances.code,
-      kind: "text",
-      nullable: false,
-      width: 180,
-      className: "font-mono text-xs",
-      render: (r) => r.code,
-    };
-    const nameJa: TableColumn<Row> = {
-      key: "nameJa",
-      header: m.products.nameJa,
-      kind: "text",
-      nullable: false,
-      width: 320,
-      render: (r) => r.nameJa,
-    };
-    const nameEn: TableColumn<Row> = {
-      key: "nameEn",
-      header: m.products.nameEn,
-      kind: "text",
-      width: 260,
-      render: (r) => r.nameEn ?? "",
-    };
-    if (isProduct) return [code, nameJa, nameEn];
-    return [
-      code,
-      {
-        key: "casNumber",
-        header: m.substances.casNumber,
-        kind: "text",
-        width: 140,
-        className: "font-mono text-xs",
-        render: (r) => (r as SubstanceListItemDto).casNumber ?? "",
-      },
-      nameJa,
-      nameEn,
-    ];
-  }, [isProduct, m]);
+  /*
+    選択。ページをまたいで残す（表に持たせると読み直しで消える）。
+    `all` のあいだは「絞り込みに当たる全件」で、チェックは全部付いて動かせない
+  */
+  const [keys, setKeys] = useState<Set<string>>(new Set());
+  const [all, setAll] = useState(false);
+  const total = data?.total ?? 0;
+
+  /*
+    外へ知らせる。ID の並びか、絞り込みの条件（全件のとき）。
+    全件のときは、絞り込みを変えるたびに条件と件数を送り直す
+  */
+  const keysText = [...keys].join(",");
+  useEffect(() => {
+    if (all) onSelectionChange({ mode: "all", filter: query, total });
+    else if (keys.size > 0) onSelectionChange({ mode: "ids", ids: [...keys] });
+    else onSelectionChange(null);
+    // keys は文字列にして比べる（Set は毎回別のものになる）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all, keysText, query, total]);
+
+  const clear = () => {
+    setAll(false);
+    setKeys(new Set());
+  };
 
   return (
     <div className="space-y-2">
@@ -147,24 +195,52 @@ export function DocTargetPicker({
         </Alert>
       )}
       <DataTable
-        storageKey={isProduct ? "chem.table.docPickProduct" : "chem.table.docPickSubstance"}
+        storageKey={storageKey}
         columns={columns}
         rows={data?.items ?? null}
         rowKey={(r) => r.id}
-        total={data?.total ?? 0}
+        total={total}
         state={state}
         defaultState={defaultState}
         onStateChange={setState}
-        emptyMessage={isProduct ? m.products.empty : m.substances.empty}
+        emptyMessage={emptyMessage}
+        filterLayout={filterLayout}
         /*
           選ぶのは消すためではなく作るため。**編集の権限は要らない。**
           何件でも選べる（まとめて作れるかは様式による）
         */
         selectable
         singleSelect={single}
-        onSelectionChange={(rows) => onSelectionChange(rows.map((r) => r.id))}
-        pageSizeOptions={[10, 15, 25, 50]}
-        hintText={single ? m.documents.pickHintSingle : m.documents.pickHint}
+        selection={{ keys, onChange: setKeys, all }}
+        headerActions={
+          <div className="flex flex-wrap items-center gap-2">
+            {all ? (
+              <span className="text-primary text-sm font-medium">
+                {m.documents.allSelected(total)}
+              </span>
+            ) : (
+              <>
+                {keys.size > 0 && (
+                  <span className="text-muted-foreground text-sm">
+                    {m.documents.pickedCount(keys.size)}
+                  </span>
+                )}
+                {!single && total > 0 && (
+                  <Button size="sm" variant="outline" onClick={() => setAll(true)}>
+                    {m.documents.selectAllMatching(total)}
+                  </Button>
+                )}
+              </>
+            )}
+            {(all || keys.size > 0) && (
+              <Button size="sm" variant="ghost" onClick={clear}>
+                {m.documents.clearSelection}
+              </Button>
+            )}
+          </div>
+        }
+        pageSizeOptions={[10, 15, 25, 50, 100]}
+        hintText={single ? m.documents.pickHintSingle : m.documents.pickHintAll}
       />
     </div>
   );

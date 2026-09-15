@@ -1,22 +1,15 @@
 /**
- * まとめて帳票を作るときの行き先。
+ * 帳票を 1 件作るときの行き先。
  *
- * **選んだものは URL に載せる。**サーバーに預けると、
- * 印刷し直したり戻ったりするたびに、預けたものが生きているかを気にすることになる。
- * URL に入っていれば、あとから開き直しても同じ帳票が出る。
- *
- * ただし長さには限りがあるので、**入れられる数を決めておく**。
- * 超えたぶんは切らずに、画面で断る（黙って減らすと、
- * 出したはずのものが入っていないことに気づけない）。
+ * まとめて作るときは URL ではなく、バックグラウンド処理の仕事（`/api/documents/batch`）に頼む
+ * （2026-09-16。以前は選んだ ID を URL に載せて 100 件までに限っていた）。
  */
-export const BATCH_MAX = 100;
 
 /**
  * 帳票の相手。**URL で持ち回る。**
  * 対象を選ぶ画面をまたぐので、選んだ差出人・宛先を落とさないため
  */
 export interface PartyParams {
-  /** 差出人の組織。既定は作った人の会社 */
   /** 任意の会社・任意の部署（組織のID）。様式がその項目を使っているときだけ付く */
   company?: string | null;
   department?: string | null;
@@ -26,18 +19,13 @@ export interface PartyParams {
   org?: string[];
 }
 
-/** `from` `to` を問い合わせ文字列に足す（無いものは付けない） */
+/** 差出人・宛先を問い合わせ文字列に足す（無いものは付けない） */
 export function partyQuery(q: URLSearchParams, parties?: PartyParams): URLSearchParams {
   if (parties?.company) q.set("company", parties.company);
   if (parties?.department) q.set("department", parties.department);
   if (parties?.to) q.set("to", parties.to);
   for (const v of parties?.org ?? []) q.append("org", v);
   return q;
-}
-
-export function batchHref(templateId: string, ids: string[], parties?: PartyParams): string {
-  const q = new URLSearchParams({ ids: ids.slice(0, BATCH_MAX).join(",") });
-  return `/documents/${templateId}/batch?${partyQuery(q, parties)}`;
 }
 
 /** 1件ぶんの行き先 */
@@ -47,15 +35,9 @@ export function documentHref(templateId: string, targetId: string, parties?: Par
   return `/documents/${templateId}/${targetId}${tail ? `?${tail}` : ""}`;
 }
 
-/** URL から取り出す。空や重複は落とす */
-export function parseBatchIds(raw: string | undefined): string[] {
-  if (!raw) return [];
-  return [
-    ...new Set(
-      raw
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean),
-    ),
-  ].slice(0, BATCH_MAX);
-}
+/**
+ * 相手の選びかた（画面 → 仕事）。
+ * ID の並びか、「絞り込みに当たる全件」（一覧の問い合わせ文字列で持ち、走るときに引き直す）
+ */
+export type DocPickSelection =
+  { mode: "ids"; ids: string[] } | { mode: "all"; filter: string; total: number };

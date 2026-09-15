@@ -13,6 +13,7 @@ export * from "./constants";
 export * from "./country";
 export * from "./data-exchange";
 export * from "./decimal";
+export * from "./doc-batch";
 export * from "./doc-tags";
 export * from "./document";
 export * from "./feedback";

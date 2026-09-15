@@ -79,6 +79,16 @@ interface Props<T> {
    */
   onSelectionChange?: (rows: T[]) => void;
   /**
+   * 選択を呼び出し側で持つ（ページをまたいで選び続ける表。ドキュメント生成の相手選びなど）。
+   * 渡すと、読み直しても選択は消えず、「すべて選択」はいま見えている行を足す・外すだけになる。
+   * `all` が真のあいだは「絞り込みに当たる全件」を選んでいる状態で、チェックは全部付いて動かせない
+   */
+  selection?: {
+    keys: ReadonlySet<string>;
+    onChange: (next: Set<string>) => void;
+    all?: boolean;
+  };
+  /**
    * 選択した行をまとめて次の状態へ送る操作（申請・発行）。
    * 文言と処理はいつも一組なので、まとめて受ける。渡さなければボタンを出さない。
    */
@@ -197,6 +207,7 @@ export function DataTable<T>({
   singleSelect = false,
   onDeleteSelected,
   onSelectionChange,
+  selection,
   bulkAction,
   filterLayout,
   showFilters = true,
@@ -277,7 +288,16 @@ export function DataTable<T>({
     if (state.page > totalPages) onStateChange((prev) => ({ ...prev, page: totalPages }));
   }, [rows, state.page, totalPages, onStateChange]);
 
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  /*
+    チェックの状態。呼び出し側が持つ表（selection）ではそちらを読み書きし、
+    そうでなければこの部品の中で持つ
+  */
+  const [ownSelected, setOwnSelected] = useState<Set<string>>(new Set());
+  const selected: ReadonlySet<string> = selection ? selection.keys : ownSelected;
+  const setSelected = (update: (prev: ReadonlySet<string>) => Set<string>) => {
+    if (selection) selection.onChange(update(selection.keys));
+    else setOwnSelected((prev) => update(prev));
+  };
   const [deleting, setDeleting] = useState(false);
   /** つかんでいる行と、いま重ねている行 */
   const [dragKey, setDragKey] = useState<string | null>(null);
@@ -336,8 +356,12 @@ export function DataTable<T>({
     return (Math.max(el.clientWidth, minTableWidth) - selectWidth) / dataSum;
   };
 
-  // 読み直したら選択は解除する（見えていない行を消してしまわないように）
-  useEffect(() => setSelected(new Set()), [rows]);
+  // 読み直したら選択は解除する（見えていない行を消してしまわないように）。
+  // 呼び出し側が持つ選択は、ページをまたいで選び続けるためのものなので消さない
+  const controlled = selection !== undefined;
+  useEffect(() => {
+    if (!controlled) setOwnSelected(new Set());
+  }, [rows, controlled]);
 
   /**
    * 行をダブルクリックしてから次の画面が出るまで、カーソルを砂時計にする。
@@ -367,17 +391,28 @@ export function DataTable<T>({
   const RowActionIcon = rowAction?.icon ?? Pencil;
 
   const visible = rows ?? [];
-  const allChecked = visible.length > 0 && visible.every((r) => selected.has(rowKey(r)));
-  const someChecked = visible.some((r) => selected.has(rowKey(r)));
+  /** 「絞り込みに当たる全件」を選んでいる状態。チェックは全部付いて動かせない */
+  const allMatching = selection?.all === true;
+  const allChecked =
+    allMatching || (visible.length > 0 && visible.every((r) => selected.has(rowKey(r))));
+  const someChecked = allMatching || visible.some((r) => selected.has(rowKey(r)));
 
   function toggleAll(checked: boolean) {
-    setSelected(checked ? new Set(visible.map(rowKey)) : new Set());
+    // 呼び出し側が持つ選択では、見えている行だけを足す・外す（他のページの選択は残す）
+    setSelected((prev) => {
+      const next = controlled ? new Set(prev) : new Set<string>();
+      for (const r of visible) {
+        if (checked) next.add(rowKey(r));
+        else next.delete(rowKey(r));
+      }
+      return next;
+    });
   }
 
   function toggleRow(key: string, checked: boolean) {
     // 1行しか選べない表では、前のチェックを外してから付ける
     if (singleSelect) {
-      setSelected(checked ? new Set([key]) : new Set());
+      setSelected(() => (checked ? new Set([key]) : new Set()));
       return;
     }
     setSelected((prev) => {
@@ -404,7 +439,7 @@ export function DataTable<T>({
     setDeleting(true);
     try {
       await bulkAction.run(targets);
-      setSelected(new Set());
+      setSelected(() => new Set());
     } finally {
       setDeleting(false);
     }
@@ -418,7 +453,7 @@ export function DataTable<T>({
     setDeleting(true);
     try {
       await onDeleteSelected(targets);
-      setSelected(new Set());
+      setSelected(() => new Set());
     } finally {
       setDeleting(false);
     }
@@ -552,7 +587,7 @@ export function DataTable<T>({
             {selected.size > 0 && `（${selected.size}）`}
           </Button>
         )}
-        {selected.size > 0 && (
+        {!controlled && selected.size > 0 && (
           <span className="text-muted-foreground text-sm">
             {m.table.selectedCount(selected.size)}
           </span>
@@ -669,6 +704,7 @@ export function DataTable<T>({
                       type="checkbox"
                       aria-label={m.table.selectAll}
                       checked={allChecked}
+                      disabled={allMatching}
                       ref={(el) => {
                         if (el) el.indeterminate = !allChecked && someChecked;
                       }}
@@ -821,7 +857,8 @@ export function DataTable<T>({
                       <input
                         type="checkbox"
                         aria-label={m.table.selectRow}
-                        checked={selected.has(key)}
+                        checked={allMatching || selected.has(key)}
+                        disabled={allMatching}
                         onChange={(e) => toggleRow(key, e.target.checked)}
                         // チェックのつもりでダブルクリックしても詳細が開かないようにする
                         onDoubleClick={(e) => e.stopPropagation()}
