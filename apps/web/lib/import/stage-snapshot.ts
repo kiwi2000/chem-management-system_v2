@@ -122,6 +122,172 @@ export async function stageSnapshot(snap: Snapshot, emit: Emit, ctx: StageContex
     }
   };
 
+  // ── 地域・国・元素・金属換算係数（法律の親と、判定に要るもの。古い写しには無い） ──
+  const regionMap = new Map(
+    (
+      await prisma.region.findMany({
+        where: { deletedAt: null },
+        select: {
+          codeNormalized: true,
+          nameJa: true,
+          nameEn: true,
+          displayOrder: true,
+          updatedBy: true,
+        },
+      })
+    ).map((r) => [r.codeNormalized, r]),
+  );
+  for (const r of snap.regions ?? []) {
+    const code = normalizeCode(r.code);
+    const cur = regionMap.get(code);
+    const base = {
+      kind: "region" as const,
+      keyPath: `region/${r.code}`,
+      label: r.nameJa || r.code,
+      payload: r,
+    };
+    if (!cur) {
+      await push({ ...base, action: "ADD", apply: true });
+      regionMap.set(code, { codeNormalized: code, ...r, updatedBy: null });
+    } else {
+      await push(
+        updateRow(
+          base,
+          diffFields(cur, r as unknown as Record<string, unknown>, [
+            "nameJa",
+            "nameEn",
+            "displayOrder",
+          ]),
+          cur.updatedBy,
+        ),
+      );
+    }
+  }
+  const countryRows = await prisma.country.findMany({
+    where: { deletedAt: null },
+    select: {
+      codeNormalized: true,
+      nameJa: true,
+      nameEn: true,
+      displayOrder: true,
+      updatedBy: true,
+      region: { select: { code: true } },
+    },
+  });
+  const countryMap = new Map(
+    countryRows.map((c) => [c.codeNormalized, { ...c, regionCode: c.region.code }]),
+  );
+  for (const c of snap.countries ?? []) {
+    const code = normalizeCode(c.code);
+    const cur = countryMap.get(code);
+    const base = {
+      kind: "country" as const,
+      keyPath: `country/${c.code}`,
+      label: c.nameJa || c.code,
+      payload: c,
+    };
+    if (!regionMap.has(normalizeCode(c.regionCode))) {
+      await push({
+        ...base,
+        action: "ERROR",
+        apply: false,
+        message: `地域「${c.regionCode}」がありません`,
+      });
+      continue;
+    }
+    if (!cur) {
+      await push({ ...base, action: "ADD", apply: true });
+      countryMap.set(code, {
+        codeNormalized: code,
+        region: { code: c.regionCode },
+        ...c,
+        updatedBy: null,
+      });
+    } else {
+      await push(
+        updateRow(
+          base,
+          diffFields(cur, c as unknown as Record<string, unknown>, [
+            "regionCode",
+            "nameJa",
+            "nameEn",
+            "displayOrder",
+          ]),
+          cur.updatedBy,
+        ),
+      );
+    }
+  }
+  const elementMap = new Map(
+    (
+      await prisma.element.findMany({
+        where: { deletedAt: null },
+        select: { symbol: true, atomicNumber: true, nameJa: true, nameEn: true, updatedBy: true },
+      })
+    ).map((e) => [e.symbol, e]),
+  );
+  for (const e of snap.elements ?? []) {
+    const cur = elementMap.get(e.symbol);
+    const base = {
+      kind: "element" as const,
+      keyPath: `element/${e.symbol}`,
+      label: `${e.symbol} ${e.nameJa}`,
+      payload: e,
+    };
+    if (!cur) await push({ ...base, action: "ADD", apply: true });
+    else
+      await push(
+        updateRow(
+          base,
+          diffFields(cur, e as unknown as Record<string, unknown>, [
+            "atomicNumber",
+            "nameJa",
+            "nameEn",
+          ]),
+          cur.updatedBy,
+        ),
+      );
+  }
+  if (snap.metalFactors && snap.metalFactors.length > 0) {
+    const factorMap = new Map(
+      (
+        await prisma.metalConversionFactor.findMany({
+          where: { deletedAt: null },
+          select: {
+            casNormalized: true,
+            metalElement: true,
+            casNumber: true,
+            ratioPct: true,
+            note: true,
+            updatedBy: true,
+          },
+        })
+      ).map((f) => [`${f.casNormalized}/${f.metalElement}`, f]),
+    );
+    for (const f of snap.metalFactors) {
+      const cur = factorMap.get(`${normalizeCas(f.cas)}/${f.element}`);
+      const base = {
+        kind: "factor" as const,
+        keyPath: `factor/${f.cas}/${f.element}`,
+        label: `${f.casNumber} → ${f.element}`,
+        payload: f,
+      };
+      if (!cur) await push({ ...base, action: "ADD", apply: true });
+      else
+        await push(
+          updateRow(
+            base,
+            diffFields(
+              { casNumber: cur.casNumber, ratioPct: cur.ratioPct, note: cur.note },
+              f as unknown as Record<string, unknown>,
+              ["casNumber", "ratioPct", "note"],
+            ),
+            cur.updatedBy,
+          ),
+        );
+    }
+  }
+
   // ── データソースとバージョン ──
   const sources = await prisma.source.findMany({
     where: { deletedAt: null },
@@ -182,7 +348,15 @@ export async function stageSnapshot(snap: Snapshot, emit: Emit, ctx: StageContex
     const two = ALPHA2[c.codeNormalized];
     if (two) countryByKey.set(two, c.code);
   }
-  const countryList = countries.map((c) => c.code).join(", ");
+  for (const c of snap.countries ?? []) {
+    // この写しで足す国も当てられるようにする（空の DB に取り込むとき）
+    if (!countryByKey.has(normalizeCode(c.code))) countryByKey.set(normalizeCode(c.code), c.code);
+    if (c.nameJa && !countryByKey.has(normalizeCode(c.nameJa)))
+      countryByKey.set(normalizeCode(c.nameJa), c.code);
+  }
+  const countryList = [
+    ...new Set([...countries.map((c) => c.code), ...(snap.countries ?? []).map((c) => c.code)]),
+  ].join(", ");
   const laws = await prisma.law.findMany({
     where: { deletedAt: null },
     select: {

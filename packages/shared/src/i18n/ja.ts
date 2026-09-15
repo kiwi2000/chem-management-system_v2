@@ -1945,6 +1945,10 @@ export const ja = {
       ERROR: "読めなかった行。理由は右の列に出ます",
     },
     rowKinds: {
+      region: "地域",
+      country: "国",
+      element: "元素",
+      factor: "金属換算係数",
       source: "データソース",
       version: "バージョン",
       law: "法律",

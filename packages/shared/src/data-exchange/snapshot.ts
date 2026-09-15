@@ -97,6 +97,40 @@ export interface LawSnap {
   categories: CategorySnap[];
 }
 
+/** 地域（国内・EU加盟国など）。法律の国が属する */
+export interface RegionSnap {
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  displayOrder: number;
+}
+
+/** 国。法律の親 */
+export interface CountrySnap {
+  code: string;
+  regionCode: string;
+  nameJa: string;
+  nameEn: string | null;
+  displayOrder: number;
+}
+
+/** 元素（金属換算の換算先）。鍵は元素記号 */
+export interface ElementSnap {
+  symbol: string;
+  atomicNumber: number;
+  nameJa: string;
+  nameEn: string;
+}
+
+/** 金属換算係数。鍵は CAS × 元素 */
+export interface MetalFactorSnap {
+  cas: string;
+  casNumber: string;
+  element: string;
+  ratioPct: string;
+  note: string | null;
+}
+
 export interface Snapshot {
   format: SnapshotFormat;
   takenAt: string;
@@ -105,6 +139,15 @@ export interface Snapshot {
   versions: { code: string; asOf: string; isCurrent: boolean }[];
   sources: { code: string }[];
   laws: LawSnap[];
+  /**
+   * 法律が指す地域・国と、判定に要る元素・金属換算係数（2026-09-15 追加）。
+   * **空の DB に取り込めるように**入れる（無いと法律が「国がありません」で全部読めない。評価機で実際に起きた）。
+   * 古い写しには無いので任意
+   */
+  regions?: RegionSnap[];
+  countries?: CountrySnap[];
+  elements?: ElementSnap[];
+  metalFactors?: MetalFactorSnap[];
 }
 
 /**
@@ -126,6 +169,8 @@ export const DISPLAY_FIELDS: ReadonlySet<string> = new Set([
   "casNumber",
   "text",
   "textJa",
+  "regionCode",
+  "atomicNumber",
 ]);
 
 export const JUDGEMENT_FIELDS: ReadonlySet<string> = new Set([
@@ -144,6 +189,7 @@ export const JUDGEMENT_FIELDS: ReadonlySet<string> = new Set([
   "rank",
   "score",
   "excluded",
+  "ratioPct",
 ]);
 
 export function impactOfField(field: string): "display" | "judgement" {
@@ -178,6 +224,9 @@ export const FIELD_LABELS_JA: Record<string, string> = {
   rank: "rank",
   score: "スコア",
   excluded: "非該当",
+  regionCode: "地域",
+  atomicNumber: "元素番号",
+  ratioPct: "換算係数（%）",
 };
 
 /** 受け取った JSON がこの形かどうか（中身の細かい検証は取り込みの側で行う） */

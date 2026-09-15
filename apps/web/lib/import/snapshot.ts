@@ -11,6 +11,72 @@
 import type { PrismaClient } from "@prisma/client";
 import { SNAPSHOT_FORMAT, type LinkSnap, type Snapshot, type SnapshotFormat } from "@chem/shared";
 
+/** 地域・国・元素・金属換算係数。法律の親と、判定に要るもの。空の DB に取り込めるように写しに入れる */
+async function takeMasters(prisma: PrismaClient) {
+  const [regions, countries, elements, factors] = await Promise.all([
+    prisma.region.findMany({
+      where: { deletedAt: null },
+      orderBy: { displayOrder: "asc" },
+      select: { code: true, nameJa: true, nameEn: true, displayOrder: true },
+    }),
+    prisma.country.findMany({
+      where: { deletedAt: null },
+      orderBy: { displayOrder: "asc" },
+      select: {
+        code: true,
+        nameJa: true,
+        nameEn: true,
+        displayOrder: true,
+        region: { select: { code: true } },
+      },
+    }),
+    prisma.element.findMany({
+      where: { deletedAt: null },
+      orderBy: { atomicNumber: "asc" },
+      select: { symbol: true, atomicNumber: true, nameJa: true, nameEn: true },
+    }),
+    prisma.metalConversionFactor.findMany({
+      where: { deletedAt: null },
+      orderBy: [{ casNormalized: "asc" }, { metalElement: "asc" }],
+      select: {
+        casNumber: true,
+        casNormalized: true,
+        metalElement: true,
+        ratioPct: true,
+        note: true,
+      },
+    }),
+  ]);
+  return {
+    regions: regions.map((r) => ({
+      code: r.code,
+      nameJa: r.nameJa,
+      nameEn: r.nameEn,
+      displayOrder: r.displayOrder,
+    })),
+    countries: countries.map((c) => ({
+      code: c.code,
+      regionCode: c.region.code,
+      nameJa: c.nameJa,
+      nameEn: c.nameEn,
+      displayOrder: c.displayOrder,
+    })),
+    elements: elements.map((e) => ({
+      symbol: e.symbol,
+      atomicNumber: e.atomicNumber,
+      nameJa: e.nameJa,
+      nameEn: e.nameEn,
+    })),
+    metalFactors: factors.map((f) => ({
+      cas: f.casNormalized,
+      casNumber: f.casNumber,
+      element: f.metalElement,
+      ratioPct: f.ratioPct.toString(),
+      note: f.note,
+    })),
+  };
+}
+
 const day = (v: Date | null) => (v ? v.toISOString().slice(0, 10) : null);
 
 /**
@@ -158,10 +224,12 @@ export async function takeSnapshot(
     cursor = rows[rows.length - 1]?.id;
   }
 
+  const masters = await takeMasters(prisma);
   return {
     format,
     takenAt: new Date().toISOString(),
     label,
+    ...masters,
     versions: versions.map((v) => ({
       code: v.code,
       asOf: day(v.asOf) ?? "",

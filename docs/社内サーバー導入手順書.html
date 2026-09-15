@@ -1136,7 +1136,7 @@ Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
           <tr><td class="k">前</td><td>利用者に「何時から何分止まる／判定が一時的に古くなる」と知らせる。判定し直しが走っている最中でないことを確かめる（システム設定 › 法規制の判定）</td><td colspan="2">—</td></tr>
           <tr><td class="k">前</td><td><b>バックアップを取る</b>（更新に失敗したとき、ここに戻します）</td><td><code>cd /opt/chem &amp;&amp; ./scripts/backup-db.sh</code></td><td><code>update.ps1</code> が自動で取ります。データだけの更新のときは <code>powershell -ExecutionPolicy Bypass -File C:\chem\scripts\backup-db.ps1</code></td></tr>
           <tr><td class="k">後</td><td>ログインして、ユーザーマニュアルの<b>「変更履歴」の先頭</b>が新しい版になっていることを見る（プログラムの更新のとき）</td><td colspan="2">ブラウザで</td></tr>
-          <tr><td class="k">後</td><td>アプリが動いていることを確かめる</td><td><code>docker compose -f compose.prod.yml --env-file .env.prod ps</code>（3 つとも running）</td><td><code>powershell -ExecutionPolicy Bypass -File C:\chem\scripts\check.ps1</code>（Running と 200）</td></tr>
+          <tr><td class="k">後</td><td>アプリが動いていることを確かめる</td><td><code>docker compose -f compose.prod.yml --env-file .env.prod ps</code>（3 つとも running）</td><td><code>powershell -ExecutionPolicy Bypass -File C:\chem\deploy\windows\check.ps1</code>（Running と 200）</td></tr>
           <tr><td class="k">後</td><td>判定し直しが要る場合は、<b>システム設定 › 法規制の判定 › 「全製品を判定し直す」</b>を押し、左のメニューの「要再計算」が消えるまで待つ（数百製品で数分）</td><td colspan="2">ブラウザで（システム管理者）</td></tr>
         </tbody>
       </table>

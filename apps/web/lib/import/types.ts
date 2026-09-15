@@ -9,6 +9,10 @@ import type { ImportAction } from "@prisma/client";
 
 /** 一時領域の行の種類（ImportRow.kind） */
 export type RowKind =
+  | "region"
+  | "country"
+  | "element"
+  | "factor"
   | "source"
   | "version"
   | "law"

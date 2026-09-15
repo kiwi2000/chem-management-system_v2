@@ -225,6 +225,115 @@ async function applyRegulation(jobId: string, kind: ImportKind, h: Hooks) {
     );
   }
 
+  // 地域 → 国 → 元素 → 金属換算係数（法律より先。空の DB に取り込めるように）
+  const regions = new Map(
+    (await prisma.region.findMany({ select: { id: true, codeNormalized: true } })).map((r) => [
+      r.codeNormalized,
+      r.id,
+    ]),
+  );
+  for await (const page of rowsOf(jobId, "region")) {
+    for (const row of page) {
+      const p = row.payload as {
+        code: string;
+        nameJa: string;
+        nameEn: string | null;
+        displayOrder: number;
+      };
+      const codeN = normalizeCode(p.code);
+      const data = { nameJa: p.nameJa, nameEn: p.nameEn, displayOrder: p.displayOrder };
+      const id = regions.get(codeN);
+      if (!id) {
+        const r = await prisma.region.create({
+          data: { code: p.code, codeNormalized: codeN, ...data, ...audit },
+        });
+        regions.set(codeN, r.id);
+      } else {
+        await prisma.region.update({ where: { id }, data: { ...data, updatedBy: by } });
+      }
+      h.count("region");
+    }
+    await h.tick(page.length);
+  }
+  for await (const page of rowsOf(jobId, "country")) {
+    for (const row of page) {
+      const p = row.payload as {
+        code: string;
+        regionCode: string;
+        nameJa: string;
+        nameEn: string | null;
+        displayOrder: number;
+      };
+      const codeN = normalizeCode(p.code);
+      const regionId = regions.get(normalizeCode(p.regionCode));
+      if (!regionId) {
+        await h.fail(row, `地域「${p.regionCode}」がありません`);
+        continue;
+      }
+      const data = { regionId, nameJa: p.nameJa, nameEn: p.nameEn, displayOrder: p.displayOrder };
+      const id = countries.get(codeN);
+      if (!id) {
+        const c = await prisma.country.create({
+          data: { code: p.code, codeNormalized: codeN, ...data, ...audit },
+        });
+        countries.set(codeN, c.id);
+      } else {
+        await prisma.country.update({ where: { id }, data: { ...data, updatedBy: by } });
+      }
+      h.count("country");
+    }
+    await h.tick(page.length);
+  }
+  for await (const page of rowsOf(jobId, "element")) {
+    for (const row of page) {
+      const p = row.payload as {
+        symbol: string;
+        atomicNumber: number;
+        nameJa: string;
+        nameEn: string;
+      };
+      await prisma.element.upsert({
+        where: { symbol: p.symbol },
+        create: {
+          symbol: p.symbol,
+          atomicNumber: p.atomicNumber,
+          nameJa: p.nameJa,
+          nameEn: p.nameEn,
+          ...audit,
+        },
+        update: { atomicNumber: p.atomicNumber, nameJa: p.nameJa, nameEn: p.nameEn, updatedBy: by },
+      });
+      h.count("element");
+    }
+    await h.tick(page.length);
+  }
+  for await (const page of rowsOf(jobId, "factor")) {
+    for (const row of page) {
+      const p = row.payload as {
+        cas: string;
+        casNumber: string;
+        element: string;
+        ratioPct: string;
+        note: string | null;
+      };
+      const casN = normalizeCas(p.cas);
+      await prisma.metalConversionFactor.upsert({
+        where: { casNormalized_metalElement: { casNormalized: casN, metalElement: p.element } },
+        create: {
+          casNumber: p.casNumber,
+          casNormalized: casN,
+          metalElement: p.element,
+          ratioPct: p.ratioPct,
+          note: p.note,
+          ...audit,
+        },
+        update: { casNumber: p.casNumber, ratioPct: p.ratioPct, note: p.note, updatedBy: by },
+      });
+      h.count("factor");
+    }
+    await h.tick(page.length);
+  }
+
   for await (const page of rowsOf(jobId, "source")) {
     for (const row of page) {
       const p = row.payload as { code: string };

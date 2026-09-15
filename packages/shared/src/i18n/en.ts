@@ -1888,6 +1888,10 @@ export const en: Messages = {
       ERROR: "Could not be read. The reason is in the last column",
     },
     rowKinds: {
+      region: "Region",
+      country: "Country",
+      element: "Element",
+      factor: "Metal conversion factor",
       source: "Data source",
       version: "Version",
       law: "Law",
