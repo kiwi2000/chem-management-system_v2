@@ -71,6 +71,9 @@ export const FIELD_LABELS: Record<string, string> = FIELD_LABELS_JA;
 
 const str = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
 
+/** 法文物質名では空にできる（空＝区分の既定値に従う。2026-09-16）。空と "0" は別の意味 */
+const THRESHOLD_FIELDS = new Set(["thresholdLower", "lowerBound", "thresholdUpper", "upperBound"]);
+
 function impactOfField(field: string): Impact {
   if (JUDGEMENT_FIELDS.has(field)) return "judgement";
   if (DISPLAY_FIELDS.has(field)) return "display";
@@ -154,7 +157,12 @@ export function compare(customer: Snapshot, base: Snapshot, next: Snapshot | nul
         next: n ? nv : "",
         impact: impactOfField(field),
         conflict,
-        remark: field === "officialNumber" ? "取り込みの突き合わせには使わない（鍵はコード）" : "",
+        remark:
+          field === "officialNumber"
+            ? "取り込みの突き合わせには使わない（鍵はコード）"
+            : kind === "substance" && THRESHOLD_FIELDS.has(field) && (cv === "" || bv === "")
+              ? "空欄は区分の既定値に従う（値が入っていれば、その値が優先）"
+              : "",
       });
     }
   }

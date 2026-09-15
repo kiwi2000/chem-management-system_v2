@@ -1,4 +1,11 @@
+import {
+  effectiveThreshold,
+  type Messages,
+  type OwnThreshold,
+  type ThresholdBound,
+} from "@chem/shared";
 import type { Prisma } from "@prisma/client";
+import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import type {
   LawDto,
@@ -120,9 +127,53 @@ export function toClassDto(c: ClassRow): RegulationClassDto {
   };
 }
 
+/** 区分の閾値。法文物質名の空の欄を埋める既定値なので、いつも一緒に引く */
+export const CATEGORY_THRESHOLD_SELECT = {
+  thresholdLower: true,
+  lowerBound: true,
+  thresholdUpper: true,
+  upperBound: true,
+} satisfies Prisma.RegulationCategorySelect;
+
 export const SUBSTANCE_INCLUDE = {
   _count: { select: { links: true } },
+  regulationClass: { select: { category: { select: CATEGORY_THRESHOLD_SELECT } } },
 } satisfies Prisma.StatutorySubstanceInclude;
+
+type CategoryThresholdRow = {
+  thresholdLower: { toString(): string };
+  lowerBound: ThresholdBound;
+  thresholdUpper: { toString(): string };
+  upperBound: ThresholdBound;
+};
+
+/** DB の区分の行から、閾値の4欄を文字で取り出す */
+export function categoryThresholdOf(c: CategoryThresholdRow) {
+  return {
+    thresholdLower: c.thresholdLower.toString(),
+    lowerBound: c.lowerBound,
+    thresholdUpper: c.thresholdUpper.toString(),
+    upperBound: c.upperBound,
+  };
+}
+
+/**
+ * 法文物質名の閾値の並び（下限 ≤ 上限）を、空の欄を区分で埋めたうえで見る。
+ * 入力の検査（Zod）は両方入っているときしか比べられないので、区分が分かるここで見る。
+ * 崩れていれば、画面がそのまま出せる 400 を返す
+ */
+export function thresholdOrderError(
+  own: OwnThreshold,
+  category: CategoryThresholdRow,
+  m: Messages,
+): Response | null {
+  const t = effectiveThreshold(own, categoryThresholdOf(category));
+  if (Number(t.thresholdLower) <= Number(t.thresholdUpper)) return null;
+  return jsonError(400, "validation_error", m.errors.validation, {
+    formErrors: [],
+    fieldErrors: { thresholdUpper: [m.validation.thresholdOrder] },
+  });
+}
 
 type SubstanceRow = Prisma.StatutorySubstanceGetPayload<{ include: typeof SUBSTANCE_INCLUDE }>;
 
@@ -138,10 +189,11 @@ export function toStatutorySubstanceDto(s: SubstanceRow): StatutorySubstanceDto 
     nameLang: s.nameLang,
     nameJa: s.nameJa,
     nameEn: s.nameEn,
-    thresholdLower: s.thresholdLower.toString(),
+    thresholdLower: s.thresholdLower?.toString() ?? null,
     lowerBound: s.lowerBound,
-    thresholdUpper: s.thresholdUpper.toString(),
+    thresholdUpper: s.thresholdUpper?.toString() ?? null,
     upperBound: s.upperBound,
+    categoryThreshold: categoryThresholdOf(s.regulationClass.category),
     effectiveFrom: toDate(s.effectiveFrom),
     effectiveTo: toDate(s.effectiveTo),
     displayOrder: s.displayOrder,

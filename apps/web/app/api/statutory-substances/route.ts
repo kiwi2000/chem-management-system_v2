@@ -8,7 +8,12 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { SUBSTANCE_INCLUDE, toStatutorySubstanceDto } from "@/lib/law-service";
+import {
+  CATEGORY_THRESHOLD_SELECT,
+  SUBSTANCE_INCLUDE,
+  thresholdOrderError,
+  toStatutorySubstanceDto,
+} from "@/lib/law-service";
 import { STATUTORY_SUBSTANCE_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
@@ -69,8 +74,13 @@ export async function POST(req: Request) {
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
 
-  const cls = await prisma.regulationClass.findFirst({ where: { id: v.classId, deletedAt: null } });
+  const cls = await prisma.regulationClass.findFirst({
+    where: { id: v.classId, deletedAt: null },
+    include: { category: { select: CATEGORY_THRESHOLD_SELECT } },
+  });
   if (!cls) return jsonError(404, "not_found", m.errors.notFound);
+  const orderError = thresholdOrderError(v, cls.category, m);
+  if (orderError) return orderError;
 
   const live = await prisma.statutorySubstance.findFirst({
     where: { classId: v.classId, codeNormalized, deletedAt: null },

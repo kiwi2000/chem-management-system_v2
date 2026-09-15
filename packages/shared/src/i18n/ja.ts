@@ -718,7 +718,12 @@ export const ja = {
     nameJa: "名称（日本語）",
     nameEn: "名称（英語）",
     threshold: "閾値",
-    thresholdHint: "判定はこの4つだけを読みます",
+    thresholdHint:
+      "空欄の欄は区分の既定値に従います（区分を直せば伝わります）。判定はこの4つだけを読みます",
+    /** 入力欄の横に出す、区分の閾値の見出し */
+    categoryDefault: "区分の既定値",
+    /** 一覧・見出しで、区分の値で埋めた閾値に付ける印 */
+    fromCategory: "（区分）",
     lower: "下限値",
     upper: "上限値",
     effectiveFrom: "適用開始日",
@@ -1976,6 +1981,8 @@ export const ja = {
     uncheckAll: "表示中の種類・動きを全部外す",
     diffArrow: "→",
     empty: "（空）",
+    /** 法文物質名の閾値が空のとき（区分の既定値に従う） */
+    categoryDefault: "（区分の既定値）",
     /** 進み具合 */
     progress: (pct: number) => `処理中... ${pct}%`,
     running: "処理が走っています。終わると表示が変わります",

@@ -284,9 +284,10 @@ export async function takeSnapshot(
             nameJa: s.nameJa,
             nameEn: s.nameEn,
             displayOrder: s.displayOrder,
-            thresholdLower: s.thresholdLower.toString(),
+            // 空の欄は空のまま運ぶ（取り込み先でも区分の既定値に従う）
+            thresholdLower: s.thresholdLower?.toString() ?? null,
             lowerBound: s.lowerBound,
-            thresholdUpper: s.thresholdUpper.toString(),
+            thresholdUpper: s.thresholdUpper?.toString() ?? null,
             upperBound: s.upperBound,
             aggregation: s.aggregation,
             metalEtc: s.metalEtc,

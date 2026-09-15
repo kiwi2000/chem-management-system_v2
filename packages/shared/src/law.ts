@@ -8,9 +8,9 @@ import type { Messages } from "./i18n/ja";
  * 名称はどの段も「原文・原文の言語・日本語・英語」の4つで持つ。
  * 中国や韓国の法律は原文が現地語で、日本語訳が無いこともあるため。
  *
- * 閾値は4欄（下限値・下限の境目・上限値・上限の境目）で、すべて必須。
- * 空欄という状態を作らないことで、「空欄をどう読むか」という暗黙の規則を消してある。
- * 区分が持つのは**ひな型**で、判定に使うのは法文物質名の側だけ。
+ * 閾値は4欄（下限値・下限の境目・上限値・上限の境目）。区分では4欄とも必須。
+ * 法文物質名では欄ごとに空にでき、**空の欄は区分の値に従う**（区分の閾値が既定値。2026-09-16）。
+ * 判定に使うのは、区分の値で埋めた法文物質名の閾値（`effectiveThreshold`）。
  */
 
 /** 閾値の境目。下限では 超/以上、上限では 未満/以下 を表す */
@@ -64,9 +64,14 @@ const thresholdFields = (m: Messages) => ({
   upperBound: z.enum(THRESHOLD_BOUNDS),
 });
 
+/** 下限が上限を超えていたら弾く。空（区分に従う）の側があるときは、ここでは比べない（区分の値は API 側で見る） */
 const withThresholdOrder = <T extends z.ZodTypeAny>(schema: T, m: Messages) =>
-  schema.superRefine((v: { thresholdLower: string; thresholdUpper: string }, ctx) => {
-    if (Number(v.thresholdLower) > Number(v.thresholdUpper)) {
+  schema.superRefine((v: { thresholdLower: string | null; thresholdUpper: string | null }, ctx) => {
+    if (
+      v.thresholdLower !== null &&
+      v.thresholdUpper !== null &&
+      Number(v.thresholdLower) > Number(v.thresholdUpper)
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["thresholdUpper"],
@@ -74,6 +79,51 @@ const withThresholdOrder = <T extends z.ZodTypeAny>(schema: T, m: Messages) =>
       });
     }
   });
+
+/**
+ * 法文物質名の閾値の4欄。**空は「区分の既定値に従う」**（2026-09-16）。
+ * 空文字・未指定・null はすべて null にそろえる
+ */
+const blankToNull = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((v) => (v === "" || v === undefined ? null : v), schema.nullable());
+const substanceThresholdFields = (m: Messages) => ({
+  thresholdLower: blankToNull(pct(m)),
+  lowerBound: blankToNull(z.enum(THRESHOLD_BOUNDS)),
+  thresholdUpper: blankToNull(pct(m)),
+  upperBound: blankToNull(z.enum(THRESHOLD_BOUNDS)),
+});
+
+/** 閾値の4欄（値と不等号）。法文物質名では欄ごとに null＝区分に従う */
+export interface ThresholdValues {
+  thresholdLower: string;
+  lowerBound: ThresholdBound;
+  thresholdUpper: string;
+  upperBound: ThresholdBound;
+}
+export type OwnThreshold = { [K in keyof ThresholdValues]: ThresholdValues[K] | null };
+
+/**
+ * 法文物質名の実効の閾値。**空の欄は区分の値で埋める。**
+ * 判定・一覧・書き出しのどこでも、閾値を読むときはこれを通す。
+ * `fromCategory` は欄ごとに「区分の値を使った」印（画面で灰色に出すため）
+ */
+export function effectiveThreshold(
+  own: OwnThreshold,
+  category: ThresholdValues,
+): ThresholdValues & { fromCategory: { [K in keyof ThresholdValues]: boolean } } {
+  return {
+    thresholdLower: own.thresholdLower ?? category.thresholdLower,
+    lowerBound: own.lowerBound ?? category.lowerBound,
+    thresholdUpper: own.thresholdUpper ?? category.thresholdUpper,
+    upperBound: own.upperBound ?? category.upperBound,
+    fromCategory: {
+      thresholdLower: own.thresholdLower === null,
+      lowerBound: own.lowerBound === null,
+      thresholdUpper: own.thresholdUpper === null,
+      upperBound: own.upperBound === null,
+    },
+  };
+}
 
 export const lawSchema = (m: Messages) =>
   z.object({
@@ -159,7 +209,7 @@ export const statutorySubstanceSchema = (m: Messages) =>
       classId: z.string().trim().min(1, m.validation.required),
       officialNumber: optionalText(m, 50),
       ...nameFields(m),
-      ...thresholdFields(m),
+      ...substanceThresholdFields(m),
       displayOrder: displayOrder(),
       /**
        * 適用開始日・適用終了日。該非は変えない。開始日が今日より後なら判定に「施行前」と出る。
@@ -192,11 +242,15 @@ export function formatThreshold(
   upper: string,
   upperBound: ThresholdBound,
 ): string {
-  const trim = (v: string) => (v.includes(".") ? v.replace(/0+$/, "").replace(/\.$/, "") : v);
-  const lo = lowerBound === "INCLUSIVE" ? "≤" : "<";
-  const hi = upperBound === "INCLUSIVE" ? "≤" : "<";
-  return `${trim(lower)} ${lo} x ${hi} ${trim(upper)}`;
+  return `${trimPct(lower)} ${boundSign(lowerBound)} x ${boundSign(upperBound)} ${trimPct(upper)}`;
 }
+
+/** 含有率の末尾の 0 を落とす（"1.500000" → "1.5"） */
+export const trimPct = (v: string) =>
+  v.includes(".") ? v.replace(/0+$/, "").replace(/\.$/, "") : v;
+
+/** 不等号の記号。下限でも上限でも同じ記号（x を真ん中に置いて読む） */
+export const boundSign = (b: ThresholdBound) => (b === "INCLUSIVE" ? "≤" : "<");
 
 /**
  * 名称の出し分け。**見ている言語の訳 → 原文 → もう一方の訳** の順に、あるものを出す。

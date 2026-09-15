@@ -1,4 +1,4 @@
-import type { ConditionalLinkMode } from "@chem/shared";
+import { effectiveThreshold, type ConditionalLinkMode, type ThresholdBound } from "@chem/shared";
 import { prisma } from "@/lib/db";
 import { effectiveLinks } from "@/lib/link-priority";
 import { judge, type ElementFactors, type JudgeEntry, type JudgeResult } from "@/lib/judge-calc";
@@ -40,6 +40,40 @@ export interface CategoryRule {
   categoryId: string;
   category: Parameters<typeof judge>[0]["category"];
   entries: JudgeEntry[];
+}
+
+type ThresholdRow<TNull> = {
+  thresholdLower: { toString(): string } | TNull;
+  lowerBound: ThresholdBound | TNull;
+  thresholdUpper: { toString(): string } | TNull;
+  upperBound: ThresholdBound | TNull;
+};
+
+/**
+ * 法文物質名の実効の閾値。**空の欄は区分の値で埋める**（区分の閾値が既定値。2026-09-16）。
+ * 判定はここを通した値だけを読む
+ */
+export function substanceThreshold(s: ThresholdRow<null>, c: ThresholdRow<never>) {
+  const t = effectiveThreshold(
+    {
+      thresholdLower: s.thresholdLower?.toString() ?? null,
+      lowerBound: s.lowerBound,
+      thresholdUpper: s.thresholdUpper?.toString() ?? null,
+      upperBound: s.upperBound,
+    },
+    {
+      thresholdLower: c.thresholdLower.toString(),
+      lowerBound: c.lowerBound,
+      thresholdUpper: c.thresholdUpper.toString(),
+      upperBound: c.upperBound,
+    },
+  );
+  return {
+    lower: t.thresholdLower,
+    lowerBound: t.lowerBound,
+    upper: t.thresholdUpper,
+    upperBound: t.upperBound,
+  };
 }
 
 /**
@@ -182,12 +216,8 @@ export async function loadRules(
         sourcesOf: sourcesOf.get(s.id) ?? {},
         aggregation: s.aggregation,
         metalEtc: s.metalEtc,
-        threshold: {
-          lower: s.thresholdLower.toString(),
-          lowerBound: s.lowerBound,
-          upper: s.thresholdUpper.toString(),
-          upperBound: s.upperBound,
-        },
+        // 空の欄は区分の閾値に従う（区分の閾値が既定値）
+        threshold: substanceThreshold(s, c),
         /*
           **適用条件が書いてあれば、当たったときは必ず要確認。**
           条件は法律の側で決まっているので、

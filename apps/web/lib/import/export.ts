@@ -140,9 +140,10 @@ export async function exportRegulationList(filter: RegulationListFilter): Promis
               sub.code,
               sub.nameJa ?? sub.nameOriginal,
               l.casNumber,
-              sub.thresholdLower.toString(),
+              // 空の欄は空で出す（読み戻したときも区分の既定値に従う）
+              sub.thresholdLower?.toString() ?? null,
               sub.lowerBound,
-              sub.thresholdUpper.toString(),
+              sub.thresholdUpper?.toString() ?? null,
               sub.upperBound,
               sub.applicableCondition,
               l.excluded ? "1" : "",

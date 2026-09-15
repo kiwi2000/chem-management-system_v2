@@ -3,6 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { CATEGORY_THRESHOLD_SELECT, thresholdOrderError } from "@/lib/law-service";
 
 export const dynamic = "force-dynamic";
 
@@ -33,8 +34,13 @@ export async function PUT(req: Request, { params }: Ctx) {
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
 
-  const cls = await prisma.regulationClass.findFirst({ where: { id: v.classId, deletedAt: null } });
+  const cls = await prisma.regulationClass.findFirst({
+    where: { id: v.classId, deletedAt: null },
+    include: { category: { select: CATEGORY_THRESHOLD_SELECT } },
+  });
   if (!cls) return jsonError(404, "not_found", m.errors.notFound);
+  const orderError = thresholdOrderError(v, cls.category, m);
+  if (orderError) return orderError;
 
   if (codeNormalized !== existing.codeNormalized || v.classId !== existing.classId) {
     const clash = await prisma.statutorySubstance.findFirst({

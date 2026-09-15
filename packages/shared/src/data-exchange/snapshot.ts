@@ -35,10 +35,11 @@ export interface SubstanceSnap {
   nameJa: string | null;
   nameEn: string | null;
   displayOrder: number;
-  thresholdLower: string;
-  lowerBound: string;
-  thresholdUpper: string;
-  upperBound: string;
+  /** 閾値。**null の欄は区分の既定値に従う**（2026-09-16。古い写しは4欄とも入っている） */
+  thresholdLower: string | null;
+  lowerBound: string | null;
+  thresholdUpper: string | null;
+  upperBound: string | null;
   aggregation: string;
   metalEtc: string | null;
   effectiveFrom: string | null;

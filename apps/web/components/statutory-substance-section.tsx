@@ -2,7 +2,6 @@
 
 import {
   emptyTableState,
-  formatThreshold,
   pickStatutoryName,
   serializeTableState,
   type TableState,
@@ -18,6 +17,7 @@ import {
   Field,
   NameFields,
   ThresholdFields,
+  ThresholdText,
   type NameDraft,
   type ThresholdDraft,
 } from "@/components/law-fields";
@@ -58,7 +58,11 @@ const EMPTY: Draft = {
   nameLang: "",
   nameJa: "",
   nameEn: "",
-  ...DEFAULT_THRESHOLD,
+  // 閾値は空＝区分の既定値に従う（2026-09-16）。新しく作るときは写さず空のまま
+  thresholdLower: "",
+  lowerBound: "",
+  thresholdUpper: "",
+  upperBound: "",
   displayOrder: 0,
   effectiveFrom: "",
   effectiveTo: "",
@@ -158,12 +162,18 @@ export function StatutorySubstanceSection({
         key: "threshold",
         header: m.statutorySubstances.threshold,
         kind: "text",
-        width: 130,
+        // 「（区分）」の印まで入る幅
+        width: 190,
         sortable: false,
         filterable: false,
-        className: "text-muted-foreground font-mono text-xs",
-        render: (s) =>
-          formatThreshold(s.thresholdLower, s.lowerBound, s.thresholdUpper, s.upperBound),
+        className: "text-muted-foreground text-xs",
+        render: (s) => (
+          <ThresholdText
+            own={s}
+            category={s.categoryThreshold}
+            fromCategoryLabel={m.statutorySubstances.fromCategory}
+          />
+        ),
       },
       {
         key: "applicableCondition",
@@ -425,14 +435,10 @@ export function StatutorySubstanceSection({
 
   function startNew() {
     setError(null);
-    // 閾値は区分の既定を複写する。以後この行だけで完結し、区分を変えても伝わらない
+    // 閾値は空のまま（区分の既定値に従う）。区分を後から直せば、空の欄には伝わる
     setDraft({
       ...EMPTY,
       nameLang: languages[0]?.code ?? "",
-      thresholdLower: category?.thresholdLower ?? DEFAULT_THRESHOLD.thresholdLower,
-      lowerBound: category?.lowerBound ?? DEFAULT_THRESHOLD.lowerBound,
-      thresholdUpper: category?.thresholdUpper ?? DEFAULT_THRESHOLD.thresholdUpper,
-      upperBound: category?.upperBound ?? DEFAULT_THRESHOLD.upperBound,
       displayOrder: (data?.total ?? 0) + 1,
     });
     setEditingId("new");
@@ -447,10 +453,10 @@ export function StatutorySubstanceSection({
       nameLang: s.nameLang,
       nameJa: s.nameJa ?? "",
       nameEn: s.nameEn ?? "",
-      thresholdLower: s.thresholdLower,
-      lowerBound: s.lowerBound,
-      thresholdUpper: s.thresholdUpper,
-      upperBound: s.upperBound,
+      thresholdLower: s.thresholdLower ?? "",
+      lowerBound: s.lowerBound ?? "",
+      thresholdUpper: s.thresholdUpper ?? "",
+      upperBound: s.upperBound ?? "",
       displayOrder: s.displayOrder,
       effectiveFrom: s.effectiveFrom ?? "",
       effectiveTo: s.effectiveTo ?? "",
@@ -480,10 +486,11 @@ export function StatutorySubstanceSection({
             nameLang: draft.nameLang,
             nameJa: draft.nameJa || null,
             nameEn: draft.nameEn || null,
-            thresholdLower: draft.thresholdLower,
-            lowerBound: draft.lowerBound,
-            thresholdUpper: draft.thresholdUpper,
-            upperBound: draft.upperBound,
+            // 空は null（区分の既定値に従う）
+            thresholdLower: draft.thresholdLower || null,
+            lowerBound: draft.lowerBound || null,
+            thresholdUpper: draft.thresholdUpper || null,
+            upperBound: draft.upperBound || null,
             displayOrder: Number(draft.displayOrder) || 0,
             effectiveFrom: draft.effectiveFrom || null,
             effectiveTo: draft.effectiveTo || null,
@@ -705,6 +712,8 @@ export function StatutorySubstanceSection({
                 middleLabel={m.regulationCategories.content}
                 value={draft}
                 onChange={(v) => setDraft({ ...draft, ...v })}
+                fallback={category ?? DEFAULT_THRESHOLD}
+                fallbackLabel={m.statutorySubstances.categoryDefault}
               />
 
               <div className="flex flex-wrap items-start gap-3">

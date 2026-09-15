@@ -173,6 +173,20 @@ function pct(raw: string, fallback: string): string {
   return Number.isFinite(n) ? String(n) : fallback;
 }
 
+/** 法文物質名の閾値。空欄・読めない値は null（区分の既定値に従う） */
+function pctOrNull(raw: string): string | null {
+  const s = raw.replace(/[%％\s]/g, "");
+  if (s === "") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? String(n) : null;
+}
+function boundOrNull(raw: string): string | null {
+  if (raw.trim() === "") return null;
+  const v = bound(raw, "EXCLUSIVE");
+  // bound() は読めないと fallback を返すので、読めたかどうかを別に見る
+  return bound(raw, "INCLUSIVE") === v ? v : null;
+}
+
 export async function readRegulationList(text: string): Promise<ReadResult> {
   const table = parseTable(text);
   const map = mapHeader(table.header, REGULATION_LIST_COLUMNS);
@@ -356,10 +370,11 @@ export async function readRegulationList(text: string): Promise<ReadResult> {
         nameJa: subName,
         nameEn: null,
         displayOrder: cls.substances.length + 1,
-        thresholdLower: pct(col(row, "thresholdLower"), cat.thresholdLower),
-        lowerBound: bound(col(row, "lowerBound"), cat.lowerBound as "EXCLUSIVE" | "INCLUSIVE"),
-        thresholdUpper: pct(col(row, "thresholdUpper"), cat.thresholdUpper),
-        upperBound: bound(col(row, "upperBound"), cat.upperBound as "EXCLUSIVE" | "INCLUSIVE"),
+        // 空の欄は空のまま（区分の既定値に従う）。区分の値を写さない
+        thresholdLower: pctOrNull(col(row, "thresholdLower")),
+        lowerBound: boundOrNull(col(row, "lowerBound")),
+        thresholdUpper: pctOrNull(col(row, "thresholdUpper")),
+        upperBound: boundOrNull(col(row, "upperBound")),
         aggregation: "NONE",
         metalEtc: null,
         effectiveFrom: null,
@@ -371,12 +386,13 @@ export async function readRegulationList(text: string): Promise<ReadResult> {
       cls.substances.push(sub);
     } else {
       // 同じ法文物質名の行で閾値が食い違えば止める（どちらが正しいか分からない）
-      const lo = pct(col(row, "thresholdLower"), sub.thresholdLower);
-      const hi = pct(col(row, "thresholdUpper"), sub.thresholdUpper);
+      const lo = pctOrNull(col(row, "thresholdLower"));
+      const hi = pctOrNull(col(row, "thresholdUpper"));
       if (lo !== sub.thresholdLower || hi !== sub.thresholdUpper) {
+        const show = (v: string | null) => v ?? "（空）";
         errors.push({
           line,
-          message: `「${subName}」の閾値が前の行と食い違います（${sub.thresholdLower}〜${sub.thresholdUpper} と ${lo}〜${hi}）`,
+          message: `「${subName}」の閾値が前の行と食い違います（${show(sub.thresholdLower)}〜${show(sub.thresholdUpper)} と ${show(lo)}〜${show(hi)}）`,
         });
         return;
       }

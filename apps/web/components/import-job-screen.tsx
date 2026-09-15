@@ -38,6 +38,8 @@ function actionVariant(a: ImportAction): "default" | "secondary" | "destructive"
 }
 
 /** 値を 1 行で。空は「（空）」 */
+const THRESHOLD_FIELDS = new Set(["thresholdLower", "lowerBound", "thresholdUpper", "upperBound"]);
+
 function show(v: unknown, empty: string): string {
   if (v === null || v === undefined || v === "") return empty;
   if (Array.isArray(v)) return v.map((x) => show(x, empty)).join("; ");
@@ -164,15 +166,21 @@ export function ImportJobScreen({ id }: { id: string }) {
         className: "text-xs",
         render: (r) =>
           r.diff
-            ? Object.entries(r.diff).map(([field, d]) => (
-                <div key={field}>
-                  <span className="text-muted-foreground">
-                    {(locale === "ja" ? FIELD_LABELS_JA[field] : undefined) ?? field}:
-                  </span>{" "}
-                  {show(d.current, m.importExport.empty)} {m.importExport.diffArrow}{" "}
-                  {show(d.next, m.importExport.empty)}
-                </div>
-              ))
+            ? Object.entries(r.diff).map(([field, d]) => {
+                // 法文物質名の閾値は、空が「区分の既定値に従う」の意味
+                const empty =
+                  r.kind === "substance" && THRESHOLD_FIELDS.has(field)
+                    ? m.importExport.categoryDefault
+                    : m.importExport.empty;
+                return (
+                  <div key={field}>
+                    <span className="text-muted-foreground">
+                      {(locale === "ja" ? FIELD_LABELS_JA[field] : undefined) ?? field}:
+                    </span>{" "}
+                    {show(d.current, empty)} {m.importExport.diffArrow} {show(d.next, empty)}
+                  </div>
+                );
+              })
             : null,
       },
       {

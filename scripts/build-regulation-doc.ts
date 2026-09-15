@@ -398,7 +398,7 @@ async function main() {
     "| 当たる CAS | 現在の法規制バージョンで、その法文物質名に結び付いている CAS（データソースを問わず全部。非該当で確定させたリンクは除く） |",
   );
   w(
-    "| 閾値 | **法文物質名の閾値を使う。区分の閾値はその既定値**（登録時に写す。空にできる作りは未実装）。下限（以上／超）と上限（以下／未満）を持つ。下限 0% 超＝「含めば該当」 |",
+    "| 閾値 | **法文物質名の閾値を使う。区分の閾値はその既定値**（法文物質名の空の欄は区分の値に従う。2026-09-16）。下限（以上／超）と上限（以下／未満）を持つ。下限 0% 超＝「含めば該当」 |",
   );
   w(
     "| まとめかた | 区分または法文物質名ごとに 3 通り。**まとめない**（CAS ごとに閾値と比べる）／**足す**（複数 CAS の含有率を合計して比べる）／**元素換算**（金属換算係数でその元素の量に直して合計） |",
@@ -507,9 +507,10 @@ async function main() {
       w("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
       for (const c of l.categories) {
         const subs = c.classes.flatMap((k) => k.statutorySubstances);
-        const vals = [...new Set(subs.map((s) => Number(s.thresholdLower.toString())))].sort(
-          (a, b) => a - b,
-        );
+        // 空の欄は区分の値に従う
+        const vals = [
+          ...new Set(subs.map((s) => Number((s.thresholdLower ?? c.thresholdLower).toString()))),
+        ].sort((a, b) => a - b);
         const lower = num(c.thresholdLower);
         const thr =
           lower === "0" && c.lowerBound === "EXCLUSIVE"

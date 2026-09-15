@@ -162,8 +162,8 @@ export async function GET(req: Request) {
     adopted: boolean,
     substance: {
       id: string;
-      thresholdLower: { toString(): string };
-      lowerBound: "INCLUSIVE" | "EXCLUSIVE";
+      thresholdLower: { toString(): string } | null;
+      lowerBound: "INCLUSIVE" | "EXCLUSIVE" | null;
       aggregation: "NONE" | "SUM" | "ELEMENT";
       metalEtc: string | null;
     },
@@ -172,10 +172,17 @@ export async function GET(req: Request) {
     linkNote: string | null,
   ) => {
     const substanceId = substance.id;
-    // 区分でまとめるときは、閾値も区分のもの（judge-calc と同じ）
+    // 区分でまとめるときは、閾値も区分のもの（judge-calc と同じ）。
+    // 法文物質名の空の欄も区分の値に従う（区分の閾値が既定値）
     const byCategory = category.aggregation !== "NONE";
-    const limit = toScaled((byCategory ? category : substance).thresholdLower.toString()) ?? 0n;
-    const bound = byCategory ? category.lowerBound : substance.lowerBound;
+    const limit =
+      toScaled(
+        (byCategory
+          ? category.thresholdLower
+          : (substance.thresholdLower ?? category.thresholdLower)
+        ).toString(),
+      ) ?? 0n;
+    const bound = byCategory ? category.lowerBound : (substance.lowerBound ?? category.lowerBound);
     const { pct: amount, missing: missingFactor } = contentAs(substance);
     const enough = bound === "INCLUSIVE" ? amount >= limit : amount > limit;
     /*

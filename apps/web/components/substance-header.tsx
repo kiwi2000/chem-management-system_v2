@@ -1,9 +1,10 @@
 "use client";
 
-import { formatThreshold, pickStatutoryName } from "@chem/shared";
+import { pickStatutoryName } from "@chem/shared";
 import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useEffect } from "react";
 import { slideClass, type SlideDir } from "@/components/category-header";
+import { ThresholdText } from "@/components/law-fields";
 import { useI18n } from "@/lib/i18n-client";
 import type { StatutorySubstanceDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -102,14 +103,11 @@ export function SubstanceHeader({
             </span>
             <span>
               <span className="text-muted-foreground">{m.statutorySubstances.threshold} </span>
-              <span className="font-mono">
-                {formatThreshold(
-                  substance.thresholdLower,
-                  substance.lowerBound,
-                  substance.thresholdUpper,
-                  substance.upperBound,
-                )}
-              </span>
+              <ThresholdText
+                own={substance}
+                category={substance.categoryThreshold}
+                fromCategoryLabel={m.statutorySubstances.fromCategory}
+              />
             </span>
           </div>
         </div>

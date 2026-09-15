@@ -866,10 +866,18 @@ export interface StatutorySubstanceDto {
   nameLang: string;
   nameJa: string | null;
   nameEn: string | null;
-  thresholdLower: string;
-  lowerBound: ThresholdBound;
-  thresholdUpper: string;
-  upperBound: ThresholdBound;
+  /** 自分で持っている閾値。**null の欄は区分の既定値に従う**（`categoryThreshold` で埋めて読む） */
+  thresholdLower: string | null;
+  lowerBound: ThresholdBound | null;
+  thresholdUpper: string | null;
+  upperBound: ThresholdBound | null;
+  /** 親の区分の閾値。空の欄を埋める既定値で、画面では灰色に出す */
+  categoryThreshold: {
+    thresholdLower: string;
+    lowerBound: ThresholdBound;
+    thresholdUpper: string;
+    upperBound: ThresholdBound;
+  };
   effectiveFrom: string | null;
   effectiveTo: string | null;
   displayOrder: number;

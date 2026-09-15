@@ -1,6 +1,15 @@
 "use client";
 
-import { THRESHOLD_BOUNDS, pickName, type ThresholdBound } from "@chem/shared";
+import {
+  THRESHOLD_BOUNDS,
+  boundSign,
+  effectiveThreshold,
+  formatThreshold,
+  pickName,
+  trimPct,
+  type OwnThreshold,
+  type ThresholdBound,
+} from "@chem/shared";
 import type { ReactNode } from "react";
 import type { LanguageDto } from "@/lib/types";
 import { Input } from "@/components/ui/input";
@@ -125,14 +134,26 @@ export function NameFields({
   );
 }
 
+/**
+ * 閾値の入力中の値。法文物質名では空（""）が「区分の既定値に従う」。
+ * 区分の欄では空にできない（`fallback` を渡さないと必須になる）
+ */
 export interface ThresholdDraft {
+  thresholdLower: string;
+  lowerBound: ThresholdBound | "";
+  thresholdUpper: string;
+  upperBound: ThresholdBound | "";
+}
+
+/** 区分の閾値。空の欄を埋める既定値 */
+export interface ThresholdFallback {
   thresholdLower: string;
   lowerBound: ThresholdBound;
   thresholdUpper: string;
   upperBound: ThresholdBound;
 }
 
-export const DEFAULT_THRESHOLD: ThresholdDraft = {
+export const DEFAULT_THRESHOLD: ThresholdFallback = {
   thresholdLower: "0",
   lowerBound: "EXCLUSIVE",
   thresholdUpper: "100",
@@ -143,9 +164,12 @@ export const DEFAULT_THRESHOLD: ThresholdDraft = {
 const NUMERIC = /^\d*\.?\d*$/;
 
 /**
- * 閾値の4欄。空欄という状態を作らないため、すべて必須。
+ * 閾値の4欄。
  * 並びは **下限値 不等号 含有率 不等号 上限値** で、式をそのまま読める形にしてある。
  * 一覧では `0 < x ≤ 100` の形にまとめて1列で見せる。
+ *
+ * 区分の欄では空にできない（すべて必須）。法文物質名の欄では `fallback`（区分の閾値）を渡すと
+ * **空にできて、空の欄は区分の値が灰色で透けて見える**（入れた値と見分けが付くように）。
  */
 export function ThresholdFields({
   idPrefix,
@@ -157,6 +181,8 @@ export function ThresholdFields({
   bounds,
   value,
   onChange,
+  fallback,
+  fallbackLabel,
 }: {
   idPrefix: string;
   label: string;
@@ -169,14 +195,23 @@ export function ThresholdFields({
   bounds: Record<ThresholdBound, string>;
   value: ThresholdDraft;
   onChange: (next: ThresholdDraft) => void;
+  /** 空の欄を埋める区分の閾値。渡すと欄を空にできる */
+  fallback?: ThresholdFallback;
+  /** 区分の値の見出し（例: 区分の既定値） */
+  fallbackLabel?: string;
 }) {
   const sign = (key: "lowerBound" | "upperBound", ariaLabel: string) => (
     <select
       aria-label={ariaLabel}
       value={value[key]}
-      onChange={(e) => onChange({ ...value, [key]: e.target.value as ThresholdBound })}
-      className={cn(SELECT_CLASS, "w-16 text-center")}
+      onChange={(e) => onChange({ ...value, [key]: e.target.value as ThresholdBound | "" })}
+      className={cn(
+        SELECT_CLASS,
+        "w-16 text-center",
+        fallback && value[key] === "" && "text-muted-foreground",
+      )}
     >
+      {fallback && <option value="">{bounds[fallback[key]]}</option>}
       {THRESHOLD_BOUNDS.map((b) => (
         <option key={b} value={b}>
           {bounds[b]}
@@ -188,15 +223,17 @@ export function ThresholdFields({
   const number = (key: "thresholdLower" | "thresholdUpper", id: string, ariaLabel: string) => (
     <Input
       id={id}
-      required
+      required={!fallback}
       inputMode="decimal"
       aria-label={ariaLabel}
       value={value[key]}
+      // 空欄のときは区分の値が薄く見える（入力した値とは色で見分ける）
+      placeholder={fallback ? trimPct(fallback[key]) : undefined}
       // 数字と小数点しか入らないようにする（貼り付けもここを通る）
       onChange={(e) => {
         if (NUMERIC.test(e.target.value)) onChange({ ...value, [key]: e.target.value });
       }}
-      className="w-24 text-right font-mono"
+      className="w-24 text-right font-mono placeholder:text-muted-foreground/70"
     />
   );
 
@@ -209,8 +246,48 @@ export function ThresholdFields({
         <span className="px-1 text-sm">{middleLabel}</span>
         {sign("upperBound", upperLabel)}
         {number("thresholdUpper", `${idPrefix}-upper`, upperLabel)}
+        {fallback && (
+          <span className="text-muted-foreground font-mono text-xs">
+            {fallbackLabel}{" "}
+            {formatThreshold(
+              fallback.thresholdLower,
+              fallback.lowerBound,
+              fallback.thresholdUpper,
+              fallback.upperBound,
+            )}
+          </span>
+        )}
       </div>
       {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
     </div>
+  );
+}
+
+/**
+ * 法文物質名の閾値を1行で見せる（一覧・見出し用）。
+ * 区分の値で埋めた欄は灰色にし、1つでもあれば末尾に「（区分）」を付ける
+ */
+export function ThresholdText({
+  own,
+  category,
+  fromCategoryLabel,
+}: {
+  own: OwnThreshold;
+  category: ThresholdFallback;
+  fromCategoryLabel: string;
+}) {
+  const t = effectiveThreshold(own, category);
+  const part = (text: string, muted: boolean) => (
+    <span className={cn(muted && "text-muted-foreground/70")}>{text}</span>
+  );
+  const any = Object.values(t.fromCategory).some(Boolean);
+  return (
+    <span className="font-mono whitespace-nowrap">
+      {part(trimPct(t.thresholdLower), t.fromCategory.thresholdLower)}{" "}
+      {part(boundSign(t.lowerBound), t.fromCategory.lowerBound)} x{" "}
+      {part(boundSign(t.upperBound), t.fromCategory.upperBound)}{" "}
+      {part(trimPct(t.thresholdUpper), t.fromCategory.thresholdUpper)}
+      {any && <span className="text-muted-foreground/70 ml-1">{fromCategoryLabel}</span>}
+    </span>
   );
 }

@@ -3,7 +3,11 @@ import { ForbiddenNotice } from "@/components/forbidden-notice";
 import { SubstanceCasScreen } from "@/components/substance-cas-screen";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { SUBSTANCE_INCLUDE, toStatutorySubstanceDto } from "@/lib/law-service";
+import {
+  CATEGORY_THRESHOLD_SELECT,
+  SUBSTANCE_INCLUDE,
+  toStatutorySubstanceDto,
+} from "@/lib/law-service";
 
 /**
  * 法文物質名の対象CAS。
@@ -33,6 +37,8 @@ export default async function StatutorySubstancePage({
               nameOriginal: true,
               nameJa: true,
               nameEn: true,
+              // 閾値の空の欄を埋める既定値（SUBSTANCE_INCLUDE と同じもの。ここで上書きするので足す）
+              ...CATEGORY_THRESHOLD_SELECT,
               // パンくずに法律まで出すため、親も一緒に引く
               law: { select: { code: true, nameOriginal: true, nameJa: true, nameEn: true } },
             },
