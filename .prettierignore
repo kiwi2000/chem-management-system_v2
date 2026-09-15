@@ -15,3 +15,6 @@ scripts/data/
 # Next.js が build のたびに作り直すもの。git にも載せないので、体裁を整える意味がない
 next-env.d.ts
 out/
+
+# scripts/build-docs-index.ts が作る（手で直さない）
+docs/ドキュメント一式.html
