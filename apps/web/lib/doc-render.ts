@@ -7,10 +7,18 @@ import {
   type BlockWidth,
   type DocumentBlock,
   type DocumentContent,
+  bandHasText,
+  resolveBandText,
 } from "@chem/shared";
 import type {
+  BandVars,
   BlockMargin,
   DocumentTable,
+  PageBand,
+  PageBorder,
+  PageMargin,
+  PageSettings,
+  PageTitle,
   DocumentTarget,
   HeadingLevel,
   ImageAlign,
@@ -98,6 +106,25 @@ export type RenderBlock =
       align?: ImageAlign;
     });
 
+/** ヘッダー・フッターの帯。差込みは埋めてあり、ページ番号の印だけが残る */
+export interface RenderedBand {
+  left?: string;
+  center?: string;
+  right?: string;
+  startPage?: number;
+  size?: number;
+  color?: string;
+}
+
+/** 用紙の設定（余白・枠・タイトル・ヘッダー・フッター）。無いものは省く */
+export interface RenderedPage {
+  margin?: PageMargin;
+  border?: PageBorder;
+  title?: PageTitle;
+  header?: RenderedBand;
+  footer?: RenderedBand;
+}
+
 export interface RenderedDocument {
   orientation: "portrait" | "landscape";
   /** 紙面ぜんたいの字。ブロックに指定が無いときの既定になる */
@@ -105,6 +132,7 @@ export interface RenderedDocument {
   blocks: RenderBlock[];
   /** 画面にだけ出す知らせ。紙面には出さない */
   warnings: string[];
+  page?: RenderedPage;
 }
 
 export interface RenderInput {
@@ -122,6 +150,41 @@ export interface RenderInput {
    * 区間の中は、この並びの数だけ繰り返す。値は紙面ぜんたいの値に重ねる。無ければ区間は出ない
    */
   repeats?: { values: Map<string, string>; tables: RenderInput["tables"] }[];
+  /** ヘッダー・フッターの差込みに入れる値。無ければ日時だけ今の時刻で、あとは空 */
+  pageVars?: BandVars;
+}
+
+function renderBand(band: PageBand | undefined, vars: BandVars): RenderedBand | undefined {
+  if (!bandHasText(band)) return undefined;
+  const b = band!;
+  const text = (s: string | undefined) =>
+    s && s.trim() !== "" ? resolveBandText(s, vars) : undefined;
+  return {
+    ...(text(b.left) !== undefined ? { left: text(b.left) } : {}),
+    ...(text(b.center) !== undefined ? { center: text(b.center) } : {}),
+    ...(text(b.right) !== undefined ? { right: text(b.right) } : {}),
+    ...(b.startPage !== undefined && b.startPage > 1 ? { startPage: b.startPage } : {}),
+    ...(b.size !== undefined ? { size: b.size } : {}),
+    ...(b.color ? { color: b.color } : {}),
+  };
+}
+
+/** 用紙の設定を紙面用に。差込みを埋め、空のものは省く */
+function renderPage(
+  page: PageSettings | undefined,
+  vars: BandVars | undefined,
+): RenderedPage | undefined {
+  if (!page) return undefined;
+  const v: BandVars = vars ?? { at: new Date(), template: "", target: "", user: "", locale: "ja" };
+  const out: RenderedPage = {};
+  if (page.margin) out.margin = page.margin;
+  if (page.border) out.border = page.border;
+  if (page.title && page.title.text.trim() !== "") out.title = page.title;
+  const header = renderBand(page.header, v);
+  const footer = renderBand(page.footer, v);
+  if (header) out.header = header;
+  if (footer) out.footer = footer;
+  return Object.keys(out).length === 0 ? undefined : out;
 }
 
 function renderLines(
@@ -215,7 +278,14 @@ export function renderDocument(input: RenderInput): RenderedDocument {
   const warnings: string[] = [];
   if (unknown.size > 0) warnings.push(`unknownFields:${[...unknown].join(",")}`);
 
-  return { orientation: content.orientation, style: content.style, blocks, warnings };
+  const page = renderPage(content.page, input.pageVars);
+  return {
+    orientation: content.orientation,
+    style: content.style,
+    blocks,
+    warnings,
+    ...(page ? { page } : {}),
+  };
 }
 
 function renderBlock(

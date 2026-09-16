@@ -9,6 +9,7 @@ import {
   type DocumentTarget,
   listRowTarget,
   targetIsList,
+  pickName,
 } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
@@ -299,6 +300,13 @@ async function run(jobId: string): Promise<void> {
             values: data.values,
             tables: data.tables,
             repeats: data.items?.map((it) => ({ values: it.values, tables: it.tables })),
+            pageVars: {
+              at: new Date(),
+              template: pickName(locale, template.nameJa, template.nameEn),
+              target: targetNameOf(template.target, data) ?? data.code,
+              user: actor.user.displayName ?? actor.user.email,
+              locale,
+            },
           });
           const version = data.values.get("doc.version") ?? "";
           const created = await prisma.generatedDocument.create({

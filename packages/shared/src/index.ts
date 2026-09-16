@@ -15,6 +15,7 @@ export * from "./data-exchange";
 export * from "./decimal";
 export * from "./doc-batch";
 export * from "./doc-file-name";
+export * from "./doc-page";
 export * from "./doc-tags";
 export * from "./document";
 export * from "./feedback";

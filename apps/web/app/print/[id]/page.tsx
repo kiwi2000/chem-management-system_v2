@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { DocumentSheet } from "@/components/doc-editor/document-view";
-import { PrintOrientation } from "@/components/doc-editor/print-orientation";
+import { PrintPageStyle } from "@/components/doc-editor/print-orientation";
 import { prisma } from "@/lib/db";
 import type { RenderedDocument } from "@/lib/doc-render";
 import { imageDataUrls } from "@/lib/image-service";
@@ -38,7 +38,7 @@ export default async function PrintDocumentPage({
 
   return (
     <>
-      <PrintOrientation orientation={doc.orientation} />
+      <PrintPageStyle orientation={doc.orientation} page={doc.page} family={doc.style?.family} />
       <DocumentSheet doc={doc} imageSources={imageSources} />
     </>
   );

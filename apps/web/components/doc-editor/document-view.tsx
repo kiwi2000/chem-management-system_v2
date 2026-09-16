@@ -10,6 +10,11 @@ import {
   type BlockStyle,
   spacerMm,
   type BlockMargin,
+  bandTextForPreview,
+  DEFAULT_BAND_SIZE,
+  DEFAULT_TITLE_SIZE,
+  pageMarginOf,
+  type PageMargin,
 } from "@chem/shared";
 import { Printer } from "lucide-react";
 import Link from "next/link";
@@ -17,7 +22,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import { createContext, useContext, type CSSProperties } from "react";
-import type { RenderBlock, RenderLine, RenderedDocument } from "@/lib/doc-render";
+import { printPageMargin } from "@/components/doc-editor/print-orientation";
+import type {
+  RenderBlock,
+  RenderLine,
+  RenderedBand,
+  RenderedDocument,
+  RenderedPage,
+} from "@/lib/doc-render";
 
 /**
  * できあがった帳票を出す。
@@ -105,6 +117,12 @@ export function DocumentSheet({
   /** 紙の右上の角に重ねる短い断り（編集画面の「見本の値」。刷るときは渡さない） */
   cornerNote?: string;
 }) {
+  const page = doc.page;
+  const margin = pageMarginOf(page);
+  const printMargin = printPageMargin(page);
+  const border = page?.border;
+  const borderCss = border ? `${border.widthMm}mm ${border.style} ${border.color}` : undefined;
+  const segments = segmentRows(groupIntoRows(doc.blocks), page);
   return (
     <div
       /*
@@ -116,9 +134,34 @@ export function DocumentSheet({
         fontFamily: fontStack(DEFAULT_FONT),
         ...styleOf(doc.style),
         ...decorOf(doc.style, false),
+        // 余白は用紙の設定。刷るときは @page が持つので、PrintPageStyle が上書きする
+        padding: `${margin.top}mm ${margin.right}mm ${margin.bottom}mm ${margin.left}mm`,
       }}
-      className="relative mx-auto my-4 max-w-[210mm] bg-white p-[15mm] text-black shadow print:m-0 print:max-w-none print:p-0 print:shadow-none"
+      className="doc-sheet relative mx-auto my-4 max-w-[210mm] bg-white text-black shadow print:m-0 print:max-w-none print:shadow-none"
     >
+      {/* 用紙全体の枠。画面では紙面（この箱）の端から、刷るときは紙の端から測る（position: fixed は紙ごとに繰り返し描かれる） */}
+      {border && borderCss && (
+        <>
+          <div
+            className="pointer-events-none absolute print:hidden"
+            style={{ inset: `${border.insetMm}mm`, border: borderCss }}
+          />
+          <div
+            className="pointer-events-none hidden print:block"
+            style={{
+              position: "fixed",
+              top: `${border.insetMm - printMargin.top}mm`,
+              right: `${border.insetMm - printMargin.right}mm`,
+              bottom: `${border.insetMm - printMargin.bottom}mm`,
+              left: `${border.insetMm - printMargin.left}mm`,
+              border: borderCss,
+            }}
+          />
+        </>
+      )}
+      {/* ヘッダー・フッターの画面用の見本。刷るときは @page の余白の箱に出るので、ここでは隠す */}
+      {page?.header && <BandPreview band={page.header} side="top" margin={margin} />}
+      {page?.footer && <BandPreview band={page.footer} side="bottom" margin={margin} />}
       {cornerNote && (
         <p
           className="text-destructive absolute top-0 right-0 m-0 text-xs font-normal"
@@ -131,21 +174,108 @@ export function DocumentSheet({
         横に並ぶものは、編集画面と同じ規則でまとめる（`groupIntoRows`）。
         別々に組むと、書いたとおりに刷られない
       */}
+      {/*
+        タイトルは 1 ページ目の中身の先頭。**最初の区間の中に入れる。**
+        外に置くと、帯を出さない紙（pg-00 など）との境目で紙が変わり、タイトルだけの 1 枚目ができる
+      */}
       <ImageSourceContext.Provider value={imageSources}>
-        {groupIntoRows(doc.blocks).map((row, i) =>
-          row.blocks.length === 1 ? (
-            <Block key={i} block={row.blocks[0]!} doc={doc.style} highlightIds={highlightIds} />
-          ) : (
-            <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
-              {row.blocks.map((b, j) => (
-                <div key={j} style={{ width: `${row.percents[j]}%` }}>
-                  <Block block={b} doc={doc.style} highlightIds={highlightIds} />
+        {segments.map((seg, s) => (
+          <div key={s} className={`doc-${seg.name}`}>
+            {s === 0 && page?.title && (
+              <p
+                style={{
+                  margin: "0 0 4mm",
+                  fontSize: `${page.title.size ?? DEFAULT_TITLE_SIZE}pt`,
+                  fontWeight: page.title.bold === false ? 400 : 700,
+                  textAlign: page.title.align ?? "center",
+                  ...(page.title.color ? { color: page.title.color } : {}),
+                }}
+              >
+                {page.title.text}
+              </p>
+            )}
+            {seg.rows.map((row, i) =>
+              row.blocks.length === 1 ? (
+                <Block key={i} block={row.blocks[0]!} doc={doc.style} highlightIds={highlightIds} />
+              ) : (
+                <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
+                  {row.blocks.map((b, j) => (
+                    <div key={j} style={{ width: `${row.percents[j]}%` }}>
+                      <Block block={b} doc={doc.style} highlightIds={highlightIds} />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ),
-        )}
+              ),
+            )}
+          </div>
+        ))}
       </ImageSourceContext.Provider>
+    </div>
+  );
+}
+
+/**
+ * 帯（ヘッダー・フッター）の開始ページより前の紙を、名前付きの紙（pg-<ヘッダー><フッター>）で包む。
+ * ページは「改ページ」のブロックで数える。名前が変わる境目にある改ページは、
+ * 紙の名前が変わるだけで紙が変わるので落とす（残すと白紙が挟まる）
+ */
+function segmentRows(
+  rows: ReturnType<typeof groupIntoRows<RenderBlock>>,
+  page: RenderedPage | undefined,
+): { name: string; rows: ReturnType<typeof groupIntoRows<RenderBlock>> }[] {
+  const hasH = !!page?.header;
+  const hasF = !!page?.footer;
+  const hs = page?.header?.startPage ?? 1;
+  const fs = page?.footer?.startPage ?? 1;
+  if ((!hasH || hs <= 1) && (!hasF || fs <= 1)) return [{ name: "pg-11", rows }];
+  const out: { name: string; rows: typeof rows }[] = [];
+  let breaks = 0;
+  for (const row of rows) {
+    const h = !hasH || breaks >= hs - 1 ? 1 : 0;
+    const f = !hasF || breaks >= fs - 1 ? 1 : 0;
+    const name = `pg-${h}${f}`;
+    const last = out[out.length - 1];
+    if (last && last.name === name) last.rows.push(row);
+    else out.push({ name, rows: [row] });
+    breaks += row.blocks.filter((b) => b.kind === "pageBreak").length;
+  }
+  // ブロックが無くても区間は 1 つ置く（タイトルの置き場）
+  if (out.length === 0) out.push({ name: `pg-${hs <= 1 ? 1 : 0}${fs <= 1 ? 1 : 0}`, rows: [] });
+  for (let i = 0; i < out.length - 1; i++) {
+    const seg = out[i]!;
+    const tail = seg.rows[seg.rows.length - 1];
+    if (tail && tail.blocks.length === 1 && tail.blocks[0]!.kind === "pageBreak") seg.rows.pop();
+  }
+  return out;
+}
+
+/** ヘッダー・フッターの画面用の見本。紙面の上下の余白に薄く出す（ページ番号は 1 / 1） */
+function BandPreview({
+  band,
+  side,
+  margin,
+}: {
+  band: RenderedBand;
+  side: "top" | "bottom";
+  margin: PageMargin;
+}) {
+  const size = `${band.size ?? DEFAULT_BAND_SIZE}pt`;
+  return (
+    <div
+      className="pointer-events-none absolute right-0 left-0 grid items-center print:hidden"
+      style={{
+        [side]: 0,
+        height: `${side === "top" ? margin.top : margin.bottom}mm`,
+        padding: `0 ${margin.right}mm 0 ${margin.left}mm`,
+        gridTemplateColumns: "1fr auto 1fr",
+        fontSize: size,
+        whiteSpace: "pre",
+        ...(band.color ? { color: band.color } : {}),
+      }}
+    >
+      <span style={{ textAlign: "left" }}>{bandTextForPreview(band.left ?? "")}</span>
+      <span style={{ textAlign: "center" }}>{bandTextForPreview(band.center ?? "")}</span>
+      <span style={{ textAlign: "right" }}>{bandTextForPreview(band.right ?? "")}</span>
     </div>
   );
 }

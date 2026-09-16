@@ -1290,7 +1290,7 @@ export const ja = {
     patternColor: "模様の色",
     border: "枠線",
     borders: { none: "なし", solid: "実線", dashed: "破線", dotted: "点線", double: "二重線" },
-    borderWidth: "太さ（mm）",
+    pageBorderWidth: "太さ（mm）",
     borderColor: "枠の色",
     headingLevel: "見出しレベル",
     /** 欄の上に小さく出す短い名前 */
@@ -1374,6 +1374,27 @@ export const ja = {
     /** 欄の上に小さく出す短い名前 */
     orientationShort: "向き",
     orientations: { portrait: "縦", landscape: "横" },
+    /* 用紙の設定（2026-09-16 指示） */
+    pageSettings: "用紙の設定",
+    pageSettingsHint: "余白・枠・タイトル・ヘッダー・フッター",
+    pageMarginTitle: "余白（mm）",
+    pageBorderOn: "用紙全体に枠を付ける",
+    borderStyle: "線の種類",
+    borderStyles: { solid: "実線", dashed: "破線", dotted: "点線", double: "二重線" },
+    borderWidth: "太さ（mm）",
+    borderInset: "紙の端からの距離（mm）",
+    pageTitle: "タイトル（1 ページ目だけ）",
+    pageTitleText: "文字",
+    titleAlign: "寄せ",
+    header: "ヘッダー",
+    footer: "フッター",
+    bandPositions: { left: "左", center: "中央", right: "右" },
+    bandStartPage: "開始ページ",
+    bandSize: "大きさ（pt）",
+    bandVarsHint: (vars: string) =>
+      `ヘッダー・フッターに使える差込み: ${vars}。日付は {日付:YYYY-MM-DD} のように形を添えられます`,
+    bandStartPageHint:
+      "ページは「改ページ」で数えます。1 ページ目を表紙にするなら、表紙の終わりに改ページを置いて、開始ページに 2 を入れてください",
     remove: "このブロックを消す",
     reorderHint: "つまみを引くと、ブロックを並べ替えられます",
     empty: "ブロックがありません。「＋ ブロック」から足してください",

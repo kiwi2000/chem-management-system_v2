@@ -1,12 +1,13 @@
 "use client";
 
-import { DEFAULT_FONT_SIZE, targetIsList, type DocumentContent } from "@chem/shared";
+import { DEFAULT_FONT_SIZE, pickName, targetIsList, type DocumentContent } from "@chem/shared";
 import { ChevronDown, ChevronUp, Eye, Redo2, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BlockList, Labeled } from "@/components/doc-editor/block-list";
 import { DocumentSheet } from "@/components/doc-editor/document-view";
 import { FontSizeInput } from "@/components/doc-editor/font-size-input";
+import { PageSettingsPanel } from "@/components/doc-editor/page-settings-panel";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -50,6 +51,8 @@ export function DocTemplateEditor({ id }: { id: string }) {
   const { m } = useI18n();
   const { can } = useMe();
   const editable = can("DOC_TEMPLATE_EDIT");
+  /** 用紙の設定（余白・枠・タイトル・ヘッダー・フッター）の欄を開いているか */
+  const [pageOpen, setPageOpen] = useState(false);
   // 会社の自由項目。差込項目の一覧に足す
   const orgItems = useOrgItemLabels();
   const organisations = useOrganisations();
@@ -372,6 +375,14 @@ export function DocTemplateEditor({ id }: { id: string }) {
         locale,
       ),
       tables: sampleTables(locale),
+      // ヘッダー・フッターの差込みも見本で埋める
+      pageVars: {
+        at: new Date(),
+        template: pickName(locale, template.nameJa, template.nameEn),
+        target: locale === "en" ? "Sample" : "見本",
+        user: locale === "en" ? "Sample User" : "見本 太郎",
+        locale,
+      },
       // 一覧の帳票の繰り返しは、見本を 2 件ぶん流して形を確かめられるようにする
       ...(targetIsList(template.target)
         ? { repeats: [0, 1].map(() => ({ values: new Map(), tables: sampleTables(locale) })) }
@@ -628,6 +639,29 @@ export function DocTemplateEditor({ id }: { id: string }) {
           }
         >
           <div className={cn(framed && "min-h-0 overflow-y-auto pr-1")}>
+            {/* 用紙の設定。ブロックとは別のものなので、一覧の上に畳んで置く（2026-09-16 指示） */}
+            <div className="mb-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                aria-expanded={pageOpen}
+                title={m.docEditor.pageSettingsHint}
+                onClick={() => setPageOpen((v) => !v)}
+              >
+                {pageOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                {m.docEditor.pageSettings}
+              </Button>
+              {pageOpen && (
+                <div className="mt-2">
+                  <PageSettingsPanel
+                    value={content.page}
+                    onChange={(page) => edit({ ...content, page })}
+                    editable={editable}
+                  />
+                </div>
+              )}
+            </div>
             <BlockList
               // 会社の項目名が届く前に描いた差込は名前が鍵のまま残るので、届いたら作り直す
               key={`${revision}-${orgItems.length}`}

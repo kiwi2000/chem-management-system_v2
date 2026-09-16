@@ -1,3 +1,4 @@
+import type { PageSettings } from "./doc-page";
 import { z } from "zod";
 import type { OrganisationKind } from "./organisation";
 import type { Messages } from "./i18n/ja";
@@ -1160,6 +1161,8 @@ export interface DocumentContent {
    */
   style?: BlockStyle;
   blocks: DocumentBlock[];
+  /** 用紙の設定（余白・枠・タイトル・ヘッダー・フッター）。無ければ余白 15mm だけ */
+  page?: PageSettings;
 }
 
 export const EMPTY_DOCUMENT: DocumentContent = { orientation: "portrait", blocks: [] };
