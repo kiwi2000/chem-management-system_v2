@@ -198,6 +198,7 @@ export const en: Messages = {
   permissions: {
     DOC_TEMPLATE_EDIT: "Can edit document templates",
     DOCUMENT_CREATE: "Can create documents (and see their own)",
+    DOCUMENT_VIEW_ALL: "Can also see documents created by others",
     ORG_EDIT: "Can create and edit organisations (companies, departments, partners)",
     PRODUCT_VIEW: "View products",
     PRODUCT_EDIT: "Edit products",
@@ -226,6 +227,8 @@ export const en: Messages = {
       "Import our data sets or your own tables on the data import/export screen. It rewrites master data, so by default only system administrators",
     INACTIVE_VIEW:
       "See unpublished data and inactive products in lists and details (creators always see their own)",
+    DOCUMENT_VIEW_ALL:
+      "Everyone's documents appear under Created documents and can be downloaded or deleted. Documents that contain composition still need “Can see composition”; documents for unpublished products or substances still need “Can see inactive/unpublished data”",
     NEWS_POST: "Announcements you posted can be edited and deleted by you",
     FEEDBACK_VIEW:
       "Shows Feedback in the left menu and lets you read posts and replies, with unread marks",
@@ -1374,6 +1377,8 @@ export const en: Messages = {
     } as Record<string, string>,
     jobMissed: (n: number) => `${n} not produced`,
     jobOpen: "Open all",
+    jobDeleteRunning: "A running batch cannot be deleted. Wait until it finishes",
+    createdBy: "Created by",
     file: "File",
     fileMaking: "Creating…",
     fileFailed: "PDF could not be created",

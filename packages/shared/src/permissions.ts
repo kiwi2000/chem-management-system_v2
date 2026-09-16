@@ -33,6 +33,12 @@ export const PERMISSIONS = [
   "DOC_TEMPLATE_EDIT",
   "DOCUMENT_CREATE",
   /*
+    他の人が作ったドキュメントも見る・落とす・消す（2026-09-16 指示）。
+    ただし組成の載ったものは組成の権限、未公開の製品・物質のものは未公開の権限も要る
+    （見せてよいものだけ見せる）
+  */
+  "DOCUMENT_VIEW_ALL",
+  /*
     組織（会社・部署・取引先）を作る・直す・消す。
     **見るのは権限が要らない。**帳票の宛先に選ぶために、誰でも一覧を引ける必要がある
   */
@@ -68,6 +74,8 @@ const IMPLIES: Partial<Record<Permission, readonly Permission[]>> = {
   SUBSTANCE_EDIT: ["SUBSTANCE_VIEW"],
   // 無効・未公開を編集できる人は、当然それを見られる
   INACTIVE_EDIT: ["INACTIVE_VIEW"],
+  // 他人のドキュメントを見るには、ドキュメントの画面そのものに入れる必要がある
+  DOCUMENT_VIEW_ALL: ["DOCUMENT_CREATE"],
   REGULATION_EDIT: ["REGULATION_VIEW"],
   // 他人のお知らせを編集できる人は、自分でも投稿できるものとして扱う
   NEWS_MANAGE: ["NEWS_POST"],
@@ -121,7 +129,7 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "inactive", permissions: ["INACTIVE_VIEW", "INACTIVE_EDIT", "APPROVE"] },
   { key: "regulation", permissions: ["REGULATION_VIEW", "REGULATION_EDIT"] },
   { key: "data", permissions: ["DATA_EXPORT", "DATA_IMPORT"] },
-  { key: "document", permissions: ["DOC_TEMPLATE_EDIT", "DOCUMENT_CREATE"] },
+  { key: "document", permissions: ["DOC_TEMPLATE_EDIT", "DOCUMENT_CREATE", "DOCUMENT_VIEW_ALL"] },
   { key: "organisation", permissions: ["ORG_EDIT"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },
   { key: "feedback", permissions: ["FEEDBACK_VIEW", "FEEDBACK_EDIT"] },

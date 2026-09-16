@@ -2,6 +2,7 @@ import { z } from "zod";
 import { formatDate } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { documentWhere } from "@/lib/doc-access";
 import { fileResponse, zipFiles } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -12,7 +13,7 @@ const bodySchema = z.object({ ids: z.array(z.string().trim().min(1)).min(1).max(
 /**
  * POST /api/documents/download — 選んだ帳票の PDF を 1 つの zip にして落とす。
  *
- * **自分が作ったものだけ**を入れる（他人のものや、組成を見られないものは黙って外す）。
+ * **見せてよいものだけ**を入れる（lib/doc-access.ts。他人のものは権限があるときだけ）。
  * ファイルが無くなっているものも外し、外した数は応答のヘッダーで知らせる
  */
 export async function POST(req: Request) {
@@ -34,8 +35,7 @@ export async function POST(req: Request) {
   const rows = await prisma.generatedDocument.findMany({
     where: {
       id: { in: parsed.data.ids },
-      generatedBy: actor.user.id,
-      ...(actor.has("COMPOSITION_VIEW") ? {} : { hasComposition: false }),
+      ...(await documentWhere(actor)),
       fileName: { not: null },
     },
     orderBy: { generatedAt: "asc" },

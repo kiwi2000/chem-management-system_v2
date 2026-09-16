@@ -24,3 +24,26 @@ export async function GET(_req: Request, { params }: Ctx) {
   if (!row) return jsonError(404, "not_found", m.errors.notFound);
   return Response.json(toJobDto(row));
 }
+
+/**
+ * DELETE /api/documents/batch/[id] — 生成状況から 1 件消す。
+ * **自分が頼んだものだけ。走っている最中は消せない。**
+ * 消えるのは仕事の記録だけで、できた帳票（PDF）は生成済ドキュメントに残る
+ */
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const actor = await requirePermission("DOCUMENT_CREATE");
+  if (actor instanceof Response) return actor;
+  const { id } = await params;
+  const m = await getServerMessages();
+
+  const row = await prisma.documentBatchJob.findFirst({
+    where: { id, createdBy: actor.user.id },
+    select: { status: true },
+  });
+  if (!row) return jsonError(404, "not_found", m.errors.notFound);
+  if (row.status === "QUEUED" || row.status === "RUNNING") {
+    return jsonError(409, "running", m.documents.jobDeleteRunning);
+  }
+  await prisma.documentBatchJob.delete({ where: { id } });
+  return Response.json({ ok: true });
+}

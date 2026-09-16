@@ -726,6 +726,10 @@ export interface GeneratedDocumentDto {
   fileName: string | null;
   fileSize: number | null;
   fileError: string | null;
+  /** 作った人の表示名（他人のものが見える権限のとき、誰のものか分かるように） */
+  createdByName: string | null;
+  /** 自分が作ったものか */
+  mine: boolean;
 }
 
 /** まとめて帳票を作る仕事（バックグラウンド処理）の進み具合。自分の仕事だけが見える */

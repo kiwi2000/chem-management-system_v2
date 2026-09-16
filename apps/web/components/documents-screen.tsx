@@ -199,9 +199,24 @@ export function DocumentsScreen({
     setWasRunning(running);
   }, [running, wasRunning, load]);
 
+  /** 生成状況から選んだ仕事を消す（記録だけ。できた帳票は残る）。走っている最中のものは断られる */
+  async function deleteJobs(targets: DocBatchJobDto[]) {
+    setError(null);
+    for (const j of targets) {
+      const res = await fetch(`/api/documents/batch/${j.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        break;
+      }
+    }
+    void loadJobs();
+  }
+
   /**
    * 選んだものを消す。
-   * **消せるのは自分が作ったものだけ**（この表には自分のものしか出ない）。
+   * **消せるのは自分が作ったものと、権限があれば他人のもの**（見せてよいものだけが表に出る）。
    * 印を付けるのではなく本当に消すので、押したあとは元に戻せない
    */
   async function onDeleteSelected(targets: GeneratedDocumentDto[]) {
@@ -256,6 +271,21 @@ export function DocumentsScreen({
         className: "font-mono text-xs",
         // 描きかたを渡さないと空欄になる（共通テーブルは既定の描きかたを持たない）
         render: (d) => d.targetCode,
+      },
+      {
+        // 誰が作ったか。他人のものが見える権限のときに意味を持つ（自分のものは薄く出す）
+        key: "createdBy",
+        header: m.documents.createdBy,
+        kind: "text",
+        width: 120,
+        sortable: false,
+        filterable: false,
+        className: "text-xs",
+        render: (d) => (
+          <span className={d.mine ? "text-muted-foreground" : undefined}>
+            {d.createdByName ?? ""}
+          </span>
+        ),
       },
       {
         key: "hasComposition",
@@ -738,6 +768,8 @@ export function DocumentsScreen({
             emptyMessage={m.documents.jobsNone}
             showFilters={false}
             showPager={false}
+            selectable
+            onDeleteSelected={deleteJobs}
             hintText={m.documents.jobsHint}
           />
         </div>

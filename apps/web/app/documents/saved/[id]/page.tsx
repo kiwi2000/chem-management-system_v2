@@ -3,6 +3,7 @@ import { DocumentView } from "@/components/doc-editor/document-view";
 import { SavedFileNote } from "@/components/doc-editor/saved-file-note";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { canAccessDocument } from "@/lib/doc-access";
 import type { RenderedDocument } from "@/lib/doc-render";
 
 /**
@@ -37,14 +38,14 @@ export default async function SavedDocumentPage({ params }: { params: Promise<{ 
       content: true,
       hasComposition: true,
       targetCode: true,
+      targetRef: true,
       generatedBy: true,
-      template: { select: { code: true, nameJa: true } },
+      template: { select: { code: true, nameJa: true, target: true } },
     },
   });
   if (!row) notFound();
-  // 他人のものは、あることも伝えない
-  if (row.generatedBy !== actor.user.id) notFound();
-  if (row.hasComposition && !actor.has("COMPOSITION_VIEW")) notFound();
+  // 自分のものか、権限があれば他人のものも（lib/doc-access.ts）。見せないものは、あることも伝えない
+  if (!(await canAccessDocument(actor, row))) notFound();
 
   /*
     **ファイルの様式で作ったものは、紙面が残っていない。**

@@ -1,6 +1,7 @@
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { canAccessDocument } from "@/lib/doc-access";
 import { removeFile } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -28,12 +29,15 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     select: {
       generatedBy: true,
       targetCode: true,
+      targetRef: true,
+      hasComposition: true,
       generatedAt: true,
       filePath: true,
-      template: { select: { code: true } },
+      template: { select: { code: true, target: true } },
     },
   });
-  if (!row || row.generatedBy !== actor.user.id) {
+  // 自分のものか、権限があれば他人のものも（lib/doc-access.ts）。見せないものは、あることも伝えない
+  if (!row || !(await canAccessDocument(actor, row))) {
     return jsonError(404, "not_found", m.errors.notFound);
   }
 

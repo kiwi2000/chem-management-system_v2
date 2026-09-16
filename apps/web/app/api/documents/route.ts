@@ -1,6 +1,7 @@
 import { emptyTableState, parseTableState } from "@chem/shared";
 import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { creatorNames, documentWhere } from "@/lib/doc-access";
 import { DOCUMENT_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import type { GeneratedDocumentDto } from "@/lib/types";
@@ -25,10 +26,9 @@ export async function GET(req: Request) {
     DOCUMENT_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
+  // 自分のものか、権限があれば他人のものも（組成・未公開の権限で見せてよいものだけ。lib/doc-access.ts）
   const where = {
-    generatedBy: actor.user.id,
-    // 組成（判定の根拠を含む）が載っている帳票は、組成を見られない人には一覧にも出さない
-    ...(actor.has("COMPOSITION_VIEW") ? {} : { hasComposition: false }),
+    ...(await documentWhere(actor)),
     ...buildWhere(DOCUMENT_COLUMNS, state.filters),
   };
 
@@ -41,6 +41,7 @@ export async function GET(req: Request) {
         targetCode: true,
         hasComposition: true,
         generatedAt: true,
+        generatedBy: true,
         params: true,
         fileName: true,
         fileSize: true,
@@ -53,6 +54,7 @@ export async function GET(req: Request) {
     prisma.generatedDocument.count({ where }),
   ]);
 
+  const names = await creatorNames(items.map((d) => d.generatedBy));
   return Response.json({
     items: items.map((d): GeneratedDocumentDto => ({
       id: d.id,
@@ -67,6 +69,8 @@ export async function GET(req: Request) {
       fileName: d.fileName,
       fileSize: d.fileSize,
       fileError: d.fileError,
+      createdByName: (d.generatedBy && names.get(d.generatedBy)) || null,
+      mine: d.generatedBy === actor.user.id,
     })),
     total,
     page: state.page,

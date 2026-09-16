@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { canAccessDocument } from "@/lib/doc-access";
 import { fileExists, fileResponse } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -22,12 +23,16 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   const row = await prisma.generatedDocument.findUnique({
     where: { id },
-    select: { generatedBy: true, hasComposition: true, fileName: true, filePath: true },
+    select: {
+      generatedBy: true,
+      hasComposition: true,
+      targetRef: true,
+      fileName: true,
+      filePath: true,
+      template: { select: { target: true } },
+    },
   });
-  if (!row || row.generatedBy !== actor.user.id) {
-    return jsonError(404, "not_found", m.errors.notFound);
-  }
-  if (row.hasComposition && !actor.has("COMPOSITION_VIEW")) {
+  if (!row || !(await canAccessDocument(actor, row))) {
     return jsonError(404, "not_found", m.errors.notFound);
   }
   if (!row.fileName || !(await fileExists(row.filePath))) {
