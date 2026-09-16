@@ -642,7 +642,8 @@ export async function collectForList(
             : categories.size === 0
               ? m.judgements.listNone
               : m.judgements.listHit(categories.size),
-          judgementCategories: [...categories.values()].join(locale === "en" ? ", " : "、"),
+          // 区分ごとに改行。読点でつなぐと、区分が多い製品で読めなくなる（2026-09-16 指示）
+          judgementCategories: [...categories.values()].join("\n"),
           needsReview: p.judgements.some((j) => j.needsReview) ? m.common.yes : "",
           note: p.note ?? "",
         };

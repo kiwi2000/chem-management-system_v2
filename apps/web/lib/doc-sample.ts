@@ -177,7 +177,7 @@ function sampleCell(columnKey: string, row: number, locale: Locale): string {
     case "judgement":
       return en ? "2" : "2 件";
     case "judgementCategories":
-      return en ? "Sample Act Class 1, Sample Act Class 2" : "見本法 第一種、見本法 第二種";
+      return en ? "Sample Act Class 1\nSample Act Class 2" : "見本法 第一種\n見本法 第二種";
     case "score":
       return ["12.000", "3.500", "0"][row] ?? "0";
     case "scoreRank":

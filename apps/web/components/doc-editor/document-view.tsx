@@ -646,6 +646,8 @@ const CELL: React.CSSProperties = {
   border: "0.2mm solid #000",
   padding: "1mm 2mm",
   verticalAlign: "top",
+  // 値の中の改行（該当した規制区分など）をそのまま行に出す
+  whiteSpace: "pre-line",
 };
 
 /** 表のセルに重ねる飾り。地色だけ（罫線は表のもの、余白は詰めない） */
