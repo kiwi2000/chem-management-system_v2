@@ -2,6 +2,7 @@ import { settingsSaveSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { endNonAdminSessions } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
+import { ensureWritableDir, resolveOutputDir } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
 import { countPending, resolvePending } from "@/lib/pending-resolution";
 import { getAppSettings, saveAppSettings } from "@/lib/settings";
@@ -67,6 +68,17 @@ export async function PUT(req: Request) {
     if (how && wasRequired && !isRequired) {
       await resolvePending(entity, how, actor.user.id);
     }
+  }
+
+  // 帳票の出力先は、あるか・書けるかをここで確かめる（無ければ作る）。だめなら保存しない
+  const outDir = resolveOutputDir(next.documentOutputDir);
+  try {
+    await ensureWritableDir(outDir);
+  } catch {
+    return jsonError(400, "validation_error", m.settings.outputDirUnwritable(outDir), {
+      formErrors: [],
+      fieldErrors: { documentOutputDir: [m.settings.outputDirUnwritable(outDir)] },
+    });
   }
 
   await saveAppSettings(next, actor.user.id);

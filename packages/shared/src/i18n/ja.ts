@@ -1412,6 +1412,15 @@ export const ja = {
     } as Record<string, string>,
     jobMissed: (n: number) => `作れなかった ${n} 件`,
     jobOpen: "まとめて開く",
+    /** PDF ファイル（2026-09-16 指示） */
+    file: "ファイル",
+    fileMaking: "作成中…",
+    fileFailed: "PDF を作れませんでした",
+    fileGone: "ファイルが見つかりません（消されています）",
+    download: "ダウンロード",
+    downloadZip: "zip でダウンロード",
+    downloadNone: "選んだものにファイルがありません",
+    downloadSkipped: (n: number) => `${n} 件はファイルが無いため入っていません`,
     jobInterrupted: "サーバーが再起動したため途中で止まりました。もう一度生成してください",
     jobNoAccess: "帳票を作る権限が無くなっているため、作れませんでした",
     printHint:
@@ -1557,6 +1566,17 @@ export const ja = {
     passwordRequireMixedCase: "英字の大文字と小文字を両方入れる",
     passwordPreview: "いまの決まり",
     productSection: "製品",
+    /** 帳票（PDF）の置き場所とファイル名（2026-09-16 指示） */
+    documentSection: "ドキュメント（帳票の PDF）",
+    outputDir: "帳票の出力先フォルダー",
+    outputDirHint:
+      "作った PDF を置くサーバー上のフォルダーです。「data/documents」のように書くとアプリのフォルダーからの相対、「D:\\chem-docs」や「/srv/chem/docs」のように書くと絶対の場所になります。保存するときに、あるか・書けるかを確かめます（無ければ作ります）",
+    outputDirUnwritable: (dir: string) =>
+      `帳票の出力先フォルダー「${dir}」を作れないか、書き込めません`,
+    fileNamePattern: "帳票のファイル名",
+    fileNamePatternHint:
+      "拡張子（.pdf）は付けません。使える差込み: {テンプレート} {対象コード} {対象名} {日付} {時刻} {バージョン} {通番}。日付・時刻は {日付:YYYY-MM-DD} {時刻:HHmm} のように形を添えられます（YYYY・YY・MM・DD・HH・mm・ss）。通番は {通番} でそのまま、{通番:3} で 3 桁のゼロ埋めです。ファイル名に使えない文字は _ になり、同じ名前があれば -2 のように付きます",
+    fileNamePatternUnknown: (names: string[]) => `使えない差込みがあります: ${names.join("、")}`,
     approvalSection: "承認",
     pendingTitle: "承認待のものが残っています",
     pendingHint: "承認を不要にすると、承認する人がいなくなります。まとめてどちらかに寄せてください",

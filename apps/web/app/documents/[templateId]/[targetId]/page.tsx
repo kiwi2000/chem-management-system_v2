@@ -1,13 +1,7 @@
-import { notFound } from "next/navigation";
-import { DocumentView } from "@/components/doc-editor/document-view";
-import { writeAudit } from "@/lib/audit";
+import { notFound, redirect } from "next/navigation";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { collectFor, containsComposition, resolveOrgChoices } from "@/lib/doc-data";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
-import { renderDocument } from "@/lib/doc-render";
-import { getMessages, isLocale, organisationIdsIn, parseOrgChoices } from "@chem/shared";
-import { PrintOrientation } from "@/components/doc-editor/print-orientation";
 import { TemplateFileDownload } from "@/components/doc-editor/template-file-download";
 
 /**
@@ -48,14 +42,9 @@ export default async function DocumentPage({
   searchParams,
 }: {
   params: Promise<{ templateId: string; targetId: string }>;
-  searchParams: Promise<{
-    company?: string;
-    department?: string;
-    to?: string;
-    org?: string | string[];
-  }>;
+  searchParams: Promise<{ company?: string; department?: string; to?: string }>;
 }) {
-  const [{ templateId, targetId }, { company, department, to, org }] = await Promise.all([
+  const [{ templateId, targetId }, { company, department, to }] = await Promise.all([
     params,
     searchParams,
   ]);
@@ -71,105 +60,20 @@ export default async function DocumentPage({
   const template = toDocTemplateDto(row);
 
   /*
-    **紙面の言葉は、テンプレートに書いてある言語で決める。**
-    読んでいる人の画面の言語ではない。英語の様式は、
-    日本語で使っている人が出しても英語で出るのでなければ、
-    相手に送るものとして使えない。
-    画面の操作欄（印刷ボタンなど）は、読んでいる人の言語のまま。
-  */
-  const lower = template.locale.toLowerCase();
-  const locale = isLocale(lower) ? lower : "ja";
-  const m = getMessages(locale);
-
-  /*
-    差出人と宛先。**宛先は「宛先を使う」印の付いた様式でだけ見る。**
-    印の無い様式に付いてきても捨てる（URLに書けば効く、という状態を作らない）。
-    差出人を差し替えられるかどうかは、集める側が権限で判断する
-  */
-  // 生成するときに選んだ組織を、様式の組織ブロックへ書き込む（様式で決めてあるものは変えない）
-  const content = await resolveOrgChoices(template.content, org);
-  const parties = {
-    companyId: company ?? null,
-    departmentId: department ?? null,
-    recipientId: template.usesRecipient ? (to ?? null) : null,
-    // 様式が名指ししている組織と、生成するときに選んだ組織（組織ブロック）
-    organisationIds: organisationIdsIn(content),
-  };
-
-  /*
-    預かった Excel・Word の様式は、**画面に出さずに落としてもらう。**
-    紙面をこちらで組み立てないので、見せられるものが無い。
+    画面編集の様式は、1 件でもバックグラウンド処理で PDF にする（2026-09-16 指示）。
+    この画面は **預かった Excel・Word の様式** のためにだけ残す。
+    紙面をこちらで組み立てないので、画面に出さずに落としてもらう。
     値を埋めたファイルは、押されたときに作る（作った記録もそのときに残る）
   */
-  if (template.kind !== "BLOCK") {
-    return (
-      <TemplateFileDownload
-        href={`/api/document-files/${template.id}/${targetId}${search(company, department, to, template.usesRecipient)}`}
-        title={`${template.code} ${template.nameJa}`}
-        ready={template.fileName !== null}
-        backHref="/documents"
-      />
-    );
-  }
-
-  // 見る権限は、集める側が対象ごとに判断する（見られないものは null が返る）
-  const data = await collectFor(actor, template.target, targetId, locale, m, parties);
-  if (!data) notFound();
-
-  const doc = renderDocument({
-    content,
-    target: template.target,
-    values: data.values,
-    tables: data.tables,
-  });
-
-  await Promise.all([
-    prisma.generatedDocument.create({
-      data: {
-        templateId: template.id,
-        targetRef: targetId,
-        targetCode: data.code,
-        generatedBy: actor.user.id,
-        // 出した紙面をそのまま残す。あとで開いたときに当時の内容が出る
-        content: doc as unknown as object,
-        hasComposition: containsComposition(content, data),
-        params: {
-          version: data.values.get("doc.version") ?? "",
-          // どの会社・部署を選び、誰に宛てて出したか。あとから記録だけで追えるように残す
-          ...(parties.companyId ? { companyId: parties.companyId } : {}),
-          ...(parties.departmentId ? { departmentId: parties.departmentId } : {}),
-          ...(parties.recipientId ? { recipientId: parties.recipientId } : {}),
-          // 組織ブロックで選んだ組織。ブロックid → 組織id
-          ...(parseOrgChoices(org).size
-            ? { organisations: Object.fromEntries(parseOrgChoices(org)) }
-            : {}),
-        },
-      },
-    }),
-    // 持ち出しの記録。組成が載ることがあるので、閲覧としても残す
-    writeAudit({
-      entity: "generated_documents",
-      entityId: template.id,
-      action: "export",
-      actorId: actor.user.id,
-      diff: { template: template.code, target: data.code },
-    }),
-  ]);
+  if (template.kind === "BLOCK") redirect("/documents");
 
   return (
-    <>
-      <PrintOrientation orientation={doc.orientation} />
-      <DocumentView
-        doc={doc}
-        title={`${template.code} ${template.nameJa}`}
-        backHref="/documents"
-        /*
-          保存するときのファイル名。**中身が分かる名前にする。**
-          テンプレート・対象・日付の3つが揃っていれば、
-          あとから見て何の帳票か分かる（記号は入れない。ファイル名に使えない環境がある）
-        */
-      />
-    </>
+    <TemplateFileDownload
+      href={`/api/document-files/${template.id}/${targetId}${search(company, department, to, template.usesRecipient)}`}
+      title={`${template.code} ${template.nameJa}`}
+      ready={template.fileName !== null}
+      backHref="/documents"
+    />
   );
 }
 

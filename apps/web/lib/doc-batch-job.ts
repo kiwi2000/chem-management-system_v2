@@ -14,23 +14,29 @@ import { actorOf, type Actor } from "@/lib/authz";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { collectFor, containsComposition, resolveOrgChoices } from "@/lib/doc-data";
+import { currentOutputDir, writePdfFile } from "@/lib/doc-files";
 import { renderDocument } from "@/lib/doc-render";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { productColumns, SUBSTANCE_COLUMNS } from "@/lib/list-columns";
+import { closeBrowser, internalBaseUrl, renderPdf } from "@/lib/pdf";
+import { makePrintToken } from "@/lib/print-token";
 import { visibilityWhere as productVisibility } from "@/lib/product-service";
+import { getAppSettings } from "@/lib/settings";
 import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import type { DocBatchJobDto } from "@/lib/types";
 
 /**
- * まとめて帳票を作る仕事（バックグラウンド処理。2026-09-16 指示）。
+ * 帳票を作る仕事（バックグラウンド処理。2026-09-16 指示）。
  *
  * 頼まれたぶんを **1 つずつ順に** 作り、進み具合を DocumentBatchJob に書く。
+ * 1 件ごとに、紙面のデータを残してから **PDF ファイルを作って出力先フォルダーに置く**。
  * 画面は数秒おきに聞きに来る。画面を離れても仕事は続き、できたものは
- * 「自分が作ったドキュメント」に並ぶ（仕事ごとにまとめて開いて、1 回で刷れる）。
+ * 「自分が作ったドキュメント」に並ぶ（1 件ずつでも zip でも落とせる）。
  *
- * **頼んだ人の権限のまま動く。**見る権限が無い相手は作れなかった数に入る
- * （1 件ずつ作るときと同じ）。サーバーが 1 台のあいだは、待ち行列をこのモジュールの変数で持つ。
+ * **頼んだ人の権限のまま動く。**見る権限が無い相手は作れなかった数に入る。
+ * PDF だけ作れなかったときは記録に理由を残し、紙面のデータは残す（画面では開ける）。
+ * サーバーが 1 台のあいだは、待ち行列をこのモジュールの変数で持つ。
  *
  * **生きているかは DB の heartbeatAt で見る**（メモリの記録には頼らない）。
  * 走らせている側が 1 件ごとに更新し、待っている仕事にも同じ時刻を書く。
@@ -61,6 +67,8 @@ async function pump(): Promise<void> {
     await run(next);
   } finally {
     active = null;
+    // 続きが無ければブラウザを閉じてメモリを返す
+    if (queue.length === 0) await closeBrowser();
     void pump();
   }
 }
@@ -139,6 +147,30 @@ export interface DocBatchParams {
   org?: string[];
 }
 
+/**
+ * 1 枚の PDF を作って置く。**失敗しても投げない**（理由を記録に残して次へ進む）
+ */
+async function makePdf(
+  docId: string,
+  vars: { template: string; code: string; name: string; version: string; seq: number },
+  outDir: string,
+  pattern: string,
+  m: ReturnType<typeof getMessages>,
+): Promise<void> {
+  try {
+    const url = `${internalBaseUrl()}/print/${docId}?t=${encodeURIComponent(makePrintToken(docId))}`;
+    const pdf = await renderPdf(url);
+    const file = await writePdfFile(outDir, pattern, { ...vars, at: new Date() }, pdf);
+    await prisma.generatedDocument.update({ where: { id: docId }, data: { ...file } });
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    await prisma.generatedDocument.update({
+      where: { id: docId },
+      data: { fileError: `${m.documents.fileFailed}: ${reason}`.slice(0, 1000) },
+    });
+  }
+}
+
 async function run(jobId: string): Promise<void> {
   const job = await prisma.documentBatchJob.findUnique({
     where: { id: jobId },
@@ -179,6 +211,11 @@ async function run(jobId: string): Promise<void> {
     const ids = await resolveTargetIds(actor, template.target, job.selection as DocSelection);
     await heartbeat(jobId, { total: ids.length });
 
+    // 出力先とファイル名の書式は、走り始めた時点の設定を使う（途中で変えても、この仕事は変えない）
+    const settings = await getAppSettings();
+    const outDir = await currentOutputDir();
+    const pattern = settings.documentFileNamePattern;
+
     let done = 0;
     let missed = 0;
     const missedIds: string[] = [];
@@ -196,7 +233,8 @@ async function run(jobId: string): Promise<void> {
             values: data.values,
             tables: data.tables,
           });
-          await prisma.generatedDocument.create({
+          const version = data.values.get("doc.version") ?? "";
+          const created = await prisma.generatedDocument.create({
             data: {
               templateId: template.id,
               targetRef: id,
@@ -206,7 +244,7 @@ async function run(jobId: string): Promise<void> {
               content: doc as unknown as object,
               hasComposition: containsComposition(content, data),
               params: {
-                version: data.values.get("doc.version") ?? "",
+                version,
                 ...(parties.companyId ? { companyId: parties.companyId } : {}),
                 ...(parties.departmentId ? { departmentId: parties.departmentId } : {}),
                 ...(parties.recipientId ? { recipientId: parties.recipientId } : {}),
@@ -214,7 +252,24 @@ async function run(jobId: string): Promise<void> {
               },
               batchJobId: jobId,
             },
+            select: { id: true },
           });
+          await makePdf(
+            created.id,
+            {
+              template: template.code,
+              code: data.code,
+              name:
+                data.values.get(
+                  template.target === "PRODUCT" ? "product.nameJa" : "substance.nameJa",
+                ) ?? data.code,
+              version,
+              seq: done + 1,
+            },
+            outDir,
+            pattern,
+            m,
+          );
         }
       } catch {
         // 1 件の失敗で全部を止めない。作れなかった数に入れて先へ進む

@@ -96,7 +96,13 @@ export default function SettingsPage() {
           setPending(details?.pending ?? null);
           return;
         }
-        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        // 欄ごとの理由（帳票のファイル名の差込みなど）があれば、それも並べる
+        const fieldErrors = Object.values(
+          (body?.error.details as { fieldErrors?: Record<string, string[]> } | undefined)
+            ?.fieldErrors ?? {},
+        ).flat();
+        const detail = fieldErrors.length > 0 ? ` ${fieldErrors.join(" / ")}` : "";
+        setError((body?.error.message ?? m.errors.saveFailed(res.status)) + detail);
         return;
       }
       setPending(null);
@@ -363,6 +369,39 @@ export default function SettingsPage() {
                 className="border-input bg-background w-full rounded-none border px-3 py-2 text-sm"
               />
               <p className="text-muted-foreground text-xs">{m.settings.optionListHint}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.documentSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 帳票（PDF）の置き場所。相対ならアプリのフォルダーから。保存時にサーバーが確かめる */}
+            <div className="space-y-2">
+              <Label htmlFor="documentOutputDir">{m.settings.outputDir}</Label>
+              <Input
+                id="documentOutputDir"
+                value={settings.documentOutputDir}
+                onChange={(e) => setSettings({ ...settings, documentOutputDir: e.target.value })}
+                className="font-mono"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.outputDirHint}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="documentFileNamePattern">{m.settings.fileNamePattern}</Label>
+              <Input
+                id="documentFileNamePattern"
+                value={settings.documentFileNamePattern}
+                onChange={(e) =>
+                  setSettings({ ...settings, documentFileNamePattern: e.target.value })
+                }
+                className="font-mono"
+              />
+              <p className="text-muted-foreground text-xs whitespace-pre-line">
+                {m.settings.fileNamePatternHint}
+              </p>
             </div>
           </CardContent>
         </Card>

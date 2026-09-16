@@ -1,6 +1,7 @@
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { removeFile } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       generatedBy: true,
       targetCode: true,
       generatedAt: true,
+      filePath: true,
       template: { select: { code: true } },
     },
   });
@@ -36,6 +38,8 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   }
 
   await prisma.generatedDocument.delete({ where: { id } });
+  // PDF のファイルも一緒に消す（記録だけ消えて、ファイルが残らないように）
+  await removeFile(row.filePath);
   await writeAudit({
     entity: "generated_documents",
     entityId: id,

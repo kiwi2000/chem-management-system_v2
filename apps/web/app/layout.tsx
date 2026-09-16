@@ -8,7 +8,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n-client";
 import { getAppSettings } from "@/lib/settings";
-import { NONCE_HEADER } from "@/lib/routes";
+import { NONCE_HEADER, PATH_HEADER } from "@/lib/routes";
 import { getBackground, getHeaderStrong, getTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import "./globals.css";
@@ -25,8 +25,22 @@ export async function generateMetadata(): Promise<Metadata> {
 const SYSTEM_THEME_SCRIPT = `try{if(matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}`;
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  const h = await headers();
   // middleware が要求ごとに作る使い捨ての印。これが付いた script だけが実行できる
-  const nonce = (await headers()).get(NONCE_HEADER) ?? undefined;
+  const nonce = h.get(NONCE_HEADER) ?? undefined;
+
+  /*
+    印刷用（PDF 化）のページは **紙面だけ**。メニューも見出しも無く、ログインも求めない
+    （サーバー側の Chromium が短命の印で開く。守りはページ自身が行う。lib/print-token.ts）
+  */
+  if (h.get(PATH_HEADER)?.startsWith("/print/")) {
+    return (
+      <html lang="ja">
+        <body className="bg-white antialiased">{children}</body>
+      </html>
+    );
+  }
+
   const [locale, theme, headerStrong, background, user, settings] = await Promise.all([
     getLocale(),
     getTheme(),

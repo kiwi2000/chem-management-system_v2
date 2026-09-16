@@ -526,6 +526,7 @@
 sudo apt update &amp;&amp; sudo apt -y upgrade
 sudo apt -y install unattended-upgrades</pre>
           <p>RHEL系の場合は <code>sudo dnf -y update</code> と <code>sudo dnf -y install dnf-automatic</code> です。</p>
+          <p><b>帳票の PDF 化について。</b>アプリはサーバーの中で Chromium（ブラウザ）を動かして PDF を作ります。Docker 構成ではイメージに入っているので、何もしなくて構いません。Docker を使わず直接動かす場合は、Chromium が使う共有ライブラリを入れます（<code>sudo apt -y install libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2 fonts-noto-cjk</code>）。ネットに出られないサーバーでは、これらの deb を導入セットに同梱してお渡しします。</p>
         </div>
       </div>
 
@@ -858,6 +859,7 @@ docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
 
   <section>
     <h2>10. Windows Server への導入 <span class="count">Linux の代わりに</span></h2>
+    <p><b>帳票の PDF 化について。</b>導入セットには PDF を作るための Chromium が入っており、展開するだけで動きます（インストーラーも管理者権限も要りません。実行時に外へは出ません）。万一それが動かない場合でも、Windows Server 2022 以降に最初から入っている Microsoft Edge を使って作ります。日本語の字は Windows のフォントで出ます。</p>
     <p>
       ここまでは Linux での手順です。<b>Windows Server に入れる場合は、この節に読み替えてください。</b>
       <b>アプリのプログラムは1行も変わりません。</b>変わるのは、入れ物（Docker）の代わりに

@@ -19,6 +19,12 @@ COPY packages/domain/package.json packages/domain/
 COPY packages/shared/package.json packages/shared/
 RUN npm ci --no-audit --no-fund
 
+# 帳票の PDF 化に使う Chromium（Playwright）。イメージに焼き込み、実行時に外へは出ない。
+# 共有ライブラリも一緒に入れる（--with-deps）。置き場所は PLAYWRIGHT_BROWSERS_PATH（実行時も同じ値を使う）
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN npx playwright install --with-deps chromium \
+  && rm -rf /var/lib/apt/lists/*
+
 # ソースコピー → Prismaクライアント生成 → 本番ビルド
 # 認証は自前実装のため、ビルド時に外部サービスの設定を焼き込む必要はない
 COPY . .

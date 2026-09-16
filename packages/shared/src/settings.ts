@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  DEFAULT_DOC_FILE_NAME_PATTERN,
+  DEFAULT_DOC_OUTPUT_DIR,
+  unknownFileNamePlaceholders,
+} from "./doc-file-name";
 import { COMPOSITION_VALIDATION_MODES, type CompositionValidationMode } from "./composition";
 import { toScaled } from "./decimal";
 import type { Messages } from "./i18n/ja";
@@ -102,6 +107,15 @@ export interface AppSettings {
   passwordSymbolChars: string;
   /** 大文字と小文字を両方入れさせる（英字を使う場合のみ意味を持つ） */
   passwordRequireMixedCase: boolean;
+
+  /**
+   * 帳票（PDF）を置くフォルダー。**相対の道筋はアプリのフォルダーから数える**（既定 data/documents。
+   * お客さんの環境ごとに違う絶対の道筋を決め打ちしないため）。絶対の道筋も書ける。
+   * 外からは直接見えない場所に置き、取り出しは API を通す。保存するときに、あるか・書けるかを確かめる（2026-09-16 指示）
+   */
+  documentOutputDir: string;
+  /** 帳票のファイル名の書式。差込みは doc-file-name.ts（例: {テンプレート}_{対象コード}_{日付}） */
+  documentFileNamePattern: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -125,6 +139,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   passwordSymbolChars: "!@#$%^&*()-_=+[]{};:,.?/",
   passwordRequireMixedCase: false,
   mfaRequired: false,
+  documentOutputDir: DEFAULT_DOC_OUTPUT_DIR,
+  documentFileNamePattern: DEFAULT_DOC_FILE_NAME_PATTERN,
 };
 
 /** パスワードの決まりだけを取り出したもの。画面にも渡すのでこの形で持つ */
@@ -285,6 +301,20 @@ export const SETTING_DEFS: SettingDef[] = [
     parse: (raw) => parseOptionList(raw),
     format: (v) => formatOptionList(v as string[]),
   },
+  {
+    field: "documentOutputDir",
+    key: "document.output_dir",
+    valueType: "STRING",
+    parse: (raw) => (raw.trim() === "" ? null : raw.trim()),
+  },
+  {
+    field: "documentFileNamePattern",
+    key: "document.file_name_pattern",
+    valueType: "STRING",
+    // 知らない差込みが入っていれば既定に戻す（作れないファイル名にしない）
+    parse: (raw) =>
+      raw.trim() !== "" && unknownFileNamePlaceholders(raw).length === 0 ? raw.trim() : null,
+  },
 ];
 
 /** 許容誤差は 0〜10%。これより大きい値は設定ミスとみなす */
@@ -336,6 +366,21 @@ export const settingsSchema = (m: Messages) =>
     passwordSymbolChars: z.string().max(100),
     passwordRequireMixedCase: z.boolean(),
     mfaRequired: z.boolean(),
+    // フォルダーがあるか・書けるかは、サーバー側（API）で確かめる
+    documentOutputDir: z
+      .string()
+      .trim()
+      .min(1, m.validation.required)
+      .max(500, m.validation.tooLong(500)),
+    documentFileNamePattern: z
+      .string()
+      .trim()
+      .min(1, m.validation.required)
+      .max(200, m.validation.tooLong(200))
+      .refine(
+        (v) => unknownFileNamePlaceholders(v).length === 0,
+        (v) => ({ message: m.settings.fileNamePatternUnknown(unknownFileNamePlaceholders(v)) }),
+      ),
   });
 
 export type SettingsInput = z.infer<ReturnType<typeof settingsSchema>>;

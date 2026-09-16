@@ -35,3 +35,6 @@ scripts/data/loli-inventories.tsv
 
 # LOLI の ListData.Data の取り出し（60MB 超。scripts/loli-dump-data.sh で作り直せる）
 scripts/data/loli-data-*.tsv
+
+# 帳票の PDF の既定の置き場所（システム設定「帳票の出力先フォルダー」）
+/data/

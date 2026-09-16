@@ -104,6 +104,18 @@ function shouldLog(ip: string | null): boolean {
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
+  /*
+    印刷用（PDF 化）のページは、サーバー側のブラウザが自分自身から開く。
+    ログインの Cookie も、送り元の住所（Caddy が付けるヘッダー）も持たないので、
+    接続元の判定と Cookie の確認はしない。ページ自身が短命の印（print-token.ts）で守る
+  */
+  if (pathname.startsWith("/print/")) {
+    // 外枠（app/layout.tsx）が「紙面だけの画面」と分かるように、道筋だけは載せる
+    const headers = new Headers(request.headers);
+    headers.set(PATH_HEADER, pathname);
+    return NextResponse.next({ request: { headers } });
+  }
+
   const blocked = checkIp(request, pathname);
   if (blocked) return blocked;
 

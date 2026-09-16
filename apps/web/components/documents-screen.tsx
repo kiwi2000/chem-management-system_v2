@@ -277,9 +277,78 @@ export function DocumentsScreen({
         filterable: false,
         render: (d) => d.version,
       },
+      {
+        // 作った PDF。押すと落ちる。まだ作っている途中・作れなかったときはその旨
+        key: "file",
+        header: m.documents.file,
+        kind: "text",
+        width: 260,
+        sortable: false,
+        filterable: false,
+        className: "text-xs",
+        render: (d) =>
+          d.fileName ? (
+            <a
+              href={`/api/documents/${d.id}/file`}
+              className="text-primary underline underline-offset-2"
+              title={
+                d.fileSize !== null ? `${Math.max(1, Math.round(d.fileSize / 1024))} KB` : undefined
+              }
+            >
+              {d.fileName}
+            </a>
+          ) : d.fileError ? (
+            <span className="text-destructive" title={d.fileError}>
+              {m.documents.fileFailed}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">{m.documents.fileMaking}</span>
+          ),
+      },
     ],
     [m, locale],
   );
+
+  /**
+   * 選んだ帳票の PDF を落とす。1 件ならそのファイル、複数なら zip。
+   * ファイルが無いものは飛ばされ、その数が知らせに出る
+   */
+  async function downloadSelected(targets: GeneratedDocumentDto[]) {
+    setError(null);
+    const withFile = targets.filter((d) => d.fileName);
+    if (withFile.length === 0) {
+      setError(m.documents.downloadNone);
+      return;
+    }
+    if (withFile.length === 1 && targets.length === 1) {
+      window.location.href = `/api/documents/${withFile[0]!.id}/file`;
+      return;
+    }
+    const res = await fetch("/api/documents/download", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: withFile.map((d) => d.id) }),
+    });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.loadFailed(res.status));
+      return;
+    }
+    const skipped =
+      Number(res.headers.get("X-Chem-Skipped") ?? "0") + (targets.length - withFile.length);
+    const name =
+      res.headers.get("Content-Disposition")?.match(/filename\*=UTF-8''([^;]+)/)?.[1] ??
+      "documents.zip";
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = decodeURIComponent(name);
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    if (skipped > 0) setNotice(m.documents.downloadSkipped(skipped));
+  }
 
   /** 生成の状況の列。進み具合は数字と帯で */
   const jobColumns: TableColumn<DocBatchJobDto>[] = useMemo(
@@ -360,6 +429,14 @@ export function DocumentsScreen({
                 {m.documents.jobOpen}
               </Link>
             )}
+            {j.status === "DONE" && j.done - j.missed > 0 && (
+              <a
+                href={`/api/documents/batch/${j.id}/zip`}
+                className="text-primary underline underline-offset-2"
+              >
+                {m.documents.downloadZip}
+              </a>
+            )}
             {j.error && <span className="text-destructive">{j.error}</span>}
           </div>
         ),
@@ -419,8 +496,11 @@ export function DocumentsScreen({
   async function make() {
     if (!picked || !selection) return;
     const parties = partyParams(picked);
-    if (selection.mode === "ids" && selection.ids.length === 1) {
-      router.push(documentHref(picked.id, selection.ids[0]!, parties));
+    // Excel・Word は 1 件ずつその場で落とす（PDF にはしない。保留）。画面編集の様式は何件でも仕事に頼む
+    if (picked.kind !== "BLOCK") {
+      if (selection.mode === "ids" && selection.ids.length === 1) {
+        router.push(documentHref(picked.id, selection.ids[0]!, parties));
+      }
       return;
     }
     setError(null);
@@ -677,6 +757,8 @@ export function DocumentsScreen({
           emptyMessage={m.documents.noneYet}
           selectable
           onDeleteSelected={onDeleteSelected}
+          // 選んだぶんを落とす（1 件なら PDF そのもの、複数なら zip）
+          bulkAction={{ label: m.documents.download, run: downloadSelected }}
           pageSizeOptions={[15, 25, 50, 100]}
           hintText={m.documents.savedHint}
         />

@@ -97,6 +97,7 @@ npm run dev                   # 開発サーバー（v2 は 3001。v1 の 3000 �
 npx prisma migrate dev        # マイグレーション作成・適用（データ欠損を伴う変更は
                               #   非対話環境で止まるので migration.sql を手書きして migrate deploy）
 npx prisma studio             # DBをブラウザで確認
+PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium   # 帳票の PDF 化に使う Chromium（node_modules に入る。初回だけ）
 npx tsx scripts/set-password.ts <メール> <パスワード>   # パスワード発行
 ```
 

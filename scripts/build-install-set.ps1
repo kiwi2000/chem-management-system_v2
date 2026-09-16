@@ -77,6 +77,11 @@ try {
   if ($env:NODE_ENV) { throw "NODE_ENV=$($env:NODE_ENV) が立っています。外してから実行してください" }
   & npm ci --no-audit --no-fund
   if ($LASTEXITCODE -ne 0) { throw "npm ci が失敗しました" }
+  # 帳票の PDF 化に使う Chromium を node_modules の中に入れる（PLAYWRIGHT_BROWSERS_PATH=0）。
+  # セットに同梱され、お客さんのサーバーでは展開するだけで動く（Edge しか無くても動く。lib/pdf.ts）
+  $env:PLAYWRIGHT_BROWSERS_PATH = "0"
+  & npx playwright install chromium
+  if ($LASTEXITCODE -ne 0) { throw "playwright install chromium が失敗しました" }
   & npx prisma generate
   if ($LASTEXITCODE -ne 0) { throw "prisma generate が失敗しました" }
   & npm run build

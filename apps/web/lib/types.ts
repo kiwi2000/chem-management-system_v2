@@ -722,6 +722,10 @@ export interface GeneratedDocumentDto {
   hasComposition: boolean;
   version: string;
   generatedAt: string;
+  /** 作った PDF。まだ作っている途中なら null、作れなかったら fileError に理由 */
+  fileName: string | null;
+  fileSize: number | null;
+  fileError: string | null;
 }
 
 /** まとめて帳票を作る仕事（バックグラウンド処理）の進み具合。自分の仕事だけが見える */

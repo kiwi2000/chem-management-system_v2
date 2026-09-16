@@ -2514,6 +2514,15 @@ model GeneratedDocument {
    */
   batchJobId String? @map("batch_job_id")
 
+  /**
+   * 作った PDF ファイル（2026-09-16 指示）。fileName は落とすときの名前、filePath はサーバー上の絶対の道筋。
+   * PDF を作れなかったときは fileError に理由を残す（紙面のデータは残るので画面では開ける）
+   */
+  fileName  String? @map("file_name") @db.VarChar(255)
+  filePath  String? @map("file_path")
+  fileSize  Int?    @map("file_size")
+  fileError String? @map("file_error")
+
   template DocumentTemplate  @relation(fields: [templateId], references: [id])
   batchJob DocumentBatchJob? @relation(fields: [batchJobId], references: [id])
 
