@@ -40,12 +40,52 @@ export type DocumentTemplateKind = (typeof DOCUMENT_TEMPLATE_KINDS)[number];
  *  ORGANISATION … 組織（取引先など）1 件につき 1 枚（2026-09-16 指示）
  *  NONE … 対象なし（汎用）。共通の項目だけで 1 枚（送付状・案内状など）
  */
-export const DOCUMENT_TARGETS = ["PRODUCT", "SUBSTANCE", "ORGANISATION", "NONE"] as const;
+export const DOCUMENT_TARGETS = [
+  "PRODUCT",
+  "SUBSTANCE",
+  "ORGANISATION",
+  "NONE",
+  "PRODUCT_LIST",
+  "SUBSTANCE_LIST",
+] as const;
 export type DocumentTarget = (typeof DOCUMENT_TARGETS)[number];
 
 /** 対象を 1 件ずつ選ぶ種類か（NONE だけは選ばずに作る） */
 export function targetHasRows(target: DocumentTarget): boolean {
   return target !== "NONE";
+}
+
+/**
+ * 一覧の帳票か。選んだ全部で **1 枚** を作る（2026-09-16 指示）。
+ * PRODUCT_LIST … 選んだ製品を 1 枚の表に。SUBSTANCE_LIST … 選んだ物質を 1 枚の表に
+ */
+export function targetIsList(target: DocumentTarget): boolean {
+  return target === "PRODUCT_LIST" || target === "SUBSTANCE_LIST";
+}
+
+/** 一覧の帳票で、相手を選ぶ表の種類（製品の表か物質の表か）。一覧でなければ null */
+export function listRowTarget(target: DocumentTarget): "PRODUCT" | "SUBSTANCE" | null {
+  if (target === "PRODUCT_LIST") return "PRODUCT";
+  if (target === "SUBSTANCE_LIST") return "SUBSTANCE";
+  return null;
+}
+
+/** 相手を選ぶ表の種類（製品・物質・組織）。対象なしは選ばないので null */
+export function pickerTargetOf(
+  target: DocumentTarget,
+): "PRODUCT" | "SUBSTANCE" | "ORGANISATION" | null {
+  switch (target) {
+    case "PRODUCT":
+    case "PRODUCT_LIST":
+      return "PRODUCT";
+    case "SUBSTANCE":
+    case "SUBSTANCE_LIST":
+      return "SUBSTANCE";
+    case "ORGANISATION":
+      return "ORGANISATION";
+    case "NONE":
+      return null;
+  }
 }
 
 /**
@@ -114,6 +154,10 @@ export const DOCUMENT_FIELDS: DocumentField[] = [
     印の無い様式に置いても空欄になる（社内文書に宛名は要らない）
   */
   { key: "to.name", target: "*", labelJa: "宛先の名称", labelEn: "Recipient" },
+
+  /* 一覧の帳票（選んだ製品・物質を 1 枚の表に）。1 件ごとの項目は無く、件数だけ */
+  { key: "list.count", target: "PRODUCT_LIST", labelJa: "件数", labelEn: "Row count" },
+  { key: "list.count", target: "SUBSTANCE_LIST", labelJa: "件数", labelEn: "Row count" },
 
   /*
     対象が組織のとき（2026-09-16 指示）。取引先ごとの案内状・調査依頼など。
@@ -327,6 +371,8 @@ export const DOCUMENT_TABLES = [
   "judgement",
   "substanceRegulation",
   "substanceInventory",
+  "productList",
+  "substanceList",
 ] as const;
 export type DocumentTable = (typeof DOCUMENT_TABLES)[number];
 
@@ -401,6 +447,42 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
       { key: "inventory", labelJa: "インベントリ", labelEn: "Inventory" },
       { key: "country", labelJa: "国", labelEn: "Country" },
       { key: "value", labelJa: "番号", labelEn: "Number" },
+    ],
+  },
+  /*
+    一覧の帳票の表（2026-09-16 指示）。列は製品・物質の一覧の画面にあるものから。
+    組成（成分・CAS）は載せない。載せると組成を見られる人にしか渡せない帳票になる
+  */
+  {
+    key: "productList",
+    target: "PRODUCT_LIST",
+    labelJa: "製品の一覧",
+    labelEn: "Product list",
+    columns: [
+      { key: "code", labelJa: "製品コード", labelEn: "Product code" },
+      { key: "nameJa", labelJa: "日本語名称", labelEn: "Name (JA)" },
+      { key: "nameEn", labelJa: "英語名称", labelEn: "Name (EN)" },
+      { key: "modelName", labelJa: "型式", labelEn: "Model" },
+      { key: "useName", labelJa: "用途", labelEn: "Use" },
+      { key: "judgement", labelJa: "判定", labelEn: "Result" },
+      { key: "judgementCategories", labelJa: "該当した規制区分", labelEn: "Applicable categories" },
+      { key: "needsReview", labelJa: "要確認", labelEn: "Needs review" },
+      { key: "note", labelJa: "備考", labelEn: "Note" },
+    ],
+  },
+  {
+    key: "substanceList",
+    target: "SUBSTANCE_LIST",
+    labelJa: "物質の一覧",
+    labelEn: "Substance list",
+    columns: [
+      { key: "code", labelJa: "物質コード", labelEn: "Substance code" },
+      { key: "casNumber", labelJa: "CAS番号", labelEn: "CAS number" },
+      { key: "nameJa", labelJa: "日本語名", labelEn: "Name (JA)" },
+      { key: "nameEn", labelJa: "英語名", labelEn: "Name (EN)" },
+      { key: "score", labelJa: "スコア", labelEn: "Score" },
+      { key: "scoreRank", labelJa: "段階", labelEn: "Rank" },
+      { key: "note", labelJa: "備考", labelEn: "Note" },
     ],
   },
 ];

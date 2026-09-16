@@ -1,4 +1,4 @@
-import type { DocumentTarget } from "@chem/shared";
+import { targetIsList, type DocumentTarget } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
@@ -34,14 +34,22 @@ async function hiddenTargetIds(actor: Actor): Promise<string[]> {
   return [...products.map((p) => p.id), ...substances.map((s) => s.id)];
 }
 
+const LIST_TARGETS: DocumentTarget[] = ["PRODUCT_LIST", "SUBSTANCE_LIST"];
+
 /** 一覧・zip の where。自分のものか、権限があれば他人のものも（見せてよいものだけ） */
 export async function documentWhere(actor: Actor): Promise<Prisma.GeneratedDocumentWhereInput> {
   const composition = actor.has("COMPOSITION_VIEW") ? {} : { hasComposition: false };
   if (!actor.has("DOCUMENT_VIEW_ALL")) return { generatedBy: actor.user.id, ...composition };
+  if (actor.has("INACTIVE_VIEW")) return composition;
   const hidden = await hiddenTargetIds(actor);
   return {
     ...composition,
     ...(hidden.length > 0 ? { targetRef: { notIn: hidden } } : {}),
+    /*
+      一覧の帳票（製品・物質の一覧）は、未公開のものが混ざっていても紙面からは分からない。
+      未公開を見られない人には、自分が作ったものだけ
+    */
+    OR: [{ generatedBy: actor.user.id }, { template: { target: { in: LIST_TARGETS } } }],
   };
 }
 
@@ -61,6 +69,8 @@ export async function canAccessDocument(
   if (actor.has("INACTIVE_VIEW")) return true;
   // 組織は誰でも見られ、対象なしは相手が無い
   if (doc.template.target === "ORGANISATION" || doc.template.target === "NONE") return true;
+  // 一覧の帳票は未公開が混ざりうる。未公開を見られない人には見せない（上の documentWhere と同じ）
+  if (targetIsList(doc.template.target)) return false;
   const visible =
     doc.template.target === "PRODUCT"
       ? await prisma.product.findFirst({

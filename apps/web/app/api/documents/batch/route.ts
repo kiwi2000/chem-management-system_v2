@@ -1,4 +1,4 @@
-import { docBatchRequestSchema } from "@chem/shared";
+import { docBatchRequestSchema, targetIsList } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import {
@@ -71,6 +71,8 @@ export async function POST(req: Request) {
   // 件数は頼んだ時点のもの。走るときにもう一度引き直す（そのあいだに増減していれば、そちらに従う）
   const ids = await resolveTargetIds(actor, template.target, v.selection);
   if (ids.length === 0) return jsonError(400, "empty", m.documents.batchEmpty);
+  // 一覧の帳票は、選んだ全部で 1 枚
+  const total = targetIsList(template.target) ? 1 : ids.length;
 
   const job = await prisma.documentBatchJob.create({
     data: {
@@ -82,11 +84,11 @@ export async function POST(req: Request) {
         ...(v.to ? { to: v.to } : {}),
         ...(v.org && v.org.length > 0 ? { org: v.org } : {}),
       },
-      total: ids.length,
+      total,
       createdBy: actor.user.id,
     },
     select: { id: true },
   });
   enqueueDocBatch(job.id);
-  return Response.json({ id: job.id, total: ids.length }, { status: 201 });
+  return Response.json({ id: job.id, total }, { status: 201 });
 }

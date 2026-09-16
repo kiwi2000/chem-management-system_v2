@@ -50,6 +50,7 @@ const SAMPLE_JA: Record<string, string> = {
   "org.group": "見本部",
   "pick.company": "見本商事株式会社",
   "pick.department": "見本営業部",
+  "list.count": "3",
 };
 
 const SAMPLE_EN: Record<string, string> = {
@@ -136,6 +137,22 @@ function sampleCell(columnKey: string, row: number, locale: Locale): string {
     case "contentPct":
     case "totalPct":
       return ["55.0", "30.0", "15.0"][row] ?? "10.0";
+    case "nameJa":
+      return en ? `Sample ${row + 1}` : `見本 ${row + 1}`;
+    case "nameEn":
+      return `Sample ${row + 1}`;
+    case "modelName":
+      return `MX-10${row}`;
+    case "useName":
+      return en ? "Paint" : "塗料";
+    case "judgement":
+      return en ? "2" : "2 件";
+    case "judgementCategories":
+      return en ? "Sample Act Class 1, Sample Act Class 2" : "見本法 第一種、見本法 第二種";
+    case "score":
+      return ["12.000", "3.500", "0"][row] ?? "0";
+    case "scoreRank":
+      return ["A", "B", ""][row] ?? "";
     case "name":
       return en ? `Sample substance ${row + 1}` : `見本物質 ${row + 1}`;
     case "law":

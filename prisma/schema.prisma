@@ -2341,6 +2341,9 @@ enum DocumentTarget {
   ORGANISATION
   /** 対象なし（汎用）。共通の項目だけで 1 枚（2026-09-16 指示） */
   NONE
+  /** 選んだ製品・物質を 1 枚の表に（2026-09-16 指示） */
+  PRODUCT_LIST
+  SUBSTANCE_LIST
 }
 
 /**

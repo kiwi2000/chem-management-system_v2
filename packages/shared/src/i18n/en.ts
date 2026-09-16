@@ -1121,9 +1121,11 @@ export const en: Messages = {
       SUBSTANCE: "Substance",
       ORGANISATION: "Organisation",
       NONE: "None (general)",
+      PRODUCT_LIST: "Product list",
+      SUBSTANCE_LIST: "Substance list",
     },
     targetHint:
-      "Product and substance make one document per row; organisation makes one per organisation; none makes a single document from the common fields only (cover letters, notices)",
+      "Product and substance make one document per row; organisation makes one per organisation; none makes a single document from the common fields only (cover letters, notices); product list and substance list put everything selected into one table",
     kind: "Built as",
     kinds: { BLOCK: "Screen editor", XLSX: "Excel", DOCX: "Word" },
     file: {

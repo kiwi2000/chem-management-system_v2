@@ -483,7 +483,137 @@ export async function collectForNone(
   return { code: "", values, tables: new Map(), judgementWithBasis: false };
 }
 
-/** 対象の種類に応じて集める */
+/**
+ * 一覧の帳票（選んだ製品・物質を 1 枚の表に。2026-09-16 指示）。
+ *
+ * **行の並びは選んだ順（＝生成の画面で並べ替えていた順）のまま。**
+ * 見えない行（未公開・無効）は載せない。組成の列は無いので、組成の権限には関わらない。
+ * 判定の列は製品の一覧の画面と同じ読み（未判定・該当なし・n 件）
+ */
+export async function collectForList(
+  actor: Actor,
+  target: DocumentTarget,
+  ids: string[],
+  locale: Locale,
+  m: Messages,
+  parties?: DocParties,
+): Promise<DocData> {
+  const version = await getCurrentVersion();
+  const order = new Map(ids.map((id, i) => [id, i]));
+  const byPicked = <T extends { id: string }>(a: T, b: T) =>
+    (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0);
+  const tables: RenderInput["tables"] = new Map();
+  let count = 0;
+
+  if (target === "PRODUCT_LIST") {
+    const products = await prisma.product.findMany({
+      where: { id: { in: ids }, deletedAt: null, ...visibilityWhere(actor) },
+      select: {
+        id: true,
+        code: true,
+        nameJa: true,
+        nameEn: true,
+        note: true,
+        modelValue: true,
+        uses: { orderBy: { displayOrder: "asc" }, select: { value: true } },
+        expansion: { select: { judgedVersionId: true } },
+        judgements: {
+          where: { versionId: version?.id ?? "" },
+          select: {
+            categoryId: true,
+            verdict: true,
+            needsReview: true,
+            category: {
+              select: {
+                nameOriginal: true,
+                nameJa: true,
+                nameEn: true,
+                law: { select: { nameOriginal: true, nameJa: true, nameEn: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    products.sort(byPicked);
+    count = products.length;
+    tables.set("productList", {
+      columns: tableDef("productList", locale),
+      rows: products.map((p) => {
+        // 判定したか・当たった区分の数は、製品の一覧と同じ数えかた（区分ごとに 1）
+        const judged = version !== null && p.expansion?.judgedVersionId === version.id;
+        const categories = new Map<string, string>();
+        for (const j of p.judgements) {
+          if (j.verdict !== "APPLICABLE" || categories.has(j.categoryId)) continue;
+          const law = pickStatutoryName(
+            locale,
+            j.category.law.nameOriginal,
+            j.category.law.nameJa,
+            j.category.law.nameEn,
+          );
+          const category = pickStatutoryName(
+            locale,
+            j.category.nameOriginal,
+            j.category.nameJa,
+            j.category.nameEn,
+          );
+          categories.set(j.categoryId, `${law} ${category}`);
+        }
+        return {
+          code: p.code,
+          nameJa: p.nameJa,
+          nameEn: p.nameEn ?? "",
+          modelName: p.modelValue ?? "",
+          useName: p.uses.map((u) => u.value).join("、"),
+          judgement: !judged
+            ? m.judgements.listUnjudged
+            : categories.size === 0
+              ? m.judgements.listNone
+              : m.judgements.listHit(categories.size),
+          judgementCategories: [...categories.values()].join(locale === "en" ? ", " : "、"),
+          needsReview: p.judgements.some((j) => j.needsReview) ? m.common.yes : "",
+          note: p.note ?? "",
+        };
+      }),
+    });
+  } else {
+    const substances = await prisma.substance.findMany({
+      where: { id: { in: ids }, deletedAt: null, ...substanceVisibility(actor) },
+      select: {
+        id: true,
+        code: true,
+        casNumber: true,
+        nameJa: true,
+        nameEn: true,
+        score: true,
+        scoreRank: true,
+        note: true,
+      },
+    });
+    substances.sort(byPicked);
+    count = substances.length;
+    tables.set("substanceList", {
+      columns: tableDef("substanceList", locale),
+      rows: substances.map((s) => ({
+        code: s.code,
+        casNumber: s.casNumber ?? "",
+        nameJa: s.nameJa,
+        nameEn: s.nameEn ?? "",
+        score: s.score.toString(),
+        scoreRank: s.scoreRank ?? "",
+        note: s.note ?? "",
+      })),
+    });
+  }
+
+  const values = new Map<string, string>([
+    ...(await commonValues(actor, version?.code ?? null, locale, parties)),
+    ["list.count", String(count)],
+  ]);
+  return { code: "", values, tables, judgementWithBasis: false };
+}
+
+/** 対象の種類に応じて集める（1 件につき 1 枚の対象。一覧は collectForList） */
 export async function collectFor(
   actor: Actor,
   target: DocumentTarget,
@@ -501,6 +631,10 @@ export async function collectFor(
       return collectForOrganisation(actor, targetId, locale, parties);
     case "NONE":
       return collectForNone(actor, locale, parties);
+    case "PRODUCT_LIST":
+    case "SUBSTANCE_LIST":
+      // 一覧は id の並びを受け取る別の口（collectForList）。ここには来ない
+      return null;
   }
 }
 

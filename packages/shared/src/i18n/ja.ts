@@ -1146,9 +1146,16 @@ export const ja = {
     nameJa: "名称（日本語）",
     nameEn: "名称（英語）",
     target: "対象",
-    targets: { PRODUCT: "製品", SUBSTANCE: "物質", ORGANISATION: "組織", NONE: "対象なし（汎用）" },
+    targets: {
+      PRODUCT: "製品",
+      SUBSTANCE: "物質",
+      ORGANISATION: "組織",
+      NONE: "対象なし（汎用）",
+      PRODUCT_LIST: "製品の一覧",
+      SUBSTANCE_LIST: "物質の一覧",
+    },
     targetHint:
-      "製品・物質は 1 件につき 1 枚。組織は取引先などの組織ごとに 1 枚。対象なしは、宛先や会社などの共通の項目だけで 1 枚作ります（送付状・案内状など）",
+      "製品・物質は 1 件につき 1 枚。組織は取引先などの組織ごとに 1 枚。対象なしは、宛先や会社などの共通の項目だけで 1 枚作ります（送付状・案内状など）。製品の一覧・物質の一覧は、選んだ全部を 1 枚の表にします",
     kind: "作りかた",
     kinds: { BLOCK: "画面編集", XLSX: "Excel", DOCX: "Word" },
     file: {

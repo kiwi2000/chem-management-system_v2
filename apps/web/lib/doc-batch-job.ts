@@ -7,13 +7,15 @@ import {
   parseTableState,
   type DocSelection,
   type DocumentTarget,
+  listRowTarget,
+  targetIsList,
 } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
 import { actorOf, type Actor } from "@/lib/authz";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
-import { collectFor, containsComposition, resolveOrgChoices } from "@/lib/doc-data";
+import { collectFor, collectForList, containsComposition, resolveOrgChoices } from "@/lib/doc-data";
 import { currentOutputDir, writePdfFile } from "@/lib/doc-files";
 import { renderDocument } from "@/lib/doc-render";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
@@ -104,6 +106,8 @@ export async function resolveTargetIds(
   // 対象なしは 1 枚だけ。相手の id は使わない
   if (target === "NONE") return [""];
   if (selection.mode === "ids") return [...new Set(selection.ids)];
+  // 一覧の帳票は、製品（物質）の表で選ぶ。絞り込みの読みかたは製品（物質）と同じ
+  target = listRowTarget(target) ?? target;
   const params = new URLSearchParams(selection.filter);
   if (target === "ORGANISATION") {
     const state = parseTableState(
@@ -167,6 +171,8 @@ function targetNameOf(
     case "ORGANISATION":
       return data.values.get("organisation.name");
     case "NONE":
+    case "PRODUCT_LIST":
+    case "SUBSTANCE_LIST":
       return undefined;
   }
 }
@@ -241,7 +247,10 @@ async function run(jobId: string): Promise<void> {
     const orgChoices = parseOrgChoices(p.org);
 
     const ids = await resolveTargetIds(actor, template.target, job.selection as DocSelection);
-    await heartbeat(jobId, { total: ids.length });
+    // 一覧の帳票は、選んだ全部で 1 枚。そうでなければ 1 件につき 1 枚
+    const isList = targetIsList(template.target);
+    const units: string[][] = isList ? [ids] : ids.map((id) => [id]);
+    await heartbeat(jobId, { total: units.length });
 
     // 出力先とファイル名の書式は、走り始めた時点の設定を使う（途中で変えても、この仕事は変えない）
     const settings = await getAppSettings();
@@ -251,10 +260,13 @@ async function run(jobId: string): Promise<void> {
     let done = 0;
     let missed = 0;
     const missedIds: string[] = [];
-    for (const id of ids) {
+    for (const unit of units) {
+      const id = isList ? "" : (unit[0] ?? "");
       try {
         // 見る権限は、集める側が対象ごとに判断する（見られないものは null）
-        const data = await collectFor(actor, template.target, id, locale, m, parties);
+        const data = isList
+          ? await collectForList(actor, template.target, unit, locale, m, parties)
+          : await collectFor(actor, template.target, id, locale, m, parties);
         if (!data) {
           missed++;
           missedIds.push(id);

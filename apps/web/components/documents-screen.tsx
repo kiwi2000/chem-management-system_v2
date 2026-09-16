@@ -12,6 +12,7 @@ import {
   fieldKeysIn,
   PICK_COMPANY_KEY,
   PICK_DEPARTMENT_KEY,
+  pickerTargetOf,
   targetHasRows,
 } from "@chem/shared";
 import { FileText } from "lucide-react";
@@ -511,15 +512,16 @@ export function DocumentsScreen({
   /** 段の見出し。番号は付けない（2026-09-16 指示。見出しだけで分かるように大きめに出す） */
   const HEADING = "text-lg font-semibold";
   /** 相手の段の見出しは、テンプレートの対象（製品か物質か）で変える */
-  const step3Label = picked
-    ? picked.target === "PRODUCT"
+  /** 相手を選ぶ表の種類。一覧の帳票は製品（物質）の表で選び、対象なしは選ばない */
+  const rowTarget = picked === null ? null : pickerTargetOf(picked.target);
+  const step3Label =
+    rowTarget === "PRODUCT"
       ? m.documents.step3Product
-      : picked.target === "SUBSTANCE"
+      : rowTarget === "SUBSTANCE"
         ? m.documents.step3Substance
-        : picked.target === "ORGANISATION"
+        : rowTarget === "ORGANISATION"
           ? m.documents.step3Organisation
-          : m.documents.step3
-    : m.documents.step3;
+          : m.documents.step3;
   /** 対象なしのテンプレートは相手を選ばず、そのまま 1 枚作る */
   const noTarget = picked !== null && !targetHasRows(picked.target);
 
@@ -731,10 +733,10 @@ export function DocumentsScreen({
         <p className={HEADING}>{step3Label}</p>
         {picked && noTarget ? (
           <p className="text-muted-foreground text-sm">{m.documents.noTargetNeeded}</p>
-        ) : picked && picked.target !== "NONE" ? (
+        ) : picked && rowTarget !== null ? (
           <DocTargetPicker
             key={`${picked.id}:${pickerToken}`}
-            target={picked.target}
+            target={rowTarget}
             // Excel・Word はまとめて作れない。選ばせてから断らない
             single={picked.kind !== "BLOCK"}
             product={product}
