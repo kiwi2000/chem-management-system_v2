@@ -103,7 +103,8 @@ export function BlockStyleBar({
       title={m.docEditor.font}
       value={level === "document" ? (st.family ?? DEFAULT_FONT) : (st.family ?? "")}
       onChange={(e) => patch({ family: (e.target.value || undefined) as FontKey | undefined })}
-      className="border-input bg-background h-7 w-24 rounded-none border px-1 text-xs"
+      // 幅は選択肢の長さに合わせる（「ブロックに合わせる」が切れないように。2026-09-16 指示）
+      className="border-input bg-background h-7 w-auto max-w-48 rounded-none border px-1 text-xs"
     >
       {/* 合わせる先があるのはブロックだけ。紙面ぜんたいはここがいちばん外 */}
       {level === "block" && <option value="">{defaultFontLabel ?? m.docEditor.fontDefault}</option>}
