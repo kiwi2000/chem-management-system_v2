@@ -1,5 +1,6 @@
 import {
   orgBlockKey,
+  columnWidthPercents,
   compileReplacement,
   isKnownField,
   passesFilter,
@@ -91,6 +92,8 @@ export type RenderBlock =
       caption?: string;
       head: string[];
       rows: string[][];
+      /** 列ごとの幅（%）。無ければ中身に合わせて自動 */
+      widths?: number[];
       captionStyle?: BlockStyle;
       headStyle?: BlockStyle;
       cellStyle?: BlockStyle;
@@ -389,6 +392,13 @@ function renderBlock(
           ...(b.cellStyle ? { cellStyle: b.cellStyle } : {}),
           head: cols.map((c) => c.label),
           rows: kept.map((r) => cols.map((c) => apply(c.key, r[c.key] ?? ""))),
+          ...(() => {
+            const widths = columnWidthPercents(
+              cols.map((c) => c.key),
+              b.columnWidths,
+            );
+            return widths ? { widths } : {};
+          })(),
         },
       ];
     }

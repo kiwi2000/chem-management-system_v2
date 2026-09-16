@@ -152,6 +152,29 @@ describe("表", () => {
     });
   });
 
+  it("列の幅の比は、出す列の順に %（比が無ければ自動）", () => {
+    const withWidths = run(
+      [
+        {
+          id: "1",
+          kind: "table",
+          table: "composition",
+          columns: ["contentPct", "casNumber"],
+          columnWidths: { casNumber: 3 },
+        },
+      ],
+      {},
+      tables,
+    );
+    expect(withWidths.blocks[0]).toMatchObject({ kind: "table", widths: [25, 75] });
+    const auto = run(
+      [{ id: "1", kind: "table", table: "composition", columns: ["contentPct", "casNumber"] }],
+      {},
+      tables,
+    );
+    expect((auto.blocks[0] as { widths?: number[] }).widths).toBeUndefined();
+  });
+
   it("表を変えたあとに残った列は、落とす", () => {
     const out = run(
       [{ id: "1", kind: "table", table: "composition", columns: ["name", "law"] }],

@@ -746,6 +746,26 @@ export interface TableReplacement {
   replacement: string;
 }
 
+/**
+ * 列の幅の比から、列ごとの割合（%）を出す。
+ *
+ * **どの列にも比が無ければ undefined**（これまでどおり、中身に合わせて自動で決める）。
+ * 1 つでも比があれば、書いていない列・読めない値は 1 として、合計で割る（2026-09-16 指示）
+ */
+export function columnWidthPercents(
+  columns: string[],
+  widths: Record<string, number> | undefined,
+): number[] | undefined {
+  if (!widths || columns.length === 0) return undefined;
+  const ratio = (k: string) => {
+    const v = widths[k];
+    return typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 1;
+  };
+  if (!columns.some((k) => widths[k] !== undefined)) return undefined;
+  const sum = columns.reduce((acc, k) => acc + ratio(k), 0);
+  return columns.map((k) => (ratio(k) / sum) * 100);
+}
+
 /** 打ち間違いで紙面が壊れないよう、読めない形は当てずに素通りさせる */
 export function compileReplacement(r: TableReplacement): RegExp | null {
   if (r.pattern === "") return null;
@@ -1036,6 +1056,11 @@ export type DocumentBlock =
        * 無ければ columns の順のあとに定義の順で続く
        */
       columnOrder?: string[];
+      /**
+       * 列の幅の比（列の鍵 → 数）。**書いていない列は 1**。どの列にも無ければ中身に合わせて自動（2026-09-16 指示）。
+       * 割合にしないのは、列を出し入れするたびに合計を 100 に直させないため
+       */
+      columnWidths?: Record<string, number>;
       caption?: string;
       /**
        * 表題・見出し行・中身の字（2026-09-16 指示）。それぞれブロックの字の上に重ねる。

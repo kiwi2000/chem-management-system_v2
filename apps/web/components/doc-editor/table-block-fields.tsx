@@ -68,6 +68,15 @@ export function TableBlockFields({
 
   const filters = b.filters ?? [];
   const replacements = b.replacements ?? [];
+  const widths = b.columnWidths ?? {};
+  /** 幅の比。空にしたら消す（全部空になったら自動に戻る） */
+  function setWidth(key: string, raw: string) {
+    const next = { ...widths };
+    const n = Number(raw);
+    if (raw.trim() === "" || !Number.isFinite(n) || n <= 0) delete next[key];
+    else next[key] = n;
+    onChange({ ...b, columnWidths: Object.keys(next).length ? next : undefined });
+  }
 
   return (
     <div className="space-y-3">
@@ -131,6 +140,19 @@ export function TableBlockFields({
                   }}
                 />
                 <span className={cn("w-44", !on && "text-muted-foreground")}>{labelOf(key)}</span>
+                {/* 幅の比。空なら 1（どの列も空なら中身に合わせて自動） */}
+                <Input
+                  type="number"
+                  min={0.1}
+                  step={0.5}
+                  className="h-7 w-16"
+                  aria-label={`${m.docEditor.tableColumnWidth}: ${labelOf(key)}`}
+                  title={m.docEditor.tableColumnWidth}
+                  placeholder="1"
+                  disabled={!on}
+                  value={widths[key] ?? ""}
+                  onChange={(e) => setWidth(key, e.target.value)}
+                />
                 <Button
                   type="button"
                   size="icon-sm"

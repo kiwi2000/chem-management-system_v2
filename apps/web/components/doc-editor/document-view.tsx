@@ -534,8 +534,17 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
               fontSize: fs(),
               // 表が長いと途中で切れる。行の途中では切らない（下の tr で指定）
               pageBreakInside: "auto",
+              // 幅の比が決まっているときは、中身の長さに引きずられないように固定で割る
+              ...(b.widths ? { tableLayout: "fixed" } : {}),
             }}
           >
+            {b.widths && (
+              <colgroup>
+                {b.widths.map((w, i) => (
+                  <col key={i} style={{ width: `${w}%` }} />
+                ))}
+              </colgroup>
+            )}
             <thead>
               <tr>
                 {b.head.map((h, i) => (
@@ -648,6 +657,8 @@ const CELL: React.CSSProperties = {
   verticalAlign: "top",
   // 値の中の改行（該当した規制区分など）をそのまま行に出す
   whiteSpace: "pre-line",
+  // 幅を固定で割ったとき、長い CAS 番号や英語名が枠からはみ出さないように折る
+  overflowWrap: "anywhere",
 };
 
 /** 表のセルに重ねる飾り。地色だけ（罫線は表のもの、余白は詰めない） */

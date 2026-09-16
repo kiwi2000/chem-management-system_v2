@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  columnWidthPercents,
   EMPTY_DOCUMENT,
   fieldKeysIn,
   fieldsFor,
@@ -280,5 +281,20 @@ describe("様式が使っている差込項目", () => {
 
   it("使っていなければ空。作る画面で「任意の会社」を聞かない", () => {
     expect(fieldKeysIn(doc([{ id: "c", kind: "divider" }])).size).toBe(0);
+  });
+});
+
+describe("columnWidthPercents", () => {
+  it("どの列にも比が無ければ自動（undefined）", () => {
+    expect(columnWidthPercents(["a", "b"], undefined)).toBeUndefined();
+    expect(columnWidthPercents(["a", "b"], {})).toBeUndefined();
+    // 出していない列にだけ比があるときも、出す列の側では自動
+    expect(columnWidthPercents(["a", "b"], { z: 3 })).toBeUndefined();
+  });
+
+  it("書いていない列と読めない値は 1 として、合計で割る", () => {
+    expect(columnWidthPercents(["a", "b", "c"], { b: 3 })).toEqual([20, 60, 20]);
+    expect(columnWidthPercents(["a", "b"], { a: 0, b: -2 })).toEqual([50, 50]);
+    expect(columnWidthPercents(["a", "b"], { a: 1, b: 3 })).toEqual([25, 75]);
   });
 });
