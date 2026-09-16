@@ -335,6 +335,26 @@ describe("繰り返しの区間（一覧の帳票）", () => {
     expect(out.warnings).toEqual([]);
   });
 
+  it("区間の中の表は、1 件ごとの表に無ければ紙面ぜんたいの表から出る（一覧の表を中に置いても消えない）", () => {
+    const out = renderDocument({
+      content: content([
+        { id: "s", kind: "repeatStart" },
+        { id: "t", kind: "table", table: "productList", columns: ["code"] },
+        { id: "e", kind: "repeatEnd" },
+      ]),
+      target: "PRODUCT_LIST",
+      values: new Map(),
+      tables: new Map([
+        [
+          "productList",
+          { columns: [{ key: "code", label: "コード" }], rows: [{ code: "PR-001" }] },
+        ],
+      ]),
+      repeats: [{ values: new Map(), tables: new Map() }],
+    });
+    expect(out.blocks).toEqual([{ id: "t", kind: "table", head: ["コード"], rows: [["PR-001"]] }]);
+  });
+
   it("流すものが無ければ区間は出ず、印も紙には出ない", () => {
     const out = renderDocument({
       content: content(blocks),

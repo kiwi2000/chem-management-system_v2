@@ -273,8 +273,11 @@ export function renderDocument(input: RenderInput): RenderedDocument {
         j += 1;
       }
       (repeats ?? []).forEach((item, n) => {
+        // 1 件ごとの値と表を、紙面ぜんたいのものの上に重ねる。
+        // 区間の中に一覧の表（製品の一覧など）を置いても、消えずに出る（2026-09-16 報告）
         const merged = new Map([...values, ...item.values]);
-        for (const x of inner) emit(x, merged, item.tables, n === 0 ? "" : `#${n}`);
+        const mergedTables = new Map([...tables, ...item.tables]);
+        for (const x of inner) emit(x, merged, mergedTables, n === 0 ? "" : `#${n}`);
       });
       i = j + 1;
       continue;
