@@ -1,10 +1,12 @@
 "use client";
 
 import { DEFAULT_FONT_SIZE, pickName, targetIsList, type DocumentContent } from "@chem/shared";
-import { ChevronDown, ChevronUp, Eye, Redo2, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Eye, Redo2, Undo2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BlockList, Labeled } from "@/components/doc-editor/block-list";
+import { CopyTemplateDialog } from "@/components/doc-editor/copy-template-dialog";
 import { DocumentSheet } from "@/components/doc-editor/document-view";
 import { FontSizeInput } from "@/components/doc-editor/font-size-input";
 import { PageSettingsPanel } from "@/components/doc-editor/page-settings-panel";
@@ -184,6 +186,23 @@ export function DocTemplateEditor({ id }: { id: string }) {
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
+  /** 複製の窓を開いているか */
+  const [copyOpen, setCopyOpen] = useState(false);
+  /** 保存していないまま複製しようとしたときの知らせ */
+  const [copyWarning, setCopyWarning] = useState(false);
+  /**
+   * 複製。**保存したものを写す。**書きかけの変えぶんは写さないので、
+   * 残っているときは窓を開かず、保存か破棄を選んでもらう
+   */
+  function startCopy() {
+    if (dirty) {
+      setCopyWarning(true);
+      return;
+    }
+    setCopyWarning(false);
+    setCopyOpen(true);
+  }
 
   /*
     元に戻す・やり直し（2026-09-16 指示）。
@@ -243,6 +262,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
     setDirty(false);
     setError(null);
     setLeaveWarning(false);
+    setCopyWarning(false);
     setRevision((v) => v + 1);
     clearHistory();
   }
@@ -348,6 +368,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
       setTemplate(body);
       setContent(body.content);
       setDirty(false);
+      setCopyWarning(false);
     } finally {
       setSaving(false);
     }
@@ -558,6 +579,13 @@ export function DocTemplateEditor({ id }: { id: string }) {
                     )}
                   </>
                 )}
+                {/* 複製。保存したものを写すので、Excel・Word の様式でも使える（2026-09-16 指示） */}
+                {editable && (
+                  <Button size="sm" variant="outline" disabled={saving} onClick={startCopy}>
+                    <Copy className="size-4" />
+                    {m.docTemplates.copy}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -593,6 +621,22 @@ export function DocTemplateEditor({ id }: { id: string }) {
           <AlertDescription>{m.docEditor.unsavedOnLeave}</AlertDescription>
         </Alert>
       )}
+
+      {copyWarning && (
+        <Alert variant="destructive" className="mt-2">
+          <AlertDescription>{m.docTemplates.copyUnsaved}</AlertDescription>
+        </Alert>
+      )}
+
+      <CopyTemplateDialog
+        template={template}
+        open={copyOpen}
+        onOpenChange={setCopyOpen}
+        onCopied={(copy) => {
+          setCopyOpen(false);
+          router.push(`/doc-templates/${copy.id}`);
+        }}
+      />
 
       {template.contentBroken && (
         <Alert className="mt-2">

@@ -1169,6 +1169,14 @@ export const en: Messages = {
     contentBroken: "The stored content could not be read. Please rebuild it.",
     unknownFields: (n: number) => `${n} field(s) are not available for the current target`,
     reorderHint: "Drag the handle on the left to reorder",
+    copy: "Duplicate",
+    copyTitle: "Duplicate template",
+    copyHint:
+      "Creates a new template with the same content, target, kind, language and uploaded file. You will be taken to the copy afterwards",
+    copyDefaultName: (name: string) => `Copy of ${name}`,
+    copyCodePlaceholder: (code: string) =>
+      `Leave blank to assign "${code}-2" or the next free number`,
+    copyUnsaved: "You have unsaved changes. Save or discard them before duplicating.",
   },
   docEditor: {
     width: "Width",

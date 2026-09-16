@@ -1200,6 +1200,14 @@ export const ja = {
     contentBroken: "保存されている中身を読めませんでした。作り直してください",
     unknownFields: (n: number) => `いまの対象では使えない差込項目が ${n} 件あります`,
     reorderHint: "左端のつまみを引くと並べ替えられます",
+    copy: "複製",
+    copyTitle: "テンプレートを複製",
+    copyHint:
+      "中身・対象・作りかた・言語・預けたファイルをそのまま写した、新しいテンプレートを作ります。できたら写しの編集画面に移ります",
+    copyDefaultName: (name: string) => `${name} のコピー`,
+    copyCodePlaceholder: (code: string) => `空欄なら「${code}-2」のように自動で付きます`,
+    copyUnsaved:
+      "保存していない変更があります。「保存」か「変更を破棄」を選んでから複製してください。",
   },
   docEditor: {
     width: "横幅",

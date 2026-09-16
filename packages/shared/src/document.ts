@@ -1269,3 +1269,15 @@ export const documentTemplateSchema = (m: Messages) =>
   });
 
 export type DocumentTemplateInput = z.infer<ReturnType<typeof documentTemplateSchema>>;
+
+/**
+ * テンプレートを複製するときの入力。**名前だけ必ず聞く。**
+ * コードは空なら「元のコード-2」のように自動で付ける
+ */
+export const documentTemplateCopySchema = (m: Messages) =>
+  z.object({
+    nameJa: z.string().trim().min(1, m.validation.required).max(200, m.validation.tooLong(200)),
+    code: z.string().trim().max(50, m.validation.tooLong(50)).nullish(),
+  });
+
+export type DocumentTemplateCopyInput = z.infer<ReturnType<typeof documentTemplateCopySchema>>;
