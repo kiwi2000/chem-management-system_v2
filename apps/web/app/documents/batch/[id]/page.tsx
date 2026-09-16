@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { DocumentBatchView } from "@/components/doc-editor/document-batch-view";
 import { PrintOrientation } from "@/components/doc-editor/print-orientation";
+import { ForbiddenNotice } from "@/components/forbidden-notice";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import type { RenderedDocument } from "@/lib/doc-render";
@@ -33,6 +34,8 @@ export default async function DocumentBatchResultPage({
   const { id } = await params;
   const actor = await getActor();
   if (!actor || !actor.has("DOCUMENT_CREATE")) notFound();
+  // 紙面を開くのは、落とすのと同じ扱い（印刷して保存できる。2026-09-17 指示）
+  if (!actor.has("DOCUMENT_DOWNLOAD")) return <ForbiddenNotice />;
 
   const job = await prisma.documentBatchJob.findFirst({
     // 他人のものは、あることも伝えない

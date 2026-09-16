@@ -33,8 +33,9 @@ export const PERMISSIONS = [
   "DOC_TEMPLATE_EDIT",
   "DOCUMENT_CREATE",
   /*
-    できた帳票をファイルで落とす（PDF・zip・値を埋めた Excel／Word）。2026-09-17 指示。
-    **作る・画面で見るのと、ファイルで持ち出すのは分ける**（TSV 出力と同じ考え）
+    できた帳票を開く・落とす（紙面を画面で開く、PDF・zip・値を埋めた Excel／Word を落とす）。2026-09-17 指示。
+    **作る・一覧で見るのと、中身を手にするのは分ける。**画面で開ければ印刷して保存できるので、
+    「画面は良いがファイルは駄目」は成り立たない。だから開くのもこの権限に含める
   */
   "DOCUMENT_DOWNLOAD",
   /*
@@ -83,7 +84,7 @@ const IMPLIES: Partial<Record<Permission, readonly Permission[]>> = {
   APPROVE: ["INACTIVE_VIEW"],
   // テンプレートを直すには、ドキュメントの画面（メニューの束と一覧）に入れる必要がある（2026-09-17 指示）
   DOC_TEMPLATE_EDIT: ["DOCUMENT_CREATE"],
-  // 落とすには、帳票の画面そのものに入れる必要がある
+  // 開く・落とすには、帳票の画面そのものに入れる必要がある
   DOCUMENT_DOWNLOAD: ["DOCUMENT_CREATE"],
   // 他人のドキュメントを見るには、ドキュメントの画面そのものに入れる必要がある
   DOCUMENT_VIEW_ALL: ["DOCUMENT_CREATE"],

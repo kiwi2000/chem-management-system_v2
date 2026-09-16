@@ -198,8 +198,8 @@ export const en: Messages = {
 
   permissions: {
     DOC_TEMPLATE_EDIT: "Can edit document templates",
-    DOCUMENT_CREATE: "Can create documents (and see their own)",
-    DOCUMENT_DOWNLOAD: "Can download documents as files",
+    DOCUMENT_CREATE: "Can create documents (and see their own in the list)",
+    DOCUMENT_DOWNLOAD: "Can open and download documents",
     DOCUMENT_VIEW_ALL: "Can also see documents created by others",
     ORG_EDIT: "Can create and edit organisations (companies, departments, partners)",
     PRODUCT_VIEW: "View products",
@@ -231,7 +231,7 @@ export const en: Messages = {
     INACTIVE_VIEW:
       "See unpublished data and inactive products in lists and details (creators always see their own)",
     DOCUMENT_DOWNLOAD:
-      "Download finished PDFs / zips and filled Excel / Word files. Without it, documents can still be viewed on screen. Grant only to those who need it",
+      "Open finished documents on screen, print them, and download PDFs / zips and filled Excel / Word files. Without it, only the list (name, date, status) is visible. Opening on screen counts as taking the data out, since it can be printed to a file",
     DOCUMENT_VIEW_ALL:
       "Everyone's documents appear under Created documents and can be downloaded or deleted. Documents that contain composition still need “Can see composition”; documents for unpublished products or substances still need “Can see inactive/unpublished data”",
     NEWS_POST: "Announcements you posted can be edited and deleted by you",

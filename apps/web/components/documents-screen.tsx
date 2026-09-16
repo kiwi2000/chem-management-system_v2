@@ -87,7 +87,7 @@ export function DocumentsScreen({
 }) {
   const { m, locale } = useI18n();
   const { can } = useMe();
-  /** 帳票をファイルで落とせるか。無い人には落とし口を出さない（2026-09-17） */
+  /** 帳票を開く・落とせるか。無い人には紙面への道も落とし口も出さない（2026-09-17） */
   const canDownload = can("DOCUMENT_DOWNLOAD");
   const router = useRouter();
 
@@ -247,12 +247,15 @@ export function DocumentsScreen({
         kind: "date",
         width: 140,
         className: "whitespace-nowrap",
-        // 押すと、出したときの紙面をそのまま開く（作り直さない）
-        render: (d) => (
-          <Link href={`/documents/saved/${d.id}`} className="underline underline-offset-2">
-            {fmt(d.generatedAt, locale)}
-          </Link>
-        ),
+        // 押すと、出したときの紙面をそのまま開く（作り直さない）。開ける権限が無い人には文字だけ
+        render: (d) =>
+          canDownload ? (
+            <Link href={`/documents/saved/${d.id}`} className="underline underline-offset-2">
+              {fmt(d.generatedAt, locale)}
+            </Link>
+          ) : (
+            <span>{fmt(d.generatedAt, locale)}</span>
+          ),
       },
       {
         key: "templateCode",
@@ -471,7 +474,7 @@ export function DocumentsScreen({
             <span className={j.status === "FAILED" ? "text-destructive" : undefined}>
               {m.documents.jobStatuses[j.status] ?? j.status}
             </span>
-            {j.status === "DONE" && j.done - j.missed > 0 && (
+            {canDownload && j.status === "DONE" && j.done - j.missed > 0 && (
               <Link
                 href={`/documents/batch/${j.id}`}
                 className="text-primary underline underline-offset-2"

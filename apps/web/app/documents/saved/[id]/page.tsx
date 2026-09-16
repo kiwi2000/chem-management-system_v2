@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { DocumentView } from "@/components/doc-editor/document-view";
 import { SavedFileNote } from "@/components/doc-editor/saved-file-note";
+import { ForbiddenNotice } from "@/components/forbidden-notice";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { canAccessDocument } from "@/lib/doc-access";
@@ -31,6 +32,8 @@ export default async function SavedDocumentPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const actor = await getActor();
   if (!actor || !actor.has("DOCUMENT_CREATE")) notFound();
+  // 紙面を開くのは、落とすのと同じ扱い（印刷して保存できる。2026-09-17 指示）
+  if (!actor.has("DOCUMENT_DOWNLOAD")) return <ForbiddenNotice />;
 
   const row = await prisma.generatedDocument.findUnique({
     where: { id },
