@@ -117,6 +117,11 @@ export interface RenderInput {
     DocumentTable,
     { columns: { key: string; label: string }[]; rows: Record<string, string>[] }
   >;
+  /**
+   * 繰り返しの区間に流す 1 件ごとのデータ（一覧の帳票）。
+   * 区間の中は、この並びの数だけ繰り返す。値は紙面ぜんたいの値に重ねる。無ければ区間は出ない
+   */
+  repeats?: { values: Map<string, string>; tables: RenderInput["tables"] }[];
 }
 
 function renderLines(
@@ -152,23 +157,59 @@ function markOnly(v: RichSpanLoose): RichMark {
 
 /** テンプレートと集めたデータから、紙面を組み立てる */
 export function renderDocument(input: RenderInput): RenderedDocument {
-  const { content, target, values, tables } = input;
+  const { content, target, values, tables, repeats } = input;
   const unknown = new Set<string>();
   const warn = (key: string) => unknown.add(key);
   const blocks: RenderBlock[] = [];
 
-  for (const b of content.blocks) {
+  const emit = (
+    b: DocumentBlock,
+    v: Map<string, string>,
+    t: RenderInput["tables"],
+    suffix: string,
+  ) => {
     // 幅は組み立て直さず、そのまま持ち越す（横に並べるのは出す側の仕事）
-    for (const out of renderBlock(b, target, values, tables, warn)) {
+    for (const out of renderBlock(b, target, v, t, warn)) {
       // 幅と字は、種類によらず同じように持ち回る
       blocks.push({
         ...out,
-        id: b.id,
+        // 繰り返した 2 件目からは id に番号を添える（編集画面の枠は 1 件目に付く）
+        id: `${b.id}${suffix}`,
         ...(b.width ? { width: b.width } : {}),
         ...(b.style ? { style: b.style } : {}),
         ...(b.margin ? { margin: b.margin } : {}),
       });
     }
+  };
+
+  /*
+    繰り返しの区間。「始まり」から「終わり」（無ければ最後）までを 1 件分として、
+    `repeats` の数だけ流す。入れ子は作らない（中の「始まり」は無視する）
+  */
+  const src = content.blocks;
+  let i = 0;
+  while (i < src.length) {
+    const b = src[i]!;
+    if (b.kind === "repeatEnd") {
+      i += 1;
+      continue;
+    }
+    if (b.kind === "repeatStart") {
+      const inner: DocumentBlock[] = [];
+      let j = i + 1;
+      while (j < src.length && src[j]!.kind !== "repeatEnd") {
+        if (src[j]!.kind !== "repeatStart") inner.push(src[j]!);
+        j += 1;
+      }
+      (repeats ?? []).forEach((item, n) => {
+        const merged = new Map([...values, ...item.values]);
+        for (const x of inner) emit(x, merged, item.tables, n === 0 ? "" : `#${n}`);
+      });
+      i = j + 1;
+      continue;
+    }
+    emit(b, values, tables, "");
+    i += 1;
   }
 
   const warnings: string[] = [];
@@ -276,6 +317,10 @@ function renderBlock(
       return [{ kind: "rowBreak" }];
     case "pageBreak":
       return [{ kind: "pageBreak" }];
+    // 繰り返しの印は renderDocument が読む。ここまで来るのは区間の外の迷子だけで、紙には出さない
+    case "repeatStart":
+    case "repeatEnd":
+      return [];
     case "signature":
       return [
         {

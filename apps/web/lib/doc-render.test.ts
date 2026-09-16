@@ -299,3 +299,49 @@ describe("そのほかのブロック", () => {
     expect(run([]).orientation).toBe("portrait");
   });
 });
+
+describe("繰り返しの区間（一覧の帳票）", () => {
+  const blocks: DocumentContent["blocks"] = [
+    { id: "h", kind: "heading", level: 1, lines: [{ spans: [{ kind: "text", text: "一覧" }] }] },
+    { id: "s", kind: "repeatStart" },
+    { id: "f", kind: "fields", items: [{ label: "コード", field: "product.code" }] },
+    { id: "p", kind: "pageBreak" },
+    { id: "e", kind: "repeatEnd" },
+    { id: "t", kind: "text", lines: [{ spans: [{ kind: "text", text: "末尾" }] }] },
+  ];
+
+  it("挟んだ部分を件数ぶん繰り返し、2 件目からは id に番号を添える", () => {
+    const out = renderDocument({
+      content: content(blocks),
+      target: "PRODUCT_LIST",
+      values: new Map([["list.count", "2"]]),
+      tables: new Map(),
+      repeats: [
+        { values: new Map([["product.code", "PR-001"]]), tables: new Map() },
+        { values: new Map([["product.code", "PR-002"]]), tables: new Map() },
+      ],
+    });
+    expect(out.blocks.map((b) => `${b.kind}:${b.id}`)).toEqual([
+      "heading:h",
+      "fields:f",
+      "pageBreak:p",
+      "fields:f#1",
+      "pageBreak:p#1",
+      "text:t",
+    ]);
+    expect(out.blocks[1]).toMatchObject({ items: [{ label: "コード", value: "PR-001" }] });
+    expect(out.blocks[3]).toMatchObject({ items: [{ label: "コード", value: "PR-002" }] });
+    // 繰り返しの中の 1 件ごとの項目は、一覧の帳票でも知らない項目にならない
+    expect(out.warnings).toEqual([]);
+  });
+
+  it("流すものが無ければ区間は出ず、印も紙には出ない", () => {
+    const out = renderDocument({
+      content: content(blocks),
+      target: "PRODUCT_LIST",
+      values: new Map(),
+      tables: new Map(),
+    });
+    expect(out.blocks.map((b) => b.kind)).toEqual(["heading", "text"]);
+  });
+});

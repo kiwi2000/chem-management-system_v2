@@ -27,6 +27,8 @@ import {
   type OrgBlockItem,
   type OrgBlockMode,
   type BlockMargin,
+  BARE_BLOCK_KINDS,
+  targetIsList,
 } from "@chem/shared";
 import { ChevronDown, ChevronUp, GripVertical, Link2, Link2Off, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -240,7 +242,12 @@ export function BlockList({
       ))}
 
       <div className="flex flex-wrap gap-2">
-        {BLOCK_KINDS.filter((k) => k !== "table" || tablesFor(target).length > 0).map((k) => (
+        {BLOCK_KINDS.filter(
+          (k) =>
+            (k !== "table" || tablesFor(target).length > 0) &&
+            // 繰り返しは一覧の帳票でだけ
+            ((k !== "repeatStart" && k !== "repeatEnd") || targetIsList(target)),
+        ).map((k) => (
           <Button key={k} type="button" size="sm" variant="outline" onClick={() => add(k)}>
             ＋ {m.docEditor.blockKinds[k]}
           </Button>
@@ -356,7 +363,7 @@ export function BlockList({
           {/*
               幅。**改ページと改行は幅を持てない**（必ず1行を占めるので、選ばせても効かない）
             */}
-          {b.kind !== "pageBreak" && b.kind !== "rowBreak" && (
+          {!BARE_BLOCK_KINDS.includes(b.kind) && (
             <Labeled label={m.docEditor.width}>
               <WidthSelect
                 key={b.id}
@@ -369,7 +376,7 @@ export function BlockList({
             そのブロック全体の字。**どの種類でも変えられる。**
             文章と見出しは、この上に文字ごとの指定を重ねられる（そちらが勝つ）
           */}
-          {b.kind !== "pageBreak" && b.kind !== "rowBreak" && b.kind !== "spacer" && (
+          {!BARE_BLOCK_KINDS.includes(b.kind) && b.kind !== "spacer" && (
             <BlockStyleBar
               value={b.style}
               onChange={(style) => replace(i, { ...b, style })}
@@ -380,7 +387,7 @@ export function BlockList({
             />
           )}
           {/* 余白（mm）。紙の端や隣のブロックからの間を、辺ごとに決める（2026-09-13 指示） */}
-          {b.kind !== "pageBreak" && b.kind !== "rowBreak" && (
+          {!BARE_BLOCK_KINDS.includes(b.kind) && (
             <MarginInputs
               value={effectiveMargin(b.kind, b.margin)}
               onChange={(margin) => replace(i, { ...b, margin })}
@@ -945,6 +952,12 @@ export function BlockList({
 
           {(b.kind === "divider" || b.kind === "pageBreak" || b.kind === "rowBreak") && (
             <p className="text-muted-foreground text-sm">{m.docEditor.blockKinds[b.kind]}</p>
+          )}
+          {(b.kind === "repeatStart" || b.kind === "repeatEnd") && (
+            <p className="text-muted-foreground text-sm">
+              {m.docEditor.blockKinds[b.kind]}
+              <span className="ml-2 text-xs">{m.docEditor.repeatHint}</span>
+            </p>
           )}
         </div>
       </div>

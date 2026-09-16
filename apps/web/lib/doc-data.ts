@@ -15,10 +15,11 @@ import {
   TARGET_ORG_ITEM_PREFIX,
   formatThreshold,
   getMessages,
+  listRowTarget,
 } from "@chem/shared";
 import type { DocumentTable, DocumentTarget, Locale, Messages } from "@chem/shared";
 import type { Actor } from "@/lib/authz";
-import { aggregateComposition } from "@/lib/composition-aggregate";
+import { aggregateComposition, expandComposition } from "@/lib/composition-aggregate";
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { visibilityWhere } from "@/lib/product-service";
@@ -53,6 +54,8 @@ export interface DocData {
   judgementWithBasis: boolean;
   /** 一覧の帳票で、成分・CAS番号の列に中身が入ったか（組成を見られる人が作ったときだけ真） */
   listComposition?: boolean;
+  /** 一覧の帳票の繰り返しの区間に流す、1 件ごとのデータ（選んだ順） */
+  items?: DocData[];
 }
 
 function tableDef(key: DocumentTable, locale: Locale) {
@@ -328,6 +331,19 @@ export async function collectForProduct(
       })),
     });
 
+    const expanded = await expandComposition(actor, product.id);
+    tables.set("compositionExpanded", {
+      columns: tableDef("compositionExpanded", locale),
+      rows: expanded.map((r) => ({
+        path: r.path.map((p) => pickName(locale, p.nameJa, p.nameEn)).join(" > "),
+        code: r.code,
+        casNumber: r.casNumber ?? "",
+        name: pickName(locale, r.nameJa, r.nameEn),
+        totalPct: r.totalPct,
+        note: r.note ?? "",
+      })),
+    });
+
     const agg = await aggregateComposition(actor, product.id);
     tables.set("compositionAggregate", {
       columns: tableDef("compositionAggregate", locale),
@@ -501,6 +517,8 @@ export async function collectForList(
   locale: Locale,
   m: Messages,
   parties?: DocParties,
+  /** 繰り返しの区間があるときだけ、1 件ごとのデータも集める（重いので要るときだけ） */
+  withItems = false,
 ): Promise<DocData> {
   const version = await getCurrentVersion();
   const order = new Map(ids.map((id, i) => [id, i]));
@@ -544,17 +562,50 @@ export async function collectForList(
     });
     products.sort(byPicked);
     count = products.length;
-    // 成分・CAS番号は原材料展開・CAS合算の行から。見られない製品は空欄
-    const compositions = new Map<string, { names: string; cas: string }>();
+    /*
+      成分・CAS番号の列。**元の組成・展開後・CAS合算の 3 通り**（2026-09-16 指示）。
+      見られない製品は空欄。元の組成で原材料（製品）の行は名前だけで CAS は無い
+    */
+    const sep = locale === "en" ? ", " : "、";
+    const joinNames = (xs: { nameJa: string; nameEn: string | null }[]) =>
+      xs.map((x) => pickName(locale, x.nameJa, x.nameEn)).join(sep);
+    const joinCas = (xs: { casNumber: string | null }[]) =>
+      [...new Set(xs.map((x) => x.casNumber).filter((c): c is string => !!c))].join(sep);
+    const compositions = new Map<string, Record<string, string>>();
     for (const p of products) {
       if (!canViewComposition(actor, p as never)) continue;
-      const agg = await aggregateComposition(actor, p.id);
-      if (agg.rows.length === 0) continue;
+      const lines = await prisma.compositionLine.findMany({
+        where: { parentProductId: p.id },
+        orderBy: { displayOrder: "asc" },
+        select: {
+          substance: { select: { casNumber: true, nameJa: true, nameEn: true } },
+          childProduct: { select: { nameJa: true, nameEn: true } },
+        },
+      });
+      if (lines.length === 0) continue;
       listComposition = true;
-      const sep = locale === "en" ? ", " : "、";
+      const original = lines.flatMap((l) =>
+        l.substance
+          ? [
+              {
+                casNumber: l.substance.casNumber,
+                nameJa: l.substance.nameJa,
+                nameEn: l.substance.nameEn,
+              },
+            ]
+          : l.childProduct
+            ? [{ casNumber: null, nameJa: l.childProduct.nameJa, nameEn: l.childProduct.nameEn }]
+            : [],
+      );
+      const expanded = await expandComposition(actor, p.id);
+      const agg = await aggregateComposition(actor, p.id);
       compositions.set(p.id, {
-        names: agg.rows.map((r) => pickName(locale, r.nameJa, r.nameEn)).join(sep),
-        cas: [...new Set(agg.rows.map((r) => r.casNumber).filter((c) => c))].join(sep),
+        substanceNamesOriginal: joinNames(original),
+        casNumbersOriginal: joinCas(original),
+        substanceNamesExpanded: joinNames(expanded),
+        casNumbersExpanded: joinCas(expanded),
+        substanceNames: joinNames(agg.rows),
+        casNumbers: joinCas(agg.rows),
       });
     }
     tables.set("productList", {
@@ -585,8 +636,7 @@ export async function collectForList(
           nameEn: p.nameEn ?? "",
           modelName: p.modelValue ?? "",
           useName: p.uses.map((u) => u.value).join("、"),
-          substanceNames: compositions.get(p.id)?.names ?? "",
-          casNumbers: compositions.get(p.id)?.cas ?? "",
+          ...(compositions.get(p.id) ?? {}),
           judgement: !judged
             ? m.judgements.listUnjudged
             : categories.size === 0
@@ -632,7 +682,18 @@ export async function collectForList(
     ...(await commonValues(actor, version?.code ?? null, locale, parties)),
     ["list.count", String(count)],
   ]);
-  return { code: "", values, tables, judgementWithBasis: false, listComposition };
+
+  // 繰り返しの区間に流す 1 件ごとのデータ。見えないものは飛ばす（一覧の行と同じ）
+  let items: DocData[] | undefined;
+  if (withItems) {
+    const rowTarget = listRowTarget(target) ?? "PRODUCT";
+    items = [];
+    for (const id of ids) {
+      const one = await collectFor(actor, rowTarget, id, locale, m, parties);
+      if (one) items.push(one);
+    }
+  }
+  return { code: "", values, tables, judgementWithBasis: false, listComposition, items };
 }
 
 /** 日付を紙面の言語で（日だけ） */
@@ -824,20 +885,26 @@ export async function collectFor(
  */
 export function containsComposition(
   content: { blocks: { kind: string; table?: string; columns?: string[] }[] },
-  data: Pick<DocData, "tables" | "judgementWithBasis" | "listComposition">,
+  data: Pick<DocData, "tables" | "judgementWithBasis" | "listComposition" | "items">,
 ): boolean {
+  const tablesOf = [data, ...(data.items ?? [])];
   return content.blocks.some((b) => {
     if (b.kind !== "table") return false;
-    if (b.table === "composition" || b.table === "compositionAggregate") {
-      return data.tables.has(b.table);
+    const table = b.table;
+    if (
+      table === "composition" ||
+      table === "compositionExpanded" ||
+      table === "compositionAggregate"
+    ) {
+      return tablesOf.some((d) => d.tables.has(table));
     }
     // 判定の根拠（法文物質名）が載っていれば、それも組成のうち
-    if (b.table === "judgement") return data.judgementWithBasis;
+    if (b.table === "judgement") return tablesOf.some((d) => d.judgementWithBasis);
     // 製品の一覧の成分・CAS番号の列に中身が入っていれば、同じ扱い
     if (b.table === "productList") {
       return (
         data.listComposition === true &&
-        (b.columns ?? []).some((c) => c === "substanceNames" || c === "casNumbers")
+        (b.columns ?? []).some((c) => c.startsWith("substanceNames") || c.startsWith("casNumbers"))
       );
     }
     return false;

@@ -1,6 +1,6 @@
 "use client";
 
-import { DEFAULT_FONT_SIZE, type DocumentContent } from "@chem/shared";
+import { DEFAULT_FONT_SIZE, targetIsList, type DocumentContent } from "@chem/shared";
 import { ChevronDown, ChevronUp, Eye, Redo2, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -372,6 +372,10 @@ export function DocTemplateEditor({ id }: { id: string }) {
         locale,
       ),
       tables: sampleTables(locale),
+      // 一覧の帳票の繰り返しは、見本を 2 件ぶん流して形を確かめられるようにする
+      ...(targetIsList(template.target)
+        ? { repeats: [0, 1].map(() => ({ values: new Map(), tables: sampleTables(locale) })) }
+        : {}),
     });
   }, [template, content, orgItems, organisations]);
 

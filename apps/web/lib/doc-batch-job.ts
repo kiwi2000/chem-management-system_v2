@@ -270,6 +270,8 @@ async function run(jobId: string): Promise<void> {
     // 一覧の帳票は、選んだ全部で 1 枚。そうでなければ 1 件につき 1 枚
     const isList = targetIsList(template.target);
     const units: string[][] = isList ? [ids] : ids.map((id) => [id]);
+    // 繰り返しの区間があるときだけ、1 件ごとのデータも集める
+    const withItems = isList && content.blocks.some((b) => b.kind === "repeatStart");
     await heartbeat(jobId, { total: units.length });
 
     // 出力先とファイル名の書式は、走り始めた時点の設定を使う（途中で変えても、この仕事は変えない）
@@ -285,7 +287,7 @@ async function run(jobId: string): Promise<void> {
       try {
         // 見る権限は、集める側が対象ごとに判断する（見られないものは null）
         const data = isList
-          ? await collectForList(actor, template.target, unit, locale, m, parties)
+          ? await collectForList(actor, template.target, unit, locale, m, parties, withItems)
           : await collectFor(actor, template.target, id, locale, m, parties);
         if (!data) {
           missed++;
@@ -296,6 +298,7 @@ async function run(jobId: string): Promise<void> {
             target: template.target,
             values: data.values,
             tables: data.tables,
+            repeats: data.items?.map((it) => ({ values: it.values, tables: it.tables })),
           });
           const version = data.values.get("doc.version") ?? "";
           const created = await prisma.generatedDocument.create({

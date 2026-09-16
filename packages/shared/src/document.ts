@@ -370,9 +370,18 @@ export function recipientItemField(label: string, target: DocumentTarget): Docum
  * その対象で選べる項目。
  * `orgItems` に会社の項目名を渡すと、その分も選べるようになる
  */
+/** その対象で差込項目・表として選べる対象の集まり。一覧の帳票は繰り返しの中で 1 件ごとのものも使える */
+function fieldTargetsOf(target: DocumentTarget): DocumentTarget[] {
+  const row = listRowTarget(target);
+  return row ? [target, row] : [target];
+}
+
 export function fieldsFor(target: DocumentTarget, orgItems: string[] = []): DocumentField[] {
+  const targets = fieldTargetsOf(target);
   return [
-    ...DOCUMENT_FIELDS.filter((f) => f.target === target || f.target === "*"),
+    ...DOCUMENT_FIELDS.filter(
+      (f) => f.target === "*" || targets.includes(f.target as DocumentTarget),
+    ),
     ...orgItems.map((label) => orgItemField(label, target)),
     ...orgItems.map((label) => recipientItemField(label, target)),
     // 対象が組織なら、その組織の自由項目も
@@ -393,7 +402,10 @@ export function isKnownField(target: DocumentTarget, key: string, orgItems?: str
     if (prefix === TARGET_ORG_ITEM_PREFIX && target !== "ORGANISATION") return false;
     return orgItems === undefined || orgItems.includes(key.slice(prefix.length));
   }
-  return DOCUMENT_FIELDS.some((f) => (f.target === target || f.target === "*") && f.key === key);
+  const targets = fieldTargetsOf(target);
+  return DOCUMENT_FIELDS.some(
+    (f) => (f.target === "*" || targets.includes(f.target as DocumentTarget)) && f.key === key,
+  );
 }
 
 /**
@@ -406,6 +418,7 @@ export const DOCUMENT_TABLES = [
   "judgement",
   "substanceRegulation",
   "substanceInventory",
+  "compositionExpanded",
   "productList",
   "substanceList",
   "categorySubstances",
@@ -445,6 +458,21 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
       { key: "code", labelJa: "物質ID", labelEn: "Substance ID" },
       { key: "name", labelJa: "物質名", labelEn: "Name" },
       { key: "totalPct", labelJa: "重量%", labelEn: "Weight %" },
+      { key: "note", labelJa: "備考", labelEn: "Note" },
+    ],
+  },
+  {
+    // 原材料を末端まで下ろした形。まとめる前なので、同じ物質が何行も出る（どこから来たかが分かる）
+    key: "compositionExpanded",
+    target: "PRODUCT",
+    labelJa: "原材料展開（合算前）",
+    labelEn: "Expanded (before summing)",
+    columns: [
+      { key: "path", labelJa: "経路（原材料）", labelEn: "Path (materials)" },
+      { key: "code", labelJa: "物質ID", labelEn: "Substance ID" },
+      { key: "casNumber", labelJa: "CAS番号", labelEn: "CAS" },
+      { key: "name", labelJa: "物質名", labelEn: "Name" },
+      { key: "totalPct", labelJa: "製品全体の重量%", labelEn: "Weight % of product" },
       { key: "note", labelJa: "備考", labelEn: "Note" },
     ],
   },
@@ -501,8 +529,20 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
       { key: "nameEn", labelJa: "英語名称", labelEn: "Name (EN)" },
       { key: "modelName", labelJa: "型式", labelEn: "Model" },
       { key: "useName", labelJa: "用途", labelEn: "Use" },
-      { key: "substanceNames", labelJa: "成分（物質名）", labelEn: "Ingredients" },
-      { key: "casNumbers", labelJa: "CAS番号", labelEn: "CAS numbers" },
+      {
+        key: "substanceNamesOriginal",
+        labelJa: "成分（組成）",
+        labelEn: "Ingredients (as entered)",
+      },
+      { key: "casNumbersOriginal", labelJa: "CAS番号（組成）", labelEn: "CAS (as entered)" },
+      {
+        key: "substanceNamesExpanded",
+        labelJa: "成分（展開後）",
+        labelEn: "Ingredients (expanded)",
+      },
+      { key: "casNumbersExpanded", labelJa: "CAS番号（展開後）", labelEn: "CAS (expanded)" },
+      { key: "substanceNames", labelJa: "成分（CAS合算）", labelEn: "Ingredients (summed by CAS)" },
+      { key: "casNumbers", labelJa: "CAS番号（CAS合算）", labelEn: "CAS (summed by CAS)" },
       { key: "judgement", labelJa: "判定", labelEn: "Result" },
       { key: "judgementCategories", labelJa: "該当した規制区分", labelEn: "Applicable categories" },
       { key: "needsReview", labelJa: "要確認", labelEn: "Needs review" },
@@ -544,7 +584,9 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
 ];
 
 export function tablesFor(target: DocumentTarget): DocumentTableDef[] {
-  return DOCUMENT_TABLE_DEFS.filter((t) => t.target === target);
+  const targets = fieldTargetsOf(target);
+  // 一覧の帳票は、一覧の表を先に、繰り返しの中で使う 1 件ごとの表をあとに
+  return targets.flatMap((t) => DOCUMENT_TABLE_DEFS.filter((d) => d.target === t));
 }
 
 /**
@@ -604,8 +646,18 @@ export const BLOCK_KINDS = [
   "pageBreak",
   "signature",
   "image",
+  "repeatStart",
+  "repeatEnd",
 ] as const;
 export type BlockKind = (typeof BLOCK_KINDS)[number];
+
+/** 紙に何も出さず、幅・字・余白も持たないブロック */
+export const BARE_BLOCK_KINDS: readonly BlockKind[] = [
+  "rowBreak",
+  "pageBreak",
+  "repeatStart",
+  "repeatEnd",
+];
 
 /** 画像の寄せ */
 export const IMAGE_ALIGNS = ["left", "center", "right"] as const;
@@ -999,6 +1051,13 @@ export type DocumentBlock =
   | (BlockBase & { kind: "rowBreak" })
   | (BlockBase & { kind: "pageBreak" })
   /**
+   * 繰り返しの区間（一覧の帳票だけ。2026-09-16 指示）。
+   * 「始まり」から「終わり」までを 1 件分として、選んだ製品（物質）の数だけ繰り返す。
+   * この間では製品（物質）1 件ごとの差込項目と表が使える。紙には印そのものは出ない
+   */
+  | (BlockBase & { kind: "repeatStart" })
+  | (BlockBase & { kind: "repeatEnd" })
+  /**
    * 署名欄。`labelPosition` はラベルを線の左に置くか上に置くか（省略は左）、
    * `gap` はラベルと線の間（mm、省略は 4）、`lineWidth` は線の長さ（mm、省略は 60）。
    * 2026-09-13 指示で決められるようにした
@@ -1164,7 +1223,8 @@ export function unknownFields(
       }
     } else if (b.kind === "table") {
       const def = DOCUMENT_TABLE_DEFS.find((t) => t.key === b.table);
-      if (!def || def.target !== target) out.add(`table:${b.table}`);
+      // 一覧の帳票は、繰り返しの中で使う 1 件ごとの表も知っている（tablesFor と同じ範囲）
+      if (!def || !tablesFor(target).some((t) => t.key === def.key)) out.add(`table:${b.table}`);
     }
   }
   return [...out];

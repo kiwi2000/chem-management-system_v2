@@ -58,6 +58,73 @@ interface Bucket {
   notes: string[];
 }
 
+/** 展開した 1 行。まとめる前なので、同じ物質が木の別の場所から何度も出る */
+export interface ExpandedCompositionRow {
+  /** たどった原材料の名前（根の製品は含めない） */
+  path: { code: string; nameJa: string; nameEn: string | null }[];
+  code: string;
+  casNumber: string | null;
+  nameJa: string;
+  nameEn: string | null;
+  /** 製品全体に占める重量% */
+  totalPct: string;
+  note: string | null;
+}
+
+/**
+ * 組成を末端の物質まで下ろし、**まとめずに** 1 行ずつ返す（2026-09-16 指示。帳票の「原材料展開（合算前）」）。
+ * どの原材料をたどって来たかが分かる。数え上げかたは aggregateComposition と同じ
+ */
+export async function expandComposition(
+  actor: Actor,
+  rootProductId: string,
+): Promise<ExpandedCompositionRow[]> {
+  const rows: ExpandedCompositionRow[] = [];
+  async function walk(
+    productId: string,
+    ratio: Ratio,
+    depth: number,
+    path: ExpandedCompositionRow["path"],
+  ): Promise<void> {
+    const product = await prisma.product.findFirst({
+      where: { id: productId, deletedAt: null, ...visibilityWhere(actor) },
+      select: { id: true },
+    });
+    if (!product) return;
+    const lines = await prisma.compositionLine.findMany({
+      where: { parentProductId: productId },
+      include: COMPOSITION_INCLUDE,
+      orderBy: { displayOrder: "asc" },
+    });
+    for (const line of lines) {
+      const within = line.contentPct?.toString() ?? null;
+      if (within === null) continue;
+      const next = timesPct(ratio, within);
+      if (!next) continue;
+      if (line.substance) {
+        rows.push({
+          path,
+          code: line.substance.code,
+          casNumber: line.substance.casNumber,
+          nameJa: line.substance.nameJa,
+          nameEn: line.substance.nameEn,
+          totalPct: fineToPct(ratioToFine(next)),
+          note: line.note,
+        });
+        continue;
+      }
+      if (!line.childProduct || depth >= COMPOSITION_MAX_DEPTH) continue;
+      const c = line.childProduct;
+      await walk(c.id, next, depth + 1, [
+        ...path,
+        { code: c.code, nameJa: c.nameJa, nameEn: c.nameEn },
+      ]);
+    }
+  }
+  await walk(rootProductId, RATIO_ONE, 0, []);
+  return rows;
+}
+
 export async function aggregateComposition(
   actor: Actor,
   rootProductId: string,

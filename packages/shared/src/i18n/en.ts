@@ -1200,7 +1200,11 @@ export const en: Messages = {
       pageBreak: "Page break",
       signature: "Signature",
       image: "Image",
+      repeatStart: "Repeat from here",
+      repeatEnd: "Repeat until here",
     },
+    repeatHint:
+      "Everything between “Repeat from here” and “Repeat until here” is one item and is repeated for every selected product (substance). Inside, the per-item fields and tables (composition, regulation results, …) are available. The markers themselves do not print",
     orgBlock: "Organisation items",
     orgBlockHint:
       "Prints an organisation's name and items. Fix the organisation in the template, fix only its kind, or leave it to be chosen when the document is made. Separate from sender and recipient",
