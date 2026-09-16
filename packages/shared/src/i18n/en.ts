@@ -1276,7 +1276,9 @@ export const en: Messages = {
     tableColumns: "Columns",
     moveUp: "Up",
     moveDown: "Down",
-    tableColumnsHint: "Tick to include, reorder with the arrows. Columns print in this order.",
+    tableColumnsHint:
+      "Tick to include, reorder with the arrows. Columns print in this order. The number is the width ratio; blank means 1 (e.g. 1, 3, 2 gives 1:3:2). Leave all blank to size columns by content.",
+    tableColumnWidth: "Width ratio",
     tableFilters: "Keep only rows that match",
     tableFilterColumn: "Column",
     tableFilterOp: "Condition",
@@ -1436,6 +1438,8 @@ export const en: Messages = {
     targetKind: "Kind",
     targetCode: "Subject",
     hasComposition: "Composition",
+    hasCompositionYes: "Yes",
+    hasCompositionNo: "No",
     version: "Version",
     pickCompany: "Chosen company",
     pickDepartment: "Chosen department",
@@ -1461,7 +1465,7 @@ export const en: Messages = {
     jobsTitle: "Batch progress",
     jobsHint: "Progress of batch requests. When one finishes, “Open all” prints them in one go",
     jobsNone: "No batch requests yet",
-    jobRequestedAt: "Requested",
+    jobRequestedAt: "Started",
     jobProgress: "Progress",
     jobStatus: "Status",
     jobStatuses: {

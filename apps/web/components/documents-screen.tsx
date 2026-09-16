@@ -295,10 +295,12 @@ export function DocumentsScreen({
         kind: "enum",
         width: 96,
         options: [
-          { value: "true", label: m.common.yes },
-          { value: "false", label: m.common.no },
+          { value: "true", label: m.documents.hasCompositionYes },
+          { value: "false", label: m.documents.hasCompositionNo },
         ],
-        render: (d) => (d.hasComposition ? m.common.yes : ""),
+        // 「有」「無」で出す（2026-09-16 指示）
+        render: (d) =>
+          d.hasComposition ? m.documents.hasCompositionYes : m.documents.hasCompositionNo,
       },
       {
         key: "version",
@@ -389,7 +391,12 @@ export function DocumentsScreen({
         key: "createdAt",
         header: m.documents.jobRequestedAt,
         kind: "date",
-        width: 140,
+        /*
+          列幅は表ごとの比率で効く。上の「生成済ドキュメント」の「作成日時」（140 / 合計 1170）と
+          同じ幅に見えるよう、この表の合計（688 + この列）に対して同じ比率になる値にしてある（2026-09-16 指示）。
+          どちらかの表の列を足し引きしたら、ここも合わせ直す
+        */
+        width: 94,
         sortable: false,
         filterable: false,
         className: "whitespace-nowrap",
