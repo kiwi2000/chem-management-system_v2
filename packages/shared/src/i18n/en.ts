@@ -1123,9 +1123,10 @@ export const en: Messages = {
       NONE: "None (general)",
       PRODUCT_LIST: "Product list",
       SUBSTANCE_LIST: "Substance list",
+      CATEGORY: "Regulation category",
     },
     targetHint:
-      "Product and substance make one document per row; organisation makes one per organisation; none makes a single document from the common fields only (cover letters, notices); product list and substance list put everything selected into one table",
+      "Product and substance make one document per row; organisation makes one per organisation; none makes a single document from the common fields only (cover letters, notices); product list and substance list put everything selected into one table; regulation category makes one per category with its statutory substances",
     kind: "Built as",
     kinds: { BLOCK: "Screen editor", XLSX: "Excel", DOCX: "Word" },
     file: {
@@ -1380,6 +1381,7 @@ export const en: Messages = {
     step3Product: "Select products",
     step3Substance: "Select substances",
     step3Organisation: "Select organisations",
+    step3Category: "Select regulation categories",
     noTargetNeeded: "This template has no target. Choose the recipient or company and press Create",
     step4: "Create documents",
     pickedCount: (n: number) => `${n} selected`,

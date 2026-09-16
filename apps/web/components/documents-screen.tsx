@@ -521,7 +521,9 @@ export function DocumentsScreen({
         ? m.documents.step3Substance
         : rowTarget === "ORGANISATION"
           ? m.documents.step3Organisation
-          : m.documents.step3;
+          : rowTarget === "CATEGORY"
+            ? m.documents.step3Category
+            : m.documents.step3;
   /** 対象なしのテンプレートは相手を選ばず、そのまま 1 枚作る */
   const noTarget = picked !== null && !targetHasRows(picked.target);
 

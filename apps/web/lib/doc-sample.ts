@@ -51,6 +51,17 @@ const SAMPLE_JA: Record<string, string> = {
   "pick.company": "見本商事株式会社",
   "pick.department": "見本営業部",
   "list.count": "3",
+  "category.code": "SAMPLE-CAT",
+  "category.name": "第一種指定化学物質",
+  "category.nameOriginal": "第一種指定化学物質",
+  "category.law": "見本法",
+  "category.lawCode": "JP-SAMPLE",
+  "category.threshold": "1 ≤ x ≤ 100",
+  "category.thresholdBasis": "製品全体",
+  "category.effective": "2026/1/1〜",
+  "category.score": "30",
+  "category.note": "これは見本です",
+  "category.substanceCount": "3",
 };
 
 const SAMPLE_EN: Record<string, string> = {
@@ -63,6 +74,11 @@ const SAMPLE_EN: Record<string, string> = {
   "substance.note": "This is a sample",
   "organisation.name": "Sample Trading Co., Ltd.",
   "organisation.kind": "Partner",
+  "category.name": "Class 1 designated substances",
+  "category.law": "Sample Act",
+  "category.thresholdBasis": "Whole product",
+  "category.effective": "1/1/2026〜",
+  "category.note": "This is a sample",
   "org.name": "Sample Co., Ltd.",
   "org.group": "Sample dept.",
   "pick.company": "Sample Trading Co., Ltd.",
@@ -168,6 +184,16 @@ function sampleCell(columnKey: string, row: number, locale: Locale): string {
     case "needsReview":
       // すべての行に付けない。付いた行と付かない行の見え方を確かめられるように
       return row === 0 ? (en ? "Yes" : "要確認") : "";
+    case "threshold":
+      return ["1 ≤ x ≤ 100", "0.1 < x ≤ 100", "1 ≤ x ≤ 100"][row] ?? "1 ≤ x ≤ 100";
+    case "applicableCondition":
+      return row === 1 ? (en ? "Sample condition" : "見本の条件") : "";
+    case "effectiveFrom":
+      return en ? "1/1/2026" : "2026/1/1";
+    case "casNumbers":
+      return ["000-00-0", "111-11-1、222-22-2", "333-33-3"][row] ?? "000-00-0";
+    case "casCount":
+      return ["1", "2", "1"][row] ?? "1";
     case "inventory":
       return en ? "Sample inventory" : "見本インベントリ";
     case "country":

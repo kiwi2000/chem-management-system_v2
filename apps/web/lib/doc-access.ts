@@ -67,8 +67,14 @@ export async function canAccessDocument(
   if (doc.generatedBy === actor.user.id) return true;
   if (!actor.has("DOCUMENT_VIEW_ALL")) return false;
   if (actor.has("INACTIVE_VIEW")) return true;
-  // 組織は誰でも見られ、対象なしは相手が無い
-  if (doc.template.target === "ORGANISATION" || doc.template.target === "NONE") return true;
+  // 組織・規制区分は誰でも見られ、対象なしは相手が無い
+  if (
+    doc.template.target === "ORGANISATION" ||
+    doc.template.target === "CATEGORY" ||
+    doc.template.target === "NONE"
+  ) {
+    return true;
+  }
   // 一覧の帳票は未公開が混ざりうる。未公開を見られない人には見せない（上の documentWhere と同じ）
   if (targetIsList(doc.template.target)) return false;
   const visible =

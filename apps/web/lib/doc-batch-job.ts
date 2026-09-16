@@ -19,7 +19,12 @@ import { collectFor, collectForList, containsComposition, resolveOrgChoices } fr
 import { currentOutputDir, writePdfFile } from "@/lib/doc-files";
 import { renderDocument } from "@/lib/doc-render";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
-import { ORGANISATION_COLUMNS, productColumns, SUBSTANCE_COLUMNS } from "@/lib/list-columns";
+import {
+  ORGANISATION_COLUMNS,
+  productColumns,
+  REGULATION_CATEGORY_COLUMNS,
+  SUBSTANCE_COLUMNS,
+} from "@/lib/list-columns";
 import { closeBrowser, internalBaseUrl, renderPdf } from "@/lib/pdf";
 import { makePrintToken } from "@/lib/print-token";
 import { visibilityWhere as productVisibility } from "@/lib/product-service";
@@ -122,6 +127,19 @@ export async function resolveTargetIds(
     });
     return rows.map((r) => r.id);
   }
+  if (target === "CATEGORY") {
+    const state = parseTableState(
+      params,
+      REGULATION_CATEGORY_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+      emptyTableState([{ column: "displayOrder", direction: "asc" }]),
+    );
+    const rows = await prisma.regulationCategory.findMany({
+      where: { deletedAt: null, ...buildWhere(REGULATION_CATEGORY_COLUMNS, state.filters) },
+      orderBy: buildOrderBy(REGULATION_CATEGORY_COLUMNS, state.sort, { displayOrder: "asc" }),
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
   if (target === "PRODUCT") {
     const version = await getCurrentVersion();
     const columns = productColumns(version?.id ?? null, actor.has("COMPOSITION_VIEW"));
@@ -170,6 +188,8 @@ function targetNameOf(
       return data.values.get("substance.nameJa");
     case "ORGANISATION":
       return data.values.get("organisation.name");
+    case "CATEGORY":
+      return data.values.get("category.name");
     case "NONE":
     case "PRODUCT_LIST":
     case "SUBSTANCE_LIST":

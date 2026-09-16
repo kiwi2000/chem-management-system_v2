@@ -2344,6 +2344,8 @@ enum DocumentTarget {
   /** 選んだ製品・物質を 1 枚の表に（2026-09-16 指示） */
   PRODUCT_LIST
   SUBSTANCE_LIST
+  /** 規制区分ごとに 1 枚。法文物質名の表を添える（2026-09-16 指示） */
+  CATEGORY
 }
 
 /**

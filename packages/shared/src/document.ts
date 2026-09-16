@@ -47,6 +47,7 @@ export const DOCUMENT_TARGETS = [
   "NONE",
   "PRODUCT_LIST",
   "SUBSTANCE_LIST",
+  "CATEGORY",
 ] as const;
 export type DocumentTarget = (typeof DOCUMENT_TARGETS)[number];
 
@@ -70,10 +71,9 @@ export function listRowTarget(target: DocumentTarget): "PRODUCT" | "SUBSTANCE" |
   return null;
 }
 
-/** 相手を選ぶ表の種類（製品・物質・組織）。対象なしは選ばないので null */
-export function pickerTargetOf(
-  target: DocumentTarget,
-): "PRODUCT" | "SUBSTANCE" | "ORGANISATION" | null {
+/** 相手を選ぶ表の種類。対象なしは選ばないので null */
+export type PickerTarget = "PRODUCT" | "SUBSTANCE" | "ORGANISATION" | "CATEGORY";
+export function pickerTargetOf(target: DocumentTarget): PickerTarget | null {
   switch (target) {
     case "PRODUCT":
     case "PRODUCT_LIST":
@@ -83,6 +83,8 @@ export function pickerTargetOf(
       return "SUBSTANCE";
     case "ORGANISATION":
       return "ORGANISATION";
+    case "CATEGORY":
+      return "CATEGORY";
     case "NONE":
       return null;
   }
@@ -158,6 +160,39 @@ export const DOCUMENT_FIELDS: DocumentField[] = [
   /* 一覧の帳票（選んだ製品・物質を 1 枚の表に）。1 件ごとの項目は無く、件数だけ */
   { key: "list.count", target: "PRODUCT_LIST", labelJa: "件数", labelEn: "Row count" },
   { key: "list.count", target: "SUBSTANCE_LIST", labelJa: "件数", labelEn: "Row count" },
+
+  /* 対象が規制区分のとき（2026-09-16 指示）。規制区分 1 件につき 1 枚（法文物質名の表を添える） */
+  { key: "category.code", target: "CATEGORY", labelJa: "区分コード", labelEn: "Category code" },
+  { key: "category.name", target: "CATEGORY", labelJa: "区分の名称", labelEn: "Category name" },
+  {
+    key: "category.nameOriginal",
+    target: "CATEGORY",
+    labelJa: "区分の原文の名称",
+    labelEn: "Category name (original)",
+  },
+  { key: "category.law", target: "CATEGORY", labelJa: "法律の名称", labelEn: "Law name" },
+  { key: "category.lawCode", target: "CATEGORY", labelJa: "法律コード", labelEn: "Law code" },
+  { key: "category.threshold", target: "CATEGORY", labelJa: "既定の閾値", labelEn: "Threshold" },
+  {
+    key: "category.thresholdBasis",
+    target: "CATEGORY",
+    labelJa: "閾値の対象",
+    labelEn: "Threshold basis",
+  },
+  {
+    key: "category.effective",
+    target: "CATEGORY",
+    labelJa: "有効期間",
+    labelEn: "Effective period",
+  },
+  { key: "category.score", target: "CATEGORY", labelJa: "区分の点数", labelEn: "Category score" },
+  { key: "category.note", target: "CATEGORY", labelJa: "区分の備考", labelEn: "Category note" },
+  {
+    key: "category.substanceCount",
+    target: "CATEGORY",
+    labelJa: "法文物質名の数",
+    labelEn: "Statutory substance count",
+  },
 
   /*
     対象が組織のとき（2026-09-16 指示）。取引先ごとの案内状・調査依頼など。
@@ -373,6 +408,7 @@ export const DOCUMENT_TABLES = [
   "substanceInventory",
   "productList",
   "substanceList",
+  "categorySubstances",
 ] as const;
 export type DocumentTable = (typeof DOCUMENT_TABLES)[number];
 
@@ -483,6 +519,23 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
       { key: "score", labelJa: "スコア", labelEn: "Score" },
       { key: "scoreRank", labelJa: "段階", labelEn: "Rank" },
       { key: "note", labelJa: "備考", labelEn: "Note" },
+    ],
+  },
+  /* 規制区分の帳票の表（2026-09-16 指示）。区分にぶら下がる法文物質名を、法規制の画面と同じ列で */
+  {
+    key: "categorySubstances",
+    target: "CATEGORY",
+    labelJa: "法文物質名",
+    labelEn: "Statutory substances",
+    columns: [
+      { key: "officialNumber", labelJa: "法律上の番号", labelEn: "Official number" },
+      { key: "code", labelJa: "コード", labelEn: "Code" },
+      { key: "name", labelJa: "法文物質名", labelEn: "Statutory name" },
+      { key: "threshold", labelJa: "閾値", labelEn: "Threshold" },
+      { key: "applicableCondition", labelJa: "適用条件", labelEn: "Condition" },
+      { key: "effectiveFrom", labelJa: "適用開始日", labelEn: "Effective from" },
+      { key: "casNumbers", labelJa: "CAS番号", labelEn: "CAS numbers" },
+      { key: "casCount", labelJa: "CAS の数", labelEn: "CAS count" },
     ],
   },
 ];

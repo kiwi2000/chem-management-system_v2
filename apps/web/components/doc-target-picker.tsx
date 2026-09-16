@@ -2,10 +2,13 @@
 
 import {
   emptyTableState,
+  formatThreshold,
   kindLabelOf,
   ORGANISATION_KINDS,
   pickName,
+  pickStatutoryName,
   serializeTableState,
+  type PickerTarget,
   type TableState,
 } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -30,9 +33,11 @@ import type { DocPickSelection } from "@/lib/doc-batch";
 import { useI18n } from "@/lib/i18n-client";
 import type {
   ApiError,
+  LawDto,
   ListResponse,
   OrganisationDto,
   ProductListItemDto,
+  RegulationCategoryDto,
   SubstanceListItemDto,
 } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
@@ -56,7 +61,7 @@ export function DocTargetPicker({
   onSelectionChange,
 }: {
   /** 対象なし（NONE）は相手を選ばないので、この表は出さない */
-  target: "PRODUCT" | "SUBSTANCE" | "ORGANISATION";
+  target: PickerTarget;
   /**
    * 1件しか選べない表にするか。
    * **まとめて作れないテンプレート（Excel・Word）で使う。**
@@ -73,6 +78,9 @@ export function DocTargetPicker({
 }) {
   if (target === "ORGANISATION") {
     return <OrganisationPicker single={single} onSelectionChange={onSelectionChange} />;
+  }
+  if (target === "CATEGORY") {
+    return <CategoryPicker single={single} onSelectionChange={onSelectionChange} />;
   }
   return target === "PRODUCT" ? (
     <ProductPicker single={single} options={product} onSelectionChange={onSelectionChange} />
@@ -230,8 +238,114 @@ function SubstancePicker({
   );
 }
 
-/** 製品・物質・組織で共通の、読み込みと選択の持ちかた */
-function PickerTable<T extends ProductListItemDto | SubstanceListItemDto | OrganisationDto>({
+const CATEGORY_DEFAULT_STATE: TableState = emptyTableState([
+  { column: "displayOrder", direction: "asc" },
+]);
+
+/** 規制区分の表。法規制の画面の区分の行と同じ列。法律は名前で絞れる */
+function CategoryPicker({
+  single,
+  onSelectionChange,
+}: {
+  single: boolean;
+  onSelectionChange: (selection: DocPickSelection | null) => void;
+}) {
+  const { m, locale } = useI18n();
+  // 法律の名前（列の絞り込みの選択肢と、行の表示に使う）。数は少ないので全部引く
+  const [laws, setLaws] = useState<LawDto[]>([]);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const res = await fetch("/api/laws?size=500");
+      if (!res.ok) return;
+      const body = (await res.json()) as ListResponse<LawDto>;
+      if (alive) setLaws(body.items);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const lawName = useCallback(
+    (l: LawDto) => pickStatutoryName(locale, l.nameOriginal, l.nameJa, l.nameEn),
+    [locale],
+  );
+  const columns = useMemo<TableColumn<RegulationCategoryDto>[]>(
+    () => [
+      {
+        key: "code",
+        header: m.regulationCategories.code,
+        kind: "text",
+        width: 140,
+        className: "font-mono text-xs",
+        render: (c) => c.code,
+      },
+      {
+        key: "lawId",
+        header: m.laws.title,
+        kind: "enum",
+        width: 220,
+        options: laws.map((l) => ({ value: l.id, label: lawName(l) })),
+        render: (c) => {
+          const law = laws.find((l) => l.id === c.lawId);
+          return law ? lawName(law) : "";
+        },
+      },
+      {
+        key: "nameJa",
+        header: m.regulationCategories.title,
+        kind: "text",
+        width: 260,
+        render: (c) => pickStatutoryName(locale, c.nameOriginal, c.nameJa, c.nameEn),
+      },
+      {
+        key: "threshold",
+        header: m.regulationCategories.threshold,
+        kind: "text",
+        width: 130,
+        sortable: false,
+        filterable: false,
+        className: "text-muted-foreground font-mono text-xs",
+        render: (c) =>
+          formatThreshold(c.thresholdLower, c.lowerBound, c.thresholdUpper, c.upperBound),
+      },
+      {
+        key: "score",
+        header: m.score.categoryScore,
+        kind: "number",
+        nullable: false,
+        width: 72,
+        className: "text-right font-mono text-xs",
+        render: (c) => c.score,
+      },
+      {
+        key: "displayOrder",
+        header: m.regulationCategories.displayOrder,
+        kind: "number",
+        width: 80,
+        className: "text-right text-xs",
+        render: (c) => String(c.displayOrder),
+      },
+    ],
+    [m, locale, laws, lawName],
+  );
+  return (
+    <PickerTable
+      storageKey="chem.table.docPickCategory"
+      endpoint="/api/regulation-categories"
+      columns={columns}
+      filterLayout={[["code", "lawId", "nameJa", "score"]]}
+      defaultState={CATEGORY_DEFAULT_STATE}
+      emptyMessage={m.regulationCategories.empty}
+      single={single}
+      onSelectionChange={onSelectionChange}
+    />
+  );
+}
+
+/** 製品・物質・組織・規制区分で共通の、読み込みと選択の持ちかた */
+function PickerTable<
+  T extends ProductListItemDto | SubstanceListItemDto | OrganisationDto | RegulationCategoryDto,
+>({
   storageKey,
   endpoint,
   columns,

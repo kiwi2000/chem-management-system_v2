@@ -13,6 +13,7 @@ import {
   PICK_COMPANY_KEY,
   PICK_DEPARTMENT_KEY,
   TARGET_ORG_ITEM_PREFIX,
+  formatThreshold,
   getMessages,
 } from "@chem/shared";
 import type { DocumentTable, DocumentTarget, Locale, Messages } from "@chem/shared";
@@ -613,6 +614,159 @@ export async function collectForList(
   return { code: "", values, tables, judgementWithBasis: false };
 }
 
+/** 日付を紙面の言語で（日だけ） */
+function dateText(d: Date | null, locale: Locale): string {
+  return d ? d.toLocaleDateString(locale === "en" ? "en-US" : "ja-JP") : "";
+}
+
+/**
+ * 規制区分の帳票（2026-09-16 指示）。区分 1 件につき 1 枚。
+ *
+ * **法規制の画面と同じものを出す。**区分の閾値・点数・有効期間と、
+ * ぶら下がる法文物質名（分類をまたいで全部。並びは分類の順 → 法文物質名の順）。
+ * CAS 番号は現在の法規制バージョンのリンク（除外したものは載せない）。
+ * 法規制を見られない人には作らせない（画面と同じ REGULATION_VIEW）
+ */
+export async function collectForCategory(
+  actor: Actor,
+  categoryId: string,
+  locale: Locale,
+  m: Messages,
+  parties?: DocParties,
+): Promise<DocData | null> {
+  if (!actor.has("REGULATION_VIEW")) return null;
+  const category = await prisma.regulationCategory.findFirst({
+    where: { id: categoryId, deletedAt: null },
+    select: {
+      id: true,
+      code: true,
+      nameOriginal: true,
+      nameJa: true,
+      nameEn: true,
+      thresholdLower: true,
+      lowerBound: true,
+      thresholdUpper: true,
+      upperBound: true,
+      thresholdBasis: true,
+      effectiveFrom: true,
+      effectiveTo: true,
+      score: true,
+      note: true,
+      law: { select: { code: true, nameOriginal: true, nameJa: true, nameEn: true } },
+      classes: {
+        where: { deletedAt: null },
+        orderBy: { displayOrder: "asc" },
+        select: {
+          statutorySubstances: {
+            where: { deletedAt: null },
+            orderBy: { displayOrder: "asc" },
+            select: {
+              id: true,
+              code: true,
+              officialNumber: true,
+              nameOriginal: true,
+              nameJa: true,
+              nameEn: true,
+              thresholdLower: true,
+              lowerBound: true,
+              thresholdUpper: true,
+              upperBound: true,
+              applicableCondition: true,
+              effectiveFrom: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!category) return null;
+
+  const version = await getCurrentVersion();
+  const substances = category.classes.flatMap((c) => c.statutorySubstances);
+  // CAS 番号は現在の版のリンクから。法文物質名ごとにまとめる
+  const cas = new Map<string, string[]>();
+  if (version && substances.length > 0) {
+    const links = await prisma.statutoryCasLink.findMany({
+      where: {
+        versionId: version.id,
+        excluded: false,
+        statutorySubstanceId: { in: substances.map((s) => s.id) },
+      },
+      orderBy: { casNumber: "asc" },
+      select: { statutorySubstanceId: true, casNumber: true },
+    });
+    for (const l of links) {
+      // 同じ CAS が複数の出典から来ることがある。紙面には 1 回だけ
+      const list = cas.get(l.statutorySubstanceId) ?? [];
+      if (!list.includes(l.casNumber)) list.push(l.casNumber);
+      cas.set(l.statutorySubstanceId, list);
+    }
+  }
+
+  const threshold = formatThreshold(
+    category.thresholdLower.toString(),
+    category.lowerBound,
+    category.thresholdUpper.toString(),
+    category.upperBound,
+  );
+  const effective =
+    category.effectiveFrom || category.effectiveTo
+      ? `${dateText(category.effectiveFrom, locale)}〜${dateText(category.effectiveTo, locale)}`
+      : "";
+  const values = new Map<string, string>([
+    ...(await commonValues(actor, version?.code ?? null, locale, parties)),
+    ["category.code", category.code],
+    [
+      "category.name",
+      pickStatutoryName(locale, category.nameOriginal, category.nameJa, category.nameEn),
+    ],
+    ["category.nameOriginal", category.nameOriginal],
+    [
+      "category.law",
+      pickStatutoryName(
+        locale,
+        category.law.nameOriginal,
+        category.law.nameJa,
+        category.law.nameEn,
+      ),
+    ],
+    ["category.lawCode", category.law.code],
+    ["category.threshold", threshold],
+    ["category.thresholdBasis", m.regulationCategories.thresholdBases[category.thresholdBasis]],
+    ["category.effective", effective],
+    ["category.score", category.score.toString()],
+    ["category.note", category.note ?? ""],
+    ["category.substanceCount", String(substances.length)],
+  ]);
+
+  const tables: RenderInput["tables"] = new Map();
+  tables.set("categorySubstances", {
+    columns: tableDef("categorySubstances", locale),
+    rows: substances.map((s) => {
+      // 自分の閾値が空の欄は区分の既定値で埋める（画面の灰色の表示と同じ読み）
+      const own = formatThreshold(
+        (s.thresholdLower ?? category.thresholdLower).toString(),
+        s.lowerBound ?? category.lowerBound,
+        (s.thresholdUpper ?? category.thresholdUpper).toString(),
+        s.upperBound ?? category.upperBound,
+      );
+      const numbers = cas.get(s.id) ?? [];
+      return {
+        officialNumber: s.officialNumber ?? "",
+        code: s.code,
+        name: pickStatutoryName(locale, s.nameOriginal, s.nameJa, s.nameEn),
+        threshold: own,
+        applicableCondition: s.applicableCondition ?? "",
+        effectiveFrom: dateText(s.effectiveFrom, locale),
+        casNumbers: numbers.join(locale === "en" ? ", " : "、"),
+        casCount: String(numbers.length),
+      };
+    }),
+  });
+
+  return { code: category.code, values, tables, judgementWithBasis: false };
+}
+
 /** 対象の種類に応じて集める（1 件につき 1 枚の対象。一覧は collectForList） */
 export async function collectFor(
   actor: Actor,
@@ -631,6 +785,8 @@ export async function collectFor(
       return collectForOrganisation(actor, targetId, locale, parties);
     case "NONE":
       return collectForNone(actor, locale, parties);
+    case "CATEGORY":
+      return collectForCategory(actor, targetId, locale, m, parties);
     case "PRODUCT_LIST":
     case "SUBSTANCE_LIST":
       // 一覧は id の並びを受け取る別の口（collectForList）。ここには来ない
