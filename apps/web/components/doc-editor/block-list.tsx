@@ -850,12 +850,32 @@ export function BlockList({
           )}
 
           {b.kind === "table" && (
-            <TableBlockFields
-              block={b}
-              target={target}
-              locale={locale}
-              onChange={(next) => replace(i, next)}
-            />
+            <>
+              <TableBlockFields
+                block={b}
+                target={target}
+                locale={locale}
+                onChange={(next) => replace(i, next)}
+              />
+              {/* 表題・見出し行・中身の字を別々に（2026-09-16 指示）。空ならブロックの字のまま */}
+              {(
+                [
+                  ["captionStyle", m.docEditor.tableCaptionStyle],
+                  ["headStyle", m.docEditor.tableHeadStyle],
+                  ["cellStyle", m.docEditor.tableCellStyle],
+                ] as const
+              ).map(([key, label]) => (
+                <div key={key} className="flex flex-wrap items-center gap-3 border-t pt-2">
+                  <span className="w-24 text-sm">{label}</span>
+                  <BlockStyleBar
+                    value={b[key]}
+                    onChange={(style) => replace(i, { ...b, [key]: style })}
+                    defaultFontLabel={m.docEditor.fieldsLabelFollow}
+                    inheritedSize={b.style?.size ?? ownFontSize(b) ?? docSize ?? DEFAULT_FONT_SIZE}
+                  />
+                </div>
+              ))}
+            </>
           )}
 
           {b.kind === "spacer" && (

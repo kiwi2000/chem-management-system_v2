@@ -1037,6 +1037,13 @@ export type DocumentBlock =
        */
       columnOrder?: string[];
       caption?: string;
+      /**
+       * 表題・見出し行・中身の字（2026-09-16 指示）。それぞれブロックの字の上に重ねる。
+       * 省略ならブロックの字のまま（表題は太字、見出し行は薄い地色という従来の見た目）
+       */
+      captionStyle?: BlockStyle;
+      headStyle?: BlockStyle;
+      cellStyle?: BlockStyle;
       /** 出す行を絞る。複数あるときは、すべてに当てはまる行だけを出す */
       filters?: TableFilter[];
       /** 出す値を置き換える。上から順に当てる */

@@ -515,7 +515,17 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
       return (
         <div style={{ margin: 0 }}>
           {b.caption && (
-            <p style={{ margin: "0 0 1mm", fontSize: captionSize, fontWeight: 700 }}>{b.caption}</p>
+            <p
+              style={{
+                margin: "0 0 1mm",
+                fontSize: captionSize,
+                fontWeight: 700,
+                ...styleOf(b.captionStyle),
+                ...decorOf(b.captionStyle, false),
+              }}
+            >
+              {b.caption}
+            </p>
           )}
           <table
             style={{
@@ -529,7 +539,10 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
             <thead>
               <tr>
                 {b.head.map((h, i) => (
-                  <th key={i} style={CELL_HEAD}>
+                  <th
+                    key={i}
+                    style={{ ...CELL_HEAD, ...styleOf(b.headStyle), ...cellDecor(b.headStyle) }}
+                  >
                     {h}
                   </th>
                 ))}
@@ -539,7 +552,10 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
               {b.rows.map((r, i) => (
                 <tr key={i} style={{ pageBreakInside: "avoid" }}>
                   {r.map((c, j) => (
-                    <td key={j} style={CELL}>
+                    <td
+                      key={j}
+                      style={{ ...CELL, ...styleOf(b.cellStyle), ...cellDecor(b.cellStyle) }}
+                    >
                       {c}
                     </td>
                   ))}
@@ -631,3 +647,13 @@ const CELL: React.CSSProperties = {
   padding: "1mm 2mm",
   verticalAlign: "top",
 };
+
+/** 表のセルに重ねる飾り。地色だけ（罫線は表のもの、余白は詰めない） */
+function cellDecor(st: BlockStyle | undefined): CSSProperties {
+  if (!st?.background) return {};
+  return {
+    backgroundColor: st.background,
+    WebkitPrintColorAdjust: "exact",
+    printColorAdjust: "exact",
+  };
+}

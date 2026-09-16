@@ -86,7 +86,15 @@ export type RenderBlock =
       kind: "orgItems";
       items: { label: string; value: string; align: "left" | "center" | "right" }[];
     })
-  | (RenderBase & { kind: "table"; caption?: string; head: string[]; rows: string[][] })
+  | (RenderBase & {
+      kind: "table";
+      caption?: string;
+      head: string[];
+      rows: string[][];
+      captionStyle?: BlockStyle;
+      headStyle?: BlockStyle;
+      cellStyle?: BlockStyle;
+    })
   | (RenderBase & { kind: "divider" })
   | (RenderBase & { kind: "spacer"; size: SpacerSize })
   | (RenderBase & { kind: "rowBreak" })
@@ -373,6 +381,9 @@ function renderBlock(
         {
           kind: "table",
           ...(b.caption ? { caption: b.caption } : {}),
+          ...(b.captionStyle ? { captionStyle: b.captionStyle } : {}),
+          ...(b.headStyle ? { headStyle: b.headStyle } : {}),
+          ...(b.cellStyle ? { cellStyle: b.cellStyle } : {}),
           head: cols.map((c) => c.label),
           rows: kept.map((r) => cols.map((c) => apply(c.key, r[c.key] ?? ""))),
         },
