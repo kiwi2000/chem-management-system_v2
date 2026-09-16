@@ -334,6 +334,32 @@ export function BlockList({
           >
             <GripVertical className="size-4" />
           </button>
+          {/*
+            つまみを引けない環境（アプリ内のブラウザなど。引くと固まることがあった。2026-09-16 報告）のために、
+            ▲▼ でも動かせる。上端・下端ではそれ以上動かない
+          */}
+          <span className="flex flex-col">
+            <button
+              type="button"
+              aria-label={m.docEditor.moveUp}
+              title={m.docEditor.moveUp}
+              disabled={i === 0}
+              className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+              onClick={() => move(i, -1)}
+            >
+              <ChevronUp className="size-3" />
+            </button>
+            <button
+              type="button"
+              aria-label={m.docEditor.moveDown}
+              title={m.docEditor.moveDown}
+              disabled={i === blocks.length - 1}
+              className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+              onClick={() => move(i, 1)}
+            >
+              <ChevronDown className="size-3" />
+            </button>
+          </span>
           <span className="shrink-0 text-sm font-medium whitespace-nowrap">
             {m.docEditor.blockKinds[b.kind]}
           </span>
