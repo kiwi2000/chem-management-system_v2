@@ -45,19 +45,25 @@ export function TableBlockFields({
     return c ? (locale === "en" ? c.labelEn : c.labelJa) : key;
   };
 
-  /** 出していない列は、定義の順で後ろに並べる（選ぶときに探しやすい） */
-  const ordered = [
-    ...b.columns.filter((k) => all.some((c) => c.key === k)),
-    ...all.map((c) => c.key).filter((k) => !b.columns.includes(k)),
-  ];
+  /**
+   * 一覧の並び。**出していない列も同じ並びの中に置く**（チェックを外しても場所が変わらない。2026-09-16 指示）。
+   * 並びを覚えていない古い様式は、出している列のあとに定義の順で続ける
+   */
+  const known = new Set(all.map((c) => c.key));
+  const remembered = (b.columnOrder ?? b.columns).filter((k) => known.has(k));
+  const ordered = [...remembered, ...all.map((c) => c.key).filter((k) => !remembered.includes(k))];
+
+  /** 並びと出す列をそろえて保存する。出す列は並びの順に並べ直す */
+  const commit = (order: string[], shown: Set<string>) =>
+    onChange({ ...b, columnOrder: order, columns: order.filter((k) => shown.has(k)) });
 
   function move(key: string, dir: -1 | 1) {
-    const cur = [...b.columns];
+    const cur = [...ordered];
     const at = cur.indexOf(key);
     const to = at + dir;
     if (at < 0 || to < 0 || to >= cur.length) return;
     [cur[at], cur[to]] = [cur[to]!, cur[at]!];
-    onChange({ ...b, columns: cur });
+    commit(cur, new Set(b.columns));
   }
 
   const filters = b.filters ?? [];
@@ -90,6 +96,7 @@ export function TableBlockFields({
               ...b,
               table,
               columns: next?.columns.map((c) => c.key) ?? [],
+              columnOrder: undefined,
               filters: undefined,
               replacements: undefined,
             });
@@ -109,28 +116,26 @@ export function TableBlockFields({
         <ul className="space-y-1">
           {ordered.map((key) => {
             const on = b.columns.includes(key);
-            const at = b.columns.indexOf(key);
+            const at = ordered.indexOf(key);
             return (
               <li key={key} className="flex items-center gap-1 text-sm">
                 <input
                   type="checkbox"
                   checked={on}
-                  onChange={(e) =>
-                    onChange({
-                      ...b,
-                      // 足すときは末尾へ。並べ替えは▲▼で行う
-                      columns: e.target.checked
-                        ? [...b.columns, key]
-                        : b.columns.filter((k) => k !== key),
-                    })
-                  }
+                  onChange={(e) => {
+                    // 出す・出さないを切り替えても、一覧の中の場所は動かさない
+                    const shown = new Set(b.columns);
+                    if (e.target.checked) shown.add(key);
+                    else shown.delete(key);
+                    commit(ordered, shown);
+                  }}
                 />
                 <span className={cn("w-44", !on && "text-muted-foreground")}>{labelOf(key)}</span>
                 <Button
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  disabled={!on || at <= 0}
+                  disabled={at <= 0}
                   aria-label={`${m.docEditor.moveUp}: ${labelOf(key)}`}
                   title={m.docEditor.moveUp}
                   onClick={() => move(key, -1)}
@@ -141,7 +146,7 @@ export function TableBlockFields({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  disabled={!on || at < 0 || at >= b.columns.length - 1}
+                  disabled={at < 0 || at >= ordered.length - 1}
                   aria-label={`${m.docEditor.moveDown}: ${labelOf(key)}`}
                   title={m.docEditor.moveDown}
                   onClick={() => move(key, 1)}

@@ -803,6 +803,11 @@ export type DocumentBlock =
       table: DocumentTable;
       /** 出す列。**並びはここで決まる**（選んだ順ではなく、この配列の順） */
       columns: string[];
+      /**
+       * 出していない列も含めた並び（編集画面の一覧の順）。チェックを外しても場所を保つため（2026-09-16 指示）。
+       * 無ければ columns の順のあとに定義の順で続く
+       */
+      columnOrder?: string[];
       caption?: string;
       /** 出す行を絞る。複数あるときは、すべてに当てはまる行だけを出す */
       filters?: TableFilter[];
