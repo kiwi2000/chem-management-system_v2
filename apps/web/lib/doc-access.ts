@@ -59,6 +59,8 @@ export async function canAccessDocument(
   if (doc.generatedBy === actor.user.id) return true;
   if (!actor.has("DOCUMENT_VIEW_ALL")) return false;
   if (actor.has("INACTIVE_VIEW")) return true;
+  // 組織は誰でも見られ、対象なしは相手が無い
+  if (doc.template.target === "ORGANISATION" || doc.template.target === "NONE") return true;
   const visible =
     doc.template.target === "PRODUCT"
       ? await prisma.product.findFirst({

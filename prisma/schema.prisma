@@ -2337,6 +2337,10 @@ enum DocumentTemplateKind {
 enum DocumentTarget {
   PRODUCT
   SUBSTANCE
+  /** 組織（取引先など）ごとに 1 枚（2026-09-16 指示） */
+  ORGANISATION
+  /** 対象なし（汎用）。共通の項目だけで 1 枚（2026-09-16 指示） */
+  NONE
 }
 
 /**

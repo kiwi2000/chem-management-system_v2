@@ -17,7 +17,7 @@ import { collectFor, containsComposition, resolveOrgChoices } from "@/lib/doc-da
 import { currentOutputDir, writePdfFile } from "@/lib/doc-files";
 import { renderDocument } from "@/lib/doc-render";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
-import { productColumns, SUBSTANCE_COLUMNS } from "@/lib/list-columns";
+import { ORGANISATION_COLUMNS, productColumns, SUBSTANCE_COLUMNS } from "@/lib/list-columns";
 import { closeBrowser, internalBaseUrl, renderPdf } from "@/lib/pdf";
 import { makePrintToken } from "@/lib/print-token";
 import { visibilityWhere as productVisibility } from "@/lib/product-service";
@@ -101,8 +101,23 @@ export async function resolveTargetIds(
   target: DocumentTarget,
   selection: DocSelection,
 ): Promise<string[]> {
+  // 対象なしは 1 枚だけ。相手の id は使わない
+  if (target === "NONE") return [""];
   if (selection.mode === "ids") return [...new Set(selection.ids)];
   const params = new URLSearchParams(selection.filter);
+  if (target === "ORGANISATION") {
+    const state = parseTableState(
+      params,
+      ORGANISATION_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+      emptyTableState([{ column: "displayOrder", direction: "asc" }]),
+    );
+    const rows = await prisma.organisation.findMany({
+      where: { deletedAt: null, ...buildWhere(ORGANISATION_COLUMNS, state.filters) },
+      orderBy: buildOrderBy(ORGANISATION_COLUMNS, state.sort, { displayOrder: "asc" }),
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
   if (target === "PRODUCT") {
     const version = await getCurrentVersion();
     const columns = productColumns(version?.id ?? null, actor.has("COMPOSITION_VIEW"));
@@ -137,6 +152,23 @@ export async function resolveTargetIds(
     select: { id: true },
   });
   return rows.map((r) => r.id);
+}
+
+/** ファイル名の {対象名} に使う名前。対象なしはテンプレートの名前 */
+function targetNameOf(
+  target: DocumentTarget,
+  data: { code: string; values: Map<string, string> },
+): string | undefined {
+  switch (target) {
+    case "PRODUCT":
+      return data.values.get("product.nameJa");
+    case "SUBSTANCE":
+      return data.values.get("substance.nameJa");
+    case "ORGANISATION":
+      return data.values.get("organisation.name");
+    case "NONE":
+      return undefined;
+  }
 }
 
 /** 仕事に添えた差出人・宛先（1 件ずつ作るときの URL と同じ形） */
@@ -238,7 +270,8 @@ async function run(jobId: string): Promise<void> {
             data: {
               templateId: template.id,
               targetRef: id,
-              targetCode: data.code,
+              // 対象なしは相手が無いので、テンプレートのコードを控えにする
+              targetCode: data.code || template.code,
               generatedBy: actor.user.id,
               // 出した紙面をそのまま残す。あとで開いたときに当時の内容が出る
               content: doc as unknown as object,
@@ -258,11 +291,8 @@ async function run(jobId: string): Promise<void> {
             created.id,
             {
               template: template.code,
-              code: data.code,
-              name:
-                data.values.get(
-                  template.target === "PRODUCT" ? "product.nameJa" : "substance.nameJa",
-                ) ?? data.code,
+              code: data.code || template.code,
+              name: targetNameOf(template.target, data) ?? template.nameJa,
               version,
               seq: done + 1,
             },

@@ -108,7 +108,7 @@ export async function GET(
       data: {
         templateId: row.id,
         targetRef: targetId,
-        targetCode: data.code,
+        targetCode: data.code || row.code,
         generatedBy: actor.user.id,
         /*
           **紙面は残せない。**預かったファイルに埋めた形なので、

@@ -38,6 +38,8 @@ const TAG_HEADS: readonly string[] = [
   "doc",
   "product",
   "substance",
+  "organisation",
+  "target",
   "org",
   "to",
   ...DOCUMENT_TABLES,

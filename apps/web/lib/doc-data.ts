@@ -12,6 +12,8 @@ import {
   type DocumentContent,
   PICK_COMPANY_KEY,
   PICK_DEPARTMENT_KEY,
+  TARGET_ORG_ITEM_PREFIX,
+  getMessages,
 } from "@chem/shared";
 import type { DocumentTable, DocumentTarget, Locale, Messages } from "@chem/shared";
 import type { Actor } from "@/lib/authz";
@@ -420,6 +422,67 @@ export async function collectForSubstance(
   return { code: substance.code, values, tables, judgementWithBasis: false };
 }
 
+/**
+ * 対象が組織のとき（2026-09-16 指示）。取引先ごとの案内状・調査依頼など。
+ * 組織は誰でも見られる（宛先に選ぶため）ので、見える範囲の絞りは無い。消した組織は作れない
+ */
+export async function collectForOrganisation(
+  actor: Actor,
+  organisationId: string,
+  locale: Locale,
+  parties?: DocParties,
+): Promise<DocData | null> {
+  const org = await prisma.organisation.findFirst({
+    where: { id: organisationId, deletedAt: null },
+    select: {
+      code: true,
+      kind: true,
+      kindLabel: true,
+      nameJa: true,
+      nameEn: true,
+      items: { select: { label: true, value: true } },
+    },
+  });
+  if (!org) return null;
+  const version = await getCurrentVersion();
+  const kindName =
+    org.kind === "OTHER" && org.kindLabel
+      ? org.kindLabel
+      : getMessages(locale).organisations[
+          (
+            {
+              COMPANY: "kindCompany",
+              DEPARTMENT: "kindDepartment",
+              PARTNER: "kindPartner",
+              OTHER: "kindOther",
+            } as const
+          )[org.kind]
+        ];
+  const values = new Map<string, string>([
+    ...(await commonValues(actor, version?.code ?? null, locale, parties)),
+    ["organisation.code", org.code],
+    ["organisation.name", pickName(locale, org.nameJa, org.nameEn)],
+    ["organisation.nameEn", org.nameEn ?? ""],
+    ["organisation.kind", kindName],
+    // 自由項目はそのまま。持っていない項目は空欄になる
+    ...org.items.map((it): [string, string] => [`${TARGET_ORG_ITEM_PREFIX}${it.label}`, it.value]),
+  ]);
+  return { code: org.code, values, tables: new Map(), judgementWithBasis: false };
+}
+
+/** 対象なし（汎用）。共通の項目（作成日時・会社・宛先・組織ブロック）だけで 1 枚 */
+export async function collectForNone(
+  actor: Actor,
+  locale: Locale,
+  parties?: DocParties,
+): Promise<DocData> {
+  const version = await getCurrentVersion();
+  const values = new Map<string, string>(
+    await commonValues(actor, version?.code ?? null, locale, parties),
+  );
+  return { code: "", values, tables: new Map(), judgementWithBasis: false };
+}
+
 /** 対象の種類に応じて集める */
 export async function collectFor(
   actor: Actor,
@@ -429,9 +492,16 @@ export async function collectFor(
   m: Messages,
   parties?: DocParties,
 ): Promise<DocData | null> {
-  return target === "PRODUCT"
-    ? collectForProduct(actor, targetId, locale, m, parties)
-    : collectForSubstance(actor, targetId, locale, parties);
+  switch (target) {
+    case "PRODUCT":
+      return collectForProduct(actor, targetId, locale, m, parties);
+    case "SUBSTANCE":
+      return collectForSubstance(actor, targetId, locale, parties);
+    case "ORGANISATION":
+      return collectForOrganisation(actor, targetId, locale, parties);
+    case "NONE":
+      return collectForNone(actor, locale, parties);
+  }
 }
 
 /**

@@ -1,6 +1,7 @@
 import {
   DOCUMENT_TABLE_DEFS,
   ORG_ITEM_PREFIX,
+  TARGET_ORG_ITEM_PREFIX,
   ORG_NAME_ITEM,
   fieldsFor,
   orgBlockKey,
@@ -41,6 +42,10 @@ const SAMPLE_JA: Record<string, string> = {
   "substance.nameJa": "見本物質",
   "substance.nameEn": "Sample substance",
   "substance.note": "これは見本です",
+  "organisation.code": "ORG-0001",
+  "organisation.name": "見本商事株式会社",
+  "organisation.nameEn": "Sample Trading Co., Ltd.",
+  "organisation.kind": "取引先",
   "org.name": "見本株式会社",
   "org.group": "見本部",
   "pick.company": "見本商事株式会社",
@@ -55,6 +60,8 @@ const SAMPLE_EN: Record<string, string> = {
   "product.note": "This is a sample",
   "substance.nameJa": "Sample substance",
   "substance.note": "This is a sample",
+  "organisation.name": "Sample Trading Co., Ltd.",
+  "organisation.kind": "Partner",
   "org.name": "Sample Co., Ltd.",
   "org.group": "Sample dept.",
   "pick.company": "Sample Trading Co., Ltd.",
@@ -80,6 +87,10 @@ export function sampleValues(
   for (const f of fieldsFor(target, orgItems)) {
     if (f.key.startsWith(ORG_ITEM_PREFIX)) {
       out.set(f.key, sampleForOrgItem(f.key.slice(ORG_ITEM_PREFIX.length), locale));
+      continue;
+    }
+    if (f.key.startsWith(TARGET_ORG_ITEM_PREFIX)) {
+      out.set(f.key, sampleForOrgItem(f.key.slice(TARGET_ORG_ITEM_PREFIX.length), locale));
       continue;
     }
     out.set(f.key, table[f.key] ?? (locale === "en" ? "Sample" : "見本"));

@@ -240,7 +240,7 @@ export function BlockList({
       ))}
 
       <div className="flex flex-wrap gap-2">
-        {BLOCK_KINDS.map((k) => (
+        {BLOCK_KINDS.filter((k) => k !== "table" || tablesFor(target).length > 0).map((k) => (
           <Button key={k} type="button" size="sm" variant="outline" onClick={() => add(k)}>
             ＋ {m.docEditor.blockKinds[k]}
           </Button>

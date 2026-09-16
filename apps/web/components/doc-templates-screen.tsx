@@ -264,7 +264,7 @@ export function DocTemplatesScreen() {
         key: "target",
         header: m.docTemplates.target,
         kind: "enum",
-        width: 96,
+        width: 130,
         options: DOCUMENT_TARGETS.map((v) => ({ value: v, label: m.docTemplates.targets[v] })),
         render: (t) =>
           editingRow(t) || t.id === NEW_ID ? (
@@ -272,6 +272,7 @@ export function DocTemplatesScreen() {
               className="border-input h-7 w-full rounded-none border bg-transparent px-1 text-sm"
               value={draft.target}
               aria-label={m.docTemplates.target}
+              title={m.docTemplates.targetHint}
               onChange={(e) => setDraft({ ...draft, target: e.target.value as DocumentTarget })}
             >
               {DOCUMENT_TARGETS.map((v) => (

@@ -1146,7 +1146,9 @@ export const ja = {
     nameJa: "名称（日本語）",
     nameEn: "名称（英語）",
     target: "対象",
-    targets: { PRODUCT: "製品", SUBSTANCE: "物質" },
+    targets: { PRODUCT: "製品", SUBSTANCE: "物質", ORGANISATION: "組織", NONE: "対象なし（汎用）" },
+    targetHint:
+      "製品・物質は 1 件につき 1 枚。組織は取引先などの組織ごとに 1 枚。対象なしは、宛先や会社などの共通の項目だけで 1 枚作ります（送付状・案内状など）",
     kind: "作りかた",
     kinds: { BLOCK: "画面編集", XLSX: "Excel", DOCX: "Word" },
     file: {
@@ -1412,6 +1414,9 @@ export const ja = {
     step3: "対象を選択",
     step3Product: "対象製品を選択",
     step3Substance: "対象物質を選択",
+    step3Organisation: "対象組織を選択",
+    noTargetNeeded:
+      "このテンプレートは対象を選びません。宛先や会社を決めて「生成」を押してください",
     step4: "ドキュメント生成",
     pickedCount: (n: number) => `${n} 件を選んでいます`,
     pickNoneYet: "まだ選ばれていません",

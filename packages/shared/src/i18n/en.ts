@@ -1116,7 +1116,14 @@ export const en: Messages = {
     nameJa: "Name (JA)",
     nameEn: "Name (EN)",
     target: "Target",
-    targets: { PRODUCT: "Product", SUBSTANCE: "Substance" },
+    targets: {
+      PRODUCT: "Product",
+      SUBSTANCE: "Substance",
+      ORGANISATION: "Organisation",
+      NONE: "None (general)",
+    },
+    targetHint:
+      "Product and substance make one document per row; organisation makes one per organisation; none makes a single document from the common fields only (cover letters, notices)",
     kind: "Built as",
     kinds: { BLOCK: "Screen editor", XLSX: "Excel", DOCX: "Word" },
     file: {
@@ -1370,6 +1377,8 @@ export const en: Messages = {
     step3: "Select targets",
     step3Product: "Select products",
     step3Substance: "Select substances",
+    step3Organisation: "Select organisations",
+    noTargetNeeded: "This template has no target. Choose the recipient or company and press Create",
     step4: "Create documents",
     pickedCount: (n: number) => `${n} selected`,
     pickNoneYet: "Nothing selected yet",

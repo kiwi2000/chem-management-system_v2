@@ -24,16 +24,17 @@ export async function generateMetadata({
   params: Promise<{ templateId: string; targetId: string }>;
 }) {
   const { templateId, targetId } = await params;
-  const [template, product, substance] = await Promise.all([
+  const [template, product, substance, organisation] = await Promise.all([
     prisma.documentTemplate.findFirst({
       where: { id: templateId, deletedAt: null },
       select: { code: true },
     }),
     prisma.product.findFirst({ where: { id: targetId }, select: { code: true } }),
     prisma.substance.findFirst({ where: { id: targetId }, select: { code: true } }),
+    prisma.organisation.findFirst({ where: { id: targetId }, select: { code: true } }),
   ]);
   const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const target = product?.code ?? substance?.code ?? "";
+  const target = product?.code ?? substance?.code ?? organisation?.code ?? "";
   return { title: [template?.code, target, day].filter(Boolean).join("_") };
 }
 

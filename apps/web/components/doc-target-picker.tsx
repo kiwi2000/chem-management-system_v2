@@ -1,6 +1,13 @@
 "use client";
 
-import { serializeTableState, type TableState } from "@chem/shared";
+import {
+  emptyTableState,
+  kindLabelOf,
+  ORGANISATION_KINDS,
+  pickName,
+  serializeTableState,
+  type TableState,
+} from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { FilterLayoutRow } from "@/components/data-table/filter-panel";
@@ -15,12 +22,19 @@ import {
   useSubstanceListColumns,
   type SubstanceListOptions,
 } from "@/components/substance-list-columns";
+import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import type { DocPickSelection } from "@/lib/doc-batch";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, ListResponse, ProductListItemDto, SubstanceListItemDto } from "@/lib/types";
+import type {
+  ApiError,
+  ListResponse,
+  OrganisationDto,
+  ProductListItemDto,
+  SubstanceListItemDto,
+} from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 
 /**
@@ -41,7 +55,8 @@ export function DocTargetPicker({
   substance,
   onSelectionChange,
 }: {
-  target: "PRODUCT" | "SUBSTANCE";
+  /** 対象なし（NONE）は相手を選ばないので、この表は出さない */
+  target: "PRODUCT" | "SUBSTANCE" | "ORGANISATION";
   /**
    * 1件しか選べない表にするか。
    * **まとめて作れないテンプレート（Excel・Word）で使う。**
@@ -56,10 +71,111 @@ export function DocTargetPicker({
    */
   onSelectionChange: (selection: DocPickSelection | null) => void;
 }) {
+  if (target === "ORGANISATION") {
+    return <OrganisationPicker single={single} onSelectionChange={onSelectionChange} />;
+  }
   return target === "PRODUCT" ? (
     <ProductPicker single={single} options={product} onSelectionChange={onSelectionChange} />
   ) : (
     <SubstancePicker single={single} options={substance} onSelectionChange={onSelectionChange} />
+  );
+}
+
+const ORGANISATION_DEFAULT_STATE: TableState = emptyTableState([
+  { column: "displayOrder", direction: "asc" },
+]);
+
+/** 組織の表。組織の画面と同じ列（項目数・所属人数は選ぶ役に立たないので出さない） */
+function OrganisationPicker({
+  single,
+  onSelectionChange,
+}: {
+  single: boolean;
+  onSelectionChange: (selection: DocPickSelection | null) => void;
+}) {
+  const { m, locale } = useI18n();
+  const kindNames = useMemo(
+    () => ({
+      COMPANY: m.organisations.kindCompany,
+      DEPARTMENT: m.organisations.kindDepartment,
+      PARTNER: m.organisations.kindPartner,
+      OTHER: m.organisations.kindOther,
+    }),
+    [m],
+  );
+  const columns = useMemo<TableColumn<OrganisationDto>[]>(
+    () => [
+      {
+        key: "code",
+        header: m.organisations.code,
+        kind: "text",
+        width: 120,
+        className: "font-mono text-xs",
+        render: (o) => o.code,
+      },
+      {
+        key: "kind",
+        header: m.organisations.kind,
+        kind: "enum",
+        width: 110,
+        options: ORGANISATION_KINDS.map((k) => ({ value: k, label: kindNames[k] })),
+        render: (o) => kindLabelOf(o.kind, o.kindLabel, kindNames),
+      },
+      {
+        key: "nameJa",
+        header: m.organisations.nameJa,
+        kind: "text",
+        width: 240,
+        render: (o) => pickName(locale, o.nameJa, o.nameEn),
+      },
+      {
+        key: "nameEn",
+        header: m.organisations.nameEn,
+        kind: "text",
+        width: 200,
+        render: (o) => o.nameEn ?? "",
+      },
+      {
+        key: "displayOrder",
+        header: m.organisations.displayOrder,
+        kind: "number",
+        width: 88,
+        className: "text-right text-xs",
+        render: (o) => String(o.displayOrder),
+      },
+      {
+        key: "activeFlag",
+        header: m.common.activeHeader,
+        kind: "enum",
+        filterLabelHidden: true,
+        width: 72,
+        className: "text-center",
+        options: [
+          { value: "true", label: m.users.active },
+          { value: "false", label: m.users.inactive },
+        ],
+        render: (o) => (
+          <StatusIcon
+            active={o.activeFlag}
+            activeLabel={m.users.active}
+            inactiveLabel={m.users.inactive}
+          />
+        ),
+      },
+    ],
+    [m, locale, kindNames],
+  );
+  return (
+    <PickerTable
+      storageKey="chem.table.docPickOrganisation"
+      endpoint="/api/organisations"
+      columns={columns}
+      filterLayout={[["code", "kind", "nameJa", "nameEn", "activeFlag"]]}
+      defaultState={ORGANISATION_DEFAULT_STATE}
+      emptyMessage={m.organisations.empty}
+      single={single}
+      onSelectionChange={onSelectionChange}
+    />
   );
 }
 
@@ -114,8 +230,8 @@ function SubstancePicker({
   );
 }
 
-/** 製品・物質で共通の、読み込みと選択の持ちかた */
-function PickerTable<T extends ProductListItemDto | SubstanceListItemDto>({
+/** 製品・物質・組織で共通の、読み込みと選択の持ちかた */
+function PickerTable<T extends ProductListItemDto | SubstanceListItemDto | OrganisationDto>({
   storageKey,
   endpoint,
   columns,

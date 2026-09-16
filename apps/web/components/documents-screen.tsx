@@ -12,6 +12,7 @@ import {
   fieldKeysIn,
   PICK_COMPANY_KEY,
   PICK_DEPARTMENT_KEY,
+  targetHasRows,
 } from "@chem/shared";
 import { FileText } from "lucide-react";
 import Link from "next/link";
@@ -513,24 +514,38 @@ export function DocumentsScreen({
   const step3Label = picked
     ? picked.target === "PRODUCT"
       ? m.documents.step3Product
-      : m.documents.step3Substance
+      : picked.target === "SUBSTANCE"
+        ? m.documents.step3Substance
+        : picked.target === "ORGANISATION"
+          ? m.documents.step3Organisation
+          : m.documents.step3
     : m.documents.step3;
+  /** 対象なしのテンプレートは相手を選ばず、そのまま 1 枚作る */
+  const noTarget = picked !== null && !targetHasRows(picked.target);
 
   /** 選ばれている件数（全件のときは絞り込みに当たる数） */
-  const selectedCount =
-    selection === null ? 0 : selection.mode === "ids" ? selection.ids.length : selection.total;
+  const selectedCount = noTarget
+    ? 1
+    : selection === null
+      ? 0
+      : selection.mode === "ids"
+        ? selection.ids.length
+        : selection.total;
 
   /**
    * 選ばれた相手で作る。**1件ならその場で開き、複数ならバックグラウンド処理に頼む。**
    * 頼んだあとは相手の選択を消し、生成の状況に並べる（終わるまで他の作業ができる）
    */
   async function make() {
-    if (!picked || !selection) return;
+    if (!picked) return;
+    // 対象なしは相手の選択が無い。仕事の側は id を見ない
+    const chosen: DocPickSelection | null = noTarget ? { mode: "ids", ids: ["-"] } : selection;
+    if (!chosen) return;
     const parties = partyParams(picked);
     // Excel・Word は 1 件ずつその場で落とす（PDF にはしない。保留）。画面編集の様式は何件でも仕事に頼む
     if (picked.kind !== "BLOCK") {
-      if (selection.mode === "ids" && selection.ids.length === 1) {
-        router.push(documentHref(picked.id, selection.ids[0]!, parties));
+      if (chosen.mode === "ids" && chosen.ids.length === 1) {
+        router.push(documentHref(picked.id, chosen.ids[0]!, parties));
       }
       return;
     }
@@ -544,9 +559,9 @@ export function DocumentsScreen({
         body: JSON.stringify({
           templateId: picked.id,
           selection:
-            selection.mode === "ids"
-              ? { mode: "ids", ids: selection.ids }
-              : { mode: "all", filter: selection.filter },
+            chosen.mode === "ids"
+              ? { mode: "ids", ids: chosen.ids }
+              : { mode: "all", filter: chosen.filter },
           ...parties,
         }),
       });
@@ -714,7 +729,9 @@ export function DocumentsScreen({
       {/* ③ 作る相手。テンプレートで対象（製品か物質か）が決まる。表は製品・物質の一覧と同じ */}
       <div className="space-y-2 border-t pt-4">
         <p className={HEADING}>{step3Label}</p>
-        {picked ? (
+        {picked && noTarget ? (
+          <p className="text-muted-foreground text-sm">{m.documents.noTargetNeeded}</p>
+        ) : picked && picked.target !== "NONE" ? (
           <DocTargetPicker
             key={`${picked.id}:${pickerToken}`}
             target={picked.target}
@@ -733,7 +750,10 @@ export function DocumentsScreen({
       <div className="space-y-2 border-t pt-4">
         <p className={HEADING}>{m.documents.step4}</p>
         <div className="flex flex-wrap items-center gap-3">
-          <Button disabled={!picked || !selection || starting} onClick={() => void make()}>
+          <Button
+            disabled={!picked || (!noTarget && !selection) || starting}
+            onClick={() => void make()}
+          >
             <FileText className="size-4" />
             {m.documents.make}
           </Button>

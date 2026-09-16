@@ -1,10 +1,11 @@
+import { DOCUMENT_TARGETS } from "@chem/shared";
 import { DOCUMENT_TABLE_DEFS, fieldsFor, ORG_ITEM_PREFIX } from "@chem/shared";
 import { describe, expect, it } from "vitest";
 import { sampleTables, sampleValues } from "./doc-sample";
 
 describe("プレビューの見本の値", () => {
   it("その対象で選べる差込項目には、すべて値が入る", () => {
-    for (const target of ["PRODUCT", "SUBSTANCE"] as const) {
+    for (const target of DOCUMENT_TARGETS) {
       const values = sampleValues(target, [], "ja");
       for (const f of fieldsFor(target)) {
         expect(values.get(f.key), `${target} の ${f.key} が空`).toBeTruthy();
