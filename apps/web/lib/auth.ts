@@ -1,5 +1,4 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { hash as argonHash, verify as argonVerify } from "@node-rs/argon2";
 import { AUTH_POLICY, normalizeEmail } from "@chem/shared";
 import type { User as AppUser } from "@prisma/client";
 import { cookies, headers } from "next/headers";
@@ -25,13 +24,26 @@ const ARGON_OPTS = {
   parallelism: 1,
 } as const;
 
+/**
+ * Argon2 の本体は使うときに読む。
+ * **組み立て（next build）のときには読まない。**next build は API の入れものを一度読み込むので、
+ * 上で import すると、そのときに Argon2 のネイティブ部品が要る。開発 PC の Smart App Control が
+ * 新しく置かれたその部品を止め、インストールセットが組み立てられなくなった（2026-09-16）。
+ * ログインのときに読めば、動く場所（本番のサーバー）でだけ読まれる
+ */
+async function argon() {
+  return import("@node-rs/argon2");
+}
+
 export async function hashPassword(plain: string): Promise<string> {
-  return argonHash(plain, ARGON_OPTS);
+  const { hash } = await argon();
+  return hash(plain, ARGON_OPTS);
 }
 
 export async function verifyPassword(hash: string, plain: string): Promise<boolean> {
   try {
-    return await argonVerify(hash, plain);
+    const { verify } = await argon();
+    return await verify(hash, plain);
   } catch {
     return false;
   }
