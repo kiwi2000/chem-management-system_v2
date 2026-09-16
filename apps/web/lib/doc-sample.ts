@@ -153,6 +153,8 @@ function sampleCell(columnKey: string, row: number, locale: Locale): string {
     case "contentPct":
     case "totalPct":
       return ["55.0", "30.0", "15.0"][row] ?? "10.0";
+    case "substanceNames":
+      return en ? "Sample substance 1, Sample substance 2" : "見本物質 1、見本物質 2";
     case "nameJa":
       return en ? `Sample ${row + 1}` : `見本 ${row + 1}`;
     case "nameEn":

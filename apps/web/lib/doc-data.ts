@@ -51,6 +51,8 @@ export interface DocData {
    * 載っていれば組成と同じ扱い（組成を見られる人にしか、できあがった帳票を見せない）
    */
   judgementWithBasis: boolean;
+  /** 一覧の帳票で、成分・CAS番号の列に中身が入ったか（組成を見られる人が作ったときだけ真） */
+  listComposition?: boolean;
 }
 
 function tableDef(key: DocumentTable, locale: Locale) {
@@ -488,7 +490,8 @@ export async function collectForNone(
  * 一覧の帳票（選んだ製品・物質を 1 枚の表に。2026-09-16 指示）。
  *
  * **行の並びは選んだ順（＝生成の画面で並べ替えていた順）のまま。**
- * 見えない行（未公開・無効）は載せない。組成の列は無いので、組成の権限には関わらない。
+ * 見えない行（未公開・無効）は載せない。成分・CAS番号の列（原材料展開・CAS合算）は
+ * 組成を見られる人にだけ入り、入ったぶんは組成の帳票と同じ扱いになる。
  * 判定の列は製品の一覧の画面と同じ読み（未判定・該当なし・n 件）
  */
 export async function collectForList(
@@ -505,6 +508,7 @@ export async function collectForList(
     (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0);
   const tables: RenderInput["tables"] = new Map();
   let count = 0;
+  let listComposition = false;
 
   if (target === "PRODUCT_LIST") {
     const products = await prisma.product.findMany({
@@ -515,6 +519,8 @@ export async function collectForList(
         nameJa: true,
         nameEn: true,
         note: true,
+        publishState: true,
+        createdBy: true,
         modelValue: true,
         uses: { orderBy: { displayOrder: "asc" }, select: { value: true } },
         expansion: { select: { judgedVersionId: true } },
@@ -538,6 +544,19 @@ export async function collectForList(
     });
     products.sort(byPicked);
     count = products.length;
+    // 成分・CAS番号は原材料展開・CAS合算の行から。見られない製品は空欄
+    const compositions = new Map<string, { names: string; cas: string }>();
+    for (const p of products) {
+      if (!canViewComposition(actor, p as never)) continue;
+      const agg = await aggregateComposition(actor, p.id);
+      if (agg.rows.length === 0) continue;
+      listComposition = true;
+      const sep = locale === "en" ? ", " : "、";
+      compositions.set(p.id, {
+        names: agg.rows.map((r) => pickName(locale, r.nameJa, r.nameEn)).join(sep),
+        cas: [...new Set(agg.rows.map((r) => r.casNumber).filter((c) => c))].join(sep),
+      });
+    }
     tables.set("productList", {
       columns: tableDef("productList", locale),
       rows: products.map((p) => {
@@ -566,6 +585,8 @@ export async function collectForList(
           nameEn: p.nameEn ?? "",
           modelName: p.modelValue ?? "",
           useName: p.uses.map((u) => u.value).join("、"),
+          substanceNames: compositions.get(p.id)?.names ?? "",
+          casNumbers: compositions.get(p.id)?.cas ?? "",
           judgement: !judged
             ? m.judgements.listUnjudged
             : categories.size === 0
@@ -611,7 +632,7 @@ export async function collectForList(
     ...(await commonValues(actor, version?.code ?? null, locale, parties)),
     ["list.count", String(count)],
   ]);
-  return { code: "", values, tables, judgementWithBasis: false };
+  return { code: "", values, tables, judgementWithBasis: false, listComposition };
 }
 
 /** 日付を紙面の言語で（日だけ） */
@@ -802,15 +823,23 @@ export async function collectFor(
  * そのぶんは偽になる（開くときに要らぬ制限をかけないため）。
  */
 export function containsComposition(
-  content: { blocks: { kind: string; table?: string }[] },
-  data: Pick<DocData, "tables" | "judgementWithBasis">,
+  content: { blocks: { kind: string; table?: string; columns?: string[] }[] },
+  data: Pick<DocData, "tables" | "judgementWithBasis" | "listComposition">,
 ): boolean {
-  return content.blocks.some(
-    (b) =>
-      b.kind === "table" &&
-      ((b.table === "composition" || b.table === "compositionAggregate") && data.tables.has(b.table)
-        ? true
-        : // 判定の根拠（法文物質名）が載っていれば、それも組成のうち
-          b.table === "judgement" && data.judgementWithBasis),
-  );
+  return content.blocks.some((b) => {
+    if (b.kind !== "table") return false;
+    if (b.table === "composition" || b.table === "compositionAggregate") {
+      return data.tables.has(b.table);
+    }
+    // 判定の根拠（法文物質名）が載っていれば、それも組成のうち
+    if (b.table === "judgement") return data.judgementWithBasis;
+    // 製品の一覧の成分・CAS番号の列に中身が入っていれば、同じ扱い
+    if (b.table === "productList") {
+      return (
+        data.listComposition === true &&
+        (b.columns ?? []).some((c) => c === "substanceNames" || c === "casNumbers")
+      );
+    }
+    return false;
+  });
 }

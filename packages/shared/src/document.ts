@@ -487,7 +487,8 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
   },
   /*
     一覧の帳票の表（2026-09-16 指示）。列は製品・物質の一覧の画面にあるものから。
-    組成（成分・CAS）は載せない。載せると組成を見られる人にしか渡せない帳票になる
+    成分・CAS番号（原材料展開・CAS合算）は組成を見られる人にだけ入り、
+    入った帳票は組成の帳票と同じ扱い（組成を見られる人にしか見せない）
   */
   {
     key: "productList",
@@ -500,6 +501,8 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
       { key: "nameEn", labelJa: "英語名称", labelEn: "Name (EN)" },
       { key: "modelName", labelJa: "型式", labelEn: "Model" },
       { key: "useName", labelJa: "用途", labelEn: "Use" },
+      { key: "substanceNames", labelJa: "成分（物質名）", labelEn: "Ingredients" },
+      { key: "casNumbers", labelJa: "CAS番号", labelEn: "CAS numbers" },
       { key: "judgement", labelJa: "判定", labelEn: "Result" },
       { key: "judgementCategories", labelJa: "該当した規制区分", labelEn: "Applicable categories" },
       { key: "needsReview", labelJa: "要確認", labelEn: "Needs review" },
