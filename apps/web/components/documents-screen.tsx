@@ -477,13 +477,14 @@ export function DocumentsScreen({
       .join(locale === "ja" ? "・" : ", "),
   );
 
-  /*
-    段の見出し。**出す段だけで番号を数える。**
-    宛先の段を飛ばしたときに ①③④ と並ぶと、抜けたように見える
-  */
-  const stepShown = [true, asksParties, true, true];
-  const step = (n: number, label: string) =>
-    `${"①②③④"[stepShown.slice(0, n).filter(Boolean).length - 1]} ${label}`;
+  /** 段の見出し。番号は付けない（2026-09-16 指示。見出しだけで分かるように大きめに出す） */
+  const HEADING = "text-lg font-semibold";
+  /** 相手の段の見出しは、テンプレートの対象（製品か物質か）で変える */
+  const step3Label = picked
+    ? picked.target === "PRODUCT"
+      ? m.documents.step3Product
+      : m.documents.step3Substance
+    : m.documents.step3;
 
   /** 選ばれている件数（全件のときは絞り込みに当たる数） */
   const selectedCount =
@@ -545,7 +546,7 @@ export function DocumentsScreen({
 
       {/* ① テンプレートを選ぶ。表から選ぶ（数が増えても探せるように） */}
       <div className="space-y-2">
-        <p className="text-sm font-medium">{step(1, m.documents.step1)}</p>
+        <p className={HEADING}>{m.documents.step1}</p>
         <DocTemplatePicker
           selectedId={picked?.id ?? null}
           onSelect={(t) => {
@@ -569,7 +570,7 @@ export function DocumentsScreen({
       */}
       {asksParties && (
         <div className="space-y-2 border-t pt-4">
-          <p className="text-sm font-medium">{step(2, step2Label)}</p>
+          <p className={HEADING}>{step2Label}</p>
           <div className="flex flex-wrap items-end gap-3">
             {asksCompany && (
               <div className="space-y-1">
@@ -682,7 +683,7 @@ export function DocumentsScreen({
 
       {/* ③ 作る相手。テンプレートで対象（製品か物質か）が決まる。表は製品・物質の一覧と同じ */}
       <div className="space-y-2 border-t pt-4">
-        <p className="text-sm font-medium">{step(3, m.documents.step3)}</p>
+        <p className={HEADING}>{step3Label}</p>
         {picked ? (
           <DocTargetPicker
             key={`${picked.id}:${pickerToken}`}
@@ -700,7 +701,7 @@ export function DocumentsScreen({
 
       {/* ④ 生成。**手順の最後に、押すためのボタンとして置く** */}
       <div className="space-y-2 border-t pt-4">
-        <p className="text-sm font-medium">{step(4, m.documents.step4)}</p>
+        <p className={HEADING}>{m.documents.step4}</p>
         <div className="flex flex-wrap items-center gap-3">
           <Button disabled={!picked || !selection || starting} onClick={() => void make()}>
             <FileText className="size-4" />
@@ -724,7 +725,7 @@ export function DocumentsScreen({
       {/* 生成の状況（まとめて頼んだ仕事）。無ければ出さない */}
       {jobs !== null && jobs.length > 0 && (
         <div className="space-y-2 border-t pt-4">
-          <p className="text-sm font-medium">{m.documents.jobsTitle}</p>
+          <p className={HEADING}>{m.documents.jobsTitle}</p>
           <DataTable
             storageKey="chem.table.docBatchJobs"
             columns={jobColumns}
@@ -744,7 +745,7 @@ export function DocumentsScreen({
 
       {/* 下：自分が作ったもの */}
       <div className="space-y-2 border-t pt-4">
-        <p className="text-sm font-medium">{m.documents.mine}</p>
+        <p className={HEADING}>{m.documents.mine}</p>
         <DataTable
           storageKey="chem.table.documents"
           columns={columns}
