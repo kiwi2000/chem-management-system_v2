@@ -1,7 +1,7 @@
 "use client";
 
 import { DEFAULT_FONT_SIZE, type DocumentContent } from "@chem/shared";
-import { ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, Redo2, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { BlockList, Labeled } from "@/components/doc-editor/block-list";
@@ -182,6 +182,27 @@ export function DocTemplateEditor({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  /*
+    元に戻す・やり直し（2026-09-16 指示）。
+    紙面の中身は 1 つの値なので、書き換える前の値を積んでおけば戻せる。
+    **打っている最中は 1 文字ごとに積まない**（短い間隔の書き換えは 1 つにまとめる）。
+    保存しても履歴は残し、読み込み直し・取消で消す。画面を離れれば無くなる
+  */
+  const past = useRef<DocumentContent[]>([]);
+  const future = useRef<DocumentContent[]>([]);
+  const lastEditAt = useRef(0);
+  const [historySize, setHistorySize] = useState({ past: 0, future: 0 });
+  const HISTORY_MAX = 100;
+  const GROUP_MS = 700;
+  const syncHistory = () =>
+    setHistorySize({ past: past.current.length, future: future.current.length });
+  const clearHistory = () => {
+    past.current = [];
+    future.current = [];
+    lastEditAt.current = 0;
+    syncHistory();
+  };
+
   const load = useCallback(async () => {
     setError(null);
     const res = await fetch(`/api/doc-templates/${id}`);
@@ -196,6 +217,9 @@ export function DocTemplateEditor({ id }: { id: string }) {
     setContent(body.content);
     setDirty(false);
     setRevision((v) => v + 1);
+    clearHistory();
+    // clearHistory は ref を触るだけで、毎回同じ動きをする
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, m]);
 
   useEffect(() => {
@@ -217,6 +241,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
     setError(null);
     setLeaveWarning(false);
     setRevision((v) => v + 1);
+    clearHistory();
   }
 
   /**
@@ -230,11 +255,75 @@ export function DocTemplateEditor({ id }: { id: string }) {
   }
 
   function edit(next: DocumentContent) {
+    // 前の値を積む。直前の書き換えから間が無ければ、同じひとまとまりとして積まない（1 文字ずつ戻らない）
+    const now = Date.now();
+    if (content && now - lastEditAt.current > GROUP_MS) {
+      past.current.push(content);
+      if (past.current.length > HISTORY_MAX) past.current.shift();
+    }
+    lastEditAt.current = now;
+    // 新しく書き換えたら、やり直しの先は無くなる
+    future.current = [];
+    syncHistory();
     setContent(next);
     setDirty(true);
     // 直し始めたら知らせは引っ込める。出しっぱなしだと何の話か分からなくなる
     setLeaveWarning(false);
   }
+
+  /** 1 つ前へ。いまの値はやり直しの側へ積む。欄の中身も作り直す（打ちかけの字が残らないように） */
+  function undo() {
+    const prev = past.current.pop();
+    if (!prev || !content) return;
+    future.current.push(content);
+    lastEditAt.current = 0;
+    syncHistory();
+    setContent(prev);
+    setDirty(true);
+    setRevision((v) => v + 1);
+  }
+
+  function redo() {
+    const next = future.current.pop();
+    if (!next || !content) return;
+    past.current.push(content);
+    lastEditAt.current = 0;
+    syncHistory();
+    setContent(next);
+    setDirty(true);
+    setRevision((v) => v + 1);
+  }
+
+  /*
+    Ctrl+Z / Ctrl+Y（Ctrl+Shift+Z も）。
+    **文字を打っている欄の中では効かせない**（欄の中の取り消しはブラウザに任せる）。
+    欄の外にいるときだけ紙面ぜんたいを戻す
+  */
+  useEffect(() => {
+    if (!editable) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key !== "z" && key !== "y") return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      if (key === "y" || (key === "z" && e.shiftKey)) redo();
+      else undo();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // undo/redo は ref を読むだけの関数。content が変わるたびに付け直せば足りる
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable, content]);
 
   async function save() {
     if (!content) return;
@@ -345,6 +434,33 @@ export function DocTemplateEditor({ id }: { id: string }) {
               <div className="flex flex-wrap items-end justify-end gap-2">
                 {isFile ? null : (
                   <>
+                    {/* 元に戻す・やり直し。帯の左端（2026-09-16 指示） */}
+                    {editable && (
+                      <span className="flex items-center gap-0.5 self-end">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={m.docEditor.undo}
+                          title={m.docEditor.undo}
+                          disabled={historySize.past === 0}
+                          className="h-7 w-7"
+                          onClick={undo}
+                        >
+                          <Undo2 className="size-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={m.docEditor.redo}
+                          title={m.docEditor.redo}
+                          disabled={historySize.future === 0}
+                          className="h-7 w-7"
+                          onClick={redo}
+                        >
+                          <Redo2 className="size-4" />
+                        </Button>
+                      </span>
+                    )}
                     {/*
                       紙面の表示倍率（%）。候補から選ぶか、数を打つ。
                       紙面の上に置くと縦の場所を食うので、帯の「向き」の左に置く（2026-09-13 指示）

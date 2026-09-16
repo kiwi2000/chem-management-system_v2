@@ -1328,6 +1328,9 @@ export const ja = {
     imageHeight: "高さ（mm）",
     imageSizeHint:
       "片方だけ入れると、もう片方は縦横の比で決まります。両方空なら元の大きさ（紙幅を超えれば縮みます）",
+    /** 元に戻す・やり直し（2026-09-16 指示） */
+    undo: "元に戻す（Ctrl+Z）",
+    redo: "やり直し（Ctrl+Y）",
     imageLinkOn: "幅と高さを連動しています（押すと別々に決められます）",
     imageLinkOff: "幅と高さは別々です（押すと縦横の比で連動します）",
     imageAlign: "寄せ",
