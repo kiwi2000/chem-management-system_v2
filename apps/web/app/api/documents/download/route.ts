@@ -17,7 +17,7 @@ const bodySchema = z.object({ ids: z.array(z.string().trim().min(1)).min(1).max(
  * ファイルが無くなっているものも外し、外した数は応答のヘッダーで知らせる
  */
 export async function POST(req: Request) {
-  const actor = await requirePermission("DOCUMENT_CREATE");
+  const actor = await requirePermission("DOCUMENT_DOWNLOAD");
   if (actor instanceof Response) return actor;
   const m = await getServerMessages();
 

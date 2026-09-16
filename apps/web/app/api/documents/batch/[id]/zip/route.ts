@@ -13,7 +13,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * **自分が頼んだ仕事だけ。**組成を見られない人には、組成の載った帳票は入れない
  */
 export async function GET(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("DOCUMENT_CREATE");
+  const actor = await requirePermission("DOCUMENT_DOWNLOAD");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();

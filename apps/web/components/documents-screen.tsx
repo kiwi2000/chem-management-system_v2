@@ -29,6 +29,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { useMe } from "@/lib/use-me";
 import { useOrganisations } from "@/lib/use-organisations";
 import type {
   ApiError,
@@ -85,6 +86,9 @@ export function DocumentsScreen({
   substance: SubstanceListOptions;
 }) {
   const { m, locale } = useI18n();
+  const { can } = useMe();
+  /** 帳票をファイルで落とせるか。無い人には落とし口を出さない（2026-09-17） */
+  const canDownload = can("DOCUMENT_DOWNLOAD");
   const router = useRouter();
 
   /*
@@ -322,15 +326,22 @@ export function DocumentsScreen({
         className: "text-xs",
         render: (d) =>
           d.fileName ? (
-            <a
-              href={`/api/documents/${d.id}/file`}
-              className="text-primary underline underline-offset-2"
-              title={
-                d.fileSize !== null ? `${Math.max(1, Math.round(d.fileSize / 1024))} KB` : undefined
-              }
-            >
-              {d.fileName}
-            </a>
+            // 落とす権限が無い人には名前だけ（押せない）。紙面は日時の欄から画面で見られる
+            canDownload ? (
+              <a
+                href={`/api/documents/${d.id}/file`}
+                className="text-primary underline underline-offset-2"
+                title={
+                  d.fileSize !== null
+                    ? `${Math.max(1, Math.round(d.fileSize / 1024))} KB`
+                    : undefined
+                }
+              >
+                {d.fileName}
+              </a>
+            ) : (
+              <span className="text-muted-foreground">{d.fileName}</span>
+            )
           ) : d.fileError ? (
             <span className="text-destructive" title={d.fileError}>
               {m.documents.fileFailed}
@@ -468,7 +479,7 @@ export function DocumentsScreen({
                 {m.documents.jobOpen}
               </Link>
             )}
-            {j.status === "DONE" && j.done - j.missed > 0 && (
+            {canDownload && j.status === "DONE" && j.done - j.missed > 0 && (
               <a
                 href={`/api/documents/batch/${j.id}/zip`}
                 className="text-primary underline underline-offset-2"
@@ -822,7 +833,9 @@ export function DocumentsScreen({
           selectable
           onDeleteSelected={onDeleteSelected}
           // 選んだぶんを落とす（1 件なら PDF そのもの、複数なら zip）
-          bulkAction={{ label: m.documents.download, run: downloadSelected }}
+          bulkAction={
+            canDownload ? { label: m.documents.download, run: downloadSelected } : undefined
+          }
           pageSizeOptions={[15, 25, 50, 100]}
           hintText={m.documents.savedHint}
         />

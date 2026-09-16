@@ -33,6 +33,11 @@ export const PERMISSIONS = [
   "DOC_TEMPLATE_EDIT",
   "DOCUMENT_CREATE",
   /*
+    できた帳票をファイルで落とす（PDF・zip・値を埋めた Excel／Word）。2026-09-17 指示。
+    **作る・画面で見るのと、ファイルで持ち出すのは分ける**（TSV 出力と同じ考え）
+  */
+  "DOCUMENT_DOWNLOAD",
+  /*
     他の人が作ったドキュメントも見る・落とす・消す（2026-09-16 指示）。
     ただし組成の載ったものは組成の権限、未公開の製品・物質のものは未公開の権限も要る
     （見せてよいものだけ見せる）
@@ -74,6 +79,12 @@ const IMPLIES: Partial<Record<Permission, readonly Permission[]>> = {
   SUBSTANCE_EDIT: ["SUBSTANCE_VIEW"],
   // 無効・未公開を編集できる人は、当然それを見られる
   INACTIVE_EDIT: ["INACTIVE_VIEW"],
+  // 承認するには、他人の承認待ち（未公開）が見えないと始まらない（2026-09-17 指示）
+  APPROVE: ["INACTIVE_VIEW"],
+  // テンプレートを直すには、ドキュメントの画面（メニューの束と一覧）に入れる必要がある（2026-09-17 指示）
+  DOC_TEMPLATE_EDIT: ["DOCUMENT_CREATE"],
+  // 落とすには、帳票の画面そのものに入れる必要がある
+  DOCUMENT_DOWNLOAD: ["DOCUMENT_CREATE"],
   // 他人のドキュメントを見るには、ドキュメントの画面そのものに入れる必要がある
   DOCUMENT_VIEW_ALL: ["DOCUMENT_CREATE"],
   REGULATION_EDIT: ["REGULATION_VIEW"],
@@ -129,7 +140,10 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "inactive", permissions: ["INACTIVE_VIEW", "INACTIVE_EDIT", "APPROVE"] },
   { key: "regulation", permissions: ["REGULATION_VIEW", "REGULATION_EDIT"] },
   { key: "data", permissions: ["DATA_EXPORT", "DATA_IMPORT"] },
-  { key: "document", permissions: ["DOC_TEMPLATE_EDIT", "DOCUMENT_CREATE", "DOCUMENT_VIEW_ALL"] },
+  {
+    key: "document",
+    permissions: ["DOC_TEMPLATE_EDIT", "DOCUMENT_CREATE", "DOCUMENT_DOWNLOAD", "DOCUMENT_VIEW_ALL"],
+  },
   { key: "organisation", permissions: ["ORG_EDIT"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },
   { key: "feedback", permissions: ["FEEDBACK_VIEW", "FEEDBACK_EDIT"] },
@@ -153,6 +167,7 @@ export const PERMISSION_PRESETS: { key: string; permissions: readonly Permission
       "REGULATION_VIEW",
       "DATA_EXPORT",
       "DOCUMENT_CREATE",
+      "DOCUMENT_DOWNLOAD",
       "NEWS_POST",
     ],
   },
@@ -166,6 +181,7 @@ export const PERMISSION_PRESETS: { key: string; permissions: readonly Permission
       "REGULATION_EDIT",
       "DATA_EXPORT",
       "DOCUMENT_CREATE",
+      "DOCUMENT_DOWNLOAD",
     ],
   },
   { key: "admin", permissions: PERMISSIONS },

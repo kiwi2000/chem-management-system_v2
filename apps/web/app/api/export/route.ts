@@ -62,7 +62,7 @@ export async function GET(req: Request) {
         ? await exportRegulationList({ lawCode: q.law, sourceCode: q.source })
         : q.kind === "PRODUCTS"
           ? await exportProducts(actor)
-          : await exportSubstances();
+          : await exportSubstances(actor);
     const stem =
       q.kind === "REGULATION_LIST"
         ? "regulation-list"

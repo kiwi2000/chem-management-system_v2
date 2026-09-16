@@ -199,6 +199,7 @@ export const en: Messages = {
   permissions: {
     DOC_TEMPLATE_EDIT: "Can edit document templates",
     DOCUMENT_CREATE: "Can create documents (and see their own)",
+    DOCUMENT_DOWNLOAD: "Can download documents as files",
     DOCUMENT_VIEW_ALL: "Can also see documents created by others",
     ORG_EDIT: "Can create and edit organisations (companies, departments, partners)",
     PRODUCT_VIEW: "View products",
@@ -223,11 +224,14 @@ export const en: Messages = {
     PRODUCT_VIEW: "Also allows running assessments and reverse lookup",
     PRODUCT_EDIT: "Includes editing compositions: create, change, delete, TSV import",
     REGULATION_EDIT: "Includes metal conversion factors, sources and link versions",
-    DATA_EXPORT: "TSV export and document download. Grant only to those who need it",
+    DATA_EXPORT:
+      "TSV / JSON export on the data import/export screen. Grant only to those who need it",
     DATA_IMPORT:
       "Import our data sets or your own tables on the data import/export screen. It rewrites master data, so by default only system administrators",
     INACTIVE_VIEW:
       "See unpublished data and inactive products in lists and details (creators always see their own)",
+    DOCUMENT_DOWNLOAD:
+      "Download finished PDFs / zips and filled Excel / Word files. Without it, documents can still be viewed on screen. Grant only to those who need it",
     DOCUMENT_VIEW_ALL:
       "Everyone's documents appear under Created documents and can be downloaded or deleted. Documents that contain composition still need “Can see composition”; documents for unpublished products or substances still need “Can see inactive/unpublished data”",
     NEWS_POST: "Announcements you posted can be edited and deleted by you",

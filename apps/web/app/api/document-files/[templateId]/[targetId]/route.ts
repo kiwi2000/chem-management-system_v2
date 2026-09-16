@@ -31,7 +31,7 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ templateId: string; targetId: string }> },
 ) {
-  const actor = await requirePermission("DOCUMENT_CREATE");
+  const actor = await requirePermission("DOCUMENT_DOWNLOAD");
   if (actor instanceof Response) return actor;
   const { templateId, targetId } = await params;
   const m0 = await getServerMessages();

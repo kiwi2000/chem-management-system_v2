@@ -11,6 +11,7 @@ import type { Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { takeSnapshot } from "@/lib/import/snapshot";
 import { visibilityWhere } from "@/lib/product-service";
+import { visibilityWhere as substanceVisibilityWhere } from "@/lib/substance-service";
 
 /**
  * 「エクスポート」（決定 0011）。書き出したファイルは、そのまま「インポート」で読める形にする。
@@ -218,10 +219,10 @@ export async function exportProducts(actor: Actor): Promise<string> {
   return writeTable(head(PRODUCTS_COLUMNS), rows);
 }
 
-/** 物質。別名は「;」区切りで 1 列 */
-export async function exportSubstances(): Promise<string> {
+/** 物質。別名は「;」区切りで 1 列。**未公開のものは一覧と同じ見える範囲**（製品と同じ扱い。2026-09-17） */
+export async function exportSubstances(actor: Actor): Promise<string> {
   const substances = await prisma.substance.findMany({
-    where: { deletedAt: null },
+    where: { deletedAt: null, ...substanceVisibilityWhere(actor) },
     orderBy: { codeNormalized: "asc" },
     select: { id: true, code: true, nameJa: true, nameEn: true, casNumber: true, note: true },
   });

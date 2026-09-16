@@ -16,7 +16,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * 組成が載っている帳票は、いま組成を見る権限がある人にだけ（画面で開くときと同じ）
  */
 export async function GET(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("DOCUMENT_CREATE");
+  const actor = await requirePermission("DOCUMENT_DOWNLOAD");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();

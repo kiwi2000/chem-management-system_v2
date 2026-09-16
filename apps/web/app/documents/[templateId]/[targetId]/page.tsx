@@ -3,6 +3,7 @@ import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { TemplateFileDownload } from "@/components/doc-editor/template-file-download";
+import { ForbiddenNotice } from "@/components/forbidden-notice";
 
 /**
  * できあがった帳票。テンプレート × 対象1件で1枚。
@@ -53,6 +54,8 @@ export default async function DocumentPage({
   // 帳票を作れる人だけ（保存した帳票の画面と同じ）。権限が無ければ、あることも伝えない
   const actor = await getActor();
   if (!actor || !actor.has("DOCUMENT_CREATE")) notFound();
+  // 値を埋めたファイルを落とす画面なので、落とす権限が要る（2026-09-17）
+  if (!actor.has("DOCUMENT_DOWNLOAD")) return <ForbiddenNotice />;
 
   const row = await prisma.documentTemplate.findFirst({
     where: { id: templateId, deletedAt: null, active: true },
