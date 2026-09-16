@@ -1328,6 +1328,8 @@ export const ja = {
     imageHeight: "高さ（mm）",
     imageSizeHint:
       "片方だけ入れると、もう片方は縦横の比で決まります。両方空なら元の大きさ（紙幅を超えれば縮みます）",
+    imageLinkOn: "幅と高さを連動しています（押すと別々に決められます）",
+    imageLinkOff: "幅と高さは別々です（押すと縦横の比で連動します）",
     imageAlign: "寄せ",
     imageAligns: { left: "左", center: "中央", right: "右" },
     margin: "余白",
@@ -1373,7 +1375,7 @@ export const ja = {
     note: "備考",
     format: "形式",
     dimensions: "大きさ（px）",
-    size: "容量",
+    size: "サイズ",
     usedBy: "使用テンプレート",
     createdAt: "登録日時",
     preview: "プレビュー",

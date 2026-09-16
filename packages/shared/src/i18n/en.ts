@@ -1291,6 +1291,8 @@ export const en: Messages = {
     imageHeight: "Height (mm)",
     imageSizeHint:
       "Give one and the other follows the aspect ratio. Both empty keeps the natural size (shrunk to fit the page)",
+    imageLinkOn: "Width and height are linked (click to set them separately)",
+    imageLinkOff: "Width and height are separate (click to link by aspect ratio)",
     imageAlign: "Align",
     imageAligns: { left: "Left", center: "Centre", right: "Right" },
     margin: "Margin",

@@ -839,6 +839,8 @@ export type DocumentBlock =
       imageId: string;
       widthMm?: number;
       heightMm?: number;
+      /** 幅と高さを縦横の比で連動させるか（編集画面のリンクの印。省略は連動）。紙面には影響しない */
+      keepRatio?: boolean;
       align?: ImageAlign;
     });
 

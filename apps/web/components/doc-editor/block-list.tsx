@@ -28,7 +28,7 @@ import {
   type OrgBlockMode,
   type BlockMargin,
 } from "@chem/shared";
-import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Link2, Link2Off, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { RichEditor } from "@/components/doc-editor/rich-editor";
 import { TableBlockFields } from "@/components/doc-editor/table-block-fields";
@@ -586,35 +586,74 @@ export function BlockList({
                 }
               />
               <div className="flex flex-wrap items-center gap-3">
-                {(["widthMm", "heightMm"] as const).map((key) => (
-                  <label key={key} className="flex items-center gap-2 text-sm">
-                    {key === "widthMm" ? m.docEditor.imageWidth : m.docEditor.imageHeight}
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min={1}
-                      max={300}
-                      step={0.5}
-                      title={m.docEditor.imageSizeHint}
-                      // 空欄には、いま紙面に出ている大きさ（mm）を薄く出す（入れた値と見分けが付く）
-                      placeholder={(() => {
-                        const s = shownImageMm(b);
-                        return s ? mm1(key === "widthMm" ? s.width : s.height) : undefined;
-                      })()}
-                      className={cn(SELECT, "w-20 text-right placeholder:text-muted-foreground/70")}
-                      value={b[key] ?? ""}
-                      onChange={(e) => {
-                        if (e.target.value === "") {
-                          replace(i, { ...b, [key]: undefined });
-                          return;
-                        }
-                        const n = Number(e.target.value);
-                        if (!Number.isFinite(n)) return;
-                        replace(i, { ...b, [key]: Math.min(300, Math.max(1, n)) });
-                      }}
-                    />
-                  </label>
-                ))}
+                {(["widthMm", "heightMm"] as const).map((key, k) => {
+                  const linked = b.keepRatio !== false;
+                  const other = key === "widthMm" ? "heightMm" : "widthMm";
+                  const px = imagePx[b.id];
+                  const ratio = px && px.width > 0 ? px.height / px.width : null;
+                  /** 連動しているときは、もう片方を縦横の比で決める（画像の大きさが分かっているとき） */
+                  const paired = (n: number | undefined) => {
+                    if (!linked || ratio === null) return {};
+                    if (n === undefined) return { [other]: undefined };
+                    const v = key === "widthMm" ? n * ratio : n / ratio;
+                    return { [other]: Math.round(Math.min(300, Math.max(1, v)) * 10) / 10 };
+                  };
+                  return (
+                    <span key={key} className="flex items-center gap-2">
+                      {k === 1 && (
+                        // 幅と高さの間のリンク。押すと連動の ON/OFF（お絵かきソフトと同じ印）
+                        <button
+                          type="button"
+                          onClick={() =>
+                            replace(i, { ...b, keepRatio: linked ? false : undefined })
+                          }
+                          title={linked ? m.docEditor.imageLinkOn : m.docEditor.imageLinkOff}
+                          aria-label={linked ? m.docEditor.imageLinkOn : m.docEditor.imageLinkOff}
+                          aria-pressed={linked}
+                          className={cn(
+                            "flex size-7 items-center justify-center rounded-none border",
+                            linked
+                              ? "border-primary text-primary bg-primary/10"
+                              : "border-input text-muted-foreground",
+                          )}
+                        >
+                          {linked ? <Link2 className="size-4" /> : <Link2Off className="size-4" />}
+                        </button>
+                      )}
+                      <label className="flex items-center gap-2 text-sm">
+                        {key === "widthMm" ? m.docEditor.imageWidth : m.docEditor.imageHeight}
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min={1}
+                          max={300}
+                          step={0.5}
+                          title={m.docEditor.imageSizeHint}
+                          // 空欄には、いま紙面に出ている大きさ（mm）を薄く出す（入れた値と見分けが付く）
+                          placeholder={(() => {
+                            const s = shownImageMm(b);
+                            return s ? mm1(key === "widthMm" ? s.width : s.height) : undefined;
+                          })()}
+                          className={cn(
+                            SELECT,
+                            "w-20 text-right placeholder:text-muted-foreground/70",
+                          )}
+                          value={b[key] ?? ""}
+                          onChange={(e) => {
+                            if (e.target.value === "") {
+                              replace(i, { ...b, [key]: undefined, ...paired(undefined) });
+                              return;
+                            }
+                            const n = Number(e.target.value);
+                            if (!Number.isFinite(n)) return;
+                            const v = Math.min(300, Math.max(1, n));
+                            replace(i, { ...b, [key]: v, ...paired(v) });
+                          }}
+                        />
+                      </label>
+                    </span>
+                  );
+                })}
                 <label className="flex items-center gap-2 text-sm">
                   {m.docEditor.imageAlign}
                   <select
