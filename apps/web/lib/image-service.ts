@@ -21,23 +21,35 @@ export const IMAGE_SELECT = {
 
 type ImageRow = Prisma.ImageAssetGetPayload<{ select: typeof IMAGE_SELECT }>;
 
-/** 各画像を使っているテンプレートの数（消されていないものだけ） */
-export async function usageCounts(ids: string[]): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
+/** 画像を使っているテンプレート（消されていないものだけ）。画面でコードを押して編集へ移れるように */
+export interface ImageUsage {
+  id: string;
+  code: string;
+  nameJa: string;
+}
+
+export async function usageOf(ids: string[]): Promise<Map<string, ImageUsage[]>> {
+  const out = new Map<string, ImageUsage[]>();
   if (ids.length === 0) return out;
-  const rows = await prisma.$queryRaw<{ id: string; n: bigint }[]>`
-    SELECT i.id, COUNT(t.id) AS n
+  const rows = await prisma.$queryRaw<
+    { image_id: string; id: string; code: string; name_ja: string }[]
+  >`
+    SELECT i.id AS image_id, t.id, t.code, t.name_ja
     FROM unnest(${ids}::text[]) AS i(id)
-    LEFT JOIN document_templates t
+    JOIN document_templates t
       ON t.deleted_at IS NULL
      -- jsonb を文字にすると「"imageId": "…"」のようにコロンの後に空白が入る。入らない書きかたも拾う
      AND t.content::text ~ ('"imageId":\\s*"' || i.id || '"')
-    GROUP BY i.id`;
-  for (const r of rows) out.set(r.id, Number(r.n));
+    ORDER BY t.code`;
+  for (const r of rows) {
+    const list = out.get(r.image_id) ?? [];
+    list.push({ id: r.id, code: r.code, nameJa: r.name_ja });
+    out.set(r.image_id, list);
+  }
   return out;
 }
 
-export function toImageDto(r: ImageRow, usedBy: number): ImageAssetDto {
+export function toImageDto(r: ImageRow, usedBy: ImageUsage[]): ImageAssetDto {
   return {
     id: r.id,
     name: r.name,

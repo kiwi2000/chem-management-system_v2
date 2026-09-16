@@ -741,8 +741,8 @@ export interface ImageAssetDto {
   width: number;
   height: number;
   size: number;
-  /** この画像を「画像」ブロックで使っているテンプレートの数 */
-  usedBy: number;
+  /** この画像を「画像」ブロックで使っているテンプレート */
+  usedBy: { id: string; code: string; nameJa: string }[];
   createdAt: string;
 }
 

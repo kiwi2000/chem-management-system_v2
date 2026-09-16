@@ -4,7 +4,7 @@ import { jsonError, requireAnyPermission, requirePermission } from "@/lib/authz"
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { IMAGE_INPUT_MIMES, IMAGE_UPLOAD_MAX, processImage } from "@/lib/image-process";
-import { IMAGE_SELECT, toImageDto, usageCounts } from "@/lib/image-service";
+import { IMAGE_SELECT, toImageDto, usageOf } from "@/lib/image-service";
 import { IMAGE_COLUMNS } from "@/lib/list-columns";
 import { getAppSettings } from "@/lib/settings";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
@@ -38,9 +38,9 @@ export async function GET(req: Request) {
     }),
     prisma.imageAsset.count({ where }),
   ]);
-  const used = await usageCounts(items.map((i) => i.id));
+  const used = await usageOf(items.map((i) => i.id));
   return Response.json({
-    items: items.map((i) => toImageDto(i, used.get(i.id) ?? 0)),
+    items: items.map((i) => toImageDto(i, used.get(i.id) ?? [])),
     total,
     page: state.page,
     pageSize: state.pageSize,

@@ -7,6 +7,7 @@ import {
   type TableState,
 } from "@chem/shared";
 import { Upload } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -240,11 +241,34 @@ export function ImageLibraryScreen() {
         key: "usedBy",
         header: m.images.usedBy,
         kind: "text",
-        width: 110,
+        width: 180,
         sortable: false,
         filterable: false,
-        className: "text-right",
-        render: (r) => (r.usedBy > 0 ? r.usedBy : ""),
+        // コードを並べる。テンプレートを直せる人には編集画面へのリンク（権限が無ければ文字だけ）
+        render: (r) =>
+          r.usedBy.length === 0 ? (
+            ""
+          ) : (
+            <span className="flex flex-wrap gap-x-2 gap-y-0.5 font-mono text-xs">
+              {r.usedBy.map((t) =>
+                editable ? (
+                  <Link
+                    key={t.id}
+                    href={`/doc-templates/${t.id}`}
+                    title={t.nameJa}
+                    className="underline underline-offset-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {t.code}
+                  </Link>
+                ) : (
+                  <span key={t.id} title={t.nameJa}>
+                    {t.code}
+                  </span>
+                ),
+              )}
+            </span>
+          ),
       },
       {
         key: "createdAt",
@@ -258,7 +282,7 @@ export function ImageLibraryScreen() {
     ],
     // saveEdit は editing を閉じ込めた関数。editing が変われば列も作り直すので、依存はこれで足りる
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [m, locale, editing],
+    [m, locale, editing, editable],
   );
 
   return (

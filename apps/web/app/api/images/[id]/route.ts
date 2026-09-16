@@ -3,7 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requireAnyPermission, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { IMAGE_SELECT, toImageDto, usageCounts } from "@/lib/image-service";
+import { IMAGE_SELECT, toImageDto, usageOf } from "@/lib/image-service";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +24,8 @@ export async function GET(req: Request, { params }: Ctx) {
   if (q.get("meta") === "1") {
     const meta = await prisma.imageAsset.findUnique({ where: { id }, select: IMAGE_SELECT });
     if (!meta) return new Response(null, { status: 404 });
-    const used = await usageCounts([id]);
-    return Response.json(toImageDto(meta, used.get(id) ?? 0));
+    const used = await usageOf([id]);
+    return Response.json(toImageDto(meta, used.get(id) ?? []));
   }
 
   const row = thumb
@@ -76,8 +76,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     data: { name: parsed.data.name, note: parsed.data.note ?? null },
     select: IMAGE_SELECT,
   });
-  const used = await usageCounts([id]);
-  return Response.json(toImageDto(row, used.get(id) ?? 0));
+  const used = await usageOf([id]);
+  return Response.json(toImageDto(row, used.get(id) ?? []));
 }
 
 /**
@@ -92,7 +92,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
   const row = await prisma.imageAsset.findUnique({ where: { id }, select: { name: true } });
   if (!row) return jsonError(404, "not_found", m.errors.notFound);
-  const used = (await usageCounts([id])).get(id) ?? 0;
+  const used = ((await usageOf([id])).get(id) ?? []).length;
   if (used > 0) return jsonError(409, "in_use", m.images.inUse(used));
 
   await prisma.imageAsset.delete({ where: { id } });
