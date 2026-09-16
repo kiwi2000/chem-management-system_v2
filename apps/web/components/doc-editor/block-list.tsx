@@ -2,6 +2,7 @@
 
 import {
   BLOCK_KINDS,
+  widthPercent,
   IMAGE_ALIGNS,
   type ImageAlign,
   DEFAULT_BLOCK_MARGIN,
@@ -94,6 +95,7 @@ export function BlockList({
   onActivate,
   activeIds = [],
   docSize,
+  orientation = "portrait",
 }: {
   blocks: DocumentBlock[];
   target: DocumentTarget;
@@ -106,8 +108,31 @@ export function BlockList({
   activeIds?: readonly string[];
   /** 紙面ぜんたいの字の大きさ（pt）。「既定」を選んだときになる値を一覧に添えるために使う */
   docSize?: number;
+  /** 紙の向き。画像の「いまの大きさ」を出すときの紙幅に使う */
+  orientation?: "portrait" | "landscape";
 }) {
   const { m, locale } = useI18n();
+  /** 画像ブロックごとの、選んでいる画像の大きさ（px）。幅・高さの欄が空のとき、いまの大きさを薄く出す */
+  const [imagePx, setImagePx] = useState<Record<string, { width: number; height: number }>>({});
+  /**
+   * 画像がいま紙面に出ている大きさ（mm）。紙面と同じ計算:
+   * 96dpi の px を mm に直し、両方空ならブロックの幅（紙幅 × 横幅%）に収まるまで縮める。
+   * 片方だけ入っていれば、もう片方は縦横の比で決まる
+   */
+  const shownImageMm = (b: Extract<DocumentBlock, { kind: "image" }>) => {
+    const px = imagePx[b.id];
+    if (!px || px.width === 0 || px.height === 0) return null;
+    const pxToMm = 25.4 / 96;
+    const ratio = px.height / px.width;
+    if (b.widthMm !== undefined) return { width: b.widthMm, height: b.widthMm * ratio };
+    if (b.heightMm !== undefined) return { width: b.heightMm / ratio, height: b.heightMm };
+    // A4 の紙幅から余白（15mm ずつ）を引いた幅に、ブロックの横幅%をかける
+    const pageMm = (orientation === "landscape" ? 297 : 210) - 30;
+    const blockMm = (pageMm * (widthPercent(b.width) ?? 100)) / 100;
+    const width = Math.min(px.width * pxToMm, blockMm);
+    return { width, height: width * ratio };
+  };
+  const mm1 = (v: number) => (Math.round(v * 10) / 10).toString();
   /** そのブロックで実際に使われる大きさ（pt）。紙面と同じ計算 */
   const sizeOf = (b: DocumentBlock) =>
     b.style?.size ?? ownFontSize(b) ?? docSize ?? DEFAULT_FONT_SIZE;
@@ -549,6 +574,16 @@ export function BlockList({
               <ImagePickerField
                 value={b.imageId}
                 onChange={(imageId) => replace(i, { ...b, imageId })}
+                onMeta={(meta) =>
+                  setImagePx((prev) => {
+                    if (!meta) {
+                      const next = { ...prev };
+                      delete next[b.id];
+                      return next;
+                    }
+                    return { ...prev, [b.id]: meta };
+                  })
+                }
               />
               <div className="flex flex-wrap items-center gap-3">
                 {(["widthMm", "heightMm"] as const).map((key) => (
@@ -561,7 +596,12 @@ export function BlockList({
                       max={300}
                       step={0.5}
                       title={m.docEditor.imageSizeHint}
-                      className={cn(SELECT, "w-20 text-right")}
+                      // 空欄には、いま紙面に出ている大きさ（mm）を薄く出す（入れた値と見分けが付く）
+                      placeholder={(() => {
+                        const s = shownImageMm(b);
+                        return s ? mm1(key === "widthMm" ? s.width : s.height) : undefined;
+                      })()}
+                      className={cn(SELECT, "w-20 text-right placeholder:text-muted-foreground/70")}
                       value={b[key] ?? ""}
                       onChange={(e) => {
                         if (e.target.value === "") {

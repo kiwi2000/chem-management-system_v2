@@ -15,10 +15,13 @@ import type { ApiError, ImageAssetDto, ListResponse } from "@/lib/types";
 export function ImagePickerField({
   value,
   onChange,
+  onMeta,
 }: {
   /** 画像ライブラリの id。空なら未選択 */
   value: string;
   onChange: (imageId: string) => void;
+  /** 選んでいる画像の大きさ（px）を知らせる。幅・高さの欄に「いまの大きさ」を出すため */
+  onMeta?: (meta: { width: number; height: number } | null) => void;
 }) {
   const { m } = useI18n();
   const [open, setOpen] = useState(false);
@@ -28,6 +31,7 @@ export function ImagePickerField({
   useEffect(() => {
     if (!value) {
       setCurrent(null);
+      onMeta?.(null);
       return;
     }
     let alive = true;
@@ -35,11 +39,16 @@ export function ImagePickerField({
       const res = await fetch(`/api/images/${value}?meta=1`).catch(() => null);
       if (!res?.ok || !alive) return;
       const body = (await res.json()) as ImageAssetDto;
-      if (alive) setCurrent(body);
+      if (alive) {
+        setCurrent(body);
+        onMeta?.({ width: body.width, height: body.height });
+      }
     })();
     return () => {
       alive = false;
     };
+    // onMeta は毎回作り直される関数なので依存に入れない（画像が変わったときだけ知らせる）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   return (

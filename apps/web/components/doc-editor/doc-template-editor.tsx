@@ -518,6 +518,7 @@ export function DocTemplateEditor({ id }: { id: string }) {
               onActivate={setActiveIds}
               activeIds={activeIds}
               docSize={content.style?.size}
+              orientation={content.orientation}
             />
           </div>
 
