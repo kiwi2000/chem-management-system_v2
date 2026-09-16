@@ -2,6 +2,8 @@
 
 import {
   BLOCK_KINDS,
+  IMAGE_ALIGNS,
+  type ImageAlign,
   DEFAULT_BLOCK_MARGIN,
   DEFAULT_FONT_SIZE,
   effectiveMargin,
@@ -29,6 +31,7 @@ import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { RichEditor } from "@/components/doc-editor/rich-editor";
 import { TableBlockFields } from "@/components/doc-editor/table-block-fields";
+import { ImagePickerField } from "@/components/doc-editor/image-picker";
 import { BlockStyleBar } from "@/components/doc-editor/block-style-bar";
 import { FontSizeInput } from "@/components/doc-editor/font-size-input";
 import { WidthSelect } from "@/components/doc-editor/width-select";
@@ -68,6 +71,9 @@ function newBlock(kind: BlockKind, target: DocumentTarget, id: string): Document
       return { id, kind, size: 8 };
     case "signature":
       return { id, kind, label: "" };
+    // 画像はライブラリから選んでもらう。空のまま置いても紙面には何も出ない
+    case "image":
+      return { id, kind, imageId: "" };
     default:
       return { id, kind } as DocumentBlock;
   }
@@ -496,6 +502,100 @@ export function BlockList({
                     }}
                   />
                 </label>
+                <label className="flex items-center gap-2 text-sm">
+                  {m.docEditor.fieldsLabelPosition}
+                  <select
+                    className={SELECT}
+                    value={b.labelPosition ?? "left"}
+                    onChange={(e) =>
+                      replace(i, {
+                        ...b,
+                        labelPosition: e.target.value === "right" ? "right" : undefined,
+                      })
+                    }
+                  >
+                    <option value="left">{m.docEditor.fieldsLabelPositions.left}</option>
+                    <option value="right">{m.docEditor.fieldsLabelPositions.right}</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  {m.docEditor.fieldsLabelWidth}
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={5}
+                    max={90}
+                    step={1}
+                    title={m.docEditor.fieldsLabelWidthHint}
+                    className={cn(SELECT, "w-20 text-right")}
+                    value={b.labelWidth ?? ""}
+                    onChange={(e) => {
+                      if (e.target.value === "") {
+                        replace(i, { ...b, labelWidth: undefined });
+                        return;
+                      }
+                      const n = Number(e.target.value);
+                      if (!Number.isFinite(n)) return;
+                      replace(i, { ...b, labelWidth: Math.min(90, Math.max(5, n)) });
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {b.kind === "image" && (
+            <div className="space-y-2">
+              <ImagePickerField
+                value={b.imageId}
+                onChange={(imageId) => replace(i, { ...b, imageId })}
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                {(["widthMm", "heightMm"] as const).map((key) => (
+                  <label key={key} className="flex items-center gap-2 text-sm">
+                    {key === "widthMm" ? m.docEditor.imageWidth : m.docEditor.imageHeight}
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={1}
+                      max={300}
+                      step={0.5}
+                      title={m.docEditor.imageSizeHint}
+                      className={cn(SELECT, "w-20 text-right")}
+                      value={b[key] ?? ""}
+                      onChange={(e) => {
+                        if (e.target.value === "") {
+                          replace(i, { ...b, [key]: undefined });
+                          return;
+                        }
+                        const n = Number(e.target.value);
+                        if (!Number.isFinite(n)) return;
+                        replace(i, { ...b, [key]: Math.min(300, Math.max(1, n)) });
+                      }}
+                    />
+                  </label>
+                ))}
+                <label className="flex items-center gap-2 text-sm">
+                  {m.docEditor.imageAlign}
+                  <select
+                    className={SELECT}
+                    value={b.align ?? "left"}
+                    onChange={(e) =>
+                      replace(i, {
+                        ...b,
+                        align:
+                          e.target.value === "left" ? undefined : (e.target.value as ImageAlign),
+                      })
+                    }
+                  >
+                    {IMAGE_ALIGNS.map((a) => (
+                      <option key={a} value={a}>
+                        {m.docEditor.imageAligns[a]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <span className="text-muted-foreground text-xs">{m.docEditor.imageSizeHint}</span>
               </div>
             </div>
           )}

@@ -428,8 +428,13 @@ export const BLOCK_KINDS = [
   "rowBreak",
   "pageBreak",
   "signature",
+  "image",
 ] as const;
 export type BlockKind = (typeof BLOCK_KINDS)[number];
+
+/** 画像の寄せ */
+export const IMAGE_ALIGNS = ["left", "center", "right"] as const;
+export type ImageAlign = (typeof IMAGE_ALIGNS)[number];
 
 /**
  * ブロックの幅。
@@ -767,6 +772,10 @@ export type DocumentBlock =
       gap?: number;
       /** 値の寄せ。右にすると値が右端にそろう（狭い枠で氏名が折れるのを避ける）。省略は左 */
       valueAlign?: "left" | "right";
+      /** ラベルの位置。右にすると「値 ラベル」の並びになる（2026-09-16 指示）。省略は左 */
+      labelPosition?: "left" | "right";
+      /** ラベルの幅（ブロックの横幅に対する %）。空なら中身の長さぶん */
+      labelWidth?: number;
     })
   /**
    * 名指しした組織の項目を並べる。
@@ -820,7 +829,25 @@ export type DocumentBlock =
       labelPosition?: "left" | "above";
       gap?: number;
       lineWidth?: number;
+    })
+  /**
+   * 画像（ロゴ・印影・写真）。**画像ライブラリの画像を id で指す**（2026-09-16 指示）。
+   * 幅・高さは mm。片方だけなら縦横比で決まり、両方空なら元の大きさ（紙幅を超えれば縮む）
+   */
+  | (BlockBase & {
+      kind: "image";
+      imageId: string;
+      widthMm?: number;
+      heightMm?: number;
+      align?: ImageAlign;
     });
+
+/** 様式が使っている画像の id（印刷用ページで中身を埋め込むため） */
+export function imageIdsIn(content: DocumentContent): string[] {
+  const ids = new Set<string>();
+  for (const b of content.blocks) if (b.kind === "image" && b.imageId) ids.add(b.imageId);
+  return [...ids];
+}
 
 /**
  * 横に並ぶものをまとめる。**画面と紙面の両方がこれを使う。**

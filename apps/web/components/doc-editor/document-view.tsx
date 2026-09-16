@@ -16,7 +16,7 @@ import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
-import type { CSSProperties } from "react";
+import { createContext, useContext, type CSSProperties } from "react";
 import type { RenderBlock, RenderLine, RenderedDocument } from "@/lib/doc-render";
 
 /**
@@ -82,12 +82,24 @@ export function DocumentView({
  * 紙面1枚ぶん。画面では枠を付け、印刷では枠を消す。
  * **まとめて作るときも同じものを使う。**別々に組むと見た目が分かれる
  */
+/**
+ * 画像ブロックの絵の出どころ。ふつうは API（ログインした人が見る）。
+ * 印刷用ページ（PDF 化）は Cookie を持たないブラウザが開くので、data: URL を渡して埋め込む
+ */
+const ImageSourceContext = createContext<Record<string, string>>({});
+export function imageSrc(sources: Record<string, string>, id: string): string {
+  return sources[id] ?? `/api/images/${id}`;
+}
+
 export function DocumentSheet({
   doc,
   highlightIds,
   cornerNote,
+  imageSources = {},
 }: {
   doc: RenderedDocument;
+  /** 画像 id → 絵の出どころ（data: URL）。省略すると API から読む */
+  imageSources?: Record<string, string>;
   /** 編集画面で選んでいるブロックの id（複数可）。そのブロックを赤い細線で囲む（刷るときは渡さない） */
   highlightIds?: readonly string[];
   /** 紙の右上の角に重ねる短い断り（編集画面の「見本の値」。刷るときは渡さない） */
@@ -119,19 +131,21 @@ export function DocumentSheet({
         横に並ぶものは、編集画面と同じ規則でまとめる（`groupIntoRows`）。
         別々に組むと、書いたとおりに刷られない
       */}
-      {groupIntoRows(doc.blocks).map((row, i) =>
-        row.blocks.length === 1 ? (
-          <Block key={i} block={row.blocks[0]!} doc={doc.style} highlightIds={highlightIds} />
-        ) : (
-          <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
-            {row.blocks.map((b, j) => (
-              <div key={j} style={{ width: `${row.percents[j]}%` }}>
-                <Block block={b} doc={doc.style} highlightIds={highlightIds} />
-              </div>
-            ))}
-          </div>
-        ),
-      )}
+      <ImageSourceContext.Provider value={imageSources}>
+        {groupIntoRows(doc.blocks).map((row, i) =>
+          row.blocks.length === 1 ? (
+            <Block key={i} block={row.blocks[0]!} doc={doc.style} highlightIds={highlightIds} />
+          ) : (
+            <div key={i} style={{ display: "flex", gap: "4mm", alignItems: "flex-start" }}>
+              {row.blocks.map((b, j) => (
+                <div key={j} style={{ width: `${row.percents[j]}%` }}>
+                  <Block block={b} doc={doc.style} highlightIds={highlightIds} />
+                </div>
+              ))}
+            </div>
+          ),
+        )}
+      </ImageSourceContext.Provider>
     </div>
   );
 }
@@ -261,6 +275,7 @@ function Block({
 }
 
 function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | undefined }) {
+  const sources = useContext(ImageSourceContext);
   /*
     字の大きさ。**ブロックの指定 → 種類の既定（見出しはレベル、表は表用） → 紙面ぜんたい → 10.5**の順。
     編集画面の欄に出ている値と同じ計算にして、見たままが刷られるようにする（2026-09-14 決定）。
@@ -296,57 +311,63 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
           ))}
         </div>
       );
-    case "fields":
+    case "fields": {
+      // ラベルの位置（左／右）と幅（%）は様式で決められる（2026-09-16 指示）
+      const labelRight = b.labelPosition === "right";
+      const labelCell = (label: string) => (
+        <th
+          style={{
+            textAlign: "left",
+            fontWeight: 400,
+            // ラベルと値の間は mm で決められる。省略は 6mm。右置きなら間は左側に付く
+            padding: labelRight ? `1mm 0 1mm ${b.gap ?? 6}mm` : `1mm ${b.gap ?? 6}mm 1mm 0`,
+            /*
+              右寄せのときは値を折らず、狭ければラベルの側を折る（氏名が途中で折れないように）。
+              左寄せは今までどおりラベルを折らない。幅を決めたときはその幅で折る
+            */
+            whiteSpace: b.valueAlign === "right" || b.labelWidth ? "normal" : "nowrap",
+            verticalAlign: "top",
+            ...(b.labelWidth ? { width: `${b.labelWidth}%` } : {}),
+            // ラベルだけの字。ブロックの字の上に重ねる
+            ...styleOf(b.labelStyle),
+          }}
+        >
+          {label}
+        </th>
+      );
+      const valueCell = (value: string) => (
+        <td
+          style={{
+            padding: "1mm 0",
+            textAlign: b.valueAlign ?? "left",
+            whiteSpace: b.valueAlign === "right" ? "nowrap" : "normal",
+            verticalAlign: "top",
+          }}
+        >
+          {value}
+        </td>
+      );
       return (
         <table
           style={{
             margin: 0,
             borderCollapse: "collapse",
             fontSize: fs(),
-            // 右寄せのときは枠いっぱいに広げて、値を右端にそろえる
-            ...(b.valueAlign === "right" ? { width: "100%" } : {}),
+            // 右寄せか、ラベルの幅を決めたときは枠いっぱいに広げる（割合はブロックの横幅に対して）
+            ...(b.valueAlign === "right" || b.labelWidth ? { width: "100%" } : {}),
           }}
         >
           <tbody>
             {b.items.map((it, i) => (
               <tr key={i}>
-                <th
-                  style={{
-                    textAlign: "left",
-                    fontWeight: 400,
-                    // ラベルと値の間は mm で決められる。省略は 6mm
-                    padding: `1mm ${b.gap ?? 6}mm 1mm 0`,
-                    /*
-                      右寄せのときは値を折らず、狭ければラベルの側を折る（氏名が途中で折れないように）。
-                      左寄せは今までどおりラベルを折らない
-                    */
-                    whiteSpace: b.valueAlign === "right" ? "normal" : "nowrap",
-                    verticalAlign: "top",
-                    // ラベルだけの字。ブロックの字の上に重ねる
-                    ...styleOf(b.labelStyle),
-                  }}
-                >
-                  {it.label}
-                </th>
-                <td
-                  style={{
-                    padding: "1mm 0",
-                    textAlign: b.valueAlign ?? "left",
-                    whiteSpace: b.valueAlign === "right" ? "nowrap" : "normal",
-                    verticalAlign: "top",
-                  }}
-                >
-                  {it.value}
-                </td>
+                {labelRight ? valueCell(it.value) : labelCell(it.label)}
+                {labelRight ? labelCell(it.label) : valueCell(it.value)}
               </tr>
             ))}
           </tbody>
         </table>
       );
-    /*
-      組織の項目。**行ごとに寄せを持つので、表ではなく行で組む。**
-      表で組むと、左の見出しの幅に引きずられて、右寄せが揃わない
-    */
+    }
     case "orgItems":
       return (
         <div style={{ margin: 0, fontSize: fs() }}>
@@ -441,6 +462,25 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
         <div style={{ margin: 0, fontSize: fs(), whiteSpace: "nowrap" }}>
           <span style={{ marginRight: gap }}>{b.label}</span>
           {line}
+        </div>
+      );
+    }
+    case "image": {
+      // 幅・高さは mm。片方だけなら縦横比で決まり、両方空なら元の大きさ（紙幅を超えれば縮む）
+      const align = b.align ?? "left";
+      return (
+        <div style={{ margin: 0, textAlign: align }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- DB から出す絵。next/image は使えない */}
+          <img
+            src={imageSrc(sources, b.imageId)}
+            alt=""
+            style={{
+              display: "inline-block",
+              maxWidth: "100%",
+              ...(b.widthMm !== undefined ? { width: `${b.widthMm}mm` } : {}),
+              ...(b.heightMm !== undefined ? { height: `${b.heightMm}mm` } : {}),
+            }}
+          />
         </div>
       );
     }

@@ -2412,6 +2412,35 @@ model DocumentTemplate {
   @@map("document_templates")
 }
 
+/**
+ * 画像ライブラリ（2026-09-16 指示）。テンプレートの「画像」ブロックが使うロゴ・印影・写真を、
+ * テンプレートをまたいで使い回す。**中身は DB に置く**（テンプレートの様式ファイルと同じ。
+ * バックアップに一緒に入り、置き場所の設定が要らない）。
+ * アップロード時にシステム設定の決まり（長辺の上限・形式・画質）で整えてから入れる
+ */
+model ImageAsset {
+  id       String @id @default(cuid())
+  /** 一覧に出す名前（最初はファイル名。あとから直せる） */
+  name     String @db.VarChar(255)
+  note     String?
+  /** image/png か image/jpeg（整えたあとの形式） */
+  mime     String @db.VarChar(64)
+  width    Int
+  height   Int
+  /** バイト数（整えたあと） */
+  size     Int
+  data     Bytes
+  /** 一覧用の小さな絵（PNG/JPEG、長辺 200px）。毎回本体を送らないため */
+  thumb    Bytes
+
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@map("image_assets")
+}
+
 enum DocBatchStatus {
   QUEUED
   RUNNING

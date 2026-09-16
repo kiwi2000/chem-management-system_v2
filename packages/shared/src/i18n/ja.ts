@@ -76,6 +76,7 @@ export const ja = {
     documents: "ドキュメント",
     documentCreate: "ドキュメント生成",
     docTemplates: "テンプレート編集",
+    docImages: "画像ライブラリ",
     system: "システム",
     home: "ホーム",
     news: "お知らせ",
@@ -1220,6 +1221,7 @@ export const ja = {
       rowBreak: "改行",
       pageBreak: "改ページ",
       signature: "署名欄",
+      image: "画像",
     },
     orgBlock: "組織の項目",
     orgBlockHint:
@@ -1316,6 +1318,18 @@ export const ja = {
     fieldsValueAligns: { left: "左", right: "右" },
     fieldsGap: "ラベルと値の間（mm）",
     fieldsGapHint: "ミリメートル。空なら 6mm。0〜100 の数を打ちます",
+    fieldsLabelPosition: "ラベルの位置",
+    fieldsLabelPositions: { left: "左", right: "右" },
+    fieldsLabelWidth: "ラベルの幅（%）",
+    fieldsLabelWidthHint: "ブロックの横幅に対する割合。空ならラベルの長さぶんだけ取ります。5〜90",
+    /** 画像ブロック（2026-09-16 指示） */
+    imageNone: "画像が選ばれていません",
+    imageWidth: "幅（mm）",
+    imageHeight: "高さ（mm）",
+    imageSizeHint:
+      "片方だけ入れると、もう片方は縦横の比で決まります。両方空なら元の大きさ（紙幅を超えれば縮みます）",
+    imageAlign: "寄せ",
+    imageAligns: { left: "左", center: "中央", right: "右" },
     margin: "余白",
     marginSides: { top: "上", right: "右", bottom: "下", left: "左" },
     marginHint:
@@ -1347,6 +1361,38 @@ export const ja = {
     preview: "プレビュー",
     unknownField: "使えない項目",
   },
+  /** 画像ライブラリ（2026-09-16 指示）。テンプレートの「画像」ブロックが使う画像を使い回す */
+  images: {
+    title: "画像ライブラリ",
+    lead: "テンプレートの「画像」ブロックで使うロゴ・印影・写真を置いておく場所です。1 つの画像を複数のテンプレートで使えます",
+    upload: "アップロード",
+    uploading: "アップロード中…",
+    uploadHint:
+      "PNG・JPEG・GIF・WebP・BMP・TIFF を、まとめて何枚でも選べます（1 枚 20 MB まで）。入れるときにシステム設定の決まりで縮小・変換します",
+    name: "名前",
+    note: "備考",
+    format: "形式",
+    dimensions: "大きさ（px）",
+    size: "容量",
+    usedBy: "使用テンプレート",
+    createdAt: "登録日時",
+    preview: "プレビュー",
+    empty: "画像がありません。「アップロード」から入れてください",
+    uploaded: (n: number) => `${n} 枚を入れました`,
+    rejected: (name: string, reason: string) => `${name}: ${reason}`,
+    rejectTooLarge: "20 MB を超えています",
+    rejectNotImage: "画像として読めません（PNG・JPEG・GIF・WebP・BMP・TIFF）",
+    inUse: (n: number) =>
+      `${n} 件のテンプレートで使っているので消せません。先にテンプレートから外してください`,
+    deleteConfirm: (n: number) => `選んだ ${n} 枚の画像を消します。元に戻せません`,
+    pick: "ライブラリから選ぶ",
+    pickTitle: "画像を選ぶ",
+    pickNone: "画像が選ばれていません",
+    change: "変える",
+    clear: "外す",
+    saved: "保存しました",
+  },
+
   documents: {
     generatedAt: "作成日時",
     pickHintSingle: "作る相手を1つ選んでください。Excel・Word のテンプレートは、まとめて作れません",
@@ -1584,6 +1630,23 @@ export const ja = {
     fileNamePatternHint:
       "拡張子（.pdf）は付けません。使える差込み: {テンプレート} {対象コード} {対象名} {日付} {時刻} {バージョン} {通番}。日付・時刻は {日付:YYYY-MM-DD} {時刻:HHmm} のように形を添えられます（YYYY・YY・MM・DD・HH・mm・ss）。通番は {通番} でそのまま、{通番:3} で 3 桁のゼロ埋めです。ファイル名に使えない文字は _ になり、同じ名前があれば -2 のように付きます",
     fileNamePatternUnknown: (names: string[]) => `使えない差込みがあります: ${names.join("、")}`,
+    /** 画像ライブラリに入れるときの整えかた（2026-09-16 指示） */
+    imageSection: "画像（画像ライブラリ）",
+    imageSectionHint:
+      "画像ライブラリにアップロードした画像を、入れるときにこの決まりで整えます。印刷で 300dpi を保つなら、幅 50mm のロゴで約 600px、A4 いっぱいで約 2,100px あれば足ります",
+    imageMaxEdge: "長辺の上限（px）",
+    imageMaxEdgeHint:
+      "これより大きい画像は、縦横の比を保ったまま縮めます。小さい画像は引き伸ばしません",
+    imageMaxEdgeRange: "長辺の上限は 200〜8000 の間で指定してください",
+    imageFormat: "形式",
+    imageFormats: {
+      keep: "そのまま（PNG は PNG、JPEG は JPEG。それ以外は PNG に）",
+      png: "すべて PNG にする（ロゴ・印影向き。にじまず、透明にできる）",
+      jpeg: "すべて JPEG にする（写真向き。小さくなるが、透明は白になる）",
+    },
+    imageJpegQuality: "JPEG の画質（1〜100）",
+    imageJpegQualityHint: "85 前後がふつうです。数を上げるときれいになり、大きくなります",
+    imageJpegQualityRange: "画質は 1〜100 の間で指定してください",
     approvalSection: "承認",
     pendingTitle: "承認待のものが残っています",
     pendingHint: "承認を不要にすると、承認する人がいなくなります。まとめてどちらかに寄せてください",

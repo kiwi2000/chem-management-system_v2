@@ -13,6 +13,7 @@ import type {
   DocumentTable,
   DocumentTarget,
   HeadingLevel,
+  ImageAlign,
   RichLine,
   RichMark,
   SpacerSize,
@@ -65,6 +66,8 @@ export type RenderBlock =
       labelStyle?: BlockStyle;
       gap?: number;
       valueAlign?: "left" | "right";
+      labelPosition?: "left" | "right";
+      labelWidth?: number;
     })
   /**
    * 組織の項目。**行ごとに寄せを持つ。**
@@ -86,6 +89,13 @@ export type RenderBlock =
       labelPosition?: "left" | "above";
       gap?: number;
       lineWidth?: number;
+    })
+  | (RenderBase & {
+      kind: "image";
+      imageId: string;
+      widthMm?: number;
+      heightMm?: number;
+      align?: ImageAlign;
     });
 
 export interface RenderedDocument {
@@ -208,6 +218,8 @@ function renderBlock(
           ...(b.labelStyle ? { labelStyle: b.labelStyle } : {}),
           ...(b.gap !== undefined ? { gap: b.gap } : {}),
           ...(b.valueAlign ? { valueAlign: b.valueAlign } : {}),
+          ...(b.labelPosition ? { labelPosition: b.labelPosition } : {}),
+          ...(b.labelWidth !== undefined ? { labelWidth: b.labelWidth } : {}),
           items: b.items
             // 項目を選んでいない行は、ラベルだけが浮くので出さない
             .filter((it) => it.field)
@@ -272,6 +284,18 @@ function renderBlock(
           ...(b.labelPosition ? { labelPosition: b.labelPosition } : {}),
           ...(b.gap !== undefined ? { gap: b.gap } : {}),
           ...(b.lineWidth !== undefined ? { lineWidth: b.lineWidth } : {}),
+        },
+      ];
+    case "image":
+      // 画像を選んでいなければ、何も出さない（空の枠を刷らない）
+      if (!b.imageId) return [];
+      return [
+        {
+          kind: "image",
+          imageId: b.imageId,
+          ...(b.widthMm !== undefined ? { widthMm: b.widthMm } : {}),
+          ...(b.heightMm !== undefined ? { heightMm: b.heightMm } : {}),
+          ...(b.align ? { align: b.align } : {}),
         },
       ];
     default:

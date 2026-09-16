@@ -305,6 +305,16 @@ export const COUNTRY_COLUMNS: QueryColumn[] = [
   { key: "displayOrder", kind: "number", field: "displayOrder" },
 ];
 
+/** 画像ライブラリ */
+export const IMAGE_COLUMNS: QueryColumn[] = [
+  // 画像ブロックが「いま選んでいる 1 枚」を引くために id でも絞れる
+  { key: "id", kind: "text", field: "id" },
+  { key: "name", kind: "text", field: "name", caseInsensitive: true },
+  { key: "note", kind: "text", field: "note", caseInsensitive: true },
+  { key: "mime", kind: "enum", field: "mime" },
+  { key: "createdAt", kind: "date", field: "createdAt" },
+];
+
 export const LAW_COLUMNS: QueryColumn[] = [
   /*
     法律そのものを id で選ぶ。

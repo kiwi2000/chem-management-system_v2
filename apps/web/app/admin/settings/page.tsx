@@ -10,7 +10,11 @@ import {
   pickPasswordPolicy,
   PASSWORD_MAX_LENGTH_CEILING,
   PASSWORD_MIN_LENGTH_FLOOR,
+  IMAGE_FORMAT_POLICIES,
+  IMAGE_MAX_EDGE_MAX,
+  IMAGE_MAX_EDGE_MIN,
   SESSION_IDLE_MIN,
+  type ImageFormatPolicy,
   SESSION_IDLE_MAX,
   type AppSettings,
   type CompositionValidationMode,
@@ -402,6 +406,64 @@ export default function SettingsPage() {
               <p className="text-muted-foreground text-xs whitespace-pre-line">
                 {m.settings.fileNamePatternHint}
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.imageSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-xs">{m.settings.imageSectionHint}</p>
+            <div className="space-y-2">
+              <Label htmlFor="imageMaxEdgePx">{m.settings.imageMaxEdge}</Label>
+              <Input
+                id="imageMaxEdgePx"
+                type="number"
+                min={IMAGE_MAX_EDGE_MIN}
+                max={IMAGE_MAX_EDGE_MAX}
+                step={100}
+                value={settings.imageMaxEdgePx}
+                onChange={(e) =>
+                  setSettings({ ...settings, imageMaxEdgePx: Number(e.target.value) })
+                }
+                className="w-32"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.imageMaxEdgeHint}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="imageFormat">{m.settings.imageFormat}</Label>
+              <select
+                id="imageFormat"
+                value={settings.imageFormat}
+                onChange={(e) =>
+                  setSettings({ ...settings, imageFormat: e.target.value as ImageFormatPolicy })
+                }
+                className="border-input bg-background block h-9 w-full max-w-xl rounded-none border px-2 text-sm"
+              >
+                {IMAGE_FORMAT_POLICIES.map((v) => (
+                  <option key={v} value={v}>
+                    {m.settings.imageFormats[v]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="imageJpegQuality">{m.settings.imageJpegQuality}</Label>
+              <Input
+                id="imageJpegQuality"
+                type="number"
+                min={1}
+                max={100}
+                step={1}
+                value={settings.imageJpegQuality}
+                onChange={(e) =>
+                  setSettings({ ...settings, imageJpegQuality: Number(e.target.value) })
+                }
+                className="w-28"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.imageJpegQualityHint}</p>
             </div>
           </CardContent>
         </Card>

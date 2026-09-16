@@ -116,7 +116,22 @@ export interface AppSettings {
   documentOutputDir: string;
   /** 帳票のファイル名の書式。差込みは doc-file-name.ts（例: {テンプレート}_{対象コード}_{日付}） */
   documentFileNamePattern: string;
+
+  /**
+   * 画像ライブラリに入れるときの整えかた（2026-09-16 指示）。
+   * 長辺がこれより大きい画像は縮める。印刷 300dpi なら A4 いっぱいでも 2,100px ほどで足りる
+   */
+  imageMaxEdgePx: number;
+  /** 形式。keep = PNG は PNG、JPEG は JPEG のまま（それ以外は PNG に）。png / jpeg = すべてその形式に */
+  imageFormat: ImageFormatPolicy;
+  /** JPEG にするときの画質（1〜100） */
+  imageJpegQuality: number;
 }
+
+export const IMAGE_FORMAT_POLICIES = ["keep", "png", "jpeg"] as const;
+export type ImageFormatPolicy = (typeof IMAGE_FORMAT_POLICIES)[number];
+export const IMAGE_MAX_EDGE_MIN = 200;
+export const IMAGE_MAX_EDGE_MAX = 8000;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   maintenanceMode: false,
@@ -141,6 +156,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mfaRequired: false,
   documentOutputDir: DEFAULT_DOC_OUTPUT_DIR,
   documentFileNamePattern: DEFAULT_DOC_FILE_NAME_PATTERN,
+  imageMaxEdgePx: 2000,
+  imageFormat: "keep",
+  imageJpegQuality: 85,
 };
 
 /** パスワードの決まりだけを取り出したもの。画面にも渡すのでこの形で持つ */
@@ -308,6 +326,34 @@ export const SETTING_DEFS: SettingDef[] = [
     parse: (raw) => (raw.trim() === "" ? null : raw.trim()),
   },
   {
+    field: "imageMaxEdgePx",
+    key: "image.max_edge_px",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const n = Number(raw);
+      if (!Number.isInteger(n)) return null;
+      return n >= IMAGE_MAX_EDGE_MIN && n <= IMAGE_MAX_EDGE_MAX ? n : null;
+    },
+  },
+  {
+    field: "imageFormat",
+    key: "image.format",
+    valueType: "STRING",
+    parse: (raw) =>
+      (IMAGE_FORMAT_POLICIES as readonly string[]).includes(raw)
+        ? (raw as ImageFormatPolicy)
+        : null,
+  },
+  {
+    field: "imageJpegQuality",
+    key: "image.jpeg_quality",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const n = Number(raw);
+      return Number.isInteger(n) && n >= 1 && n <= 100 ? n : null;
+    },
+  },
+  {
     field: "documentFileNamePattern",
     key: "document.file_name_pattern",
     valueType: "STRING",
@@ -381,6 +427,17 @@ export const settingsSchema = (m: Messages) =>
         (v) => unknownFileNamePlaceholders(v).length === 0,
         (v) => ({ message: m.settings.fileNamePatternUnknown(unknownFileNamePlaceholders(v)) }),
       ),
+    imageMaxEdgePx: z
+      .number()
+      .int()
+      .min(IMAGE_MAX_EDGE_MIN, m.settings.imageMaxEdgeRange)
+      .max(IMAGE_MAX_EDGE_MAX, m.settings.imageMaxEdgeRange),
+    imageFormat: z.enum(IMAGE_FORMAT_POLICIES),
+    imageJpegQuality: z
+      .number()
+      .int()
+      .min(1, m.settings.imageJpegQualityRange)
+      .max(100, m.settings.imageJpegQualityRange),
   });
 
 export type SettingsInput = z.infer<ReturnType<typeof settingsSchema>>;

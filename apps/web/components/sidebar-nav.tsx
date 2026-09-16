@@ -11,6 +11,7 @@ import {
   Download,
   FileCog,
   FilePlus,
+  Image as ImageIcon,
   FileText,
   FlaskConical,
   Globe,
@@ -143,6 +144,14 @@ const ITEMS: NavItem[] = [
         icon: FilePlus,
         needs: "DOCUMENT_CREATE",
         match: ["/documents"],
+      },
+      // 画像ライブラリ（テンプレートの画像ブロックで使う。整えるのは様式を直せる人）
+      {
+        href: "/doc-images",
+        key: "docImages",
+        icon: ImageIcon,
+        needs: "DOC_TEMPLATE_EDIT",
+        match: ["/doc-images"],
       },
     ],
   },

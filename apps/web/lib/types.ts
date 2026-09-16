@@ -732,6 +732,20 @@ export interface GeneratedDocumentDto {
   mine: boolean;
 }
 
+/** 画像ライブラリの 1 枚。中身（バイト列）は一覧には載せず、/api/images/[id] で取る */
+export interface ImageAssetDto {
+  id: string;
+  name: string;
+  note: string | null;
+  mime: string;
+  width: number;
+  height: number;
+  size: number;
+  /** この画像を「画像」ブロックで使っているテンプレートの数 */
+  usedBy: number;
+  createdAt: string;
+}
+
 /** まとめて帳票を作る仕事（バックグラウンド処理）の進み具合。自分の仕事だけが見える */
 export interface DocBatchJobDto {
   id: string;
