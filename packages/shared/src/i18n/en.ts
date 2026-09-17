@@ -1374,6 +1374,8 @@ export const en: Messages = {
       "Pages are counted by “Page break” blocks. For a cover page, put a page break at the end of the cover and start from page 2",
     remove: "Remove this block",
     reorderHint: "Drag the handle to reorder blocks (or use ▲▼)",
+    blockCollapse: "Collapse this block",
+    blockExpand: "Expand this block",
     empty: 'No blocks yet. Add one from "+ Block".',
     unknownField: "Unavailable field",
   },

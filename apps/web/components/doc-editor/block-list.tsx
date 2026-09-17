@@ -30,7 +30,15 @@ import {
   BARE_BLOCK_KINDS,
   targetIsList,
 } from "@chem/shared";
-import { ChevronDown, ChevronUp, GripVertical, Link2, Link2Off, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  GripVertical,
+  Link2,
+  Link2Off,
+  Trash2,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { RichEditor } from "@/components/doc-editor/rich-editor";
 import { TableBlockFields } from "@/components/doc-editor/table-block-fields";
@@ -201,6 +209,13 @@ export function BlockList({
 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
+  /*
+    たたんでいるブロック。縦に長いブロック（表など）を閉じて、並びを見渡せるようにする（2026-09-17 指示）。
+    中身は隠すだけで作り直さない（文章の欄が打ちかけの状態を失わないように）。保存はしない
+  */
+  const [folded, setFolded] = useState<string[]>([]);
+  const toggleFold = (id: string) =>
+    setFolded((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
 
   const replace = (i: number, block: DocumentBlock) =>
     onChange(blocks.map((b, j) => (j === i ? block : b)));
@@ -258,6 +273,7 @@ export function BlockList({
   );
 
   function renderBlock(b: DocumentBlock, i: number) {
+    const isFolded = folded.includes(b.id);
     return (
       <div
         key={b.id}
@@ -310,6 +326,17 @@ export function BlockList({
         }
       >
         <div className="bg-muted/50 flex flex-wrap items-end gap-x-1.5 gap-y-1 px-2 py-1">
+          {/* 左上の小さな矢印。押すと中身をたたむ・開く（見出し行だけが残る） */}
+          <button
+            type="button"
+            aria-expanded={!isFolded}
+            aria-label={isFolded ? m.docEditor.blockExpand : m.docEditor.blockCollapse}
+            title={isFolded ? m.docEditor.blockExpand : m.docEditor.blockCollapse}
+            className="text-muted-foreground hover:text-foreground -ml-1 self-center"
+            onClick={() => toggleFold(b.id)}
+          >
+            {isFolded ? <ChevronRight className="size-3" /> : <ChevronDown className="size-3" />}
+          </button>
           <button
             type="button"
             draggable
@@ -436,7 +463,7 @@ export function BlockList({
           </div>
         </div>
 
-        <div className="space-y-2 p-2">
+        <div className={cn("space-y-2 p-2", isFolded && "hidden")}>
           {b.kind === "heading" && (
             <>
               <RichEditor
