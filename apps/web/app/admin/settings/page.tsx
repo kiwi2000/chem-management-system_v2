@@ -9,6 +9,7 @@ import {
   parseOptionList,
   pickPasswordPolicy,
   PASSWORD_EXPIRY_DAYS_MAX,
+  PASSWORD_EXPIRY_WARN_DAYS_MAX,
   PASSWORD_MAX_LENGTH_CEILING,
   PASSWORD_MIN_LENGTH_FLOOR,
   IMAGE_FORMAT_POLICIES,
@@ -704,6 +705,24 @@ export default function SettingsPage() {
             <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryOff}</p>
             <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryHint}</p>
             <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryRange}</p>
+
+            <div className="space-y-2 pt-2">
+              <Label htmlFor="pwExpiryWarn">{m.settings.passwordExpiryWarnDays}</Label>
+              <Input
+                id="pwExpiryWarn"
+                type="number"
+                min={0}
+                max={PASSWORD_EXPIRY_WARN_DAYS_MAX}
+                step={1}
+                value={settings.passwordExpiryWarnDays}
+                onChange={(e) =>
+                  setSettings({ ...settings, passwordExpiryWarnDays: Number(e.target.value) })
+                }
+                className="w-28"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryWarnHint}</p>
+              <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryWarnRange}</p>
+            </div>
           </CardContent>
         </Card>
 

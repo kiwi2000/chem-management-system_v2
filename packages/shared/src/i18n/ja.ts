@@ -110,6 +110,7 @@ export const ja = {
     linkVersion: "法規制バージョン",
     online: "ログイン中",
     rejudgeNeeded: "要再計算",
+    passwordExpiresIn: (days: number) => `パスワードの有効期限まで、あと ${days} 日です。`,
     rejudgeNeededHint:
       "法規制のデータが変わってから、または法規制バージョンを切り替えてから、全製品の判定をやり直していません。押すとシステム設定の「法規制の判定」に移ります",
     noLinkVersion: "法規制バージョン未設定",
@@ -1678,6 +1679,10 @@ export const ja = {
       "最後にパスワードを変えた日から数えます。期限を過ぎた人は、次に入ったときパスワード変更の画面から動けなくなり、変えるとそのまま使えます。パスワードを持たない人（パスキーだけの人）には効きません",
     passwordExpiryOff: "0 にすると期限なしです",
     passwordExpiryRange: "0（期限なし）から 3650 日までで指定してください",
+    passwordExpiryWarnDays: "期限前に知らせる日数",
+    passwordExpiryWarnHint:
+      "期限の何日前から「あと何日です」と画面の上に出すかです。0 にすると知らせません（期限の日に、いきなり変更の画面になります）。有効期限より大きくすると、変えた直後からずっと出ます",
+    passwordExpiryWarnRange: "0（知らせない）から 365 日までで指定してください",
     passwordSection: "パスワード規則",
     passwordRequiredKinds: "必須文字",
     kindLetter: "英字",

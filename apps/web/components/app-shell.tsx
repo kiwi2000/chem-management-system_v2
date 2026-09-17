@@ -6,7 +6,7 @@ import { ConfirmProvider } from "@/components/confirm-dialog";
 import { canEdit, getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { hasPasskey } from "@/lib/passkey";
-import { PENDING_PATH, pendingStep } from "@/lib/pending-step";
+import { PENDING_PATH, passwordExpiryWarningDays, pendingStep } from "@/lib/pending-step";
 import { EXPIRED_LOGIN_URL, PATH_HEADER, PUBLIC_PATHS } from "@/lib/routes";
 import { getAppSettings } from "@/lib/settings";
 
@@ -36,9 +36,10 @@ export async function AppShell({ children }: { children: ReactNode }) {
 
     **枠は出したまま。**ログアウトの口を消すと、途中でやめられなくなる
   */
+  const settings = await getAppSettings();
   const step = pendingStep(
     { ...actor.user, hasPasskey: await hasPasskey(actor.user.id) },
-    await getAppSettings(),
+    settings,
   );
   if (step && path !== PENDING_PATH[step]) {
     redirect(PENDING_PATH[step]);
@@ -69,6 +70,8 @@ export async function AppShell({ children }: { children: ReactNode }) {
         // アバターを差し替えても、URLが同じだとブラウザが古い絵を出し続ける。
         // 更新日時をURLに乗せて、変わったときだけ取り直させる
         avatarVersion={actor.user.avatarUpdatedAt?.getTime() ?? 0}
+        // パスワードの期限が近いときの予告（2026-09-17 指示）。出さないときは null
+        passwordExpiresIn={passwordExpiryWarningDays(actor.user, settings)}
       >
         {children}
       </AppShellClient>

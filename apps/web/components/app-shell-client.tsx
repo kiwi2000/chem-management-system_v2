@@ -9,6 +9,7 @@ import { IdleCountdown } from "@/components/idle-countdown";
 import { CardToggleRow } from "@/components/card-toggle-all";
 import { UserAvatar } from "@/components/user-avatar";
 import { SignOutButton } from "@/components/sign-out-button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
@@ -42,6 +43,8 @@ interface Props {
   avatarVersion: number;
   /** いま判定に使っている法規制バージョン。null は「現在のバージョンが決まっていない」 */
   version: { code: string; nameJa: string | null } | null;
+  /** パスワードの期限まであと何日か。予告を出さないときは null */
+  passwordExpiresIn: number | null;
   children: ReactNode;
 }
 
@@ -50,7 +53,13 @@ interface Props {
  * 広い画面ではサイドバーが本文を押し出し、狭い画面では本文の上に重ねて表示する。
  * どちらもトップバー左端の同じボタンで開閉する。
  */
-export function AppShellClient({ user, avatarVersion, version, children }: Props) {
+export function AppShellClient({
+  user,
+  avatarVersion,
+  version,
+  passwordExpiresIn,
+  children,
+}: Props) {
   const { m } = useI18n();
   // 広い画面用（既定は開いた状態。localStorage に前回の状態を覚える）
   const [open, setOpen] = useState(true);
@@ -281,6 +290,23 @@ export function AppShellClient({ user, avatarVersion, version, children }: Props
         )}
 
         <main className="min-w-0 flex-1">
+          {/*
+            パスワードの期限が近いことの予告（2026-09-17 指示）。
+            **どの画面にいても目に入る場所に出す。**期限の日に突然止められると、
+            その日に問い合わせがまとまる。変えれば消える
+          */}
+          {passwordExpiresIn !== null && (
+            <div className="px-4 pt-4 lg:px-6 lg:pt-6">
+              <Alert>
+                <AlertDescription>
+                  {m.shell.passwordExpiresIn(passwordExpiresIn)}{" "}
+                  <Link href="/change-password" className="underline underline-offset-2">
+                    {m.preferences.changePassword}
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
           <CardToggleRow />
           {children}
         </main>

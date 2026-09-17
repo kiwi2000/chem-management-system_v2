@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { PENDING_PATH, passwordExpired, pendingStep } from "./pending-step";
+import {
+  PENDING_PATH,
+  passwordExpired,
+  passwordExpiresInDays,
+  passwordExpiryWarningDays,
+  pendingStep,
+} from "./pending-step";
 
 const user = (over: Partial<{ mustChangePassword: boolean; mfaMethod: string }> = {}) => ({
   mustChangePassword: false,
@@ -108,5 +114,41 @@ describe("パスワードの有効期限", () => {
     expect(
       pendingStep(withPassword(daysAgo(100)), { mfaRequired: true, passwordExpiryDays: 90 }),
     ).toBe("changePassword");
+  });
+});
+
+describe("期限前の予告", () => {
+  const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+  const user = (changedAt: Date) => ({ passwordHash: "argon2...", passwordChangedAt: changedAt });
+  const set = (passwordExpiryDays: number, passwordExpiryWarnDays: number) => ({
+    passwordExpiryDays,
+    passwordExpiryWarnDays,
+  });
+
+  it("残り日数は切り上げ。半端な時間でも「あと1日」と数える", () => {
+    expect(passwordExpiresInDays(user(daysAgo(80)), set(90, 0))).toBe(10);
+    expect(passwordExpiresInDays(user(daysAgo(89.5)), set(90, 0))).toBe(1);
+  });
+
+  it("期限なし・パスワードを持たない人は、残り日数を数えない", () => {
+    expect(passwordExpiresInDays(user(daysAgo(80)), set(0, 14))).toBeNull();
+    expect(
+      passwordExpiresInDays({ passwordHash: null, passwordChangedAt: daysAgo(80) }, set(90, 14)),
+    ).toBeNull();
+  });
+
+  it("0 日前なら知らせない", () => {
+    expect(passwordExpiryWarningDays(user(daysAgo(89)), set(90, 0))).toBeNull();
+  });
+
+  it("知らせる日数の中に入ったら、残り日数を返す", () => {
+    expect(passwordExpiryWarningDays(user(daysAgo(80)), set(90, 14))).toBe(10);
+    // まだ手前なら出さない
+    expect(passwordExpiryWarningDays(user(daysAgo(70)), set(90, 14))).toBeNull();
+  });
+
+  it("切れてしまったら予告ではなく、変更の画面で止める", () => {
+    expect(passwordExpiryWarningDays(user(daysAgo(91)), set(90, 14))).toBeNull();
+    expect(passwordExpired(user(daysAgo(91)), set(90, 14))).toBe(true);
   });
 });

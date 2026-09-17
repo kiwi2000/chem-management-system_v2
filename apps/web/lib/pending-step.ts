@@ -24,6 +24,8 @@ export type PendingStep = "changePassword" | "setUpMfa";
  * **持っていない人は対象外。**パスキーだけの人・まだ発行されていない人は
  * 変えるものが無いので、期限で止めると出口の無い画面に閉じ込めてしまう。
  */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export function passwordExpired(
   user: { passwordHash?: string | null; passwordChangedAt?: Date | null },
   settings: Pick<AppSettings, "passwordExpiryDays">,
@@ -34,7 +36,41 @@ export function passwordExpired(
   const changedAt = user.passwordChangedAt;
   // 起点が分からないものは期限切れにしない（変えた記録が残っていない古いデータ）
   if (!changedAt) return false;
-  return Date.now() - changedAt.getTime() >= days * 24 * 60 * 60 * 1000;
+  return Date.now() - changedAt.getTime() >= days * DAY_MS;
+}
+
+/**
+ * 期限までの残り日数。**切れていれば 0 以下**を返す。
+ * 期限なし・パスワードを持たない人・起点が分からない人は null
+ */
+export function passwordExpiresInDays(
+  user: { passwordHash?: string | null; passwordChangedAt?: Date | null },
+  settings: Pick<AppSettings, "passwordExpiryDays">,
+): number | null {
+  const days = settings.passwordExpiryDays;
+  if (!days || days <= 0) return null;
+  if (!user.passwordHash) return null;
+  const changedAt = user.passwordChangedAt;
+  if (!changedAt) return null;
+  const expiresAt = changedAt.getTime() + days * DAY_MS;
+  // 切り上げ。残り 12 時間でも「あと 1 日」と伝える（0 日と出すと、もう切れたように読める）
+  return Math.ceil((expiresAt - Date.now()) / DAY_MS);
+}
+
+/**
+ * 「あと何日」の予告を出すなら、その日数（2026-09-17 指示）。出さないなら null。
+ *
+ * **0 日前なら出さない。**切れたものは予告ではなく、変更の画面で止める
+ */
+export function passwordExpiryWarningDays(
+  user: { passwordHash?: string | null; passwordChangedAt?: Date | null },
+  settings: Pick<AppSettings, "passwordExpiryDays" | "passwordExpiryWarnDays">,
+): number | null {
+  const warn = settings.passwordExpiryWarnDays;
+  if (!warn || warn <= 0) return null;
+  const left = passwordExpiresInDays(user, settings);
+  if (left === null || left <= 0) return null;
+  return left <= warn ? left : null;
 }
 
 /** 用事ごとの行き先。ここに載っている画面だけは、用事が残っていても開ける */

@@ -94,6 +94,11 @@ export interface AppSettings {
    */
   passwordExpiryDays: number;
   /**
+   * 期限の何日前から「あと何日」と知らせるか。**0 なら知らせない**（2026-09-17 指示）。
+   * 予告が無いと、期限の日に突然入れなくなり、問い合わせがその日にまとまる
+   */
+  passwordExpiryWarnDays: number;
+  /**
    * 操作が無いまま、この分数を過ぎたらログアウトさせる。
    * 席を離れた端末が開いたままになるのを防ぐ。
    */
@@ -154,6 +159,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   productApprovalRequired: false,
   sessionIdleMinutes: 10,
   passwordExpiryDays: 0,
+  passwordExpiryWarnDays: 0,
   passwordMinLength: 12,
   passwordRequireLetter: true,
   passwordRequireDigit: true,
@@ -192,6 +198,9 @@ export const PASSWORD_MAX_LENGTH_CEILING = 128;
 
 /** パスワードの有効期限（日）の上限。0 は「期限なし」 */
 export const PASSWORD_EXPIRY_DAYS_MAX = 3650;
+
+/** 期限前に知らせる日数の上限。0 は「知らせない」 */
+export const PASSWORD_EXPIRY_WARN_DAYS_MAX = 365;
 
 export const pickPasswordPolicy = (s: AppSettings): PasswordPolicy => ({
   passwordMinLength: s.passwordMinLength,
@@ -301,6 +310,16 @@ export const SETTING_DEFS: SettingDef[] = [
       const n = Number(raw);
       if (!Number.isInteger(n)) return null;
       return n >= 0 && n <= PASSWORD_EXPIRY_DAYS_MAX ? n : null;
+    },
+  },
+  {
+    field: "passwordExpiryWarnDays",
+    key: "password.expiry_warn_days",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const n = Number(raw);
+      if (!Number.isInteger(n)) return null;
+      return n >= 0 && n <= PASSWORD_EXPIRY_WARN_DAYS_MAX ? n : null;
     },
   },
   {
@@ -431,6 +450,11 @@ export const settingsSchema = (m: Messages) =>
       .int()
       .min(0, m.settings.passwordExpiryRange)
       .max(PASSWORD_EXPIRY_DAYS_MAX, m.settings.passwordExpiryRange),
+    passwordExpiryWarnDays: z
+      .number()
+      .int()
+      .min(0, m.settings.passwordExpiryWarnRange)
+      .max(PASSWORD_EXPIRY_WARN_DAYS_MAX, m.settings.passwordExpiryWarnRange),
     passwordRequireLetter: z.boolean(),
     passwordRequireDigit: z.boolean(),
     passwordRequireSymbol: z.boolean(),

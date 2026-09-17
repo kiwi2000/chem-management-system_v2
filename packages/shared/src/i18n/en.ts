@@ -107,6 +107,7 @@ export const en: Messages = {
     linkVersion: "Regulation set",
     online: "Signed in",
     rejudgeNeeded: "Re-judge needed",
+    passwordExpiresIn: (days: number) => `Your password expires in ${days} day(s).`,
     rejudgeNeededHint:
       "Regulation data changed, or the regulation version was switched, after the last full re-judge. Opens System settings › Regulatory judgement",
     noLinkVersion: "No current version",
@@ -1625,6 +1626,10 @@ export const en: Messages = {
       "Counted from the day the password was last changed. Once it expires, the next sign-in stops on the change-password screen until a new password is set. It does not apply to people without a password (passkey only)",
     passwordExpiryOff: "0 means passwords never expire",
     passwordExpiryRange: "Choose between 0 (never) and 3650 days",
+    passwordExpiryWarnDays: "Warn this many days ahead",
+    passwordExpiryWarnHint:
+      "How many days before expiry the notice appears at the top of the screen. 0 means no notice (the change-password screen simply appears on the day). A value larger than the expiry shows the notice from the moment the password is changed",
+    passwordExpiryWarnRange: "Choose between 0 (no notice) and 365 days",
     passwordSection: "Password rules",
     passwordRequiredKinds: "Required characters",
     kindLetter: "Letters",
