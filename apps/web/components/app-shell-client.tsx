@@ -203,7 +203,7 @@ export function AppShellClient({
             headerOpen ? "h-14" : "h-0",
           )}
         >
-          <header className="bg-header text-header-foreground flex h-14 items-center gap-2 border-b px-3">
+          <header className="bg-header text-header-foreground relative flex h-14 items-center gap-2 border-b px-3">
             <Button
               variant="ghost"
               size="icon"
@@ -244,8 +244,6 @@ export function AppShellClient({
               )}
               {/* 自動ログアウトが近いときだけ出る。ふだんは何も無い */}
               <IdleCountdown />
-              {/* 通知の鈴。知らせることがあるときだけ出る（2026-09-17 指示） */}
-              <NoticeBell notices={notices} />
               <Link href="/preferences" title={user.displayName ?? user.email}>
                 <UserAvatar
                   userId={user.id}
@@ -277,22 +275,28 @@ export function AppShellClient({
               </Button>
               <SignOutButton />
               {/*
-                畳む口。いちばん端に置く（押し間違えても実害が無い並び）。
-                テンプレート編集の上の欄のつまみと同じ、線にまたがる小さな札の形（2026-09-13 指示）。帯の下端に掛ける
+                通知の鈴。知らせることがあるときだけ、いちばん端に出る（2026-09-17 指示）。
+                下の角に掛けた札と少し重なるので、押したときは鈴を優先させる
               */}
-              <span className="flex h-14 items-end">
-                <button
-                  type="button"
-                  className={HEADER_TAB}
-                  title={m.shell.hideHeader}
-                  aria-label={m.shell.hideHeader}
-                  aria-expanded
-                  onClick={() => toggleHeader(false)}
-                >
-                  <ChevronUp className="size-3" />
-                </button>
+              <span className="relative z-10 flex">
+                <NoticeBell notices={notices} />
               </span>
             </div>
+            {/*
+              畳む口。**並びから外して右下の角に掛ける**（2026-09-17 指示）。
+              流れの中に置くと横の場所を食い、鈴を端に置けない。
+              テンプレート編集の上の欄のつまみと同じ、線にまたがる小さな札の形（2026-09-13 指示）
+            */}
+            <button
+              type="button"
+              className={cn(HEADER_TAB, "absolute right-3 bottom-0")}
+              title={m.shell.hideHeader}
+              aria-label={m.shell.hideHeader}
+              aria-expanded
+              onClick={() => toggleHeader(false)}
+            >
+              <ChevronUp className="size-3" />
+            </button>
           </header>
         </div>
 
