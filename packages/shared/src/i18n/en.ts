@@ -108,6 +108,7 @@ export const en: Messages = {
     online: "Signed in",
     rejudgeNeeded: "Re-judge needed",
     passwordExpiresIn: (days: number) => `Your password expires in ${days} day(s).`,
+    notifications: "Notifications",
     rejudgeNeededHint:
       "Regulation data changed, or the regulation version was switched, after the last full re-judge. Opens System settings › Regulatory judgement",
     noLinkVersion: "No current version",

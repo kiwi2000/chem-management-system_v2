@@ -111,6 +111,8 @@ export const ja = {
     online: "ログイン中",
     rejudgeNeeded: "要再計算",
     passwordExpiresIn: (days: number) => `パスワードの有効期限まで、あと ${days} 日です。`,
+    /** ヘッダーの鈴。人が書く「お知らせ」（左メニュー）とは別物なので、言葉を分ける */
+    notifications: "通知",
     rejudgeNeededHint:
       "法規制のデータが変わってから、または法規制バージョンを切り替えてから、全製品の判定をやり直していません。押すとシステム設定の「法規制の判定」に移ります",
     noLinkVersion: "法規制バージョン未設定",

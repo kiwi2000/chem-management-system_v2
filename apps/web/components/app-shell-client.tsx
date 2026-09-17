@@ -7,6 +7,7 @@ import { SidebarNav } from "@/components/sidebar-nav";
 import { SidebarFooter } from "@/components/sidebar-footer";
 import { IdleCountdown } from "@/components/idle-countdown";
 import { CardToggleRow } from "@/components/card-toggle-all";
+import { NoticeBell, type Notice } from "@/components/notice-bell";
 import { UserAvatar } from "@/components/user-avatar";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -34,6 +35,12 @@ const HEADER_TAB =
 
 /** サイドバーの開閉状態は端末ごとに覚えておく */
 const STORAGE_KEY = "chem.sidebar.open";
+/**
+ * 残りがこの日数を切ったら、鈴だけでなく帯でも知らせる（2026-09-17 決定）。
+ * 鈴は見落とせるので、締め出しが目前のときは目に入る形に切り替える
+ */
+const NOTICE_URGENT_DAYS = 3;
+
 /** ヘッダーの開閉も同じように覚える。作業のあいだ閉じたままにしたい人がいる */
 const HEADER_KEY = "chem.header.open";
 
@@ -61,6 +68,22 @@ export function AppShellClient({
   children,
 }: Props) {
   const { m } = useI18n();
+  /*
+    ヘッダーの鈴に出す通知。いまはパスワードの期限だけ。
+    残りわずかになったら、鈴に加えて帯でも出す（見落とすと締め出しになるため）
+  */
+  const notices: Notice[] =
+    passwordExpiresIn === null
+      ? []
+      : [
+          {
+            key: "passwordExpiry",
+            text: m.shell.passwordExpiresIn(passwordExpiresIn),
+            href: "/change-password",
+            linkLabel: m.preferences.changePassword,
+          },
+        ];
+  const urgent = passwordExpiresIn !== null && passwordExpiresIn <= NOTICE_URGENT_DAYS;
   // 広い画面用（既定は開いた状態。localStorage に前回の状態を覚える）
   const [open, setOpen] = useState(true);
   // 狭い画面用のドロワー（既定は閉じた状態）
@@ -221,6 +244,8 @@ export function AppShellClient({
               )}
               {/* 自動ログアウトが近いときだけ出る。ふだんは何も無い */}
               <IdleCountdown />
+              {/* 通知の鈴。知らせることがあるときだけ出る（2026-09-17 指示） */}
+              <NoticeBell notices={notices} />
               <Link href="/preferences" title={user.displayName ?? user.email}>
                 <UserAvatar
                   userId={user.id}
@@ -295,11 +320,11 @@ export function AppShellClient({
             **どの画面にいても目に入る場所に出す。**期限の日に突然止められると、
             その日に問い合わせがまとまる。変えれば消える
           */}
-          {passwordExpiresIn !== null && (
+          {urgent && (
             <div className="px-4 pt-4 lg:px-6 lg:pt-6">
-              <Alert>
+              <Alert variant="destructive">
                 <AlertDescription>
-                  {m.shell.passwordExpiresIn(passwordExpiresIn)}{" "}
+                  {m.shell.passwordExpiresIn(passwordExpiresIn ?? 0)}{" "}
                   <Link href="/change-password" className="underline underline-offset-2">
                     {m.preferences.changePassword}
                   </Link>
