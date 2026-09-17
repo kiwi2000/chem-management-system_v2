@@ -132,6 +132,59 @@ git status -sb
 - 認証の都合で push できなかったときは、そこで止めて利用者に伝える。デプロイ自体は
   済んでいるので、やり直さない
 
+## 9. Windows Server の評価機が動いていたら、そこへも出す
+
+社内の評価機（`chem.lan` / 192.168.1.109、Windows Server 2025）は、お客さん向けの
+インストールセットで動いている。本番と版がずれたまま試されると、直したはずの不具合が
+そこで再現して混乱するので、**届く状態なら同じ版へ更新する。**届かなければ飛ばして、
+そのことを利用者に伝える（評価機が止まっているのは珍しくない）。
+
+届くかどうかは ssh で見る（鍵認証。パスワードは打たない）。
+
+```bash
+ssh -i ~/.ssh/chem-eval -o BatchMode=yes -o ConnectTimeout=10 Administrator@192.168.1.109 "Get-Content C:\chem\manifest.json"
+```
+
+返ってきた `commit` が今回出した版と違えば、次の順で更新する（全部で 15 分ほど）。
+
+1. **開発サーバーを止める**（`next build` と `.next` を共有するため。動いたまま組むと壊れる）
+2. **インストールセットを組む。** PowerShell ツールから流す（Bash ツールだと `\` が化けて始まらない）。
+   10 分ほどかかるのでバックグラウンドで。記録は `out\build-install-set-N.log`（N は連番）
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\build-install-set.ps1 *> out\build-install-set-N.log
+   ```
+
+   できた `out\chem-install-set-<版>-win64.zip`（1 GB 前後）と `.sha256` を確かめる。
+   `out\install-set\...\app\manifest.json` の `commit` が今回の版になっていること
+
+3. **評価機へ送って、ハッシュを突き合わせる**
+
+   ```bash
+   scp -i ~/.ssh/chem-eval -o BatchMode=yes out/chem-install-set-0.1.0-win64.zip out/chem-install-set-0.1.0-win64.zip.sha256 Administrator@192.168.1.109:C:/
+   ```
+
+   ```bash
+   ssh -i ~/.ssh/chem-eval -o BatchMode=yes Administrator@192.168.1.109 "(Get-FileHash C:\chem-install-set-0.1.0-win64.zip -Algorithm SHA256).Hash.ToLower(); Get-Content C:\chem-install-set-0.1.0-win64.zip.sha256"
+   ```
+
+4. **評価機で展開して更新スクリプトを流す**（同期で。Start-Process で切り離すと ssh の終了時に止まる。
+   記録は `updateN.log` に残す。表が変わるときは自動でバックアップを取って `prisma migrate deploy` する）
+
+   ```bash
+   ssh -i ~/.ssh/chem-eval -o BatchMode=yes Administrator@192.168.1.109 "Remove-Item -Recurse -Force C:\chem-install -ErrorAction SilentlyContinue; tar -xf C:\chem-install-set-0.1.0-win64.zip -C C:\ ; Rename-Item C:\chem-install-set-0.1.0-win64 C:\chem-install; powershell -ExecutionPolicy Bypass -File C:\chem-install\scripts\update.ps1 *> C:\chem-install\updateN.log; Get-Content C:\chem\manifest.json; Get-Service chem-app,chem-caddy,postgresql-x64-16 | Format-Table Name,Status -AutoSize; Invoke-WebRequest -UseBasicParsing http://127.0.0.1:3001/api/health | Select-Object -ExpandProperty Content"
+   ```
+
+   nssm の出力は NUL まじりなので、読むときは `tr -d '\000'` を通す
+
+5. **確かめる。** `manifest.json` の `commit` が今回の版、サービス 3 つが Running、
+   `/api/health` が `{"ok":true,"db":"up"}`。更新スクリプトの http 側の応答確認は起動直後だと
+   タイムアウトすることがある（https 側が通っていれば、数秒待って確かめ直す）
+6. **記録を残す。** `docs/評価機更新記録_WindowsServer_<日付>.md` に届いた版・ログの要点・気づきを追記する
+   （git には入れない）。開発サーバーを起こし直す
+
+評価機に届かなかったときは、その旨と「次に動いたときに更新が要る」ことを利用者への報告に入れる。
+
 ## この環境の制約
 
 - `railway run` / `railway ssh` は自動承認の対象外で**使えない**。本番DBは触れない。
