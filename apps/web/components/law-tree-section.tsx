@@ -95,6 +95,32 @@ export function LawTreeSection({
   const columns = useMemo<TableColumn<Row>[]>(
     () => [
       {
+        // 国の1つ上。大きい単位から並べると、どのあたりの法律かを追いやすい
+        key: "regionId",
+        header: m.laws.region,
+        kind: "enum",
+        width: 100,
+        // 地域は国の表から拾う（法律の一覧に地域そのものは持っていない）
+        options: [...new Map(countries.map((c) => [c.regionId, c])).values()].map((c) => ({
+          value: c.regionId,
+          label: pickName(locale, c.regionNameJa, c.regionNameEn),
+        })),
+        render: (r) =>
+          r.kind === "law" ? pickName(locale, r.law.regionNameJa, r.law.regionNameEn) : "",
+      },
+      {
+        key: "countryId",
+        header: m.laws.country,
+        kind: "enum",
+        width: 110,
+        options: countries.map((c) => ({
+          value: c.id,
+          label: pickName(locale, c.nameJa, c.nameEn),
+        })),
+        render: (r) =>
+          r.kind === "law" ? pickName(locale, r.law.countryNameJa, r.law.countryNameEn) : "",
+      },
+      {
         key: "code",
         header: m.laws.code,
         kind: "text",
@@ -148,32 +174,6 @@ export function LawTreeSection({
                 r.category.nameJa,
                 r.category.nameEn,
               ),
-      },
-      {
-        // 国の1つ上。大きい単位から並べると、どのあたりの法律かを追いやすい
-        key: "regionId",
-        header: m.laws.region,
-        kind: "enum",
-        width: 100,
-        // 地域は国の表から拾う（法律の一覧に地域そのものは持っていない）
-        options: [...new Map(countries.map((c) => [c.regionId, c])).values()].map((c) => ({
-          value: c.regionId,
-          label: pickName(locale, c.regionNameJa, c.regionNameEn),
-        })),
-        render: (r) =>
-          r.kind === "law" ? pickName(locale, r.law.regionNameJa, r.law.regionNameEn) : "",
-      },
-      {
-        key: "countryId",
-        header: m.laws.country,
-        kind: "enum",
-        width: 110,
-        options: countries.map((c) => ({
-          value: c.id,
-          label: pickName(locale, c.nameJa, c.nameEn),
-        })),
-        render: (r) =>
-          r.kind === "law" ? pickName(locale, r.law.countryNameJa, r.law.countryNameEn) : "",
       },
       {
         /*

@@ -67,6 +67,37 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
     const editing = (c: CountryDto) => c.id === editingId;
     return [
       {
+        // 絞り込みは地域のIDで送る。選択肢は登録済みの地域から作る
+        key: "regionId",
+        header: m.countries.region,
+        kind: "enum",
+        width: 110,
+        options: regions.map((r) => ({
+          value: r.id,
+          label: pickName(locale, r.nameJa, r.nameEn),
+        })),
+        render: (c) =>
+          editing(c) ? (
+            <select
+              value={draft.regionId}
+              aria-label={m.countries.region}
+              onChange={(e) => setDraft({ ...draft, regionId: e.target.value })}
+              className={CELL_SELECT}
+            >
+              <option value="" disabled>
+                —
+              </option>
+              {regions.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {pickName(locale, r.nameJa, r.nameEn)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            pickName(locale, c.regionNameJa, c.regionNameEn)
+          ),
+      },
+      {
         key: "code",
         header: m.countries.code,
         kind: "text",
@@ -120,37 +151,6 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
             />
           ) : (
             (c.nameEn ?? "")
-          ),
-      },
-      {
-        // 絞り込みは地域のIDで送る。選択肢は登録済みの地域から作る
-        key: "regionId",
-        header: m.countries.region,
-        kind: "enum",
-        width: 110,
-        options: regions.map((r) => ({
-          value: r.id,
-          label: pickName(locale, r.nameJa, r.nameEn),
-        })),
-        render: (c) =>
-          editing(c) ? (
-            <select
-              value={draft.regionId}
-              aria-label={m.countries.region}
-              onChange={(e) => setDraft({ ...draft, regionId: e.target.value })}
-              className={CELL_SELECT}
-            >
-              <option value="" disabled>
-                —
-              </option>
-              {regions.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {pickName(locale, r.nameJa, r.nameEn)}
-                </option>
-              ))}
-            </select>
-          ) : (
-            pickName(locale, c.regionNameJa, c.regionNameEn)
           ),
       },
       {
