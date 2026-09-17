@@ -12,6 +12,7 @@ import {
   splitNumericTokens,
   splitTextTokens,
 } from "@chem/shared";
+import { Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useOutsideClose } from "@/lib/use-outside-close";
 import { ImeInput, ImeTextarea } from "./ime-field";
@@ -39,7 +40,15 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
   const [pickedOp, setPickedOp] = useState<string | null>(null);
   // 選択肢の小窓。外側のクリックと Esc で閉じる
   const [enumOpen, setEnumOpen] = useState(false);
-  const closeEnum = useCallback(() => setEnumOpen(false), []);
+  /*
+    小窓の中の絞り込み（2026-09-17 指示）。**選択肢が多い列（規制区分）で、
+    目当ての区分まで送らずに済むようにする。**閉じるたびに空へ戻す
+  */
+  const [optionQuery, setOptionQuery] = useState("");
+  const closeEnum = useCallback(() => {
+    setEnumOpen(false);
+    setOptionQuery("");
+  }, []);
   const enumBoxRef = useOutsideClose<HTMLDivElement>(enumOpen, closeEnum);
   useEffect(() => {
     if (appliedOp) setPickedOp(appliedOp);
@@ -73,6 +82,8 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
     */
     if (column.options) {
       const options = column.options;
+      const q = optionQuery.trim().toLowerCase();
+      const shown = q === "" ? options : options.filter((o) => o.label.toLowerCase().includes(q));
       const toggle = (v: string, checked: boolean) => {
         const next = checked ? [...appliedValues, v] : appliedValues.filter((x) => x !== v);
         onChange(next.length > 0 ? { kind: "list", op: mode, values: next } : undefined);
@@ -90,24 +101,43 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
             <button
               type="button"
               aria-expanded={enumOpen}
-              onClick={() => setEnumOpen((v) => !v)}
+              onClick={() => (enumOpen ? closeEnum() : setEnumOpen(true))}
               className="border-input bg-background flex h-8 w-full cursor-pointer items-center truncate rounded-none border px-2 text-xs"
               title={label}
             >
               {label}
             </button>
             {enumOpen && (
-              <div className="bg-background absolute z-20 max-h-72 min-w-64 space-y-1 overflow-y-auto rounded-md border p-2 shadow-md">
-                {options.map((o) => (
-                  <label key={o.value} className="flex items-center gap-2 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={appliedValues.includes(o.value)}
-                      onChange={(e) => toggle(o.value, e.target.checked)}
-                    />
-                    {o.label}
-                  </label>
-                ))}
+              <div className="bg-background absolute z-20 min-w-64 rounded-md border p-2 shadow-md">
+                {/* 探す欄は上に固定し、下の一覧だけを送る */}
+                <div className="relative mb-1">
+                  <ImeInput
+                    value={optionQuery}
+                    onValueChange={setOptionQuery}
+                    aria-label={m.table.optionSearch}
+                    placeholder={m.table.optionSearch}
+                    className="h-8 pr-7 text-xs"
+                  />
+                  <Search className="text-muted-foreground pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2" />
+                </div>
+                <div className="max-h-64 space-y-1 overflow-y-auto">
+                  {shown.length === 0 ? (
+                    <p className="text-muted-foreground px-1 py-2 text-xs">
+                      {m.table.optionSearchEmpty}
+                    </p>
+                  ) : (
+                    shown.map((o) => (
+                      <label key={o.value} className="flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={appliedValues.includes(o.value)}
+                          onChange={(e) => toggle(o.value, e.target.checked)}
+                        />
+                        {o.label}
+                      </label>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -308,6 +308,8 @@ export const en: Messages = {
     filterValue: "value",
     filterValue2: "value (to)",
     all: "All",
+    optionSearch: "Find an option",
+    optionSearchEmpty: "No match",
     firstPage: "First page",
     prevMark: "<",
     nextMark: ">",

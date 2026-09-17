@@ -322,6 +322,9 @@ export const ja = {
     filterValue: "値",
     filterValue2: "値（終わり）",
     all: "すべて",
+    /** 選択肢が多い列（規制区分など）で、打った文字を含むものだけに絞る欄 */
+    optionSearch: "選択肢を探す",
+    optionSearchEmpty: "見つかりません",
     firstPage: "最初のページ",
     /** ページ送りのボタンに出す記号。読み上げには prevPage / nextPage を使う */
     prevMark: "<",
