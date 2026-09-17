@@ -180,6 +180,8 @@ export const en: Messages = {
   changePassword: {
     title: "Change password",
     description: "Changing your password signs you out of all other devices.",
+    expiredDescription:
+      "Your password has expired. No other screen opens until you set a new one. Changing it also signs you out of all other devices.",
     current: "Current password",
     next: "New password",
     confirm: "New password (confirm)",
@@ -1617,6 +1619,12 @@ export const en: Messages = {
     sessionIdleHint:
       "Stops an unattended device from staying signed in. Acting after this time returns you to the sign-in screen.",
     sessionIdleRange: "Choose between 1 and 480 minutes (8 hours)",
+    passwordExpirySection: "Password expiry",
+    passwordExpiryDays: "Expires after (days)",
+    passwordExpiryHint:
+      "Counted from the day the password was last changed. Once it expires, the next sign-in stops on the change-password screen until a new password is set. It does not apply to people without a password (passkey only)",
+    passwordExpiryOff: "0 means passwords never expire",
+    passwordExpiryRange: "Choose between 0 (never) and 3650 days",
     passwordSection: "Password rules",
     passwordRequiredKinds: "Required characters",
     kindLetter: "Letters",

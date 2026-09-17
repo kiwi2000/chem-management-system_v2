@@ -88,6 +88,12 @@ export interface AppSettings {
   /** 数字を1文字以上入れさせる */
   passwordRequireDigit: boolean;
   /**
+   * パスワードの有効期限（日）。**0 なら期限なし**（2026-09-17 指示）。
+   * 期限を過ぎた人は、次にログインしたときパスワード変更の画面から動けなくなる。
+   * 決まり（最小文字数など）と違い、**すでに使われているパスワードにも効く**
+   */
+  passwordExpiryDays: number;
+  /**
    * 操作が無いまま、この分数を過ぎたらログアウトさせる。
    * 席を離れた端末が開いたままになるのを防ぐ。
    */
@@ -147,6 +153,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   substanceApprovalRequired: false,
   productApprovalRequired: false,
   sessionIdleMinutes: 10,
+  passwordExpiryDays: 0,
   passwordMinLength: 12,
   passwordRequireLetter: true,
   passwordRequireDigit: true,
@@ -182,6 +189,9 @@ export const SESSION_IDLE_MAX = 480;
 
 export const PASSWORD_MIN_LENGTH_FLOOR = 8;
 export const PASSWORD_MAX_LENGTH_CEILING = 128;
+
+/** パスワードの有効期限（日）の上限。0 は「期限なし」 */
+export const PASSWORD_EXPIRY_DAYS_MAX = 3650;
 
 export const pickPasswordPolicy = (s: AppSettings): PasswordPolicy => ({
   passwordMinLength: s.passwordMinLength,
@@ -281,6 +291,16 @@ export const SETTING_DEFS: SettingDef[] = [
       const n = Number(raw);
       if (!Number.isInteger(n)) return null;
       return n >= PASSWORD_MIN_LENGTH_FLOOR && n <= PASSWORD_MAX_LENGTH_CEILING ? n : null;
+    },
+  },
+  {
+    field: "passwordExpiryDays",
+    key: "password.expiry_days",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const n = Number(raw);
+      if (!Number.isInteger(n)) return null;
+      return n >= 0 && n <= PASSWORD_EXPIRY_DAYS_MAX ? n : null;
     },
   },
   {
@@ -406,6 +426,11 @@ export const settingsSchema = (m: Messages) =>
       .int()
       .min(SESSION_IDLE_MIN, m.settings.sessionIdleRange)
       .max(SESSION_IDLE_MAX, m.settings.sessionIdleRange),
+    passwordExpiryDays: z
+      .number()
+      .int()
+      .min(0, m.settings.passwordExpiryRange)
+      .max(PASSWORD_EXPIRY_DAYS_MAX, m.settings.passwordExpiryRange),
     passwordRequireLetter: z.boolean(),
     passwordRequireDigit: z.boolean(),
     passwordRequireSymbol: z.boolean(),

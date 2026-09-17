@@ -45,6 +45,8 @@ export async function POST(req: Request) {
     data: {
       passwordHash: await hashPassword(newPassword),
       mustChangePassword: false,
+      // 有効期限の起点。ここを動かさないと、変えた直後にまた期限切れになる
+      passwordChangedAt: new Date(),
       failedLoginCount: 0,
       lockedUntil: null,
     },

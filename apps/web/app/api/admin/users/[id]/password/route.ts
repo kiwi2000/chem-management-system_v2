@@ -38,6 +38,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     data: {
       passwordHash: await hashPassword(newPassword),
       mustChangePassword: mustChangePassword ?? true,
+      passwordChangedAt: new Date(),
       failedLoginCount: 0,
       lockedUntil: null,
     },

@@ -191,6 +191,8 @@ export const ja = {
     title: "パスワード変更",
     // 決まりの中身は設定で変わるので、ここには書かない（欄のすぐ下に出す）
     description: "変更すると、他の端末のログインはすべて解除されます。",
+    expiredDescription:
+      "パスワードの有効期限が切れました。新しいものに変えるまで、ほかの画面は開けません。変更すると、他の端末のログインはすべて解除されます。",
     current: "現在のパスワード",
     next: "新しいパスワード",
     confirm: "新しいパスワード（確認）",
@@ -1670,6 +1672,12 @@ export const ja = {
     sessionIdleHint:
       "席を離れた端末が開いたままになるのを防ぎます。この時間を過ぎてから操作すると、ログイン画面に戻ります。",
     sessionIdleRange: "1分から480分（8時間）までで指定してください",
+    passwordExpirySection: "パスワードの有効期限",
+    passwordExpiryDays: "有効期限（日）",
+    passwordExpiryHint:
+      "最後にパスワードを変えた日から数えます。期限を過ぎた人は、次に入ったときパスワード変更の画面から動けなくなり、変えるとそのまま使えます。パスワードを持たない人（パスキーだけの人）には効きません",
+    passwordExpiryOff: "0 にすると期限なしです",
+    passwordExpiryRange: "0（期限なし）から 3650 日までで指定してください",
     passwordSection: "パスワード規則",
     passwordRequiredKinds: "必須文字",
     kindLetter: "英字",

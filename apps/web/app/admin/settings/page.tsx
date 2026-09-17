@@ -8,6 +8,7 @@ import {
   formatOptionList,
   parseOptionList,
   pickPasswordPolicy,
+  PASSWORD_EXPIRY_DAYS_MAX,
   PASSWORD_MAX_LENGTH_CEILING,
   PASSWORD_MIN_LENGTH_FLOOR,
   IMAGE_FORMAT_POLICIES,
@@ -678,6 +679,31 @@ export default function SettingsPage() {
               <span className="text-muted-foreground">{m.settings.passwordPreview}: </span>
               {describePasswordPolicy(m, pickPasswordPolicy(settings))}
             </p>
+          </CardContent>
+        </Card>
+
+        {/* パスワードの有効期限（2026-09-17 指示）。決まりと違い、いま使われているパスワードにも効く */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.passwordExpirySection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label htmlFor="pwExpiry">{m.settings.passwordExpiryDays}</Label>
+            <Input
+              id="pwExpiry"
+              type="number"
+              min={0}
+              max={PASSWORD_EXPIRY_DAYS_MAX}
+              step={1}
+              value={settings.passwordExpiryDays}
+              onChange={(e) =>
+                setSettings({ ...settings, passwordExpiryDays: Number(e.target.value) })
+              }
+              className="w-28"
+            />
+            <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryOff}</p>
+            <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryHint}</p>
+            <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryRange}</p>
           </CardContent>
         </Card>
 

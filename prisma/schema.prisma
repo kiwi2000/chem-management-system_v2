@@ -171,6 +171,11 @@ model User {
    */
   mustChangePassword Boolean   @default(false) @map("must_change_password")
   /**
+   * パスワードを最後に変えた日時。**有効期限（システム設定）の起点**。
+   * 管理者による再発行でも今の時刻になる
+   */
+  passwordChangedAt  DateTime  @default(now()) @map("password_changed_at")
+  /**
    * 連続ログイン失敗回数（総当たり対策）
    */
   failedLoginCount   Int       @default(0) @map("failed_login_count")

@@ -88,6 +88,7 @@ async function main() {
     where: { id: user.id },
     data: {
       passwordHash: await hash(password, ARGON_OPTS),
+      passwordChangedAt: new Date(),
       // CLI で設定したパスワードは本人が決めた値である前提のため変更を強制しない
       mustChangePassword: false,
       failedLoginCount: 0,

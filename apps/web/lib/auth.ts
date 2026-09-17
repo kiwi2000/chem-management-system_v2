@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
+import { passwordExpired } from "@/lib/pending-step";
 import { getAppSettings } from "@/lib/settings";
 import { clientIp } from "@/lib/ip-allow";
 
@@ -175,8 +176,9 @@ export async function login(
     }
   }
 
+  const settings = await getAppSettings();
   // メンテナンス中は管理者しか入れない。パスワードが合ってから断る（合っているかは漏らさない）
-  if ((await getAppSettings()).maintenanceMode && !(await isAdminUser(user.id))) {
+  if (settings.maintenanceMode && !(await isAdminUser(user.id))) {
     await auditLoginFailure(email, "maintenance", user.id);
     return { ok: false, reason: "maintenance" };
   }
@@ -186,7 +188,12 @@ export async function login(
     data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() },
   });
   await createSession(user.id);
-  return { ok: true, user, mustChangePassword: user.mustChangePassword };
+  // 期限切れも「変えてもらう」で同じ。画面はどちらもパスワード変更へ送る（2026-09-17 指示）
+  return {
+    ok: true,
+    user,
+    mustChangePassword: user.mustChangePassword || passwordExpired(user, settings),
+  };
 }
 
 /** システム管理者か。メンテナンス中に入れる人を決めるために引く */
