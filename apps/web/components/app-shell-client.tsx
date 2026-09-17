@@ -230,7 +230,13 @@ export function AppShellClient({
               headerOpen ? "h-14" : "h-0",
             )}
           >
-            <header className="bg-header text-header-foreground relative flex h-14 items-center gap-2 border-b px-3">
+            {/* 角のタブが出ているあいだは、題字が重ならないよう左を空ける（2026-09-17 指示） */}
+            <header
+              className={cn(
+                "bg-header text-header-foreground relative flex h-14 items-center gap-2 border-b pr-3 pl-7",
+                open && "md:pl-3",
+              )}
+            >
               {/*
                 メニューを開くタブ。**広い画面では、閉じているときだけここに出る**（開いている
                 あいだは左ペインの頭にある）。狭い画面は引き出し式で左ペインの頭が画面に無いので、
@@ -252,7 +258,8 @@ export function AppShellClient({
                 <ChevronRight className="size-4" />
               </Button>
               {/* 名前は帯の左、開閉ボタンの隣。左ペインの頭に置くとペインの幅で切れた */}
-              <Link href="/" className="min-w-0 truncate text-base font-semibold">
+              {/* 題字は帯の中でいちばん大きく（2026-09-17 指示） */}
+              <Link href="/" className="min-w-0 truncate text-xl font-semibold">
                 {m.common.appName}
               </Link>
               <div className="ml-auto flex items-center gap-3">
