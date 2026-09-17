@@ -31,10 +31,11 @@ const HEADER_ICON_BUTTON =
 
 /**
  * 上の帯を開け閉めするタブ。**帯のすぐ外側、下の縁からぶら下げる**（2026-09-17 指示）。
+ * 大きさは矢印がちょうど入るだけ、位置は帯の右端に寄せる（同日 指示）。
  * 白い紙の上に出るので、帯と同じ色で塗り、上辺だけ枠を描かない（帯と地続きに見せる）
  */
 const HEADER_TAB =
-  "bg-header text-header-foreground border-header-foreground/40 hover:bg-header/80 flex h-4 w-10 items-center justify-center border border-t-0";
+  "bg-header text-header-foreground border-header-foreground/40 hover:bg-header/80 flex h-4 w-5 items-center justify-center border border-t-0";
 
 /** サイドバーの開閉状態は端末ごとに覚えておく */
 const STORAGE_KEY = "chem.sidebar.open";
@@ -295,7 +296,7 @@ export function AppShellClient({
           */}
           <button
             type="button"
-            className={cn(HEADER_TAB, "absolute top-full right-3 z-40")}
+            className={cn(HEADER_TAB, "absolute top-full right-0 z-40")}
             title={headerOpen ? m.shell.hideHeader : m.shell.showHeader}
             aria-label={headerOpen ? m.shell.hideHeader : m.shell.showHeader}
             aria-expanded={headerOpen}
