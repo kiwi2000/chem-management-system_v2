@@ -10,10 +10,11 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /**
  * GET /api/documents/batch/[id]/zip — まとめて作った仕事の PDF を 1 つの zip で落とす。
- * **自分が頼んだ仕事だけ。**組成を見られない人には、組成の載った帳票は入れない
+ * **自分が頼んだ仕事だけ。**組成を見られない人には、組成の載った帳票は入れない。
+ * 自分のぶんなので、作れる人なら落とせる（2026-09-17 指示）
  */
 export async function GET(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("DOCUMENT_DOWNLOAD");
+  const actor = await requirePermission("DOCUMENT_CREATE");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();

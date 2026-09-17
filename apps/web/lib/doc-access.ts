@@ -90,6 +90,18 @@ export async function canAccessDocument(
   return visible !== null;
 }
 
+/**
+ * 開く・落とすを許すか（2026-09-17 指示）。
+ *
+ * **自分が作ったものは、作れる人なら開けて落とせる。**
+ * 作った本人が成果を確かめられないと、作る権限そのものが役に立たない。
+ * 他の人が作ったものを開く・落とすには「ドキュメントを開ける・落とせる」が要る
+ * （一覧に並べるかどうかは canAccessDocument / documentWhere が決める）
+ */
+export function canOpenDocument(actor: Actor, doc: { generatedBy: string | null }): boolean {
+  return doc.generatedBy === actor.user.id || actor.has("DOCUMENT_DOWNLOAD");
+}
+
 /** 作った人の表示名。一覧の「作成者」の列に出す */
 export async function creatorNames(userIds: (string | null)[]): Promise<Map<string, string>> {
   const ids = [...new Set(userIds.filter((v): v is string => v !== null))];

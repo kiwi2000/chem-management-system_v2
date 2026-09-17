@@ -87,8 +87,12 @@ export function DocumentsScreen({
 }) {
   const { m, locale } = useI18n();
   const { can } = useMe();
-  /** 帳票を開く・落とせるか。無い人には紙面への道も落とし口も出さない（2026-09-17） */
-  const canDownload = can("DOCUMENT_DOWNLOAD");
+  /*
+    帳票を開く・落とせるか（2026-09-17）。**自分が作ったものは、作れる人なら開ける。**
+    他の人が作ったものには「ドキュメントを開ける・落とせる」が要り、
+    無い人には紙面への道も落とし口も出さない（一覧には並ぶ）
+  */
+  const canOthers = can("DOCUMENT_DOWNLOAD");
   const router = useRouter();
 
   /*
@@ -249,7 +253,7 @@ export function DocumentsScreen({
         className: "whitespace-nowrap",
         // 押すと、出したときの紙面をそのまま開く（作り直さない）。開ける権限が無い人には文字だけ
         render: (d) =>
-          canDownload ? (
+          d.mine || canOthers ? (
             <Link href={`/documents/saved/${d.id}`} className="underline underline-offset-2">
               {fmt(d.generatedAt, locale)}
             </Link>
@@ -330,7 +334,7 @@ export function DocumentsScreen({
         render: (d) =>
           d.fileName ? (
             // 落とす権限が無い人には名前だけ（押せない）。紙面は日時の欄から画面で見られる
-            canDownload ? (
+            d.mine || canOthers ? (
               <a
                 href={`/api/documents/${d.id}/file`}
                 className="text-primary underline underline-offset-2"
@@ -354,7 +358,7 @@ export function DocumentsScreen({
           ),
       },
     ],
-    [m, locale],
+    [m, locale, canOthers],
   );
 
   /**
@@ -474,7 +478,7 @@ export function DocumentsScreen({
             <span className={j.status === "FAILED" ? "text-destructive" : undefined}>
               {m.documents.jobStatuses[j.status] ?? j.status}
             </span>
-            {canDownload && j.status === "DONE" && j.done - j.missed > 0 && (
+            {j.status === "DONE" && j.done - j.missed > 0 && (
               <Link
                 href={`/documents/batch/${j.id}`}
                 className="text-primary underline underline-offset-2"
@@ -482,7 +486,7 @@ export function DocumentsScreen({
                 {m.documents.jobOpen}
               </Link>
             )}
-            {canDownload && j.status === "DONE" && j.done - j.missed > 0 && (
+            {j.status === "DONE" && j.done - j.missed > 0 && (
               <a
                 href={`/api/documents/batch/${j.id}/zip`}
                 className="text-primary underline underline-offset-2"
@@ -836,9 +840,7 @@ export function DocumentsScreen({
           selectable
           onDeleteSelected={onDeleteSelected}
           // 選んだぶんを落とす（1 件なら PDF そのもの、複数なら zip）
-          bulkAction={
-            canDownload ? { label: m.documents.download, run: downloadSelected } : undefined
-          }
+          bulkAction={{ label: m.documents.download, run: downloadSelected }}
           pageSizeOptions={[15, 25, 50, 100]}
           hintText={m.documents.savedHint}
         />

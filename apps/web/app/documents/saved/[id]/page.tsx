@@ -4,7 +4,7 @@ import { SavedFileNote } from "@/components/doc-editor/saved-file-note";
 import { ForbiddenNotice } from "@/components/forbidden-notice";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { canAccessDocument } from "@/lib/doc-access";
+import { canAccessDocument, canOpenDocument } from "@/lib/doc-access";
 import type { RenderedDocument } from "@/lib/doc-render";
 
 /**
@@ -32,8 +32,6 @@ export default async function SavedDocumentPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const actor = await getActor();
   if (!actor || !actor.has("DOCUMENT_CREATE")) notFound();
-  // 紙面を開くのは、落とすのと同じ扱い（印刷して保存できる。2026-09-17 指示）
-  if (!actor.has("DOCUMENT_DOWNLOAD")) return <ForbiddenNotice />;
 
   const row = await prisma.generatedDocument.findUnique({
     where: { id },
@@ -49,6 +47,11 @@ export default async function SavedDocumentPage({ params }: { params: Promise<{ 
   if (!row) notFound();
   // 自分のものか、権限があれば他人のものも（lib/doc-access.ts）。見せないものは、あることも伝えない
   if (!(await canAccessDocument(actor, row))) notFound();
+  /*
+    紙面を開くのは、落とすのと同じ扱い（印刷して保存できる。2026-09-17 指示）。
+    **自分が作ったものは、作れる人なら開ける。**他人のぶんには権限が要る（同日 指示）
+  */
+  if (!canOpenDocument(actor, row)) return <ForbiddenNotice />;
 
   /*
     **ファイルの様式で作ったものは、紙面が残っていない。**

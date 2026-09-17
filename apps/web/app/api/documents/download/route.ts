@@ -17,7 +17,7 @@ const bodySchema = z.object({ ids: z.array(z.string().trim().min(1)).min(1).max(
  * ファイルが無くなっているものも外し、外した数は応答のヘッダーで知らせる
  */
 export async function POST(req: Request) {
-  const actor = await requirePermission("DOCUMENT_DOWNLOAD");
+  const actor = await requirePermission("DOCUMENT_CREATE");
   if (actor instanceof Response) return actor;
   const m = await getServerMessages();
 
@@ -36,6 +36,8 @@ export async function POST(req: Request) {
     where: {
       id: { in: parsed.data.ids },
       ...(await documentWhere(actor)),
+      // 他人のぶんを落とすには権限が要る。無い人の zip には自分のぶんだけ入る
+      ...(actor.has("DOCUMENT_DOWNLOAD") ? {} : { generatedBy: actor.user.id }),
       fileName: { not: null },
     },
     orderBy: { generatedAt: "asc" },

@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { canAccessDocument } from "@/lib/doc-access";
+import { canAccessDocument, canOpenDocument } from "@/lib/doc-access";
 import { fileExists, fileResponse } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -16,7 +16,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * 組成が載っている帳票は、いま組成を見る権限がある人にだけ（画面で開くときと同じ）
  */
 export async function GET(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("DOCUMENT_DOWNLOAD");
+  const actor = await requirePermission("DOCUMENT_CREATE");
   if (actor instanceof Response) return actor;
   const { id } = await params;
   const m = await getServerMessages();
@@ -35,6 +35,8 @@ export async function GET(_req: Request, { params }: Ctx) {
   if (!row || !(await canAccessDocument(actor, row))) {
     return jsonError(404, "not_found", m.errors.notFound);
   }
+  // 他人のぶんを落とすには権限が要る。自分のぶんは作れる人なら落とせる
+  if (!canOpenDocument(actor, row)) return jsonError(403, "forbidden", m.errors.forbidden);
   if (!row.fileName || !(await fileExists(row.filePath))) {
     return jsonError(404, "file_missing", m.documents.fileGone);
   }

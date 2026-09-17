@@ -235,7 +235,7 @@ export const en: Messages = {
     INACTIVE_VIEW:
       "See unpublished data and inactive products in lists and details (creators always see their own)",
     DOCUMENT_DOWNLOAD:
-      "Open finished documents on screen, print them, and download PDFs / zips and filled Excel / Word files. Without it, only the list (name, date, status) is visible. Opening on screen counts as taking the data out, since it can be printed to a file",
+      "Open and print documents made by other people, and download their PDFs / zips. Without it, only the list (name, date, status) is visible for them. Opening on screen counts as taking the data out, since it can be printed to a file. Your own documents are always available to you",
     DOCUMENT_VIEW_ALL:
       "Everyone's documents appear under Created documents and can be downloaded or deleted. Documents that contain composition still need “Can see composition”; documents for unpublished products or substances still need “Can see inactive/unpublished data”",
     NEWS_POST: "Announcements you posted can be edited and deleted by you",

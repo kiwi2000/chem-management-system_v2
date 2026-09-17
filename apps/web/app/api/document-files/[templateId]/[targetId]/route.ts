@@ -31,7 +31,8 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ templateId: string; targetId: string }> },
 ) {
-  const actor = await requirePermission("DOCUMENT_DOWNLOAD");
+  // いま自分が作るものなので、作れる人なら落とせる（2026-09-17 指示）
+  const actor = await requirePermission("DOCUMENT_CREATE");
   if (actor instanceof Response) return actor;
   const { templateId, targetId } = await params;
   const m0 = await getServerMessages();
