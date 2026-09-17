@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, Settings, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
@@ -23,21 +23,24 @@ import { cn } from "@/lib/utils";
   白い四角が浮いて見えた。帯の字色を薄く混ぜた塗りにして、帯になじませる
 */
 /**
- * メニューの開閉。**白いアイコンだけ**で、薄い四角の下地は付けない（2026-09-13 指示）。
- * 押せることはマウスを乗せたときの濃さで示す。幅はアイコンぶんに詰める
+ * 帯に付く小さなタブ。上の帯を畳む「＾」と、左ペインを開け閉めする「＜」「＞」の 3 つは
+ * **同じ形にする（2026-09-17 指示）。**20×20 の四角、帯と同じ塗り、細い枠、真ん中に矢印。
+ * **付いている辺の枠だけ描かない。**帯と地続きに見せるため。
+ * 押せることはマウスを乗せたときの淡さで示す（薄い四角の下地は 2026-09-13 に取りやめている）
  */
-const HEADER_ICON_BUTTON =
-  "text-header-foreground hover:text-header-foreground aria-expanded:text-header-foreground h-8 w-5 rounded-none bg-transparent hover:bg-transparent aria-expanded:bg-transparent hover:opacity-70";
+const EDGE_TAB = "flex size-5 items-center justify-center rounded-none border p-0 hover:opacity-70";
 
 /**
- * 上の帯を開け閉めするタブ。**帯のすぐ外側、下の縁からぶら下げる**（2026-09-17 指示）。
- * 大きさは矢印がちょうど入るだけ、位置は帯の右端に寄せる（同日 指示）。
- * 白い紙の上に出るので、帯と同じ色で塗り、上辺だけ枠を描かない（帯と地続きに見せる）
+ * 本文側の帯に付くもの。帯を畳む「＾」（帯のすぐ下、右端）と、
+ * 左ペインを開く「＞」（帯の左上の角。ペインを閉じているときだけ出る）
  */
 const HEADER_TAB =
-  "bg-header text-header-foreground border-header-foreground/40 hover:bg-header/80 flex h-4 w-5 items-center justify-center border border-t-0";
+  "bg-header text-header-foreground border-header-foreground/40 hover:bg-header hover:text-header-foreground aria-expanded:bg-header aria-expanded:text-header-foreground";
 
-/** サイドバーの開閉状態は端末ごとに覚えておく */
+/** 左ペインの頭に付くもの（ペインを閉じる「＜」。頭の右上の角）。色だけペインの頭に合わせる */
+const SIDEBAR_TAB =
+  "bg-sidebar-header text-sidebar-header-foreground border-sidebar-header-foreground/40 hover:bg-sidebar-header hover:text-sidebar-header-foreground";
+
 const STORAGE_KEY = "chem.sidebar.open";
 /**
  * 残りがこの日数を切ったら、鈴だけでなく帯でも知らせる（2026-09-17 決定）。
@@ -125,7 +128,7 @@ export function AppShellClient({
   const sidebarBody = (
     <>
       {/* 設定で濃くできる。既定は左ペインと同じ色なので見た目は変わらない */}
-      <div className="bg-sidebar-header text-sidebar-header-foreground flex h-14 items-center justify-between gap-2 border-b px-4">
+      <div className="bg-sidebar-header text-sidebar-header-foreground relative flex h-14 items-center justify-between gap-2 border-b px-4">
         {/* 名前はヘッダーの中央に出す。ここに出すと左ペインの幅で切れる。引き出しのときだけ */}
         <Link href="/" className="truncate text-base font-semibold md:hidden">
           {m.common.appName}
@@ -138,6 +141,25 @@ export function AppShellClient({
           onClick={() => setDrawerOpen(false)}
         >
           <X className="size-4" />
+        </Button>
+        {/*
+          広い画面でメニューを閉じるタブ（2026-09-17 指示）。
+          **開いているあいだは、この頭の右上に置く。**閉じると本文側の頭の左上に移り、向きが > に変わる。
+          高さはどちらも同じなので、押した場所から動かずに開け閉めできる。
+          狭い画面は引き出し式で、隣の X で閉じる
+        */}
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={m.shell.closeMenu}
+          className={cn(
+            EDGE_TAB,
+            SIDEBAR_TAB,
+            "absolute top-0 right-0 z-10 hidden border-t-0 border-r-0 md:inline-flex",
+          )}
+          onClick={toggle}
+        >
+          <ChevronLeft className="size-4" />
         </Button>
       </div>
       <SidebarNav permissions={user.permissions} onNavigate={() => setDrawerOpen(false)} />
@@ -208,20 +230,26 @@ export function AppShellClient({
               headerOpen ? "h-14" : "h-0",
             )}
           >
-            <header className="bg-header text-header-foreground flex h-14 items-center gap-2 border-b px-3">
+            <header className="bg-header text-header-foreground relative flex h-14 items-center gap-2 border-b px-3">
+              {/*
+                メニューを開くタブ。**広い画面では、閉じているときだけここに出る**（開いている
+                あいだは左ペインの頭にある）。狭い画面は引き出し式で左ペインの頭が画面に無いので、
+                いつもここに出す
+              */}
               <Button
                 variant="ghost"
                 size="icon"
-                className={HEADER_ICON_BUTTON}
+                className={cn(
+                  EDGE_TAB,
+                  HEADER_TAB,
+                  "absolute top-0 left-0 z-10 border-t-0 border-l-0",
+                  open && "md:hidden",
+                )}
                 onClick={toggle}
                 aria-label={open ? m.shell.closeMenu : m.shell.openMenu}
                 aria-expanded={open}
               >
-                {open ? (
-                  <PanelLeftClose className="size-4" />
-                ) : (
-                  <PanelLeftOpen className="size-4" />
-                )}
+                <ChevronRight className="size-4" />
               </Button>
               {/* 名前は帯の左、開閉ボタンの隣。左ペインの頭に置くとペインの幅で切れた */}
               <Link href="/" className="min-w-0 truncate text-base font-semibold">
@@ -296,13 +324,13 @@ export function AppShellClient({
           */}
           <button
             type="button"
-            className={cn(HEADER_TAB, "absolute top-full right-0 z-40")}
+            className={cn(EDGE_TAB, HEADER_TAB, "absolute top-full right-0 z-40 border-t-0")}
             title={headerOpen ? m.shell.hideHeader : m.shell.showHeader}
             aria-label={headerOpen ? m.shell.hideHeader : m.shell.showHeader}
             aria-expanded={headerOpen}
             onClick={() => toggleHeader(!headerOpen)}
           >
-            {headerOpen ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+            {headerOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
           </button>
         </div>
 
