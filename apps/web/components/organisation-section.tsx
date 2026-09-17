@@ -257,7 +257,7 @@ export function OrganisationSection() {
       )}
 
       {open && (
-        <Card>
+        <Card collapsible={false}>
           <CardHeader>
             <CardTitle className="text-base">
               {form.id ? m.organisations.editTitle : m.organisations.newTitle}

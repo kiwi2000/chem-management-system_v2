@@ -78,7 +78,7 @@ export function LawForm({
   }
 
   return (
-    <Card>
+    <Card collapsible={false}>
       <CardHeader>
         <CardTitle className="text-base">{initial ? m.laws.editTitle : m.laws.newTitle}</CardTitle>
       </CardHeader>

@@ -125,7 +125,7 @@ export function RegulationCategoryForm({
   }
 
   return (
-    <Card>
+    <Card collapsible={false}>
       <CardHeader>
         <CardTitle className="text-base">
           {initial ? m.regulationCategories.editTitle : m.regulationCategories.newTitle}

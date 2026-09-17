@@ -196,7 +196,7 @@ export function GroupSection({ kind, title, hint, storageKey }: Props) {
         </Alert>
       )}
 
-      <Card>
+      <Card collapsible={false}>
         <CardHeader>
           <CardTitle className="text-base">
             {form.id ? m.groups.editTitle : m.groups.newTitle}

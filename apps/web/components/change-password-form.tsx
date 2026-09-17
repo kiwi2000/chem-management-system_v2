@@ -89,7 +89,7 @@ export function ChangePasswordForm({ expired = false }: { expired?: boolean }) {
 
   return (
     <div className="mx-auto max-w-md p-4 lg:p-6">
-      <Card>
+      <Card collapsible={false}>
         <CardHeader>
           <CardTitle>{m.changePassword.title}</CardTitle>
           <CardDescription>

@@ -314,7 +314,7 @@ export default function FeedbackPage() {
       )}
 
       {open && (
-        <Card>
+        <Card collapsible={false}>
           <CardHeader>
             <CardTitle className="text-base">新規登録</CardTitle>
           </CardHeader>

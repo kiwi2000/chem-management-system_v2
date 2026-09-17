@@ -237,7 +237,7 @@ export default function MetalFactorsPage() {
       )}
 
       {editable && formOpen && (
-        <Card>
+        <Card collapsible={false}>
           <CardHeader>
             <CardTitle className="text-base">
               {form.id ? m.metalFactors.editTitle : m.metalFactors.newTitle}

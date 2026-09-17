@@ -236,7 +236,7 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
         </Alert>
       )}
 
-      <Card>
+      <Card collapsible={false}>
         <CardHeader>
           <CardTitle className="text-base">
             {form.id ? m.propertyDefs.editTitle : m.propertyDefs.newTitle}
