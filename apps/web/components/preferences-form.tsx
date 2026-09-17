@@ -62,6 +62,9 @@ function Swatch({ theme, headerStrong }: { theme: Theme; headerStrong: boolean }
  * 選んだ時点ですぐ保存して画面に反映する（保存ボタンを押させない）。
  * 見た目の設定は、押した結果がその場で見えたほうが選びやすいため。
  */
+/** 画面の上に出す知らせの種類。文言は描くときに引く */
+type NoticeKind = "saved" | "avatarStaged" | "avatarRemoveStaged";
+
 export function PreferencesForm({
   locale,
   theme,
@@ -88,7 +91,11 @@ export function PreferencesForm({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  /*
+    知らせの中身。**文言ではなく種類をしまう。**
+    文言をしまうと、言語を切り替えた直後だけ前の言語のまま残る（2026-09-17 指摘）
+  */
+  const [notice, setNotice] = useState<NoticeKind | null>(null);
   // 表示名だけは打ち終わってから保存するので、入力中の値を持つ
   const [name, setName] = useState(displayName);
   const [themeOpen, setThemeOpen] = useState(false);
@@ -115,7 +122,7 @@ export function PreferencesForm({
     setPicked(null);
     setError(null);
     // 押しても何も起きていないように見えるので、次に何をすればよいかを出す
-    setNotice(m.preferences.avatarStaged);
+    setNotice("avatarStaged");
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -127,7 +134,7 @@ export function PreferencesForm({
     setAvatarCleared(true);
     setPicked(null);
     setError(null);
-    setNotice(m.preferences.avatarRemoveStaged);
+    setNotice("avatarRemoveStaged");
   }
 
   const nameChanged = name.trim() !== displayName;
@@ -181,7 +188,7 @@ export function PreferencesForm({
       setNewAvatarUrl(null);
       setAvatarCleared(false);
       setAvatarVersion((v) => v + 1);
-      setNotice(m.preferences.saved);
+      setNotice("saved");
       router.refresh();
     } finally {
       setSaving(false);
@@ -223,7 +230,7 @@ export function PreferencesForm({
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
-      setNotice(m.preferences.saved);
+      setNotice("saved");
       router.refresh();
     } finally {
       setSaving(false);
@@ -243,7 +250,7 @@ export function PreferencesForm({
       )}
       {notice && (
         <Alert>
-          <AlertDescription>{notice}</AlertDescription>
+          <AlertDescription>{m.preferences[notice]}</AlertDescription>
         </Alert>
       )}
       <Card>
