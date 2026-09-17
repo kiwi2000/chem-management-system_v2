@@ -12,7 +12,7 @@ import { getServerMessages } from "@/lib/i18n";
 import { getAppSettings } from "@/lib/settings";
 import { clientIp } from "@/lib/ip-allow";
 import { expectedOrigin, keepChallenge, rpId, takeChallenge } from "@/lib/passkey";
-import { syncPreferenceCookies } from "@/lib/preference-cookies";
+import { adoptLoginLocale, syncPreferenceCookies } from "@/lib/preference-cookies";
 
 export const dynamic = "force-dynamic";
 
@@ -117,7 +117,8 @@ export async function PUT(req: Request) {
   await createSession(user.id);
 
   void purgeExpiredSessions();
-  await syncPreferenceCookies(user);
+  // ログイン画面で言語を選んでいたら、それをこの人の設定にする
+  await syncPreferenceCookies(await adoptLoginLocale(user));
 
   const hdrs = await headers();
   await writeAudit({

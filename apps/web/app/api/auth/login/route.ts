@@ -3,7 +3,7 @@ import { loginSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { login, purgeExpiredSessions } from "@/lib/auth";
 import { jsonError } from "@/lib/authz";
-import { syncPreferenceCookies } from "@/lib/preference-cookies";
+import { adoptLoginLocale, syncPreferenceCookies } from "@/lib/preference-cookies";
 import { getServerMessages } from "@/lib/i18n";
 import { clientIp } from "@/lib/ip-allow";
 
@@ -55,8 +55,10 @@ export async function POST(req: Request) {
   }
 
   void purgeExpiredSessions();
+  // ログイン画面で言語を選んでいたら、それをこの人の設定にする
+  const user = await adoptLoginLocale(result.user);
   // 前に使った人の Cookie が残っていることがあるので、この人のものに入れ替える
-  await syncPreferenceCookies(result.user);
+  await syncPreferenceCookies(user);
   // 成功も、どこから入ったかまで残す。失敗の記録と突き合わせて見るため
   const hdrs = await headers();
   await writeAudit({
