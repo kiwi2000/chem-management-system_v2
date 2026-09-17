@@ -1,4 +1,4 @@
-import type { DocumentContent } from "@chem/shared";
+import type { DocumentBlock, DocumentContent } from "@chem/shared";
 import { describe, expect, it } from "vitest";
 import { renderDocument, type RenderInput } from "./doc-render";
 
@@ -173,6 +173,31 @@ describe("表", () => {
       tables,
     );
     expect((auto.blocks[0] as { widths?: number[] }).widths).toBeUndefined();
+  });
+
+  it("出す規制区分を選ぶと、その区分の行だけ（id の無い行は通す。空なら全部）", () => {
+    const withCats: RenderInput["tables"] = new Map();
+    withCats.set("judgement", {
+      columns: [
+        { key: "category", label: "規制区分" },
+        { key: "verdict", label: "該非" },
+      ],
+      rows: [
+        { categoryId: "c1", category: "第一種", verdict: "該当" },
+        { categoryId: "c2", category: "第二種", verdict: "該当" },
+        { category: "見本", verdict: "該当" },
+      ],
+    });
+    const block: DocumentBlock = {
+      id: "1",
+      kind: "table",
+      table: "judgement",
+      columns: ["category"],
+    };
+    const picked = run([{ ...block, categoryIds: ["c2"] }], {}, withCats);
+    expect(picked.blocks[0]).toMatchObject({ rows: [["第二種"], ["見本"]] });
+    const all = run([block], {}, withCats);
+    expect(all.blocks[0]).toMatchObject({ rows: [["第一種"], ["第二種"], ["見本"]] });
   });
 
   it("表を変えたあとに残った列は、落とす", () => {

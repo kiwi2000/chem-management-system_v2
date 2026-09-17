@@ -24,3 +24,34 @@ export function useOrgItemLabels(): string[] {
 
   return items;
 }
+
+/** 表のブロックで選ぶ規制区分。名前は元の言語・日本語・英語を持ち、画面の側でテンプレートの言語に合わせる */
+export interface DocCategoryOption {
+  id: string;
+  lawId: string;
+  nameOriginal: string;
+  nameJa: string | null;
+  nameEn: string | null;
+  law: { nameOriginal: string; nameJa: string | null; nameEn: string | null };
+}
+
+/** 表のブロックは何個もあるので、一覧は 1 回だけ引いて使い回す */
+let categoriesCache: Promise<DocCategoryOption[]> | null = null;
+
+export function useDocCategories(): DocCategoryOption[] {
+  const [items, setItems] = useState<DocCategoryOption[]>([]);
+  useEffect(() => {
+    let alive = true;
+    categoriesCache ??= fetch("/api/doc-fields")
+      .then((res) => (res.ok ? res.json() : { categories: [] }))
+      .then((body: { categories?: DocCategoryOption[] }) => body.categories ?? [])
+      .catch(() => []);
+    void categoriesCache.then((list) => {
+      if (alive) setItems(list);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return items;
+}

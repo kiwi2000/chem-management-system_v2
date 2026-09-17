@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  TABLES_WITH_CATEGORY,
   TABLE_FILTER_OPS,
+  pickStatutoryName,
   tablesFor,
   type DocumentBlock,
   type DocumentTable,
@@ -10,9 +12,11 @@ import {
   type TableFilterOp,
 } from "@chem/shared";
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n-client";
+import { useDocCategories } from "@/lib/use-doc-fields";
 import { cn } from "@/lib/utils";
 
 const SELECT = "border-input h-7 rounded-none border bg-transparent px-2 text-sm";
@@ -22,7 +26,7 @@ type TableBlock = Extract<DocumentBlock, { kind: "table" }>;
 /**
  * 表のブロックの設定。
  *
- * 上から**表題 → 出す表 → 出す列 → 絞り込み → 置き換え**の順に置く。
+ * 上から**表題 → 表の種類 → 出す列 → 出す規制区分 → 絞り込み → 置き換え**の順に置く。
  * 表題がいちばん上なのは、紙面でもそこに出るため。
  * 画面の並びと紙面の並びを揃えておくと、どれを直しているのか迷わない。
  */
@@ -68,6 +72,29 @@ export function TableBlockFields({
 
   const filters = b.filters ?? [];
   const replacements = b.replacements ?? [];
+  /*
+    出す規制区分（2026-09-17 指示）。規制区分の列を持つ表でだけ出す。
+    法律ごとにまとめて並べ、チェックした区分の行だけを出す。何も付けなければ全部
+  */
+  const withCategory = TABLES_WITH_CATEGORY.includes(b.table);
+  const categories = useDocCategories();
+  const pickedCats = b.categoryIds ?? [];
+  const lawGroups = useMemo(() => {
+    const groups = new Map<string, { label: string; items: typeof categories }>();
+    for (const c of categories) {
+      const g = groups.get(c.lawId) ?? {
+        label: pickStatutoryName(locale, c.law.nameOriginal, c.law.nameJa, c.law.nameEn),
+        items: [],
+      };
+      g.items.push(c);
+      groups.set(c.lawId, g);
+    }
+    return [...groups.values()];
+  }, [categories, locale]);
+  function toggleCategory(id: string, on: boolean) {
+    const next = on ? [...pickedCats, id] : pickedCats.filter((x) => x !== id);
+    onChange({ ...b, categoryIds: next.length ? next : undefined });
+  }
   const widths = b.columnWidths ?? {};
   /** 幅の比。空にしたら消す（全部空になったら自動に戻る） */
   function setWidth(key: string, raw: string) {
@@ -106,6 +133,7 @@ export function TableBlockFields({
               table,
               columns: next?.columns.map((c) => c.key) ?? [],
               columnOrder: undefined,
+              categoryIds: undefined,
               filters: undefined,
               replacements: undefined,
             });
@@ -181,6 +209,41 @@ export function TableBlockFields({
         </ul>
         <p className="text-muted-foreground text-xs">{m.docEditor.tableColumnsHint}</p>
       </div>
+
+      {withCategory && (
+        <div className="space-y-1 border-t pt-2">
+          <p className="text-sm">
+            {m.docEditor.tableCategories}
+            {pickedCats.length > 0 && (
+              <span className="text-muted-foreground ml-2 text-xs">
+                {m.docEditor.tableCategoriesPicked(pickedCats.length)}
+              </span>
+            )}
+          </p>
+          <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+            {lawGroups.map((g) => (
+              <div key={g.label}>
+                <p className="text-muted-foreground text-xs">{g.label}</p>
+                <ul className="ml-3">
+                  {g.items.map((c) => (
+                    <li key={c.id}>
+                      <label className="flex items-center gap-1 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={pickedCats.includes(c.id)}
+                          onChange={(e) => toggleCategory(c.id, e.target.checked)}
+                        />
+                        {pickStatutoryName(locale, c.nameOriginal, c.nameJa, c.nameEn)}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="text-muted-foreground text-xs">{m.docEditor.tableCategoriesHint}</p>
+        </div>
+      )}
 
       {/* 絞り込み。すべてに当てはまる行だけを出す */}
       <div className="space-y-1 border-t pt-2">

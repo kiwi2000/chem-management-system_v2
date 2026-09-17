@@ -450,19 +450,6 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
     ],
   },
   {
-    key: "compositionAggregate",
-    target: "PRODUCT",
-    labelJa: "原材料展開・CAS合算",
-    labelEn: "Expanded and summed by CAS",
-    columns: [
-      { key: "casNumber", labelJa: "CAS番号", labelEn: "CAS" },
-      { key: "code", labelJa: "物質ID", labelEn: "Substance ID" },
-      { key: "name", labelJa: "物質名", labelEn: "Name" },
-      { key: "totalPct", labelJa: "重量%", labelEn: "Weight %" },
-      { key: "note", labelJa: "備考", labelEn: "Note" },
-    ],
-  },
-  {
     // 原材料を末端まで下ろした形。まとめる前なので、同じ物質が何行も出る（どこから来たかが分かる）
     key: "compositionExpanded",
     target: "PRODUCT",
@@ -474,6 +461,19 @@ export const DOCUMENT_TABLE_DEFS: DocumentTableDef[] = [
       { key: "casNumber", labelJa: "CAS番号", labelEn: "CAS" },
       { key: "name", labelJa: "物質名", labelEn: "Name" },
       { key: "totalPct", labelJa: "製品全体の重量%", labelEn: "Weight % of product" },
+      { key: "note", labelJa: "備考", labelEn: "Note" },
+    ],
+  },
+  {
+    key: "compositionAggregate",
+    target: "PRODUCT",
+    labelJa: "原材料展開・CAS合算",
+    labelEn: "Expanded and summed by CAS",
+    columns: [
+      { key: "casNumber", labelJa: "CAS番号", labelEn: "CAS" },
+      { key: "code", labelJa: "物質ID", labelEn: "Substance ID" },
+      { key: "name", labelJa: "物質名", labelEn: "Name" },
+      { key: "totalPct", labelJa: "重量%", labelEn: "Weight %" },
       { key: "note", labelJa: "備考", labelEn: "Note" },
     ],
   },
@@ -765,6 +765,9 @@ export function columnWidthPercents(
   const sum = columns.reduce((acc, k) => acc + ratio(k), 0);
   return columns.map((k) => (ratio(k) / sum) * 100);
 }
+
+/** 規制区分の列を持つ表。区分で絞る欄は、これらの表でだけ出す */
+export const TABLES_WITH_CATEGORY: readonly DocumentTable[] = ["judgement", "substanceRegulation"];
 
 /** 打ち間違いで紙面が壊れないよう、読めない形は当てずに素通りさせる */
 export function compileReplacement(r: TableReplacement): RegExp | null {
@@ -1061,6 +1064,11 @@ export type DocumentBlock =
        * 割合にしないのは、列を出し入れするたびに合計を 100 に直させないため
        */
       columnWidths?: Record<string, number>;
+      /**
+       * 出す規制区分（区分の id）。**空なら全部。**規制区分の列がある表（法規制判定・該当法規）でだけ効く（2026-09-17 指示）。
+       * 行の側に `categoryId` を持たせてあり、無い行（見本など）はそのまま通す
+       */
+      categoryIds?: string[];
       caption?: string;
       /**
        * 表題・見出し行・中身の字（2026-09-16 指示）。それぞれブロックの字の上に重ねる。

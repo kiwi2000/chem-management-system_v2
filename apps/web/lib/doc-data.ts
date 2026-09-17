@@ -289,6 +289,8 @@ export async function collectForProduct(
       根拠を伏せる相手には区分ごとに 1 行（番号と名前は空）
     */
     rows: hit.map((j) => ({
+      // 区分で絞るための鍵。列ではないので紙面には出ない
+      categoryId: j.categoryId,
       law: pickStatutoryName(locale, j.lawNameOriginal, j.lawNameJa, j.lawNameEn),
       category: pickStatutoryName(
         locale,
@@ -416,6 +418,8 @@ export async function collectForSubstance(
       columns: tableDef("substanceRegulation", locale),
       rows: matrix.regulation.columns.flatMap((c) =>
         cellText(c.key).map((v) => ({
+          // 列の鍵は `cat:<区分の id>`。区分で絞るための鍵（紙面には出ない）
+          ...(c.key.startsWith("cat:") ? { categoryId: c.key.slice(4) } : {}),
           law: c.parentLabel ?? "",
           category: c.label,
           officialNumber: "",

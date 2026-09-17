@@ -924,6 +924,7 @@ export function BlockList({
                     value={b[key]}
                     onChange={(style) => replace(i, { ...b, [key]: style })}
                     defaultFontLabel={m.docEditor.fieldsLabelFollow}
+                    fontLabel={m.docEditor.font}
                     inheritedSize={b.style?.size ?? ownFontSize(b) ?? docSize ?? DEFAULT_FONT_SIZE}
                   />
                 </div>

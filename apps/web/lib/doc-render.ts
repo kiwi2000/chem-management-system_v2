@@ -371,6 +371,15 @@ function renderBlock(
       // 絞り込み。条件が複数あるときは、すべてに当てはまる行だけを出す
       const filters = b.filters ?? [];
       const kept = src.rows.filter((r) => filters.every((f) => passesFilter(r[f.column] ?? "", f)));
+      /*
+        出す規制区分（2026-09-17 指示）。**空なら全部。**
+        行が区分の id を持っていないとき（見本の値など）は絞らずに通す
+      */
+      const cats = b.categoryIds ?? [];
+      const keptByCat =
+        cats.length === 0
+          ? kept
+          : kept.filter((r) => r.categoryId === undefined || cats.includes(r.categoryId));
 
       /*
         置き換え。**読めない形は当てずに素通りさせる。**
@@ -391,7 +400,7 @@ function renderBlock(
           ...(b.headStyle ? { headStyle: b.headStyle } : {}),
           ...(b.cellStyle ? { cellStyle: b.cellStyle } : {}),
           head: cols.map((c) => c.label),
-          rows: kept.map((r) => cols.map((c) => apply(c.key, r[c.key] ?? ""))),
+          rows: keptByCat.map((r) => cols.map((c) => apply(c.key, r[c.key] ?? ""))),
           ...(() => {
             const widths = columnWidthPercents(
               cols.map((c) => c.key),
