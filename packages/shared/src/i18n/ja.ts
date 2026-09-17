@@ -1347,6 +1347,8 @@ export const ja = {
     tableCaptionStyle: "タイトル",
     tableHeadStyle: "ヘッダー",
     tableCellStyle: "セル",
+    tableBorder: "罫線",
+    tableBorderColor: "線の色",
     fieldsLabelFollow: "ブロックに合わせる",
     fieldsValueAlign: "値の寄せ",
     fieldsValueAligns: { left: "左", right: "右" },

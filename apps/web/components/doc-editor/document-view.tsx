@@ -4,7 +4,10 @@ import {
   DEFAULT_FONT,
   DEFAULT_FONT_SIZE,
   effectiveMargin,
+  DEFAULT_TABLE_BORDER_COLOR,
+  DEFAULT_TABLE_BORDER_MM,
   ownFontSize,
+  type TableBorder,
   fontStack,
   groupIntoRows,
   type BlockStyle,
@@ -550,7 +553,12 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
                 {b.head.map((h, i) => (
                   <th
                     key={i}
-                    style={{ ...CELL_HEAD, ...styleOf(b.headStyle), ...cellDecor(b.headStyle) }}
+                    style={{
+                      ...CELL_HEAD,
+                      ...borderOf(b.border),
+                      ...styleOf(b.headStyle),
+                      ...cellDecor(b.headStyle),
+                    }}
                   >
                     {h}
                   </th>
@@ -563,7 +571,12 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
                   {r.map((c, j) => (
                     <td
                       key={j}
-                      style={{ ...CELL, ...styleOf(b.cellStyle), ...cellDecor(b.cellStyle) }}
+                      style={{
+                        ...CELL,
+                        ...borderOf(b.border),
+                        ...styleOf(b.cellStyle),
+                        ...cellDecor(b.cellStyle),
+                      }}
                     >
                       {c}
                     </td>
@@ -642,6 +655,13 @@ function BlockBody({ block: b, doc }: { block: RenderBlock; doc: BlockStyle | un
     default:
       return null;
   }
+}
+
+/** 表の罫線。太さ 0 なら線なし。書いていない側は既定（0.2mm・黒） */
+function borderOf(border: TableBorder | undefined): CSSProperties {
+  const w = border?.widthMm ?? DEFAULT_TABLE_BORDER_MM;
+  const color = border?.color ?? DEFAULT_TABLE_BORDER_COLOR;
+  return { border: w > 0 ? `${w}mm solid ${color}` : "none" };
 }
 
 const CELL_HEAD: React.CSSProperties = {

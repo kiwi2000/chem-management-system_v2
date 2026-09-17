@@ -200,6 +200,23 @@ describe("表", () => {
     expect(all.blocks[0]).toMatchObject({ rows: [["第一種"], ["第二種"], ["見本"]] });
   });
 
+  it("罫線の指定は、そのまま紙面へ持ち越す", () => {
+    const out = run(
+      [
+        {
+          id: "1",
+          kind: "table",
+          table: "composition",
+          columns: ["casNumber"],
+          border: { widthMm: 0.5, color: "#ff0000" },
+        },
+      ],
+      {},
+      tables,
+    );
+    expect(out.blocks[0]).toMatchObject({ border: { widthMm: 0.5, color: "#ff0000" } });
+  });
+
   it("表を変えたあとに残った列は、落とす", () => {
     const out = run(
       [{ id: "1", kind: "table", table: "composition", columns: ["name", "law"] }],

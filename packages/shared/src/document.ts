@@ -766,6 +766,14 @@ export function columnWidthPercents(
   return columns.map((k) => (ratio(k) / sum) * 100);
 }
 
+/** 表の罫線。書いていない側は既定（0.2mm・黒） */
+export interface TableBorder {
+  widthMm?: number;
+  color?: string;
+}
+export const DEFAULT_TABLE_BORDER_MM = 0.2;
+export const DEFAULT_TABLE_BORDER_COLOR = "#000000";
+
 /** 規制区分の列を持つ表。区分で絞る欄は、これらの表でだけ出す */
 export const TABLES_WITH_CATEGORY: readonly DocumentTable[] = ["judgement", "substanceRegulation"];
 
@@ -1077,6 +1085,11 @@ export type DocumentBlock =
       captionStyle?: BlockStyle;
       headStyle?: BlockStyle;
       cellStyle?: BlockStyle;
+      /**
+       * 罫線（2026-09-17 指示）。太さは mm（0 で線なし）、色は #rrggbb。
+       * 省略はこれまでどおり 0.2mm の黒
+       */
+      border?: TableBorder;
       /** 出す行を絞る。複数あるときは、すべてに当てはまる行だけを出す */
       filters?: TableFilter[];
       /** 出す値を置き換える。上から順に当てる */

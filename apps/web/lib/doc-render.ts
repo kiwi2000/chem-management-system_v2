@@ -6,6 +6,7 @@ import {
   passesFilter,
   type BlockStyle,
   type BlockWidth,
+  type TableBorder,
   type DocumentBlock,
   type DocumentContent,
   bandHasText,
@@ -97,6 +98,8 @@ export type RenderBlock =
       captionStyle?: BlockStyle;
       headStyle?: BlockStyle;
       cellStyle?: BlockStyle;
+      /** 罫線。無ければ 0.2mm の黒 */
+      border?: TableBorder;
     })
   | (RenderBase & { kind: "divider" })
   | (RenderBase & { kind: "spacer"; size: SpacerSize })
@@ -399,6 +402,7 @@ function renderBlock(
           ...(b.captionStyle ? { captionStyle: b.captionStyle } : {}),
           ...(b.headStyle ? { headStyle: b.headStyle } : {}),
           ...(b.cellStyle ? { cellStyle: b.cellStyle } : {}),
+          ...(b.border ? { border: b.border } : {}),
           head: cols.map((c) => c.label),
           rows: keptByCat.map((r) => cols.map((c) => apply(c.key, r[c.key] ?? ""))),
           ...(() => {

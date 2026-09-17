@@ -1312,6 +1312,8 @@ export const en: Messages = {
     tableCaptionStyle: "Title",
     tableHeadStyle: "Header",
     tableCellStyle: "Cells",
+    tableBorder: "Borders",
+    tableBorderColor: "Line colour",
     fieldsLabelFollow: "Follow the block",
     fieldsValueAlign: "Value alignment",
     fieldsValueAligns: { left: "Left", right: "Right" },

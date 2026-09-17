@@ -7,6 +7,9 @@ import {
   type ImageAlign,
   DEFAULT_BLOCK_MARGIN,
   DEFAULT_FONT_SIZE,
+  DEFAULT_TABLE_BORDER_COLOR,
+  DEFAULT_TABLE_BORDER_MM,
+  type TableBorder,
   effectiveMargin,
   HEADING_LEVELS,
   ownFontSize,
@@ -929,6 +932,57 @@ export function BlockList({
                   />
                 </div>
               ))}
+              {/* 罫線の太さ（mm）と色（2026-09-17 指示）。空なら 0.2mm の黒。0 で線なし */}
+              <div className="flex flex-wrap items-end gap-3 border-t pt-2">
+                <span className="w-24 self-center text-sm">{m.docEditor.tableBorder}</span>
+                <Labeled label={m.docEditor.pageBorderWidth}>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={5}
+                    step={0.1}
+                    aria-label={`${m.docEditor.tableBorder} ${m.docEditor.pageBorderWidth}`}
+                    placeholder={String(DEFAULT_TABLE_BORDER_MM)}
+                    className="border-input h-7 w-16 rounded-none border bg-transparent px-1 text-right text-xs"
+                    value={b.border?.widthMm ?? ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const n = Number(raw);
+                      const widthMm =
+                        raw === "" || !Number.isFinite(n) ? undefined : Math.min(5, Math.max(0, n));
+                      replace(i, { ...b, border: tableBorder({ ...b.border, widthMm }) });
+                    }}
+                  />
+                </Labeled>
+                <Labeled label={m.docEditor.tableBorderColor}>
+                  <input
+                    type="color"
+                    aria-label={`${m.docEditor.tableBorder} ${m.docEditor.tableBorderColor}`}
+                    className="border-input h-7 w-7 cursor-pointer border bg-transparent p-0.5"
+                    value={b.border?.color ?? DEFAULT_TABLE_BORDER_COLOR}
+                    onChange={(e) =>
+                      replace(i, {
+                        ...b,
+                        border: tableBorder({ ...b.border, color: e.target.value }),
+                      })
+                    }
+                  />
+                </Labeled>
+                {b.border?.color && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    onClick={() =>
+                      replace(i, { ...b, border: tableBorder({ ...b.border, color: undefined }) })
+                    }
+                  >
+                    {m.docEditor.fontColorClear}
+                  </Button>
+                )}
+              </div>
             </>
           )}
 
@@ -1037,6 +1091,14 @@ export function BlockList({
       </div>
     );
   }
+}
+
+/** 罫線の指定。両方とも空になったら指定そのものを外す（保存した様式に空の入れものを残さない） */
+function tableBorder(v: TableBorder): TableBorder | undefined {
+  const out: TableBorder = {};
+  if (v.widthMm !== undefined) out.widthMm = v.widthMm;
+  if (v.color) out.color = v.color;
+  return Object.keys(out).length ? out : undefined;
 }
 
 /**
