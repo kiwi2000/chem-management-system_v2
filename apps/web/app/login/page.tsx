@@ -212,7 +212,8 @@ export default function LoginPage() {
 
   return (
     <main className="bg-muted/40 flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-3">
+      {/* 幅はシステム名が1行で収まるところまで広げる（2026-09-17 指示） */}
+      <div className="w-full max-w-md space-y-3">
         <div className="flex justify-end">
           <LanguageSwitcher />
         </div>
