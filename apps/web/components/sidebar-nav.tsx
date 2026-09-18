@@ -2,6 +2,7 @@
 
 import type { Messages, Permission } from "@chem/shared";
 import {
+  Activity,
   ArrowDownUp,
   Atom,
   BookMarked,
@@ -9,28 +10,28 @@ import {
   Building2,
   ChevronRight,
   Download,
+  Droplets,
   FileCog,
   FilePlus,
-  Image as ImageIcon,
   FileText,
   FlaskConical,
   Globe,
   Home,
+  Image as ImageIcon,
   Link2,
   Megaphone,
   MessageSquare,
   Package,
-  Activity,
   Scale,
   ScrollText,
   Settings,
   Sigma,
   Tags,
-  type LucideIcon,
   Upload,
   UserCog,
   Users,
   Wrench,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -95,8 +96,14 @@ const ITEMS: NavItem[] = [
         needs: "REGULATION_VIEW",
         match: ["/external-db"],
       },
-      // 換算係数と元素は法規制の判定にしか使わないので、ここに置く
+      // 換算係数・元素・不純物パターンは法規制の判定にしか使わないので、ここに置く
       { href: "/metal-factors", key: "metalFactors", icon: Sigma, needs: "REGULATION_VIEW" },
+      {
+        href: "/impurity-patterns",
+        key: "impurityPatterns",
+        icon: Droplets,
+        needs: "REGULATION_VIEW",
+      },
       { href: "/elements", key: "elements", icon: Atom, needs: "REGULATION_VIEW" },
     ],
   },

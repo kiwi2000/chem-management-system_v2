@@ -1,6 +1,6 @@
 "use client";
 
-import { pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
+import { IMPURITY_NONE, pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
 import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,7 +16,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { SubstanceNumber } from "@/lib/substance-numbers";
-import type { ApiError, CasSiblingDto, PropertyDefDto, SubstanceDetailDto } from "@/lib/types";
+import type {
+  ApiError,
+  CasSiblingDto,
+  ImpurityPatternDto,
+  ListResponse,
+  PropertyDefDto,
+  SubstanceDetailDto,
+} from "@/lib/types";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 
@@ -61,6 +68,23 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
    * 他にいなければ自動で代表になるので、その場合は何も出さない。
    */
   const [casSiblings, setCasSiblings] = useState<CasSiblingDto[]>([]);
+  /** 不純物パターン（S21）。既定は 0「不純物ではない」 */
+  const [impurityPatternId, setImpurityPatternId] = useState(
+    initial?.impurityPatternId ?? IMPURITY_NONE,
+  );
+  const [patterns, setPatterns] = useState<ImpurityPatternDto[]>([]);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const res = await fetch("/api/impurity-patterns").catch(() => null);
+      if (!res?.ok) return;
+      const body = (await res.json()) as ListResponse<ImpurityPatternDto>;
+      if (alive) setPatterns(body.items);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
   const [casRepresentative, setCasRepresentative] = useState(initial?.casRepresentative ?? false);
   /** 「この物質を代表にする」を押して確認した相手（いまの代表）。保存するまで印だけ */
   const [switchedFrom, setSwitchedFrom] = useState<CasSiblingDto | null>(null);
@@ -162,6 +186,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
     return {
       code,
       casNumber: casNumber || null,
+      impurityPatternId,
       casRepresentative,
       casRepresentativeSuccessorId: successorId || null,
       status,
@@ -340,6 +365,29 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                   {!settings.casRequired && (
                     <p className="text-muted-foreground text-xs">{m.substances.casHint}</p>
                   )}
+                </div>
+                {/*
+                  不純物パターン（S21）。不純物として入る物質は、パターンごとに別の物質として登録する。
+                  どの規制区分で非該当にするかは「法規制 > 不純物パターン」で決める
+                */}
+                <div className="space-y-2">
+                  <Label htmlFor="impurity-pattern">{m.substances.impurityPattern}</Label>
+                  <select
+                    id="impurity-pattern"
+                    className="border-input bg-background h-9 w-56 rounded-none border px-2 text-sm disabled:opacity-60"
+                    value={impurityPatternId}
+                    disabled={!editing}
+                    onChange={(e) => setImpurityPatternId(e.target.value)}
+                  >
+                    {patterns.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.code} — {pickName(locale, p.nameJa, p.nameEn)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-muted-foreground text-xs">
+                    {m.substances.impurityPatternHint}
+                  </p>
                   {/* 代表かどうか。読むだけのときも出す（一覧の星と同じ意味） */}
                   {initial && casNumber.trim() !== "" && (
                     <p className="text-xs">

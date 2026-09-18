@@ -1,9 +1,10 @@
 import {
+  type AppSettings,
+  IMPURITY_NONE,
   looksLikeCas,
+  type Messages,
   normalizeCas,
   normalizeCode,
-  type AppSettings,
-  type Messages,
   type PublishState,
   type SubstanceInput,
 } from "@chem/shared";
@@ -67,6 +68,7 @@ export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
     code: s.code,
     casNumber: s.casNumber,
     casRepresentative: s.isCasRepresentative,
+    impurityPatternId: s.impurityPatternId,
     status: s.status,
     publishState: s.publishState,
     nameJa: s.nameJa,
@@ -122,6 +124,8 @@ export async function collectWarnings(
   excludeSubstanceId: string | null,
   settings: AppSettings,
   m: Messages,
+  /** 不純物パターン（S21）。同じ CAS でもパターンが違えば別の物質なので、数えるのは同じ組だけ */
+  impurityPatternId = IMPURITY_NONE,
 ): Promise<string[]> {
   const warnings: string[] = [];
   if (!casNormalized) return warnings;
@@ -138,6 +142,7 @@ export async function collectWarnings(
   */
   const sameWhere = {
     casNormalized,
+    impurityPatternId,
     deletedAt: null,
     ...(excludeSubstanceId ? { id: { not: excludeSubstanceId } } : {}),
   };
@@ -175,11 +180,19 @@ export async function collectWarnings(
 /** 更新の中で使う型。トランザクションでも素の client でも呼べるようにする */
 type Db = Pick<typeof prisma, "substance">;
 
-/** 同じCASの、生きている他の物質 */
-export function casSiblings(casNormalized: string, excludeId: string | null) {
+/**
+ * 同じCAS・**同じ不純物パターン**の、生きている他の物質（S21）。
+ * 代表はこの組ごとに 1 件なので、選び直す相手もこの組の中
+ */
+export function casSiblings(
+  casNormalized: string,
+  excludeId: string | null,
+  impurityPatternId = IMPURITY_NONE,
+) {
   return prisma.substance.findMany({
     where: {
       casNormalized,
+      impurityPatternId,
       deletedAt: null,
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
@@ -203,9 +216,16 @@ export async function makeCasRepresentative(
   db: Db,
   substanceId: string,
   casNormalized: string,
+  impurityPatternId = IMPURITY_NONE,
 ): Promise<void> {
   await db.substance.updateMany({
-    where: { casNormalized, deletedAt: null, isCasRepresentative: true, id: { not: substanceId } },
+    where: {
+      casNormalized,
+      impurityPatternId,
+      deletedAt: null,
+      isCasRepresentative: true,
+      id: { not: substanceId },
+    },
     data: { isCasRepresentative: false },
   });
   await db.substance.update({
@@ -220,11 +240,15 @@ export async function makeCasRepresentative(
  * （廃番品の名前が合算表に出続けるのを避けるため）。
  * 生きている物質が1件も無ければ何もしない（代表を立てる相手がいない）。
  */
-export async function ensureCasRepresentative(db: Db, casNormalized: string | null): Promise<void> {
+export async function ensureCasRepresentative(
+  db: Db,
+  casNormalized: string | null,
+  impurityPatternId = IMPURITY_NONE,
+): Promise<void> {
   if (!casNormalized) return;
 
   const alive = await db.substance.findMany({
-    where: { casNormalized, deletedAt: null },
+    where: { casNormalized, impurityPatternId, deletedAt: null },
     select: { id: true, status: true, isCasRepresentative: true },
     orderBy: { createdAt: "asc" },
   });
@@ -253,6 +277,7 @@ export function normalizeInput(input: SubstanceInput) {
     note: input.note?.trim() || null,
     nameJa: input.mainNameJa.trim(),
     nameEn: input.mainNameEn?.trim() || null,
+    impurityPatternId: input.impurityPatternId?.trim() || IMPURITY_NONE,
   };
 }
 

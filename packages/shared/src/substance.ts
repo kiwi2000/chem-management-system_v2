@@ -69,6 +69,11 @@ export const substanceSchema = (m: Messages) =>
      * 無効にする操作で代表が空くときに、画面で選ばせた結果が届く。
      */
     casRepresentativeSuccessorId: z.string().trim().max(50).nullish(),
+    /**
+     * 不純物パターン（S21）。不純物として入る物質は、パターンごとに別の物質として登録する。
+     * 省くと 0「不純物ではない」のまま
+     */
+    impurityPatternId: z.string().trim().max(50).optional(),
     note: emptyToNull(z.string().trim().max(2000, m.validation.tooLong(2000))).optional(),
 
     mainNameJa: z.string().trim().min(1, m.validation.required).max(500, m.validation.tooLong(500)),

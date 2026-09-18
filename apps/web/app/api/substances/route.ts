@@ -132,10 +132,11 @@ export async function POST(req: Request) {
    * 他がいるときは、画面で選ばせた結果が casRepresentative で届く。
    */
   if (base.casNormalized) {
+    // 代表は CAS × 不純物パターンごとに 1 件（S21）
     if (input.casRepresentative) {
-      await makeCasRepresentative(prisma, created.id, base.casNormalized);
+      await makeCasRepresentative(prisma, created.id, base.casNormalized, base.impurityPatternId);
     } else {
-      await ensureCasRepresentative(prisma, base.casNormalized);
+      await ensureCasRepresentative(prisma, base.casNormalized, base.impurityPatternId);
     }
   }
 
@@ -154,6 +155,12 @@ export async function POST(req: Request) {
     diff: { code: base.code, casNumber: base.casNumber, mainNameJa: input.mainNameJa },
   });
 
-  const warnings = await collectWarnings(base.casNormalized, created.id, settings, m);
+  const warnings = await collectWarnings(
+    base.casNormalized,
+    created.id,
+    settings,
+    m,
+    base.impurityPatternId,
+  );
   return Response.json({ id: created.id, warnings }, { status: 201 });
 }

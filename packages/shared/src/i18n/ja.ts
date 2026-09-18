@@ -102,6 +102,7 @@ export const ja = {
     externalDb: "外部データベース",
     elements: "元素",
     metalFactors: "金属換算係数",
+    impurityPatterns: "不純物パターン",
     importExport: "データ入出力",
     dataImport: "インポート",
     dataExport: "エクスポート",
@@ -361,6 +362,10 @@ export const ja = {
   },
 
   substances: {
+    /** 不純物パターン（S21）。物質の属性 */
+    impurityPattern: "不純物パターン",
+    impurityPatternHint:
+      "不純物として入る物質は、パターンごとに別の物質として登録します。パターンごとに、どの規制区分で非該当にするかを「法規制 > 不純物パターン」で決めます",
     publishState: "状態",
     workingSection: "作業中",
     title: "物質",
@@ -778,6 +783,46 @@ export const ja = {
     empty: "法文物質名が登録されていません",
     selectCategory: "上で区分を選んでください",
     duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
+  },
+
+  impurityPatterns: {
+    title: "不純物パターン",
+    lead: "不純物として含む物質を、規制ごとに非該当にするための区分です。物質の「不純物パターン」で選びます",
+    code: "コード",
+    name: "名前",
+    nameEn: "名前（英語）",
+    note: "説明",
+    substanceCount: "物質",
+    add: "＋ 不純物パターン",
+    addTitle: "不純物パターンの追加",
+    editTitle: "不純物パターンの編集",
+    empty: "不純物パターンが登録されていません",
+    builtin: "組み込み",
+    /** 一覧・組成の表に出す短い印。0 のときは何も出さない */
+    none: "不純物ではない",
+    /** 除外の設定 */
+    exemptions: "非該当にする規制区分",
+    exemptionsHint:
+      "チェックを付けた規制区分では、このパターンの物質を必ず非該当にします。法律の行を押すと、その法律の区分をまとめて付け外しできます",
+    exclude: "非該当にする",
+    exceptions: (n: number) => `例外 ${n} 件`,
+    exceptionsTitle: "法文物質名ごとの例外",
+    exceptionsHint:
+      "区分の設定と違う扱いにする法文物質名だけを決めます。触っていないものは区分の設定に従います",
+    followCategory: "区分に従う",
+    excludeHere: "除外する",
+    dontExcludeHere: "除外しない",
+    onlyExceptions: "例外のある行だけ",
+    noneHasNoExemption:
+      "「不純物ではない」には除外の設定がありません。判定はデータソースの合算だけで決まります",
+    builtinCode: "組み込みのパターンのコードは変えられません（名前と説明は変えられます）",
+    builtinDelete: "組み込みのパターンは消せません",
+    inUse: (n: number) =>
+      `このパターンは物質${n}件で使われています。先に物質のパターンを付け替えてください`,
+    duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
+    /** 判定の結果に出す印 */
+    excluded: "不純物のため非該当",
+    excludedHint: "不純物パターンの設定で、この規制区分では非該当と決めています",
   },
 
   metalFactors: {

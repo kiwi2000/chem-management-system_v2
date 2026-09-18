@@ -19,6 +19,10 @@ export async function GET(req: Request) {
   const raw = url.searchParams.get("cas")?.trim() ?? "";
   if (raw === "") return Response.json({ items: [] });
 
-  const items = await casSiblings(normalizeCas(raw), url.searchParams.get("exclude"));
+  const items = await casSiblings(
+    normalizeCas(raw),
+    url.searchParams.get("exclude"),
+    url.searchParams.get("pattern") || undefined,
+  );
   return Response.json({ items });
 }

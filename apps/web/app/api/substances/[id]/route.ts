@@ -132,7 +132,7 @@ export async function PUT(req: Request, { params }: Ctx) {
    * （廃番品の名前が合算表に出続けるのを避けるため）。
    */
   if (input.casRepresentative && base.casNormalized) {
-    await makeCasRepresentative(prisma, id, base.casNormalized);
+    await makeCasRepresentative(prisma, id, base.casNormalized, base.impurityPatternId);
   } else if (existing.isCasRepresentative && base.status !== "ACTIVE") {
     // 無効にした物質の名前を合算表に出し続けないよう、代表を降ろす
     await prisma.substance.update({ where: { id }, data: { isCasRepresentative: false } });
@@ -147,14 +147,19 @@ export async function PUT(req: Request, { params }: Ctx) {
         select: { id: true },
       });
       if (successor) {
-        await makeCasRepresentative(prisma, successor.id, existing.casNormalized);
+        await makeCasRepresentative(
+          prisma,
+          successor.id,
+          existing.casNormalized,
+          existing.impurityPatternId,
+        );
       }
     }
   }
   if (existing.casNormalized && existing.casNormalized !== base.casNormalized) {
-    await ensureCasRepresentative(prisma, existing.casNormalized);
+    await ensureCasRepresentative(prisma, existing.casNormalized, existing.impurityPatternId);
   }
-  await ensureCasRepresentative(prisma, base.casNormalized);
+  await ensureCasRepresentative(prisma, base.casNormalized, base.impurityPatternId);
 
   await writeAudit({
     entity: "substances",
@@ -180,7 +185,13 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
 
   // 更新でも同一CASの警告を出す（v1は登録時しか見ていなかった）
-  const warnings = await collectWarnings(base.casNormalized, id, settings, m);
+  const warnings = await collectWarnings(
+    base.casNormalized,
+    id,
+    settings,
+    m,
+    base.impurityPatternId,
+  );
   return Response.json({ ok: true, warnings });
 }
 
@@ -218,7 +229,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     },
   });
   // 消したのが代表だった場合、そのCASの代表が空く。残っているものから埋め直す
-  await ensureCasRepresentative(prisma, existing.casNormalized);
+  await ensureCasRepresentative(prisma, existing.casNormalized, existing.impurityPatternId);
 
   await writeAudit({
     entity: "substances",

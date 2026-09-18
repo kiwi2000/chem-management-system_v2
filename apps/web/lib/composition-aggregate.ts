@@ -1,11 +1,12 @@
 import {
-  COMPOSITION_MAX_DEPTH,
-  RATIO_ONE,
   compareFine,
+  COMPOSITION_MAX_DEPTH,
   fineToPct,
+  IMPURITY_NONE,
+  type Ratio,
+  RATIO_ONE,
   ratioToFine,
   timesPct,
-  type Ratio,
 } from "@chem/shared";
 import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
 import {
@@ -36,13 +37,18 @@ import type { CompositionAggregateDto } from "@/lib/types";
  * 開けなかった原材料を blocked に載せて呼び出し側から見えるようにする。
  */
 
-/** CASを持たない物質はまとめようがないので、物質IDそのものを鍵にする */
-const keyOf = (casNormalized: string | null, substanceId: string) =>
-  casNormalized ? `cas:${casNormalized}` : `sub:${substanceId}`;
+/**
+ * CASを持たない物質はまとめようがないので、物質IDそのものを鍵にする。
+ * **不純物パターン（S21）が違えば別の行**にする（パターンをまたいで足さない）
+ */
+const keyOf = (casNormalized: string | null, substanceId: string, pattern: string) =>
+  casNormalized ? `cas:${casNormalized}@${pattern}` : `sub:${substanceId}`;
 
 interface Bucket {
   casNumber: string | null;
   casNormalized: string | null;
+  /** 不純物パターン（S21）。0 は「不純物ではない」 */
+  impurityPatternId: string;
   /** 代表が決まるまでの仮の名前。いちばん最初に見つけた物質のもの */
   code: string;
   nameJa: string;
@@ -205,17 +211,20 @@ export async function aggregateComposition(
       casNumber: string | null;
       score: { toString(): string };
       scoreRank: string | null;
+      impurityPatternId?: string;
     },
     ratio: Ratio,
     note: string | null,
   ) {
     const casNormalized = substance.casNumber?.trim().toUpperCase() ?? null;
-    const key = keyOf(casNormalized, substance.id);
+    const pattern = substance.impurityPatternId ?? IMPURITY_NONE;
+    const key = keyOf(casNormalized, substance.id, pattern);
     const fine = ratioToFine(ratio);
 
     const bucket = buckets.get(key) ?? {
       casNumber: substance.casNumber,
       casNormalized,
+      impurityPatternId: pattern,
       code: substance.code,
       nameJa: substance.nameJa,
       nameEn: substance.nameEn,
@@ -263,9 +272,13 @@ export async function aggregateComposition(
             nameEn: true,
             score: true,
             scoreRank: true,
+            impurityPatternId: true,
           },
         });
-  const byCas = new Map(representatives.map((r) => [r.casNormalized ?? "", r]));
+  // 代表は CAS × 不純物パターンごとに 1 件（S21）
+  const byCas = new Map(
+    representatives.map((r) => [`${r.casNormalized ?? ""}@${r.impurityPatternId}`, r]),
+  );
 
   /*
     どの CAS がどの規制区分に効いているか。保持してある判定結果から引くだけで、
@@ -283,9 +296,12 @@ export async function aggregateComposition(
   const rows = [...buckets.values()]
     .sort((a, b) => compareFine(b.fine, a.fine))
     .map((b) => {
-      const rep = b.casNormalized ? byCas.get(b.casNormalized) : undefined;
+      const rep = b.casNormalized
+        ? byCas.get(`${b.casNormalized}@${b.impurityPatternId}`)
+        : undefined;
       return {
         casNumber: b.casNumber,
+        impurityPatternId: b.impurityPatternId,
         code: rep?.code ?? b.code,
         nameJa: rep?.nameJa ?? b.nameJa,
         nameEn: rep?.nameEn ?? b.nameEn,

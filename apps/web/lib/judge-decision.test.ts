@@ -72,7 +72,7 @@ describe("premiseOf", () => {
       premiseOf({
         statutorySubstanceId: "s1",
         contributions: [],
-        excluded: [{ cas: "7439-92-1", pct: "40", pattern: "ip-impurity" }],
+        excluded: [{ cas: "7439-92-1", pattern: "ip-impurity" }],
       }),
     ).toBe("s1:7439-92-1@ip-impurity!");
   });

@@ -98,6 +98,7 @@ export const en: Messages = {
     externalDb: "External databases",
     elements: "Elements",
     metalFactors: "Metal conversion factors",
+    impurityPatterns: "Impurity patterns",
     importExport: "Data import and export",
     dataImport: "Import",
     dataExport: "Export",
@@ -344,6 +345,9 @@ export const en: Messages = {
   },
 
   substances: {
+    impurityPattern: "Impurity pattern",
+    impurityPatternHint:
+      "Register a substance present as an impurity under its own pattern. Which categories each pattern exempts is set under Regulations > Impurity patterns.",
     publishState: "Status",
     workingSection: "In progress",
     title: "Substances",
@@ -750,6 +754,42 @@ export const en: Messages = {
     empty: "No statutory names",
     selectCategory: "Select a category above",
     duplicateCode: (code: string) => `Code "${code}" is already in use`,
+  },
+
+  impurityPatterns: {
+    title: "Impurity patterns",
+    lead: "Groups substances present as impurities so that chosen regulations treat them as non-applicable. Pick one on the substance.",
+    code: "Code",
+    name: "Name",
+    nameEn: "Name (English)",
+    note: "Description",
+    substanceCount: "Substances",
+    add: "+ Impurity pattern",
+    addTitle: "New impurity pattern",
+    editTitle: "Edit impurity pattern",
+    empty: "No impurity patterns",
+    builtin: "Built-in",
+    none: "Not an impurity",
+    exemptions: "Categories treated as non-applicable",
+    exemptionsHint:
+      "In the ticked categories, substances with this pattern are always non-applicable. Tick a law to set all of its categories at once.",
+    exclude: "Treat as non-applicable",
+    exceptions: (n: number) => `${n} exception(s)`,
+    exceptionsTitle: "Exceptions per statutory name",
+    exceptionsHint:
+      "Only the statutory names that differ from the category setting. Everything untouched follows the category.",
+    followCategory: "Follow the category",
+    excludeHere: "Exempt",
+    dontExcludeHere: "Do not exempt",
+    onlyExceptions: "Exceptions only",
+    noneHasNoExemption:
+      '"Not an impurity" has no exemptions. Judgement follows the data sources alone.',
+    builtinCode: "A built-in pattern keeps its code (the name and description can change)",
+    builtinDelete: "A built-in pattern cannot be deleted",
+    inUse: (n: number) => `${n} substance(s) still use this pattern. Move them first`,
+    duplicateCode: (code: string) => `Code "${code}" is already in use`,
+    excluded: "Non-applicable as an impurity",
+    excludedHint: "The impurity pattern marks this category as non-applicable",
   },
 
   metalFactors: {

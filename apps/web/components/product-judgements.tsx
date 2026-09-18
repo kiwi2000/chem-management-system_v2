@@ -7,6 +7,7 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   CircleHelp,
+  Droplets,
   TriangleAlert,
 } from "lucide-react";
 import { Fragment, useCallback, useEffect, useState } from "react";
@@ -932,8 +933,26 @@ function Warning({
   m: M;
   locale: ReturnType<typeof useI18n>["locale"];
 }) {
+  /*
+    不純物パターンで除外した寄与（S21）。**黙って消さない。**
+    「その CAS は入っているのに非該当」の理由がここでしか読めない
+  */
+  const excluded = j.hits.flatMap((h) => h.excluded ?? []);
+
   return (
     <>
+      {excluded.length > 0 && (
+        <p
+          className="text-muted-foreground inline-flex items-center gap-1 text-xs"
+          title={m.impurityPatterns.excludedHint}
+        >
+          <Droplets className="size-3" />
+          {m.impurityPatterns.excluded}
+          <span className="font-mono">
+            （{excluded.map((x) => `${x.cas} ${x.pct}%`).join("、")}）
+          </span>
+        </p>
+      )}
       {/*
         **警告と要確認は別。**要確認でなくても、気を付けることがあれば必ず出す。
         条件つきで結ばれたCASは、システム設定によっては要確認にせず警告だけになる

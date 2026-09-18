@@ -368,6 +368,8 @@ export interface SubstanceListItemDto {
    * この物質から取る。CASが無い物質は false
    */
   casRepresentative: boolean;
+  /** 不純物パターン（S21）。0（`ip-none`）は「不純物ではない」 */
+  impurityPatternId: string;
   status: SubstanceStatus;
   /** 公開の状態。公開済になるまで他の人には見えない */
   publishState: PublishState;
@@ -647,6 +649,8 @@ export interface CellStatutoryDto {
 export interface AggregateRowDto {
   /** CAS番号。持たない物質は null（まとめようがないので1物質1行になる） */
   casNumber: string | null;
+  /** 不純物パターン（S21）。同じ CAS でもパターンが違えば別の行 */
+  impurityPatternId: string;
   /** 代表物質のコードと名称。CASを持たない物質は自分自身のもの */
   code: string;
   nameJa: string;
@@ -1172,6 +1176,32 @@ export interface LinkSetVersionDto {
 }
 
 /** データソース（バージョン × データソース種別）。取り込みの単位でもある */
+/**
+ * 不純物パターン（S21）。物質の属性で、パターンごとに「どの規制区分で非該当にするか」を持つ
+ */
+export interface ImpurityPatternDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  note: string | null;
+  displayOrder: number;
+  /** 組み込み（0・1）。消せない */
+  builtin: boolean;
+  /** 0「不純物ではない」。除外の設定を持たない */
+  isNone: boolean;
+  /** このパターンを使っている物質の数 */
+  substanceCount: number;
+}
+
+/** そのパターンの除外の設定 */
+export interface ImpurityExemptionsDto {
+  /** 非該当にする規制区分 */
+  categoryIds: string[];
+  /** 法文物質名ごとの上書き（区分の設定より強い）。区分は「例外 N 件」を出すため */
+  substances: { statutorySubstanceId: string; categoryId: string; excluded: boolean }[];
+}
+
 export interface LinkVersionSourceDto {
   id: string;
   versionId: string;
