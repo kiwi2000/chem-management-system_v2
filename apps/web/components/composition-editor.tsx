@@ -163,6 +163,17 @@ function ExpandButtons({
   );
 }
 
+/** 候補の検索条件。ページを送るときも同じものを使う */
+interface SearchCond {
+  id: string;
+  cas: string;
+  name: string;
+  nameOp: TextOperator;
+  nameScope: NameScope;
+  substance: boolean;
+  product: boolean;
+}
+
 export function CompositionEditor({
   productId,
   settings,
@@ -196,7 +207,7 @@ export function CompositionEditor({
 
   // 追加用の検索
   /** 検索の条件。入れた条件はすべて満たすものを探す */
-  const [cond, setCond] = useState({
+  const [cond, setCond] = useState<SearchCond>({
     id: "",
     cas: "",
     name: "",
@@ -206,6 +217,16 @@ export function CompositionEditor({
     product: true,
   });
   const [candidates, setCandidates] = useState<CompositionCandidateDto[] | null>(null);
+  /*
+    当たった全件数と、いま見ているページ（2026-09-18 指示）。
+    **以前は 50 件で打ち切って、そのことを伝えていなかった。**
+    件数が出れば、多すぎるときに絞り直す合図にもなる
+  */
+  const [candidateTotal, setCandidateTotal] = useState(0);
+  const [candidatePage, setCandidatePage] = useState(1);
+  const [candidatePageSize, setCandidatePageSize] = useState(50);
+  /** ページを送るときに使う、検索したときの条件。あとから欄を触っても送り先は変わらない */
+  const [searchedCond, setSearchedCond] = useState<SearchCond | null>(null);
   /** 結果から選んだもの。「種別:ID」で持つ */
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [searching, setSearching] = useState(false);
@@ -243,26 +264,49 @@ export function CompositionEditor({
 
   /** 条件で候補を探す。打つたびではなく「検索」で引く */
   async function search() {
+    setSearchedCond(cond);
+    await runSearch(cond, 1);
+  }
+
+  /**
+   * 候補を引く。ページを送るときは、検索したときの条件のまま引き直す。
+   *
+   * **ページをまたいで選択は持ち越さない。**出ていないものまで足すと、
+   * ボタンの数と実際に足されるものが食い違う
+   */
+  async function runSearch(target: SearchCond, page: number) {
     setSearching(true);
     setPicked(new Set());
     try {
       const params = new URLSearchParams({
-        id: cond.id,
-        cas: cond.cas,
-        name: cond.name,
-        nameOp: cond.nameOp,
-        nameScope: cond.nameScope,
-        substance: cond.substance ? "1" : "0",
-        product: cond.product ? "1" : "0",
+        id: target.id,
+        cas: target.cas,
+        name: target.name,
+        nameOp: target.nameOp,
+        nameScope: target.nameScope,
+        substance: target.substance ? "1" : "0",
+        product: target.product ? "1" : "0",
         exclude: productId,
+        page: String(page),
       });
       const res = await fetch(`/api/composition/candidates?${params.toString()}`);
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         setCandidates([]);
+        setCandidateTotal(0);
+        setCandidatePage(1);
         return;
       }
-      setCandidates(((await res.json()) as { items: CompositionCandidateDto[] }).items);
+      const body = (await res.json()) as {
+        items: CompositionCandidateDto[];
+        total: number;
+        page: number;
+        pageSize: number;
+      };
+      setCandidates(body.items);
+      setCandidateTotal(body.total);
+      setCandidatePage(body.page);
+      setCandidatePageSize(body.pageSize);
     } finally {
       setSearching(false);
     }
@@ -325,6 +369,9 @@ export function CompositionEditor({
       product: true,
     });
     setCandidates(null);
+    setCandidateTotal(0);
+    setCandidatePage(1);
+    setSearchedCond(null);
     setPicked(new Set());
     searchRef.current?.focus();
   }
@@ -526,6 +573,8 @@ export function CompositionEditor({
     () => (candidates ?? []).filter((c) => !alreadyAdded.has(`${c.kind}:${c.id}`)),
     [candidates, alreadyAdded],
   );
+  /** 何ページあるか。1ページに収まるなら送りは出さない */
+  const candidatePageCount = Math.max(1, Math.ceil(candidateTotal / candidatePageSize));
   const allPicked =
     selectable.length > 0 && selectable.every((c) => picked.has(`${c.kind}:${c.id}`));
 
@@ -1159,14 +1208,49 @@ export function CompositionEditor({
                       </tbody>
                     </table>
                   </ResizableBox>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={picked.size === 0 || full}
-                    onClick={addPicked}
-                  >
-                    {m.composition.addSelected(picked.size)}
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={picked.size === 0 || full}
+                      onClick={addPicked}
+                    >
+                      {m.composition.addSelected(picked.size)}
+                    </Button>
+                    {/* 当たった全件。多いときは、条件を絞り直す合図になる */}
+                    <span className="text-muted-foreground text-xs">
+                      {m.common.totalCount(candidateTotal)}
+                    </span>
+                    {candidatePageCount > 1 && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          aria-label={m.table.prevPage}
+                          title={m.table.prevPage}
+                          disabled={searching || candidatePage <= 1}
+                          onClick={() => void runSearch(searchedCond ?? cond, candidatePage - 1)}
+                        >
+                          {m.table.prevMark}
+                        </Button>
+                        <span className="text-muted-foreground text-xs tabular-nums">
+                          {m.common.pageOf(candidatePage, candidatePageCount)}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          aria-label={m.table.nextPage}
+                          title={m.table.nextPage}
+                          disabled={searching || candidatePage >= candidatePageCount}
+                          onClick={() => void runSearch(searchedCond ?? cond, candidatePage + 1)}
+                        >
+                          {m.table.nextMark}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </>
               ))}
           </div>

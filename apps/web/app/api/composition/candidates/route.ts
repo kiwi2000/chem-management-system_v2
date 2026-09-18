@@ -5,8 +5,15 @@ import type { CompositionCandidateDto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-/** 候補は選ぶためのものなので、多すぎても選べない */
-const LIMIT = 50;
+/**
+ * 1ページに出す件数（2026-09-18 指示でページ送りにした）。
+ *
+ * **以前は 50 件で打ち切って、そのことを何も伝えていなかった。**
+ * 51件目以降は無いのと同じに見え、表の上の全選択も出ている50件しか選ばない。
+ * いまは全体の件数を返し、ページで送る
+ */
+const PAGE_SIZE_DEFAULT = 50;
+const PAGE_SIZE_MAX = 200;
 
 const SELECT = { id: true, code: true, nameJa: true, nameEn: true } as const;
 /** 物質はCAS番号も返す。原材料は持たないので null を足す */
@@ -73,9 +80,14 @@ export async function GET(req: Request) {
   const wantSubstance = url.searchParams.get("substance") !== "0";
   const wantProduct = url.searchParams.get("product") !== "0";
   const exclude = url.searchParams.get("exclude");
+  const page = Math.max(1, Number(url.searchParams.get("page") ?? "") || 1);
+  const sizeRaw = Number(url.searchParams.get("size") ?? "") || PAGE_SIZE_DEFAULT;
+  const pageSize = Math.min(PAGE_SIZE_MAX, Math.max(1, sizeRaw));
 
   // 条件が何も無いときは全件を返さない（選ぶための一覧なので、まず絞ってもらう）
-  if (id === "" && cas === "" && name === "") return Response.json({ items: [] });
+  if (id === "" && cas === "" && name === "") {
+    return Response.json({ items: [], total: 0, page: 1, pageSize });
+  }
 
   const common = [
     ...(id === "" ? [] : [{ codeNormalized: { contains: normalizeCode(id) } }]),
@@ -83,43 +95,62 @@ export async function GET(req: Request) {
   ];
   const casNormalized = normalizeCas(cas);
 
+  const substanceWhere = {
+    deletedAt: null,
+    status: "ACTIVE" as const,
+    publishState: "PUBLISHED" as const,
+    ...(cas === "" ? {} : { casNormalized }),
+    AND: common,
+  };
+  const productWhere = {
+    deletedAt: null,
+    status: "ACTIVE" as const,
+    // 公開されていないものは、まだ他の人に使わせない
+    publishState: "PUBLISHED" as const,
+    usableAsMaterial: true,
+    // 自分自身は原材料にできない（循環になる）
+    ...(exclude ? { id: { not: exclude } } : {}),
+    // CAS は原材料自身ではなく、その組成に含まれる物質で突き合わせる
+    ...(cas === ""
+      ? {}
+      : { compositionLines: { some: { substance: { casNormalized, deletedAt: null } } } }),
+    AND: common,
+  };
+
+  /*
+    **並びは「物質を全部 → 原材料を全部」、それぞれコード順。**
+    2つの表をまたいで1つの並びにすると SQL を1本書くことになるが、
+    この画面は選ぶためのものなので、種類ごとにまとまっているほうが探しやすい。
+    ページの切り出しは、2つの件数から計算する
+  */
+  const [substanceTotal, productTotal] = await Promise.all([
+    wantSubstance ? prisma.substance.count({ where: substanceWhere }) : Promise.resolve(0),
+    wantProduct ? prisma.product.count({ where: productWhere }) : Promise.resolve(0),
+  ]);
+
+  const offset = (page - 1) * pageSize;
   const items: CompositionCandidateDto[] = [];
 
-  if (wantSubstance) {
+  if (wantSubstance && offset < substanceTotal) {
     const rows = await prisma.substance.findMany({
-      where: {
-        deletedAt: null,
-        status: "ACTIVE",
-        publishState: "PUBLISHED",
-        ...(cas === "" ? {} : { casNormalized }),
-        AND: common,
-      },
+      where: substanceWhere,
       select: SELECT_SUBSTANCE,
       orderBy: { codeNormalized: "asc" },
-      take: LIMIT,
+      skip: offset,
+      take: Math.min(pageSize, substanceTotal - offset),
     });
     items.push(...rows.map((r) => ({ ...r, hasComposition: false, kind: "substance" as const })));
   }
 
-  if (wantProduct) {
+  const rest = pageSize - items.length;
+  if (wantProduct && rest > 0) {
     const rows = await prisma.product.findMany({
-      where: {
-        deletedAt: null,
-        status: "ACTIVE",
-        // 公開されていないものは、まだ他の人に使わせない
-        publishState: "PUBLISHED",
-        usableAsMaterial: true,
-        // 自分自身は原材料にできない（循環になる）
-        ...(exclude ? { id: { not: exclude } } : {}),
-        // CAS は原材料自身ではなく、その組成に含まれる物質で突き合わせる
-        ...(cas === ""
-          ? {}
-          : { compositionLines: { some: { substance: { casNormalized, deletedAt: null } } } }),
-        AND: common,
-      },
+      where: productWhere,
       select: SELECT_PRODUCT,
       orderBy: { codeNormalized: "asc" },
-      take: LIMIT,
+      // 物質を使い切ったあとの続きから
+      skip: Math.max(0, offset - substanceTotal),
+      take: rest,
     });
     items.push(
       ...rows.map(({ _count, ...r }) => ({
@@ -131,5 +162,5 @@ export async function GET(req: Request) {
     );
   }
 
-  return Response.json({ items });
+  return Response.json({ items, total: substanceTotal + productTotal, page, pageSize });
 }
