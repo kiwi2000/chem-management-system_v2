@@ -683,7 +683,8 @@ export const ja = {
     used: "採用",
     updatedAt: "更新日",
     diff: "差分",
-    diffOff: "差分なし",
+    /** 比べる相手を選んでいない状態。「差分なし」だと「比べたが差が無い」と読める（2026-09-18 指示） */
+    diffOff: "比較しない",
     diffAgainst: (code: string) => `${code} と比較`,
     diffKind: "差分",
     diffAdded: "追加",

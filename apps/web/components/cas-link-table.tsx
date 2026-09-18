@@ -509,7 +509,7 @@ export function CasLinkTable({
           <div className="flex flex-wrap items-center gap-2">
             {/*
               比べる相手。同じデータソースの別の版だけが候補。
-              選ぶと差分モードになり、「差分なし」に戻すと通常の表
+              選ぶと差分モードになり、「比較しない」に戻すと通常の表
             */}
             <select
               className={SELECT_CLASS}

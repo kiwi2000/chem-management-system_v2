@@ -662,7 +662,7 @@ export const en: Messages = {
     used: "Used",
     updatedAt: "Updated",
     diff: "Diff",
-    diffOff: "No diff",
+    diffOff: "Do not compare",
     diffAgainst: (code: string) => `Compare with ${code}`,
     diffKind: "Diff",
     diffAdded: "Added",
