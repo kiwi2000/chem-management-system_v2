@@ -404,25 +404,41 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "effectiveFrom", kind: "date", field: "effectiveFrom" },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
   /*
-    **結び付いている CAS から探す**（2026-09-18 指示）。
-    リンクの表をたどって「その CAS を持つリンクが1件でもあるか」で見る。
-    「空」はリンクが1件も無い法文物質名、「空でない」は1件でもあるもの
-  */
-  {
-    key: "casNumber",
-    kind: "text",
-    field: "casNormalized",
-    normalize: normalizeCas,
-    relation: "links",
-    sortable: false,
-  },
-  /*
-    **結び付いている物質の名前から探す**（同日 指示）。
+    **結び付いている物質の名前から探す**（2026-09-18 指示）。
     物質の表とはつながっていない（CAS番号で突き合わせる）ので、
     条件はここでは作らず、物質を引いてから組み立てる（lib/law-service.ts）
   */
   { key: "substanceName", kind: "text", field: "nameJa", sortable: false, custom: () => null },
 ];
+
+/**
+ * 法文物質名の列。**いま判定に使っている版が要る**ので関数にしてある。
+ *
+ * 「結び付いた CAS番号」で探すとき、版を限らないと、**古い版にしか無い結び付きで当たる**。
+ * 画面（規制対象CAS）はいまの版を出しているので、一覧に「CASが付いていないはずの行」が並んだ
+ * （2026-09-18 指摘）。番号は完全一致で見る。部分一致だったころは
+ * `50-00-0` で探すと `71550-00-0` の行まで出ていた
+ */
+export function statutorySubstanceColumns(versionId: string | null): QueryColumn[] {
+  return [
+    ...STATUTORY_SUBSTANCE_COLUMNS,
+    {
+      key: "casNumber",
+      kind: "list",
+      field: "casNormalized",
+      sortable: false,
+      custom: (f) => {
+        if (f.kind !== "list") return null;
+        const values = [...new Set(f.values.map(normalizeCas).filter((v) => v !== ""))];
+        if (values.length === 0) return null;
+        // 版が決まっていないときは、当たるものが無い（判定も動いていない状態）
+        if (versionId === null) return { id: { in: [] } };
+        const each = values.map((v) => ({ links: { some: { versionId, casNormalized: v } } }));
+        return f.op === "all" ? { AND: each } : { OR: each };
+      },
+    },
+  ];
+}
 
 export const METAL_FACTOR_COLUMNS: QueryColumn[] = [
   { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },

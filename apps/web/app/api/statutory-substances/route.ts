@@ -15,7 +15,8 @@ import {
   thresholdOrderError,
   toStatutorySubstanceDto,
 } from "@/lib/law-service";
-import { STATUTORY_SUBSTANCE_COLUMNS } from "@/lib/list-columns";
+import { getCurrentVersion } from "@/lib/current-version";
+import { statutorySubstanceColumns } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -30,9 +31,12 @@ export async function GET(req: Request) {
   const actor = await requirePermission("REGULATION_VIEW");
   if (actor instanceof Response) return actor;
 
+  // 結び付きはいまの版だけを見る（古い版にしか無いものでは当てない）
+  const version = await getCurrentVersion();
+  const columns = statutorySubstanceColumns(version?.id ?? null);
   const state = parseTableState(
     new URL(req.url).searchParams,
-    STATUTORY_SUBSTANCE_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+    columns.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
   // 物質名の条件だけは、物質の表を引いてから作る（法文物質名とは CAS番号でつながる）
@@ -41,20 +45,21 @@ export async function GET(req: Request) {
     actor,
     state.filters.substanceName,
     classFilter?.kind === "enum" ? classFilter.values : [],
+    version?.id ?? null,
     await getServerMessages(),
   );
   // 当たる物質が多すぎるときは、切り詰めた結果を出さずに断る
   if (byName instanceof Response) return byName;
   const where = {
     deletedAt: null,
-    ...buildWhere(STATUTORY_SUBSTANCE_COLUMNS, state.filters),
+    ...buildWhere(columns, state.filters),
     ...(byName ?? {}),
   };
 
   const [items, total] = await Promise.all([
     prisma.statutorySubstance.findMany({
       where,
-      orderBy: buildOrderBy(STATUTORY_SUBSTANCE_COLUMNS, state.sort, { displayOrder: "asc" }),
+      orderBy: buildOrderBy(columns, state.sort, { displayOrder: "asc" }),
       include: SUBSTANCE_INCLUDE,
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,

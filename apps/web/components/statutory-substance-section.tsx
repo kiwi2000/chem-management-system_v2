@@ -211,9 +211,11 @@ export function StatutorySubstanceSection({
         */
         key: "casNumber",
         header: m.statutorySubstances.casNumber,
-        kind: "text",
+        // 番号は完全一致。複数まとめて打てる（物質の一覧の CAS番号の欄と同じ）
+        kind: "list",
         filterOnly: true,
         sortable: false,
+        filterFullWidth: true,
         filterPlaceholder: "108-88-3",
       },
       {

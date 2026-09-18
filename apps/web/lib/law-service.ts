@@ -181,9 +181,10 @@ export function thresholdOrderError(
  *
  * **黙って切り詰めない**（2026-09-18 指摘）。出るはずのものが出ないまま「該当なし」に
  * 見えると、法規制の確認で見落としになる。
- * 数そのものは、PostgreSQL が1つの問い合わせに取れる値の数（65535）に届かない範囲で決めている
+ * 数そのものは、PostgreSQL が1つの問い合わせに取れる値の数（**32767**。65535 ではない）に
+ * ほかの条件のぶんの余裕を残して決めている。超えると切り詰めではなく問い合わせ自体が失敗する
  */
-const NAME_MATCH_MAX = 50000;
+const NAME_MATCH_MAX = 30000;
 
 /** LIKE の特殊文字（% _ \）を、そのままの文字として扱わせる */
 function likeLiteral(value: string): string {
@@ -206,6 +207,8 @@ export async function linkedSubstanceNameWhere(
   actor: Actor,
   filter: ColumnFilter | undefined,
   classIds: string[],
+  /** いま判定に使っている版。結び付きはこの版のものだけを見る（2026-09-18 指摘） */
+  versionId: string | null,
   m: Messages,
 ): Promise<Prisma.StatutorySubstanceWhereInput | Response | null> {
   if (!filter || filter.kind !== "text") return null;
@@ -225,6 +228,8 @@ export async function linkedSubstanceNameWhere(
           : `%${lit}%`;
   const seeAll = actor.has("INACTIVE_VIEW");
   const anyClass = classIds.length === 0;
+  // 版が決まっていないときは、当たるものが無い（判定も動いていない状態）
+  if (versionId === null) return { id: { in: [] } };
 
   const rows = await prisma.$queryRaw<{ id: string }[]>`
     SELECT DISTINCT l.statutory_substance_id AS id
@@ -234,7 +239,8 @@ export async function linkedSubstanceNameWhere(
     JOIN substances s
       ON s.cas_normalized = l.cas_normalized AND s.deleted_at IS NULL
     LEFT JOIN substance_aliases a ON a.substance_id = s.id
-    WHERE (${anyClass} OR ss.class_id = ANY(${classIds}::text[]))
+    WHERE l.version_id = ${versionId}::text
+      AND (${anyClass} OR ss.class_id = ANY(${classIds}::text[]))
       AND (${seeAll} OR s.publish_state = 'PUBLISHED' OR s.created_by = ${actor.user.id}::text)
       AND (
         LOWER(s.name_ja) LIKE LOWER(${pattern})
