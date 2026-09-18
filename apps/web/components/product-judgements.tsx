@@ -1,7 +1,14 @@
 "use client";
 
 import { pickName } from "@chem/shared";
-import { Check, ChevronDown, ChevronRight, CircleHelp, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  CircleHelp,
+  TriangleAlert,
+} from "lucide-react";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -399,7 +406,7 @@ export function ProductJudgements({
                     setOpen(new Set(openable));
                   }}
                 >
-                  <ChevronRight className="mr-1 size-3.5" />
+                  <ChevronsUpDown className="mr-1 size-3.5" />
                   {m.composition.expandAll}
                 </Button>
               )}
@@ -415,7 +422,7 @@ export function ProductJudgements({
                     setOpenCountries(new Set());
                   }}
                 >
-                  <ChevronDown className="mr-1 size-3.5" />
+                  <ChevronsDownUp className="mr-1 size-3.5" />
                   {m.composition.collapseAll}
                 </Button>
               )}

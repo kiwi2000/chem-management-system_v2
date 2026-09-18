@@ -1738,8 +1738,8 @@ export const en: Messages = {
     noCandidates: "Nothing matches",
 
     expand: "Show contents",
-    expandAll: "Open",
-    expandAllHint: "Open all",
+    expandAll: "Expand all",
+    expandAllHint: "Open them all",
 
     aggregateTitle: "Expanded and combined by CAS",
     nearMissShow: "Below the threshold",
@@ -1778,8 +1778,8 @@ export const en: Messages = {
     aggregateShowSources: "Show sources",
     aggregateIncomplete: (n: number) =>
       `${n} material(s) could not be broken down. This table is not complete yet, and the total below will not reach 100%.`,
-    collapseAll: "Close",
-    collapseAllHint: "Close all",
+    collapseAll: "Collapse all",
+    collapseAllHint: "Close them all",
     collapse: "Hide",
     expandedOf: (name: string) => `Contents of ${name}`,
     withinParent: (name: string, pct: string) => `${pct}% within ${name}`,

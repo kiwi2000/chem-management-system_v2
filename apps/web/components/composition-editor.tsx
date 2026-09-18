@@ -12,8 +12,8 @@ import {
   type TextOperator,
 } from "@chem/shared";
 import {
-  ChevronDown,
-  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
   CircleHelp,
   Database,
   GitCompare,
@@ -144,7 +144,7 @@ function ExpandButtons({
           title={m.composition.expandAllHint}
           onClick={onExpand}
         >
-          <ChevronRight className="mr-1 size-3.5" />
+          <ChevronsUpDown className="mr-1 size-3.5" />
           {m.composition.expandAll}
         </Button>
       )}
@@ -156,7 +156,7 @@ function ExpandButtons({
           title={m.composition.collapseAllHint}
           onClick={onCollapse}
         >
-          <ChevronDown className="mr-1 size-3.5" />
+          <ChevronsDownUp className="mr-1 size-3.5" />
           {m.composition.collapseAll}
         </Button>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight, Database } from "lucide-react";
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Database } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { CELL_CLIP, OPAQUE_MUTED_40 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
@@ -353,7 +353,7 @@ function Matrix({
                 setFoldedParents(new Set());
               }}
             >
-              <ChevronRight className="mr-1 size-3.5" />
+              <ChevronsUpDown className="mr-1 size-3.5" />
               {m.composition.expandAll}
             </Button>
           )}
@@ -368,7 +368,7 @@ function Matrix({
                 if (parentHeader) setFoldedParents(new Set(allGroupKeys));
               }}
             >
-              <ChevronDown className="mr-1 size-3.5" />
+              <ChevronsDownUp className="mr-1 size-3.5" />
               {m.composition.collapseAll}
             </Button>
           )}

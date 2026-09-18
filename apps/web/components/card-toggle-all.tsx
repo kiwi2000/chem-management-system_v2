@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -27,7 +27,7 @@ export function CardToggleAll() {
           title={m.composition.expandAllHint}
           onClick={() => setAllCards(true)}
         >
-          <ChevronRight className="mr-1 size-3.5" />
+          <ChevronsUpDown className="mr-1 size-3.5" />
           {m.composition.expandAll}
         </Button>
       )}
@@ -39,7 +39,7 @@ export function CardToggleAll() {
           title={m.composition.collapseAllHint}
           onClick={() => setAllCards(false)}
         >
-          <ChevronDown className="mr-1 size-3.5" />
+          <ChevronsDownUp className="mr-1 size-3.5" />
           {m.composition.collapseAll}
         </Button>
       )}
