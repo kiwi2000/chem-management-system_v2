@@ -535,9 +535,6 @@ async function stageLaw(
   const catMap = new Map(categories.map((c) => [c.codeNormalized, c]));
 
   // 結び付きは法律ごとにまとめて読む（法文物質名の id → 版/ソース/CAS の集合）
-  const substanceIds = categories.flatMap((c) =>
-    c.classes.flatMap((k) => k.statutorySubstances.map((s) => s.id)),
-  );
   const linkMap = new Map<
     string,
     {
@@ -550,7 +547,7 @@ async function stageLaw(
       updatedBy: string | null;
     }
   >();
-  if (substanceIds.length > 0) {
+  if (lawId && categories.length > 0) {
     // 大きい法律（LOLI 由来で十数万）は id 順に区切って読む
     let cursor: string | null = null;
     for (;;) {
@@ -566,8 +563,16 @@ async function stageLaw(
         source: { codeNormalized: string };
         data: { text: string; textJa: string | null } | null;
       }[] = await prisma.statutoryCasLink.findMany({
+        /*
+          **法文物質名の id を並べず、法律をたどって引く**（2026-09-18 指摘）。
+          並べると大きい法律で数万個になり、値の数の上限（32767）に当たる。
+          実測でも、たどるほうが速い（JP-ISHA の 4 万件で 290ms → 127ms）
+        */
         where: {
-          statutorySubstanceId: { in: substanceIds },
+          statutorySubstance: {
+            deletedAt: null,
+            regulationClass: { category: { lawId } },
+          },
           ...(cursor ? { id: { gt: cursor } } : {}),
         },
         orderBy: { id: "asc" },

@@ -100,18 +100,35 @@ async function heartbeat(jobId: string, data: Prisma.DocumentBatchJobUpdateManyM
 const LIST_DEFAULT = emptyTableState([{ column: "code", direction: "asc" }]);
 
 /**
- * 作る相手の ID を決める。
- * 絞り込みの条件で頼まれたときは、**一覧の API と同じ列・同じ見える範囲**で引き直す
+ * 作る相手の引きかた。
+ *
+ * **ID の並びで頼まれたときはその並び、絞り込みで頼まれたときは条件そのもの。**
+ * 条件のまま持ち回れば、一覧の帳票で「当たる全件」を頼まれても
+ * id を数万個並べずに済む（2026-09-18 指摘）。
+ * 実際、物質 6 万件では `id in (...)` が
+ * 「値が多すぎる（上限 32767 個）」で落ちていた
+ */
+export type TargetQuery =
+  | { kind: "ids"; ids: string[] }
+  | {
+      kind: "where";
+      where: Record<string, unknown>;
+      orderBy: Record<string, "asc" | "desc">[];
+    };
+
+/**
+ * 作る相手の引きかたを決める。
+ * 絞り込みの条件で頼まれたときは、**一覧の API と同じ列・同じ見える範囲**で組み立てる
  * （見えないものは件数にも入らない）。並びも一覧と同じにして、刷ったときの順が画面と揃うようにする
  */
-export async function resolveTargetIds(
+export async function resolveTargetQuery(
   actor: Actor,
   target: DocumentTarget,
   selection: DocSelection,
-): Promise<string[]> {
+): Promise<TargetQuery> {
   // 対象なしは 1 枚だけ。相手の id は使わない
-  if (target === "NONE") return [""];
-  if (selection.mode === "ids") return [...new Set(selection.ids)];
+  if (target === "NONE") return { kind: "ids", ids: [""] };
+  if (selection.mode === "ids") return { kind: "ids", ids: [...new Set(selection.ids)] };
   // 一覧の帳票は、製品（物質）の表で選ぶ。絞り込みの読みかたは製品（物質）と同じ
   target = listRowTarget(target) ?? target;
   const params = new URLSearchParams(selection.filter);
@@ -121,12 +138,11 @@ export async function resolveTargetIds(
       ORGANISATION_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
       emptyTableState([{ column: "displayOrder", direction: "asc" }]),
     );
-    const rows = await prisma.organisation.findMany({
+    return {
+      kind: "where",
       where: { deletedAt: null, ...buildWhere(ORGANISATION_COLUMNS, state.filters) },
       orderBy: buildOrderBy(ORGANISATION_COLUMNS, state.sort, { displayOrder: "asc" }),
-      select: { id: true },
-    });
-    return rows.map((r) => r.id);
+    };
   }
   if (target === "CATEGORY") {
     const state = parseTableState(
@@ -134,12 +150,11 @@ export async function resolveTargetIds(
       REGULATION_CATEGORY_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
       emptyTableState([{ column: "displayOrder", direction: "asc" }]),
     );
-    const rows = await prisma.regulationCategory.findMany({
+    return {
+      kind: "where",
       where: { deletedAt: null, ...buildWhere(REGULATION_CATEGORY_COLUMNS, state.filters) },
       orderBy: buildOrderBy(REGULATION_CATEGORY_COLUMNS, state.sort, { displayOrder: "asc" }),
-      select: { id: true },
-    });
-    return rows.map((r) => r.id);
+    };
   }
   if (target === "PRODUCT") {
     const version = await getCurrentVersion();
@@ -149,32 +164,69 @@ export async function resolveTargetIds(
       columns.map((c) => ({ key: c.key, kind: c.kind })),
       LIST_DEFAULT,
     );
-    const rows = await prisma.product.findMany({
+    return {
+      kind: "where",
       where: {
         deletedAt: null,
         ...productVisibility(actor),
         ...buildWhere(columns, state.filters),
       },
       orderBy: buildOrderBy(columns, state.sort, { codeNormalized: "asc" }),
-      select: { id: true },
-    });
-    return rows.map((r) => r.id);
+    };
   }
   const state = parseTableState(
     params,
     SUBSTANCE_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
     LIST_DEFAULT,
   );
-  const rows = await prisma.substance.findMany({
+  return {
+    kind: "where",
     where: {
       deletedAt: null,
       ...substanceVisibility(actor),
       ...buildWhere(SUBSTANCE_COLUMNS, state.filters),
     },
     orderBy: buildOrderBy(SUBSTANCE_COLUMNS, state.sort, { codeNormalized: "asc" }),
+  };
+}
+
+/** その種類の相手を、条件で引くときの入口（一覧の帳票以外は id で回す） */
+function modelOf(target: DocumentTarget) {
+  const t = listRowTarget(target) ?? target;
+  if (t === "ORGANISATION") return prisma.organisation;
+  if (t === "CATEGORY") return prisma.regulationCategory;
+  if (t === "PRODUCT") return prisma.product;
+  return prisma.substance;
+}
+
+/**
+ * 作る相手の ID を決める（1 件につき 1 枚のとき）。
+ * 一覧の帳票は id を並べずに済むので `resolveTargetQuery` のまま持ち回る
+ */
+export async function resolveTargetIds(
+  actor: Actor,
+  target: DocumentTarget,
+  selection: DocSelection,
+): Promise<string[]> {
+  const q = await resolveTargetQuery(actor, target, selection);
+  if (q.kind === "ids") return q.ids;
+  const rows = await (modelOf(target).findMany as (args: unknown) => Promise<{ id: string }[]>)({
+    where: q.where,
+    orderBy: q.orderBy,
     select: { id: true },
   });
   return rows.map((r) => r.id);
+}
+
+/** 何件が相手になるか。**数えるだけのときは id を持ってこない** */
+export async function countTargets(
+  actor: Actor,
+  target: DocumentTarget,
+  selection: DocSelection,
+): Promise<number> {
+  const q = await resolveTargetQuery(actor, target, selection);
+  if (q.kind === "ids") return q.ids.length;
+  return (modelOf(target).count as (args: unknown) => Promise<number>)({ where: q.where });
 }
 
 /** ファイル名の {対象名} に使う名前。対象なしはテンプレートの名前 */
@@ -267,10 +319,19 @@ async function run(jobId: string): Promise<void> {
     };
     const orgChoices = parseOrgChoices(p.org);
 
-    const ids = await resolveTargetIds(actor, template.target, job.selection as DocSelection);
     // 一覧の帳票は、選んだ全部で 1 枚。そうでなければ 1 件につき 1 枚
     const isList = targetIsList(template.target);
-    const units: string[][] = isList ? [ids] : ids.map((id) => [id]);
+    /*
+      **一覧の帳票は id を並べない**（2026-09-18 指摘）。条件のまま集める側へ渡す。
+      1 件につき 1 枚のときは、どのみち 1 件ずつ回すので id の並びが要る
+    */
+    const listQuery = isList
+      ? await resolveTargetQuery(actor, template.target, job.selection as DocSelection)
+      : null;
+    const ids = isList
+      ? []
+      : await resolveTargetIds(actor, template.target, job.selection as DocSelection);
+    const units: string[][] = isList ? [[]] : ids.map((id) => [id]);
     // 繰り返しの区間があるときだけ、1 件ごとのデータも集める
     const withItems = isList && content.blocks.some((b) => b.kind === "repeatStart");
     await heartbeat(jobId, { total: units.length });
@@ -287,9 +348,10 @@ async function run(jobId: string): Promise<void> {
       const id = isList ? "" : (unit[0] ?? "");
       try {
         // 見る権限は、集める側が対象ごとに判断する（見られないものは null）
-        const data = isList
-          ? await collectForList(actor, template.target, unit, locale, m, parties, withItems)
-          : await collectFor(actor, template.target, id, locale, m, parties);
+        const data =
+          isList && listQuery
+            ? await collectForList(actor, template.target, listQuery, locale, m, parties, withItems)
+            : await collectFor(actor, template.target, id, locale, m, parties);
         if (!data) {
           missed++;
           missedIds.push(id);

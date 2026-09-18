@@ -6,7 +6,7 @@ import {
   countRunningFor,
   enqueueDocBatch,
   markInterrupted,
-  resolveTargetIds,
+  countTargets,
   toJobDto,
 } from "@/lib/doc-batch-job";
 import { getServerMessages } from "@/lib/i18n";
@@ -69,10 +69,11 @@ export async function POST(req: Request) {
   if (template.kind !== "BLOCK") return jsonError(400, "file_template", m.documents.fileBatch);
 
   // 件数は頼んだ時点のもの。走るときにもう一度引き直す（そのあいだに増減していれば、そちらに従う）
-  const ids = await resolveTargetIds(actor, template.target, v.selection);
-  if (ids.length === 0) return jsonError(400, "empty", m.documents.batchEmpty);
+  // **数えるだけなので id は持ってこない**（2026-09-18 指摘。物質 6 万件では並べきれない）
+  const count = await countTargets(actor, template.target, v.selection);
+  if (count === 0) return jsonError(400, "empty", m.documents.batchEmpty);
   // 一覧の帳票は、選んだ全部で 1 枚
-  const total = targetIsList(template.target) ? 1 : ids.length;
+  const total = targetIsList(template.target) ? 1 : count;
 
   const job = await prisma.documentBatchJob.create({
     data: {

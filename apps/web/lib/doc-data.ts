@@ -19,6 +19,7 @@ import {
 } from "@chem/shared";
 import type { DocumentTable, DocumentTarget, Locale, Messages } from "@chem/shared";
 import type { Actor } from "@/lib/authz";
+import type { TargetQuery } from "@/lib/doc-batch-job";
 import { aggregateComposition, expandComposition } from "@/lib/composition-aggregate";
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
@@ -517,7 +518,7 @@ export async function collectForNone(
 export async function collectForList(
   actor: Actor,
   target: DocumentTarget,
-  ids: string[],
+  query: TargetQuery,
   locale: Locale,
   m: Messages,
   parties?: DocParties,
@@ -525,6 +526,15 @@ export async function collectForList(
   withItems = false,
 ): Promise<DocData> {
   const version = await getCurrentVersion();
+  /*
+    **絞り込みで頼まれたぶんは、条件のまま引く**（2026-09-18 指摘）。
+    以前はいったん id を全部持ってきて `id in (...)` にしていたので、
+    物質 6 万件では「値が多すぎる（上限 32767 個）」で落ちていた。
+    ID で選ばれたぶんは、選んだ順に並べたいので、これまでどおり持ってきた並びで整える
+  */
+  const ids = query.kind === "ids" ? query.ids : [];
+  const listWhere = query.kind === "ids" ? null : query.where;
+  const listOrderBy = query.kind === "ids" ? undefined : query.orderBy;
   const order = new Map(ids.map((id, i) => [id, i]));
   const byPicked = <T extends { id: string }>(a: T, b: T) =>
     (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0);
@@ -534,7 +544,8 @@ export async function collectForList(
 
   if (target === "PRODUCT_LIST") {
     const products = await prisma.product.findMany({
-      where: { id: { in: ids }, deletedAt: null, ...visibilityWhere(actor) },
+      where: listWhere ?? { id: { in: ids }, deletedAt: null, ...visibilityWhere(actor) },
+      ...(listOrderBy ? { orderBy: listOrderBy } : {}),
       select: {
         id: true,
         code: true,
@@ -564,7 +575,7 @@ export async function collectForList(
         },
       },
     });
-    products.sort(byPicked);
+    if (query.kind === "ids") products.sort(byPicked);
     count = products.length;
     /*
       成分・CAS番号の列。**元の組成・展開後・CAS合算の 3 通り**（2026-09-16 指示）。
@@ -655,7 +666,8 @@ export async function collectForList(
     });
   } else {
     const substances = await prisma.substance.findMany({
-      where: { id: { in: ids }, deletedAt: null, ...substanceVisibility(actor) },
+      where: listWhere ?? { id: { in: ids }, deletedAt: null, ...substanceVisibility(actor) },
+      ...(listOrderBy ? { orderBy: listOrderBy } : {}),
       select: {
         id: true,
         code: true,
@@ -667,7 +679,7 @@ export async function collectForList(
         note: true,
       },
     });
-    substances.sort(byPicked);
+    if (query.kind === "ids") substances.sort(byPicked);
     count = substances.length;
     tables.set("substanceList", {
       columns: tableDef("substanceList", locale),
@@ -744,6 +756,8 @@ export async function collectForCategory(
         where: { deletedAt: null },
         orderBy: { displayOrder: "asc" },
         select: {
+          // リンクを引くときに、法文物質名の id を並べず分類でたどるので要る
+          id: true,
           statutorySubstances: {
             where: { deletedAt: null },
             orderBy: { displayOrder: "asc" },
@@ -774,10 +788,14 @@ export async function collectForCategory(
   const cas = new Map<string, string[]>();
   if (version && substances.length > 0) {
     const links = await prisma.statutoryCasLink.findMany({
+      // 法文物質名の id を並べず、分類をたどって引く（同日 指摘。実測でも速い）
       where: {
         versionId: version.id,
         excluded: false,
-        statutorySubstanceId: { in: substances.map((s) => s.id) },
+        statutorySubstance: {
+          deletedAt: null,
+          classId: { in: category.classes.map((c) => c.id) },
+        },
       },
       orderBy: { casNumber: "asc" },
       select: { statutorySubstanceId: true, casNumber: true },
