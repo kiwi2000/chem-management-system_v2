@@ -1,5 +1,6 @@
 import {
   COMPOSITION_MAX_DEPTH,
+  IMPURITY_NONE,
   RATIO_ONE,
   fineToPct,
   ratioToFine,
@@ -23,13 +24,19 @@ export interface ExpandedProduct {
   unknownPct: string;
   /** 深さの上限で打ち切った枝の数 */
   truncated: number;
-  lines: { casNormalized: string | null; substanceId: string | null; totalPct: string }[];
+  lines: {
+    casNormalized: string | null;
+    substanceId: string | null;
+    /** 物質の不純物パターン。同じ CAS でもパターンが違えば別の行（S21） */
+    impurityPatternId: string;
+    totalPct: string;
+  }[];
 }
 
 /** 組成の1行。木をたどるのに要るぶんだけ */
 export interface ExpandLine {
   contentPct: string | null;
-  substance: { id: string; casNumber: string | null } | null;
+  substance: { id: string; casNumber: string | null; impurityPatternId?: string } | null;
   childProductId: string | null;
 }
 
@@ -49,10 +56,13 @@ export async function expandTree(
   rootProductId: string,
   load: LineLoader,
 ): Promise<ExpandedProduct> {
-  /** 鍵。CAS を持たない物質はまとめようがないので、物質そのものを鍵にする */
+  /**
+   * 鍵。**CAS × 不純物パターン**でまとめる（S21。パターンをまたいで足さない）。
+   * CAS を持たない物質はまとめようがないので、物質そのものを鍵にする
+   */
   const buckets = new Map<
     string,
-    { cas: string | null; substanceId: string | null; fine: bigint }
+    { cas: string | null; substanceId: string | null; pattern: string; fine: bigint }
   >();
   let unknownFine = 0n;
   let truncated = 0;
@@ -70,13 +80,18 @@ export async function expandTree(
     unknownFine += ratioToFine(ratio);
   }
 
-  function addLeaf(substance: { id: string; casNumber: string | null }, ratio: Ratio) {
+  function addLeaf(
+    substance: { id: string; casNumber: string | null; impurityPatternId?: string },
+    ratio: Ratio,
+  ) {
     const cas = substance.casNumber?.trim().toUpperCase() || null;
-    // CAS を持つものは CAS でまとめる。持たないものは物質そのものを鍵にする
-    const key = cas ? `cas:${cas}` : `sub:${substance.id}`;
+    const pattern = substance.impurityPatternId ?? IMPURITY_NONE;
+    // CAS を持つものは CAS × パターンでまとめる。持たないものは物質そのものを鍵にする
+    const key = cas ? `cas:${cas}@${pattern}` : `sub:${substance.id}`;
     const cur = buckets.get(key) ?? {
       cas,
       substanceId: cas ? null : substance.id,
+      pattern,
       fine: 0n,
     };
     cur.fine += ratioToFine(ratio);
@@ -123,6 +138,7 @@ export async function expandTree(
     lines: [...buckets.values()].map((b) => ({
       casNormalized: b.cas,
       substanceId: b.substanceId,
+      impurityPatternId: b.pattern,
       totalPct: fineToPct(b.fine),
     })),
   };

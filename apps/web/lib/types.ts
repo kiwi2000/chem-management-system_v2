@@ -205,9 +205,15 @@ export interface JudgementHitDto {
   asElement: AsElementDto | null;
   /**
    * その値を作ったCASと、それぞれの寄与。まとめたときは複数並ぶ。
-   * 「なぜその合計になったのか」を追えるようにするため
+   * 「なぜその合計になったのか」を追えるようにするため。
+   * 同じ CAS が不純物パターン違いで 2 つ並ぶことがある（`pattern` は 0 のとき省く）
    */
-  contributions: { cas: string; pct: string }[];
+  contributions: { cas: string; pct: string; pattern?: string }[];
+  /**
+   * 不純物パターンの設定で除外した寄与（S21）。閾値とは比べていない。
+   * これしか無い行は「不純物のため非該当」
+   */
+  excluded: { cas: string; pct: string; pattern: string }[];
   /** 合算した含有率。**まとめたときだけ入る**（足していないものを足したように見せない） */
   total: string | null;
   /** 法文物質名の適用開始日（YYYY-MM-DD）。無ければ空 */

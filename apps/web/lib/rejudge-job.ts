@@ -193,13 +193,17 @@ export async function rejudgeNeeded(): Promise<boolean> {
  * どれも `updatedAt` を持つので、いちばん新しいものを取る
  */
 export async function premisesChangedAt(versionId: string): Promise<Date | null> {
-  const [link, order, sub, cat] = await Promise.all([
+  const [link, order, sub, cat, pat, ex, exSub] = await Promise.all([
     prisma.statutoryCasLink.aggregate({ where: { versionId }, _max: { updatedAt: true } }),
     prisma.linkVersionSource.aggregate({ where: { versionId }, _max: { updatedAt: true } }),
     prisma.statutorySubstance.aggregate({ _max: { updatedAt: true } }),
     prisma.regulationCategory.aggregate({ _max: { updatedAt: true } }),
+    // 不純物パターンと除外の設定（S21）。変えると判定の前提が変わる
+    prisma.impurityPattern.aggregate({ _max: { updatedAt: true } }),
+    prisma.impurityExemption.aggregate({ _max: { updatedAt: true } }),
+    prisma.impurityExemptionSubstance.aggregate({ _max: { updatedAt: true } }),
   ]);
-  const times = [link, order, sub, cat]
+  const times = [link, order, sub, cat, pat, ex, exSub]
     .map((r) => r._max.updatedAt)
     .filter((d): d is Date => d !== null);
   if (times.length === 0) return null;

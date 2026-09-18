@@ -41,6 +41,41 @@ describe("premiseOf", () => {
   it("同じCASが重なっても1つに数える", () => {
     expect(premiseOf(hit("s1", ["a", "a"]))).toBe("s1:a");
   });
+
+  /*
+    不純物パターン（S21）。**0（不純物ではない）だけの製品では、前からある前提と同じ文字列**にする。
+    ここを変えると、前に付けた判定修正が全部外れて要確認に戻る
+  */
+  it("不純物パターンが 0 だけなら、前提の書きかたは変わらない", () => {
+    expect(
+      premiseOf({
+        statutorySubstanceId: "s1",
+        contributions: [{ cas: "7439-92-1", pattern: "ip-none" }],
+      }),
+    ).toBe("s1:7439-92-1");
+  });
+
+  it("0 以外のパターンは番号に添える", () => {
+    expect(
+      premiseOf({
+        statutorySubstanceId: "s1",
+        contributions: [
+          { cas: "7439-92-1", pattern: "ip-none" },
+          { cas: "7439-92-1", pattern: "ip-impurity" },
+        ],
+      }),
+    ).toBe("s1:7439-92-1,7439-92-1@ip-impurity");
+  });
+
+  it("除外した寄与も前提に入る（除外の設定を変えれば前提が変わる）", () => {
+    expect(
+      premiseOf({
+        statutorySubstanceId: "s1",
+        contributions: [],
+        excluded: [{ cas: "7439-92-1", pct: "40", pattern: "ip-impurity" }],
+      }),
+    ).toBe("s1:7439-92-1@ip-impurity!");
+  });
 });
 
 describe("samePremise", () => {

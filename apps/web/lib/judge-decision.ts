@@ -1,4 +1,5 @@
 import type { JudgeUnit, ReviewReason } from "@/lib/judge-calc";
+import { IMPURITY_NONE } from "@chem/shared";
 
 /**
  * 判定に対する**人の判断**を、判定し直した結果に当てはめる。**ここはデータベースを知らない。**
@@ -54,9 +55,24 @@ export interface AppliedJudgement {
  * 「この物質は法文物質名の形ではない」という判断は変わらないため
  */
 export function premiseOf(
-  unit: Pick<JudgeUnit, "statutorySubstanceId"> & { contributions: { cas: string }[] },
+  unit: Pick<JudgeUnit, "statutorySubstanceId"> & {
+    contributions: { cas: string; pattern?: string }[];
+    excluded?: { cas: string; pattern: string }[];
+  },
 ): string {
-  const cas = [...new Set(unit.contributions.map((c) => c.cas))].sort();
+  /*
+    不純物パターン（S21）は、0 以外のときだけ `@パターン` を添える。
+    全部が 0 なら前の書きかたと同じ文字列になり、前からある人の判断が外れない。
+    除外した行は `!` を付けて入れる。除外の設定が変わると前提が変わり、判断は要確認に戻る
+  */
+  const tag = (cas: string, pattern?: string) =>
+    pattern && pattern !== IMPURITY_NONE ? `${cas}@${pattern}` : cas;
+  const cas = [
+    ...new Set([
+      ...unit.contributions.map((c) => tag(c.cas, c.pattern)),
+      ...(unit.excluded ?? []).map((x) => `${tag(x.cas, x.pattern)}!`),
+    ]),
+  ].sort();
   return `${unit.statutorySubstanceId ?? "*"}:${cas.join(",")}`;
 }
 

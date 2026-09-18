@@ -104,7 +104,9 @@ const JUDGEMENT_SELECT = {
   decidedNote: true,
   computedAt: true,
   versionId: true,
-  hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
+  hits: {
+    select: { statutorySubstanceId: true, total: true, contributions: true, excluded: true },
+  },
   // 根拠を伏せるときも「根拠があるか」は要る（伏せたことを画面に伝えるため）
   _count: { select: { hits: true } },
   category: {
@@ -190,16 +192,17 @@ export async function toJudgementDtosAsOf(
       computedAt: now,
       versionId: version.id,
       hits:
-        u.contributions.length > 0
+        u.contributions.length > 0 || u.excluded.length > 0
           ? [
               {
                 statutorySubstanceId: u.statutorySubstanceId,
                 total: u.total === null ? null : new Prisma.Decimal(u.total),
                 contributions: u.contributions,
+                excluded: u.excluded,
               },
             ]
           : [],
-      _count: { hits: u.contributions.length > 0 ? 1 : 0 },
+      _count: { hits: u.contributions.length > 0 || u.excluded.length > 0 ? 1 : 0 },
       category,
     }));
   });
@@ -345,7 +348,16 @@ async function buildJudgementDtos(
         versionId: r.versionId,
         hits: withHits
           ? r.hits.map((h): JudgementHitDto => {
-              const contributions = (h.contributions ?? []) as { cas: string; pct: string }[];
+              const contributions = (h.contributions ?? []) as {
+                cas: string;
+                pct: string;
+                pattern?: string;
+              }[];
+              const excluded = (h.excluded ?? []) as {
+                cas: string;
+                pct: string;
+                pattern: string;
+              }[];
               const score = sumScores(
                 contributions.map((c) => scoreOf.get(normalizeCas(c.cas)) ?? "0"),
               );
@@ -354,6 +366,7 @@ async function buildJudgementDtos(
                 officialNumber: info?.officialNumber ?? null,
                 asElement: info ? asElementOf(elementNames, r.category, info) : null,
                 contributions,
+                excluded,
                 total: h.total?.toString() ?? null,
                 ...mark,
                 /*
@@ -503,7 +516,9 @@ export async function toMatchedProducts(
     reviewReasons: true,
     computedAt: true,
     product: { select: { id: true, code: true, nameJa: true, nameEn: true, status: true } },
-    hits: { select: { statutorySubstanceId: true, total: true, contributions: true } },
+    hits: {
+      select: { statutorySubstanceId: true, total: true, contributions: true, excluded: true },
+    },
     _count: { select: { hits: true } },
   } satisfies Prisma.ProductJudgementSelect;
   type Row = Prisma.ProductJudgementGetPayload<{ select: typeof select }>;
@@ -556,7 +571,12 @@ export async function toMatchedProducts(
                 name: info ? (info.nameJa ?? info.nameOriginal) : null,
                 officialNumber: info?.officialNumber ?? null,
                 asElement: info ? asElementOf(elementNames, category, info) : null,
-                contributions: (h.contributions ?? []) as { cas: string; pct: string }[],
+                contributions: (h.contributions ?? []) as {
+                  cas: string;
+                  pct: string;
+                  pattern?: string;
+                }[],
+                excluded: (h.excluded ?? []) as { cas: string; pct: string; pattern: string }[],
                 total: h.total?.toString() ?? null,
                 ...mark,
               }))

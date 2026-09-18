@@ -2,7 +2,13 @@ import { effectiveThreshold, type ConditionalLinkMode, type ThresholdBound } fro
 import { prisma } from "@/lib/db";
 import { notDisabledIn } from "@/lib/enabled-sources";
 import { effectiveLinks } from "@/lib/link-priority";
-import { judge, type ElementFactors, type JudgeEntry, type JudgeResult } from "@/lib/judge-calc";
+import {
+  judge,
+  type ElementFactors,
+  type ExemptResolver,
+  type JudgeEntry,
+  type JudgeResult,
+} from "@/lib/judge-calc";
 import { applyDecision, premiseOf } from "@/lib/judge-decision";
 import { getAppSettings } from "@/lib/settings";
 
@@ -41,6 +47,8 @@ export interface CategoryRule {
   categoryId: string;
   category: Parameters<typeof judge>[0]["category"];
   entries: JudgeEntry[];
+  /** 不純物パターンによる除外（S21）。この区分の設定と、法文物質名の上書きから答える */
+  isExempt: ExemptResolver;
 }
 
 type ThresholdRow<TNull> = {
@@ -151,6 +159,42 @@ export async function loadRules(
     ).map((v, i) => [v.sourceId, i]),
   );
 
+  /*
+    不純物パターンの除外（S21）。区分の設定と、法文物質名の上書き。
+    「法文物質名の上書き → 区分の設定 → 除外しない」の順に答える
+  */
+  const [exemptions, overrides] = await Promise.all([
+    prisma.impurityExemption.findMany({
+      where: { pattern: { deletedAt: null } },
+      select: { patternId: true, categoryId: true, excluded: true },
+    }),
+    prisma.impurityExemptionSubstance.findMany({
+      where: { pattern: { deletedAt: null } },
+      select: { patternId: true, statutorySubstanceId: true, excluded: true },
+    }),
+  ]);
+  /** 区分 → パターン → 除外する */
+  const byCategory = new Map<string, Map<string, boolean>>();
+  for (const x of exemptions) {
+    const m = byCategory.get(x.categoryId) ?? new Map<string, boolean>();
+    m.set(x.patternId, x.excluded);
+    byCategory.set(x.categoryId, m);
+  }
+  /** `パターン/法文物質名` → 上書き */
+  const bySubstance = new Map(
+    overrides.map((x) => [`${x.patternId}/${x.statutorySubstanceId}`, x.excluded]),
+  );
+  const resolverFor = (categoryId: string): ExemptResolver => {
+    const cat = byCategory.get(categoryId);
+    return (patternId, statutorySubstanceId) => {
+      if (statutorySubstanceId) {
+        const o = bySubstance.get(`${patternId}/${statutorySubstanceId}`);
+        if (o !== undefined) return o;
+      }
+      return cat?.get(patternId) ?? false;
+    };
+  };
+
   /** 法文物質名 → その区分。勝ち負けを区分ごとに決めるために要る */
   const categoryOf = new Map<string, string>();
   for (const c of categories) {
@@ -199,6 +243,7 @@ export async function loadRules(
 
   return categories.map((c) => ({
     categoryId: c.id,
+    isExempt: resolverFor(c.id),
     category: {
       aggregation: c.aggregation,
       metalEtc: c.metalEtc,
@@ -278,7 +323,7 @@ export async function computeJudgements(
   });
   const lines = await prisma.productExpansionLine.findMany({
     where: { productId },
-    select: { casNormalized: true, substanceId: true, totalPct: true },
+    select: { casNormalized: true, substanceId: true, totalPct: true, impurityPatternId: true },
   });
 
   /*
@@ -295,6 +340,7 @@ export async function computeJudgements(
         casNormalized: l.casNormalized,
         substanceId: l.substanceId,
         totalPct: l.totalPct.toString(),
+        impurityPatternId: l.impurityPatternId,
       })),
       unknownPct,
       truncated,
@@ -302,6 +348,7 @@ export async function computeJudgements(
       entries: rule.entries,
       factors,
       conditionalLinkMode: linkMode,
+      isExempt: rule.isExempt,
     }),
   }));
 }
@@ -394,15 +441,17 @@ export async function judgeProduct(
           decidedAt: a.decidedAt,
           decidedNote: a.decidedNote,
           versionId: version,
-          // 根拠。見た CAS が無ければ（区分でまとめる区分に何も入っていない）行は作らない
+          // 根拠。見た CAS が無ければ（区分でまとめる区分に何も入っていない）行は作らない。
+          // 不純物パターンで除外した行しか無いときも、除外したことを根拠として残す
           hits: {
             create:
-              unit.contributions.length > 0
+              unit.contributions.length > 0 || unit.excluded.length > 0
                 ? [
                     {
                       statutorySubstanceId: unit.statutorySubstanceId,
                       total: unit.total,
                       contributions: unit.contributions,
+                      excluded: unit.excluded,
                     },
                   ]
                 : [],

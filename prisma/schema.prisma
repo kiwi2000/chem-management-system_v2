@@ -736,13 +736,18 @@ model ProductExpansionLine {
   substanceId   String? @map("substance_id")
 
   /**
+   * 物質の不純物パターン。同じ CAS でもパターンが違えば別の行（S21）
+   */
+  impurityPatternId String @default("ip-none") @map("impurity_pattern_id")
+
+  /**
    * 製品全体に対する重量％
    */
   totalPct Decimal @map("total_pct") @db.Decimal(9, 6)
 
   expansion ProductExpansion @relation(fields: [productId], references: [productId], onDelete: Cascade)
 
-  @@unique([productId, casNormalized, substanceId])
+  @@unique([productId, casNormalized, substanceId, impurityPatternId], map: "product_expansion_lines_key_cas_pattern")
   // 逆引き（この CAS を含む製品を全部出す）で引く
   @@index([casNormalized])
   @@index([substanceId])
@@ -902,6 +907,10 @@ model ProductJudgementHit {
    * 番号と割合を別々の配列で持つと、順番がずれたときに黙って食い違う
    */
   contributions        Json?
+  /**
+   * 不純物パターンで除外した寄与（[{ cas, pct, pattern }]、S21）。閾値とは比べていない
+   */
+  excluded             Json?
 
   judgement ProductJudgement @relation(fields: [judgementId], references: [id], onDelete: Cascade)
 
@@ -935,10 +944,17 @@ model Substance {
   /**
    * このCASを代表する物質か。
    * 同じCASの物質が複数あるとき、合算した行に出す名称をこの物質から取る。
-   * 1つのCASにつき1件までで、制約は migration の部分ユニーク索引で持つ
+   * 1つの CAS × 不純物パターンにつき1件までで、制約は migration の部分ユニーク索引で持つ
    * （Prisma では条件付きの一意制約を書けないため）。
    */
   isCasRepresentative Boolean @default(false) @map("is_cas_representative")
+
+  /**
+   * 不純物パターン（S21）。0「不純物ではない」が既定。
+   * 不純物として入る物質は、パターンごとに別の物質として登録する。
+   * 判定はパターンごとの除外の設定（impurity_exemptions）に従う
+   */
+  impurityPatternId String @default("ip-none") @map("impurity_pattern_id")
 
   /**
    * 主名称。1物質1件なので子テーブルではなくこの行に持つ。
@@ -986,8 +1002,10 @@ model Substance {
   gazetteNumbers   SubstanceGazetteNumber[]
   properties       SubstanceProperty[]
   compositionLines CompositionLine[]
+  impurityPattern  ImpurityPattern          @relation(fields: [impurityPatternId], references: [id])
 
   @@index([casNormalized])
+  @@index([impurityPatternId])
   @@index([status])
   @@index([nameJa])
   @@index([nameEn])
@@ -1793,6 +1811,8 @@ model RegulationCategory {
   classes    RegulationClass[]
   judgements ProductJudgement[]
   decisions  ProductDecision[]
+  /** 不純物パターンごとの除外（S21） */
+  impurityExemptions ImpurityExemption[]
 
   @@unique([lawId, codeNormalized])
   @@index([lawId, displayOrder])
@@ -1921,6 +1941,8 @@ model StatutorySubstance {
   links           StatutoryCasLink[]
 
   linkDiffs StatutoryCasLinkDiff[]
+  /** 不純物パターンごとの除外の上書き（S21） */
+  impurityExemptions ImpurityExemptionSubstance[]
 
   @@unique([classId, codeNormalized])
   @@index([classId, displayOrder])
@@ -2648,4 +2670,85 @@ view StatutoryCasLinkDiffName {
   diff StatutoryCasLinkDiff @relation(fields: [diffId], references: [id])
 
   @@map("statutory_cas_link_diff_names")
+}
+
+/**
+ * 不純物パターン（S21、2026-09-18）。
+ *
+ * 「同じ該非判定になる不純物どうし」をまとめた区分。物質の属性として持つ。
+ * 0「不純物ではない」（id `ip-none`）と 1「不純物」（id `ip-impurity`）は組み込みで消せない。
+ * 0 は除外の設定を持たない（データソースの合算だけで決まる）
+ */
+model ImpurityPattern {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  nameJa String  @map("name_ja")
+  nameEn String? @map("name_en")
+  note   String?
+
+  displayOrder Int     @default(0) @map("display_order")
+  /** 組み込み。消せない */
+  builtin      Boolean @default(false)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  substances          Substance[]
+  exemptions          ImpurityExemption[]
+  substanceExemptions ImpurityExemptionSubstance[]
+
+  @@map("impurity_patterns")
+}
+
+/**
+ * 不純物パターン × 規制区分：このパターンの物質を、この区分では非該当にする。
+ * 行が無ければ除外しない
+ */
+model ImpurityExemption {
+  id         String  @id @default(cuid())
+  patternId  String  @map("pattern_id")
+  categoryId String  @map("category_id")
+  excluded   Boolean @default(true)
+  note       String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  pattern  ImpurityPattern    @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  category RegulationCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([patternId, categoryId])
+  @@index([categoryId])
+  @@map("impurity_exemptions")
+}
+
+/**
+ * 不純物パターン × 法文物質名：区分の設定を上書きする（true=除外する、false=除外しない）。
+ * 行が無ければ区分の設定に従う
+ */
+model ImpurityExemptionSubstance {
+  id                   String  @id @default(cuid())
+  patternId            String  @map("pattern_id")
+  statutorySubstanceId String  @map("statutory_substance_id")
+  excluded             Boolean
+  note                 String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  pattern            ImpurityPattern    @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id], onDelete: Cascade)
+
+  @@unique([patternId, statutorySubstanceId])
+  @@index([statutorySubstanceId])
+  @@map("impurity_exemption_substances")
 }

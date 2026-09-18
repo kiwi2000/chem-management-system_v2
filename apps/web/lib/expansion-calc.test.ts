@@ -13,7 +13,11 @@ function loaderOf(tree: Record<string, ExpandLine[]>): LineLoader {
   return (id) => Promise.resolve(tree[id] ?? null);
 }
 
-const sub = (id: string, cas: string | null) => ({ id, casNumber: cas });
+const sub = (id: string, cas: string | null, impurityPatternId = "ip-none") => ({
+  id,
+  casNumber: cas,
+  impurityPatternId,
+});
 const line = (pct: string | null, x: Partial<ExpandLine> = {}): ExpandLine => ({
   contentPct: pct,
   substance: null,
@@ -159,5 +163,41 @@ describe("組成の展開", () => {
     const e = await expandTree("P", loaderOf({}));
     expect(e.lines).toEqual([]);
     expect(e.unknownPct).toBe("100");
+  });
+});
+
+/**
+ * 不純物パターン（S21）。**CAS が同じでもパターンが違えば別の行**にする。
+ * 合算してしまうと、不純物ぶんを除外できなくなる
+ */
+describe("不純物パターンでの分けかた", () => {
+  it("同じCASでもパターンが違えば、別々に足す", async () => {
+    const out = await expandTree(
+      "p",
+      loaderOf({
+        p: [
+          line("60", { substance: sub("s1", "108-88-3") }),
+          line("40", { substance: sub("s2", "108-88-3", "ip-impurity") }),
+        ],
+      }),
+    );
+    expect(out.lines.map((l) => [l.casNormalized, l.impurityPatternId, l.totalPct])).toEqual([
+      ["108-88-3", "ip-none", "60"],
+      ["108-88-3", "ip-impurity", "40"],
+    ]);
+  });
+
+  it("同じCAS・同じパターンなら、いままでどおり足す", async () => {
+    const out = await expandTree(
+      "p",
+      loaderOf({
+        p: [
+          line("30", { substance: sub("s1", "108-88-3", "ip-impurity") }),
+          line("20", { substance: sub("s2", "108-88-3", "ip-impurity") }),
+        ],
+      }),
+    );
+    expect(out.lines).toHaveLength(1);
+    expect(out.lines[0]?.totalPct).toBe("50");
   });
 });

@@ -1,4 +1,4 @@
-import { fromScaled, toScaled } from "@chem/shared";
+import { IMPURITY_NONE, fromScaled, toScaled } from "@chem/shared";
 
 /**
  * 法規制の判定。**ここはデータベースを知らない。**
@@ -39,12 +39,21 @@ export interface Threshold {
   upperBound: Bound;
 }
 
-/** 展開済みの組成の1行 */
+/** 展開済みの組成の1行。同じ CAS でも不純物パターンが違えば別の行 */
 export interface ExpandedLine {
   casNormalized: string | null;
   substanceId: string | null;
   totalPct: string;
+  /** 物質の不純物パターン。省くと 0（不純物ではない） */
+  impurityPatternId?: string;
 }
+
+/**
+ * 不純物パターンによる除外の問い合わせ（S21）。
+ * 「このパターンの物質は、この判定の単位では非該当にするか」。
+ * 法文物質名が単位なら id、区分そのものが単位なら null で聞く
+ */
+export type ExemptResolver = (patternId: string, statutorySubstanceId: string | null) => boolean;
 
 /** 判定の対象になる法文物質名 */
 export interface JudgeEntry {
@@ -110,6 +119,8 @@ export interface JudgeInput {
    * **どちらでも警告は出る。**省くと `review`
    */
   conditionalLinkMode?: "hit" | "review";
+  /** 不純物パターンによる除外。省くと何も除外しない */
+  isExempt?: ExemptResolver;
 }
 
 /** 要確認にした理由。文言は画面側で付ける */
@@ -156,8 +167,15 @@ export interface JudgeUnit {
    *   該当・まとめない … **個別に閾値を超えた CAS が、すべて並ぶ**
    *   該当・まとめる   … 足し合わせた CAS が、すべて並ぶ（元素換算なら換算後の値）
    *   非該当           … 製品に入っている CAS が並ぶ（閾値に届かなかった値。「含有率不足」を読むため）
+   *
+   * 同じ CAS が不純物パターン違いで 2 行並ぶことがある（`pattern` で見分ける）
    */
-  contributions: { cas: string; pct: string; sources: string[] }[];
+  contributions: { cas: string; pct: string; sources: string[]; pattern: string }[];
+  /**
+   * **不純物パターンの設定で除外した寄与**（S21）。閾値とは比べていない。
+   * 「不純物のため非該当」として画面に出すために、消さずに残す。含有率はそのままの値
+   */
+  excluded: { cas: string; pct: string; pattern: string }[];
 }
 
 export interface JudgeResult {
@@ -224,9 +242,38 @@ function pctOf(
 export function judge(input: JudgeInput): JudgeResult {
   const { lines, category, entries, factors } = input;
   const linkMode = input.conditionalLinkMode ?? "review";
-  const byCas = new Map(
-    lines.filter((l) => l.casNormalized).map((l) => [l.casNormalized as string, l]),
-  );
+  const isExempt = input.isExempt ?? (() => false);
+  /** CAS → その CAS の行（不純物パターンごとに 1 行）。同じ CAS が複数並ぶことがある */
+  const byCas = new Map<string, ExpandedLine[]>();
+  for (const l of lines) {
+    if (!l.casNormalized) continue;
+    const list = byCas.get(l.casNormalized);
+    if (list) list.push(l);
+    else byCas.set(l.casNormalized, [l]);
+  }
+  const patternOf = (l: ExpandedLine) => l.impurityPatternId ?? IMPURITY_NONE;
+  /**
+   * その単位で見る行を、閾値と比べる行と、不純物パターンで除外する行に分ける（S21）。
+   * 除外は「法文物質名の上書き → 区分の設定 → 除外しない」の順に決めてある（isExempt が答える）
+   */
+  const splitLines = (cas: string[], statutorySubstanceId: string | null) => {
+    const compared: ExpandedLine[] = [];
+    const exempt: ExpandedLine[] = [];
+    for (const c of cas) {
+      for (const l of byCas.get(c) ?? []) {
+        const p = patternOf(l);
+        if (p !== IMPURITY_NONE && isExempt(p, statutorySubstanceId)) exempt.push(l);
+        else compared.push(l);
+      }
+    }
+    return { compared, exempt };
+  };
+  const excludedOf = (list: ExpandedLine[]) =>
+    list.map((l) => ({
+      cas: l.casNormalized as string,
+      pct: fromScaled(toScaled(l.totalPct) ?? 0n),
+      pattern: patternOf(l),
+    }));
 
   /*
     区分全体にかかる理由。どの単位にも同じように付く。
@@ -243,18 +290,19 @@ export function judge(input: JudgeInput): JudgeResult {
   /** その CAS を結んでいるデータソース。区分でまとめたときは、関わった全部を合わせる */
   const sourcesOf = (c: string) => [...new Set(entries.flatMap((e) => e.sourcesOf?.[c] ?? []))];
 
-  /** 1 単位ぶんの計算。理由はこの単位のものだけを集める */
-  const unitOf = (statutorySubstanceId: string | null) => {
+  /** 1 単位ぶんの計算。理由はこの単位のものだけを集める。行は CAS × パターンごと */
+  const unitOf = (statutorySubstanceId: string | null, excluded: JudgeUnit["excluded"]) => {
     const reasons = new Set<ReviewReason>(common);
-    const shareOf = (list: string[], mode: Aggregation, target: string | null) =>
-      list.map((c) => {
-        const r = pctOf(byCas.get(c) as ExpandedLine, mode, target, factors);
+    const shareOf = (list: ExpandedLine[], mode: Aggregation, target: string | null) =>
+      list.map((l) => {
+        const r = pctOf(l, mode, target, factors);
         if (r.missing) reasons.add("missingFactor");
-        return { cas: c, pct: fromScaled(r.pct), sources: sourcesOf(c) };
+        const cas = l.casNormalized as string;
+        return { cas, pct: fromScaled(r.pct), sources: sourcesOf(cas), pattern: patternOf(l) };
       });
     /** 閾値と比べる値。合計するときはここを足す */
-    const valueOf = (c: string, mode: Aggregation, target: string | null) => {
-      const r = pctOf(byCas.get(c) as ExpandedLine, mode, target, factors);
+    const valueOf = (l: ExpandedLine, mode: Aggregation, target: string | null) => {
+      const r = pctOf(l, mode, target, factors);
       if (r.missing) reasons.add("missingFactor");
       return r.pct;
     };
@@ -273,22 +321,28 @@ export function judge(input: JudgeInput): JudgeResult {
         reasons: [...reasons],
         total,
         contributions,
+        excluded,
       };
     };
     return { reasons, shareOf, valueOf, finish };
   };
+  const casOfLines = (list: ExpandedLine[]) => [
+    ...new Set(list.map((l) => l.casNormalized as string)),
+  ];
 
   if (category.aggregation !== "NONE") {
-    // 区分でまとめる。CAS を重複なく集めてから、一度だけ足す
-    const u = unitOf(null);
-    const cas = [...new Set(entries.flatMap((e) => e.cas))].filter((c) => byCas.has(c));
+    // 区分でまとめる。CAS を重複なく集めてから、一度だけ足す（除外した行は足さない）
+    const casAll = [...new Set(entries.flatMap((e) => e.cas))].filter((c) => byCas.has(c));
+    const { compared, exempt } = splitLines(casAll, null);
+    const u = unitOf(null, excludedOf(exempt));
     let total = 0n;
-    for (const c of cas) total += u.valueOf(c, category.aggregation, category.metalEtc);
-    const applicable = cas.length > 0 && within(total, category.threshold);
+    for (const l of compared) total += u.valueOf(l, category.aggregation, category.metalEtc);
+    const applicable = compared.length > 0 && within(total, category.threshold);
     if (applicable) {
+      const comparedCas = new Set(casOfLines(compared));
       // まとめた中に、条件つき・閾値未設定のものが混ざっていれば要確認
       for (const e of entries) {
-        const present = e.cas.filter((c) => byCas.has(c));
+        const present = e.cas.filter((c) => comparedCas.has(c));
         if (present.length === 0) continue;
         if (e.conditional) u.reasons.add("conditionalExclusion");
         if (e.unfilled) u.reasons.add("unfilledThreshold");
@@ -300,8 +354,8 @@ export function judge(input: JudgeInput): JudgeResult {
       units: [
         u.finish(
           applicable ? "APPLICABLE" : "NOT_APPLICABLE",
-          cas.length > 0 ? fromScaled(total) : null,
-          u.shareOf(cas, category.aggregation, category.metalEtc),
+          compared.length > 0 ? fromScaled(total) : null,
+          u.shareOf(compared, category.aggregation, category.metalEtc),
         ),
       ],
     };
@@ -309,10 +363,20 @@ export function judge(input: JudgeInput): JudgeResult {
 
   const units: JudgeUnit[] = [];
   for (const e of entries) {
-    const present = e.cas.filter((c) => byCas.has(c));
+    const presentAll = e.cas.filter((c) => byCas.has(c));
     // 入っていない法文物質名は結果に並べない（並べると区分の法文物質名の数だけ行ができる）
-    if (present.length === 0) continue;
-    const u = unitOf(e.id);
+    if (presentAll.length === 0) continue;
+    const { compared, exempt } = splitLines(presentAll, e.id);
+    const u = unitOf(e.id, excludedOf(exempt));
+    /*
+      入っている行が全部、不純物パターンで除外されたら**不純物のため非該当**。
+      閾値とは比べず、条件つき・閾値未設定の理由も付けない（除外が先に決まる）
+    */
+    if (compared.length === 0) {
+      units.push(u.finish("NOT_APPLICABLE", null, []));
+      continue;
+    }
+    const present = casOfLines(compared);
     /** 当たった CAS が条件つきなら印を立てる */
     const markConditionalLink = (cas: string[]) => {
       if (cas.some((c) => e.conditionalCas?.includes(c))) u.reasons.add("conditionalLink");
@@ -334,23 +398,24 @@ export function judge(input: JudgeInput): JudgeResult {
         当たったものは全部拾う（最初の1件で打ち切ると、残りが見えなくなる）。
         どれかが超えれば、この法文物質名が該当
       */
-      const matched = present.filter((c) => within(u.valueOf(c, "NONE", null), e.threshold));
+      // 行は CAS × パターンごと。**パターンをまたいで足さない**（S21 決定）
+      const matched = compared.filter((l) => within(u.valueOf(l, "NONE", null), e.threshold));
       if (matched.length > 0) {
-        markConditionalLink(matched);
+        markConditionalLink(casOfLines(matched));
         markCondition();
         // 足していないので合計は出さない
         units.push(u.finish("APPLICABLE", null, u.shareOf(matched, "NONE", null)));
         continue;
       }
     } else {
-      // まとめる。足した値ひとつを閾値と比べる
+      // まとめる。足した値ひとつを閾値と比べる（除外されなかった行は、パターンに関わらず足す）
       let total = 0n;
-      for (const c of present) total += u.valueOf(c, e.aggregation, e.metalEtc);
+      for (const l of compared) total += u.valueOf(l, e.aggregation, e.metalEtc);
       if (within(total, e.threshold)) {
         markConditionalLink(present);
         markCondition();
         units.push(
-          u.finish("APPLICABLE", fromScaled(total), u.shareOf(present, e.aggregation, e.metalEtc)),
+          u.finish("APPLICABLE", fromScaled(total), u.shareOf(compared, e.aggregation, e.metalEtc)),
         );
         continue;
       }
@@ -368,7 +433,7 @@ export function judge(input: JudgeInput): JudgeResult {
       該当として扱い、人に見てもらう。
     */
     const aggregated = e.aggregation !== "NONE";
-    const share = u.shareOf(present, e.aggregation, e.metalEtc);
+    const share = u.shareOf(compared, e.aggregation, e.metalEtc);
     const total = aggregated
       ? fromScaled(share.reduce((sum, x) => sum + (toScaled(x.pct) ?? 0n), 0n))
       : null;
