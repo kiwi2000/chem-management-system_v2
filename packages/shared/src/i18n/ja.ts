@@ -1959,6 +1959,12 @@ export const ja = {
     editingElsewhere: (section: string) =>
       `${section}が編集中です。保存するか、変更を破棄してください。`,
     savedWithWarnings: "保存しました。次の点を確認してください",
+    /** 一覧で選んだ製品だけを判定し直す（2026-09-18 指示） */
+    rejudgeSelected: "判定し直す",
+    rejudged: (judged: number, requested: number) =>
+      judged === requested
+        ? `${judged.toLocaleString()} 件を判定し直しました`
+        : `${requested.toLocaleString()} 件のうち ${judged.toLocaleString()} 件を判定し直しました（見られない製品は飛ばしました）`,
   },
 
   groups: {

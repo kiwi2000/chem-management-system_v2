@@ -1886,6 +1886,11 @@ export const en: Messages = {
     editingElsewhere: (section: string) =>
       `${section} is being edited. Save it, or discard the changes.`,
     savedWithWarnings: "Saved. Please check the following",
+    rejudgeSelected: "Re-judge",
+    rejudged: (judged: number, requested: number) =>
+      judged === requested
+        ? `Re-judged ${judged.toLocaleString()} product(s)`
+        : `Re-judged ${judged.toLocaleString()} of ${requested.toLocaleString()} product(s) (those you cannot see were skipped)`,
   },
 
   groups: {

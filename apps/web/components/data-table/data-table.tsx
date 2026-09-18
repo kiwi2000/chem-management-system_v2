@@ -50,6 +50,26 @@ import { useColumnWidths } from "./use-column-widths";
 import { rowHeightOf, rowLinesOf, useRowLines } from "./use-row-lines";
 import { ResizableBox } from "@/components/data-table/resizable-box";
 
+/**
+ * 選んだ行に対する操作（表の上のボタン）。
+ * 文言と処理はいつも一組なので、まとめて受ける
+ */
+export interface BulkAction<T> {
+  label: string;
+  /**
+   * 念押しの文。**省略すると、押してすぐ動く。**
+   * 取り返しの付かないもの（公開・申請）にだけ付ける
+   */
+  confirm?: (n: number) => string;
+  /**
+   * その画面の**主役の操作**か。
+   * 塗りつぶしたボタンで出す（ドキュメント生成の「生成」など、
+   * それを押しに来た人がいる操作は、控えめに置くと見つからない）
+   */
+  primary?: boolean;
+  run: (rows: T[]) => void | Promise<void>;
+}
+
 interface Props<T> {
   /** 端末に列幅・パネル開閉を覚えるための識別子（画面ごとに一意） */
   storageKey: string;
@@ -92,21 +112,12 @@ interface Props<T> {
    * 選択した行をまとめて次の状態へ送る操作（申請・発行）。
    * 文言と処理はいつも一組なので、まとめて受ける。渡さなければボタンを出さない。
    */
-  bulkAction?: {
-    label: string;
-    /**
-     * 念押しの文。**省略すると、押してすぐ動く。**
-     * 取り返しの付かないもの（公開・申請）にだけ付ける
-     */
-    confirm?: (n: number) => string;
-    /**
-     * その画面の**主役の操作**か。
-     * 塗りつぶしたボタンで出す（ドキュメント生成の「生成」など、
-     * それを押しに来た人がいる操作は、控えめに置くと見つからない）
-     */
-    primary?: boolean;
-    run: (rows: T[]) => void | Promise<void>;
-  };
+  bulkAction?: BulkAction<T>;
+  /**
+   * 2つ目以降の操作。製品の一覧の「判定し直す」のように、主役の操作の横に並べるもの。
+   * `bulkAction` と併用できる（先に bulkAction、次にこの並び）
+   */
+  bulkActions?: BulkAction<T>[];
   /** フィルターの並びを指定する場合、1行に置く列キーを行ごとに並べる */
   filterLayout?: FilterLayoutRow[];
   /** 件数が少なく絞り込む意味が無い表では false にしてパネルごと消す（並べ替えは見出しで行う） */
@@ -209,6 +220,7 @@ export function DataTable<T>({
   onSelectionChange,
   selection,
   bulkAction,
+  bulkActions,
   filterLayout,
   showFilters = true,
   create,
@@ -432,13 +444,16 @@ export function DataTable<T>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedKeys]);
 
-  async function runBulkAction() {
+  /** 表の上に並べる一括操作。主役のものを先に */
+  const allBulkActions = [...(bulkAction ? [bulkAction] : []), ...(bulkActions ?? [])];
+
+  async function runBulkAction(action: BulkAction<T>) {
     const targets = (rows ?? []).filter((r) => selected.has(rowKey(r)));
-    if (targets.length === 0 || !bulkAction) return;
-    if (bulkAction.confirm && !(await ask({ message: bulkAction.confirm(targets.length) }))) return;
+    if (targets.length === 0) return;
+    if (action.confirm && !(await ask({ message: action.confirm(targets.length) }))) return;
     setDeleting(true);
     try {
-      await bulkAction.run(targets);
+      await action.run(targets);
       setSelected(() => new Set());
     } finally {
       setDeleting(false);
@@ -541,7 +556,7 @@ export function DataTable<T>({
    * フィルターと同じ1行に置くので、行が2段になって空白の帯ができることがない。
    */
   const actions =
-    title || create || selectable || bulkAction || headerActions ? (
+    title || create || selectable || allBulkActions.length > 0 || headerActions ? (
       <div className="flex flex-wrap items-center gap-2">
         {title && <h2 className={TABLE_TITLE}>{title}</h2>}
         {create && (
@@ -575,18 +590,19 @@ export function DataTable<T>({
             <Trash2 className="size-4" />
           </Button>
         )}
-        {bulkAction && (
+        {allBulkActions.map((action) => (
           <Button
-            variant={bulkAction.primary ? "default" : "outline"}
+            key={action.label}
+            variant={action.primary ? "default" : "outline"}
             size="sm"
             disabled={selected.size === 0 || deleting}
-            onClick={() => void runBulkAction()}
+            onClick={() => void runBulkAction(action)}
           >
             <CircleCheck className="mr-1 size-3.5" />
-            {bulkAction.label}
+            {action.label}
             {selected.size > 0 && `（${selected.size}）`}
           </Button>
-        )}
+        ))}
         {!controlled && selected.size > 0 && (
           <span className="text-muted-foreground text-sm">
             {m.table.selectedCount(selected.size)}

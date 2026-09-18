@@ -57,6 +57,8 @@ export function ProductsTable({
 
   const [data, setData] = useState<ListResponse<ProductListItemDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** 済んだことの知らせ（判定し直した件数など）。失敗ではないので赤くしない */
+  const [notice, setNotice] = useState<string | null>(null);
 
   const query = useMemo(() => {
     const params = serializeTableState(state, DEFAULT_STATE);
@@ -124,12 +126,40 @@ export function ProductsTable({
     onChanged();
   }
 
+  /**
+   * 選んだ製品を判定し直す（2026-09-18 指示）。
+   * データソースの有効／無効や閾値を変えたあと、全製品のやり直しを待たずに手元の製品だけ確かめるためのもの
+   */
+  async function rejudge(targets: ProductListItemDto[]) {
+    setError(null);
+    setNotice(null);
+    const res = await fetch("/api/products/rejudge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: targets.map((t) => t.id) }),
+    });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      return;
+    }
+    const body = (await res.json()) as { judged: number; requested: number };
+    setNotice(m.products.rejudged(body.judged, body.requested));
+    onChanged();
+  }
+
   return (
     // 外側（一覧の画面）が余白を持っているので、ここでは付けない（物質の一覧と同じ）
     <div className="w-full space-y-4">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {notice && (
+        <Alert>
+          <AlertDescription>{notice}</AlertDescription>
         </Alert>
       )}
 
@@ -154,6 +184,12 @@ export function ProductsTable({
                 confirm: approvalRequired ? m.common.submitConfirm : m.common.publishConfirm,
                 run: (rows) => void runBulk(approvalRequired ? "submit" : "publish", rows),
               }
+            : undefined
+        }
+        // 判定し直しは、作成中でも公開済みでも押せる（編集できる人だけ）
+        bulkActions={
+          editable
+            ? [{ label: m.products.rejudgeSelected, run: (rows) => rejudge(rows) }]
             : undefined
         }
         filterLayout={filterLayout}

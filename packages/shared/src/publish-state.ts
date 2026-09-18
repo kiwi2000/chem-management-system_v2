@@ -67,3 +67,9 @@ export const publishActionSchema = z.object({
 });
 
 export type PublishActionInput = z.infer<typeof publishActionSchema>;
+
+/** 製品の一覧で選んだ製品を判定し直す（2026-09-18 指示）。数の上限は公開の一括操作と同じ */
+export const productRejudgeSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(500),
+});
+export type ProductRejudgeInput = z.infer<typeof productRejudgeSchema>;
