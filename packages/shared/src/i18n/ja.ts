@@ -763,6 +763,8 @@ export const ja = {
     */
     casNumber: "結び付いたCAS番号",
     substanceName: "結び付いた物質の名前",
+    substanceNameTooMany:
+      "その名前に当たる物質が多すぎます。結果の取りこぼしが出るので、名前をもう少し絞ってください",
     empty: "法文物質名が登録されていません",
     selectCategory: "上で区分を選んでください",
     duplicateCode: (code: string) => `コード「${code}」は既に使われています`,

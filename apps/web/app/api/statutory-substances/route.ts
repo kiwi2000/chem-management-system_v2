@@ -36,7 +36,15 @@ export async function GET(req: Request) {
     DEFAULT_STATE,
   );
   // 物質名の条件だけは、物質の表を引いてから作る（法文物質名とは CAS番号でつながる）
-  const byName = await linkedSubstanceNameWhere(actor, state.filters.substanceName);
+  const classFilter = state.filters.classId;
+  const byName = await linkedSubstanceNameWhere(
+    actor,
+    state.filters.substanceName,
+    classFilter?.kind === "enum" ? classFilter.values : [],
+    await getServerMessages(),
+  );
+  // 当たる物質が多すぎるときは、切り詰めた結果を出さずに断る
+  if (byName instanceof Response) return byName;
   const where = {
     deletedAt: null,
     ...buildWhere(STATUTORY_SUBSTANCE_COLUMNS, state.filters),

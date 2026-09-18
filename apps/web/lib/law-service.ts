@@ -8,7 +8,6 @@ import {
 import type { Prisma } from "@prisma/client";
 import { jsonError, type Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { visibilityWhere as substanceVisibilityWhere } from "@/lib/substance-service";
 import type {
   LawDto,
   RegulationCategoryDto,
@@ -178,62 +177,78 @@ export function thresholdOrderError(
 }
 
 /**
- * 物質名で法文物質名を絞るときに、いくつまでの CAS を見るか。
- * 「酸」のような短い語では何千件も当たるので、上限を決めて打ち切る
+ * 物質名で当たった法文物質名が、これを超えたら断る。
+ *
+ * **黙って切り詰めない**（2026-09-18 指摘）。出るはずのものが出ないまま「該当なし」に
+ * 見えると、法規制の確認で見落としになる。
+ * 数そのものは、PostgreSQL が1つの問い合わせに取れる値の数（65535）に届かない範囲で決めている
  */
-const NAME_MATCH_MAX = 2000;
+const NAME_MATCH_MAX = 50000;
+
+/** LIKE の特殊文字（% _ \）を、そのままの文字として扱わせる */
+function likeLiteral(value: string): string {
+  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
 
 /**
  * 登録してある物質の名前から、法文物質名を絞る条件（2026-09-18 指示）。
  *
- * **物質の表と法文物質名の表はつながっていない。**突き合わせは CAS番号で行うので、
- * 先に物質を引いて CAS を集め、その CAS を持つリンクがあるか、で見る。
+ * **物質の表と法文物質名の表はつながっていない。**突き合わせは CAS番号で行う。
+ * Prisma は一意でない列（`cas_normalized`）での関連を張れないので、
+ * **当たる CAS を全部持ってくるのではなく、条件のまま DB に渡して結合させる**（同日 指摘）。
  * 別名も見る（物質の一覧の「別名も含む」と同じ）。
  *
- * **見えない物質は数に入れない。**未公開の物質の名前で当たってしまうと、
- * その物質があること自体が伝わる（CLAUDE.md §4）
+ * **見えない物質は当てない。**未公開の物質の名前で当たってしまうと、
+ * その物質があること自体が伝わる（CLAUDE.md §4）。
+ * 区分（分類）で絞っているときは、その中だけを見る
  */
 export async function linkedSubstanceNameWhere(
   actor: Actor,
   filter: ColumnFilter | undefined,
-): Promise<Prisma.StatutorySubstanceWhereInput | null> {
+  classIds: string[],
+  m: Messages,
+): Promise<Prisma.StatutorySubstanceWhereInput | Response | null> {
   if (!filter || filter.kind !== "text") return null;
   // 「空」「空でない」は物質の側では意味を成さない（リンクの有無は CAS番号の欄で見る）
   if (filter.op === "empty" || filter.op === "notEmpty") return null;
   const value = filter.value.trim();
   if (value === "") return null;
 
-  const mode = { mode: "insensitive" as const };
-  const text =
+  const lit = likeLiteral(value);
+  const pattern =
     filter.op === "startsWith"
-      ? { startsWith: value, ...mode }
+      ? `${lit}%`
       : filter.op === "endsWith"
-        ? { endsWith: value, ...mode }
+        ? `%${lit}`
         : filter.op === "equals"
-          ? { equals: value, ...mode }
-          : { contains: value, ...mode };
-  const byName = {
-    OR: [
-      { nameJa: text },
-      { nameEn: text },
-      { aliases: { some: { OR: [{ nameJa: text }, { nameEn: text }] } } },
-    ],
-  };
+          ? lit
+          : `%${lit}%`;
+  const seeAll = actor.has("INACTIVE_VIEW");
+  const anyClass = classIds.length === 0;
 
-  const rows = await prisma.substance.findMany({
-    where: {
-      deletedAt: null,
-      casNormalized: { not: null },
-      AND: [substanceVisibilityWhere(actor), byName],
-    },
-    select: { casNormalized: true },
-    distinct: ["casNormalized"],
-    take: NAME_MATCH_MAX,
-  });
-  const cas = rows.flatMap((r) => (r.casNormalized ? [r.casNormalized] : []));
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT DISTINCT l.statutory_substance_id AS id
+    FROM statutory_cas_links l
+    JOIN statutory_substances ss
+      ON ss.id = l.statutory_substance_id AND ss.deleted_at IS NULL
+    JOIN substances s
+      ON s.cas_normalized = l.cas_normalized AND s.deleted_at IS NULL
+    LEFT JOIN substance_aliases a ON a.substance_id = s.id
+    WHERE (${anyClass} OR ss.class_id = ANY(${classIds}::text[]))
+      AND (${seeAll} OR s.publish_state = 'PUBLISHED' OR s.created_by = ${actor.user.id}::text)
+      AND (
+        LOWER(s.name_ja) LIKE LOWER(${pattern})
+        OR LOWER(s.name_en) LIKE LOWER(${pattern})
+        OR LOWER(a.name_ja) LIKE LOWER(${pattern})
+        OR LOWER(a.name_en) LIKE LOWER(${pattern})
+      )
+    LIMIT ${NAME_MATCH_MAX + 1}
+  `;
+  if (rows.length > NAME_MATCH_MAX) {
+    return jsonError(400, "too_many_matches", m.statutorySubstances.substanceNameTooMany);
+  }
   // 1件も当たらなければ、結果も1件も出さない（条件を無視して全件出さない）
-  if (cas.length === 0) return { id: { in: [] } };
-  return { links: { some: { casNormalized: { in: cas } } } };
+  return { id: { in: rows.map((r) => r.id) } };
 }
 
 type SubstanceRow = Prisma.StatutorySubstanceGetPayload<{ include: typeof SUBSTANCE_INCLUDE }>;
