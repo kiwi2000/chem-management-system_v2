@@ -1,3 +1,4 @@
+import { IMPURITY_NONE } from "@chem/shared";
 import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
 import { notDisabledIn } from "@/lib/enabled-sources";
@@ -113,6 +114,13 @@ async function linkDataOf(
  * 拾うのは**該当したものだけ**。非該当まで印を付けると、
  * ほぼ全部の CAS に全部の区分が並び、印としての意味が無くなる。
  */
+/**
+ * 合算表の行の鍵。**CAS × 不純物パターン**（S21）。
+ * 判定の根拠に残っているパターンが 0 のときは省くので、揃えて `IMPURITY_NONE` に寄せる
+ */
+export const casPatternKey = (cas: string, pattern?: string | null) =>
+  `${cas}@${pattern || IMPURITY_NONE}`;
+
 export async function regulationsByCas(
   productId: string,
 ): Promise<Map<string, RowRegulationDto[]>> {
@@ -202,7 +210,11 @@ export async function regulationsByCas(
     そのぶんだけ印が並ぶ
   */
 
-  /** CAS → 効いている区分。同じ区分に複数の法文物質名で当たっても1つにまとめる */
+  /**
+   * 「CAS × 不純物パターン」→ 効いている区分。同じ区分に複数の法文物質名で当たっても1つにまとめる。
+   * **パターンを鍵に入れる**（S21）。CAS だけで引くと、不純物として入っている行にも
+   * 主成分で当たった区分が出てしまう
+   */
   const byCas = new Map<string, Map<string, RowRegulationDto>>();
   for (const r of rows) {
     for (const h of r.hits) {
@@ -211,10 +223,15 @@ export async function regulationsByCas(
         ここで引き直すと、あとからバージョンやリンクが変わったときに
         判定と食い違う答えを出してしまう
       */
-      const contributions = (h.contributions ?? []) as { cas: string; sources?: string[] }[];
+      const contributions = (h.contributions ?? []) as {
+        cas: string;
+        sources?: string[];
+        pattern?: string;
+      }[];
       for (const c of contributions) {
         if (!c.cas) continue;
-        const seen = byCas.get(c.cas) ?? new Map<string, RowRegulationDto>();
+        const key = casPatternKey(c.cas, c.pattern);
+        const seen = byCas.get(key) ?? new Map<string, RowRegulationDto>();
         const region = r.category.law.country.region;
         // 同じ区分に別の号でも当たることがあるので、消さずに足していく
         const statutory: RowStatutoryDto[] = [...(seen.get(r.categoryId)?.statutory ?? [])];
@@ -265,7 +282,7 @@ export async function regulationsByCas(
           categoryNameOriginal: r.category.nameOriginal,
           needsReview: r.needsReview,
         });
-        byCas.set(c.cas, seen);
+        byCas.set(key, seen);
       }
     }
   }

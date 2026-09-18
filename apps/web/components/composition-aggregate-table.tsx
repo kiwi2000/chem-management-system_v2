@@ -98,7 +98,11 @@ const HEAD_GRID = [
 ].join(" ");
 
 /** 行を指す鍵。CASを持たない物質は自分のコードで区別する */
-const keyOf = (row: { casNumber: string | null; code: string }) => row.casNumber ?? row.code;
+/**
+ * 行の鍵。**同じ CAS でも不純物パターンが違えば別の行**なので、パターンまで入れる（S21）
+ */
+const keyOf = (row: { casNumber: string | null; code: string; impurityPatternId?: string }) =>
+  `${row.casNumber ?? row.code}@${row.impurityPatternId ?? ""}`;
 
 interface Props {
   productId: string;

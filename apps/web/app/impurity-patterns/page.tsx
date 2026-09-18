@@ -1,8 +1,16 @@
 "use client";
 
-import { IMPURITY_NONE, pickName, pickStatutoryName } from "@chem/shared";
+import {
+  IMPURITY_NONE,
+  emptyTableState,
+  pickName,
+  pickStatutoryName,
+  type TableState,
+} from "@chem/shared";
 import { ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/data-table";
+import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +28,7 @@ import type {
   StatutorySubstanceDto,
 } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
+import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
 
 /**
@@ -33,6 +42,9 @@ import { cn } from "@/lib/utils";
  */
 
 const EMPTY_FORM = { id: "", code: "", nameJa: "", nameEn: "", note: "" };
+
+/** 件数が知れているので、並びは表示順のみ */
+const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
 
 export default function ImpurityPatternsPage() {
   const { m, locale } = useI18n();
@@ -56,6 +68,62 @@ export default function ImpurityPatternsPage() {
   const [exceptionsFor, setExceptionsFor] = useState<RegulationCategoryDto | null>(null);
 
   const selected = patterns.find((p) => p.id === selectedId) ?? null;
+
+  const columns = useMemo<TableColumn<ImpurityPatternDto>[]>(
+    () => [
+      {
+        key: "code",
+        header: m.impurityPatterns.code,
+        kind: "text",
+        width: 96,
+        sortable: false,
+        filterable: false,
+        className: "font-mono text-xs",
+        render: (r) => r.code,
+      },
+      {
+        key: "nameJa",
+        header: m.impurityPatterns.name,
+        kind: "text",
+        width: 240,
+        sortable: false,
+        filterable: false,
+        render: (r) => (
+          <>
+            {pickName(locale, r.nameJa, r.nameEn)}
+            {r.builtin && (
+              <span className="text-muted-foreground border-input ml-2 border px-1 text-xs">
+                {m.impurityPatterns.builtin}
+              </span>
+            )}
+          </>
+        ),
+      },
+      {
+        key: "note",
+        header: m.impurityPatterns.note,
+        kind: "text",
+        width: 380,
+        sortable: false,
+        filterable: false,
+        className: "text-muted-foreground text-xs",
+        render: (r) => r.note ?? "",
+      },
+      {
+        key: "substanceCount",
+        header: m.impurityPatterns.substanceCount,
+        kind: "number",
+        width: 88,
+        sortable: false,
+        filterable: false,
+        className: "text-right font-mono tabular-nums text-xs",
+        render: (r) => r.substanceCount.toLocaleString(locale),
+      },
+    ],
+    [m, locale],
+  );
+
+  const { state, setState } = useTableState("chem.table.impurityPatterns", columns, DEFAULT_STATE);
 
   const loadPatterns = useCallback(async () => {
     const res = await fetch("/api/impurity-patterns").catch(() => null);
@@ -173,16 +241,19 @@ export default function ImpurityPatternsPage() {
     }
   }
 
-  async function removePattern(p: ImpurityPatternDto) {
+  /** まとめて削除。組み込み（0・1）はサーバーが断るので、そのまま知らせる */
+  async function removeSelected(rows: ImpurityPatternDto[]) {
     setError(null);
-    const res = await fetch(`/api/impurity-patterns/${p.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      if (redirectIfUnauthorized(res)) return;
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.deleteFailed);
-      return;
+    for (const p of rows) {
+      const res = await fetch(`/api/impurity-patterns/${p.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        break;
+      }
+      if (selectedId === p.id) setSelectedId(null);
     }
-    if (selectedId === p.id) setSelectedId(null);
     await loadPatterns();
   }
 
@@ -264,85 +335,41 @@ export default function ImpurityPatternsPage() {
             </div>
           )}
 
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-primary text-primary-foreground">
-                <th className="w-24 px-2 py-1 text-left">{m.impurityPatterns.code}</th>
-                <th className="px-2 py-1 text-left">{m.impurityPatterns.name}</th>
-                <th className="px-2 py-1 text-left">{m.impurityPatterns.note}</th>
-                <th className="w-20 px-2 py-1 text-right">{m.impurityPatterns.substanceCount}</th>
-                <th className="w-28 px-2 py-1" />
-              </tr>
-            </thead>
-            <tbody>
-              {patterns.map((p) => (
-                <tr
-                  key={p.id}
-                  onClick={() => setSelectedId(p.id)}
-                  className={cn(
-                    "border-border cursor-pointer border-b",
-                    selectedId === p.id && "bg-accent",
-                  )}
-                >
-                  <td className="px-2 py-1 font-mono">{p.code}</td>
-                  <td className="px-2 py-1">
-                    {pickName(locale, p.nameJa, p.nameEn)}
-                    {p.builtin && (
-                      <span className="text-muted-foreground border-input ml-2 border px-1 text-xs">
-                        {m.impurityPatterns.builtin}
-                      </span>
-                    )}
-                  </td>
-                  <td className="text-muted-foreground px-2 py-1 text-xs">{p.note}</td>
-                  <td className="px-2 py-1 text-right font-mono tabular-nums">
-                    {p.substanceCount.toLocaleString(locale)}
-                  </td>
-                  <td className="px-2 py-1 text-right">
-                    {editable && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setForm({
-                              id: p.id,
-                              code: p.code,
-                              nameJa: p.nameJa,
-                              nameEn: p.nameEn ?? "",
-                              note: p.note ?? "",
-                            });
-                            setAdding(true);
-                          }}
-                        >
-                          {m.common.edit}
-                        </Button>
-                        {!p.builtin && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void removePattern(p);
-                            }}
-                          >
-                            {m.common.delete}
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {patterns.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="text-muted-foreground px-2 py-3 text-center">
-                    {m.impurityPatterns.empty}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <DataTable
+            storageKey="chem.table.impurityPatterns"
+            columns={columns}
+            rows={patterns}
+            rowKey={(r) => r.id}
+            total={patterns.length}
+            state={state}
+            defaultState={DEFAULT_STATE}
+            onStateChange={setState}
+            emptyMessage={m.impurityPatterns.empty}
+            showPager={false}
+            showFilters={false}
+            // 行を選ぶと、下の表がそのパターンの設定になる
+            selectedKey={selectedId}
+            onRowSelect={(r) => setSelectedId(r.id)}
+            // 組み込み（0・1）は消せないので、選べるのはそれ以外だけ
+            selectable={editable}
+            onDeleteSelected={(rows) => void removeSelected(rows)}
+            rowAction={
+              editable
+                ? {
+                    onClick: (r) => {
+                      setForm({
+                        id: r.id,
+                        code: r.code,
+                        nameJa: r.nameJa,
+                        nameEn: r.nameEn ?? "",
+                        note: r.note ?? "",
+                      });
+                      setAdding(true);
+                    },
+                  }
+                : undefined
+            }
+          />
         </CardContent>
       </Card>
 
@@ -544,6 +571,8 @@ function ExceptionsDialog({
 }) {
   const { m, locale } = useI18n();
   const [items, setItems] = useState<StatutorySubstanceDto[]>([]);
+  /** 当たった全件。出しているのは先頭 200 件なので、多いときは絞ってもらう */
+  const [total, setTotal] = useState(0);
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
   const [query, setQuery] = useState("");
   const [onlyExceptions, setOnlyExceptions] = useState(false);
@@ -555,7 +584,11 @@ function ExceptionsDialog({
       fetch(`/api/statutory-substances?${params.toString()}`).catch(() => null),
       fetch(`/api/impurity-patterns/${pattern.id}/exemptions`).catch(() => null),
     ]);
-    if (s?.ok) setItems(((await s.json()) as ListResponse<StatutorySubstanceDto>).items);
+    if (s?.ok) {
+      const body = (await s.json()) as ListResponse<StatutorySubstanceDto>;
+      setItems(body.items);
+      setTotal(body.total);
+    }
     if (e?.ok) {
       const body = (await e.json()) as ImpurityExemptionsDto;
       setOverrides(new Map(body.substances.map((x) => [x.statutorySubstanceId, x.excluded])));
@@ -607,6 +640,10 @@ function ExceptionsDialog({
               />
               {m.impurityPatterns.onlyExceptions}
             </label>
+            {/* **出している数と全体の数を必ず出す。**黙って切ると、続きがあることに気づけない */}
+            <span className="text-muted-foreground text-xs">
+              {m.table.showingOf(shown.length, total)}
+            </span>
           </div>
           <table className="w-full border-collapse text-sm">
             <thead>

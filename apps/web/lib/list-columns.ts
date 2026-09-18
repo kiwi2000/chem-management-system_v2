@@ -469,6 +469,8 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
   },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "classId", kind: "enum", field: "classId" },
+  // 区分で絞る（分類をたどる）。不純物パターンの例外の窓で使う
+  { key: "categoryId", kind: "enum", field: "categoryId", nested: "regulationClass" },
   {
     key: "applicableCondition",
     kind: "text",

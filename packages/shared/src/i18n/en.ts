@@ -303,6 +303,8 @@ export const en: Messages = {
     selectAll: "Select all on this page",
     selectRow: "Select this row",
     selectedCount: (n: number) => `${n} selected`,
+    showingOf: (shown: number, total: number) =>
+      shown >= total ? `${total}` : `${shown} of ${total} (narrow it down)`,
     create: "New",
     deleteSelected: "Delete selected",
     deleteSelectedConfirm: (n: number) => `Delete the ${n} selected item${n === 1 ? "" : "s"}?`,

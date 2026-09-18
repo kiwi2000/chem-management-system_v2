@@ -109,7 +109,8 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
     let alive = true;
     const timer = setTimeout(() => {
       void (async () => {
-        const params = new URLSearchParams({ cas });
+        // 同じ CAS でも不純物パターンが違えば別の物質。代表もその組ごとなので、パターンで絞る
+        const params = new URLSearchParams({ cas, pattern: impurityPatternId });
         if (initial?.id) params.set("exclude", initial.id);
         const res = await fetch(`/api/substances/cas-siblings?${params}`).catch(() => null);
         if (!res?.ok || !alive) return;
@@ -121,7 +122,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
       alive = false;
       clearTimeout(timer);
     };
-  }, [casNumber, initial?.id]);
+  }, [casNumber, impurityPatternId, initial?.id]);
   /*
    * 代表を外す操作は無い（外すと合算した行に出す名前が無くなる）。
    * 別の物質を代表にするときだけ、いまの代表を示して確かめてから切り替える。

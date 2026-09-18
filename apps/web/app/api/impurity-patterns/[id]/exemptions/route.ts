@@ -7,10 +7,26 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { recomputeScoresForPattern } from "@/lib/score-store";
 
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+/**
+ * 除外を変えたことを、パターンの行の更新日時に残す。
+ * 「要再計算」の印はこの日時を見る（`lib/rejudge-job.ts` の premisesChangedAt）。
+ * あわせて、そのパターンの物質のスコアを計算し直す（除外した区分の点は数えない）
+ */
+async function touchPattern(patternId: string, userId: string) {
+  await prisma.impurityPattern.update({
+    where: { id: patternId },
+    data: { updatedBy: userId, updatedAt: new Date() },
+  });
+  await recomputeScoresForPattern(patternId).catch((e) =>
+    console.error("score recompute failed:", e),
+  );
+}
 
 /**
  * 不純物パターンごとの除外の設定（S21）。
@@ -100,6 +116,13 @@ export async function PUT(req: Request, { params }: Ctx) {
     });
   }
 
+  /*
+    **外したときも判定の前提が変わる。**外す操作は行を消すので、
+    除外の表の更新日時だけを見ていると気づけない（「要再計算」が出ない）。
+    パターンの行を必ず触って、前提が変わったことを残す
+  */
+  await touchPattern(id, actor.user.id);
+
   await writeAudit({
     entity: "impurity_exemptions",
     entityId: id,
@@ -153,6 +176,8 @@ export async function POST(req: Request, { params }: Ctx) {
       update: { excluded, updatedAt: new Date(), updatedBy: actor.user.id },
     });
   }
+
+  await touchPattern(id, actor.user.id);
 
   await writeAudit({
     entity: "impurity_exemption_substances",

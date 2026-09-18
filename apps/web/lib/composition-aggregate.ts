@@ -10,6 +10,7 @@ import {
 } from "@chem/shared";
 import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
 import {
+  casPatternKey,
   currentSources,
   nearMissByCas,
   previousVersion,
@@ -319,8 +320,15 @@ export async function aggregateComposition(
             pct: fineToPct(c.fine),
           })),
         note: b.notes.join("／") || null,
-        // 判定は正規化した CAS で紐づいている（表示用の CAS 番号ではない）
-        regulations: (b.casNormalized ? regulations.get(b.casNormalized) : undefined) ?? [],
+        /*
+          判定は正規化した CAS で紐づいている（表示用の CAS 番号ではない）。
+          **規制は CAS × 不純物パターンで引く**（S21）。除外した区分が不純物の行に出ないようにする。
+          含有率不足のほうはリンクの側にパターンが無いので、CAS だけで引く
+        */
+        regulations:
+          (b.casNormalized
+            ? regulations.get(casPatternKey(b.casNormalized, b.impurityPatternId))
+            : undefined) ?? [],
         nearMiss: (b.casNormalized ? nearMiss.get(b.casNormalized) : undefined) ?? [],
       };
     });

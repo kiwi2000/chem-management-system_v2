@@ -179,6 +179,20 @@ export async function recomputeScoresForCategory(categoryId: string): Promise<nu
   return writeScores(cas);
 }
 
+/**
+ * ある不純物パターンの物質を、まとめて計算し直す（S21）。
+ * 除外の設定を変えると、そのパターンの物質の点が変わるので、除外の付け外しのときに呼ぶ
+ */
+export async function recomputeScoresForPattern(patternId: string): Promise<number> {
+  const rows = await prisma.substance.findMany({
+    where: { impurityPatternId: patternId, deletedAt: null, casNormalized: { not: null } },
+    select: { casNormalized: true },
+  });
+  const cas = [...new Set(rows.map((r) => r.casNormalized as string))];
+  if (cas.length === 0) return 0;
+  return writeScores(cas);
+}
+
 /** 物質1件を計算し直す。登録・CAS番号の変更のときに呼ぶ */
 export async function recomputeScoreForSubstance(casNormalized: string | null): Promise<number> {
   if (!casNormalized) return 0;

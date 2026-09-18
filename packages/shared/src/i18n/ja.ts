@@ -318,6 +318,9 @@ export const ja = {
     selectAll: "このページをすべて選択",
     selectRow: "この行を選択",
     selectedCount: (n: number) => `${n} 件選択中`,
+    /** 一部だけを出しているとき、続きがあることを伝える */
+    showingOf: (shown: number, total: number) =>
+      shown >= total ? `${total} 件` : `${total} 件中 ${shown} 件（絞り込んでください）`,
     create: "新規登録",
     deleteSelected: "選択した行を削除",
     deleteSelectedConfirm: (n: number) => `選択した ${n} 件を削除しますか？`,
