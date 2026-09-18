@@ -375,6 +375,45 @@ export const REGULATION_CATEGORY_COLUMNS: QueryColumn[] = [
   { key: "score", kind: "number", field: "score" },
 ];
 
+/**
+ * 区分の列。**いま判定に使っている版が要る**ので関数にしてある（法文物質名と同じ）。
+ *
+ * 法律の一覧から「このCAS（この物質）はどの法律・区分に当たるか」を引くための欄（2026-09-18 指示）。
+ * 区分 → 分類 → 法文物質名 → 結び付き とたどり、いまの版の結び付きだけを見る。
+ * 番号は完全一致
+ */
+export function regulationCategoryColumns(versionId: string | null): QueryColumn[] {
+  return [
+    ...REGULATION_CATEGORY_COLUMNS,
+    {
+      key: "casNumber",
+      kind: "list",
+      field: "casNormalized",
+      sortable: false,
+      custom: (f) => {
+        if (f.kind !== "list") return null;
+        const values = [...new Set(f.values.map(normalizeCas).filter((v) => v !== ""))];
+        if (values.length === 0) return null;
+        // 版が決まっていないときは、当たるものが無い（判定も動いていない状態）
+        if (versionId === null) return { id: { in: [] } };
+        const each = values.map((v) => ({
+          classes: {
+            some: {
+              deletedAt: null,
+              statutorySubstances: {
+                some: { deletedAt: null, links: { some: { versionId, casNormalized: v } } },
+              },
+            },
+          },
+        }));
+        return f.op === "all" ? { AND: each } : { OR: each };
+      },
+    },
+    // 物質の名前は、物質を引いてから組み立てる（lib/law-service.ts）。ここでは条件を作らない
+    { key: "substanceName", kind: "text", field: "nameJa", sortable: false, custom: () => null },
+  ];
+}
+
 export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
   { key: "officialNumber", kind: "text", field: "officialNumber", caseInsensitive: true },

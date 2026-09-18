@@ -34,6 +34,9 @@ import { cn } from "@/lib/utils";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
+/** 区分の側を探すときに一度に引く数。これを超えて当たったら、絞り込みが欠けるので知らせる */
+const CATEGORY_HITS_MAX = 500;
+
 /**
  * 法律と、その配下の区分を1つの表にまとめたもの。
  *
@@ -271,6 +274,34 @@ export function LawTreeSection({
         width: 0,
       },
       {
+        /*
+          結び付いている CAS番号から探す（2026-09-18 指示）。
+          「このCASはどの法律・区分に当たるか」を法律の一覧から引く。
+          区分の側を探して、当たった区分を持つ法律だけを残す（区分コードの欄と同じ動き）
+        */
+        key: "casNumber",
+        header: m.statutorySubstances.casNumber,
+        // 番号は完全一致。複数まとめて打てる（法文物質名の一覧の欄と同じ）
+        kind: "list",
+        filterOnly: true,
+        sortable: false,
+        filterFullWidth: true,
+        filterPlaceholder: "108-88-3",
+        width: 0,
+      },
+      {
+        // 結び付いている CAS を持つ物質の名前から探す（別名も見る）。同じく条件だけ
+        key: "substanceName",
+        header: m.statutorySubstances.substanceName,
+        kind: "text",
+        filterOnly: true,
+        sortable: false,
+        filterFullWidth: true,
+        // 「空白」「空白でない」は物質の側では意味を成さない
+        nullable: false,
+        width: 0,
+      },
+      {
         key: "count",
         header: m.regulationCategories.title,
         kind: "number",
@@ -298,18 +329,26 @@ export function LawTreeSection({
     先に区分の側を探し、当たった区分を持つ法律だけを残して、その法律を開いておく。
   */
   const categoryQueries = useMemo(() => {
-    const byCode = tableState.filters.categoryCode;
     const byName = tableState.filters.categoryName;
-    const byScore = tableState.filters.categoryScore;
-    if (!byCode && !byName && !byScore) return null;
+    // 区分の側でそのまま効く条件。まとめて1回で引く（全部に当たったものだけが返る）
+    const rest: TableState["filters"] = {};
+    if (tableState.filters.categoryCode) rest.code = tableState.filters.categoryCode;
+    if (tableState.filters.categoryScore) rest.score = tableState.filters.categoryScore;
+    if (tableState.filters.casNumber) rest.casNumber = tableState.filters.casNumber;
+    if (tableState.filters.substanceName) rest.substanceName = tableState.filters.substanceName;
+    if (!byName && Object.keys(rest).length === 0) return null;
     const build = (filters: TableState["filters"]) =>
       serializeTableState(
-        { sort: [{ column: "displayOrder", direction: "asc" }], filters, page: 1, pageSize: 200 },
+        {
+          sort: [{ column: "displayOrder", direction: "asc" }],
+          filters,
+          page: 1,
+          pageSize: CATEGORY_HITS_MAX,
+        },
         emptyTableState(),
       ).toString();
     return {
-      code: byCode ? build({ code: byCode }) : null,
-      score: byScore ? build({ score: byScore }) : null,
+      rest: Object.keys(rest).length > 0 ? build(rest) : null,
       // 名称は原文・日本語・英語のどれに入っているか決まっていないので、3つとも探して合わせる
       names: byName
         ? [build({ nameOriginal: byName }), build({ nameJa: byName }), build({ nameEn: byName })]
@@ -383,13 +422,23 @@ export function LawTreeSection({
       return;
     }
     let alive = true;
+    setError(null);
     const fetchOne = async (query: string) => {
       const res = await fetch(`/api/regulation-categories?${query}`).catch(() => null);
       if (!res || !res.ok) return [];
-      return ((await res.json()) as ListResponse<RegulationCategoryDto>).items;
+      const body = (await res.json()) as ListResponse<RegulationCategoryDto>;
+      /*
+        1ページに収まらないほど当たったら、**黙って一部だけで絞らない**。
+        足りないぶんの法律が落ちて「該当なし」に見える。区分の数はいまのところ百件ほどで
+        届かないが、届いたときに気づけるようにしておく
+      */
+      if (body.total > body.items.length) {
+        if (alive) setError(m.laws.tooManyCategoryHits);
+      }
+      return body.items;
     };
     void (async () => {
-      const { code, names, score } = categoryQueries;
+      const { rest, names } = categoryQueries;
       let items: RegulationCategoryDto[] = [];
       if (names) {
         const lists = await Promise.all(names.map(fetchOne));
@@ -397,23 +446,18 @@ export function LawTreeSection({
         const byId = new Map(lists.flat().map((c) => [c.id, c]));
         items = [...byId.values()];
       }
-      if (score) {
-        const byScore = await fetchOne(score);
-        // ほかの条件も指定されていれば、どちらにも当たったものだけ
-        const ids = new Set(byScore.map((c) => c.id));
-        items = names ? items.filter((c) => ids.has(c.id)) : byScore;
-      }
-      if (code) {
-        const byCode = await fetchOne(code);
-        // 両方指定されていれば、どちらにも当たったものだけ
-        items = names ? items.filter((c) => byCode.some((x) => x.id === c.id)) : byCode;
+      if (rest) {
+        const byRest = await fetchOne(rest);
+        // 名前も指定されていれば、どちらにも当たったものだけ
+        const ids = new Set(byRest.map((c) => c.id));
+        items = names ? items.filter((c) => ids.has(c.id)) : byRest;
       }
       if (alive) setHits(items);
     })();
     return () => {
       alive = false;
     };
-  }, [categoryQueries]);
+  }, [categoryQueries, m]);
 
   /** その法律の区分を引くだけ。開いた状態にはしない */
   const fetchCategories = useCallback(async (id: string) => {

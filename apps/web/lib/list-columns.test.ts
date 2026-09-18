@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CAS_LINK_DIFF_COLUMNS, STATUTORY_SUBSTANCE_COLUMNS, productColumns } from "./list-columns";
+import {
+  CAS_LINK_DIFF_COLUMNS,
+  STATUTORY_SUBSTANCE_COLUMNS,
+  productColumns,
+  regulationCategoryColumns,
+  statutorySubstanceColumns,
+} from "./list-columns";
 import { buildWhere } from "./table-query";
 
 /**
@@ -155,6 +161,73 @@ describe("法文物質名の絞り込み", () => {
   it("「空でない」はどれかに入っているとき", () => {
     const w = nameWhere("notEmpty") as { OR: unknown[] };
     expect(w.OR).toHaveLength(3);
+  });
+});
+
+/**
+ * 結び付いた CAS番号で法文物質名・区分を絞る条件。
+ *
+ * **番号は完全一致、見るのはいまの版だけ**（2026-09-18 指摘）。
+ * 部分一致だと `50-00-0` で `71550-00-0` の行まで出る。版を限らないと、
+ * 古い版にしか無い結び付きで、画面に出ていない行が並ぶ
+ */
+describe("結び付いたCAS番号の絞り込み", () => {
+  const first = (w: unknown) => (w as { AND: Record<string, unknown>[] }).AND[0];
+  const cas = (op: "any" | "all", values: string[]) => ({
+    casNumber: { kind: "list" as const, op, values },
+  });
+
+  it("法文物質名：いまの版の結び付きに、その番号がそのまま付いているもの", () => {
+    expect(first(buildWhere(statutorySubstanceColumns("v1"), cas("any", ["50-00-0"])))).toEqual({
+      OR: [{ links: { some: { versionId: "v1", casNormalized: "50-00-0" } } }],
+    });
+  });
+
+  it("複数の番号は「いずれか」なら OR、「すべて」なら AND", () => {
+    const any = first(
+      buildWhere(statutorySubstanceColumns("v1"), cas("any", ["50-00-0", "71-43-2"])),
+    );
+    const all = first(
+      buildWhere(statutorySubstanceColumns("v1"), cas("all", ["50-00-0", "71-43-2"])),
+    );
+    expect((any as { OR: unknown[] }).OR).toHaveLength(2);
+    expect((all as { AND: unknown[] }).AND).toHaveLength(2);
+  });
+
+  it("版が決まっていなければ1件も当たらない", () => {
+    expect(first(buildWhere(statutorySubstanceColumns(null), cas("any", ["50-00-0"])))).toEqual({
+      id: { in: [] },
+    });
+    expect(first(buildWhere(regulationCategoryColumns(null), cas("any", ["50-00-0"])))).toEqual({
+      id: { in: [] },
+    });
+  });
+
+  it("区分：分類 → 法文物質名 → 結び付き とたどる（消したものは飛ばす）", () => {
+    expect(first(buildWhere(regulationCategoryColumns("v1"), cas("any", ["50-00-0"])))).toEqual({
+      OR: [
+        {
+          classes: {
+            some: {
+              deletedAt: null,
+              statutorySubstances: {
+                some: {
+                  deletedAt: null,
+                  links: { some: { versionId: "v1", casNormalized: "50-00-0" } },
+                },
+              },
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it("物質の名前の欄は、ここでは条件を作らない（物質を引いてから組み立てる）", () => {
+    const w = buildWhere(regulationCategoryColumns("v1"), {
+      substanceName: { kind: "text", op: "contains", value: "鉛" },
+    });
+    expect(w).toEqual({});
   });
 });
 

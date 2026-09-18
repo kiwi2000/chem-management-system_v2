@@ -497,6 +497,8 @@ export const en: Messages = {
     duplicateCode: (code: string) => `Law code "${code}" is already in use`,
     inUse: (n: number) => `${n} categories still belong to this law. Remove them first`,
     revived: "A deleted entry with the same code was restored with the new values",
+    tooManyCategoryHits:
+      "Too many categories matched, so some laws are missing. Narrow the category filters",
   },
 
   externalDb: {

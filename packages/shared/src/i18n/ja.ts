@@ -517,6 +517,8 @@ export const ja = {
     duplicateCode: (code: string) => `法律コード「${code}」は既に使われています`,
     inUse: (n: number) => `この法律は区分${n}件から使われています。先にその区分を消してください`,
     revived: "以前に削除した同じコードがあったため、内容を更新して復活させました",
+    tooManyCategoryHits:
+      "当たった区分が多すぎて、一部の法律が出ていません。区分の条件をもう少し絞ってください",
   },
 
   externalDb: {

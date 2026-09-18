@@ -9,8 +9,14 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { countSubstancesByCategory, ensureDefaultClass, toCategoryDto } from "@/lib/law-service";
-import { REGULATION_CATEGORY_COLUMNS } from "@/lib/list-columns";
+import { getCurrentVersion } from "@/lib/current-version";
+import {
+  countSubstancesByCategory,
+  ensureDefaultClass,
+  linkedSubstanceNameCategoryIds,
+  toCategoryDto,
+} from "@/lib/law-service";
+import { regulationCategoryColumns } from "@/lib/list-columns";
 import { getAppSettings } from "@/lib/settings";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
@@ -26,17 +32,30 @@ export async function GET(req: Request) {
   const actor = await requirePermission("REGULATION_VIEW");
   if (actor instanceof Response) return actor;
 
+  // 結び付いた CAS・物質名の欄は、いま判定に使っている版の結び付きだけを見る
+  const version = await getCurrentVersion();
+  const columns = regulationCategoryColumns(version?.id ?? null);
   const state = parseTableState(
     new URL(req.url).searchParams,
-    REGULATION_CATEGORY_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+    columns.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
-  const where = { deletedAt: null, ...buildWhere(REGULATION_CATEGORY_COLUMNS, state.filters) };
+  const byName = await linkedSubstanceNameCategoryIds(
+    actor,
+    state.filters.substanceName,
+    version?.id ?? null,
+  );
+  const where = {
+    deletedAt: null,
+    ...buildWhere(columns, state.filters),
+    // 1件も当たらなければ、結果も1件も出さない（条件を無視して全件出さない）
+    ...(byName === null ? {} : { id: { in: byName } }),
+  };
 
   const [items, total] = await Promise.all([
     prisma.regulationCategory.findMany({
       where,
-      orderBy: buildOrderBy(REGULATION_CATEGORY_COLUMNS, state.sort, { displayOrder: "asc" }),
+      orderBy: buildOrderBy(columns, state.sort, { displayOrder: "asc" }),
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
     }),

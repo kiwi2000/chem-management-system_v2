@@ -192,6 +192,65 @@ function likeLiteral(value: string): string {
 }
 
 /**
+ * 名前の欄の条件を LIKE の形にする。使えない条件（空・「空でない」・空文字）なら null
+ */
+function namePattern(filter: ColumnFilter | undefined): string | null {
+  if (!filter || filter.kind !== "text") return null;
+  // 「空」「空でない」は物質の側では意味を成さない（リンクの有無は CAS番号の欄で見る）
+  if (filter.op === "empty" || filter.op === "notEmpty") return null;
+  const value = filter.value.trim();
+  if (value === "") return null;
+
+  const lit = likeLiteral(value);
+  return filter.op === "startsWith"
+    ? `${lit}%`
+    : filter.op === "endsWith"
+      ? `%${lit}`
+      : filter.op === "equals"
+        ? lit
+        : `%${lit}%`;
+}
+
+/**
+ * 登録してある物質の名前から、**区分**を絞る（2026-09-18 指示。法律の一覧で使う）。
+ *
+ * 結び付き → 法文物質名 → 分類 → 区分 とたどって、区分の id を返す。
+ * 区分は多くても百件ほどなので、法文物質名のときのような上限は要らない。
+ * 条件が無ければ null（＝絞らない）。版が決まっていなければ空（＝1件も当たらない）
+ */
+export async function linkedSubstanceNameCategoryIds(
+  actor: Actor,
+  filter: ColumnFilter | undefined,
+  versionId: string | null,
+): Promise<string[] | null> {
+  const pattern = namePattern(filter);
+  if (pattern === null) return null;
+  if (versionId === null) return [];
+  const seeAll = actor.has("INACTIVE_VIEW");
+
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT DISTINCT rc.category_id AS id
+    FROM statutory_cas_links l
+    JOIN statutory_substances ss
+      ON ss.id = l.statutory_substance_id AND ss.deleted_at IS NULL
+    JOIN regulation_classes rc
+      ON rc.id = ss.class_id AND rc.deleted_at IS NULL
+    JOIN substances s
+      ON s.cas_normalized = l.cas_normalized AND s.deleted_at IS NULL
+    LEFT JOIN substance_aliases a ON a.substance_id = s.id
+    WHERE l.version_id = ${versionId}::text
+      AND (${seeAll} OR s.publish_state = 'PUBLISHED' OR s.created_by = ${actor.user.id}::text)
+      AND (
+        LOWER(s.name_ja) LIKE LOWER(${pattern})
+        OR LOWER(s.name_en) LIKE LOWER(${pattern})
+        OR LOWER(a.name_ja) LIKE LOWER(${pattern})
+        OR LOWER(a.name_en) LIKE LOWER(${pattern})
+      )
+  `;
+  return rows.map((r) => r.id);
+}
+
+/**
  * 登録してある物質の名前から、法文物質名を絞る条件（2026-09-18 指示）。
  *
  * **物質の表と法文物質名の表はつながっていない。**突き合わせは CAS番号で行う。
@@ -211,21 +270,8 @@ export async function linkedSubstanceNameWhere(
   versionId: string | null,
   m: Messages,
 ): Promise<Prisma.StatutorySubstanceWhereInput | Response | null> {
-  if (!filter || filter.kind !== "text") return null;
-  // 「空」「空でない」は物質の側では意味を成さない（リンクの有無は CAS番号の欄で見る）
-  if (filter.op === "empty" || filter.op === "notEmpty") return null;
-  const value = filter.value.trim();
-  if (value === "") return null;
-
-  const lit = likeLiteral(value);
-  const pattern =
-    filter.op === "startsWith"
-      ? `${lit}%`
-      : filter.op === "endsWith"
-        ? `%${lit}`
-        : filter.op === "equals"
-          ? lit
-          : `%${lit}%`;
+  const pattern = namePattern(filter);
+  if (pattern === null) return null;
   const seeAll = actor.has("INACTIVE_VIEW");
   const anyClass = classIds.length === 0;
   // 版が決まっていないときは、当たるものが無い（判定も動いていない状態）
