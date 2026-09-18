@@ -704,6 +704,8 @@ export const ja = {
     title: "規制対象CAS",
     casNumber: "CAS番号",
     casName: "物質名",
+    casNameTooMany:
+      "その名前に当たる物質が多すぎます。結果の取りこぼしが出るので、名前をもう少し絞ってください",
     status: "該非",
     applicable: "該当",
     notApplicable: "非該当",

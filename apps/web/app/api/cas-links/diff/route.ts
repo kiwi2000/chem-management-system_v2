@@ -1,6 +1,7 @@
 import { emptyTableState, parseTableState, type SortRule } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { ensureDiffRun } from "@/lib/cas-link-diff";
+import { casScopeByName } from "@/lib/cas-name-scope";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { statutoryHierarchyOrderBy } from "@/lib/law-order";
@@ -15,9 +16,6 @@ const DEFAULT_STATE = emptyTableState([
   { column: "kind", direction: "asc" },
   { column: "casNumber", direction: "asc" },
 ]);
-
-/** 物質名で絞るときに集める CAS の上限（対象CASの表と同じ） */
-const CAS_NAME_LIMIT = 2000;
 
 const KIND_OF = {
   ADDED: "added",
@@ -149,26 +147,14 @@ export async function GET(req: Request) {
     DEFAULT_STATE,
   );
 
-  // 物質名（代表物質）で絞る。差分の行には名前が無いので、先に物質マスタから CAS を集める
-  const casName = state.filters.casName;
-  let casScope: string[] | null = null;
-  if (casName?.kind === "text" && casName.value.trim() !== "") {
-    const v = casName.value.trim();
-    const reps = await prisma.substance.findMany({
-      where: {
-        deletedAt: null,
-        isCasRepresentative: true,
-        casNormalized: { not: null },
-        OR: [
-          { nameJa: { contains: v, mode: "insensitive" } },
-          { nameEn: { contains: v, mode: "insensitive" } },
-        ],
-      },
-      select: { casNormalized: true },
-      take: CAS_NAME_LIMIT,
-    });
-    casScope = reps.map((r) => r.casNormalized).filter((c): c is string => c !== null);
-  }
+  // 物質名（代表物質）で絞る。差分の行には名前が無いので、CAS番号で突き合わせる
+  const casScope = await casScopeByName(
+    { versionId, sourceId, againstId },
+    state.filters.casName,
+    m,
+  );
+  // 当たる物質が多すぎるときは、切り詰めた結果を出さずに断る
+  if (casScope instanceof Response) return casScope;
 
   const where = {
     versionId,
