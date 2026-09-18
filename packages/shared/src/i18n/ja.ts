@@ -26,6 +26,12 @@ export const ja = {
     publishConfirm: (n: number) => `選択した ${n} 件を発行しますか？`,
     rejectReason: "却下の理由（任意）",
     approvalHistory: "承認履歴",
+    /** 承認履歴の表の見出し（2026-09-18 指示でほかの表と同じ作りにした） */
+    approvalAt: "日時",
+    approvalAction: "操作",
+    approvalActor: "実行した人",
+    approvalComment: "コメント",
+    approvalEmpty: "履歴はありません",
     noApprovalHistory: "履歴はありません",
     actionDone: (updated: number, requested: number) =>
       `${requested} 件のうち ${updated} 件を変更しました`,

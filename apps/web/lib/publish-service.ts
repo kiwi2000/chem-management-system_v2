@@ -5,10 +5,13 @@ import {
   type ApprovalActionInput,
   type Messages,
   type PublishState,
+  type TableState,
 } from "@chem/shared";
 import type { ApprovalAction } from "@prisma/client";
 import { jsonError, type Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { APPROVAL_EVENT_COLUMNS } from "@/lib/list-columns";
+import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 /** 履歴の1件。画面に出す形 */
 export interface ApprovalEventDto {
@@ -123,16 +126,27 @@ export async function publishedParentsOf(
   return [...new Set(rows.map((r) => r.parentProduct.code))];
 }
 
-/** 履歴を新しい順に取る */
+/**
+ * 履歴を新しい順に取る。
+ *
+ * **ほかの一覧と同じく、ページで送る**（2026-09-18 指示）。
+ * 以前は直近 50 件で打ち切っていて、それが全部のように見えていた
+ */
 export async function listApprovalEvents(
   entity: "substance" | "product",
   entityId: string,
-): Promise<ApprovalEventDto[]> {
-  const rows = await prisma.approvalEvent.findMany({
-    where: { entity, entityId },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  state: TableState,
+): Promise<{ items: ApprovalEventDto[]; total: number; page: number; pageSize: number }> {
+  const where = { entity, entityId, ...buildWhere(APPROVAL_EVENT_COLUMNS, state.filters) };
+  const [rows, total] = await Promise.all([
+    prisma.approvalEvent.findMany({
+      where,
+      orderBy: buildOrderBy(APPROVAL_EVENT_COLUMNS, state.sort, { createdAt: "desc" }),
+      skip: (state.page - 1) * state.pageSize,
+      take: state.pageSize,
+    }),
+    prisma.approvalEvent.count({ where }),
+  ]);
   const actorIds = [...new Set(rows.flatMap((r) => (r.actorId ? [r.actorId] : [])))];
   const users = await prisma.user.findMany({
     where: { id: { in: actorIds } },
@@ -140,11 +154,16 @@ export async function listApprovalEvents(
   });
   const nameById = new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
 
-  return rows.map((r) => ({
-    id: r.id,
-    action: r.action,
-    actorName: r.actorId ? (nameById.get(r.actorId) ?? "-") : "-",
-    comment: r.comment,
-    createdAt: r.createdAt.toISOString(),
-  }));
+  return {
+    items: rows.map((r) => ({
+      id: r.id,
+      action: r.action,
+      actorName: r.actorId ? (nameById.get(r.actorId) ?? "-") : "-",
+      comment: r.comment,
+      createdAt: r.createdAt.toISOString(),
+    })),
+    total,
+    page: state.page,
+    pageSize: state.pageSize,
+  };
 }

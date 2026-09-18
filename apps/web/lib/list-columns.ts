@@ -432,6 +432,17 @@ export const METAL_FACTOR_COLUMNS: QueryColumn[] = [
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
+/**
+ * 承認履歴（2026-09-18 指示でほかの表と同じ作りにした）。
+ * **実行者は並べ替え・絞り込みに使えない。**名前は利用者の表から後で引いており、
+ * この表には id しか無い（Prisma で関連を張っていない）
+ */
+export const APPROVAL_EVENT_COLUMNS: QueryColumn[] = [
+  { key: "createdAt", kind: "date", field: "createdAt" },
+  { key: "action", kind: "enum", field: "action" },
+  { key: "comment", kind: "text", field: "comment", caseInsensitive: true, sortable: false },
+];
+
 export const NEWS_COLUMNS: QueryColumn[] = [
   { key: "titleJa", kind: "text", field: "titleJa", caseInsensitive: true },
   { key: "status", kind: "enum", field: "status" },

@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { DataTable } from "@/components/data-table/data-table";
+import type { TableColumn } from "@/components/data-table/types";
 import { useI18n } from "@/lib/i18n-client";
+import { useTableState } from "@/lib/use-table-state";
 
 interface Event {
   id: string;
@@ -12,9 +15,15 @@ interface Event {
   createdAt: string;
 }
 
+/** 新しい順。ほかの一覧と同じで、1ページの件数はその人の設定に従う */
+const DEFAULT_STATE: TableState = emptyTableState([{ column: "createdAt", direction: "desc" }]);
+
 /**
- * 申請・承認・却下の履歴。新しい順。
+ * 申請・承認・却下の履歴。
+ *
  * 見られるのは編集できる人と承認できる人だけ（サーバー側で判断する）。
+ * **ほかの一覧と同じ表にしてある**（2026-09-18 指示）。
+ * 以前は直近 50 件だけを並べていて、それが全部のように見えていた
  */
 export function ApprovalHistory({
   entity,
@@ -25,51 +34,109 @@ export function ApprovalHistory({
 }) {
   const { m, locale } = useI18n();
   const [items, setItems] = useState<Event[] | null>(null);
+  const [total, setTotal] = useState(0);
+  /** 権限が無いときは節ごと出さない（403 が返る） */
+  const [forbidden, setForbidden] = useState(false);
+
+  const label = useCallback(
+    (action: string) =>
+      ({
+        SUBMIT: m.common.submit,
+        APPROVE: m.common.approve,
+        REJECT: m.common.reject,
+        WITHDRAW: m.common.withdraw,
+        UNPUBLISH: m.common.unpublish,
+      })[action] ?? action,
+    [m],
+  );
+
+  const columns = useMemo<TableColumn<Event>[]>(
+    () => [
+      {
+        key: "createdAt",
+        header: m.common.approvalAt,
+        kind: "date",
+        width: 170,
+        className: "whitespace-nowrap text-xs",
+        render: (e) => new Date(e.createdAt).toLocaleString(locale),
+      },
+      {
+        key: "action",
+        header: m.common.approvalAction,
+        kind: "enum",
+        width: 110,
+        options: ["SUBMIT", "APPROVE", "REJECT", "WITHDRAW", "UNPUBLISH"].map((v) => ({
+          value: v,
+          label: label(v),
+        })),
+        render: (e) => label(e.action),
+      },
+      {
+        // 名前は利用者の表から引いている。この表には id しか無いので、並べ替え・絞り込みはできない
+        key: "actorName",
+        header: m.common.approvalActor,
+        kind: "text",
+        width: 160,
+        sortable: false,
+        filterable: false,
+        render: (e) => e.actorName,
+      },
+      {
+        key: "comment",
+        header: m.common.approvalComment,
+        kind: "text",
+        sortable: false,
+        className: "text-muted-foreground text-xs",
+        multiline: true,
+        clampLines: 3,
+        render: (e) => e.comment ?? "",
+      },
+    ],
+    [m, locale, label],
+  );
+
+  const { state, setState, ready } = useTableState(
+    "chem.table.approvalEvents",
+    columns,
+    DEFAULT_STATE,
+  );
+  const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
   const load = useCallback(async () => {
     const res = await fetch(
-      `/api/approval-events?entity=${entity}&entityId=${encodeURIComponent(entityId)}`,
+      `/api/approval-events?entity=${entity}&entityId=${encodeURIComponent(entityId)}&${query}`,
     );
     if (!res.ok) {
+      setForbidden(true);
       setItems([]);
+      setTotal(0);
       return;
     }
-    setItems(((await res.json()) as { items: Event[] }).items);
-  }, [entity, entityId]);
+    const body = (await res.json()) as { items: Event[]; total: number };
+    setItems(body.items);
+    setTotal(body.total);
+  }, [entity, entityId, query]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (ready) void load();
+  }, [ready, load]);
 
-  // 見る権限が無い人には節ごと出さない
-  if (items === null || items.length === 0) return null;
-
-  const label = (action: string) =>
-    ({
-      SUBMIT: m.common.submit,
-      APPROVE: m.common.approve,
-      REJECT: m.common.reject,
-      WITHDRAW: m.common.withdraw,
-      UNPUBLISH: m.common.unpublish,
-    })[action] ?? action;
+  // 権限が無いときと、一度も申請されていないときは節ごと出さない
+  const filtering = Object.keys(state.filters).length > 0;
+  if (forbidden || items === null || (total === 0 && !filtering)) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{m.common.approvalHistory}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {items.map((e) => (
-          <div key={e.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
-            <span className="text-muted-foreground w-40 shrink-0 text-xs">
-              {new Date(e.createdAt).toLocaleString(locale)}
-            </span>
-            <span className="font-medium">{label(e.action)}</span>
-            <span className="text-muted-foreground">{e.actorName}</span>
-            {e.comment && <span className="text-muted-foreground text-xs">{e.comment}</span>}
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+    <DataTable
+      title={m.common.approvalHistory}
+      storageKey="chem.table.approvalEvents"
+      columns={columns}
+      rows={items}
+      rowKey={(e) => e.id}
+      total={total}
+      state={state}
+      defaultState={DEFAULT_STATE}
+      onStateChange={setState}
+      emptyMessage={m.common.approvalEmpty}
+    />
   );
 }

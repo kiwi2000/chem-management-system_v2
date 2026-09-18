@@ -1,6 +1,11 @@
+import { emptyTableState, parseTableState } from "@chem/shared";
 import { jsonError, requireUser } from "@/lib/authz";
 import { getServerMessages } from "@/lib/i18n";
+import { APPROVAL_EVENT_COLUMNS } from "@/lib/list-columns";
 import { listApprovalEvents } from "@/lib/publish-service";
+
+/** 既定は新しい順。ほかの一覧と同じく、件数はその人の設定に従う */
+const DEFAULT_STATE = emptyTableState([{ column: "createdAt", direction: "desc" }]);
 
 export const dynamic = "force-dynamic";
 
@@ -27,5 +32,10 @@ export async function GET(req: Request) {
     return jsonError(403, "forbidden", m.errors.forbidden);
   }
 
-  return Response.json({ items: await listApprovalEvents(entity, entityId) });
+  const state = parseTableState(
+    url.searchParams,
+    APPROVAL_EVENT_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+    DEFAULT_STATE,
+  );
+  return Response.json(await listApprovalEvents(entity, entityId, state));
 }
