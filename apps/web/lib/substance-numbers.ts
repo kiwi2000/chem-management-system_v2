@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { notDisabledIn } from "@/lib/enabled-sources";
 
 /**
  * 物質に付いている各種番号（化審法番号・EC番号など）。
@@ -72,7 +73,7 @@ export async function listNumbersByCas(
 
   const [order, rows] = await Promise.all([
     prisma.linkVersionSource.findMany({
-      where: { versionId: version.id },
+      where: { versionId: version.id, enabled: true },
       select: { sourceId: true, priority: true },
     }),
     prisma.inventoryRow.findMany({
@@ -80,6 +81,7 @@ export async function listNumbersByCas(
         versionId: version.id,
         inventoryId: { in: inventories.map((i) => i.id) },
         casNormalized: { in: cas },
+        ...notDisabledIn(version.id),
       },
       select: { inventoryId: true, sourceId: true, casNormalized: true, value: true },
       orderBy: { value: "asc" },

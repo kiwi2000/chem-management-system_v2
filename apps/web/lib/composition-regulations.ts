@@ -1,5 +1,6 @@
 import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
+import { notDisabledIn } from "@/lib/enabled-sources";
 import type { RowRegulationDto, RowStatutoryDto } from "@/lib/types";
 
 /**
@@ -15,7 +16,7 @@ export async function currentSources(): Promise<
   });
   if (!version) return [];
   const rows = await prisma.linkVersionSource.findMany({
-    where: { versionId: version.id },
+    where: { versionId: version.id, enabled: true },
     orderBy: { priority: "asc" },
     select: { source: { select: { id: true, code: true, color: true, mark: true } } },
   });
@@ -55,7 +56,12 @@ async function previousLinks(subIds: string[]): Promise<Set<string>> {
   const prev = await previousVersion();
   if (!prev) return out;
   const links = await prisma.statutoryCasLink.findMany({
-    where: { versionId: prev.id, statutorySubstanceId: { in: subIds }, excluded: false },
+    where: {
+      versionId: prev.id,
+      statutorySubstanceId: { in: subIds },
+      excluded: false,
+      ...notDisabledIn(prev.id),
+    },
     select: { statutorySubstanceId: true, casNormalized: true },
   });
   for (const l of links) out.add(`${l.statutorySubstanceId}/${l.casNormalized}`);
@@ -82,6 +88,7 @@ async function linkDataOf(
       statutorySubstanceId: { in: subIds },
       excluded: false,
       data: { isNot: null },
+      ...notDisabledIn(version.id),
     },
     select: {
       statutorySubstanceId: true,
@@ -311,7 +318,7 @@ export async function nearMissByCas(
   const [links, judgements] = await Promise.all([
     prisma.statutoryCasLink.findMany({
       // 非該当も引く。勝ち負けに出したうえで落とす（上位の非該当が下位の該当を打ち消す）
-      where: { versionId: version.id, casNormalized: { in: cas } },
+      where: { versionId: version.id, casNormalized: { in: cas }, ...notDisabledIn(version.id) },
       select: {
         casNormalized: true,
         sourceId: true,
@@ -385,7 +392,7 @@ export async function nearMissByCas(
   const rank = new Map(
     (
       await prisma.linkVersionSource.findMany({
-        where: { versionId: version.id },
+        where: { versionId: version.id, enabled: true },
         orderBy: { priority: "asc" },
         select: { sourceId: true },
       })

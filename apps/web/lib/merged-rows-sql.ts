@@ -165,6 +165,8 @@ export function mergedPageQuery(
       LEFT JOIN link_version_sources lvs
         ON lvs.version_id = r.version_id AND lvs.source_id = r.source_id
       WHERE r.version_id = ${version} AND r.inventory_id = ${inventory}
+        -- 無効にしたデータソースの行は無いものとして扱う（並んでいないものは従来どおり最後に回す）
+        AND (lvs.enabled IS NULL OR lvs.enabled = true)
       -- 優先度まで同じ行があるときの順番も決めておく（どれが残るかを毎回同じにする）
       ORDER BY r.cas_normalized ${NATURAL}, lvs.priority NULLS LAST, r.value, r.id
     )

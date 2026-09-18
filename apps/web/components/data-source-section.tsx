@@ -159,6 +159,30 @@ export function DataSourceSection({
           ),
       },
       {
+        /*
+          有効／無効（2026-09-18 指示）。外すと、このバージョンではその種別は無いものとして扱う。
+          リンクは残るので、また付ければ元に戻る
+        */
+        key: "enabled",
+        header: m.dataSources.enabled,
+        kind: "text",
+        width: 56,
+        sortable: false,
+        filterable: false,
+        className: "text-center",
+        render: (r) => (
+          <input
+            type="checkbox"
+            checked={r.enabled}
+            disabled={!editable || saving}
+            aria-label={m.dataSources.enabled}
+            title={m.dataSources.enabledHint}
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => void toggleEnabled(r)}
+          />
+        ),
+      },
+      {
         key: "note",
         header: m.dataSources.note,
         kind: "text",
@@ -201,7 +225,7 @@ export function DataSourceSection({
     ],
     // saveColor は毎回作られるが、中身は変わらないので手がかりに入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [m, locale, editingId, note, markEditingId, mark, editable, sources],
+    [m, locale, editingId, note, markEditingId, mark, editable, saving, sources],
   );
 
   const { state, setState, ready } = useTableState(
@@ -360,6 +384,36 @@ export function DataSourceSection({
     }
   }
 
+  /**
+   * 有効／無効を切り替える。切り替えると判定は「要再計算」になる
+   * （サーバーがこの行の更新日時で気づく。スコアはサーバーがその場で計算し直す）
+   */
+  async function toggleEnabled(target: LinkVersionSourceDto) {
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/link-version-sources/" + target.id, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          versionId: target.versionId,
+          sourceId: target.sourceId,
+          note: target.note,
+          enabled: !target.enabled,
+        }),
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      void load();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function saveNote() {
     const target = items?.find((r) => r.id === editingId);
     if (!target) return;
@@ -497,6 +551,8 @@ export function DataSourceSection({
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
         emptyMessage={m.dataSources.empty}
+        // 無効にした行は薄く出す（消したのではなく、いまは使っていないことが分かるように）
+        rowClassName={(r) => (r.enabled ? undefined : "opacity-50")}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
         showPager={false}

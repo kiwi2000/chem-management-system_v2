@@ -595,6 +595,9 @@ export const ja = {
     inUseByLinks: (n: number) =>
       `このデータソースにはリンクが${n}件あります。先にそちらを消してください`,
     selectSource: "種別を選んでください",
+    enabled: "有効",
+    enabledHint:
+      "外すと、このバージョンではこの種別を無いものとして扱います（判定・画面・帳票・スコアのどれにも出ません）。リンクは残るので、付け直せば戻ります",
   },
 
   linkVersions: {

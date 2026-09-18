@@ -1178,6 +1178,8 @@ export interface LinkVersionSourceDto {
   sourceMark: string | null;
   /** 小さいほど優先。同じバージョンの中で重複しない */
   priority: number;
+  /** 外すと、このバージョンではこの種別を無いものとして扱う。リンクは残る */
+  enabled: boolean;
   note: string | null;
   loadedAt: string | null;
   /** この組み合わせで入っているリンクの数 */

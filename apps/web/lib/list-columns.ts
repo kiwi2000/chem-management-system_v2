@@ -1,4 +1,5 @@
 import { normalizeCas, normalizeCode, type ColumnFilter } from "@chem/shared";
+import { notDisabledIn } from "@/lib/enabled-sources";
 import { anyOfTextCondition, type QueryColumn } from "@/lib/table-query";
 
 /**
@@ -404,7 +405,10 @@ export function regulationCategoryColumns(
             some: {
               deletedAt: null,
               statutorySubstances: {
-                some: { deletedAt: null, links: { some: { versionId, casNormalized: v } } },
+                some: {
+                  deletedAt: null,
+                  links: { some: { versionId, casNormalized: v, ...notDisabledIn(versionId) } },
+                },
               },
             },
           },
@@ -428,7 +432,12 @@ export function regulationCategoryColumns(
             some: {
               deletedAt: null,
               statutorySubstances: {
-                some: { deletedAt: null, links: { some: { versionId, names: { some: names } } } },
+                some: {
+                  deletedAt: null,
+                  links: {
+                    some: { versionId, names: { some: names }, ...notDisabledIn(versionId) },
+                  },
+                },
               },
             },
           },
@@ -530,7 +539,9 @@ export function statutorySubstanceColumns(
         if (values.length === 0) return null;
         // 版が決まっていないときは、当たるものが無い（判定も動いていない状態）
         if (versionId === null) return { id: { in: [] } };
-        const each = values.map((v) => ({ links: { some: { versionId, casNormalized: v } } }));
+        const each = values.map((v) => ({
+          links: { some: { versionId, casNormalized: v, ...notDisabledIn(versionId) } },
+        }));
         return f.op === "all" ? { AND: each } : { OR: each };
       },
     },
@@ -545,7 +556,9 @@ export function statutorySubstanceColumns(
         const names = linkNameCondition(f, { viewer });
         if (!names) return null;
         if (versionId === null) return { id: { in: [] } };
-        return { links: { some: { versionId, names: { some: names } } } };
+        return {
+          links: { some: { versionId, names: { some: names }, ...notDisabledIn(versionId) } },
+        };
       },
     },
   ];

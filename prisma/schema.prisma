@@ -2047,6 +2047,13 @@ model LinkVersionSource {
   priority  Int
 
   /**
+   * 無効にすると、**このバージョンではそのデータソースは無いものとして扱う**（2026-09-18 指示）。
+   * リンクは残るが、判定・採用の勝ち負け・画面・帳票・スコアのどれにも出ない。有効に戻せる。
+   * docs/judgment-engine.md の `active` にあたる
+   */
+  enabled Boolean @default(true)
+
+  /**
    * どのファイルを入れたか、どこまで載っているかを書く
    */
   note String?

@@ -2,6 +2,7 @@ import { normalizeCas, toScaled } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
+import { notDisabledIn } from "@/lib/enabled-sources";
 import { MARK_CONDITIONAL_LINK, MARK_UNFILLED, loadFactors } from "@/lib/judge-store";
 import { getServerMessages } from "@/lib/i18n";
 import type { CellDetailDto } from "@/lib/types";
@@ -242,7 +243,7 @@ export async function GET(req: Request) {
       バージョンをまたいで並びを揃えると、優先度が変わったことが見えなくなる
     */
     const defs = await prisma.linkVersionSource.findMany({
-      where: { versionId: v.id },
+      where: { versionId: v.id, enabled: true },
       orderBy: { priority: "asc" },
       select: { source: { select: { id: true, code: true, color: true, mark: true } } },
     });
@@ -253,6 +254,7 @@ export async function GET(req: Request) {
         versionId: v.id,
         casNormalized: cas,
         statutorySubstance: { deletedAt: null, regulationClass: { categoryId } },
+        ...notDisabledIn(v.id),
       },
       select: {
         sourceId: true,

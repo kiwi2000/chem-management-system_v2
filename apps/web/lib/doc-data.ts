@@ -23,6 +23,7 @@ import type { TargetQuery } from "@/lib/doc-batch-job";
 import { aggregateComposition, expandComposition } from "@/lib/composition-aggregate";
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
+import { notDisabledIn } from "@/lib/enabled-sources";
 import { visibilityWhere } from "@/lib/product-service";
 import { pickOrganisation } from "@/lib/user-organisations";
 import type { RenderInput } from "@/lib/doc-render";
@@ -796,6 +797,7 @@ export async function collectForCategory(
           deletedAt: null,
           classId: { in: category.classes.map((c) => c.id) },
         },
+        ...notDisabledIn(version.id),
       },
       orderBy: { casNumber: "asc" },
       select: { statutorySubstanceId: true, casNumber: true },

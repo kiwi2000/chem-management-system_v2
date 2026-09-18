@@ -13,6 +13,12 @@ import { buildWhere } from "./table-query";
 const VIEWER = { seeAll: true, userId: "u1" };
 
 /**
+ * 結び付きを見る条件には、必ず「そのバージョンで無効にしたデータソースではない」が付く（2026-09-18 指示）。
+ * 「有効なものに限る」ではない。バージョンに並んでいない種別（取り消し線）は従来どおり見る
+ */
+const NOT_DISABLED = { source: { versions: { none: { versionId: "v1", enabled: false } } } };
+
+/**
  * 製品一覧の「法規制」「要確認」の絞り込み。
  *
  * この2つは**行の有無と行の中身を組み合わせて見る**ので、共通の組み立てに乗らない。
@@ -185,7 +191,7 @@ describe("結び付いたCAS番号の絞り込み", () => {
     expect(
       first(buildWhere(statutorySubstanceColumns("v1", VIEWER), cas("any", ["50-00-0"]))),
     ).toEqual({
-      OR: [{ links: { some: { versionId: "v1", casNormalized: "50-00-0" } } }],
+      OR: [{ links: { some: { versionId: "v1", casNormalized: "50-00-0", ...NOT_DISABLED } } }],
     });
   });
 
@@ -225,7 +231,7 @@ describe("結び付いたCAS番号の絞り込み", () => {
               statutorySubstances: {
                 some: {
                   deletedAt: null,
-                  links: { some: { versionId: "v1", casNormalized: "50-00-0" } },
+                  links: { some: { versionId: "v1", casNormalized: "50-00-0", ...NOT_DISABLED } },
                 },
               },
             },
@@ -257,7 +263,7 @@ describe("結び付いた物質の名前の絞り込み", () => {
 
   it("法文物質名：いまの版の結び付きに、その名前（別名も）の物質が付いているもの", () => {
     expect(first(buildWhere(statutorySubstanceColumns("v1", VIEWER), name("鉛")))).toEqual({
-      links: { some: { versionId: "v1", names: { some: { AND: [nameMatch] } } } },
+      links: { some: { versionId: "v1", names: { some: { AND: [nameMatch] } }, ...NOT_DISABLED } },
     });
   });
 
@@ -279,7 +285,9 @@ describe("結び付いた物質の名前の絞り込み", () => {
           statutorySubstances: {
             some: {
               deletedAt: null,
-              links: { some: { versionId: "v1", names: { some: { AND: [nameMatch] } } } },
+              links: {
+                some: { versionId: "v1", names: { some: { AND: [nameMatch] } }, ...NOT_DISABLED },
+              },
             },
           },
         },

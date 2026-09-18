@@ -52,7 +52,8 @@ export async function sourcesOfVersion(
   versionId: string,
 ): Promise<{ id: string; code: string; priority: number }[]> {
   const rows = await prisma.linkVersionSource.findMany({
-    where: { versionId },
+    // 無効にしたものは並べない（選べず、合算にも入らない）
+    where: { versionId, enabled: true },
     orderBy: { priority: "asc" },
     select: { sourceId: true, priority: true, source: { select: { code: true } } },
   });

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { notDisabledIn } from "@/lib/enabled-sources";
 
 /**
  * データの整合性チェック（FR-AU-03）。
@@ -73,6 +74,7 @@ export async function checkIntegrity(): Promise<IntegrityReport | null> {
       versionId: version.id,
       excluded: false,
       statutorySubstanceId: { in: entries.map((e) => e.id) },
+      ...notDisabledIn(version.id),
     },
     select: { statutorySubstanceId: true, casNormalized: true },
   });

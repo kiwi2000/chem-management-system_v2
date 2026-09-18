@@ -72,7 +72,10 @@ export function VersionSourcePicker({
     async (versionId: string, keep: string) => {
       const res = await fetch(`/api/link-version-sources?versionId=${versionId}`).catch(() => null);
       if (!res?.ok) return;
-      const items = ((await res.json()) as ListResponse<LinkVersionSourceDto>).items;
+      // 無効にしたものは無いものとして扱うので、選択肢にも出さない
+      const items = ((await res.json()) as ListResponse<LinkVersionSourceDto>).items.filter(
+        (s) => s.enabled,
+      );
       setSources(items);
       /*
         バージョンを切り替えると、いま選んでいるデータソースが

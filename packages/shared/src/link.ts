@@ -78,6 +78,8 @@ export const linkVersionSourceSchema = (m: Messages) =>
     versionId: z.string().trim().min(1, m.validation.required),
     sourceId: z.string().trim().min(1, m.validation.required),
     note: optionalNote(m),
+    // 有効／無効。省くと変えない（説明だけを直すときに送らない）
+    enabled: z.boolean().optional(),
   });
 
 /**

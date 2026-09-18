@@ -576,6 +576,9 @@ export const en: Messages = {
     inUseByLinks: (n: number) =>
       `This data source has ${n} link${n === 1 ? "" : "s"}. Delete them first`,
     selectSource: "Choose a type",
+    enabled: "On",
+    enabledHint:
+      "Unticked, this type is treated as absent in this version (it appears in no judgement, screen, document or score). Its links stay, so ticking it again restores them",
   },
 
   linkVersions: {

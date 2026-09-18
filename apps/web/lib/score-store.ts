@@ -29,6 +29,11 @@ const SUM_SQL = `
     JOIN regulation_categories c ON c.id = rc.category_id AND c.deleted_at IS NULL
     WHERE l.excluded = false
       AND c.judged = true
+      -- 無効にしたデータソースのリンクは点に入れない
+      AND NOT EXISTS (
+        SELECT 1 FROM link_version_sources x
+        WHERE x.version_id = l.version_id AND x.source_id = l.source_id AND x.enabled = false
+      )
   )
   SELECT cas_normalized, SUM(score) AS total
   FROM hit
@@ -146,6 +151,10 @@ export async function recomputeScoresForCategory(categoryId: string): Promise<nu
     JOIN statutory_substances s ON s.id = l.statutory_substance_id AND s.deleted_at IS NULL
     JOIN regulation_classes rc ON rc.id = s.class_id AND rc.category_id = ${categoryId}::text
     WHERE l.excluded = false
+      AND NOT EXISTS (
+        SELECT 1 FROM link_version_sources x
+        WHERE x.version_id = l.version_id AND x.source_id = l.source_id AND x.enabled = false
+      )
   `;
   const cas = rows.map((r) => r.cas_normalized).filter(Boolean);
   if (cas.length === 0) return 0;

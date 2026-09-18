@@ -1,5 +1,6 @@
 import { pickName, pickStatutoryName, type Locale } from "@chem/shared";
 import { prisma } from "@/lib/db";
+import { notDisabledIn } from "@/lib/enabled-sources";
 import { compareLawOrder, lawOrderKey } from "@/lib/law-order";
 
 /**
@@ -114,7 +115,7 @@ export async function buildSubstanceMatrix(
     先頭のバージョンに載っていないものは、その後ろに並べる。
   */
   const vs = await prisma.linkVersionSource.findMany({
-    where: { versionId: { in: versionIds } },
+    where: { versionId: { in: versionIds }, enabled: true },
     orderBy: { priority: "asc" },
     select: {
       versionId: true,
@@ -189,7 +190,8 @@ export async function buildSubstanceMatrix(
   );
 
   const invRows = await prisma.inventoryRow.findMany({
-    where: { casNormalized, versionId: { in: versionIds } },
+    // 版ごとに、その版で無効にしたデータソースの行を外す
+    where: { casNormalized, OR: versionIds.map((v) => ({ versionId: v, ...notDisabledIn(v) })) },
     select: { inventoryId: true, versionId: true, sourceId: true, value: true },
   });
   const invCells: Record<string, MatrixValue[]> = {};
@@ -214,7 +216,8 @@ export async function buildSubstanceMatrix(
     採用されていない印を付けて出す。隠すと「LOLI に載っていない」ように読めてしまった
   */
   const links = await prisma.statutoryCasLink.findMany({
-    where: { casNormalized, versionId: { in: versionIds } },
+    // 版ごとに、その版で無効にしたデータソースの行を外す
+    where: { casNormalized, OR: versionIds.map((v) => ({ versionId: v, ...notDisabledIn(v) })) },
     select: {
       versionId: true,
       sourceId: true,

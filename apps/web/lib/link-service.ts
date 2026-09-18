@@ -1,5 +1,6 @@
 import type { LinkSetVersion, LinkVersionSource, Source } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { notDisabledIn } from "@/lib/enabled-sources";
 import type {
   LinkSetVersionDto,
   LinkVersionSourceDto,
@@ -88,6 +89,7 @@ export function toLinkVersionSourceDto(
     sourceColor: row.source.color,
     sourceMark: row.source.mark,
     priority: row.priority,
+    enabled: row.enabled,
     note: row.note,
     loadedAt: row.loadedAt?.toISOString() ?? null,
     linkCount,
@@ -110,11 +112,12 @@ export async function listCasLinks(
 ): Promise<StatutoryCasLinkDto[]> {
   const [order, links] = await Promise.all([
     prisma.linkVersionSource.findMany({
-      where: { versionId },
+      where: { versionId, enabled: true },
       select: { sourceId: true, priority: true },
     }),
     prisma.statutoryCasLink.findMany({
-      where: { versionId, statutorySubstanceId },
+      // 無効にしたデータソースの行は出さない（無いものとして扱う）
+      where: { versionId, statutorySubstanceId, ...notDisabledIn(versionId) },
       include: {
         source: { select: { code: true } },
         // 出どころの文章。無いリンクのほうが多いので別テーブル

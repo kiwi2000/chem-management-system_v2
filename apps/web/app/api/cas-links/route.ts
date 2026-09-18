@@ -1,6 +1,7 @@
 import { emptyTableState, parseTableState, type SortRule } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { notDisabledIn } from "@/lib/enabled-sources";
 import { getServerMessages } from "@/lib/i18n";
 import { statutoryHierarchyOrderBy } from "@/lib/law-order";
 import { CAS_LINK_COLUMNS } from "@/lib/list-columns";
@@ -159,7 +160,8 @@ export async function GET(req: Request) {
     }),
     prisma.statutoryCasLink.count({ where }),
     prisma.linkVersionSource.findMany({
-      where: { versionId },
+      // 無効にしたデータソースは勝ち負けに出ない（自分が無効なら「採用」は付かない）
+      where: { versionId, enabled: true },
       select: { sourceId: true, priority: true },
     }),
   ]);
@@ -180,6 +182,7 @@ export async function GET(req: Request) {
           where: {
             versionId,
             sourceId: { not: sourceId },
+            ...notDisabledIn(versionId),
             statutorySubstanceId: { in: [...new Set(rows.map((r) => r.statutorySubstanceId))] },
             casNormalized: { in: [...new Set(rows.map((r) => r.casNormalized))] },
           },

@@ -1,5 +1,6 @@
 import { effectiveThreshold, type ConditionalLinkMode, type ThresholdBound } from "@chem/shared";
 import { prisma } from "@/lib/db";
+import { notDisabledIn } from "@/lib/enabled-sources";
 import { effectiveLinks } from "@/lib/link-priority";
 import { judge, type ElementFactors, type JudgeEntry, type JudgeResult } from "@/lib/judge-calc";
 import { applyDecision, premiseOf } from "@/lib/judge-decision";
@@ -128,7 +129,8 @@ export async function loadRules(
 
   // CAS の紐づけは、法文物質名ごとにまとめて引く（1件ずつ引くと問い合わせが爆発する）
   const links = await prisma.statutoryCasLink.findMany({
-    where: { versionId },
+    // 無効にしたデータソースのリンクは無いものとして扱う（勝ち負けにも出さない）
+    where: { versionId, ...notDisabledIn(versionId) },
     select: {
       statutorySubstanceId: true,
       casNormalized: true,
@@ -142,7 +144,7 @@ export async function loadRules(
   const order = new Map(
     (
       await prisma.linkVersionSource.findMany({
-        where: { versionId },
+        where: { versionId, enabled: true },
         orderBy: { priority: "asc" },
         select: { sourceId: true },
       })
