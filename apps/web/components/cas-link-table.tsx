@@ -13,9 +13,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type {
+  ApiError,
   CasLinkDiffRowDto,
   CasLinkDiffRunDto,
   CasLinkRowDto,
@@ -24,6 +28,7 @@ import type {
   ListResponse,
   RegionDto,
 } from "@/lib/types";
+import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +41,13 @@ const DIFF_DEFAULT_STATE: TableState = emptyTableState([
 ]);
 
 const SELECT_CLASS = "border-input bg-background h-8 rounded-none border px-2 text-sm";
+
+/** 行末の鉛筆で直せる項目。法文物質名の画面の「規制対象CAS」と同じ3つ */
+interface Draft {
+  casNumber: string;
+  excluded: boolean;
+  note: string;
+}
 
 /** 差分の種類の印の色。増えた＝緑、消えた＝赤、変わった＝黄 */
 const KIND_CLASS: Record<CasLinkDiffRowDto["kind"], string> = {
@@ -59,8 +71,13 @@ interface DiffResponse extends ListResponse<CasLinkDiffRowDto> {
  * 1つのバージョン × 1つのデータソースの対象CASを、法文物質名をまたいで1つの表にする。
  *
  * 外部データベースの画面の下に置く。上でデータソースの行を選ぶと中身が入れ替わる。
- * 取り込んだ内容を確かめるための表なので、**編集はしない**（法文物質名の画面に任せる）。
  * 絞り込み・並べ替え・ページングはすべてサーバー側（20万行規模）。
+ *
+ * **権限（REGULATION_EDIT）がある人は、ここで直せる**（2026-09-18 指示）。
+ * 行末の鉛筆で CAS番号・該非・備考、先頭のチェックでまとめて削除。
+ * 法文物質名の画面の「規制対象CAS」と同じ API（`/api/statutory-cas-links`）を使う。
+ * 行の追加はここではしない（どの法文物質名に付けるかを選ぶ欄が無い。法文物質名の画面で足す）。
+ * 差分モードは見るだけ
  *
  * **「差分」で別のバージョンと比べられる。**同じデータソースの別の版と突き合わせ、
  * 増えた・消えた・変わった だけを出す。消えた行は今の版に無いので薄く出す。
@@ -83,12 +100,19 @@ export function CasLinkTable({
   onAgainstChange: (id: string | null) => void;
 }) {
   const { m, locale } = useI18n();
+  const { can } = useMe();
   const [data, setData] = useState<{
     items: Row[];
     total: number;
     run: CasLinkDiffRunDto | null;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** 直している行の id。null なら閉じている */
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Draft>({ casNumber: "", excluded: false, note: "" });
+  const [saving, setSaving] = useState(false);
+  /** 直したあとに引き直す合図。同じ問い合わせをもう一度投げる */
+  const [reloadTick, setReloadTick] = useState(0);
   const [regions, setRegions] = useState<RegionDto[]>([]);
   const [countries, setCountries] = useState<CountryDto[]>([]);
   const [versions, setVersions] = useState<LinkSetVersionDto[]>([]);
@@ -96,6 +120,8 @@ export function CasLinkTable({
   // 自分自身とは比べられない。URL に残っていても通常の表として扱う
   const diffAgainst = against !== null && against !== versionId ? against : null;
   const diffMode = diffAgainst !== null;
+  // 差分モードは前後2つの版を見比べる表なので、直す相手が決まらない。見るだけ
+  const editable = can("REGULATION_EDIT") && !diffMode;
 
   // 地域・国・バージョンの選択肢。件数が知れているので全部引く
   useEffect(() => {
@@ -423,6 +449,7 @@ export function CasLinkTable({
   const wantKey = useRef<string | null>(null);
   useEffect(() => {
     if (!ready) return;
+    setEditingId(null);
     if (!versionId || !sourceId) {
       setData(null);
       return;
@@ -454,9 +481,63 @@ export function CasLinkTable({
         setData({ items: body.items, total: body.total, run: null });
       }
     })();
-  }, [ready, versionId, sourceId, diffAgainst, query, m]);
+    // reloadTick は「もう一度引く」の合図。値そのものは使わない
+  }, [ready, versionId, sourceId, diffAgainst, query, m, reloadTick]);
+
+  function startEdit(r: Row) {
+    setError(null);
+    setDraft({ casNumber: r.casNumber, excluded: r.excluded, note: r.note ?? "" });
+    setEditingId(r.id);
+  }
+
+  async function save() {
+    const row = data?.items.find((r) => r.id === editingId);
+    if (!row) return;
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/statutory-cas-links/${row.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          versionId: row.versionId,
+          statutorySubstanceId: row.statutorySubstanceId,
+          sourceId: row.sourceId,
+          casNumber: draft.casNumber,
+          excluded: draft.excluded,
+          note: draft.note || null,
+        }),
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      setEditingId(null);
+      setReloadTick((n) => n + 1);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDeleteSelected(targets: Row[]) {
+    setError(null);
+    for (const r of targets) {
+      const res = await fetch(`/api/statutory-cas-links/${r.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        break;
+      }
+      if (editingId === r.id) setEditingId(null);
+    }
+    setReloadTick((n) => n + 1);
+  }
 
   const run = data?.run ?? null;
+  const canSave = draft.casNumber.trim() !== "";
 
   return (
     <section className="space-y-3">
@@ -464,6 +545,53 @@ export function CasLinkTable({
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {/* 編集の欄。法文物質名の画面の「規制対象CAS」と同じ並び（項目が3つなので1行に収める） */}
+      {editable && editingId && (
+        <div className="border-border bg-muted/30 flex flex-wrap items-end gap-3 border p-3">
+          <div className="w-40 space-y-1">
+            <Label htmlFor="clt-cas">{m.casLinks.casNumber}</Label>
+            <Input
+              id="clt-cas"
+              maxLength={20}
+              value={draft.casNumber}
+              onChange={(e) => setDraft({ ...draft, casNumber: e.target.value })}
+              className="h-8 font-mono"
+              placeholder="7439-92-1"
+            />
+          </div>
+          <div className="w-32 space-y-1">
+            <Label htmlFor="clt-status">{m.casLinks.status}</Label>
+            <select
+              id="clt-status"
+              value={draft.excluded ? "1" : "0"}
+              onChange={(e) => setDraft({ ...draft, excluded: e.target.value === "1" })}
+              className={`${SELECT_CLASS} w-full`}
+            >
+              <option value="0">{m.casLinks.applicable}</option>
+              <option value="1">{m.casLinks.notApplicable}</option>
+            </select>
+          </div>
+          <div className="min-w-56 flex-1 space-y-1">
+            <Label htmlFor="clt-note">{m.casLinks.note}</Label>
+            <Input
+              id="clt-note"
+              maxLength={2000}
+              value={draft.note}
+              onChange={(e) => setDraft({ ...draft, note: e.target.value })}
+              className="h-8"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" disabled={!canSave || saving} onClick={() => void save()}>
+              {saving ? m.common.saving : m.common.save}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+              {m.common.cancel}
+            </Button>
+          </div>
+        </div>
       )}
       <DataTable
         title={
@@ -498,6 +626,11 @@ export function CasLinkTable({
         onStateChange={setState}
         // 消えた行は今の版に無いので薄く
         rowClassName={(r) => (r.kind === "removed" ? "opacity-60" : undefined)}
+        selectable={editable}
+        onDeleteSelected={editable ? onDeleteSelected : undefined}
+        rowAction={
+          editable ? { onClick: startEdit, disabled: () => editingId !== null } : undefined
+        }
         emptyMessage={
           !versionId || !sourceId
             ? m.casLinkTable.pickSource
