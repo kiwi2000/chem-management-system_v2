@@ -358,6 +358,11 @@ export function LawTreeSection({
 
   /** 絞り込みに当たった区分。条件が無いときは null（＝絞らない） */
   const [hits, setHits] = useState<RegulationCategoryDto[] | null>(null);
+  /**
+   * 当たった区分が一度に引ける数を超えた。
+   * 法律の一覧を引くときの `error` とは別に持つ（あちらは引き直すたびに消えるので、同じ入れ物だと出る前に消える）
+   */
+  const [overflow, setOverflow] = useState(false);
   /** 当たった区分を持つ法律。条件が無いときは null（＝絞らない） */
   const hitLawIds = hits ? new Set(hits.map((c) => c.lawId)) : null;
   /** 絞り込む法律の id。並びを毎回同じにして、引き直しを増やさない */
@@ -419,10 +424,11 @@ export function LawTreeSection({
   useEffect(() => {
     if (!categoryQueries) {
       setHits(null);
+      setOverflow(false);
       return;
     }
     let alive = true;
-    setError(null);
+    setOverflow(false);
     const fetchOne = async (query: string) => {
       const res = await fetch(`/api/regulation-categories?${query}`).catch(() => null);
       if (!res || !res.ok) return [];
@@ -432,9 +438,7 @@ export function LawTreeSection({
         足りないぶんの法律が落ちて「該当なし」に見える。区分の数はいまのところ百件ほどで
         届かないが、届いたときに気づけるようにしておく
       */
-      if (body.total > body.items.length) {
-        if (alive) setError(m.laws.tooManyCategoryHits);
-      }
+      if (body.total > body.items.length && alive) setOverflow(true);
       return body.items;
     };
     void (async () => {
@@ -457,7 +461,7 @@ export function LawTreeSection({
     return () => {
       alive = false;
     };
-  }, [categoryQueries, m]);
+  }, [categoryQueries]);
 
   /** その法律の区分を引くだけ。開いた状態にはしない */
   const fetchCategories = useCallback(async (id: string) => {
@@ -641,6 +645,11 @@ export function LawTreeSection({
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {overflow && (
+        <Alert variant="destructive">
+          <AlertDescription>{m.laws.tooManyCategoryHits}</AlertDescription>
         </Alert>
       )}
 
