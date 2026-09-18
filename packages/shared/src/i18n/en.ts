@@ -734,6 +734,8 @@ export const en: Messages = {
       "Conditions beyond concentration - use, form, product type. When filled in, every hit is flagged for review",
     noteHint: "Conditions that depend on use or product type cannot be assessed. Record them here",
     casCount: "Links",
+    casNumber: "Linked CAS number",
+    substanceName: "Linked substance name",
     empty: "No statutory names",
     selectCategory: "Select a category above",
     duplicateCode: (code: string) => `Code "${code}" is already in use`,

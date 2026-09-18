@@ -403,6 +403,25 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
   },
   { key: "effectiveFrom", kind: "date", field: "effectiveFrom" },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
+  /*
+    **結び付いている CAS から探す**（2026-09-18 指示）。
+    リンクの表をたどって「その CAS を持つリンクが1件でもあるか」で見る。
+    「空」はリンクが1件も無い法文物質名、「空でない」は1件でもあるもの
+  */
+  {
+    key: "casNumber",
+    kind: "text",
+    field: "casNormalized",
+    normalize: normalizeCas,
+    relation: "links",
+    sortable: false,
+  },
+  /*
+    **結び付いている物質の名前から探す**（同日 指示）。
+    物質の表とはつながっていない（CAS番号で突き合わせる）ので、
+    条件はここでは作らず、物質を引いてから組み立てる（lib/law-service.ts）
+  */
+  { key: "substanceName", kind: "text", field: "nameJa", sortable: false, custom: () => null },
 ];
 
 export const METAL_FACTOR_COLUMNS: QueryColumn[] = [

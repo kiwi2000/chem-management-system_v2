@@ -11,6 +11,7 @@ import { getServerMessages } from "@/lib/i18n";
 import {
   CATEGORY_THRESHOLD_SELECT,
   SUBSTANCE_INCLUDE,
+  linkedSubstanceNameWhere,
   thresholdOrderError,
   toStatutorySubstanceDto,
 } from "@/lib/law-service";
@@ -34,7 +35,13 @@ export async function GET(req: Request) {
     STATUTORY_SUBSTANCE_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
-  const where = { deletedAt: null, ...buildWhere(STATUTORY_SUBSTANCE_COLUMNS, state.filters) };
+  // 物質名の条件だけは、物質の表を引いてから作る（法文物質名とは CAS番号でつながる）
+  const byName = await linkedSubstanceNameWhere(actor, state.filters.substanceName);
+  const where = {
+    deletedAt: null,
+    ...buildWhere(STATUTORY_SUBSTANCE_COLUMNS, state.filters),
+    ...(byName ?? {}),
+  };
 
   const [items, total] = await Promise.all([
     prisma.statutorySubstance.findMany({

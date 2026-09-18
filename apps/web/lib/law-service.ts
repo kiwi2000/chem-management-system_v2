@@ -1,12 +1,14 @@
 import {
   effectiveThreshold,
+  type ColumnFilter,
   type Messages,
   type OwnThreshold,
   type ThresholdBound,
 } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
-import { jsonError } from "@/lib/authz";
+import { jsonError, type Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { visibilityWhere as substanceVisibilityWhere } from "@/lib/substance-service";
 import type {
   LawDto,
   RegulationCategoryDto,
@@ -173,6 +175,65 @@ export function thresholdOrderError(
     formErrors: [],
     fieldErrors: { thresholdUpper: [m.validation.thresholdOrder] },
   });
+}
+
+/**
+ * 物質名で法文物質名を絞るときに、いくつまでの CAS を見るか。
+ * 「酸」のような短い語では何千件も当たるので、上限を決めて打ち切る
+ */
+const NAME_MATCH_MAX = 2000;
+
+/**
+ * 登録してある物質の名前から、法文物質名を絞る条件（2026-09-18 指示）。
+ *
+ * **物質の表と法文物質名の表はつながっていない。**突き合わせは CAS番号で行うので、
+ * 先に物質を引いて CAS を集め、その CAS を持つリンクがあるか、で見る。
+ * 別名も見る（物質の一覧の「別名も含む」と同じ）。
+ *
+ * **見えない物質は数に入れない。**未公開の物質の名前で当たってしまうと、
+ * その物質があること自体が伝わる（CLAUDE.md §4）
+ */
+export async function linkedSubstanceNameWhere(
+  actor: Actor,
+  filter: ColumnFilter | undefined,
+): Promise<Prisma.StatutorySubstanceWhereInput | null> {
+  if (!filter || filter.kind !== "text") return null;
+  // 「空」「空でない」は物質の側では意味を成さない（リンクの有無は CAS番号の欄で見る）
+  if (filter.op === "empty" || filter.op === "notEmpty") return null;
+  const value = filter.value.trim();
+  if (value === "") return null;
+
+  const mode = { mode: "insensitive" as const };
+  const text =
+    filter.op === "startsWith"
+      ? { startsWith: value, ...mode }
+      : filter.op === "endsWith"
+        ? { endsWith: value, ...mode }
+        : filter.op === "equals"
+          ? { equals: value, ...mode }
+          : { contains: value, ...mode };
+  const byName = {
+    OR: [
+      { nameJa: text },
+      { nameEn: text },
+      { aliases: { some: { OR: [{ nameJa: text }, { nameEn: text }] } } },
+    ],
+  };
+
+  const rows = await prisma.substance.findMany({
+    where: {
+      deletedAt: null,
+      casNormalized: { not: null },
+      AND: [substanceVisibilityWhere(actor), byName],
+    },
+    select: { casNormalized: true },
+    distinct: ["casNormalized"],
+    take: NAME_MATCH_MAX,
+  });
+  const cas = rows.flatMap((r) => (r.casNormalized ? [r.casNormalized] : []));
+  // 1件も当たらなければ、結果も1件も出さない（条件を無視して全件出さない）
+  if (cas.length === 0) return { id: { in: [] } };
+  return { links: { some: { casNormalized: { in: cas } } } };
 }
 
 type SubstanceRow = Prisma.StatutorySubstanceGetPayload<{ include: typeof SUBSTANCE_INCLUDE }>;

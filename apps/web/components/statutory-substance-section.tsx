@@ -203,6 +203,30 @@ export function StatutorySubstanceSection({
         className: "text-muted-foreground text-right text-xs",
         render: (s) => s.casCount,
       },
+      {
+        /*
+          結び付いている CAS番号から探す（2026-09-18 指示）。
+          **表には出さず、条件としてだけ使う。**1つの法文物質名に CAS が何百と付くので、
+          列にすると読めない（中身はコードを押した先の「規制対象CAS」の画面で見る）
+        */
+        key: "casNumber",
+        header: m.statutorySubstances.casNumber,
+        kind: "text",
+        filterOnly: true,
+        sortable: false,
+        filterPlaceholder: "108-88-3",
+      },
+      {
+        // 結び付いている CAS を持つ物質の名前から探す（別名も見る）。同じく条件だけ
+        key: "substanceName",
+        header: m.statutorySubstances.substanceName,
+        kind: "text",
+        filterOnly: true,
+        sortable: false,
+        filterFullWidth: true,
+        // 「空白」「空白でない」は物質の側では意味を成さない（リンクの有無は CAS番号の欄で見る）
+        nullable: false,
+      },
     ],
     [m, locale],
   );
