@@ -42,6 +42,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { usePageSizePrefs } from "@/lib/page-size-prefs";
 import { NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
 import type {
   ApiError,
@@ -224,7 +225,9 @@ export function CompositionEditor({
   */
   const [candidateTotal, setCandidateTotal] = useState(0);
   const [candidatePage, setCandidatePage] = useState(1);
-  const [candidatePageSize, setCandidatePageSize] = useState(50);
+  /** 1ページの件数。**ほかの表と同じく、その人の設定に従う**（2026-09-18 指示） */
+  const pageSizePrefs = usePageSizePrefs();
+  const [candidatePageSize, setCandidatePageSize] = useState(pageSizePrefs.defaultSize);
   /** ページを送るときに使う、検索したときの条件。あとから欄を触っても送り先は変わらない */
   const [searchedCond, setSearchedCond] = useState<SearchCond | null>(null);
   /** 結果から選んだもの。「種別:ID」で持つ */
@@ -274,7 +277,7 @@ export function CompositionEditor({
    * **ページをまたいで選択は持ち越さない。**出ていないものまで足すと、
    * ボタンの数と実際に足されるものが食い違う
    */
-  async function runSearch(target: SearchCond, page: number) {
+  async function runSearch(target: SearchCond, page: number, size = candidatePageSize) {
     setSearching(true);
     setPicked(new Set());
     try {
@@ -288,6 +291,7 @@ export function CompositionEditor({
         product: target.product ? "1" : "0",
         exclude: productId,
         page: String(page),
+        size: String(size),
       });
       const res = await fetch(`/api/composition/candidates?${params.toString()}`);
       if (!res.ok) {
@@ -575,6 +579,10 @@ export function CompositionEditor({
   );
   /** 何ページあるか。1ページに収まるなら送りは出さない */
   const candidatePageCount = Math.max(1, Math.ceil(candidateTotal / candidatePageSize));
+  /** 件数の選択肢。いま選んでいる件数が並びに無いときは足す（data-table と同じ扱い） */
+  const candidateSizes = pageSizePrefs.options.includes(candidatePageSize)
+    ? pageSizePrefs.options
+    : [...pageSizePrefs.options, candidatePageSize].sort((a, b) => a - b);
   const allPicked =
     selectable.length > 0 && selectable.every((c) => picked.has(`${c.kind}:${c.id}`));
 
@@ -1221,6 +1229,27 @@ export function CompositionEditor({
                     <span className="text-muted-foreground text-xs">
                       {m.common.totalCount(candidateTotal)}
                     </span>
+                    {/* 1ページの件数。ほかの表と同じ選択肢・同じ既定値 */}
+                    <label className="text-muted-foreground flex items-center gap-1 text-xs whitespace-nowrap">
+                      {m.table.pageSize}
+                      <select
+                        aria-label={m.table.pageSize}
+                        value={candidatePageSize}
+                        disabled={searching}
+                        onChange={(e) => {
+                          const next = Number(e.target.value);
+                          setCandidatePageSize(next);
+                          void runSearch(searchedCond ?? cond, 1, next);
+                        }}
+                        className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+                      >
+                        {candidateSizes.map((n) => (
+                          <option key={n} value={n}>
+                            {m.table.perPage(n)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     {candidatePageCount > 1 && (
                       <div className="flex items-center gap-1">
                         <Button
