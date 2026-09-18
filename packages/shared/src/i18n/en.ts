@@ -690,8 +690,6 @@ export const en: Messages = {
     title: "Regulated CAS numbers",
     casNumber: "CAS number",
     casName: "Substance",
-    casNameTooMany:
-      "Too many substances match that name. Narrow it down, otherwise results would be missing.",
     status: "Applies",
     applicable: "Applies",
     notApplicable: "Does not apply",
@@ -746,8 +744,6 @@ export const en: Messages = {
     casCount: "Links",
     casNumber: "Linked CAS number",
     substanceName: "Linked substance name",
-    substanceNameTooMany:
-      "Too many substances match that name. Narrow it down, otherwise results would be missing.",
     empty: "No statutory names",
     selectCategory: "Select a category above",
     duplicateCode: (code: string) => `Code "${code}" is already in use`,

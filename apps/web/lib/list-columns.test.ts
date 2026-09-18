@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CAS_LINK_COLUMNS,
   CAS_LINK_DIFF_COLUMNS,
   STATUTORY_SUBSTANCE_COLUMNS,
   productColumns,
@@ -7,6 +8,9 @@ import {
   statutorySubstanceColumns,
 } from "./list-columns";
 import { buildWhere } from "./table-query";
+
+/** 全部の物質を見られる人。公開前の物質の扱いは別に試す */
+const VIEWER = { seeAll: true, userId: "u1" };
 
 /**
  * 製品一覧の「法規制」「要確認」の絞り込み。
@@ -178,33 +182,41 @@ describe("結び付いたCAS番号の絞り込み", () => {
   });
 
   it("法文物質名：いまの版の結び付きに、その番号がそのまま付いているもの", () => {
-    expect(first(buildWhere(statutorySubstanceColumns("v1"), cas("any", ["50-00-0"])))).toEqual({
+    expect(
+      first(buildWhere(statutorySubstanceColumns("v1", VIEWER), cas("any", ["50-00-0"]))),
+    ).toEqual({
       OR: [{ links: { some: { versionId: "v1", casNormalized: "50-00-0" } } }],
     });
   });
 
   it("複数の番号は「いずれか」なら OR、「すべて」なら AND", () => {
     const any = first(
-      buildWhere(statutorySubstanceColumns("v1"), cas("any", ["50-00-0", "71-43-2"])),
+      buildWhere(statutorySubstanceColumns("v1", VIEWER), cas("any", ["50-00-0", "71-43-2"])),
     );
     const all = first(
-      buildWhere(statutorySubstanceColumns("v1"), cas("all", ["50-00-0", "71-43-2"])),
+      buildWhere(statutorySubstanceColumns("v1", VIEWER), cas("all", ["50-00-0", "71-43-2"])),
     );
     expect((any as { OR: unknown[] }).OR).toHaveLength(2);
     expect((all as { AND: unknown[] }).AND).toHaveLength(2);
   });
 
   it("版が決まっていなければ1件も当たらない", () => {
-    expect(first(buildWhere(statutorySubstanceColumns(null), cas("any", ["50-00-0"])))).toEqual({
+    expect(
+      first(buildWhere(statutorySubstanceColumns(null, VIEWER), cas("any", ["50-00-0"]))),
+    ).toEqual({
       id: { in: [] },
     });
-    expect(first(buildWhere(regulationCategoryColumns(null), cas("any", ["50-00-0"])))).toEqual({
+    expect(
+      first(buildWhere(regulationCategoryColumns(null, VIEWER), cas("any", ["50-00-0"]))),
+    ).toEqual({
       id: { in: [] },
     });
   });
 
   it("区分：分類 → 法文物質名 → 結び付き とたどる（消したものは飛ばす）", () => {
-    expect(first(buildWhere(regulationCategoryColumns("v1"), cas("any", ["50-00-0"])))).toEqual({
+    expect(
+      first(buildWhere(regulationCategoryColumns("v1", VIEWER), cas("any", ["50-00-0"]))),
+    ).toEqual({
       OR: [
         {
           classes: {
@@ -222,12 +234,83 @@ describe("結び付いたCAS番号の絞り込み", () => {
       ],
     });
   });
+});
 
-  it("物質の名前の欄は、ここでは条件を作らない（物質を引いてから組み立てる）", () => {
-    const w = buildWhere(regulationCategoryColumns("v1"), {
-      substanceName: { kind: "text", op: "contains", value: "鉛" },
+/**
+ * 「結び付いた物質の名前」の絞り込み。
+ *
+ * **当たった物質や CAS の一覧を渡し直さず、条件だけを渡す**（2026-09-18 指摘）。
+ * 一覧を渡す形だと、PostgreSQL が受け取れる値の数（32,767）を超えたところで失敗する。
+ * リンク → 名前（ビュー）とたどる条件になっていることを固定する
+ */
+describe("結び付いた物質の名前の絞り込み", () => {
+  const first = (w: unknown) => (w as { AND: Record<string, unknown>[] }).AND[0];
+  const name = (value: string) => ({
+    substanceName: { kind: "text" as const, op: "contains" as const, value },
+  });
+  const nameMatch = {
+    OR: [
+      { nameJa: { contains: "鉛", mode: "insensitive" } },
+      { nameEn: { contains: "鉛", mode: "insensitive" } },
+    ],
+  };
+
+  it("法文物質名：いまの版の結び付きに、その名前（別名も）の物質が付いているもの", () => {
+    expect(first(buildWhere(statutorySubstanceColumns("v1", VIEWER), name("鉛")))).toEqual({
+      links: { some: { versionId: "v1", names: { some: { AND: [nameMatch] } } } },
     });
-    expect(w).toEqual({});
+  });
+
+  it("全部を見られない人には、公開済みか本人が作った物質だけを当てる", () => {
+    const w = first(
+      buildWhere(statutorySubstanceColumns("v1", { seeAll: false, userId: "u9" }), name("鉛")),
+    ) as { links: { some: { names: { some: { AND: unknown[] } } } } };
+    expect(w.links.some.names.some.AND).toEqual([
+      nameMatch,
+      { OR: [{ publishState: "PUBLISHED" }, { createdBy: "u9" }] },
+    ]);
+  });
+
+  it("区分：分類 → 法文物質名 → 結び付き → 名前 とたどる", () => {
+    expect(first(buildWhere(regulationCategoryColumns("v1", VIEWER), name("鉛")))).toEqual({
+      classes: {
+        some: {
+          deletedAt: null,
+          statutorySubstances: {
+            some: {
+              deletedAt: null,
+              links: { some: { versionId: "v1", names: { some: { AND: [nameMatch] } } } },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("版が決まっていなければ1件も当たらない", () => {
+    expect(first(buildWhere(statutorySubstanceColumns(null, VIEWER), name("鉛")))).toEqual({
+      id: { in: [] },
+    });
+  });
+
+  it("規制対象CASの表：代表物質の主名称だけを見る（公開状態は見ない）", () => {
+    expect(
+      first(
+        buildWhere(CAS_LINK_COLUMNS, {
+          casName: { kind: "text", op: "contains", value: "鉛" },
+        }),
+      ),
+    ).toEqual({
+      names: { some: { AND: [nameMatch, { isCasRepresentative: true }, { aliasId: null }] } },
+    });
+  });
+
+  it("「空」「空でない」は条件にしない", () => {
+    expect(
+      buildWhere(statutorySubstanceColumns("v1", VIEWER), {
+        substanceName: { kind: "text", op: "empty", value: "" },
+      }),
+    ).toEqual({});
   });
 });
 

@@ -1,7 +1,6 @@
 import { emptyTableState, parseTableState, type SortRule } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { ensureDiffRun } from "@/lib/cas-link-diff";
-import { casScopeByName } from "@/lib/cas-name-scope";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { statutoryHierarchyOrderBy } from "@/lib/law-order";
@@ -147,20 +146,10 @@ export async function GET(req: Request) {
     DEFAULT_STATE,
   );
 
-  // 物質名（代表物質）で絞る。差分の行には名前が無いので、CAS番号で突き合わせる
-  const casScope = await casScopeByName(
-    { versionId, sourceId, againstId },
-    state.filters.casName,
-    m,
-  );
-  // 当たる物質が多すぎるときは、切り詰めた結果を出さずに断る
-  if (casScope instanceof Response) return casScope;
-
   const where = {
     versionId,
     againstId,
     sourceId,
-    ...(casScope ? { casNormalized: { in: casScope } } : {}),
     ...buildWhere(CAS_LINK_DIFF_COLUMNS, state.filters),
     // 種類を絞っていなければ「変更なし」は出さない。押して初めて出る
     ...(state.filters.kind ? {} : { kind: { not: "UNCHANGED" as const } }),

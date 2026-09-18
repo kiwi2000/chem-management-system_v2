@@ -382,7 +382,10 @@ export const REGULATION_CATEGORY_COLUMNS: QueryColumn[] = [
  * 区分 → 分類 → 法文物質名 → 結び付き とたどり、いまの版の結び付きだけを見る。
  * 番号は完全一致
  */
-export function regulationCategoryColumns(versionId: string | null): QueryColumn[] {
+export function regulationCategoryColumns(
+  versionId: string | null,
+  viewer: LinkNameViewer,
+): QueryColumn[] {
   return [
     ...REGULATION_CATEGORY_COLUMNS,
     {
@@ -409,8 +412,29 @@ export function regulationCategoryColumns(versionId: string | null): QueryColumn
         return f.op === "all" ? { AND: each } : { OR: each };
       },
     },
-    // 物質の名前は、物質を引いてから組み立てる（lib/law-service.ts）。ここでは条件を作らない
-    { key: "substanceName", kind: "text", field: "nameJa", sortable: false, custom: () => null },
+    {
+      // 結び付いた物質の名前。区分 → 分類 → 法文物質名 → 結び付き → 名前（ビュー）とたどる
+      key: "substanceName",
+      kind: "text",
+      field: "nameJa",
+      sortable: false,
+      custom: (f) => {
+        if (f.kind !== "text") return null;
+        const names = linkNameCondition(f, { viewer });
+        if (!names) return null;
+        if (versionId === null) return { id: { in: [] } };
+        return {
+          classes: {
+            some: {
+              deletedAt: null,
+              statutorySubstances: {
+                some: { deletedAt: null, links: { some: { versionId, names: { some: names } } } },
+              },
+            },
+          },
+        };
+      },
+    },
   ];
 }
 
@@ -442,13 +466,44 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
   },
   { key: "effectiveFrom", kind: "date", field: "effectiveFrom" },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
-  /*
-    **結び付いている物質の名前から探す**（2026-09-18 指示）。
-    物質の表とはつながっていない（CAS番号で突き合わせる）ので、
-    条件はここでは作らず、物質を引いてから組み立てる（lib/law-service.ts）
-  */
-  { key: "substanceName", kind: "text", field: "nameJa", sortable: false, custom: () => null },
 ];
+
+/**
+ * 「結び付いた物質の名前」で探すときの、見る人の情報。
+ * 公開前の物質は、作った本人と INACTIVE_VIEW を持つ人にしか見せない（サーバー側で除く）
+ */
+export interface LinkNameViewer {
+  seeAll: boolean;
+  userId: string;
+}
+
+/**
+ * リンクにぶら下がる「物質の名前」（ビュー StatutoryCasLinkName / StatutoryCasLinkDiffName）への条件。
+ *
+ * リンクと物質は CAS番号で突き合わせるだけで表の関係を持たないので、DB のビューで突き合わせを
+ * 済ませておき、ここでは **条件だけ** を作る。当たった物質や CAS の一覧を渡し直さない
+ * （2026-09-18 指摘。一覧を渡すと、PostgreSQL が受け取れる値の数 32,767 を超えたとき失敗する）。
+ *
+ * - `representativeOnly`: 代表物質だけを見る（規制対象CASの表。物質名の列がその値なので）
+ * - `mainNameOnly`: 別名を見ない
+ * - `viewer`: 渡すと、公開前の物質は本人のものだけ当てる
+ */
+function linkNameCondition(
+  f: Extract<ColumnFilter, { kind: "text" }>,
+  opts: { representativeOnly?: boolean; mainNameOnly?: boolean; viewer?: LinkNameViewer },
+): Record<string, unknown> | null {
+  // 「空」「空でない」は物質の側では意味を成さない（リンクの有無は CAS番号の欄で見る）
+  if (f.op === "empty" || f.op === "notEmpty") return null;
+  const names = anyOfTextCondition(["nameJa", "nameEn"], f);
+  if (!names) return null;
+  const each: Record<string, unknown>[] = [names];
+  if (opts.representativeOnly) each.push({ isCasRepresentative: true });
+  if (opts.mainNameOnly) each.push({ aliasId: null });
+  if (opts.viewer && !opts.viewer.seeAll) {
+    each.push({ OR: [{ publishState: "PUBLISHED" }, { createdBy: opts.viewer.userId }] });
+  }
+  return { AND: each };
+}
 
 /**
  * 法文物質名の列。**いま判定に使っている版が要る**ので関数にしてある。
@@ -458,7 +513,10 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
  * （2026-09-18 指摘）。番号は完全一致で見る。部分一致だったころは
  * `50-00-0` で探すと `71550-00-0` の行まで出ていた
  */
-export function statutorySubstanceColumns(versionId: string | null): QueryColumn[] {
+export function statutorySubstanceColumns(
+  versionId: string | null,
+  viewer: LinkNameViewer,
+): QueryColumn[] {
   return [
     ...STATUTORY_SUBSTANCE_COLUMNS,
     {
@@ -474,6 +532,20 @@ export function statutorySubstanceColumns(versionId: string | null): QueryColumn
         if (versionId === null) return { id: { in: [] } };
         const each = values.map((v) => ({ links: { some: { versionId, casNormalized: v } } }));
         return f.op === "all" ? { AND: each } : { OR: each };
+      },
+    },
+    {
+      // 結び付いた物質の名前（別名も見る）。結び付き → 名前（ビュー）とたどる
+      key: "substanceName",
+      kind: "text",
+      field: "nameJa",
+      sortable: false,
+      custom: (f) => {
+        if (f.kind !== "text") return null;
+        const names = linkNameCondition(f, { viewer });
+        if (!names) return null;
+        if (versionId === null) return { id: { in: [] } };
+        return { links: { some: { versionId, names: { some: names } } } };
       },
     },
   ];
@@ -708,7 +780,7 @@ const wrap = (into: (w: Where) => Where, w: Where | null) => (w ? into(w) : null
  * 外部データベースの「対象CAS」の表（`/api/cas-links`）。
  * 1つのバージョン × 1つのデータソースの全リンクを、法文物質名をまたいで並べる。
  * バージョンとデータソースは絞り込みの列ではなく、上の表で選んだものが API に付く。
- * 「採用」と「物質名」はここに無い（採用はページの行だけで決める。物質名は API が先に CAS を集める）
+ * 「採用」はここに無い（ページの行だけで決める）
  */
 /**
  * 対象CASの表と、その差分の表で共通の列（法文物質名の側から掘るもの）。
@@ -766,8 +838,20 @@ const CAS_LINK_SCOPE_COLUMNS: QueryColumn[] = [
       f.kind === "text" ? wrap(underSubstance, anyOfTextCondition(NAME_FIELDS, f)) : null,
   },
   { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
-  // 物質名（代表物質）。条件は API が先に物質マスタから CAS を集めて付けるので、ここでは何もしない
-  { key: "casName", kind: "text", field: "casNormalized", sortable: false, custom: () => null },
+  {
+    // 物質名（代表物質の主名称）。行にぶら下がる名前のビューをたどる（差分の表も同じ形）
+    key: "casName",
+    kind: "text",
+    field: "casNormalized",
+    sortable: false,
+    custom: (f) =>
+      f.kind === "text"
+        ? wrap(
+            (w) => ({ names: { some: w } }),
+            linkNameCondition(f, { representativeOnly: true, mainNameOnly: true }),
+          )
+        : null,
+  },
 ];
 
 export const CAS_LINK_COLUMNS: QueryColumn[] = [

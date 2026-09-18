@@ -11,7 +11,9 @@
 // - Prisma は 6 系に固定（7 系は datasource url の設定方式が変わる）。
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  // ビュー（statutory_cas_link_names ほか）を使う。Prisma 6 ではまだプレビュー扱い
+  previewFeatures = ["views"]
 }
 
 datasource db {
@@ -2107,6 +2109,10 @@ model StatutoryCasLink {
 
   diffAsCurrent  StatutoryCasLinkDiff[] @relation("LinkDiffCurrent")
   diffAsPrevious StatutoryCasLinkDiff[] @relation("LinkDiffPrevious")
+  /**
+   * この CAS を持つ登録物質の名前（ビュー）。「物質名で探す」はここをたどる
+   */
+  names          StatutoryCasLinkName[]
 
   @@unique([versionId, statutorySubstanceId, casNormalized, sourceId])
   /**
@@ -2186,6 +2192,10 @@ model StatutoryCasLinkDiff {
   statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id], onDelete: Cascade)
   currentLink        StatutoryCasLink?  @relation("LinkDiffCurrent", fields: [currentLinkId], references: [id], onDelete: Cascade)
   previousLink       StatutoryCasLink?  @relation("LinkDiffPrevious", fields: [previousLinkId], references: [id], onDelete: Cascade)
+  /**
+   * この CAS を持つ登録物質の名前（ビュー）。差分の表を「物質名で探す」はここをたどる
+   */
+  names              StatutoryCasLinkDiffName[]
 
   @@unique([versionId, againstId, sourceId, statutorySubstanceId, casNormalized])
   @@index([versionId, againstId, sourceId, kind])
@@ -2584,4 +2594,51 @@ model GeneratedDocument {
   @@index([targetRef])
   @@index([batchJobId])
   @@map("generated_documents")
+}
+
+/**
+ * 規制対象CAS（リンク）と、同じ CAS番号を持つ登録物質の名前を並べたビュー。
+ *
+ * リンクと物質は CAS番号の文字列で突き合わせるだけで、表としての関係を持たない
+ * （同じ CAS の物質が複数あってよいので、関係としても張れない）。
+ * このビューがその突き合わせを DB の側で済ませるので、「物質名で探す」を
+ * **当たった物質や CAS の一覧を渡し直さず、条件のまま** DB に渡せる（2026-09-18 指摘）。
+ *
+ * 1行は「リンク × 物質の名前（主名称または別名）」。主名称の行は alias_id が空。
+ * 定義は prisma/migrations/20260918120000_statutory_cas_link_names_view/migration.sql
+ */
+view StatutoryCasLinkName {
+  /** リンク id と物質（または別名）の id をつないだもの。ビューに一意の列が要るため */
+  rowKey              String       @unique @map("row_key")
+  linkId              String       @map("link_id")
+  substanceId         String       @map("substance_id")
+  aliasId             String?      @map("alias_id")
+  nameJa              String?      @map("name_ja")
+  nameEn              String?      @map("name_en")
+  isCasRepresentative Boolean      @map("is_cas_representative")
+  publishState        PublishState @map("publish_state")
+  createdBy           String?      @map("created_by")
+
+  link StatutoryCasLink @relation(fields: [linkId], references: [id])
+
+  @@map("statutory_cas_link_names")
+}
+
+/**
+ * 上と同じものを、差分の行（statutory_cas_link_diffs）に付けたビュー
+ */
+view StatutoryCasLinkDiffName {
+  rowKey              String       @unique @map("row_key")
+  diffId              String       @map("diff_id")
+  substanceId         String       @map("substance_id")
+  aliasId             String?      @map("alias_id")
+  nameJa              String?      @map("name_ja")
+  nameEn              String?      @map("name_en")
+  isCasRepresentative Boolean      @map("is_cas_representative")
+  publishState        PublishState @map("publish_state")
+  createdBy           String?      @map("created_by")
+
+  diff StatutoryCasLinkDiff @relation(fields: [diffId], references: [id])
+
+  @@map("statutory_cas_link_diff_names")
 }

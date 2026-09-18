@@ -11,7 +11,6 @@ import { getServerMessages } from "@/lib/i18n";
 import {
   CATEGORY_THRESHOLD_SELECT,
   SUBSTANCE_INCLUDE,
-  linkedSubstanceNameWhere,
   thresholdOrderError,
   toStatutorySubstanceDto,
 } from "@/lib/law-service";
@@ -33,28 +32,16 @@ export async function GET(req: Request) {
 
   // 結び付きはいまの版だけを見る（古い版にしか無いものでは当てない）
   const version = await getCurrentVersion();
-  const columns = statutorySubstanceColumns(version?.id ?? null);
+  const columns = statutorySubstanceColumns(version?.id ?? null, {
+    seeAll: actor.has("INACTIVE_VIEW"),
+    userId: actor.user.id,
+  });
   const state = parseTableState(
     new URL(req.url).searchParams,
     columns.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
-  // 物質名の条件だけは、物質の表を引いてから作る（法文物質名とは CAS番号でつながる）
-  const classFilter = state.filters.classId;
-  const byName = await linkedSubstanceNameWhere(
-    actor,
-    state.filters.substanceName,
-    classFilter?.kind === "enum" ? classFilter.values : [],
-    version?.id ?? null,
-    await getServerMessages(),
-  );
-  // 当たる物質が多すぎるときは、切り詰めた結果を出さずに断る
-  if (byName instanceof Response) return byName;
-  const where = {
-    deletedAt: null,
-    ...buildWhere(columns, state.filters),
-    ...(byName ?? {}),
-  };
+  const where = { deletedAt: null, ...buildWhere(columns, state.filters) };
 
   const [items, total] = await Promise.all([
     prisma.statutorySubstance.findMany({

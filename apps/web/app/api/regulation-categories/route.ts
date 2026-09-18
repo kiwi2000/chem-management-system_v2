@@ -10,12 +10,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { getCurrentVersion } from "@/lib/current-version";
-import {
-  countSubstancesByCategory,
-  ensureDefaultClass,
-  linkedSubstanceNameCategoryIds,
-  toCategoryDto,
-} from "@/lib/law-service";
+import { countSubstancesByCategory, ensureDefaultClass, toCategoryDto } from "@/lib/law-service";
 import { regulationCategoryColumns } from "@/lib/list-columns";
 import { getAppSettings } from "@/lib/settings";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
@@ -34,23 +29,16 @@ export async function GET(req: Request) {
 
   // 結び付いた CAS・物質名の欄は、いま判定に使っている版の結び付きだけを見る
   const version = await getCurrentVersion();
-  const columns = regulationCategoryColumns(version?.id ?? null);
+  const columns = regulationCategoryColumns(version?.id ?? null, {
+    seeAll: actor.has("INACTIVE_VIEW"),
+    userId: actor.user.id,
+  });
   const state = parseTableState(
     new URL(req.url).searchParams,
     columns.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
-  const byName = await linkedSubstanceNameCategoryIds(
-    actor,
-    state.filters.substanceName,
-    version?.id ?? null,
-  );
-  const where = {
-    deletedAt: null,
-    ...buildWhere(columns, state.filters),
-    // 1件も当たらなければ、結果も1件も出さない（条件を無視して全件出さない）
-    ...(byName === null ? {} : { id: { in: byName } }),
-  };
+  const where = { deletedAt: null, ...buildWhere(columns, state.filters) };
 
   const [items, total] = await Promise.all([
     prisma.regulationCategory.findMany({
