@@ -10,6 +10,11 @@
 
 > 本書は要件定義書 第3章を、3DB（PostgreSQL/MySQL/SQL Server）で同一に動くテーブル定義へ落とし込んだもの。矛盾が生じた場合は要件定義書を優先し、実装を止めて確認する（CLAUDE.md §0）。
 
+> **いま動いている定義は `prisma/schema.prisma`。**本書は設計時の記述で、実装では名前と形が変わった表がある
+> （例: 判定系は `DeterminationRun`/`DeterminationResult` ではなく `ProductExpansion`/`ProductJudgement`/`ProductJudgementHit`、
+> 名称は `SubstanceName` ではなく `substances` の列と `substance_aliases`）。
+> **食い違ったらスキーマが正。**実装後に足した表と列は §3.9 にまとめてある。
+
 ---
 
 ## 1. 設計方針・共通ルール
@@ -250,8 +255,8 @@ SystemSetting / AuditLog / ImportJob : 独立
 | 属性 | 型 | 制約 | 説明 |
 |---|---|---|---|
 | `name` | varchar | NOT NULL | 例 LOLI/CHRIP/JAMP/USER。 |
-| `priority` | int | NOT NULL | 優先度（フォールバック用）。**グローバルか版別かは【要確認 Q-V2】**（当面グローバル列として保持）。 |
-| `active_flag` | Boolean | NOT NULL, default true | |
+| `priority` | int | NOT NULL | 優先度（フォールバック用）。**Q-V2 は「版別」で確定**（2026-09-18）。実装では `sources` ではなく **`link_version_sources`（バージョン × 種別）**が `priority` を持つ。 |
+| `active_flag` | Boolean | NOT NULL, default true | 実装では `link_version_sources.enabled`（版ごとの有効／無効。§3.9）。 |
 
 #### StatutoryCasLink（法文物質名↔CASリンク）
 | 属性 | 型 | 制約 | 説明 |
@@ -392,6 +397,45 @@ SystemSetting / AuditLog / ImportJob : 独立
 
 ---
 
+### 3.9 実装後に足した表・列（2026-08〜09）
+
+設計時の §3.1〜3.8 の後に、実装で足したもの。**定義の正は `prisma/schema.prisma`。**
+
+#### データソースの有効／無効（2026-09-18）
+| 表 | 列 | 説明 |
+|---|---|---|
+| `link_version_sources` | `enabled` Boolean NOT NULL default true | 外すと、その版ではその種別を**無いものとして扱う**。リンクは残る（戻せる）。判定・採用の勝ち負け・画面・帳票・スコアのどれにも出ない。条件は「**無効にされていない**」で書く（「有効なものに限る」にすると、版に並んでいない種別まで落ちる） |
+
+#### 不純物パターン（S21・2026-09-18）
+| 表 | 主な列 | 説明 |
+|---|---|---|
+| `impurity_patterns` | `code`/`code_normalized` UNIQUE、`name_ja`/`name_en`、`display_order`、`builtin` | 「同じ該非判定になる不純物どうし」の区分。組み込みは id 固定（`ip-none`＝0 不純物ではない、`ip-impurity`＝1 不純物）。論理削除 |
+| `impurity_exemptions` | `(pattern_id, category_id)` UNIQUE、`excluded` | パターン × 規制区分。行が無ければ除外しない |
+| `impurity_exemption_substances` | `(pattern_id, statutory_substance_id)` UNIQUE、`excluded` | パターン × 法文物質名。**区分の設定を両方向に上書き**する |
+| `substances` | `impurity_pattern_id` NOT NULL default `ip-none` | 物質の属性。代表物質の部分一意索引は **`(cas_normalized, impurity_pattern_id)`** に変えた |
+| `product_expansion_lines` | `impurity_pattern_id` NOT NULL default `ip-none` | 展開結果。一意キーは `(product_id, cas_normalized, substance_id, impurity_pattern_id)`（索引名 `product_expansion_lines_key_cas_pattern`） |
+| `product_judgement_hits` | `excluded` Json? | 不純物パターンで除外した寄与（`[{ cas, pct, pattern }]`）。閾値と比べていない |
+
+判定での効きかたは `docs/judgment-engine.md` §4-3、設計判断は `docs/decisions/0014`。
+
+#### 物質名で引くためのビュー（2026-09-18・決定 0013）
+| ビュー | 元 | 説明 |
+|---|---|---|
+| `statutory_cas_link_names` | `statutory_cas_links` × `substances`（＋別名） | リンクと、同じ CAS を持つ登録物質の名前。主名称と別名で 1 行ずつ |
+| `statutory_cas_link_diff_names` | `statutory_cas_link_diffs` × 同上 | 差分の行に付けた同じもの |
+
+リンクと物質は CAS番号の文字列でしか突き合わせられず（同じ CAS の物質が複数あってよいので関連を張れない）、
+当たった一覧を渡し直すと **PostgreSQL の 32,767 個の上限**に当たる。ビューを関連として登録し、
+**条件だけを DB へ渡す**（Prisma は `IN (SELECT …)` にする）。
+**ビューは `prisma migrate` が面倒を見ない。**定義を変えるときは `DROP VIEW` → `CREATE VIEW` の移行を手で書く。
+
+#### そのほか
+| 表 | 列 | 説明 |
+|---|---|---|
+| `approval_events` | `actor_id` に FK（`ON DELETE SET NULL`）＋索引 | 承認履歴の「実行した人」で並べ替え・絞り込みをするため（2026-09-18） |
+
+---
+
 ## 4. Enum 一覧
 | Enum | 値 |
 |---|---|
@@ -445,3 +489,4 @@ SystemSetting / AuditLog / ImportJob : 独立
 |---|---|---|
 | 0.1 | 2026-07-02 | 初版。要件定義書 v0.7 第3章に基づく全エンティティ定義（3DB移植制約込み）。 |
 | 0.2 | 2026-07-02 | ID戦略を追加（§1.4）。主要マスタにユーザー付与の業務キー `code`（＋内部サロゲート `id`）を導入。物質/製品/法律/規制区分に `code`/`code_normalized` を追加。 |
+| 0.3 | 2026-09-18 | 実装後に足した表・列を §3.9 に追加（データソースの有効／無効、不純物パターン一式、物質名のビュー、承認履歴の実行者FK）。Q-V2（優先度はグローバルか版別か）を「版別」で確定。冒頭に「定義の正は prisma/schema.prisma」を明記。 |

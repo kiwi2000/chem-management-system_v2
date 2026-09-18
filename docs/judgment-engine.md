@@ -6,7 +6,8 @@
 | バージョン | 0.1（ドラフト） |
 | 作成日 | 2026-07-02 |
 | 親仕様 | `化学物質管理システム_要件定義書_v0.7.md` 第5章 |
-| 実装場所 | `packages/domain`（DB非依存の純粋関数・CLAUDE.md §1.2/§4） |
+| 実装場所 | `apps/web/lib/judge-calc.ts`（DB非依存の純粋関数）＋ `judge-store.ts`（読み出し・保存） |
+| 版 | 0.3（2026-09-18。データソースの有効／無効・不純物パターンを反映） |
 
 > 判定は**決定的（deterministic）**であること。同一入力（組成・リンクバージョン・マスタ）から常に同一結果を返す。ORM・フレームワークに依存しない純粋関数として実装し、要件§5のケースをユニットテストで必ず担保する（CLAUDE.md §4）。
 
@@ -30,12 +31,15 @@
 JudgmentInput {
   product: {
     id
-    expanded: [ { substanceId, casNormalized, contentPct: Decimal } ]   // 展開・統合後組成
+    expanded: [ { substanceId, casNormalized, impurityPatternId, contentPct: Decimal } ]
+    // 展開・統合後組成。**合算の鍵は「CAS × 不純物パターン」**（S21）
   }
   categories: [ RegulationCategory ]        // 対象規制区分（rank, 兼ね合い, 合算方式, 閾値, 結果抑制）
   statutorySubstances: [ StatutorySubstance ] // 法文物質名（閾値, 判定方式, 判定金属元素）
   links: [ { statutorySubstanceId, casNormalized, sourceId, excluded } ]  // 指定バージョン内のリンク（excluded=非該当）
-  sources: [ { id, priority, active } ]     // 情報源優先度
+  sources: [ { id, priority, active } ]     // 情報源優先度。active は `link_version_sources.enabled`（実装済み）
+  isExempt: (impurityPatternId, statutorySubstanceId?) => boolean
+  // 不純物パターンによる除外（S21）。法文物質名の上書き → 区分の設定 → 除外しない の順で答える
   metalFactors: [ { casNormalized, metalElement, ratioPct: Decimal } ]
   options: { lowerBoundInclusive, upperBoundInclusive }   // 境界の扱い（Q-N2）
 }
@@ -50,7 +54,8 @@ JudgmentResult {
     calculatedValue: Decimal?      // 合算量 / 金属換算量（合算方式に応じる）
     isFinal: boolean               // 最終該当区分か（結果抑制後）
     suppressed: boolean            // 下位として抑制されたか
-    contributions: [ { substanceId, value: Decimal, adoptedSourceId, statutorySubstanceId } ]  // 根拠
+    contributions: [ { cas, pct, pattern, sources } ]   // 閾値と比べた寄与（根拠）
+    excluded: [ { cas, pct, pattern } ]                 // 不純物パターンで除外した寄与（S21）
     // adoptedSourceId は組ごとに採った行の情報源。リンク無し（該非不明）のときは null とし、
     // excluded による確認済みの非該当と区別できるようにする（§4）
   } ]
@@ -74,8 +79,16 @@ JudgmentResult {
 ## 4. リンク解決と情報源フォールバック
 1. 判定は**特定の1バージョン**を基準（混在させない）。入力 `links` は当該バージョン分のみ。
 2. ★**フォールバックの単位は「法文物質名 × CAS番号」の組**（Q-L2・確定）。
-   組ごとに `active` な情報源を**優先度順**に見て、**最初に行が見つかったところで止め、その1行だけを採る**。
+   組ごとに **有効な情報源**を**優先度順**に見て、**最初に行が見つかったところで止め、その1行だけを採る**。
    それより下位の情報源は参照しない。
+
+   ★**実装での単位は「規制区分 × CAS番号」**（`apps/web/lib/link-priority.ts`）。
+   同じ区分の別の法文物質名が同じ CAS を結んでいるとき、勝つ情報源を区分でそろえるため。
+   本節の「法文物質名 × CAS」は設計時の記述で、**実装が優先**する。
+
+   ★**有効／無効は列で持つ**（2026-09-18）。`link_version_sources.enabled` を外すと、
+   そのバージョンではその情報源は**無いものとして扱う**（リンクは残る。戻せる）。
+   判定・採用の勝ち負け・画面・帳票・物質のスコアのどれにも出ない。
 
    | 採った行 | その組の結果 |
    | --- | --- |
@@ -98,6 +111,35 @@ JudgmentResult {
 3. こうして組ごとに「該当」と決まったリンクの `casNormalized` を、製品組成の各物質の `casNormalized` と突合して `M(S)` を作る。
    - **CAS非ユニーク（Q-D1）**: 同一 CAS を複数物質が持ちうるが、判定は「組成に実在する物質 i の CAS が S のリンク CAS と一致するか」で行うため一意に定まる。
    - 突合の多重一致/未一致（リンク CAS が組成に無い等）の扱いは **【要確認 Q-L1】**（既定: 組成に無い CAS は寄与に現れないので無視。組成にある物質の CAS が複数 S に一致するのは許容）。
+
+---
+
+## 4-3. 不純物パターンによる除外（S21・2026-09-18 確定）
+
+不純物・副生成物として含まれる物質は、規制によっては裾切値以上でも非該当になる
+（化審法の届出、K-REACH の登録など）。一方で安衛法の表示・通知、化管法、RoHS は不純物でも対象。
+この違いを**物質の属性「不純物パターン」**と、**パターンごとの除外の設定**で表す。
+
+1. **合算の鍵は「CAS番号 × 不純物パターン」。**パターンをまたいで足さない。
+   「不純物と決めた物質は、その規制に対しては必ず非該当」という運用の前提に立つ（利用者の決定）。
+2. リンクの解決（§4）は**パターンに関係なく CAS で**行う。ここは変わらない。
+3. 判定の単位ごとに、当たった行を **除外するもの／閾値と比べるもの** に仕分ける。
+   除外の判定は **法文物質名の上書き → 区分の設定 → 除外しない** の順。
+4. **除外は閾値より先に決まる。**除外した行は閾値と比べず、適用条件・閾値未設定の理由も付けない。
+5. 除外した行は捨てず `excluded` に残す（「不純物のため非該当」として画面・帳票に出す）。
+   入っている行が全部除外されたら、その単位は**非該当**。
+6. 法文物質名の中で複数 CAS を合算する区分（SUM・元素換算）では、
+   **除外されなかった行をパターンに関わらず足す**（利用者の決定は CAS 合算についてのもの）。
+7. 前提（`premiseOf`）にもパターンを入れる。書きかたは `<法文物質名>:<cas>@<パターン>,…`、
+   除外した行には `!` を付ける。**パターンが 0（不純物ではない）だけのときは従来と同じ文字列**にし、
+   前からある人の判断が外れないようにする。
+8. 除外の設定を変えると判定の前提が変わるので、「要再計算」の印が出る
+   （`premisesChangedAt` は除外の 2 つの表とパターンの表も見る）。
+
+濃度の条件が付く除外（POPs 規則の非意図的微量汚染物質など）は持たない。
+その濃度以下で入るものをパターンに割り当てる、という運用で表す。
+
+設計判断は `docs/decisions/0014`、仕様は `docs/steps/S21_不純物パターン.md`。
 
 ---
 
@@ -213,11 +255,19 @@ function judge(input):
   return { perCategory: results, finalCategories }
 
 
+function split(lines, S, input):                       # §4-3 不純物パターンの仕分け
+  exempt  = [ l in lines where l.pattern != 0 and input.isExempt(l.pattern, S?.id) ]
+  compared = lines - exempt
+  return (compared, exempt)
+
+
 function evaluateCategory(C, substances, input):
   switch C.summation_method:
     case STATUTORY_NAME:
       for S in statutorySubstancesOf(C):
         M = resolveLinks(S, substances, input)          # §4
+        (M, excluded) = split(M, S, input)              # §4-3。除外は閾値と比べない
+        if M is empty and excluded not empty: return 非該当 (excluded)
         amount = Σ_{i in M} contribution(i, S)          # §3
         th = threshold(S) or threshold(C)               # §5 (Q-J1)
         if withinThreshold(amount, th): return 該当 (value=amount, contribs)
@@ -317,6 +367,20 @@ function withinThreshold(value, th):
 
 ---
 
+### T14: 不純物パターンによる除外（§4-3）
+同じ CAS が主成分 3%・不純物 40% で入っている製品。
+
+| 設定 | 期待 |
+| --- | --- |
+| 除外なし | 2 行とも閾値と比べる（パターンごとに別々） |
+| その区分で不純物を除外 | 主成分 3% だけで判定。40% は `excluded` に残る |
+| 入っている行が全部除外 | **非該当**。`contributions` は空、`excluded` に全部 |
+| 区分は除外しないが法文物質名で上書き | その法文物質名だけ除外（逆向きの上書きも同じ） |
+
+実装のテストは `apps/web/lib/judge-calc.test.ts`（「不純物パターンによる除外」）。
+
+---
+
 ## 11. 決定性・数値の注意
 - 合算は集合走査順に依存しない（加算の順序で結果が変わらないよう Decimal を使用）。
 - 丸めは**判定の最終比較まで行わない**（途中で丸めない）。表示丸めは別レイヤ（Q-N1）。
@@ -342,3 +406,4 @@ function withinThreshold(value, th):
 |---|---|---|
 | 0.1 | 2026-07-02 | 初版。要件定義書 v0.7 第5章に基づくアルゴリズム＋テストケース T1〜T13。 |
 | 0.2 | 2026-07-02 | 実装反映。兼ね合い（累積）はプール合算に修正（§7・Q-G8暫定。ケース4確定例との矛盾解消）。`packages/domain` に実装完了、T1〜T13＋決定性テスト=15件グリーン。 |
+| 0.3 | 2026-09-18 | 実装反映。(1) フォールバックの単位は実装では「規制区分 × CAS」（§4）。(2) 情報源の `active` は `link_version_sources.enabled` として実装（§4）。(3) 不純物パターンによる除外を追加（§4-3・T14）。実装場所は `apps/web/lib/judge-calc.ts`。 |
