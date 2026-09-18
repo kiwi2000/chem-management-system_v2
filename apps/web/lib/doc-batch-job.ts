@@ -113,7 +113,8 @@ export type TargetQuery =
   | {
       kind: "where";
       where: Record<string, unknown>;
-      orderBy: Record<string, "asc" | "desc">[];
+      // 1対1の関連をたどる列があるので、入れ子も入る
+      orderBy: Record<string, unknown>[];
     };
 
 /**

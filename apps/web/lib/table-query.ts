@@ -240,14 +240,20 @@ export function buildOrderBy(
   columns: QueryColumn[],
   sort: SortRule[],
   tieBreaker: Record<string, "asc" | "desc">,
-): Record<string, "asc" | "desc">[] {
+  // 1対1の関連をたどる列があるので、入れ子も入る（{ actor: { displayName: "asc" } } など）
+): Record<string, unknown>[] {
   const byKey = new Map(columns.map((c) => [c.key, c]));
-  const order: Record<string, "asc" | "desc">[] = [];
+  const order: Record<string, unknown>[] = [];
 
   for (const rule of sort) {
     const col = byKey.get(rule.column);
     if (!col || col.sortable === false || col.relation) continue;
-    order.push({ [col.field]: rule.direction });
+    // 1対1の関連は、そのまま入れ子にする（Prisma は 1対多 では並べ替えられない）
+    order.push(
+      col.nested
+        ? { [col.nested]: { [col.field]: rule.direction } }
+        : { [col.field]: rule.direction },
+    );
   }
 
   const tieField = Object.keys(tieBreaker)[0];

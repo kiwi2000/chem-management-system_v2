@@ -72,13 +72,11 @@ export function ApprovalHistory({
         render: (e) => label(e.action),
       },
       {
-        // 名前は利用者の表から引いている。この表には id しか無いので、並べ替え・絞り込みはできない
+        // 並べ替えは表示名で、絞り込みは表示名とメールの両方を見る（lib/list-columns.ts）
         key: "actorName",
         header: m.common.approvalActor,
         kind: "text",
         width: 160,
-        sortable: false,
-        filterable: false,
         render: (e) => e.actorName,
       },
       {

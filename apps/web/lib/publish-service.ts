@@ -144,21 +144,17 @@ export async function listApprovalEvents(
       orderBy: buildOrderBy(APPROVAL_EVENT_COLUMNS, state.sort, { createdAt: "desc" }),
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
+      // 名前は関連から引く（並べ替え・絞り込みも DB 側で効く）
+      include: { actor: { select: { displayName: true, email: true } } },
     }),
     prisma.approvalEvent.count({ where }),
   ]);
-  const actorIds = [...new Set(rows.flatMap((r) => (r.actorId ? [r.actorId] : [])))];
-  const users = await prisma.user.findMany({
-    where: { id: { in: actorIds } },
-    select: { id: true, displayName: true, email: true },
-  });
-  const nameById = new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
-
   return {
     items: rows.map((r) => ({
       id: r.id,
       action: r.action,
-      actorName: r.actorId ? (nameById.get(r.actorId) ?? "-") : "-",
+      // 表示名が無ければメール。どちらも無い（その人の行が消えている）ときは「-」
+      actorName: r.actor ? (r.actor.displayName ?? r.actor.email) : "-",
       comment: r.comment,
       createdAt: r.createdAt.toISOString(),
     })),

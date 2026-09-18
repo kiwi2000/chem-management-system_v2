@@ -266,6 +266,8 @@ model User {
   organisations UserOrganisation[]
 
   @@index([newsGroupId])
+  approvalEvents ApprovalEvent[]
+
   @@map("users")
 }
 
@@ -1366,7 +1368,14 @@ model ApprovalEvent {
   comment   String?        @db.VarChar(500)
   createdAt DateTime       @default(now()) @map("created_at")
 
+  /**
+   * 実行した人。**名前で並べ替え・絞り込みできるように関連を張る**（2026-09-18 指示）。
+   * 利用者は論理削除なので行は残るが、万一消えても履歴は残したいので `SetNull`
+   */
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
   @@index([entity, entityId, createdAt])
+  @@index([actorId])
   @@map("approval_events")
 }
 

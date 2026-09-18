@@ -440,6 +440,26 @@ export const METAL_FACTOR_COLUMNS: QueryColumn[] = [
 export const APPROVAL_EVENT_COLUMNS: QueryColumn[] = [
   { key: "createdAt", kind: "date", field: "createdAt" },
   { key: "action", kind: "enum", field: "action" },
+  /*
+    実行した人（2026-09-18 指示）。**並べ替えは表示名で、絞り込みは表示名とメールの両方を見る。**
+    画面には「表示名が無ければメール」を出しているので、片方だけ見ると、
+    出ている文字で絞ったのに当たらないことがある
+  */
+  {
+    key: "actorName",
+    kind: "text",
+    field: "displayName",
+    nested: "actor",
+    caseInsensitive: true,
+    custom: (f) =>
+      f.kind !== "text"
+        ? null
+        : f.op === "empty"
+          ? { actorId: null }
+          : f.op === "notEmpty"
+            ? { actorId: { not: null } }
+            : { actor: { OR: anyOfTextCondition(["displayName", "email"], f)?.OR ?? [] } },
+  },
   { key: "comment", kind: "text", field: "comment", caseInsensitive: true, sortable: false },
 ];
 
