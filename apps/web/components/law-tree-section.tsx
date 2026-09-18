@@ -685,7 +685,12 @@ export function LawTreeSection({
         columns={columns}
         rows={rows}
         rowKey={(r) => r.key}
-        total={hitLawIds ? (rows?.filter((r) => r.kind === "law").length ?? 0) : (data?.total ?? 0)}
+        /*
+          件数は必ずサーバーの数。区分で絞っているときも、当たった法律だけをサーバーに出させている
+          （load を見よ）ので、そのまま使える。以前はページに出ている法律の数を出していたので、
+          当たった法律が1ページに収まらないと 2ページ目が無いことになり、残りの法律に届かなかった
+        */
+        total={data?.total ?? 0}
         state={tableState}
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
