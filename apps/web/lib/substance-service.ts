@@ -13,6 +13,9 @@ import { prisma } from "@/lib/db";
 import { propertyWrites } from "@/lib/property-values";
 import type { SubstanceDetailDto, SubstanceListItemDto } from "@/lib/types";
 
+/** 同じCASの物質を知らせるとき、コードを何件まで並べるか（件数は別に添える） */
+const SAME_CAS_SHOWN = 10;
+
 /** 一覧に必要な関連（別名は件数だけ使う） */
 export const SUBSTANCE_LIST_INCLUDE = {
   _count: { select: { aliases: true } },
@@ -128,17 +131,31 @@ export async function collectWarnings(
     warnings.push(m.substances.warnCasFormat);
   }
 
-  // 同一CASは意図的に許しているが、取り違えに気づけるよう知らせる
-  const same = await prisma.substance.findMany({
-    where: {
-      casNormalized,
-      deletedAt: null,
-      ...(excludeSubstanceId ? { id: { not: excludeSubstanceId } } : {}),
-    },
-    select: { code: true },
-    take: 10,
-  });
-  if (same.length > 0) warnings.push(m.substances.warnSameCas(same.map((s) => s.code).join(", ")));
+  /*
+    同一CASは意図的に許しているが、取り違えに気づけるよう知らせる。
+    **コードは 10 件までしか並べないので、合計の件数も添える**（2026-09-18 指示）。
+    並べただけだと、11 件目からがあることに気づけない
+  */
+  const sameWhere = {
+    casNormalized,
+    deletedAt: null,
+    ...(excludeSubstanceId ? { id: { not: excludeSubstanceId } } : {}),
+  };
+  const [same, sameTotal] = await Promise.all([
+    prisma.substance.findMany({
+      where: sameWhere,
+      select: { code: true },
+      orderBy: { codeNormalized: "asc" },
+      take: SAME_CAS_SHOWN,
+    }),
+    prisma.substance.count({ where: sameWhere }),
+  ]);
+  if (sameTotal > 0) {
+    const codes = same.map((s) => s.code).join(", ");
+    warnings.push(
+      m.substances.warnSameCas(sameTotal > SAME_CAS_SHOWN ? `${codes} …` : codes, sameTotal),
+    );
+  }
 
   return warnings;
 }

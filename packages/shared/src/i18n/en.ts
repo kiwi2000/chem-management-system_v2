@@ -414,7 +414,8 @@ export const en: Messages = {
     casRepresentativePending: (current: string) =>
       `On save, the representative switches from ${current} to this substance`,
     casRepresentativePendingNew: "On save, this substance becomes the representative",
-    warnSameCas: (codes: string) => `Other substances already use this CAS number: ${codes}`,
+    warnSameCas: (codes: string, total: number) =>
+      `Other substances already use this CAS number (${total} in total): ${codes}`,
     warnCasFormat: "The CAS number does not look like the usual format (e.g. 7439-92-1)",
     savedWithWarnings: "Saved. Please check the following",
   },

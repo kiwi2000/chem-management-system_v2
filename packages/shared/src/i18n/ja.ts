@@ -434,7 +434,8 @@ export const ja = {
     casRepresentativePending: (current: string) =>
       `保存すると、代表が ${current} からこの物質に切り替わります`,
     casRepresentativePendingNew: "保存すると、この物質が代表になります",
-    warnSameCas: (codes: string) => `同じCAS番号の物質が既にあります: ${codes}`,
+    warnSameCas: (codes: string, total: number) =>
+      `同じCAS番号の物質が既にあります（合計 ${total} 件）: ${codes}`,
     warnCasFormat: "CAS番号が一般的な形（例: 7439-92-1）ではありません",
     savedWithWarnings: "保存しました。次の点を確認してください",
   },
