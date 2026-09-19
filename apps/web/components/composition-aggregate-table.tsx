@@ -508,10 +508,10 @@ export function CompositionAggregateTable({
   /** 閉じている法律。**開いているのが既定**で、閉じたものだけを覚える */
   const [closedLaws, setClosedLaws] = useState<Set<string>>(new Set());
   /**
-   * 該当法規制の列をまとめているか。**既定は開く**（この表の主役なので）。
-   * 畳むと、当たっている区分の数だけの1列になる（2026-09-20 指示）
+   * 該当法規制の列をまとめているか。**既定は閉じる**（2026-09-20 指示。インベントリと同じ）。
+   * 閉じているあいだは、当たっている区分の数だけの1列。見出しを押すと地域ごとに分かれる
    */
-  const [regOpen, setRegOpen] = useState(true);
+  const [regOpen, setRegOpen] = useState(false);
   /**
    * 押して開いているセル。**区分まで分けた列だけ**開ける。
    * 地域でまとめた列は区分がいくつも重なっており、どれを見せるか決まらない

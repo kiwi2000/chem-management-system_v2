@@ -31,22 +31,13 @@ import { cn } from "@/lib/utils";
 const EDGE_TAB = "flex size-5 items-center justify-center rounded-none border p-0 hover:opacity-70";
 
 /**
- * 本文側の帯に付くもの。帯を畳む「＾」（帯のすぐ下、右端）と、
- * 左ペインを開く「＞」（帯の左上の角。ペインを閉じているときだけ出る）
- */
-const HEADER_TAB =
-  "bg-header text-header-foreground border-header-foreground/40 hover:bg-header hover:text-header-foreground aria-expanded:bg-header aria-expanded:text-header-foreground";
-
-/**
- * 本文の側に付くタブ（左ペインを開く「＞」）。
- * **帯の色は使わない**（2026-09-18 指摘。暗い配色では帯と本文が同じ色になり、タブが消えていた）。
- * 枠と地の色で、どの配色でも本文から浮くようにする
+ * 開け閉めのタブの色。**左ペインの「＜」「＞」も、帯の「∧」「∨」も同じ**
+ * （2026-09-20 指示。開いているときと閉じているときで見た目が変わっていた）。
+ *
+ * **帯やペインの頭の色は使わない**（2026-09-18 指摘。暗い配色では地と同じ色になり、
+ * タブが消えていた）。枠と薄い地の色で、どの配色でも浮くようにする
  */
 const BODY_TAB = "bg-muted text-foreground border-border hover:bg-accent";
-
-/** 左ペインの頭に付くもの（ペインを閉じる「＜」。頭の右上の角）。色だけペインの頭に合わせる */
-const SIDEBAR_TAB =
-  "bg-sidebar-header text-sidebar-header-foreground border-sidebar-header-foreground/40 hover:bg-sidebar-header hover:text-sidebar-header-foreground";
 
 const STORAGE_KEY = "chem.sidebar.open";
 /**
@@ -160,7 +151,7 @@ export function AppShellClient({
           variant="ghost"
           size="icon"
           aria-label={m.shell.closeMenu}
-          className={cn(EDGE_TAB, SIDEBAR_TAB, "absolute top-0 right-0 z-20 border-t-0 border-r-0")}
+          className={cn(EDGE_TAB, BODY_TAB, "absolute top-0 right-0 z-20 border-t-0 border-r-0")}
           onClick={toggle}
         >
           <ChevronLeft className="size-4" />
@@ -297,7 +288,7 @@ export function AppShellClient({
         </Button>
         <button
           type="button"
-          className={cn(EDGE_TAB, HEADER_TAB, "absolute top-full right-0 z-40 border-t-0")}
+          className={cn(EDGE_TAB, BODY_TAB, "absolute top-full right-0 z-40 border-t-0")}
           title={headerOpen ? m.shell.hideHeader : m.shell.showHeader}
           aria-label={headerOpen ? m.shell.hideHeader : m.shell.showHeader}
           aria-expanded={headerOpen}
