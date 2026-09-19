@@ -11,12 +11,14 @@ import { useI18n } from "@/lib/i18n-client";
 /**
  * 画面にある枠（見出し付きのカード）を、まとめて開く／閉じるボタン。
  * **状態で出し分ける**（2026-09-12 指示）。全部閉じていれば「＞ 開」だけ、全部開いていれば「∨ 閉」だけ、
- * 一部だけ開いていれば両方。枠が1つも無い画面では出ない
+ * 一部だけ開いていれば両方。
+ * **枠が1つ以下の画面では出ない**（2026-09-19 指示）。枠が1つなら開け閉めしないので、
+ * まとめて開け閉めする口も要らない
  */
 export function CardToggleAll() {
   const { m } = useI18n();
   const { count, allOpen, anyOpen } = useCardsState();
-  if (count === 0) return null;
+  if (count <= 1) return null;
   return (
     <>
       {!allOpen && (
@@ -63,7 +65,8 @@ export function CardToggleRow() {
   const [fallback, setFallback] = useState(false);
 
   useLayoutEffect(() => {
-    if (count === 0) {
+    // 枠が1つの画面では開け閉めしないので、置き場所も作らない（2026-09-19 指示）
+    if (count <= 1) {
       setHost(null);
       setFallback(false);
       return;

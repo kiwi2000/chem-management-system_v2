@@ -108,6 +108,11 @@ export function EdgeHandle({
 
 interface CardState {
   open: boolean;
+  /**
+   * 見出しに開け閉めの「>」を出すか。
+   * **画面に枠が1つしかないときは出さない**（2026-09-19 指示）。開いたままで使う
+   */
+  canToggle: boolean;
   toggle: () => void;
   /** 見出しの文字が分かったら、開け閉めを覚える鍵に使う */
   registerTitle: (text: string) => void;
@@ -139,6 +144,24 @@ function notifyState() {
 /** 画面の枠をすべて開く／閉じる */
 export function setAllCards(open: boolean) {
   for (const e of cardEntries) e.set(open);
+}
+
+/**
+ * 画面にある枠の数だけを見る。
+ * 枠が1つのときは開け閉めをやめる（2026-09-19 指示）ので、枠の側もこれを見る。
+ * 開け閉めまで見る `useCardsState` を使うと、1つ開け閉めするたびに画面中の枠が描き直される
+ */
+function useCardCount(): number {
+  return Number(
+    React.useSyncExternalStore(
+      (cb) => {
+        stateListeners.add(cb);
+        return () => stateListeners.delete(cb);
+      },
+      () => String(cardEntries.size),
+      () => "0",
+    ),
+  );
 }
 
 /**
@@ -190,8 +213,10 @@ function Card({
   /**
    * 見出しの「>」で開け閉めできるか。既定はできる。
    *
-   * **その画面に枠が1つしかなく、必ず開いて使うなら false にする**（2026-09-17 指示）。
-   * 開け閉めする意味が無いうえ、上の「開」「閉」まで出て、押す口が増えるだけになる
+   * **画面に枠が1つしかないときは、これを true にしていても開け閉めしない**
+   * （2026-09-19 指示。システム全体の決まり）。枠が1つなら開け閉めする意味が無く、
+   * 上の「開」「閉」まで出て押す口が増えるだけなので、数を見て自動で外す。
+   * 見出しの無い枠や、数に関わらず必ず開いて使う枠は false を渡す
    */
   collapsible?: boolean;
   /** 最初に開いているか。**既定は閉じる**（2026-09-11 指示。覚えている状態があればそちらが勝つ） */
@@ -201,6 +226,7 @@ function Card({
 }) {
   const pathname = usePathname();
   const { m } = useI18n();
+  const cardCount = useCardCount();
   const [open, setOpen] = React.useState(defaultOpen);
   const [titleText, setTitleText] = React.useState<string | null>(null);
   const [boxes, setBoxes] = React.useState(0);
@@ -318,12 +344,19 @@ function Card({
     見出しが無いのに閉じると開く手立てが無い（お知らせの編集画面で欄が全部隠れた。2026-09-11）。
     見出しが登録されるまでは開いた扱いにする
   */
-  const shown = !collapsible || titleText === null || open;
+  /*
+    **画面に枠が1つしかなければ、開け閉めしない**（2026-09-19 指示。システム全体の決まり）。
+    閉じても隠れるものが無く、上の「開」「閉」と合わせて押す口が2つ増えるだけになる。
+    数は登録簿で数える（この枠自身も登録してあるので、1 なら自分だけ）
+  */
+  const solo = collapsible && key !== null && cardCount === 1;
+  const shown = !collapsible || titleText === null || solo || open;
   const state = React.useMemo<CardState | null>(
     () =>
       collapsible
         ? {
             open: shown,
+            canToggle: !solo,
             toggle,
             registerTitle,
             registerBox,
@@ -332,7 +365,7 @@ function Card({
             contentHeight: boxes === 0 ? contentHeight : null,
           }
         : null,
-    [collapsible, shown, toggle, registerTitle, registerBox, contentHeight, boxes],
+    [collapsible, shown, solo, toggle, registerTitle, registerBox, contentHeight, boxes],
   );
 
   return (
@@ -397,7 +430,8 @@ function CardTitle({ className, children, ...props }: React.ComponentProps<"div"
     if (register && text) register(text);
   }, [register, children]);
 
-  if (!card) {
+  // 枠が1つしかない画面では開け閉めしないので、「>」も押せる見た目も出さない（2026-09-19 指示）
+  if (!card || !card.canToggle) {
     return (
       <div
         data-slot="card-title"
