@@ -1,10 +1,17 @@
 "use client";
 
-import { IMPURITY_NONE, pickName, type AppSettings, type GazetteLawKind } from "@chem/shared";
+import {
+  IMPURITY_NONE,
+  casProblem,
+  normalizeCas,
+  pickName,
+  type AppSettings,
+  type GazetteLawKind,
+} from "@chem/shared";
 import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AliasList } from "@/components/alias-list";
 import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
@@ -63,6 +70,18 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
 
   const [code, setCode] = useState(initial?.code ?? "");
   const [casNumber, setCasNumber] = useState(initial?.casNumber ?? "");
+  /*
+    **打っているそばから CAS 番号の形を見る**（2026-09-20 指示）。
+    保存するまで何も出ないと、打ち間違いに気づくのが登録のあとになる。
+    形を強制している設定では保存そのものが止まるので、そのときは赤で出す
+  */
+  const casIssue = useMemo(() => {
+    const value = normalizeCas(casNumber.trim());
+    if (value === "") return null;
+    const problem = casProblem(value);
+    if (problem === null) return null;
+    return problem === "checkDigit" ? m.substances.warnCasCheckDigit : m.substances.warnCasFormat;
+  }, [casNumber, m]);
   /**
    * 同じCASの他の物質と、この物質を代表にするか。
    * 他にいなければ自動で代表になるので、その場合は何も出さない。
@@ -361,6 +380,21 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                     placeholder="7439-92-1"
                   />
                   <FieldError message={fieldError("casNumber")} />
+                  {/*
+                    打っているそばから出す注意書き。
+                    形を強制しているときは保存できないので、より強い色にする
+                  */}
+                  {casIssue && (
+                    <p
+                      className={
+                        settings.casFormatEnforced
+                          ? "text-destructive text-xs"
+                          : "text-xs text-orange-600 dark:text-orange-400"
+                      }
+                    >
+                      {casIssue}
+                    </p>
+                  )}
                   {!settings.casRequired && (
                     <p className="text-muted-foreground text-xs">{m.substances.casHint}</p>
                   )}
