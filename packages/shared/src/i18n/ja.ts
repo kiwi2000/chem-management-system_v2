@@ -1866,6 +1866,8 @@ export const ja = {
     aggregateTitle: "原材料展開・CAS合算",
     /** CAS番号は法律に載っているが、含有率が足りず当たっていないもの */
     nearMissShow: "含有率不足による非該当",
+    /** ボタンの右に出す件数。押すと何件増えるのかが分かるように */
+    nearMissCount: (n: number) => `${n} 件`,
     sourceShow: "データソース",
     reviewLegend: "要確認",
     diffShow: "差分あり",
@@ -1891,6 +1893,8 @@ export const ja = {
     aggregateName: "物質名",
     aggregateSubstanceId: "物質ID",
     aggregateRegulations: "該当法規制",
+    /** まとめ表の右に出す、インベントリ番号の列の見出し */
+    aggregateInventories: "インベントリ",
     aggregateSplitByCategory: "規制区分ごとに分ける",
     aggregateGroupByRegion: "地域にまとめる",
     aggregateGroupByLaw: "法律にまとめる",

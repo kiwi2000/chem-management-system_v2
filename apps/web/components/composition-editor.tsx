@@ -506,6 +506,8 @@ export function CompositionEditor({
    */
   const [aggregateOpen, setAggregateOpen] = useState<Set<string>>(new Set());
   const [aggregateKeys, setAggregateKeys] = useState<string[]>([]);
+  /** 含有率不足で当たっていないものの件数。ボタンの右に出す */
+  const [nearMissCount, setNearMissCount] = useState(0);
   /** 含有率が足りずに当たっていないものを赤字で出すか。既定は出さない */
   const [showNearMiss, setShowNearMiss] = useState(false);
   /** データソースの印を出すか。既定は出さない（ふだんは要らないので） */
@@ -958,6 +960,14 @@ export function CompositionEditor({
                   {m.composition.nearMissShow}
                 </Button>
                 {/*
+                  件数はボタンの**外**に出す（2026-09-19 指示）。
+                  押しても何も変わらないことがあり、効いていないのか
+                  そもそも無いのかが分からなかった
+                */}
+                <span className="text-muted-foreground text-sm">
+                  {m.composition.nearMissCount(nearMissCount)}
+                </span>
+                {/*
                   データソースの印を出すかどうか。押している間だけ、
                   **その印が何を指すのかをボタンの右に並べる**。
                   印は頭文字だけなので、並びを見ないと `C` が CHRIP か CFR か分からない
@@ -1023,6 +1033,7 @@ export function CompositionEditor({
               showSources={showSources}
               showDiff={showDiff}
               onSourcesChange={setSources}
+              onNearMissCountChange={setNearMissCount}
               onPreviousVersionChange={setPrevious}
             />
           </div>

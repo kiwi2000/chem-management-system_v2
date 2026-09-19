@@ -124,6 +124,12 @@ interface Props {
   onPreviousVersionChange?: (code: string | null) => void;
   /** 読み込んだデータソースの並びを親へ返す（札に出すため） */
   onSourcesChange?: (sources: SourceInfo[]) => void;
+  /**
+   * 含有率不足で当たっていないものの件数を親へ返す。
+   * **ボタンの右に出す**（2026-09-19 指示）。0 件のときに押しても何も変わらず、
+   * 押したのに効いていないのか、そもそも無いのかが分からなかった
+   */
+  onNearMissCountChange?: (count: number) => void;
 }
 
 /**
@@ -440,6 +446,7 @@ export function CompositionAggregateTable({
   showSources = false,
   showDiff = false,
   onSourcesChange,
+  onNearMissCountChange,
   onPreviousVersionChange,
 }: Props) {
   const { m, locale } = useI18n();
@@ -474,6 +481,13 @@ export function CompositionAggregateTable({
     locale,
   );
   /*
+    表のいちばん右に置くインベントリの列（2026-09-19 指示）。
+    番号を出すと決めてあるインベントリだけが並ぶ（インベントリの画面で決める）。
+    **行が1件も無くても列は出す。**空欄と列の不在は意味が違う（載っていない、と読めるように）
+  */
+  const inventories = data?.inventories ?? [];
+  const invCols = inventories.map((i) => ({ key: `inv:${i.label}`, width: 132 }));
+  /*
     **組成そのものの列（CAS〜備考）は出し入れできる。**隠したぶんは端末に覚える。
     法規の列は中身で増減するので対象にしない。全部隠すと行が読めなくなるので、最後の1つは残す
   */
@@ -497,7 +511,7 @@ export function CompositionAggregateTable({
       v4 … 備考を広げ、スコアを見出しぶんまで詰めた
     */
     "chem.table.compositionAggregate.v4",
-    [...heads, ...leaves],
+    [...heads, ...leaves, ...invCols],
     // 規制区分に分けると列が増える。詰めずに、はみ出したぶんは横に送る
     { shrinkToFit: false, frozen: FROZEN },
   );
@@ -532,6 +546,11 @@ export function CompositionAggregateTable({
   useEffect(() => {
     onSourcesChange?.(data?.sources ?? []);
   }, [data, onSourcesChange]);
+
+  // 含有率不足の件数。ボタンの右に出す
+  useEffect(() => {
+    onNearMissCountChange?.((data?.rows ?? []).reduce((n, r) => n + r.nearMiss.length, 0));
+  }, [data, onNearMissCountChange]);
 
   useEffect(() => {
     onPreviousVersionChange?.(data?.previousVersion ?? null);
@@ -773,6 +792,11 @@ export function CompositionAggregateTable({
                     {m.composition.aggregateRegulations}
                   </th>
                 )}
+                {invCols.length > 0 && (
+                  <th colSpan={invCols.length} className={cn(CELL, "text-center font-medium")}>
+                    {m.composition.aggregateInventories}
+                  </th>
+                )}
               </tr>
 
               <tr className="text-left">
@@ -816,6 +840,18 @@ export function CompositionAggregateTable({
                     {/* 分けていない地域の列は、ここが幅を変える場所になる */}
                     {!g.expanded &&
                       cols.handle(`region:${g.regionId}`, `${g.label} ${m.table.resize}`)}
+                  </th>
+                ))}
+                {/* インベントリの見出しは、下の段（国・法律・区分）まで貫いて1つのセルにする */}
+                {inventories.map((i) => (
+                  <th
+                    key={i.label}
+                    rowSpan={4}
+                    className={cn(CELL, "relative align-bottom font-medium")}
+                    title={i.source}
+                  >
+                    {i.label}
+                    {cols.handle(`inv:${i.label}`, `${i.label} ${m.table.resize}`)}
                   </th>
                 ))}
               </tr>
@@ -1067,6 +1103,18 @@ export function CompositionAggregateTable({
                           </td>
                         );
                       })}
+                      {/*
+                        インベントリの番号。同じインベントリに複数付くことがあるので並べる。
+                        載っていなければ空欄（「載っていない」と読む）
+                      */}
+                      {inventories.map((i) => {
+                        const got = row.numbers.filter((n) => n.label === i.label);
+                        return (
+                          <td key={i.label} className={cn(CELL, "font-mono text-xs")}>
+                            {got.map((n) => n.number).join("、")}
+                          </td>
+                        );
+                      })}
                     </tr>
                     {/*
                      * 内訳は物質コードと、製品全体に対する重量%だけ。
@@ -1137,6 +1185,9 @@ export function CompositionAggregateTable({
                           {leaves.map((c) => (
                             <td key={c.key} className={CELL} />
                           ))}
+                          {invCols.map((c) => (
+                            <td key={c.key} className={CELL} />
+                          ))}
                         </tr>
                       ))}
                   </Fragment>
@@ -1200,6 +1251,9 @@ export function CompositionAggregateTable({
                     );
                   })()}
                   {leaves.map((c) => (
+                    <td key={c.key} className={CELL} />
+                  ))}
+                  {invCols.map((c) => (
                     <td key={c.key} className={CELL} />
                   ))}
                 </tr>

@@ -28,6 +28,29 @@ export interface SubstanceNumber {
 }
 
 /**
+ * 画面に出すインベントリの並び（呼び名）。
+ *
+ * **行が1件も無いインベントリでも列は出す。**組成のまとめ表では、
+ * 空欄と列そのものの不在は意味が違う（載っていない、と読めるようにする）
+ */
+export async function listShownInventories(): Promise<{ label: string; source: string }[]> {
+  const inventories = await prisma.inventory.findMany({
+    where: { deletedAt: null, numberShown: true, numberLabel: { not: null } },
+    select: {
+      nameJa: true,
+      nameOriginal: true,
+      numberLabel: true,
+      country: { select: { nameJa: true } },
+    },
+    orderBy: { numberOrder: "asc" },
+  });
+  return inventories.map((i) => ({
+    label: i.numberLabel as string,
+    source: `${i.country.nameJa} ${i.nameJa ?? i.nameOriginal}`,
+  }));
+}
+
+/**
  * CAS番号の集合に対して、番号をまとめて引く。
  * 一覧でも使うので、1ページぶんを1回の問い合わせで取れるようにしてある。
  *

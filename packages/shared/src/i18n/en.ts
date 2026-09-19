@@ -1790,6 +1790,7 @@ export const en: Messages = {
 
     aggregateTitle: "Expanded and combined by CAS",
     nearMissShow: "Below the threshold",
+    nearMissCount: (n: number) => `${n}`,
     sourceShow: "Data source",
     reviewLegend: "Needs checking",
     diffShow: "Changed",
@@ -1814,6 +1815,7 @@ export const en: Messages = {
       "Shows in red the listed substances whose CAS is in the law but whose content is below the threshold. A change in the recipe makes them apply",
     aggregateName: "Substance name",
     aggregateRegulations: "Regulations",
+    aggregateInventories: "Inventories",
     aggregateSplitByCategory: "split into categories",
     aggregateGroupByRegion: "group by region",
     aggregateGroupByLaw: "group by law",

@@ -681,6 +681,12 @@ export interface AggregateRowDto {
    * 画面の切り替えを入れたときだけ赤字で出す
    */
   nearMiss: RowRegulationDto[];
+  /**
+   * この CAS に付いているインベントリの番号（化審法番号・EC番号など）。
+   * 物質の属性ではなく、インベントリが振っているもの（決定 0008）。
+   * 同じインベントリに複数の番号が付くことがある
+   */
+  numbers: { label: string; number: string }[];
 }
 
 /**
@@ -805,6 +811,11 @@ export interface CompositionAggregateDto {
   }[];
   /** 比べた相手のバージョン。無ければ空（差分の印は出ない） */
   previousVersion: string | null;
+  /**
+   * 表の右に出すインベントリの列。**番号を出すと決めてあるものだけ**
+   * （インベントリの画面の「番号として出す」）。並びもそこで決めた順
+   */
+  inventories: { label: string; source: string }[];
 }
 
 /** 言語。法規制の「原文の言語」で選ぶ */
