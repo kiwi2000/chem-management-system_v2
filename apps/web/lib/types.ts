@@ -206,11 +206,11 @@ export interface JudgementHitDto {
   /**
    * その値を作ったCASと、それぞれの寄与。まとめたときは複数並ぶ。
    * 「なぜその合計になったのか」を追えるようにするため。
-   * 同じ CAS が不純物パターン違いで 2 つ並ぶことがある（`pattern` は 0 のとき省く）
+   * 同じ CAS が不純物種別違いで 2 つ並ぶことがある（`pattern` は 0 のとき省く）
    */
   contributions: { cas: string; pct: string; pattern?: string }[];
   /**
-   * 不純物パターンの設定で除外した寄与（S21）。閾値とは比べていない。
+   * 不純物種別の設定で除外した寄与（S21）。閾値とは比べていない。
    * これしか無い行は「不純物のため非該当」
    */
   excluded: { cas: string; pct: string; pattern: string }[];
@@ -368,7 +368,7 @@ export interface SubstanceListItemDto {
    * この物質から取る。CASが無い物質は false
    */
   casRepresentative: boolean;
-  /** 不純物パターン（S21）。0（`ip-none`）は「不純物ではない」 */
+  /** 不純物種別（S21）。0（`ip-none`）は「不純物ではない」 */
   impurityPatternId: string;
   status: SubstanceStatus;
   /** 公開の状態。公開済になるまで他の人には見えない */
@@ -649,7 +649,7 @@ export interface CellStatutoryDto {
 export interface AggregateRowDto {
   /** CAS番号。持たない物質は null（まとめようがないので1物質1行になる） */
   casNumber: string | null;
-  /** 不純物パターン（S21）。同じ CAS でもパターンが違えば別の行 */
+  /** 不純物種別（S21）。同じ CAS でも種別が違えば別の行 */
   impurityPatternId: string;
   /** 代表物質のコードと名称。CASを持たない物質は自分自身のもの */
   code: string;
@@ -1177,7 +1177,7 @@ export interface LinkSetVersionDto {
 
 /** データソース（バージョン × データソース種別）。取り込みの単位でもある */
 /**
- * 不純物パターン（S21）。物質の属性で、パターンごとに「どの規制区分で非該当にするか」を持つ
+ * 不純物種別（S21）。物質の属性で、種別ごとに「どの規制区分で非該当にするか」を持つ
  */
 export interface ImpurityPatternDto {
   id: string;
@@ -1190,11 +1190,11 @@ export interface ImpurityPatternDto {
   builtin: boolean;
   /** 0「不純物ではない」。除外の設定を持たない */
   isNone: boolean;
-  /** このパターンを使っている物質の数 */
+  /** この種別を使っている物質の数 */
   substanceCount: number;
 }
 
-/** そのパターンの除外の設定 */
+/** その種別の除外の設定 */
 export interface ImpurityExemptionsDto {
   /** 非該当にする規制区分 */
   categoryIds: string[];

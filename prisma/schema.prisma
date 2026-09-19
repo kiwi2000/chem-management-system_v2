@@ -736,7 +736,7 @@ model ProductExpansionLine {
   substanceId   String? @map("substance_id")
 
   /**
-   * 物質の不純物パターン。同じ CAS でもパターンが違えば別の行（S21）
+   * 物質の不純物種別。同じ CAS でもパターンが違えば別の行（S21）
    */
   impurityPatternId String @default("ip-none") @map("impurity_pattern_id")
 
@@ -908,7 +908,7 @@ model ProductJudgementHit {
    */
   contributions        Json?
   /**
-   * 不純物パターンで除外した寄与（[{ cas, pct, pattern }]、S21）。閾値とは比べていない
+   * 不純物種別で除外した寄与（[{ cas, pct, pattern }]、S21）。閾値とは比べていない
    */
   excluded             Json?
 
@@ -944,13 +944,13 @@ model Substance {
   /**
    * このCASを代表する物質か。
    * 同じCASの物質が複数あるとき、合算した行に出す名称をこの物質から取る。
-   * 1つの CAS × 不純物パターンにつき1件までで、制約は migration の部分ユニーク索引で持つ
+   * 1つの CAS × 不純物種別につき1件までで、制約は migration の部分ユニーク索引で持つ
    * （Prisma では条件付きの一意制約を書けないため）。
    */
   isCasRepresentative Boolean @default(false) @map("is_cas_representative")
 
   /**
-   * 不純物パターン（S21）。0「不純物ではない」が既定。
+   * 不純物種別（S21）。0「不純物ではない」が既定。
    * 不純物として入る物質は、パターンごとに別の物質として登録する。
    * 判定はパターンごとの除外の設定（impurity_exemptions）に従う
    */
@@ -1811,7 +1811,7 @@ model RegulationCategory {
   classes    RegulationClass[]
   judgements ProductJudgement[]
   decisions  ProductDecision[]
-  /** 不純物パターンごとの除外（S21） */
+  /** 不純物種別ごとの除外（S21） */
   impurityExemptions ImpurityExemption[]
 
   @@unique([lawId, codeNormalized])
@@ -1941,7 +1941,7 @@ model StatutorySubstance {
   links           StatutoryCasLink[]
 
   linkDiffs StatutoryCasLinkDiff[]
-  /** 不純物パターンごとの除外の上書き（S21） */
+  /** 不純物種別ごとの除外の上書き（S21） */
   impurityExemptions ImpurityExemptionSubstance[]
 
   @@unique([classId, codeNormalized])
@@ -2673,7 +2673,7 @@ view StatutoryCasLinkDiffName {
 }
 
 /**
- * 不純物パターン（S21、2026-09-18）。
+ * 不純物種別（S21、2026-09-18）。
  *
  * 「同じ該非判定になる不純物どうし」をまとめた区分。物質の属性として持つ。
  * 0「不純物ではない」（id `ip-none`）と 1「不純物」（id `ip-impurity`）は組み込みで消せない。
@@ -2706,7 +2706,7 @@ model ImpurityPattern {
 }
 
 /**
- * 不純物パターン × 規制区分：このパターンの物質を、この区分では非該当にする。
+ * 不純物種別 × 規制区分：このパターンの物質を、この区分では非該当にする。
  * 行が無ければ除外しない
  */
 model ImpurityExemption {
@@ -2730,7 +2730,7 @@ model ImpurityExemption {
 }
 
 /**
- * 不純物パターン × 法文物質名：区分の設定を上書きする（true=除外する、false=除外しない）。
+ * 不純物種別 × 法文物質名：区分の設定を上書きする（true=除外する、false=除外しない）。
  * 行が無ければ区分の設定に従う
  */
 model ImpurityExemptionSubstance {

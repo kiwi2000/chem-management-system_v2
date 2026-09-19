@@ -20,7 +20,7 @@ import { prisma } from "@/lib/db";
 
 /**
  * 現在のバージョンで当たっている「CAS × 規制区分 × 法文物質名」。
- * 点を足す前の土台。**不純物パターンの除外（S21）は物質ごとに効く**ので、ここでは落とさない
+ * 点を足す前の土台。**不純物種別の除外（S21）は物質ごとに効く**ので、ここでは落とさない
  */
 const HIT_SQL = `
   SELECT DISTINCT l.cas_normalized, c.id AS category_id, c.score, s.id AS statutory_substance_id
@@ -41,7 +41,7 @@ const HIT_SQL = `
 /**
  * 物質ごとの合計点。
  *
- * **不純物パターンで除外される区分は数えない**（S21）。
+ * **不純物種別で除外される区分は数えない**（S21）。
  * 判定と同じ順（法文物質名の上書き → 区分の設定 → 除外しない）で決める。
  * 区分の点は区分ごとに 1 回だけ数える（同じ区分の法文物質名に何件当たっても増やさない）
  */
@@ -180,8 +180,8 @@ export async function recomputeScoresForCategory(categoryId: string): Promise<nu
 }
 
 /**
- * ある不純物パターンの物質を、まとめて計算し直す（S21）。
- * 除外の設定を変えると、そのパターンの物質の点が変わるので、除外の付け外しのときに呼ぶ
+ * ある不純物種別の物質を、まとめて計算し直す（S21）。
+ * 除外の設定を変えると、その種別の物質の点が変わるので、除外の付け外しのときに呼ぶ
  */
 export async function recomputeScoresForPattern(patternId: string): Promise<number> {
   const rows = await prisma.substance.findMany({

@@ -55,7 +55,7 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   // CAS番号は複数まとめて（製品の組成のCAS番号と同じ入力欄。2026-09-11 指示）。値は正規化して完全一致
   { key: "casNumber", kind: "list", field: "casNormalized", normalize: normalizeCas },
   { key: "casRepresentative", kind: "enum", field: "isCasRepresentative", booleanEnum: true },
-  // 不純物パターン（S21）。選択肢は画面がマスタから作る
+  // 不純物種別（S21）。選択肢は画面がマスタから作る
   { key: "impurityPatternId", kind: "enum", field: "impurityPatternId" },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
@@ -469,7 +469,7 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
   },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   { key: "classId", kind: "enum", field: "classId" },
-  // 区分で絞る（分類をたどる）。不純物パターンの例外の窓で使う
+  // 区分で絞る（分類をたどる）。不純物種別の例外の窓で使う
   { key: "categoryId", kind: "enum", field: "categoryId", nested: "regulationClass" },
   {
     key: "applicableCondition",

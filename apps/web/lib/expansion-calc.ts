@@ -27,7 +27,7 @@ export interface ExpandedProduct {
   lines: {
     casNormalized: string | null;
     substanceId: string | null;
-    /** 物質の不純物パターン。同じ CAS でもパターンが違えば別の行（S21） */
+    /** 物質の不純物種別。同じ CAS でも種別が違えば別の行（S21） */
     impurityPatternId: string;
     totalPct: string;
   }[];
@@ -57,7 +57,7 @@ export async function expandTree(
   load: LineLoader,
 ): Promise<ExpandedProduct> {
   /**
-   * 鍵。**CAS × 不純物パターン**でまとめる（S21。パターンをまたいで足さない）。
+   * 鍵。**CAS × 不純物種別**でまとめる（S21。種別をまたいで足さない）。
    * CAS を持たない物質はまとめようがないので、物質そのものを鍵にする
    */
   const buckets = new Map<
@@ -86,7 +86,7 @@ export async function expandTree(
   ) {
     const cas = substance.casNumber?.trim().toUpperCase() || null;
     const pattern = substance.impurityPatternId ?? IMPURITY_NONE;
-    // CAS を持つものは CAS × パターンでまとめる。持たないものは物質そのものを鍵にする
+    // CAS を持つものは CAS × 種別でまとめる。持たないものは物質そのものを鍵にする
     const key = cas ? `cas:${cas}@${pattern}` : `sub:${substance.id}`;
     const cur = buckets.get(key) ?? {
       cas,

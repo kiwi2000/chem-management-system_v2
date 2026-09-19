@@ -132,7 +132,7 @@ export async function POST(req: Request) {
    * 他がいるときは、画面で選ばせた結果が casRepresentative で届く。
    */
   if (base.casNormalized) {
-    // 代表は CAS × 不純物パターンごとに 1 件（S21）
+    // 代表は CAS × 不純物種別ごとに 1 件（S21）
     if (input.casRepresentative) {
       await makeCasRepresentative(prisma, created.id, base.casNormalized, base.impurityPatternId);
     } else {

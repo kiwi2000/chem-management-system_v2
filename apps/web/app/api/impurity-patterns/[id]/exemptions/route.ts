@@ -14,9 +14,9 @@ export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * 除外を変えたことを、パターンの行の更新日時に残す。
+ * 除外を変えたことを、種別の行の更新日時に残す。
  * 「要再計算」の印はこの日時を見る（`lib/rejudge-job.ts` の premisesChangedAt）。
- * あわせて、そのパターンの物質のスコアを計算し直す（除外した区分の点は数えない）
+ * あわせて、その種別の物質のスコアを計算し直す（除外した区分の点は数えない）
  */
 async function touchPattern(patternId: string, userId: string) {
   await prisma.impurityPattern.update({
@@ -29,9 +29,9 @@ async function touchPattern(patternId: string, userId: string) {
 }
 
 /**
- * 不純物パターンごとの除外の設定（S21）。
+ * 不純物種別ごとの除外の設定（S21）。
  *
- * GET  … そのパターンの、除外している区分の id と、法文物質名の上書き
+ * GET  … その種別の、除外している区分の id と、法文物質名の上書き
  * PUT  … 区分の付け外し（法律の行でまとめて押せるよう、複数まとめて受ける）
  * POST … 法文物質名の上書き（`excluded: null` は「区分に従う」＝行を消す）
  *
@@ -119,7 +119,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   /*
     **外したときも判定の前提が変わる。**外す操作は行を消すので、
     除外の表の更新日時だけを見ていると気づけない（「要再計算」が出ない）。
-    パターンの行を必ず触って、前提が変わったことを残す
+    種別の行を必ず触って、前提が変わったことを残す
   */
   await touchPattern(id, actor.user.id);
 

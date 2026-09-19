@@ -32,9 +32,9 @@ import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
 
 /**
- * 不純物パターン（S21）。
+ * 不純物種別（S21）。
  *
- * 上でパターンを選び、下でそのパターンを「非該当にする規制区分」を決める。
+ * 上で種別を選び、下でその種別を「非該当にする規制区分」を決める。
  * 区分の行の「例外」から、法文物質名ごとに区分の設定を上書きできる。
  *
  * **付け外しは 1 回ごとに保存する。**保存ボタンを押し忘れて設定が残らない、を防ぐため。
@@ -347,7 +347,7 @@ export default function ImpurityPatternsPage() {
             emptyMessage={m.impurityPatterns.empty}
             showPager={false}
             showFilters={false}
-            // 行を選ぶと、下の表がそのパターンの設定になる
+            // 行を選ぶと、下の表がその種別の設定になる
             selectedKey={selectedId}
             onRowSelect={(r) => setSelectedId(r.id)}
             // 組み込み（0・1）は消せないので、選べるのはそれ以外だけ
@@ -375,7 +375,7 @@ export default function ImpurityPatternsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-3">
             {m.impurityPatterns.exemptions}
             {selected && (
               <span className="bg-primary text-primary-foreground rounded px-2 py-0.5 font-mono text-sm">

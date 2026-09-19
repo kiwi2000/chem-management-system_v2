@@ -934,7 +934,7 @@ function Warning({
   locale: ReturnType<typeof useI18n>["locale"];
 }) {
   /*
-    不純物パターンで除外した寄与（S21）。**黙って消さない。**
+    不純物種別で除外した寄与（S21）。**黙って消さない。**
     「その CAS は入っているのに非該当」の理由がここでしか読めない
   */
   const excluded = j.hits.flatMap((h) => h.excluded ?? []);

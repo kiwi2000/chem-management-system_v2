@@ -48,7 +48,7 @@ export function useSubstanceListColumns({
 }) {
   const { m, locale } = useI18n();
   /**
-   * 不純物パターン（S21）の選択肢。件数が知れているので全部引く。
+   * 不純物種別（S21）の選択肢。件数が知れているので全部引く。
    * 物質を見られる人なら引けるので、権限の出し分けは要らない
    */
   const [patterns, setPatterns] = useState<ImpurityPatternDto[]>([]);
@@ -122,7 +122,7 @@ export function useSubstanceListColumns({
       },
       {
         /*
-          不純物パターン（S21）。**0「不純物ではない」は空欄で出す。**
+          不純物種別（S21）。**0「不純物ではない」は空欄で出す。**
           ほとんどの物質が 0 なので、書くと表が「0」で埋まって読めなくなる
         */
         key: "impurityPatternId",

@@ -39,18 +39,18 @@ export interface Threshold {
   upperBound: Bound;
 }
 
-/** 展開済みの組成の1行。同じ CAS でも不純物パターンが違えば別の行 */
+/** 展開済みの組成の1行。同じ CAS でも不純物種別が違えば別の行 */
 export interface ExpandedLine {
   casNormalized: string | null;
   substanceId: string | null;
   totalPct: string;
-  /** 物質の不純物パターン。省くと 0（不純物ではない） */
+  /** 物質の不純物種別。省くと 0（不純物ではない） */
   impurityPatternId?: string;
 }
 
 /**
- * 不純物パターンによる除外の問い合わせ（S21）。
- * 「このパターンの物質は、この判定の単位では非該当にするか」。
+ * 不純物種別による除外の問い合わせ（S21）。
+ * 「この種別の物質は、この判定の単位では非該当にするか」。
  * 法文物質名が単位なら id、区分そのものが単位なら null で聞く
  */
 export type ExemptResolver = (patternId: string, statutorySubstanceId: string | null) => boolean;
@@ -119,7 +119,7 @@ export interface JudgeInput {
    * **どちらでも警告は出る。**省くと `review`
    */
   conditionalLinkMode?: "hit" | "review";
-  /** 不純物パターンによる除外。省くと何も除外しない */
+  /** 不純物種別による除外。省くと何も除外しない */
   isExempt?: ExemptResolver;
 }
 
@@ -168,11 +168,11 @@ export interface JudgeUnit {
    *   該当・まとめる   … 足し合わせた CAS が、すべて並ぶ（元素換算なら換算後の値）
    *   非該当           … 製品に入っている CAS が並ぶ（閾値に届かなかった値。「含有率不足」を読むため）
    *
-   * 同じ CAS が不純物パターン違いで 2 行並ぶことがある（`pattern` で見分ける）
+   * 同じ CAS が不純物種別違いで 2 行並ぶことがある（`pattern` で見分ける）
    */
   contributions: { cas: string; pct: string; sources: string[]; pattern: string }[];
   /**
-   * **不純物パターンの設定で除外した寄与**（S21）。閾値とは比べていない。
+   * **不純物種別の設定で除外した寄与**（S21）。閾値とは比べていない。
    * 「不純物のため非該当」として画面に出すために、消さずに残す。含有率はそのままの値
    */
   excluded: { cas: string; pct: string; pattern: string }[];
@@ -243,7 +243,7 @@ export function judge(input: JudgeInput): JudgeResult {
   const { lines, category, entries, factors } = input;
   const linkMode = input.conditionalLinkMode ?? "review";
   const isExempt = input.isExempt ?? (() => false);
-  /** CAS → その CAS の行（不純物パターンごとに 1 行）。同じ CAS が複数並ぶことがある */
+  /** CAS → その CAS の行（不純物種別ごとに 1 行）。同じ CAS が複数並ぶことがある */
   const byCas = new Map<string, ExpandedLine[]>();
   for (const l of lines) {
     if (!l.casNormalized) continue;
@@ -253,7 +253,7 @@ export function judge(input: JudgeInput): JudgeResult {
   }
   const patternOf = (l: ExpandedLine) => l.impurityPatternId ?? IMPURITY_NONE;
   /**
-   * その単位で見る行を、閾値と比べる行と、不純物パターンで除外する行に分ける（S21）。
+   * その単位で見る行を、閾値と比べる行と、不純物種別で除外する行に分ける（S21）。
    * 除外は「法文物質名の上書き → 区分の設定 → 除外しない」の順に決めてある（isExempt が答える）
    */
   const splitLines = (cas: string[], statutorySubstanceId: string | null) => {
@@ -290,7 +290,7 @@ export function judge(input: JudgeInput): JudgeResult {
   /** その CAS を結んでいるデータソース。区分でまとめたときは、関わった全部を合わせる */
   const sourcesOf = (c: string) => [...new Set(entries.flatMap((e) => e.sourcesOf?.[c] ?? []))];
 
-  /** 1 単位ぶんの計算。理由はこの単位のものだけを集める。行は CAS × パターンごと */
+  /** 1 単位ぶんの計算。理由はこの単位のものだけを集める。行は CAS × 種別ごと */
   const unitOf = (statutorySubstanceId: string | null, excluded: JudgeUnit["excluded"]) => {
     const reasons = new Set<ReviewReason>(common);
     const shareOf = (list: ExpandedLine[], mode: Aggregation, target: string | null) =>
@@ -369,7 +369,7 @@ export function judge(input: JudgeInput): JudgeResult {
     const { compared, exempt } = splitLines(presentAll, e.id);
     const u = unitOf(e.id, excludedOf(exempt));
     /*
-      入っている行が全部、不純物パターンで除外されたら**不純物のため非該当**。
+      入っている行が全部、不純物種別で除外されたら**不純物のため非該当**。
       閾値とは比べず、条件つき・閾値未設定の理由も付けない（除外が先に決まる）
     */
     if (compared.length === 0) {
@@ -398,7 +398,7 @@ export function judge(input: JudgeInput): JudgeResult {
         当たったものは全部拾う（最初の1件で打ち切ると、残りが見えなくなる）。
         どれかが超えれば、この法文物質名が該当
       */
-      // 行は CAS × パターンごと。**パターンをまたいで足さない**（S21 決定）
+      // 行は CAS × 種別ごと。**種別をまたいで足さない**（S21 決定）
       const matched = compared.filter((l) => within(u.valueOf(l, "NONE", null), e.threshold));
       if (matched.length > 0) {
         markConditionalLink(casOfLines(matched));
@@ -408,7 +408,7 @@ export function judge(input: JudgeInput): JudgeResult {
         continue;
       }
     } else {
-      // まとめる。足した値ひとつを閾値と比べる（除外されなかった行は、パターンに関わらず足す）
+      // まとめる。足した値ひとつを閾値と比べる（除外されなかった行は、種別に関わらず足す）
       let total = 0n;
       for (const l of compared) total += u.valueOf(l, e.aggregation, e.metalEtc);
       if (within(total, e.threshold)) {

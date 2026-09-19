@@ -47,7 +47,7 @@ export interface CategoryRule {
   categoryId: string;
   category: Parameters<typeof judge>[0]["category"];
   entries: JudgeEntry[];
-  /** 不純物パターンによる除外（S21）。この区分の設定と、法文物質名の上書きから答える */
+  /** 不純物種別による除外（S21）。この区分の設定と、法文物質名の上書きから答える */
   isExempt: ExemptResolver;
 }
 
@@ -160,7 +160,7 @@ export async function loadRules(
   );
 
   /*
-    不純物パターンの除外（S21）。区分の設定と、法文物質名の上書き。
+    不純物種別の除外（S21）。区分の設定と、法文物質名の上書き。
     「法文物質名の上書き → 区分の設定 → 除外しない」の順に答える
   */
   const [exemptions, overrides] = await Promise.all([
@@ -173,14 +173,14 @@ export async function loadRules(
       select: { patternId: true, statutorySubstanceId: true, excluded: true },
     }),
   ]);
-  /** 区分 → パターン → 除外する */
+  /** 区分 → 種別 → 除外する */
   const byCategory = new Map<string, Map<string, boolean>>();
   for (const x of exemptions) {
     const m = byCategory.get(x.categoryId) ?? new Map<string, boolean>();
     m.set(x.patternId, x.excluded);
     byCategory.set(x.categoryId, m);
   }
-  /** `パターン/法文物質名` → 上書き */
+  /** `種別/法文物質名` → 上書き */
   const bySubstance = new Map(
     overrides.map((x) => [`${x.patternId}/${x.statutorySubstanceId}`, x.excluded]),
   );
@@ -442,7 +442,7 @@ export async function judgeProduct(
           decidedNote: a.decidedNote,
           versionId: version,
           // 根拠。見た CAS が無ければ（区分でまとめる区分に何も入っていない）行は作らない。
-          // 不純物パターンで除外した行しか無いときも、除外したことを根拠として残す
+          // 不純物種別で除外した行しか無いときも、除外したことを根拠として残す
           hits: {
             create:
               unit.contributions.length > 0 || unit.excluded.length > 0

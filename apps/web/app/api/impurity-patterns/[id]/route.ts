@@ -66,7 +66,7 @@ export async function PUT(req: Request, { params }: Ctx) {
  * DELETE /api/impurity-patterns/[id] — 削除。
  *
  * 組み込み（0・1）は消せない。使っている物質があるときも、件数を示して断る。
- * 付け替えてから消してもらう（黙って物質のパターンを 0 に戻すと、判定が静かに変わる）
+ * 付け替えてから消してもらう（黙って物質の種別を 0 に戻すと、判定が静かに変わる）
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const actor = await requirePermission("REGULATION_EDIT");

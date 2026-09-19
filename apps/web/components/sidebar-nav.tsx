@@ -96,7 +96,7 @@ const ITEMS: NavItem[] = [
         needs: "REGULATION_VIEW",
         match: ["/external-db"],
       },
-      // 換算係数・元素・不純物パターンは法規制の判定にしか使わないので、ここに置く
+      // 換算係数・元素・不純物種別は法規制の判定にしか使わないので、ここに置く
       { href: "/metal-factors", key: "metalFactors", icon: Sigma, needs: "REGULATION_VIEW" },
       {
         href: "/impurity-patterns",

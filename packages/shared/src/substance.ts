@@ -70,7 +70,7 @@ export const substanceSchema = (m: Messages) =>
      */
     casRepresentativeSuccessorId: z.string().trim().max(50).nullish(),
     /**
-     * 不純物パターン（S21）。不純物として入る物質は、パターンごとに別の物質として登録する。
+     * 不純物種別（S21）。不純物として入る物質は、種別ごとに別の物質として登録する。
      * 省くと 0「不純物ではない」のまま
      */
     impurityPatternId: z.string().trim().max(50).optional(),

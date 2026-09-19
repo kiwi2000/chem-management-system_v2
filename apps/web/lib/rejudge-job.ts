@@ -198,7 +198,7 @@ export async function premisesChangedAt(versionId: string): Promise<Date | null>
     prisma.linkVersionSource.aggregate({ where: { versionId }, _max: { updatedAt: true } }),
     prisma.statutorySubstance.aggregate({ _max: { updatedAt: true } }),
     prisma.regulationCategory.aggregate({ _max: { updatedAt: true } }),
-    // 不純物パターンと除外の設定（S21）。変えると判定の前提が変わる
+    // 不純物種別と除外の設定（S21）。変えると判定の前提が変わる
     prisma.impurityPattern.aggregate({ _max: { updatedAt: true } }),
     prisma.impurityExemption.aggregate({ _max: { updatedAt: true } }),
     prisma.impurityExemptionSubstance.aggregate({ _max: { updatedAt: true } }),

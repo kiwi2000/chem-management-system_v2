@@ -68,7 +68,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
    * 他にいなければ自動で代表になるので、その場合は何も出さない。
    */
   const [casSiblings, setCasSiblings] = useState<CasSiblingDto[]>([]);
-  /** 不純物パターン（S21）。既定は 0「不純物ではない」 */
+  /** 不純物種別（S21）。既定は 0「不純物ではない」 */
   const [impurityPatternId, setImpurityPatternId] = useState(
     initial?.impurityPatternId ?? IMPURITY_NONE,
   );
@@ -109,7 +109,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
     let alive = true;
     const timer = setTimeout(() => {
       void (async () => {
-        // 同じ CAS でも不純物パターンが違えば別の物質。代表もその組ごとなので、パターンで絞る
+        // 同じ CAS でも不純物種別が違えば別の物質。代表もその組ごとなので、種別で絞る
         const params = new URLSearchParams({ cas, pattern: impurityPatternId });
         if (initial?.id) params.set("exclude", initial.id);
         const res = await fetch(`/api/substances/cas-siblings?${params}`).catch(() => null);
@@ -368,8 +368,8 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                   )}
                 </div>
                 {/*
-                  不純物パターン（S21）。不純物として入る物質は、パターンごとに別の物質として登録する。
-                  どの規制区分で非該当にするかは「法規制 > 不純物パターン」で決める
+                  不純物種別（S21）。不純物として入る物質は、種別ごとに別の物質として登録する。
+                  どの規制区分で非該当にするかは「法規制 > 不純物種別」で決める
                 */}
                 <div className="space-y-2">
                   <Label htmlFor="impurity-pattern">{m.substances.impurityPattern}</Label>

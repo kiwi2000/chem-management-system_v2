@@ -406,15 +406,15 @@ SystemSetting / AuditLog / ImportJob : 独立
 |---|---|---|
 | `link_version_sources` | `enabled` Boolean NOT NULL default true | 外すと、その版ではその種別を**無いものとして扱う**。リンクは残る（戻せる）。判定・採用の勝ち負け・画面・帳票・スコアのどれにも出ない。条件は「**無効にされていない**」で書く（「有効なものに限る」にすると、版に並んでいない種別まで落ちる） |
 
-#### 不純物パターン（S21・2026-09-18）
+#### 不純物種別（S21・2026-09-18）
 | 表 | 主な列 | 説明 |
 |---|---|---|
 | `impurity_patterns` | `code`/`code_normalized` UNIQUE、`name_ja`/`name_en`、`display_order`、`builtin` | 「同じ該非判定になる不純物どうし」の区分。組み込みは id 固定（`ip-none`＝0 不純物ではない、`ip-impurity`＝1 不純物）。論理削除 |
-| `impurity_exemptions` | `(pattern_id, category_id)` UNIQUE、`excluded` | パターン × 規制区分。行が無ければ除外しない |
-| `impurity_exemption_substances` | `(pattern_id, statutory_substance_id)` UNIQUE、`excluded` | パターン × 法文物質名。**区分の設定を両方向に上書き**する |
+| `impurity_exemptions` | `(pattern_id, category_id)` UNIQUE、`excluded` | 種別 × 規制区分。行が無ければ除外しない |
+| `impurity_exemption_substances` | `(pattern_id, statutory_substance_id)` UNIQUE、`excluded` | 種別 × 法文物質名。**区分の設定を両方向に上書き**する |
 | `substances` | `impurity_pattern_id` NOT NULL default `ip-none` | 物質の属性。代表物質の部分一意索引は **`(cas_normalized, impurity_pattern_id)`** に変えた |
 | `product_expansion_lines` | `impurity_pattern_id` NOT NULL default `ip-none` | 展開結果。一意キーは `(product_id, cas_normalized, substance_id, impurity_pattern_id)`（索引名 `product_expansion_lines_key_cas_pattern`） |
-| `product_judgement_hits` | `excluded` Json? | 不純物パターンで除外した寄与（`[{ cas, pct, pattern }]`）。閾値と比べていない |
+| `product_judgement_hits` | `excluded` Json? | 不純物種別で除外した寄与（`[{ cas, pct, pattern }]`）。閾値と比べていない |
 
 判定での効きかたは `docs/judgment-engine.md` §4-3、設計判断は `docs/decisions/0014`。
 
@@ -489,4 +489,4 @@ SystemSetting / AuditLog / ImportJob : 独立
 |---|---|---|
 | 0.1 | 2026-07-02 | 初版。要件定義書 v0.7 第3章に基づく全エンティティ定義（3DB移植制約込み）。 |
 | 0.2 | 2026-07-02 | ID戦略を追加（§1.4）。主要マスタにユーザー付与の業務キー `code`（＋内部サロゲート `id`）を導入。物質/製品/法律/規制区分に `code`/`code_normalized` を追加。 |
-| 0.3 | 2026-09-18 | 実装後に足した表・列を §3.9 に追加（データソースの有効／無効、不純物パターン一式、物質名のビュー、承認履歴の実行者FK）。Q-V2（優先度はグローバルか版別か）を「版別」で確定。冒頭に「定義の正は prisma/schema.prisma」を明記。 |
+| 0.3 | 2026-09-18 | 実装後に足した表・列を §3.9 に追加（データソースの有効／無効、不純物種別一式、物質名のビュー、承認履歴の実行者FK）。Q-V2（優先度はグローバルか版別か）を「版別」で確定。冒頭に「定義の正は prisma/schema.prisma」を明記。 |

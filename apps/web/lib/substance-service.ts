@@ -124,7 +124,7 @@ export async function collectWarnings(
   excludeSubstanceId: string | null,
   settings: AppSettings,
   m: Messages,
-  /** 不純物パターン（S21）。同じ CAS でもパターンが違えば別の物質なので、数えるのは同じ組だけ */
+  /** 不純物種別（S21）。同じ CAS でも種別が違えば別の物質なので、数えるのは同じ組だけ */
   impurityPatternId = IMPURITY_NONE,
 ): Promise<string[]> {
   const warnings: string[] = [];
@@ -181,7 +181,7 @@ export async function collectWarnings(
 type Db = Pick<typeof prisma, "substance">;
 
 /**
- * 同じCAS・**同じ不純物パターン**の、生きている他の物質（S21）。
+ * 同じCAS・**同じ不純物種別**の、生きている他の物質（S21）。
  * 代表はこの組ごとに 1 件なので、選び直す相手もこの組の中
  */
 export function casSiblings(

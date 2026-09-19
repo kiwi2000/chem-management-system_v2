@@ -20,7 +20,7 @@ export const COMPOSITION_INCLUDE = {
       casNumber: true,
       score: true,
       scoreRank: true,
-      // 不純物パターン（S21）。合算は CAS × パターンで分ける
+      // 不純物種別（S21）。合算は CAS × 種別で分ける
       impurityPatternId: true,
     },
   },

@@ -115,8 +115,8 @@ async function linkDataOf(
  * ほぼ全部の CAS に全部の区分が並び、印としての意味が無くなる。
  */
 /**
- * 合算表の行の鍵。**CAS × 不純物パターン**（S21）。
- * 判定の根拠に残っているパターンが 0 のときは省くので、揃えて `IMPURITY_NONE` に寄せる
+ * 合算表の行の鍵。**CAS × 不純物種別**（S21）。
+ * 判定の根拠に残っている種別が 0 のときは省くので、揃えて `IMPURITY_NONE` に寄せる
  */
 export const casPatternKey = (cas: string, pattern?: string | null) =>
   `${cas}@${pattern || IMPURITY_NONE}`;
@@ -211,8 +211,8 @@ export async function regulationsByCas(
   */
 
   /**
-   * 「CAS × 不純物パターン」→ 効いている区分。同じ区分に複数の法文物質名で当たっても1つにまとめる。
-   * **パターンを鍵に入れる**（S21）。CAS だけで引くと、不純物として入っている行にも
+   * 「CAS × 不純物種別」→ 効いている区分。同じ区分に複数の法文物質名で当たっても1つにまとめる。
+   * **種別を鍵に入れる**（S21）。CAS だけで引くと、不純物として入っている行にも
    * 主成分で当たった区分が出てしまう
    */
   const byCas = new Map<string, Map<string, RowRegulationDto>>();

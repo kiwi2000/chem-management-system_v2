@@ -40,7 +40,7 @@ import type { CompositionAggregateDto } from "@/lib/types";
 
 /**
  * CASを持たない物質はまとめようがないので、物質IDそのものを鍵にする。
- * **不純物パターン（S21）が違えば別の行**にする（パターンをまたいで足さない）
+ * **不純物種別（S21）が違えば別の行**にする（種別をまたいで足さない）
  */
 const keyOf = (casNormalized: string | null, substanceId: string, pattern: string) =>
   casNormalized ? `cas:${casNormalized}@${pattern}` : `sub:${substanceId}`;
@@ -48,7 +48,7 @@ const keyOf = (casNormalized: string | null, substanceId: string, pattern: strin
 interface Bucket {
   casNumber: string | null;
   casNormalized: string | null;
-  /** 不純物パターン（S21）。0 は「不純物ではない」 */
+  /** 不純物種別（S21）。0 は「不純物ではない」 */
   impurityPatternId: string;
   /** 代表が決まるまでの仮の名前。いちばん最初に見つけた物質のもの */
   code: string;
@@ -276,7 +276,7 @@ export async function aggregateComposition(
             impurityPatternId: true,
           },
         });
-  // 代表は CAS × 不純物パターンごとに 1 件（S21）
+  // 代表は CAS × 不純物種別ごとに 1 件（S21）
   const byCas = new Map(
     representatives.map((r) => [`${r.casNormalized ?? ""}@${r.impurityPatternId}`, r]),
   );
@@ -322,8 +322,8 @@ export async function aggregateComposition(
         note: b.notes.join("／") || null,
         /*
           判定は正規化した CAS で紐づいている（表示用の CAS 番号ではない）。
-          **規制は CAS × 不純物パターンで引く**（S21）。除外した区分が不純物の行に出ないようにする。
-          含有率不足のほうはリンクの側にパターンが無いので、CAS だけで引く
+          **規制は CAS × 不純物種別で引く**（S21）。除外した区分が不純物の行に出ないようにする。
+          含有率不足のほうはリンクの側に種別が無いので、CAS だけで引く
         */
         regulations:
           (b.casNormalized
