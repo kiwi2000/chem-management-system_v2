@@ -1901,6 +1901,7 @@ export const ja = {
     aggregateSplitByCategory: "規制区分ごとに分ける",
     aggregateGroupByRegion: "地域にまとめる",
     aggregateGroupByLaw: "法律にまとめる",
+    aggregateGroupByCountry: "国にまとめる",
     aggregateOnlyThis: "これに該当する行だけを見る",
     aggregateShowAllRows: "すべての行を見る",
     aggregateFocused: (name: string, n: number) =>

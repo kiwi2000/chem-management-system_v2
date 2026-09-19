@@ -1820,6 +1820,7 @@ export const en: Messages = {
     aggregateSplitByCategory: "split into categories",
     aggregateGroupByRegion: "group by region",
     aggregateGroupByLaw: "group by law",
+    aggregateGroupByCountry: "Group by country",
     aggregateOnlyThis: "show only matching rows",
     aggregateShowAllRows: "show all rows",
     aggregateFocused: (name: string, n: number) =>

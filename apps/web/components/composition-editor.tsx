@@ -681,7 +681,8 @@ export function CompositionEditor({
               </colgroup>
               {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
               <thead className="sticky top-0 z-20">
-                <tr className="table-head-solid text-table-head-foreground text-left [&>th]:border-t">
+                {/* **見出しの項目名は中央に寄せる**（2026-09-20 指示）。中身の寄せは変えない */}
+                <tr className="table-head-solid text-table-head-foreground text-center [&>th]:border-t">
                   {/* 行をつかんで並べ替えるためのつまみ。幅は固定（つまみの大きさで決まる） */}
                   {editing && <th className={cn(CELL, "w-8")} />}
                   <th className={cn(CELL, "relative font-medium")}>
@@ -696,20 +697,20 @@ export function CompositionEditor({
                     {m.composition.elementName}
                     {cols.handle("elementName", `${m.composition.elementName} ${m.table.resize}`)}
                   </th>
-                  <th className={cn(CELL, "relative text-right font-medium whitespace-nowrap")}>
+                  <th className={cn(CELL, "relative text-center font-medium whitespace-nowrap")}>
                     {m.composition.contentPct}
                     {/* 列が2つ並ぶときだけ、どちらの重量%かを添える */}
                     {showWithin && (
-                      <span className="text-muted-foreground block text-xs font-normal">
+                      <span className="block text-xs font-normal opacity-80">
                         {m.composition.pctOfProduct}
                       </span>
                     )}
                     {cols.handle("contentPct", `${m.composition.contentPct} ${m.table.resize}`)}
                   </th>
                   {showWithin && (
-                    <th className={cn(CELL, "relative text-right font-medium whitespace-nowrap")}>
+                    <th className={cn(CELL, "relative text-center font-medium whitespace-nowrap")}>
                       {m.composition.contentPct}
-                      <span className="text-muted-foreground block text-xs font-normal">
+                      <span className="block text-xs font-normal opacity-80">
                         {m.composition.pctWithinMaterial}
                       </span>
                       {cols.handle(
