@@ -8,7 +8,7 @@ import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import {
   MatchedCells,
   OneLine,
-  reasonText,
+  reasonTexts,
   unitName,
   type M,
 } from "@/components/product-judgements";
@@ -204,8 +204,8 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
                       {m.judgements.needsReview}
                     </Badge>
                     <ul className="text-muted-foreground list-disc space-y-0.5 pl-4 text-xs">
-                      {p.reviewReasons.map((r) => (
-                        <li key={r}>{reasonText(m, r)}</li>
+                      {reasonTexts(m, p).map((t) => (
+                        <li key={t}>{t}</li>
                       ))}
                     </ul>
                   </div>

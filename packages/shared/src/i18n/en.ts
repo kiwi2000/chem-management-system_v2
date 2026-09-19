@@ -1141,6 +1141,8 @@ export const en: Messages = {
     reasonTruncated: "The material nesting was too deep to expand fully.",
     reasonConditional:
       "The exemption carries conditions beyond concentration (formulation, colouring, use). It does not apply unless those are met.",
+    reasonConditionWith: (condition: string) =>
+      `Applies only when: "${condition}". Outside that condition it is non-applicable.`,
     reasonUnfilled:
       "No threshold is set for this entry because its exemption cannot be reduced to a single number. Read the text and decide.",
     reasonConditionalLink:

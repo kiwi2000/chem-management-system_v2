@@ -199,6 +199,12 @@ export interface JudgementHitDto {
   /** 法律が付けている番号（政令番号など） */
   officialNumber: string | null;
   /**
+   * 法文物質名に書いてある適用条件（剤型・用途など、濃度以外の条件）。
+   * **要確認の理由に、決まり文句ではなく実際の条文を出すため**（2026-09-20 指示）。
+   * 区分そのものが判定の単位のときは null（条件は法文物質名に付くため）
+   */
+  applicableCondition: string | null;
+  /**
    * 元素換算でまとめて判定した法文物質名なら、その元素（「鉛として」の鉛）。
    * 名前の後ろに「（鉛として）」と添える。区分そのものが当たったときや、元素換算でないときは null
    */
@@ -256,6 +262,12 @@ export interface ProductJudgementDto {
   statutoryName: string | null;
   /** 法律が付けている番号（政令番号など） */
   officialNumber: string | null;
+  /**
+   * 法文物質名に書いてある適用条件（剤型・用途など、濃度以外の条件）。
+   * **要確認の理由に、決まり文句ではなく実際の条文を出すため**（2026-09-20 指示）。
+   * 区分そのものが判定の単位のときは null（条件は法文物質名に付くため）
+   */
+  applicableCondition: string | null;
   /** 元素換算でまとめて判定した法文物質名なら、その元素（「鉛として」の鉛） */
   asElement: AsElementDto | null;
   /** 法文物質名の適用開始日（YYYY-MM-DD）。無ければ空 */
@@ -331,6 +343,8 @@ export interface MatchedProductDto {
   statutorySubstanceId: string | null;
   statutoryName: string | null;
   officialNumber: string | null;
+  /** 法文物質名の適用条件。要確認の理由に条文を出す（2026-09-20 指示） */
+  applicableCondition: string | null;
   asElement: AsElementDto | null;
   effectiveFrom: string | null;
   notYetEffective: boolean;

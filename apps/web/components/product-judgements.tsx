@@ -1044,8 +1044,8 @@ function Warning({
             {j.needsReview ? m.judgements.needsReview : m.judgements.warning}
           </span>
           <ul className="text-muted-foreground list-disc space-y-0.5 pl-4 text-xs">
-            {j.reviewReasons.map((r) => (
-              <li key={r}>{reasonText(m, r)}</li>
+            {reasonTexts(m, j).map((t) => (
+              <li key={t}>{t}</li>
             ))}
           </ul>
           {/* 前提が変わって当てはめなかった以前の判断。何を外したのかが分からないと判断し直せない */}
@@ -1202,6 +1202,40 @@ export function OneLine({ text }: { text: string }) {
     >
       {text}
     </div>
+  );
+}
+
+/**
+ * 判定の行に付いている適用条件。
+ * 法文物質名が単位ならその条件、区分が単位なら当たった法文物質名の条件を重複なしで集める
+ */
+export function conditionsOf(j: {
+  applicableCondition: string | null;
+  hits?: { applicableCondition: string | null }[];
+}): string[] {
+  const list = [j.applicableCondition, ...(j.hits ?? []).map((h) => h.applicableCondition)]
+    .map((c) => (c ?? "").trim())
+    .filter((c) => c !== "");
+  return [...new Set(list)];
+}
+
+/**
+ * 要確認の理由の並び。**適用条件が書いてあれば、決まり文句ではなく条文を出す**
+ * （2026-09-20 指示。毎回同じ文では、何を確かめればよいのか分からない）
+ */
+export function reasonTexts(
+  m: M,
+  j: {
+    reviewReasons: string[];
+    applicableCondition: string | null;
+    hits?: { applicableCondition: string | null }[];
+  },
+): string[] {
+  const conditions = conditionsOf(j);
+  return j.reviewReasons.flatMap((r) =>
+    r === "conditionalExclusion" && conditions.length > 0
+      ? conditions.map((c) => m.judgements.reasonConditionWith(c))
+      : [reasonText(m, r)],
   );
 }
 

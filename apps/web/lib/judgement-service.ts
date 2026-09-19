@@ -225,6 +225,8 @@ async function loadSubstanceInfo(ids: string[]) {
       effectiveFrom: true,
       aggregation: true,
       metalEtc: true,
+      // 要確認の文言に、実際の条文を出すため（2026-09-20 指示）
+      applicableCondition: true,
     },
   });
   return new Map(rows.map((s) => [s.id, s]));
@@ -238,6 +240,7 @@ type SubstanceInfo = Prisma.StatutorySubstanceGetPayload<{
     effectiveFrom: true;
     aggregation: true;
     metalEtc: true;
+    applicableCondition: true;
   };
 }>;
 
@@ -316,6 +319,7 @@ async function buildJudgementDtos(
         statutorySubstanceId: r.statutorySubstanceId || null,
         statutoryName: info ? (info.nameJa ?? info.nameOriginal) : null,
         officialNumber: info?.officialNumber ?? null,
+        applicableCondition: info?.applicableCondition ?? null,
         asElement: info ? asElementOf(elementNames, r.category, info) : null,
         effectiveFrom: mark.effectiveFrom,
         notYetEffective: mark.notYetEffective,
@@ -364,6 +368,7 @@ async function buildJudgementDtos(
               return {
                 name: info ? (info.nameJa ?? info.nameOriginal) : null,
                 officialNumber: info?.officialNumber ?? null,
+                applicableCondition: info?.applicableCondition ?? null,
                 asElement: info ? asElementOf(elementNames, r.category, info) : null,
                 contributions,
                 excluded,
@@ -558,6 +563,7 @@ export async function toMatchedProducts(
           statutorySubstanceId: r.statutorySubstanceId || null,
           statutoryName: info ? (info.nameJa ?? info.nameOriginal) : null,
           officialNumber: info?.officialNumber ?? null,
+          applicableCondition: info?.applicableCondition ?? null,
           asElement: info ? asElementOf(elementNames, category, info) : null,
           effectiveFrom: mark.effectiveFrom,
           notYetEffective: mark.notYetEffective,
@@ -570,6 +576,7 @@ export async function toMatchedProducts(
             ? r.hits.map((h): JudgementHitDto => ({
                 name: info ? (info.nameJa ?? info.nameOriginal) : null,
                 officialNumber: info?.officialNumber ?? null,
+                applicableCondition: info?.applicableCondition ?? null,
                 asElement: info ? asElementOf(elementNames, category, info) : null,
                 contributions: (h.contributions ?? []) as {
                   cas: string;
