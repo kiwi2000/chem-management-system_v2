@@ -20,6 +20,8 @@ import { notDisabledIn } from "@/lib/enabled-sources";
  * 区別できなくなるため。
  */
 export interface SubstanceNumber {
+  /** どのインベントリのものか。表の列と突き合わせるのに使う */
+  inventoryId: string;
   /** インベントリに付けた呼び名。そのまま画面の見出しになる */
   label: string;
   number: string;
@@ -33,20 +35,27 @@ export interface SubstanceNumber {
  * **行が1件も無いインベントリでも列は出す。**組成のまとめ表では、
  * 空欄と列そのものの不在は意味が違う（載っていない、と読めるようにする）
  */
-export async function listShownInventories(): Promise<{ label: string; source: string }[]> {
+export async function listInventoryColumns(): Promise<
+  { id: string; label: string; source: string; shown: boolean }[]
+> {
   const inventories = await prisma.inventory.findMany({
-    where: { deletedAt: null, numberShown: true, numberLabel: { not: null } },
+    where: { deletedAt: null },
     select: {
+      id: true,
       nameJa: true,
       nameOriginal: true,
       numberLabel: true,
+      numberShown: true,
       country: { select: { nameJa: true } },
     },
     orderBy: { numberOrder: "asc" },
   });
   return inventories.map((i) => ({
-    label: i.numberLabel as string,
+    id: i.id,
+    // 呼び名を付けていないインベントリは、名前をそのまま見出しにする（物質の表と同じ）
+    label: i.numberLabel ?? i.nameJa ?? i.nameOriginal,
     source: `${i.country.nameJa} ${i.nameJa ?? i.nameOriginal}`,
+    shown: i.numberShown && i.numberLabel !== null,
   }));
 }
 
@@ -65,6 +74,11 @@ export async function listShownInventories(): Promise<{ label: string; source: s
  */
 export async function listNumbersByCas(
   casNormalized: string[],
+  /**
+   * すべてのインベントリを引くか。既定は「番号として出す」と決めたものだけ。
+   * 組成のまとめ表は、画面の「全てのインベントリを表示」で切り替えるので全部引く
+   */
+  opts?: { all?: boolean },
 ): Promise<Map<string, SubstanceNumber[]>> {
   const result = new Map<string, SubstanceNumber[]>();
   const cas = [...new Set(casNormalized.filter((c) => c))];
@@ -82,7 +96,9 @@ export async function listNumbersByCas(
     呼び名が無いと見出しの無い番号が並ぶので、印が立っていても出さない
   */
   const inventories = await prisma.inventory.findMany({
-    where: { deletedAt: null, numberShown: true, numberLabel: { not: null } },
+    where: opts?.all
+      ? { deletedAt: null }
+      : { deletedAt: null, numberShown: true, numberLabel: { not: null } },
     select: {
       id: true,
       nameJa: true,
@@ -136,7 +152,8 @@ export async function listNumbersByCas(
       if (rankOf(row.sourceId) !== best.get(`${row.inventoryId}/${row.casNormalized}`)) continue;
       const list = result.get(row.casNormalized) ?? [];
       list.push({
-        label: inv.numberLabel as string,
+        inventoryId: inv.id,
+        label: inv.numberLabel ?? inv.nameJa ?? inv.nameOriginal,
         number: row.value,
         source: `${inv.country.nameJa} ${inv.nameJa ?? inv.nameOriginal}`,
       });

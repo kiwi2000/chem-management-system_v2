@@ -125,6 +125,11 @@ interface Props {
   /** 読み込んだデータソースの並びを親へ返す（札に出すため） */
   onSourcesChange?: (sources: SourceInfo[]) => void;
   /**
+   * インベントリを全部出すか。切っているあいだは「番号として出す」と
+   * 決めてあるものだけ（物質の表と同じ切り替え。2026-09-20 指示）
+   */
+  showAllInventories?: boolean;
+  /**
    * 含有率不足で当たっていないものの件数を親へ返す。
    * **ボタンの右に出す**（2026-09-19 指示）。0 件のときに押しても何も変わらず、
    * 押したのに効いていないのか、そもそも無いのかが分からなかった
@@ -447,6 +452,7 @@ export function CompositionAggregateTable({
   showDiff = false,
   onSourcesChange,
   onNearMissCountChange,
+  showAllInventories = false,
   onPreviousVersionChange,
 }: Props) {
   const { m, locale } = useI18n();
@@ -485,8 +491,15 @@ export function CompositionAggregateTable({
     番号を出すと決めてあるインベントリだけが並ぶ（インベントリの画面で決める）。
     **行が1件も無くても列は出す。**空欄と列の不在は意味が違う（載っていない、と読めるように）
   */
-  const inventories = data?.inventories ?? [];
-  const invCols = inventories.map((i) => ({ key: `inv:${i.label}`, width: 132 }));
+  const inventories = (data?.inventories ?? []).filter((i) => showAllInventories || i.shown);
+  /** インベントリの列を分けているか。**既定は閉じる**（2026-09-20 指示。横に長くしない） */
+  const [invOpen, setInvOpen] = useState(false);
+  const invCols =
+    inventories.length === 0
+      ? []
+      : invOpen
+        ? inventories.map((i) => ({ key: `inv:${i.id}`, width: 132 }))
+        : [{ key: "inv:all", width: 120 }];
   /*
     **組成そのものの列（CAS〜備考）は出し入れできる。**隠したぶんは端末に覚える。
     法規の列は中身で増減するので対象にしない。全部隠すと行が読めなくなるので、最後の1つは残す
@@ -793,8 +806,23 @@ export function CompositionAggregateTable({
                   </th>
                 )}
                 {invCols.length > 0 && (
-                  <th colSpan={invCols.length} className={cn(CELL, "text-center font-medium")}>
-                    {m.composition.aggregateInventories}
+                  <th colSpan={invCols.length} className={cn(CELL, "p-0 font-medium")}>
+                    {/* 押すとインベントリごとの列に分かれる。もう一度押すとまとまる */}
+                    <button
+                      type="button"
+                      className="hover:bg-primary-foreground/10 flex w-full items-center justify-center gap-1 px-2 py-1"
+                      aria-expanded={invOpen}
+                      onClick={() => setInvOpen((v) => !v)}
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "size-3.5 shrink-0 transition-transform",
+                          invOpen && "rotate-90",
+                        )}
+                        aria-hidden="true"
+                      />
+                      <span className="truncate">{m.composition.aggregateInventories}</span>
+                    </button>
                   </th>
                 )}
               </tr>
@@ -843,17 +871,26 @@ export function CompositionAggregateTable({
                   </th>
                 ))}
                 {/* インベントリの見出しは、下の段（国・法律・区分）まで貫いて1つのセルにする */}
-                {inventories.map((i) => (
-                  <th
-                    key={i.label}
-                    rowSpan={4}
-                    className={cn(CELL, "relative align-bottom font-medium")}
-                    title={i.source}
-                  >
-                    {i.label}
-                    {cols.handle(`inv:${i.label}`, `${i.label} ${m.table.resize}`)}
-                  </th>
-                ))}
+                {invOpen
+                  ? inventories.map((i) => (
+                      <th
+                        key={i.id}
+                        rowSpan={4}
+                        className={cn(CELL, "relative align-bottom font-medium")}
+                        title={i.source}
+                      >
+                        {i.label}
+                        {cols.handle(`inv:${i.id}`, `${i.label} ${m.table.resize}`)}
+                      </th>
+                    ))
+                  : invCols.length > 0 && (
+                      <th rowSpan={4} className={cn(CELL, "relative")}>
+                        {cols.handle(
+                          "inv:all",
+                          `${m.composition.aggregateInventories} ${m.table.resize}`,
+                        )}
+                      </th>
+                    )}
               </tr>
 
               {/* 国の段。地域を分けたとき、法律の1つ上に国名を出す。押す操作は無い */}
@@ -1107,14 +1144,28 @@ export function CompositionAggregateTable({
                         インベントリの番号。同じインベントリに複数付くことがあるので並べる。
                         載っていなければ空欄（「載っていない」と読む）
                       */}
-                      {inventories.map((i) => {
-                        const got = row.numbers.filter((n) => n.label === i.label);
-                        return (
-                          <td key={i.label} className={cn(CELL, "font-mono text-xs")}>
-                            {got.map((n) => n.number).join("、")}
-                          </td>
-                        );
-                      })}
+                      {invOpen ? (
+                        inventories.map((i) => {
+                          const got = row.numbers.filter((n) => n.inventoryId === i.id);
+                          return (
+                            <td key={i.id} className={cn(CELL, "font-mono text-xs")}>
+                              {got.map((n) => n.number).join("、")}
+                            </td>
+                          );
+                        })
+                      ) : invCols.length > 0 ? (
+                        /* まとめているときは、載っているインベントリの数だけ出す（地域の列と同じ読みかた） */
+                        <td className={cn(CELL, "text-center")}>
+                          {(() => {
+                            const ids = new Set(
+                              row.numbers
+                                .filter((n) => inventories.some((i) => i.id === n.inventoryId))
+                                .map((n) => n.inventoryId),
+                            );
+                            return ids.size > 0 ? ids.size.toLocaleString(locale) : "—";
+                          })()}
+                        </td>
+                      ) : null}
                     </tr>
                     {/*
                      * 内訳は物質コードと、製品全体に対する重量%だけ。

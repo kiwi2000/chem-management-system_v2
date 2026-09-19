@@ -508,6 +508,11 @@ export function CompositionEditor({
   const [aggregateKeys, setAggregateKeys] = useState<string[]>([]);
   /** 含有率不足で当たっていないものの件数。ボタンの右に出す */
   const [nearMissCount, setNearMissCount] = useState(0);
+  /**
+   * インベントリを全部出すか。切っているあいだは「番号として出す」と
+   * 決めてあるものだけ（物質の表と同じ切り替え。2026-09-20 指示）
+   */
+  const [allInventories, setAllInventories] = useState(false);
   /** 含有率が足りずに当たっていないものを赤字で出すか。既定は出さない */
   const [showNearMiss, setShowNearMiss] = useState(false);
   /** データソースの印を出すか。既定は出さない（ふだんは要らないので） */
@@ -984,6 +989,18 @@ export function CompositionEditor({
                   <Database className="mr-1 size-3.5" />
                   {m.composition.sourceShow}
                 </Button>
+                {/*
+                  インベントリの列を、番号として出すもの（既定）だけにするか全部出すか。
+                  **物質の表と同じ切り替え**にする（2026-09-20 指示）
+                */}
+                <label className="text-muted-foreground flex items-center gap-1 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={allInventories}
+                    onChange={(e) => setAllInventories(e.target.checked)}
+                  />
+                  {m.substanceMatrix.showAllInventories}
+                </label>
                 {showSources && sources.length > 0 && (
                   <span className="ml-[1em] inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     {sources.map((s) => (
@@ -1034,6 +1051,7 @@ export function CompositionEditor({
               showDiff={showDiff}
               onSourcesChange={setSources}
               onNearMissCountChange={setNearMissCount}
+              showAllInventories={allInventories}
               onPreviousVersionChange={setPrevious}
             />
           </div>

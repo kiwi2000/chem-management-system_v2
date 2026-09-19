@@ -16,7 +16,7 @@ import {
   previousVersion,
   regulationsByCas,
 } from "@/lib/composition-regulations";
-import { listNumbersByCas, listShownInventories } from "@/lib/substance-numbers";
+import { listNumbersByCas, listInventoryColumns } from "@/lib/substance-numbers";
 import { prisma } from "@/lib/db";
 import { visibilityWhere } from "@/lib/product-service";
 import type { Actor } from "@/lib/authz";
@@ -257,7 +257,7 @@ export async function aggregateComposition(
       truncated,
       sources: await currentSources(),
       previousVersion: (await previousVersion())?.code ?? null,
-      inventories: await listShownInventories(),
+      inventories: await listInventoryColumns(),
     };
   }
 
@@ -296,7 +296,7 @@ export async function aggregateComposition(
   */
   const nearMiss = await nearMissByCas(rootProductId, casKeys);
   // インベントリの番号（化審法番号・EC番号など）。物質の画面と同じ引きかた
-  const numbers = await listNumbersByCas(casKeys);
+  const numbers = await listNumbersByCas(casKeys, { all: true });
 
   const rows = [...buckets.values()]
     .sort((a, b) => compareFine(b.fine, a.fine))
@@ -334,7 +334,7 @@ export async function aggregateComposition(
         nearMiss: (b.casNormalized ? nearMiss.get(b.casNormalized) : undefined) ?? [],
         numbers:
           (b.casNormalized ? numbers.get(b.casNormalized) : undefined)?.map((n) => ({
-            label: n.label,
+            inventoryId: n.inventoryId,
             number: n.number,
           })) ?? [],
       };
@@ -350,6 +350,6 @@ export async function aggregateComposition(
     sources: await currentSources(),
     previousVersion: (await previousVersion())?.code ?? null,
     // 表の右に出すインベントリの列。行が無くても列は出す
-    inventories: await listShownInventories(),
+    inventories: await listInventoryColumns(),
   };
 }
