@@ -28,6 +28,8 @@ import {
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { ResizableBox } from "@/components/data-table/resizable-box";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { setBusyCursor } from "@/lib/busy-cursor";
+import { JUDGEMENTS_CHANGED } from "@/lib/judgements-refresh";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 import type { ApiError, JudgementHitDto, ProductJudgementDto } from "@/lib/types";
@@ -191,6 +193,17 @@ export function ProductJudgements({
     void load();
   }, [load]);
 
+  /*
+    組成を保存すると、サーバー側で展開結果と判定を作り直している。
+    この枠は別に読み込んでいるので、合図を受けて読み直す。
+    でないと上のCAS合算表とこの表が食い違う（2026-09-19 報告）
+  */
+  useEffect(() => {
+    const onChanged = () => void load();
+    window.addEventListener(JUDGEMENTS_CHANGED, onChanged);
+    return () => window.removeEventListener(JUDGEMENTS_CHANGED, onChanged);
+  }, [load]);
+
   /**
    * この製品だけを、いまの前提で判定し直す（2026-09-19 指示）。
    * 前提が変わっているとき（`stale`）だけボタンを出す。
@@ -198,6 +211,7 @@ export function ProductJudgements({
    */
   async function rejudge() {
     setBusy(true);
+    setBusyCursor(true);
     setError(null);
     try {
       const res = await fetch("/api/products/rejudge", {
@@ -219,6 +233,7 @@ export function ProductJudgements({
       window.location.reload();
     } finally {
       setBusy(false);
+      setBusyCursor(false);
     }
   }
 

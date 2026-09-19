@@ -10,6 +10,7 @@ import {
 } from "@/components/product-list-columns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { setBusyCursor } from "@/lib/busy-cursor";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, ProductListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -133,20 +134,25 @@ export function ProductsTable({
   async function rejudge(targets: ProductListItemDto[]) {
     setError(null);
     setNotice(null);
-    const res = await fetch("/api/products/rejudge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: targets.map((t) => t.id) }),
-    });
-    if (!res.ok) {
-      if (redirectIfUnauthorized(res)) return;
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.saveFailed(res.status));
-      return;
+    setBusyCursor(true);
+    try {
+      const res = await fetch("/api/products/rejudge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: targets.map((t) => t.id) }),
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      const body = (await res.json()) as { judged: number; requested: number };
+      setNotice(m.products.rejudged(body.judged, body.requested));
+      onChanged();
+    } finally {
+      setBusyCursor(false);
     }
-    const body = (await res.json()) as { judged: number; requested: number };
-    setNotice(m.products.rejudged(body.judged, body.requested));
-    onChanged();
   }
 
   return (

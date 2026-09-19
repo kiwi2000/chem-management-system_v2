@@ -1,5 +1,6 @@
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
+import { expandProduct, saveExpansion } from "@/lib/expansion-store";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
 import { isRejudgeNeeded } from "@/lib/rejudge-needed";
 import { getAppSettings } from "@/lib/settings";
@@ -89,6 +90,8 @@ async function run(actorId: string) {
     status.total = products.length;
 
     for (const p of products) {
+      // 展開結果は物質の不純物種別を写し取っているので、ここから作り直す（2026-09-19）
+      await saveExpansion(p.id, await expandProduct(p.id));
       await judgeProduct(p.id, rules, factors, settings.conditionalLinkMode, version.id);
       status.done += 1;
     }

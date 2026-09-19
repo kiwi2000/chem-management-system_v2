@@ -782,3 +782,15 @@ body.cursor-busy * {
   white-space: normal;
   overflow-wrap: break-word;
 }
+
+/*
+  時間のかかる処理のあいだ、マウスカーソルを待ち状態にする（2026-09-19 指示）。
+  押したのに何も起きていないように見える時間があるため。
+
+  **中の要素まで指定する。**ボタンやリンクは自分で cursor を持っているので、
+  body に付けるだけでは、その上にカーソルを置いたときに元の形へ戻ってしまう
+*/
+body[data-busy="true"],
+body[data-busy="true"] * {
+  cursor: wait !important;
+}

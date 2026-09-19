@@ -2,6 +2,7 @@ import { productRejudgeSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { expandProduct, saveExpansion } from "@/lib/expansion-store";
 import { getServerMessages } from "@/lib/i18n";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
 import { visibilityWhere } from "@/lib/product-service";
@@ -12,10 +13,13 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/products/rejudge — 選んだ製品だけを判定し直す（2026-09-18 指示）。
  *
- * 全製品のやり直し（管理者の「全製品を判定し直す」）を待たずに、
+ * 全製品のやり直し（管理者の「全製品の再計算」）を待たずに、
  * 手元の製品だけ新しい前提（データソースの有効／無効・閾値・結び付き）で判定するためのもの。
- * 製品を編集できる人なら押せる。組成を保存したときと同じ計算で、展開は作り直さない
- * （組成は変わっていないので）。
+ * 製品を編集できる人なら押せる。
+ *
+ * **展開結果から作り直す**（2026-09-19）。展開結果は物質の不純物種別を写し取っているので、
+ * 組成が変わっていなくても、物質の側で種別を変えれば古くなる。
+ * 判定だけやり直すと、除外の設定が効かないまま該当が残る
  *
  * その場で回して返す。数は公開の一括操作と同じ上限（500件）
  */
@@ -55,6 +59,7 @@ export async function POST(req: Request) {
     getAppSettings(),
   ]);
   for (const p of products) {
+    await saveExpansion(p.id, await expandProduct(p.id));
     await judgeProduct(p.id, rules, factors, settings.conditionalLinkMode, version.id);
   }
 

@@ -118,6 +118,19 @@ export async function PUT(req: Request, { params }: Ctx) {
   ]);
 
   /*
+    **不純物種別を変えたら、判定の前提が変わる。**
+    展開結果は物質の種別を写し取っているので、この物質を含む製品は再計算しないと
+    古い種別のまま判定され、除外の設定が効かない。「要再計算」の印が出るよう、
+    種別の表の更新日時を触る（`lib/rejudge-job.ts` の premisesChangedAt が見る）
+  */
+  if (existing.impurityTypeId !== base.impurityTypeId) {
+    await prisma.impurityType.update({
+      where: { id: base.impurityTypeId },
+      data: { updatedAt: new Date() },
+    });
+  }
+
+  /*
     **CAS番号を変えたら、スコアも計算し直す。**当たる規制が入れ替わるため。
     元のCASのぶんは触らない（そちらに残っている物質のスコアは変わらない）
   */

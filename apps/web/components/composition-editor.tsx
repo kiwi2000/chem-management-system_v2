@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { notifyJudgementsChanged } from "@/lib/judgements-refresh";
 import { useI18n } from "@/lib/i18n-client";
 import { usePageSizePrefs } from "@/lib/page-size-prefs";
 import { NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
@@ -460,6 +461,8 @@ export function CompositionEditor({
       setNotice(body.warnings.length > 0 ? m.composition.savedWithWarnings : m.composition.saved);
       onFinishEdit?.();
       void load();
+      // 下の「法規制判定」にも読み直させる（サーバー側では作り直している）
+      notifyJudgementsChanged();
     } finally {
       setSaving(false);
     }
