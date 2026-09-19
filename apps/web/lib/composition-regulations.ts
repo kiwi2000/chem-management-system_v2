@@ -367,6 +367,8 @@ export async function nearMissByCas(
                     deletedAt: true,
                     aggregation: true,
                     metalEtc: true,
+                    // 判定に使わない区分は、含有率で該非が決まらない（2026-09-19 報告）
+                    judged: true,
                     law: {
                       select: {
                         nameJa: true,
@@ -395,8 +397,13 @@ export async function nearMissByCas(
       },
     }),
     prisma.productJudgement.findMany({
-      where: { productId, verdict: "APPLICABLE", versionId: version.id },
-      select: { categoryId: true, hits: { select: { statutorySubstanceId: true } } },
+      // **該当だけでなく全部引く。**非該当の理由を見分けるため（2026-09-19 報告）
+      where: { productId, versionId: version.id },
+      select: {
+        categoryId: true,
+        verdict: true,
+        hits: { select: { statutorySubstanceId: true, contributions: true, excluded: true } },
+      },
     }),
   ]);
 
@@ -435,10 +442,27 @@ export async function nearMissByCas(
   const hitSubstances = new Set<string>();
   /** 区分そのものでまとめて当たった区分。中身は全部当たり扱いにする */
   const hitCategories = new Set<string>();
+  /*
+    **不純物種別で除外して非該当にしたもの。**
+    「含有率不足による非該当」は、**閾値に届かなかったから非該当**というものだけを出す印
+    （高ければ該当していた、と読める）。除外は含有率に関係なく非該当なので混ぜない
+    （2026-09-19 報告。100% 入っているのに含有率不足として出ていた）
+  */
+  const exemptSubstances = new Set<string>();
+  const exemptCategories = new Set<string>();
   for (const j of judgements) {
     for (const h of j.hits) {
-      if (h.statutorySubstanceId) hitSubstances.add(h.statutorySubstanceId);
-      else hitCategories.add(j.categoryId);
+      if (j.verdict === "APPLICABLE") {
+        if (h.statutorySubstanceId) hitSubstances.add(h.statutorySubstanceId);
+        else hitCategories.add(j.categoryId);
+        continue;
+      }
+      // 閾値と比べた寄与が無く、除外した寄与だけがある＝不純物として外したもの
+      const excluded = (h.excluded ?? []) as unknown[];
+      const compared = (h.contributions ?? []) as unknown[];
+      if (excluded.length === 0 || compared.length > 0) continue;
+      if (h.statutorySubstanceId) exemptSubstances.add(h.statutorySubstanceId);
+      else exemptCategories.add(j.categoryId);
     }
   }
 
@@ -447,10 +471,12 @@ export async function nearMissByCas(
   for (const l of links) {
     const sub = l.statutorySubstance;
     if (sub.deletedAt) continue;
-    if (hitSubstances.has(sub.id)) continue;
+    if (hitSubstances.has(sub.id) || exemptSubstances.has(sub.id)) continue;
 
     const cat = sub.regulationClass.category;
-    if (cat.deletedAt || hitCategories.has(cat.id)) continue;
+    if (cat.deletedAt || hitCategories.has(cat.id) || exemptCategories.has(cat.id)) continue;
+    // 判定に使わない区分（IARC の分類など）は、含有率で該非が決まらない
+    if (!cat.judged) continue;
     // 負けたデータソースの結び付きは出さない（判定でも見ていない）
     if ((rank.get(l.sourceId) ?? 99) !== winner.get(`${cat.id}/${l.casNormalized}`)) continue;
     // 勝ったのが非該当なら、その CAS はこの区分に当たらない（含有率不足でもない）
