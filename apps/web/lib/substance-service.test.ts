@@ -36,6 +36,9 @@ describe("validateCas", () => {
 
     it("形式を強制していれば止める", () => {
       expect(validateCas("POLY-0001", settings(false, true), m)).toBe(m.errors.casFormatInvalid);
+      // 形は合っていても、チェックデジットが違えば止める（2026-09-20 指示）
+      expect(validateCas("50-00-1", settings(false, true), m)).toBe(m.errors.casCheckDigitInvalid);
+      expect(validateCas("50-00-0", settings(false, true), m)).toBeNull();
       expect(validateCas("POLY-0001", settings(true, true), m)).toBe(m.errors.casFormatInvalid);
     });
   });

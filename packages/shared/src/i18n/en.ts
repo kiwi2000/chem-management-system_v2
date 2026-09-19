@@ -424,6 +424,7 @@ export const en: Messages = {
     warnSameCas: (codes: string, total: number) =>
       `Other substances already use this CAS number (${total} in total): ${codes}`,
     warnCasFormat: "The CAS number does not look like the usual format (e.g. 7439-92-1)",
+    warnCasCheckDigit: "The check digit does not match",
     savedWithWarnings: "Saved. Please check the following",
   },
 
@@ -2083,6 +2084,7 @@ export const en: Messages = {
     casRequired: "A CAS number is required (this can be changed in the system settings)",
     casFormatInvalid:
       "The CAS number format is not valid (e.g. 7439-92-1). This can be relaxed in the system settings",
+    casCheckDigitInvalid: "The check digit does not match. A system setting can relax this",
   },
 
   /** Data import / export (decision 0011). Import = read into staging, apply = write to the main tables */

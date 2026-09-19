@@ -38,6 +38,41 @@ export function looksLikeCas(normalized: string): boolean {
 }
 
 /**
+ * CAS番号の最後の1桁（チェックデジット）が合っているか。
+ *
+ * 決めかたは CAS の定義どおり。**最後の桁を除いた数字を右から 1, 2, 3 … 倍して足し、
+ * 10 で割った余り**が最後の桁になる（7439-92-1 なら
+ * 2×1 + 9×2 + 9×3 + 3×4 + 4×5 + 7×6 = 121、121 % 10 = 1）。
+ *
+ * 形が合っていないものは判定できないので false を返さず、呼ぶ側で形を先に見る
+ */
+export function casCheckDigitOk(normalized: string): boolean {
+  if (!looksLikeCas(normalized)) return false;
+  const digits = normalized.replace(/-/g, "");
+  const check = Number(digits[digits.length - 1]);
+  let sum = 0;
+  for (let i = 0; i < digits.length - 1; i += 1) {
+    // 右から数えた位置（1 始まり）を掛ける
+    sum += Number(digits[digits.length - 2 - i]) * (i + 1);
+  }
+  return sum % 10 === check;
+}
+
+/**
+ * CAS番号の何がおかしいか。問題が無ければ null。
+ *
+ *   `"format"`     … 数字とハイフンの並びが CAS の形になっていない
+ *   `"checkDigit"` … 形は合っているが、最後の1桁が合わない（打ち間違いの多くはこれ）
+ *
+ * **2つを分けて返す。**「形が違う」と「1桁だけ違う」では直しかたが別なので、
+ * 同じ文言にすると打ち間違いを探し直すことになる（2026-09-20 指示）
+ */
+export function casProblem(normalized: string): "format" | "checkDigit" | null {
+  if (!looksLikeCas(normalized)) return "format";
+  return casCheckDigitOk(normalized) ? null : "checkDigit";
+}
+
+/**
  * 閾値が**何に対する濃度か**。
  *
  * ほとんどの法律は製品全体に対する重量%だが、RoHS のように

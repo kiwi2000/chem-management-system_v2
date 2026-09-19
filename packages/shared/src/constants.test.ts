@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { looksLikeCas, normalizeCas, normalizeCode } from "./constants";
+import { casProblem, looksLikeCas, normalizeCas, normalizeCode } from "./constants";
 
 /**
  * 正規化の単体テスト。
@@ -55,5 +55,20 @@ describe("looksLikeCas", () => {
 
   it.each(["POLY-0001", "7439-92", "abc", "", "12345678-92-1"])("%s は CAS らしくない", (v) => {
     expect(looksLikeCas(v)).toBe(false);
+  });
+});
+
+describe("casProblem", () => {
+  it.each(["50-00-0", "7439-92-1", "108-88-3", "1330-20-7"])("%s は問題なし", (v) => {
+    expect(casProblem(v)).toBeNull();
+  });
+
+  // 形は合っているが最後の1桁が違う。打ち間違いの多くはこれ（2026-09-20 指示）
+  it.each(["50-00-1", "7439-92-2", "108-88-4"])("%s はチェックデジット違い", (v) => {
+    expect(casProblem(v)).toBe("checkDigit");
+  });
+
+  it.each(["POLY-0001", "7439-92", "abc", "", "12345678-92-1"])("%s は形そのものが違う", (v) => {
+    expect(casProblem(v)).toBe("format");
   });
 });

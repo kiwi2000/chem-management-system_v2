@@ -1,7 +1,7 @@
 import {
   type AppSettings,
   IMPURITY_NONE,
-  looksLikeCas,
+  casProblem,
   type Messages,
   normalizeCas,
   normalizeCode,
@@ -112,8 +112,15 @@ export function validateCas(
   if (!casNormalized) {
     return settings.casRequired ? m.errors.casRequired : null;
   }
-  if (settings.casFormatEnforced && !looksLikeCas(casNormalized)) {
-    return m.errors.casFormatInvalid;
+  if (settings.casFormatEnforced) {
+    /*
+      **チェックデジットまで見る**（2026-09-20 指示）。
+      形だけ通していると、1桁違いの CAS がそのまま登録され、
+      別の物質の規制を拾ってしまう
+    */
+    const problem = casProblem(casNormalized);
+    if (problem === "format") return m.errors.casFormatInvalid;
+    if (problem === "checkDigit") return m.errors.casCheckDigitInvalid;
   }
   return null;
 }
@@ -131,8 +138,11 @@ export async function collectWarnings(
   if (!casNormalized) return warnings;
 
   // 形式を強制している場合は validateCas がエラーで弾くので、ここでは警告を出さない
-  if (!settings.casFormatEnforced && !looksLikeCas(casNormalized)) {
+  const problem = settings.casFormatEnforced ? null : casProblem(casNormalized);
+  if (problem === "format") {
     warnings.push(m.substances.warnCasFormat);
+  } else if (problem === "checkDigit") {
+    warnings.push(m.substances.warnCasCheckDigit);
   }
 
   /*

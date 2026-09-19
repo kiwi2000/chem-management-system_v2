@@ -445,7 +445,10 @@ export const ja = {
     casRepresentativePendingNew: "保存すると、この物質が代表になります",
     warnSameCas: (codes: string, total: number) =>
       `同じCAS番号の物質が既にあります（合計 ${total} 件）: ${codes}`,
-    warnCasFormat: "CAS番号が一般的な形（例: 7439-92-1）ではありません",
+    /** 形そのものが違う。桁数・ハイフンの位置を見直してもらう */
+    warnCasFormat: "CASの形式ではありません（例: 7439-92-1）",
+    /** 形は合っているが最後の1桁が合わない。打ち間違いの多くはこれ */
+    warnCasCheckDigit: "チェックデジットが合っていません",
     savedWithWarnings: "保存しました。次の点を確認してください",
   },
 
@@ -2165,7 +2168,8 @@ export const ja = {
     propertyTypeMismatch: (label: string) => `「${label}」の値の種類が定義と合っていません`,
     unknownProperty: "定義されていない項目が含まれています",
     casRequired: "CAS番号は必須です（システム設定で変更できます）",
-    casFormatInvalid: "CAS番号の形が正しくありません（例: 7439-92-1）。システム設定で緩められます",
+    casFormatInvalid: "CASの形式ではありません（例: 7439-92-1）。システム設定で緩められます",
+    casCheckDigitInvalid: "チェックデジットが合っていません。システム設定で緩められます",
   },
 
   /** 入力チェック（Zodスキーマが使う） */
