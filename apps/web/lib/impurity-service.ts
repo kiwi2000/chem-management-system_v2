@@ -1,7 +1,7 @@
 import { IMPURITY_NONE } from "@chem/shared";
-import type { ImpurityPattern } from "@prisma/client";
+import type { ImpurityType } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import type { ImpurityPatternDto } from "@/lib/types";
+import type { ImpurityTypeDto } from "@/lib/types";
 
 /**
  * 不純物種別（S21）。
@@ -13,10 +13,7 @@ import type { ImpurityPatternDto } from "@/lib/types";
  * 判定での使われかたは lib/judge-store.ts の `resolverFor`
  */
 
-export function toImpurityPatternDto(
-  p: ImpurityPattern,
-  substanceCount: number,
-): ImpurityPatternDto {
+export function toImpurityTypeDto(p: ImpurityType, substanceCount: number): ImpurityTypeDto {
   return {
     id: p.id,
     code: p.code,
@@ -32,12 +29,12 @@ export function toImpurityPatternDto(
 }
 
 /** 種別ごとの、使っている物質の数（消してよいかの判断に要る） */
-export async function countSubstancesByPattern(ids: string[]): Promise<Map<string, number>> {
+export async function countSubstancesByType(ids: string[]): Promise<Map<string, number>> {
   if (ids.length === 0) return new Map();
   const rows = await prisma.substance.groupBy({
-    by: ["impurityPatternId"],
-    where: { impurityPatternId: { in: ids }, deletedAt: null },
+    by: ["impurityTypeId"],
+    where: { impurityTypeId: { in: ids }, deletedAt: null },
     _count: { _all: true },
   });
-  return new Map(rows.map((r) => [r.impurityPatternId, r._count._all]));
+  return new Map(rows.map((r) => [r.impurityTypeId, r._count._all]));
 }

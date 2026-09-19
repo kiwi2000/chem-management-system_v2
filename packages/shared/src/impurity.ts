@@ -13,14 +13,14 @@ export const IMPURITY_NONE = "ip-none";
 /** 1「不純物」。組み込み。たいていの会社はこれだけで足りる */
 export const IMPURITY_BUILTIN = "ip-impurity";
 
-export const impurityPatternSchema = (m: Messages) =>
+export const impurityTypeSchema = (m: Messages) =>
   z.object({
     code: z.string().trim().min(1, m.validation.required).max(50, m.validation.tooLong(50)),
     nameJa: z.string().trim().min(1, m.validation.required).max(200, m.validation.tooLong(200)),
     nameEn: z.string().trim().max(200, m.validation.tooLong(200)).optional().nullable(),
     note: z.string().trim().max(2000, m.validation.tooLong(2000)).optional().nullable(),
   });
-export type ImpurityPatternInput = z.infer<ReturnType<typeof impurityPatternSchema>>;
+export type ImpurityTypeInput = z.infer<ReturnType<typeof impurityTypeSchema>>;
 
 /** 区分の除外：付ける／外す */
 export const impurityExemptionSchema = z.object({

@@ -13,10 +13,10 @@ function loaderOf(tree: Record<string, ExpandLine[]>): LineLoader {
   return (id) => Promise.resolve(tree[id] ?? null);
 }
 
-const sub = (id: string, cas: string | null, impurityPatternId = "ip-none") => ({
+const sub = (id: string, cas: string | null, impurityTypeId = "ip-none") => ({
   id,
   casNumber: cas,
-  impurityPatternId,
+  impurityTypeId,
 });
 const line = (pct: string | null, x: Partial<ExpandLine> = {}): ExpandLine => ({
   contentPct: pct,
@@ -181,7 +181,7 @@ describe("不純物種別での分けかた", () => {
         ],
       }),
     );
-    expect(out.lines.map((l) => [l.casNormalized, l.impurityPatternId, l.totalPct])).toEqual([
+    expect(out.lines.map((l) => [l.casNormalized, l.impurityTypeId, l.totalPct])).toEqual([
       ["108-88-3", "ip-none", "60"],
       ["108-88-3", "ip-impurity", "40"],
     ]);

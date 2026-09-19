@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   const items = await casSiblings(
     normalizeCas(raw),
     url.searchParams.get("exclude"),
-    url.searchParams.get("pattern") || undefined,
+    url.searchParams.get("type") || undefined,
   );
   return Response.json({ items });
 }

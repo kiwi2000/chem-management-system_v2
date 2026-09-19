@@ -351,12 +351,12 @@ async function buildJudgementDtos(
               const contributions = (h.contributions ?? []) as {
                 cas: string;
                 pct: string;
-                pattern?: string;
+                type?: string;
               }[];
               const excluded = (h.excluded ?? []) as {
                 cas: string;
                 pct: string;
-                pattern: string;
+                type: string;
               }[];
               const score = sumScores(
                 contributions.map((c) => scoreOf.get(normalizeCas(c.cas)) ?? "0"),
@@ -574,9 +574,9 @@ export async function toMatchedProducts(
                 contributions: (h.contributions ?? []) as {
                   cas: string;
                   pct: string;
-                  pattern?: string;
+                  type?: string;
                 }[],
-                excluded: (h.excluded ?? []) as { cas: string; pct: string; pattern: string }[],
+                excluded: (h.excluded ?? []) as { cas: string; pct: string; type: string }[],
                 total: h.total?.toString() ?? null,
                 ...mark,
               }))

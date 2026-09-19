@@ -103,7 +103,7 @@ export const ja = {
     elements: "元素",
     metalFactors: "金属換算係数",
     /** 左ペインは短く「不純物」。画面の見出しは「不純物種別」 */
-    impurityPatterns: "不純物",
+    impurityTypes: "不純物",
     importExport: "データ入出力",
     dataImport: "インポート",
     dataExport: "エクスポート",
@@ -367,8 +367,8 @@ export const ja = {
 
   substances: {
     /** 不純物種別（S21）。物質の属性 */
-    impurityPattern: "不純物種別",
-    impurityPatternHint:
+    impurityType: "不純物種別",
+    impurityTypeHint:
       "不純物として入る物質は、種別ごとに別の物質として登録します。種別ごとに、どの規制区分で非該当にするかを「法規制 > 不純物種別」で決めます",
     publishState: "状態",
     workingSection: "作業中",
@@ -789,7 +789,7 @@ export const ja = {
     duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
   },
 
-  impurityPatterns: {
+  impurityTypes: {
     title: "不純物種別",
     lead: "不純物として含む物質を、規制ごとに非該当にするための区分です。物質の「不純物種別」で選びます",
     code: "コード",

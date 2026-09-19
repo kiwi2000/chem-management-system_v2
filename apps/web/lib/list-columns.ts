@@ -56,7 +56,7 @@ export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   { key: "casNumber", kind: "list", field: "casNormalized", normalize: normalizeCas },
   { key: "casRepresentative", kind: "enum", field: "isCasRepresentative", booleanEnum: true },
   // 不純物種別（S21）。選択肢は画面がマスタから作る
-  { key: "impurityPatternId", kind: "enum", field: "impurityPatternId" },
+  { key: "impurityTypeId", kind: "enum", field: "impurityTypeId" },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   // 「別名も含む」にチェックしたときの名称（製品と同じ）

@@ -101,8 +101,8 @@ const HEAD_GRID = [
 /**
  * 行の鍵。**同じ CAS でも不純物種別が違えば別の行**なので、種別まで入れる（S21）
  */
-const keyOf = (row: { casNumber: string | null; code: string; impurityPatternId?: string }) =>
-  `${row.casNumber ?? row.code}@${row.impurityPatternId ?? ""}`;
+const keyOf = (row: { casNumber: string | null; code: string; impurityTypeId?: string }) =>
+  `${row.casNumber ?? row.code}@${row.impurityTypeId ?? ""}`;
 
 interface Props {
   productId: string;

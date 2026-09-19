@@ -68,7 +68,7 @@ export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
     code: s.code,
     casNumber: s.casNumber,
     casRepresentative: s.isCasRepresentative,
-    impurityPatternId: s.impurityPatternId,
+    impurityTypeId: s.impurityTypeId,
     status: s.status,
     publishState: s.publishState,
     nameJa: s.nameJa,
@@ -125,7 +125,7 @@ export async function collectWarnings(
   settings: AppSettings,
   m: Messages,
   /** 不純物種別（S21）。同じ CAS でも種別が違えば別の物質なので、数えるのは同じ組だけ */
-  impurityPatternId = IMPURITY_NONE,
+  impurityTypeId = IMPURITY_NONE,
 ): Promise<string[]> {
   const warnings: string[] = [];
   if (!casNormalized) return warnings;
@@ -142,7 +142,7 @@ export async function collectWarnings(
   */
   const sameWhere = {
     casNormalized,
-    impurityPatternId,
+    impurityTypeId,
     deletedAt: null,
     ...(excludeSubstanceId ? { id: { not: excludeSubstanceId } } : {}),
   };
@@ -187,12 +187,12 @@ type Db = Pick<typeof prisma, "substance">;
 export function casSiblings(
   casNormalized: string,
   excludeId: string | null,
-  impurityPatternId = IMPURITY_NONE,
+  impurityTypeId = IMPURITY_NONE,
 ) {
   return prisma.substance.findMany({
     where: {
       casNormalized,
-      impurityPatternId,
+      impurityTypeId,
       deletedAt: null,
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
@@ -216,12 +216,12 @@ export async function makeCasRepresentative(
   db: Db,
   substanceId: string,
   casNormalized: string,
-  impurityPatternId = IMPURITY_NONE,
+  impurityTypeId = IMPURITY_NONE,
 ): Promise<void> {
   await db.substance.updateMany({
     where: {
       casNormalized,
-      impurityPatternId,
+      impurityTypeId,
       deletedAt: null,
       isCasRepresentative: true,
       id: { not: substanceId },
@@ -243,12 +243,12 @@ export async function makeCasRepresentative(
 export async function ensureCasRepresentative(
   db: Db,
   casNormalized: string | null,
-  impurityPatternId = IMPURITY_NONE,
+  impurityTypeId = IMPURITY_NONE,
 ): Promise<void> {
   if (!casNormalized) return;
 
   const alive = await db.substance.findMany({
-    where: { casNormalized, impurityPatternId, deletedAt: null },
+    where: { casNormalized, impurityTypeId, deletedAt: null },
     select: { id: true, status: true, isCasRepresentative: true },
     orderBy: { createdAt: "asc" },
   });
@@ -277,7 +277,7 @@ export function normalizeInput(input: SubstanceInput) {
     note: input.note?.trim() || null,
     nameJa: input.mainNameJa.trim(),
     nameEn: input.mainNameEn?.trim() || null,
-    impurityPatternId: input.impurityPatternId?.trim() || IMPURITY_NONE,
+    impurityTypeId: input.impurityTypeId?.trim() || IMPURITY_NONE,
   };
 }
 

@@ -7,7 +7,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { recomputeScoresForPattern } from "@/lib/score-store";
+import { recomputeScoresForType } from "@/lib/score-store";
 
 export const dynamic = "force-dynamic";
 
@@ -18,14 +18,12 @@ type Ctx = { params: Promise<{ id: string }> };
  * 「要再計算」の印はこの日時を見る（`lib/rejudge-job.ts` の premisesChangedAt）。
  * あわせて、その種別の物質のスコアを計算し直す（除外した区分の点は数えない）
  */
-async function touchPattern(patternId: string, userId: string) {
-  await prisma.impurityPattern.update({
-    where: { id: patternId },
+async function touchType(typeId: string, userId: string) {
+  await prisma.impurityType.update({
+    where: { id: typeId },
     data: { updatedBy: userId, updatedAt: new Date() },
   });
-  await recomputeScoresForPattern(patternId).catch((e) =>
-    console.error("score recompute failed:", e),
-  );
+  await recomputeScoresForType(typeId).catch((e) => console.error("score recompute failed:", e));
 }
 
 /**
@@ -44,11 +42,11 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   const [categories, substances] = await Promise.all([
     prisma.impurityExemption.findMany({
-      where: { patternId: id, excluded: true },
+      where: { typeId: id, excluded: true },
       select: { categoryId: true },
     }),
     prisma.impurityExemptionSubstance.findMany({
-      where: { patternId: id },
+      where: { typeId: id },
       // 画面が区分ごとに「例外 N 件」を出すので、区分もたどって返す
       select: {
         statutorySubstanceId: true,
@@ -75,10 +73,10 @@ export async function PUT(req: Request, { params }: Ctx) {
   const { id } = await params;
   const m = await getServerMessages();
 
-  const pattern = await prisma.impurityPattern.findFirst({ where: { id, deletedAt: null } });
-  if (!pattern) return jsonError(404, "not_found", m.errors.notFound);
+  const type = await prisma.impurityType.findFirst({ where: { id, deletedAt: null } });
+  if (!type) return jsonError(404, "not_found", m.errors.notFound);
   // 0「不純物ではない」は除外の設定を持たない
-  if (id === IMPURITY_NONE) return jsonError(409, "builtin", m.impurityPatterns.noneHasNoExemption);
+  if (id === IMPURITY_NONE) return jsonError(409, "builtin", m.impurityTypes.noneHasNoExemption);
 
   let body: unknown;
   try {
@@ -97,9 +95,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     await prisma.$transaction(
       categoryIds.map((categoryId) =>
         prisma.impurityExemption.upsert({
-          where: { patternId_categoryId: { patternId: id, categoryId } },
+          where: { typeId_categoryId: { typeId: id, categoryId } },
           create: {
-            patternId: id,
+            typeId: id,
             categoryId,
             excluded: true,
             createdBy: actor.user.id,
@@ -112,7 +110,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   } else {
     // 外すときは行ごと消す（「除外しない」は行が無い状態）
     await prisma.impurityExemption.deleteMany({
-      where: { patternId: id, categoryId: { in: categoryIds } },
+      where: { typeId: id, categoryId: { in: categoryIds } },
     });
   }
 
@@ -121,7 +119,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     除外の表の更新日時だけを見ていると気づけない（「要再計算」が出ない）。
     種別の行を必ず触って、前提が変わったことを残す
   */
-  await touchPattern(id, actor.user.id);
+  await touchType(id, actor.user.id);
 
   await writeAudit({
     entity: "impurity_exemptions",
@@ -140,9 +138,9 @@ export async function POST(req: Request, { params }: Ctx) {
   const { id } = await params;
   const m = await getServerMessages();
 
-  const pattern = await prisma.impurityPattern.findFirst({ where: { id, deletedAt: null } });
-  if (!pattern) return jsonError(404, "not_found", m.errors.notFound);
-  if (id === IMPURITY_NONE) return jsonError(409, "builtin", m.impurityPatterns.noneHasNoExemption);
+  const type = await prisma.impurityType.findFirst({ where: { id, deletedAt: null } });
+  if (!type) return jsonError(404, "not_found", m.errors.notFound);
+  if (id === IMPURITY_NONE) return jsonError(409, "builtin", m.impurityTypes.noneHasNoExemption);
 
   let body: unknown;
   try {
@@ -159,15 +157,15 @@ export async function POST(req: Request, { params }: Ctx) {
   if (excluded === null) {
     // 「区分に従う」＝上書きを消す
     await prisma.impurityExemptionSubstance.deleteMany({
-      where: { patternId: id, statutorySubstanceId },
+      where: { typeId: id, statutorySubstanceId },
     });
   } else {
     await prisma.impurityExemptionSubstance.upsert({
       where: {
-        patternId_statutorySubstanceId: { patternId: id, statutorySubstanceId },
+        typeId_statutorySubstanceId: { typeId: id, statutorySubstanceId },
       },
       create: {
-        patternId: id,
+        typeId: id,
         statutorySubstanceId,
         excluded,
         createdBy: actor.user.id,
@@ -177,7 +175,7 @@ export async function POST(req: Request, { params }: Ctx) {
     });
   }
 
-  await touchPattern(id, actor.user.id);
+  await touchType(id, actor.user.id);
 
   await writeAudit({
     entity: "impurity_exemption_substances",

@@ -247,6 +247,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -255,21 +256,20 @@ model User {
   updatedAt             DateTime  @updatedAt @map("updated_at")
   deletedAt             DateTime? @map("deleted_at")
 
-  sessions      Session[]
-  permissions   UserPermission[]
-  savedFilters  SavedFilter[]
-  news          News[]
-  passkeys      Passkey[]
-  newsGroup     Group?             @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
+  sessions       Session[]
+  permissions    UserPermission[]
+  savedFilters   SavedFilter[]
+  news           News[]
+  passkeys       Passkey[]
+  newsGroup      Group?             @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
   /**
    * 所属する組織。**種別を問わず何件でも。**
    * 帳票の差出人には種別「会社」の先頭、お知らせの所属には「部署」の先頭を使う
    */
-  organisations UserOrganisation[]
-
-  @@index([newsGroupId])
+  organisations  UserOrganisation[]
   approvalEvents ApprovalEvent[]
 
+  @@index([newsGroupId])
   @@map("users")
 }
 
@@ -736,9 +736,9 @@ model ProductExpansionLine {
   substanceId   String? @map("substance_id")
 
   /**
-   * 物質の不純物種別。同じ CAS でもパターンが違えば別の行（S21）
+   * 物質の不純物種別。同じ CAS でも種別が違えば別の行（S21）
    */
-  impurityPatternId String @default("ip-none") @map("impurity_pattern_id")
+  impurityTypeId String @default("ip-none") @map("impurity_type_id")
 
   /**
    * 製品全体に対する重量％
@@ -747,7 +747,7 @@ model ProductExpansionLine {
 
   expansion ProductExpansion @relation(fields: [productId], references: [productId], onDelete: Cascade)
 
-  @@unique([productId, casNormalized, substanceId, impurityPatternId], map: "product_expansion_lines_key_cas_pattern")
+  @@unique([productId, casNormalized, substanceId, impurityTypeId], map: "product_expansion_lines_key_cas_type")
   // 逆引き（この CAS を含む製品を全部出す）で引く
   @@index([casNormalized])
   @@index([substanceId])
@@ -951,10 +951,10 @@ model Substance {
 
   /**
    * 不純物種別（S21）。0「不純物ではない」が既定。
-   * 不純物として入る物質は、パターンごとに別の物質として登録する。
-   * 判定はパターンごとの除外の設定（impurity_exemptions）に従う
+   * 不純物として入る物質は、種別ごとに別の物質として登録する。
+   * 判定は種別ごとの除外の設定（impurity_exemptions）に従う
    */
-  impurityPatternId String @default("ip-none") @map("impurity_pattern_id")
+  impurityTypeId String @default("ip-none") @map("impurity_type_id")
 
   /**
    * 主名称。1物質1件なので子テーブルではなくこの行に持つ。
@@ -1002,10 +1002,10 @@ model Substance {
   gazetteNumbers   SubstanceGazetteNumber[]
   properties       SubstanceProperty[]
   compositionLines CompositionLine[]
-  impurityPattern  ImpurityPattern          @relation(fields: [impurityPatternId], references: [id])
+  impurityType     ImpurityType             @relation(fields: [impurityTypeId], references: [id])
 
   @@index([casNormalized])
-  @@index([impurityPatternId])
+  @@index([impurityTypeId])
   @@index([status])
   @@index([nameJa])
   @@index([nameEn])
@@ -1807,11 +1807,13 @@ model RegulationCategory {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  law        Law                @relation(fields: [lawId], references: [id])
-  classes    RegulationClass[]
-  judgements ProductJudgement[]
-  decisions  ProductDecision[]
-  /** 不純物種別ごとの除外（S21） */
+  law                Law                 @relation(fields: [lawId], references: [id])
+  classes            RegulationClass[]
+  judgements         ProductJudgement[]
+  decisions          ProductDecision[]
+  /**
+   * 不純物種別ごとの除外（S21）
+   */
   impurityExemptions ImpurityExemption[]
 
   @@unique([lawId, codeNormalized])
@@ -1940,8 +1942,10 @@ model StatutorySubstance {
   regulationClass RegulationClass    @relation(fields: [classId], references: [id])
   links           StatutoryCasLink[]
 
-  linkDiffs StatutoryCasLinkDiff[]
-  /** 不純物種別ごとの除外の上書き（S21） */
+  linkDiffs          StatutoryCasLinkDiff[]
+  /**
+   * 不純物種別ごとの除外の上書き（S21）
+   */
   impurityExemptions ImpurityExemptionSubstance[]
 
   @@unique([classId, codeNormalized])
@@ -2216,11 +2220,11 @@ model StatutoryCasLinkDiff {
   previousLinkId       String?      @map("previous_link_id")
   computedAt           DateTime     @default(now()) @map("computed_at")
 
-  version            LinkSetVersion     @relation("LinkDiffVersion", fields: [versionId], references: [id], onDelete: Cascade)
-  against            LinkSetVersion     @relation("LinkDiffAgainst", fields: [againstId], references: [id], onDelete: Cascade)
-  statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id], onDelete: Cascade)
-  currentLink        StatutoryCasLink?  @relation("LinkDiffCurrent", fields: [currentLinkId], references: [id], onDelete: Cascade)
-  previousLink       StatutoryCasLink?  @relation("LinkDiffPrevious", fields: [previousLinkId], references: [id], onDelete: Cascade)
+  version            LinkSetVersion             @relation("LinkDiffVersion", fields: [versionId], references: [id], onDelete: Cascade)
+  against            LinkSetVersion             @relation("LinkDiffAgainst", fields: [againstId], references: [id], onDelete: Cascade)
+  statutorySubstance StatutorySubstance         @relation(fields: [statutorySubstanceId], references: [id], onDelete: Cascade)
+  currentLink        StatutoryCasLink?          @relation("LinkDiffCurrent", fields: [currentLinkId], references: [id], onDelete: Cascade)
+  previousLink       StatutoryCasLink?          @relation("LinkDiffPrevious", fields: [previousLinkId], references: [id], onDelete: Cascade)
   /**
    * この CAS を持つ登録物質の名前（ビュー）。差分の表を「物質名で探す」はここをたどる
    */
@@ -2391,14 +2395,22 @@ enum DocumentTemplateKind {
 enum DocumentTarget {
   PRODUCT
   SUBSTANCE
-  /** 組織（取引先など）ごとに 1 枚（2026-09-16 指示） */
+  /**
+   * 組織（取引先など）ごとに 1 枚（2026-09-16 指示）
+   */
   ORGANISATION
-  /** 対象なし（汎用）。共通の項目だけで 1 枚（2026-09-16 指示） */
+  /**
+   * 対象なし（汎用）。共通の項目だけで 1 枚（2026-09-16 指示）
+   */
   NONE
-  /** 選んだ製品・物質を 1 枚の表に（2026-09-16 指示） */
+  /**
+   * 選んだ製品・物質を 1 枚の表に（2026-09-16 指示）
+   */
   PRODUCT_LIST
   SUBSTANCE_LIST
-  /** 規制区分ごとに 1 枚。法文物質名の表を添える（2026-09-16 指示） */
+  /**
+   * 規制区分ごとに 1 枚。法文物質名の表を添える（2026-09-16 指示）
+   */
   CATEGORY
 }
 
@@ -2482,23 +2494,31 @@ model DocumentTemplate {
  * アップロード時にシステム設定の決まり（長辺の上限・形式・画質）で整えてから入れる
  */
 model ImageAsset {
-  id       String @id @default(cuid())
-  /** 一覧に出す名前（最初はファイル名。あとから直せる） */
-  name     String @db.VarChar(255)
-  note     String?
-  /** image/png か image/jpeg（整えたあとの形式） */
-  mime     String @db.VarChar(64)
-  width    Int
-  height   Int
-  /** バイト数（整えたあと） */
-  size     Int
-  data     Bytes
-  /** 一覧用の小さな絵（PNG/JPEG、長辺 200px）。毎回本体を送らないため */
-  thumb    Bytes
+  id     String  @id @default(cuid())
+  /**
+   * 一覧に出す名前（最初はファイル名。あとから直せる）
+   */
+  name   String  @db.VarChar(255)
+  note   String?
+  /**
+   * image/png か image/jpeg（整えたあとの形式）
+   */
+  mime   String  @db.VarChar(64)
+  width  Int
+  height Int
+  /**
+   * バイト数（整えたあと）
+   */
+  size   Int
+  data   Bytes
+  /**
+   * 一覧用の小さな絵（PNG/JPEG、長辺 200px）。毎回本体を送らないため
+   */
+  thumb  Bytes
 
-  createdBy String?   @map("created_by")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([createdAt])
   @@map("image_assets")
@@ -2513,7 +2533,6 @@ enum DocBatchStatus {
 
 /**
  * まとめて帳票を作る仕事（バックグラウンド処理。2026-09-16）。
- *
  * 選んだ相手ぶんを裏で順に作り、進み具合をここに書く。画面を離れても続き、
  * できたものは GeneratedDocument に batchJobId 付きで残る（まとめて開いて 1 回で刷れる）。
  * 走っているかどうかは lib/doc-batch-job.ts のメモリでも持つ（サーバーが 1 台のあいだはこれで足りる）
@@ -2526,30 +2545,30 @@ model DocumentBatchJob {
    * 作る相手の決めかた。ID の並び（{ mode: "ids", ids }）か、
    * 一覧の絞り込みの条件（{ mode: "all", filter }。走るときに同じ条件で引き直す）
    */
-  selection Json
+  selection  Json
   /**
    * 差出人・宛先・組織ブロックで選んだ組織（1 件ずつ作るときの URL と同じもの）
    */
-  params Json?
-  total  Int  @default(0)
-  done   Int  @default(0)
+  params     Json?
+  total      Int            @default(0)
+  done       Int            @default(0)
   /**
    * 作れなかった件数（見る権限が無い・消されている）。どれかは summary に残す
    */
-  missed  Int     @default(0)
-  summary Json?
-  error   String?
+  missed     Int            @default(0)
+  summary    Json?
+  error      String?
 
-  createdBy  String    @map("created_by")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  startedAt  DateTime? @map("started_at")
-  finishedAt DateTime? @map("finished_at")
+  createdBy   String    @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  startedAt   DateTime? @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
   /**
    * 生きている印。走らせている側が折々更新する。
    * 待ち・実行中なのにこれが古ければ、サーバーが再起動して途切れたと分かる
    * （メモリの記録に頼らない。開発時はモジュールが作り直されることがある）
    */
-  heartbeatAt DateTime @default(now()) @map("heartbeat_at")
+  heartbeatAt DateTime  @default(now()) @map("heartbeat_at")
 
   template  DocumentTemplate    @relation(fields: [templateId], references: [id])
   documents GeneratedDocument[]
@@ -2627,17 +2646,17 @@ model GeneratedDocument {
 
 /**
  * 規制対象CAS（リンク）と、同じ CAS番号を持つ登録物質の名前を並べたビュー。
- *
  * リンクと物質は CAS番号の文字列で突き合わせるだけで、表としての関係を持たない
  * （同じ CAS の物質が複数あってよいので、関係としても張れない）。
  * このビューがその突き合わせを DB の側で済ませるので、「物質名で探す」を
  * **当たった物質や CAS の一覧を渡し直さず、条件のまま** DB に渡せる（2026-09-18 指摘）。
- *
  * 1行は「リンク × 物質の名前（主名称または別名）」。主名称の行は alias_id が空。
  * 定義は prisma/migrations/20260918120000_statutory_cas_link_names_view/migration.sql
  */
 view StatutoryCasLinkName {
-  /** リンク id と物質（または別名）の id をつないだもの。ビューに一意の列が要るため */
+  /**
+   * リンク id と物質（または別名）の id をつないだもの。ビューに一意の列が要るため
+   */
   rowKey              String       @unique @map("row_key")
   linkId              String       @map("link_id")
   substanceId         String       @map("substance_id")
@@ -2674,12 +2693,11 @@ view StatutoryCasLinkDiffName {
 
 /**
  * 不純物種別（S21、2026-09-18）。
- *
  * 「同じ該非判定になる不純物どうし」をまとめた区分。物質の属性として持つ。
  * 0「不純物ではない」（id `ip-none`）と 1「不純物」（id `ip-impurity`）は組み込みで消せない。
  * 0 は除外の設定を持たない（データソースの合算だけで決まる）
  */
-model ImpurityPattern {
+model ImpurityType {
   id             String @id @default(cuid())
   code           String @db.VarChar(50)
   codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
@@ -2689,7 +2707,9 @@ model ImpurityPattern {
   note   String?
 
   displayOrder Int     @default(0) @map("display_order")
-  /** 組み込み。消せない */
+  /**
+   * 組み込み。消せない
+   */
   builtin      Boolean @default(false)
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -2702,16 +2722,16 @@ model ImpurityPattern {
   exemptions          ImpurityExemption[]
   substanceExemptions ImpurityExemptionSubstance[]
 
-  @@map("impurity_patterns")
+  @@map("impurity_types")
 }
 
 /**
- * 不純物種別 × 規制区分：このパターンの物質を、この区分では非該当にする。
+ * 不純物種別 × 規制区分：この種別の物質を、この区分では非該当にする。
  * 行が無ければ除外しない
  */
 model ImpurityExemption {
   id         String  @id @default(cuid())
-  patternId  String  @map("pattern_id")
+  typeId     String  @map("type_id")
   categoryId String  @map("category_id")
   excluded   Boolean @default(true)
   note       String?
@@ -2721,10 +2741,10 @@ model ImpurityExemption {
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
-  pattern  ImpurityPattern    @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  type     ImpurityType       @relation(fields: [typeId], references: [id], onDelete: Cascade)
   category RegulationCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  @@unique([patternId, categoryId])
+  @@unique([typeId, categoryId])
   @@index([categoryId])
   @@map("impurity_exemptions")
 }
@@ -2735,7 +2755,7 @@ model ImpurityExemption {
  */
 model ImpurityExemptionSubstance {
   id                   String  @id @default(cuid())
-  patternId            String  @map("pattern_id")
+  typeId               String  @map("type_id")
   statutorySubstanceId String  @map("statutory_substance_id")
   excluded             Boolean
   note                 String?
@@ -2745,10 +2765,10 @@ model ImpurityExemptionSubstance {
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
-  pattern            ImpurityPattern    @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  type               ImpurityType       @relation(fields: [typeId], references: [id], onDelete: Cascade)
   statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id], onDelete: Cascade)
 
-  @@unique([patternId, statutorySubstanceId])
+  @@unique([typeId, statutorySubstanceId])
   @@index([statutorySubstanceId])
   @@map("impurity_exemption_substances")
 }

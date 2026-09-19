@@ -23,7 +23,7 @@ const dbLoader: LineLoader = async (productId) => {
   if (!product) return null;
   const lines = await prisma.compositionLine.findMany({
     where: { parentProductId: productId },
-    include: { substance: { select: { id: true, casNumber: true, impurityPatternId: true } } },
+    include: { substance: { select: { id: true, casNumber: true, impurityTypeId: true } } },
     orderBy: { displayOrder: "asc" },
   });
   if (lines.length === 0) return null;

@@ -944,10 +944,10 @@ function Warning({
       {excluded.length > 0 && (
         <p
           className="text-muted-foreground inline-flex items-center gap-1 text-xs"
-          title={m.impurityPatterns.excludedHint}
+          title={m.impurityTypes.excludedHint}
         >
           <Droplets className="size-3" />
-          {m.impurityPatterns.excluded}
+          {m.impurityTypes.excluded}
           <span className="font-mono">
             （{excluded.map((x) => `${x.cas} ${x.pct}%`).join("、")}）
           </span>

@@ -19,7 +19,7 @@ import type { SubstanceNumber } from "@/lib/substance-numbers";
 import type {
   ApiError,
   CasSiblingDto,
-  ImpurityPatternDto,
+  ImpurityTypeDto,
   ListResponse,
   PropertyDefDto,
   SubstanceDetailDto,
@@ -69,17 +69,15 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
    */
   const [casSiblings, setCasSiblings] = useState<CasSiblingDto[]>([]);
   /** 不純物種別（S21）。既定は 0「不純物ではない」 */
-  const [impurityPatternId, setImpurityPatternId] = useState(
-    initial?.impurityPatternId ?? IMPURITY_NONE,
-  );
-  const [patterns, setPatterns] = useState<ImpurityPatternDto[]>([]);
+  const [impurityTypeId, setImpurityTypeId] = useState(initial?.impurityTypeId ?? IMPURITY_NONE);
+  const [types, setTypes] = useState<ImpurityTypeDto[]>([]);
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const res = await fetch("/api/impurity-patterns").catch(() => null);
+      const res = await fetch("/api/impurity-types").catch(() => null);
       if (!res?.ok) return;
-      const body = (await res.json()) as ListResponse<ImpurityPatternDto>;
-      if (alive) setPatterns(body.items);
+      const body = (await res.json()) as ListResponse<ImpurityTypeDto>;
+      if (alive) setTypes(body.items);
     })();
     return () => {
       alive = false;
@@ -110,7 +108,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
     const timer = setTimeout(() => {
       void (async () => {
         // 同じ CAS でも不純物種別が違えば別の物質。代表もその組ごとなので、種別で絞る
-        const params = new URLSearchParams({ cas, pattern: impurityPatternId });
+        const params = new URLSearchParams({ cas, type: impurityTypeId });
         if (initial?.id) params.set("exclude", initial.id);
         const res = await fetch(`/api/substances/cas-siblings?${params}`).catch(() => null);
         if (!res?.ok || !alive) return;
@@ -122,7 +120,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
       alive = false;
       clearTimeout(timer);
     };
-  }, [casNumber, impurityPatternId, initial?.id]);
+  }, [casNumber, impurityTypeId, initial?.id]);
   /*
    * 代表を外す操作は無い（外すと合算した行に出す名前が無くなる）。
    * 別の物質を代表にするときだけ、いまの代表を示して確かめてから切り替える。
@@ -187,7 +185,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
     return {
       code,
       casNumber: casNumber || null,
-      impurityPatternId,
+      impurityTypeId,
       casRepresentative,
       casRepresentativeSuccessorId: successorId || null,
       status,
@@ -372,23 +370,21 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                   どの規制区分で非該当にするかは「法規制 > 不純物種別」で決める
                 */}
                 <div className="space-y-2">
-                  <Label htmlFor="impurity-pattern">{m.substances.impurityPattern}</Label>
+                  <Label htmlFor="impurity-type">{m.substances.impurityType}</Label>
                   <select
-                    id="impurity-pattern"
+                    id="impurity-type"
                     className="border-input bg-background h-9 w-56 rounded-none border px-2 text-sm disabled:opacity-60"
-                    value={impurityPatternId}
+                    value={impurityTypeId}
                     disabled={!editing}
-                    onChange={(e) => setImpurityPatternId(e.target.value)}
+                    onChange={(e) => setImpurityTypeId(e.target.value)}
                   >
-                    {patterns.map((p) => (
+                    {types.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.code} — {pickName(locale, p.nameJa, p.nameEn)}
                       </option>
                     ))}
                   </select>
-                  <p className="text-muted-foreground text-xs">
-                    {m.substances.impurityPatternHint}
-                  </p>
+                  <p className="text-muted-foreground text-xs">{m.substances.impurityTypeHint}</p>
                   {/* 代表かどうか。読むだけのときも出す（一覧の星と同じ意味） */}
                   {initial && casNumber.trim() !== "" && (
                     <p className="text-xs">

@@ -50,7 +50,7 @@ describe("premiseOf", () => {
     expect(
       premiseOf({
         statutorySubstanceId: "s1",
-        contributions: [{ cas: "7439-92-1", pattern: "ip-none" }],
+        contributions: [{ cas: "7439-92-1", type: "ip-none" }],
       }),
     ).toBe("s1:7439-92-1");
   });
@@ -60,8 +60,8 @@ describe("premiseOf", () => {
       premiseOf({
         statutorySubstanceId: "s1",
         contributions: [
-          { cas: "7439-92-1", pattern: "ip-none" },
-          { cas: "7439-92-1", pattern: "ip-impurity" },
+          { cas: "7439-92-1", type: "ip-none" },
+          { cas: "7439-92-1", type: "ip-impurity" },
         ],
       }),
     ).toBe("s1:7439-92-1,7439-92-1@ip-impurity");
@@ -72,7 +72,7 @@ describe("premiseOf", () => {
       premiseOf({
         statutorySubstanceId: "s1",
         contributions: [],
-        excluded: [{ cas: "7439-92-1", pattern: "ip-impurity" }],
+        excluded: [{ cas: "7439-92-1", type: "ip-impurity" }],
       }),
     ).toBe("s1:7439-92-1@ip-impurity!");
   });

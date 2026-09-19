@@ -118,8 +118,7 @@ async function linkDataOf(
  * 合算表の行の鍵。**CAS × 不純物種別**（S21）。
  * 判定の根拠に残っている種別が 0 のときは省くので、揃えて `IMPURITY_NONE` に寄せる
  */
-export const casPatternKey = (cas: string, pattern?: string | null) =>
-  `${cas}@${pattern || IMPURITY_NONE}`;
+export const casTypeKey = (cas: string, type?: string | null) => `${cas}@${type || IMPURITY_NONE}`;
 
 export async function regulationsByCas(
   productId: string,
@@ -226,11 +225,11 @@ export async function regulationsByCas(
       const contributions = (h.contributions ?? []) as {
         cas: string;
         sources?: string[];
-        pattern?: string;
+        type?: string;
       }[];
       for (const c of contributions) {
         if (!c.cas) continue;
-        const key = casPatternKey(c.cas, c.pattern);
+        const key = casTypeKey(c.cas, c.type);
         const seen = byCas.get(key) ?? new Map<string, RowRegulationDto>();
         const region = r.category.law.country.region;
         // 同じ区分に別の号でも当たることがあるので、消さずに足していく

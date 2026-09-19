@@ -21,7 +21,7 @@ import { useI18n } from "@/lib/i18n-client";
 import type {
   ApiError,
   ImpurityExemptionsDto,
-  ImpurityPatternDto,
+  ImpurityTypeDto,
   LawDto,
   ListResponse,
   RegulationCategoryDto,
@@ -46,12 +46,12 @@ const EMPTY_FORM = { id: "", code: "", nameJa: "", nameEn: "", note: "" };
 /** 件数が知れているので、並びは表示順のみ */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
 
-export default function ImpurityPatternsPage() {
+export default function ImpurityTypesPage() {
   const { m, locale } = useI18n();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
-  const [patterns, setPatterns] = useState<ImpurityPatternDto[]>([]);
+  const [types, setTypes] = useState<ImpurityTypeDto[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [adding, setAdding] = useState(false);
@@ -67,13 +67,13 @@ export default function ImpurityPatternsPage() {
   /** 例外を開いている区分 */
   const [exceptionsFor, setExceptionsFor] = useState<RegulationCategoryDto | null>(null);
 
-  const selected = patterns.find((p) => p.id === selectedId) ?? null;
+  const selected = types.find((p) => p.id === selectedId) ?? null;
 
-  const columns = useMemo<TableColumn<ImpurityPatternDto>[]>(
+  const columns = useMemo<TableColumn<ImpurityTypeDto>[]>(
     () => [
       {
         key: "code",
-        header: m.impurityPatterns.code,
+        header: m.impurityTypes.code,
         kind: "text",
         width: 96,
         sortable: false,
@@ -83,7 +83,7 @@ export default function ImpurityPatternsPage() {
       },
       {
         key: "nameJa",
-        header: m.impurityPatterns.name,
+        header: m.impurityTypes.name,
         kind: "text",
         width: 240,
         sortable: false,
@@ -93,7 +93,7 @@ export default function ImpurityPatternsPage() {
             {pickName(locale, r.nameJa, r.nameEn)}
             {r.builtin && (
               <span className="text-muted-foreground border-input ml-2 border px-1 text-xs">
-                {m.impurityPatterns.builtin}
+                {m.impurityTypes.builtin}
               </span>
             )}
           </>
@@ -101,7 +101,7 @@ export default function ImpurityPatternsPage() {
       },
       {
         key: "note",
-        header: m.impurityPatterns.note,
+        header: m.impurityTypes.note,
         kind: "text",
         width: 380,
         sortable: false,
@@ -111,7 +111,7 @@ export default function ImpurityPatternsPage() {
       },
       {
         key: "substanceCount",
-        header: m.impurityPatterns.substanceCount,
+        header: m.impurityTypes.substanceCount,
         kind: "number",
         width: 88,
         sortable: false,
@@ -123,22 +123,22 @@ export default function ImpurityPatternsPage() {
     [m, locale],
   );
 
-  const { state, setState } = useTableState("chem.table.impurityPatterns", columns, DEFAULT_STATE);
+  const { state, setState } = useTableState("chem.table.impurityTypes", columns, DEFAULT_STATE);
 
-  const loadPatterns = useCallback(async () => {
-    const res = await fetch("/api/impurity-patterns").catch(() => null);
+  const loadTypes = useCallback(async () => {
+    const res = await fetch("/api/impurity-types").catch(() => null);
     if (!res?.ok) {
       if (res) redirectIfUnauthorized(res);
       return;
     }
-    const body = (await res.json()) as ListResponse<ImpurityPatternDto>;
-    setPatterns(body.items);
+    const body = (await res.json()) as ListResponse<ImpurityTypeDto>;
+    setTypes(body.items);
     setSelectedId((cur) => cur ?? body.items.find((p) => p.id !== IMPURITY_NONE)?.id ?? null);
   }, []);
 
   useEffect(() => {
-    void loadPatterns();
-  }, [loadPatterns]);
+    void loadTypes();
+  }, [loadTypes]);
 
   // 法律と区分は件数が知れているので全部引く
   useEffect(() => {
@@ -152,8 +152,8 @@ export default function ImpurityPatternsPage() {
     })();
   }, []);
 
-  const loadExemptions = useCallback(async (patternId: string) => {
-    const res = await fetch(`/api/impurity-patterns/${patternId}/exemptions`).catch(() => null);
+  const loadExemptions = useCallback(async (typeId: string) => {
+    const res = await fetch(`/api/impurity-types/${typeId}/exemptions`).catch(() => null);
     if (!res?.ok) return;
     setExempt((await res.json()) as ImpurityExemptionsDto);
   }, []);
@@ -192,7 +192,7 @@ export default function ImpurityPatternsPage() {
     setError(null);
     setSaving(true);
     try {
-      const res = await fetch(`/api/impurity-patterns/${selectedId}/exemptions`, {
+      const res = await fetch(`/api/impurity-types/${selectedId}/exemptions`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ categoryIds, excluded: next }),
@@ -209,24 +209,21 @@ export default function ImpurityPatternsPage() {
     }
   }
 
-  async function savePattern() {
+  async function saveType() {
     setError(null);
     setSaving(true);
     try {
       const creating = form.id === "";
-      const res = await fetch(
-        creating ? "/api/impurity-patterns" : `/api/impurity-patterns/${form.id}`,
-        {
-          method: creating ? "POST" : "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            code: form.code,
-            nameJa: form.nameJa,
-            nameEn: form.nameEn || null,
-            note: form.note || null,
-          }),
-        },
-      );
+      const res = await fetch(creating ? "/api/impurity-types" : `/api/impurity-types/${form.id}`, {
+        method: creating ? "POST" : "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: form.code,
+          nameJa: form.nameJa,
+          nameEn: form.nameEn || null,
+          note: form.note || null,
+        }),
+      });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -235,17 +232,17 @@ export default function ImpurityPatternsPage() {
       }
       setAdding(false);
       setForm(EMPTY_FORM);
-      await loadPatterns();
+      await loadTypes();
     } finally {
       setSaving(false);
     }
   }
 
   /** まとめて削除。組み込み（0・1）はサーバーが断るので、そのまま知らせる */
-  async function removeSelected(rows: ImpurityPatternDto[]) {
+  async function removeSelected(rows: ImpurityTypeDto[]) {
     setError(null);
     for (const p of rows) {
-      const res = await fetch(`/api/impurity-patterns/${p.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/impurity-types/${p.id}`, { method: "DELETE" });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -254,7 +251,7 @@ export default function ImpurityPatternsPage() {
       }
       if (selectedId === p.id) setSelectedId(null);
     }
-    await loadPatterns();
+    await loadTypes();
   }
 
   const lawName = (l: LawDto) => pickStatutoryName(locale, l.nameOriginal, l.nameJa, l.nameEn);
@@ -272,8 +269,8 @@ export default function ImpurityPatternsPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <div>
-            <CardTitle>{m.impurityPatterns.title}</CardTitle>
-            <p className="text-muted-foreground mt-1 text-sm">{m.impurityPatterns.lead}</p>
+            <CardTitle>{m.impurityTypes.title}</CardTitle>
+            <p className="text-muted-foreground mt-1 text-sm">{m.impurityTypes.lead}</p>
           </div>
           {editable && !adding && (
             <Button
@@ -283,7 +280,7 @@ export default function ImpurityPatternsPage() {
                 setAdding(true);
               }}
             >
-              {m.impurityPatterns.add}
+              {m.impurityTypes.add}
             </Button>
           )}
         </CardHeader>
@@ -291,7 +288,7 @@ export default function ImpurityPatternsPage() {
           {editable && adding && (
             <div className="border-border bg-muted/30 flex flex-wrap items-end gap-3 border p-3">
               <div className="w-28 space-y-1">
-                <Label htmlFor="ip-code">{m.impurityPatterns.code}</Label>
+                <Label htmlFor="ip-code">{m.impurityTypes.code}</Label>
                 <Input
                   id="ip-code"
                   value={form.code}
@@ -301,7 +298,7 @@ export default function ImpurityPatternsPage() {
                 />
               </div>
               <div className="w-56 space-y-1">
-                <Label htmlFor="ip-name">{m.impurityPatterns.name}</Label>
+                <Label htmlFor="ip-name">{m.impurityTypes.name}</Label>
                 <Input
                   id="ip-name"
                   value={form.nameJa}
@@ -311,7 +308,7 @@ export default function ImpurityPatternsPage() {
                 />
               </div>
               <div className="min-w-56 flex-1 space-y-1">
-                <Label htmlFor="ip-note">{m.impurityPatterns.note}</Label>
+                <Label htmlFor="ip-note">{m.impurityTypes.note}</Label>
                 <Input
                   id="ip-note"
                   value={form.note}
@@ -324,7 +321,7 @@ export default function ImpurityPatternsPage() {
                 <Button
                   size="sm"
                   disabled={saving || form.code.trim() === "" || form.nameJa.trim() === ""}
-                  onClick={() => void savePattern()}
+                  onClick={() => void saveType()}
                 >
                   {saving ? m.common.saving : m.common.save}
                 </Button>
@@ -336,15 +333,15 @@ export default function ImpurityPatternsPage() {
           )}
 
           <DataTable
-            storageKey="chem.table.impurityPatterns"
+            storageKey="chem.table.impurityTypes"
             columns={columns}
-            rows={patterns}
+            rows={types}
             rowKey={(r) => r.id}
-            total={patterns.length}
+            total={types.length}
             state={state}
             defaultState={DEFAULT_STATE}
             onStateChange={setState}
-            emptyMessage={m.impurityPatterns.empty}
+            emptyMessage={m.impurityTypes.empty}
             showPager={false}
             showFilters={false}
             // 行を選ぶと、下の表がその種別の設定になる
@@ -375,22 +372,22 @@ export default function ImpurityPatternsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            {m.impurityPatterns.exemptions}
+          <CardTitle className="flex items-center gap-5">
+            {m.impurityTypes.exemptions}
             {selected && (
               <span className="bg-primary text-primary-foreground rounded px-2 py-0.5 font-mono text-sm">
                 {selected.code}
               </span>
             )}
           </CardTitle>
-          <p className="text-muted-foreground mt-1 text-sm">{m.impurityPatterns.exemptionsHint}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{m.impurityTypes.exemptionsHint}</p>
         </CardHeader>
         <CardContent>
           {!selected ? (
-            <p className="text-muted-foreground text-sm">{m.impurityPatterns.empty}</p>
+            <p className="text-muted-foreground text-sm">{m.impurityTypes.empty}</p>
           ) : selected.isNone ? (
             <Alert>
-              <AlertDescription>{m.impurityPatterns.noneHasNoExemption}</AlertDescription>
+              <AlertDescription>{m.impurityTypes.noneHasNoExemption}</AlertDescription>
             </Alert>
           ) : (
             <table className="w-full border-collapse text-sm">
@@ -398,7 +395,7 @@ export default function ImpurityPatternsPage() {
                 <tr className="bg-primary text-primary-foreground">
                   <th className="w-10 px-2 py-1" />
                   <th className="px-2 py-1 text-left">{m.laws.title}</th>
-                  <th className="w-32 px-2 py-1 text-center">{m.impurityPatterns.exclude}</th>
+                  <th className="w-32 px-2 py-1 text-center">{m.impurityTypes.exclude}</th>
                   <th className="w-28 px-2 py-1" />
                 </tr>
               </thead>
@@ -437,7 +434,7 @@ export default function ImpurityPatternsPage() {
                       }
                       onToggleCategory={(id, next) => void toggleCategories([id], next)}
                       onOpenExceptions={setExceptionsFor}
-                      exceptionsLabel={m.impurityPatterns.exceptions}
+                      exceptionsLabel={m.impurityTypes.exceptions}
                     />
                   );
                 })}
@@ -449,7 +446,7 @@ export default function ImpurityPatternsPage() {
 
       {exceptionsFor && selected && (
         <ExceptionsDialog
-          pattern={selected}
+          type={selected}
           category={exceptionsFor}
           onClose={() => {
             setExceptionsFor(null);
@@ -559,12 +556,12 @@ function ImpurityLawRows({
 
 /** 法文物質名ごとの上書き */
 function ExceptionsDialog({
-  pattern,
+  type,
   category,
   onClose,
   editable,
 }: {
-  pattern: ImpurityPatternDto;
+  type: ImpurityTypeDto;
   category: RegulationCategoryDto;
   onClose: () => void;
   editable: boolean;
@@ -582,7 +579,7 @@ function ExceptionsDialog({
     if (query.trim() !== "") params.set("f.nameJa", `contains:${query.trim()}`);
     const [s, e] = await Promise.all([
       fetch(`/api/statutory-substances?${params.toString()}`).catch(() => null),
-      fetch(`/api/impurity-patterns/${pattern.id}/exemptions`).catch(() => null),
+      fetch(`/api/impurity-types/${type.id}/exemptions`).catch(() => null),
     ]);
     if (s?.ok) {
       const body = (await s.json()) as ListResponse<StatutorySubstanceDto>;
@@ -593,14 +590,14 @@ function ExceptionsDialog({
       const body = (await e.json()) as ImpurityExemptionsDto;
       setOverrides(new Map(body.substances.map((x) => [x.statutorySubstanceId, x.excluded])));
     }
-  }, [category.id, pattern.id, query]);
+  }, [category.id, type.id, query]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   async function set(statutorySubstanceId: string, excluded: boolean | null) {
-    await fetch(`/api/impurity-patterns/${pattern.id}/exemptions`, {
+    await fetch(`/api/impurity-types/${type.id}/exemptions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ statutorySubstanceId, excluded }),
@@ -615,10 +612,8 @@ function ExceptionsDialog({
       <Card className="max-h-[80vh] w-[56rem] overflow-auto">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>{m.impurityPatterns.exceptionsTitle}</CardTitle>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {m.impurityPatterns.exceptionsHint}
-            </p>
+            <CardTitle>{m.impurityTypes.exceptionsTitle}</CardTitle>
+            <p className="text-muted-foreground mt-1 text-sm">{m.impurityTypes.exceptionsHint}</p>
           </div>
           <Button size="sm" variant="outline" onClick={onClose}>
             {m.common.close}
@@ -638,7 +633,7 @@ function ExceptionsDialog({
                 checked={onlyExceptions}
                 onChange={() => setOnlyExceptions(!onlyExceptions)}
               />
-              {m.impurityPatterns.onlyExceptions}
+              {m.impurityTypes.onlyExceptions}
             </label>
             {/* **出している数と全体の数を必ず出す。**黙って切ると、続きがあることに気づけない */}
             <span className="text-muted-foreground text-xs">
@@ -649,7 +644,7 @@ function ExceptionsDialog({
             <thead>
               <tr className="bg-primary text-primary-foreground">
                 <th className="px-2 py-1 text-left">{m.statutorySubstances.title}</th>
-                <th className="w-64 px-2 py-1 text-left">{m.impurityPatterns.exclude}</th>
+                <th className="w-64 px-2 py-1 text-left">{m.impurityTypes.exclude}</th>
               </tr>
             </thead>
             <tbody>
@@ -666,14 +661,14 @@ function ExceptionsDialog({
                         className="border-input bg-background h-8 w-full rounded-none border px-2 text-sm"
                         value={value}
                         disabled={!editable}
-                        aria-label={m.impurityPatterns.exclude}
+                        aria-label={m.impurityTypes.exclude}
                         onChange={(e) =>
                           void set(s.id, e.target.value === "" ? null : e.target.value === "yes")
                         }
                       >
-                        <option value="">{m.impurityPatterns.followCategory}</option>
-                        <option value="yes">{m.impurityPatterns.excludeHere}</option>
-                        <option value="no">{m.impurityPatterns.dontExcludeHere}</option>
+                        <option value="">{m.impurityTypes.followCategory}</option>
+                        <option value="yes">{m.impurityTypes.excludeHere}</option>
+                        <option value="no">{m.impurityTypes.dontExcludeHere}</option>
                       </select>
                     </td>
                   </tr>

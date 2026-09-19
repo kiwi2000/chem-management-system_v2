@@ -134,9 +134,9 @@ export async function POST(req: Request) {
   if (base.casNormalized) {
     // 代表は CAS × 不純物種別ごとに 1 件（S21）
     if (input.casRepresentative) {
-      await makeCasRepresentative(prisma, created.id, base.casNormalized, base.impurityPatternId);
+      await makeCasRepresentative(prisma, created.id, base.casNormalized, base.impurityTypeId);
     } else {
-      await ensureCasRepresentative(prisma, base.casNormalized, base.impurityPatternId);
+      await ensureCasRepresentative(prisma, base.casNormalized, base.impurityTypeId);
     }
   }
 
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
     created.id,
     settings,
     m,
-    base.impurityPatternId,
+    base.impurityTypeId,
   );
   return Response.json({ id: created.id, warnings }, { status: 201 });
 }

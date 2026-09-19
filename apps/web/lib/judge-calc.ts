@@ -45,7 +45,7 @@ export interface ExpandedLine {
   substanceId: string | null;
   totalPct: string;
   /** 物質の不純物種別。省くと 0（不純物ではない） */
-  impurityPatternId?: string;
+  impurityTypeId?: string;
 }
 
 /**
@@ -53,7 +53,7 @@ export interface ExpandedLine {
  * 「この種別の物質は、この判定の単位では非該当にするか」。
  * 法文物質名が単位なら id、区分そのものが単位なら null で聞く
  */
-export type ExemptResolver = (patternId: string, statutorySubstanceId: string | null) => boolean;
+export type ExemptResolver = (typeId: string, statutorySubstanceId: string | null) => boolean;
 
 /** 判定の対象になる法文物質名 */
 export interface JudgeEntry {
@@ -168,14 +168,14 @@ export interface JudgeUnit {
    *   該当・まとめる   … 足し合わせた CAS が、すべて並ぶ（元素換算なら換算後の値）
    *   非該当           … 製品に入っている CAS が並ぶ（閾値に届かなかった値。「含有率不足」を読むため）
    *
-   * 同じ CAS が不純物種別違いで 2 行並ぶことがある（`pattern` で見分ける）
+   * 同じ CAS が不純物種別違いで 2 行並ぶことがある（`type` で見分ける）
    */
-  contributions: { cas: string; pct: string; sources: string[]; pattern: string }[];
+  contributions: { cas: string; pct: string; sources: string[]; type: string }[];
   /**
    * **不純物種別の設定で除外した寄与**（S21）。閾値とは比べていない。
    * 「不純物のため非該当」として画面に出すために、消さずに残す。含有率はそのままの値
    */
-  excluded: { cas: string; pct: string; pattern: string }[];
+  excluded: { cas: string; pct: string; type: string }[];
 }
 
 export interface JudgeResult {
@@ -251,7 +251,7 @@ export function judge(input: JudgeInput): JudgeResult {
     if (list) list.push(l);
     else byCas.set(l.casNormalized, [l]);
   }
-  const patternOf = (l: ExpandedLine) => l.impurityPatternId ?? IMPURITY_NONE;
+  const impurityTypeOf = (l: ExpandedLine) => l.impurityTypeId ?? IMPURITY_NONE;
   /**
    * その単位で見る行を、閾値と比べる行と、不純物種別で除外する行に分ける（S21）。
    * 除外は「法文物質名の上書き → 区分の設定 → 除外しない」の順に決めてある（isExempt が答える）
@@ -261,7 +261,7 @@ export function judge(input: JudgeInput): JudgeResult {
     const exempt: ExpandedLine[] = [];
     for (const c of cas) {
       for (const l of byCas.get(c) ?? []) {
-        const p = patternOf(l);
+        const p = impurityTypeOf(l);
         if (p !== IMPURITY_NONE && isExempt(p, statutorySubstanceId)) exempt.push(l);
         else compared.push(l);
       }
@@ -272,7 +272,7 @@ export function judge(input: JudgeInput): JudgeResult {
     list.map((l) => ({
       cas: l.casNormalized as string,
       pct: fromScaled(toScaled(l.totalPct) ?? 0n),
-      pattern: patternOf(l),
+      type: impurityTypeOf(l),
     }));
 
   /*
@@ -298,7 +298,7 @@ export function judge(input: JudgeInput): JudgeResult {
         const r = pctOf(l, mode, target, factors);
         if (r.missing) reasons.add("missingFactor");
         const cas = l.casNormalized as string;
-        return { cas, pct: fromScaled(r.pct), sources: sourcesOf(cas), pattern: patternOf(l) };
+        return { cas, pct: fromScaled(r.pct), sources: sourcesOf(cas), type: impurityTypeOf(l) };
       });
     /** 閾値と比べる値。合計するときはここを足す */
     const valueOf = (l: ExpandedLine, mode: Aggregation, target: string | null) => {

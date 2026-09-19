@@ -10,7 +10,7 @@ import {
 } from "@chem/shared";
 import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
 import {
-  casPatternKey,
+  casTypeKey,
   currentSources,
   nearMissByCas,
   previousVersion,
@@ -42,14 +42,14 @@ import type { CompositionAggregateDto } from "@/lib/types";
  * CASを持たない物質はまとめようがないので、物質IDそのものを鍵にする。
  * **不純物種別（S21）が違えば別の行**にする（種別をまたいで足さない）
  */
-const keyOf = (casNormalized: string | null, substanceId: string, pattern: string) =>
-  casNormalized ? `cas:${casNormalized}@${pattern}` : `sub:${substanceId}`;
+const keyOf = (casNormalized: string | null, substanceId: string, type: string) =>
+  casNormalized ? `cas:${casNormalized}@${type}` : `sub:${substanceId}`;
 
 interface Bucket {
   casNumber: string | null;
   casNormalized: string | null;
   /** 不純物種別（S21）。0 は「不純物ではない」 */
-  impurityPatternId: string;
+  impurityTypeId: string;
   /** 代表が決まるまでの仮の名前。いちばん最初に見つけた物質のもの */
   code: string;
   nameJa: string;
@@ -212,20 +212,20 @@ export async function aggregateComposition(
       casNumber: string | null;
       score: { toString(): string };
       scoreRank: string | null;
-      impurityPatternId?: string;
+      impurityTypeId?: string;
     },
     ratio: Ratio,
     note: string | null,
   ) {
     const casNormalized = substance.casNumber?.trim().toUpperCase() ?? null;
-    const pattern = substance.impurityPatternId ?? IMPURITY_NONE;
-    const key = keyOf(casNormalized, substance.id, pattern);
+    const type = substance.impurityTypeId ?? IMPURITY_NONE;
+    const key = keyOf(casNormalized, substance.id, type);
     const fine = ratioToFine(ratio);
 
     const bucket = buckets.get(key) ?? {
       casNumber: substance.casNumber,
       casNormalized,
-      impurityPatternId: pattern,
+      impurityTypeId: type,
       code: substance.code,
       nameJa: substance.nameJa,
       nameEn: substance.nameEn,
@@ -273,12 +273,12 @@ export async function aggregateComposition(
             nameEn: true,
             score: true,
             scoreRank: true,
-            impurityPatternId: true,
+            impurityTypeId: true,
           },
         });
   // 代表は CAS × 不純物種別ごとに 1 件（S21）
   const byCas = new Map(
-    representatives.map((r) => [`${r.casNormalized ?? ""}@${r.impurityPatternId}`, r]),
+    representatives.map((r) => [`${r.casNormalized ?? ""}@${r.impurityTypeId}`, r]),
   );
 
   /*
@@ -297,12 +297,10 @@ export async function aggregateComposition(
   const rows = [...buckets.values()]
     .sort((a, b) => compareFine(b.fine, a.fine))
     .map((b) => {
-      const rep = b.casNormalized
-        ? byCas.get(`${b.casNormalized}@${b.impurityPatternId}`)
-        : undefined;
+      const rep = b.casNormalized ? byCas.get(`${b.casNormalized}@${b.impurityTypeId}`) : undefined;
       return {
         casNumber: b.casNumber,
-        impurityPatternId: b.impurityPatternId,
+        impurityTypeId: b.impurityTypeId,
         code: rep?.code ?? b.code,
         nameJa: rep?.nameJa ?? b.nameJa,
         nameEn: rep?.nameEn ?? b.nameEn,
@@ -327,7 +325,7 @@ export async function aggregateComposition(
         */
         regulations:
           (b.casNormalized
-            ? regulations.get(casPatternKey(b.casNormalized, b.impurityPatternId))
+            ? regulations.get(casTypeKey(b.casNormalized, b.impurityTypeId))
             : undefined) ?? [],
         nearMiss: (b.casNormalized ? nearMiss.get(b.casNormalized) : undefined) ?? [],
       };

@@ -99,8 +99,8 @@ const ITEMS: NavItem[] = [
       // 換算係数・元素・不純物種別は法規制の判定にしか使わないので、ここに置く
       { href: "/metal-factors", key: "metalFactors", icon: Sigma, needs: "REGULATION_VIEW" },
       {
-        href: "/impurity-patterns",
-        key: "impurityPatterns",
+        href: "/impurity-types",
+        key: "impurityTypes",
         icon: Droplets,
         needs: "REGULATION_VIEW",
       },

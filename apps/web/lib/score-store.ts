@@ -54,10 +54,10 @@ const TOTAL_SQL = `
     WHERE s.deleted_at IS NULL
       AND NOT COALESCE(
         (SELECT es.excluded FROM impurity_exemption_substances es
-          WHERE es.pattern_id = s.impurity_pattern_id
+          WHERE es.type_id = s.impurity_type_id
             AND es.statutory_substance_id = h.statutory_substance_id),
         (SELECT e.excluded FROM impurity_exemptions e
-          WHERE e.pattern_id = s.impurity_pattern_id AND e.category_id = h.category_id),
+          WHERE e.type_id = s.impurity_type_id AND e.category_id = h.category_id),
         false)
   )
   SELECT substance_id, SUM(score) AS total
@@ -183,9 +183,9 @@ export async function recomputeScoresForCategory(categoryId: string): Promise<nu
  * ある不純物種別の物質を、まとめて計算し直す（S21）。
  * 除外の設定を変えると、その種別の物質の点が変わるので、除外の付け外しのときに呼ぶ
  */
-export async function recomputeScoresForPattern(patternId: string): Promise<number> {
+export async function recomputeScoresForType(typeId: string): Promise<number> {
   const rows = await prisma.substance.findMany({
-    where: { impurityPatternId: patternId, deletedAt: null, casNormalized: { not: null } },
+    where: { impurityTypeId: typeId, deletedAt: null, casNormalized: { not: null } },
     select: { casNormalized: true },
   });
   const cas = [...new Set(rows.map((r) => r.casNormalized as string))];

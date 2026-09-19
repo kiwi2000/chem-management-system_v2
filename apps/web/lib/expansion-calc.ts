@@ -28,7 +28,7 @@ export interface ExpandedProduct {
     casNormalized: string | null;
     substanceId: string | null;
     /** 物質の不純物種別。同じ CAS でも種別が違えば別の行（S21） */
-    impurityPatternId: string;
+    impurityTypeId: string;
     totalPct: string;
   }[];
 }
@@ -36,7 +36,7 @@ export interface ExpandedProduct {
 /** 組成の1行。木をたどるのに要るぶんだけ */
 export interface ExpandLine {
   contentPct: string | null;
-  substance: { id: string; casNumber: string | null; impurityPatternId?: string } | null;
+  substance: { id: string; casNumber: string | null; impurityTypeId?: string } | null;
   childProductId: string | null;
 }
 
@@ -62,7 +62,7 @@ export async function expandTree(
    */
   const buckets = new Map<
     string,
-    { cas: string | null; substanceId: string | null; pattern: string; fine: bigint }
+    { cas: string | null; substanceId: string | null; type: string; fine: bigint }
   >();
   let unknownFine = 0n;
   let truncated = 0;
@@ -81,17 +81,17 @@ export async function expandTree(
   }
 
   function addLeaf(
-    substance: { id: string; casNumber: string | null; impurityPatternId?: string },
+    substance: { id: string; casNumber: string | null; impurityTypeId?: string },
     ratio: Ratio,
   ) {
     const cas = substance.casNumber?.trim().toUpperCase() || null;
-    const pattern = substance.impurityPatternId ?? IMPURITY_NONE;
+    const type = substance.impurityTypeId ?? IMPURITY_NONE;
     // CAS を持つものは CAS × 種別でまとめる。持たないものは物質そのものを鍵にする
-    const key = cas ? `cas:${cas}@${pattern}` : `sub:${substance.id}`;
+    const key = cas ? `cas:${cas}@${type}` : `sub:${substance.id}`;
     const cur = buckets.get(key) ?? {
       cas,
       substanceId: cas ? null : substance.id,
-      pattern,
+      type,
       fine: 0n,
     };
     cur.fine += ratioToFine(ratio);
@@ -138,7 +138,7 @@ export async function expandTree(
     lines: [...buckets.values()].map((b) => ({
       casNormalized: b.cas,
       substanceId: b.substanceId,
-      impurityPatternId: b.pattern,
+      impurityTypeId: b.type,
       totalPct: fineToPct(b.fine),
     })),
   };

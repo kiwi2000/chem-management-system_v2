@@ -56,8 +56,8 @@ export interface AppliedJudgement {
  */
 export function premiseOf(
   unit: Pick<JudgeUnit, "statutorySubstanceId"> & {
-    contributions: { cas: string; pattern?: string }[];
-    excluded?: { cas: string; pattern: string }[];
+    contributions: { cas: string; type?: string }[];
+    excluded?: { cas: string; type: string }[];
   },
 ): string {
   /*
@@ -65,12 +65,12 @@ export function premiseOf(
     全部が 0 なら前の書きかたと同じ文字列になり、前からある人の判断が外れない。
     除外した行は `!` を付けて入れる。除外の設定が変わると前提が変わり、判断は要確認に戻る
   */
-  const tag = (cas: string, pattern?: string) =>
-    pattern && pattern !== IMPURITY_NONE ? `${cas}@${pattern}` : cas;
+  const tag = (cas: string, type?: string) =>
+    type && type !== IMPURITY_NONE ? `${cas}@${type}` : cas;
   const cas = [
     ...new Set([
-      ...unit.contributions.map((c) => tag(c.cas, c.pattern)),
-      ...(unit.excluded ?? []).map((x) => `${tag(x.cas, x.pattern)}!`),
+      ...unit.contributions.map((c) => tag(c.cas, c.type)),
+      ...(unit.excluded ?? []).map((x) => `${tag(x.cas, x.type)}!`),
     ]),
   ].sort();
   return `${unit.statutorySubstanceId ?? "*"}:${cas.join(",")}`;

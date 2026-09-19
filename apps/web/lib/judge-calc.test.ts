@@ -46,11 +46,11 @@ const input = (x: Partial<JudgeInput> = {}): JudgeInput => ({
   ...x,
 });
 
-const line = (cas: string, pct: string, impurityPatternId = "ip-none") => ({
+const line = (cas: string, pct: string, impurityTypeId = "ip-none") => ({
   casNormalized: cas,
   substanceId: null,
   totalPct: pct,
-  impurityPatternId,
+  impurityTypeId,
 });
 
 /**
@@ -65,8 +65,8 @@ const first = (r: ReturnType<typeof judge>) =>
     needsReview: false,
     reasons: [] as string[],
     total: null,
-    contributions: [] as { cas: string; pct: string; sources: string[]; pattern: string }[],
-    excluded: [] as { cas: string; pct: string; pattern: string }[],
+    contributions: [] as { cas: string; pct: string; sources: string[]; type: string }[],
+    excluded: [] as { cas: string; pct: string; type: string }[],
   };
 
 describe("閾値との比較", () => {
@@ -78,7 +78,7 @@ describe("閾値との比較", () => {
     expect(first(r).needsReview).toBe(false);
     expect(first(r).total).toBeNull();
     expect(first(r).contributions).toEqual([
-      { cas: "7439-92-1", pct: "0.2", sources: [], pattern: "ip-none" },
+      { cas: "7439-92-1", pct: "0.2", sources: [], type: "ip-none" },
     ]);
   });
 
@@ -127,7 +127,7 @@ describe("判定の単位は法文物質名", () => {
     expect(first(r).verdict).toBe("NOT_APPLICABLE");
     // 「含有率不足」を読めるように、閾値に届かなかった値をそのまま残す
     expect(first(r).contributions).toEqual([
-      { cas: "7439-92-1", pct: "0.05", sources: [], pattern: "ip-none" },
+      { cas: "7439-92-1", pct: "0.05", sources: [], type: "ip-none" },
     ]);
     expect(first(r).total).toBeNull();
   });
@@ -346,8 +346,8 @@ describe("まとめないときの、複数の当たり", () => {
     expect(first(r).verdict).toBe("APPLICABLE");
     // 0.05 の銀は閾値に届かないので入らない
     expect(first(r).contributions).toEqual([
-      { cas: "7439-92-1", pct: "0.5", sources: [], pattern: "ip-none" },
-      { cas: "1317-36-8", pct: "0.4", sources: [], pattern: "ip-none" },
+      { cas: "7439-92-1", pct: "0.5", sources: [], type: "ip-none" },
+      { cas: "1317-36-8", pct: "0.4", sources: [], type: "ip-none" },
     ]);
   });
 
@@ -369,7 +369,7 @@ describe("まとめないときの、複数の当たり", () => {
       }),
     );
     expect(first(r).contributions).toEqual([
-      { cas: "7439-92-1", pct: "0.2", sources: ["loli", "chrip"], pattern: "ip-none" },
+      { cas: "7439-92-1", pct: "0.2", sources: ["loli", "chrip"], type: "ip-none" },
     ]);
   });
 
@@ -385,8 +385,8 @@ describe("まとめないときの、複数の当たり", () => {
       }),
     );
     expect(first(r).contributions).toEqual([
-      { cas: "7439-92-1", pct: "0.06", sources: ["loli"], pattern: "ip-none" },
-      { cas: "1317-36-8", pct: "0.06", sources: ["chrip"], pattern: "ip-none" },
+      { cas: "7439-92-1", pct: "0.06", sources: ["loli"], type: "ip-none" },
+      { cas: "1317-36-8", pct: "0.06", sources: ["chrip"], type: "ip-none" },
     ]);
   });
 
@@ -412,8 +412,8 @@ describe("まとめないときの、複数の当たり", () => {
     );
     expect(first(r).total).toBe("0.12");
     expect(first(r).contributions).toEqual([
-      { cas: "7439-92-1", pct: "0.06", sources: [], pattern: "ip-none" },
-      { cas: "1317-36-8", pct: "0.06", sources: [], pattern: "ip-none" },
+      { cas: "7439-92-1", pct: "0.06", sources: [], type: "ip-none" },
+      { cas: "1317-36-8", pct: "0.06", sources: [], type: "ip-none" },
     ]);
   });
 
@@ -630,7 +630,7 @@ describe("条件つきで結ばれたCAS", () => {
  */
 describe("不純物種別による除外", () => {
   /** 指定した種別を、すべての単位で除外する */
-  const exempt = (pattern: string) => (p: string) => p === pattern;
+  const exempt = (type: string) => (p: string) => p === type;
 
   it("不純物の種別が除外に当たれば、閾値を超えていても非該当", () => {
     const r = judge(
@@ -642,7 +642,7 @@ describe("不純物種別による除外", () => {
     );
     expect(first(r).verdict).toBe("NOT_APPLICABLE");
     expect(first(r).contributions).toEqual([]);
-    expect(first(r).excluded).toEqual([{ cas: "7439-92-1", pct: "40", pattern: "ip-impurity" }]);
+    expect(first(r).excluded).toEqual([{ cas: "7439-92-1", pct: "40", type: "ip-impurity" }]);
   });
 
   it("除外の設定が無ければ、不純物でもいままでどおり判定する", () => {
@@ -665,7 +665,7 @@ describe("不純物種別による除外", () => {
       }),
     );
     expect(first(r).verdict).toBe("NOT_APPLICABLE");
-    expect(first(r).contributions.map((c) => c.pattern)).toEqual(["ip-none", "ip-impurity"]);
+    expect(first(r).contributions.map((c) => c.type)).toEqual(["ip-none", "ip-impurity"]);
   });
 
   it("主成分は判定し、不純物だけを除外する", () => {
@@ -678,9 +678,9 @@ describe("不純物種別による除外", () => {
     );
     expect(first(r).verdict).toBe("APPLICABLE");
     expect(first(r).contributions).toEqual([
-      { cas: "7439-92-1", pct: "0.2", sources: [], pattern: "ip-none" },
+      { cas: "7439-92-1", pct: "0.2", sources: [], type: "ip-none" },
     ]);
-    expect(first(r).excluded).toEqual([{ cas: "7439-92-1", pct: "40", pattern: "ip-impurity" }]);
+    expect(first(r).excluded).toEqual([{ cas: "7439-92-1", pct: "40", type: "ip-impurity" }]);
   });
 
   it("法文物質名ごとに除外を変えられる（区分の設定の上書き）", () => {
@@ -713,7 +713,7 @@ describe("不純物種別による除外", () => {
     // 除外しなければ 0.12 で該当。除外すると 0.06 で非該当
     expect(first(r).verdict).toBe("NOT_APPLICABLE");
     expect(first(r).total).toBe("0.06");
-    expect(first(r).excluded).toEqual([{ cas: "1317-36-8", pct: "0.06", pattern: "ip-impurity" }]);
+    expect(first(r).excluded).toEqual([{ cas: "1317-36-8", pct: "0.06", type: "ip-impurity" }]);
   });
 
   it("除外は閾値より先。適用条件が付いていても、除外されれば非該当のまま", () => {

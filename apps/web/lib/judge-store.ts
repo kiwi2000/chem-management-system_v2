@@ -165,33 +165,33 @@ export async function loadRules(
   */
   const [exemptions, overrides] = await Promise.all([
     prisma.impurityExemption.findMany({
-      where: { pattern: { deletedAt: null } },
-      select: { patternId: true, categoryId: true, excluded: true },
+      where: { type: { deletedAt: null } },
+      select: { typeId: true, categoryId: true, excluded: true },
     }),
     prisma.impurityExemptionSubstance.findMany({
-      where: { pattern: { deletedAt: null } },
-      select: { patternId: true, statutorySubstanceId: true, excluded: true },
+      where: { type: { deletedAt: null } },
+      select: { typeId: true, statutorySubstanceId: true, excluded: true },
     }),
   ]);
   /** 区分 → 種別 → 除外する */
   const byCategory = new Map<string, Map<string, boolean>>();
   for (const x of exemptions) {
     const m = byCategory.get(x.categoryId) ?? new Map<string, boolean>();
-    m.set(x.patternId, x.excluded);
+    m.set(x.typeId, x.excluded);
     byCategory.set(x.categoryId, m);
   }
   /** `種別/法文物質名` → 上書き */
   const bySubstance = new Map(
-    overrides.map((x) => [`${x.patternId}/${x.statutorySubstanceId}`, x.excluded]),
+    overrides.map((x) => [`${x.typeId}/${x.statutorySubstanceId}`, x.excluded]),
   );
   const resolverFor = (categoryId: string): ExemptResolver => {
     const cat = byCategory.get(categoryId);
-    return (patternId, statutorySubstanceId) => {
+    return (typeId, statutorySubstanceId) => {
       if (statutorySubstanceId) {
-        const o = bySubstance.get(`${patternId}/${statutorySubstanceId}`);
+        const o = bySubstance.get(`${typeId}/${statutorySubstanceId}`);
         if (o !== undefined) return o;
       }
-      return cat?.get(patternId) ?? false;
+      return cat?.get(typeId) ?? false;
     };
   };
 
@@ -323,7 +323,7 @@ export async function computeJudgements(
   });
   const lines = await prisma.productExpansionLine.findMany({
     where: { productId },
-    select: { casNormalized: true, substanceId: true, totalPct: true, impurityPatternId: true },
+    select: { casNormalized: true, substanceId: true, totalPct: true, impurityTypeId: true },
   });
 
   /*
@@ -340,7 +340,7 @@ export async function computeJudgements(
         casNormalized: l.casNormalized,
         substanceId: l.substanceId,
         totalPct: l.totalPct.toString(),
-        impurityPatternId: l.impurityPatternId,
+        impurityTypeId: l.impurityTypeId,
       })),
       unknownPct,
       truncated,

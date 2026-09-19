@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { useI18n } from "@/lib/i18n-client";
-import type { ImpurityPatternDto, ListResponse, SubstanceListItemDto } from "@/lib/types";
+import type { ImpurityTypeDto, ListResponse, SubstanceListItemDto } from "@/lib/types";
 
 /**
  * 物質一覧の列と絞り込み。
@@ -26,7 +26,7 @@ export const SUBSTANCE_DEFAULT_STATE: TableState = emptyTableState([
 
 /** フィルターの並び。ここに無い列は、この後ろに2列で並ぶ */
 export const SUBSTANCE_FILTER_LAYOUT: string[][] = [
-  ["code", "casRepresentative", "impurityPatternId", "status"],
+  ["code", "casRepresentative", "impurityTypeId", "status"],
   ["casNumber"],
   ["nameJa"],
   ["nameEn"],
@@ -51,14 +51,14 @@ export function useSubstanceListColumns({
    * 不純物種別（S21）の選択肢。件数が知れているので全部引く。
    * 物質を見られる人なら引けるので、権限の出し分けは要らない
    */
-  const [patterns, setPatterns] = useState<ImpurityPatternDto[]>([]);
+  const [types, setTypes] = useState<ImpurityTypeDto[]>([]);
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const res = await fetch("/api/impurity-patterns").catch(() => null);
+      const res = await fetch("/api/impurity-types").catch(() => null);
       if (!res?.ok) return;
-      const body = (await res.json()) as ListResponse<ImpurityPatternDto>;
-      if (alive) setPatterns(body.items);
+      const body = (await res.json()) as ListResponse<ImpurityTypeDto>;
+      if (alive) setTypes(body.items);
     })();
     return () => {
       alive = false;
@@ -125,19 +125,19 @@ export function useSubstanceListColumns({
           不純物種別（S21）。**0「不純物ではない」は空欄で出す。**
           ほとんどの物質が 0 なので、書くと表が「0」で埋まって読めなくなる
         */
-        key: "impurityPatternId",
-        header: m.substances.impurityPattern,
+        key: "impurityTypeId",
+        header: m.substances.impurityType,
         kind: "enum",
         width: 110,
         className: "text-xs",
-        options: patterns.map((p) => ({
+        options: types.map((p) => ({
           value: p.id,
           label: `${p.code} — ${pickName(locale, p.nameJa, p.nameEn)}`,
         })),
         render: (r) => {
-          if (r.impurityPatternId === IMPURITY_NONE) return "";
-          const p = patterns.find((x) => x.id === r.impurityPatternId);
-          return p ? pickName(locale, p.nameJa, p.nameEn) : r.impurityPatternId;
+          if (r.impurityTypeId === IMPURITY_NONE) return "";
+          const p = types.find((x) => x.id === r.impurityTypeId);
+          return p ? pickName(locale, p.nameJa, p.nameEn) : r.impurityTypeId;
         },
       },
       {
@@ -294,7 +294,7 @@ export function useSubstanceListColumns({
     ];
     // 公開済だけの表では、状態の列は出さない（全部同じ値になるため）
     return scope === "published" ? cols.filter((c) => c.key !== "publishState") : cols;
-  }, [m, locale, scope, rankOptions, patterns]);
+  }, [m, locale, scope, rankOptions, types]);
 
   return { columns, filterLayout: SUBSTANCE_FILTER_LAYOUT };
 }

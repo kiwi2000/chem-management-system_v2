@@ -99,7 +99,7 @@ export const en: Messages = {
     elements: "Elements",
     metalFactors: "Metal conversion factors",
     /** The sidebar keeps it short; the page heading is "Impurity types" */
-    impurityPatterns: "Impurities",
+    impurityTypes: "Impurities",
     importExport: "Data import and export",
     dataImport: "Import",
     dataExport: "Export",
@@ -348,8 +348,8 @@ export const en: Messages = {
   },
 
   substances: {
-    impurityPattern: "Impurity type",
-    impurityPatternHint:
+    impurityType: "Impurity type",
+    impurityTypeHint:
       "Register a substance present as an impurity under its own type. Which categories each type exempts is set under Regulations > Impurities.",
     publishState: "Status",
     workingSection: "In progress",
@@ -759,7 +759,7 @@ export const en: Messages = {
     duplicateCode: (code: string) => `Code "${code}" is already in use`,
   },
 
-  impurityPatterns: {
+  impurityTypes: {
     title: "Impurity types",
     lead: "Groups substances present as impurities so that chosen regulations treat them as non-applicable. Pick one on the substance.",
     code: "Code",

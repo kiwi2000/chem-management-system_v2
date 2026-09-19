@@ -31,14 +31,14 @@
 JudgmentInput {
   product: {
     id
-    expanded: [ { substanceId, casNormalized, impurityPatternId, contentPct: Decimal } ]
+    expanded: [ { substanceId, casNormalized, impurityTypeId, contentPct: Decimal } ]
     // 展開・統合後組成。**合算の鍵は「CAS × 不純物種別」**（S21）
   }
   categories: [ RegulationCategory ]        // 対象規制区分（rank, 兼ね合い, 合算方式, 閾値, 結果抑制）
   statutorySubstances: [ StatutorySubstance ] // 法文物質名（閾値, 判定方式, 判定金属元素）
   links: [ { statutorySubstanceId, casNormalized, sourceId, excluded } ]  // 指定バージョン内のリンク（excluded=非該当）
   sources: [ { id, priority, active } ]     // 情報源優先度。active は `link_version_sources.enabled`（実装済み）
-  isExempt: (impurityPatternId, statutorySubstanceId?) => boolean
+  isExempt: (impurityTypeId, statutorySubstanceId?) => boolean
   // 不純物種別による除外（S21）。法文物質名の上書き → 区分の設定 → 除外しない の順で答える
   metalFactors: [ { casNormalized, metalElement, ratioPct: Decimal } ]
   options: { lowerBoundInclusive, upperBoundInclusive }   // 境界の扱い（Q-N2）
@@ -54,8 +54,8 @@ JudgmentResult {
     calculatedValue: Decimal?      // 合算量 / 金属換算量（合算方式に応じる）
     isFinal: boolean               // 最終該当区分か（結果抑制後）
     suppressed: boolean            // 下位として抑制されたか
-    contributions: [ { cas, pct, pattern, sources } ]   // 閾値と比べた寄与（根拠）
-    excluded: [ { cas, pct, pattern } ]                 // 不純物種別で除外した寄与（S21）
+    contributions: [ { cas, pct, type, sources } ]   // 閾値と比べた寄与（根拠）
+    excluded: [ { cas, pct, type } ]                 // 不純物種別で除外した寄与（S21）
     // adoptedSourceId は組ごとに採った行の情報源。リンク無し（該非不明）のときは null とし、
     // excluded による確認済みの非該当と区別できるようにする（§4）
   } ]
@@ -256,7 +256,7 @@ function judge(input):
 
 
 function split(lines, S, input):                       # §4-3 不純物種別の仕分け
-  exempt  = [ l in lines where l.pattern != 0 and input.isExempt(l.pattern, S?.id) ]
+  exempt  = [ l in lines where l.type != 0 and input.isExempt(l.type, S?.id) ]
   compared = lines - exempt
   return (compared, exempt)
 

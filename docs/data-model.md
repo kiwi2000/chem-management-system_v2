@@ -409,12 +409,12 @@ SystemSetting / AuditLog / ImportJob : 独立
 #### 不純物種別（S21・2026-09-18）
 | 表 | 主な列 | 説明 |
 |---|---|---|
-| `impurity_patterns` | `code`/`code_normalized` UNIQUE、`name_ja`/`name_en`、`display_order`、`builtin` | 「同じ該非判定になる不純物どうし」の区分。組み込みは id 固定（`ip-none`＝0 不純物ではない、`ip-impurity`＝1 不純物）。論理削除 |
-| `impurity_exemptions` | `(pattern_id, category_id)` UNIQUE、`excluded` | 種別 × 規制区分。行が無ければ除外しない |
-| `impurity_exemption_substances` | `(pattern_id, statutory_substance_id)` UNIQUE、`excluded` | 種別 × 法文物質名。**区分の設定を両方向に上書き**する |
-| `substances` | `impurity_pattern_id` NOT NULL default `ip-none` | 物質の属性。代表物質の部分一意索引は **`(cas_normalized, impurity_pattern_id)`** に変えた |
-| `product_expansion_lines` | `impurity_pattern_id` NOT NULL default `ip-none` | 展開結果。一意キーは `(product_id, cas_normalized, substance_id, impurity_pattern_id)`（索引名 `product_expansion_lines_key_cas_pattern`） |
-| `product_judgement_hits` | `excluded` Json? | 不純物種別で除外した寄与（`[{ cas, pct, pattern }]`）。閾値と比べていない |
+| `impurity_types` | `code`/`code_normalized` UNIQUE、`name_ja`/`name_en`、`display_order`、`builtin` | 「同じ該非判定になる不純物どうし」の区分。組み込みは id 固定（`ip-none`＝0 不純物ではない、`ip-impurity`＝1 不純物）。論理削除 |
+| `impurity_exemptions` | `(type_id, category_id)` UNIQUE、`excluded` | 種別 × 規制区分。行が無ければ除外しない |
+| `impurity_exemption_substances` | `(type_id, statutory_substance_id)` UNIQUE、`excluded` | 種別 × 法文物質名。**区分の設定を両方向に上書き**する |
+| `substances` | `impurity_type_id` NOT NULL default `ip-none` | 物質の属性。代表物質の部分一意索引は **`(cas_normalized, impurity_type_id)`** に変えた |
+| `product_expansion_lines` | `impurity_type_id` NOT NULL default `ip-none` | 展開結果。一意キーは `(product_id, cas_normalized, substance_id, impurity_type_id)`（索引名 `product_expansion_lines_key_cas_type`） |
+| `product_judgement_hits` | `excluded` Json? | 不純物種別で除外した寄与（`[{ cas, pct, type }]`）。閾値と比べていない |
 
 判定での効きかたは `docs/judgment-engine.md` §4-3、設計判断は `docs/decisions/0014`。
 
