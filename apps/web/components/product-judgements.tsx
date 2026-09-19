@@ -8,6 +8,7 @@ import {
   ChevronsUpDown,
   CircleHelp,
   Droplets,
+  RefreshCw,
   TriangleAlert,
 } from "lucide-react";
 import { Fragment, useCallback, useEffect, useState } from "react";
@@ -189,6 +190,37 @@ export function ProductJudgements({
   useEffect(() => {
     void load();
   }, [load]);
+
+  /**
+   * この製品だけを、いまの前提で判定し直す（2026-09-19 指示）。
+   * 前提が変わっているとき（`stale`）だけボタンを出す。
+   * 全製品のやり直しは管理者しか押せないので、その順番を待たずに手元の製品を確かめるためのもの
+   */
+  async function rejudge() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/products/rejudge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [productId] }),
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      /*
+        **画面ごと読み直す。**上の「原材料展開・CAS合算」の該当法規制も、
+        保存してある判定から作っている。ここだけ入れ替えると、
+        同じ画面の中で合算表と判定表が食い違う
+      */
+      window.location.reload();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function decide(judgementId: string, verdict?: "APPLICABLE" | "NOT_APPLICABLE") {
     setBusy(true);
@@ -437,6 +469,24 @@ export function ProductJudgements({
               <CircleHelp className="size-3" />
               {m.judgements.reviewCount(review.length)}
             </Badge>
+          )}
+          {/*
+            再計算。**前提が変わっていて、押せる人にだけ出す**（2026-09-19 指示）。
+            いつも出しておくと、押しても何も変わらない場面のほうが多くなる。
+            判定対象日を入れているあいだは、その場で計算した結果を見ているので出さない
+          */}
+          {canEdit && stamp?.stale && !asOf && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              title={m.judgements.rejudgeHint}
+              onClick={() => void rejudge()}
+            >
+              <RefreshCw className="mr-1 size-3.5" />
+              {m.judgements.rejudge}
+            </Button>
           )}
           {/* 判定対象日。入れているあいだは、その日の規制でその場で計算した判定に切り替わる */}
           <label className="flex items-center gap-1 text-xs" title={m.judgements.asOfHint}>

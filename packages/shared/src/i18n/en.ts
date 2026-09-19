@@ -1085,7 +1085,10 @@ export const en: Messages = {
     computedAt: (when: string) => `computed ${when}`,
     stale: "Data has changed, so recomputing may change the result.",
     staleHint:
-      "CAS links or thresholds changed after this judgement was computed. Re-judging may change the result (System settings › Re-judge every product)",
+      "CAS links or thresholds changed after this judgement was computed. Re-judging may change the result",
+    rejudge: "Recompute",
+    rejudgeHint:
+      "Re-judges this product alone on the current premises. Other products stay as they are",
     notJudgedForVersion: (version: string) =>
       `No judgement exists yet for regulation version ${version}. Judgements made under another version are not applied to this one. Ask a system administrator to run "Re-judge every product".`,
     title: "Regulatory judgement",
