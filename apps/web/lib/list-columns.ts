@@ -385,6 +385,59 @@ export const REGULATION_CATEGORY_COLUMNS: QueryColumn[] = [
  * 区分 → 分類 → 法文物質名 → 結び付き とたどり、いまの版の結び付きだけを見る。
  * 番号は完全一致
  */
+/**
+ * 分類の列。法律の表で「トルエン」などで絞ったとき、**当たった分類だけ**を出すためのもの
+ * （2026-09-20 指示）。条件は区分の列と同じで、たどる段が1つ浅い（分類 → 法文物質名 → 結び付き）
+ */
+export function regulationClassColumns(
+  versionId: string | null,
+  viewer: LinkNameViewer,
+): QueryColumn[] {
+  return [
+    {
+      key: "casNumber",
+      kind: "list",
+      field: "casNormalized",
+      sortable: false,
+      custom: (f) => {
+        if (f.kind !== "list") return null;
+        const values = [...new Set(f.values.map(normalizeCas).filter((v) => v !== ""))];
+        if (values.length === 0) return null;
+        if (versionId === null) return { id: { in: [] } };
+        const each = values.map((v) => ({
+          statutorySubstances: {
+            some: {
+              deletedAt: null,
+              links: { some: { versionId, casNormalized: v, ...notDisabledIn(versionId) } },
+            },
+          },
+        }));
+        return f.op === "all" ? { AND: each } : { OR: each };
+      },
+    },
+    {
+      key: "substanceName",
+      kind: "text",
+      field: "nameJa",
+      sortable: false,
+      custom: (f) => {
+        if (f.kind !== "text") return null;
+        const names = linkNameCondition(f, { viewer });
+        if (!names) return null;
+        if (versionId === null) return { id: { in: [] } };
+        return {
+          statutorySubstances: {
+            some: {
+              deletedAt: null,
+              links: { some: { versionId, names: { some: names }, ...notDisabledIn(versionId) } },
+            },
+          },
+        };
+      },
+    },
+  ];
+}
+
 export function regulationCategoryColumns(
   versionId: string | null,
   viewer: LinkNameViewer,

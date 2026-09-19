@@ -4,7 +4,7 @@ import { ForbiddenNotice } from "@/components/forbidden-notice";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { listLanguages } from "@/lib/language-service";
-import { countSubstancesByCategory, toCategoryDto } from "@/lib/law-service";
+import { countByCategory, toCategoryDto } from "@/lib/law-service";
 
 /**
  * 規制区分の法文物質名。
@@ -12,10 +12,18 @@ import { countSubstancesByCategory, toCategoryDto } from "@/lib/law-service";
  * 法律の一覧で区分のコードを押すと、ここへ移る。
  * 区分そのものはここで引いて渡す（画面が開いた直後に見出しを出せるようにするため）。
  */
-export default async function CategoryPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CategoryPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  /** `?class=<分類の id>` で、その分類を選んだ状態で開く（法律の表の分類のリンクから） */
+  searchParams: Promise<{ class?: string }>;
+}) {
   const actor = await getActor();
   if (!actor?.has("REGULATION_VIEW")) return <ForbiddenNotice />;
   const { id } = await params;
+  const { class: initialClassId } = await searchParams;
 
   const row = await prisma.regulationCategory.findFirst({
     where: { id, deletedAt: null },
@@ -38,13 +46,14 @@ export default async function CategoryPage({ params }: { params: Promise<{ id: s
   const neighbour = (c: (typeof siblings)[number] | undefined) =>
     c ? { href: `/categories/${c.id}`, label: c.nameJa ?? c.nameOriginal ?? c.code } : null;
 
-  const counts = await countSubstancesByCategory([row.id]);
+  const counts = await countByCategory([row.id]);
   const languages = await listLanguages();
 
   return (
     <CategoryScreen
       languages={languages}
-      category={toCategoryDto(row, counts.get(row.id) ?? 0)}
+      category={toCategoryDto(row, counts.get(row.id))}
+      initialClassId={initialClassId ?? null}
       prev={neighbour(siblings[at - 1])}
       next={neighbour(siblings[at + 1])}
       law={{

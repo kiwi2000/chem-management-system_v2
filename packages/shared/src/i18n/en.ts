@@ -484,7 +484,8 @@ export const en: Messages = {
   laws: {
     title: "Laws",
     rowHint:
-      "Click a law code to list its categories below. Click a category code to open its statutory substances",
+      "Click a law code to list its categories below. Click a category's > to list its classes; click the category code to open its statutory substances",
+    classReorderElsewhere: "Reorder classes on the category screen (click the category code)",
     sameCountryOnly: "Rows can only be reordered within the same country",
     sameLawOnly: "Rows can only be reordered within the same law",
     reorderHint: "Drag the handle on the left to reorder (within one country, or one law)",

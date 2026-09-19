@@ -918,6 +918,8 @@ export interface RegulationCategoryDto {
   note: string | null;
   /** 配下の法文物質名の数（表示名のない分類のぶんも含む） */
   substanceCount: number;
+  /** 分類の数。2つ以上のときだけ、法律の表で区分の下に分類を開ける */
+  classCount: number;
 }
 
 /** 分類。名前が無いものは画面に出さない受け皿 */

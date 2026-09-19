@@ -58,9 +58,17 @@ export function toLawDto(l: LawRow): LawDto {
  * 区分の配下の法文物質名の数。
  * 分類を1段はさむので Prisma の _count では数えられず、まとめて引いてから配る。
  */
-export async function countSubstancesByCategory(
-  categoryIds: string[],
-): Promise<Map<string, number>> {
+export interface CategoryCounts {
+  /** 配下の法文物質名の数（分類をまたいで合計） */
+  substances: number;
+  /**
+   * 分類の数。**2つ以上あるときだけ、法律の表に分類の段を出す**（2026-09-20 指示）。
+   * 1つだけの分類は区分そのものと同じ意味なので、区分の画面と同じく出さない
+   */
+  classes: number;
+}
+
+export async function countByCategory(categoryIds: string[]): Promise<Map<string, CategoryCounts>> {
   if (categoryIds.length === 0) return new Map();
   const rows = await prisma.regulationClass.findMany({
     where: { categoryId: { in: categoryIds }, deletedAt: null },
@@ -69,9 +77,13 @@ export async function countSubstancesByCategory(
       _count: { select: { statutorySubstances: { where: { deletedAt: null } } } },
     },
   });
-  const out = new Map<string, number>();
+  const out = new Map<string, CategoryCounts>();
   for (const r of rows) {
-    out.set(r.categoryId, (out.get(r.categoryId) ?? 0) + r._count.statutorySubstances);
+    const cur = out.get(r.categoryId) ?? { substances: 0, classes: 0 };
+    out.set(r.categoryId, {
+      substances: cur.substances + r._count.statutorySubstances,
+      classes: cur.classes + 1,
+    });
   }
   return out;
 }
@@ -81,7 +93,10 @@ const toDate = (v: Date | null) => (v ? v.toISOString().slice(0, 10) : null);
 
 type CategoryRow = Prisma.RegulationCategoryGetPayload<object>;
 
-export function toCategoryDto(c: CategoryRow, substanceCount: number): RegulationCategoryDto {
+export function toCategoryDto(
+  c: CategoryRow,
+  counts: CategoryCounts | undefined,
+): RegulationCategoryDto {
   return {
     id: c.id,
     code: c.code,
@@ -103,7 +118,8 @@ export function toCategoryDto(c: CategoryRow, substanceCount: number): Regulatio
     score: c.score.toString(),
     displayOrder: c.displayOrder,
     note: c.note,
-    substanceCount,
+    substanceCount: counts?.substances ?? 0,
+    classCount: counts?.classes ?? 0,
   };
 }
 

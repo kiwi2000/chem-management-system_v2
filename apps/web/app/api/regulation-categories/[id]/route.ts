@@ -3,7 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { countSubstancesByCategory } from "@/lib/law-service";
+import { countByCategory } from "@/lib/law-service";
 import { recomputeScoresForCategory } from "@/lib/score-store";
 import { getAppSettings } from "@/lib/settings";
 
@@ -128,8 +128,8 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const existing = await prisma.regulationCategory.findFirst({ where: { id, deletedAt: null } });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
 
-  const counts = await countSubstancesByCategory([id]);
-  const substances = counts.get(id) ?? 0;
+  const counts = await countByCategory([id]);
+  const substances = counts.get(id)?.substances ?? 0;
   if (substances > 0) {
     return jsonError(409, "referenced", m.regulationCategories.inUse(substances));
   }

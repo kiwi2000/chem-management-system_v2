@@ -86,11 +86,17 @@ const named = (c: RegulationClassDto) => c.nameOriginal !== null;
 export function StatutorySubstanceSection({
   languages,
   category,
+  initialClassId = null,
   slideDir,
   onShown,
 }: {
   languages: LanguageDto[];
   category: RegulationCategoryDto | null;
+  /**
+   * 最初に選んでおく分類（2026-09-20 指示）。法律の表の分類のリンクから来たとき、
+   * 先頭の分類ではなくその分類を開く。無い id なら先頭に落ちる
+   */
+  initialClassId?: string | null;
   /** 区分が入れ替わったときに滑らせる向き。1画面1段のときは要らない */
   slideDir?: SlideDir;
   /** 新しい区分の中身を画面に出したときに呼ぶ。見出しはこれに合わせて切り替わる */
@@ -308,7 +314,9 @@ export function StatutorySubstanceSection({
     let alive = true;
     void (async () => {
       const items = await fetchClasses(id);
-      const first = items?.[0]?.id ?? null;
+      // リンクで指された分類があればそれを、無ければ先頭を開く
+      const wanted = items?.find((c) => c.id === initialClassId)?.id ?? null;
+      const first = wanted ?? items?.[0]?.id ?? null;
       // 区分ごとに件数が違うので、ページは先頭に戻す
       const params = serializeTableState({ ...stateRef.current, page: 1 }, DEFAULT_STATE);
       if (first) params.set("f.classId", `in:${first}`);

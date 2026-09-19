@@ -10,7 +10,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { getCurrentVersion } from "@/lib/current-version";
-import { countSubstancesByCategory, ensureDefaultClass, toCategoryDto } from "@/lib/law-service";
+import { countByCategory, ensureDefaultClass, toCategoryDto } from "@/lib/law-service";
 import { regulationCategoryColumns } from "@/lib/list-columns";
 import { getAppSettings } from "@/lib/settings";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
@@ -51,10 +51,10 @@ export async function GET(req: Request) {
   ]);
 
   // 分類を1段はさむので、法文物質名の数は別に数える
-  const counts = await countSubstancesByCategory(items.map((c) => c.id));
+  const counts = await countByCategory(items.map((c) => c.id));
 
   return Response.json({
-    items: items.map((c) => toCategoryDto(c, counts.get(c.id) ?? 0)),
+    items: items.map((c) => toCategoryDto(c, counts.get(c.id))),
     total,
     page: state.page,
     pageSize: state.pageSize,

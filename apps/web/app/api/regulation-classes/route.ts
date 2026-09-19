@@ -1,26 +1,50 @@
-import { normalizeCode, regulationClassSchema } from "@chem/shared";
+import {
+  emptyTableState,
+  normalizeCode,
+  parseTableState,
+  regulationClassSchema,
+} from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
+import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { CLASS_INCLUDE, toClassDto } from "@/lib/law-service";
+import { regulationClassColumns } from "@/lib/list-columns";
+import { buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/regulation-classes?categoryId=... — その区分の分類を並び順で全部返す。
- * 数は多くても数個なので、絞り込みも改ページも持たない。
+ * GET /api/regulation-classes?categoryId=... — その区分の分類を並び順で返す。
+ * 数は多くても数個なので改ページは持たない。
+ *
+ * **結び付いた CAS・物質名で絞れる**（`f.casNumber` / `f.substanceName`。2026-09-20 指示）。
+ * 法律の表で「トルエン」と絞ったとき、区分の下に当たった分類だけを並べるため。
+ * 条件は区分の一覧と同じ引きかた（いま判定に使っている版・無効にしていないデータソース）
  */
 export async function GET(req: Request) {
   const actor = await requirePermission("REGULATION_VIEW");
   if (actor instanceof Response) return actor;
   const m = await getServerMessages();
 
-  const categoryId = new URL(req.url).searchParams.get("categoryId");
+  const url = new URL(req.url);
+  const categoryId = url.searchParams.get("categoryId");
   if (!categoryId) return jsonError(400, "validation_error", m.errors.validation);
 
+  const version = await getCurrentVersion();
+  const columns = regulationClassColumns(version?.id ?? null, {
+    seeAll: actor.has("INACTIVE_VIEW"),
+    userId: actor.user.id,
+  });
+  const state = parseTableState(
+    url.searchParams,
+    columns.map((c) => ({ key: c.key, kind: c.kind })),
+    emptyTableState(),
+  );
+
   const items = await prisma.regulationClass.findMany({
-    where: { categoryId, deletedAt: null },
+    where: { categoryId, deletedAt: null, ...buildWhere(columns, state.filters) },
     orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
     include: CLASS_INCLUDE,
   });

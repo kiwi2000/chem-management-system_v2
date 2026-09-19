@@ -27,6 +27,7 @@ import type {
   LawDto,
   ListResponse,
   RegulationCategoryDto,
+  RegulationClassDto,
 } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
@@ -45,10 +46,23 @@ const CATEGORY_HITS_MAX = 500;
  * 区分は開いた法律のぶんだけ取りに行く（全部まとめて引かない）。
  */
 
-/** 表に流す行。法律と区分が混ざるので、種別を持たせて描き分ける */
+/**
+ * 表に流す行。法律・区分・分類が混ざるので、種別を持たせて描き分ける。
+ * 分類の段は**分類が2つ以上ある区分だけ**開ける（2026-09-20 指示。区分の画面と同じ決まり）
+ */
 type Row =
   | { kind: "law"; key: string; law: LawDto }
-  | { kind: "category"; key: string; law: LawDto; category: RegulationCategoryDto };
+  | { kind: "category"; key: string; law: LawDto; category: RegulationCategoryDto }
+  | {
+      kind: "class";
+      key: string;
+      law: LawDto;
+      category: RegulationCategoryDto;
+      klass: RegulationClassDto;
+    };
+
+/** 分類に名前が付いているか。無いものは「（分類なし）」と出す（区分の画面と同じ） */
+const namedClass = (c: RegulationClassDto) => Boolean(c.nameOriginal || c.nameJa || c.nameEn);
 
 /**
  * 選んだ区分と、その周辺。
@@ -82,6 +96,10 @@ export function LawTreeSection({
   const [data, setData] = useState<ListResponse<LawDto> | null>(null);
   /** 開いている法律。値はその法律の区分（取りに行くまでは undefined） */
   const [open, setOpen] = useState<Map<string, RegulationCategoryDto[] | undefined>>(new Map());
+  /** 分類まで開いている区分。値はその区分の分類（取りに行くまでは undefined） */
+  const [openClasses, setOpenClasses] = useState<Map<string, RegulationClassDto[] | undefined>>(
+    new Map(),
+  );
   /** いま選んでいる法律。区分の追加先になる */
   const [lawId, setLawId] = useState<string | null>(null);
 
@@ -149,9 +167,34 @@ export function LawTreeSection({
               />
               {r.law.code}
             </button>
-          ) : (
+          ) : r.kind === "category" ? (
             // 法律にぶら下がっていることを縦線で示す。区分が続いても親を見失わない
-            <span className="border-border ml-2 border-l pl-3 text-xs">
+            <span className="border-border ml-2 inline-flex items-center border-l pl-3 text-xs">
+              {/*
+                分類が2つ以上ある区分だけ、法律と同じ「>」で分類の段を開ける（2026-09-20 指示）。
+                1つだけの区分は開くものが無いので、「>」のぶんだけ空けて桁を揃える
+              */}
+              {r.category.classCount >= 2 ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void toggleClasses(r.category.id);
+                  }}
+                  aria-expanded={openClasses.has(r.category.id)}
+                  aria-label={openClasses.has(r.category.id) ? m.common.close : m.common.open}
+                  className="hover:text-foreground -ml-1 mr-1 inline-flex"
+                >
+                  <ChevronRight
+                    className={cn(
+                      "text-muted-foreground size-4 shrink-0 transition-transform",
+                      openClasses.has(r.category.id) && "rotate-90",
+                    )}
+                  />
+                </button>
+              ) : (
+                <span className="-ml-1 mr-1 inline-block size-4 shrink-0" aria-hidden="true" />
+              )}
               {/* 押すと法文物質名の一覧へ移る。インベントリのコードと同じ形 */}
               <Link
                 href={`/categories/${r.category.id}`}
@@ -159,6 +202,18 @@ export function LawTreeSection({
                 className="underline underline-offset-2"
               >
                 {r.category.code}
+              </Link>
+            </span>
+          ) : (
+            // 分類。区分の下にもう1段ぶら下げる
+            <span className="border-border ml-7 border-l pl-3 text-xs">
+              {/* 押すと、区分の画面をその分類を選んだ状態で開く（2026-09-20 指示） */}
+              <Link
+                href={`/categories/${r.category.id}?class=${r.klass.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="underline underline-offset-2"
+              >
+                {r.klass.code}
               </Link>
             </span>
           ),
@@ -171,12 +226,16 @@ export function LawTreeSection({
         render: (r) =>
           r.kind === "law"
             ? pickStatutoryName(locale, r.law.nameOriginal, r.law.nameJa, r.law.nameEn)
-            : pickStatutoryName(
-                locale,
-                r.category.nameOriginal,
-                r.category.nameJa,
-                r.category.nameEn,
-              ),
+            : r.kind === "category"
+              ? pickStatutoryName(
+                  locale,
+                  r.category.nameOriginal,
+                  r.category.nameJa,
+                  r.category.nameEn,
+                )
+              : namedClass(r.klass)
+                ? pickStatutoryName(locale, r.klass.nameOriginal, r.klass.nameJa, r.klass.nameEn)
+                : m.regulationClasses.unnamed,
       },
       {
         /*
@@ -309,12 +368,17 @@ export function LawTreeSection({
         sortable: false,
         filterable: false,
         className: "text-muted-foreground text-right text-xs",
-        render: (r) => (r.kind === "law" ? r.law.categoryCount : r.category.substanceCount),
+        render: (r) =>
+          r.kind === "law"
+            ? r.law.categoryCount
+            : r.kind === "category"
+              ? r.category.substanceCount
+              : r.klass.substanceCount,
       },
     ],
     // toggle は毎回作られるが、列のキーは変わらないので描き直しだけで足りる
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [m, locale, countries, open],
+    [m, locale, countries, open, openClasses],
   );
 
   const {
@@ -514,6 +578,8 @@ export function LawTreeSection({
       else byLaw.set(c.lawId, [c]);
     }
     setOpen(byLaw);
+    // 条件が変わると当たる分類も変わる。開いていた分類は閉じて、開き直したときに引き直す
+    setOpenClasses(new Map());
   }, [hits]);
 
   async function toggle(id: string) {
@@ -530,6 +596,51 @@ export function LawTreeSection({
   }
 
   /**
+   * 分類に効かせる絞り込み（結び付いた CAS・物質名）。
+   * 区分の側の条件（コード・名称・スコア）は分類には無いので送らない
+   */
+  const classQuery = useMemo(() => {
+    const filters: TableState["filters"] = {};
+    if (tableState.filters.casNumber) filters.casNumber = tableState.filters.casNumber;
+    if (tableState.filters.substanceName) filters.substanceName = tableState.filters.substanceName;
+    if (Object.keys(filters).length === 0) return "";
+    return `&${serializeTableState(
+      { sort: [], filters, page: 1, pageSize: 200 },
+      emptyTableState(),
+    ).toString()}`;
+  }, [tableState.filters.casNumber, tableState.filters.substanceName]);
+
+  /**
+   * その区分の分類を引くだけ。開いた状態にはしない。
+   * **CAS・物質名で絞っているあいだは、当たった分類だけ**（2026-09-20 指示）
+   */
+  const fetchClasses = useCallback(
+    async (categoryId: string) => {
+      const res = await fetch(
+        `/api/regulation-classes?categoryId=${categoryId}${classQuery}`,
+      ).catch(() => null);
+      if (!res || !res.ok) return null;
+      return ((await res.json()) as { items: RegulationClassDto[] }).items;
+    },
+    [classQuery],
+  );
+
+  /** 区分の下の分類を開け閉めする。法律の開け閉めと同じ形 */
+  async function toggleClasses(categoryId: string) {
+    if (openClasses.has(categoryId)) {
+      setOpenClasses((prev) => {
+        const next = new Map(prev);
+        next.delete(categoryId);
+        return next;
+      });
+      return;
+    }
+    setOpenClasses((prev) => new Map(prev).set(categoryId, undefined));
+    const items = await fetchClasses(categoryId);
+    if (items) setOpenClasses((prev) => new Map(prev).set(categoryId, items));
+  }
+
+  /**
    * 保存や削除のあと、見えている範囲を取り直す。
    * 見出しは選んだ区分の中身をそのまま映すので、選択中のものは取り直したもので差し替える。
    */
@@ -538,6 +649,11 @@ export function LawTreeSection({
     const lists = await Promise.all(
       [...open.keys()].map(async (id) => [id, await loadCategories(id)] as const),
     );
+    // 開いている分類も取り直す（消したり足したりした直後に古い段が残らないように）
+    const classLists = await Promise.all(
+      [...openClasses.keys()].map(async (id) => [id, await fetchClasses(id)] as const),
+    );
+    setOpenClasses(new Map(classLists.map(([id, items]) => [id, items ?? undefined])));
     if (!selected) return;
     for (const [id, items] of lists) {
       const fresh = items?.find((c) => c.id === selected.id);
@@ -581,6 +697,11 @@ export function LawTreeSection({
       await move(`/api/regulation-categories/${from.category.id}/move`, to.category.id);
       return;
     }
+    // 分類の並びは区分の画面で変える。ここは見るだけ
+    if (from.kind === "class" || to.kind === "class") {
+      setError(m.laws.classReorderElsewhere);
+      return;
+    }
     // 法律の行と区分の行は入れ替えられない（親子なので位置に意味が無い）
     setError(from.kind === "law" ? m.laws.sameCountryOnly : m.laws.sameLawOnly);
   }
@@ -604,7 +725,11 @@ export function LawTreeSection({
     setError(null);
     for (const r of targets) {
       const url =
-        r.kind === "law" ? `/api/laws/${r.law.id}` : `/api/regulation-categories/${r.category.id}`;
+        r.kind === "law"
+          ? `/api/laws/${r.law.id}`
+          : r.kind === "category"
+            ? `/api/regulation-categories/${r.category.id}`
+            : `/api/regulation-classes/${r.klass.id}`;
       const res = await fetch(url, { method: "DELETE" });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -629,12 +754,17 @@ export function LawTreeSection({
             const kids = open.get(law.id) ?? [];
             return [
               head,
-              ...kids.map((category): Row => ({
-                kind: "category",
-                key: `cat:${category.id}`,
-                law,
-                category,
-              })),
+              ...kids.flatMap((category): Row[] => [
+                { kind: "category", key: `cat:${category.id}`, law, category },
+                // 開いている区分は、その下に分類を並べる
+                ...(openClasses.get(category.id) ?? []).map((klass): Row => ({
+                  kind: "class",
+                  key: `cls:${klass.id}`,
+                  law,
+                  category,
+                  klass,
+                })),
+              ]),
             ];
           });
 
@@ -713,6 +843,7 @@ export function LawTreeSection({
             setLawId(r.law.id);
             onSelect(null);
           } else {
+            // 分類の行を押したときも、下の表に出すのはその区分（分類は区分の画面で切り替える）
             setLawId(r.law.id);
             onSelect({
               law: r.law,
@@ -725,12 +856,16 @@ export function LawTreeSection({
         rowAction={
           editable
             ? {
-                onClick: (r) =>
+                onClick: (r) => {
+                  // 分類の名前は区分の画面で直す（ここに入力欄は置かない）
+                  if (r.kind === "class") return;
                   setEditing(
                     r.kind === "law"
                       ? { kind: "law", initial: r.law }
                       : { kind: "category", lawId: r.law.id, initial: r.category },
-                  ),
+                  );
+                },
+                disabled: (r) => r.kind === "class",
               }
             : undefined
         }
@@ -758,7 +893,10 @@ export function LawTreeSection({
                 size="sm"
                 variant="outline"
                 title={m.composition.collapseAllHint}
-                onClick={() => setOpen(new Map())}
+                onClick={() => {
+                  setOpen(new Map());
+                  setOpenClasses(new Map());
+                }}
               >
                 <ChevronsDownUp className="mr-1 size-3.5" />
                 {m.composition.collapseAll}

@@ -28,12 +28,15 @@ interface LawRef {
 export function CategoryScreen({
   languages,
   category,
+  initialClassId = null,
   law,
   prev,
   next,
 }: {
   languages: LanguageDto[];
   category: RegulationCategoryDto;
+  /** 最初に選んでおく分類。法律の表の分類のリンクから来たときに入る */
+  initialClassId?: string | null;
   law: LawRef;
   /** 同じ法律の隣の区分。端では null */
   prev: Neighbour | null;
@@ -78,7 +81,11 @@ export function CategoryScreen({
 
       {productsOpen && <CategoryProducts categoryId={category.id} />}
 
-      <StatutorySubstanceSection languages={languages} category={category} />
+      <StatutorySubstanceSection
+        languages={languages}
+        category={category}
+        initialClassId={initialClassId}
+      />
     </div>
   );
 }
