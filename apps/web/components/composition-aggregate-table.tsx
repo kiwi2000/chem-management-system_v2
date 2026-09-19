@@ -1304,8 +1304,16 @@ export function CompositionAggregateTable({
                         inventories.map((i) => {
                           const got = row.numbers.filter((n) => n.inventoryId === i.id);
                           return (
-                            <td key={i.id} className={cn(CELL, "font-mono text-xs")}>
-                              {got.map((n) => n.number).join("、")}
+                            <td
+                              key={i.id}
+                              className={cn(
+                                CELL,
+                                "font-mono text-xs",
+                                // 載っていない印は、規制の列と同じ見せかたにそろえる
+                                got.length === 0 && "text-center",
+                              )}
+                            >
+                              {got.length > 0 ? got.map((n) => n.number).join("、") : "—"}
                             </td>
                           );
                         })

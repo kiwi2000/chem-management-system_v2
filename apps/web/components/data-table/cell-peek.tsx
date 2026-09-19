@@ -217,6 +217,8 @@ export function useTablePeek<T extends HTMLElement = HTMLDivElement>() {
     createPortal(
       <div
         ref={pop}
+        // 窓そのものを見分ける印（検証と、外から場所を測るときに使う）
+        data-cell-peek=""
         style={{
           top: at.top,
           left: at.left,
@@ -323,6 +325,12 @@ export function useTablePeek<T extends HTMLElement = HTMLDivElement>() {
 /** 出す値打ちがあるか。切れていない、または中身を写せないセルでは出さない */
 function worthShowing(td: HTMLElement, target: Element) {
   if (td.textContent?.trim() === "") return false;
+  /*
+    **見出しは対象外**（2026-09-20 指示）。
+    項目名は短くて読めるものにしてあるうえ、見出しには開け閉め・並べ替え・
+    列幅のつまみが載っているので、押すたびに窓が開くと邪魔になる
+  */
+  if (td.closest("thead")) return false;
   /*
     **セル自身が押されたときの動きを持つ表では出さない。**
     判定表のように、押すと別の窓が開くセルでは、両方が同時に開いてしまう

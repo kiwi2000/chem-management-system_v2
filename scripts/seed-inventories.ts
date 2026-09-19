@@ -77,7 +77,7 @@ const INVENTORIES: InventoryDef[] = [
     // (5)-3714 の形。番号の無い行は "-" なので拾わない
     matchPattern: "\\((\\d+)\\)-(\\d+)",
     displayFormat: "($1)-$2",
-    numberLabel: "化審法番号（官報公示整理番号）",
+    numberLabel: "化審法番号",
   },
   {
     listId: 3830,
