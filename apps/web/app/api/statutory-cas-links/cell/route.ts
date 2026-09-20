@@ -318,6 +318,7 @@ export async function GET(req: Request) {
             nameEn: l.statutorySubstance.nameEn,
             nameOriginal: l.statutorySubstance.nameOriginal,
             asElement: asElementOf(elementNames, category, l.statutorySubstance),
+            applicableCondition: l.statutorySubstance.applicableCondition ?? null,
             adopted: best !== null && (rank.get(d.source.id) ?? 99) === best,
             excluded: l.excluded,
             dataText: l.data?.text ?? null,
@@ -352,6 +353,7 @@ export async function GET(req: Request) {
     categoryNameJa: category.nameJa,
     categoryNameEn: category.nameEn,
     categoryNameOriginal: category.nameOriginal,
+    reviewReasons: judgement?.reviewReasons ?? [],
     versions: out,
   };
   return Response.json(body);

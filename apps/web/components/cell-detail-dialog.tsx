@@ -2,8 +2,9 @@
 
 import { pickName, pickStatutoryName } from "@chem/shared";
 import { CircleHelp, TriangleAlert, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { conditionsOf, reasonTexts } from "@/components/product-judgements";
 import { SourceChip } from "@/components/source-chip";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -32,6 +33,80 @@ function labelOf(
 /** 出どころの文章。画面の言語で選ぶ（日本語訳があれば日本語、無ければ原文） */
 function dataOf(x: CellStatutoryDto, locale: ReturnType<typeof useI18n>["locale"]) {
   return locale === "ja" ? (x.dataTextJa ?? x.dataText) : x.dataText;
+}
+
+/**
+ * 要確認の「?」を押したときに出す小さな窓。
+ *
+ * **適用条件の文だけを出す**（2026-09-20 指示。見出しも決まり文句も付けない）。
+ * 法文物質名に適用条件が無いときだけ、保存してある判定の理由に落ちる
+ */
+function ReviewPopup({
+  x,
+  reviewReasons,
+  open,
+  onToggle,
+  m,
+}: {
+  x: CellStatutoryDto;
+  reviewReasons: string[];
+  open: boolean;
+  onToggle: () => void;
+  m: ReturnType<typeof useI18n>["m"];
+}) {
+  const conditions = conditionsOf({ applicableCondition: x.applicableCondition });
+  const lines =
+    conditions.length > 0
+      ? conditions
+      : reasonTexts(m, { reviewReasons, applicableCondition: null });
+  const texts = lines.length > 0 ? lines : [m.judgements.needsReviewHint];
+  /*
+    窓の中は縦にスクロールする箱なので、印の下に普通に置くと箱の縁で切れる。
+    画面に対する位置（fixed）で置き、下に入りきらなければ印の上に出す
+  */
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null);
+  const place = () => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const width = 288; // w-72
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+    const below = window.innerHeight - r.bottom > 220;
+    setPos(below ? { left, top: r.bottom + 4 } : { left, bottom: window.innerHeight - r.top + 4 });
+  };
+  return (
+    <span className="inline-block">
+      <button
+        ref={btnRef}
+        type="button"
+        className={cn("mr-0.5 inline-flex align-[-0.1em]", REVIEW_CLASS)}
+        aria-label={m.judgements.needsReview}
+        aria-expanded={open}
+        title={m.judgements.needsReview}
+        onClick={(e) => {
+          e.stopPropagation();
+          place();
+          onToggle();
+        }}
+      >
+        <CircleHelp className="size-3" />
+      </button>
+      {open && pos && (
+        <span
+          className="bg-popover text-popover-foreground fixed z-[60] block w-72 rounded-md border p-2 text-xs font-normal shadow-md"
+          style={pos}
+          role="tooltip"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {texts.map((t) => (
+            <span key={t} className="block whitespace-pre-wrap">
+              {t}
+            </span>
+          ))}
+        </span>
+      )}
+    </span>
+  );
 }
 
 /**
@@ -65,6 +140,8 @@ export function CellDetailDialog({
   const { m, locale } = useI18n();
   const [data, setData] = useState<CellDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** 開いている「?」の窓。バージョン／データソース／法文物質名で1つに決まる */
+  const [openReview, setOpenReview] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -86,14 +163,17 @@ export function CellDetailDialog({
     };
   }, [cas, categoryId, productId, m]);
 
-  // 逃げ道は必ず用意する。表の上に重なるので、閉じられないと詰む
+  // 逃げ道は必ず用意する。表の上に重なるので、閉じられないと詰む。
+  // 「?」の窓が開いていれば、Escape はまずそれを閉じる
   useEffect(() => {
     const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (openReview !== null) setOpenReview(null);
+      else onClose();
     };
     document.addEventListener("keydown", esc);
     return () => document.removeEventListener("keydown", esc);
-  }, [onClose]);
+  }, [onClose, openReview]);
 
   return createPortal(
     <div
@@ -105,7 +185,11 @@ export function CellDetailDialog({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-background flex max-h-[85vh] w-full max-w-4xl flex-col rounded-md border shadow-lg">
+      <div
+        className="bg-background flex max-h-[85vh] w-full max-w-4xl flex-col rounded-md border shadow-lg"
+        // 窓の中のどこかを押したら「?」の窓は閉じる（「?」自身は stopPropagation している）
+        onClick={() => setOpenReview(null)}
+      >
         <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
           <div className="min-w-0">
             <p className="text-sm font-medium">{m.composition.cellDetailTitle}</p>
@@ -210,13 +294,22 @@ export function CellDetailDialog({
                                         : NOT_ADOPTED_CLASS,
                                     )}
                                   >
-                                    {/* 印は表と同じもの。?＝要確認、三角＝含有率不足 */}
+                                    {/* 印は表と同じもの。?＝要確認（押すと理由）、三角＝含有率不足 */}
                                     {x.needsReview && (
-                                      <CircleHelp
-                                        className={cn(
-                                          "mr-0.5 inline size-3 align-[-0.1em]",
-                                          REVIEW_CLASS,
-                                        )}
+                                      <ReviewPopup
+                                        x={x}
+                                        reviewReasons={data.reviewReasons}
+                                        open={
+                                          openReview ===
+                                          `${v.code}/${s.id}/${x.officialNumber}/${x.nameOriginal}`
+                                        }
+                                        onToggle={() =>
+                                          setOpenReview((cur) => {
+                                            const key = `${v.code}/${s.id}/${x.officialNumber}/${x.nameOriginal}`;
+                                            return cur === key ? null : key;
+                                          })
+                                        }
+                                        m={m}
                                       />
                                     )}
                                     {x.nearMiss && (

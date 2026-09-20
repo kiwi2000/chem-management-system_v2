@@ -615,6 +615,11 @@ export interface CellDetailDto {
   categoryNameJa: string | null;
   categoryNameEn: string | null;
   categoryNameOriginal: string;
+  /**
+   * その製品・その区分の判定に付いている要確認の理由（現バージョン）。
+   * 「?」のポップアップで、適用条件の無い理由もここから出す
+   */
+  reviewReasons: string[];
   /** 新しいバージョンが先 */
   versions: {
     code: string;
@@ -652,6 +657,11 @@ export interface CellStatutoryDto {
   hit: boolean;
   /** 当たっているが、人が見て確かめることが残っている */
   needsReview: boolean;
+  /**
+   * その法文物質名の適用条件。要確認の「?」を押したときに見せる
+   * （2026-09-20 指示。判定の表と同じく、決まり文句ではなく条文を出す）
+   */
+  applicableCondition: string | null;
   /** CAS は載っているのに、含有率が足りず当たっていない */
   nearMiss: boolean;
   /** 出どころがそのCASについて書いている文章（CASリンクの「データ」）。無ければ null */

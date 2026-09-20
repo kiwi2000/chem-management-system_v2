@@ -1220,8 +1220,9 @@ export function conditionsOf(j: {
 }
 
 /**
- * 要確認の理由の並び。**適用条件が書いてあれば、決まり文句ではなく条文を出す**
- * （2026-09-20 指示。毎回同じ文では、何を確かめればよいのか分からない）
+ * 要確認の理由の並び。**適用条件が書いてあれば、決まり文句ではなく条文そのものを出す**
+ * （2026-09-20 指示。毎回同じ文では何を確かめればよいのか分からない。
+ * 「適用条件「…」。この条件に当たらなければ…」の飾りも外し、条文だけにする）
  */
 export function reasonTexts(
   m: M,
@@ -1233,9 +1234,7 @@ export function reasonTexts(
 ): string[] {
   const conditions = conditionsOf(j);
   return j.reviewReasons.flatMap((r) =>
-    r === "conditionalExclusion" && conditions.length > 0
-      ? conditions.map((c) => m.judgements.reasonConditionWith(c))
-      : [reasonText(m, r)],
+    r === "conditionalExclusion" && conditions.length > 0 ? conditions : [reasonText(m, r)],
   );
 }
 
