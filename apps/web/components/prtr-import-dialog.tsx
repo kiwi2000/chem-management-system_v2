@@ -28,6 +28,7 @@ export function PrtrImportDialog({
   entryId,
   kind,
   file,
+  shippedRequired = false,
   onClose,
 }: {
   entryId: string;
@@ -35,12 +36,17 @@ export function PrtrImportDialog({
   kind: PrtrImportKind;
   /** 選ばれたファイル */
   file: File;
+  /** 出荷数量が要る方法か（物質収支・排出係数）。要るなら列が無いと進めない */
+  shippedRequired?: boolean;
   /** applied が true なら表を読み直す */
   onClose: (applied: boolean) => void;
 }) {
   const { m } = useI18n();
   const t = m.prtr.import;
-  const fields = PRTR_IMPORT_FIELDS[kind];
+  // 出荷数量は方法しだいで必須になる。窓で止めないと、下見で全行「出荷数量が要ります」になる
+  const fields = PRTR_IMPORT_FIELDS[kind].map((f) =>
+    f.key === "shippedKg" && shippedRequired ? { ...f, required: true } : f,
+  );
   const [inspected, setInspected] = useState<PrtrImportInspectDto | null>(null);
   const [mapping, setMapping] = useState<Record<string, number | null>>({});
   const [mode, setMode] = useState<PrtrImportMode>("upsert");

@@ -600,6 +600,7 @@ function QuantitySection({
           entryId={entryId}
           kind="quantities"
           file={importing}
+          shippedRequired={method !== "MEASURED"}
           onClose={(applied) => {
             setImporting(null);
             if (applied) void onChanged();
