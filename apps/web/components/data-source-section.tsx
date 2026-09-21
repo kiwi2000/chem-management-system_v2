@@ -84,7 +84,8 @@ export function DataSourceSection({
       {
         /*
           色。**種別そのものの持ちものなので、どのバージョンでも同じ色**になる。
-          ここで変えると、ほかのバージョンの同じ種別も変わる
+          ここで変えると、ほかのバージョンの同じ種別も変わる。
+          押せるのは、行末の鉛筆で編集中の行だけ（2026-09-22 指示。見ているだけのつもりで変わらないように）
         */
         key: "sourceColor",
         header: m.sources.color,
@@ -96,7 +97,7 @@ export function DataSourceSection({
         render: (r) => (
           <ColorPicker
             value={r.sourceColor}
-            disabled={!editable}
+            disabled={!editable || r.id !== editingId}
             label={m.sources.colorPick}
             clearLabel={m.sources.colorNone}
             customLabel={m.sources.colorCustom}
