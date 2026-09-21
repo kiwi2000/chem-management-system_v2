@@ -185,17 +185,17 @@ export function AppShellClient({
         <div
           className={cn(
             "overflow-hidden transition-[height] duration-200",
-            headerOpen ? "h-14" : "h-0",
+            headerOpen ? "h-[52px]" : "h-0",
           )}
         >
           <header
             className={cn(
-              "bg-header text-header-foreground relative flex h-14 items-center gap-2 border-b px-3",
+              "bg-header text-header-foreground relative flex h-[52px] items-center gap-2 border-b px-3 py-2",
             )}
           >
             {/* 名前は帯の左、開閉ボタンの隣。左ペインの頭に置くとペインの幅で切れた */}
-            {/* 題字は帯の中でいちばん大きく（2026-09-17 指示） */}
-            <Link href="/" className="min-w-0 truncate text-xl font-semibold">
+            {/* 題字は帯の中でいちばん大きく（2026-09-17 指示）。上下の余白は 2 mm ほど（8px、2026-09-21 指示） */}
+            <Link href="/" className="min-w-0 truncate text-3xl leading-9 font-semibold">
               {m.common.appName}
             </Link>
             <div className="ml-auto flex items-center gap-3">
