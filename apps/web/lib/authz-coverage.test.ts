@@ -85,3 +85,33 @@ describe("API ルートの認可", () => {
     for (const rel of ALLOWLIST) expect(all.has(rel), `${rel} は存在しない`).toBe(true);
   });
 });
+
+/**
+ * PRTR（S22）の API は、権限に加えて**担当の範囲**（工場・グループ）で絞る決まり。
+ * マスタ（業種・主務大臣・事業者）は会社で 1 つなので範囲を持たない
+ */
+describe("PRTR の API の担当の範囲", () => {
+  const SCOPE_FREE = new Set([
+    "prtr/industries/route.ts",
+    "prtr/industries/[id]/route.ts",
+    "prtr/ministers/route.ts",
+    "prtr/ministers/[id]/route.ts",
+    "prtr/registrants/route.ts",
+    "prtr/registrants/[id]/route.ts",
+  ]);
+  const files = findRouteFiles(API_DIR).filter((f) =>
+    relative(API_DIR, f).split(sep).join("/").startsWith("prtr/"),
+  );
+
+  it("PRTR の route.ts が見つかること", () => {
+    expect(files.length).toBeGreaterThan(0);
+  });
+
+  it.each(files)("%s は担当の範囲で絞っている", (file) => {
+    const rel = relative(API_DIR, file).split(sep).join("/");
+    if (SCOPE_FREE.has(rel)) return;
+    const src = readFileSync(file, "utf8");
+    const scoped = src.includes("requirePrtrScope(") || src.includes("prtrScopeOf(");
+    expect(scoped, `${rel} が requirePrtrScope / prtrScopeOf のどちらも呼んでいない`).toBe(true);
+  });
+});

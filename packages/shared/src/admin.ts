@@ -3,6 +3,7 @@ import { emailSchema, passwordSchema } from "./auth";
 import type { PasswordPolicy } from "./settings";
 import type { Messages } from "./i18n/ja";
 import { PERMISSIONS } from "./permissions";
+import { prtrScopeSchema } from "./prtr";
 
 /** グループの割り当て。空文字は「未設定」として null に倒す */
 const groupId = z
@@ -30,6 +31,7 @@ export const userCreateSchema = (m: Messages, policy?: PasswordPolicy) =>
     initialPassword: passwordSchema(m, policy),
     newsGroupId: groupId,
     organisationIds,
+    prtrScope: prtrScopeSchema,
   });
 export type UserCreateInput = z.infer<ReturnType<typeof userCreateSchema>>;
 
@@ -41,6 +43,7 @@ export const userUpdateSchema = (_m: Messages) =>
     activeFlag: z.boolean(),
     newsGroupId: groupId,
     organisationIds,
+    prtrScope: prtrScopeSchema,
   });
 export type UserUpdateInput = z.infer<ReturnType<typeof userUpdateSchema>>;
 

@@ -79,6 +79,13 @@ export const ja = {
   },
 
   nav: {
+    /** PRTR（S22）。左ペインの見出しと配下 */
+    prtr: "PRTR",
+    prtrGroups: "グループ",
+    prtrSites: "工場",
+    prtrIndustries: "業種",
+    prtrMinisters: "主務大臣",
+    prtrRegistrants: "事業者",
     documents: "ドキュメント",
     documentCreate: "ドキュメント生成",
     docTemplates: "テンプレート編集",
@@ -222,6 +229,9 @@ export const ja = {
 
   /** 権限の名前と説明（ユーザー管理画面のチェックボックス） */
   permissions: {
+    PRTR_SITE: "PRTR: 自分の工場のデータを登録・参照できる",
+    PRTR_GROUP: "PRTR: 自分のグループの全工場を登録・参照し、集計と届出データを作れる",
+    PRTR_ADMIN: "PRTR 管理（全グループの集計、グループ・工場・業種・主務大臣・事業者の登録）",
     DOC_TEMPLATE_EDIT: "テンプレートを編集できる",
     DOCUMENT_CREATE: "ドキュメントを作れる（自分が作ったものを一覧で見られる）",
     DOCUMENT_DOWNLOAD: "ドキュメントを開ける・落とせる",
@@ -246,6 +256,11 @@ export const ja = {
     ADMIN: "システム管理（ユーザー・設定・監査ログ）",
   },
   permissionHints: {
+    PRTR_SITE:
+      "担当する工場は、この画面の下の「PRTR の担当」で割り当てます。割り当てが無いと PRTR の画面は空のままです",
+    PRTR_GROUP:
+      "担当するグループを割り当てると、そのグループに属する工場のデータを登録・修正できます。工場担当の権限を含みます",
+    PRTR_ADMIN: "担当の割り当ては要りません（全グループ）。グループ担当・工場担当の権限を含みます",
     PRODUCT_VIEW: "規制該当の判定と逆引き検索もできます",
     PRODUCT_EDIT: "組成の編集を含みます。登録・変更・削除・TSV取込",
     REGULATION_EDIT: "金属換算係数・情報源・リンクバージョンを含みます",
@@ -265,6 +280,7 @@ export const ja = {
     ADMIN: "ユーザーの作成・権限変更・システム設定・監査ログの閲覧",
   },
   permissionGroups: {
+    prtr: "PRTR",
     document: "ドキュメント",
     organisation: "組織",
     product: "製品 / 原材料",
@@ -1703,6 +1719,16 @@ export const ja = {
   },
 
   settings: {
+    /** PRTR（S22） */
+    prtrTitle: "PRTR",
+    prtrThresholdKg: "第一種指定化学物質の届出要否の閾値（kg）",
+    prtrThresholdSpecificKg: "特定第一種指定化学物質の届出要否の閾値（kg）",
+    prtrThresholdHint:
+      "グループ（届出単位）の年間取扱量がこの値以上なら届出要否を「要」にします。法の定めは 1,000 kg と 500 kg です",
+    prtrDefaultRegistrant: "既定の事業者（届出者）",
+    prtrDefaultRegistrantNone: "（未設定）",
+    prtrDefaultRegistrantHint:
+      "届出データを作るときに最初から入っている事業者です。組織マスタの会社から選びます。届出者に要る項目は PRTR の「事業者」の画面で入れます",
     title: "システム設定",
     description: "運用の方針に合わせて、入力チェックの厳しさを切り替えます。",
     substanceSection: "物質のCAS番号",
@@ -2057,6 +2083,18 @@ export const ja = {
   },
 
   users: {
+    /** PRTR の担当（S22）。工場かグループのどちらか 1 つ */
+    prtrScope: "PRTR の担当",
+    prtrScopeNone: "（担当なし）",
+    prtrScopeSite: "工場",
+    prtrScopeGroup: "グループ",
+    prtrScopeHint:
+      "工場担当の権限には担当の工場を、グループ担当の権限には担当のグループを割り当てます。PRTR 管理者は全グループを見られるので割り当ては要りません",
+    prtrScopeDisabled: "PRTR の権限が無いので割り当てられません",
+    prtrScopeSiteRequired: "工場担当の権限には、担当の工場の割り当てが要ります",
+    prtrScopeGroupRequired: "グループ担当の権限には、担当のグループの割り当てが要ります",
+    prtrScopeAdminHasNone: "PRTR 管理者は担当を持ちません（全グループ）。割り当てを外してください",
+    prtrScopeAdmin: "PRTR 管理者は担当を持ちません（全グループ）",
     title: "ユーザー管理",
     organisation: "組織",
     organisationHint:
@@ -2333,6 +2371,111 @@ export const ja = {
   },
 
   /** 組織（会社・事業所）。帳票に載せる差出人の情報を置く画面 */
+  /** PRTR（S22）。工場 → グループ → 会社 */
+  prtr: {
+    title: "PRTR",
+    description:
+      "化管法の PRTR 届出のための集計です。データを入れるのは工場、届け出るのはグループ（都道府県など）、会社全体の集計はその上で見ます",
+    viewOnly: "表示のみ",
+    validation: {
+      zip: "郵便番号は 7 桁の数字で入れてください（ハイフンは無くても構いません）",
+      industryCode: "業種コードは 4 桁の数字です",
+      corporateNumber: "法人番号は 13 桁の数字です",
+    },
+    groups: {
+      title: "グループ",
+      lead: "届け出る単位です。同じ都道府県の工場をまとめて 1 通で届け出るなら、都道府県ごとに作ります。工場が 1 つだけのグループもあります",
+      code: "コード",
+      name: "名称",
+      nameKana: "名称（ふりがな）",
+      nameEn: "名称（英語）",
+      address: "届出上の所在地",
+      addressKana: "所在地（ふりがな）",
+      zip: "郵便番号",
+      prefecture: "都道府県",
+      city: "市区町村",
+      town: "町域・番地",
+      prefectureKana: "都道府県（ふりがな）",
+      cityKana: "市区町村（ふりがな）",
+      townKana: "町域・番地（ふりがな）",
+      employeeNum: "常時使用する従業員の数",
+      employeeNumHint: "前年 4 月 1 日現在の人数。届出書の本紙に載ります",
+      displayOrder: "表示順",
+      note: "備考",
+      siteCount: "工場",
+      userCount: "担当者",
+      add: "＋ グループ",
+      newTitle: "グループの登録",
+      empty: "グループが登録されていません",
+      duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
+      inUseSites: (n: number) =>
+        `このグループには工場が ${n} 件あります。先に工場を別のグループへ移すか消してください`,
+      inUseUsers: (n: number) =>
+        `このグループを担当している利用者が ${n} 人います。先に担当を外してください`,
+      backToList: "一覧に戻る",
+      saved: "保存しました",
+    },
+    sites: {
+      title: "工場",
+      lead: "数量・方法・値を入れる単位です。必ずどれかのグループに属します",
+      code: "コード",
+      name: "名称",
+      nameEn: "名称（英語）",
+      group: "グループ",
+      note: "備考",
+      userCount: "担当者",
+      add: "＋ 工場",
+      empty: "工場が登録されていません",
+      duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
+      inUseUsers: (n: number) =>
+        `この工場を担当している利用者が ${n} 人います。先に担当を外してください`,
+      groupMissing: "グループを選んでください",
+    },
+    industries: {
+      title: "業種",
+      lead: "届出書の本紙で選ぶ業種です。既定として「PRTR 届出の手引き」の業種コード・届出先一覧を入れてあります",
+      code: "業種コード",
+      name: "業種名",
+      minister: "届出先の既定",
+      ministerNone: "（既定なし）",
+      active: "使う",
+      add: "＋ 業種",
+      empty: "業種が登録されていません",
+      duplicateCode: (code: string) => `業種コード「${code}」は既に使われています`,
+    },
+    ministers: {
+      title: "主務大臣",
+      lead: "届出先です。業種を選ぶと、その業種の既定の届出先が入ります",
+      name: "名称",
+      industryCount: "既定にしている業種",
+      active: "使う",
+      add: "＋ 主務大臣",
+      empty: "主務大臣が登録されていません",
+      inUse: (n: number) =>
+        `この主務大臣を既定にしている業種が ${n} 件あります。先に業種の既定を変えてください`,
+    },
+    registrants: {
+      title: "事業者（届出者）",
+      lead: "届出書の本紙に載せる届出者の情報です。組織マスタの会社から選び、届出に要る項目を足します",
+      organisation: "会社",
+      noCompanies:
+        "組織マスタに会社が登録されていません。先に「組織」の画面で会社を登録してください",
+      isDefault: "既定の事業者",
+      nameKana: "名称（ふりがな）",
+      representName: "代表者（役職と氏名）",
+      representNameKana: "代表者（ふりがな）",
+      agentName: "代理人（役職と氏名）",
+      agentNameKana: "代理人（ふりがな）",
+      corporateNumber: "法人番号",
+      corporateNumberHint: "13 桁。無ければ空のままにします",
+      lastYearCompanyName: "前回の届出における事業者名",
+      lastYearCompanyNameHint: "名称を変えたときだけ入れます",
+      address: "住所",
+      addressKana: "住所（ふりがな）",
+      empty: "この会社の届出者情報はまだありません。「編集」で入れてください",
+      saved: "保存しました",
+    },
+  },
   organisations: {
     title: "組織",
     description:

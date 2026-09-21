@@ -35,10 +35,13 @@ import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError } from "@/lib/types";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { useOrganisations } from "@/lib/use-organisations";
 
 export default function SettingsPage() {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  // PRTR の既定の事業者は、組織マスタの会社から選ぶ
+  const organisations = useOrganisations();
   /** 読み込んだ直後の内容。「変更を破棄」で戻す先 */
   const [loaded, setLoaded] = useState<AppSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -298,6 +301,70 @@ export default function SettingsPage() {
         </Card>
 
         <ScoreSettingsSection />
+
+        {/* PRTR（S22）。届出要否の閾値と、既定の事業者 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.prtrTitle}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="prtr-threshold">{m.settings.prtrThresholdKg}</Label>
+                <Input
+                  id="prtr-threshold"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={settings.prtrThresholdKg}
+                  onChange={(e) => setSettings({ ...settings, prtrThresholdKg: e.target.value })}
+                  className="w-32 font-mono"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="prtr-threshold-specific">
+                  {m.settings.prtrThresholdSpecificKg}
+                </Label>
+                <Input
+                  id="prtr-threshold-specific"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={settings.prtrThresholdSpecificKg}
+                  onChange={(e) =>
+                    setSettings({ ...settings, prtrThresholdSpecificKg: e.target.value })
+                  }
+                  className="w-32 font-mono"
+                />
+              </div>
+            </div>
+            <p className="text-muted-foreground text-xs">{m.settings.prtrThresholdHint}</p>
+            <div className="space-y-2">
+              <Label htmlFor="prtr-registrant">{m.settings.prtrDefaultRegistrant}</Label>
+              <select
+                id="prtr-registrant"
+                value={settings.prtrDefaultRegistrantOrganisationId}
+                onChange={(e) =>
+                  setSettings({ ...settings, prtrDefaultRegistrantOrganisationId: e.target.value })
+                }
+                className="border-input bg-background h-9 max-w-md rounded-none border px-2 text-sm"
+              >
+                <option value="">{m.settings.prtrDefaultRegistrantNone}</option>
+                {(organisations ?? [])
+                  .filter(
+                    (o) =>
+                      o.kind === "COMPANY" || o.id === settings.prtrDefaultRegistrantOrganisationId,
+                  )
+                  .map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.code} {locale === "ja" ? o.nameJa : (o.nameEn ?? o.nameJa)}
+                    </option>
+                  ))}
+              </select>
+              <p className="text-muted-foreground text-xs">
+                {m.settings.prtrDefaultRegistrantHint}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

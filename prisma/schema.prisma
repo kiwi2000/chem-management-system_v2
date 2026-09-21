@@ -51,6 +51,10 @@ enum Permission {
   FEEDBACK_VIEW
   FEEDBACK_EDIT
   ADMIN
+  // PRTR（S22）。工場 → グループ → 会社の 3 段
+  PRTR_SITE
+  PRTR_GROUP
+  PRTR_ADMIN
 }
 
 enum NewsStatus {
@@ -248,6 +252,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -268,6 +273,7 @@ model User {
    */
   organisations  UserOrganisation[]
   approvalEvents ApprovalEvent[]
+  prtrScopes     PrtrUserScope[]
 
   @@index([newsGroupId])
   @@map("users")
@@ -346,11 +352,15 @@ model Organisation {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  items   OrganisationItem[]
+  items          OrganisationItem[]
   /**
    * この組織に所属する人
    */
-  members UserOrganisation[]
+  members        UserOrganisation[]
+  /**
+   * PRTR の届出者として使うときの項目（S22）。会社のときだけ
+   */
+  prtrRegistrant PrtrRegistrant?
 
   @@index([displayOrder])
   @@map("organisations")
@@ -2771,4 +2781,174 @@ model ImpurityExemptionSubstance {
   @@unique([typeId, statutorySubstanceId])
   @@index([statutorySubstanceId])
   @@map("impurity_exemption_substances")
+}
+
+// ── PRTR（S22）─────────────────────────────────────────────
+//
+// データを入れるのは工場、届け出るのはグループ（お客様の運用では都道府県）、
+// 会社全体の集計はその上。利用者は工場かグループのどちらか 1 つを担当する。
+// 仕様は docs/steps/S22_PRTR集計と届出.md
+
+/**
+ * グループ。届出上の事業所にあたる。届出の本紙に要る名称・所在地を持つ
+ */
+model PrtrGroup {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+
+  nameJa   String  @map("name_ja") @db.VarChar(200)
+  nameKana String? @map("name_kana") @db.VarChar(200)
+  nameEn   String? @map("name_en") @db.VarChar(200)
+
+  zip            String? @db.VarChar(10)
+  prefecture     String? @db.VarChar(50)
+  city           String? @db.VarChar(100)
+  town           String? @db.VarChar(200)
+  prefectureKana String? @map("prefecture_kana") @db.VarChar(100)
+  cityKana       String? @map("city_kana") @db.VarChar(200)
+  townKana       String? @map("town_kana") @db.VarChar(400)
+  /**
+   * 常時使用する従業員の数（前年 4/1 現在）
+   */
+  employeeNum    Int?    @map("employee_num")
+
+  displayOrder Int     @default(0) @map("display_order")
+  note         String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  sites  PrtrSite[]
+  scopes PrtrUserScope[]
+
+  @@index([displayOrder])
+  @@map("prtr_groups")
+}
+
+/**
+ * 工場。数量・方法・値を入れる単位。必ずどれかのグループに属する
+ */
+model PrtrSite {
+  id             String @id @default(cuid())
+  code           String @db.VarChar(50)
+  codeNormalized String @unique @map("code_normalized") @db.VarChar(64)
+  groupId        String @map("group_id")
+
+  nameJa String  @map("name_ja") @db.VarChar(200)
+  nameEn String? @map("name_en") @db.VarChar(200)
+
+  displayOrder Int     @default(0) @map("display_order")
+  note         String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String?   @map("created_by")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  updatedBy String?   @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+
+  group  PrtrGroup       @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  scopes PrtrUserScope[]
+
+  @@index([groupId])
+  @@index([displayOrder])
+  @@map("prtr_sites")
+}
+
+/**
+ * 担当。工場担当は site_id、グループ担当は group_id（どちらか一方。DB の CHECK で縛る）。
+ * **当面は 1 人 1 行**（API が守る）。複数にするときは画面だけ直す
+ */
+model PrtrUserScope {
+  id      String  @id @default(cuid())
+  userId  String  @map("user_id")
+  siteId  String? @map("site_id")
+  groupId String? @map("group_id")
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site  PrtrSite?  @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  group PrtrGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([siteId])
+  @@index([groupId])
+  @@map("prtr_user_scopes")
+}
+
+/**
+ * 主務大臣（届出先）。PRTR 管理者が登録する。既定のデータは移行で入れる
+ */
+model PrtrMinister {
+  id           String  @id @default(cuid())
+  name         String  @db.VarChar(100)
+  displayOrder Int     @default(0) @map("display_order")
+  active       Boolean @default(true)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  industries PrtrIndustry[]
+
+  @@index([displayOrder])
+  @@map("prtr_ministers")
+}
+
+/**
+ * 業種（コード 4 桁と名称）。届出書の本紙で選ぶ。
+ * 既定のデータは「PRTR 届出の手引き」の業種コード・届出先一覧（移行で入れる）
+ */
+model PrtrIndustry {
+  id                String  @id @default(cuid())
+  code              String  @db.VarChar(10)
+  name              String  @db.VarChar(200)
+  /**
+   * 届出先の既定。業種を選ぶとこれが入る。決まらない業種（自然科学研究所）は空
+   */
+  defaultMinisterId String? @map("default_minister_id")
+  displayOrder      Int     @default(0) @map("display_order")
+  active            Boolean @default(true)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  defaultMinister PrtrMinister? @relation(fields: [defaultMinisterId], references: [id], onDelete: SetNull)
+
+  @@index([code])
+  @@index([displayOrder])
+  @@map("prtr_industries")
+}
+
+/**
+ * 事業者（届出者）。組織マスタの会社 1 件に、届出の本紙に要る項目を添える
+ */
+model PrtrRegistrant {
+  organisationId String @id @map("organisation_id")
+
+  nameKana            String? @map("name_kana") @db.VarChar(200)
+  representName       String? @map("represent_name") @db.VarChar(200)
+  representNameKana   String? @map("represent_name_kana") @db.VarChar(200)
+  agentName           String? @map("agent_name") @db.VarChar(200)
+  agentNameKana       String? @map("agent_name_kana") @db.VarChar(200)
+  corporateNumber     String? @map("corporate_number") @db.VarChar(13)
+  lastYearCompanyName String? @map("last_year_company_name") @db.VarChar(200)
+
+  zip            String? @db.VarChar(10)
+  prefecture     String? @db.VarChar(50)
+  city           String? @db.VarChar(100)
+  town           String? @db.VarChar(200)
+  prefectureKana String? @map("prefecture_kana") @db.VarChar(100)
+  cityKana       String? @map("city_kana") @db.VarChar(200)
+  townKana       String? @map("town_kana") @db.VarChar(400)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@map("prtr_registrants")
 }

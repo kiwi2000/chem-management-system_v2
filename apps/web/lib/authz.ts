@@ -131,3 +131,87 @@ export async function requireAdmin(): Promise<Actor | Response> {
 export function canEdit(actor: Actor): boolean {
   return canEditAnything(actor.permissions);
 }
+
+/*
+  ── PRTR の担当の範囲（S22）──────────────────────────────────
+  権限は「できること」、担当は「どこまで」。工場担当は自分の工場、
+  グループ担当は自分のグループの工場、PRTR 管理者は全部。
+  **行単位の絞り込みは本システムで初めて。**PRTR の API は requirePermission の後に
+  必ずここを通す（呼び忘れは authz-coverage.test.ts が見張る）
+*/
+
+export interface PrtrScope {
+  /** PRTR 管理者。何でも見られる */
+  all: boolean;
+  /** グループ担当として担当しているグループ */
+  groupIds: string[];
+  /** 工場担当として担当している工場 */
+  siteIds: string[];
+}
+
+/** その人の担当の範囲。一覧の絞り込みに使う */
+export async function prtrScopeOf(actor: Actor): Promise<PrtrScope> {
+  if (actor.has("PRTR_ADMIN")) return { all: true, groupIds: [], siteIds: [] };
+  const rows = await prisma.prtrUserScope.findMany({
+    where: { userId: actor.user.id },
+    select: { siteId: true, groupId: true },
+  });
+  return {
+    all: false,
+    groupIds: actor.has("PRTR_GROUP")
+      ? rows.map((r) => r.groupId).filter((v): v is string => v !== null)
+      : [],
+    siteIds: actor.has("PRTR_SITE")
+      ? rows.map((r) => r.siteId).filter((v): v is string => v !== null)
+      : [],
+  };
+}
+
+/** 工場の一覧を担当の範囲で絞る Prisma の条件。範囲外の人には何も返さない */
+export function prtrSiteWhere(scope: PrtrScope): Record<string, unknown> {
+  if (scope.all) return {};
+  return { OR: [{ id: { in: scope.siteIds } }, { groupId: { in: scope.groupIds } }] };
+}
+
+/** グループの一覧を担当の範囲で絞る条件。工場担当には自分の工場が属するグループだけ見せる */
+export function prtrGroupWhere(scope: PrtrScope): Record<string, unknown> {
+  if (scope.all) return {};
+  return {
+    OR: [{ id: { in: scope.groupIds } }, { sites: { some: { id: { in: scope.siteIds } } } }],
+  };
+}
+
+/**
+ * その工場（またはグループ）を触ってよいか。**範囲外は 404**
+ * （存在を教えない。403 だと「あるが触れない」と分かってしまう）
+ */
+export async function requirePrtrScope(
+  actor: Actor,
+  target: { siteId?: string; groupId?: string },
+): Promise<null | Response> {
+  const scope = await prtrScopeOf(actor);
+  if (scope.all) return null;
+  let ok = false;
+  if (target.siteId) {
+    const site = await prisma.prtrSite.findFirst({
+      where: { id: target.siteId, deletedAt: null },
+      select: { groupId: true },
+    });
+    ok =
+      site !== null &&
+      (scope.siteIds.includes(target.siteId) || scope.groupIds.includes(site.groupId));
+  } else if (target.groupId) {
+    const g = target.groupId;
+    ok = scope.groupIds.includes(g);
+    if (!ok && scope.siteIds.length > 0) {
+      // 工場担当は自分の工場が属するグループを見てよい（名前を出すため）
+      const n = await prisma.prtrSite.count({
+        where: { id: { in: scope.siteIds }, groupId: g, deletedAt: null },
+      });
+      ok = n > 0;
+    }
+  }
+  if (ok) return null;
+  const m = await getServerMessages();
+  return jsonError(404, "not_found", m.errors.notFound);
+}

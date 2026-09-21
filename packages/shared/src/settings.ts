@@ -137,6 +137,15 @@ export interface AppSettings {
   imageFormat: ImageFormatPolicy;
   /** JPEG にするときの画質（1〜100） */
   imageJpegQuality: number;
+
+  /**
+   * PRTR（S22）。届出要否の閾値（kg）。**数値は文字列で持つ**。
+   * 法の定めは第一種 1,000 kg・特定第一種 500 kg だが、運用で変えられるようにしてある
+   */
+  prtrThresholdKg: string;
+  prtrThresholdSpecificKg: string;
+  /** 既定の事業者（届出者）。組織マスタの会社の id。空は未設定 */
+  prtrDefaultRegistrantOrganisationId: string;
 }
 
 export const IMAGE_FORMAT_POLICIES = ["keep", "png", "jpeg"] as const;
@@ -145,6 +154,9 @@ export const IMAGE_MAX_EDGE_MIN = 200;
 export const IMAGE_MAX_EDGE_MAX = 8000;
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  prtrThresholdKg: "1000",
+  prtrThresholdSpecificKg: "500",
+  prtrDefaultRegistrantOrganisationId: "",
   maintenanceMode: false,
   casRequired: false,
   casFormatEnforced: false,
@@ -248,6 +260,30 @@ const boolDef = (field: keyof AppSettings, key: string): SettingDef => ({
 });
 
 export const SETTING_DEFS: SettingDef[] = [
+  {
+    field: "prtrThresholdKg",
+    key: "prtr.threshold_kg",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const scaled = toScaled(raw);
+      return scaled !== null && scaled >= 0n ? raw.trim() : null;
+    },
+  },
+  {
+    field: "prtrThresholdSpecificKg",
+    key: "prtr.threshold_specific_kg",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const scaled = toScaled(raw);
+      return scaled !== null && scaled >= 0n ? raw.trim() : null;
+    },
+  },
+  {
+    field: "prtrDefaultRegistrantOrganisationId",
+    key: "prtr.default_registrant_organisation_id",
+    valueType: "STRING",
+    parse: (raw) => raw.trim(),
+  },
   boolDef("maintenanceMode", "system.maintenance_mode"),
   boolDef("casRequired", "substance.cas_required"),
   boolDef("casFormatEnforced", "substance.cas_format_enforced"),
@@ -420,8 +456,18 @@ const scoreBoundSchema = (m: Messages) =>
     .trim()
     .regex(/^-?\d+(\.\d{1,3})?$/, m.validation.numberFormat);
 
+/** 届出要否の閾値（kg）。0 以上、小数 3 桁まで */
+const prtrThresholdSchema = (m: Messages) =>
+  z
+    .string()
+    .trim()
+    .regex(/^\d+(\.\d{1,3})?$/, m.validation.numberFormat);
+
 export const settingsSchema = (m: Messages) =>
   z.object({
+    prtrThresholdKg: prtrThresholdSchema(m),
+    prtrThresholdSpecificKg: prtrThresholdSchema(m),
+    prtrDefaultRegistrantOrganisationId: z.string().trim().max(64),
     maintenanceMode: z.boolean(),
     casRequired: z.boolean(),
     casFormatEnforced: z.boolean(),

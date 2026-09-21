@@ -59,6 +59,15 @@ export const PERMISSIONS = [
   */
   "FEEDBACK_VIEW",
   "FEEDBACK_EDIT",
+  /*
+    PRTR（S22）。工場 → グループ → 会社の 3 段。
+    工場担当は自分の工場、グループ担当は自分のグループの工場、管理者は全部。
+    **どの工場・グループを担当するかは権限ではなく、利用者の画面で割り当てる**
+    （権限は「できること」、担当は「どこまで」）
+  */
+  "PRTR_SITE",
+  "PRTR_GROUP",
+  "PRTR_ADMIN",
   // システム管理（ユーザー管理・システム設定・監査ログ）
   "ADMIN",
 ] as const;
@@ -93,6 +102,9 @@ const IMPLIES: Partial<Record<Permission, readonly Permission[]>> = {
   NEWS_MANAGE: ["NEWS_POST"],
   // フィードバックを書ける人は、当然それを見られる
   FEEDBACK_EDIT: ["FEEDBACK_VIEW"],
+  // PRTR は上の段が下の段を含む（管理者はグループ担当の、グループ担当は工場担当のことができる）
+  PRTR_GROUP: ["PRTR_SITE"],
+  PRTR_ADMIN: ["PRTR_GROUP"],
 };
 
 /** 含意をたどって権限集合を閉じる（保存前・チェックボックス操作時の両方で使う） */
@@ -148,6 +160,7 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "organisation", permissions: ["ORG_EDIT"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },
   { key: "feedback", permissions: ["FEEDBACK_VIEW", "FEEDBACK_EDIT"] },
+  { key: "prtr", permissions: ["PRTR_SITE", "PRTR_GROUP", "PRTR_ADMIN"] },
   { key: "system", permissions: ["ADMIN"] },
 ];
 
