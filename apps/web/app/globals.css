@@ -2,6 +2,15 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* 題字の明朝（Noto Serif JP SemiBold の部分集合。SIL OFL 1.1、public/fonts/OFL-NotoSerifJP.txt） */
+@font-face {
+  font-family: "Chem Title Serif";
+  src: url("/fonts/title-serif.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* 暗い配色は .dark とミッドナイトの2つ。どちらでも dark: 指定を効かせる */
 @custom-variant dark (&:is(.dark *, .theme-midnight *));
 
@@ -15,10 +24,13 @@
     Meiryo, system-ui, sans-serif;
   --font-mono:
     ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", "BIZ UDGothic", monospace;
-  /* 題字用の明朝。外部からフォントは取らないので、PC にある書体だけで組む（2026-09-21 指示） */
+  /*
+    題字用の明朝。Noto Serif JP の SemiBold を題字の文字だけに絞って同梱している（scripts/build-title-font.py）。
+    アプリが自分で配るので外部との通信は無い。同梱に無い字は PC の明朝で補う（2026-09-21 指示）
+  */
   --font-serif:
-    "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "BIZ UDPMincho", "MS PMincho",
-    serif;
+    "Chem Title Serif", "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho",
+    "BIZ UDPMincho", "MS PMincho", serif;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
