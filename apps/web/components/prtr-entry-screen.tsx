@@ -455,7 +455,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
     ],
     [t, locale],
   );
-  const { state, setState } = useTableState(S_KEY, columns, S_STATE);
+  const { state, setState } = useTableState(S_KEY, columns, S_STATE, "s");
 
   const showError = useCallback(
     async (res: Response | null) => {
@@ -650,7 +650,7 @@ function QuantitySection({
     ],
     [t, m, locale, canSeeProducts],
   );
-  const { state, setState } = useTableState(Q_KEY, columns, Q_STATE);
+  const { state, setState } = useTableState(Q_KEY, columns, Q_STATE, "q");
 
   const loadRows = useCallback(async () => {
     const res = await fetch(
@@ -927,7 +927,7 @@ function MeasuredSection({
     ],
     [t, m, locale],
   );
-  const { state, setState } = useTableState(M_KEY, columns, M_STATE);
+  const { state, setState } = useTableState(M_KEY, columns, M_STATE, "m");
 
   const loadRows = useCallback(async () => {
     const res = await fetch(

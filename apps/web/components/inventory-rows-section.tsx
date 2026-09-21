@@ -151,6 +151,8 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
     "chem.table.inventoryRows",
     columns,
     DEFAULT_STATE,
+    // インベントリの一覧と同じ画面に並ぶので、URL の名前を分ける
+    "rows",
   );
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);

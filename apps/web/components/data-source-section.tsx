@@ -232,6 +232,8 @@ export function DataSourceSection({
     "chem.table.dataSources",
     columns,
     DEFAULT_STATE,
+    // 外部データベースの画面には表が 4 つ並ぶので、URL の名前を分ける
+    "ds",
   );
 
   const load = useCallback(async () => {

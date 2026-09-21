@@ -177,7 +177,12 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
     ];
   }, [m, locale, regions, editingId, draft]);
 
-  const { state, setState, ready } = useTableState("chem.table.countries", columns, DEFAULT_STATE);
+  const {
+    state,
+    setState,
+    ready,
+  } = // 地域の表と同じ画面に並ぶので、URL の名前を分ける（分けないと page を書き合って 1 ページ目へ戻される）
+    useTableState("chem.table.countries", columns, DEFAULT_STATE, "country");
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 

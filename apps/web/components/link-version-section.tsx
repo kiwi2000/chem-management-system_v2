@@ -163,6 +163,8 @@ export function LinkVersionSection({
     "chem.table.linkVersions",
     columns,
     DEFAULT_STATE,
+    // 外部データベースの画面には表が 4 つ並ぶので、URL の名前を分ける
+    "lv",
   );
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
