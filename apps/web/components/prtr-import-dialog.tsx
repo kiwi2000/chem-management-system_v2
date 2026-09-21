@@ -20,7 +20,7 @@ import type { ApiError, PrtrImportInspectDto, PrtrImportResultDto } from "@/lib/
  *
  * ファイルは「ファイル」ボタンで OS の選択画面から選ばれて渡ってくる（この窓では選ばない）。
  * 1. 1 行目を見出しとして読み、どの列を何に使うかを選ぶ（見出しが項目名と同じ列は最初から割り当てる）
- * 2. 下見（何も書かない）→ 重ね方／上書きの答え → 取り込む
+ * 2. プレビュー（何も書かない）→ 重ね方／上書きの答え → 取り込む
  *
  * ファイルはサーバーに置かず、毎回送り直す
  */
@@ -43,7 +43,7 @@ export function PrtrImportDialog({
 }) {
   const { m } = useI18n();
   const t = m.prtr.import;
-  // 出荷数量は方法しだいで必須になる。窓で止めないと、下見で全行「出荷数量が要ります」になる
+  // 出荷数量は方法しだいで必須になる。窓で止めないと、プレビューで全行「出荷数量が要ります」になる
   const fields = PRTR_IMPORT_FIELDS[kind].map((f) =>
     f.key === "shippedKg" && shippedRequired ? { ...f, required: true } : f,
   );

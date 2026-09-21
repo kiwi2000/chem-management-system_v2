@@ -2425,7 +2425,7 @@ export const ja = {
         substanceName: "物質名（照合だけ）",
         measuredKg: "実測値（kg）",
       },
-      preview: "下見",
+      preview: "プレビュー",
       previewHint: "何も書き込まずに、読める行と読めない行を数えます",
       rows: (n: number) => `${n} 行`,
       readable: (n: number) => `読める ${n} 行`,
