@@ -707,6 +707,29 @@
 }
 
 /*
+ * 「編集」ボタン（components/edit-button.tsx）。どの画面でも同じ見た目にする（2026-09-22 指示）。
+ * 塗りはそのテーマの帯の色（--strong）を薄くしたグラデーションで、帯より明るい。文字は帯の文字色
+ */
+.edit-button {
+  color: var(--strong-foreground);
+  border-color: color-mix(in oklab, var(--strong) 75%, black);
+  background-color: oklch(from var(--strong) calc(l + 0.1) c h);
+  background-image: linear-gradient(
+    to bottom,
+    oklch(from var(--strong) calc(l + 0.16) c h),
+    oklch(from var(--strong) calc(l + 0.04) c h)
+  );
+}
+.edit-button:hover {
+  color: var(--strong-foreground);
+  background-image: linear-gradient(
+    to bottom,
+    oklch(from var(--strong) calc(l + 0.12) c h),
+    oklch(from var(--strong) c h)
+  );
+}
+
+/*
  * 背景の模様・挿絵。<html> に付くクラスで body に敷く。
  * どのテーマでも成立するよう、色は本文色を薄く混ぜたものだけを使う
  * （テーマごとに色を持たせない ＝ テーマ × 背景 の組み合わせが増えない）。

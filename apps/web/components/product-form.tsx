@@ -1,7 +1,6 @@
 "use client";
 
 import { pickName } from "@chem/shared";
-import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -11,6 +10,7 @@ import { FieldError } from "@/components/field-error";
 import { MultiSelect } from "@/components/multi-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -227,11 +227,7 @@ export function ProductForm({
         </Button>
       </span>
     ) : (
-      // 物質・お知らせ・利用者の「編集」と同じ塗りのボタンにそろえる
-      <Button type="button" size="sm" onClick={() => tryEdit(sec)}>
-        <Pencil className="mr-1 size-3.5" />
-        {m.common.edit}
-      </Button>
+      <EditButton onClick={() => tryEdit(sec)} />
     );
   }
 
@@ -379,7 +375,7 @@ export function ProductForm({
           {blockedNotice("basic")}
           {(!wizard || step === 1) && (
             <Card>
-              <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
+              <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
                 <CardTitle className="text-base">{m.products.basic}</CardTitle>
                 {sectionAction("basic")}
               </CardHeader>
@@ -552,7 +548,7 @@ export function ProductForm({
           {blockedNotice("note")}
           {(!wizard || step === 3) && (
             <Card>
-              <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
+              <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
                 <CardTitle className="text-base">
                   {m.products.note}
                   {m.common.optional}

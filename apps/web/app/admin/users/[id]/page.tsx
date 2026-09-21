@@ -1,7 +1,6 @@
 "use client";
 
 import { describePasswordPolicy, expandPermissions, type Permission } from "@chem/shared";
-import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -11,6 +10,7 @@ import { OrganisationPicker } from "@/components/organisation-picker";
 import { PermissionPicker } from "@/components/permission-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -195,10 +195,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         {editing ? (
           <Badge variant="secondary">{m.common.editMode}</Badge>
         ) : (
-          <Button type="button" size="sm" onClick={() => setEditing(true)}>
-            <Pencil className="mr-1 size-3.5" />
-            {m.common.edit}
-          </Button>
+          <EditButton onClick={() => setEditing(true)} />
         )}
       </div>
 

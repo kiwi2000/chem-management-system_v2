@@ -8,7 +8,6 @@ import {
   type AppSettings,
   type GazetteLawKind,
 } from "@chem/shared";
-import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -17,6 +16,7 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -283,12 +283,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
           */}
           {readOnly ? (
             <>
-              {canEdit && (
-                <Button key="edit" type="button" size="sm" onClick={() => setEditing(true)}>
-                  <Pencil className="mr-1 size-3.5" />
-                  {m.common.edit}
-                </Button>
-              )}
+              {canEdit && <EditButton key="edit" onClick={() => setEditing(true)} />}
               <Button
                 key="back"
                 type="button"
@@ -732,12 +727,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
 
       {readOnly && (
         <div className="flex gap-2">
-          {canEdit && (
-            <Button type="button" onClick={() => setEditing(true)}>
-              <Pencil className="mr-1 size-4" />
-              {m.common.edit}
-            </Button>
-          )}
+          {canEdit && <EditButton onClick={() => setEditing(true)} />}
           <Button type="button" variant="outline" onClick={() => router.push("/substances")}>
             {m.common.back}
           </Button>

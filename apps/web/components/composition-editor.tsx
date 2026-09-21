@@ -18,7 +18,6 @@ import {
   Database,
   GitCompare,
   GripVertical,
-  Pencil,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -37,6 +36,7 @@ import {
 } from "@/components/composition-tree";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -636,10 +636,7 @@ export function CompositionEditor({
             (editing ? (
               <Badge variant="secondary">{m.common.editMode}</Badge>
             ) : (
-              <Button type="button" size="sm" variant="outline" onClick={onRequestEdit}>
-                <Pencil className="mr-1 size-3.5" />
-                {m.common.edit}
-              </Button>
+              <EditButton onClick={onRequestEdit} />
             ))}
         </div>
       </CardHeader>

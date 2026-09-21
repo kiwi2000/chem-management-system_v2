@@ -1,10 +1,10 @@
 "use client";
 
-import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -78,10 +78,7 @@ export function NewsForm({ initial, canEdit }: Props) {
       {initial && (readOnly ? canEdit : true) && (
         <div className="flex items-center gap-3">
           {readOnly ? (
-            <Button type="button" size="sm" onClick={() => setEditing(true)}>
-              <Pencil className="mr-1 size-3.5" />
-              {m.common.edit}
-            </Button>
+            <EditButton onClick={() => setEditing(true)} />
           ) : (
             <Badge variant="secondary">{m.common.editMode}</Badge>
           )}
@@ -215,12 +212,7 @@ export function NewsForm({ initial, canEdit }: Props) {
 
       {readOnly && (
         <div className="flex gap-2">
-          {canEdit && (
-            <Button type="button" onClick={() => setEditing(true)}>
-              <Pencil className="mr-1 size-4" />
-              {m.common.edit}
-            </Button>
-          )}
+          {canEdit && <EditButton onClick={() => setEditing(true)} />}
           <Button type="button" variant="outline" onClick={() => router.push("/news")}>
             {m.common.back}
           </Button>
