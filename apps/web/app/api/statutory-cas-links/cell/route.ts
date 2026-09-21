@@ -86,27 +86,30 @@ export async function GET(req: Request) {
 
   /*
     その製品の、その区分の判定。**現バージョンぶんだけを見る。**
-    判定は版ごとに保存しているが、当たり・要確認・含有率不足の別は
-    現バージョンにだけ付ける（ほかの版は含有率から同じやりかたで見る。下を参照）
+    判定は「製品 × 区分 × 号」ごとに 1 行なので、区分の行を全部取っておき、
+    号ごとに自分の行を見る（区分そのものが単位のときは、号が空の行）。
+    **1 行だけ取ってはいけない。**同じ区分に別の号の判定があると（劇物のキシレンなど）
+    その行を掴み、当たっている号を「含有率不足」と読み違えていた（2026-09-22 硫酸バリウム）。
+    当たり・要確認・含有率不足の別は現バージョンにだけ付ける
+    （ほかの版は含有率から同じやりかたで見る。下を参照）
   */
-  const judgement = productId
-    ? await prisma.productJudgement.findFirst({
+  const judgements = productId
+    ? await prisma.productJudgement.findMany({
         where: { productId, categoryId, version: { isCurrent: true, deletedAt: null } },
         select: {
+          statutorySubstanceId: true,
           verdict: true,
           needsReview: true,
           reviewReasons: true,
           hits: { select: { statutorySubstanceId: true } },
         },
       })
-    : null;
-  const hitSubstances = new Set(
-    (judgement?.hits ?? []).map((h) => h.statutorySubstanceId).filter((x) => !!x),
-  );
-  /** 区分そのものでまとめて当たったとき。中の号は全部当たり扱い */
-  const wholeCategoryHit =
-    judgement?.verdict === "APPLICABLE" &&
-    (judgement?.hits ?? []).some((h) => h.statutorySubstanceId === null);
+    : [];
+  /** その号の判定行。号ごとの行が無ければ、区分そのものが単位の行 */
+  const judgementFor = (substanceId: string) =>
+    judgements.find((j) => j.statutorySubstanceId === substanceId) ??
+    judgements.find((j) => j.statutorySubstanceId === "") ??
+    null;
 
   const versions = await prisma.linkSetVersion.findMany({
     where: { deletedAt: null },
@@ -173,6 +176,7 @@ export async function GET(req: Request) {
     linkNote: string | null,
   ) => {
     const substanceId = substance.id;
+    const judgement = judgementFor(substanceId);
     // 区分でまとめるときは、閾値も区分のもの（judge-calc と同じ）。
     // 法文物質名の空の欄も区分の値に従う（区分の閾値が既定値）
     const byCategory = category.aggregation !== "NONE";
@@ -194,7 +198,10 @@ export async function GET(req: Request) {
     */
     const hitHere =
       isCurrent && judgement !== null && adopted
-        ? wholeCategoryHit || hitSubstances.has(substanceId)
+        ? judgement.hits.some((h) => h.statutorySubstanceId === substanceId) ||
+          // 区分そのものでまとめて当たったとき。中の号は全部当たり扱い
+          (judgement.verdict === "APPLICABLE" &&
+            judgement.hits.some((h) => h.statutorySubstanceId === null))
         : enough;
     /*
       **要確認は両方のバージョンに付ける。**
@@ -231,6 +238,7 @@ export async function GET(req: Request) {
       needsReview: hitHere && (marked || linkMarked || savedReview),
       // 載っているのに当たっていない。含有率が足りない
       nearMiss: !hitHere,
+      reviewReasons: judgement?.reviewReasons ?? [],
     };
   };
 
@@ -353,7 +361,6 @@ export async function GET(req: Request) {
     categoryNameJa: category.nameJa,
     categoryNameEn: category.nameEn,
     categoryNameOriginal: category.nameOriginal,
-    reviewReasons: judgement?.reviewReasons ?? [],
     versions: out,
   };
   return Response.json(body);

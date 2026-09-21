@@ -298,7 +298,7 @@ export function CellDetailDialog({
                                     {x.needsReview && (
                                       <ReviewPopup
                                         x={x}
-                                        reviewReasons={data.reviewReasons}
+                                        reviewReasons={x.reviewReasons}
                                         open={
                                           openReview ===
                                           `${v.code}/${s.id}/${x.officialNumber}/${x.nameOriginal}`
