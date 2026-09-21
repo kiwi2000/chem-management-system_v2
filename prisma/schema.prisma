@@ -2868,7 +2868,7 @@ model PrtrMeasured {
   entryId              String          @map("entry_id")
   statutorySubstanceId String          @map("statutory_substance_id")
   /**
-   * 打った物質（物質マスタ）。画面にコードと名前を出すため。物質を消せば空になる
+   * 利用者が入力した物質（物質マスタ）。画面にコードと名前を出すため。物質を消せば空になる
    */
   substanceId          String?         @map("substance_id")
   measuredKg           Decimal         @map("measured_kg") @db.Decimal(18, 3)

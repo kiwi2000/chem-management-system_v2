@@ -1285,7 +1285,7 @@ export interface PrtrMeasuredDto {
   statutoryNameJa: string | null;
   statutoryNameEn: string | null;
   statutoryNameOriginal: string;
-  /** 打った物質コード（同じ法文物質名に当たる代表の物質） */
+  /** 利用者が入力した物質コード（同じ法文物質名に当たる代表の物質） */
   substanceCode: string | null;
   substanceNameJa: string | null;
   measuredKg: string;
