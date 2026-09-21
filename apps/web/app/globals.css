@@ -680,28 +680,49 @@
 }
 
 /*
- * スカイ: 金属光沢の帯（2026-09-22 指示）。上半分を白っぽく明るくし、中央で光の帯がすっと切れて、
- * 下端にわずかな照り返しを置く。表の見出しも同じ形で控えめに
+ * スカイ: 金属光沢の帯（2026-09-22 指示）。明暗の差は小さく境目はなだらかに、
+ * 金属らしさは「なだらかな明暗の波（複数の反射）」と「細いヘアライン（横筋）」で出す。
+ * 上端に明るい縁、下端に細い影を置いて厚みを見せる
  */
 .theme-sky.header-strong .bg-header,
 .theme-sky.header-strong .bg-sidebar-header {
-  background-image: linear-gradient(
-    to bottom,
-    oklch(from var(--strong) calc(l + 0.22) calc(c * 0.45) h) 0,
-    oklch(from var(--strong) calc(l + 0.11) calc(c * 0.85) h) 46%,
-    oklch(from var(--strong) calc(l - 0.02) c h) 52%,
-    oklch(from var(--strong) calc(l - 0.06) c h) 86%,
-    oklch(from var(--strong) calc(l + 0.05) calc(c * 0.9) h) 100%
-  );
+  background-image:
+    /* ヘアライン: 1px おきの白と黒のごく薄い筋 */
+    repeating-linear-gradient(
+      to bottom,
+      oklch(1 0 0 / 0.07) 0,
+      oklch(1 0 0 / 0.07) 1px,
+      oklch(0 0 0 / 0.035) 1px,
+      oklch(0 0 0 / 0.035) 2px
+    ),
+    /* 反射の波: 上の光 → 少し沈む → 中ほどでもう一度光る → 下でやや沈む → 下端の照り返し */
+    linear-gradient(
+        to bottom,
+        oklch(from var(--strong) calc(l + 0.16) calc(c * 0.55) h) 0,
+        oklch(from var(--strong) calc(l + 0.08) calc(c * 0.85) h) 22%,
+        oklch(from var(--strong) calc(l - 0.02) c h) 48%,
+        oklch(from var(--strong) calc(l + 0.03) c h) 58%,
+        oklch(from var(--strong) calc(l - 0.05) c h) 82%,
+        oklch(from var(--strong) calc(l + 0.04) calc(c * 0.9) h) 97%,
+        oklch(from var(--strong) calc(l - 0.1) c h) 100%
+      );
 }
 .theme-sky.header-strong .table-head-solid {
   background:
+    repeating-linear-gradient(
+      to bottom,
+      oklch(1 0 0 / 0.06) 0,
+      oklch(1 0 0 / 0.06) 1px,
+      oklch(0 0 0 / 0.03) 1px,
+      oklch(0 0 0 / 0.03) 2px
+    ),
     linear-gradient(
       to bottom,
-      oklch(from var(--strong-head) calc(l + 0.1) calc(c * 0.7) h) 0,
-      oklch(from var(--strong-head) calc(l + 0.04) c h) 48%,
-      oklch(from var(--strong-head) calc(l - 0.04) c h) 52%,
-      var(--strong-head) 100%
+      oklch(from var(--strong-head) calc(l + 0.08) calc(c * 0.7) h) 0,
+      oklch(from var(--strong-head) calc(l + 0.03) c h) 30%,
+      oklch(from var(--strong-head) calc(l - 0.02) c h) 55%,
+      oklch(from var(--strong-head) calc(l - 0.04) c h) 85%,
+      oklch(from var(--strong-head) calc(l + 0.02) c h) 100%
     ),
     var(--background);
 }
