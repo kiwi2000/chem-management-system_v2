@@ -680,18 +680,19 @@
 }
 
 /*
- * スカイ: 金属光沢の帯（2026-09-22 指示）。上半分を白っぽく明るくし、中央で光の帯がすっと切れて、
- * 下端にわずかな照り返しを置く。表の見出しも同じ形で控えめに
+ * スカイ: 金属光沢の帯（2026-09-22 指示）。上半分を明るくし、中央で光の帯がすっと切れて、
+ * 下端にわずかな照り返しを置く。表の見出しも同じ形で控えめに。
+ * 明暗の差は最初の案より小さくした（極端に見えた）。横筋を重ねる案は「にじんだ」と不評で取り下げた
  */
 .theme-sky.header-strong .bg-header,
 .theme-sky.header-strong .bg-sidebar-header {
   background-image: linear-gradient(
     to bottom,
-    oklch(from var(--strong) calc(l + 0.22) calc(c * 0.45) h) 0,
-    oklch(from var(--strong) calc(l + 0.11) calc(c * 0.85) h) 46%,
+    oklch(from var(--strong) calc(l + 0.15) calc(c * 0.6) h) 0,
+    oklch(from var(--strong) calc(l + 0.08) calc(c * 0.9) h) 46%,
     oklch(from var(--strong) calc(l - 0.02) c h) 52%,
-    oklch(from var(--strong) calc(l - 0.06) c h) 86%,
-    oklch(from var(--strong) calc(l + 0.05) calc(c * 0.9) h) 100%
+    oklch(from var(--strong) calc(l - 0.045) c h) 86%,
+    oklch(from var(--strong) calc(l + 0.03) calc(c * 0.95) h) 100%
   );
 }
 .theme-sky.header-strong .table-head-solid {
