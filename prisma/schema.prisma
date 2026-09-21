@@ -252,6 +252,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -1959,6 +1960,7 @@ model StatutorySubstance {
    */
   impurityExemptions ImpurityExemptionSubstance[]
   prtrMeasured       PrtrMeasured[]
+  prtrSummaryRows    PrtrSummaryRow[]
 
   @@unique([classId, codeNormalized])
   @@index([classId, displayOrder])
@@ -2012,6 +2014,7 @@ model LinkSetVersion {
   sources       LinkVersionSource[]
   links         StatutoryCasLink[]
   judgements    ProductJudgement[]
+  prtrSummaries PrtrSummary[]
   inventoryRows InventoryRow[]
 
   linkDiffs           StatutoryCasLinkDiff[]    @relation("LinkDiffVersion")
@@ -2832,6 +2835,7 @@ model PrtrEntry {
   organisation Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   quantities   PrtrQuantity[]
   measured     PrtrMeasured[]
+  summary      PrtrSummary?
 
   @@unique([organisationId, fiscalYear])
   @@map("prtr_entries")
@@ -2886,4 +2890,78 @@ model PrtrMeasured {
   @@index([statutorySubstanceId])
   @@index([substanceId])
   @@map("prtr_measured")
+}
+
+/**
+ * 集計（所属 × 年度で 1 つ）。**集計するたびに丸ごと作り直して保存する。**
+ * 届出書はこの表から作る。どの法規制バージョン・方法・係数で出したかを一緒に残す
+ */
+model PrtrSummary {
+  id        String  @id @default(cuid())
+  entryId   String  @unique @map("entry_id")
+  /**
+   * 判定に使った法規制バージョン。版を消したら null（集計の数字は残す）
+   */
+  versionId String? @map("version_id")
+
+  method              PrtrMethod
+  factorPct           Decimal?   @map("factor_pct") @db.Decimal(9, 4)
+  /**
+   * 数量を入れた製品の数と、そのうち現在の版で判定していない製品の数（集計に入っていない）
+   */
+  productCount        Int        @map("product_count")
+  unjudgedProducts    Int        @map("unjudged_products")
+  /**
+   * 届出要否の閾値（kg）。第一種と特定第一種。集計した時点の値を残す
+   */
+  thresholdKg         Decimal    @map("threshold_kg") @db.Decimal(18, 3)
+  thresholdSpecificKg Decimal    @map("threshold_specific_kg") @db.Decimal(18, 3)
+
+  computedAt DateTime @default(now()) @map("computed_at")
+  computedBy String?  @map("computed_by")
+
+  entry   PrtrEntry        @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  version LinkSetVersion?  @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  rows    PrtrSummaryRow[]
+
+  @@map("prtr_summaries")
+}
+
+/**
+ * 集計の 1 行: 第一種指定化学物質ごと。特定第一種は第一種の一部なので、
+ * 同じ管理番号は 1 行にまとめてある（`specific` が特定第一種の印）
+ */
+model PrtrSummaryRow {
+  id                   String @id @default(cuid())
+  summaryId            String @map("summary_id")
+  statutorySubstanceId String @map("statutory_substance_id")
+
+  specific     Boolean
+  /**
+   * この物質が当たった製品の数
+   */
+  productCount Int      @map("product_count")
+  /**
+   * 取扱量 = Σ 購入数量 × 含有率
+   */
+  handledKg    Decimal  @map("handled_kg") @db.Decimal(18, 3)
+  /**
+   * 出荷量 = Σ 出荷数量 × 含有率。実測値の方法では null
+   */
+  shippedKg    Decimal? @map("shipped_kg") @db.Decimal(18, 3)
+  /**
+   * 排出量。方法ごとの式。実測値が無い物質・係数が無いときは null
+   */
+  releaseKg    Decimal? @map("release_kg") @db.Decimal(18, 3)
+  /**
+   * 届出要否（取扱量が閾値以上）
+   */
+  needsReport  Boolean  @map("needs_report")
+
+  summary            PrtrSummary        @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id], onDelete: Cascade)
+
+  @@unique([summaryId, statutorySubstanceId])
+  @@index([statutorySubstanceId])
+  @@map("prtr_summary_rows")
 }

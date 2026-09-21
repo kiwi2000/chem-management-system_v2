@@ -36,7 +36,6 @@ import type {
   PrtrSummaryRowDto,
 } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
-import { PRTR_SUMMARY_DEFAULT_STATE } from "@/lib/prtr-summary-table";
 import { useTableState } from "@/lib/use-table-state";
 
 const Q_KEY = "chem.table.prtrQuantities";
@@ -44,7 +43,8 @@ const M_KEY = "chem.table.prtrMeasured";
 const Q_STATE: TableState = emptyTableState([{ column: "productCode", direction: "asc" }]);
 const M_STATE: TableState = emptyTableState([{ column: "officialNumber", direction: "asc" }]);
 const S_KEY = "chem.table.prtrSummary";
-const S_STATE: TableState = PRTR_SUMMARY_DEFAULT_STATE;
+/** 既定の並びは API 側（法文物質名の表示順）。番号の列で並べると文字の順になる */
+const S_STATE: TableState = emptyTableState([]);
 
 const SELECT = "border-input bg-background h-8 rounded-none border px-2 text-sm";
 /** 取り込めるファイル。OS の選択画面ではこれだけ選べる */
@@ -361,12 +361,18 @@ export function PrtrEntryScreen() {
   );
 }
 
-/** 集計（第一種指定化学物質ごと）。保存せず、数量や方法が変わるたびに読み直す */
+/**
+ * 集計（第一種指定化学物質ごと）。開いたとき・数量や方法が変わったときに集計して保存し、
+ * 保存した行を一覧に出す。「再計算」でいつでも集計し直せる
+ */
 function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
   const { m, locale } = useI18n();
   const t = m.prtr.summary;
   const [data, setData] = useState<PrtrSummaryDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [computing, setComputing] = useState(false);
+  /** 集計し直した回数。増えると一覧を読み直す */
+  const [computed, setComputed] = useState(0);
 
   const columns = useMemo<TableColumn<PrtrSummaryRowDto>[]>(
     () => [
@@ -451,29 +457,74 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
   );
   const { state, setState } = useTableState(S_KEY, columns, S_STATE);
 
+  const showError = useCallback(
+    async (res: Response | null) => {
+      if (!res) return;
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.loadFailed(res.status));
+    },
+    [m],
+  );
+
+  /** 集計して保存する。開いたとき、数量や方法が変わったとき、「再計算」を押したとき */
+  const compute = useCallback(async () => {
+    setComputing(true);
+    try {
+      const res = await fetch(`/api/prtr/entries/${entryId}/summary`, { method: "POST" }).catch(
+        () => null,
+      );
+      if (!res?.ok) {
+        await showError(res);
+        return;
+      }
+      setError(null);
+      setComputed((n) => n + 1);
+    } finally {
+      setComputing(false);
+    }
+  }, [entryId, showError]);
+
+  useEffect(() => {
+    void compute();
+  }, [compute, tick]);
+
+  // 保存した行を、表の状態（絞り込み・並べ替え・ページ）で読む
   useEffect(() => {
     void (async () => {
       const res = await fetch(
         `/api/prtr/entries/${entryId}/summary?${serializeTableState(state, S_STATE).toString()}`,
       ).catch(() => null);
       if (!res?.ok) {
-        if (res) {
-          if (redirectIfUnauthorized(res)) return;
-          const body = (await res.json().catch(() => null)) as ApiError | null;
-          setError(body?.error.message ?? m.errors.loadFailed(res.status));
-        }
+        await showError(res);
         return;
       }
-      setError(null);
       setData((await res.json()) as PrtrSummaryDto);
     })();
-  }, [entryId, tick, state, m]);
+  }, [entryId, state, computed, showError]);
+
+  const head = data?.summary ?? null;
 
   return (
     <Card defaultOpen>
-      <CardHeader>
-        <CardTitle>{t.title}</CardTitle>
-        <p className="text-muted-foreground mt-1 text-sm">{t.lead}</p>
+      <CardHeader className="flex flex-row items-start justify-between gap-3">
+        <div>
+          <CardTitle>{t.title}</CardTitle>
+          <p className="text-muted-foreground mt-1 text-sm">{t.lead}</p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {head
+              ? [
+                  t.computedAt(new Date(head.computedAt).toLocaleString(locale)),
+                  head.versionCode ? t.versionLabel(head.versionCode) : null,
+                ]
+                  .filter(Boolean)
+                  .join("　")
+              : t.notComputed}
+          </p>
+        </div>
+        <Button size="sm" variant="outline" disabled={computing} onClick={() => void compute()}>
+          {computing ? t.computing : t.recompute}
+        </Button>
       </CardHeader>
       <CardContent className="space-y-3">
         {error && (
@@ -481,12 +532,12 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        {data && data.unjudgedProducts > 0 && (
+        {head && head.unjudgedProducts > 0 && (
           <Alert>
-            <AlertDescription>{t.unjudged(data.unjudgedProducts)}</AlertDescription>
+            <AlertDescription>{t.unjudged(head.unjudgedProducts)}</AlertDescription>
           </Alert>
         )}
-        {data && data.method === "FACTOR" && data.factorPct === null && (
+        {head && head.method === "FACTOR" && head.factorPct === null && (
           <Alert variant="destructive">
             <AlertDescription>{t.factorMissing}</AlertDescription>
           </Alert>
@@ -502,10 +553,10 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
           onStateChange={setState}
           emptyMessage={t.empty}
         />
-        {data && (
+        {head && (
           <p className="text-muted-foreground text-xs">
-            {t.releaseNote[data.method]}。
-            {t.thresholdNote(data.thresholdKg, data.thresholdSpecificKg)}
+            {t.releaseNote[head.method]}。
+            {t.thresholdNote(head.thresholdKg, head.thresholdSpecificKg)}
           </p>
         )}
       </CardContent>

@@ -2360,7 +2360,12 @@ export const en: Messages = {
     },
     summary: {
       title: "Totals per Class I designated substance",
-      lead: "Computed from the quantities and the products' judgement results (content). Nothing is stored; it is recalculated each time",
+      lead: "Computed from the quantities and the products' judgement results (content). Recalculated and saved every time you open it",
+      computedAt: (at: string) => `Computed at ${at}`,
+      versionLabel: (code: string) => `Regulation version ${code}`,
+      recompute: "Recalculate",
+      computing: "Calculating…",
+      notComputed: "Not calculated yet",
       officialNumber: "Statutory number",
       name: "Class I designated substance",
       kind: "Class",

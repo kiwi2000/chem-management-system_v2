@@ -1357,8 +1357,12 @@ export interface PrtrSummaryRowDto {
   productCount: number;
 }
 
-/** 所属 × 年度の集計に付く情報（行の絞り込みに関わらず全体の値） */
+/** 所属 × 年度の集計の頭（保存したもの。行の絞り込みに関わらず全体の値） */
 export interface PrtrSummaryMeta {
+  /** 集計した日時 */
+  computedAt: string;
+  /** 判定に使った法規制バージョン（版を消していれば null） */
+  versionCode: string | null;
   method: "MEASURED" | "BALANCE" | "FACTOR";
   factorPct: string | null;
   /** 数量を入れた製品の数 */
@@ -1370,5 +1374,5 @@ export interface PrtrSummaryMeta {
   thresholdSpecificKg: string;
 }
 
-/** 集計の API の応答。行はほかの一覧と同じく絞り込み・並べ替え・ページ送り済み */
-export type PrtrSummaryDto = ListResponse<PrtrSummaryRowDto> & PrtrSummaryMeta;
+/** 集計の一覧の応答。行はほかの一覧と同じく絞り込み・並べ替え・ページ送り済み。まだ集計していなければ summary は null */
+export type PrtrSummaryDto = ListResponse<PrtrSummaryRowDto> & { summary: PrtrSummaryMeta | null };

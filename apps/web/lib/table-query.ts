@@ -239,8 +239,8 @@ export function buildWhere(columns: QueryColumn[], filters: TableState["filters"
 export function buildOrderBy(
   columns: QueryColumn[],
   sort: SortRule[],
-  tieBreaker: Record<string, "asc" | "desc">,
-  // 1対1の関連をたどる列があるので、入れ子も入る（{ actor: { displayName: "asc" } } など）
+  // 1対1の関連をたどる列があるので、入れ子も入る（{ statutorySubstance: { displayOrder: "asc" } } など）
+  tieBreaker: Record<string, unknown>,
 ): Record<string, unknown>[] {
   const byKey = new Map(columns.map((c) => [c.key, c]));
   const order: Record<string, unknown>[] = [];

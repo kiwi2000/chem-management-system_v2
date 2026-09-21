@@ -5,7 +5,14 @@ import {
   type PrtrImportInput,
   type PrtrImportKind,
 } from "@chem/shared";
-import { Prisma, type PrtrEntry, type PrtrMeasured, type PrtrQuantity } from "@prisma/client";
+import {
+  Prisma,
+  type PrtrEntry,
+  type PrtrMeasured,
+  type PrtrQuantity,
+  type PrtrSummary,
+  type PrtrSummaryRow,
+} from "@prisma/client";
 import ExcelJS from "exceljs";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
@@ -546,7 +553,7 @@ const D = (v: string | number | Prisma.Decimal | null | undefined) => new Prisma
 const kg = (v: Prisma.Decimal) => v.toDecimalPlaces(3).toString();
 
 /**
- * 所属 × 年度の集計（第一種指定化学物質ごと）。**保存しない。**開くたびに計算する。
+ * 所属 × 年度の集計（第一種指定化学物質ごと）。**集計するたびに丸ごと作り直して保存する**（届出書はこの表から作る）。
  *
  * 含有率は製品の**判定結果**（現在の版、化管法 第一種・特定第一種で該当）から取る。
  * 裾切値未満の製品と、不純物種別で除外した物質はそこで落ちている。
@@ -558,9 +565,7 @@ const kg = (v: Prisma.Decimal) => v.toDecimalPlaces(3).toString();
  * 同じ製品が両方の区分で当たっても数量は 1 回しか足さない。
  * 判定がまだ無い製品（現在の版で判定していない製品）は数えて知らせ、集計には入れない
  */
-export async function summarizeEntry(
-  entry: PrtrEntry,
-): Promise<PrtrSummaryMeta & { rows: PrtrSummaryRowDto[] }> {
+export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise<PrtrSummaryMeta> {
   const quantities = await prisma.prtrQuantity.findMany({
     where: { entryId: entry.id },
     select: { productId: true, purchasedKg: true, shippedKg: true },
@@ -685,43 +690,105 @@ export async function summarizeEntry(
   }
 
   const factor = entry.factorPct !== null ? D(entry.factorPct) : null;
-  const rows: PrtrSummaryRowDto[] = [...groups.values()]
-    .sort((a, b) => a.name.displayOrder - b.name.displayOrder)
-    .map((g) => {
-      let handled = D(0);
-      let shipped = D(0);
-      for (const [productId, pct] of g.pctByProduct) {
-        const q = byProduct.get(productId)!;
-        handled = handled.plus(D(q.purchasedKg).mul(pct).div(100));
-        if (q.shippedKg !== null) shipped = shipped.plus(D(q.shippedKg).mul(pct).div(100));
-      }
-      const threshold = D(g.specific ? PRTR_THRESHOLD_SPECIFIC_KG : PRTR_THRESHOLD_KG);
-      let release: Prisma.Decimal | null = null;
-      if (entry.method === "MEASURED") release = g.measured;
-      else if (entry.method === "BALANCE") release = handled.minus(shipped);
-      else if (factor !== null) release = shipped.mul(factor).div(100);
-      return {
-        statutorySubstanceId: g.name.id,
-        officialNumber: g.name.officialNumber,
-        nameJa: g.name.nameJa,
-        nameEn: g.name.nameEn,
-        nameOriginal: g.name.nameOriginal,
-        specific: g.specific,
-        handledKg: kg(handled),
-        shippedKg: entry.method === "MEASURED" ? null : kg(shipped),
-        releaseKg: release === null ? null : kg(release),
-        needsReport: handled.gte(threshold),
-        productCount: g.pctByProduct.size,
-      };
-    });
+  const rows = [...groups.values()].map((g) => {
+    let handled = D(0);
+    let shipped = D(0);
+    for (const [productId, pct] of g.pctByProduct) {
+      const q = byProduct.get(productId)!;
+      handled = handled.plus(D(q.purchasedKg).mul(pct).div(100));
+      if (q.shippedKg !== null) shipped = shipped.plus(D(q.shippedKg).mul(pct).div(100));
+    }
+    const threshold = D(g.specific ? PRTR_THRESHOLD_SPECIFIC_KG : PRTR_THRESHOLD_KG);
+    let release: Prisma.Decimal | null = null;
+    if (entry.method === "MEASURED") release = g.measured;
+    else if (entry.method === "BALANCE") release = handled.minus(shipped);
+    else if (factor !== null) release = shipped.mul(factor).div(100);
+    return {
+      statutorySubstanceId: g.name.id,
+      specific: g.specific,
+      productCount: g.pctByProduct.size,
+      handledKg: handled.toDecimalPlaces(3),
+      shippedKg: entry.method === "MEASURED" ? null : shipped.toDecimalPlaces(3),
+      releaseKg: release === null ? null : release.toDecimalPlaces(3),
+      needsReport: handled.gte(threshold),
+    };
+  });
 
-  return {
+  // 前の集計を消して、丸ごと入れ直す（途中で失敗したら前のものが残る）
+  const head = {
+    versionId: version?.id ?? null,
     method: entry.method,
-    factorPct: entry.factorPct?.toString() ?? null,
-    rows,
+    factorPct: entry.factorPct,
     productCount: productIds.length,
     unjudgedProducts: productIds.filter((id) => !judgedProducts.has(id)).length,
-    thresholdKg: PRTR_THRESHOLD_KG,
-    thresholdSpecificKg: PRTR_THRESHOLD_SPECIFIC_KG,
+    thresholdKg: D(PRTR_THRESHOLD_KG),
+    thresholdSpecificKg: D(PRTR_THRESHOLD_SPECIFIC_KG),
+    computedAt: new Date(),
+    computedBy: actorId,
+  };
+  const saved = await prisma.$transaction(async (tx) => {
+    const summary = await tx.prtrSummary.upsert({
+      where: { entryId: entry.id },
+      create: { entryId: entry.id, ...head },
+      update: head,
+    });
+    await tx.prtrSummaryRow.deleteMany({ where: { summaryId: summary.id } });
+    if (rows.length) {
+      await tx.prtrSummaryRow.createMany({
+        data: rows.map((r) => ({ summaryId: summary.id, ...r })),
+      });
+    }
+    return tx.prtrSummary.findUniqueOrThrow({
+      where: { id: summary.id },
+      include: SUMMARY_HEAD_INCLUDE,
+    });
+  });
+  return toSummaryMeta(saved);
+}
+
+export const SUMMARY_HEAD_INCLUDE = { version: { select: { code: true } } } as const;
+export const SUMMARY_ROW_INCLUDE = {
+  statutorySubstance: {
+    select: { officialNumber: true, nameJa: true, nameEn: true, nameOriginal: true },
+  },
+} as const;
+
+export function toSummaryMeta(
+  x: PrtrSummary & { version: { code: string } | null },
+): PrtrSummaryMeta {
+  return {
+    computedAt: x.computedAt.toISOString(),
+    versionCode: x.version?.code ?? null,
+    method: x.method,
+    factorPct: x.factorPct?.toString() ?? null,
+    productCount: x.productCount,
+    unjudgedProducts: x.unjudgedProducts,
+    thresholdKg: kg(x.thresholdKg),
+    thresholdSpecificKg: kg(x.thresholdSpecificKg),
+  };
+}
+
+export function toSummaryRowDto(
+  r: PrtrSummaryRow & {
+    statutorySubstance: {
+      officialNumber: string | null;
+      nameJa: string | null;
+      nameEn: string | null;
+      nameOriginal: string;
+    };
+  },
+): PrtrSummaryRowDto {
+  return {
+    statutorySubstanceId: r.statutorySubstanceId,
+    officialNumber: r.statutorySubstance.officialNumber,
+    nameJa: r.statutorySubstance.nameJa,
+    nameEn: r.statutorySubstance.nameEn,
+    nameOriginal: r.statutorySubstance.nameOriginal,
+    specific: r.specific,
+    handledKg: kg(r.handledKg),
+    shippedKg: r.shippedKg === null ? null : kg(r.shippedKg),
+    releaseKg: r.releaseKg === null ? null : kg(r.releaseKg),
+    needsReport: r.needsReport,
+    productCount: r.productCount,
   };
 }

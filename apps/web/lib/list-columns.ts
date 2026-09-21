@@ -982,11 +982,14 @@ export const PRTR_MEASURED_COLUMNS: QueryColumn[] = [
     caseInsensitive: true,
   },
   {
+    // 画面は言語で出し分けるが、絞るときは原文・訳のどちらでも当たってほしい（並べ替えは日本語の欄）
     key: "statutoryName",
     kind: "text",
     field: "nameJa",
     nested: "statutorySubstance",
     caseInsensitive: true,
+    custom: (f) =>
+      f.kind === "text" ? wrap(underSubstance, anyOfTextCondition(NAME_FIELDS, f)) : null,
   },
   {
     key: "substanceCode",
@@ -997,4 +1000,30 @@ export const PRTR_MEASURED_COLUMNS: QueryColumn[] = [
   },
   { key: "measuredKg", kind: "number", field: "measuredKg" },
   { key: "source", kind: "enum", field: "source" },
+];
+
+/** PRTR 集計（第一種指定化学物質ごと）。保存した行を、ほかの一覧と同じように絞る・並べる */
+export const PRTR_SUMMARY_COLUMNS: QueryColumn[] = [
+  {
+    key: "officialNumber",
+    kind: "text",
+    field: "officialNumber",
+    nested: "statutorySubstance",
+    caseInsensitive: true,
+  },
+  {
+    key: "name",
+    kind: "text",
+    field: "nameJa",
+    nested: "statutorySubstance",
+    caseInsensitive: true,
+    custom: (f) =>
+      f.kind === "text" ? wrap(underSubstance, anyOfTextCondition(NAME_FIELDS, f)) : null,
+  },
+  { key: "kind", kind: "enum", field: "specific", booleanEnum: true },
+  { key: "productCount", kind: "number", field: "productCount" },
+  { key: "handledKg", kind: "number", field: "handledKg" },
+  { key: "shippedKg", kind: "number", field: "shippedKg" },
+  { key: "releaseKg", kind: "number", field: "releaseKg" },
+  { key: "needsReport", kind: "enum", field: "needsReport", booleanEnum: true },
 ];

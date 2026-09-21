@@ -2453,7 +2453,12 @@ export const ja = {
     },
     summary: {
       title: "集計（第一種指定化学物質ごと）",
-      lead: "数量と、製品の判定結果（含有率）から出します。保存はせず、開くたびに計算します",
+      lead: "数量と、製品の判定結果（含有率）から出します。開くたびに集計し直して保存します",
+      computedAt: (at: string) => `集計日時 ${at}`,
+      versionLabel: (code: string) => `法規制バージョン ${code}`,
+      recompute: "再計算",
+      computing: "集計中…",
+      notComputed: "まだ集計していません",
       officialNumber: "法律上の番号",
       name: "第一種指定化学物質",
       kind: "区分",

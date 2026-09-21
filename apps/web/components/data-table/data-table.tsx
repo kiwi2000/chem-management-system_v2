@@ -539,7 +539,8 @@ export function DataTable<T>({
   */
   const topPager = showPager ? (
     <div className="text-muted-foreground flex items-center gap-2 text-sm">
-      {/* 件数も上に置く。下まで送らずに「もっと出す」ができる */}
+      {/* 全件数と1ページ件数も上に置く。下まで送らずに「何件あるか」「もっと出す」が分かる */}
+      <span>{m.common.totalCount(total)}</span>
       {pageSizeSelect}
       {totalPages > 1 && (
         <Pager
