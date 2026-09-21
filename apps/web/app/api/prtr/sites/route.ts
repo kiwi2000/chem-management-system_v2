@@ -22,24 +22,18 @@ const DEFAULT_STATE = emptyTableState([{ column: "displayOrder", direction: "asc
  * **担当の範囲で絞る。**工場担当には自分の工場、グループ担当にはグループの工場、管理者には全部
  */
 export async function GET(req: Request) {
-  /*
-    システム管理者は PRTR の権限が無くても一覧だけは引ける（利用者の画面で担当を割り当てるため）。
-    **一覧だけ。**データの API はこの例外を持たない（システム管理者に工場のデータを見せない）
-  */
-  const actor = await requireAnyPermission("PRTR_SITE", "PRTR_GROUP", "PRTR_ADMIN", "ADMIN");
+  const actor = await requireAnyPermission("PRTR_SITE", "PRTR_GROUP", "PRTR_ADMIN");
   if (actor instanceof Response) return actor;
-  const scope = actor.has("ADMIN")
-    ? { all: true, groupIds: [], siteIds: [] }
-    : await prtrScopeOf(actor);
+  const scope = await prtrScopeOf(actor);
 
   const state = parseTableState(
     new URL(req.url).searchParams,
     PRTR_SITE_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
-  // 絞り込みと担当の範囲は AND で重ねる（どちらも OR を持ちうるので、広げて混ぜない）
   const where = {
-    AND: [buildWhere(PRTR_SITE_COLUMNS, state.filters), prtrSiteWhere(scope)],
+    ...buildWhere(PRTR_SITE_COLUMNS, state.filters),
+    ...prtrSiteWhere(scope),
     deletedAt: null,
   };
   const [items, total] = await Promise.all([
