@@ -351,10 +351,11 @@ export function PrtrEntryScreen() {
           onChanged={load}
         />
       )}
-      {entry && <SummarySection entryId={entry.id} tick={tick} />}
+      {/* 集計は入力の表の下。実測値のときは実測値の表も入力なので、その下に置く */}
       {entry && entry.method === "MEASURED" && (
         <MeasuredSection entryId={entry.id} onChanged={load} />
       )}
+      {entry && <SummarySection entryId={entry.id} tick={tick} />}
     </div>
   );
 }

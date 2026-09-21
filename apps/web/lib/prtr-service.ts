@@ -556,7 +556,7 @@ const kg = (v: Prisma.Decimal) => v.toDecimalPlaces(3).toString();
  * 特定第一種は第一種の一部なので、同じ物質が両方の区分で該当する。届出は物質 1 つに 1 行なので、
  * **法律上の番号（管理番号）で 1 行にまとめ**、特定第一種に入っていればその閾値（0.5 t）を使う。
  * 同じ製品が両方の区分で当たっても数量は 1 回しか足さない。
- * 判定がまだ無い製品は数えて知らせ、集計には入れない
+ * 判定がまだ無い製品（現在の版で判定していない製品）は数えて知らせ、集計には入れない
  */
 export async function summarizeEntry(entry: PrtrEntry): Promise<PrtrSummaryDto> {
   const quantities = await prisma.prtrQuantity.findMany({
@@ -585,7 +585,18 @@ export async function summarizeEntry(entry: PrtrEntry): Promise<PrtrSummaryDto> 
           },
         })
       : [];
-  const judgedProducts = new Set(judgements.map((j) => j.productId));
+  // 「判定済み」は展開結果の判定版で見る。判定の行は当たった分しか無いので、
+  // 化管法に当たらない製品は行が 0 件でも判定済み（決定 0012）
+  const judgedProducts = new Set(
+    productIds.length && version
+      ? (
+          await prisma.productExpansion.findMany({
+            where: { productId: { in: productIds }, judgedVersionId: version.id },
+            select: { productId: true },
+          })
+        ).map((x) => x.productId)
+      : [],
+  );
 
   // 実測値の方法は、実測値のある物質も並べる（数量から当たらなくても）
   const measured =
