@@ -2358,6 +2358,33 @@ export const en: Messages = {
       noHeader: "The first row (headers) could not be read",
       cancel: "Cancel",
     },
+    summary: {
+      title: "Totals per Class I designated substance",
+      lead: "Computed from the quantities and the products' judgement results (content). Nothing is stored; it is recalculated each time",
+      officialNumber: "Statutory number",
+      name: "Class I designated substance",
+      kind: "Class",
+      kindClass1: "Class I",
+      kindSpecific: "Specified Class I",
+      handledKg: "Handled (kg)",
+      shippedKg: "Shipped (kg)",
+      releaseKg: "Release (kg)",
+      needsReport: "Report",
+      needsReportYes: "Required",
+      needsReportNo: "—",
+      productCount: "Products",
+      empty: "Nothing to total yet. Enter quantities and make sure the products have been judged",
+      unjudged: (n: number) =>
+        `${n} product(s) have no judgement yet, so they are not in the totals. Run the judgement and check again`,
+      thresholdNote: (a: string, b: string) =>
+        `A report is required when the handled amount reaches ${a} kg (${b} kg for Specified Class I)`,
+      releaseNote: {
+        MEASURED: "Release is the measured value as entered (blank when none)",
+        BALANCE: "Release = handled − shipped",
+        FACTOR: "Release = shipped × factor ÷ 100",
+      },
+      factorMissing: "No factor entered, so the release cannot be computed",
+    },
     validation: {
       kg: "Enter a quantity of 0 or more (up to 3 decimals)",
       factor: "Enter a factor of 0 or more (%, up to 4 decimals)",

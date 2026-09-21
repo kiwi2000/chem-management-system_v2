@@ -2451,6 +2451,33 @@ export const ja = {
       noHeader: "1 行目（見出し）が読めません",
       cancel: "やめる",
     },
+    summary: {
+      title: "集計（第一種指定化学物質ごと）",
+      lead: "数量と、製品の判定結果（含有率）から出します。保存はせず、開くたびに計算します",
+      officialNumber: "法律上の番号",
+      name: "第一種指定化学物質",
+      kind: "区分",
+      kindClass1: "第一種",
+      kindSpecific: "特定第一種",
+      handledKg: "取扱量（kg）",
+      shippedKg: "出荷量（kg）",
+      releaseKg: "排出量（kg）",
+      needsReport: "届出要否",
+      needsReportYes: "要",
+      needsReportNo: "—",
+      productCount: "製品",
+      empty: "集計できる物質がありません。数量を入れ、製品の判定が済んでいることを確かめてください",
+      unjudged: (n: number) =>
+        `判定がまだ無い製品が ${n} 件あります。集計に入っていないので、製品の判定を流してから見直してください`,
+      thresholdNote: (a: string, b: string) =>
+        `届出要否は取扱量が ${a} kg 以上（特定第一種は ${b} kg 以上）で「要」にします`,
+      releaseNote: {
+        MEASURED: "排出量は実測値そのままです（実測値の無い物質は空）",
+        BALANCE: "排出量 ＝ 取扱量 − 出荷量",
+        FACTOR: "排出量 ＝ 出荷量 × 係数 ÷ 100",
+      },
+      factorMissing: "係数が入っていないので排出量は出せません",
+    },
     validation: {
       kg: "数量は 0 以上の数で入れてください（小数 3 桁まで）",
       factor: "係数は 0 以上の数（%）で入れてください（小数 4 桁まで）",

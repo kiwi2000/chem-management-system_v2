@@ -16,6 +16,8 @@ import type {
   PrtrImportResultDto,
   PrtrMeasuredDto,
   PrtrQuantityDto,
+  PrtrSummaryDto,
+  PrtrSummaryRowDto,
 } from "@/lib/types";
 
 /**
@@ -528,4 +530,185 @@ export async function runImport(
   });
   result.applied = true;
   return result;
+}
+
+// ── 集計 ─────────────────────────────────────────────
+
+/**
+ * 届出要否の閾値（kg）。化管法の定め: 第一種 1 t、特定第一種 0.5 t。
+ * 設定で変えられるようにするのは、要望が出てから
+ */
+export const PRTR_THRESHOLD_KG = "1000";
+export const PRTR_THRESHOLD_SPECIFIC_KG = "500";
+
+const D = (v: string | number | Prisma.Decimal | null | undefined) => new Prisma.Decimal(v ?? 0);
+/** kg の表示。小数 3 桁で丸め、末尾の 0 は落とす */
+const kg = (v: Prisma.Decimal) => v.toDecimalPlaces(3).toString();
+
+/**
+ * 所属 × 年度の集計（第一種指定化学物質ごと）。**保存しない。**開くたびに計算する。
+ *
+ * 含有率は製品の**判定結果**（現在の版、化管法 第一種・特定第一種で該当）から取る。
+ * 裾切値未満の製品と、不純物種別で除外した物質はそこで落ちている。
+ *   取扱量 = Σ 購入数量 × 含有率
+ *   出荷量 = Σ 出荷数量 × 含有率（物質収支・排出係数）
+ *   排出量 = 実測値そのまま ／ 取扱量 − 出荷量 ／ 出荷量 × 係数 ÷ 100
+ * 特定第一種は第一種の一部なので、同じ物質が両方の区分で該当する。届出は物質 1 つに 1 行なので、
+ * **法律上の番号（管理番号）で 1 行にまとめ**、特定第一種に入っていればその閾値（0.5 t）を使う。
+ * 同じ製品が両方の区分で当たっても数量は 1 回しか足さない。
+ * 判定がまだ無い製品は数えて知らせ、集計には入れない
+ */
+export async function summarizeEntry(entry: PrtrEntry): Promise<PrtrSummaryDto> {
+  const quantities = await prisma.prtrQuantity.findMany({
+    where: { entryId: entry.id },
+    select: { productId: true, purchasedKg: true, shippedKg: true },
+  });
+  const productIds = quantities.map((q) => q.productId);
+  const byProduct = new Map(quantities.map((q) => [q.productId, q]));
+
+  const version = await getCurrentVersion();
+  const judgements =
+    productIds.length && version
+      ? await prisma.productJudgement.findMany({
+          where: {
+            productId: { in: productIds },
+            versionId: version.id,
+            statutorySubstanceId: { not: "" },
+            category: { law: { code: "JP-PRTR" }, code: { in: ["C1", "SC1"] } },
+          },
+          select: {
+            productId: true,
+            statutorySubstanceId: true,
+            verdict: true,
+            category: { select: { code: true } },
+            hits: { select: { total: true, contributions: true } },
+          },
+        })
+      : [];
+  const judgedProducts = new Set(judgements.map((j) => j.productId));
+
+  // 実測値の方法は、実測値のある物質も並べる（数量から当たらなくても）
+  const measured =
+    entry.method === "MEASURED"
+      ? await prisma.prtrMeasured.findMany({
+          where: { entryId: entry.id },
+          select: { statutorySubstanceId: true, measuredKg: true },
+        })
+      : [];
+
+  const ids = [
+    ...new Set([
+      ...judgements.filter((j) => j.verdict === "APPLICABLE").map((j) => j.statutorySubstanceId),
+      ...measured.map((x) => x.statutorySubstanceId),
+    ]),
+  ];
+  const names = ids.length
+    ? await prisma.statutorySubstance.findMany({
+        where: { id: { in: ids } },
+        select: {
+          id: true,
+          officialNumber: true,
+          nameJa: true,
+          nameEn: true,
+          nameOriginal: true,
+          displayOrder: true,
+          regulationClass: { select: { category: { select: { code: true } } } },
+        },
+      })
+    : [];
+  type Name = (typeof names)[number];
+  const nameOf = new Map(names.map((n) => [n.id, n]));
+  /** 法文物質名 → まとめ先の鍵（管理番号。無ければ自分の ID） */
+  const keyOf = (id: string) => nameOf.get(id)?.officialNumber ?? id;
+
+  interface Group {
+    /** 表示に使う法文物質名（第一種の側を優先） */
+    name: Name;
+    specific: boolean;
+    /** 製品ごとの含有率（%）。両方の区分で当たったときは大きいほう */
+    pctByProduct: Map<string, Prisma.Decimal>;
+    measured: Prisma.Decimal | null;
+  }
+  const groups = new Map<string, Group>();
+  const groupFor = (id: string): Group | null => {
+    const name = nameOf.get(id);
+    if (!name) return null;
+    const key = keyOf(id);
+    const specific = name.regulationClass.category.code === "SC1";
+    let g = groups.get(key);
+    if (!g) {
+      g = { name, specific, pctByProduct: new Map(), measured: null };
+      groups.set(key, g);
+    } else {
+      if (specific) g.specific = true;
+      else if (g.name.regulationClass.category.code === "SC1") g.name = name;
+    }
+    return g;
+  };
+
+  for (const j of judgements) {
+    if (j.verdict !== "APPLICABLE" || !byProduct.has(j.productId)) continue;
+    const g = groupFor(j.statutorySubstanceId);
+    if (!g) continue;
+    // 含有率: 合算した値があればそれ、無ければ CAS ごとの寄与を足す（根拠の行は通常 1 つ）
+    const pct = j.hits.reduce(
+      (sum, h) =>
+        sum.plus(
+          h.total !== null
+            ? D(h.total)
+            : (Array.isArray(h.contributions)
+                ? (h.contributions as { pct?: string }[])
+                : []
+              ).reduce((s, c) => s.plus(D(c.pct ?? 0)), D(0)),
+        ),
+      D(0),
+    );
+    const prev = g.pctByProduct.get(j.productId);
+    if (!prev || prev.lt(pct)) g.pctByProduct.set(j.productId, pct);
+  }
+  for (const x of measured) {
+    const g = groupFor(x.statutorySubstanceId);
+    if (g) g.measured = (g.measured ?? D(0)).plus(D(x.measuredKg));
+  }
+
+  const factor = entry.factorPct !== null ? D(entry.factorPct) : null;
+  const rows: PrtrSummaryRowDto[] = [...groups.values()]
+    .sort((a, b) => a.name.displayOrder - b.name.displayOrder)
+    .map((g) => {
+      let handled = D(0);
+      let shipped = D(0);
+      for (const [productId, pct] of g.pctByProduct) {
+        const q = byProduct.get(productId)!;
+        handled = handled.plus(D(q.purchasedKg).mul(pct).div(100));
+        if (q.shippedKg !== null) shipped = shipped.plus(D(q.shippedKg).mul(pct).div(100));
+      }
+      const threshold = D(g.specific ? PRTR_THRESHOLD_SPECIFIC_KG : PRTR_THRESHOLD_KG);
+      let release: Prisma.Decimal | null = null;
+      if (entry.method === "MEASURED") release = g.measured;
+      else if (entry.method === "BALANCE") release = handled.minus(shipped);
+      else if (factor !== null) release = shipped.mul(factor).div(100);
+      return {
+        statutorySubstanceId: g.name.id,
+        officialNumber: g.name.officialNumber,
+        nameJa: g.name.nameJa,
+        nameEn: g.name.nameEn,
+        nameOriginal: g.name.nameOriginal,
+        specific: g.specific,
+        handledKg: kg(handled),
+        shippedKg: entry.method === "MEASURED" ? null : kg(shipped),
+        releaseKg: release === null ? null : kg(release),
+        needsReport: handled.gte(threshold),
+        productCount: g.pctByProduct.size,
+      };
+    });
+
+  return {
+    method: entry.method,
+    factorPct: entry.factorPct?.toString() ?? null,
+    rows,
+    productCount: productIds.length,
+    unjudgedProducts: productIds.filter((id) => !judgedProducts.has(id)).length,
+    thresholdKg: PRTR_THRESHOLD_KG,
+    thresholdSpecificKg: PRTR_THRESHOLD_SPECIFIC_KG,
+  };
 }

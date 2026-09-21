@@ -17,6 +17,7 @@ import type { TableColumn } from "@/components/data-table/types";
 import { FieldError } from "@/components/field-error";
 import { PrtrImportDialog } from "@/components/prtr-import-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,8 @@ import type {
   PrtrMeasuredDto,
   PrtrQuantityDto,
   PrtrScopeDto,
+  PrtrSummaryDto,
+  PrtrSummaryRowDto,
 } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
@@ -39,6 +42,8 @@ const Q_KEY = "chem.table.prtrQuantities";
 const M_KEY = "chem.table.prtrMeasured";
 const Q_STATE: TableState = emptyTableState([{ column: "productCode", direction: "asc" }]);
 const M_STATE: TableState = emptyTableState([{ column: "officialNumber", direction: "asc" }]);
+const S_KEY = "chem.table.prtrSummary";
+const S_STATE: TableState = emptyTableState([{ column: "officialNumber", direction: "asc" }]);
 
 const SELECT = "border-input bg-background h-8 rounded-none border px-2 text-sm";
 /** 取り込めるファイル。OS の選択画面ではこれだけ選べる */
@@ -113,6 +118,8 @@ export function PrtrEntryScreen() {
   const [savingHead, setSavingHead] = useState(false);
   /** 方法を変えるときの確認（入れてある数量の意味が変わる） */
   const [askMethod, setAskMethod] = useState(false);
+  /** 数量や実測値が変わるたびに増やし、集計を読み直す合図にする */
+  const [tick, setTick] = useState(0);
 
   const years = useMemo(() => {
     const base = defaultPrtrFiscalYear();
@@ -136,6 +143,7 @@ export function PrtrEntryScreen() {
   const load = useCallback(async () => {
     if (!orgId) return;
     setError(null);
+    setTick((n) => n + 1);
     const params = new URLSearchParams({ organisationId: orgId, fiscalYear: String(fiscalYear) });
     const res = await fetch(`/api/prtr/entries?${params.toString()}`).catch(() => null);
     if (!res?.ok) {
@@ -185,6 +193,7 @@ export function PrtrEntryScreen() {
       setData((await res.json()) as PrtrEntryDto);
       setNotice(t.headerSaved);
       setAskMethod(false);
+      setTick((n) => n + 1);
     } finally {
       setSavingHead(false);
     }
@@ -342,10 +351,171 @@ export function PrtrEntryScreen() {
           onChanged={load}
         />
       )}
+      {entry && <SummarySection entryId={entry.id} tick={tick} />}
       {entry && entry.method === "MEASURED" && (
         <MeasuredSection entryId={entry.id} onChanged={load} />
       )}
     </div>
+  );
+}
+
+/** 集計（第一種指定化学物質ごと）。保存せず、数量や方法が変わるたびに読み直す */
+function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
+  const { m, locale } = useI18n();
+  const t = m.prtr.summary;
+  const [data, setData] = useState<PrtrSummaryDto | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch(`/api/prtr/entries/${entryId}/summary`).catch(() => null);
+      if (!res?.ok) {
+        if (res) {
+          if (redirectIfUnauthorized(res)) return;
+          const body = (await res.json().catch(() => null)) as ApiError | null;
+          setError(body?.error.message ?? m.errors.loadFailed(res.status));
+        }
+        return;
+      }
+      setError(null);
+      setData((await res.json()) as PrtrSummaryDto);
+    })();
+  }, [entryId, tick, m]);
+
+  const columns = useMemo<TableColumn<PrtrSummaryRowDto>[]>(
+    () => [
+      {
+        key: "officialNumber",
+        header: t.officialNumber,
+        kind: "text",
+        width: 130,
+        sortable: false,
+        filterable: false,
+        className: "font-mono text-xs",
+        render: (r) => r.officialNumber ?? "",
+      },
+      {
+        key: "name",
+        header: t.name,
+        kind: "text",
+        width: 340,
+        sortable: false,
+        filterable: false,
+        render: (r) => pickStatutoryName(locale, r.nameOriginal, r.nameJa, r.nameEn),
+      },
+      {
+        key: "kind",
+        header: t.kind,
+        kind: "text",
+        width: 100,
+        sortable: false,
+        filterable: false,
+        className: "text-xs",
+        render: (r) => (r.specific ? t.kindSpecific : t.kindClass1),
+      },
+      {
+        key: "productCount",
+        header: t.productCount,
+        kind: "number",
+        width: 70,
+        sortable: false,
+        filterable: false,
+        className: "text-right text-xs",
+        render: (r) => String(r.productCount),
+      },
+      {
+        key: "handledKg",
+        header: t.handledKg,
+        kind: "number",
+        width: 130,
+        sortable: false,
+        filterable: false,
+        className: "text-right font-mono tabular-nums",
+        render: (r) => r.handledKg,
+      },
+      {
+        key: "shippedKg",
+        header: t.shippedKg,
+        kind: "number",
+        width: 130,
+        sortable: false,
+        filterable: false,
+        className: "text-right font-mono tabular-nums",
+        render: (r) => r.shippedKg ?? "",
+      },
+      {
+        key: "releaseKg",
+        header: t.releaseKg,
+        kind: "number",
+        width: 130,
+        sortable: false,
+        filterable: false,
+        className: "text-right font-mono tabular-nums",
+        render: (r) => r.releaseKg ?? "",
+      },
+      {
+        key: "needsReport",
+        header: t.needsReport,
+        kind: "text",
+        width: 90,
+        sortable: false,
+        filterable: false,
+        className: "text-center",
+        render: (r) =>
+          r.needsReport ? (
+            <Badge variant="destructive">{t.needsReportYes}</Badge>
+          ) : (
+            <span className="text-muted-foreground">{t.needsReportNo}</span>
+          ),
+      },
+    ],
+    [t, locale],
+  );
+  const { state, setState } = useTableState(S_KEY, columns, S_STATE);
+
+  return (
+    <Card defaultOpen>
+      <CardHeader>
+        <CardTitle>{t.title}</CardTitle>
+        <p className="text-muted-foreground mt-1 text-sm">{t.lead}</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {data && data.unjudgedProducts > 0 && (
+          <Alert>
+            <AlertDescription>{t.unjudged(data.unjudgedProducts)}</AlertDescription>
+          </Alert>
+        )}
+        {data && data.method === "FACTOR" && data.factorPct === null && (
+          <Alert variant="destructive">
+            <AlertDescription>{t.factorMissing}</AlertDescription>
+          </Alert>
+        )}
+        <DataTable
+          storageKey={S_KEY}
+          columns={columns}
+          rows={data?.rows ?? []}
+          rowKey={(r) => r.statutorySubstanceId}
+          total={data?.rows.length ?? 0}
+          state={state}
+          defaultState={S_STATE}
+          onStateChange={setState}
+          emptyMessage={t.empty}
+          showPager={false}
+          showFilters={false}
+        />
+        {data && (
+          <p className="text-muted-foreground text-xs">
+            {t.releaseNote[data.method]}。
+            {t.thresholdNote(data.thresholdKg, data.thresholdSpecificKg)}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

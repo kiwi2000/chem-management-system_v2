@@ -1335,3 +1335,38 @@ export interface PrtrImportResultDto {
   /** 上書きの答えが要るので止めたか */
   needsOverwrite: boolean;
 }
+
+/** 集計の 1 行: 第一種指定化学物質ごと */
+export interface PrtrSummaryRowDto {
+  statutorySubstanceId: string;
+  officialNumber: string | null;
+  nameJa: string | null;
+  nameEn: string | null;
+  nameOriginal: string;
+  /** 特定第一種か */
+  specific: boolean;
+  /** 取扱量（Σ 購入数量 × 含有率）kg */
+  handledKg: string;
+  /** 出荷量（Σ 出荷数量 × 含有率）kg。実測値の方法では null */
+  shippedKg: string | null;
+  /** 排出量 kg。方法ごとの式。実測値が無い物質は null */
+  releaseKg: string | null;
+  /** 届出要否（取扱量が閾値以上） */
+  needsReport: boolean;
+  /** この物質が当たった製品の数 */
+  productCount: number;
+}
+
+/** 所属 × 年度の集計 */
+export interface PrtrSummaryDto {
+  method: "MEASURED" | "BALANCE" | "FACTOR";
+  factorPct: string | null;
+  rows: PrtrSummaryRowDto[];
+  /** 数量を入れた製品の数 */
+  productCount: number;
+  /** 判定がまだ無い製品の数（判定を流すまで集計に入らない） */
+  unjudgedProducts: number;
+  /** 閾値（kg）。第一種と特定第一種 */
+  thresholdKg: string;
+  thresholdSpecificKg: string;
+}

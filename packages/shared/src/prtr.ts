@@ -138,7 +138,7 @@ export const PRTR_IMPORT_FIELDS: Record<
 
 /** 見出しの文字が項目名と同じ列は最初から割り当てる。大文字小文字・全角半角の空白は無視 */
 export function guessColumn(headers: string[], aliases: string[]): number | null {
-  const norm = (s: string) => s.replace(/[\s　]/g, "").toLowerCase();
+  const norm = (s: string) => s.replace(/[\s\u3000]/g, "").toLowerCase();
   const wanted = aliases.map(norm);
   const i = headers.findIndex((h) => wanted.includes(norm(h)));
   return i >= 0 ? i : null;
