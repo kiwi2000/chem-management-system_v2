@@ -79,7 +79,7 @@ export const THEME_STRONG_SWATCH: Record<Theme, string> = {
   system: "oklch(0.93 0 0)",
   light: "oklch(0.93 0 0)",
   dark: "oklch(0.21 0.008 85)",
-  sky: "oklch(0.66 0.125 232)",
+  sky: "oklch(0.74 0.15 235)",
   ocean: "oklch(0.45 0.15 250)",
   forest: "oklch(0.53 0.14 152)",
   mint: "oklch(0.54 0.11 190)",

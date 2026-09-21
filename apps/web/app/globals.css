@@ -318,9 +318,10 @@
    * 濃くするとオーシャンと見分けが付かなくなる（濃い青＋白文字も試したが差が出なかった）。
    * 明るいことがこの配色の個性なので、暗くする方向へは動かさない。
    */
-  --strong: oklch(0.76 0.1 232);
-  --strong-foreground: oklch(0.26 0.11 250);
-  --strong-head: oklch(0.84 0.075 232);
+  /* 帯は彩度を上げた澄んだ空色（くすんで見えたので 2026-09-22 に上げた）。光沢は下の .theme-sky.header-strong で */
+  --strong: oklch(0.74 0.15 235);
+  --strong-foreground: oklch(0.24 0.11 250);
+  --strong-head: oklch(0.82 0.11 232);
   --sidebar: oklch(0.96 0.025 220);
   --sidebar-foreground: oklch(0.26 0.03 240);
   --sidebar-border: oklch(0.895 0.03 220);
@@ -676,6 +677,33 @@
 }
 .theme-contrast.header-strong .table-head-solid {
   background: linear-gradient(var(--table-head), var(--table-head)), var(--background);
+}
+
+/*
+ * スカイ: 金属光沢の帯（2026-09-22 指示）。上半分を白っぽく明るくし、中央で光の帯がすっと切れて、
+ * 下端にわずかな照り返しを置く。表の見出しも同じ形で控えめに
+ */
+.theme-sky.header-strong .bg-header,
+.theme-sky.header-strong .bg-sidebar-header {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(from var(--strong) calc(l + 0.22) calc(c * 0.45) h) 0,
+    oklch(from var(--strong) calc(l + 0.11) calc(c * 0.85) h) 46%,
+    oklch(from var(--strong) calc(l - 0.02) c h) 52%,
+    oklch(from var(--strong) calc(l - 0.06) c h) 86%,
+    oklch(from var(--strong) calc(l + 0.05) calc(c * 0.9) h) 100%
+  );
+}
+.theme-sky.header-strong .table-head-solid {
+  background:
+    linear-gradient(
+      to bottom,
+      oklch(from var(--strong-head) calc(l + 0.1) calc(c * 0.7) h) 0,
+      oklch(from var(--strong-head) calc(l + 0.04) c h) 48%,
+      oklch(from var(--strong-head) calc(l - 0.04) c h) 52%,
+      var(--strong-head) 100%
+    ),
+    var(--background);
 }
 
 /*
