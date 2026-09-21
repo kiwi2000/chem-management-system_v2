@@ -680,28 +680,28 @@
 }
 
 /*
- * スカイ: 光沢の帯（2026-09-22 指示）。上を明るく、下へなだらかに深い色へ移り、下端にわずかな照り返し。
+ * スカイ: 光沢の帯（2026-09-22 指示、見本 4 案から C を採用）。上を明るく、下へなだらかに深い色へ移り、下端に照り返し。
  * 中央で切れる光の線は「はっきりした線が出る」と不評でやめ、横筋を重ねる案も「にじんだ」と不評で取り下げた
  */
 .theme-sky.header-strong .bg-header,
 .theme-sky.header-strong .bg-sidebar-header {
   background-image: linear-gradient(
     to bottom,
-    oklch(from var(--strong) calc(l + 0.14) calc(c * 0.6) h) 0,
-    oklch(from var(--strong) calc(l + 0.07) calc(c * 0.9) h) 30%,
-    oklch(from var(--strong) calc(l - 0.01) c h) 58%,
-    oklch(from var(--strong) calc(l - 0.045) c h) 88%,
-    oklch(from var(--strong) calc(l + 0.02) calc(c * 0.95) h) 100%
+    oklch(from var(--strong) calc(l + 0.18) calc(c * 0.5) h) 0,
+    oklch(from var(--strong) calc(l + 0.08) calc(c * 0.9) h) 32%,
+    oklch(from var(--strong) calc(l - 0.03) c h) 62%,
+    oklch(from var(--strong) calc(l - 0.07) c h) 90%,
+    oklch(from var(--strong) calc(l + 0.06) calc(c * 0.9) h) 100%
   );
 }
 .theme-sky.header-strong .table-head-solid {
   background:
     linear-gradient(
       to bottom,
-      oklch(from var(--strong-head) calc(l + 0.09) calc(c * 0.7) h) 0,
+      oklch(from var(--strong-head) calc(l + 0.1) calc(c * 0.7) h) 0,
       oklch(from var(--strong-head) calc(l + 0.03) c h) 35%,
-      oklch(from var(--strong-head) calc(l - 0.03) c h) 70%,
-      var(--strong-head) 100%
+      oklch(from var(--strong-head) calc(l - 0.04) c h) 75%,
+      oklch(from var(--strong-head) calc(l + 0.02) c h) 100%
     ),
     var(--background);
 }
