@@ -18,6 +18,7 @@ import {
   Database,
   GitCompare,
   GripVertical,
+  RefreshCw,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -41,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { rejudgeProduct, useJudgementControls } from "@/lib/judgement-controls";
 import { notifyJudgementsChanged } from "@/lib/judgements-refresh";
 import { useI18n } from "@/lib/i18n-client";
 import { usePageSizePrefs } from "@/lib/page-size-prefs";
@@ -523,6 +525,9 @@ export function CompositionEditor({
   const [showDiff, setShowDiff] = useState(false);
   /** 比べた相手のバージョン。無ければボタンを押せなくする */
   const [previous, setPrevious] = useState<string | null>(null);
+  // 下の判定表と共有する「判定対象日」「再計算」（2026-09-22 指示）
+  const controls = useJudgementControls();
+  const [rejudgeError, setRejudgeError] = useState<string | null>(null);
   /*
     列幅は一覧と同じ規則。
     **原材料内の重量%は、出ているときだけ数に入れる。**
@@ -920,7 +925,41 @@ export function CompositionEditor({
               左端がそろっていないと、2つの表が別のものに見える。
             */}
             <div className="space-y-1">
-              {showRaw && <p className="text-sm font-medium">{m.composition.aggregateTitle}</p>}
+              {(showRaw || controls.versionCode || controls.stale) && (
+                <p className="text-sm font-medium">
+                  {showRaw && m.composition.aggregateTitle}
+                  {/* いつ・どのバージョンで出した判定か。下の判定表の見出しと同じ（2026-09-22 指示） */}
+                  {controls.versionCode && (
+                    <span
+                      className={cn("text-muted-foreground text-xs font-normal", showRaw && "ml-2")}
+                    >
+                      {[
+                        controls.versionCode,
+                        controls.computedAt
+                          ? m.judgements.computedAt(
+                              new Date(controls.computedAt).toLocaleString(locale),
+                            )
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" ・ ")}
+                    </span>
+                  )}
+                  {/* 前提が計算より後に変わった。下の判定表と同じ注意をここにも出す（2026-09-22 指示） */}
+                  {controls.stale && (
+                    <span
+                      className={cn(
+                        "text-destructive inline-flex items-center gap-1 text-xs font-normal",
+                        (showRaw || controls.versionCode) && "ml-2",
+                      )}
+                      title={m.judgements.staleHint}
+                    >
+                      <TriangleAlert className="size-3" />
+                      {m.judgements.stale}
+                    </span>
+                  )}
+                </p>
+              )}
               <div className="flex flex-wrap items-center gap-1.5">
                 {aggregateKeys.length > 0 && (
                   <ExpandButtons
@@ -931,41 +970,6 @@ export function CompositionEditor({
                     onCollapse={() => setAggregateOpen(new Set())}
                   />
                 )}
-                {/*
-                  含有率が足りずに当たっていないものを、赤字で出すかどうか。
-                  既定は出さない。**当たっているものと混ぜて読ませない**ため
-                */}
-                {/*
-                  押しているときは**背景ではなく字と印を赤の太字**にする。
-                  表に出る印と同じ見た目にして、ボタンと表の印を結び付ける
-                */}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  aria-pressed={showNearMiss}
-                  title={m.composition.nearMissHint}
-                  onClick={() => setShowNearMiss((v) => !v)}
-                  className={cn(
-                    // 触っている間の色（`hover:text-foreground`）に負けるので、そこも赤にする
-                    showNearMiss &&
-                      cn(
-                        NEAR_MISS_CLASS,
-                        "hover:text-orange-600 dark:hover:text-orange-400 font-bold",
-                      ),
-                  )}
-                >
-                  <TriangleAlert className="mr-1 size-3.5" />
-                  {m.composition.nearMissShow}
-                </Button>
-                {/*
-                  件数はボタンの**外**に出す（2026-09-19 指示）。
-                  押しても何も変わらないことがあり、効いていないのか
-                  そもそも無いのかが分からなかった
-                */}
-                <span className="text-muted-foreground text-sm">
-                  {m.composition.nearMissCount(nearMissCount)}
-                </span>
                 {/*
                   データソースの印を出すかどうか。押している間だけ、
                   **その印が何を指すのかをボタンの右に並べる**。
@@ -1033,7 +1037,80 @@ export function CompositionEditor({
                   <CircleHelp className="size-3" />
                   {m.composition.reviewLegend}
                 </span>
+                {/*
+                  「要確認」の右に続けて、下の判定表と同じ操作を置く（2026-09-22 指示。右寄せにはしない）。
+                  「再計算」と「判定対象日」は下の判定表と同じもの（judgement-controls で共有。
+                  日付が効くのは判定表の中身で、この表の該当法規制は保存してある判定のまま）。
+                  「含有率不足による非該当」はこの表の切り替え
+                */}
+                <span className="ml-[0.5em] inline-flex flex-wrap items-center gap-1.5">
+                  {controls.canRejudge && controls.stale && !controls.asOf && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={controls.busy}
+                      title={m.judgements.rejudgeHint}
+                      onClick={() => {
+                        setRejudgeError(null);
+                        void rejudgeProduct(productId, m.errors.saveFailed).then((failed) => {
+                          if (failed) setRejudgeError(failed);
+                        });
+                      }}
+                    >
+                      <RefreshCw className="mr-1 size-3.5" />
+                      {m.judgements.rejudge}
+                    </Button>
+                  )}
+                  <label className="flex items-center gap-1 text-xs" title={m.judgements.asOfHint}>
+                    <span className="text-muted-foreground">{m.judgements.asOf}</span>
+                    <Input
+                      type="date"
+                      value={controls.asOf}
+                      onChange={(e) => controls.setAsOf(e.target.value)}
+                      className="h-8 w-36"
+                    />
+                  </label>
+                  {/*
+                    含有率が足りずに当たっていないものを出すかどうか。
+                    既定は出さない。**当たっているものと混ぜて読ませない**ため。
+                    押しているときは**背景ではなく字と印を橙の太字**にする。
+                    表に出る印と同じ見た目にして、ボタンと表の印を結び付ける
+                  */}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    aria-pressed={showNearMiss}
+                    title={m.composition.nearMissHint}
+                    onClick={() => setShowNearMiss((v) => !v)}
+                    className={cn(
+                      // 触っている間の色（`hover:text-foreground`）に負けるので、そこも橙にする
+                      showNearMiss &&
+                        cn(
+                          NEAR_MISS_CLASS,
+                          "hover:text-orange-600 dark:hover:text-orange-400 font-bold",
+                        ),
+                    )}
+                  >
+                    <TriangleAlert className="mr-1 size-3.5" />
+                    {m.composition.nearMissShow}
+                  </Button>
+                  {/*
+                    件数はボタンの**外**に出す（2026-09-19 指示）。
+                    押しても何も変わらないことがあり、効いていないのか
+                    そもそも無いのかが分からなかった
+                  */}
+                  <span className="text-muted-foreground text-sm">
+                    {m.composition.nearMissCount(nearMissCount)}
+                  </span>
+                </span>
               </div>
+              {rejudgeError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{rejudgeError}</AlertDescription>
+                </Alert>
+              )}
             </div>
             <CompositionAggregateTable
               productId={productId}

@@ -28,7 +28,12 @@ import {
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { ResizableBox } from "@/components/data-table/resizable-box";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
-import { setBusyCursor } from "@/lib/busy-cursor";
+import {
+  bindJudgementControls,
+  publishJudgementState,
+  rejudgeProduct,
+  useJudgementControls,
+} from "@/lib/judgement-controls";
 import { JUDGEMENTS_CHANGED } from "@/lib/judgements-refresh";
 import { useI18n } from "@/lib/i18n-client";
 import { NEAR_MISS_CLASS } from "@/lib/mark-styles";
@@ -147,9 +152,14 @@ export function ProductJudgements({
   const [showNotApplicable, setShowNotApplicable] = useState(false);
   /**
    * 判定対象日。入れると、その日に効いている規制でその場で判定し直して出す（保存しない）。
-   * 空なら保存してある判定。判定の確認や修正は、保存してある判定にだけできる
+   * 空なら保存してある判定。判定の確認や修正は、保存してある判定にだけできる。
+   * 上の合算表にも同じ日付欄と「再計算」があるので、置き場（judgement-controls）で共有する
    */
-  const [asOf, setAsOf] = useState("");
+  const controls = useJudgementControls();
+  const { asOf, setAsOf } = controls;
+  useEffect(() => {
+    bindJudgementControls(productId);
+  }, [productId]);
   // 列幅は一覧と同じ規則。操作の列は、出るときだけ幅を数に入れる
   const cols = useResizableColumns(
     // 末尾の版を上げると、覚えている列幅を捨てて既定から始め直す
@@ -194,6 +204,16 @@ export function ProductJudgements({
     void load();
   }, [load]);
 
+  // いつ・どの版の判定か、前提が変わったか、「再計算」を押せる人かを、上の合算表にも知らせる
+  useEffect(() => {
+    publishJudgementState({
+      versionCode: stamp?.versionCode ?? version,
+      computedAt: stamp?.computedAt ?? null,
+      stale: stamp?.stale ?? false,
+      canRejudge: canEdit,
+    });
+  }, [stamp, version, canEdit]);
+
   /*
     組成を保存すると、サーバー側で展開結果と判定を作り直している。
     この枠は別に読み込んでいるので、合図を受けて読み直す。
@@ -211,31 +231,10 @@ export function ProductJudgements({
    * 全製品のやり直しは管理者しか押せないので、その順番を待たずに手元の製品を確かめるためのもの
    */
   async function rejudge() {
-    setBusy(true);
-    setBusyCursor(true);
     setError(null);
-    try {
-      const res = await fetch("/api/products/rejudge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: [productId] }),
-      });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.saveFailed(res.status));
-        return;
-      }
-      /*
-        **画面ごと読み直す。**上の「原材料展開・CAS合算」の該当法規制も、
-        保存してある判定から作っている。ここだけ入れ替えると、
-        同じ画面の中で合算表と判定表が食い違う
-      */
-      window.location.reload();
-    } finally {
-      setBusy(false);
-      setBusyCursor(false);
-    }
+    // 中身は judgement-controls（上の合算表の「再計算」と同じもの）
+    const failed = await rejudgeProduct(productId, m.errors.saveFailed);
+    if (failed) setError(failed);
   }
 
   async function decide(judgementId: string, verdict?: "APPLICABLE" | "NOT_APPLICABLE") {
@@ -496,7 +495,7 @@ export function ProductJudgements({
               type="button"
               size="sm"
               variant="outline"
-              disabled={busy}
+              disabled={busy || controls.busy}
               title={m.judgements.rejudgeHint}
               onClick={() => void rejudge()}
             >
