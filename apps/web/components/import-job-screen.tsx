@@ -520,7 +520,6 @@ export function ImportJobScreen({ id }: { id: string }) {
           defaultState={DEFAULT_STATE}
           onStateChange={setState}
           emptyMessage={m.importExport.noRows}
-          pageSizeOptions={[25, 50, 100, 200]}
           headerActions={
             <div className="flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-1 text-xs">

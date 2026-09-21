@@ -467,7 +467,6 @@ export function DocTemplatesScreen() {
         emptyMessage={m.docTemplates.empty}
         selectable={editable}
         onDeleteSelected={onDeleteSelected}
-        pageSizeOptions={[15, 25, 50, 100]}
         showFilters={false}
         create={editable && !adding && !editingId ? { onClick: startNew } : undefined}
         rowAction={

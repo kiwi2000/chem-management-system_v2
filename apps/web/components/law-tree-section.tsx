@@ -829,7 +829,6 @@ export function LawTreeSection({
         onDeleteSelected={onDeleteSelected}
         // 直せる人にだけ、つまみを出す
         onReorder={editable ? onReorder : undefined}
-        pageSizeOptions={[15, 25, 50, 100]}
         // 左から詰めて並べる。指定しないと画面幅いっぱいに散らばってしまう
         filterLayout={[
           ["code", "nameJa", "countryId"],

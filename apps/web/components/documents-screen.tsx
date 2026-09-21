@@ -841,7 +841,6 @@ export function DocumentsScreen({
           onDeleteSelected={onDeleteSelected}
           // 選んだぶんを落とす（1 件なら PDF そのもの、複数なら zip）
           bulkAction={{ label: m.documents.download, run: downloadSelected }}
-          pageSizeOptions={[15, 25, 50, 100]}
           hintText={m.documents.savedHint}
         />
       </div>

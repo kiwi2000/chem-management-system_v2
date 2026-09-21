@@ -138,7 +138,6 @@ export function DocTemplatePicker({
         // 1つだけ選ぶ。行を押すと選ばれる（チェックは要らない）
         selectedKey={selectedId}
         onRowSelect={onSelect}
-        pageSizeOptions={[5, 10, 15, 25]}
         hintText={m.documents.pickTemplateHint}
       />
     </div>

@@ -164,8 +164,6 @@ interface Props<T> {
    * 見出しだけで1行使うと、そのぶん表が下へ押されて読める行が減る
    */
   title?: ReactNode;
-  /** 指定しなければ、その人の設定（`個人設定 → 1ページの件数`）に従う */
-  pageSizeOptions?: readonly number[];
   /**
    * 行ごとに足す class。親子など、行の種類で見た目を変える表で使う。
    * 選択中の行の背景はこれより後に効くので、上書きされない。
@@ -228,7 +226,6 @@ export function DataTable<T>({
   rowAction,
   hintText,
   title,
-  pageSizeOptions,
   showPager = true,
   rowClassName,
   selectedKey = null,
@@ -274,10 +271,11 @@ export function DataTable<T>({
   const ask = useConfirm();
   const prefs = usePageSizePrefs();
   /*
-    並べる件数。**画面ごとの指定があればそれを、無ければその人の設定を使う。**
+    並べる件数は**どの表もその人の設定**（個人設定「1ページの件数」）。画面ごとの決め打ちはしない
+    （2026-09-22 指示。法律の表だけ 10 件が選べない、という食い違いが起きていた）。
     いま選んでいる件数が並びに無いと、選択欄が別の値を指してしまうので足しておく
   */
-  const sizes = pageSizeOptions ?? prefs.options;
+  const sizes = prefs.options;
   const shownSizes = sizes.includes(state.pageSize)
     ? sizes
     : [...sizes, state.pageSize].sort((a, b) => a - b);

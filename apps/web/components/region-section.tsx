@@ -298,8 +298,6 @@ export function RegionSection({ onChanged }: { onChanged?: () => void }) {
         // 直せる人にだけ、つまみを出す
         onReorder={editable ? onReorder : undefined}
         hintText={editable ? m.regions.reorderHint : undefined}
-        // 件数が少ないので、1ページの件数も小さい値だけにする
-        pageSizeOptions={[15, 25, 50, 100]}
         // 件数が少ないので絞り込みは出さない（並べ替えは見出しで行う）
         showFilters={false}
         // 案内の文言は出さない（この表では「詳細」ではなく編集を開くため）

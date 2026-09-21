@@ -223,7 +223,6 @@ export function ImportScreen() {
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
         emptyMessage={m.importExport.noneYet}
-        pageSizeOptions={[15, 25, 50]}
       />
     </div>
   );

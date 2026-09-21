@@ -469,7 +469,6 @@ function PickerTable<
             )}
           </div>
         }
-        pageSizeOptions={[10, 15, 25, 50, 100]}
         hintText={single ? m.documents.pickHintSingle : m.documents.pickHintAll}
       />
     </div>
