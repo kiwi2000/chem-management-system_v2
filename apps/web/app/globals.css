@@ -136,6 +136,11 @@
   --strong: oklch(0.93 0 0);
   --strong-foreground: oklch(0.2 0 0);
   --strong-head: oklch(0.88 0 0);
+  /*
+   * 濃くした帯のグラデーションの向き。明るい色のテーマは明るい方へ流し（-1）、
+   * 濃い色のテーマは暗い方へ流す（1）。濃い色のテーマが自分で 1 にする（2026-09-22 指示）
+   */
+  --grad-sign: -1;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -182,6 +187,7 @@
   --strong: oklch(0.21 0.008 85);
   --strong-foreground: oklch(0.9 0.07 85);
   --strong-head: oklch(0.29 0.018 85);
+  --grad-sign: 1;
   --sidebar: oklch(0.19 0.004 85);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.79 0.135 85);
@@ -221,6 +227,7 @@
   --strong: oklch(0.35 0.05 60);
   --strong-foreground: oklch(0.97 0.015 85);
   --strong-head: oklch(0.45 0.05 60);
+  --grad-sign: 1;
   --sidebar: oklch(0.953 0.018 85);
   --sidebar-foreground: oklch(0.29 0.03 60);
   --sidebar-border: oklch(0.87 0.025 80);
@@ -250,6 +257,7 @@
   --strong: oklch(0.45 0.15 250);
   --strong-foreground: oklch(0.98 0.01 230);
   --strong-head: oklch(0.37 0.13 250);
+  --grad-sign: 1;
   --sidebar: oklch(0.955 0.02 230);
   --sidebar-foreground: oklch(0.24 0.04 250);
   --sidebar-border: oklch(0.89 0.025 230);
@@ -278,6 +286,7 @@
   --strong: oklch(0.53 0.14 152);
   --strong-foreground: oklch(0.99 0.01 145);
   --strong-head: oklch(0.44 0.12 152);
+  --grad-sign: 1;
   --sidebar: oklch(0.95 0.025 145);
   --sidebar-foreground: oklch(0.25 0.03 150);
   --sidebar-border: oklch(0.885 0.03 145);
@@ -341,6 +350,7 @@
   --strong: oklch(0.58 0.215 15);
   --strong-foreground: oklch(0.99 0.01 350);
   --strong-head: oklch(0.48 0.19 12);
+  --grad-sign: 1;
   --sidebar: oklch(0.955 0.028 350);
   --sidebar-foreground: oklch(0.27 0.04 350);
   --sidebar-border: oklch(0.89 0.035 350);
@@ -401,6 +411,7 @@
   --strong: oklch(0.54 0.11 190);
   --strong-foreground: oklch(0.99 0.01 185);
   --strong-head: oklch(0.45 0.1 190);
+  --grad-sign: 1;
   --sidebar: oklch(0.955 0.022 185);
   --sidebar-foreground: oklch(0.25 0.03 195);
   --sidebar-border: oklch(0.89 0.03 185);
@@ -462,6 +473,7 @@
   --strong: oklch(0.52 0.19 295);
   --strong-foreground: oklch(0.99 0.01 300);
   --strong-head: oklch(0.43 0.17 295);
+  --grad-sign: 1;
   --sidebar: oklch(0.955 0.022 300);
   --sidebar-foreground: oklch(0.27 0.04 300);
   --sidebar-border: oklch(0.89 0.03 300);
@@ -501,6 +513,7 @@
   --strong: oklch(0.477 0.147 24);
   --strong-foreground: oklch(0.99 0.008 20);
   --strong-head: oklch(0.336 0.111 25);
+  --grad-sign: 1;
   --sidebar: oklch(0.982 0.006 18);
   --sidebar-foreground: oklch(0.3 0.006 20);
   --sidebar-primary: oklch(0.43 0.17 27);
@@ -559,6 +572,7 @@
   --strong: oklch(0.24 0.04 265);
   --strong-foreground: oklch(0.88 0.06 245);
   --strong-head: oklch(0.31 0.05 265);
+  --grad-sign: 1;
   --sidebar: oklch(0.21 0.03 265);
   --sidebar-foreground: oklch(0.95 0.015 250);
   --sidebar-primary: oklch(0.68 0.13 245);
@@ -617,33 +631,45 @@
 }
 
 /*
- * 濃くした帯と表の見出しは単色にせず、そのテーマの濃い色から上下のグラデーションを作る
- * （2026-09-22 指示。CAJ の見た目をほかのテーマにも）。
- * 帯: 上端 3px をやや暗い線にし、その下を「やや暗い → その色 → わずかに明るい」へ流す。
- * 表の見出し: 「やや明るい → やや暗い」。色はテーマの --strong / --strong-head から混ぜて作るので、
- * テーマごとに書かなくてよい。CAJ はサイトから取った色の指定（後ろの .theme-caj）が優先される。
+ * 帯と表の見出しは単色にせず、そのテーマの色の**明るさだけ**をずらしたグラデーションにする
+ * （2026-09-22 指示。CAJ の見た目をほかのテーマにも）。色相と彩度はそのまま。
+ * 向きは --grad-sign（明るい色のテーマは明るい方へ、濃い色のテーマは暗い方へ）。
+ *   濃くした帯: 上端 3px の縁 → 少しずらした色 → その色（40%）→ 反対側へわずかに
+ *   表の見出し: 反対側へ少し → 同じ側へ少し
+ *   濃くしていない帯: 背景色から下へわずかに（白い帯にもうっすら掛かる）
+ * CAJ はサイトから取った色の指定（後ろの .theme-caj）が優先される。
  * 高コントラストは白黒をはっきりさせるのが目的なので、単色のまま
  */
+.bg-header,
+.bg-sidebar-header {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(from var(--header) calc(l + 0.012) c h),
+    oklch(from var(--header) calc(l - 0.02) c h)
+  );
+}
 .header-strong .bg-header,
 .header-strong .bg-sidebar-header {
   background-image: linear-gradient(
     to bottom,
-    color-mix(in oklab, var(--strong) 80%, black) 0,
-    color-mix(in oklab, var(--strong) 80%, black) 3px,
-    color-mix(in oklab, var(--strong) 92%, black) 3px,
+    oklch(from var(--strong) calc(l - 0.12 * var(--grad-sign)) c h) 0,
+    oklch(from var(--strong) calc(l - 0.12 * var(--grad-sign)) c h) 3px,
+    oklch(from var(--strong) calc(l - 0.05 * var(--grad-sign)) c h) 3px,
     var(--strong) 40%,
-    color-mix(in oklab, var(--strong) 94%, white) 100%
+    oklch(from var(--strong) calc(l + 0.03 * var(--grad-sign)) c h) 100%
   );
 }
 .header-strong .table-head-solid {
   background:
     linear-gradient(
       to bottom,
-      color-mix(in oklab, var(--strong-head) 88%, white),
-      color-mix(in oklab, var(--strong-head) 84%, black)
+      oklch(from var(--strong-head) calc(l + 0.06 * var(--grad-sign)) c h),
+      oklch(from var(--strong-head) calc(l - 0.06 * var(--grad-sign)) c h)
     ),
     var(--background);
 }
+.theme-contrast .bg-header,
+.theme-contrast .bg-sidebar-header,
 .theme-contrast.header-strong .bg-header,
 .theme-contrast.header-strong .bg-sidebar-header {
   background-image: none;
