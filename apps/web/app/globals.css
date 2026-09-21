@@ -467,41 +467,67 @@
 
 /*
  * CAJ: CA Japan（ca-japan.co.jp）のホームページの配色（2026-09-21 指示）。
- * 白い地に薄い灰の罫線、見出しの帯とボタンは深い赤（えんじ）、押せるものには赤みのピンク。
- * 「ヘッダーなどを濃くする」を入にすると、トップバーがホームページのメニューと同じ赤い帯になる。
+ * 色はサイトの背景画像の画素から取った。白い地に薄い灰の罫線、文字は濃い灰。
+ *   メニューの帯      #9f3032（上端に #5b0102 の細い線、上が暗く下へ明るくなる）
+ *   選ばれているタブ  #601515
+ *   ボタン            #960002（お問合せ）
+ *   左メニューの見出し 白 → #eddedd の淡いピンク、下線 #be7373
+ * 「ヘッダーなどを濃くする」を入にすると、トップバーと表の見出しがサイトと同じ赤のグラデーションになる
  */
 .theme-caj {
   --background: oklch(0.995 0.002 20);
-  --foreground: oklch(0.25 0.01 20);
+  --foreground: oklch(0.3 0.006 20);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.01 20);
+  --card-foreground: oklch(0.3 0.006 20);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.01 20);
-  /* メニューの帯の赤。ボタン・リンク・選択中の印に使う */
-  --primary: oklch(0.5 0.2 22);
+  --popover-foreground: oklch(0.3 0.006 20);
+  /* ボタン・リンク・選択中の印はお問合せボタンの深い赤 */
+  --primary: oklch(0.43 0.17 27);
   --primary-foreground: oklch(0.99 0.005 20);
-  --secondary: oklch(0.96 0.006 20);
-  --secondary-foreground: oklch(0.35 0.08 20);
-  --muted: oklch(0.965 0.004 20);
-  --muted-foreground: oklch(0.5 0.02 20);
-  /* 「お問合せはこちら」のボタンの薄いピンク */
-  --accent: oklch(0.93 0.035 15);
-  --accent-foreground: oklch(0.4 0.14 20);
-  --destructive: oklch(0.52 0.22 27);
+  --secondary: oklch(0.95 0.012 20);
+  --secondary-foreground: oklch(0.34 0.09 24);
+  --muted: oklch(0.965 0.005 20);
+  --muted-foreground: oklch(0.5 0.012 20);
+  /* 押せるものの背景は「お問合せはこちら」の薄いピンク */
+  --accent: oklch(0.93 0.03 18);
+  --accent-foreground: oklch(0.38 0.14 25);
+  --destructive: oklch(0.5 0.2 27);
   --border: oklch(0.9 0.006 20);
   --input: oklch(0.9 0.006 20);
-  --ring: oklch(0.6 0.17 22);
-  --strong: oklch(0.5 0.2 22);
+  --ring: oklch(0.55 0.15 24);
+  /* 帯はメニューの赤。表の見出しは選ばれているタブの暗い赤 */
+  --strong: oklch(0.477 0.147 24);
   --strong-foreground: oklch(0.99 0.008 20);
-  --strong-head: oklch(0.43 0.18 20);
-  --sidebar: oklch(0.975 0.004 20);
-  --sidebar-foreground: oklch(0.25 0.01 20);
-  --sidebar-primary: oklch(0.5 0.2 22);
+  --strong-head: oklch(0.336 0.111 25);
+  --sidebar: oklch(0.982 0.006 18);
+  --sidebar-foreground: oklch(0.3 0.006 20);
+  --sidebar-primary: oklch(0.43 0.17 27);
   --sidebar-primary-foreground: oklch(0.99 0.005 20);
-  --sidebar-accent: oklch(0.93 0.035 15);
-  --sidebar-accent-foreground: oklch(0.4 0.14 20);
-  --sidebar-border: oklch(0.9 0.006 20);
-  --sidebar-ring: oklch(0.6 0.17 22);
+  --sidebar-accent: oklch(0.93 0.03 18);
+  --sidebar-accent-foreground: oklch(0.38 0.14 25);
+  --sidebar-border: oklch(0.9 0.012 20);
+  --sidebar-ring: oklch(0.55 0.15 24);
+}
+
+/*
+ * CAJ で「濃くする」を入にしたときの帯。サイトのメニューと同じく単色ではなく、
+ * 上端に暗い臙脂の細い線を置き、その下を暗い赤から明るい赤へ流す。
+ * 表の見出しは「規制関連のニュース」の見出しと同じ、明るい赤から暗い赤へのグラデーション
+ */
+.theme-caj.header-strong .bg-header,
+.theme-caj.header-strong .bg-sidebar-header {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(0.297 0.12 28) 0,
+    oklch(0.297 0.12 28) 3px,
+    oklch(0.43 0.134 24) 3px,
+    oklch(0.477 0.147 24) 35%,
+    oklch(0.5 0.14 22) 100%
+  );
+}
+.theme-caj.header-strong .table-head-solid {
+  background:
+    linear-gradient(to bottom, oklch(0.55 0.17 22), oklch(0.4 0.15 25)), var(--background);
 }
 
 /*
