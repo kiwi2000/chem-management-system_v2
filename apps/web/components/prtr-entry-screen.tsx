@@ -222,8 +222,8 @@ export function PrtrEntryScreen() {
         </Alert>
       )}
 
-      {/* 所属・年度・方法は入り口なので畳まない。下の表は最初から開いておく */}
-      <Card collapsible={false}>
+      {/* 白い箱が複数あるので、どれも開閉できる（システム共通の決まり）。最初は全部開いておく */}
+      <Card defaultOpen>
         <CardHeader className="flex flex-row items-start justify-between gap-3">
           <div>
             <CardTitle>{t.title}</CardTitle>
