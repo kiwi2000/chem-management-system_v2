@@ -5,6 +5,7 @@ import { CircleCheck, CircleX, Send, Undo2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { ErrorPopup } from "@/components/error-popup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -173,7 +174,8 @@ export function PublishActions({
         </div>
       )}
 
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {/* 失敗の知らせは枠の中に残さず、浮かべて出して押したら消す（2026-09-22 指示） */}
+      <ErrorPopup message={error} onClose={() => setError(null)} />
     </div>
   );
 }
