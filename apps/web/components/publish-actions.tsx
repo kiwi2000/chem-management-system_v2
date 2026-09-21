@@ -23,7 +23,10 @@ interface Props {
   canApprove: boolean;
 }
 
-/** 状態ごとの見た目。公開済だけ落ち着いた色にし、手が要るものを目立たせる */
+/**
+ * 状態ごとの見た目。公開済だけ落ち着いた色にし、手が要るものを目立たせる。
+ * 印は 28px・文字はボタンと同じ 14px、ボタンは普通の大きさ（2026-09-22 指示）
+ */
 const BADGE_CLASS: Record<PublishState, string> = {
   DRAFT:
     "border border-amber-400 bg-amber-100 text-amber-900 dark:border-amber-500/60 dark:bg-amber-500/20 dark:text-amber-200",
@@ -85,18 +88,18 @@ export function PublishActions({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-3">
-        <Badge className={`px-3 py-1 text-sm font-semibold ${BADGE_CLASS[publishState]}`}>
+        <Badge className={`h-7 px-3.5 text-sm font-semibold ${BADGE_CLASS[publishState]}`}>
           {m.common.publishStates[publishState]}
         </Badge>
 
         {canEdit && approvalRequired && can("submit") && (
-          <Button type="button" size="lg" disabled={busy} onClick={() => void run("submit")}>
+          <Button type="button" disabled={busy} onClick={() => void run("submit")}>
             <Send className="mr-1 size-4" />
             {m.common.submit}
           </Button>
         )}
         {canEdit && !approvalRequired && can("publish") && (
-          <Button type="button" size="lg" disabled={busy} onClick={() => void run("publish")}>
+          <Button type="button" disabled={busy} onClick={() => void run("publish")}>
             <CircleCheck className="mr-1 size-4" />
             {m.common.publish}
           </Button>
@@ -105,7 +108,7 @@ export function PublishActions({
           <Button
             type="button"
             variant="outline"
-            size="lg"
+
             disabled={busy}
             onClick={() => void run("withdraw")}
           >
@@ -114,7 +117,7 @@ export function PublishActions({
           </Button>
         )}
         {canApprove && can("approve") && (
-          <Button type="button" size="lg" disabled={busy} onClick={() => void run("approve")}>
+          <Button type="button" disabled={busy} onClick={() => void run("approve")}>
             <CircleCheck className="mr-1 size-4" />
             {m.common.approve}
           </Button>
@@ -123,7 +126,7 @@ export function PublishActions({
           <Button
             type="button"
             variant="outline"
-            size="lg"
+
             disabled={busy}
             className="text-destructive"
             onClick={() => setAskReason((v) => !v)}
@@ -136,7 +139,7 @@ export function PublishActions({
           <Button
             type="button"
             variant="outline"
-            size="lg"
+
             disabled={busy}
             onClick={() => void run("unpublish")}
           >

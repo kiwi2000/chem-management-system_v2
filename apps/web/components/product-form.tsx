@@ -9,7 +9,7 @@ import { AliasList } from "@/components/alias-list";
 import { FieldError } from "@/components/field-error";
 import { MultiSelect } from "@/components/multi-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { EditingBadge } from "@/components/editing-badge";
 import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -221,7 +221,7 @@ export function ProductForm({
     return isEditing(sec) ? (
       // 節が長いので、見出しの側でもやめられるようにする（下まで送らずに済む）
       <span className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">{m.common.editMode}</Badge>
+        <EditingBadge />
         <Button type="button" size="sm" variant="outline" onClick={() => discard(sec)}>
           {m.common.discard}
         </Button>

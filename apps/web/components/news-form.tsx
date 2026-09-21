@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { EditingBadge } from "@/components/editing-badge";
 import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -77,11 +77,7 @@ export function NewsForm({ initial, canEdit }: Props) {
       {/* 状態と編集ボタンは form の外に置く（送信と受け取られないように） */}
       {initial && (readOnly ? canEdit : true) && (
         <div className="flex items-center gap-3">
-          {readOnly ? (
-            <EditButton onClick={() => setEditing(true)} />
-          ) : (
-            <Badge variant="secondary">{m.common.editMode}</Badge>
-          )}
+          {readOnly ? <EditButton onClick={() => setEditing(true)} /> : <EditingBadge />}
         </div>
       )}
 

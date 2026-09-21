@@ -9,7 +9,7 @@ import { GroupSelect } from "@/components/group-select";
 import { OrganisationPicker } from "@/components/organisation-picker";
 import { PermissionPicker } from "@/components/permission-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { EditingBadge } from "@/components/editing-badge";
 import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -192,11 +192,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
       {/* まず表示だけにして、「編集」を押してから書き換えられるようにする（物質・お知らせと同じ形） */}
       <div className="flex items-center gap-3">
-        {editing ? (
-          <Badge variant="secondary">{m.common.editMode}</Badge>
-        ) : (
-          <EditButton onClick={() => setEditing(true)} />
-        )}
+        {editing ? <EditingBadge /> : <EditButton onClick={() => setEditing(true)} />}
       </div>
 
       <form onSubmit={onSave} className="space-y-4">
