@@ -2307,6 +2307,12 @@ export const en: Messages = {
       templateFile: "PRTR_import_template",
       title: "Import from a file",
       kinds: { quantities: "Quantities per product", measured: "Measured values" },
+      expected: {
+        quantities:
+          "Choose a file with product code, product name, purchased and shipped columns (shipped is optional when the method is Measured)",
+        measured: "Choose a file with substance code, substance name and measured columns",
+      },
+      measuredNeedsMethod: "To import measured values, set the method to Measured and save first",
       file: "File (CSV / TSV / Excel)",
       step2: "1. Assign columns",
       step3: "2. Check and import",

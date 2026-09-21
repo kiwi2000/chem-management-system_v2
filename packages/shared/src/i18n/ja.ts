@@ -2401,6 +2401,12 @@ export const ja = {
       templateFile: "PRTR_取り込みテンプレート",
       title: "ファイルから取り込む",
       kinds: { quantities: "製品ごとの数量", measured: "実測値" },
+      expected: {
+        quantities:
+          "製品コード・製品名・購入数量・出荷数量の列を持つファイルを選んでください（方法が実測値なら出荷数量は無くて構いません）",
+        measured: "物質コード・物質名・実測値の列を持つファイルを選んでください",
+      },
+      measuredNeedsMethod: "実測値を取り込むには、方法を「実測値」にして保存してください",
       file: "ファイル（CSV / TSV / Excel）",
       step2: "1. 列を割り当てる",
       step3: "2. 確かめて取り込む",

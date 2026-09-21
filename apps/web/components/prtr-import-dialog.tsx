@@ -31,6 +31,7 @@ export function PrtrImportDialog({
   onClose,
 }: {
   entryId: string;
+  /** どの表の「ファイル」から開いたか。**いま選ばれている方法に合わせて決まり、窓の中では変えない** */
   kind: PrtrImportKind;
   /** 選ばれたファイル */
   file: File;
@@ -85,10 +86,7 @@ export function PrtrImportDialog({
       }
       const body = (await res.json()) as PrtrImportInspectDto;
       setInspected(body);
-      // 見出しが項目名と同じ列は最初から割り当てる
-      const guess: Record<string, number | null> = {};
-      for (const fd of fields) guess[fd.key] = guessColumn(body.headers, fd.aliases);
-      setMapping(guess);
+      applyGuess(kind, body.headers);
     } finally {
       setBusy(false);
     }
@@ -99,6 +97,13 @@ export function PrtrImportDialog({
     // ファイルが変わることは無い（選び直すときは窓ごと開き直す）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file]);
+
+  /** 見出しが項目名と同じ列は最初から割り当てる */
+  function applyGuess(k: PrtrImportKind, headers: string[]) {
+    const guess: Record<string, number | null> = {};
+    for (const fd of PRTR_IMPORT_FIELDS[k]) guess[fd.key] = guessColumn(headers, fd.aliases);
+    setMapping(guess);
+  }
 
   const missing = fields.filter((f) => f.required && mapping[f.key] == null);
   const cleanMapping = () =>
@@ -242,6 +247,7 @@ export function PrtrImportDialog({
               {missing.length > 0 && (
                 <p className="text-destructive text-xs">
                   {t.required(t.fields[missing[0]!.key as keyof typeof t.fields])}
+                  <span className="text-muted-foreground ml-2">{t.expected[kind]}</span>
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-2">
