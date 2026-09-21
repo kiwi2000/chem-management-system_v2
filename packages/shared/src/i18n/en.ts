@@ -2281,7 +2281,7 @@ export const en: Messages = {
       shippedKg: "Shipped",
       source: "Source",
       updatedAt: "Updated",
-      add: "+ Add one",
+      add: "Add one",
       empty: "No quantities yet",
       productNotFound: (code: string) => `Product code "${code}" is not registered`,
       shippedRequired: "This method needs the shipped quantity",
@@ -2293,7 +2293,7 @@ export const en: Messages = {
       substanceName: "Substance",
       statutoryName: "Class I designated substance",
       measuredKg: "Measured",
-      add: "+ Add one",
+      add: "Add one",
       empty: "No measured values yet",
       substanceNotFound: (code: string) => `Substance code "${code}" is not registered`,
       notPrtrSubstance: (code: string) =>

@@ -736,20 +736,7 @@ function QuantitySection({
             {method === "MEASURED" ? t.shippedOptional : t.shippedRequired}
           </p>
         </div>
-        <div className="flex gap-2">
-          <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
-          {!open && (
-            <Button
-              size="sm"
-              onClick={() => {
-                setForm({ id: "", productCode: "", purchasedKg: "", shippedKg: "" });
-                setOpen(true);
-              }}
-            >
-              {t.add}
-            </Button>
-          )}
-        </div>
+        <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
       </CardHeader>
       <CardContent className="space-y-3">
         {error && (
@@ -814,6 +801,18 @@ function QuantitySection({
         )}
         <DataTable
           storageKey={Q_KEY}
+          // 1 件登録は、ほかの一覧と同じ表の上の「＋」から
+          create={
+            !open
+              ? {
+                  label: t.add,
+                  onClick: () => {
+                    setForm({ id: "", productCode: "", purchasedKg: "", shippedKg: "" });
+                    setOpen(true);
+                  },
+                }
+              : undefined
+          }
           columns={columns}
           rows={data?.items ?? []}
           rowKey={(q) => q.id}
@@ -1011,20 +1010,7 @@ function MeasuredSection({
           <CardTitle>{t.title}</CardTitle>
           <p className="text-muted-foreground mt-1 text-sm">{m.prtr.methodHints.MEASURED}</p>
         </div>
-        <div className="flex gap-2">
-          <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
-          {!open && (
-            <Button
-              size="sm"
-              onClick={() => {
-                setForm({ id: "", substanceCode: "", measuredKg: "" });
-                setOpen(true);
-              }}
-            >
-              {t.add}
-            </Button>
-          )}
-        </div>
+        <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
       </CardHeader>
       <CardContent className="space-y-3">
         {error && (
@@ -1079,6 +1065,17 @@ function MeasuredSection({
         )}
         <DataTable
           storageKey={M_KEY}
+          create={
+            !open
+              ? {
+                  label: t.add,
+                  onClick: () => {
+                    setForm({ id: "", substanceCode: "", measuredKg: "" });
+                    setOpen(true);
+                  },
+                }
+              : undefined
+          }
           columns={columns}
           rows={data?.items ?? []}
           rowKey={(x) => x.id}

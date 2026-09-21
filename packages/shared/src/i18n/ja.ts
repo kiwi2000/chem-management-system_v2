@@ -2376,7 +2376,7 @@ export const ja = {
       shippedKg: "出荷数量",
       source: "登録元",
       updatedAt: "更新",
-      add: "＋ 1 件登録",
+      add: "1 件登録",
       empty: "数量が登録されていません",
       productNotFound: (code: string) => `製品コード「${code}」は登録されていません`,
       shippedRequired: "この方法では出荷数量が要ります",
@@ -2388,7 +2388,7 @@ export const ja = {
       substanceName: "物質名",
       statutoryName: "第一種指定化学物質",
       measuredKg: "実測値",
-      add: "＋ 1 件登録",
+      add: "1 件登録",
       empty: "実測値が登録されていません",
       substanceNotFound: (code: string) => `物質コード「${code}」は登録されていません`,
       notPrtrSubstance: (code: string) =>
