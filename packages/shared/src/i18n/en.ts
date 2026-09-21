@@ -75,6 +75,9 @@ export const en: Messages = {
   },
 
   nav: {
+    /** PRTR (S22) */
+    prtr: "PRTR",
+    prtrEntry: "Report data entry",
     documents: "Documents",
     documentCreate: "Create",
     docTemplates: "Templates",
@@ -208,6 +211,7 @@ export const en: Messages = {
   },
 
   permissions: {
+    PRTR_ENTRY: "Enter PRTR report data (for their own organisation)",
     DOC_TEMPLATE_EDIT: "Can edit document templates",
     DOCUMENT_CREATE: "Can create documents (and see their own in the list)",
     DOCUMENT_DOWNLOAD: "Can open and download documents",
@@ -232,6 +236,8 @@ export const en: Messages = {
     ADMIN: "System administration (users, settings, audit log)",
   },
   permissionHints: {
+    PRTR_ENTRY:
+      'Only for the organisations set under "Organisation" on this screen. Without one, the screen opens but stays empty',
     PRODUCT_VIEW: "Also allows running assessments and reverse lookup",
     PRODUCT_EDIT: "Includes editing compositions: create, change, delete, TSV import",
     REGULATION_EDIT: "Includes metal conversion factors, sources and link versions",
@@ -252,6 +258,7 @@ export const en: Messages = {
     ADMIN: "Creating users, changing permissions, system settings, audit log",
   },
   permissionGroups: {
+    prtr: "PRTR",
     document: "Documents",
     organisation: "Organisations",
     product: "Products / Materials",
@@ -2236,6 +2243,118 @@ export const en: Messages = {
     },
   },
 
+  /** PRTR report data entry (S22) */
+  prtr: {
+    title: "PRTR report data",
+    lead: "Choose the organisation and fiscal year, pick the method, then enter the quantities (kg) per product. With measured values, also enter the measured amount per substance",
+    organisation: "Organisation",
+    noOrganisation:
+      "You belong to no organisation, so nothing can be entered. Ask the system administrator to assign one under Users › Organisation",
+    fiscalYear: "Fiscal year",
+    fiscalYearLabel: (y: number) => `FY${y} (${y}/4–${y + 1}/3)`,
+    method: "Method",
+    methods: {
+      MEASURED: "Measured",
+      BALANCE: "Mass balance",
+      FACTOR: "Emission factor",
+    },
+    methodHints: {
+      MEASURED:
+        "The measured amount per substance (kg per year) is the release. Purchased quantities decide whether a report is needed",
+      BALANCE:
+        "Release = (purchased − shipped) × content. Enter purchased and shipped quantities per product",
+      FACTOR:
+        "Release = shipped × content × factor ÷ 100. One factor per organisation, for every substance",
+    },
+    factorPct: "Emission factor (%)",
+    factorHint: "Release kg ÷ shipped kg × 100. Same for every substance",
+    note: "Note",
+    headerSaved: "Saved",
+    changeMethodAsk:
+      "Changing the method changes what the entered quantities and measured values mean. They are kept as they are. Continue?",
+    sources: { MANUAL: "Manual", IMPORT: "Import" },
+    quantities: {
+      title: "Quantities per product (kg)",
+      productCode: "Product code",
+      productName: "Product",
+      purchasedKg: "Purchased",
+      shippedKg: "Shipped",
+      source: "Source",
+      updatedAt: "Updated",
+      add: "+ Add one",
+      empty: "No quantities yet",
+      productNotFound: (code: string) => `Product code "${code}" is not registered`,
+      shippedRequired: "This method needs the shipped quantity",
+      shippedOptional: "With measured values the shipped quantity is optional",
+    },
+    measured: {
+      title: "Measured values (kg per year)",
+      substanceCode: "Substance code",
+      substanceName: "Substance",
+      statutoryName: "Class I designated substance",
+      measuredKg: "Measured",
+      add: "+ Add one",
+      empty: "No measured values yet",
+      substanceNotFound: (code: string) => `Substance code "${code}" is not registered`,
+      notPrtrSubstance: (code: string) =>
+        `Substance "${code}" is not a Class I designated substance (in the current regulation version)`,
+      alreadyThere:
+        "A measured value for the same substance exists. Edit it with the pencil at the end of the row",
+    },
+    import: {
+      button: "File",
+      template: "Template",
+      templateFile: "PRTR_import_template",
+      title: "Import from a file",
+      kinds: { quantities: "Quantities per product", measured: "Measured values" },
+      file: "File (CSV / TSV / Excel)",
+      step2: "1. Assign columns",
+      step3: "2. Check and import",
+      headersHint:
+        "The first row was read as headers. Assign a column to each required field; extra columns and their order do not matter",
+      column: "Column",
+      assign: "Use as",
+      unused: "(not used)",
+      requiredMark: "(required)",
+      fields: {
+        productCode: "Product code",
+        productName: "Product name (check only)",
+        purchasedKg: "Purchased (kg)",
+        shippedKg: "Shipped (kg)",
+        substanceCode: "Substance code",
+        substanceName: "Substance name (check only)",
+        measuredKg: "Measured (kg)",
+      },
+      preview: "Preview",
+      previewHint: "Counts readable and unreadable rows without writing anything",
+      rows: (n: number) => `${n} rows`,
+      readable: (n: number) => `${n} readable`,
+      unreadable: (n: number) => `${n} unreadable`,
+      willAdd: (n: number) => `${n} to add`,
+      willUpdate: (n: number) => `${n} to overwrite`,
+      willRemove: (n: number) => `${n} to remove`,
+      nameMismatch: (n: number) => `${n} rows with a different name (still imported)`,
+      mode: "How to merge",
+      modeUpsert: "Overwrite the same products, add the others",
+      modeReplace: "Replace every quantity of this organisation and year",
+      overwriteAsk: (n: number) => `${n} substance(s) already have a measured value. Overwrite?`,
+      overwriteYes: "Overwrite",
+      apply: "Import",
+      done: (n: number) => `${n} rows imported`,
+      line: (n: number) => `line ${n}`,
+      required: (field: string) => `No column assigned to the required field "${field}"`,
+      noRows: "No readable rows",
+      tooLarge: "The file is too large (up to 10 MB)",
+      unreadableFile: "Could not read the file. Choose CSV / TSV / Excel (.xlsx)",
+      noHeader: "The first row (headers) could not be read",
+      cancel: "Cancel",
+    },
+    validation: {
+      kg: "Enter a quantity of 0 or more (up to 3 decimals)",
+      factor: "Enter a factor of 0 or more (%, up to 4 decimals)",
+      duplicateRow: "Appears twice",
+    },
+  },
   organisations: {
     title: "Organisations",
     description:

@@ -30,6 +30,7 @@ export * from "./law";
 export * from "./link";
 export * from "./i18n";
 export * from "./impurity";
+export * from "./prtr";
 export * from "./inventory";
 export * from "./metal-factor";
 export * from "./news";

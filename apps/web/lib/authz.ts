@@ -131,3 +131,33 @@ export async function requireAdmin(): Promise<Actor | Response> {
 export function canEdit(actor: Actor): boolean {
   return canEditAnything(actor.permissions);
 }
+
+/*
+  ── PRTR 届出データの所属（S22）───────────────────────────
+  権限 PRTR_ENTRY は「入力できる」、所属（利用者の組織）は「どこの分を」。
+  PRTR の API は requirePermission の後に必ずここを通す（呼び忘れは authz-coverage.test.ts が見張る）
+*/
+
+/** その人が届出データを入れられる組織（所属している組織）。PRTR_ENTRY が無ければ空 */
+export async function prtrOrgsOf(actor: Actor): Promise<string[]> {
+  if (!actor.has("PRTR_ENTRY")) return [];
+  const rows = await prisma.userOrganisation.findMany({
+    where: { userId: actor.user.id, organisation: { deletedAt: null } },
+    select: { organisationId: true },
+  });
+  return rows.map((r) => r.organisationId);
+}
+
+/**
+ * その組織の届出データを触ってよいか。**所属していなければ 404**
+ * （存在を教えない。403 だと「あるが触れない」と分かってしまう）
+ */
+export async function requirePrtrOrg(
+  actor: Actor,
+  organisationId: string,
+): Promise<null | Response> {
+  const orgs = await prtrOrgsOf(actor);
+  if (orgs.includes(organisationId)) return null;
+  const m = await getServerMessages();
+  return jsonError(404, "not_found", m.errors.notFound);
+}

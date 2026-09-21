@@ -85,3 +85,27 @@ describe("API ルートの認可", () => {
     for (const rel of ALLOWLIST) expect(all.has(rel), `${rel} は存在しない`).toBe(true);
   });
 });
+
+/**
+ * PRTR（S22）の API は、権限に加えて**所属**（利用者の組織）で絞る決まり。
+ * 所属を持たない人の分は 404。呼び忘れをここで止める
+ */
+describe("PRTR の API の所属の絞り込み", () => {
+  /** 所属によらないもの（取り込みのテンプレートは誰が落としても同じ物） */
+  const SCOPE_FREE = new Set(["prtr/template/route.ts"]);
+  const files = findRouteFiles(API_DIR).filter((f) =>
+    relative(API_DIR, f).split(sep).join("/").startsWith("prtr/"),
+  );
+
+  it("PRTR の route.ts が見つかること", () => {
+    expect(files.length).toBeGreaterThan(0);
+  });
+
+  it.each(files)("%s は所属で絞っている", (file) => {
+    const rel = relative(API_DIR, file).split(sep).join("/");
+    if (SCOPE_FREE.has(rel)) return;
+    const src = readFileSync(file, "utf8");
+    const scoped = src.includes("requirePrtrOrg(") || src.includes("prtrOrgsOf(");
+    expect(scoped, `${rel} が requirePrtrOrg / prtrOrgsOf のどちらも呼んでいない`).toBe(true);
+  });
+});

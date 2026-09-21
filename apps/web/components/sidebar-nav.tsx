@@ -8,6 +8,8 @@ import {
   BookMarked,
   BookOpen,
   Building2,
+  ClipboardList,
+  Factory,
   ChevronRight,
   Download,
   Droplets,
@@ -126,6 +128,13 @@ const ITEMS: NavItem[] = [
         needs: "DATA_EXPORT",
       },
     ],
+  },
+  {
+    // PRTR（S22）。いまは届出データの入力だけ。集計・届出書はここに足していく
+    key: "prtr",
+    icon: Factory,
+    needs: "PRTR_ENTRY",
+    children: [{ href: "/prtr/entry", key: "prtrEntry", icon: ClipboardList, needs: "PRTR_ENTRY" }],
   },
   {
     /*
@@ -384,7 +393,8 @@ export function SidebarNav({
   /** 親と、その配下の項目。配下を持つ見出しは押して開け閉めできる */
   const renderTree = (item: NavItem, indented: boolean) => {
     const children = (item.children ?? []).filter(allowed);
-    if (children.length === 0) return renderItem(item, indented);
+    // 配下が 1 つも許されていない見出しは出さない（押しても何も開かない行を残さない）
+    if (children.length === 0) return item.href ? renderItem(item, indented) : null;
 
     /*
       畳んだ状態から始める。ログインした直後にメニューが縦に長いと、

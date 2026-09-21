@@ -1258,3 +1258,77 @@ export interface LinkVersionSourceDto {
   /** この組み合わせで入っているリンクの数 */
   linkCount: number;
 }
+
+// ── PRTR 届出データ（S22）────────────────────────────────
+
+/** 届出データを入れられる所属（利用者の組織） */
+export interface PrtrScopeDto {
+  organisations: { id: string; code: string; nameJa: string; nameEn: string | null }[];
+}
+
+export interface PrtrQuantityDto {
+  id: string;
+  productId: string;
+  productCode: string;
+  productNameJa: string;
+  productNameEn: string | null;
+  purchasedKg: string;
+  shippedKg: string | null;
+  source: "MANUAL" | "IMPORT";
+  updatedAt: string;
+}
+
+export interface PrtrMeasuredDto {
+  id: string;
+  statutorySubstanceId: string;
+  officialNumber: string | null;
+  statutoryNameJa: string | null;
+  statutoryNameEn: string | null;
+  statutoryNameOriginal: string;
+  /** 打った物質コード（同じ法文物質名に当たる代表の物質） */
+  substanceCode: string | null;
+  substanceNameJa: string | null;
+  measuredKg: string;
+  source: "MANUAL" | "IMPORT";
+  updatedAt: string;
+}
+
+/** 所属 × 年度の届出データ。頭が無ければ entry は null（まだ何も入れていない） */
+export interface PrtrEntryDto {
+  entry: {
+    id: string;
+    organisationId: string;
+    fiscalYear: number;
+    method: "MEASURED" | "BALANCE" | "FACTOR";
+    factorPct: string | null;
+    note: string | null;
+    updatedAt: string;
+  } | null;
+  quantities: PrtrQuantityDto[];
+  measured: PrtrMeasuredDto[];
+}
+
+/** 取り込み: ファイルを読んだ結果（見出しと最初の数行） */
+export interface PrtrImportInspectDto {
+  headers: string[];
+  sample: string[][];
+  rowCount: number;
+}
+
+/** 取り込み: 下見と実行の結果 */
+export interface PrtrImportResultDto {
+  readable: number;
+  unreadable: number;
+  willAdd: number;
+  willUpdate: number;
+  willRemove: number;
+  nameMismatch: number;
+  /** 実測値で、既に値がある物質の数（上書きの確認に使う） */
+  conflicts: number;
+  /** 読めなかった行（行番号と理由）。先頭 50 件まで */
+  errors: { line: number; message: string }[];
+  /** 実行したか（下見なら false） */
+  applied: boolean;
+  /** 上書きの答えが要るので止めたか */
+  needsOverwrite: boolean;
+}

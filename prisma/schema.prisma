@@ -51,6 +51,8 @@ enum Permission {
   FEEDBACK_VIEW
   FEEDBACK_EDIT
   ADMIN
+  // PRTR 届出データの入力（S22）。自分の所属（組織）の分だけ
+  PRTR_ENTRY
 }
 
 enum NewsStatus {
@@ -248,6 +250,8 @@ model User {
    * /**
    * /**
    * /**
+   * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -346,11 +350,15 @@ model Organisation {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  items   OrganisationItem[]
+  items       OrganisationItem[]
   /**
    * この組織に所属する人
    */
-  members UserOrganisation[]
+  members     UserOrganisation[]
+  /**
+   * PRTR の届出データ（S22）。所属 × 年度
+   */
+  prtrEntries PrtrEntry[]
 
   @@index([displayOrder])
   @@map("organisations")
@@ -1004,6 +1012,8 @@ model Substance {
   compositionLines CompositionLine[]
   impurityType     ImpurityType             @relation(fields: [impurityTypeId], references: [id])
 
+  prtrMeasured PrtrMeasured[]
+
   @@index([casNormalized])
   @@index([impurityTypeId])
   @@index([status])
@@ -1160,12 +1170,13 @@ model Product {
   /**
    * 末端まで下ろして CAS でまとめた結果。組成が変わったら作り直す
    */
-  expansion  ProductExpansion?
+  expansion      ProductExpansion?
   /**
    * 区分ごとの判定結果。展開結果が変わったら作り直す
    */
-  judgements ProductJudgement[]
-  decisions  ProductDecision[]
+  judgements     ProductJudgement[]
+  decisions      ProductDecision[]
+  prtrQuantities PrtrQuantity[]
 
   @@index([nameJa])
   @@index([nameEn])
@@ -1947,6 +1958,7 @@ model StatutorySubstance {
    * 不純物種別ごとの除外の上書き（S21）
    */
   impurityExemptions ImpurityExemptionSubstance[]
+  prtrMeasured       PrtrMeasured[]
 
   @@unique([classId, codeNormalized])
   @@index([classId, displayOrder])
@@ -2771,4 +2783,107 @@ model ImpurityExemptionSubstance {
   @@unique([typeId, statutorySubstanceId])
   @@index([statutorySubstanceId])
   @@map("impurity_exemption_substances")
+}
+
+// ── PRTR 届出データ（S22）────────────────────────────────
+//
+// 所属（組織マスタの組織）× 年度で 1 組。方法（実測値・物質収支・排出係数）を選び、
+// 製品ごとの数量と、実測値のときは物質ごとの kg を入れる。仕様は docs/steps/S22_PRTR集計と届出.md
+
+/**
+ * 排出量の出し方
+ */
+enum PrtrMethod {
+  MEASURED
+  BALANCE
+  FACTOR
+}
+
+/**
+ * 行の登録元。取り込みで入ったか、画面で打ったか
+ */
+enum PrtrEntrySource {
+  MANUAL
+  IMPORT
+}
+
+/**
+ * 届出データの頭。所属 × 年度で 1 つ
+ */
+model PrtrEntry {
+  id             String     @id @default(cuid())
+  organisationId String     @map("organisation_id")
+  /**
+   * 年度（4 月〜翌 3 月）。2025 なら 2025 年 4 月〜2026 年 3 月
+   */
+  fiscalYear     Int        @map("fiscal_year")
+  method         PrtrMethod @default(BALANCE)
+  /**
+   * 排出係数（%）。方法が排出係数のときだけ。所属で 1 つ（全物質共通）
+   */
+  factorPct      Decimal?   @map("factor_pct") @db.Decimal(9, 4)
+  note           String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  organisation Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  quantities   PrtrQuantity[]
+  measured     PrtrMeasured[]
+
+  @@unique([organisationId, fiscalYear])
+  @@map("prtr_entries")
+}
+
+/**
+ * 製品ごとの数量（kg）。購入数量はどの方法でも、出荷数量は物質収支・排出係数で要る
+ */
+model PrtrQuantity {
+  id          String          @id @default(cuid())
+  entryId     String          @map("entry_id")
+  productId   String          @map("product_id")
+  purchasedKg Decimal         @map("purchased_kg") @db.Decimal(18, 3)
+  shippedKg   Decimal?        @map("shipped_kg") @db.Decimal(18, 3)
+  source      PrtrEntrySource @default(MANUAL)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  entry   PrtrEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  product Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([entryId, productId])
+  @@index([productId])
+  @@map("prtr_quantities")
+}
+
+/**
+ * 実測値（kg、年間）。第一種指定化学物質（化管法の法文物質名）ごと
+ */
+model PrtrMeasured {
+  id                   String          @id @default(cuid())
+  entryId              String          @map("entry_id")
+  statutorySubstanceId String          @map("statutory_substance_id")
+  /**
+   * 打った物質（物質マスタ）。画面にコードと名前を出すため。物質を消せば空になる
+   */
+  substanceId          String?         @map("substance_id")
+  measuredKg           Decimal         @map("measured_kg") @db.Decimal(18, 3)
+  source               PrtrEntrySource @default(MANUAL)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  entry              PrtrEntry          @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id], onDelete: Restrict)
+  substance          Substance?         @relation(fields: [substanceId], references: [id], onDelete: SetNull)
+
+  @@unique([entryId, statutorySubstanceId])
+  @@index([statutorySubstanceId])
+  @@index([substanceId])
+  @@map("prtr_measured")
 }

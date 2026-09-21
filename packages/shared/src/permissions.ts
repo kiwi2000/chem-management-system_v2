@@ -59,6 +59,11 @@ export const PERMISSIONS = [
   */
   "FEEDBACK_VIEW",
   "FEEDBACK_EDIT",
+  /*
+    PRTR の届出データの入力（S22）。**自分の所属（組織）の分だけ。**
+    どの組織の分を入れられるかは権限ではなく、利用者の「所属する組織」で決まる
+  */
+  "PRTR_ENTRY",
   // システム管理（ユーザー管理・システム設定・監査ログ）
   "ADMIN",
 ] as const;
@@ -148,6 +153,7 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "organisation", permissions: ["ORG_EDIT"] },
   { key: "news", permissions: ["NEWS_POST", "NEWS_MANAGE"] },
   { key: "feedback", permissions: ["FEEDBACK_VIEW", "FEEDBACK_EDIT"] },
+  { key: "prtr", permissions: ["PRTR_ENTRY"] },
   { key: "system", permissions: ["ADMIN"] },
 ];
 

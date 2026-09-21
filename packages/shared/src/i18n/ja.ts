@@ -79,6 +79,9 @@ export const ja = {
   },
 
   nav: {
+    /** PRTR（S22） */
+    prtr: "PRTR",
+    prtrEntry: "届出データ入力",
     documents: "ドキュメント",
     documentCreate: "ドキュメント生成",
     docTemplates: "テンプレート編集",
@@ -222,6 +225,7 @@ export const ja = {
 
   /** 権限の名前と説明（ユーザー管理画面のチェックボックス） */
   permissions: {
+    PRTR_ENTRY: "PRTR の届出データを入力できる（自分の所属の分）",
     DOC_TEMPLATE_EDIT: "テンプレートを編集できる",
     DOCUMENT_CREATE: "ドキュメントを作れる（自分が作ったものを一覧で見られる）",
     DOCUMENT_DOWNLOAD: "ドキュメントを開ける・落とせる",
@@ -246,6 +250,8 @@ export const ja = {
     ADMIN: "システム管理（ユーザー・設定・監査ログ）",
   },
   permissionHints: {
+    PRTR_ENTRY:
+      "入力できるのは、この画面の「組織」で所属にした組織の分だけです。所属が無い人には画面は出ますが中身は空です",
     PRODUCT_VIEW: "規制該当の判定と逆引き検索もできます",
     PRODUCT_EDIT: "組成の編集を含みます。登録・変更・削除・TSV取込",
     REGULATION_EDIT: "金属換算係数・情報源・リンクバージョンを含みます",
@@ -265,6 +271,7 @@ export const ja = {
     ADMIN: "ユーザーの作成・権限変更・システム設定・監査ログの閲覧",
   },
   permissionGroups: {
+    prtr: "PRTR",
     document: "ドキュメント",
     organisation: "組織",
     product: "製品 / 原材料",
@@ -2333,6 +2340,115 @@ export const ja = {
   },
 
   /** 組織（会社・事業所）。帳票に載せる差出人の情報を置く画面 */
+  /** PRTR 届出データの入力（S22） */
+  prtr: {
+    title: "PRTR 届出データ",
+    lead: "所属と年度を選び、方法を決めてから、製品ごとの数量（kg）を入れます。実測値のときは物質ごとの実測値も入れます",
+    organisation: "所属",
+    noOrganisation:
+      "所属している組織が無いので入力できません。システム管理者に、ユーザー管理の「組織」で所属を割り当ててもらってください",
+    fiscalYear: "年度",
+    fiscalYearLabel: (y: number) => `${y} 年度（${y}/4〜${y + 1}/3）`,
+    method: "方法",
+    methods: {
+      MEASURED: "実測値",
+      BALANCE: "物質収支",
+      FACTOR: "排出係数",
+    },
+    methodHints: {
+      MEASURED:
+        "物質ごとの実測値（年間の kg）をそのまま排出量にします。製品の購入数量は届出要否の判断に使います",
+      BALANCE: "排出量 ＝（購入数量 − 出荷数量）× 含有率。製品ごとに購入数量と出荷数量を入れます",
+      FACTOR: "排出量 ＝ 出荷数量 × 含有率 × 係数 ÷ 100。係数は所属で 1 つ（全物質共通）",
+    },
+    factorPct: "排出係数（%）",
+    factorHint: "排出量 kg ÷ 出荷量 kg × 100。全物質共通",
+    note: "備考",
+    headerSaved: "保存しました",
+    changeMethodAsk:
+      "方法を変えると、入れてある数量や実測値の意味が変わります。入れたものはそのまま残します。よろしいですか",
+    sources: { MANUAL: "手入力", IMPORT: "取り込み" },
+    quantities: {
+      title: "製品ごとの数量（kg）",
+      productCode: "製品コード",
+      productName: "製品名",
+      purchasedKg: "購入数量",
+      shippedKg: "出荷数量",
+      source: "登録元",
+      updatedAt: "更新",
+      add: "＋ 1 件登録",
+      empty: "数量が登録されていません",
+      productNotFound: (code: string) => `製品コード「${code}」は登録されていません`,
+      shippedRequired: "この方法では出荷数量が要ります",
+      shippedOptional: "実測値のときは出荷数量は任意です",
+    },
+    measured: {
+      title: "実測値（kg・年間）",
+      substanceCode: "物質コード",
+      substanceName: "物質名",
+      statutoryName: "第一種指定化学物質",
+      measuredKg: "実測値",
+      add: "＋ 1 件登録",
+      empty: "実測値が登録されていません",
+      substanceNotFound: (code: string) => `物質コード「${code}」は登録されていません`,
+      notPrtrSubstance: (code: string) =>
+        `物質「${code}」は化管法の第一種指定化学物質に当たりません（現在の法規制バージョンで）`,
+      alreadyThere: "同じ第一種指定化学物質の実測値が既にあります。行末の鉛筆で直してください",
+    },
+    import: {
+      button: "ファイル",
+      template: "テンプレート",
+      templateFile: "PRTR_取り込みテンプレート",
+      title: "ファイルから取り込む",
+      kinds: { quantities: "製品ごとの数量", measured: "実測値" },
+      file: "ファイル（CSV / TSV / Excel）",
+      step2: "1. 列を割り当てる",
+      step3: "2. 確かめて取り込む",
+      headersHint:
+        "1 行目を見出しとして読みました。必要な項目に列を割り当ててください。余分な列や順番は気にしなくて構いません",
+      column: "列",
+      assign: "使う項目",
+      unused: "（使わない）",
+      requiredMark: "（必須）",
+      fields: {
+        productCode: "製品コード",
+        productName: "製品名（照合だけ）",
+        purchasedKg: "購入数量（kg）",
+        shippedKg: "出荷数量（kg）",
+        substanceCode: "物質コード",
+        substanceName: "物質名（照合だけ）",
+        measuredKg: "実測値（kg）",
+      },
+      preview: "下見",
+      previewHint: "何も書き込まずに、読める行と読めない行を数えます",
+      rows: (n: number) => `${n} 行`,
+      readable: (n: number) => `読める ${n} 行`,
+      unreadable: (n: number) => `読めない ${n} 行`,
+      willAdd: (n: number) => `追加 ${n} 件`,
+      willUpdate: (n: number) => `上書き ${n} 件`,
+      willRemove: (n: number) => `消える ${n} 件`,
+      nameMismatch: (n: number) => `名前が違う ${n} 行（取り込みは通します）`,
+      mode: "重ね方",
+      modeUpsert: "同じ製品は上書き、無い製品は追加",
+      modeReplace: "この所属・年度の数量を全部入れ替える",
+      overwriteAsk: (n: number) => `既に実測値がある物質が ${n} 件あります。上書きしますか`,
+      overwriteYes: "上書きしてよい",
+      apply: "取り込む",
+      done: (n: number) => `${n} 件を取り込みました`,
+      line: (n: number) => `${n} 行目`,
+      required: (field: string) => `必須の項目「${field}」に列が割り当てられていません`,
+      noRows: "読める行がありません",
+      tooLarge: "ファイルが大きすぎます（10 MB まで）",
+      unreadableFile: "ファイルを読めませんでした。CSV / TSV / Excel（.xlsx）を選んでください",
+      noHeader: "1 行目（見出し）が読めません",
+      cancel: "やめる",
+    },
+    validation: {
+      kg: "数量は 0 以上の数で入れてください（小数 3 桁まで）",
+      factor: "係数は 0 以上の数（%）で入れてください（小数 4 桁まで）",
+      duplicateRow: "同じものが 2 回出てきます",
+    },
+  },
   organisations: {
     title: "組織",
     description:
