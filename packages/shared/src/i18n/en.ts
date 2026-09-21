@@ -2302,7 +2302,7 @@ export const en: Messages = {
         "A measured value for the same substance exists. Edit it with the pencil at the end of the row",
     },
     import: {
-      button: "File",
+      button: "Import",
       template: "Template",
       templateFile: "PRTR_import_template",
       title: "Import from a file",

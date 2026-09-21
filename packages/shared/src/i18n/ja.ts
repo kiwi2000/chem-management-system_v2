@@ -2396,7 +2396,7 @@ export const ja = {
       alreadyThere: "同じ第一種指定化学物質の実測値が既にあります。行末の鉛筆で直してください",
     },
     import: {
-      button: "ファイル",
+      button: "インポート",
       template: "テンプレート",
       templateFile: "PRTR_取り込みテンプレート",
       title: "ファイルから取り込む",
