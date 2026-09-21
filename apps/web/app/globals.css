@@ -17,11 +17,13 @@
 @theme inline {
   /*
     日本語の本文と等幅。**指定しないとブラウザの既定フォントになり、端末ごとに字体が変わる。**
-    外部から取ってこない（通信ゼロの方針）ので、端末にある字体を順に当てる
+    外部から取ってこない（通信ゼロの方針）ので、端末にある字体を順に当てる。
+    お客さんは Windows だけなので、Noto が無ければ BIZ UDPゴシック（Windows 10/11 標準。
+    游ゴシック UI は Chrome で細く薄く見える）を先に当てる（2026-09-21 指示）
   */
   --font-sans:
-    "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic",
-    Meiryo, system-ui, sans-serif;
+    "Noto Sans JP", "BIZ UDPGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
+    "Yu Gothic", Meiryo, system-ui, sans-serif;
   --font-mono:
     ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", "BIZ UDGothic", monospace;
   /*
