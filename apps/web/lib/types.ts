@@ -1293,7 +1293,10 @@ export interface PrtrMeasuredDto {
   updatedAt: string;
 }
 
-/** 所属 × 年度の届出データ。頭が無ければ entry は null（まだ何も入れていない） */
+/**
+ * 所属 × 年度の届出データの頭。無ければ entry は null（まだ何も入れていない）。
+ * 行は一覧の API（quantities / measured）で絞り込み・ページ送り付きで取る。件数は方法を変えるときの確認に使う
+ */
 export interface PrtrEntryDto {
   entry: {
     id: string;
@@ -1304,8 +1307,8 @@ export interface PrtrEntryDto {
     note: string | null;
     updatedAt: string;
   } | null;
-  quantities: PrtrQuantityDto[];
-  measured: PrtrMeasuredDto[];
+  quantityCount: number;
+  measuredCount: number;
 }
 
 /** 取り込み: ファイルを読んだ結果（見出しと最初の数行） */

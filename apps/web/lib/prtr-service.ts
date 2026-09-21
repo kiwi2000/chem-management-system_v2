@@ -87,23 +87,17 @@ export function toMeasuredDto(x: MeasuredRow): PrtrMeasuredDto {
   };
 }
 
-/** 所属 × 年度の届出データを丸ごと読む。頭が無ければ entry は null */
+/** 所属 × 年度の届出データの頭と件数。頭が無ければ entry は null */
 export async function loadEntry(organisationId: string, fiscalYear: number): Promise<PrtrEntryDto> {
   const entry = await prisma.prtrEntry.findUnique({
     where: { organisationId_fiscalYear: { organisationId, fiscalYear } },
-    include: {
-      quantities: { include: QUANTITY_INCLUDE, orderBy: { product: { codeNormalized: "asc" } } },
-      measured: {
-        include: MEASURED_INCLUDE,
-        orderBy: { statutorySubstance: { displayOrder: "asc" } },
-      },
-    },
+    include: { _count: { select: { quantities: true, measured: true } } },
   });
-  if (!entry) return { entry: null, quantities: [], measured: [] };
+  if (!entry) return { entry: null, quantityCount: 0, measuredCount: 0 };
   return {
     entry: toEntryHead(entry),
-    quantities: entry.quantities.map(toQuantityDto),
-    measured: entry.measured.map(toMeasuredDto),
+    quantityCount: entry._count.quantities,
+    measuredCount: entry._count.measured,
   };
 }
 

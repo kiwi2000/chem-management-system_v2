@@ -6,6 +6,7 @@ import {
   pickName,
   pickStatutoryName,
   PRTR_METHODS,
+  serializeTableState,
   type PrtrMethod,
   type TableState,
 } from "@chem/shared";
@@ -25,6 +26,7 @@ import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors"
 import { useI18n } from "@/lib/i18n-client";
 import type {
   ApiError,
+  ListResponse,
   PrtrEntryDto,
   PrtrMeasuredDto,
   PrtrQuantityDto,
@@ -190,7 +192,7 @@ export function PrtrEntryScreen() {
 
   const entry = data?.entry ?? null;
   const methodChanged = entry !== null && entry.method !== method;
-  const hasRows = (data?.quantities.length ?? 0) + (data?.measured.length ?? 0) > 0;
+  const hasRows = (data?.quantityCount ?? 0) + (data?.measuredCount ?? 0) > 0;
 
   if (scope && scope.organisations.length === 0) {
     return (
@@ -332,17 +334,16 @@ export function PrtrEntryScreen() {
         </CardContent>
       </Card>
 
-      {entry && data && (
+      {entry && (
         <QuantitySection
           entryId={entry.id}
           method={entry.method}
-          rows={data.quantities}
           canSeeProducts={can("PRODUCT_VIEW")}
           onChanged={load}
         />
       )}
-      {entry && data && entry.method === "MEASURED" && (
-        <MeasuredSection entryId={entry.id} rows={data.measured} onChanged={load} />
+      {entry && entry.method === "MEASURED" && (
+        <MeasuredSection entryId={entry.id} onChanged={load} />
       )}
     </div>
   );
@@ -352,18 +353,18 @@ export function PrtrEntryScreen() {
 function QuantitySection({
   entryId,
   method,
-  rows,
   canSeeProducts,
   onChanged,
 }: {
   entryId: string;
   method: PrtrMethod;
-  rows: PrtrQuantityDto[];
   canSeeProducts: boolean;
+  /** 件数が変わったことを上に知らせる（方法を変えるときの確認に使う） */
   onChanged: () => Promise<void>;
 }) {
   const { m, locale } = useI18n();
   const t = m.prtr.quantities;
+  const [data, setData] = useState<ListResponse<PrtrQuantityDto> | null>(null);
   const [form, setForm] = useState({ id: "", productCode: "", purchasedKg: "", shippedKg: "" });
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
@@ -417,6 +418,10 @@ function QuantitySection({
         kind: "enum",
         width: 90,
         className: "text-xs",
+        options: [
+          { value: "MANUAL", label: m.prtr.sources.MANUAL },
+          { value: "IMPORT", label: m.prtr.sources.IMPORT },
+        ],
         render: (q) => m.prtr.sources[q.source],
       },
       {
@@ -431,6 +436,30 @@ function QuantitySection({
     [t, m, locale, canSeeProducts],
   );
   const { state, setState } = useTableState(Q_KEY, columns, Q_STATE);
+
+  const loadRows = useCallback(async () => {
+    const res = await fetch(
+      `/api/prtr/entries/${entryId}/quantities?${serializeTableState(state, Q_STATE).toString()}`,
+    ).catch(() => null);
+    if (!res?.ok) {
+      if (res) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.loadFailed(res.status));
+      }
+      return;
+    }
+    setData((await res.json()) as ListResponse<PrtrQuantityDto>);
+  }, [entryId, state, m]);
+
+  useEffect(() => {
+    void loadRows();
+  }, [loadRows]);
+
+  /** 行を足した・直した・消したあと。表と、上の件数の両方を読み直す */
+  const changed = async () => {
+    await Promise.all([loadRows(), onChanged()]);
+  };
 
   async function save() {
     setError(null);
@@ -461,7 +490,7 @@ function QuantitySection({
       }
       setOpen(false);
       setForm({ id: "", productCode: "", purchasedKg: "", shippedKg: "" });
-      await onChanged();
+      await changed();
     } finally {
       setSaving(false);
     }
@@ -480,7 +509,7 @@ function QuantitySection({
         break;
       }
     }
-    await onChanged();
+    await changed();
   }
 
   return (
@@ -571,15 +600,13 @@ function QuantitySection({
         <DataTable
           storageKey={Q_KEY}
           columns={columns}
-          rows={rows}
+          rows={data?.items ?? []}
           rowKey={(q) => q.id}
-          total={rows.length}
+          total={data?.total ?? 0}
           state={state}
           defaultState={Q_STATE}
           onStateChange={setState}
           emptyMessage={t.empty}
-          showPager={false}
-          showFilters={false}
           selectable
           onDeleteSelected={(sel) => void removeSelected(sel)}
           rowAction={{
@@ -603,7 +630,7 @@ function QuantitySection({
           shippedRequired={method !== "MEASURED"}
           onClose={(applied) => {
             setImporting(null);
-            if (applied) void onChanged();
+            if (applied) void changed();
           }}
         />
       )}
@@ -614,15 +641,14 @@ function QuantitySection({
 /** 実測値（方法が実測値のときだけ） */
 function MeasuredSection({
   entryId,
-  rows,
   onChanged,
 }: {
   entryId: string;
-  rows: PrtrMeasuredDto[];
   onChanged: () => Promise<void>;
 }) {
   const { m, locale } = useI18n();
   const t = m.prtr.measured;
+  const [data, setData] = useState<ListResponse<PrtrMeasuredDto> | null>(null);
   const [form, setForm] = useState({ id: "", substanceCode: "", measuredKg: "" });
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
@@ -678,12 +704,39 @@ function MeasuredSection({
         kind: "enum",
         width: 90,
         className: "text-xs",
+        options: [
+          { value: "MANUAL", label: m.prtr.sources.MANUAL },
+          { value: "IMPORT", label: m.prtr.sources.IMPORT },
+        ],
         render: (x) => m.prtr.sources[x.source],
       },
     ],
     [t, m, locale],
   );
   const { state, setState } = useTableState(M_KEY, columns, M_STATE);
+
+  const loadRows = useCallback(async () => {
+    const res = await fetch(
+      `/api/prtr/entries/${entryId}/measured?${serializeTableState(state, M_STATE).toString()}`,
+    ).catch(() => null);
+    if (!res?.ok) {
+      if (res) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.loadFailed(res.status));
+      }
+      return;
+    }
+    setData((await res.json()) as ListResponse<PrtrMeasuredDto>);
+  }, [entryId, state, m]);
+
+  useEffect(() => {
+    void loadRows();
+  }, [loadRows]);
+
+  const changed = async () => {
+    await Promise.all([loadRows(), onChanged()]);
+  };
 
   async function save() {
     setError(null);
@@ -714,7 +767,7 @@ function MeasuredSection({
       }
       setOpen(false);
       setForm({ id: "", substanceCode: "", measuredKg: "" });
-      await onChanged();
+      await changed();
     } finally {
       setSaving(false);
     }
@@ -733,7 +786,7 @@ function MeasuredSection({
         break;
       }
     }
-    await onChanged();
+    await changed();
   }
 
   return (
@@ -812,15 +865,13 @@ function MeasuredSection({
         <DataTable
           storageKey={M_KEY}
           columns={columns}
-          rows={rows}
+          rows={data?.items ?? []}
           rowKey={(x) => x.id}
-          total={rows.length}
+          total={data?.total ?? 0}
           state={state}
           defaultState={M_STATE}
           onStateChange={setState}
           emptyMessage={t.empty}
-          showPager={false}
-          showFilters={false}
           selectable
           onDeleteSelected={(sel) => void removeSelected(sel)}
           rowAction={{
@@ -838,7 +889,7 @@ function MeasuredSection({
           file={importing}
           onClose={(applied) => {
             setImporting(null);
-            if (applied) void onChanged();
+            if (applied) void changed();
           }}
         />
       )}

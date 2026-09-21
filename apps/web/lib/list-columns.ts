@@ -955,3 +955,46 @@ export const CAS_LINK_DIFF_COLUMNS: QueryColumn[] = [
   { key: "kind", kind: "enum", field: "kind" },
   ...CAS_LINK_SCOPE_COLUMNS,
 ];
+
+/** PRTR 届出データ: 製品ごとの数量（S22）。キーは画面の TableColumn と揃える */
+export const PRTR_QUANTITY_COLUMNS: QueryColumn[] = [
+  {
+    key: "productCode",
+    kind: "text",
+    field: "codeNormalized",
+    nested: "product",
+    normalize: normalizeCode,
+  },
+  { key: "productName", kind: "text", field: "nameJa", nested: "product", caseInsensitive: true },
+  { key: "purchasedKg", kind: "number", field: "purchasedKg" },
+  { key: "shippedKg", kind: "number", field: "shippedKg" },
+  { key: "source", kind: "enum", field: "source" },
+  { key: "updatedAt", kind: "date", field: "updatedAt" },
+];
+
+/** PRTR 届出データ: 実測値（S22） */
+export const PRTR_MEASURED_COLUMNS: QueryColumn[] = [
+  {
+    key: "officialNumber",
+    kind: "text",
+    field: "officialNumber",
+    nested: "statutorySubstance",
+    caseInsensitive: true,
+  },
+  {
+    key: "statutoryName",
+    kind: "text",
+    field: "nameJa",
+    nested: "statutorySubstance",
+    caseInsensitive: true,
+  },
+  {
+    key: "substanceCode",
+    kind: "text",
+    field: "codeNormalized",
+    nested: "substance",
+    normalize: normalizeCode,
+  },
+  { key: "measuredKg", kind: "number", field: "measuredKg" },
+  { key: "source", kind: "enum", field: "source" },
+];
