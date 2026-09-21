@@ -59,7 +59,8 @@ export default function AccessStatsPage() {
             <Button
               key={d}
               size="sm"
-              variant={d === days ? "default" : "outline"}
+              variant="outline"
+              aria-pressed={d === days}
               onClick={() => setDays(d)}
             >
               {m.accessStats.lastDays(d)}

@@ -375,7 +375,7 @@ function Matrix({
           {dataToggle && (
             <Button
               size="sm"
-              variant={showData ? "default" : "outline"}
+              variant="outline"
               aria-pressed={showData}
               title={m.substanceMatrix.sourceDataHint}
               onClick={() => setShowData((v) => !v)}

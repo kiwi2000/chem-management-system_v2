@@ -35,7 +35,7 @@ import {
   type TreeRoot,
 } from "@/components/composition-tree";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { EditingBadge } from "@/components/editing-badge";
 import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -633,11 +633,7 @@ export function CompositionEditor({
           )}
           {onRequestEdit &&
             canEdit &&
-            (editing ? (
-              <Badge variant="secondary">{m.common.editMode}</Badge>
-            ) : (
-              <EditButton onClick={onRequestEdit} />
-            ))}
+            (editing ? <EditingBadge /> : <EditButton onClick={onRequestEdit} />)}
         </div>
       </CardHeader>
 
@@ -978,8 +974,8 @@ export function CompositionEditor({
                 <Button
                   type="button"
                   size="sm"
-                  // 押されているときは塗りつぶす（ほかの切り替えと同じ見せかた）
-                  variant={showSources ? "default" : "outline"}
+                  // 押されているときは濃い塗り（aria-pressed の見た目。ほかの切り替えと同じ）
+                  variant="outline"
                   aria-pressed={showSources}
                   title={m.composition.sourceHint}
                   onClick={() => setShowSources((v) => !v)}

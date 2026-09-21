@@ -50,9 +50,6 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
-  --color-header-button: var(--header-button);
-  --color-header-button-foreground: var(--header-button-foreground);
-  --color-header-button-border: var(--header-button-border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -116,13 +113,6 @@
    */
   --header: var(--background);
   --header-foreground: var(--foreground);
-  /*
-   * トップバーに置く、塗りのあるボタン（ログアウト）。既定は普通の枠線のボタンと同じ。
-   * 濃い帯のときは .header-strong が、帯の色を少し混ぜた白に差し替える
-   */
-  --header-button: var(--background);
-  --header-button-foreground: var(--foreground);
-  --header-button-border: var(--border);
   --table-head: transparent;
   --table-head-foreground: var(--foreground);
   --sidebar-header: var(--sidebar);
@@ -621,10 +611,6 @@
 .header-strong {
   --header: var(--strong);
   --header-foreground: var(--strong-foreground);
-  /* 帯の字色（ほぼ白）に帯の色を少し混ぜる。アイコンのボタン（15%）より白寄り */
-  --header-button: color-mix(in oklab, var(--strong-foreground) 82%, var(--strong));
-  --header-button-foreground: var(--strong);
-  --header-button-border: color-mix(in oklab, var(--strong-foreground) 55%, var(--strong));
   --table-head: var(--strong-head);
   --table-head-foreground: var(--strong-foreground);
   --sidebar-header: var(--strong);
@@ -707,26 +693,56 @@
 }
 
 /*
- * 「編集」ボタン（components/edit-button.tsx）。どの画面でも同じ見た目にする（2026-09-22 指示）。
- * 塗りはそのテーマの帯の色（--strong）を薄くしたグラデーションで、帯より明るい。文字は帯の文字色
+ * 角丸四角形のボタン（Button の outline。「編集」「戻る」「すべて開く」「ログアウト」など）は、
+ * どの画面でも同じ塗り（2026-09-22 指示）。背景色 7 割に、そのテーマの帯の色（--strong）を
+ * 薄くしたものを 3 割混ぜる。白っぽいまま、帯の色味と上下のグラデーションを帯びる。
+ * 枠線は黒でなく帯の色を薄めたもの。乗せた・開いたときは少し濃く、
+ * 押し込み（aria-pressed。「該当のみ表示」など）はさらに濃く枠線も帯の色にして、入っていると分かるようにする。
+ * 高コントラストは白黒をはっきりさせるのが目的なので、単色のまま
  */
-.edit-button {
-  color: var(--strong-foreground);
-  border-color: color-mix(in oklab, var(--strong) 75%, black);
-  background-color: oklch(from var(--strong) calc(l + 0.1) c h);
+[data-slot="button"][data-variant="outline"] {
+  border-color: color-mix(in oklab, var(--strong) 60%, var(--background));
+  background-color: color-mix(
+    in oklab,
+    var(--background) 70%,
+    oklch(from var(--strong) calc(l + 0.1) c h)
+  );
   background-image: linear-gradient(
     to bottom,
-    oklch(from var(--strong) calc(l + 0.16) c h),
-    oklch(from var(--strong) calc(l + 0.04) c h)
+    color-mix(in oklab, var(--background) 70%, oklch(from var(--strong) calc(l + 0.16) c h)),
+    color-mix(in oklab, var(--background) 70%, oklch(from var(--strong) calc(l + 0.04) c h))
   );
 }
-.edit-button:hover {
-  color: var(--strong-foreground);
+[data-slot="button"][data-variant="outline"]:hover,
+[data-slot="button"][data-variant="outline"][aria-expanded="true"] {
   background-image: linear-gradient(
     to bottom,
-    oklch(from var(--strong) calc(l + 0.12) c h),
-    oklch(from var(--strong) c h)
+    color-mix(in oklab, var(--background) 55%, oklch(from var(--strong) calc(l + 0.14) c h)),
+    color-mix(in oklab, var(--background) 55%, oklch(from var(--strong) calc(l + 0.02) c h))
   );
+}
+[data-slot="button"][data-variant="outline"][aria-pressed="true"] {
+  border-color: var(--strong);
+  /* 入のときは帯の色をほぼそのまま（薄めない）にして、切と見分けがつくようにする。少し沈めた影も */
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--background) 10%, oklch(from var(--strong) calc(l + 0.1) c h)),
+    color-mix(in oklab, var(--background) 10%, oklch(from var(--strong) calc(l - 0.02) c h))
+  );
+  box-shadow: inset 0 1px 3px oklch(from var(--strong) calc(l - 0.3) c h / 35%);
+}
+/* 「編集中」の印（components/editing-badge.tsx）。枠線は角丸四角形のボタンと同じ色 */
+.editing-badge {
+  border-color: color-mix(in oklab, var(--strong) 60%, var(--background));
+}
+.theme-contrast [data-slot="button"][data-variant="outline"] {
+  border-color: var(--border);
+  background-color: var(--background);
+  background-image: none;
+}
+.theme-contrast [data-slot="button"][data-variant="outline"][aria-pressed="true"] {
+  background-color: var(--foreground);
+  color: var(--background);
 }
 
 /*
@@ -835,9 +851,10 @@
       scrollbar-color: color-mix(in oklab, var(--primary) 55%, transparent) transparent;
     }
   }
+  /* 溝 12px・縁 3px で、つまみは 6px（乗せると 8px）に見える。4px はつまみづらかった（2026-09-22 指示） */
   *::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
   }
   *::-webkit-scrollbar-track,
   *::-webkit-scrollbar-corner {

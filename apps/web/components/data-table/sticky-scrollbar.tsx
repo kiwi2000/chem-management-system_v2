@@ -25,8 +25,8 @@ import { useI18n } from "@/lib/i18n-client";
  * ```
  */
 
-/** 帯の高さ。つまみ（10px）に上下の余白を足したぶん */
-const BAR_HEIGHT = 14;
+/** 帯の高さ。スクロールバーの溝（12px。globals.css）に上下の余白を足したぶん */
+const BAR_HEIGHT = 16;
 
 interface Placement {
   left: number;
