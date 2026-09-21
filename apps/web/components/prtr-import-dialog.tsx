@@ -212,100 +212,46 @@ export function PrtrImportDialog({
                   ))}
                 </tbody>
               </table>
-              <p className="text-muted-foreground text-xs">{t.rows(inspected.rowCount)}</p>
-            </section>
-          )}
-
-          {inspected && (
-            <section className="space-y-3">
-              {/* 数量は見出しと重複時の処理を 1 行に（行数を取らない）。意味はマウスを置くと出る */}
-              {kind === "quantities" ? (
-                <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <span className="font-medium">2. {t.mode}</span>
-                  {(["upsert", "replace"] as const).map((k) => (
-                    <label
-                      key={k}
-                      className="flex items-center gap-1.5"
-                      title={k === "upsert" ? t.modeUpsertHint : t.modeReplaceHint}
-                    >
-                      <input
-                        type="radio"
-                        name="prtr-mode"
-                        checked={mode === k}
-                        disabled={applied}
-                        onChange={() => {
-                          setMode(k);
-                          setResult(null);
-                        }}
-                      />
-                      {k === "upsert" ? t.modeUpsert : t.modeReplace}
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm font-medium">{t.step3}</p>
-              )}
-              {missing.length > 0 && (
-                <p className="text-destructive text-xs">
-                  {t.required(t.fields[missing[0]!.key as keyof typeof t.fields])}
-                  <span className="text-muted-foreground ml-2">{t.expected[kind]}</span>
-                </p>
-              )}
-              <div className="flex flex-wrap items-center gap-2">
+              {/*
+                行数の右に「検証」。押すと追加・上書き・エラーの件数がその右に並び、
+                右端の「インポート」で書き込む。検証は何も書き込まない（dryRun）
+              */}
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <span className="text-muted-foreground text-xs">{t.rows(inspected.rowCount)}</span>
                 <Button
                   size="sm"
                   variant="outline"
+                  className="ml-2"
                   disabled={busy || applied || missing.length > 0}
                   onClick={() => void run(true)}
                 >
-                  {t.preview}
+                  {t.verify}
                 </Button>
-                <span className="text-muted-foreground text-xs">{t.previewHint}</span>
-              </div>
-
-              {result && (
-                <div className="border-border bg-muted/30 space-y-2 border p-3 text-sm">
-                  <p>
-                    {t.readable(result.readable)}・{t.unreadable(result.unreadable)}
+                {result && (
+                  <span>
+                    {t.willAdd(result.willAdd)}・{t.willUpdate(result.willUpdate)}
+                    {result.willRemove > 0 && <>・{t.willRemove(result.willRemove)}</>}・
+                    <span className={result.unreadable > 0 ? "text-destructive" : undefined}>
+                      {t.errors(result.unreadable)}
+                    </span>
                     {kind === "quantities" && result.nameMismatch > 0 && (
-                      <span className="text-muted-foreground ml-2">
+                      <span className="text-muted-foreground ml-2 text-xs">
                         {t.nameMismatch(result.nameMismatch)}
                       </span>
                     )}
-                  </p>
-                  <p>
-                    {t.willAdd(result.willAdd)}・{t.willUpdate(result.willUpdate)}
-                    {result.willRemove > 0 && (
-                      <span className="ml-1">・{t.willRemove(result.willRemove)}</span>
-                    )}
-                  </p>
-                  {result.errors.length > 0 && (
-                    <ul className="text-destructive list-disc space-y-0.5 pl-5 text-xs">
-                      {result.errors.map((e, i) => (
-                        <li key={i}>
-                          {t.line(e.line)}: {e.message}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {/* 実測値: 既に値がある物質があれば、OK の答えが無いかぎり取り込まない */}
-                  {kind === "measured" && result.conflicts > 0 && !applied && (
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={overwrite}
-                        onChange={(e) => setOverwrite(e.target.checked)}
-                      />
-                      {t.overwriteAsk(result.conflicts)} {t.overwriteYes}
-                    </label>
-                  )}
-                  {applied ? (
-                    <p className="font-medium">{t.done(result.willAdd + result.willUpdate)}</p>
+                  </span>
+                )}
+                <div className="ml-auto">
+                  {applied && result ? (
+                    <span className="font-medium">
+                      {t.done(result.willAdd + result.willUpdate)}
+                    </span>
                   ) : (
                     <Button
                       size="sm"
                       disabled={
                         busy ||
+                        !result ||
                         result.readable === 0 ||
                         (kind === "measured" && result.conflicts > 0 && !overwrite)
                       }
@@ -315,8 +261,60 @@ export function PrtrImportDialog({
                     </Button>
                   )}
                 </div>
+              </div>
+              {missing.length > 0 && (
+                <p className="text-destructive text-xs">
+                  {t.required(t.fields[missing[0]!.key as keyof typeof t.fields])}
+                  <span className="text-muted-foreground ml-2">{t.expected[kind]}</span>
+                </p>
+              )}
+              {result && result.errors.length > 0 && (
+                <ul className="text-destructive list-disc space-y-0.5 pl-5 text-xs">
+                  {result.errors.map((e, i) => (
+                    <li key={i}>
+                      {t.line(e.line)}: {e.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {/* 実測値: 既に値がある物質があれば、OK の答えが無いかぎり取り込まない */}
+              {kind === "measured" && result && result.conflicts > 0 && !applied && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={overwrite}
+                    onChange={(e) => setOverwrite(e.target.checked)}
+                  />
+                  {t.overwriteAsk(result.conflicts)} {t.overwriteYes}
+                </label>
               )}
             </section>
+          )}
+
+          {/* 数量は重複時の処理を 1 行に（行数を取らない）。意味はマウスを置くと出る */}
+          {inspected && kind === "quantities" && (
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <span className="font-medium">{t.mode}</span>
+              {(["upsert", "replace"] as const).map((k) => (
+                <label
+                  key={k}
+                  className="flex items-center gap-1.5"
+                  title={k === "upsert" ? t.modeUpsertHint : t.modeReplaceHint}
+                >
+                  <input
+                    type="radio"
+                    name="prtr-mode"
+                    checked={mode === k}
+                    disabled={applied}
+                    onChange={() => {
+                      setMode(k);
+                      setResult(null);
+                    }}
+                  />
+                  {k === "upsert" ? t.modeUpsert : t.modeReplace}
+                </label>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
