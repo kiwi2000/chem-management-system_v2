@@ -871,6 +871,7 @@ export const en: Messages = {
       rose: "Rose",
       lavender: "Lavender",
       midnight: "Midnight",
+      caj: "CAJ",
       contrast: "High contrast",
     },
     themeDescriptions: {
@@ -887,6 +888,7 @@ export const en: Messages = {
       rose: "Based on a deeper pink",
       lavender: "Based on a pale purple",
       midnight: "A dark navy scheme — the blue counterpart to Dark",
+      caj: "The CA Japan website colours: white with deep red bars and buttons",
       contrast: "Strong black and white with heavier borders",
     },
     background: "Background",

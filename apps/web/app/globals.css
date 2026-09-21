@@ -466,6 +466,45 @@
 }
 
 /*
+ * CAJ: CA Japan（ca-japan.co.jp）のホームページの配色（2026-09-21 指示）。
+ * 白い地に薄い灰の罫線、見出しの帯とボタンは深い赤（えんじ）、押せるものには赤みのピンク。
+ * 「ヘッダーなどを濃くする」を入にすると、トップバーがホームページのメニューと同じ赤い帯になる。
+ */
+.theme-caj {
+  --background: oklch(0.995 0.002 20);
+  --foreground: oklch(0.25 0.01 20);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.01 20);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0.01 20);
+  /* メニューの帯の赤。ボタン・リンク・選択中の印に使う */
+  --primary: oklch(0.5 0.2 22);
+  --primary-foreground: oklch(0.99 0.005 20);
+  --secondary: oklch(0.96 0.006 20);
+  --secondary-foreground: oklch(0.35 0.08 20);
+  --muted: oklch(0.965 0.004 20);
+  --muted-foreground: oklch(0.5 0.02 20);
+  /* 「お問合せはこちら」のボタンの薄いピンク */
+  --accent: oklch(0.93 0.035 15);
+  --accent-foreground: oklch(0.4 0.14 20);
+  --destructive: oklch(0.52 0.22 27);
+  --border: oklch(0.9 0.006 20);
+  --input: oklch(0.9 0.006 20);
+  --ring: oklch(0.6 0.17 22);
+  --strong: oklch(0.5 0.2 22);
+  --strong-foreground: oklch(0.99 0.008 20);
+  --strong-head: oklch(0.43 0.18 20);
+  --sidebar: oklch(0.975 0.004 20);
+  --sidebar-foreground: oklch(0.25 0.01 20);
+  --sidebar-primary: oklch(0.5 0.2 22);
+  --sidebar-primary-foreground: oklch(0.99 0.005 20);
+  --sidebar-accent: oklch(0.93 0.035 15);
+  --sidebar-accent-foreground: oklch(0.4 0.14 20);
+  --sidebar-border: oklch(0.9 0.006 20);
+  --sidebar-ring: oklch(0.6 0.17 22);
+}
+
+/*
  * ミッドナイト: 濃紺の暗い配色。ダーク（黒＋金）の青版。
  * .dark と同じく暗い配色なので、暗い配色向けの分岐（`dark:` 指定）も効かせる。
  */

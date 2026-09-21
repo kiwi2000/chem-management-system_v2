@@ -908,6 +908,7 @@ export const ja = {
       rose: "ローズ",
       lavender: "ラベンダー",
       midnight: "ミッドナイト",
+      caj: "CAJ",
       contrast: "高コントラスト",
     },
     themeDescriptions: {
@@ -924,6 +925,7 @@ export const ja = {
       rose: "少し濃いピンクを基調にした配色",
       lavender: "淡い紫を基調にした配色",
       midnight: "濃紺の暗い配色。ダークの青バージョン",
+      caj: "CA Japan のホームページの配色。白い地に深い赤の帯とボタン",
       contrast: "白黒をはっきりさせ、枠線を強く出す",
     },
     background: "背景",

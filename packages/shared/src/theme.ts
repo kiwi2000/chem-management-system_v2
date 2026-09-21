@@ -19,6 +19,8 @@ export const THEMES = [
   "rose",
   "lavender",
   "midnight",
+  // 会社の配色
+  "caj",
   // その他
   "contrast",
 ] as const;
@@ -59,6 +61,7 @@ export const THEME_SWATCHES: Record<Theme, [string, string, string]> = {
   rose: ["oklch(0.985 0.008 350)", "oklch(0.27 0.04 350)", "oklch(0.55 0.17 355)"],
   lavender: ["oklch(0.985 0.012 300)", "oklch(0.27 0.04 300)", "oklch(0.53 0.16 295)"],
   midnight: ["oklch(0.18 0.025 265)", "oklch(0.95 0.015 250)", "oklch(0.68 0.13 245)"],
+  caj: ["oklch(0.995 0.002 20)", "oklch(0.25 0.01 20)", "oklch(0.5 0.2 22)"],
   contrast: ["oklch(1 0 0)", "oklch(0 0 0)", "oklch(0.35 0 0)"],
 };
 
@@ -86,5 +89,6 @@ export const THEME_STRONG_SWATCH: Record<Theme, string> = {
   rose: "oklch(0.58 0.215 15)",
   lavender: "oklch(0.52 0.19 295)",
   midnight: "oklch(0.24 0.04 265)",
+  caj: "oklch(0.5 0.2 22)",
   contrast: "oklch(0 0 0)",
 };
