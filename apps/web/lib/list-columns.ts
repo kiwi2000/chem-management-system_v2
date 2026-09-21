@@ -955,22 +955,3 @@ export const CAS_LINK_DIFF_COLUMNS: QueryColumn[] = [
   { key: "kind", kind: "enum", field: "kind" },
   ...CAS_LINK_SCOPE_COLUMNS,
 ];
-
-/** PRTR のグループ（S22）。キーは画面の TableColumn と揃える */
-export const PRTR_GROUP_COLUMNS: QueryColumn[] = [
-  { key: "code", kind: "text", field: "code", caseInsensitive: true },
-  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
-  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
-  { key: "prefecture", kind: "text", field: "prefecture", caseInsensitive: true },
-  { key: "employeeNum", kind: "number", field: "employeeNum" },
-  { key: "displayOrder", kind: "number", field: "displayOrder" },
-];
-
-/** PRTR の工場（S22） */
-export const PRTR_SITE_COLUMNS: QueryColumn[] = [
-  { key: "code", kind: "text", field: "code", caseInsensitive: true },
-  { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
-  { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
-  { key: "groupId", kind: "enum", field: "groupId" },
-  { key: "displayOrder", kind: "number", field: "displayOrder" },
-];

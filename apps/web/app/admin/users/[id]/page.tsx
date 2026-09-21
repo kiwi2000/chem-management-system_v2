@@ -9,11 +9,6 @@ import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
 import { OrganisationPicker } from "@/components/organisation-picker";
 import { PermissionPicker } from "@/components/permission-picker";
-import {
-  EMPTY_PRTR_SCOPE,
-  PrtrScopePicker,
-  type PrtrScopeValue,
-} from "@/components/prtr-scope-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,7 +38,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [newsGroupId, setNewsGroupId] = useState("");
   const [organisationIds, setOrganisationIds] = useState<string[]>([]);
-  const [prtrScope, setPrtrScope] = useState<PrtrScopeValue>(EMPTY_PRTR_SCOPE);
   const groups = useGroups();
   const organisations = useOrganisations();
   const [editing, setEditing] = useState(false);
@@ -75,7 +69,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setPermissions(u.permissions);
     setOrganisationIds(u.organisations.map((o) => o.id));
     setNewsGroupId(u.newsGroupId ?? "");
-    setPrtrScope({ siteId: u.prtrScope?.siteId ?? "", groupId: u.prtrScope?.groupId ?? "" });
     if (meRes.ok) setMe((await meRes.json()) as MeDto);
   }, [id, m]);
 
@@ -102,7 +95,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           activeFlag,
           organisationIds,
           newsGroupId: newsGroupId || null,
-          prtrScope: { siteId: prtrScope.siteId || null, groupId: prtrScope.groupId || null },
         }),
       });
       if (!res.ok) {
@@ -291,13 +283,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   {canPost ? m.users.newsGroupHint : m.users.newsGroupDisabled}
                 </p>
               </div>
-              {/* PRTR の担当（S22）。権限に合わせて工場かグループを選ぶ */}
-              <PrtrScopePicker
-                permissions={permissions}
-                value={prtrScope}
-                disabled={!editing}
-                onChange={setPrtrScope}
-              />
             </CardContent>
           </Card>
         </fieldset>

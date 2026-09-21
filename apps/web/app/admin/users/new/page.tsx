@@ -7,11 +7,6 @@ import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
 import { OrganisationPicker } from "@/components/organisation-picker";
 import { PermissionPicker } from "@/components/permission-picker";
-import {
-  EMPTY_PRTR_SCOPE,
-  PrtrScopePicker,
-  type PrtrScopeValue,
-} from "@/components/prtr-scope-picker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +33,6 @@ export default function NewUserPage() {
   const organisations = useOrganisations();
   const [newsGroupId, setNewsGroupId] = useState("");
   const groups = useGroups();
-  const [prtrScope, setPrtrScope] = useState<PrtrScopeValue>(EMPTY_PRTR_SCOPE);
   const [error, setError] = useState<string | null>(null);
   // どの項目が悪いのかを、その欄の下に出す
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -68,7 +62,6 @@ export default function NewUserPage() {
           permissions,
           organisationIds,
           newsGroupId: newsGroupId || null,
-          prtrScope: { siteId: prtrScope.siteId || null, groupId: prtrScope.groupId || null },
         }),
       });
       if (!res.ok) {
@@ -171,8 +164,6 @@ export default function NewUserPage() {
                 {canPost ? m.users.newsGroupHint : m.users.newsGroupDisabled}
               </p>
             </div>
-            {/* PRTR の担当（S22）。権限に合わせて工場かグループを選ぶ */}
-            <PrtrScopePicker permissions={permissions} value={prtrScope} onChange={setPrtrScope} />
           </CardContent>
         </Card>
 

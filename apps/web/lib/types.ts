@@ -60,8 +60,6 @@ export interface UserSummaryDto {
   organisations: { id: string; kind: OrganisationKind; nameJa: string; nameEn: string | null }[];
   /** 登録しているパスキーの数 */
   passkeyCount: number;
-  /** PRTR の担当（S22）。工場かグループのどちらか 1 つ。無ければ null */
-  prtrScope: PrtrScopeDto | null;
 }
 
 /** ログイン中の利用者（生きているセッション）1行 */
@@ -1259,101 +1257,4 @@ export interface LinkVersionSourceDto {
   loadedAt: string | null;
   /** この組み合わせで入っているリンクの数 */
   linkCount: number;
-}
-
-// ── PRTR（S22）────────────────────────────────────────────
-
-/** 利用者の担当。工場かグループのどちらか一方 */
-export interface PrtrScopeDto {
-  siteId: string | null;
-  siteName: string | null;
-  groupId: string | null;
-  groupName: string | null;
-}
-
-/** グループ（届出上の事業所） */
-export interface PrtrGroupDto {
-  id: string;
-  code: string;
-  nameJa: string;
-  nameKana: string | null;
-  nameEn: string | null;
-  zip: string | null;
-  prefecture: string | null;
-  city: string | null;
-  town: string | null;
-  prefectureKana: string | null;
-  cityKana: string | null;
-  townKana: string | null;
-  employeeNum: number | null;
-  displayOrder: number;
-  note: string | null;
-  /** 属する工場の数 */
-  siteCount: number;
-  /** 担当している利用者の数 */
-  userCount: number;
-  updatedAt: string;
-}
-
-/** 工場 */
-export interface PrtrSiteDto {
-  id: string;
-  code: string;
-  nameJa: string;
-  nameEn: string | null;
-  groupId: string;
-  groupCode: string;
-  groupNameJa: string;
-  groupNameEn: string | null;
-  displayOrder: number;
-  note: string | null;
-  userCount: number;
-  updatedAt: string;
-}
-
-/** 業種（届出の手引きの業種コード） */
-export interface PrtrIndustryDto {
-  id: string;
-  code: string;
-  name: string;
-  defaultMinisterId: string | null;
-  defaultMinisterName: string | null;
-  displayOrder: number;
-  active: boolean;
-}
-
-/** 主務大臣（届出先） */
-export interface PrtrMinisterDto {
-  id: string;
-  name: string;
-  displayOrder: number;
-  active: boolean;
-  /** この大臣を既定にしている業種の数 */
-  industryCount: number;
-}
-
-/** 事業者（届出者）。組織マスタの会社 1 件と、届出に要る項目 */
-export interface PrtrRegistrantDto {
-  organisationId: string;
-  organisationCode: string;
-  organisationNameJa: string;
-  organisationNameEn: string | null;
-  /** システム設定の既定の事業者か */
-  isDefault: boolean;
-  /** 届出者の項目をまだ入れていなければ false */
-  hasDetails: boolean;
-  nameKana: string | null;
-  representName: string | null;
-  representNameKana: string | null;
-  agentName: string | null;
-  agentNameKana: string | null;
-  corporateNumber: string | null;
-  lastYearCompanyName: string | null;
-  zip: string | null;
-  prefecture: string | null;
-  city: string | null;
-  town: string | null;
-  prefectureKana: string | null;
-  cityKana: string | null;
-  townKana: string | null;
 }

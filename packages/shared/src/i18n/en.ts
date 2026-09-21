@@ -75,13 +75,6 @@ export const en: Messages = {
   },
 
   nav: {
-    /** PRTR (S22) */
-    prtr: "PRTR",
-    prtrGroups: "Groups",
-    prtrSites: "Plants",
-    prtrIndustries: "Industries",
-    prtrMinisters: "Ministers",
-    prtrRegistrants: "Registrants",
     documents: "Documents",
     documentCreate: "Create",
     docTemplates: "Templates",
@@ -215,11 +208,6 @@ export const en: Messages = {
   },
 
   permissions: {
-    PRTR_SITE: "PRTR: register and view the data of their own plant",
-    PRTR_GROUP:
-      "PRTR: register and view every plant in their group, aggregate, and prepare reports",
-    PRTR_ADMIN:
-      "PRTR administration (company-wide totals; groups, plants, industries, ministers and registrants)",
     DOC_TEMPLATE_EDIT: "Can edit document templates",
     DOCUMENT_CREATE: "Can create documents (and see their own in the list)",
     DOCUMENT_DOWNLOAD: "Can open and download documents",
@@ -244,11 +232,6 @@ export const en: Messages = {
     ADMIN: "System administration (users, settings, audit log)",
   },
   permissionHints: {
-    PRTR_SITE:
-      'Assign the plant under "PRTR assignment" below. Without an assignment the PRTR screens stay empty',
-    PRTR_GROUP:
-      "Assign the group; the person can then register and correct the data of every plant in it. Includes the plant permission",
-    PRTR_ADMIN: "No assignment needed (all groups). Includes the group and plant permissions",
     PRODUCT_VIEW: "Also allows running assessments and reverse lookup",
     PRODUCT_EDIT: "Includes editing compositions: create, change, delete, TSV import",
     REGULATION_EDIT: "Includes metal conversion factors, sources and link versions",
@@ -269,7 +252,6 @@ export const en: Messages = {
     ADMIN: "Creating users, changing permissions, system settings, audit log",
   },
   permissionGroups: {
-    prtr: "PRTR",
     document: "Documents",
     organisation: "Organisations",
     product: "Products / Materials",
@@ -1652,16 +1634,6 @@ export const en: Messages = {
   },
 
   settings: {
-    /** PRTR (S22) */
-    prtrTitle: "PRTR",
-    prtrThresholdKg: "Reporting threshold for Class I substances (kg)",
-    prtrThresholdSpecificKg: "Reporting threshold for Specified Class I substances (kg)",
-    prtrThresholdHint:
-      "A group (reporting unit) whose annual handled amount reaches this value is marked as requiring a report. The law says 1,000 kg and 500 kg",
-    prtrDefaultRegistrant: "Default registrant",
-    prtrDefaultRegistrantNone: "(not set)",
-    prtrDefaultRegistrantHint:
-      'Pre-filled when a report is created. Chosen from the companies in the organisation master; the registrant details are entered on the PRTR "Registrants" screen',
     title: "System settings",
     description: "Adjust how strict the input checks are to match how you work.",
     substanceSection: "Substance CAS numbers",
@@ -1998,19 +1970,6 @@ export const en: Messages = {
   },
 
   users: {
-    /** PRTR assignment (S22): one plant or one group */
-    prtrScope: "PRTR assignment",
-    prtrScopeNone: "(none)",
-    prtrScopeSite: "Plant",
-    prtrScopeGroup: "Group",
-    prtrScopeHint:
-      "The plant permission needs a plant, the group permission needs a group. PRTR administrators see every group and need no assignment",
-    prtrScopeDisabled: "No PRTR permission, so nothing can be assigned",
-    prtrScopeSiteRequired: "The plant permission needs an assigned plant",
-    prtrScopeGroupRequired: "The group permission needs an assigned group",
-    prtrScopeAdminHasNone:
-      "PRTR administrators have no assignment (all groups). Remove the assignment",
-    prtrScopeAdmin: "PRTR administrators have no assignment (all groups)",
     title: "Users",
     organisation: "Organisations",
     organisationHint:
@@ -2277,109 +2236,6 @@ export const en: Messages = {
     },
   },
 
-  /** PRTR (S22): plant → group → company */
-  prtr: {
-    title: "PRTR",
-    description:
-      "Aggregation for PRTR reporting under the Chemical Substances Control Law. Plants enter data, groups (e.g. prefectures) report, and the company sees the totals above them",
-    viewOnly: "View only",
-    validation: {
-      zip: "Enter the postal code as 7 digits (the hyphen is optional)",
-      industryCode: "The industry code is 4 digits",
-      corporateNumber: "The corporate number is 13 digits",
-    },
-    groups: {
-      title: "Groups",
-      lead: "The reporting unit. If plants in the same prefecture report as one, make one group per prefecture. A group may hold a single plant",
-      code: "Code",
-      name: "Name",
-      nameKana: "Name (kana)",
-      nameEn: "Name (English)",
-      address: "Address for the report",
-      addressKana: "Address (kana)",
-      zip: "Postal code",
-      prefecture: "Prefecture",
-      city: "City",
-      town: "Town and street",
-      prefectureKana: "Prefecture (kana)",
-      cityKana: "City (kana)",
-      townKana: "Town and street (kana)",
-      employeeNum: "Number of regular employees",
-      employeeNumHint: "As of 1 April of the previous year. Printed on the report",
-      displayOrder: "Order",
-      note: "Note",
-      siteCount: "Plants",
-      userCount: "Assignees",
-      add: "+ Group",
-      newTitle: "New group",
-      empty: "No groups yet",
-      duplicateCode: (code: string) => `Code "${code}" is already in use`,
-      inUseSites: (n: number) => `This group still has ${n} plant(s). Move or delete them first`,
-      inUseUsers: (n: number) =>
-        `${n} user(s) are assigned to this group. Remove the assignments first`,
-      backToList: "Back to list",
-      saved: "Saved",
-    },
-    sites: {
-      title: "Plants",
-      lead: "The unit that enters quantities, method and values. Every plant belongs to a group",
-      code: "Code",
-      name: "Name",
-      nameEn: "Name (English)",
-      group: "Group",
-      note: "Note",
-      userCount: "Assignees",
-      add: "+ Plant",
-      empty: "No plants yet",
-      duplicateCode: (code: string) => `Code "${code}" is already in use`,
-      inUseUsers: (n: number) =>
-        `${n} user(s) are assigned to this plant. Remove the assignments first`,
-      groupMissing: "Choose a group",
-    },
-    industries: {
-      title: "Industries",
-      lead: "Chosen on the report form. The industry code list from the PRTR reporting guide is loaded as the default",
-      code: "Industry code",
-      name: "Industry",
-      minister: "Default addressee",
-      ministerNone: "(none)",
-      active: "In use",
-      add: "+ Industry",
-      empty: "No industries yet",
-      duplicateCode: (code: string) => `Industry code "${code}" is already in use`,
-    },
-    ministers: {
-      title: "Ministers",
-      lead: "The addressee of the report. Choosing an industry fills in its default minister",
-      name: "Name",
-      industryCount: "Industries using it as default",
-      active: "In use",
-      add: "+ Minister",
-      empty: "No ministers yet",
-      inUse: (n: number) => `${n} industr(y/ies) use this minister as default. Change them first`,
-    },
-    registrants: {
-      title: "Registrants",
-      lead: "The registrant printed on the report. Choose a company from the organisation master and add the details the report needs",
-      organisation: "Company",
-      noCompanies:
-        "No company in the organisation master. Register one on the Organisations screen first",
-      isDefault: "Default registrant",
-      nameKana: "Name (kana)",
-      representName: "Representative (title and name)",
-      representNameKana: "Representative (kana)",
-      agentName: "Agent (title and name)",
-      agentNameKana: "Agent (kana)",
-      corporateNumber: "Corporate number",
-      corporateNumberHint: "13 digits. Leave empty if none",
-      lastYearCompanyName: "Company name in the previous report",
-      lastYearCompanyNameHint: "Only when the name changed",
-      address: "Address",
-      addressKana: "Address (kana)",
-      empty: "No registrant details for this company yet. Press Edit to enter them",
-      saved: "Saved",
-    },
-  },
   organisations: {
     title: "Organisations",
     description:

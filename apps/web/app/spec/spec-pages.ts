@@ -14,7 +14,6 @@ export const SPEC_PAGES = [
   { href: "/spec/documents", label: "ドキュメントを作る" },
   { href: "/spec/images", label: "画像ライブラリ" },
   { href: "/spec/import-export", label: "データを出し入れする" },
-  { href: "/spec/prtr", label: "PRTR の集計と届出" },
   { href: "/spec/lists", label: "探す・絞り込む" },
   { href: "/spec/states", label: "公開までの流れ" },
   { href: "/spec/permissions", label: "だれが何をできるか" },

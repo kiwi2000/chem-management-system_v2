@@ -7,9 +7,7 @@ import { getServerMessages } from "@/lib/i18n";
 import {
   countActiveAdmins,
   resolveGroups,
-  resolvePrtrScope,
   setOrganisations,
-  setPrtrScope,
   setPermissions,
   toUserSummary,
   USER_INCLUDE,
@@ -56,14 +54,11 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const { displayName, permissions, activeFlag, newsGroupId, organisationIds, prtrScope } =
-    parsed.data;
+  const { displayName, permissions, activeFlag, newsGroupId, organisationIds } = parsed.data;
   const next = expandPermissions(permissions);
 
   const groups = await resolveGroups(newsGroupId ?? null, next, organisationIds ?? []);
   if (groups instanceof Response) return groups;
-  const scope = await resolvePrtrScope(prtrScope, next);
-  if (scope instanceof Response) return scope;
 
   // 締め出し防止: 自分自身の管理権限は外せない。管理者が0人になる操作もできない
   const losesAdmin = !next.includes("ADMIN") || !activeFlag;
@@ -81,7 +76,6 @@ export async function PUT(req: Request, { params }: Ctx) {
     data: { displayName: displayName ?? null, activeFlag, newsGroupId: groups.newsGroupId },
   });
   await setOrganisations(id, groups.organisationIds);
-  await setPrtrScope(id, scope);
   const granted = await setPermissions(id, next, actor.user.id);
 
   // 無効化・権限縮小をその場で効かせるため、対象ユーザーのセッションを切る

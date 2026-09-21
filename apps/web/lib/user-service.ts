@@ -18,13 +18,6 @@ export type UserWithPermissions = User & {
   newsGroup?: Pick<Group, "id" | "nameJa" | "nameEn"> | null;
   /** 所属する組織。種別を問わず何件でも */
   organisations?: { organisation: OrganisationRef }[];
-  /** PRTR の担当（S22）。当面は 0 か 1 件 */
-  prtrScopes?: {
-    siteId: string | null;
-    groupId: string | null;
-    site: { nameJa: string } | null;
-    group: { nameJa: string } | null;
-  }[];
   _count?: { passkeys: number };
 };
 
@@ -37,14 +30,6 @@ export const USER_INCLUDE = {
       organisation: {
         select: { id: true, kind: true, nameJa: true, nameEn: true, displayOrder: true },
       },
-    },
-  },
-  prtrScopes: {
-    select: {
-      siteId: true,
-      groupId: true,
-      site: { select: { nameJa: true } },
-      group: { select: { nameJa: true } },
     },
   },
   _count: { select: { passkeys: true } },
@@ -69,68 +54,7 @@ export function toUserSummary(u: UserWithPermissions) {
     ),
     // パスキーの数。2要素認証と同じく、入口の守りとして管理者に見せる
     passkeyCount: u._count?.passkeys ?? 0,
-    prtrScope: (() => {
-      const s = u.prtrScopes?.[0];
-      if (!s) return null;
-      return {
-        siteId: s.siteId,
-        siteName: s.site?.nameJa ?? null,
-        groupId: s.groupId,
-        groupName: s.group?.nameJa ?? null,
-      };
-    })(),
   };
-}
-
-/**
- * PRTR の担当（S22）を、権限に照らして確かめる。
- * 管理者は担当を持たない。グループ担当にはグループ、工場担当には工場が要る。
- * PRTR の権限が無い人の担当は捨てる（残しておくと、あとで権限を付けたときに古い担当が効く）
- */
-export async function resolvePrtrScope(
-  scope: { siteId?: string | null; groupId?: string | null } | null | undefined,
-  wantedPermissions: Permission[],
-): Promise<{ siteId: string | null; groupId: string | null } | null | Response> {
-  const m = await getServerMessages();
-  const granted = expandPermissions(wantedPermissions);
-  const siteId = scope?.siteId ?? null;
-  const groupId = scope?.groupId ?? null;
-  if (granted.includes("PRTR_ADMIN")) {
-    if (siteId || groupId) {
-      return jsonError(400, "validation_error", m.users.prtrScopeAdminHasNone);
-    }
-    return null;
-  }
-  if (granted.includes("PRTR_GROUP")) {
-    if (!groupId) return jsonError(400, "validation_error", m.users.prtrScopeGroupRequired);
-    const found = await prisma.prtrGroup.count({ where: { id: groupId, deletedAt: null } });
-    if (found === 0) return jsonError(400, "validation_error", m.errors.validation);
-    return { siteId: null, groupId };
-  }
-  if (granted.includes("PRTR_SITE")) {
-    if (!siteId) return jsonError(400, "validation_error", m.users.prtrScopeSiteRequired);
-    const found = await prisma.prtrSite.count({ where: { id: siteId, deletedAt: null } });
-    if (found === 0) return jsonError(400, "validation_error", m.errors.validation);
-    return { siteId, groupId: null };
-  }
-  return null;
-}
-
-/** 担当を置き換える。**当面は 1 人 1 行**（複数にするときは画面だけ直す） */
-export async function setPrtrScope(
-  userId: string,
-  scope: { siteId: string | null; groupId: string | null } | null,
-): Promise<void> {
-  await prisma.$transaction([
-    prisma.prtrUserScope.deleteMany({ where: { userId } }),
-    ...(scope
-      ? [
-          prisma.prtrUserScope.create({
-            data: { userId, siteId: scope.siteId, groupId: scope.groupId },
-          }),
-        ]
-      : []),
-  ]);
 }
 
 /**

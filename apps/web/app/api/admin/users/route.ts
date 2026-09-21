@@ -15,9 +15,7 @@ import { USER_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import {
   resolveGroups,
-  resolvePrtrScope,
   setOrganisations,
-  setPrtrScope,
   setPermissions,
   toUserSummary,
   USER_INCLUDE,
@@ -75,15 +73,8 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const {
-    email,
-    displayName,
-    permissions,
-    initialPassword,
-    newsGroupId,
-    organisationIds,
-    prtrScope,
-  } = parsed.data;
+  const { email, displayName, permissions, initialPassword, newsGroupId, organisationIds } =
+    parsed.data;
   const normalized = normalizeEmail(email);
 
   if (await prisma.user.findUnique({ where: { email: normalized } })) {
@@ -92,8 +83,6 @@ export async function POST(req: Request) {
 
   const groups = await resolveGroups(newsGroupId ?? null, permissions, organisationIds ?? []);
   if (groups instanceof Response) return groups;
-  const scope = await resolvePrtrScope(prtrScope, permissions);
-  if (scope instanceof Response) return scope;
 
   const created = await prisma.user.create({
     data: {
@@ -105,7 +94,6 @@ export async function POST(req: Request) {
     },
   });
   await setOrganisations(created.id, groups.organisationIds);
-  await setPrtrScope(created.id, scope);
   const granted = await setPermissions(created.id, permissions, actor.user.id);
 
   await writeAudit({

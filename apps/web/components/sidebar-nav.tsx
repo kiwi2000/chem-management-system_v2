@@ -7,10 +7,7 @@ import {
   Atom,
   BookMarked,
   BookOpen,
-  Briefcase,
   Building2,
-  Factory,
-  Landmark,
   ChevronRight,
   Download,
   Droplets,
@@ -128,22 +125,6 @@ const ITEMS: NavItem[] = [
         icon: Download,
         needs: "DATA_EXPORT",
       },
-    ],
-  },
-  {
-    /*
-      PRTR（S22）。工場 → グループ → 会社の 3 段。
-      入力・集計は工場担当から、マスタ（グループ・工場・業種・主務大臣・事業者）は管理者だけ
-    */
-    key: "prtr",
-    icon: Factory,
-    needs: ["PRTR_SITE", "PRTR_GROUP", "PRTR_ADMIN"],
-    children: [
-      { href: "/prtr/groups", key: "prtrGroups", icon: Building2, needs: "PRTR_ADMIN" },
-      { href: "/prtr/sites", key: "prtrSites", icon: Factory, needs: "PRTR_ADMIN" },
-      { href: "/prtr/industries", key: "prtrIndustries", icon: Briefcase, needs: "PRTR_ADMIN" },
-      { href: "/prtr/ministers", key: "prtrMinisters", icon: Landmark, needs: "PRTR_ADMIN" },
-      { href: "/prtr/registrants", key: "prtrRegistrants", icon: Building2, needs: "PRTR_ADMIN" },
     ],
   },
   {
@@ -403,8 +384,7 @@ export function SidebarNav({
   /** 親と、その配下の項目。配下を持つ見出しは押して開け閉めできる */
   const renderTree = (item: NavItem, indented: boolean) => {
     const children = (item.children ?? []).filter(allowed);
-    // 配下が 1 つも許されていない見出しは出さない（押しても何も開かない行を残さない）
-    if (children.length === 0) return item.href ? renderItem(item, indented) : null;
+    if (children.length === 0) return renderItem(item, indented);
 
     /*
       畳んだ状態から始める。ログインした直後にメニューが縦に長いと、
