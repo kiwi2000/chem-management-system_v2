@@ -218,37 +218,32 @@ export function PrtrImportDialog({
 
           {inspected && (
             <section className="space-y-3">
-              <p className="text-sm font-medium">{t.step3}</p>
-              {kind === "quantities" && (
-                <div className="space-y-1 text-sm">
-                  <p className="font-medium">{t.mode}</p>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="prtr-mode"
-                      checked={mode === "upsert"}
-                      disabled={applied}
-                      onChange={() => {
-                        setMode("upsert");
-                        setResult(null);
-                      }}
-                    />
-                    {t.modeUpsert}
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="prtr-mode"
-                      checked={mode === "replace"}
-                      disabled={applied}
-                      onChange={() => {
-                        setMode("replace");
-                        setResult(null);
-                      }}
-                    />
-                    {t.modeReplace}
-                  </label>
+              {/* 数量は見出しと重複時の処理を 1 行に（行数を取らない）。意味はマウスを置くと出る */}
+              {kind === "quantities" ? (
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <span className="font-medium">2. {t.mode}</span>
+                  {(["upsert", "replace"] as const).map((k) => (
+                    <label
+                      key={k}
+                      className="flex items-center gap-1.5"
+                      title={k === "upsert" ? t.modeUpsertHint : t.modeReplaceHint}
+                    >
+                      <input
+                        type="radio"
+                        name="prtr-mode"
+                        checked={mode === k}
+                        disabled={applied}
+                        onChange={() => {
+                          setMode(k);
+                          setResult(null);
+                        }}
+                      />
+                      {k === "upsert" ? t.modeUpsert : t.modeReplace}
+                    </label>
+                  ))}
                 </div>
+              ) : (
+                <p className="text-sm font-medium">{t.step3}</p>
               )}
               {missing.length > 0 && (
                 <p className="text-destructive text-xs">
