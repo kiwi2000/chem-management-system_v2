@@ -36,6 +36,7 @@ import type {
   PrtrSummaryRowDto,
 } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
+import { PRTR_SUMMARY_DEFAULT_STATE } from "@/lib/prtr-summary-table";
 import { useTableState } from "@/lib/use-table-state";
 
 const Q_KEY = "chem.table.prtrQuantities";
@@ -43,7 +44,7 @@ const M_KEY = "chem.table.prtrMeasured";
 const Q_STATE: TableState = emptyTableState([{ column: "productCode", direction: "asc" }]);
 const M_STATE: TableState = emptyTableState([{ column: "officialNumber", direction: "asc" }]);
 const S_KEY = "chem.table.prtrSummary";
-const S_STATE: TableState = emptyTableState([{ column: "officialNumber", direction: "asc" }]);
+const S_STATE: TableState = PRTR_SUMMARY_DEFAULT_STATE;
 
 const SELECT = "border-input bg-background h-8 rounded-none border px-2 text-sm";
 /** 取り込めるファイル。OS の選択画面ではこれだけ選べる */
@@ -367,22 +368,6 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
   const [data, setData] = useState<PrtrSummaryDto | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void (async () => {
-      const res = await fetch(`/api/prtr/entries/${entryId}/summary`).catch(() => null);
-      if (!res?.ok) {
-        if (res) {
-          if (redirectIfUnauthorized(res)) return;
-          const body = (await res.json().catch(() => null)) as ApiError | null;
-          setError(body?.error.message ?? m.errors.loadFailed(res.status));
-        }
-        return;
-      }
-      setError(null);
-      setData((await res.json()) as PrtrSummaryDto);
-    })();
-  }, [entryId, tick, m]);
-
   const columns = useMemo<TableColumn<PrtrSummaryRowDto>[]>(
     () => [
       {
@@ -390,8 +375,6 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         header: t.officialNumber,
         kind: "text",
         width: 130,
-        sortable: false,
-        filterable: false,
         className: "font-mono text-xs",
         render: (r) => r.officialNumber ?? "",
       },
@@ -400,18 +383,18 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         header: t.name,
         kind: "text",
         width: 340,
-        sortable: false,
-        filterable: false,
         render: (r) => pickStatutoryName(locale, r.nameOriginal, r.nameJa, r.nameEn),
       },
       {
         key: "kind",
         header: t.kind,
-        kind: "text",
+        kind: "enum",
         width: 100,
-        sortable: false,
-        filterable: false,
         className: "text-xs",
+        options: [
+          { value: "C1", label: t.kindClass1 },
+          { value: "SC1", label: t.kindSpecific },
+        ],
         render: (r) => (r.specific ? t.kindSpecific : t.kindClass1),
       },
       {
@@ -419,8 +402,6 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         header: t.productCount,
         kind: "number",
         width: 70,
-        sortable: false,
-        filterable: false,
         className: "text-right text-xs",
         render: (r) => String(r.productCount),
       },
@@ -429,8 +410,6 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         header: t.handledKg,
         kind: "number",
         width: 130,
-        sortable: false,
-        filterable: false,
         className: "text-right font-mono tabular-nums",
         render: (r) => r.handledKg,
       },
@@ -439,8 +418,6 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         header: t.shippedKg,
         kind: "number",
         width: 130,
-        sortable: false,
-        filterable: false,
         className: "text-right font-mono tabular-nums",
         render: (r) => r.shippedKg ?? "",
       },
@@ -449,19 +426,19 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         header: t.releaseKg,
         kind: "number",
         width: 130,
-        sortable: false,
-        filterable: false,
         className: "text-right font-mono tabular-nums",
         render: (r) => r.releaseKg ?? "",
       },
       {
         key: "needsReport",
         header: t.needsReport,
-        kind: "text",
+        kind: "enum",
         width: 90,
-        sortable: false,
-        filterable: false,
         className: "text-center",
+        options: [
+          { value: "yes", label: t.needsReportYes },
+          { value: "no", label: t.needsReportNo },
+        ],
         render: (r) =>
           r.needsReport ? (
             <Badge variant="destructive">{t.needsReportYes}</Badge>
@@ -473,6 +450,24 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
     [t, locale],
   );
   const { state, setState } = useTableState(S_KEY, columns, S_STATE);
+
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch(
+        `/api/prtr/entries/${entryId}/summary?${serializeTableState(state, S_STATE).toString()}`,
+      ).catch(() => null);
+      if (!res?.ok) {
+        if (res) {
+          if (redirectIfUnauthorized(res)) return;
+          const body = (await res.json().catch(() => null)) as ApiError | null;
+          setError(body?.error.message ?? m.errors.loadFailed(res.status));
+        }
+        return;
+      }
+      setError(null);
+      setData((await res.json()) as PrtrSummaryDto);
+    })();
+  }, [entryId, tick, state, m]);
 
   return (
     <Card defaultOpen>
@@ -499,15 +494,13 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         <DataTable
           storageKey={S_KEY}
           columns={columns}
-          rows={data?.rows ?? []}
+          rows={data?.items ?? []}
           rowKey={(r) => r.statutorySubstanceId}
-          total={data?.rows.length ?? 0}
+          total={data?.total ?? 0}
           state={state}
           defaultState={S_STATE}
           onStateChange={setState}
           emptyMessage={t.empty}
-          showPager={false}
-          showFilters={false}
         />
         {data && (
           <p className="text-muted-foreground text-xs">

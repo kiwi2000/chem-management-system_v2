@@ -16,7 +16,7 @@ import type {
   PrtrImportResultDto,
   PrtrMeasuredDto,
   PrtrQuantityDto,
-  PrtrSummaryDto,
+  PrtrSummaryMeta,
   PrtrSummaryRowDto,
 } from "@/lib/types";
 
@@ -558,7 +558,9 @@ const kg = (v: Prisma.Decimal) => v.toDecimalPlaces(3).toString();
  * 同じ製品が両方の区分で当たっても数量は 1 回しか足さない。
  * 判定がまだ無い製品（現在の版で判定していない製品）は数えて知らせ、集計には入れない
  */
-export async function summarizeEntry(entry: PrtrEntry): Promise<PrtrSummaryDto> {
+export async function summarizeEntry(
+  entry: PrtrEntry,
+): Promise<PrtrSummaryMeta & { rows: PrtrSummaryRowDto[] }> {
   const quantities = await prisma.prtrQuantity.findMany({
     where: { entryId: entry.id },
     select: { productId: true, purchasedKg: true, shippedKg: true },
