@@ -617,6 +617,42 @@
 }
 
 /*
+ * 濃くした帯と表の見出しは単色にせず、そのテーマの濃い色から上下のグラデーションを作る
+ * （2026-09-22 指示。CAJ の見た目をほかのテーマにも）。
+ * 帯: 上端 3px をやや暗い線にし、その下を「やや暗い → その色 → わずかに明るい」へ流す。
+ * 表の見出し: 「やや明るい → やや暗い」。色はテーマの --strong / --strong-head から混ぜて作るので、
+ * テーマごとに書かなくてよい。CAJ はサイトから取った色の指定（後ろの .theme-caj）が優先される。
+ * 高コントラストは白黒をはっきりさせるのが目的なので、単色のまま
+ */
+.header-strong .bg-header,
+.header-strong .bg-sidebar-header {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--strong) 80%, black) 0,
+    color-mix(in oklab, var(--strong) 80%, black) 3px,
+    color-mix(in oklab, var(--strong) 92%, black) 3px,
+    var(--strong) 40%,
+    color-mix(in oklab, var(--strong) 94%, white) 100%
+  );
+}
+.header-strong .table-head-solid {
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--strong-head) 88%, white),
+      color-mix(in oklab, var(--strong-head) 84%, black)
+    ),
+    var(--background);
+}
+.theme-contrast.header-strong .bg-header,
+.theme-contrast.header-strong .bg-sidebar-header {
+  background-image: none;
+}
+.theme-contrast.header-strong .table-head-solid {
+  background: linear-gradient(var(--table-head), var(--table-head)), var(--background);
+}
+
+/*
  * 背景の模様・挿絵。<html> に付くクラスで body に敷く。
  * どのテーマでも成立するよう、色は本文色を薄く混ぜたものだけを使う
  * （テーマごとに色を持たせない ＝ テーマ × 背景 の組み合わせが増えない）。
