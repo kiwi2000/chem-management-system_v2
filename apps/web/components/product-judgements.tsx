@@ -31,6 +31,7 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { setBusyCursor } from "@/lib/busy-cursor";
 import { JUDGEMENTS_CHANGED } from "@/lib/judgements-refresh";
 import { useI18n } from "@/lib/i18n-client";
+import { NEAR_MISS_CLASS } from "@/lib/mark-styles";
 import { cn } from "@/lib/utils";
 import type { ApiError, JudgementHitDto, ProductJudgementDto } from "@/lib/types";
 
@@ -138,12 +139,12 @@ export function ProductJudgements({
   /** 開いている法律。鍵は「国コード/法律コード」（同じ法律コードが国をまたぐことはないが、念のため） */
   const [openLaws, setOpenLaws] = useState<Set<string>>(new Set());
   /**
-   * 該当したものだけに絞るか。**既定は絞る。**
+   * 非該当も出すか。**既定は出さない。**
    * ふだん見たいのは当たったものだけだが、**非該当に直した判定を戻す口が要る**のと、
-   * 「入っているが含有率が足りない」法文物質名を確かめたいことがあるので、外して全部出せる
-   * （組成の表の「含有率不足による非該当」と同じもの。2026-09-15 決定）
+   * 「入っているが含有率が足りない」法文物質名を確かめたいことがあるので、押して全部出せる
+   * （組成の表の「含有率不足による非該当」と同じもの。2026-09-15 決定。見せ方も同じにした 2026-09-22）
    */
-  const [onlyApplicable, setOnlyApplicable] = useState(true);
+  const [showNotApplicable, setShowNotApplicable] = useState(false);
   /**
    * 判定対象日。入れると、その日に効いている規制でその場で判定し直して出す（保存しない）。
    * 空なら保存してある判定。判定の確認や修正は、保存してある判定にだけできる
@@ -274,7 +275,7 @@ export function ProductJudgements({
   }
 
   const applicable = items.filter((j) => j.verdict === "APPLICABLE");
-  const shown = onlyApplicable ? applicable : items;
+  const shown = showNotApplicable ? items : applicable;
   const review = shown.filter((j) => j.needsReview);
 
   /*
@@ -513,15 +514,28 @@ export function ProductJudgements({
               className="h-8 w-36"
             />
           </label>
+          {/*
+            非該当も出す切り替え。組成の表の「含有率不足による非該当」と同じ見せ方:
+            押しているときは字と印を橙の太字にし、件数はボタンの外に出す（押しても増えないことがある）
+          */}
           <Button
             type="button"
             size="sm"
-            variant={onlyApplicable ? "default" : "outline"}
-            aria-pressed={onlyApplicable}
-            onClick={() => setOnlyApplicable(!onlyApplicable)}
+            variant="outline"
+            aria-pressed={showNotApplicable}
+            title={m.judgements.notApplicableHint}
+            onClick={() => setShowNotApplicable((v) => !v)}
+            className={cn(
+              showNotApplicable &&
+                cn(NEAR_MISS_CLASS, "hover:text-orange-600 dark:hover:text-orange-400 font-bold"),
+            )}
           >
-            {m.judgements.onlyApplicable}
+            <TriangleAlert className="mr-1 size-3.5" />
+            {m.judgements.notApplicableShow}
           </Button>
+          <span className="text-muted-foreground text-sm">
+            {m.judgements.notApplicableCount(items.length - applicable.length)}
+          </span>
         </div>
       </CardHeader>
 
@@ -728,13 +742,11 @@ export function ProductJudgements({
                                               <OneLine text={g.label} />
                                             </button>
                                           ) : (
-                                            <OneLine text={g.label} />
-                                          )}
-                                          {/* 区分そのものが単位のときだけ、非該当のラベルをここに付ける（絞りを外したとき） */}
-                                          {own && own.verdict !== "APPLICABLE" && (
-                                            <Badge variant="secondary" className="mt-0.5">
-                                              {m.judgements.notApplicable}
-                                            </Badge>
+                                            /* 区分そのものが単位のとき、非該当なら名前を ⚠ 付きの橙色の字にする（非該当を出しているとき） */
+                                            <OneLine
+                                              text={g.label}
+                                              notApplicable={!!own && own.verdict !== "APPLICABLE"}
+                                            />
                                           )}
                                         </TableCell>
                                         <TableCell className={CELL} />
@@ -822,16 +834,14 @@ export function ProductJudgements({
                                                   {j.officialNumber ?? ""}
                                                 </TableCell>
                                                 <TableCell className={cn(CELL, "align-top")}>
-                                                  <OneLine text={unitName(j, locale, m)} />
                                                   {/*
-                                                    判定の列は置いていない。絞りを外したときだけ、
-                                                    非該当のものにここでラベルを付ける（ラベルが無い＝該当）
+                                                    判定の列は置いていない。非該当を出しているときだけ、
+                                                    非該当のものは名前が ⚠ 付きの橙色の字になる（組成の表と同じ印。普通の字＝該当）
                                                   */}
-                                                  {j.verdict !== "APPLICABLE" && (
-                                                    <Badge variant="secondary" className="mt-0.5">
-                                                      {m.judgements.notApplicable}
-                                                    </Badge>
-                                                  )}
+                                                  <OneLine
+                                                    text={unitName(j, locale, m)}
+                                                    notApplicable={j.verdict !== "APPLICABLE"}
+                                                  />
                                                   {/* 施行前に登録した法文物質名。該非は変えず、何であるかだけ分かるようにする */}
                                                   {j.notYetEffective && j.effectiveFrom && (
                                                     <Badge variant="outline" className="mt-1">
@@ -1194,12 +1204,20 @@ export function unitName(
   return `${j.statutoryName} ${m.judgements.asElement(locale === "ja" ? j.asElement.nameJa : j.asElement.nameEn)}`;
 }
 
-export function OneLine({ text }: { text: string }) {
+export function OneLine({ text, notApplicable }: { text: string; notApplicable?: boolean }) {
+  const { m } = useI18n();
   return (
     <div
-      className="overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      title={text}
+      className={cn(
+        "overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        notApplicable && NEAR_MISS_CLASS,
+      )}
+      title={notApplicable ? text + "\n" + m.judgements.notApplicable : text}
     >
+      {/* 非該当の印。組成の表の「含有率不足による非該当」と同じ三角 */}
+      {notApplicable && (
+        <TriangleAlert className="mr-0.5 inline size-3 align-[-0.1em]" aria-hidden />
+      )}
       {text}
     </div>
   );

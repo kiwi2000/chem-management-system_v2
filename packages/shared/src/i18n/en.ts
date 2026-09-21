@@ -1124,7 +1124,10 @@ export const en: Messages = {
     warning: "Warning",
     applicable: "Applies",
     notApplicable: "Does not apply",
-    onlyApplicable: "Applicable only",
+    notApplicableShow: "Below the threshold",
+    notApplicableCount: (n: number) => `${n}`,
+    notApplicableHint:
+      "Also shows the listed substances that do not apply (below the threshold, or set to not applicable by a person), in orange with a warning sign",
     needsReview: "Needs checking",
     needsReviewHint:
       "Check the conditions under which this applies, and change the verdict if needed.",

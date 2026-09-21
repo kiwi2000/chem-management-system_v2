@@ -1166,7 +1166,14 @@ export const ja = {
     warning: "警告",
     applicable: "該当",
     notApplicable: "非該当",
-    onlyApplicable: "該当のみ表示",
+    /**
+     * 非該当も出すか。組成の表の「含有率不足による非該当」と同じ見せ方
+     * （押し込み・件数はボタンの外・行は ⚠ 付きの橙色の字。2026-09-22 指示）
+     */
+    notApplicableShow: "含有率不足による非該当",
+    notApplicableCount: (n: number) => `${n} 件`,
+    notApplicableHint:
+      "該当していない法文物質名（含有率が足りないもの・人が非該当にしたもの）も、⚠ 付きの橙色の字で出します",
     needsReview: "要確認",
     needsReviewHint: "適用条件を確認し、必要があれば該非を変更して下さい。",
     byUser: "人が判断",
