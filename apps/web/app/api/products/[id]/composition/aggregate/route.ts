@@ -20,7 +20,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * 見えかたの判定は1段のときと同じ。製品が見えなければ404、組成が非開示なら403。
  * 途中の原材料が見えない場合は止めずに、その枝を「開けなかった」として返す。
  */
-export async function GET(_req: Request, { params }: Ctx) {
+export async function GET(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRODUCT_VIEW");
   if (actor instanceof Response) return actor;
   const { id } = await params;
@@ -34,7 +34,11 @@ export async function GET(_req: Request, { params }: Ctx) {
     return jsonError(403, "forbidden", m.composition.withheld);
   }
 
-  const result = await aggregateComposition(actor, id);
+  // 判定対象日。判定の API と同じ書式・同じ意味（その日の規制でその場で判定。保存しない）
+  const asOf = new URL(req.url).searchParams.get("asOf");
+  if (asOf && (!/^\d{4}-\d{2}-\d{2}$/.test(asOf) || Number.isNaN(Date.parse(`${asOf}T00:00:00Z`))))
+    return jsonError(400, "validation", m.validation.dateFormat);
+  const result = await aggregateComposition(actor, id, asOf);
 
   // 見たことを残す。末端まで下ろした表なので、持ち出されたときの重みは1段より大きい
   await recordCompositionView({

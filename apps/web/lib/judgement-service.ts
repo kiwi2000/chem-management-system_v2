@@ -132,8 +132,10 @@ const JUDGEMENT_SELECT = {
               nameJa: true,
               nameEn: true,
               displayOrder: true,
-              // 地域の名前も出す（国の左の欄）
-              region: { select: { code: true, nameJa: true, nameEn: true, displayOrder: true } },
+              // 地域の名前も出す（国の左の欄）。id は合算表が地域ごとに列をまとめる鍵
+              region: {
+                select: { id: true, code: true, nameJa: true, nameEn: true, displayOrder: true },
+              },
             },
           },
         },
@@ -142,7 +144,7 @@ const JUDGEMENT_SELECT = {
   },
 } satisfies Prisma.ProductJudgementSelect;
 
-type JudgementRow = Prisma.ProductJudgementGetPayload<{ select: typeof JUDGEMENT_SELECT }>;
+export type JudgementRow = Prisma.ProductJudgementGetPayload<{ select: typeof JUDGEMENT_SELECT }>;
 
 /**
  * 判定対象日を指定して、その場で判定する。**保持しない。**
@@ -155,11 +157,28 @@ export async function toJudgementDtosAsOf(
   asOf: string,
   withHits: boolean,
 ): Promise<{ items: ProductJudgementDto[]; versionCode: string | null }> {
+  const { rows, version } = await computeJudgementRowsAsOf(productId, asOf);
+  if (!version) return { items: [], versionCode: null };
+  return {
+    items: await buildJudgementDtos(rows, withHits, asOf, new Map()),
+    versionCode: version.code,
+  };
+}
+
+/**
+ * 判定対象日でその場で判定し、**保存してある判定と同じ形の行**にして返す。
+ * 判定表（DTO にする）と「原材料展開・CAS合算」（CAS ごとの該当法規制にする）の両方が使う。
+ * 同じ行から作るので、日付を入れたときも上下の表が食い違わない（2026-09-22 指示）
+ */
+export async function computeJudgementRowsAsOf(
+  productId: string,
+  asOf: string,
+): Promise<{ rows: JudgementRow[]; version: { id: string; code: string } | null }> {
   const version = await prisma.linkSetVersion.findFirst({
     where: { isCurrent: true, deletedAt: null },
     select: { id: true, code: true },
   });
-  if (!version) return { items: [], versionCode: null };
+  if (!version) return { rows: [], version: null };
   const [rules, factors, settings] = await Promise.all([
     loadRules(version.id, asOf),
     loadFactors(),
@@ -206,10 +225,7 @@ export async function toJudgementDtosAsOf(
       category,
     }));
   });
-  return {
-    items: await buildJudgementDtos(rows, withHits, asOf, new Map()),
-    versionCode: version.code,
-  };
+  return { rows, version };
 }
 
 /** 法文物質名の名前・番号・適用開始日などをまとめて引く */

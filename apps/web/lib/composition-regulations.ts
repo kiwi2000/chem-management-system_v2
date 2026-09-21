@@ -1,4 +1,5 @@
 import { IMPURITY_NONE } from "@chem/shared";
+import type { Prisma } from "@prisma/client";
 import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
 import { notDisabledIn } from "@/lib/enabled-sources";
@@ -120,48 +121,64 @@ async function linkDataOf(
  */
 export const casTypeKey = (cas: string, type?: string | null) => `${cas}@${type || IMPURITY_NONE}`;
 
-export async function regulationsByCas(
-  productId: string,
-): Promise<Map<string, RowRegulationDto[]>> {
-  // 判定は法規制バージョンごとにあるので、現在のバージョンの行だけを見る
-  const rows = await prisma.productJudgement.findMany({
-    where: { productId, verdict: "APPLICABLE", version: { isCurrent: true, deletedAt: null } },
+/** 該当法規制を組み立てるのに要る、判定の行の形（保存してある行も、その場で計算した行もこれを満たす） */
+const REGULATION_JUDGEMENT_SELECT = {
+  categoryId: true,
+  needsReview: true,
+  hits: { select: { contributions: true, statutorySubstanceId: true } },
+  category: {
     select: {
-      categoryId: true,
-      needsReview: true,
-      hits: { select: { contributions: true, statutorySubstanceId: true } },
-      category: {
+      nameJa: true,
+      nameEn: true,
+      nameOriginal: true,
+      displayOrder: true,
+      aggregation: true,
+      metalEtc: true,
+      law: {
         select: {
           nameJa: true,
           nameEn: true,
           nameOriginal: true,
           displayOrder: true,
-          aggregation: true,
-          metalEtc: true,
-          law: {
+          country: {
             select: {
+              code: true,
               nameJa: true,
               nameEn: true,
-              nameOriginal: true,
               displayOrder: true,
-              country: {
-                select: {
-                  code: true,
-                  nameJa: true,
-                  nameEn: true,
-                  displayOrder: true,
-                  region: {
-                    select: { id: true, nameJa: true, nameEn: true, displayOrder: true },
-                  },
-                },
+              region: {
+                select: { id: true, nameJa: true, nameEn: true, displayOrder: true },
               },
             },
           },
         },
       },
     },
-  });
+  },
+} satisfies Prisma.ProductJudgementSelect;
+export type RegulationJudgement = Prisma.ProductJudgementGetPayload<{
+  select: typeof REGULATION_JUDGEMENT_SELECT;
+}>;
 
+export async function regulationsByCas(
+  productId: string,
+): Promise<Map<string, RowRegulationDto[]>> {
+  // 判定は法規制バージョンごとにあるので、現在のバージョンの行だけを見る
+  const rows = await prisma.productJudgement.findMany({
+    where: { productId, verdict: "APPLICABLE", version: { isCurrent: true, deletedAt: null } },
+    select: REGULATION_JUDGEMENT_SELECT,
+  });
+  return regulationsFromJudgements(rows);
+}
+
+/**
+ * 判定の行（該当のものだけ）から、「CAS × 不純物種別」→ 効いている区分 を組み立てる。
+ * 保存してある判定（`regulationsByCas`）のほか、判定対象日でその場で計算した行も渡せる
+ * （2026-09-22 指示。日付を入れたら合算表もその日の該非にする）
+ */
+export async function regulationsFromJudgements(
+  rows: RegulationJudgement[],
+): Promise<Map<string, RowRegulationDto[]>> {
   /*
     当たった法文物質名の中身は、判定の結果に id しか残っていないので引き直す。
     **区分そのものでまとめて当たったときは id が空**なので、その場合は名前が出ない
@@ -303,6 +320,13 @@ export async function regulationsByCas(
   return out;
 }
 
+/** 含有率不足を差し引くのに要る、判定の行の形 */
+export interface NearMissJudgement {
+  categoryId: string;
+  verdict: "APPLICABLE" | "NOT_APPLICABLE";
+  hits: { statutorySubstanceId: string | null; contributions: unknown; excluded: unknown }[];
+}
+
 /**
  * 「CAS は載っているのに、いまは当たっていない」法文物質名を CAS ごとに引く。
  *
@@ -320,6 +344,11 @@ export async function regulationsByCas(
 export async function nearMissByCas(
   productId: string,
   casNormalized: string[],
+  /**
+   * 判定対象日でその場で計算した判定。渡すと保存してある判定の代わりにこれで
+   * 「すでに当たっているもの」を差し引く（2026-09-22 指示）
+   */
+  computed?: NearMissJudgement[],
 ): Promise<Map<string, RowRegulationDto[]>> {
   const empty = new Map<string, RowRegulationDto[]>();
   const cas = [...new Set(casNormalized.filter((c) => c))];
@@ -396,15 +425,17 @@ export async function nearMissByCas(
         },
       },
     }),
-    prisma.productJudgement.findMany({
-      // **該当だけでなく全部引く。**非該当の理由を見分けるため（2026-09-19 報告）
-      where: { productId, versionId: version.id },
-      select: {
-        categoryId: true,
-        verdict: true,
-        hits: { select: { statutorySubstanceId: true, contributions: true, excluded: true } },
-      },
-    }),
+    computed
+      ? Promise.resolve(computed)
+      : prisma.productJudgement.findMany({
+          // **該当だけでなく全部引く。**非該当の理由を見分けるため（2026-09-19 報告）
+          where: { productId, versionId: version.id },
+          select: {
+            categoryId: true,
+            verdict: true,
+            hits: { select: { statutorySubstanceId: true, contributions: true, excluded: true } },
+          },
+        }),
   ]);
 
   /*

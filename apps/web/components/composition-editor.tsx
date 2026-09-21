@@ -945,6 +945,17 @@ export function CompositionEditor({
                         .join(" ・ ")}
                     </span>
                   )}
+                  {/* 判定対象日を入れているあいだは、この表もその日の判定（下の判定表と同じ断り） */}
+                  {controls.asOf && (
+                    <span
+                      className={cn(
+                        "text-muted-foreground text-xs font-normal",
+                        (showRaw || controls.versionCode) && "ml-2",
+                      )}
+                    >
+                      {m.judgements.asOfPreview(controls.asOf)}
+                    </span>
+                  )}
                   {/* 前提が計算より後に変わった。下の判定表と同じ注意をここにも出す（2026-09-22 指示） */}
                   {controls.stale && (
                     <span
