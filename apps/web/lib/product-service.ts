@@ -16,7 +16,7 @@ import type { ProductDetailDto, ProductListItemDto } from "@/lib/types";
 function judgementsInclude(versionId: string | null) {
   return {
     where: { versionId: versionId ?? "" },
-    select: { categoryId: true, verdict: true, needsReview: true },
+    select: { categoryId: true, verdict: true, needsReview: true, effective: true },
   } satisfies Prisma.Product$judgementsArgs;
 }
 
@@ -103,8 +103,11 @@ export function toListItem(p: ProductListRow, versionId: string | null): Product
     // この版で判定したか（判定の行が 0 件でも判定済みのことがある。「該当なし」とは別）
     judged: versionId !== null && p.expansion?.judgedVersionId === versionId,
     // 当たった区分の数（同じ区分に法文物質名が何件当たっても 1 と数える。2026-09-15 決定）
+    // 施行前・適用終了のものは該当に数えない（2026-09-22 決定）
     hitCount: new Set(
-      p.judgements.filter((j) => j.verdict === "APPLICABLE").map((j) => j.categoryId),
+      p.judgements
+        .filter((j) => j.verdict === "APPLICABLE" && j.effective === "IN_FORCE")
+        .map((j) => j.categoryId),
     ).size,
     needsReview: p.judgements.some((j) => j.needsReview),
   };

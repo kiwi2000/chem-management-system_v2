@@ -222,14 +222,11 @@ export interface JudgementHitDto {
   excluded: { cas: string; pct: string; type: string }[];
   /** 合算した含有率。**まとめたときだけ入る**（足していないものを足したように見せない） */
   total: string | null;
-  /** 法文物質名の適用開始日（YYYY-MM-DD）。無ければ空 */
+  /** 判定対象日にその法文物質名（区分）が効いているか。効いていなければ該当に数えない */
+  effective: JudgementEffectiveDto;
+  /** 効いていないとき、その根拠の適用開始日・終了日（YYYY-MM-DD）。効いていれば空 */
   effectiveFrom: string | null;
-  /**
-   * 適用開始日がまだ来ていない（施行前）。**該非は変えない。**
-   * 施行前に登録した法文物質名で当たったことが分かるように、印だけ出す。
-   * 保存した判定を読むときに今日の日付で決めるので、施行日が来れば印は自然に消える
-   */
-  notYetEffective: boolean;
+  effectiveTo: string | null;
   /**
    * この行を作った物質のスコア。寄与が複数あるときは合計。
    * 組成を見られない人には出さないので、`hits` ごと空になる。
@@ -239,6 +236,9 @@ export interface JudgementHitDto {
   /** スコアを段に読み替えたもの（システム設定の対応表）。どの段にも当たらなければ null */
   scoreRank?: string | null;
 }
+
+/** 判定対象日に、その法文物質名（区分）が効いているか（schema の JudgementEffective と同じ） */
+export type JudgementEffectiveDto = "IN_FORCE" | "NOT_YET" | "EXPIRED";
 
 /**
  * 製品ごと・区分ごとの法規制判定。
@@ -270,10 +270,18 @@ export interface ProductJudgementDto {
   applicableCondition: string | null;
   /** 元素換算でまとめて判定した法文物質名なら、その元素（「鉛として」の鉛） */
   asElement: AsElementDto | null;
-  /** 法文物質名の適用開始日（YYYY-MM-DD）。無ければ空 */
+  /** この判定の判定対象日（YYYY-MM-DD）。この日に効いている規制で見た判定 */
+  judgedAsOf: string;
+  /**
+   * 判定対象日に効いているか。IN_FORCE でなければ verdict は必ず NOT_APPLICABLE
+   * （施行前・適用終了の非該当。要確認も人の判断も付かない。2026-09-22 決定）
+   */
+  effective: JudgementEffectiveDto;
+  /** 効いていないのが区分ごとか、この法文物質名だけか。効いていれば null */
+  effectiveScope: "category" | "substance" | null;
+  /** 効いていないときの適用開始日・終了日（YYYY-MM-DD）。効いていれば空 */
   effectiveFrom: string | null;
-  /** 適用開始日がまだ来ていない（施行前）。該非は変えず、印だけ出す */
-  notYetEffective: boolean;
+  effectiveTo: string | null;
   lawCode: string;
   lawNameJa: string | null;
   lawNameEn: string | null;
@@ -346,8 +354,10 @@ export interface MatchedProductDto {
   /** 法文物質名の適用条件。要確認の理由に条文を出す（2026-09-20 指示） */
   applicableCondition: string | null;
   asElement: AsElementDto | null;
+  judgedAsOf: string;
+  effective: JudgementEffectiveDto;
   effectiveFrom: string | null;
-  notYetEffective: boolean;
+  effectiveTo: string | null;
   /**
    * 該当か非該当か。
    * **非該当のものも並ぶ。**確認が残っている（引っかからないと言い切れていない）ものは、

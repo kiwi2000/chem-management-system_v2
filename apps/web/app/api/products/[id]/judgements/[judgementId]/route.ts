@@ -72,9 +72,14 @@ export async function PUT(req: Request, { params }: Ctx) {
       premise: true,
       needsReview: true,
       reviewReasons: true,
+      effective: true,
     },
   });
   if (!current) return jsonError(404, "not_found", m.errors.notFound);
+  // 施行前・適用終了の法文物質名は該当に数えない非該当。判断の対象にしない（2026-09-22 決定）
+  if (current.effective !== "IN_FORCE") {
+    return jsonError(409, "not_in_force", m.judgements.cannotDecideNotInForce);
+  }
 
   // 判定を指定しなければ、いまの判定のまま「見た」ことだけを残す
   const next = (verdict as "APPLICABLE" | "NOT_APPLICABLE" | undefined) ?? current.verdict;

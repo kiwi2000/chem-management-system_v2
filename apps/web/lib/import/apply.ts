@@ -17,6 +17,7 @@ import type { CompositionPayload, ProductPayload } from "@/lib/import/stage-prod
 import type { SubstancePayload } from "@/lib/import/stage-substances";
 import { importActor, type ApplySummary, type RowKind } from "@/lib/import/types";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
+import { todayInJapan } from "@/lib/judgement-date";
 import { recomputeAllScores } from "@/lib/score-store";
 import { getAppSettings } from "@/lib/settings";
 import { ensureCasRepresentative } from "@/lib/substance-service";
@@ -809,13 +810,20 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
       where: { isCurrent: true, deletedAt: null },
       select: { id: true },
     });
+    // 取り込みの判定は今日を判定対象日にする（自動の判定と同じ）
+    const asOf = todayInJapan();
     const [rules, factors, settings] = version
-      ? await Promise.all([loadRules(version.id), loadFactors(), getAppSettings()])
+      ? await Promise.all([loadRules(version.id, asOf), loadFactors(), getAppSettings()])
       : [null, null, null];
     for (const id of targets) {
       await saveExpansion(id, await expandProduct(id));
       if (version && rules && factors && settings) {
-        await judgeProduct(id, rules, factors, settings.conditionalLinkMode, version.id);
+        await judgeProduct(id, rules, factors, {
+          asOf,
+          trigger: "IMPORT",
+          conditionalLinkMode: settings.conditionalLinkMode,
+          versionId: version.id,
+        });
       }
     }
   }

@@ -3,9 +3,9 @@ import { Prisma } from "@prisma/client";
 import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
 import { loadBands } from "@/lib/score-store";
-import { computeJudgements, loadFactors, loadRules, unitKey } from "@/lib/judge-store";
+import { unitKey } from "@/lib/judge-store";
+import { dayOf, effectiveOn, type Effective } from "@/lib/judgement-date";
 import { LAW_ORDER_SELECT, compareLawOrder, lawOrderKey } from "@/lib/law-order";
-import { getAppSettings } from "@/lib/settings";
 import type { JudgementHitDto, MatchedProductDto, ProductJudgementDto } from "@/lib/types";
 
 /**
@@ -60,7 +60,7 @@ export async function toJudgementDtos(
         return d ? [[key, d] as const] : [];
       }),
   );
-  return buildJudgementDtos(rows, withHits, todayInJapan(), dropped);
+  return buildJudgementDtos(rows, withHits, dropped);
 }
 
 /**
@@ -104,6 +104,8 @@ const JUDGEMENT_SELECT = {
   decidedNote: true,
   computedAt: true,
   versionId: true,
+  judgedAsOf: true,
+  effective: true,
   hits: {
     select: { statutorySubstanceId: true, total: true, contributions: true, excluded: true },
   },
@@ -118,6 +120,9 @@ const JUDGEMENT_SELECT = {
       score: true,
       aggregation: true,
       metalEtc: true,
+      // 区分ごと効いていないときの印に、区分の期間が要る
+      effectiveFrom: true,
+      effectiveTo: true,
       law: {
         select: {
           nameJa: true,
@@ -146,89 +151,7 @@ const JUDGEMENT_SELECT = {
 
 export type JudgementRow = Prisma.ProductJudgementGetPayload<{ select: typeof JUDGEMENT_SELECT }>;
 
-/**
- * 判定対象日を指定して、その場で判定する。**保持しない。**
- * その日に効いている区分と法文物質名（適用開始日・適用終了日で絞る）だけで、
- * 現在のバージョンの CAS リンクを使って計算する。「施行前」の印もその日で見る。
- * 前年度の報告のために 3 月時点で見たい、来年度の改正に備えて 4 月時点で見たい、というときのもの
- */
-export async function toJudgementDtosAsOf(
-  productId: string,
-  asOf: string,
-  withHits: boolean,
-): Promise<{ items: ProductJudgementDto[]; versionCode: string | null }> {
-  const { rows, version } = await computeJudgementRowsAsOf(productId, asOf);
-  if (!version) return { items: [], versionCode: null };
-  return {
-    items: await buildJudgementDtos(rows, withHits, asOf, new Map()),
-    versionCode: version.code,
-  };
-}
-
-/**
- * 判定対象日でその場で判定し、**保存してある判定と同じ形の行**にして返す。
- * 判定表（DTO にする）と「原材料展開・CAS合算」（CAS ごとの該当法規制にする）の両方が使う。
- * 同じ行から作るので、日付を入れたときも上下の表が食い違わない（2026-09-22 指示）
- */
-export async function computeJudgementRowsAsOf(
-  productId: string,
-  asOf: string,
-): Promise<{ rows: JudgementRow[]; version: { id: string; code: string } | null }> {
-  const version = await prisma.linkSetVersion.findFirst({
-    where: { isCurrent: true, deletedAt: null },
-    select: { id: true, code: true },
-  });
-  if (!version) return { rows: [], version: null };
-  const [rules, factors, settings] = await Promise.all([
-    loadRules(version.id, asOf),
-    loadFactors(),
-    getAppSettings(),
-  ]);
-  const results = await computeJudgements(productId, rules, factors, settings.conditionalLinkMode);
-  const categories = await prisma.regulationCategory.findMany({
-    where: { id: { in: results.map((r) => r.rule.categoryId) } },
-    select: { id: true, ...JUDGEMENT_SELECT.category.select },
-  });
-  const categoryOf = new Map(categories.map((c) => [c.id, c]));
-  const now = new Date();
-  const rows: JudgementRow[] = results.flatMap(({ rule, result }) => {
-    const found = categoryOf.get(rule.categoryId);
-    if (!found) return [];
-    const { id: _id, ...category } = found;
-    return result.units.map((u) => ({
-      // その場の計算なので行の id は無い。確認・修正はできないので、見分けられればよい
-      id: `asof:${rule.categoryId}:${u.statutorySubstanceId ?? ""}`,
-      categoryId: rule.categoryId,
-      statutorySubstanceId: u.statutorySubstanceId ?? "",
-      verdict: u.verdict,
-      source: "SYSTEM" as const,
-      systemVerdict: u.verdict,
-      needsReview: u.needsReview,
-      reviewReasons: u.reasons,
-      decidedBy: null,
-      decidedAt: null,
-      decidedNote: null,
-      computedAt: now,
-      versionId: version.id,
-      hits:
-        u.contributions.length > 0 || u.excluded.length > 0
-          ? [
-              {
-                statutorySubstanceId: u.statutorySubstanceId,
-                total: u.total === null ? null : new Prisma.Decimal(u.total),
-                contributions: u.contributions,
-                excluded: u.excluded,
-              },
-            ]
-          : [],
-      _count: { hits: u.contributions.length > 0 || u.excluded.length > 0 ? 1 : 0 },
-      category,
-    }));
-  });
-  return { rows, version };
-}
-
-/** 法文物質名の名前・番号・適用開始日などをまとめて引く */
+/** 法文物質名の名前・番号・適用期間などをまとめて引く */
 async function loadSubstanceInfo(ids: string[]) {
   if (ids.length === 0) return new Map<string, SubstanceInfo>();
   const rows = await prisma.statutorySubstance.findMany({
@@ -239,6 +162,7 @@ async function loadSubstanceInfo(ids: string[]) {
       nameOriginal: true,
       officialNumber: true,
       effectiveFrom: true,
+      effectiveTo: true,
       aggregation: true,
       metalEtc: true,
       // 要確認の文言に、実際の条文を出すため（2026-09-20 指示）
@@ -254,6 +178,7 @@ type SubstanceInfo = Prisma.StatutorySubstanceGetPayload<{
     nameOriginal: true;
     officialNumber: true;
     effectiveFrom: true;
+    effectiveTo: true;
     aggregation: true;
     metalEtc: true;
     applicableCondition: true;
@@ -261,14 +186,12 @@ type SubstanceInfo = Prisma.StatutorySubstanceGetPayload<{
 }>;
 
 /**
- * 判定の行を画面の形に組み立てる。`today` は「施行前」を決める日
- * （保存してある判定なら今日、判定対象日を指定した判定ならその日）。
+ * 判定の行を画面の形に組み立てる。
  * `dropped` は前提が変わって当てはめなかった人の判断（判定の単位ごと）
  */
 async function buildJudgementDtos(
   rows: JudgementRow[],
   withHits: boolean,
-  today: string,
   dropped: Map<string, DroppedDecision>,
 ): Promise<ProductJudgementDto[]> {
   // 根拠を伏せる相手には、区分ごとに 1 行にまとめる（法文物質名の名前も根拠のうち）
@@ -327,7 +250,8 @@ async function buildJudgementDtos(
   return shown
     .map((r) => {
       const info = r.statutorySubstanceId ? infoOf.get(r.statutorySubstanceId) : undefined;
-      const mark = effectiveMark(info?.effectiveFrom ?? null, today);
+      const mark = effectiveMark(r, info ?? null);
+      const inForce = r.effective === "IN_FORCE";
       return {
         id: r.id,
         categoryId: r.categoryId,
@@ -337,8 +261,7 @@ async function buildJudgementDtos(
         officialNumber: info?.officialNumber ?? null,
         applicableCondition: info?.applicableCondition ?? null,
         asElement: info ? asElementOf(elementNames, r.category, info) : null,
-        effectiveFrom: mark.effectiveFrom,
-        notYetEffective: mark.notYetEffective,
+        ...mark,
         lawCode: r.category.law.code,
         lawNameJa: r.category.law.nameJa,
         lawNameEn: r.category.law.nameEn,
@@ -352,18 +275,18 @@ async function buildJudgementDtos(
         categoryNameJa: r.category.nameJa,
         categoryNameEn: r.category.nameEn,
         categoryNameOriginal: r.category.nameOriginal,
-        verdict: r.verdict,
-        source: r.source,
+        // 効いていないものは該当に数えない（施行前・適用終了の非該当）。人の判断もここでは効かない
+        verdict: inForce ? r.verdict : "NOT_APPLICABLE",
+        source: inForce ? r.source : "SYSTEM",
         systemVerdict: r.systemVerdict,
-        needsReview: r.needsReview,
-        reviewReasons: r.reviewReasons,
-        decidedByName: r.decidedBy ? (userOf.get(r.decidedBy) ?? null) : null,
-        decidedAt: r.decidedAt?.toISOString() ?? null,
-        decidedNote: r.decidedNote,
-        droppedDecision: droppedOf(
-          dropped.get(unitKey(r.categoryId, r.statutorySubstanceId || null)),
-          userOf,
-        ),
+        needsReview: inForce && r.needsReview,
+        reviewReasons: inForce ? r.reviewReasons : [],
+        decidedByName: inForce && r.decidedBy ? (userOf.get(r.decidedBy) ?? null) : null,
+        decidedAt: inForce ? (r.decidedAt?.toISOString() ?? null) : null,
+        decidedNote: inForce ? r.decidedNote : null,
+        droppedDecision: inForce
+          ? droppedOf(dropped.get(unitKey(r.categoryId, r.statutorySubstanceId || null)), userOf)
+          : null,
         computedAt: r.computedAt.toISOString(),
         versionId: r.versionId,
         hits: withHits
@@ -389,7 +312,9 @@ async function buildJudgementDtos(
                 contributions,
                 excluded,
                 total: h.total?.toString() ?? null,
-                ...mark,
+                effective: mark.effective,
+                effectiveFrom: mark.effectiveFrom,
+                effectiveTo: mark.effectiveTo,
                 /*
                   その行を作った物質のスコア。**合算した行は寄与ぶんを足す。**
                   含有率を足して1行にしている以上、スコアも同じ数え方にそろえる
@@ -433,12 +358,13 @@ function foldByCategory(rows: JudgementRow[]): JudgementRow[] {
       });
       continue;
     }
+    const hit = (x: JudgementRow) => x.effective === "IN_FORCE" && x.verdict === "APPLICABLE";
     byCategory.set(r.categoryId, {
       ...cur,
-      verdict:
-        cur.verdict === "APPLICABLE" || r.verdict === "APPLICABLE"
-          ? "APPLICABLE"
-          : "NOT_APPLICABLE",
+      verdict: hit(cur) || hit(r) ? "APPLICABLE" : "NOT_APPLICABLE",
+      // どれか 1 つでも効いていれば、区分としては効いている
+      effective:
+        cur.effective === "IN_FORCE" || r.effective === "IN_FORCE" ? "IN_FORCE" : cur.effective,
       systemVerdict:
         cur.systemVerdict === "APPLICABLE" || r.systemVerdict === "APPLICABLE"
           ? "APPLICABLE"
@@ -468,23 +394,45 @@ function droppedOf(
 }
 
 /**
- * 今日の日付（YYYY-MM-DD）。**日本の日付で決める。**
- * サーバーの時計が UTC でも、施行日の朝に「施行前」と出さないため
- */
-function todayInJapan(): string {
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo" }).format(new Date());
-}
-
-/**
- * 適用開始日と「施行前」の印。適用開始日は日付だけの列（時刻なし、UTC の 0 時）なので
- * ISO 文字列の日付部分がそのまま登録した日付になる
+ * 「効いているか」の印。判定の行に付けた印（判定対象日で見たもの）をそのまま出し、
+ * 効いていないときは、区分ごとなのか法文物質名だけなのかと、その期間を添える。
+ * 区分の期間で効いていなければ区分ごと（区分が無効になる日は中の法文物質名も無効。2026-09-22 決定）
  */
 function effectiveMark(
-  effectiveFrom: Date | null,
-  today: string,
-): { effectiveFrom: string | null; notYetEffective: boolean } {
-  const from = effectiveFrom ? effectiveFrom.toISOString().slice(0, 10) : null;
-  return { effectiveFrom: from, notYetEffective: from !== null && from > today };
+  r: {
+    judgedAsOf: Date;
+    effective: Effective;
+    category: { effectiveFrom: Date | null; effectiveTo: Date | null };
+  },
+  info: { effectiveFrom: Date | null; effectiveTo: Date | null } | null,
+): {
+  judgedAsOf: string;
+  effective: Effective;
+  effectiveScope: "category" | "substance" | null;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
+} {
+  const judgedAsOf = dayOf(r.judgedAsOf) ?? "";
+  if (r.effective === "IN_FORCE") {
+    return {
+      judgedAsOf,
+      effective: "IN_FORCE",
+      effectiveScope: null,
+      effectiveFrom: null,
+      effectiveTo: null,
+    };
+  }
+  const byCategory = effectiveOn(r.category.effectiveFrom, r.category.effectiveTo, judgedAsOf);
+  const scope = byCategory !== "IN_FORCE" ? "category" : "substance";
+  const src =
+    scope === "category" ? r.category : (info ?? { effectiveFrom: null, effectiveTo: null });
+  return {
+    judgedAsOf,
+    effective: r.effective,
+    effectiveScope: scope,
+    effectiveFrom: dayOf(src.effectiveFrom),
+    effectiveTo: dayOf(src.effectiveTo),
+  };
 }
 
 /** スコアの合計。小数を落とさないよう、文字列のまま足す */
@@ -526,7 +474,8 @@ export async function toMatchedProducts(
   const where = {
     categoryId,
     versionId,
-    OR: [{ verdict: "APPLICABLE" as const }, { needsReview: true }],
+    // 効いていないもの（施行前・適用終了）は該当に数えない。要確認も付かないので並ばない
+    OR: [{ verdict: "APPLICABLE" as const, effective: "IN_FORCE" as const }, { needsReview: true }],
     product: { deletedAt: null, ...visibility },
   };
   const select = {
@@ -536,6 +485,8 @@ export async function toMatchedProducts(
     needsReview: true,
     reviewReasons: true,
     computedAt: true,
+    judgedAsOf: true,
+    effective: true,
     product: { select: { id: true, code: true, nameJa: true, nameEn: true, status: true } },
     hits: {
       select: { statutorySubstanceId: true, total: true, contributions: true, excluded: true },
@@ -555,12 +506,11 @@ export async function toMatchedProducts(
   const infoOf = await loadSubstanceInfo(
     withHits ? [...new Set(rows.map((r) => r.statutorySubstanceId).filter((v) => v !== ""))] : [],
   );
-  const today = todayInJapan();
   // 「鉛として」を添えるために、区分のまとめかたと元素の名前も引く
   const [category, elementNames] = await Promise.all([
     prisma.regulationCategory.findUniqueOrThrow({
       where: { id: categoryId },
-      select: { aggregation: true, metalEtc: true },
+      select: { aggregation: true, metalEtc: true, effectiveFrom: true, effectiveTo: true },
     }),
     loadElementNames(),
   ]);
@@ -569,7 +519,7 @@ export async function toMatchedProducts(
     rows
       .map((r) => {
         const info = r.statutorySubstanceId ? infoOf.get(r.statutorySubstanceId) : undefined;
-        const mark = effectiveMark(info?.effectiveFrom ?? null, today);
+        const mark = effectiveMark({ ...r, category }, info ?? null);
         return {
           productId: r.product.id,
           code: r.product.code,
@@ -581,8 +531,10 @@ export async function toMatchedProducts(
           officialNumber: info?.officialNumber ?? null,
           applicableCondition: info?.applicableCondition ?? null,
           asElement: info ? asElementOf(elementNames, category, info) : null,
+          judgedAsOf: mark.judgedAsOf,
+          effective: mark.effective,
           effectiveFrom: mark.effectiveFrom,
-          notYetEffective: mark.notYetEffective,
+          effectiveTo: mark.effectiveTo,
           verdict: r.verdict,
           source: r.source,
           needsReview: r.needsReview,
@@ -601,7 +553,9 @@ export async function toMatchedProducts(
                 }[],
                 excluded: (h.excluded ?? []) as { cas: string; pct: string; type: string }[],
                 total: h.total?.toString() ?? null,
-                ...mark,
+                effective: mark.effective,
+                effectiveFrom: mark.effectiveFrom,
+                effectiveTo: mark.effectiveTo,
               }))
             : [],
           hitsWithheld: !withHits && r._count.hits > 0,
@@ -633,6 +587,8 @@ function foldByProduct<
     needsReview: boolean;
     reviewReasons: string[];
     computedAt: Date;
+    judgedAsOf: Date;
+    effective: Effective;
     _count: { hits: number };
   },
 >(rows: R[]): R[] {

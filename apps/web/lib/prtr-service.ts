@@ -581,6 +581,8 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
             productId: { in: productIds },
             versionId: version.id,
             statutorySubstanceId: { not: "" },
+            // 施行前・適用終了のものは集計に載せない（2026-09-22 決定）
+            effective: "IN_FORCE",
             category: { law: { code: "JP-PRTR" }, code: { in: ["C1", "SC1"] } },
           },
           select: {

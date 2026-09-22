@@ -3,9 +3,10 @@ import { canViewComposition } from "@/lib/composition-service";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { toJudgementDtos, toJudgementDtosAsOf } from "@/lib/judgement-service";
+import { toJudgementDtos } from "@/lib/judgement-service";
+import { dayOf, todayInJapan } from "@/lib/judgement-date";
 import { visibilityWhere } from "@/lib/product-service";
-import { premisesChangedAt } from "@/lib/rejudge-job";
+import { boundaryCrossed, premisesChangedAt } from "@/lib/rejudge-job";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * 組成を見られない人には伏せる。伏せたことは画面に伝える
  * （空なのか伏せたのかが分からないと、入っていないと読まれてしまう）。
  */
-export async function GET(req: Request, { params }: Ctx) {
+export async function GET(_req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRODUCT_VIEW");
   if (actor instanceof Response) return actor;
   const { id } = await params;
@@ -29,28 +30,6 @@ export async function GET(req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-
-  /*
-    `asOf=YYYY-MM-DD` を付けると、**その日に効いている規制でその場で判定し直す**（保存しない）。
-    前年度の報告のために 3 月時点で見る、改正に備えて 4 月時点で見る、というときのもの
-  */
-  const asOf = new URL(req.url).searchParams.get("asOf");
-  if (asOf) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf) || Number.isNaN(Date.parse(`${asOf}T00:00:00Z`)))
-      return jsonError(400, "validation", m.validation.dateFormat);
-    const { items, versionCode } = await toJudgementDtosAsOf(
-      id,
-      asOf,
-      canViewComposition(actor, product),
-    );
-    return Response.json({
-      items,
-      computedAt: new Date().toISOString(),
-      versionCode,
-      stale: false,
-      asOf,
-    });
-  }
 
   /*
     **判定は法規制バージョンごとに持っている。出すのは現在のバージョンの行だけ**（2026-09-12 決定）。
@@ -72,12 +51,20 @@ export async function GET(req: Request, { params }: Ctx) {
     (acc, j) => (acc === null || j.computedAt > acc ? j.computedAt : acc),
     null,
   );
-  const changedAt = current ? await premisesChangedAt(current.id) : null;
+  const today = todayInJapan();
+  const [changedAt, crossed] = current
+    ? await Promise.all([
+        premisesChangedAt(current.id),
+        // 判定対象日から今日までに、施行日・適用終了日を跨いだ法文物質名・区分があるか（2026-09-22）
+        boundaryCrossed(current.id, today, id),
+      ])
+    : [null, false];
   const stale =
-    items.length > 0 &&
-    computedAt !== null &&
-    changedAt !== null &&
-    changedAt.toISOString() > computedAt;
+    (items.length > 0 &&
+      computedAt !== null &&
+      changedAt !== null &&
+      changedAt.toISOString() > computedAt) ||
+    crossed;
   // この版の判定は無いが、別の版では判定してある（＝切り替えたまま判定し直していない）
   const judgedElsewhere =
     items.length === 0 &&
@@ -88,7 +75,7 @@ export async function GET(req: Request, { params }: Ctx) {
   // この版で判定したか（判定の行が 0 件＝どの法規制にも関わらない、のこともある）
   const expansion = await prisma.productExpansion.findUnique({
     where: { productId: id },
-    select: { judgedVersionId: true },
+    select: { judgedVersionId: true, judgedAsOf: true },
   });
   const judged = current !== null && expansion?.judgedVersionId === current.id;
 
@@ -97,7 +84,12 @@ export async function GET(req: Request, { params }: Ctx) {
     computedAt,
     versionCode: current?.code ?? null,
     stale,
+    // 施行日・終了日を跨いだせいで古い（前提の変更とは別の理由。画面の文言を変える）
+    staleByDate: crossed,
     judgedElsewhere,
     judged,
+    // この判定の判定対象日と、今日（違えば「今日の規制ではない」と画面で断る）
+    judgedAsOf: judged ? dayOf(expansion?.judgedAsOf) : null,
+    today,
   });
 }

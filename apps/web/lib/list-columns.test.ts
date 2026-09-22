@@ -33,7 +33,10 @@ const NOT_DISABLED = { source: { versions: { none: { versionId: "v1", enabled: f
  * 入っていないと、前の版で当たっていた製品まで「該当あり」に数える
  */
 const PRODUCT_COLUMNS = productColumns("v1", true);
-const hit = { judgements: { some: { versionId: "v1", verdict: "APPLICABLE" } } };
+// 施行前・適用終了のものは該当に数えない（2026-09-22 決定）
+const hit = {
+  judgements: { some: { versionId: "v1", verdict: "APPLICABLE", effective: "IN_FORCE" } },
+};
 
 const where = (key: string, values: string[]) =>
   buildWhere(PRODUCT_COLUMNS, { [key]: { kind: "enum", values } });
@@ -109,7 +112,9 @@ describe("該当法規制の絞り込み", () => {
   const list = (values: string[], op: "all" | "any") =>
     buildWhere(PRODUCT_COLUMNS, { judgementCategories: { kind: "list", op, values } });
   const hit = (id: string) => ({
-    judgements: { some: { versionId: "v1", categoryId: id, verdict: "APPLICABLE" } },
+    judgements: {
+      some: { versionId: "v1", categoryId: id, verdict: "APPLICABLE", effective: "IN_FORCE" },
+    },
   });
 
   it("いずれかを含む", () => {
@@ -127,6 +132,7 @@ describe("該当法規制の絞り込み", () => {
       versionId: "v1",
       categoryId: "a",
       verdict: "APPLICABLE",
+      effective: "IN_FORCE",
     });
   });
 

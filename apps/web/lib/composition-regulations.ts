@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { asElementOf, loadElementNames } from "@/lib/as-element";
 import { prisma } from "@/lib/db";
 import { notDisabledIn } from "@/lib/enabled-sources";
+import { combineEffective, effectiveOn } from "@/lib/judgement-date";
 import type { RowRegulationDto, RowStatutoryDto } from "@/lib/types";
 
 /**
@@ -165,18 +166,20 @@ export async function regulationsByCas(
 ): Promise<Map<string, RowRegulationDto[]>> {
   // 判定は法規制バージョンごとにあるので、現在のバージョンの行だけを見る
   const rows = await prisma.productJudgement.findMany({
-    where: { productId, verdict: "APPLICABLE", version: { isCurrent: true, deletedAt: null } },
+    // 効いていないもの（施行前・適用終了）は該当に数えない（2026-09-22 決定）
+    where: {
+      productId,
+      verdict: "APPLICABLE",
+      effective: "IN_FORCE",
+      version: { isCurrent: true, deletedAt: null },
+    },
     select: REGULATION_JUDGEMENT_SELECT,
   });
   return regulationsFromJudgements(rows);
 }
 
-/**
- * 判定の行（該当のものだけ）から、「CAS × 不純物種別」→ 効いている区分 を組み立てる。
- * 保存してある判定（`regulationsByCas`）のほか、判定対象日でその場で計算した行も渡せる
- * （2026-09-22 指示。日付を入れたら合算表もその日の該非にする）
- */
-export async function regulationsFromJudgements(
+/** 判定の行（該当のものだけ）から、「CAS × 不純物種別」→ 効いている区分 を組み立てる */
+async function regulationsFromJudgements(
   rows: RegulationJudgement[],
 ): Promise<Map<string, RowRegulationDto[]>> {
   /*
@@ -320,13 +323,6 @@ export async function regulationsFromJudgements(
   return out;
 }
 
-/** 含有率不足を差し引くのに要る、判定の行の形 */
-export interface NearMissJudgement {
-  categoryId: string;
-  verdict: "APPLICABLE" | "NOT_APPLICABLE";
-  hits: { statutorySubstanceId: string | null; contributions: unknown; excluded: unknown }[];
-}
-
 /**
  * 「CAS は載っているのに、いまは当たっていない」法文物質名を CAS ごとに引く。
  *
@@ -345,10 +341,10 @@ export async function nearMissByCas(
   productId: string,
   casNormalized: string[],
   /**
-   * 判定対象日でその場で計算した判定。渡すと保存してある判定の代わりにこれで
-   * 「すでに当たっているもの」を差し引く（2026-09-22 指示）
+   * その製品の判定対象日（YYYY-MM-DD）。その日に効いていない法文物質名・区分は
+   * 「含有率不足」にも出さない（施行前・適用終了。2026-09-22 決定）。判定がまだ無ければ省く
    */
-  computed?: NearMissJudgement[],
+  asOf?: string | null,
 ): Promise<Map<string, RowRegulationDto[]>> {
   const empty = new Map<string, RowRegulationDto[]>();
   const cas = [...new Set(casNormalized.filter((c) => c))];
@@ -381,6 +377,8 @@ export async function nearMissByCas(
             deletedAt: true,
             aggregation: true,
             metalEtc: true,
+            effectiveFrom: true,
+            effectiveTo: true,
             regulationClass: {
               select: {
                 nameJa: true,
@@ -396,6 +394,8 @@ export async function nearMissByCas(
                     deletedAt: true,
                     aggregation: true,
                     metalEtc: true,
+                    effectiveFrom: true,
+                    effectiveTo: true,
                     // 判定に使わない区分は、含有率で該非が決まらない（2026-09-19 報告）
                     judged: true,
                     law: {
@@ -425,17 +425,16 @@ export async function nearMissByCas(
         },
       },
     }),
-    computed
-      ? Promise.resolve(computed)
-      : prisma.productJudgement.findMany({
-          // **該当だけでなく全部引く。**非該当の理由を見分けるため（2026-09-19 報告）
-          where: { productId, versionId: version.id },
-          select: {
-            categoryId: true,
-            verdict: true,
-            hits: { select: { statutorySubstanceId: true, contributions: true, excluded: true } },
-          },
-        }),
+    prisma.productJudgement.findMany({
+      // **該当だけでなく全部引く。**非該当の理由を見分けるため（2026-09-19 報告）
+      where: { productId, versionId: version.id },
+      select: {
+        categoryId: true,
+        verdict: true,
+        effective: true,
+        hits: { select: { statutorySubstanceId: true, contributions: true, excluded: true } },
+      },
+    }),
   ]);
 
   /*
@@ -483,7 +482,8 @@ export async function nearMissByCas(
   const exemptCategories = new Set<string>();
   for (const j of judgements) {
     for (const h of j.hits) {
-      if (j.verdict === "APPLICABLE") {
+      // 効いていないもの（施行前・適用終了）は当たっていない扱い。ただし含有率不足にも出さない（下で外す）
+      if (j.verdict === "APPLICABLE" && j.effective === "IN_FORCE") {
         if (h.statutorySubstanceId) hitSubstances.add(h.statutorySubstanceId);
         else hitCategories.add(j.categoryId);
         continue;
@@ -508,6 +508,15 @@ export async function nearMissByCas(
     if (cat.deletedAt || hitCategories.has(cat.id) || exemptCategories.has(cat.id)) continue;
     // 判定に使わない区分（IARC の分類など）は、含有率で該非が決まらない
     if (!cat.judged) continue;
+    // 判定対象日に効いていない法文物質名・区分は、配合が変わっても当たらないので出さない
+    if (
+      asOf &&
+      combineEffective(
+        effectiveOn(cat.effectiveFrom, cat.effectiveTo, asOf),
+        effectiveOn(sub.effectiveFrom, sub.effectiveTo, asOf),
+      ) !== "IN_FORCE"
+    )
+      continue;
     // 負けたデータソースの結び付きは出さない（判定でも見ていない）
     if ((rank.get(l.sourceId) ?? 99) !== winner.get(`${cat.id}/${l.casNormalized}`)) continue;
     // 勝ったのが非該当なら、その CAS はこの区分に当たらない（含有率不足でもない）

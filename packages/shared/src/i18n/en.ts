@@ -1097,9 +1097,17 @@ export const en: Messages = {
     stale: "Data has changed, so recomputing may change the result.",
     staleHint:
       "CAS links or thresholds changed after this judgement was computed. Re-judging may change the result",
+    judgedAsOf: (day: string) => `Judgement date ${day}`,
+    notToday: (day: string) => `Not today's regulations (judged as of ${day})`,
+    staleByDate:
+      "A listed substance came into force or expired after the judgement date; recalculating will change the result.",
     rejudge: "Recompute",
     rejudgeHint:
-      "Re-judges this product alone on the current premises. Other products stay as they are",
+      "Pick a judgement date and re-judge this product alone (the result is saved). Other products stay as they are",
+    rejudgeAsOf: "Judgement date",
+    rejudgeAsOfHint:
+      "Re-judges with the categories and listed substances in force on that date. Defaults to today; another date stays on record",
+    rejudgeRun: "Recompute as of this date",
     notJudgedForVersion: (version: string) =>
       `No judgement exists yet for regulation version ${version}. Judgements made under another version are not applied to this one. Ask a system administrator to run "Re-judge every product".`,
     title: "Regulatory judgement",
@@ -1129,6 +1137,8 @@ export const en: Messages = {
     notApplicableHint:
       "Also shows the listed substances that do not apply (below the threshold, or set to not applicable by a person), in orange with a warning sign",
     needsReview: "Needs checking",
+    cannotDecideNotInForce:
+      "This listed substance is not in force on the judgement date (not yet effective or expired), so it cannot be confirmed or changed.",
     needsReviewHint:
       "Check the conditions under which this applies, and change the verdict if needed.",
     byUser: "Decided by a person",
@@ -1136,11 +1146,9 @@ export const en: Messages = {
     categoryItself: "(category total)",
     asElement: (name: string) => `(as ${name})`,
     notYetEffective: (from: string) => `Not yet in force (from ${from})`,
-    asOf: "As of",
-    asOfHint:
-      "Enter a date to re-assess with the categories and statutory names in force on that day (not saved). Clear it to return to the saved assessment",
-    asOfPreview: (day: string) =>
-      `Assessment computed with the regulations in force on ${day}. It is not saved, so it cannot be checked or changed. Clear the date to return to the saved assessment`,
+    expired: (to: string) => `Expired (until ${to})`,
+    notYetCategory: (from: string) => `Category not yet in force (from ${from})`,
+    expiredCategory: (to: string) => `Category expired (until ${to})`,
     basisWithheld: "The basis is close to composition data, so it is not shown.",
     decidedBy: (who: string, when: string) => `Checked by ${who} on ${when}`,
     review: "Check this",
@@ -1672,6 +1680,9 @@ export const en: Messages = {
       review: "Mark for review",
     },
     rejudge: "Re-judge every product",
+    rejudgeAsOf: "Judgement date",
+    rejudgeAsOfHint:
+      "Re-judges every product with the regulations in force on that date. Defaults to today",
     rejudgeHint:
       "Changing CAS links, thresholds or source priorities does not re-run judgements by itself (only saving a composition re-judges that product and its parents). Switching the regulation version also needs a run here: judgements are stored per version, and the earlier version's results are kept. After changing regulation data, re-judge everything here. Many products can take tens of minutes; it runs in the background, so you may leave this page",
     rejudgeRunning: (done: number, total: number) =>

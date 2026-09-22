@@ -11,6 +11,7 @@ import {
   reasonTexts,
   unitName,
   type M,
+  effectiveLabel,
 } from "@/components/product-judgements";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -183,9 +184,10 @@ export function CategoryProducts({ categoryId }: { categoryId: string }) {
                 {(p.statutoryName !== null || p.hitsWithheld === false) && (
                   <OneLine text={unitName(p, locale, m)} />
                 )}
-                {p.notYetEffective && p.effectiveFrom && (
+                {/* 施行前・適用終了は該当に数えないので普通は並ばないが、要確認が残っていれば印付きで出る */}
+                {p.effective !== "IN_FORCE" && (
                   <Badge variant="outline" className="mt-1">
-                    {m.judgements.notYetEffective(p.effectiveFrom)}
+                    {effectiveLabel(m, { ...p, effectiveScope: "substance" })}
                   </Badge>
                 )}
                 {p.hitsWithheld && (

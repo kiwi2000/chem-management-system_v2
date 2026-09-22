@@ -729,3 +729,61 @@ describe("不純物種別による除外", () => {
     expect(first(r).reasons).not.toContain("conditionalExclusion");
   });
 });
+
+/**
+ * 判定対象日に効いていない法文物質名・区分（施行前・適用終了）。
+ * **該非は含有率で決めたまま持ち、印だけ付ける。**要確認と理由は付けない（2026-09-22 決定）
+ */
+describe("施行前・適用終了", () => {
+  it("効いている法文物質名は印が IN_FORCE で、これまでどおり", () => {
+    const r = judge(input({ lines: [line("7439-92-1", "1")] }));
+    expect(first(r).verdict).toBe("APPLICABLE");
+    expect(r.units[0]!.effective).toBe("IN_FORCE");
+  });
+
+  it("施行前の法文物質名は、当たっていても印 NOT_YET・要確認なし", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "1")],
+        entries: [entry({ effective: "NOT_YET", conditional: true })],
+      }),
+    );
+    const u = r.units[0]!;
+    // 該非そのものは含有率で決めたまま（人の判断を施行日の前後で外さないため）
+    expect(u.verdict).toBe("APPLICABLE");
+    expect(u.effective).toBe("NOT_YET");
+    expect(u.needsReview).toBe(false);
+    expect(u.reasons).toEqual([]);
+  });
+
+  it("適用終了の法文物質名は印 EXPIRED", () => {
+    const r = judge(
+      input({ lines: [line("7439-92-1", "1")], entries: [entry({ effective: "EXPIRED" })] }),
+    );
+    expect(r.units[0]!.effective).toBe("EXPIRED");
+  });
+
+  it("区分が効いていなければ、中の法文物質名が効いていても効かない", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "1")],
+        category: { aggregation: "NONE", metalEtc: null, threshold: any, effective: "EXPIRED" },
+        entries: [entry({ effective: "IN_FORCE" })],
+      }),
+    );
+    expect(r.units[0]!.effective).toBe("EXPIRED");
+  });
+
+  it("区分でまとめる区分が施行前なら、区分の単位に印 NOT_YET が付き要確認は付かない", () => {
+    const r = judge(
+      input({
+        lines: [line("7439-92-1", "1")],
+        unknownPct: "5",
+        category: { aggregation: "SUM", metalEtc: null, threshold: any, effective: "NOT_YET" },
+      }),
+    );
+    expect(r.unit).toBe("category");
+    expect(r.units[0]!.effective).toBe("NOT_YET");
+    expect(r.units[0]!.needsReview).toBe(false);
+  });
+});

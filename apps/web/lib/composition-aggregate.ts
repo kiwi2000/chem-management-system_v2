@@ -9,17 +9,16 @@ import {
   timesPct,
 } from "@chem/shared";
 import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
-import { computeJudgementRowsAsOf } from "@/lib/judgement-service";
 import {
   casTypeKey,
   currentSources,
   nearMissByCas,
   previousVersion,
   regulationsByCas,
-  regulationsFromJudgements,
 } from "@/lib/composition-regulations";
 import { listNumbersByCas, listInventoryColumns } from "@/lib/substance-numbers";
 import { prisma } from "@/lib/db";
+import { dayOf } from "@/lib/judgement-date";
 import { visibilityWhere } from "@/lib/product-service";
 import type { Actor } from "@/lib/authz";
 import type { CompositionAggregateDto } from "@/lib/types";
@@ -138,11 +137,6 @@ export async function expandComposition(
 export async function aggregateComposition(
   actor: Actor,
   rootProductId: string,
-  /**
-   * 判定対象日（YYYY-MM-DD）。入れると、該当法規制と含有率不足を**その日に効いている規制で
-   * その場で判定した結果**から作る（保存しない）。下の判定表の判定対象日と同じもの（2026-09-22 指示）
-   */
-  asOf?: string | null,
 ): Promise<CompositionAggregateDto> {
   const buckets = new Map<string, Bucket>();
   const blocked: CompositionAggregateDto["blocked"] = [];
@@ -296,16 +290,17 @@ export async function aggregateComposition(
     まだ判定していない製品では空になる。空＝該当なし ではないので、
     印が付かないことを「かかっていない」と読ませないよう、画面側で断る。
   */
-  // 判定対象日が入っていれば、その日の判定をその場で計算して同じ組み立てを通す
-  const asOfRows = asOf ? (await computeJudgementRowsAsOf(rootProductId, asOf)).rows : null;
-  const regulations = asOfRows
-    ? await regulationsFromJudgements(asOfRows.filter((r) => r.verdict === "APPLICABLE"))
-    : await regulationsByCas(rootProductId);
+  const regulations = await regulationsByCas(rootProductId);
   /*
     当たってはいないが、CAS が載っているもの。含有率が変われば規制を受けるので、
-    画面で切り替えて見られるようにする（既定は出さない）
+    画面で切り替えて見られるようにする（既定は出さない）。
+    施行前・適用終了のものは、この製品の判定対象日で見て外す
   */
-  const nearMiss = await nearMissByCas(rootProductId, casKeys, asOfRows ?? undefined);
+  const judged = await prisma.productExpansion.findUnique({
+    where: { productId: rootProductId },
+    select: { judgedAsOf: true },
+  });
+  const nearMiss = await nearMissByCas(rootProductId, casKeys, dayOf(judged?.judgedAsOf));
   // インベントリの番号（化審法番号・EC番号など）。物質の画面と同じ引きかた
   const numbers = await listNumbersByCas(casKeys, { all: true });
 

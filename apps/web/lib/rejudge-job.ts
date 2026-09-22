@@ -2,6 +2,7 @@ import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
 import { expandProduct, saveExpansion } from "@/lib/expansion-store";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
+import { todayInJapan } from "@/lib/judgement-date";
 import { isRejudgeNeeded } from "@/lib/rejudge-needed";
 import { getAppSettings } from "@/lib/settings";
 
@@ -31,6 +32,8 @@ export interface RejudgeStatus {
   finishedAt: string | null;
   /** 判定に使った法規制バージョン */
   versionCode: string | null;
+  /** 判定対象日（YYYY-MM-DD） */
+  asOf: string | null;
   /** 途中で止まったときの理由。正常に終われば null */
   error: string | null;
 }
@@ -42,6 +45,7 @@ const status: RejudgeStatus = {
   startedAt: null,
   finishedAt: null,
   versionCode: null,
+  asOf: null,
   error: null,
 };
 
@@ -53,7 +57,7 @@ export function rejudgeStatus(): RejudgeStatus {
  * 開始する。すでに走っていれば false（二重に走らせない）。
  * 実行は裏で続くので、呼ぶ側はすぐ戻る
  */
-export function startRejudge(actorId: string): boolean {
+export function startRejudge(actorId: string, asOf: string): boolean {
   if (status.running) return false;
   status.running = true;
   status.total = 0;
@@ -61,12 +65,13 @@ export function startRejudge(actorId: string): boolean {
   status.startedAt = new Date().toISOString();
   status.finishedAt = null;
   status.versionCode = null;
+  status.asOf = asOf;
   status.error = null;
-  void run(actorId);
+  void run(actorId, asOf);
   return true;
 }
 
-async function run(actorId: string) {
+async function run(actorId: string, asOf: string) {
   const started = Date.now();
   try {
     const version = await prisma.linkSetVersion.findFirst({
@@ -78,7 +83,7 @@ async function run(actorId: string) {
 
     // 法律側の決めごとは1回だけ読んで使い回す（製品ごとに引くと数十万件のリンクを何度も読む）
     const [rules, factors, settings] = await Promise.all([
-      loadRules(version.id),
+      loadRules(version.id, asOf),
       loadFactors(),
       getAppSettings(),
     ]);
@@ -92,7 +97,13 @@ async function run(actorId: string) {
     for (const p of products) {
       // 展開結果は物質の不純物種別を写し取っているので、ここから作り直す（2026-09-19）
       await saveExpansion(p.id, await expandProduct(p.id));
-      await judgeProduct(p.id, rules, factors, settings.conditionalLinkMode, version.id);
+      await judgeProduct(p.id, rules, factors, {
+        asOf,
+        trigger: "FULL",
+        actorId,
+        conditionalLinkMode: settings.conditionalLinkMode,
+        versionId: version.id,
+      });
       status.done += 1;
     }
 
@@ -100,9 +111,9 @@ async function run(actorId: string) {
       entity: "products",
       action: "determine",
       actorId,
-      diff: { rejudged: products.length, version: version.code, ms: Date.now() - started },
+      diff: { rejudged: products.length, version: version.code, asOf, ms: Date.now() - started },
     });
-    await recordFullRejudge(version.id, actorId);
+    await recordFullRejudge(version.id, actorId, asOf);
   } catch (e) {
     status.error = e instanceof Error ? e.message : String(e);
     console.error("rejudge failed:", e);
@@ -118,8 +129,8 @@ async function run(actorId: string) {
  */
 const LAST_FULL_KEY = "judge.last_full_rejudge";
 
-async function recordFullRejudge(versionId: string, actorId: string) {
-  const value = JSON.stringify({ at: new Date().toISOString(), versionId });
+async function recordFullRejudge(versionId: string, actorId: string, asOf: string) {
+  const value = JSON.stringify({ at: new Date().toISOString(), versionId, asOf });
   await prisma.systemSetting.upsert({
     where: { key: LAST_FULL_KEY },
     update: { value, updatedBy: actorId },
@@ -165,9 +176,11 @@ export async function rejudgeNeeded(): Promise<boolean> {
   if (!version) return false;
   // 走っている最中は、終われば消えるので出さない
   if (status.running) return false;
-  const [changedAt, lastFull, missing] = await Promise.all([
+  const [changedAt, lastFull, crossed, missing] = await Promise.all([
     premisesChangedAt(version.id),
     lastFullRejudge(version.id),
+    // 施行日・適用終了日を跨いだ判定（今日で見ると「効いている」印が変わる）が 1 つでもあるか
+    boundaryCrossed(version.id, todayInJapan()),
     /*
       組成があるのに、この版で判定していない製品。切り替えたまま判定し直していないもののほか、
       判定の持ちかたを変える移行で判定を捨てたあと（2026-09-15）もここに当たる。
@@ -185,7 +198,36 @@ export async function rejudgeNeeded(): Promise<boolean> {
     changedAt,
     lastFull,
     missing: missing > 0,
+    boundaryCrossed: crossed,
   });
+}
+
+/**
+ * 判定に付けた「効いている」印が、今日で見ると変わる判定があるか（2026-09-22 決定）。
+ * 判定対象日から今日までのあいだに、その法文物質名か区分の施行日・適用終了日を跨いだもの。
+ * データは変わっていないので `premisesChangedAt` では拾えない。
+ * `productId` を渡せばその製品だけ（製品の画面の「要再計算」）、省けば全体（左メニューの印）。
+ * 判定の行は法文物質名と外部キーを張っていないので、生の SQL で突き合わせる
+ */
+export async function boundaryCrossed(
+  versionId: string,
+  today: string,
+  productId?: string,
+): Promise<boolean> {
+  const rows = await prisma.$queryRaw<{ n: number }[]>`
+    SELECT count(*)::int AS n
+    FROM product_judgements pj
+    JOIN regulation_categories c ON c.id = pj.category_id
+    LEFT JOIN statutory_substances s ON s.id = pj.statutory_substance_id
+    WHERE pj.version_id = ${versionId}
+      AND (${productId ?? null}::text IS NULL OR pj.product_id = ${productId ?? null})
+      AND pj.effective::text <> (CASE
+        WHEN c.effective_from IS NOT NULL AND c.effective_from > ${today}::date THEN 'NOT_YET'
+        WHEN c.effective_to IS NOT NULL AND c.effective_to < ${today}::date THEN 'EXPIRED'
+        WHEN s.effective_from IS NOT NULL AND s.effective_from > ${today}::date THEN 'NOT_YET'
+        WHEN s.effective_to IS NOT NULL AND s.effective_to < ${today}::date THEN 'EXPIRED'
+        ELSE 'IN_FORCE' END)`;
+  return (rows[0]?.n ?? 0) > 0;
 }
 
 /**

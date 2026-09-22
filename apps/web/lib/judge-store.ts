@@ -1,4 +1,5 @@
 import { effectiveThreshold, type ConditionalLinkMode, type ThresholdBound } from "@chem/shared";
+import type { JudgementTrigger } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { notDisabledIn } from "@/lib/enabled-sources";
 import { effectiveLinks } from "@/lib/link-priority";
@@ -10,6 +11,7 @@ import {
   type JudgeResult,
 } from "@/lib/judge-calc";
 import { applyDecision, premiseOf } from "@/lib/judge-decision";
+import { effectiveOn } from "@/lib/judgement-date";
 import { getAppSettings } from "@/lib/settings";
 
 /**
@@ -49,6 +51,8 @@ export interface CategoryRule {
   entries: JudgeEntry[];
   /** 不純物種別による除外（S21）。この区分の設定と、法文物質名の上書きから答える */
   isExempt: ExemptResolver;
+  /** 判定対象日。区分と法文物質名の「効いているか」はこの日で見てある */
+  asOf: string;
 }
 
 type ThresholdRow<TNull> = {
@@ -95,17 +99,18 @@ export function substanceThreshold(s: ThresholdRow<null>, c: ThresholdRow<never>
 export async function loadRules(
   versionId: string,
   /**
-   * 判定対象日（YYYY-MM-DD）。指定すると、その日に効いている区分と法文物質名だけを使う
-   * （適用開始日・適用終了日で絞る。空のものは常に効く）。省くと日付では絞らない
+   * 判定対象日（YYYY-MM-DD）。区分と法文物質名は**日付で絞らず**、その日に効いているかの印を付ける
+   * （施行前・適用終了のものは該当に数えず、印付きで残す。2026-09-22 決定）
    */
-  asOf?: string,
+  asOf: string,
 ): Promise<CategoryRule[]> {
-  const inForce = asOf ? inForceOn(asOf) : {};
   const categories = await prisma.regulationCategory.findMany({
     // 「判定に使う」印の付いた区分だけ。印の無いものは、持っているだけで判定に出さない
-    where: { deletedAt: null, judged: true, ...inForce },
+    where: { deletedAt: null, judged: true },
     select: {
       id: true,
+      effectiveFrom: true,
+      effectiveTo: true,
       aggregation: true,
       metalEtc: true,
       thresholdBasis: true,
@@ -117,9 +122,11 @@ export async function loadRules(
         where: { deletedAt: null },
         select: {
           statutorySubstances: {
-            where: { deletedAt: null, ...inForce },
+            where: { deletedAt: null },
             select: {
               id: true,
+              effectiveFrom: true,
+              effectiveTo: true,
               applicableCondition: true,
               note: true,
               aggregation: true,
@@ -243,10 +250,13 @@ export async function loadRules(
 
   return categories.map((c) => ({
     categoryId: c.id,
+    asOf,
     isExempt: resolverFor(c.id),
     category: {
       aggregation: c.aggregation,
       metalEtc: c.metalEtc,
+      // 判定対象日に効いているか。効いていなければ中の法文物質名ごと非該当に数える
+      effective: effectiveOn(c.effectiveFrom, c.effectiveTo, asOf),
       // 均質材料あたりの区分は、判定を出しても必ず要確認になる
       thresholdBasis: c.thresholdBasis,
       threshold: {
@@ -273,23 +283,10 @@ export async function loadRules(
         conditional: (s.applicableCondition ?? "").trim() !== "",
         conditionalCas: conditionalOf.get(s.id) ?? [],
         unfilled: s.note?.includes(MARK_UNFILLED) ?? false,
+        effective: effectiveOn(s.effectiveFrom, s.effectiveTo, asOf),
       })),
     ),
   }));
-}
-
-/**
- * その日に効いている行の条件。区分と法文物質名は同じ2つの日付列を持つ。
- * 開始日が無い・その日以前、かつ 終了日が無い・その日以後
- */
-function inForceOn(asOf: string) {
-  const day = new Date(`${asOf}T00:00:00.000Z`);
-  return {
-    AND: [
-      { OR: [{ effectiveFrom: null }, { effectiveFrom: { lte: day } }] },
-      { OR: [{ effectiveTo: null }, { effectiveTo: { gte: day } }] },
-    ],
-  };
 }
 
 /** 金属換算係数を、CAS で引ける形にする */
@@ -308,8 +305,7 @@ export async function loadFactors(): Promise<ElementFactors> {
 }
 
 /**
- * 1製品を、渡された区分の決めごとで判定する。**保持しない。**
- * 保存する判定（judgeProduct）と、判定対象日を指定してその場で見る判定の両方がここを通る
+ * 1製品を、渡された区分の決めごとで判定する。**保持しない。**保存は judgeProduct
  */
 export async function computeJudgements(
   productId: string,
@@ -357,6 +353,23 @@ export async function computeJudgements(
 export const unitKey = (categoryId: string, statutorySubstanceId: string | null) =>
   `${categoryId}/${statutorySubstanceId ?? ""}`;
 
+/** 判定を保存するときの、日付ときっかけ */
+export interface JudgeRunOptions {
+  /** 判定対象日（YYYY-MM-DD）。`loadRules` に渡したものと同じ日付 */
+  asOf: string;
+  /** 何がきっかけで判定したか。実行の記録に残す */
+  trigger: JudgementTrigger;
+  /** 起こした人。自動なら省く */
+  actorId?: string | null;
+  /**
+   * 条件つきのCASリンクの扱い。省くとシステム設定を読む。
+   * **全製品をやり直すときは呼ぶ側で1回だけ読んで渡す**（製品ごとに引くと無駄）
+   */
+  conditionalLinkMode?: ConditionalLinkMode;
+  /** 判定に使う法規制バージョン。省くと現在のもの。現在のものが無ければ判定は保存しない */
+  versionId?: string;
+}
+
 /**
  * 1製品を、すべての区分について judge し、結果を保持する。
  *
@@ -373,14 +386,13 @@ export async function judgeProduct(
   productId: string,
   rules: CategoryRule[],
   factors: ElementFactors,
-  /**
-   * 条件つきのCASリンクの扱い。省くとシステム設定を読む。
-   * **全製品をやり直すときは呼ぶ側で1回だけ読んで渡す**（製品ごとに引くと無駄）
-   */
-  conditionalLinkMode?: ConditionalLinkMode,
-  /** 判定に使う法規制バージョン。省くと現在のもの。現在のものが無ければ判定は保存しない */
-  versionId?: string,
+  run: JudgeRunOptions,
 ): Promise<{ applicable: number; needsReview: number }> {
+  const { asOf, trigger, actorId = null, conditionalLinkMode, versionId } = run;
+  // 決めごとを作った日付と、行に書く日付がずれていたら、それはプログラムの間違い
+  for (const r of rules) {
+    if (r.asOf !== asOf) throw new Error(`judgeProduct: rules are for ${r.asOf}, not ${asOf}`);
+  }
   const linkMode = conditionalLinkMode ?? (await getAppSettings()).conditionalLinkMode;
   const version =
     versionId ??
@@ -404,29 +416,52 @@ export async function judgeProduct(
   const applied = results.flatMap(({ rule, result }) =>
     result.units.map((unit) => {
       const premise = premiseOf(unit);
-      return {
-        rule,
-        unit,
-        premise,
-        applied: applyDecision(
-          unit,
-          premise,
-          decisions.get(unitKey(rule.categoryId, unit.statutorySubstanceId)) ?? null,
-        ),
-      };
+      /*
+        判定対象日に効いていない法文物質名（施行前・適用終了）には、人の判断を**効かせない**。
+        判断そのものは ProductDecision に残しておき、また効くようになったときに
+        前提が同じなら生き返る（2026-09-22 決定）
+      */
+      const decision =
+        unit.effective === "IN_FORCE"
+          ? (decisions.get(unitKey(rule.categoryId, unit.statutorySubstanceId)) ?? null)
+          : null;
+      return { rule, unit, premise, applied: applyDecision(unit, premise, decision) };
     }),
   );
+  const counts = {
+    // 該当に数えるのは、効いているものだけ
+    applicable: applied.filter(
+      (r) => r.unit.effective === "IN_FORCE" && r.applied.verdict === "APPLICABLE",
+    ).length,
+    needsReview: applied.filter((r) => r.applied.needsReview).length,
+  };
+  const now = new Date();
+  const judgedAsOf = new Date(`${asOf}T00:00:00.000Z`);
 
-  await prisma.$transaction([
+  await prisma.$transaction(async (tx) => {
+    // 判定を実行した記録。行が 0 件の製品でも「いつ・どの版・どの日付で」が残る
+    const record = await tx.productJudgementRun.create({
+      data: {
+        productId,
+        versionId: version,
+        judgedAsOf,
+        computedAt: now,
+        trigger,
+        actorId,
+        applicableCount: counts.applicable,
+        reviewCount: counts.needsReview,
+      },
+      select: { id: true },
+    });
     // その版の前の判定だけ捨てる。別の版のものは残す
-    prisma.productJudgement.deleteMany({ where: { productId, versionId: version } }),
-    // 判定したことを展開結果に残す（行が 0 件でも「判定済み」と分かるように）
-    prisma.productExpansion.updateMany({
+    await tx.productJudgement.deleteMany({ where: { productId, versionId: version } });
+    // 最新の記録の写しを展開結果に残す（一覧・集計が製品ごとに素早く引く）
+    await tx.productExpansion.updateMany({
       where: { productId },
-      data: { judgedVersionId: version, judgedAt: new Date() },
-    }),
-    ...applied.map(({ rule, unit, premise, applied: a }) =>
-      prisma.productJudgement.create({
+      data: { judgedVersionId: version, judgedAt: now, judgedAsOf },
+    });
+    for (const { rule, unit, premise, applied: a } of applied) {
+      await tx.productJudgement.create({
         data: {
           productId,
           categoryId: rule.categoryId,
@@ -441,6 +476,10 @@ export async function judgeProduct(
           decidedAt: a.decidedAt,
           decidedNote: a.decidedNote,
           versionId: version,
+          judgedAsOf,
+          effective: unit.effective,
+          runId: record.id,
+          computedAt: now,
           // 根拠。見た CAS が無ければ（区分でまとめる区分に何も入っていない）行は作らない。
           // 不純物種別で除外した行しか無いときも、除外したことを根拠として残す
           hits: {
@@ -457,12 +496,9 @@ export async function judgeProduct(
                 : [],
           },
         },
-      }),
-    ),
-  ]);
+      });
+    }
+  });
 
-  return {
-    applicable: applied.filter((r) => r.applied.verdict === "APPLICABLE").length,
-    needsReview: applied.filter((r) => r.applied.needsReview).length,
-  };
+  return counts;
 }

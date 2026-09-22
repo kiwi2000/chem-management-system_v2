@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { expandProduct, saveExpansion } from "@/lib/expansion-store";
 import { getServerMessages } from "@/lib/i18n";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
+import { todayInJapan } from "@/lib/judgement-date";
 import { visibilityWhere } from "@/lib/product-service";
 import { getAppSettings } from "@/lib/settings";
 
@@ -20,6 +21,9 @@ export const dynamic = "force-dynamic";
  * **展開結果から作り直す**（2026-09-19）。展開結果は物質の不純物種別を写し取っているので、
  * 組成が変わっていなくても、物質の側で種別を変えれば古くなる。
  * 判定だけやり直すと、除外の設定が効かないまま該当が残る
+ *
+ * 判定対象日は `asOf`（YYYY-MM-DD）で選べる。省くと今日（2026-09-22 決定）。
+ * その日に効いている規制で判定し、その日付が判定に残る。
  *
  * その場で回して返す。数は公開の一括操作と同じ上限（500件）
  */
@@ -39,6 +43,7 @@ export async function POST(req: Request) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const ids = [...new Set(parsed.data.ids)];
+  const asOf = parsed.data.asOf ?? todayInJapan();
 
   const version = await prisma.linkSetVersion.findFirst({
     where: { isCurrent: true, deletedAt: null },
@@ -54,20 +59,26 @@ export async function POST(req: Request) {
 
   // 法律側の決めごとは1回だけ読んで使い回す
   const [rules, factors, settings] = await Promise.all([
-    loadRules(version.id),
+    loadRules(version.id, asOf),
     loadFactors(),
     getAppSettings(),
   ]);
   for (const p of products) {
     await saveExpansion(p.id, await expandProduct(p.id));
-    await judgeProduct(p.id, rules, factors, settings.conditionalLinkMode, version.id);
+    await judgeProduct(p.id, rules, factors, {
+      asOf,
+      trigger: "MANUAL",
+      actorId: actor.user.id,
+      conditionalLinkMode: settings.conditionalLinkMode,
+      versionId: version.id,
+    });
   }
 
   await writeAudit({
     entity: "products",
     action: "determine",
     actorId: actor.user.id,
-    diff: { rejudged: products.length, requested: ids.length, version: version.code },
+    diff: { rejudged: products.length, requested: ids.length, version: version.code, asOf },
   });
   return Response.json({ requested: ids.length, judged: products.length });
 }

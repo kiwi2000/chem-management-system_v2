@@ -39,6 +39,18 @@ describe("isRejudgeNeeded", () => {
     ).toBe(false);
   });
 
+  it("施行日・適用終了日を跨いだ判定があれば、データが変わっていなくても要る", () => {
+    expect(
+      isRejudgeNeeded({
+        currentVersionId: "v1",
+        changedAt: t0,
+        lastFull: t1,
+        missing: false,
+        boundaryCrossed: true,
+      }),
+    ).toBe(true);
+  });
+
   it("バージョンが無ければ出さない", () => {
     expect(
       isRejudgeNeeded({ currentVersionId: null, changedAt: t1, lastFull: t0, missing: true }),

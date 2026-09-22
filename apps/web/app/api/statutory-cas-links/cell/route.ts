@@ -99,6 +99,7 @@ export async function GET(req: Request) {
         select: {
           statutorySubstanceId: true,
           verdict: true,
+          effective: true,
           needsReview: true,
           reviewReasons: true,
           hits: { select: { statutorySubstanceId: true } },
@@ -205,6 +206,8 @@ export async function GET(req: Request) {
     const hitHere =
       isCurrent && judgement !== null && adopted
         ? judgement.verdict === "APPLICABLE" &&
+          // 施行前・適用終了は該当に数えない（2026-09-22 決定）
+          judgement.effective === "IN_FORCE" &&
           (judgement.hits.some((h) => h.statutorySubstanceId === substanceId) ||
             // 区分そのものでまとめて当たったとき。中の号は全部当たり扱い
             judgement.hits.some((h) => h.statutorySubstanceId === null))

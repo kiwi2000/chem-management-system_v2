@@ -253,6 +253,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -718,6 +719,11 @@ model ProductExpansion {
    */
   judgedVersionId String?   @map("judged_version_id")
   judgedAt        DateTime? @map("judged_at")
+  /**
+   * 最後に判定した判定対象日（2026-09-22 決定）。判定はこの日に効いている規制で見たもの。
+   * 実行の記録（ProductJudgementRun）の最新と同じ値の写し。一覧・集計が製品ごとに素早く引くために持つ
+   */
+  judgedAsOf      DateTime? @map("judged_as_of") @db.Date
 
   product Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
   lines   ProductExpansionLine[]
@@ -822,16 +828,33 @@ model ProductJudgement {
    */
   decidedNote String?   @map("decided_note")
 
-  computedAt DateTime @default(now()) @map("computed_at")
+  computedAt DateTime           @default(now()) @map("computed_at")
   /**
    * どの法規制バージョンで出した判定か。版ごとに1行ずつ持つ。
    * 版を消せば、その版の判定も消える
    */
-  versionId  String   @map("version_id")
+  versionId  String             @map("version_id")
+  /**
+   * 判定対象日（2026-09-22 決定）。この日に効いている規制区分・法文物質名で見た判定。
+   * 組成の保存など自動の判定は今日、「再計算」は人が選んだ日（既定は今日）
+   */
+  judgedAsOf DateTime           @map("judged_as_of") @db.Date
+  /**
+   * 判定対象日にその法文物質名（区分そのものが単位なら区分）が効いているか。
+   * IN_FORCE でなければ、verdict が該当でも**該当に数えない**（施行前・適用終了の非該当）。
+   * verdict は含有率で決めたまま持つ。人の判断を施行日の前後で外さないため（前提の比較に使う）
+   */
+  effective  JudgementEffective @default(IN_FORCE)
+  /**
+   * この行を作った判定の実行。行が 0 件の製品でも記録は残るので、
+   * 「いつ・どの版・どの日付で判定したか」はそちらで答える
+   */
+  runId      String?            @map("run_id")
 
   product  Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   category RegulationCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   version  LinkSetVersion        @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  run      ProductJudgementRun?  @relation(fields: [runId], references: [id], onDelete: SetNull)
   hits     ProductJudgementHit[]
 
   @@unique([productId, categoryId, statutorySubstanceId, versionId], map: "product_judgements_unit_key")
@@ -840,7 +863,46 @@ model ProductJudgement {
   @@index([needsReview])
   @@index([versionId])
   @@index([statutorySubstanceId])
+  @@index([effective])
   @@map("product_judgements")
+}
+
+/**
+ * 判定を実行した記録。製品 × 1 回の判定で 1 件（2026-09-22 決定）。
+ * 判定の行は「製品にその CAS が入っている法文物質名」ぶんしか無く、どの法規制にも関わらない製品は
+ * 0 件になる。それでも「いつ・どの法規制バージョン・どの判定対象日で判定したか」は要るので、
+ * ここに残す。記録は消さずに溜め、判定の行は最新の記録のぶんだけ持つ（古い行まで残すと膨らむ）。
+ * 展開結果の judgedVersionId / judgedAt / judgedAsOf は最新の記録の写し
+ */
+model ProductJudgementRun {
+  id              String           @id @default(cuid())
+  productId       String           @map("product_id")
+  versionId       String           @map("version_id")
+  /**
+   * 判定対象日。この日に効いている規制で判定した
+   */
+  judgedAsOf      DateTime         @map("judged_as_of") @db.Date
+  computedAt      DateTime         @default(now()) @map("computed_at")
+  /**
+   * 何がきっかけで判定したか
+   */
+  trigger         JudgementTrigger
+  /**
+   * 人が起こしたなら誰か（組成の保存・再計算・全製品の判定し直し）。自動なら空
+   */
+  actorId         String?          @map("actor_id")
+  /**
+   * 該当に数えた単位の数（効いているものだけ）と、要確認の数。一覧で軽く出すため
+   */
+  applicableCount Int              @default(0) @map("applicable_count")
+  reviewCount     Int              @default(0) @map("review_count")
+
+  product    Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  version    LinkSetVersion     @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  judgements ProductJudgement[]
+
+  @@index([productId, computedAt])
+  @@map("product_judgement_runs")
 }
 
 /**
@@ -1176,6 +1238,7 @@ model Product {
    * 区分ごとの判定結果。展開結果が変わったら作り直す
    */
   judgements     ProductJudgement[]
+  judgementRuns  ProductJudgementRun[]
   decisions      ProductDecision[]
   prtrQuantities PrtrQuantity[]
 
@@ -1591,6 +1654,50 @@ enum JudgementVerdict {
 }
 
 /**
+ * 判定対象日に、その法文物質名（区分）が効いているか（2026-09-22 決定）
+ */
+enum JudgementEffective {
+  /**
+   * 効いている
+   */
+  IN_FORCE
+  /**
+   * 施行前（適用開始日がまだ来ていない）
+   */
+  NOT_YET
+  /**
+   * 適用終了（適用終了日を過ぎた）
+   */
+  EXPIRED
+}
+
+/**
+ * 判定を実行したきっかけ
+ */
+enum JudgementTrigger {
+  /**
+   * 組成の保存（その製品と、それを使う製品）
+   */
+  COMPOSITION
+  /**
+   * 製品の画面・一覧の「再計算」
+   */
+  MANUAL
+  /**
+   * システム設定の「全製品の再計算」
+   */
+  FULL
+  /**
+   * 取り込みの反映
+   */
+  IMPORT
+  /**
+   * スクリプト
+   */
+  SCRIPT
+}
+
+/**
  * その答えを誰が出したか
  */
 enum JudgementSource {
@@ -1791,8 +1898,8 @@ model RegulationCategory {
   /**
    * この区分が効く期間。空なら常に効く。
    * 規制が変わったら区分を丸ごと新しく作って古い区分も残す決まり（2026-09-08）なので、
-   * 新旧の区分をこの日付で見分ける。**判定対象日を指定した判定でだけ使う。**
-   * 保存してある判定（今日のもの）は日付で絞らない
+   * 新旧の区分をこの日付で見分ける。**判定は判定対象日でこれを見る**（2026-09-22 決定）。
+   * 効いていない区分は、中の法文物質名ごと「施行前」「適用終了」の印付きの非該当になる
    */
   effectiveFrom DateTime? @map("effective_from") @db.Date
   effectiveTo   DateTime? @map("effective_to") @db.Date
@@ -1924,7 +2031,8 @@ model StatutorySubstance {
   upperBound     ThresholdBound? @map("upper_bound")
 
   /**
-   * 参考情報。**判定には使わない**（どの一覧を使うかはバージョンと、登録してある区分で決まる）
+   * この法文物質名が効く期間。空なら常に効く。**判定は判定対象日でこれを見る**（2026-09-22 決定）。
+   * 効いていなければ「施行前」「適用終了」の印付きの非該当になる（該非そのものは含有率で決めたまま持つ）
    */
   effectiveFrom DateTime? @map("effective_from") @db.Date
   effectiveTo   DateTime? @map("effective_to") @db.Date
@@ -2014,6 +2122,7 @@ model LinkSetVersion {
   sources       LinkVersionSource[]
   links         StatutoryCasLink[]
   judgements    ProductJudgement[]
+  judgementRuns ProductJudgementRun[]
   prtrSummaries PrtrSummary[]
   inventoryRows InventoryRow[]
 

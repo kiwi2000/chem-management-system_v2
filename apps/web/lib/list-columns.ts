@@ -13,7 +13,12 @@ import { anyOfTextCondition, type QueryColumn } from "@/lib/table-query";
  * 絞らないと前の版で当たっていたものまで「該当あり」に数える
  */
 function judgementCondition(values: string[], versionId: string): Record<string, unknown> | null {
-  const hit = { judgements: { some: { versionId, verdict: "APPLICABLE" as const } } };
+  // 施行前・適用終了のものは該当に数えない（2026-09-22 決定）
+  const hit = {
+    judgements: {
+      some: { versionId, verdict: "APPLICABLE" as const, effective: "IN_FORCE" as const },
+    },
+  };
   // この版で判定したか。判定の行が 0 件でも判定済みのことがあるので、展開結果の記録で見る
   const judged = { expansion: { is: { judgedVersionId: versionId } } };
   const each: Record<string, unknown>[] = [];
@@ -125,7 +130,14 @@ function judgementCategoryCondition(
   const ids = [...new Set(values.filter((v) => v !== ""))];
   if (ids.length === 0) return null;
   const each = ids.map((id) => ({
-    judgements: { some: { versionId, categoryId: id, verdict: "APPLICABLE" as const } },
+    judgements: {
+      some: {
+        versionId,
+        categoryId: id,
+        verdict: "APPLICABLE" as const,
+        effective: "IN_FORCE" as const,
+      },
+    },
   }));
   return op === "all" ? { AND: each } : { OR: each };
 }
@@ -146,7 +158,16 @@ function judgementCategoryNotCondition(
   if (ids.length === 0) return null;
   const judged = { expansion: { is: { judgedVersionId: versionId } } };
   const each = ids.map((id) => ({
-    NOT: { judgements: { some: { versionId, categoryId: id, verdict: "APPLICABLE" as const } } },
+    NOT: {
+      judgements: {
+        some: {
+          versionId,
+          categoryId: id,
+          verdict: "APPLICABLE" as const,
+          effective: "IN_FORCE" as const,
+        },
+      },
+    },
   }));
   return { AND: [judged, op === "all" ? { AND: each } : { OR: each }] };
 }

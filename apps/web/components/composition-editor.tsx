@@ -18,7 +18,6 @@ import {
   Database,
   GitCompare,
   GripVertical,
-  RefreshCw,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -37,12 +36,13 @@ import {
 } from "@/components/composition-tree";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditingBadge } from "@/components/editing-badge";
+import { RejudgeButton } from "@/components/rejudge-button";
 import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
-import { rejudgeProduct, useJudgementControls } from "@/lib/judgement-controls";
+import { useJudgementControls } from "@/lib/judgement-controls";
 import { notifyJudgementsChanged } from "@/lib/judgements-refresh";
 import { useI18n } from "@/lib/i18n-client";
 import { usePageSizePrefs } from "@/lib/page-size-prefs";
@@ -940,33 +940,37 @@ export function CompositionEditor({
                               new Date(controls.computedAt).toLocaleString(locale),
                             )
                           : null,
+                        controls.judgedAsOf ? m.judgements.judgedAsOf(controls.judgedAsOf) : null,
                       ]
                         .filter(Boolean)
                         .join(" ・ ")}
                     </span>
                   )}
-                  {/* 判定対象日を入れているあいだは、この表もその日の判定（下の判定表と同じ断り） */}
-                  {controls.asOf && (
-                    <span
-                      className={cn(
-                        "text-muted-foreground text-xs font-normal",
-                        (showRaw || controls.versionCode) && "ml-2",
-                      )}
-                    >
-                      {m.judgements.asOfPreview(controls.asOf)}
-                    </span>
-                  )}
-                  {/* 前提が計算より後に変わった。下の判定表と同じ注意をここにも出す（2026-09-22 指示） */}
+                  {/* 今日でない日付で判定してある（下の判定表と同じ断り） */}
+                  {controls.judgedAsOf &&
+                    controls.today &&
+                    controls.judgedAsOf !== controls.today && (
+                      <span
+                        className={cn(
+                          "text-destructive inline-flex items-center gap-1 text-xs font-normal",
+                          (showRaw || controls.versionCode) && "ml-2",
+                        )}
+                      >
+                        <TriangleAlert className="size-3" />
+                        {m.judgements.notToday(controls.judgedAsOf)}
+                      </span>
+                    )}
+                  {/* 前提が計算より後に変わった、または施行日・終了日を跨いだ。下の判定表と同じ注意 */}
                   {controls.stale && (
                     <span
                       className={cn(
                         "text-destructive inline-flex items-center gap-1 text-xs font-normal",
                         (showRaw || controls.versionCode) && "ml-2",
                       )}
-                      title={m.judgements.staleHint}
+                      title={controls.staleByDate ? undefined : m.judgements.staleHint}
                     >
                       <TriangleAlert className="size-3" />
-                      {m.judgements.stale}
+                      {controls.staleByDate ? m.judgements.staleByDate : m.judgements.stale}
                     </span>
                   )}
                 </p>
@@ -1046,42 +1050,24 @@ export function CompositionEditor({
                   title={m.judgements.needsReviewHint}
                 >
                   <CircleHelp className="size-3" />
-                  {m.composition.reviewLegend}
+                  {/* 下の判定表と同じく件数を添える（2026-09-22 指示）。0 件なら印の意味だけ */}
+                  {controls.reviewCount > 0
+                    ? m.judgements.reviewCount(controls.reviewCount)
+                    : m.composition.reviewLegend}
                 </span>
                 {/*
                   「要確認」の右に続けて、下の判定表と同じ操作を置く（2026-09-22 指示。右寄せにはしない）。
-                  「再計算」と「判定対象日」は下の判定表と同じもの（judgement-controls で共有。
-                  日付が効くのは判定表の中身で、この表の該当法規制は保存してある判定のまま）。
+                  「再計算」は下の判定表と同じもの（押すと判定対象日を尋ねる。judgement-controls で共有）。
                   「含有率不足による非該当」はこの表の切り替え
                 */}
                 <span className="ml-[0.5em] inline-flex flex-wrap items-center gap-1.5">
-                  {controls.canRejudge && controls.stale && !controls.asOf && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={controls.busy}
-                      title={m.judgements.rejudgeHint}
-                      onClick={() => {
-                        setRejudgeError(null);
-                        void rejudgeProduct(productId, m.errors.saveFailed).then((failed) => {
-                          if (failed) setRejudgeError(failed);
-                        });
-                      }}
-                    >
-                      <RefreshCw className="mr-1 size-3.5" />
-                      {m.judgements.rejudge}
-                    </Button>
-                  )}
-                  <label className="flex items-center gap-1 text-xs" title={m.judgements.asOfHint}>
-                    <span className="text-muted-foreground">{m.judgements.asOf}</span>
-                    <Input
-                      type="date"
-                      value={controls.asOf}
-                      onChange={(e) => controls.setAsOf(e.target.value)}
-                      className="h-8 w-36"
+                  {controls.canRejudge && (
+                    <RejudgeButton
+                      productId={productId}
+                      today={controls.today}
+                      onError={setRejudgeError}
                     />
-                  </label>
+                  )}
                   {/*
                     含有率が足りずに当たっていないものを出すかどうか。
                     既定は出さない。**当たっているものと混ぜて読ませない**ため。

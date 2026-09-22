@@ -27,7 +27,12 @@ async function main() {
   if (!version) throw new Error("現在のバージョンが決まっていません");
   console.log(`バージョン: ${version.code} ${version.nameJa ?? ""}`);
 
-  const rules = await loadRules(version.id);
+  // 判定対象日は引数（YYYY-MM-DD）。省くと今日
+  const { todayInJapan, isDay } = await import("../apps/web/lib/judgement-date");
+  const asOf = process.argv[2] ?? todayInJapan();
+  if (!isDay(asOf)) throw new Error(`判定対象日は YYYY-MM-DD で: ${asOf}`);
+  console.log(`判定対象日: ${asOf}`);
+  const rules = await loadRules(version.id, asOf);
   const factors = await loadFactors();
   const { getAppSettings } = await import("../apps/web/lib/settings");
   const { conditionalLinkMode } = await getAppSettings();
@@ -48,7 +53,12 @@ async function main() {
   let applicable = 0;
   let review = 0;
   for (const p of products) {
-    const r = await judgeProduct(p.id, rules, factors, conditionalLinkMode, version.id);
+    const r = await judgeProduct(p.id, rules, factors, {
+      asOf,
+      trigger: "SCRIPT",
+      conditionalLinkMode,
+      versionId: version.id,
+    });
     if (r.applicable > 0) applicable += 1;
     if (r.needsReview > 0) review += 1;
   }

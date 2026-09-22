@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { CellDetailDialog } from "@/components/cell-detail-dialog";
 import { DiffChip, SourceChips, type SourceInfo } from "@/components/source-chip";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
-import { useJudgementControls } from "@/lib/judgement-controls";
 import { useI18n } from "@/lib/i18n-client";
 import { useColumnVisibility } from "@/lib/use-column-visibility";
 import { HIT_CLASS, NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
@@ -595,14 +594,10 @@ export function CompositionAggregateTable({
     { shrinkToFit: false, frozen: FROZEN },
   );
 
-  // 判定対象日（下の判定表と共有）。入っていれば、その日の判定で作った表を読む（2026-09-22 指示）
-  const { asOf } = useJudgementControls();
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const res = await fetch(
-        `/api/products/${productId}/composition/aggregate${asOf ? `?asOf=${asOf}` : ""}`,
-      ).catch(() => null);
+      const res = await fetch(`/api/products/${productId}/composition/aggregate`).catch(() => null);
       if (!res || !alive) return;
       if (redirectIfUnauthorized(res)) return;
       if (!res.ok) {
@@ -616,7 +611,7 @@ export function CompositionAggregateTable({
     return () => {
       alive = false;
     };
-  }, [productId, asOf, m]);
+  }, [productId, m]);
 
   // 取れたら、開ける行の鍵を親に渡す（見出しのボタンを出すかどうかの判断に使う）
   useEffect(() => {

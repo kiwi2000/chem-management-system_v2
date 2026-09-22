@@ -1,4 +1,5 @@
 import { IMPURITY_NONE, fromScaled, toScaled } from "@chem/shared";
+import { combineEffective, type Effective } from "@/lib/judgement-date";
 
 /**
  * 法規制の判定。**ここはデータベースを知らない。**
@@ -24,6 +25,11 @@ import { IMPURITY_NONE, fromScaled, toScaled } from "@chem/shared";
  * **判断できないものは「該当」に倒す。**
  * 見落とすより、余分に拾うほうが安全なため（拾いすぎても手間が増えるだけだが、
  * 見落とすとそのまま出荷して違反になる）。
+ *
+ * **判定対象日に効いていない法文物質名・区分**（施行前・適用終了）は、該非は含有率で決めたまま
+ * 持つが、`effective` に印を付け、要確認も理由も付けない（2026-09-22 決定）。
+ * 読む側は effective が IN_FORCE でない行を「非該当（施行前／適用終了）」として扱う。
+ * 該非を変えないのは、人の判断（前提が同じなら引き継ぐ）を施行日の前後で外さないため
  */
 
 /** まとめかた。schema の AggregationMode と同じ */
@@ -85,6 +91,8 @@ export interface JudgeEntry {
   conditionalCas?: string[];
   /** 閾値を入れられなかった（備考に印がある）。当たったら要確認にする */
   unfilled: boolean;
+  /** 判定対象日に効いているか。省くと効いている */
+  effective?: Effective;
 }
 
 export interface JudgeCategory {
@@ -96,6 +104,8 @@ export interface JudgeCategory {
    * 均質材料あたりなら、当たっても当たらなくても必ず要確認にする
    */
   thresholdBasis?: "PRODUCT" | "HOMOGENEOUS_MATERIAL";
+  /** 判定対象日に効いているか。省くと効いている。効いていなければ中の法文物質名も効かない */
+  effective?: Effective;
 }
 
 /** 金属換算係数。CAS → その中の元素の重量％ */
@@ -153,6 +163,11 @@ export interface JudgeUnit {
   /** 法文物質名。区分でまとめたときは null（区分そのものが単位） */
   statutorySubstanceId: string | null;
   verdict: "APPLICABLE" | "NOT_APPLICABLE";
+  /**
+   * 判定対象日に効いているか。IN_FORCE でなければ、verdict が該当でも**該当に数えない**
+   * （施行前・適用終了の非該当）。要確認と理由は付かない
+   */
+  effective: Effective;
   needsReview: boolean;
   reasons: ReviewReason[];
   /**
@@ -290,8 +305,13 @@ export function judge(input: JudgeInput): JudgeResult {
   /** その CAS を結んでいるデータソース。区分でまとめたときは、関わった全部を合わせる */
   const sourcesOf = (c: string) => [...new Set(entries.flatMap((e) => e.sourcesOf?.[c] ?? []))];
 
+  const categoryEffective = category.effective ?? "IN_FORCE";
   /** 1 単位ぶんの計算。理由はこの単位のものだけを集める。行は CAS × 種別ごと */
-  const unitOf = (statutorySubstanceId: string | null, excluded: JudgeUnit["excluded"]) => {
+  const unitOf = (
+    statutorySubstanceId: string | null,
+    excluded: JudgeUnit["excluded"],
+    effective: Effective,
+  ) => {
     const reasons = new Set<ReviewReason>(common);
     const shareOf = (list: ExpandedLine[], mode: Aggregation, target: string | null) =>
       list.map((l) => {
@@ -314,11 +334,14 @@ export function judge(input: JudgeInput): JudgeResult {
       // 条件つきのCASリンクは、システム設定が `hit` のとき警告だけ出して要確認にしない
       const warnOnly =
         linkMode === "hit" ? new Set<ReviewReason>(["conditionalLink"]) : new Set<ReviewReason>();
+      // 効いていないものは該当に数えないので、確認も理由も要らない（人の判断もここでは効かせない）
+      const inForce = effective === "IN_FORCE";
       return {
         statutorySubstanceId,
         verdict,
-        needsReview: [...reasons].some((r) => !warnOnly.has(r)),
-        reasons: [...reasons],
+        effective,
+        needsReview: inForce && [...reasons].some((r) => !warnOnly.has(r)),
+        reasons: inForce ? [...reasons] : [],
         total,
         contributions,
         excluded,
@@ -334,7 +357,7 @@ export function judge(input: JudgeInput): JudgeResult {
     // 区分でまとめる。CAS を重複なく集めてから、一度だけ足す（除外した行は足さない）
     const casAll = [...new Set(entries.flatMap((e) => e.cas))].filter((c) => byCas.has(c));
     const { compared, exempt } = splitLines(casAll, null);
-    const u = unitOf(null, excludedOf(exempt));
+    const u = unitOf(null, excludedOf(exempt), categoryEffective);
     let total = 0n;
     for (const l of compared) total += u.valueOf(l, category.aggregation, category.metalEtc);
     const applicable = compared.length > 0 && within(total, category.threshold);
@@ -367,7 +390,12 @@ export function judge(input: JudgeInput): JudgeResult {
     // 入っていない法文物質名は結果に並べない（並べると区分の法文物質名の数だけ行ができる）
     if (presentAll.length === 0) continue;
     const { compared, exempt } = splitLines(presentAll, e.id);
-    const u = unitOf(e.id, excludedOf(exempt));
+    // 区分が効いていなければ、中の法文物質名も効かない
+    const u = unitOf(
+      e.id,
+      excludedOf(exempt),
+      combineEffective(categoryEffective, e.effective ?? "IN_FORCE"),
+    );
     /*
       入っている行が全部、不純物種別で除外されたら**不純物のため非該当**。
       閾値とは比べず、条件つき・閾値未設定の理由も付けない（除外が先に決まる）

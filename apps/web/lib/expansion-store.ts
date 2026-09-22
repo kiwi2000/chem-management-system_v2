@@ -3,6 +3,7 @@ import { expandTree, type ExpandedProduct, type LineLoader } from "@/lib/expansi
 import { prisma } from "@/lib/db";
 import { getAppSettings } from "@/lib/settings";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
+import { todayInJapan } from "@/lib/judgement-date";
 
 /**
  * 展開結果の保存と、作り直し。
@@ -121,12 +122,19 @@ export async function recomputeFrom(productId: string): Promise<number> {
     select: { id: true },
   });
   if (version) {
-    const rules = await loadRules(version.id);
+    // 自動の判定は、必ず今日を判定対象日にする（人が日付を選ぶ場面ではない。2026-09-22 決定）
+    const asOf = todayInJapan();
+    const rules = await loadRules(version.id, asOf);
     const factors = await loadFactors();
     // 条件つきリンクの扱いも1回だけ読む
     const { conditionalLinkMode } = await getAppSettings();
     for (const id of targets) {
-      await judgeProduct(id, rules, factors, conditionalLinkMode, version.id);
+      await judgeProduct(id, rules, factors, {
+        asOf,
+        trigger: "COMPOSITION",
+        conditionalLinkMode,
+        versionId: version.id,
+      });
     }
   }
 

@@ -559,7 +559,8 @@ export async function collectForList(
         uses: { orderBy: { displayOrder: "asc" }, select: { value: true } },
         expansion: { select: { judgedVersionId: true } },
         judgements: {
-          where: { versionId: version?.id ?? "" },
+          // 施行前・適用終了のものは帳票に載せない（2026-09-22 決定）
+          where: { versionId: version?.id ?? "", effective: "IN_FORCE" },
           select: {
             categoryId: true,
             verdict: true,

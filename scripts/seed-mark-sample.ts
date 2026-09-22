@@ -81,9 +81,11 @@ async function main() {
     where: { isCurrent: true, deletedAt: null },
   });
   if (!version) throw new Error("現在のバージョンが決まっていません");
-  const rules = await loadRules(version.id);
+  const { todayInJapan } = await import("../apps/web/lib/judgement-date");
+  const asOf = todayInJapan();
+  const rules = await loadRules(version.id, asOf);
   const factors = await loadFactors();
-  await judgeProduct(product.id, rules, factors);
+  await judgeProduct(product.id, rules, factors, { asOf, trigger: "SCRIPT" });
   const n = await prisma.productJudgement.count({
     where: { productId: product.id, verdict: "APPLICABLE" },
   });

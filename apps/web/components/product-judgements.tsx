@@ -8,10 +8,10 @@ import {
   ChevronsUpDown,
   CircleHelp,
   Droplets,
-  RefreshCw,
   TriangleAlert,
 } from "lucide-react";
 import { Fragment, useCallback, useEffect, useState } from "react";
+import { RejudgeButton } from "@/components/rejudge-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,15 +28,10 @@ import {
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { ResizableBox } from "@/components/data-table/resizable-box";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
-import {
-  bindJudgementControls,
-  publishJudgementState,
-  rejudgeProduct,
-  useJudgementControls,
-} from "@/lib/judgement-controls";
+import { bindJudgementControls, publishJudgementState } from "@/lib/judgement-controls";
 import { JUDGEMENTS_CHANGED } from "@/lib/judgements-refresh";
 import { useI18n } from "@/lib/i18n-client";
-import { NEAR_MISS_CLASS } from "@/lib/mark-styles";
+import { NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
 import { cn } from "@/lib/utils";
 import type { ApiError, JudgementHitDto, ProductJudgementDto } from "@/lib/types";
 
@@ -120,10 +115,15 @@ export function ProductJudgements({
     computedAt: string | null;
     versionCode: string | null;
     stale: boolean;
+    /** 古い理由が「施行日・適用終了日を跨いだ」か */
+    staleByDate: boolean;
     /** この版の判定は無いが、別の版では判定してある（切り替えたまま判定し直していない） */
     judgedElsewhere: boolean;
     /** この版で判定した（行が 0 件なら、どの法規制にも関わらない製品） */
     judged: boolean;
+    /** 判定対象日と、サーバーの今日。違えば「今日の規制ではない」と断る */
+    judgedAsOf: string | null;
+    today: string | null;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** いま根拠を書いている判定の行（id）。null なら誰も書いていない */
@@ -150,13 +150,7 @@ export function ProductJudgements({
    * （組成の表の「含有率不足による非該当」と同じもの。2026-09-15 決定。見せ方も同じにした 2026-09-22）
    */
   const [showNotApplicable, setShowNotApplicable] = useState(false);
-  /**
-   * 判定対象日。入れると、その日に効いている規制でその場で判定し直して出す（保存しない）。
-   * 空なら保存してある判定。判定の確認や修正は、保存してある判定にだけできる。
-   * 上の合算表にも同じ日付欄と「再計算」があるので、置き場（judgement-controls）で共有する
-   */
-  const controls = useJudgementControls();
-  const { asOf, setAsOf } = controls;
+  // 上の合算表にも同じ見出しと「再計算」があるので、置き場（judgement-controls）で共有する
   useEffect(() => {
     bindJudgementControls(productId);
   }, [productId]);
@@ -171,9 +165,7 @@ export function ProductJudgements({
 
   const load = useCallback(async () => {
     setError(null);
-    const res = await fetch(
-      `/api/products/${productId}/judgements${asOf ? `?asOf=${asOf}` : ""}`,
-    ).catch(() => null);
+    const res = await fetch(`/api/products/${productId}/judgements`).catch(() => null);
     if (!res) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
@@ -187,18 +179,24 @@ export function ProductJudgements({
       computedAt: string | null;
       versionCode: string | null;
       stale: boolean;
+      staleByDate?: boolean;
       judgedElsewhere?: boolean;
       judged?: boolean;
+      judgedAsOf?: string | null;
+      today?: string | null;
     };
     setItems(body.items);
     setStamp({
       computedAt: body.computedAt,
       versionCode: body.versionCode,
       stale: body.stale,
+      staleByDate: body.staleByDate ?? false,
       judgedElsewhere: body.judgedElsewhere ?? false,
       judged: body.judged ?? false,
+      judgedAsOf: body.judgedAsOf ?? null,
+      today: body.today ?? null,
     });
-  }, [productId, asOf, m]);
+  }, [productId, m]);
 
   useEffect(() => {
     void load();
@@ -209,10 +207,14 @@ export function ProductJudgements({
     publishJudgementState({
       versionCode: stamp?.versionCode ?? version,
       computedAt: stamp?.computedAt ?? null,
+      judgedAsOf: stamp?.judgedAsOf ?? null,
+      today: stamp?.today ?? null,
       stale: stamp?.stale ?? false,
+      staleByDate: stamp?.staleByDate ?? false,
       canRejudge: canEdit,
+      reviewCount: items?.filter((j) => j.needsReview).length ?? 0,
     });
-  }, [stamp, version, canEdit]);
+  }, [stamp, version, canEdit, items]);
 
   /*
     組成を保存すると、サーバー側で展開結果と判定を作り直している。
@@ -224,18 +226,6 @@ export function ProductJudgements({
     window.addEventListener(JUDGEMENTS_CHANGED, onChanged);
     return () => window.removeEventListener(JUDGEMENTS_CHANGED, onChanged);
   }, [load]);
-
-  /**
-   * この製品だけを、いまの前提で判定し直す（2026-09-19 指示）。
-   * 前提が変わっているとき（`stale`）だけボタンを出す。
-   * 全製品のやり直しは管理者しか押せないので、その順番を待たずに手元の製品を確かめるためのもの
-   */
-  async function rejudge() {
-    setError(null);
-    // 中身は judgement-controls（上の合算表の「再計算」と同じもの）
-    const failed = await rejudgeProduct(productId, m.errors.saveFailed);
-    if (failed) setError(failed);
-  }
 
   async function decide(judgementId: string, verdict?: "APPLICABLE" | "NOT_APPLICABLE") {
     setBusy(true);
@@ -275,7 +265,8 @@ export function ProductJudgements({
 
   const applicable = items.filter((j) => j.verdict === "APPLICABLE");
   const shown = showNotApplicable ? items : applicable;
-  const review = shown.filter((j) => j.needsReview);
+  // 要確認の数は絞り込みに関わらず全部で数える（上の合算表の印の横と同じ数。2026-09-22 指示）
+  const review = items.filter((j) => j.needsReview);
 
   /*
     国ごとにまとめる。並びは地域 → 国 → 法律 → 区分 → 判定の単位なので、隣が同じなら同じまとまり。
@@ -423,18 +414,27 @@ export function ProductJudgements({
               stamp?.computedAt
                 ? m.judgements.computedAt(new Date(stamp.computedAt).toLocaleString(locale))
                 : null,
+              // 判定対象日は読み取りだけ。変えるには「再計算」で日付を選ぶ（2026-09-22 決定）
+              stamp?.judgedAsOf ? m.judgements.judgedAsOf(stamp.judgedAsOf) : null,
             ]
               .filter(Boolean)
               .join(" ・ ")}
           </span>
-          {/* 前提（CASリンク・閾値・バージョン）が計算より後に変わった。判定し直すと変わりうる */}
+          {/* 今日でない日付で判定してある。帳票にもこの判定が載るので、はっきり断る */}
+          {stamp?.judgedAsOf && stamp.today && stamp.judgedAsOf !== stamp.today && (
+            <span className="text-destructive ml-2 inline-flex items-center gap-1 text-xs font-normal">
+              <TriangleAlert className="size-3" />
+              {m.judgements.notToday(stamp.judgedAsOf)}
+            </span>
+          )}
+          {/* 前提（CASリンク・閾値・バージョン）が計算より後に変わった、または施行日・終了日を跨いだ */}
           {stamp?.stale && (
             <span
               className="text-destructive ml-2 inline-flex items-center gap-1 text-xs font-normal"
-              title={m.judgements.staleHint}
+              title={stamp.staleByDate ? undefined : m.judgements.staleHint}
             >
               <TriangleAlert className="size-3" />
-              {m.judgements.stale}
+              {stamp.staleByDate ? m.judgements.staleByDate : m.judgements.stale}
             </span>
           )}
         </CardTitle>
@@ -479,40 +479,23 @@ export function ProductJudgements({
           <span className="text-muted-foreground">
             {m.judgements.summary(applicable.length, items.length)}
           </span>
+          {/* 上の合算表の「? 要確認」と同じ見た目（赤字・印・件数。2026-09-22 指示） */}
           {review.length > 0 && (
-            <Badge variant="secondary" className="gap-1">
+            <span
+              className={cn(REVIEW_CLASS, "inline-flex items-center gap-1 text-xs")}
+              title={m.judgements.needsReviewHint}
+            >
               <CircleHelp className="size-3" />
               {m.judgements.reviewCount(review.length)}
-            </Badge>
+            </span>
           )}
           {/*
-            再計算。**前提が変わっていて、押せる人にだけ出す**（2026-09-19 指示）。
-            いつも出しておくと、押しても何も変わらない場面のほうが多くなる。
-            判定対象日を入れているあいだは、その場で計算した結果を見ているので出さない
+            再計算。押すと判定対象日を尋ねてから判定し直す（既定は今日。2026-09-22 決定）。
+            日付を選べる口でもあるので、前提が変わっていなくても常に出す（判定を直せる人に）
           */}
-          {canEdit && stamp?.stale && !asOf && (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={busy || controls.busy}
-              title={m.judgements.rejudgeHint}
-              onClick={() => void rejudge()}
-            >
-              <RefreshCw className="mr-1 size-3.5" />
-              {m.judgements.rejudge}
-            </Button>
+          {canEdit && (
+            <RejudgeButton productId={productId} today={stamp?.today ?? null} onError={setError} />
           )}
-          {/* 判定対象日。入れているあいだは、その日の規制でその場で計算した判定に切り替わる */}
-          <label className="flex items-center gap-1 text-xs" title={m.judgements.asOfHint}>
-            <span className="text-muted-foreground">{m.judgements.asOf}</span>
-            <Input
-              type="date"
-              value={asOf}
-              onChange={(e) => setAsOf(e.target.value)}
-              className="h-8 w-36"
-            />
-          </label>
           {/*
             非該当も出す切り替え。組成の表の「含有率不足による非該当」と同じ見せ方:
             押しているときは字と印を橙の太字にし、件数はボタンの外に出す（押しても増えないことがある）
@@ -542,11 +525,6 @@ export function ProductJudgements({
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        {asOf && (
-          <Alert>
-            <AlertDescription>{m.judgements.asOfPreview(asOf)}</AlertDescription>
           </Alert>
         )}
 
@@ -744,9 +722,23 @@ export function ProductJudgements({
                                             /* 区分そのものが単位のとき、非該当なら名前を ⚠ 付きの橙色の字にする（非該当を出しているとき） */
                                             <OneLine
                                               text={g.label}
-                                              notApplicable={!!own && own.verdict !== "APPLICABLE"}
+                                              notApplicable={
+                                                !!own &&
+                                                own.verdict !== "APPLICABLE" &&
+                                                own.effective === "IN_FORCE"
+                                              }
+                                              dimmed={!!own && own.effective !== "IN_FORCE"}
                                             />
                                           )}
+                                          {/* 区分ごと施行前・適用終了なら、区分の行に印を付ける（中の行には付けない） */}
+                                          {(() => {
+                                            const ce = categoryEffective(g);
+                                            return ce ? (
+                                              <Badge variant="outline" className="mt-1">
+                                                {effectiveLabel(m, ce)}
+                                              </Badge>
+                                            ) : null;
+                                          })()}
                                         </TableCell>
                                         <TableCell className={CELL} />
                                         {/*
@@ -782,7 +774,6 @@ export function ProductJudgements({
                                               <Actions
                                                 j={own}
                                                 m={m}
-                                                asOf={asOf}
                                                 editing={editing}
                                                 note={note}
                                                 busy={busy}
@@ -839,16 +830,22 @@ export function ProductJudgements({
                                                   */}
                                                   <OneLine
                                                     text={unitName(j, locale, m)}
-                                                    notApplicable={j.verdict !== "APPLICABLE"}
+                                                    notApplicable={
+                                                      j.verdict !== "APPLICABLE" &&
+                                                      j.effective === "IN_FORCE"
+                                                    }
+                                                    dimmed={j.effective !== "IN_FORCE"}
                                                   />
-                                                  {/* 施行前に登録した法文物質名。該非は変えず、何であるかだけ分かるようにする */}
-                                                  {j.notYetEffective && j.effectiveFrom && (
-                                                    <Badge variant="outline" className="mt-1">
-                                                      {m.judgements.notYetEffective(
-                                                        j.effectiveFrom,
-                                                      )}
-                                                    </Badge>
-                                                  )}
+                                                  {/*
+                                                    施行前・適用終了。該当に数えない非該当で、いつから・いつまでかを添える
+                                                    （2026-09-22 決定）。区分ごとのときは区分の行に付けるので、ここには付けない
+                                                  */}
+                                                  {j.effective !== "IN_FORCE" &&
+                                                    j.effectiveScope !== "category" && (
+                                                      <Badge variant="outline" className="mt-1">
+                                                        {effectiveLabel(m, j)}
+                                                      </Badge>
+                                                    )}
                                                 </TableCell>
                                                 {j.hits[0] ? (
                                                   <MatchedCells
@@ -871,7 +868,6 @@ export function ProductJudgements({
                                                     <Actions
                                                       j={j}
                                                       m={m}
-                                                      asOf={asOf}
                                                       editing={editing}
                                                       note={note}
                                                       busy={busy}
@@ -903,12 +899,11 @@ export function ProductJudgements({
 
 /**
  * 「確認する」「判定修正」の欄。判定の単位の行（区分そのものが単位なら区分の行）に置く。
- * その場で計算した判定（判定対象日あり）は保存していないので、確認も修正もできない
+ * 施行前・適用終了の行は該当に数えない非該当なので、確認も修正もできない（2026-09-22 決定）
  */
 function Actions({
   j,
   m,
-  asOf,
   editing,
   note,
   busy,
@@ -918,7 +913,6 @@ function Actions({
 }: {
   j: ProductJudgementDto;
   m: M;
-  asOf: string;
   editing: string | null;
   note: string;
   busy: boolean;
@@ -926,7 +920,7 @@ function Actions({
   setNote: (v: string) => void;
   decide: (judgementId: string, verdict?: "APPLICABLE" | "NOT_APPLICABLE") => Promise<void>;
 }) {
-  if (asOf) return null;
+  if (j.effective !== "IN_FORCE") return null;
   if (editing !== j.id) {
     return (
       <Button
@@ -1192,6 +1186,37 @@ export function hitName(
   return `${h.name} ${m.judgements.asElement(locale === "ja" ? h.asElement.nameJa : h.asElement.nameEn)}`;
 }
 
+/**
+ * 施行前・適用終了の印の文言。区分ごとなら「区分の…」と断る。
+ * 該当に数えない非該当であることが、いつから・いつまでかと一緒に読める（2026-09-22 決定）
+ */
+export function effectiveLabel(
+  m: M,
+  j: {
+    effective: "IN_FORCE" | "NOT_YET" | "EXPIRED";
+    effectiveScope: "category" | "substance" | null;
+    effectiveFrom: string | null;
+    effectiveTo: string | null;
+  },
+): string {
+  const byCategory = j.effectiveScope === "category";
+  if (j.effective === "NOT_YET") {
+    return byCategory
+      ? m.judgements.notYetCategory(j.effectiveFrom ?? "")
+      : m.judgements.notYetEffective(j.effectiveFrom ?? "");
+  }
+  return byCategory
+    ? m.judgements.expiredCategory(j.effectiveTo ?? "")
+    : m.judgements.expired(j.effectiveTo ?? "");
+}
+
+/** その区分の行に付ける印。中の行がすべて「区分ごと効いていない」なら、その 1 件を返す */
+function categoryEffective(g: { items: ProductJudgementDto[] }): ProductJudgementDto | null {
+  const first = g.items[0];
+  if (!first || first.effectiveScope !== "category") return null;
+  return g.items.every((x) => x.effectiveScope === "category") ? first : null;
+}
+
 /** 判定の単位の行の名前。区分そのものが単位なら「（区分の合計）」、元素換算なら「（鉛として）」を添える */
 export function unitName(
   j: Pick<ProductJudgementDto, "statutoryName" | "asElement">,
@@ -1203,13 +1228,23 @@ export function unitName(
   return `${j.statutoryName} ${m.judgements.asElement(locale === "ja" ? j.asElement.nameJa : j.asElement.nameEn)}`;
 }
 
-export function OneLine({ text, notApplicable }: { text: string; notApplicable?: boolean }) {
+export function OneLine({
+  text,
+  notApplicable,
+  dimmed,
+}: {
+  text: string;
+  notApplicable?: boolean;
+  /** 施行前・適用終了の行。薄い字にして、効いていないことを見た目でも示す */
+  dimmed?: boolean;
+}) {
   const { m } = useI18n();
   return (
     <div
       className={cn(
         "overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         notApplicable && NEAR_MISS_CLASS,
+        dimmed && "text-muted-foreground",
       )}
       title={notApplicable ? text + "\n" + m.judgements.notApplicable : text}
     >

@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
@@ -16,6 +17,7 @@ interface RejudgeStatus {
   startedAt: string | null;
   finishedAt: string | null;
   versionCode: string | null;
+  asOf: string | null;
   error: string | null;
 }
 
@@ -23,6 +25,8 @@ interface Body {
   status: RejudgeStatus;
   lastComputedAt: string | null;
   oldestComputedAt: string | null;
+  /** サーバーの今日（日本の日付）。判定対象日の既定 */
+  today: string;
 }
 
 /**
@@ -37,6 +41,8 @@ export function RejudgeSection() {
   const [body, setBody] = useState<Body | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  /** 判定対象日。既定は今日。その日に効いている規制で全製品を判定し直す（2026-09-22 決定） */
+  const [asOf, setAsOf] = useState("");
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/rejudge").catch(() => null);
@@ -45,7 +51,9 @@ export function RejudgeSection() {
       if (redirectIfUnauthorized(res)) return;
       return;
     }
-    setBody((await res.json()) as Body);
+    const b = (await res.json()) as Body;
+    setBody(b);
+    setAsOf((v) => v || b.today);
   }, []);
 
   useEffect(() => {
@@ -70,7 +78,11 @@ export function RejudgeSection() {
     setError(null);
     setStarting(true);
     try {
-      const res = await fetch("/api/admin/rejudge", { method: "POST" });
+      const res = await fetch("/api/admin/rejudge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ asOf }),
+      });
       if (!res.ok && res.status !== 409) {
         if (redirectIfUnauthorized(res)) return;
         const b = (await res.json().catch(() => null)) as ApiError | null;
@@ -94,7 +106,13 @@ export function RejudgeSection() {
       : s.error
         ? m.settings.rejudgeFailed(s.error)
         : s.finishedAt
-          ? m.settings.rejudgeDone(s.done, when(s.finishedAt), s.versionCode ?? "")
+          ? m.settings.rejudgeDone(
+              s.done,
+              when(s.finishedAt),
+              [s.versionCode ?? "", s.asOf ? m.judgements.judgedAsOf(s.asOf) : ""]
+                .filter(Boolean)
+                .join(" ・ "),
+            )
           : body?.lastComputedAt
             ? m.settings.rejudgeLast(when(body.lastComputedAt))
             : m.settings.rejudgeNever;
@@ -103,10 +121,19 @@ export function RejudgeSection() {
     <div id="rejudge" className="scroll-mt-24 space-y-2 border-t pt-4">
       <Label>{m.settings.rejudge}</Label>
       <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-1 text-xs" title={m.settings.rejudgeAsOfHint}>
+          <span className="text-muted-foreground">{m.settings.rejudgeAsOf}</span>
+          <Input
+            type="date"
+            value={asOf}
+            onChange={(e) => setAsOf(e.target.value)}
+            className="h-8 w-36"
+          />
+        </label>
         <Button
           type="button"
           variant="outline"
-          disabled={running || starting}
+          disabled={running || starting || !/^\d{4}-\d{2}-\d{2}$/.test(asOf)}
           onClick={() => void start()}
         >
           <RefreshCw className={running ? "mr-1 size-3.5 animate-spin" : "mr-1 size-3.5"} />
