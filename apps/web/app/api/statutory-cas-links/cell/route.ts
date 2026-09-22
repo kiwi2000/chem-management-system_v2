@@ -196,11 +196,17 @@ export async function GET(req: Request) {
       それを「含有率不足」と読んで隠してしまい、載っているのに消えたように見えた。
       採用されなかったものは、含有率だけで見る（前のバージョンと同じ見かた）
     */
+    /*
+      **該非は保存判定の verdict で見る。**根拠（hits）の有無では決めない。
+      含有率不足の非該当も「入っていた値」を根拠として残しているので、根拠の有無で見ると
+      非該当が当たりに見えていた（2026-09-22 報告。銅 × 生態毒性物質）。
+      人が非該当に直したものも、判定表・合算表と同じく当たりにしない
+    */
     const hitHere =
       isCurrent && judgement !== null && adopted
-        ? judgement.hits.some((h) => h.statutorySubstanceId === substanceId) ||
-          // 区分そのものでまとめて当たったとき。中の号は全部当たり扱い
-          (judgement.verdict === "APPLICABLE" &&
+        ? judgement.verdict === "APPLICABLE" &&
+          (judgement.hits.some((h) => h.statutorySubstanceId === substanceId) ||
+            // 区分そのものでまとめて当たったとき。中の号は全部当たり扱い
             judgement.hits.some((h) => h.statutorySubstanceId === null))
         : enough;
     /*
