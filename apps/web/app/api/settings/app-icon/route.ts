@@ -8,10 +8,11 @@ import { getAppSettings } from "@/lib/settings";
 export const dynamic = "force-dynamic";
 
 /**
- * 題字の横のアイコンは帯の高さ（36px）に縮めて出すので、これだけあれば高精細の画面でも足りる。
+ * 題字の横のアイコンは帯の高さ（36px）に縮めて出すので、これだけあれば高精細の画面でも足りる
+ * （横長 4:1 のロゴでも高さ 128px が残る）。
  * 画像ライブラリの上限（既定 2000px）をそのまま使うと、設定の行が無駄に太る
  */
-const ICON_MAX_EDGE = 256;
+const ICON_MAX_EDGE = 512;
 
 /**
  * POST /api/settings/app-icon — アイコンを預ける（multipart の `file`。システム管理者のみ）。

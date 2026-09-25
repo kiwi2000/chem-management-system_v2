@@ -118,14 +118,14 @@ export function AppIconField({
         )}
       </div>
       {/*
-        選んだら、アバターと同じ切り出しを出す。四角のまま・透明のまま。
-        横長のロゴは四角に切ると欠けるので、「切り取らずに使う」も置く
+        選んだら、アバターと同じ切り出しを出す。枠は長方形にでき（縦横比のつまみ）、透明のまま。
+        画像をまるごと使いたいときのために「切り取らずに使う」も置く
       */}
       {picked && (
         <AvatarCropper
           file={picked}
           saving={busy}
-          shape="square"
+          shape="rect"
           hint={m.settings.headerIconCropHint}
           onDone={(blob) => upload(blob, "icon.png")}
           onCancel={() => setPicked(null)}

@@ -882,6 +882,8 @@ export const ja = {
     avatarUnsaved: "未保存",
     avatarZoom: "大きさ",
     avatarApply: "この範囲にする",
+    /** 切り出しの枠の縦横比（題字のアイコン。2026-09-25 指示） */
+    cropAspect: "縦横比",
     avatarCropHint: "つまみで大きさを変え、画像をつかんで位置を合わせます。丸の中が保存されます",
     avatarHint: "正方形に切り取り、256ピクセルに縮めて保存します。JPEG・PNG・WebPが使えます",
     avatarUpload: "アップロード",
@@ -1858,7 +1860,7 @@ export const ja = {
       "PNG・JPEG・WebP などの画像ファイルを選び、使う範囲を切り取ると、題字の横に高さ 36px に縮めて出ます。透明のある PNG はそのまま透明で出ます",
     headerIconNone: "なし",
     headerIconCropHint:
-      "つまみで大きさを変え、画像をつかんで位置を合わせます。枠の中がアイコンになります。横長のロゴは「切り取らずに使う」を押してください",
+      "つまみで大きさと縦横比を変え、画像をつかんで位置を合わせます。枠の中がアイコンになります。画像をまるごと使うときは「切り取らずに使う」を押してください",
     headerIconAsIs: "切り取らずに使う",
     headerIconUpload: "ファイル",
     headerIconRemove: "アイコンを削除",
