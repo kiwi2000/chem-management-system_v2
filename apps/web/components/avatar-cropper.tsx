@@ -15,18 +15,30 @@ const MAX_SCALE = 4;
  *
  * 選んだ画像を正方形の枠に収め、つまみで拡大縮小、つかんで位置合わせをする。
  * 中央を機械的に切ると顔が外れることがあるので、どこを使うかは本人に決めてもらう。
+ *
+ * 題字の横のアイコンでも使う（2026-09-25 指示）。そのときは `shape="square"`:
+ * 丸の覆いを付けず、透明を白で埋めず、PNG で返す（ロゴの透明を残すため）。
+ * `extra` には切り出しの横に並べるボタン（「切り取らずに使う」など）を渡せる
  */
 export function AvatarCropper({
   file,
   saving,
   onDone,
   onCancel,
+  shape = "circle",
+  hint,
+  extra,
 }: {
   file: File;
   saving: boolean;
   onDone: (blob: Blob) => void;
   onCancel: () => void;
+  shape?: "circle" | "square";
+  /** 下に出す説明。既定はアバターの説明 */
+  hint?: string;
+  extra?: React.ReactNode;
 }) {
+  const square = shape === "square";
   const { m } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -95,12 +107,17 @@ export function AvatarCropper({
       if (!img || !ctx) return;
       const s = cropSide();
       const c = clamp(center);
-      // 透過のある画像でも白地にする（丸く切り抜くので、透けると背景と混ざる）
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, side, side);
+      if (square) {
+        // 題字のアイコンは透明のまま（帯の色が透けて見えるように）
+        ctx.clearRect(0, 0, side, side);
+      } else {
+        // 透過のある画像でも白地にする（丸く切り抜くので、透けると背景と混ざる）
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, side, side);
+      }
       ctx.drawImage(img, c.x - s / 2, c.y - s / 2, s, s, 0, 0, side, side);
     },
-    [center, clamp, cropSide],
+    [center, clamp, cropSide, square],
   );
 
   useEffect(() => {
@@ -132,7 +149,8 @@ export function AvatarCropper({
     out.width = AVATAR_SIDE;
     out.height = AVATAR_SIDE;
     draw(out, AVATAR_SIDE);
-    out.toBlob((b) => b && onDone(b), "image/jpeg", 0.85);
+    if (square) out.toBlob((b) => b && onDone(b), "image/png");
+    else out.toBlob((b) => b && onDone(b), "image/jpeg", 0.85);
   }
 
   if (failed) return <p className="text-destructive text-sm">{m.preferences.avatarTypeError}</p>;
@@ -153,19 +171,21 @@ export function AvatarCropper({
           onPointerCancel={onPointerUp}
           className="cursor-grab touch-none active:cursor-grabbing"
         />
-        {/* 実際に出るのは丸なので、丸の外を暗くして仕上がりを見せる */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-md"
-          style={{
-            background: "rgba(0,0,0,0.45)",
-            // closest-side にしないと、円が四隅までの距離を基準にして小さくなる
-            WebkitMaskImage:
-              "radial-gradient(circle closest-side at center, transparent 99.5%, black 100%)",
-            maskImage:
-              "radial-gradient(circle closest-side at center, transparent 99.5%, black 100%)",
-          }}
-        />
+        {/* 実際に出るのは丸なので、丸の外を暗くして仕上がりを見せる（四角のときは枠そのものが仕上がり） */}
+        {!square && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-md"
+            style={{
+              background: "rgba(0,0,0,0.45)",
+              // closest-side にしないと、円が四隅までの距離を基準にして小さくなる
+              WebkitMaskImage:
+                "radial-gradient(circle closest-side at center, transparent 99.5%, black 100%)",
+              maskImage:
+                "radial-gradient(circle closest-side at center, transparent 99.5%, black 100%)",
+            }}
+          />
+        )}
       </div>
 
       <div className="flex items-center gap-2">
@@ -192,11 +212,12 @@ export function AvatarCropper({
         <Button type="button" size="sm" disabled={!ready || saving} onClick={confirm}>
           {m.preferences.avatarApply}
         </Button>
+        {extra}
         <Button type="button" size="sm" variant="outline" disabled={saving} onClick={onCancel}>
           {m.common.cancel}
         </Button>
       </div>
-      <p className="text-muted-foreground text-xs">{m.preferences.avatarCropHint}</p>
+      <p className="text-muted-foreground text-xs">{hint ?? m.preferences.avatarCropHint}</p>
     </div>
   );
 }

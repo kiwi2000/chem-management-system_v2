@@ -2,6 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
+import { AvatarCropper } from "@/components/avatar-cropper";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
@@ -25,6 +26,8 @@ export function AppIconField({
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  /** 選んだばかりのファイル。切り出しが済むまで持つ（2026-09-25 指示） */
+  const [picked, setPicked] = useState<File | null>(null);
 
   async function send(req: Promise<Response>, done: (res: Response) => Promise<void>) {
     setBusy(true);
@@ -43,12 +46,13 @@ export function AppIconField({
     }
   }
 
-  function upload(file: File) {
+  function upload(file: Blob, name: string) {
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", file, name);
     void send(fetch("/api/settings/app-icon", { method: "POST", body: form }), async (res) => {
       const { version: next } = (await res.json()) as { version: string };
       onChange(next);
+      setPicked(null);
       setMessage({ ok: true, text: m.settings.headerIconUploaded });
     });
   }
@@ -82,7 +86,10 @@ export function AppIconField({
           onChange={(e) => {
             const f = e.target.files?.[0];
             e.target.value = "";
-            if (f) upload(f);
+            if (f) {
+              setMessage(null);
+              setPicked(f);
+            }
           }}
         />
         <Button
@@ -110,6 +117,31 @@ export function AppIconField({
           </Button>
         )}
       </div>
+      {/*
+        選んだら、アバターと同じ切り出しを出す。四角のまま・透明のまま。
+        横長のロゴは四角に切ると欠けるので、「切り取らずに使う」も置く
+      */}
+      {picked && (
+        <AvatarCropper
+          file={picked}
+          saving={busy}
+          shape="square"
+          hint={m.settings.headerIconCropHint}
+          onDone={(blob) => upload(blob, "icon.png")}
+          onCancel={() => setPicked(null)}
+          extra={
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => upload(picked, picked.name)}
+            >
+              {m.settings.headerIconAsIs}
+            </Button>
+          }
+        />
+      )}
       {message && (
         <p className={message.ok ? "text-muted-foreground text-xs" : "text-destructive text-xs"}>
           {message.text}

@@ -1855,8 +1855,11 @@ export const ja = {
       "上の帯の題字・ログイン画面・ブラウザのタブに出ます。空にするとデフォルトの名前に戻ります",
     headerIcon: "題字の横のアイコン",
     headerIconHint:
-      "PNG・JPEG などの画像ファイルを選ぶと、題字の横に高さ 36px に縮めて出ます（横長のロゴでもかまいません）。透明のある PNG はそのまま透明で出ます",
+      "PNG・JPEG・WebP などの画像ファイルを選び、使う範囲を切り取ると、題字の横に高さ 36px に縮めて出ます。透明のある PNG はそのまま透明で出ます",
     headerIconNone: "なし",
+    headerIconCropHint:
+      "つまみで大きさを変え、画像をつかんで位置を合わせます。枠の中がアイコンになります。横長のロゴは「切り取らずに使う」を押してください",
+    headerIconAsIs: "切り取らずに使う",
     headerIconUpload: "ファイル",
     headerIconRemove: "アイコンを削除",
     headerIconUploaded: "アイコンを登録しました。画面を開き直すと題字の横に出ます",

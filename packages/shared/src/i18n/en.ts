@@ -1768,8 +1768,11 @@ export const en: Messages = {
       "Shown in the header, on the login screen and in the browser tab. Leave blank to use the default name",
     headerIcon: "Icon next to the title",
     headerIconHint:
-      "Choose a PNG or JPEG image file and it appears next to the title, scaled to 36 px high (a wide logo is fine). PNG transparency is kept",
+      "Choose a PNG, JPEG or WebP image file and crop the area to use; it appears next to the title, scaled to 36 px high. PNG transparency is kept",
     headerIconNone: "None",
+    headerIconCropHint:
+      'Use the slider to resize and drag the image to position it. The frame is what becomes the icon. For a wide logo, choose "Use without cropping"',
+    headerIconAsIs: "Use without cropping",
     headerIconUpload: "File",
     headerIconRemove: "Delete icon",
     headerIconUploaded: "Icon uploaded. Reload the page to see it next to the title",
