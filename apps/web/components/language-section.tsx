@@ -231,12 +231,13 @@ export function LanguageSection() {
           <Table className="border-separate border-spacing-0" containerClassName="overflow-visible">
             <TableHeader className="bg-table-head text-table-head-foreground sticky top-0 [&_th]:text-inherit">
               <TableRow>
-                <TableHead className={cn(CELL, "w-20")}>{m.languages.code}</TableHead>
-                <TableHead className={CELL}>{m.languages.nameJa}</TableHead>
-                <TableHead className={CELL}>{m.languages.nameEn}</TableHead>
+                {/* 並び順はいちばん左（2026-09-25 指示） */}
                 <TableHead className={cn(CELL, "w-20 text-right")}>
                   {m.languages.displayOrder}
                 </TableHead>
+                <TableHead className={cn(CELL, "w-20")}>{m.languages.code}</TableHead>
+                <TableHead className={CELL}>{m.languages.nameJa}</TableHead>
+                <TableHead className={CELL}>{m.languages.nameEn}</TableHead>
                 <TableHead className={cn(CELL, "w-16")} />
               </TableRow>
             </TableHeader>
@@ -263,6 +264,23 @@ export function LanguageSection() {
                     onDoubleClick={editingId ? undefined : () => startEdit(l)}
                     className={cn(!editingId && "cursor-pointer")}
                   >
+                    <TableCell className={cn(CELL, "text-muted-foreground text-right")}>
+                      {editing ? (
+                        <Input
+                          type="number"
+                          min={0}
+                          max={9999}
+                          value={draft.displayOrder}
+                          aria-label={m.languages.displayOrder}
+                          onChange={(e) =>
+                            setDraft({ ...draft, displayOrder: Number(e.target.value) })
+                          }
+                          className={cn(CELL_INPUT, "text-right")}
+                        />
+                      ) : (
+                        l.displayOrder
+                      )}
+                    </TableCell>
                     <TableCell className={cn(CELL, "font-mono")}>
                       {editing ? (
                         <Input
@@ -302,23 +320,6 @@ export function LanguageSection() {
                         />
                       ) : (
                         l.nameEn
-                      )}
-                    </TableCell>
-                    <TableCell className={cn(CELL, "text-muted-foreground text-right")}>
-                      {editing ? (
-                        <Input
-                          type="number"
-                          min={0}
-                          max={9999}
-                          value={draft.displayOrder}
-                          aria-label={m.languages.displayOrder}
-                          onChange={(e) =>
-                            setDraft({ ...draft, displayOrder: Number(e.target.value) })
-                          }
-                          className={cn(CELL_INPUT, "text-right")}
-                        />
-                      ) : (
-                        l.displayOrder
                       )}
                     </TableCell>
                     <TableCell className={cn(CELL, "text-center")}>
