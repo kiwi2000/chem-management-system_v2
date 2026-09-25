@@ -11,4 +11,4 @@ python scripts/deliver/add-search.py    # 全文検索（search-index.js と目�
 `DST` と `GROUPS` で決める。Google ドライブへは robocopy の `/MIR` で
 `H:\マイドライブ\dev\chem-management-system_v2_納品\` に写す。
 
-原本が PDF しか無いもの（開発費用の概算）と docx はそのまま写す。`docs/out/` の PDF 一式とは別物。
+原本が PDF しか無いもの（開発費用の概算）と docx はそのまま写す。md から作った PDF（`docs/` で元の md の隣に置いてあるもの）とは別物。
