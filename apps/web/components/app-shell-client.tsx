@@ -195,10 +195,7 @@ export function AppShellClient({
           >
             {/* 名前は帯の左、開閉ボタンの隣。左ペインの頭に置くとペインの幅で切れた */}
             {/* 題字は帯の中でいちばん大きく（2026-09-17 指示）。上下の余白は 2 mm ほど（8px、2026-09-21 指示） */}
-            <Link
-              href="/"
-              className="font-serif min-w-0 truncate text-[28px] leading-9 font-semibold"
-            >
+            <Link href="/" className="min-w-0 truncate text-[28px] leading-9 font-semibold">
               {m.common.appName}
             </Link>
             <div className="ml-auto flex items-center gap-3">
