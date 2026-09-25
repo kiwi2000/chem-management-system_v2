@@ -227,7 +227,8 @@ export function LanguageSection() {
           className="bg-background overflow-auto rounded-md border"
           style={boxMax ? { maxHeight: boxMax } : undefined}
         >
-          <Table className="border-separate border-spacing-0">
+          {/* 送るのは外の箱だけ。表の枠まで送ると、見出しが上に貼り付かずに流れていく */}
+          <Table className="border-separate border-spacing-0" containerClassName="overflow-visible">
             <TableHeader className="bg-table-head text-table-head-foreground sticky top-0 [&_th]:text-inherit">
               <TableRow>
                 <TableHead className={cn(CELL, "w-20")}>{m.languages.code}</TableHead>
