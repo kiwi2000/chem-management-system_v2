@@ -2,7 +2,7 @@
 
 import { pickName } from "@chem/shared";
 import { Plus, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,15 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, LanguageDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ResizableBox } from "@/components/data-table/resizable-box";
 
 const NEW_ID = "__new__";
+
+/**
+ * 見せる行の数（2026-09-25 指示）。**この表だけは他の表と同じ箱にしない。**
+ * 共通の箱は行が増えると中身に合わせて伸びるので、言語が全部並んで長くなっていた。
+ * 見出しと 7 行ぶんの高さに固定し、残りは中で送る
+ */
+const VISIBLE_ROWS = 7;
 
 interface Draft {
   code: string;
@@ -53,6 +59,9 @@ export function LanguageSection() {
   const ask = useConfirm();
 
   const [items, setItems] = useState<LanguageDto[] | null>(null);
+  /** 表を包む箱と、その高さの上限（px）。見出しと最初の 7 行を実際に測って決める */
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const [boxMax, setBoxMax] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [error, setError] = useState<string | null>(null);
@@ -144,6 +153,35 @@ export function LanguageSection() {
       ? [{ id: NEW_ID, code: "", nameJa: "", nameEn: "", displayOrder: 0 }, ...(items ?? [])]
       : (items ?? []);
 
+  /** 見出しと最初の 7 行の高さを測って、箱の上限にする */
+  const measure = useCallback(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const head = box.querySelector("thead")?.getBoundingClientRect().height ?? 0;
+    // カードを畳んでいるあいだは高さが 0 で測れない。開いたときに測り直す（下の見張り）
+    if (head === 0) return;
+    const body = [...box.querySelectorAll("tbody > tr")].slice(0, VISIBLE_ROWS);
+    if (body.length < VISIBLE_ROWS) {
+      setBoxMax(null); // 7 行に満たないうちは、中身の高さのまま
+      return;
+    }
+    const sum = body.reduce((h, tr) => h + tr.getBoundingClientRect().height, 0);
+    // 枠の上下の線（1px ずつ）のぶんを足す
+    setBoxMax(Math.ceil(head + sum) + 2);
+  }, []);
+
+  // 行が変わるのは、読み込み直したときと、編集（行の中に入力欄が出る）を始め・終えたとき
+  useLayoutEffect(measure, [items, editingId, measure]);
+
+  // カードを開いた・画面の幅が変わって行が折り返した、などで大きさが変わったら測り直す
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [measure]);
+
   return (
     <Card>
       <CardHeader>
@@ -184,10 +222,10 @@ export function LanguageSection() {
           )}
         </div>
 
-        <ResizableBox
-          storageKey="chem.box.languages"
-          defaultMaxHeight="24rem"
-          className="bg-background rounded-md border"
+        <div
+          ref={boxRef}
+          className="bg-background overflow-auto rounded-md border"
+          style={boxMax ? { maxHeight: boxMax } : undefined}
         >
           <Table className="border-separate border-spacing-0">
             <TableHeader className="bg-table-head text-table-head-foreground sticky top-0 [&_th]:text-inherit">
@@ -302,7 +340,7 @@ export function LanguageSection() {
               })}
             </TableBody>
           </Table>
-        </ResizableBox>
+        </div>
       </CardContent>
     </Card>
   );
