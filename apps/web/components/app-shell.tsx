@@ -72,6 +72,12 @@ export async function AppShell({ children }: { children: ReactNode }) {
         avatarVersion={actor.user.avatarUpdatedAt?.getTime() ?? 0}
         // パスワードの期限が近いときの予告（2026-09-17 指示）。出さないときは null
         passwordExpiresIn={passwordExpiryWarningDays(actor.user, settings)}
+        // 題字の横のアイコン（2026-09-25 指示）。預けていなければ null
+        headerIcon={
+          settings.headerIconVersion
+            ? { version: settings.headerIconVersion, position: settings.headerIconPosition }
+            : null
+        }
       >
         {children}
       </AppShellClient>

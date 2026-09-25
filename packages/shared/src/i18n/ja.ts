@@ -1847,6 +1847,25 @@ export const ja = {
     imageJpegQuality: "JPEG の画質（1〜100）",
     imageJpegQualityHint: "85 前後がふつうです。数を上げるときれいになり、大きくなります",
     imageJpegQualityRange: "画質は 1〜100 の間で指定してください",
+    /** システム名と題字のアイコン（2026-09-25 指示） */
+    appearanceSection: "システム名とアイコン",
+    appNameJa: "システム名（日本語）",
+    appNameEn: "システム名（英語）",
+    appNameHint:
+      "上の帯の題字・ログイン画面・ブラウザのタブに出ます。空にするとデフォルトの名前に戻ります",
+    headerIcon: "題字の横のアイコン",
+    headerIconHint:
+      "PNG・JPEG などの画像ファイルを選ぶと、題字の横に高さ 36px に縮めて出ます（横長のロゴでもかまいません）。透明のある PNG はそのまま透明で出ます",
+    headerIconNone: "なし",
+    headerIconUpload: "ファイル",
+    headerIconRemove: "アイコンを削除",
+    headerIconUploaded: "アイコンを登録しました。画面を開き直すと題字の横に出ます",
+    headerIconRemoved: "アイコンを削除しました",
+    headerIconPosition: "アイコンの位置",
+    headerIconPositions: {
+      left: "左",
+      right: "右",
+    },
     approvalSection: "承認",
     pendingTitle: "承認待のものが残っています",
     pendingHint: "承認を不要にすると、承認する人がいなくなります。まとめてどちらかに寄せてください",

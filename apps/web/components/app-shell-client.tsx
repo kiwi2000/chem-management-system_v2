@@ -1,5 +1,6 @@
 "use client";
 
+import type { HeaderIconPosition } from "@chem/shared";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
@@ -39,6 +40,21 @@ const EDGE_TAB = "flex size-5 items-center justify-center rounded-none border p-
  */
 const BODY_TAB = "bg-muted text-foreground border-border hover:bg-accent";
 
+/**
+ * 題字の横のアイコン（2026-09-25 指示）。高さだけ決め、幅は絵の縦横比のまま（横長のロゴも入る）。
+ * 画像は DB から返す動的な絵なので next/image は通さない
+ */
+function HeaderIconImage({ version, className }: { version: string; className: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`/api/app-icon?v=${encodeURIComponent(version)}`}
+      alt=""
+      className={cn("w-auto shrink-0 object-contain", className)}
+    />
+  );
+}
+
 const STORAGE_KEY = "chem.sidebar.open";
 /**
  * 残りがこの日数を切ったら、鈴だけでなく帯でも知らせる（2026-09-17 決定）。
@@ -57,6 +73,8 @@ interface Props {
   version: { code: string; nameJa: string | null } | null;
   /** パスワードの期限まであと何日か。予告を出さないときは null */
   passwordExpiresIn: number | null;
+  /** 題字の横のアイコン。預けた時刻（URL に付けて覚えを切り替える）と左右。無ければ null */
+  headerIcon: { version: string; position: HeaderIconPosition } | null;
   children: ReactNode;
 }
 
@@ -70,6 +88,7 @@ export function AppShellClient({
   avatarVersion,
   version,
   passwordExpiresIn,
+  headerIcon,
   children,
 }: Props) {
   const { m } = useI18n();
@@ -130,8 +149,15 @@ export function AppShellClient({
         ペインの側には帯を持たない。狭い画面は引き出し式で帯が画面に無いので、そのときだけ出す
       */}
       <div className="bg-sidebar-header text-sidebar-header-foreground flex h-14 items-center justify-between gap-2 border-b px-4 md:hidden">
-        <Link href="/" className="truncate text-base font-semibold">
-          {m.common.appName}
+        <Link
+          href="/"
+          className={cn(
+            "flex min-w-0 items-center gap-2 text-base font-semibold",
+            headerIcon?.position === "right" && "flex-row-reverse justify-end",
+          )}
+        >
+          {headerIcon && <HeaderIconImage version={headerIcon.version} className="h-6" />}
+          <span className="min-w-0 truncate">{m.common.appName}</span>
         </Link>
         <Button
           variant="ghost"
@@ -195,8 +221,15 @@ export function AppShellClient({
           >
             {/* 名前は帯の左、開閉ボタンの隣。左ペインの頭に置くとペインの幅で切れた */}
             {/* 題字は帯の中でいちばん大きく（2026-09-17 指示）。上下の余白は 2 mm ほど（8px、2026-09-21 指示） */}
-            <Link href="/" className="min-w-0 truncate text-[28px] leading-9 font-semibold">
-              {m.common.appName}
+            <Link
+              href="/"
+              className={cn(
+                "flex min-w-0 items-center gap-2 text-[28px] leading-9 font-semibold",
+                headerIcon?.position === "right" && "flex-row-reverse justify-end",
+              )}
+            >
+              {headerIcon && <HeaderIconImage version={headerIcon.version} className="h-9" />}
+              <span className="min-w-0 truncate">{m.common.appName}</span>
             </Link>
             <div className="ml-auto flex items-center gap-3">
               {/* 画面の枠をまとめて開く／閉じる。枠の無い画面では出ない */}

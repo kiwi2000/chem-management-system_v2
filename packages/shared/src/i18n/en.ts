@@ -1761,6 +1761,24 @@ export const en: Messages = {
     imageJpegQuality: "JPEG quality (1–100)",
     imageJpegQualityHint: "Around 85 is usual; higher is sharper and larger",
     imageJpegQualityRange: "Quality must be between 1 and 100",
+    appearanceSection: "System name and icon",
+    appNameJa: "System name (Japanese)",
+    appNameEn: "System name (English)",
+    appNameHint:
+      "Shown in the header, on the login screen and in the browser tab. Leave blank to use the default name",
+    headerIcon: "Icon next to the title",
+    headerIconHint:
+      "Choose a PNG or JPEG image file and it appears next to the title, scaled to 36 px high (a wide logo is fine). PNG transparency is kept",
+    headerIconNone: "None",
+    headerIconUpload: "File",
+    headerIconRemove: "Delete icon",
+    headerIconUploaded: "Icon uploaded. Reload the page to see it next to the title",
+    headerIconRemoved: "Icon deleted",
+    headerIconPosition: "Icon position",
+    headerIconPositions: {
+      left: "Left",
+      right: "Right",
+    },
     approvalSection: "Approval",
     pendingTitle: "Some items are still awaiting approval",
     pendingHint:

@@ -1,4 +1,10 @@
-import { HEADER_STRONG_CLASS, backgroundClass, getMessages, themeClass } from "@chem/shared";
+import {
+  HEADER_STRONG_CLASS,
+  appNameOf,
+  backgroundClass,
+  getMessages,
+  themeClass,
+} from "@chem/shared";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
@@ -14,8 +20,10 @@ import { cn } from "@/lib/utils";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const m = getMessages(await getLocale());
-  return { title: m.common.appName };
+  const locale = await getLocale();
+  const m = getMessages(locale);
+  // システム設定の名前（空なら辞書の名前）。ブラウザのタブに出る
+  return { title: appNameOf(await getAppSettings(), locale, m.common.appName) };
 }
 
 /**
@@ -82,7 +90,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         )}
       </head>
       <body className="bg-background min-h-screen antialiased">
-        <I18nProvider locale={locale}>
+        <I18nProvider
+          locale={locale}
+          appName={appNameOf(settings, locale, getMessages(locale).common.appName)}
+        >
           {/* ログインしている画面だけ。ログイン画面で時計を回しても意味が無い */}
           <IdleGuard idleMinutes={settings.sessionIdleMinutes} enabled={user !== null}>
             <AppShell>{children}</AppShell>

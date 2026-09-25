@@ -6,16 +6,20 @@ import {
   DEFAULT_SETTINGS,
   describePasswordPolicy,
   formatOptionList,
+  getMessages,
   parseOptionList,
   pickPasswordPolicy,
   PASSWORD_EXPIRY_DAYS_MAX,
   PASSWORD_EXPIRY_WARN_DAYS_MAX,
   PASSWORD_MAX_LENGTH_CEILING,
   PASSWORD_MIN_LENGTH_FLOOR,
+  APP_NAME_MAX,
+  HEADER_ICON_POSITIONS,
   IMAGE_FORMAT_POLICIES,
   IMAGE_MAX_EDGE_MAX,
   IMAGE_MAX_EDGE_MIN,
   SESSION_IDLE_MIN,
+  type HeaderIconPosition,
   type ImageFormatPolicy,
   SESSION_IDLE_MAX,
   type AppSettings,
@@ -25,6 +29,7 @@ import {
 } from "@chem/shared";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AppIconField } from "@/components/app-icon-field";
 import { LanguageSection } from "@/components/language-section";
 import { RejudgeSection } from "@/components/rejudge-section";
 import { ScoreSettingsSection } from "@/components/score-settings-section";
@@ -466,6 +471,70 @@ export default function SettingsPage() {
                 className="w-28"
               />
               <p className="text-muted-foreground text-xs">{m.settings.imageJpegQualityHint}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* システム名と題字のアイコン（2026-09-25 指示）。名前と位置は「保存」で、アイコンはその場で効く */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.appearanceSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="appNameJa">{m.settings.appNameJa}</Label>
+              <Input
+                id="appNameJa"
+                value={settings.appNameJa}
+                maxLength={APP_NAME_MAX}
+                placeholder={getMessages("ja").common.appName}
+                onChange={(e) => setSettings({ ...settings, appNameJa: e.target.value })}
+                className="max-w-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="appNameEn">{m.settings.appNameEn}</Label>
+              <Input
+                id="appNameEn"
+                value={settings.appNameEn}
+                maxLength={APP_NAME_MAX}
+                placeholder={getMessages("en").common.appName}
+                onChange={(e) => setSettings({ ...settings, appNameEn: e.target.value })}
+                className="max-w-xl"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.appNameHint}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>{m.settings.headerIcon}</Label>
+              <AppIconField
+                version={settings.headerIconVersion}
+                onChange={(v) => {
+                  // その場で効いているので、「変更を破棄」で戻す先も合わせる
+                  setSettings({ ...settings, headerIconVersion: v });
+                  setLoaded((l) => (l ? { ...l, headerIconVersion: v } : l));
+                }}
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.headerIconHint}</p>
+            </div>
+            <div className="space-y-2">
+              {/* 左右は横並びのラジオボタン（2026-09-25 指示）。既定は左 */}
+              <Label>{m.settings.headerIconPosition}</Label>
+              <div role="radiogroup" className="flex items-center gap-6 text-sm">
+                {HEADER_ICON_POSITIONS.map((v) => (
+                  <label key={v} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="headerIconPosition"
+                      value={v}
+                      checked={settings.headerIconPosition === v}
+                      onChange={() =>
+                        setSettings({ ...settings, headerIconPosition: v as HeaderIconPosition })
+                      }
+                    />
+                    {m.settings.headerIconPositions[v]}
+                  </label>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>

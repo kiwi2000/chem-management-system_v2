@@ -68,6 +68,7 @@ describe("API ルートの認可", () => {
       .map((f) => relative(API_DIR, f).split(sep).join("/"))
       .sort();
     expect(opened).toEqual([
+      "app-icon/route.ts", // 画面の枠（題字の横のアイコン。用事の最中も枠は出る）
       "auth/change-password/route.ts", // 用事そのもの
       "auth/heartbeat/route.ts", // 放置での自動ログアウト
       "auth/mfa/qr/route.ts", // 用事そのもの（QRコードを絵にする）

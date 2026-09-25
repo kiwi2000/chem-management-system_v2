@@ -12,6 +12,7 @@ import type { Messages } from "./i18n/ja";
  * システム設定。
  * 値は SystemSetting テーブルに文字列で入れ、ここで型付きに読み替える。
  * 設定を増やすときは AppSettings・DEFAULT_SETTINGS・SETTING_DEFS・settingsSchema の4か所を揃えること。
+ * （サーバーだけが書く値は settingsSchema に載せず、保存側で前の値を引き継ぐ）
  */
 
 /**
@@ -137,7 +138,29 @@ export interface AppSettings {
   imageFormat: ImageFormatPolicy;
   /** JPEG にするときの画質（1〜100） */
   imageJpegQuality: number;
+
+  /**
+   * システムの名前（2026-09-25 指示）。上の帯の題字・ログイン画面・ブラウザのタブに出る。
+   * **空なら辞書の既定の名前**（ケミカルコンプライアンス支援システム / Chemical Compliance Support）
+   */
+  appNameJa: string;
+  appNameEn: string;
+  /**
+   * 題字の横に置くアイコン。画像そのものは system_settings の `ui.header_icon` の行に
+   * （`mime;base64,…` の形で）持ち、SETTING_DEFS には載せない（毎回の設定読みで運ばないため）。
+   * ここに持つのは**預けた時刻**で、空なら「アイコン無し」。URL に付けてブラウザの覚えを切り替える
+   */
+  headerIconVersion: string;
+  /** 題字の左右どちらに置くか */
+  headerIconPosition: HeaderIconPosition;
 }
+
+export const HEADER_ICON_POSITIONS = ["left", "right"] as const;
+export type HeaderIconPosition = (typeof HEADER_ICON_POSITIONS)[number];
+/** アイコンの本体を入れる system_settings のキー（SETTING_DEFS の外） */
+export const HEADER_ICON_DATA_KEY = "ui.header_icon";
+/** システム名の上限（帯に収まる長さ。題字は折り返さない） */
+export const APP_NAME_MAX = 100;
 
 export const IMAGE_FORMAT_POLICIES = ["keep", "png", "jpeg"] as const;
 export type ImageFormatPolicy = (typeof IMAGE_FORMAT_POLICIES)[number];
@@ -172,7 +195,33 @@ export const DEFAULT_SETTINGS: AppSettings = {
   imageMaxEdgePx: 2000,
   imageFormat: "keep",
   imageJpegQuality: 85,
+  appNameJa: "",
+  appNameEn: "",
+  headerIconVersion: "",
+  headerIconPosition: "left",
 };
+
+/**
+ * その言語で出すシステムの名前。設定が空なら辞書の名前（fallback）
+ */
+export function appNameOf(
+  settings: Pick<AppSettings, "appNameJa" | "appNameEn">,
+  locale: string,
+  fallback: string,
+): string {
+  const v = locale === "en" ? settings.appNameEn : settings.appNameJa;
+  return v.trim() !== "" ? v.trim() : fallback;
+}
+
+/**
+ * 文言一式の `common.appName` を設定の名前に差し替える。
+ * 題字・ログイン画面・タブの名前は全部この 1 か所を見ているので、ここで替えれば揃う
+ */
+export function withAppName(m: Messages, settings: AppSettings, locale: string): Messages {
+  const name = appNameOf(settings, locale, m.common.appName);
+  if (name === m.common.appName) return m;
+  return { ...m, common: { ...m.common, appName: name } };
+}
 
 /** パスワードの決まりだけを取り出したもの。画面にも渡すのでこの形で持つ */
 export type PasswordPolicy = Pick<
@@ -400,6 +449,24 @@ export const SETTING_DEFS: SettingDef[] = [
     parse: (raw) =>
       raw.trim() !== "" && unknownFileNamePlaceholders(raw).length === 0 ? raw.trim() : null,
   },
+  // 空は「既定の名前」なので、そのまま通す
+  { field: "appNameJa", key: "ui.app_name_ja", valueType: "STRING", parse: (raw) => raw },
+  { field: "appNameEn", key: "ui.app_name_en", valueType: "STRING", parse: (raw) => raw },
+  {
+    field: "headerIconVersion",
+    key: "ui.header_icon_version",
+    valueType: "STRING",
+    parse: (raw) => raw,
+  },
+  {
+    field: "headerIconPosition",
+    key: "ui.header_icon_position",
+    valueType: "STRING",
+    parse: (raw) =>
+      (HEADER_ICON_POSITIONS as readonly string[]).includes(raw)
+        ? (raw as HeaderIconPosition)
+        : null,
+  },
 ];
 
 /** 許容誤差は 0〜10%。これより大きい値は設定ミスとみなす */
@@ -487,6 +554,10 @@ export const settingsSchema = (m: Messages) =>
       .int()
       .min(1, m.settings.imageJpegQualityRange)
       .max(100, m.settings.imageJpegQualityRange),
+    appNameJa: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
+    appNameEn: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
+    headerIconPosition: z.enum(HEADER_ICON_POSITIONS),
+    // headerIconVersion はアイコンを預けた・外したときにサーバーが書く。画面からは受けない
   });
 
 export type SettingsInput = z.infer<ReturnType<typeof settingsSchema>>;

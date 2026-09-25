@@ -1,7 +1,7 @@
 "use client";
 
 import { DEFAULT_LOCALE, getMessages, type Locale, type Messages } from "@chem/shared";
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 /**
  * クライアント側の文言。
@@ -18,12 +18,28 @@ const I18nContext = createContext<I18nValue>({
   m: getMessages(DEFAULT_LOCALE),
 });
 
-export function I18nProvider({ locale, children }: { locale: Locale; children: ReactNode }) {
-  return (
-    <I18nContext.Provider value={{ locale, m: getMessages(locale) }}>
-      {children}
-    </I18nContext.Provider>
-  );
+export function I18nProvider({
+  locale,
+  appName,
+  children,
+}: {
+  locale: Locale;
+  /**
+   * システム設定で決めたシステムの名前（2026-09-25 指示）。
+   * 題字・ログイン画面は `m.common.appName` を見ているので、ここで差し替えれば揃う
+   */
+  appName?: string;
+  children: ReactNode;
+}) {
+  const value = useMemo(() => {
+    const base = getMessages(locale);
+    const m =
+      appName && appName !== base.common.appName
+        ? { ...base, common: { ...base.common, appName } }
+        : base;
+    return { locale, m };
+  }, [locale, appName]);
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 /** 例: `const { m } = useI18n();` → `m.login.submit` */

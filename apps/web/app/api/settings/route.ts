@@ -81,7 +81,8 @@ export async function PUT(req: Request) {
     });
   }
 
-  await saveAppSettings(next, actor.user.id);
+  // 画面から受けない値（アイコンを預けた時刻）は、いまの値を引き継ぐ
+  await saveAppSettings({ ...before, ...next }, actor.user.id);
   // メンテナンスに入った瞬間に、管理者以外を全員ログアウトさせる（入れないだけでは作業が続く）
   let endedSessions = 0;
   if (!before.maintenanceMode && next.maintenanceMode) {
