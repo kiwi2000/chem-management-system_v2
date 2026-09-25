@@ -1777,7 +1777,7 @@ export const en: Messages = {
     headerIconUploaded: "Logo uploaded. Reload the page to see it next to the system name",
     headerIconRemoved: "Logo deleted",
     headerIconPosition: "Logo position",
-    headerHideName: "Hide the system name in the header (logo only)",
+    headerHideName: "Hide the system name (a logo must be registered)",
     headerHideNameHint:
       "Available only when a logo is set. If the logo is deleted, the system name comes back. The login screen and the browser tab still show the system name",
     headerIconPositions: {

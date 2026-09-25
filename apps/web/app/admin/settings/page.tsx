@@ -504,6 +504,19 @@ export default function SettingsPage() {
               />
               <p className="text-muted-foreground text-xs">{m.settings.appNameHint}</p>
             </div>
+            {/* システム名を非表示（2026-09-25 指示）。ロゴの上に置く。ロゴが無いときは押せない */}
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={settings.headerHideName}
+                  disabled={!settings.headerIconVersion}
+                  onChange={(e) => setSettings({ ...settings, headerHideName: e.target.checked })}
+                />
+                {m.settings.headerHideName}
+              </label>
+              <p className="text-muted-foreground text-xs">{m.settings.headerHideNameHint}</p>
+            </div>
             <div className="space-y-2">
               <Label>{m.settings.headerIcon}</Label>
               <AppIconField
@@ -534,18 +547,6 @@ export default function SettingsPage() {
                     {m.settings.headerIconPositions[v]}
                   </label>
                 ))}
-              </div>
-              <div className="space-y-1">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={settings.headerHideName}
-                    disabled={!settings.headerIconVersion}
-                    onChange={(e) => setSettings({ ...settings, headerHideName: e.target.checked })}
-                  />
-                  {m.settings.headerHideName}
-                </label>
-                <p className="text-muted-foreground text-xs">{m.settings.headerHideNameHint}</p>
               </div>
             </div>
           </CardContent>
