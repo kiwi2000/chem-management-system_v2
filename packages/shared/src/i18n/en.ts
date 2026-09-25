@@ -1764,8 +1764,7 @@ export const en: Messages = {
     appearanceSection: "System name and logo",
     appNameJa: "System name (Japanese)",
     appNameEn: "System name (English)",
-    appNameHint:
-      "Shown in the header, on the login screen and in the browser tab. Leave blank to use the default name",
+    appNameHint: "If left blank, the default system name is shown.",
     headerIcon: "Logo",
     headerIconHint:
       "Choose a PNG, JPEG or WebP image file and crop the area to use; it appears next to the system name, scaled to 36 px high. PNG transparency is kept",
@@ -1777,9 +1776,7 @@ export const en: Messages = {
     headerIconUploaded: "Logo uploaded. Reload the page to see it next to the system name",
     headerIconRemoved: "Logo deleted",
     headerIconPosition: "Logo position",
-    headerHideName: "Hide the system name (a logo must be registered)",
-    headerHideNameHint:
-      "Available only when a logo is set. If the logo is deleted, the system name comes back. The login screen and the browser tab still show the system name",
+    headerHideName: "Hide the system name (logo image required)",
     headerIconPositions: {
       left: "Left",
       right: "Right",

@@ -1851,8 +1851,7 @@ export const ja = {
     appearanceSection: "システム名とロゴ",
     appNameJa: "システム名（日本語）",
     appNameEn: "システム名（英語）",
-    appNameHint:
-      "上の帯・ログイン画面・ブラウザのタブに出ます。空にするとデフォルトの名前に戻ります",
+    appNameHint: "空の場合はデフォルトのシステム名が表示されます。",
     headerIcon: "ロゴ",
     headerIconHint:
       "PNG・JPEG・WebP などの画像ファイルを選び、使う範囲を枠で切り取ると、システム名の横に高さ 36px に縮めて出ます。透明のある PNG はそのまま透明で出ます",
@@ -1864,9 +1863,7 @@ export const ja = {
     headerIconUploaded: "ロゴを登録しました。画面を開き直すとシステム名の横に出ます",
     headerIconRemoved: "ロゴを削除しました",
     headerIconPosition: "ロゴの位置",
-    headerHideName: "システム名を非表示（ロゴの登録が必須になります）",
-    headerHideNameHint:
-      "ロゴがあるときだけ選べます。ロゴを削除すると、システム名はまた出ます。ログイン画面とブラウザのタブには、システム名が出ます",
+    headerHideName: "システム名を非表示（ロゴ画像が必須）",
     headerIconPositions: {
       left: "左",
       right: "右",

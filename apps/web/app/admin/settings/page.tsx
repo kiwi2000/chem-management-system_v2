@@ -515,7 +515,6 @@ export default function SettingsPage() {
                 />
                 {m.settings.headerHideName}
               </label>
-              <p className="text-muted-foreground text-xs">{m.settings.headerHideNameHint}</p>
             </div>
             <div className="space-y-2">
               <Label>{m.settings.headerIcon}</Label>
