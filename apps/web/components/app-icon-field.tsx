@@ -2,7 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { AvatarCropper } from "@/components/avatar-cropper";
+import { RectCropper } from "@/components/rect-cropper";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
@@ -118,28 +118,16 @@ export function AppIconField({
         )}
       </div>
       {/*
-        選んだら、アバターと同じ切り出しを出す。枠は長方形にでき（縦横比のつまみ）、透明のまま。
-        画像をまるごと使いたいときのために「切り取らずに使う」も置く
+        選んだら、画像を丸ごと見せて長方形の枠で範囲を決める（2026-09-25 指示）。
+        最初の枠は画像全体なので、そのまま押せば画像をまるごと使える
       */}
       {picked && (
-        <AvatarCropper
+        <RectCropper
           file={picked}
           saving={busy}
-          shape="rect"
           hint={m.settings.headerIconCropHint}
           onDone={(blob) => upload(blob, "icon.png")}
           onCancel={() => setPicked(null)}
-          extra={
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() => upload(picked, picked.name)}
-            >
-              {m.settings.headerIconAsIs}
-            </Button>
-          }
         />
       )}
       {message && (

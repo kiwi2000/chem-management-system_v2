@@ -882,8 +882,6 @@ export const ja = {
     avatarUnsaved: "未保存",
     avatarZoom: "大きさ",
     avatarApply: "この範囲にする",
-    /** 切り出しの枠の縦横比（題字のアイコン。2026-09-25 指示） */
-    cropAspect: "縦横比",
     avatarCropHint: "つまみで大きさを変え、画像をつかんで位置を合わせます。丸の中が保存されます",
     avatarHint: "正方形に切り取り、256ピクセルに縮めて保存します。JPEG・PNG・WebPが使えます",
     avatarUpload: "アップロード",
@@ -1857,11 +1855,10 @@ export const ja = {
       "上の帯の題字・ログイン画面・ブラウザのタブに出ます。空にするとデフォルトの名前に戻ります",
     headerIcon: "題字の横のアイコン",
     headerIconHint:
-      "PNG・JPEG・WebP などの画像ファイルを選び、使う範囲を切り取ると、題字の横に高さ 36px に縮めて出ます。透明のある PNG はそのまま透明で出ます",
+      "PNG・JPEG・WebP などの画像ファイルを選び、使う範囲を枠で切り取ると、題字の横に高さ 36px に縮めて出ます。透明のある PNG はそのまま透明で出ます",
     headerIconNone: "なし",
     headerIconCropHint:
-      "つまみで大きさと縦横比を変え、画像をつかんで位置を合わせます。枠の中がアイコンになります。画像をまるごと使うときは「切り取らずに使う」を押してください",
-    headerIconAsIs: "切り取らずに使う",
+      "枠の辺や角をつかんで範囲を決め、枠の中をつかむと枠が動きます。最初は画像全体が枠に入っています。枠の中がアイコンになります",
     headerIconUpload: "ファイル",
     headerIconRemove: "アイコンを削除",
     headerIconUploaded: "アイコンを登録しました。画面を開き直すと題字の横に出ます",

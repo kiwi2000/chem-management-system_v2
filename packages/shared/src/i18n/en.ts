@@ -844,7 +844,6 @@ export const en: Messages = {
     avatarUnsaved: "Not saved",
     avatarZoom: "Size",
     avatarApply: "Use this area",
-    cropAspect: "Aspect",
     avatarCropHint:
       "Use the slider to resize and drag the image to position it. The circle is what gets saved",
     avatarHint: "Cropped to a square and resized to 256 pixels. JPEG, PNG and WebP are accepted",
@@ -1772,8 +1771,7 @@ export const en: Messages = {
       "Choose a PNG, JPEG or WebP image file and crop the area to use; it appears next to the title, scaled to 36 px high. PNG transparency is kept",
     headerIconNone: "None",
     headerIconCropHint:
-      'Use the sliders to change the size and aspect ratio, and drag the image to position it. The frame is what becomes the icon. To use the whole image, choose "Use without cropping"',
-    headerIconAsIs: "Use without cropping",
+      "Drag the edges or corners of the frame to set the area, or drag inside it to move it. The frame starts around the whole image. What is inside the frame becomes the icon",
     headerIconUpload: "File",
     headerIconRemove: "Delete icon",
     headerIconUploaded: "Icon uploaded. Reload the page to see it next to the title",
