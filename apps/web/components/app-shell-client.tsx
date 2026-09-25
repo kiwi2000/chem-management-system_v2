@@ -74,7 +74,7 @@ interface Props {
   /** パスワードの期限まであと何日か。予告を出さないときは null */
   passwordExpiresIn: number | null;
   /** 題字の横のアイコン。預けた時刻（URL に付けて覚えを切り替える）と左右。無ければ null */
-  headerIcon: { version: string; position: HeaderIconPosition } | null;
+  headerIcon: { version: string; position: HeaderIconPosition; hideName: boolean } | null;
   children: ReactNode;
 }
 
@@ -92,6 +92,8 @@ export function AppShellClient({
   children,
 }: Props) {
   const { m } = useI18n();
+  /** ロゴだけにする（ロゴがあるときだけ。名前は読み上げ用に Link の aria-label へ回す） */
+  const hideName = headerIcon?.hideName === true;
   /*
     ヘッダーの鈴に出す通知。いまはパスワードの期限だけ。
     残りわずかになったら、鈴に加えて帯でも出す（見落とすと締め出しになるため）
@@ -151,13 +153,15 @@ export function AppShellClient({
       <div className="bg-sidebar-header text-sidebar-header-foreground flex h-14 items-center justify-between gap-2 border-b px-4 md:hidden">
         <Link
           href="/"
+          aria-label={hideName ? m.common.appName : undefined}
+          title={hideName ? m.common.appName : undefined}
           className={cn(
             "flex min-w-0 items-center gap-2 text-base font-semibold",
             headerIcon?.position === "right" && "flex-row-reverse justify-end",
           )}
         >
           {headerIcon && <HeaderIconImage version={headerIcon.version} className="h-6" />}
-          <span className="min-w-0 truncate">{m.common.appName}</span>
+          {!hideName && <span className="min-w-0 truncate">{m.common.appName}</span>}
         </Link>
         <Button
           variant="ghost"
@@ -223,13 +227,15 @@ export function AppShellClient({
             {/* 題字は帯の中でいちばん大きく（2026-09-17 指示）。上下の余白は 2 mm ほど（8px、2026-09-21 指示） */}
             <Link
               href="/"
+              aria-label={hideName ? m.common.appName : undefined}
+              title={hideName ? m.common.appName : undefined}
               className={cn(
                 "flex min-w-0 items-center gap-2 text-[28px] leading-9 font-semibold",
                 headerIcon?.position === "right" && "flex-row-reverse justify-end",
               )}
             >
               {headerIcon && <HeaderIconImage version={headerIcon.version} className="h-9" />}
-              <span className="min-w-0 truncate">{m.common.appName}</span>
+              {!hideName && <span className="min-w-0 truncate">{m.common.appName}</span>}
             </Link>
             <div className="ml-auto flex items-center gap-3">
               {/* 画面の枠をまとめて開く／閉じる。枠の無い画面では出ない */}

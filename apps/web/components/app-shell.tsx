@@ -75,7 +75,11 @@ export async function AppShell({ children }: { children: ReactNode }) {
         // 題字の横のアイコン（2026-09-25 指示）。預けていなければ null
         headerIcon={
           settings.headerIconVersion
-            ? { version: settings.headerIconVersion, position: settings.headerIconPosition }
+            ? {
+                version: settings.headerIconVersion,
+                position: settings.headerIconPosition,
+                hideName: settings.headerHideName,
+              }
             : null
         }
       >

@@ -153,6 +153,12 @@ export interface AppSettings {
   headerIconVersion: string;
   /** 題字の左右どちらに置くか */
   headerIconPosition: HeaderIconPosition;
+  /**
+   * 上の帯にシステム名を出さず、ロゴだけにする（2026-09-25 指示）。
+   * **ロゴがあるときだけ効く。**ロゴを消すと名前は自動で戻る（帯が空にならないように）。
+   * ログイン画面とブラウザのタブには、これまでどおり名前を出す
+   */
+  headerHideName: boolean;
 }
 
 export const HEADER_ICON_POSITIONS = ["left", "right"] as const;
@@ -199,6 +205,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   appNameEn: "",
   headerIconVersion: "",
   headerIconPosition: "left",
+  headerHideName: false,
 };
 
 /**
@@ -458,6 +465,7 @@ export const SETTING_DEFS: SettingDef[] = [
     valueType: "STRING",
     parse: (raw) => raw,
   },
+  boolDef("headerHideName", "ui.header_hide_name"),
   {
     field: "headerIconPosition",
     key: "ui.header_icon_position",
@@ -557,6 +565,7 @@ export const settingsSchema = (m: Messages) =>
     appNameJa: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
     appNameEn: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
     headerIconPosition: z.enum(HEADER_ICON_POSITIONS),
+    headerHideName: z.boolean(),
     // headerIconVersion はアイコンを預けた・外したときにサーバーが書く。画面からは受けない
   });
 

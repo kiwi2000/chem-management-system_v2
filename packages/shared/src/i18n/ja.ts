@@ -1864,6 +1864,9 @@ export const ja = {
     headerIconUploaded: "ロゴを登録しました。画面を開き直すとシステム名の横に出ます",
     headerIconRemoved: "ロゴを削除しました",
     headerIconPosition: "ロゴの位置",
+    headerHideName: "上の帯にシステム名を出さない（ロゴだけにする）",
+    headerHideNameHint:
+      "ロゴがあるときだけ選べます。ロゴを削除すると、システム名はまた出ます。ログイン画面とブラウザのタブには、システム名が出ます",
     headerIconPositions: {
       left: "左",
       right: "右",

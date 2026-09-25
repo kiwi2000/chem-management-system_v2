@@ -535,6 +535,18 @@ export default function SettingsPage() {
                   </label>
                 ))}
               </div>
+              <div className="space-y-1">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.headerHideName}
+                    disabled={!settings.headerIconVersion}
+                    onChange={(e) => setSettings({ ...settings, headerHideName: e.target.checked })}
+                  />
+                  {m.settings.headerHideName}
+                </label>
+                <p className="text-muted-foreground text-xs">{m.settings.headerHideNameHint}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
