@@ -166,6 +166,8 @@ curl -s https://sds.ca-japan.jp/api/health
 
 - SDS あり版の DB は本体とは別（サービス `Postgres-3z1K`）。**本体の DB を写して始めた（2026-09-26）**ので
   表の並びは同じだが、データは以後それぞれで動く。法規制データの投入・判定し直しは両方に行う
+- **DB を別のホスト名の環境へ写したら、`sessions` と `passkeys` を消す。**パスキーは登録した画面のアドレス（RP ID）に
+  結び付いていて、別のアドレスでは使えないうえ、登録の「除外リスト」に残って新しい登録の邪魔になる（2026-09-26 に起きた）
 - 本体の DB へのトンネルは `railway connect Postgres --tunnel-only`、SDS 版は
   `railway connect Postgres-3z1K --tunnel-only`。Railway の Postgres は 18 系なので、
   手元の 16 系の psql/pg_dump では繋げない。`docker run --rm postgres:18-alpine psql -h host.docker.internal …` で繋ぐ
