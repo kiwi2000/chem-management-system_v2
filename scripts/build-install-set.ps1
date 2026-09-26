@@ -20,7 +20,10 @@
 param(
   [string]$Version = "",
   # 組み立て済みの app\ をそのまま使い、インストーラー・手順書・zip だけ作り直す（手順書を直したときなど）
-  [switch]$SkipBuild
+  [switch]$SkipBuild,
+  # 差込口で足すモジュール（例: -With sds）。**既定は無し。**挙げなかったモジュールのフォルダはセットに入れず、
+  # 組み立て後にも残っていないことを確かめる。挙げたときは zip の名前に付き、manifest.json に modules が入る
+  [string[]]$With = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,7 +33,8 @@ Set-Location $repo
 
 if (-not $Version) { $Version = (Get-Content package.json -Raw | ConvertFrom-Json).version }
 $commit = (& git rev-parse --short HEAD).Trim()
-$name = "chem-install-set-$Version-win64"
+$suffix = if ($With.Count -gt 0) { "-" + ($With -join "-") } else { "" }
+$name = "chem-install-set-$Version$suffix-win64"
 $out = Join-Path $repo "out"
 $stage = Join-Path $out "install-set\$name"
 $cache = Join-Path $out "installers-cache"
@@ -44,8 +48,14 @@ $include = @(
   ".env.prod.example", ".env.windows.example", "Dockerfile", "compose.prod.yml",
   "deploy", "apps", "packages", "prisma",
   "scripts/backup-db.sh", "scripts/backup-db.ps1", "scripts/set-password.ts",
-  "scripts/grant-permission.ts", "scripts/rejudge.ts"
+  "scripts/grant-permission.ts", "scripts/rejudge.ts", "scripts/gen-modules.mjs"
 )
+# モジュール（apps\web\modules\<id>\）は -With に挙げたものだけ入れる
+$allModules = @(Get-ChildItem "apps\web\modules" -Directory -ErrorAction SilentlyContinue |
+  Where-Object { Test-Path (Join-Path $_.FullName "manifest.ts") } | ForEach-Object { $_.Name })
+foreach ($w in $With) { if ($allModules -notcontains $w) { throw "モジュールが見つかりません: $w（apps\web\modules\ に無い）" } }
+$excludedModules = @($allModules | Where-Object { $With -notcontains $_ })
+$exclude = @($excludedModules | ForEach-Object { ":(exclude)apps/web/modules/$_" })
 $dirty = & git status --porcelain -- @include
 if ($dirty) {
   Write-Host "注意: 配布物に入るファイルに、コミットしていない変更があります（入りません）" -ForegroundColor Yellow
@@ -65,7 +75,7 @@ if ($SkipBuild) {
 } else {
 Step "ソースを取り出す（git archive $commit）"
 $archive = Join-Path $out "install-set\app-src.tar"
-& git archive --format=tar -o $archive HEAD -- @include
+& git archive --format=tar -o $archive HEAD -- @include @exclude
 if ($LASTEXITCODE -ne 0) { throw "git archive が失敗しました" }
 & $tar -xf $archive -C (Join-Path $stage "app")
 if ($LASTEXITCODE -ne 0) { throw "tar -x が失敗しました" }
@@ -84,8 +94,20 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "playwright install chromium が失敗しました" }
   & npx prisma generate
   if ($LASTEXITCODE -ne 0) { throw "prisma generate が失敗しました" }
-  & npm run build
-  if ($LASTEXITCODE -ne 0) { throw "npm run build が失敗しました" }
+  # 有効にするモジュール。build の前に scripts/gen-modules.mjs が読む（空なら本体だけ）
+  $env:CHEM_MODULES = ($With -join ",")
+  try {
+    & npm run build
+    if ($LASTEXITCODE -ne 0) { throw "npm run build が失敗しました" }
+  } finally { Remove-Item Env:CHEM_MODULES -ErrorAction SilentlyContinue }
+  # 外したモジュールが、ソースにも組み立て後にも残っていないことを確かめる（残っていれば配布物を作らない）
+  foreach ($id in $excludedModules) {
+    if (Test-Path "apps\web\modules\$id") { throw "外したはずのモジュールのフォルダが残っています: apps\web\modules\$id" }
+    $hit = Get-ChildItem "apps\web\.next\server" -Recurse -Include *.js,*.json -ErrorAction SilentlyContinue |
+      Select-String -Pattern "modules/$id" -List | Select-Object -First 1
+    if ($hit) { throw "外したはずのモジュールが組み立て後に残っています: $($hit.Path)" }
+  }
+  if ($excludedModules.Count -gt 0) { Write-Host "    入れていないモジュール: $($excludedModules -join ', ')（残っていないことを確認）" }
   # build の作業用キャッシュは要らない（大きい）
   $nextCache = "apps\web\.next\cache"
   if (Test-Path $nextCache) { Remove-Item $nextCache -Recurse -Force }
@@ -99,6 +121,8 @@ try {
     node          = (& node -v).Trim()
     builtAt       = (Get-Date).ToString("yyyy-MM-ddTHH:mm:sszzz")
   }
+  # 版の印はモジュールを入れたときだけ付ける（入れていない版に「標準」のような印を付けると、他の版の存在が分かる）
+  if ($With.Count -gt 0) { $manifest.modules = @($With) }
   [IO.File]::WriteAllText((Join-Path (Get-Location) "manifest.json"), ($manifest | ConvertTo-Json), (New-Object Text.UTF8Encoding $false))
   Write-Host "    manifest: 版 $Version / $commit / 表の最終変更 $lastMigration"
 }

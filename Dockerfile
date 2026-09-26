@@ -28,6 +28,10 @@ RUN npx playwright install --with-deps chromium \
 # ソースコピー → Prismaクライアント生成 → 本番ビルド
 # 認証は自前実装のため、ビルド時に外部サービスの設定を焼き込む必要はない
 COPY . .
+# 差込口で足すモジュール（例: sds）。Railway ではサービスの変数、手元では --build-arg で渡す。
+# 空なら本体だけを組む（モジュールのコードはビルドに入らない）。scripts/gen-modules.mjs が読む
+ARG CHEM_MODULES=""
+ENV CHEM_MODULES=$CHEM_MODULES
 RUN npx prisma generate && npm run build -w apps/web
 
 ENV NODE_ENV=production
