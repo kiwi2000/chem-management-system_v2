@@ -37,6 +37,8 @@ git log --format="%h %ad %s" --date=format:"%m-%d %H:%M" -8
 ```
 
 いちばん上の SUCCESS の時刻より後のコミットが、今回出すもの。
+SDS あり版（サービス `sds`）は `railway deployment list -s sds` で同じように見る。
+2 つの版は同じコミットから出すので、片方だけ古いままにしない。
 
 ## 2. 権限が増えるときは、管理者に付けてから出す
 
@@ -90,6 +92,9 @@ ON CONFLICT DO NOTHING;
 - **ここに書き足すのはデプロイのときだけ。**作業のたびに書くと、まだ出していないものが載る
 - **利用者の画面に出ないものは書かない。**スクリプト・スキル・内部の作りの直しなど。
   読み手が知っても何もできないものを並べると、本当に読むべき行が埋もれる
+- **モジュール（SDS 作成など、特定のお客さんだけのオプション）のことは、本体の変更履歴・マニュアル・
+  保留事項に一切書かない。**存在も匂わせない（決定 0016）。モジュールの説明と履歴はモジュールのフォルダ
+  （`apps/web/modules/<id>/`）に置き、モジュールあり版でだけ差し込む
 
 ## 5. 保留事項を増減させる
 
@@ -126,6 +131,15 @@ npm test
 railway up --detach
 ```
 
+**SDS あり版（sds.ca-japan.jp）へも、同じ作業ツリーを送る。**サービス `sds` はサービス変数
+`CHEM_MODULES=sds` を持っているので、同じソースから SDS のモジュール込みで組まれる
+（本体の `chem-management-system_v2` は変数が無く、モジュールは入らない）。
+サービスを指定して送るだけで、リンク先（bare の `railway up` が向く先）は変えない。
+
+```bash
+railway up -s sds --detach
+```
+
 ## 8. 反映を確かめる
 
 ```bash
@@ -139,6 +153,22 @@ status が `Online` になっていれば反映済み。
   「まだ出ていない」と読み違える（実際に20分待った事故がある）
 - **マニュアルの中身は外から確認できない。**ログインが要るため。
   利用者に「変更履歴の先頭を見てください」と伝えて締める
+
+SDS あり版のほうは、サービスを指定して見る。いちばん上が `SUCCESS` で、`/api/health` が返れば済み。
+
+```bash
+railway deployment list -s sds
+```
+
+```bash
+curl -s https://sds.ca-japan.jp/api/health
+```
+
+- SDS あり版の DB は本体とは別（サービス `Postgres-3z1K`）。**本体の DB を写して始めた（2026-09-26）**ので
+  表の並びは同じだが、データは以後それぞれで動く。法規制データの投入・判定し直しは両方に行う
+- 本体の DB へのトンネルは `railway connect Postgres --tunnel-only`、SDS 版は
+  `railway connect Postgres-3z1K --tunnel-only`。Railway の Postgres は 18 系なので、
+  手元の 16 系の psql/pg_dump では繋げない。`docker run --rm postgres:18-alpine psql -h host.docker.internal …` で繋ぐ
 
 ## 9. GitHub に push する
 
