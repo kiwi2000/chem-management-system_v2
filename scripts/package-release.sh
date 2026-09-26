@@ -106,28 +106,30 @@ git archive --format=zip -o "$ZIP" "${ADD[@]+"${ADD[@]}"}" HEAD -- "${INCLUDE[@]
 echo "作りました: $TGZ ($(du -h "$TGZ" | cut -f1))"
 echo "作りました: $ZIP ($(du -h "$ZIP" | cut -f1))"
 
-# 入ってはいけないものが混ざっていないかを機械的に見る
-if tar tzf "$TGZ" | grep -qE '^(docs/|scripts/data/|scripts/seed-|\.env$|\.env\.[^p]|.*node_modules/|.*\.next/)'; then
-  echo "エラー: 入れてはいけないファイルが混ざっています" >&2
-  tar tzf "$TGZ" | grep -E '^(docs/|scripts/data/|scripts/seed-|\.env$|\.env\.[^p]|.*node_modules/|.*\.next/)' >&2
+# 入ってはいけないものが混ざっていないかを機械的に見る。
+# 一覧は 1 回だけ取る（pipefail の下で grep -q が途中で読むのをやめると tar が SIGPIPE で落ち、正常なのに失敗扱いになる）
+LISTING="$(tar tzf "$TGZ")"
+fail() {
+  echo "エラー: $1" >&2
+  rm -f "$TGZ" "$ZIP"
   exit 1
+}
+# .env は見本（.env.prod.example / .env.windows.example）だけ入れてよい。それ以外の .env* は秘密なので入れない
+FORBIDDEN="$(grep -E '^(docs/|scripts/data/|scripts/seed-|\.env(\.|$)|.*node_modules/|.*\.next/)' <<<"$LISTING" | grep -vE '^\.env\.[a-z]+\.example$' || true)"
+if [[ -n "$FORBIDDEN" ]]; then
+  echo "$FORBIDDEN" >&2
+  fail "入れてはいけないファイルが混ざっています"
 fi
 # 入れていないモジュールが 1 ファイルでも混ざっていたら作らない。入れたモジュールは、有効にする印と一緒に入っていること
 for id in "${EXCLUDED_MODULES[@]+"${EXCLUDED_MODULES[@]}"}"; do
-  if tar tzf "$TGZ" | grep -q "^apps/web/modules/$id/"; then
-    echo "エラー: 入れていないモジュール $id のファイルが混ざっています" >&2
-    exit 1
-  fi
+  grep -q "^apps/web/modules/$id/" <<<"$LISTING" && fail "入れていないモジュール $id のファイルが混ざっています"
 done
 for w in "${WITH_MODULES[@]+"${WITH_MODULES[@]}"}"; do
-  if ! tar tzf "$TGZ" | grep -q "^apps/web/modules/$w/manifest.ts$"; then
-    echo "エラー: 入れるはずのモジュール $w が入っていません" >&2
-    exit 1
-  fi
+  grep -q "^apps/web/modules/$w/manifest.ts$" <<<"$LISTING" || fail "入れるはずのモジュール $w が入っていません"
 done
-if [[ ${#WITH_MODULES[@]} -gt 0 ]] && ! tar tzf "$TGZ" | grep -q "^apps/web/modules/enabled.json$"; then
-  echo "エラー: 有効にするモジュールの一覧（enabled.json）が入っていません" >&2
-  exit 1
+if [[ ${#WITH_MODULES[@]} -gt 0 ]]; then
+  grep -q "^apps/web/modules/enabled.json$" <<<"$LISTING" || fail "有効にするモジュールの一覧（enabled.json）が入っていません"
+  echo "入れたモジュール: ${WITH_MODULES[*]}（enabled.json で有効になります）"
 fi
 if [[ ${#EXCLUDED_MODULES[@]} -gt 0 ]]; then
   echo "入れていないモジュール: ${EXCLUDED_MODULES[*]}（混ざっていないことを確認）"
