@@ -1,6 +1,6 @@
 "use client";
 
-import type { Messages, Permission } from "@chem/shared";
+import type { Locale, Messages, Permission } from "@chem/shared";
 import {
   Activity,
   ArrowDownUp,
@@ -39,15 +39,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n-client";
+import { withModuleNav } from "@/lib/module-nav";
 import { cn } from "@/lib/utils";
+import { MODULES } from "@/modules/registry.generated";
 
 interface NavItem {
   /** 押したときに開く画面。配下をまとめるだけの行では持たない */
   href?: string;
   /** 行頭のアイコン。文字を読まなくても見当が付くように置く */
   icon: LucideIcon;
-  /** 辞書の nav ブロックから文言を引くためのキー */
-  key: keyof Messages["nav"];
+  /** 辞書の nav ブロックから文言を引くためのキー。モジュールの項目は key を持たず、label を持つ */
+  key?: keyof Messages["nav"];
+  /** モジュール（差込口）の項目の文言。両言語をモジュールが持つ。key より優先 */
+  label?: Record<Locale, string>;
   /** この権限が無い人にはメニューを出さない（サーバー側でも別途弾く）。並びなら、どれか1つあればよい */
   needs?: Permission | Permission[];
   /** この接頭辞のパスでも選択中扱いにする（詳細画面など） */
@@ -229,6 +233,23 @@ const DEV_ITEMS: NavItem[] = [
   { href: "/feedback", key: "feedback", icon: MessageSquare, needs: "FEEDBACK_VIEW" },
 ];
 
+/**
+ * モジュール（差込口）の項目を差し込んだ並び。「ドキュメント」の見出しの直後に入れる
+ * （SDS 作成のような、帳票に近い機能が来る想定）。モジュールが無ければ ITEMS そのもの
+ */
+const NAV_ITEMS: NavItem[] = withModuleNav(
+  ITEMS,
+  MODULES,
+  (item) => item.key === "documents",
+  (nav) => ({
+    href: nav.href,
+    label: nav.label,
+    icon: nav.icon,
+    needs: nav.needs,
+    match: nav.match,
+  }),
+);
+
 function isActive(pathname: string, item: NavItem): boolean {
   if (!item.href) return false;
   if (item.href === "/") return pathname === "/";
@@ -244,7 +265,10 @@ export function SidebarNav({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
+  /** 本体の項目は辞書から、モジュールの項目は自分の文言から */
+  const labelOf = (item: NavItem) =>
+    item.label ? item.label[locale] : item.key ? m.nav[item.key] : "";
   const allowed = (item: NavItem) =>
     !item.needs ||
     (Array.isArray(item.needs)
@@ -259,7 +283,7 @@ export function SidebarNav({
     collapsible?: boolean;
     apart?: boolean;
   }[] = [
-    { title: null, items: ITEMS.filter(allowed) },
+    { title: null, items: NAV_ITEMS.filter(allowed) },
     ...(adminItems.length > 0
       ? [{ title: m.nav.system, items: adminItems, collapsible: true }]
       : []),
@@ -315,7 +339,7 @@ export function SidebarNav({
     const inner = (
       <>
         <Icon className="size-4 shrink-0" aria-hidden />
-        <span className="truncate">{m.nav[item.key]}</span>
+        <span className="truncate">{labelOf(item)}</span>
         {item.key === "feedback" && <FeedbackBadge badge={badge} />}
       </>
     );
@@ -324,7 +348,7 @@ export function SidebarNav({
     // 行き先を持たない行は、配下をまとめるための見出し。押せる見た目にしない
     if (!item.href) {
       return (
-        <div key={item.key} className={cn(shape, "text-muted-foreground font-medium")}>
+        <div key={item.key ?? item.href} className={cn(shape, "text-muted-foreground font-medium")}>
           {inner}
         </div>
       );
@@ -403,10 +427,11 @@ export function SidebarNav({
       （「システム」と同じ扱い）。押したときはその選択を優先する。
     */
     const inHere = children.some((c) => isActive(pathname, c));
-    const open = toggled[item.key] ?? inHere;
+    const groupKey = item.key ?? item.href ?? "";
+    const open = toggled[groupKey] ?? inHere;
     return (
-      <div key={item.href ?? item.key} className="space-y-1">
-        {groupHeading(m.nav[item.key], item.icon, open, () => toggle(item.key, inHere))}
+      <div key={groupKey} className="space-y-1">
+        {groupHeading(labelOf(item), item.icon, open, () => toggle(groupKey, inHere))}
         {branch(open, children)}
       </div>
     );

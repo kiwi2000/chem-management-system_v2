@@ -23,6 +23,7 @@ export default tseslint.config(
       "docs/**",
       ".cache/**", // 作業用スクリプトの置き場（git 管理外）
       ".claude/worktrees/**", // 作業用の別ツリー（本体と同じソースの写し）
+      "apps/web/modules/*.generated.ts", // scripts/gen-modules.mjs が作る差込口の一覧
     ],
   },
   js.configs.recommended,
@@ -53,8 +54,38 @@ export default tseslint.config(
     },
   },
   {
+    /*
+      本体からモジュール（apps/web/modules/<id>/）を直接 import しない。
+      結び目は gen-modules.mjs が作る一覧だけ。直接読むと、モジュールを外した配布物でビルドが落ちるか、
+      外したはずのコードが本体に残る
+    */
+    files: ["apps/web/**/*.{ts,tsx}"],
+    ignores: ["apps/web/modules/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "@/modules/*",
+                "@/modules/*/**",
+                "**/modules/*/**",
+                "!@/modules/types",
+                "!@/modules/registry.generated",
+                "!@/modules/registry.server.generated",
+              ],
+              message:
+                "モジュールは差込口（@/modules/registry.generated / registry.server.generated）を通して使う。直接 import しない",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // 運用スクリプトは console 出力が本体
-    files: ["scripts/**/*.ts", "prisma/**/*.ts"],
+    files: ["scripts/**/*.ts", "scripts/**/*.mjs", "prisma/**/*.ts"],
     rules: { "no-console": "off" },
   },
   prettierConfig,

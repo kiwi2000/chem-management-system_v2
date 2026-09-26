@@ -18,3 +18,6 @@ out/
 
 # scripts/build-docs-index.ts が作る（手で直さない）
 docs/ドキュメント一式.html
+
+# scripts/gen-modules.mjs が作る（手で直さない）
+apps/web/modules/*.generated.ts

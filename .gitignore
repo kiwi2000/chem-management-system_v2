@@ -38,3 +38,9 @@ scripts/data/loli-data-*.tsv
 
 # 帳票の PDF の既定の置き場所（システム設定「帳票の出力先フォルダー」）
 /data/
+
+# 差込口（モジュール）の一覧。scripts/gen-modules.mjs が dev・build の前に作る。
+# enabled.json は配布物を組むときだけ入れる（どのモジュールを有効にするか）
+apps/web/modules/registry.generated.ts
+apps/web/modules/registry.server.generated.ts
+apps/web/modules/enabled.json
