@@ -1219,6 +1219,7 @@ model Product {
 
   aliases    ProductAlias[]
   properties ProductProperty[]
+  attachments ProductAttachment[]
   uses       ProductUse[]
 
   /**
@@ -1259,6 +1260,51 @@ model Product {
  * 選べる値はシステム設定に持ち、ここには選んだ文字列をそのまま残す
  * （設定から選択肢を消しても、過去の製品の記録は変わらないようにするため）。
  */
+/**
+ * 添付ファイルの種類（2026-09-27）
+ */
+enum AttachmentKind {
+  SDS
+  TEST_REPORT
+  SURVEY
+  DRAWING
+  OTHER
+}
+
+/**
+ * 製品・原材料の添付ファイル（2026-09-27 指示）。仕入先の SDS・試験成績書・調査回答・図面など、
+ * 組成と判定の根拠になる資料を製品に付けて持つ。
+ *
+ * **中身は DB に置く**（画像ライブラリ・様式ファイルと同じ）。サーバーのフォルダーに置くと、
+ * DB のバックアップに入らず、Docker の構成ではコンテナを作り直すと消えるため。
+ * 1 ファイル 20MB まで。一覧は中身を読まずに引く
+ */
+model ProductAttachment {
+  id        String         @id @default(cuid())
+  productId String         @map("product_id")
+  fileName  String         @map("file_name") @db.VarChar(255)
+  mime      String         @db.VarChar(100)
+  size      Int
+  kind      AttachmentKind @default(OTHER)
+  note      String?
+  /**
+   * 組成を見られる人（COMPOSITION_VIEW）にだけ見せる。組成が書かれた資料（仕入先の SDS など）から、
+   * 組成を伏せている相手に中身が漏れないようにする
+   */
+  compositionOnly Boolean @default(false) @map("composition_only")
+  data            Bytes
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, createdAt])
+  @@map("product_attachments")
+}
+
 model ProductUse {
   id           String @id @default(cuid())
   productId    String @map("product_id")

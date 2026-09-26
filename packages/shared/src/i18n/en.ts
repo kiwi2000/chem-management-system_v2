@@ -1939,6 +1939,41 @@ export const en: Messages = {
     valueCount: (n: number) => `entered on ${n} record${n === 1 ? "" : "s"}`,
   },
 
+  attachments: {
+    title: "Attachments",
+    empty: "No attachments",
+    add: "Add files",
+    uploading: "Uploading…",
+    fileName: "File name",
+    kind: "Type",
+    note: "Note",
+    size: "Size",
+    createdBy: "Added by",
+    createdAt: "Added at",
+    compositionOnly: "Composition viewers only",
+    compositionOnlyHint:
+      "Use this for documents that show the composition (such as a supplier SDS). People who cannot view compositions will not see them in the list",
+    kinds: {
+      SDS: "SDS",
+      TEST_REPORT: "Test report",
+      SURVEY: "Survey reply",
+      DRAWING: "Drawing",
+      OTHER: "Other",
+    },
+    remove: "Delete attachment",
+    removeConfirm: (name: string) => `Delete "${name}"? This cannot be undone`,
+    hint: "PDF, Word, Excel, images and text files up to 20 MB each. Files with macros cannot be added. Adding and deleting are saved at once",
+    rejected: (name: string, reason: string) => `${name}: ${reason}`,
+    rejects: {
+      tooLarge: "Larger than 20 MB",
+      badType: "This file type cannot be added (PDF, Word, Excel, images, text)",
+      mismatch: "The file name's type does not match its contents",
+      macro: "Files with macros cannot be added. Save it again without macros",
+      empty: "The file is empty",
+    },
+    download: "Download",
+  },
+
   products: {
     publishState: "Status",
     workingSection: "In progress",

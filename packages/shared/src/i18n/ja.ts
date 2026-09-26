@@ -2036,6 +2036,42 @@ export const ja = {
     valueCount: (n: number) => `${n} 件で入力済み`,
   },
 
+  /** 製品・原材料の添付ファイル（2026-09-27） */
+  attachments: {
+    title: "添付ファイル",
+    empty: "添付ファイルはありません",
+    add: "ファイルを追加",
+    uploading: "送っています…",
+    fileName: "ファイル名",
+    kind: "種類",
+    note: "備考",
+    size: "大きさ",
+    createdBy: "登録した人",
+    createdAt: "登録日時",
+    compositionOnly: "組成を見られる人だけ",
+    compositionOnlyHint:
+      "組成が書かれた資料（仕入先の SDS など）に付けてください。組成を見る権限が無い人には、一覧にも出ません",
+    kinds: {
+      SDS: "SDS",
+      TEST_REPORT: "試験成績書",
+      SURVEY: "調査回答",
+      DRAWING: "図面",
+      OTHER: "その他",
+    },
+    remove: "添付ファイルを削除",
+    removeConfirm: (name: string) => `「${name}」を削除しますか。元に戻せません`,
+    hint: "PDF・Word・Excel・画像・テキストを、1 ファイル 20 MB まで追加できます。マクロ付きのファイルは追加できません。追加と削除はその場で保存されます",
+    rejected: (name: string, reason: string) => `${name}: ${reason}`,
+    rejects: {
+      tooLarge: "20 MB を超えています",
+      badType: "この形式は追加できません（PDF・Word・Excel・画像・テキスト）",
+      mismatch: "ファイル名の形式と中身が合いません",
+      macro: "マクロ付きのファイルは追加できません。マクロなしで保存し直してください",
+      empty: "中身が空です",
+    },
+    download: "ダウンロード",
+  },
+
   products: {
     publishState: "状態",
     workingSection: "作業中",

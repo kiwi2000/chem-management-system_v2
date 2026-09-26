@@ -6,6 +6,7 @@
  * 各ステップで対象領域のスキーマを追加していく（S5 物質 / S7 製品 / S8 組成 / S9 法規制 / S10 リンク）。
  */
 export * from "./admin";
+export * from "./attachment";
 export * from "./auth";
 export * from "./background";
 export * from "./composition";

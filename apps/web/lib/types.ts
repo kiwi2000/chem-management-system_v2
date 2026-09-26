@@ -783,6 +783,21 @@ export interface GeneratedDocumentDto {
 }
 
 /** 画像ライブラリの 1 枚。中身（バイト列）は一覧には載せず、/api/images/[id] で取る */
+/** 製品・原材料の添付ファイル（2026-09-27）。中身は含まない */
+export interface ProductAttachmentDto {
+  id: string;
+  fileName: string;
+  mime: string;
+  size: number;
+  kind: import("@chem/shared").AttachmentKind;
+  note: string | null;
+  /** 組成を見られる人にだけ見せる */
+  compositionOnly: boolean;
+  createdAt: string;
+  /** 登録した人の表示名（消された人は null） */
+  createdByName: string | null;
+}
+
 export interface ImageAssetDto {
   id: string;
   name: string;

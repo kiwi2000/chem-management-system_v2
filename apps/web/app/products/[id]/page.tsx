@@ -6,6 +6,7 @@ import { PublishActions } from "@/components/publish-actions";
 import { ProductForm } from "@/components/product-form";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { getActor } from "@/lib/authz";
+import { ProductAttachments } from "@/components/product-attachments";
 import { ProductJudgements } from "@/components/product-judgements";
 import { canEditComposition, canViewComposition } from "@/lib/composition-service";
 import { getCurrentVersion } from "@/lib/current-version";
@@ -76,13 +77,23 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         /* 非開示の組成は、そもそもこの節ごと出さない */
         canViewComposition={canViewComposition(actor, item)}
         settings={settings}
-        /* 組成と備考のあいだに挟む。組成を見ながら考えたいので */
+        /*
+          組成と備考のあいだに挟む。組成を見ながら考えたいので。
+          添付ファイル（仕入先の SDS・試験成績書など、組成と判定の根拠）は判定の直後、備考の上（2026-09-27 指示）
+        */
         afterComposition={
-          <ProductJudgements
-            productId={item.id}
-            canEdit={canEditComposition(actor, item)}
-            version={linkVersion?.code ?? null}
-          />
+          <>
+            <ProductJudgements
+              productId={item.id}
+              canEdit={canEditComposition(actor, item)}
+              version={linkVersion?.code ?? null}
+            />
+            <ProductAttachments
+              productId={item.id}
+              canEdit={canEditProduct(actor, item)}
+              canViewComposition={canViewComposition(actor, item)}
+            />
+          </>
         }
       />
 
