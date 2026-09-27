@@ -1098,7 +1098,6 @@ export const en: Messages = {
     staleHint:
       "CAS links or thresholds changed after this judgement was computed. Re-judging may change the result",
     judgedAsOf: (day: string) => `Judgement date ${day}`,
-    notToday: (day: string) => `Not today's regulations (judged as of ${day})`,
     staleByDate:
       "A listed substance came into force or expired after the judgement date; recalculating will change the result.",
     rejudge: "Recompute",

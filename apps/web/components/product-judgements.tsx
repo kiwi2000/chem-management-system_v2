@@ -420,13 +420,6 @@ export function ProductJudgements({
               .filter(Boolean)
               .join(" ・ ")}
           </span>
-          {/* 今日でない日付で判定してある。帳票にもこの判定が載るので、はっきり断る */}
-          {stamp?.judgedAsOf && stamp.today && stamp.judgedAsOf !== stamp.today && (
-            <span className="text-destructive ml-2 inline-flex items-center gap-1 text-xs font-normal">
-              <TriangleAlert className="size-3" />
-              {m.judgements.notToday(stamp.judgedAsOf)}
-            </span>
-          )}
           {/* 前提（CASリンク・閾値・バージョン）が計算より後に変わった、または施行日・終了日を跨いだ */}
           {stamp?.stale && (
             <span

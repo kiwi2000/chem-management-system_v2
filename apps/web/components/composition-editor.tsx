@@ -946,20 +946,6 @@ export function CompositionEditor({
                         .join(" ・ ")}
                     </span>
                   )}
-                  {/* 今日でない日付で判定してある（下の判定表と同じ断り） */}
-                  {controls.judgedAsOf &&
-                    controls.today &&
-                    controls.judgedAsOf !== controls.today && (
-                      <span
-                        className={cn(
-                          "text-destructive inline-flex items-center gap-1 text-xs font-normal",
-                          (showRaw || controls.versionCode) && "ml-2",
-                        )}
-                      >
-                        <TriangleAlert className="size-3" />
-                        {m.judgements.notToday(controls.judgedAsOf)}
-                      </span>
-                    )}
                   {/* 前提が計算より後に変わった、または施行日・終了日を跨いだ。下の判定表と同じ注意 */}
                   {controls.stale && (
                     <span
