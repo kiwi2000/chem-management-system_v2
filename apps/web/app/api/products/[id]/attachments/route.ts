@@ -69,8 +69,14 @@ export async function POST(req: Request, { params }: Ctx) {
     const buf = Buffer.from(await f.arrayBuffer());
     const checked = await inspectAttachment(name, buf, settings);
     if (!checked.ok) {
-      const r = m.attachments.rejects[checked.reason];
-      rejected.push({ name, reason: typeof r === "function" ? r(settings.attachmentMaxMb) : r });
+      const r = m.attachments.rejects;
+      const reason =
+        checked.reason === "tooLarge"
+          ? r.tooLarge(settings.attachmentMaxMb)
+          : checked.reason === "badType"
+            ? r.badType(settings.attachmentExtensions)
+            : r[checked.reason];
+      rejected.push({ name, reason });
       continue;
     }
     const row = await prisma.productAttachment.create({

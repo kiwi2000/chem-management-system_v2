@@ -5,6 +5,10 @@ import {
   unknownFileNamePlaceholders,
 } from "./doc-file-name";
 import {
+  ATTACHMENT_EXTENSIONS,
+  EXTENSION_PATTERN,
+  formatExtensionList,
+  parseExtensionList,
   ATTACHMENT_MAX_MB_DEFAULT,
   ATTACHMENT_MAX_MB_MAX,
   ATTACHMENT_MAX_MB_MIN,
@@ -148,6 +152,8 @@ export interface AppSettings {
   attachmentMaxMb: number;
   /** マクロ付きの添付ファイル（.docm / .xlsm、マクロ入りの doc・xls・docx・xlsx）を受け付けるか。既定は受け付けない */
   attachmentAllowMacros: boolean;
+  /** 受け付ける拡張子（小文字・点なし）。**空ならすべて受け付ける**（2026-09-27 指示） */
+  attachmentExtensions: string[];
 
   /**
    * システムの名前（2026-09-25 指示）。上の帯の題字・ログイン画面・ブラウザのタブに出る。
@@ -213,6 +219,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   imageJpegQuality: 85,
   attachmentMaxMb: ATTACHMENT_MAX_MB_DEFAULT,
   attachmentAllowMacros: false,
+  attachmentExtensions: [...ATTACHMENT_EXTENSIONS],
   appNameJa: "",
   appNameEn: "",
   headerIconVersion: "",
@@ -464,6 +471,17 @@ export const SETTING_DEFS: SettingDef[] = [
   },
   boolDef("attachmentAllowMacros", "attachment.allow_macros"),
   {
+    field: "attachmentExtensions",
+    key: "attachment.extensions",
+    valueType: "STRING",
+    // 空はすべて許す。書けない拡張子が混ざっていたら既定に戻す（手で DB を書き換えたとき）
+    parse: (raw) => {
+      const list = parseExtensionList(raw);
+      return list.every((e) => EXTENSION_PATTERN.test(e)) ? list : null;
+    },
+    format: (v) => formatExtensionList(v as string[]),
+  },
+  {
     field: "imageJpegQuality",
     key: "image.jpeg_quality",
     valueType: "NUMBER",
@@ -592,6 +610,17 @@ export const settingsSchema = (m: Messages) =>
       .min(ATTACHMENT_MAX_MB_MIN, m.settings.attachmentMaxMbRange)
       .max(ATTACHMENT_MAX_MB_MAX, m.settings.attachmentMaxMbRange),
     attachmentAllowMacros: z.boolean(),
+    attachmentExtensions: z
+      .array(z.string())
+      .max(100)
+      .refine(
+        (list) => list.every((e) => EXTENSION_PATTERN.test(e)),
+        (list) => ({
+          message: m.settings.attachmentExtensionsInvalid(
+            list.filter((e) => !EXTENSION_PATTERN.test(e)),
+          ),
+        }),
+      ),
     appNameJa: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
     appNameEn: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
     headerIconPosition: z.enum(HEADER_ICON_POSITIONS),

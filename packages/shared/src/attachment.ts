@@ -17,9 +17,9 @@ export const ATTACHMENT_MAX_MB_MIN = 1;
 export const ATTACHMENT_MAX_MB_MAX = 100;
 
 /**
- * 受け付ける拡張子。PDF・Word・Excel・画像・テキスト。
- * マクロ付きは既定では受け付けない（開いた人の機械で何でも動いてしまうため）。
- * システム設定で許したときだけ、下の MACRO の拡張子と、マクロ入りの中身を受け付ける
+ * 受け付ける拡張子の**既定**。PDF・Word・Excel・画像・テキスト。
+ * 実際に受け付ける拡張子はシステム設定で決める（2026-09-27 指示。空欄ならすべて）。
+ * マクロ付きは、拡張子の設定とは別に、既定では受け付けない（開いた人の機械で何でも動いてしまうため）
  */
 export const ATTACHMENT_EXTENSIONS = [
   "pdf",
@@ -39,15 +39,51 @@ export const ATTACHMENT_EXTENSIONS = [
   "tiff",
 ] as const;
 
-/** マクロ付きの Office の拡張子。システム設定で許したときだけ受け付ける */
-export const ATTACHMENT_MACRO_EXTENSIONS = ["docm", "xlsm"] as const;
+/**
+ * マクロ付きの Office の拡張子。「マクロ付きのファイルを受け付ける」を入れたときだけ受け付ける。
+ * **許す拡張子に挙がっていても、マクロを許していなければ断る**
+ */
+export const ATTACHMENT_MACRO_EXTENSIONS = [
+  "docm",
+  "dotm",
+  "xlsm",
+  "xltm",
+  "xlsb",
+  "xlam",
+  "pptm",
+  "potm",
+  "ppsm",
+] as const;
 
-/** ファイル選びの窓に渡す accept。拡張子で絞る */
-export function attachmentAccept(allowMacros: boolean): string {
-  const exts: readonly string[] = allowMacros
-    ? [...ATTACHMENT_EXTENSIONS, ...ATTACHMENT_MACRO_EXTENSIONS]
-    : ATTACHMENT_EXTENSIONS;
-  return exts.map((e) => `.${e}`).join(",");
+/** 拡張子の書きかた（英数字 1〜10 字。点は付けない） */
+export const EXTENSION_PATTERN = /^[a-z0-9]{1,10}$/;
+
+/**
+ * 許す拡張子の欄を読む。区切りは読点・カンマ・空白・改行のどれでもよい。
+ * 頭の点は落とし、小文字にそろえ、重ねて書いたものは 1 つにする。空なら空の並び（＝すべて許す）
+ */
+export function parseExtensionList(raw: string): string[] {
+  const out: string[] = [];
+  for (const t of raw.split(/[\s,、，]+/)) {
+    const v = t.trim().replace(/^\.+/, "").toLowerCase();
+    if (v !== "" && !out.includes(v)) out.push(v);
+  }
+  return out;
+}
+
+export const formatExtensionList = (exts: readonly string[]): string => exts.join(", ");
+
+/**
+ * ファイル選びの窓に渡す accept。許す拡張子で絞る。
+ * 空（すべて許す）なら絞らない。マクロを許していなければ、マクロ付きの拡張子は外す
+ */
+export function attachmentAccept(extensions: readonly string[], allowMacros: boolean): string {
+  if (extensions.length === 0) return "";
+  const macro: readonly string[] = ATTACHMENT_MACRO_EXTENSIONS;
+  return extensions
+    .filter((e) => allowMacros || !macro.includes(e))
+    .map((e) => `.${e}`)
+    .join(",");
 }
 
 /** 種類・備考・「組成を見られる人だけ」の書き換え */

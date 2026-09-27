@@ -1768,7 +1768,12 @@ export const en: Messages = {
     attachmentMaxMbRange: "The limit must be between 1 and 100 MB",
     attachmentAllowMacros: "Accept files with macros",
     attachmentAllowMacrosHint:
-      "When on, .docm and .xlsm files and Word or Excel files containing macros can be added. Macros may run on the machine of whoever opens them, so turn this on only when needed",
+      "When on, .docm and .xlsm files and Word or Excel files containing macros can be added. Macros may run on the machine of whoever opens them, so turn this on only when needed. Files with macros are refused while this is off, even if their type is listed",
+    attachmentExtensions: "Accepted file types (extensions)",
+    attachmentExtensionsHint:
+      "List extensions separated by commas, spaces or new lines (for example: pdf, docx, xlsx, png). The leading dot is optional. Leave blank to accept any file type",
+    attachmentExtensionsInvalid: (bad: string[]) =>
+      `Some extensions are not valid: ${bad.join(", ")} (letters and digits, up to 10)`,
     appearanceSection: "System name and logo",
     appNameJa: "System name (Japanese)",
     appNameEn: "System name (English)",
@@ -1970,12 +1975,13 @@ export const en: Messages = {
     },
     remove: "Delete attachment",
     removeConfirm: (name: string) => `Delete "${name}"? This cannot be undone`,
-    hint: (maxMb: number, allowMacros: boolean) =>
-      `PDF, Word, Excel, images and text files up to ${maxMb} MB each. ${allowMacros ? "Files with macros can also be added (take care when opening them). " : "Files with macros cannot be added. "}Adding and deleting are saved at once`,
+    hint: (maxMb: number, allowMacros: boolean, extensions: string[]) =>
+      `${extensions.length > 0 ? `Allowed types: ${extensions.join(", ")}. ` : "Any file type can be added. "}Up to ${maxMb} MB each. ${allowMacros ? "Files with macros can also be added (take care when opening them). " : "Files with macros cannot be added. "}Adding and deleting are saved at once`,
     rejected: (name: string, reason: string) => `${name}: ${reason}`,
     rejects: {
       tooLarge: (maxMb: number) => `Larger than ${maxMb} MB`,
-      badType: "This file type cannot be added (PDF, Word, Excel, images, text)",
+      badType: (extensions: string[]) =>
+        `This file type cannot be added (allowed: ${extensions.join(", ")})`,
       mismatch: "The file name's type does not match its contents",
       macro: "Files with macros cannot be added. Save it again without macros",
       empty: "The file is empty",

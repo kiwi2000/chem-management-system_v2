@@ -95,6 +95,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               // 上限とマクロの扱いはシステム設定。設定の API は管理者専用なので、値だけ渡す
               maxMb={settings.attachmentMaxMb}
               allowMacros={settings.attachmentAllowMacros}
+              extensions={settings.attachmentExtensions}
             />
           </>
         }

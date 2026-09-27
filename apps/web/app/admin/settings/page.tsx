@@ -5,8 +5,10 @@ import {
   CONDITIONAL_LINK_MODES,
   DEFAULT_SETTINGS,
   describePasswordPolicy,
+  formatExtensionList,
   formatOptionList,
   getMessages,
+  parseExtensionList,
   parseOptionList,
   pickPasswordPolicy,
   PASSWORD_EXPIRY_DAYS_MAX,
@@ -54,6 +56,8 @@ export default function SettingsPage() {
   // 選択肢の入力欄は打っている途中の改行を消さないよう、生の文字列のまま持つ
   const [modelOptionsText, setModelOptionsText] = useState("");
   const [useOptionsText, setUseOptionsText] = useState("");
+  // 添付ファイルの拡張子も、打っている途中の区切りを消さないよう生の文字列で持つ
+  const [extensionsText, setExtensionsText] = useState("");
   // 承認を不要に切り替えたときに残る承認待の件数（種類ごと）
   const [pending, setPending] = useState<Record<string, number> | null>(null);
 
@@ -73,6 +77,7 @@ export default function SettingsPage() {
       setLoaded(fresh);
       setModelOptionsText(formatOptionList(fresh.productModelOptions));
       setUseOptionsText(formatOptionList(fresh.productUseOptions));
+      setExtensionsText(formatExtensionList(fresh.attachmentExtensions));
     })();
   }, [m]);
 
@@ -86,6 +91,7 @@ export default function SettingsPage() {
     setSettings(loaded);
     setModelOptionsText(formatOptionList(loaded.productModelOptions));
     setUseOptionsText(formatOptionList(loaded.productUseOptions));
+    setExtensionsText(formatExtensionList(loaded.attachmentExtensions));
     setError(null);
     setNotice(null);
   }
@@ -498,6 +504,22 @@ export default function SettingsPage() {
                 className="w-28"
               />
               <p className="text-muted-foreground text-xs">{m.settings.attachmentMaxMbHint}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attachmentExtensions">{m.settings.attachmentExtensions}</Label>
+              <Input
+                id="attachmentExtensions"
+                value={extensionsText}
+                onChange={(e) => {
+                  setExtensionsText(e.target.value);
+                  setSettings({
+                    ...settings,
+                    attachmentExtensions: parseExtensionList(e.target.value),
+                  });
+                }}
+                className="max-w-2xl font-mono"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.attachmentExtensionsHint}</p>
             </div>
             <div className="space-y-1">
               <label className="flex items-center gap-2 text-sm">

@@ -22,9 +22,11 @@ import type { ProductAttachmentDto } from "@/lib/types";
  */
 
 /** 拡張子ごとの形式と、中身の頭の印（拡張子だけ変えた別物を受け取らないため） */
-const FORMATS: Record<
-  (typeof ATTACHMENT_EXTENSIONS)[number] | (typeof ATTACHMENT_MACRO_EXTENSIONS)[number],
-  { mime: string; magic: number[][] }
+const FORMATS: Partial<
+  Record<
+    (typeof ATTACHMENT_EXTENSIONS)[number] | (typeof ATTACHMENT_MACRO_EXTENSIONS)[number],
+    { mime: string; magic: number[][] }
+  >
 > = {
   // マクロ付き。システム設定で許したときだけ受け付ける
   docm: {
@@ -79,17 +81,27 @@ export type AttachmentReject = "tooLarge" | "badType" | "mismatch" | "macro" | "
 export async function inspectAttachment(
   name: string,
   buf: Buffer,
-  /** システム設定の上限（MB）と、マクロ付きを受け付けるか（2026-09-27 指示） */
-  policy: Pick<AppSettings, "attachmentMaxMb" | "attachmentAllowMacros">,
+  /** システム設定の上限（MB）、マクロ付きを受け付けるか、受け付ける拡張子（2026-09-27 指示） */
+  policy: Pick<AppSettings, "attachmentMaxMb" | "attachmentAllowMacros" | "attachmentExtensions">,
 ): Promise<{ ok: true; mime: string } | { ok: false; reason: AttachmentReject }> {
   if (buf.length === 0) return { ok: false, reason: "empty" };
   if (buf.length > policy.attachmentMaxMb * 1024 * 1024) return { ok: false, reason: "tooLarge" };
-  const ext = fileExtension(name) as keyof typeof FORMATS;
-  const format = FORMATS[ext];
-  if (!format) return { ok: false, reason: "badType" };
-  // マクロ付きの拡張子は、許していなければ断る
+  const ext = fileExtension(name);
+  // 受け付ける拡張子。**空ならすべて受け付ける**
+  if (policy.attachmentExtensions.length > 0 && !policy.attachmentExtensions.includes(ext)) {
+    return { ok: false, reason: "badType" };
+  }
+  // マクロ付きの拡張子は、受け付ける拡張子に挙がっていても、マクロを許していなければ断る
   const macroExt = (ATTACHMENT_MACRO_EXTENSIONS as readonly string[]).includes(ext);
   if (macroExt && !policy.attachmentAllowMacros) return { ok: false, reason: "macro" };
+  /*
+    知っている形式は、中身の頭の印が拡張子と合うかを見る（拡張子だけ変えた別物を受け取らない）。
+    知らない形式（設定で足した拡張子）は中身を見ずに受け取り、落とすときは
+    「ただのバイト列」として渡す（ブラウザに中身を解釈させない）
+  */
+  const format: { mime: string; magic: number[][] } | undefined =
+    FORMATS[ext as keyof typeof FORMATS];
+  if (!format) return { ok: true, mime: "application/octet-stream" };
   if (format.magic.length > 0 && !format.magic.some((m) => m.every((b, i) => buf[i] === b))) {
     return { ok: false, reason: "mismatch" };
   }

@@ -1855,7 +1855,12 @@ export const ja = {
     attachmentMaxMbRange: "上限は 1〜100 MB の間で指定してください",
     attachmentAllowMacros: "マクロ付きのファイルを受け付ける",
     attachmentAllowMacrosHint:
-      "入れると、.docm・.xlsm や、マクロの入った Word・Excel も追加できるようになります。開いた人の機械でマクロが動くおそれがあるので、必要なときだけ入れてください",
+      "入れると、.docm・.xlsm や、マクロの入った Word・Excel も追加できるようになります。開いた人の機械でマクロが動くおそれがあるので、必要なときだけ入れてください。受け付ける形式に挙げていても、ここを入れていなければマクロ付きは断ります",
+    attachmentExtensions: "受け付ける形式（拡張子）",
+    attachmentExtensionsHint:
+      "拡張子をカンマ・読点・空白・改行で区切って並べます（例: pdf, docx, xlsx, png）。点は付けても付けなくてもかまいません。空欄にすると、どの形式でも受け付けます",
+    attachmentExtensionsInvalid: (bad: string[]) =>
+      `書けない拡張子があります: ${bad.join(", ")}（英数字 10 字まで）`,
     /** システム名と題字のアイコン（2026-09-25 指示） */
     appearanceSection: "システム名とロゴ",
     appNameJa: "システム名（日本語）",
@@ -2069,12 +2074,13 @@ export const ja = {
     },
     remove: "添付ファイルを削除",
     removeConfirm: (name: string) => `「${name}」を削除しますか。元に戻せません`,
-    hint: (maxMb: number, allowMacros: boolean) =>
-      `PDF・Word・Excel・画像・テキストを、1 ファイル ${maxMb} MB まで追加できます。${allowMacros ? "マクロ付きのファイルも追加できます（開くときは注意してください）。" : "マクロ付きのファイルは追加できません。"}追加と削除はその場で保存されます`,
+    hint: (maxMb: number, allowMacros: boolean, extensions: string[]) =>
+      `${extensions.length > 0 ? `追加できる形式: ${extensions.join("・")}。` : "どの形式でも追加できます。"}1 ファイル ${maxMb} MB まで。${allowMacros ? "マクロ付きのファイルも追加できます（開くときは注意してください）。" : "マクロ付きのファイルは追加できません。"}追加と削除はその場で保存されます`,
     rejected: (name: string, reason: string) => `${name}: ${reason}`,
     rejects: {
       tooLarge: (maxMb: number) => `${maxMb} MB を超えています`,
-      badType: "この形式は追加できません（PDF・Word・Excel・画像・テキスト）",
+      badType: (extensions: string[]) =>
+        `この形式は追加できません（追加できる形式: ${extensions.join("・")}）`,
       mismatch: "ファイル名の形式と中身が合いません",
       macro: "マクロ付きのファイルは追加できません。マクロなしで保存し直してください",
       empty: "中身が空です",

@@ -48,11 +48,14 @@ export function ProductAttachments({
   canViewComposition,
   maxMb,
   allowMacros,
+  extensions,
 }: {
   productId: string;
   /** システム設定の上限（MB）とマクロの扱い。案内の文と、ファイル選びの窓の絞り込みに使う */
   maxMb: number;
   allowMacros: boolean;
+  /** 受け付ける拡張子。空ならすべて */
+  extensions: string[];
   /** 製品を編集できる人 */
   canEdit: boolean;
   /** 組成を見られる人。「組成を見られる人だけ」の欄を出すかどうか */
@@ -347,7 +350,7 @@ export function ProductAttachments({
                 ref={inputRef}
                 type="file"
                 multiple
-                accept={attachmentAccept(allowMacros)}
+                accept={attachmentAccept(extensions, allowMacros) || undefined}
                 className="hidden"
                 onChange={(e) => {
                   const files = e.target.files;
@@ -365,7 +368,9 @@ export function ProductAttachments({
                 {busy ? t.uploading : t.add}
               </Button>
             </div>
-            <p className="text-muted-foreground text-xs">{t.hint(maxMb, allowMacros)}</p>
+            <p className="text-muted-foreground text-xs">
+              {t.hint(maxMb, allowMacros, extensions)}
+            </p>
             {canViewComposition && (
               <p className="text-muted-foreground text-xs">{t.compositionOnlyHint}</p>
             )}

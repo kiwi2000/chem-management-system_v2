@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { ATTACHMENT_EXTENSIONS } from "@chem/shared";
 import { describe, expect, it, vi } from "vitest";
 
 // DB を使う関数は読み込むだけで Prisma を起こすので、ここでは形の検査だけを確かめる
@@ -7,7 +8,8 @@ vi.mock("@/lib/db", () => ({ prisma: {} }));
 const { inspectAttachment } = await import("./attachment-service");
 
 const pdf = Buffer.from("%PDF-1.7\n...");
-const POLICY = { attachmentMaxMb: 20, attachmentAllowMacros: false };
+const EXTS = [...ATTACHMENT_EXTENSIONS];
+const POLICY = { attachmentMaxMb: 20, attachmentAllowMacros: false, attachmentExtensions: EXTS };
 
 async function zip(entries: Record<string, string>): Promise<Buffer> {
   const z = new JSZip();
@@ -43,9 +45,12 @@ describe("inspectAttachment", () => {
     });
   });
 
-  it("知らない形式は断り、マクロ付きの拡張子はマクロとして断る", async () => {
+  it("受け付ける拡張子に無い形式は断る（既定ではマクロ付きの拡張子も挙がっていない）", async () => {
     expect(await inspectAttachment("a.exe", pdf, POLICY)).toEqual({ ok: false, reason: "badType" });
-    expect(await inspectAttachment("a.xlsm", pdf, POLICY)).toEqual({ ok: false, reason: "macro" });
+    expect(await inspectAttachment("a.xlsm", pdf, POLICY)).toEqual({
+      ok: false,
+      reason: "badType",
+    });
     expect(await inspectAttachment("noext", pdf, POLICY)).toEqual({ ok: false, reason: "badType" });
   });
 
@@ -85,8 +90,16 @@ describe("inspectAttachment", () => {
     it("上限は設定の MB で決まる", async () => {
       const twoMb = Buffer.alloc(2 * 1024 * 1024);
       twoMb.write("%PDF");
-      const tight = { attachmentMaxMb: 1, attachmentAllowMacros: false };
-      const loose = { attachmentMaxMb: 3, attachmentAllowMacros: false };
+      const tight = {
+        attachmentMaxMb: 1,
+        attachmentAllowMacros: false,
+        attachmentExtensions: EXTS,
+      };
+      const loose = {
+        attachmentMaxMb: 3,
+        attachmentAllowMacros: false,
+        attachmentExtensions: EXTS,
+      };
       expect(await inspectAttachment("a.pdf", twoMb, tight)).toEqual({
         ok: false,
         reason: "tooLarge",
@@ -95,7 +108,11 @@ describe("inspectAttachment", () => {
     });
 
     it("マクロ付きを許せば、docm・xlsm とマクロ入りの docx・xls を受け付ける", async () => {
-      const allow = { attachmentMaxMb: 20, attachmentAllowMacros: true };
+      const allow = {
+        attachmentMaxMb: 20,
+        attachmentAllowMacros: true,
+        attachmentExtensions: [...EXTS, "docm"],
+      };
       const macro = await zip({ "word/document.xml": "<w:document/>", "word/vbaProject.bin": "x" });
       const ole = Buffer.concat([
         Buffer.from([0xd0, 0xcf, 0x11, 0xe0]),
@@ -111,17 +128,65 @@ describe("inspectAttachment", () => {
 
     it("許していなければ、docm・xlsm はマクロ付きとして断る", async () => {
       const macro = await zip({ "xl/workbook.xml": "<w/>" });
-      expect(await inspectAttachment("a.xlsm", macro, POLICY)).toEqual({
+      const listed = { ...POLICY, attachmentExtensions: [...EXTS, "xlsm"] };
+      expect(await inspectAttachment("a.xlsm", macro, listed)).toEqual({
         ok: false,
         reason: "macro",
       });
     });
 
     it("マクロを許しても、中身の頭の印が合わなければ断る", async () => {
-      const allow = { attachmentMaxMb: 20, attachmentAllowMacros: true };
+      const allow = {
+        attachmentMaxMb: 20,
+        attachmentAllowMacros: true,
+        attachmentExtensions: [...EXTS, "xlsm"],
+      };
       expect(await inspectAttachment("a.xlsm", Buffer.from("MZ"), allow)).toEqual({
         ok: false,
         reason: "mismatch",
+      });
+    });
+  });
+
+  describe("受け付ける拡張子（システム設定）", () => {
+    const base = { attachmentMaxMb: 20, attachmentAllowMacros: false };
+
+    it("挙げた拡張子だけ受け付ける", async () => {
+      const onlyPdf = { ...base, attachmentExtensions: ["pdf"] };
+      expect((await inspectAttachment("a.pdf", pdf, onlyPdf)).ok).toBe(true);
+      expect(await inspectAttachment("a.txt", Buffer.from("x"), onlyPdf)).toEqual({
+        ok: false,
+        reason: "badType",
+      });
+    });
+
+    it("空なら、どの形式でも受け付ける（知らない形式はただのバイト列として持つ）", async () => {
+      const any = { ...base, attachmentExtensions: [] };
+      expect(await inspectAttachment("drawing.dwg", Buffer.from("AC1032"), any)).toEqual({
+        ok: true,
+        mime: "application/octet-stream",
+      });
+      expect((await inspectAttachment("noext", Buffer.from("x"), any)).ok).toBe(true);
+    });
+
+    it("空でも、知っている形式は中身の頭の印を見る", async () => {
+      const any = { ...base, attachmentExtensions: [] };
+      expect(await inspectAttachment("a.pdf", Buffer.from("MZ"), any)).toEqual({
+        ok: false,
+        reason: "mismatch",
+      });
+    });
+
+    it("挙げていても、マクロを許していなければマクロ付きは断る", async () => {
+      const listed = { ...base, attachmentExtensions: ["xlsm", "pptm"] };
+      const macro = await zip({ "xl/workbook.xml": "<w/>" });
+      expect(await inspectAttachment("a.xlsm", macro, listed)).toEqual({
+        ok: false,
+        reason: "macro",
+      });
+      expect(await inspectAttachment("a.pptm", macro, listed)).toEqual({
+        ok: false,
+        reason: "macro",
       });
     });
   });
