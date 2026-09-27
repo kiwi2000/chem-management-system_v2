@@ -621,7 +621,11 @@ export const settingsSchema = (m: Messages) =>
       .min(ATTACHMENT_MAX_MB_MIN, m.settings.attachmentMaxMbRange)
       .max(ATTACHMENT_MAX_MB_MAX, m.settings.attachmentMaxMbRange),
     attachmentAllowMacros: z.boolean(),
-    attachmentKinds: z.array(z.string().trim().min(1).max(100)).max(100),
+    // 種類は添付の必須項目なので、選択肢が 1 つも無いと追加できなくなる
+    attachmentKinds: z
+      .array(z.string().trim().min(1).max(100))
+      .min(1, m.settings.attachmentKindsRequired)
+      .max(100),
     attachmentExtensions: z
       .array(z.string())
       .max(100)

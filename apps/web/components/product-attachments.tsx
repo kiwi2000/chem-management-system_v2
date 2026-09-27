@@ -146,6 +146,7 @@ export function ProductAttachments({
           editing(a) ? (
             <select
               aria-label={t.kind}
+              required
               value={draft.kind}
               onChange={(e) => setDraft({ ...draft, kind: e.target.value })}
               className="border-input bg-background h-7 w-full rounded-none border px-1 text-sm"
@@ -278,9 +279,13 @@ export function ProductAttachments({
   async function save() {
     setError(null);
     const creating = editingId === NEW_ID;
-    // 件名とファイルは必須（2026-09-27 指示）。件名に既定の値は入れない
+    // 件名・種類・ファイルは必須（2026-09-27 指示）。件名に既定の値は入れない
     if (draft.title.trim() === "") {
       setError(t.titleRequired);
+      return;
+    }
+    if (draft.kind === "") {
+      setError(t.kindRequired);
       return;
     }
     if (creating && !file) {
@@ -303,7 +308,7 @@ export function ProductAttachments({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: draft.title,
-            kind: draft.kind || null,
+            kind: draft.kind,
             description: draft.description || null,
           }),
         });

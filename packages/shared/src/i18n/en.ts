@@ -1770,6 +1770,7 @@ export const en: Messages = {
     attachmentAllowMacrosHint:
       "When on, .docm and .xlsm files and Word or Excel files containing macros can be added. Macros may run on the machine of whoever opens them, so turn this on only when needed. Files with macros are refused while this is off, even if their type is listed",
     attachmentKinds: "Type choices",
+    attachmentKindsRequired: "List at least one type (an attachment's type is required)",
     attachmentKindsHint:
       "The values offered for an attachment's type, one per line, in the order shown. Removing a choice does not change attachments that already use it",
     attachmentExtensions: "Accepted file types (extensions)",
@@ -1966,6 +1967,7 @@ export const en: Messages = {
     createdBy: "Added by",
     fileRequired: "Choose a file",
     titleRequired: "Enter a subject",
+    kindRequired: "Choose a type",
     kindInvalid: "Choose a type from the list (the list is set in the system settings)",
     hint: (maxMb: number, allowMacros: boolean, extensions: string[]) =>
       `${extensions.length > 0 ? `Allowed types: ${extensions.join(", ")}. ` : "Any file type can be added. "}Up to ${maxMb} MB each. ${allowMacros ? "Files with macros can also be added (take care when opening them). " : "Files with macros cannot be added. "}To replace a file, delete it and add it again`,

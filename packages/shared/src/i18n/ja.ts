@@ -1857,6 +1857,8 @@ export const ja = {
     attachmentAllowMacrosHint:
       "入れると、.docm・.xlsm や、マクロの入った Word・Excel も追加できるようになります。開いた人の機械でマクロが動くおそれがあるので、必要なときだけ入れてください。受け付ける形式に挙げていても、ここを入れていなければマクロ付きは断ります",
     attachmentKinds: "種類の選択肢",
+    attachmentKindsRequired:
+      "種類の選択肢を 1 つ以上書いてください（添付ファイルの種類は必須です）",
     attachmentKindsHint:
       "添付ファイルの「種類」で選べる値です。1 行に 1 つ書きます。並べた順がそのまま出ます。選択肢を消しても、登録済みの添付の種類はそのまま残ります",
     attachmentExtensions: "受け付ける形式（拡張子）",
@@ -2065,6 +2067,7 @@ export const ja = {
     createdBy: "登録者",
     fileRequired: "ファイルを選んでください",
     titleRequired: "件名を入れてください",
+    kindRequired: "種類を選んでください",
     kindInvalid: "種類は選択肢から選んでください（選択肢はシステム設定で決めます）",
     hint: (maxMb: number, allowMacros: boolean, extensions: string[]) =>
       `${extensions.length > 0 ? `追加できる形式: ${extensions.join("・")}。` : "どの形式でも追加できます。"}1 ファイル ${maxMb} MB まで。${allowMacros ? "マクロ付きのファイルも追加できます（開くときは注意してください）。" : "マクロ付きのファイルは追加できません。"}ファイルを差し替えるときは、消してから追加し直してください`,

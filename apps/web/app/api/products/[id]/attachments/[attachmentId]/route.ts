@@ -5,6 +5,7 @@ import {
   ATTACHMENT_SELECT,
   canEditAttachments,
   toAttachmentDtos,
+  validationMessage,
   visibleProduct,
 } from "@/lib/attachment-service";
 import { prisma } from "@/lib/db";
@@ -48,12 +49,17 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const parsed = attachmentFieldsSchema.safeParse(body);
   if (!parsed.success) {
-    return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
+    return jsonError(
+      400,
+      "validation_error",
+      validationMessage(parsed.error, m),
+      parsed.error.flatten(),
+    );
   }
   const next = parsed.data;
   // 種類は選択肢から。**いま付いている値はそのまま残してよい**（選択肢から消した値でも）
   const settings = await getAppSettings();
-  if (next.kind && next.kind !== row.kind && !settings.attachmentKinds.includes(next.kind)) {
+  if (next.kind !== row.kind && !settings.attachmentKinds.includes(next.kind)) {
     return jsonError(400, "validation_error", m.attachments.kindInvalid);
   }
 
@@ -61,7 +67,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     where: { id: row.id },
     data: {
       title: next.title,
-      kind: next.kind || null,
+      kind: next.kind,
       description: next.description || null,
       updatedBy: actor.user.id,
     },

@@ -111,7 +111,8 @@ export function attachmentAccept(extensions: readonly string[], allowMacros: boo
  */
 export const attachmentFieldsSchema = z.object({
   title: z.string().trim().min(1).max(255),
-  kind: z.string().trim().max(100).nullable().optional(),
+  // 種類も必須（2026-09-27 指示）。値はシステム設定の選択肢から
+  kind: z.string().trim().min(1).max(100),
   description: z.string().trim().max(2000).nullable().optional(),
 });
 export type AttachmentFieldsInput = z.infer<typeof attachmentFieldsSchema>;

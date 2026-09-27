@@ -7,6 +7,7 @@ import {
   canViewAttachments,
   inspectAttachment,
   toAttachmentDtos,
+  validationMessage,
   visibleProduct,
 } from "@/lib/attachment-service";
 import { prisma } from "@/lib/db";
@@ -84,14 +85,19 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!(file instanceof File)) return jsonError(400, "no_file", m.attachments.fileRequired);
   const parsed = attachmentFieldsSchema.safeParse({
     title: form.get("title") ?? "",
-    kind: (form.get("kind") as string | null) || null,
+    kind: form.get("kind") ?? "",
     description: (form.get("description") as string | null) || null,
   });
   if (!parsed.success) {
-    return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
+    return jsonError(
+      400,
+      "validation_error",
+      validationMessage(parsed.error, m),
+      parsed.error.flatten(),
+    );
   }
   const settings = await getAppSettings();
-  if (parsed.data.kind && !settings.attachmentKinds.includes(parsed.data.kind)) {
+  if (!settings.attachmentKinds.includes(parsed.data.kind)) {
     return jsonError(400, "validation_error", m.attachments.kindInvalid);
   }
 
@@ -113,7 +119,7 @@ export async function POST(req: Request, { params }: Ctx) {
     data: {
       productId: id,
       title: parsed.data.title,
-      kind: parsed.data.kind ?? null,
+      kind: parsed.data.kind,
       description: parsed.data.description ?? null,
       fileName: name,
       mime: checked.mime,

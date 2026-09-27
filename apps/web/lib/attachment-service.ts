@@ -4,6 +4,7 @@ import {
   fileExtension,
   isPreviewable,
   type AppSettings,
+  type Messages,
 } from "@chem/shared";
 import JSZip from "jszip";
 import type { Actor } from "@/lib/authz";
@@ -123,6 +124,18 @@ export async function inspectAttachment(
     if (buf.includes(Buffer.from("_VBA_PROJECT", "utf16le"))) return { ok: false, reason: "macro" };
   }
   return { ok: true, mime: format.mime };
+}
+
+/** 件名・種類・説明が通らなかったときの文言。種類が無いときはそれとわかるように */
+export function validationMessage(
+  error: { issues: readonly { path: readonly PropertyKey[] }[] },
+  m: Messages,
+): string {
+  return error.issues.some((i) => i.path[0] === "kind")
+    ? m.attachments.kindRequired
+    : error.issues.some((i) => i.path[0] === "title")
+      ? m.attachments.titleRequired
+      : m.errors.validation;
 }
 
 /** プレビューできる形式か（本体は shared。API から読みやすいようここからも出す） */
