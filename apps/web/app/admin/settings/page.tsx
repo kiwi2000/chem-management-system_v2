@@ -58,6 +58,7 @@ export default function SettingsPage() {
   const [useOptionsText, setUseOptionsText] = useState("");
   // 添付ファイルの拡張子も、打っている途中の区切りを消さないよう生の文字列で持つ
   const [extensionsText, setExtensionsText] = useState("");
+  const [kindsText, setKindsText] = useState("");
   // 承認を不要に切り替えたときに残る承認待の件数（種類ごと）
   const [pending, setPending] = useState<Record<string, number> | null>(null);
 
@@ -78,6 +79,7 @@ export default function SettingsPage() {
       setModelOptionsText(formatOptionList(fresh.productModelOptions));
       setUseOptionsText(formatOptionList(fresh.productUseOptions));
       setExtensionsText(formatExtensionList(fresh.attachmentExtensions));
+      setKindsText(formatOptionList(fresh.attachmentKinds));
     })();
   }, [m]);
 
@@ -92,6 +94,7 @@ export default function SettingsPage() {
     setModelOptionsText(formatOptionList(loaded.productModelOptions));
     setUseOptionsText(formatOptionList(loaded.productUseOptions));
     setExtensionsText(formatExtensionList(loaded.attachmentExtensions));
+    setKindsText(formatOptionList(loaded.attachmentKinds));
     setError(null);
     setNotice(null);
   }
@@ -504,6 +507,20 @@ export default function SettingsPage() {
                 className="w-28"
               />
               <p className="text-muted-foreground text-xs">{m.settings.attachmentMaxMbHint}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attachmentKinds">{m.settings.attachmentKinds}</Label>
+              <textarea
+                id="attachmentKinds"
+                rows={5}
+                value={kindsText}
+                onChange={(e) => {
+                  setKindsText(e.target.value);
+                  setSettings({ ...settings, attachmentKinds: parseOptionList(e.target.value) });
+                }}
+                className="border-input bg-background w-full max-w-md rounded-none border px-3 py-2 text-sm"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.attachmentKindsHint}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="attachmentExtensions">{m.settings.attachmentExtensions}</Label>

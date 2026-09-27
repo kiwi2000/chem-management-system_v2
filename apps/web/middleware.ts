@@ -38,6 +38,11 @@ function contentSecurityPolicy(nonce: string) {
     "font-src 'self' data:",
     "connect-src 'self'",
     "object-src 'none'",
+    /*
+      添付ファイルの PDF をポップアップで見せるとき、取ってきた中身を手元の blob にして iframe で開く
+      （2026-09-27）。自分自身と blob だけ。外のサイトは埋め込めない
+    */
+    "frame-src 'self' blob:",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",

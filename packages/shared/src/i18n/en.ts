@@ -1769,6 +1769,9 @@ export const en: Messages = {
     attachmentAllowMacros: "Accept files with macros",
     attachmentAllowMacrosHint:
       "When on, .docm and .xlsm files and Word or Excel files containing macros can be added. Macros may run on the machine of whoever opens them, so turn this on only when needed. Files with macros are refused while this is off, even if their type is listed",
+    attachmentKinds: "Type choices",
+    attachmentKindsHint:
+      "The values offered for an attachment's type, one per line, in the order shown. Removing a choice does not change attachments that already use it",
     attachmentExtensions: "Accepted file types (extensions)",
     attachmentExtensionsHint:
       "List extensions separated by commas, spaces or new lines (for example: pdf, docx, xlsx, png). The leading dot is optional. Leave blank to accept any file type",
@@ -1955,29 +1958,17 @@ export const en: Messages = {
   attachments: {
     title: "Attachments",
     empty: "No attachments",
-    add: "Add files",
-    uploading: "Uploading…",
-    fileName: "File name",
+    subject: "Subject",
     kind: "Type",
-    note: "Note",
+    description: "Description",
+    fileName: "File name",
     size: "Size",
     createdBy: "Added by",
-    createdAt: "Added at",
-    compositionOnly: "Composition viewers only",
-    compositionOnlyHint:
-      "Use this for documents that show the composition (such as a supplier SDS). People who cannot view compositions will not see them in the list",
-    kinds: {
-      SDS: "SDS",
-      TEST_REPORT: "Test report",
-      SURVEY: "Survey reply",
-      DRAWING: "Drawing",
-      OTHER: "Other",
-    },
-    remove: "Delete attachment",
-    removeConfirm: (name: string) => `Delete "${name}"? This cannot be undone`,
+    fileRequired: "Choose a file",
+    titleRequired: "Enter a subject",
+    kindInvalid: "Choose a type from the list (the list is set in the system settings)",
     hint: (maxMb: number, allowMacros: boolean, extensions: string[]) =>
-      `${extensions.length > 0 ? `Allowed types: ${extensions.join(", ")}. ` : "Any file type can be added. "}Up to ${maxMb} MB each. ${allowMacros ? "Files with macros can also be added (take care when opening them). " : "Files with macros cannot be added. "}Adding and deleting are saved at once`,
-    rejected: (name: string, reason: string) => `${name}: ${reason}`,
+      `${extensions.length > 0 ? `Allowed types: ${extensions.join(", ")}. ` : "Any file type can be added. "}Up to ${maxMb} MB each. ${allowMacros ? "Files with macros can also be added (take care when opening them). " : "Files with macros cannot be added. "}To replace a file, delete it and add it again`,
     rejects: {
       tooLarge: (maxMb: number) => `Larger than ${maxMb} MB`,
       badType: (extensions: string[]) =>

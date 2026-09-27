@@ -2,22 +2,22 @@ import {
   ATTACHMENT_EXTENSIONS,
   ATTACHMENT_MACRO_EXTENSIONS,
   fileExtension,
+  isPreviewable,
   type AppSettings,
-  type AttachmentKind,
 } from "@chem/shared";
 import JSZip from "jszip";
 import type { Actor } from "@/lib/authz";
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
-import { visibilityWhere } from "@/lib/product-service";
+import { canEditProduct, visibilityWhere } from "@/lib/product-service";
 import type { ProductAttachmentDto } from "@/lib/types";
 
 /**
  * 製品・原材料の添付ファイル（2026-09-27 指示）。
  *
- * - 見られるのは、その製品を見られる人。非公開の製品は、製品と同じく権限が無ければ存在ごと隠す
- * - 「組成を見られる人だけ」の印が付いたものは、COMPOSITION_VIEW が無い人には一覧にも出さない
- * - 追加・削除・書き換えは、その製品を編集できる人
+ * - **見られるのは、その製品を見られて、かつ組成を見られる人（COMPOSITION_VIEW）だけ。**
+ *   主な添付は原材料の SDS で組成が書かれているため。組成を見られない人には欄ごと出さない
+ * - 追加・削除・書き換えは、その製品を編集でき、かつ組成を見られる人
  * - 中身は DB に置く。一覧は中身を読まずに引く
  */
 
@@ -125,6 +125,27 @@ export async function inspectAttachment(
   return { ok: true, mime: format.mime };
 }
 
+/** プレビューできる形式か（本体は shared。API から読みやすいようここからも出す） */
+export { isPreviewable };
+
+/**
+ * 添付を見てよいか。**製品が見えて、組成を見られること**
+ */
+export function canViewAttachments(
+  actor: Actor,
+  product: Parameters<typeof canViewComposition>[1],
+): boolean {
+  return canViewComposition(actor, product);
+}
+
+/** 添付を足す・消す・直してよいか。製品を編集でき、かつ組成を見られること */
+export function canEditAttachments(
+  actor: Actor,
+  product: Parameters<typeof canViewComposition>[1],
+): boolean {
+  return canEditProduct(actor, product) && canViewComposition(actor, product);
+}
+
 /** その人が見られる製品（非公開の製品は、権限が無ければ null） */
 export async function visibleProduct(actor: Actor, productId: string) {
   return prisma.product.findFirst({
@@ -135,37 +156,27 @@ export async function visibleProduct(actor: Actor, productId: string) {
 /** 一覧に出す項目（中身は読まない） */
 export const ATTACHMENT_SELECT = {
   id: true,
+  title: true,
+  kind: true,
+  description: true,
   fileName: true,
   mime: true,
   size: true,
-  kind: true,
-  note: true,
-  compositionOnly: true,
   createdAt: true,
   createdBy: true,
-  updatedAt: true,
 } as const;
 
 type AttachmentRow = {
   id: string;
+  title: string;
+  kind: string | null;
+  description: string | null;
   fileName: string;
   mime: string;
   size: number;
-  kind: AttachmentKind;
-  note: string | null;
-  compositionOnly: boolean;
   createdAt: Date;
   createdBy: string | null;
-  updatedAt: Date;
 };
-
-/** 見てよい添付だけの条件。組成を見られない人には「組成を見られる人だけ」を除く */
-export function attachmentVisibility(
-  actor: Actor,
-  product: Parameters<typeof canViewComposition>[1],
-) {
-  return canViewComposition(actor, product) ? {} : { compositionOnly: false };
-}
 
 /** 登録した人の名前を引いて DTO にする */
 export async function toAttachmentDtos(rows: AttachmentRow[]): Promise<ProductAttachmentDto[]> {
@@ -180,12 +191,12 @@ export async function toAttachmentDtos(rows: AttachmentRow[]): Promise<ProductAt
   const nameOf = new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
   return rows.map((r) => ({
     id: r.id,
+    title: r.title,
+    kind: r.kind,
+    description: r.description,
     fileName: r.fileName,
     mime: r.mime,
     size: r.size,
-    kind: r.kind,
-    note: r.note,
-    compositionOnly: r.compositionOnly,
     createdAt: r.createdAt.toISOString(),
     createdByName: r.createdBy ? (nameOf.get(r.createdBy) ?? null) : null,
   }));

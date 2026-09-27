@@ -786,13 +786,15 @@ export interface GeneratedDocumentDto {
 /** 製品・原材料の添付ファイル（2026-09-27）。中身は含まない */
 export interface ProductAttachmentDto {
   id: string;
+  /** 件名 */
+  title: string;
+  /** 種類（選択肢はシステム設定。選択肢から消えた値もそのまま） */
+  kind: string | null;
+  /** 説明 */
+  description: string | null;
   fileName: string;
   mime: string;
   size: number;
-  kind: import("@chem/shared").AttachmentKind;
-  note: string | null;
-  /** 組成を見られる人にだけ見せる */
-  compositionOnly: boolean;
   createdAt: string;
   /** 登録した人の表示名（消された人は null） */
   createdByName: string | null;

@@ -6,6 +6,7 @@ import {
 } from "./doc-file-name";
 import {
   ATTACHMENT_EXTENSIONS,
+  ATTACHMENT_KINDS_DEFAULT,
   EXTENSION_PATTERN,
   formatExtensionList,
   parseExtensionList,
@@ -154,6 +155,8 @@ export interface AppSettings {
   attachmentAllowMacros: boolean;
   /** 受け付ける拡張子（小文字・点なし）。**空ならすべて受け付ける**（2026-09-27 指示） */
   attachmentExtensions: string[];
+  /** 添付ファイルの「種類」の選択肢。並べた順がそのまま出る（2026-09-27 指示） */
+  attachmentKinds: string[];
 
   /**
    * システムの名前（2026-09-25 指示）。上の帯の題字・ログイン画面・ブラウザのタブに出る。
@@ -220,6 +223,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   attachmentMaxMb: ATTACHMENT_MAX_MB_DEFAULT,
   attachmentAllowMacros: false,
   attachmentExtensions: [...ATTACHMENT_EXTENSIONS],
+  attachmentKinds: [...ATTACHMENT_KINDS_DEFAULT],
   appNameJa: "",
   appNameEn: "",
   headerIconVersion: "",
@@ -471,6 +475,13 @@ export const SETTING_DEFS: SettingDef[] = [
   },
   boolDef("attachmentAllowMacros", "attachment.allow_macros"),
   {
+    field: "attachmentKinds",
+    key: "attachment.kinds",
+    valueType: "STRING",
+    parse: (raw) => parseOptionList(raw),
+    format: (v) => formatOptionList(v as string[]),
+  },
+  {
     field: "attachmentExtensions",
     key: "attachment.extensions",
     valueType: "STRING",
@@ -610,6 +621,7 @@ export const settingsSchema = (m: Messages) =>
       .min(ATTACHMENT_MAX_MB_MIN, m.settings.attachmentMaxMbRange)
       .max(ATTACHMENT_MAX_MB_MAX, m.settings.attachmentMaxMbRange),
     attachmentAllowMacros: z.boolean(),
+    attachmentKinds: z.array(z.string().trim().min(1).max(100)).max(100),
     attachmentExtensions: z
       .array(z.string())
       .max(100)

@@ -1,35 +1,56 @@
 "use client";
 
-import { ATTACHMENT_KINDS, attachmentAccept, type AttachmentKind } from "@chem/shared";
-import { Paperclip, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useConfirm } from "@/components/confirm-dialog";
-import { EditButton } from "@/components/edit-button";
-import { EditingBadge } from "@/components/editing-badge";
+import {
+  attachmentAccept,
+  emptyTableState,
+  isPreviewable,
+  serializeTableState,
+  type TableState,
+} from "@chem/shared";
+import { Paperclip } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AttachmentPreview } from "@/components/attachment-preview";
+import { DataTable } from "@/components/data-table/data-table";
+import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, ProductAttachmentDto } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import type { ApiError, ListResponse, ProductAttachmentDto } from "@/lib/types";
+import { useTableState } from "@/lib/use-table-state";
 
-/** 罫線はセルが自分の右と下に引く（ほかの小さな表と同じ） */
-const CELL = "border-border border-r border-b last:border-r-0";
+/** 既定は並べ替えなし（サーバーが新しいものを上にする） */
+const DEFAULT_STATE: TableState = emptyTableState([]);
 
-/** 行ごとの書きかけ（種類・備考・組成を見られる人だけ） */
-type Draft = Pick<ProductAttachmentDto, "kind" | "note" | "compositionOnly">;
+/** 追加中の行を指す仮の id。まだ保存されていないので実在しない */
+const NEW_ID = "__new__";
 
-/** 大きさを読みやすく（1,234 KB / 12.3 MB） */
+/** 表の中の入力欄。行の高さを変えないよう小さめにする */
+const CELL_INPUT = "h-7 w-full text-sm";
+
+interface Draft {
+  title: string;
+  kind: string;
+  description: string;
+}
+const EMPTY: Draft = { title: "", kind: "", description: "" };
+
+/** 追加中に先頭へ出す、まだ保存していない行 */
+const NEW_ROW: ProductAttachmentDto = {
+  id: NEW_ID,
+  title: "",
+  kind: null,
+  description: null,
+  fileName: "",
+  mime: "",
+  size: 0,
+  createdAt: "",
+  createdByName: null,
+};
+
+/** サイズを読みやすく（12 KB / 3.4 MB） */
 function formatSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   return `${Math.max(1, Math.round(bytes / 1024)).toLocaleString()} KB`;
@@ -38,180 +59,297 @@ function formatSize(bytes: number): string {
 /**
  * 製品・原材料の添付ファイル（2026-09-27 指示）。法規制判定の下、備考の上に置く。
  *
- * ほかのカードと同じく、まず読み取り専用で見せ「編集」で書き換え可にする。
- * **追加と削除はその場で保存する**（ファイルは大きいので、書きかけで抱えない）。
- * 種類・備考・「組成を見られる人だけ」は書きかけにして「保存」でまとめて送る
+ * **共通の表に載せる**（並べ替え・絞り込み・ページ送り・先頭のチェックでまとめて削除・右端の鉛筆で行を直す・
+ * 「＋」で足す）。見られるのは組成を見られる人だけで、見られない人には画面がこのカードごと出さない。
+ * 件名を押すと、ブラウザで見られる形式（PDF・画像・テキスト）はポップアップで中身を見せる。
+ * ファイル名を押すとダウンロード。
+ *
+ * 足すときは「＋」でまずファイルを選ばせ、選んだときだけ表に行を作って件名などを待つ
+ * （選ぶのをやめたら何もしない。2026-09-27 指示）
  */
 export function ProductAttachments({
   productId,
   canEdit,
-  canViewComposition,
   maxMb,
   allowMacros,
   extensions,
+  kinds,
 }: {
   productId: string;
-  /** システム設定の上限（MB）とマクロの扱い。案内の文と、ファイル選びの窓の絞り込みに使う */
+  /** 製品を編集でき、組成を見られる人 */
+  canEdit: boolean;
+  /** システム設定の上限（MB）・マクロの扱い・受け付ける拡張子・種類の選択肢 */
   maxMb: number;
   allowMacros: boolean;
-  /** 受け付ける拡張子。空ならすべて */
   extensions: string[];
-  /** 製品を編集できる人 */
-  canEdit: boolean;
-  /** 組成を見られる人。「組成を見られる人だけ」の欄を出すかどうか */
-  canViewComposition: boolean;
+  kinds: string[];
 }) {
-  const { m, locale } = useI18n();
-  const ask = useConfirm();
+  const { m } = useI18n();
   const t = m.attachments;
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const [items, setItems] = useState<ProductAttachmentDto[] | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [rejected, setRejected] = useState<string[]>([]);
-
   const base = `/api/products/${productId}/attachments`;
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const [data, setData] = useState<ListResponse<ProductAttachmentDto> | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Draft>(EMPTY);
+  const [original, setOriginal] = useState<Draft>(EMPTY);
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  /** プレビューを開いている添付 */
+  const [previewing, setPreviewing] = useState<ProductAttachmentDto | null>(null);
+
+  /** 種類の選択肢。いま付いている値が選択肢から消えていても選べるよう足す */
+  const kindChoices = useCallback(
+    (current: string | null) => (current && !kinds.includes(current) ? [...kinds, current] : kinds),
+    [kinds],
+  );
+
+  const columns = useMemo<TableColumn<ProductAttachmentDto>[]>(() => {
+    const editing = (a: ProductAttachmentDto) => a.id === editingId;
+    return [
+      {
+        key: "title",
+        header: t.subject,
+        kind: "text",
+        width: 220,
+        render: (a) =>
+          editing(a) ? (
+            <Input
+              value={draft.title}
+              maxLength={255}
+              required
+              aria-label={t.subject}
+              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              className={CELL_INPUT}
+            />
+          ) : isPreviewable(a.mime) ? (
+            // 押すとポップアップで中身を見せる（PDF・画像・テキスト）。ダウンロードはファイル名から
+            <button
+              type="button"
+              onClick={() => setPreviewing(a)}
+              className="text-primary cursor-pointer text-left underline-offset-2 hover:underline"
+            >
+              {a.title}
+            </button>
+          ) : (
+            a.title
+          ),
+      },
+      {
+        key: "kind",
+        header: t.kind,
+        kind: "enum",
+        width: 120,
+        options: kinds.map((k) => ({ value: k, label: k })),
+        render: (a) =>
+          editing(a) ? (
+            <select
+              aria-label={t.kind}
+              value={draft.kind}
+              onChange={(e) => setDraft({ ...draft, kind: e.target.value })}
+              className="border-input bg-background h-7 w-full rounded-none border px-1 text-sm"
+            >
+              <option value="" />
+              {kindChoices(a.kind).map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          ) : (
+            a.kind
+          ),
+      },
+      {
+        key: "description",
+        header: t.description,
+        kind: "text",
+        width: 260,
+        multiline: true,
+        clampLines: 3,
+        render: (a) =>
+          editing(a) ? (
+            <Input
+              value={draft.description}
+              maxLength={2000}
+              aria-label={t.description}
+              onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+              className={CELL_INPUT}
+            />
+          ) : (
+            a.description
+          ),
+      },
+      {
+        key: "fileName",
+        header: t.fileName,
+        kind: "text",
+        width: 220,
+        render: (a) =>
+          a.id === NEW_ID ? (
+            // 追加中の行は「＋」で選んだファイル。選び直すときはキャンセルして「＋」からやり直す
+            <span className="flex min-w-0 items-center gap-1.5 text-sm">
+              <Paperclip className="text-muted-foreground size-3.5 shrink-0" />
+              <span className="truncate">{file?.name}</span>
+            </span>
+          ) : (
+            <a
+              href={`${base}/${a.id}/file`}
+              title={t.download}
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {a.fileName}
+            </a>
+          ),
+      },
+      {
+        key: "size",
+        header: t.size,
+        kind: "number",
+        width: 90,
+        filterable: false,
+        className: "text-right tabular-nums",
+        render: (a) => (a.id === NEW_ID ? (file ? formatSize(file.size) : "") : formatSize(a.size)),
+      },
+      {
+        key: "createdBy",
+        header: t.createdBy,
+        kind: "text",
+        width: 120,
+        sortable: false,
+        filterable: false,
+        render: (a) => a.createdByName ?? "",
+      },
+    ];
+  }, [t, editingId, draft, file, base, kinds, kindChoices]);
+
+  const { state, setState, ready } = useTableState(
+    "chem.table.productAttachments",
+    columns,
+    DEFAULT_STATE,
+  );
+  const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
   const load = useCallback(async () => {
-    const res = await fetch(base);
+    const res = await fetch(`${base}?${query}`);
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
-      setError(m.errors.loadFailed(res.status));
-      setItems([]);
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.loadFailed(res.status));
+      setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setItems(((await res.json()) as { items: ProductAttachmentDto[] }).items);
-  }, [base, m]);
+    setData((await res.json()) as ListResponse<ProductAttachmentDto>);
+  }, [base, query, m]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (ready) void load();
+  }, [ready, load]);
 
-  const draftOf = (a: ProductAttachmentDto): Draft =>
-    drafts[a.id] ?? { kind: a.kind, note: a.note, compositionOnly: a.compositionOnly };
-  const setDraft = (a: ProductAttachmentDto, patch: Partial<Draft>) =>
-    setDrafts((d) => ({ ...d, [a.id]: { ...draftOf(a), ...patch } }));
-
-  async function failMessage(res: Response): Promise<string> {
-    const body = (await res.json().catch(() => null)) as ApiError | null;
-    return body?.error.message ?? m.errors.saveFailed(res.status);
+  /** 「＋」: まずファイルを選ばせる。行を作るのは選んだとき（`onFileChosen`） */
+  function chooseFile() {
+    setError(null);
+    fileInput.current?.click();
   }
 
-  async function upload(files: FileList) {
-    if (files.length === 0) return;
-    setBusy(true);
+  /** ファイルが選ばれたら、表の先頭に行を作って件名などを待つ。選ぶのをやめたときは呼ばれない */
+  function onFileChosen(chosen: File) {
+    setDraft(EMPTY);
+    setOriginal(EMPTY);
+    setFile(chosen);
+    setEditingId(NEW_ID);
+  }
+
+  function startEdit(a: ProductAttachmentDto) {
     setError(null);
-    setRejected([]);
+    const d = { title: a.title, kind: a.kind ?? "", description: a.description ?? "" };
+    setDraft(d);
+    setOriginal(d);
+    setEditingId(a.id);
+  }
+
+  function stopEdit() {
+    setEditingId(null);
+    setDraft(EMPTY);
+    setFile(null);
+  }
+
+  async function save() {
+    setError(null);
+    const creating = editingId === NEW_ID;
+    // 件名とファイルは必須（2026-09-27 指示）。件名に既定の値は入れない
+    if (draft.title.trim() === "") {
+      setError(t.titleRequired);
+      return;
+    }
+    if (creating && !file) {
+      setError(t.fileRequired);
+      return;
+    }
+    setSaving(true);
     try {
-      const form = new FormData();
-      for (const f of Array.from(files)) form.append("files", f);
-      const res = await fetch(base, { method: "POST", body: form });
-      if (redirectIfUnauthorized(res)) return;
-      const body = (await res.json().catch(() => null)) as {
-        items?: ProductAttachmentDto[];
-        rejected?: { name: string; reason: string }[];
-        error?: { message: string };
-      } | null;
-      if (body?.items) setItems(body.items);
-      if (body?.rejected) setRejected(body.rejected.map((r) => t.rejected(r.name, r.reason)));
-      if (!res.ok && !body?.rejected?.length) {
-        setError(body?.error?.message ?? m.errors.saveFailed(res.status));
+      let res: Response;
+      if (creating && file) {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("title", draft.title);
+        form.append("kind", draft.kind);
+        form.append("description", draft.description);
+        res = await fetch(base, { method: "POST", body: form });
+      } else {
+        res = await fetch(`${base}/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: draft.title,
+            kind: draft.kind || null,
+            description: draft.description || null,
+          }),
+        });
       }
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return;
+      }
+      stopEdit();
+      void load();
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   }
 
-  async function remove(a: ProductAttachmentDto) {
-    if (!(await ask({ message: t.removeConfirm(a.fileName), destructive: true }))) return;
-    setBusy(true);
+  /** 確認は共通の表が出す */
+  async function onDeleteSelected(targets: ProductAttachmentDto[]) {
     setError(null);
-    try {
+    for (const a of targets) {
       const res = await fetch(`${base}/${a.id}`, { method: "DELETE" });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
-        setError(await failMessage(res));
-        return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        break;
       }
-      setItems((xs) => (xs ?? []).filter((x) => x.id !== a.id));
-      setDrafts(({ [a.id]: _gone, ...rest }) => rest);
-    } finally {
-      setBusy(false);
+      if (editingId === a.id) stopEdit();
     }
+    void load();
   }
 
-  /** 書きかけを送る。変わった行だけ */
-  async function save() {
-    if (!items) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const next = [...items];
-      for (const [i, a] of items.entries()) {
-        const d = drafts[a.id];
-        if (!d) continue;
-        const changed =
-          d.kind !== a.kind ||
-          (d.note ?? "") !== (a.note ?? "") ||
-          d.compositionOnly !== a.compositionOnly;
-        if (!changed) continue;
-        const res = await fetch(`${base}/${a.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            kind: d.kind,
-            note: d.note ?? null,
-            ...(canViewComposition ? { compositionOnly: d.compositionOnly } : {}),
-          }),
-        });
-        if (!res.ok) {
-          if (redirectIfUnauthorized(res)) return;
-          setError(await failMessage(res));
-          setItems(next);
-          return;
-        }
-        next[i] = (await res.json()) as ProductAttachmentDto;
-      }
-      setItems(next);
-      setDrafts({});
-      setEditing(false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function discard() {
-    setDrafts({});
-    setRejected([]);
-    setError(null);
-    setEditing(false);
-  }
-
-  const count = items?.length ?? 0;
+  const items = data?.items ?? null;
+  const rows = items === null ? null : editingId === NEW_ID ? [NEW_ROW, ...items] : items;
+  const accept = attachmentAccept(extensions, allowMacros);
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+      <CardHeader>
         <CardTitle className="text-base">
           {t.title}
-          {count > 0 && (
-            <span className="text-muted-foreground ml-2 text-sm font-normal">{count}</span>
+          {data && data.total > 0 && (
+            <span className="text-muted-foreground ml-2 text-sm font-normal">{data.total}</span>
           )}
         </CardTitle>
-        {canEdit &&
-          (editing ? (
-            <span className="flex flex-wrap items-center gap-2">
-              <EditingBadge />
-              <Button type="button" size="sm" variant="outline" onClick={discard}>
-                {m.common.discard}
-              </Button>
-            </span>
-          ) : (
-            <EditButton onClick={() => setEditing(true)} />
-          ))}
       </CardHeader>
       <CardContent className="space-y-3">
         {error && (
@@ -219,170 +357,60 @@ export function ProductAttachments({
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        {rejected.length > 0 && (
-          <Alert variant="destructive">
-            <AlertDescription>
-              {rejected.map((r) => (
-                <div key={r}>{r}</div>
-              ))}
-            </AlertDescription>
-          </Alert>
+        <input
+          ref={fileInput}
+          type="file"
+          accept={accept || undefined}
+          className="hidden"
+          onChange={(e) => {
+            const chosen = e.target.files?.[0];
+            e.target.value = "";
+            if (chosen) onFileChosen(chosen);
+          }}
+        />
+        <DataTable
+          storageKey="chem.table.productAttachments"
+          columns={columns}
+          rows={rows}
+          rowKey={(a) => a.id}
+          total={data?.total ?? 0}
+          state={state}
+          defaultState={DEFAULT_STATE}
+          onStateChange={setState}
+          emptyMessage={t.empty}
+          selectable={canEdit}
+          onDeleteSelected={onDeleteSelected}
+          create={canEdit && !editingId ? { onClick: chooseFile } : undefined}
+          headerActions={
+            canEdit && editingId ? (
+              <div className="flex gap-2">
+                <Button size="sm" disabled={saving} onClick={() => void save()}>
+                  {saving ? m.common.saving : m.common.save}
+                </Button>
+                <Button size="sm" variant="outline" onClick={stopEdit}>
+                  {m.common.cancel}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setDraft(original)}>
+                  {m.common.clear}
+                </Button>
+              </div>
+            ) : undefined
+          }
+          // 行を直すのは右端の鉛筆から。直している間は押せなくする（打ちかけを捨てないため）
+          rowAction={
+            canEdit ? { onClick: startEdit, disabled: () => editingId !== null } : undefined
+          }
+        />
+        {previewing && (
+          <AttachmentPreview
+            url={`${base}/${previewing.id}/file`}
+            attachment={previewing}
+            onClose={() => setPreviewing(null)}
+          />
         )}
-
-        {items === null ? (
-          <p className="text-muted-foreground text-sm">{m.common.loading}</p>
-        ) : items.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{t.empty}</p>
-        ) : (
-          <div className="bg-background overflow-x-auto rounded-md border">
-            <Table className="border-separate border-spacing-0">
-              <TableHeader className="bg-table-head text-table-head-foreground [&_th]:text-inherit">
-                <TableRow>
-                  <TableHead className={CELL}>{t.fileName}</TableHead>
-                  <TableHead className={cn(CELL, "w-32")}>{t.kind}</TableHead>
-                  <TableHead className={cn(CELL, "min-w-56")}>{t.note}</TableHead>
-                  {canViewComposition && (
-                    <TableHead className={cn(CELL, "w-28 text-center")}>
-                      {t.compositionOnly}
-                    </TableHead>
-                  )}
-                  <TableHead className={cn(CELL, "w-24 text-right")}>{t.size}</TableHead>
-                  <TableHead className={cn(CELL, "w-32")}>{t.createdBy}</TableHead>
-                  <TableHead className={cn(CELL, "w-40")}>{t.createdAt}</TableHead>
-                  {editing && <TableHead className={cn(CELL, "w-12")} />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((a) => {
-                  const d = draftOf(a);
-                  return (
-                    <TableRow key={a.id}>
-                      <TableCell className={cn(CELL, "break-all")}>
-                        <a
-                          href={`${base}/${a.id}/file`}
-                          className="text-primary inline-flex items-start gap-1 underline-offset-2 hover:underline"
-                          title={t.download}
-                        >
-                          <Paperclip className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-                          {a.fileName}
-                        </a>
-                      </TableCell>
-                      <TableCell className={CELL}>
-                        {editing ? (
-                          <select
-                            aria-label={t.kind}
-                            value={d.kind}
-                            onChange={(e) =>
-                              setDraft(a, { kind: e.target.value as AttachmentKind })
-                            }
-                            className="border-input bg-background h-8 w-full rounded-none border px-1 text-sm"
-                          >
-                            {ATTACHMENT_KINDS.map((k) => (
-                              <option key={k} value={k}>
-                                {t.kinds[k]}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          t.kinds[a.kind]
-                        )}
-                      </TableCell>
-                      <TableCell className={cn(CELL, "whitespace-pre-wrap")}>
-                        {editing ? (
-                          <Input
-                            aria-label={t.note}
-                            maxLength={1000}
-                            value={d.note ?? ""}
-                            onChange={(e) => setDraft(a, { note: e.target.value })}
-                            className="h-8"
-                          />
-                        ) : (
-                          a.note
-                        )}
-                      </TableCell>
-                      {canViewComposition && (
-                        <TableCell className={cn(CELL, "text-center")}>
-                          <input
-                            type="checkbox"
-                            aria-label={t.compositionOnly}
-                            title={t.compositionOnlyHint}
-                            checked={d.compositionOnly}
-                            disabled={!editing}
-                            onChange={(e) => setDraft(a, { compositionOnly: e.target.checked })}
-                          />
-                        </TableCell>
-                      )}
-                      <TableCell className={cn(CELL, "text-right tabular-nums")}>
-                        {formatSize(a.size)}
-                      </TableCell>
-                      <TableCell className={CELL}>{a.createdByName ?? "—"}</TableCell>
-                      <TableCell className={cn(CELL, "tabular-nums")}>
-                        {new Date(a.createdAt).toLocaleString(locale === "en" ? "en-US" : "ja-JP")}
-                      </TableCell>
-                      {editing && (
-                        <TableCell className={cn(CELL, "text-center")}>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                            title={t.remove}
-                            aria-label={t.remove}
-                            disabled={busy}
-                            onClick={() => void remove(a)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {editing && (
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                ref={inputRef}
-                type="file"
-                multiple
-                accept={attachmentAccept(extensions, allowMacros) || undefined}
-                className="hidden"
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (files) void upload(files).finally(() => (e.target.value = ""));
-                }}
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={() => inputRef.current?.click()}
-              >
-                <Paperclip className="mr-1 size-3.5" />
-                {busy ? t.uploading : t.add}
-              </Button>
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {t.hint(maxMb, allowMacros, extensions)}
-            </p>
-            {canViewComposition && (
-              <p className="text-muted-foreground text-xs">{t.compositionOnlyHint}</p>
-            )}
-            <div className="flex gap-2">
-              <Button type="button" disabled={busy} onClick={() => void save()}>
-                {busy ? m.common.saving : m.common.save}
-              </Button>
-              <Button type="button" variant="outline" onClick={discard}>
-                {m.common.discard}
-              </Button>
-            </div>
-          </div>
+        {/* 足すときだけ、受け付ける形式と上限を出す（共通の表の案内欄はページ送りと場所を分け合うので使わない） */}
+        {editingId === NEW_ID && (
+          <p className="text-muted-foreground text-xs">{t.hint(maxMb, allowMacros, extensions)}</p>
         )}
       </CardContent>
     </Card>

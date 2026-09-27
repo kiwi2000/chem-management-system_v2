@@ -330,6 +330,19 @@ export const COUNTRY_COLUMNS: QueryColumn[] = [
 ];
 
 /** 画像ライブラリ */
+/**
+ * 製品・原材料の添付ファイル（2026-09-27）。登録者は名前を別に引くので並べ替え・絞り込みには使わない。
+ * 登録日時は画面に出さないが、既定の並び（新しいものが上）に使う
+ */
+export const ATTACHMENT_COLUMNS: QueryColumn[] = [
+  { key: "title", kind: "text", field: "title", caseInsensitive: true },
+  { key: "kind", kind: "enum", field: "kind" },
+  { key: "description", kind: "text", field: "description", caseInsensitive: true },
+  { key: "fileName", kind: "text", field: "fileName", caseInsensitive: true },
+  { key: "size", kind: "number", field: "size" },
+  { key: "createdAt", kind: "date", field: "createdAt" },
+];
+
 export const IMAGE_COLUMNS: QueryColumn[] = [
   // 画像ブロックが「いま選んでいる 1 枚」を引くために id でも絞れる
   { key: "id", kind: "text", field: "id" },

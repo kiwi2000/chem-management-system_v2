@@ -7,6 +7,7 @@ import { ProductForm } from "@/components/product-form";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { getActor } from "@/lib/authz";
 import { ProductAttachments } from "@/components/product-attachments";
+import { canEditAttachments, canViewAttachments } from "@/lib/attachment-service";
 import { ProductJudgements } from "@/components/product-judgements";
 import { canEditComposition, canViewComposition } from "@/lib/composition-service";
 import { getCurrentVersion } from "@/lib/current-version";
@@ -88,15 +89,21 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               canEdit={canEditComposition(actor, item)}
               version={linkVersion?.code ?? null}
             />
-            <ProductAttachments
-              productId={item.id}
-              canEdit={canEditProduct(actor, item)}
-              canViewComposition={canViewComposition(actor, item)}
-              // 上限とマクロの扱いはシステム設定。設定の API は管理者専用なので、値だけ渡す
-              maxMb={settings.attachmentMaxMb}
-              allowMacros={settings.attachmentAllowMacros}
-              extensions={settings.attachmentExtensions}
-            />
+            {/*
+              添付は組成を見られる人だけ。主な添付は原材料の SDS で、組成が書かれているため。
+              見られない人には、この欄ごと出さない（2026-09-27 指示）
+            */}
+            {canViewAttachments(actor, item) && (
+              <ProductAttachments
+                productId={item.id}
+                canEdit={canEditAttachments(actor, item)}
+                // 上限・形式・マクロ・種類の選択肢はシステム設定。設定の API は管理者専用なので、値だけ渡す
+                maxMb={settings.attachmentMaxMb}
+                allowMacros={settings.attachmentAllowMacros}
+                extensions={settings.attachmentExtensions}
+                kinds={settings.attachmentKinds}
+              />
+            )}
           </>
         }
       />

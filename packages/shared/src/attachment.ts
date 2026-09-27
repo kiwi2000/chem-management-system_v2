@@ -4,9 +4,10 @@ import { z } from "zod";
  * 製品・原材料の添付ファイル（2026-09-27 指示）。画面・API で共用する決まり。
  */
 
-/** 種類。DB の AttachmentKind と同じ並び */
-export const ATTACHMENT_KINDS = ["SDS", "TEST_REPORT", "SURVEY", "DRAWING", "OTHER"] as const;
-export type AttachmentKind = (typeof ATTACHMENT_KINDS)[number];
+/**
+ * 種類の選択肢の**既定**。実際の選択肢はシステム設定で決める（2026-09-27 指示）
+ */
+export const ATTACHMENT_KINDS_DEFAULT = ["SDS", "試験成績書", "調査回答", "図面", "その他"];
 
 /**
  * 1 ファイルの上限（MB）。**システム設定で変えられる**（2026-09-27 指示）。
@@ -38,6 +39,24 @@ export const ATTACHMENT_EXTENSIONS = [
   "tif",
   "tiff",
 ] as const;
+
+/**
+ * ブラウザがそのまま見せられる形式（プレビューできるもの）。PDF・画像・テキスト（2026-09-27 指示）。
+ * Word・Excel はブラウザだけでは見られない（外のサービスに頼らない方針）のでダウンロードになる
+ */
+const PREVIEWABLE_MIMES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "image/bmp",
+  "text/plain",
+  "text/csv",
+]);
+export function isPreviewable(mime: string): boolean {
+  return PREVIEWABLE_MIMES.has(mime);
+}
 
 /**
  * マクロ付きの Office の拡張子。「マクロ付きのファイルを受け付ける」を入れたときだけ受け付ける。
@@ -86,10 +105,13 @@ export function attachmentAccept(extensions: readonly string[], allowMacros: boo
     .join(",");
 }
 
-/** 種類・備考・「組成を見られる人だけ」の書き換え */
-export const attachmentUpdateSchema = z.object({
-  kind: z.enum(ATTACHMENT_KINDS).optional(),
-  note: z.string().trim().max(1000).nullable().optional(),
-  compositionOnly: z.boolean().optional(),
+/**
+ * 件名・種類・説明。追加（ファイルと一緒に）と書き換えで同じ決まりを使う。
+ * 種類が選択肢にあるかはサーバーがシステム設定と突き合わせる
+ */
+export const attachmentFieldsSchema = z.object({
+  title: z.string().trim().min(1).max(255),
+  kind: z.string().trim().max(100).nullable().optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
 });
-export type AttachmentUpdateInput = z.infer<typeof attachmentUpdateSchema>;
+export type AttachmentFieldsInput = z.infer<typeof attachmentFieldsSchema>;

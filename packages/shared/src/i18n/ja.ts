@@ -1856,6 +1856,9 @@ export const ja = {
     attachmentAllowMacros: "マクロ付きのファイルを受け付ける",
     attachmentAllowMacrosHint:
       "入れると、.docm・.xlsm や、マクロの入った Word・Excel も追加できるようになります。開いた人の機械でマクロが動くおそれがあるので、必要なときだけ入れてください。受け付ける形式に挙げていても、ここを入れていなければマクロ付きは断ります",
+    attachmentKinds: "種類の選択肢",
+    attachmentKindsHint:
+      "添付ファイルの「種類」で選べる値です。1 行に 1 つ書きます。並べた順がそのまま出ます。選択肢を消しても、登録済みの添付の種類はそのまま残ります",
     attachmentExtensions: "受け付ける形式（拡張子）",
     attachmentExtensionsHint:
       "拡張子をカンマ・読点・空白・改行で区切って並べます（例: pdf, docx, xlsx, png）。点は付けても付けなくてもかまいません。空欄にすると、どの形式でも受け付けます",
@@ -2054,29 +2057,17 @@ export const ja = {
   attachments: {
     title: "添付ファイル",
     empty: "添付ファイルはありません",
-    add: "ファイルを追加",
-    uploading: "送っています…",
-    fileName: "ファイル名",
+    subject: "件名",
     kind: "種類",
-    note: "備考",
-    size: "大きさ",
-    createdBy: "登録した人",
-    createdAt: "登録日時",
-    compositionOnly: "組成を見られる人だけ",
-    compositionOnlyHint:
-      "組成が書かれた資料（仕入先の SDS など）に付けてください。組成を見る権限が無い人には、一覧にも出ません",
-    kinds: {
-      SDS: "SDS",
-      TEST_REPORT: "試験成績書",
-      SURVEY: "調査回答",
-      DRAWING: "図面",
-      OTHER: "その他",
-    },
-    remove: "添付ファイルを削除",
-    removeConfirm: (name: string) => `「${name}」を削除しますか。元に戻せません`,
+    description: "説明",
+    fileName: "ファイル名",
+    size: "サイズ",
+    createdBy: "登録者",
+    fileRequired: "ファイルを選んでください",
+    titleRequired: "件名を入れてください",
+    kindInvalid: "種類は選択肢から選んでください（選択肢はシステム設定で決めます）",
     hint: (maxMb: number, allowMacros: boolean, extensions: string[]) =>
-      `${extensions.length > 0 ? `追加できる形式: ${extensions.join("・")}。` : "どの形式でも追加できます。"}1 ファイル ${maxMb} MB まで。${allowMacros ? "マクロ付きのファイルも追加できます（開くときは注意してください）。" : "マクロ付きのファイルは追加できません。"}追加と削除はその場で保存されます`,
-    rejected: (name: string, reason: string) => `${name}: ${reason}`,
+      `${extensions.length > 0 ? `追加できる形式: ${extensions.join("・")}。` : "どの形式でも追加できます。"}1 ファイル ${maxMb} MB まで。${allowMacros ? "マクロ付きのファイルも追加できます（開くときは注意してください）。" : "マクロ付きのファイルは追加できません。"}ファイルを差し替えるときは、消してから追加し直してください`,
     rejects: {
       tooLarge: (maxMb: number) => `${maxMb} MB を超えています`,
       badType: (extensions: string[]) =>
