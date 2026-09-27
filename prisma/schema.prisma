@@ -254,6 +254,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -1217,10 +1218,10 @@ model Product {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  aliases    ProductAlias[]
-  properties ProductProperty[]
+  aliases     ProductAlias[]
+  properties  ProductProperty[]
   attachments ProductAttachment[]
-  uses       ProductUse[]
+  uses        ProductUse[]
 
   /**
    * この製品の組成（何が入っているか）
@@ -1264,7 +1265,6 @@ model Product {
  * 製品・原材料の添付ファイル（2026-09-27 指示）。仕入先の SDS・試験成績書・調査回答・図面など、
  * 組成と判定の根拠になる資料を製品に付けて持つ。**組成を見られる人（COMPOSITION_VIEW）にだけ見せる**
  * （主な添付は原材料の SDS で、組成が書かれているため）。
- *
  * **中身は DB に置く**（画像ライブラリ・様式ファイルと同じ）。サーバーのフォルダーに置くと、
  * DB のバックアップに入らず、Docker の構成ではコンテナを作り直すと消えるため。
  * 上限・形式・マクロの扱いはシステム設定。一覧は中身を読まずに引く
@@ -3111,4 +3111,340 @@ model PrtrSummaryRow {
   @@unique([summaryId, statutorySubstanceId])
   @@index([statutorySubstanceId])
   @@map("prtr_summary_rows")
+}
+
+// ---------------------------------------------------------------------------
+// SDS 作成モジュール（apps/web/modules/sds）— 物質の GHS 分類データ（S23 段 0、2026-09-28）。
+//
+// 国の機関が公表した物質ごとの GHS 分類を、出どころを混ぜずに、日付で引ける形で持つ。
+// 表は本体の DB にもできるが、使うのはモジュールだけ（決定 0016: 表の痕跡は可）。
+// お客さんに渡すときは、権利の無い出どころを丸ごと消す（source → release → entry → … に cascade）
+// ---------------------------------------------------------------------------
+
+/**
+ * 公開データか、LOLI/CHRIP 由来か、自社か。利用条件の切り分け
+ */
+enum SdsGhsProvider {
+  PUBLIC
+  LOLI
+  CHRIP
+  OWN
+}
+
+/**
+ * 丸ごと配られる（写し）か、変わった分だけ配られるか
+ */
+enum SdsGhsDelivery {
+  FULL
+  DELTA
+}
+
+/**
+ * 従う義務がある分類（EU 附属書VI など）か、参考（NITE など）か
+ */
+enum SdsGhsLegalStatus {
+  BINDING
+  REFERENCE
+}
+
+/**
+ * 項目（出どころが 1 単位として配る行）の識別子の種類
+ */
+enum SdsGhsIdentifierKind {
+  CAS
+  INDEX_NO
+  OWN_ID
+}
+
+/**
+ * 分類の状態。NITE の 3 つの書き分けに「載っていない」を足した 4 値＋該当。
+ * CANNOT_CLASSIFY（データ不足）と NOT_CLASSIFIED（該当しない）は混合物の計算で別物
+ */
+enum SdsGhsClassStatus {
+  CLASSIFIED
+  NOT_CLASSIFIED
+  CANNOT_CLASSIFY
+  NOT_APPLICABLE
+  NOT_EVALUATED
+}
+
+/**
+ * H コードが原典に書いてあったか、クラス×区分のカタログから引いたか
+ */
+enum SdsGhsHCodesOrigin {
+  SOURCE
+  CATALOG
+}
+
+/**
+ * 項目と CAS の結び付きを、原典が書いたか、展開規則で足したか、人が足したか
+ */
+enum SdsGhsCasOrigin {
+  SOURCE
+  EXPANSION
+  MANUAL
+}
+
+enum SdsGhsIssueKind {
+  UNKNOWN_TERM
+  PARSE_FAILED
+  CONFLICT
+  DISAPPEARED
+  DUPLICATE_CAS
+  INVALID_CAS
+}
+
+enum SdsGhsAliasKind {
+  CLASS
+  CATEGORY
+  STATUS
+  NOTE
+}
+
+/**
+ * 出どころ（NITE、EU 附属書VI、…、自社）
+ */
+model SdsGhsSource {
+  id                 String               @id @default(cuid())
+  code               String               @unique @db.VarChar(40)
+  nameJa             String               @map("name_ja") @db.VarChar(200)
+  nameEn             String               @map("name_en") @db.VarChar(200)
+  /**
+   * 国（管轄）のコード。JP / EU / GB / KR / AU / CN。自社は "*"
+   */
+  country            String               @db.VarChar(20)
+  provider           SdsGhsProvider
+  delivery           SdsGhsDelivery
+  legalStatus        SdsGhsLegalStatus    @map("legal_status")
+  identifierKind     SdsGhsIdentifierKind @map("identifier_kind")
+  /**
+   * 全クラスに値があるか（NITE は true。EU は調和された項目だけなので false）。「載っていない」の解釈に使う
+   */
+  coversAllClasses   Boolean              @map("covers_all_classes")
+  /**
+   * 行に改訂版が無いときの既定の GHS 改訂版
+   */
+  defaultGhsRevision String?              @map("default_ghs_revision") @db.VarChar(10)
+  /**
+   * 利用条件の要約と URL。取り込む・渡すの判断材料（お客さんに渡すときに消すかはここで見る）
+   */
+  licenseNote        String?              @map("license_note")
+  sortOrder          Int                  @default(0) @map("sort_order")
+
+  releases SdsGhsRelease[]
+  entries  SdsGhsEntry[]
+
+  @@map("sds_ghs_sources")
+}
+
+/**
+ * 公表（取り込みの記録）。出どころが配った 1 回分で、取り込みの単位。
+ * 「選べる版」ではない。行の適用開始日の既定値と、出典の表示・取り消し・差分の説明に使う
+ */
+model SdsGhsRelease {
+  id          String    @id @default(cuid())
+  sourceId    String    @map("source_id")
+  label       String    @db.VarChar(120)
+  publishedOn DateTime  @map("published_on") @db.Date
+  /**
+   * 法的な適用日（ATP の適用日・告示の施行日）。あれば項目の適用開始日に使う
+   */
+  legalFrom   DateTime? @map("legal_from") @db.Date
+  ghsRevision String?   @map("ghs_revision") @db.VarChar(10)
+  /**
+   * 何を取り込んだか。同じ出どころでも配布の経路で中身が違うことがある（EU で実際にあった）
+   */
+  fileName    String?   @map("file_name") @db.VarChar(255)
+  fileSha256  String?   @map("file_sha256") @db.VarChar(64)
+  sourceUrl   String?   @map("source_url") @db.VarChar(500)
+
+  importedAt DateTime @default(now()) @map("imported_at")
+  importedBy String?  @map("imported_by")
+
+  addedCount     Int     @default(0) @map("added_count")
+  changedCount   Int     @default(0) @map("changed_count")
+  unchangedCount Int     @default(0) @map("unchanged_count")
+  closedCount    Int     @default(0) @map("closed_count")
+  issueCount     Int     @default(0) @map("issue_count")
+  note           String?
+
+  source      SdsGhsSource        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  entriesIn   SdsGhsEntry[]       @relation("ReleaseIn")
+  entriesSeen SdsGhsEntry[]       @relation("ReleaseLastSeen")
+  issues      SdsGhsImportIssue[]
+
+  @@index([sourceId, publishedOn])
+  @@map("sds_ghs_releases")
+}
+
+/**
+ * 項目: 出どころが 1 単位として載せる行（EU は Index 番号、NITE は物質 ID）。CAS は 0〜n 個（別表）。
+ * 同じ識別子でも内容が変わると新しい行を足し、古い行は適用終了日を入れて残す（判定対象日で引くため）
+ */
+model SdsGhsEntry {
+  id        String @id @default(cuid())
+  sourceId  String @map("source_id")
+  /**
+   * 出どころの識別子（Index No、m-nite-<CAS>、고유번호、序号…）
+   */
+  sourceKey String @map("source_key") @db.VarChar(60)
+  /**
+   * 枝番・形態（NITE の a/b/c、韓国の 소번호）。無ければ空
+   */
+  subKey    String @default("") @map("sub_key") @db.VarChar(20)
+
+  name     String  @db.VarChar(500)
+  nameEn   String? @map("name_en") @db.VarChar(500)
+  ecNumber String? @map("ec_number") @db.VarChar(20)
+
+  /**
+   * 濃度・形態の条件（原文と、数値にできたもの）
+   */
+  conditionText   String?  @map("condition_text") @db.VarChar(200)
+  conditionMinPct Decimal? @map("condition_min_pct") @db.Decimal(7, 3)
+  conditionMaxPct Decimal? @map("condition_max_pct") @db.Decimal(7, 3)
+  physicalForm    String?  @map("physical_form") @db.VarChar(40)
+
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+
+  /**
+   * この内容を最初に載せた公表と、最後に確認した公表（丸ごと配布で「消えた」を見つけるため）
+   */
+  releaseInId       String  @map("release_in_id")
+  releaseLastSeenId String  @map("release_last_seen_id")
+  amendingAct       String? @map("amending_act") @db.VarChar(40)
+
+  notesRaw     String? @map("notes_raw") @db.VarChar(200)
+  notes        String? @db.VarChar(100)
+  labellingRaw String? @map("labelling_raw")
+  /**
+   * 原典の 1 行をそのまま（タブ区切り）。正規化に失敗しても失わない
+   */
+  rawRow       String  @map("raw_row")
+  contentHash  String  @map("content_hash") @db.VarChar(64)
+
+  source          SdsGhsSource           @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  releaseIn       SdsGhsRelease          @relation("ReleaseIn", fields: [releaseInId], references: [id], onDelete: Cascade)
+  releaseLastSeen SdsGhsRelease          @relation("ReleaseLastSeen", fields: [releaseLastSeenId], references: [id], onDelete: Cascade)
+  cas             SdsGhsEntryCas[]
+  classifications SdsGhsClassification[]
+  issues          SdsGhsImportIssue[]
+
+  @@unique([sourceId, sourceKey, subKey, effectiveFrom])
+  @@index([sourceId, effectiveTo])
+  @@map("sds_ghs_entries")
+}
+
+/**
+ * 項目と CAS の突き合わせ。物質マスタの cas_normalized と同じ正規化
+ */
+model SdsGhsEntryCas {
+  id            String          @id @default(cuid())
+  entryId       String          @map("entry_id")
+  casNormalized String          @map("cas_normalized") @db.VarChar(20)
+  casRaw        String          @map("cas_raw") @db.VarChar(30)
+  ordinal       Int             @default(1)
+  ecNumber      String?         @map("ec_number") @db.VarChar(20)
+  origin        SdsGhsCasOrigin @default(SOURCE)
+
+  entry SdsGhsEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([casNormalized])
+  @@index([entryId])
+  @@map("sds_ghs_entry_cas")
+}
+
+/**
+ * 分類: 項目 × クラス（× 区分）。改訂版・分類年度は行ごと（NITE 統合版は初版〜6 版が混在する）。
+ * 区分は空文字を許す（該当しない・分類できない等）。null にすると一意制約が効かない
+ */
+model SdsGhsClassification {
+  id                    String              @id @default(cuid())
+  entryId               String              @map("entry_id")
+  /**
+   * システム共通のクラスコード（SdsGhsHazardCatalog.hazardClass）
+   */
+  hazardClass           String              @map("hazard_class") @db.VarChar(40)
+  category              String              @default("") @db.VarChar(10)
+  status                SdsGhsClassStatus
+  targetOrgans          String?             @map("target_organs") @db.VarChar(200)
+  /**
+   * H コード（カンマ区切り）と、その出どころ
+   */
+  hCodes                String?             @map("h_codes") @db.VarChar(60)
+  hCodesOrigin          SdsGhsHCodesOrigin? @map("h_codes_origin")
+  /**
+   * 最小分類の印（EU の * ** ***、中国の *）
+   */
+  minimumClassification String?             @map("minimum_classification") @db.VarChar(3)
+  ghsRevision           String?             @map("ghs_revision") @db.VarChar(10)
+  /**
+   * 分類した年度・公表（NITE の「令和4年度（2022年度）」など）
+   */
+  classifiedIn          String?             @map("classified_in") @db.VarChar(40)
+  rationale             String?
+  rawClassText          String              @map("raw_class_text") @db.VarChar(200)
+  rawHText              String?             @map("raw_h_text") @db.VarChar(100)
+
+  entry SdsGhsEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, hazardClass, category])
+  @@map("sds_ghs_classifications")
+}
+
+/**
+ * クラス・区分のカタログ（システム共通）。取り込みの写像先で、表示と段 1 の計算でも使う。
+ * 区分が空の行はクラスそのもの（名前の置き場）
+ */
+model SdsGhsHazardCatalog {
+  id              String  @id @default(cuid())
+  hazardClass     String  @map("hazard_class") @db.VarChar(40)
+  category        String  @default("") @db.VarChar(10)
+  hCodes          String? @map("h_codes") @db.VarChar(60)
+  abbrevEn        String? @map("abbrev_en") @db.VarChar(60)
+  nameJa          String  @map("name_ja") @db.VarChar(120)
+  nameEn          String  @map("name_en") @db.VarChar(120)
+  ghsRevisionFrom String? @map("ghs_revision_from") @db.VarChar(10)
+  ghsRevisionTo   String? @map("ghs_revision_to") @db.VarChar(10)
+  sortOrder       Int     @default(0) @map("sort_order")
+
+  @@unique([hazardClass, category])
+  @@map("sds_ghs_hazard_catalog")
+}
+
+/**
+ * 表記揺れの辞書: 出どころの文字列 → 共通コード。出どころのコードが空なら全部に効く。
+ * 検証で見つかった揺れ（`Skin. Corr.`、`区分外`…）をここに集める
+ */
+model SdsGhsTermAlias {
+  id         String          @id @default(cuid())
+  sourceCode String          @default("") @map("source_code") @db.VarChar(40)
+  kind       SdsGhsAliasKind
+  raw        String          @db.VarChar(200)
+  canonical  String          @db.VarChar(200)
+  note       String?         @db.VarChar(200)
+
+  @@unique([sourceCode, kind, raw])
+  @@map("sds_ghs_term_aliases")
+}
+
+/**
+ * 取り込みで解決できなかったもの（要確認）。人が見て、採用・無視・辞書に足す
+ */
+model SdsGhsImportIssue {
+  id         String          @id @default(cuid())
+  releaseId  String          @map("release_id")
+  entryId    String?         @map("entry_id")
+  kind       SdsGhsIssueKind
+  detail     String
+  resolvedBy String?         @map("resolved_by")
+  resolvedAt DateTime?       @map("resolved_at")
+  resolution String?         @db.VarChar(200)
+
+  release SdsGhsRelease @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  entry   SdsGhsEntry?  @relation(fields: [entryId], references: [id], onDelete: SetNull)
+
+  @@index([releaseId])
+  @@map("sds_ghs_import_issues")
 }

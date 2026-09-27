@@ -45,6 +45,13 @@ const nextConfig = {
   poweredByHeader: false,
 
   /*
+    middleware を通る要求の本文は、既定で 10 MB で**黙って切られる**（Next.js の
+    middlewareClientMaxBodySize）。この middleware は API も通すので、添付ファイル（システム設定で
+    100 MB まで）や取り込みのファイルがそこで壊れる。設定の上限より広く取る（2026-09-28 に実際に起きた）
+  */
+  experimental: { middlewareClientMaxBodySize: "128mb" },
+
+  /*
     どの応答にも付ける守りのヘッダ。
     中身の実行を縛る Content-Security-Policy だけは、要求ごとに違う印（nonce）を
     埋める必要があるので middleware.ts の側で付ける。

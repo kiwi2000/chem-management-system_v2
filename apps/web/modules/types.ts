@@ -1,6 +1,7 @@
 import type { Locale, Permission } from "@chem/shared";
 import type { LucideIcon } from "lucide-react";
 import type { ComponentType } from "react";
+import type { Actor } from "@/lib/authz";
 
 /**
  * 差込口（モジュール）の宣言。
@@ -41,9 +42,23 @@ export interface ModulePageProps {
   path: string[];
 }
 
+/** 物質の詳細に差し込む欄が受け取るもの。物質が見える人にだけ描かれる */
+export interface ModuleSubstanceSectionProps {
+  substanceId: string;
+  casNormalized: string | null;
+  locale: Locale;
+}
+
 /** サーバーだけが読み込む宣言（`<id>/server.ts` の default export） */
 export interface ModuleServer {
   id: string;
   /** その道筋の画面。無ければ null（404 になる） */
   page: (path: string[]) => ComponentType<ModulePageProps> | null;
+  /**
+   * `/api/modules/<id>/<path>` の API。本体がログイン済みを確かめてから渡すので、
+   * 権限の確認はここで行う（`actor.has(...)`）。知らない道筋なら null（404 になる）
+   */
+  api?: (req: Request, path: string[], actor: Actor) => Promise<Response | null>;
+  /** 物質の詳細の、法規制の表の下に差し込む欄（サーバーコンポーネント）。無ければ何も出ない */
+  substanceSections?: ComponentType<ModuleSubstanceSectionProps>[];
 }
