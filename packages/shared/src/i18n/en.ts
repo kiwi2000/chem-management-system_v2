@@ -1761,6 +1761,14 @@ export const en: Messages = {
     imageJpegQuality: "JPEG quality (1–100)",
     imageJpegQualityHint: "Around 85 is usual; higher is sharper and larger",
     imageJpegQualityRange: "Quality must be between 1 and 100",
+    attachmentSection: "Attachments (products and materials)",
+    attachmentMaxMb: "Maximum size per file (MB)",
+    attachmentMaxMbHint:
+      "Larger files cannot be added. Files are stored in the database, so a higher limit makes the database and its backups larger",
+    attachmentMaxMbRange: "The limit must be between 1 and 100 MB",
+    attachmentAllowMacros: "Accept files with macros",
+    attachmentAllowMacrosHint:
+      "When on, .docm and .xlsm files and Word or Excel files containing macros can be added. Macros may run on the machine of whoever opens them, so turn this on only when needed",
     appearanceSection: "System name and logo",
     appNameJa: "System name (Japanese)",
     appNameEn: "System name (English)",
@@ -1962,10 +1970,11 @@ export const en: Messages = {
     },
     remove: "Delete attachment",
     removeConfirm: (name: string) => `Delete "${name}"? This cannot be undone`,
-    hint: "PDF, Word, Excel, images and text files up to 20 MB each. Files with macros cannot be added. Adding and deleting are saved at once",
+    hint: (maxMb: number, allowMacros: boolean) =>
+      `PDF, Word, Excel, images and text files up to ${maxMb} MB each. ${allowMacros ? "Files with macros can also be added (take care when opening them). " : "Files with macros cannot be added. "}Adding and deleting are saved at once`,
     rejected: (name: string, reason: string) => `${name}: ${reason}`,
     rejects: {
-      tooLarge: "Larger than 20 MB",
+      tooLarge: (maxMb: number) => `Larger than ${maxMb} MB`,
       badType: "This file type cannot be added (PDF, Word, Excel, images, text)",
       mismatch: "The file name's type does not match its contents",
       macro: "Files with macros cannot be added. Save it again without macros",

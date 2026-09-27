@@ -18,6 +18,8 @@ import {
   IMAGE_FORMAT_POLICIES,
   IMAGE_MAX_EDGE_MAX,
   IMAGE_MAX_EDGE_MIN,
+  ATTACHMENT_MAX_MB_MAX,
+  ATTACHMENT_MAX_MB_MIN,
   SESSION_IDLE_MIN,
   type HeaderIconPosition,
   type ImageFormatPolicy,
@@ -471,6 +473,46 @@ export default function SettingsPage() {
                 className="w-28"
               />
               <p className="text-muted-foreground text-xs">{m.settings.imageJpegQualityHint}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 添付ファイル（製品・原材料）の上限とマクロの扱い（2026-09-27 指示） */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.attachmentSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="attachmentMaxMb">{m.settings.attachmentMaxMb}</Label>
+              <Input
+                id="attachmentMaxMb"
+                type="number"
+                min={ATTACHMENT_MAX_MB_MIN}
+                max={ATTACHMENT_MAX_MB_MAX}
+                step={1}
+                value={settings.attachmentMaxMb}
+                onChange={(e) =>
+                  setSettings({ ...settings, attachmentMaxMb: Number(e.target.value) })
+                }
+                className="w-28"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.attachmentMaxMbHint}</p>
+            </div>
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={settings.attachmentAllowMacros}
+                  onChange={(e) =>
+                    setSettings({ ...settings, attachmentAllowMacros: e.target.checked })
+                  }
+                />
+                {m.settings.attachmentAllowMacros}
+              </label>
+              <p className="text-muted-foreground text-xs">
+                {m.settings.attachmentAllowMacrosHint}
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -1,7 +1,8 @@
 import {
   ATTACHMENT_EXTENSIONS,
-  ATTACHMENT_MAX_BYTES,
+  ATTACHMENT_MACRO_EXTENSIONS,
   fileExtension,
+  type AppSettings,
   type AttachmentKind,
 } from "@chem/shared";
 import JSZip from "jszip";
@@ -21,42 +22,53 @@ import type { ProductAttachmentDto } from "@/lib/types";
  */
 
 /** 拡張子ごとの形式と、中身の頭の印（拡張子だけ変えた別物を受け取らないため） */
-const FORMATS: Record<(typeof ATTACHMENT_EXTENSIONS)[number], { mime: string; magic: number[][] }> =
-  {
-    pdf: { mime: "application/pdf", magic: [[0x25, 0x50, 0x44, 0x46]] },
-    doc: { mime: "application/msword", magic: [[0xd0, 0xcf, 0x11, 0xe0]] },
-    docx: {
-      mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      magic: [[0x50, 0x4b, 0x03, 0x04]],
-    },
-    xls: { mime: "application/vnd.ms-excel", magic: [[0xd0, 0xcf, 0x11, 0xe0]] },
-    xlsx: {
-      mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      magic: [[0x50, 0x4b, 0x03, 0x04]],
-    },
-    csv: { mime: "text/csv", magic: [] },
-    txt: { mime: "text/plain", magic: [] },
-    png: { mime: "image/png", magic: [[0x89, 0x50, 0x4e, 0x47]] },
-    jpg: { mime: "image/jpeg", magic: [[0xff, 0xd8, 0xff]] },
-    jpeg: { mime: "image/jpeg", magic: [[0xff, 0xd8, 0xff]] },
-    gif: { mime: "image/gif", magic: [[0x47, 0x49, 0x46, 0x38]] },
-    webp: { mime: "image/webp", magic: [[0x52, 0x49, 0x46, 0x46]] },
-    bmp: { mime: "image/bmp", magic: [[0x42, 0x4d]] },
-    tif: {
-      mime: "image/tiff",
-      magic: [
-        [0x49, 0x49, 0x2a, 0x00],
-        [0x4d, 0x4d, 0x00, 0x2a],
-      ],
-    },
-    tiff: {
-      mime: "image/tiff",
-      magic: [
-        [0x49, 0x49, 0x2a, 0x00],
-        [0x4d, 0x4d, 0x00, 0x2a],
-      ],
-    },
-  };
+const FORMATS: Record<
+  (typeof ATTACHMENT_EXTENSIONS)[number] | (typeof ATTACHMENT_MACRO_EXTENSIONS)[number],
+  { mime: string; magic: number[][] }
+> = {
+  // マクロ付き。システム設定で許したときだけ受け付ける
+  docm: {
+    mime: "application/vnd.ms-word.document.macroEnabled.12",
+    magic: [[0x50, 0x4b, 0x03, 0x04]],
+  },
+  xlsm: {
+    mime: "application/vnd.ms-excel.sheet.macroEnabled.12",
+    magic: [[0x50, 0x4b, 0x03, 0x04]],
+  },
+  pdf: { mime: "application/pdf", magic: [[0x25, 0x50, 0x44, 0x46]] },
+  doc: { mime: "application/msword", magic: [[0xd0, 0xcf, 0x11, 0xe0]] },
+  docx: {
+    mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    magic: [[0x50, 0x4b, 0x03, 0x04]],
+  },
+  xls: { mime: "application/vnd.ms-excel", magic: [[0xd0, 0xcf, 0x11, 0xe0]] },
+  xlsx: {
+    mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    magic: [[0x50, 0x4b, 0x03, 0x04]],
+  },
+  csv: { mime: "text/csv", magic: [] },
+  txt: { mime: "text/plain", magic: [] },
+  png: { mime: "image/png", magic: [[0x89, 0x50, 0x4e, 0x47]] },
+  jpg: { mime: "image/jpeg", magic: [[0xff, 0xd8, 0xff]] },
+  jpeg: { mime: "image/jpeg", magic: [[0xff, 0xd8, 0xff]] },
+  gif: { mime: "image/gif", magic: [[0x47, 0x49, 0x46, 0x38]] },
+  webp: { mime: "image/webp", magic: [[0x52, 0x49, 0x46, 0x46]] },
+  bmp: { mime: "image/bmp", magic: [[0x42, 0x4d]] },
+  tif: {
+    mime: "image/tiff",
+    magic: [
+      [0x49, 0x49, 0x2a, 0x00],
+      [0x4d, 0x4d, 0x00, 0x2a],
+    ],
+  },
+  tiff: {
+    mime: "image/tiff",
+    magic: [
+      [0x49, 0x49, 0x2a, 0x00],
+      [0x4d, 0x4d, 0x00, 0x2a],
+    ],
+  },
+};
 
 export type AttachmentReject = "tooLarge" | "badType" | "mismatch" | "macro" | "empty";
 
@@ -67,15 +79,22 @@ export type AttachmentReject = "tooLarge" | "badType" | "mismatch" | "macro" | "
 export async function inspectAttachment(
   name: string,
   buf: Buffer,
+  /** システム設定の上限（MB）と、マクロ付きを受け付けるか（2026-09-27 指示） */
+  policy: Pick<AppSettings, "attachmentMaxMb" | "attachmentAllowMacros">,
 ): Promise<{ ok: true; mime: string } | { ok: false; reason: AttachmentReject }> {
   if (buf.length === 0) return { ok: false, reason: "empty" };
-  if (buf.length > ATTACHMENT_MAX_BYTES) return { ok: false, reason: "tooLarge" };
+  if (buf.length > policy.attachmentMaxMb * 1024 * 1024) return { ok: false, reason: "tooLarge" };
   const ext = fileExtension(name) as keyof typeof FORMATS;
   const format = FORMATS[ext];
   if (!format) return { ok: false, reason: "badType" };
+  // マクロ付きの拡張子は、許していなければ断る
+  const macroExt = (ATTACHMENT_MACRO_EXTENSIONS as readonly string[]).includes(ext);
+  if (macroExt && !policy.attachmentAllowMacros) return { ok: false, reason: "macro" };
   if (format.magic.length > 0 && !format.magic.some((m) => m.every((b, i) => buf[i] === b))) {
     return { ok: false, reason: "mismatch" };
   }
+  // マクロを許しているなら、マクロの有無は調べない（拡張子と頭の印だけ）
+  if (policy.attachmentAllowMacros) return { ok: true, mime: format.mime };
   // Office の新しい形式（zip）。マクロの本体（vbaProject.bin）が入っていたら断る
   if (ext === "docx" || ext === "xlsx") {
     try {

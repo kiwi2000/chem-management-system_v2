@@ -10,6 +10,7 @@ import {
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { canEditProduct } from "@/lib/product-service";
+import { getAppSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -59,14 +60,17 @@ export async function POST(req: Request, { params }: Ctx) {
   const files = form.getAll("files").filter((f): f is File => f instanceof File);
   if (files.length === 0) return jsonError(400, "no_files", m.errors.validation);
 
+  // 上限とマクロの扱いはシステム設定で決める（2026-09-27 指示）
+  const settings = await getAppSettings();
   const added: string[] = [];
   const rejected: { name: string; reason: string }[] = [];
   for (const f of files) {
     const name = f.name.slice(0, 255);
     const buf = Buffer.from(await f.arrayBuffer());
-    const checked = await inspectAttachment(name, buf);
+    const checked = await inspectAttachment(name, buf, settings);
     if (!checked.ok) {
-      rejected.push({ name, reason: m.attachments.rejects[checked.reason] });
+      const r = m.attachments.rejects[checked.reason];
+      rejected.push({ name, reason: typeof r === "function" ? r(settings.attachmentMaxMb) : r });
       continue;
     }
     const row = await prisma.productAttachment.create({

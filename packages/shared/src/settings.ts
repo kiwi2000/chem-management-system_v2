@@ -4,6 +4,11 @@ import {
   DEFAULT_DOC_OUTPUT_DIR,
   unknownFileNamePlaceholders,
 } from "./doc-file-name";
+import {
+  ATTACHMENT_MAX_MB_DEFAULT,
+  ATTACHMENT_MAX_MB_MAX,
+  ATTACHMENT_MAX_MB_MIN,
+} from "./attachment";
 import { COMPOSITION_VALIDATION_MODES, type CompositionValidationMode } from "./composition";
 import { toScaled } from "./decimal";
 import type { Messages } from "./i18n/ja";
@@ -139,6 +144,11 @@ export interface AppSettings {
   /** JPEG にするときの画質（1〜100） */
   imageJpegQuality: number;
 
+  /** 添付ファイル 1 つの上限（MB）。2026-09-27 指示 */
+  attachmentMaxMb: number;
+  /** マクロ付きの添付ファイル（.docm / .xlsm、マクロ入りの doc・xls・docx・xlsx）を受け付けるか。既定は受け付けない */
+  attachmentAllowMacros: boolean;
+
   /**
    * システムの名前（2026-09-25 指示）。上の帯の題字・ログイン画面・ブラウザのタブに出る。
    * **空なら辞書の既定の名前**（ケミカルコンプライアンス支援システム / Chemical Compliance Support）
@@ -201,6 +211,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   imageMaxEdgePx: 2000,
   imageFormat: "keep",
   imageJpegQuality: 85,
+  attachmentMaxMb: ATTACHMENT_MAX_MB_DEFAULT,
+  attachmentAllowMacros: false,
   appNameJa: "",
   appNameEn: "",
   headerIconVersion: "",
@@ -440,6 +452,18 @@ export const SETTING_DEFS: SettingDef[] = [
         : null,
   },
   {
+    field: "attachmentMaxMb",
+    key: "attachment.max_mb",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const n = Number(raw);
+      return Number.isInteger(n) && n >= ATTACHMENT_MAX_MB_MIN && n <= ATTACHMENT_MAX_MB_MAX
+        ? n
+        : null;
+    },
+  },
+  boolDef("attachmentAllowMacros", "attachment.allow_macros"),
+  {
     field: "imageJpegQuality",
     key: "image.jpeg_quality",
     valueType: "NUMBER",
@@ -562,6 +586,12 @@ export const settingsSchema = (m: Messages) =>
       .int()
       .min(1, m.settings.imageJpegQualityRange)
       .max(100, m.settings.imageJpegQualityRange),
+    attachmentMaxMb: z
+      .number()
+      .int()
+      .min(ATTACHMENT_MAX_MB_MIN, m.settings.attachmentMaxMbRange)
+      .max(ATTACHMENT_MAX_MB_MAX, m.settings.attachmentMaxMbRange),
+    attachmentAllowMacros: z.boolean(),
     appNameJa: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
     appNameEn: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
     headerIconPosition: z.enum(HEADER_ICON_POSITIONS),

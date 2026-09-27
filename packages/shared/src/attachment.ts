@@ -8,12 +8,18 @@ import { z } from "zod";
 export const ATTACHMENT_KINDS = ["SDS", "TEST_REPORT", "SURVEY", "DRAWING", "OTHER"] as const;
 export type AttachmentKind = (typeof ATTACHMENT_KINDS)[number];
 
-/** 1 ファイルの上限（バイト）。仕入先の SDS・試験成績書は数 MB で収まる */
-export const ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024;
+/**
+ * 1 ファイルの上限（MB）。**システム設定で変えられる**（2026-09-27 指示）。
+ * 中身は DB に置くので、上げすぎると DB とバックアップが太る。範囲はその歯止め
+ */
+export const ATTACHMENT_MAX_MB_DEFAULT = 20;
+export const ATTACHMENT_MAX_MB_MIN = 1;
+export const ATTACHMENT_MAX_MB_MAX = 100;
 
 /**
  * 受け付ける拡張子。PDF・Word・Excel・画像・テキスト。
- * **マクロ付き（.docm / .xlsm / .xlsb など）は受け付けない。**開いた人の機械で何でも動いてしまうため
+ * マクロ付きは既定では受け付けない（開いた人の機械で何でも動いてしまうため）。
+ * システム設定で許したときだけ、下の MACRO の拡張子と、マクロ入りの中身を受け付ける
  */
 export const ATTACHMENT_EXTENSIONS = [
   "pdf",
@@ -33,8 +39,16 @@ export const ATTACHMENT_EXTENSIONS = [
   "tiff",
 ] as const;
 
+/** マクロ付きの Office の拡張子。システム設定で許したときだけ受け付ける */
+export const ATTACHMENT_MACRO_EXTENSIONS = ["docm", "xlsm"] as const;
+
 /** ファイル選びの窓に渡す accept。拡張子で絞る */
-export const ATTACHMENT_ACCEPT = ATTACHMENT_EXTENSIONS.map((e) => `.${e}`).join(",");
+export function attachmentAccept(allowMacros: boolean): string {
+  const exts: readonly string[] = allowMacros
+    ? [...ATTACHMENT_EXTENSIONS, ...ATTACHMENT_MACRO_EXTENSIONS]
+    : ATTACHMENT_EXTENSIONS;
+  return exts.map((e) => `.${e}`).join(",");
+}
 
 /** 種類・備考・「組成を見られる人だけ」の書き換え */
 export const attachmentUpdateSchema = z.object({

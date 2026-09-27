@@ -1,6 +1,6 @@
 "use client";
 
-import { ATTACHMENT_ACCEPT, ATTACHMENT_KINDS, type AttachmentKind } from "@chem/shared";
+import { ATTACHMENT_KINDS, attachmentAccept, type AttachmentKind } from "@chem/shared";
 import { Paperclip, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -46,8 +46,13 @@ export function ProductAttachments({
   productId,
   canEdit,
   canViewComposition,
+  maxMb,
+  allowMacros,
 }: {
   productId: string;
+  /** システム設定の上限（MB）とマクロの扱い。案内の文と、ファイル選びの窓の絞り込みに使う */
+  maxMb: number;
+  allowMacros: boolean;
   /** 製品を編集できる人 */
   canEdit: boolean;
   /** 組成を見られる人。「組成を見られる人だけ」の欄を出すかどうか */
@@ -342,7 +347,7 @@ export function ProductAttachments({
                 ref={inputRef}
                 type="file"
                 multiple
-                accept={ATTACHMENT_ACCEPT}
+                accept={attachmentAccept(allowMacros)}
                 className="hidden"
                 onChange={(e) => {
                   const files = e.target.files;
@@ -360,7 +365,7 @@ export function ProductAttachments({
                 {busy ? t.uploading : t.add}
               </Button>
             </div>
-            <p className="text-muted-foreground text-xs">{t.hint}</p>
+            <p className="text-muted-foreground text-xs">{t.hint(maxMb, allowMacros)}</p>
             {canViewComposition && (
               <p className="text-muted-foreground text-xs">{t.compositionOnlyHint}</p>
             )}
