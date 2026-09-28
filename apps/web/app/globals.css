@@ -667,7 +667,8 @@
 
 /*
  * スカイ: 光沢の帯（2026-09-22 指示、見本 4 案から C を採用）。上を明るく、下へなだらかに深い色へ移り、下端に照り返し。
- * 中央で切れる光の線は「はっきりした線が出る」と不評でやめ、横筋を重ねる案も「にじんだ」と不評で取り下げた
+ * 中央で切れる光の線は「はっきりした線が出る」と不評でやめ、横筋を重ねる案も「にじんだ」と不評で取り下げた。
+ * 下側の濃い部分は 2026-09-28 指示で「あとわずかに薄く」（明度 +0.02。スカイだけ）
  */
 .theme-sky.header-strong .bg-header,
 .theme-sky.header-strong .bg-sidebar-header {
@@ -675,8 +676,8 @@
     to bottom,
     oklch(from var(--strong) calc(l + 0.18) calc(c * 0.5) h) 0,
     oklch(from var(--strong) calc(l + 0.08) calc(c * 0.9) h) 32%,
-    oklch(from var(--strong) calc(l - 0.03) c h) 62%,
-    oklch(from var(--strong) calc(l - 0.07) c h) 90%,
+    oklch(from var(--strong) calc(l - 0.01) c h) 62%,
+    oklch(from var(--strong) calc(l - 0.05) c h) 90%,
     oklch(from var(--strong) calc(l + 0.06) calc(c * 0.9) h) 100%
   );
 }
