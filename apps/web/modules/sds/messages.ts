@@ -64,9 +64,9 @@ interface SdsMessages {
     /** 物質の詳細の欄 */
     section: {
       title: string;
-      asOf: (day: string) => string;
+      /** データ取得日: いつ取り込んだか（出典ごと）。公表の名前と公表日を添える */
+      acquired: (importedOn: string, label: string, publishedOn: string) => string;
       /** 最終確認: どの公表（公表日）で最新と確認したか、いつ取り込んだか */
-      lastConfirmed: (label: string, publishedOn: string, importedOn: string) => string;
       columns: {
         source: string;
         hazardClass: string;
@@ -77,8 +77,9 @@ interface SdsMessages {
         revision: string;
         classifiedIn: string;
       };
-      showAll: string;
-      showClassifiedOnly: string;
+      /** 「非該当」: 出典に記載はあるが区分が付かない項目も出す。「データなし」: 出典に記載の無い項目も出す */
+      showNotClassified: string;
+      showNoData: string;
       legend: string;
       none: string;
     };
@@ -141,9 +142,8 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       },
       section: {
         title: "GHS 分類（出典別）",
-        asOf: (day) => `判定対象日 ${day}`,
-        lastConfirmed: (label, publishedOn, importedOn) =>
-          `最終確認: ${label}（${publishedOn} 公表、${importedOn} 取り込み）`,
+        acquired: (importedOn, label, publishedOn) =>
+          `データ取得日 ${importedOn}（${label}、${publishedOn} 公表）`,
         columns: {
           source: "出典",
           hazardClass: "危険有害性クラス",
@@ -154,10 +154,10 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
           revision: "GHS 改訂",
           classifiedIn: "分類年度",
         },
-        showAll: "該当しない項目も表示",
-        showClassifiedOnly: "該当する項目だけ表示",
+        showNotClassified: "非該当",
+        showNoData: "データなし",
         legend:
-          "薄い字は出典の言葉（「区分に該当しない」「分類できない」など）。斜体の「記載なし」は、その出典がその項目に何も書いていないこと。",
+          "「非該当」は、出典に記載はあるが区分が付かない項目（区分に該当しない・分類できない・分類対象外）。「データなし」は、その出典がその項目に何も書いていない項目。",
         none: "この CAS の分類は取り込まれていません。",
       },
       status: {
@@ -165,7 +165,7 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         NOT_CLASSIFIED: "区分に該当しない",
         CANNOT_CLASSIFY: "分類できない",
         NOT_APPLICABLE: "分類対象外",
-        NOT_EVALUATED: "記載なし",
+        NOT_EVALUATED: "データなし",
       },
     },
   },
@@ -222,9 +222,8 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       },
       section: {
         title: "GHS classification (by source)",
-        asOf: (day) => `As of ${day}`,
-        lastConfirmed: (label, publishedOn, importedOn) =>
-          `Last confirmed: ${label} (published ${publishedOn}, imported ${importedOn})`,
+        acquired: (importedOn, label, publishedOn) =>
+          `Data acquired ${importedOn} (${label}, published ${publishedOn})`,
         columns: {
           source: "Source",
           hazardClass: "Hazard class",
@@ -235,10 +234,10 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
           revision: "GHS rev.",
           classifiedIn: "Classified in",
         },
-        showAll: "Show non-classified items too",
-        showClassifiedOnly: "Show classified items only",
+        showNotClassified: "Not classified",
+        showNoData: "No data",
         legend:
-          "Grey text is the source's own wording (e.g. “not classified”, “classification not possible”). Italic “not stated” means the source says nothing about that class.",
+          "“Not classified” shows classes the source addresses without assigning a category (not classified, classification not possible, not applicable). “No data” shows classes the source says nothing about.",
         none: "No classification has been imported for this CAS.",
       },
       status: {
@@ -246,7 +245,7 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         NOT_CLASSIFIED: "Not classified",
         CANNOT_CLASSIFY: "Classification not possible",
         NOT_APPLICABLE: "Not applicable",
-        NOT_EVALUATED: "Not stated",
+        NOT_EVALUATED: "No data",
       },
     },
   },

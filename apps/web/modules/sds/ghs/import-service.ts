@@ -370,19 +370,37 @@ export async function applyImport(
           if (cas.length) await tx.sdsGhsEntryCas.createMany({ data: cas });
           if (cls.length) await tx.sdsGhsClassification.createMany({ data: cls });
         }
-        // 新しい適用日の行が来たら、同じ識別子でそれより前の開いている行を前日で閉じる
+        // 新しい適用日の行が来たら、同じ識別子でそれより前の開いている行を前日で閉じる。
+        // 行ごとに問い合わせると 4,000 回を超えて遅い（トンネル越しで時間切れになった）ので、
+        // 該当し得る開いている行をまとめて読んでから、閉じる行だけ更新する
+        const keys = [
+          ...new Set(diff.added.filter((e) => e.effectiveFrom).map((e) => e.sourceKey)),
+        ];
+        const openRows: { id: string; sourceKey: string; subKey: string; effectiveFrom: Date }[] =
+          [];
+        for (const ks of chunks(keys, 1000)) {
+          openRows.push(
+            ...(await tx.sdsGhsEntry.findMany({
+              where: { sourceId: source.id, sourceKey: { in: ks }, effectiveTo: null },
+              select: { id: true, sourceKey: true, subKey: true, effectiveFrom: true },
+            })),
+          );
+        }
         for (const e of diff.added) {
           if (!e.effectiveFrom) continue;
-          await tx.sdsGhsEntry.updateMany({
-            where: {
-              sourceId: source.id,
-              sourceKey: e.sourceKey,
-              subKey: e.subKey,
-              effectiveFrom: { lt: toDate(e.effectiveFrom) },
-              effectiveTo: null,
-            },
-            data: { effectiveTo: dayBefore(e.effectiveFrom) },
-          });
+          const from = toDate(e.effectiveFrom);
+          for (const prev of openRows) {
+            if (
+              prev.sourceKey !== e.sourceKey ||
+              prev.subKey !== e.subKey ||
+              prev.effectiveFrom >= from
+            )
+              continue;
+            await tx.sdsGhsEntry.update({
+              where: { id: prev.id },
+              data: { effectiveTo: dayBefore(e.effectiveFrom) },
+            });
+          }
         }
       } else {
         // 変更: 古い項目を閉じる（公表日の前日まで）

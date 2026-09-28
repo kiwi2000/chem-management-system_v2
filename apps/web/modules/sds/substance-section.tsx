@@ -16,5 +16,5 @@ export async function SdsGhsSubstanceSection({
   const blocks = await classificationsForCas(casNormalized, asOf);
   if (blocks.length === 0) return null;
   const classes = await listGhsClasses();
-  return <SubstanceGhsSectionView locale={locale} asOf={asOf} blocks={blocks} classes={classes} />;
+  return <SubstanceGhsSectionView locale={locale} blocks={blocks} classes={classes} />;
 }
