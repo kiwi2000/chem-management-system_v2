@@ -56,7 +56,14 @@ export function SubstanceGhsSectionView({
               <p className="text-sm font-medium">
                 {ja ? b.sourceNameJa : b.sourceNameEn}
                 <span className="text-muted-foreground ml-2 text-xs font-normal">
-                  {b.sourceKey} ・ {b.entryName} ・ {b.releaseLabel}
+                  {b.sourceKey} ・ {b.entryName}
+                </span>
+                <span className="text-muted-foreground ml-2 text-xs font-normal">
+                  {t.section.lastConfirmed(
+                    b.lastSeenLabel,
+                    b.lastSeenPublishedOn,
+                    new Date(b.lastSeenImportedAt).toLocaleDateString(locale),
+                  )}
                 </span>
               </p>
               <Table>

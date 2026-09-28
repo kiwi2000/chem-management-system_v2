@@ -29,6 +29,10 @@ export interface GhsSourceBlock {
   sourceKey: string;
   effectiveFrom: string;
   releaseLabel: string;
+  /** 最後にこの物質が載っていた公表（＝この行が最新であることを確認した公表）とその取り込み日時 */
+  lastSeenLabel: string;
+  lastSeenPublishedOn: string;
+  lastSeenImportedAt: string;
   rows: GhsClassificationRow[];
 }
 
@@ -50,6 +54,7 @@ export async function classificationsForCas(
         include: {
           source: { select: { code: true, nameJa: true, nameEn: true, sortOrder: true } },
           releaseIn: { select: { label: true } },
+          releaseLastSeen: { select: { label: true, publishedOn: true, importedAt: true } },
           classifications: true,
         },
       },
@@ -69,6 +74,9 @@ export async function classificationsForCas(
     sourceKey: entry.sourceKey + entry.subKey,
     effectiveFrom: entry.effectiveFrom.toISOString().slice(0, 10),
     releaseLabel: entry.releaseIn.label,
+    lastSeenLabel: entry.releaseLastSeen.label,
+    lastSeenPublishedOn: entry.releaseLastSeen.publishedOn.toISOString().slice(0, 10),
+    lastSeenImportedAt: entry.releaseLastSeen.importedAt.toISOString(),
     rows: entry.classifications
       .map((c): GhsClassificationRow => {
         const cls = nameOf.get(`${c.hazardClass}|`);

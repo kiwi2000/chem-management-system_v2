@@ -64,6 +64,8 @@ interface SdsMessages {
     section: {
       title: string;
       asOf: (day: string) => string;
+      /** 最終確認: どの公表（公表日）で最新と確認したか、いつ取り込んだか */
+      lastConfirmed: (label: string, publishedOn: string, importedOn: string) => string;
       columns: {
         source: string;
         hazardClass: string;
@@ -92,12 +94,12 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
     preparing: "SDS を作る機能は準備中です。まず、物質の GHS 分類の土台から作っています。",
     ghs: {
       title: "GHS 分類データ",
-      lead: "国の機関が公表している物質ごとの GHS 分類を取り込みます。取り込んだ分類は、物質の詳細に出どころ別に出ます。",
+      lead: "国の機関が公表している物質ごとの GHS 分類を取り込みます。取り込んだ分類は、物質の詳細に出典別に出ます。",
       linkFromHome: "GHS 分類データの取り込み",
       releases: "取り込みの記録",
       noReleases: "まだ取り込んでいません。",
       columns: {
-        source: "出どころ",
+        source: "出典",
         label: "公表",
         publishedOn: "公表日",
         importedAt: "取り込み日時",
@@ -110,7 +112,7 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       import: {
         title: "取り込み",
         hint: "NITE の「NITE統合版 GHS分類結果」の Excel（区分一覧）を選びます。根拠一覧の Excel も選ぶと、分類年度と GHS 改訂版が入ります。先に「下見」で追加・変更の件数を確かめてから「取り込む」を押してください。",
-        source: "出どころ",
+        source: "出典",
         label: "公表の名前",
         publishedOn: "公表日",
         mainFile: "区分一覧（Excel）",
@@ -134,10 +136,12 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         adminOnly: "取り込みはシステム管理者だけができます。",
       },
       section: {
-        title: "GHS 分類（出どころ別）",
+        title: "GHS 分類（出典別）",
         asOf: (day) => `判定対象日 ${day}`,
+        lastConfirmed: (label, publishedOn, importedOn) =>
+          `最終確認: ${label}（${publishedOn} 公表、${importedOn} 取り込み）`,
         columns: {
-          source: "出どころ",
+          source: "出典",
           hazardClass: "危険有害性クラス",
           category: "区分",
           status: "状態",
@@ -211,6 +215,8 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       section: {
         title: "GHS classification (by source)",
         asOf: (day) => `As of ${day}`,
+        lastConfirmed: (label, publishedOn, importedOn) =>
+          `Last confirmed: ${label} (published ${publishedOn}, imported ${importedOn})`,
         columns: {
           source: "Source",
           hazardClass: "Hazard class",

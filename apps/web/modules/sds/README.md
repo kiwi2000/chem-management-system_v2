@@ -6,7 +6,7 @@
 - 有効にする: 環境変数 `CHEM_MODULES=sds`（Railway のサービス `sds`）か、配布物の `enabled.json`。dev・typecheck・test は常に全部
 - 画面: `/sds`（入口）、`/sds/ghs`（GHS 分類データの取り込みと記録）
 - API: `/api/modules/sds/ghs/import`（POST、管理者だけ）、`/api/modules/sds/ghs/releases`（GET）
-- 物質の詳細に「GHS 分類（出どころ別）」の欄を差し込む（`substance-section.tsx`）
+- 物質の詳細に「GHS 分類（出典別）」の欄を差し込む（`substance-section.tsx`）
 - 文言は `messages.ts`（両言語）。本体の辞書には入れない
 - 表は本体の DB の `sds_ghs_*`（`prisma/schema.prisma` の末尾）。お客さんに渡すときは、権利の無い出どころを
   `sds_ghs_sources` から消せば、公表・項目・分類まで cascade で消える
@@ -30,7 +30,7 @@
 
 - NITE の政府 GHS 分類（統合版）を取り込めるようにした。`/sds/ghs` で区分一覧の Excel（任意で根拠一覧も）を選び、
   「下見」で追加・変更・変わらず・見当たらず・要確認の件数を見てから「取り込む」
-- 取り込んだ分類は、物質の詳細の「GHS 分類（出どころ別）」に出る。既定は該当する項目だけ、ボタンで全項目
+- 取り込んだ分類は、物質の詳細の「GHS 分類（出典別）」に出る。既定は該当する項目だけ、ボタンで全項目
 - 分類の行ごとに GHS 改訂版と分類年度を持つ（根拠一覧を一緒に取り込んだとき）
 - まだ無いもの: EU など他の国の読み手、濃度限界・M 係数、物質ごとの上書き、国ごとの採用規則、混合物の分類計算
 
