@@ -75,6 +75,11 @@ export interface AdoptedCell {
   via: LinkVia | null;
   /** 上書きの理由（上書きのときだけ） */
   reason?: string;
+  /**
+   * 要確認: 条件付きの項目（濃度・形態）が当たり、機械では決めきれない。
+   * 無条件の項目があればそれを採ったうえで条件付きを並べ、無ければ厳しいほうを採って全部並べる
+   */
+  review?: { entryKey: string; entryName: string; condition: string }[];
 }
 
 export interface SourceRow {
@@ -91,6 +96,8 @@ export interface SourceRow {
   linkOrigin: SdsGhsCasOrigin;
   linkedBy: string | null;
   linkNote: string | null;
+  /** 項目の適用条件（濃度・形態）。無条件なら null */
+  conditionText: string | null;
 }
 
 interface OverrideRow {
@@ -120,10 +127,23 @@ function pickWithinSource(rows: SourceRow[]): {
   status: SdsGhsClassStatus;
   items: AdoptedCell["items"];
   via: LinkVia;
+  review: NonNullable<AdoptedCell["review"]>;
 } | null {
   if (rows.length === 0) return null;
   const direct = rows.filter((r) => r.linkOrigin === "SOURCE");
-  const pool = direct.length > 0 ? direct : rows;
+  const layer = direct.length > 0 ? direct : rows;
+  // 適用条件（濃度・形態）の無い項目を先に。条件付きは要確認として添える（§9-5）
+  const plain = layer.filter((r) => !r.conditionText);
+  const pool = plain.length > 0 ? plain : layer;
+  const conditioned = layer.filter((r) => !!r.conditionText);
+  const review = [
+    ...new Map(
+      conditioned.map((r) => [
+        r.entryKey,
+        { entryKey: r.entryKey, entryName: r.entryName, condition: r.conditionText! },
+      ]),
+    ).values(),
+  ];
   // 項目ごとにまとめる
   const byEntry = new Map<string, SourceRow[]>();
   for (const r of pool) {
@@ -160,6 +180,7 @@ function pickWithinSource(rows: SourceRow[]): {
       entryName: first.entryName,
       note: first.linkNote,
     },
+    review,
   };
 }
 
@@ -209,6 +230,7 @@ export function adoptFor(
           items: [],
           from: rule.sourceCode,
           via: picked.via,
+          ...(picked.review.length > 0 ? { review: picked.review } : {}),
         };
         continue; // 分類できない → 次の出典で埋められれば埋める（埋まらなければこれを残す）
       }
@@ -218,6 +240,7 @@ export function adoptFor(
         items: picked.items,
         from: rule.sourceCode,
         via: picked.via,
+        ...(picked.review.length > 0 ? { review: picked.review } : {}),
       };
       break;
     }
@@ -246,6 +269,8 @@ const ENTRY_SELECT = {
   sourceKey: true,
   subKey: true,
   name: true,
+  conditionText: true,
+  physicalForm: true,
   source: { select: { code: true } },
   classifications: {
     select: { hazardClass: true, category: true, status: true, targetOrgans: true, hCodes: true },
@@ -257,6 +282,8 @@ type EntryLite = {
   sourceKey: string;
   subKey: string;
   name: string;
+  conditionText: string | null;
+  physicalForm: string | null;
   source: { code: string };
   classifications: {
     hazardClass: string;
@@ -283,6 +310,7 @@ function rowsOf(
     linkOrigin: link.origin,
     linkedBy: link.linkedBy,
     linkNote: link.note,
+    conditionText: e.conditionText ?? e.physicalForm ?? null,
   }));
 }
 

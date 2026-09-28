@@ -17,7 +17,10 @@ const row = (
   status: Status,
   category = "",
   link: Partial<
-    Pick<SourceRow, "entryKey" | "entryName" | "linkOrigin" | "linkedBy" | "linkNote">
+    Pick<
+      SourceRow,
+      "entryKey" | "entryName" | "linkOrigin" | "linkedBy" | "linkNote" | "conditionText"
+    >
   > = {},
 ): SourceRow => ({
   sourceCode,
@@ -31,6 +34,7 @@ const row = (
   linkOrigin: link.linkOrigin ?? "SOURCE",
   linkedBy: link.linkedBy ?? null,
   linkNote: link.linkNote ?? null,
+  conditionText: link.conditionText ?? null,
 });
 const cellOf = (cells: ReturnType<typeof adoptFor>, cls: string) =>
   cells.find((c) => c.hazardClass === cls)!;
@@ -182,5 +186,53 @@ describe("adoptFor（§9-4 結び付きの層）", () => {
     const cell = cellOf(adoptFor(rules, rows, [], "JP"), "CARC");
     expect(cell.status).toBe("NOT_CLASSIFIED");
     expect(cell.via?.entryKey).toBe("n2");
+  });
+});
+
+describe("adoptFor（§9-5 適用条件）", () => {
+  it("無条件の項目があればそれを採り、条件付きの項目は要確認として添える", () => {
+    const rows = [
+      row("EU_ANNEX_VI", "ACUTE_TOX_ORAL", "CLASSIFIED", "2", {
+        entryKey: "006-006-00-X",
+        entryName: "HCN",
+      }),
+      row("EU_ANNEX_VI", "ACUTE_TOX_ORAL", "CLASSIFIED", "3", {
+        entryKey: "006-006-01-6",
+        entryName: "HCN …%",
+        conditionText: "…%",
+      }),
+    ];
+    const cell = cellOf(adoptFor(rules, rows, [], "EU"), "ACUTE_TOX_ORAL");
+    expect(cell.items.map((i) => i.category)).toEqual(["2"]);
+    expect(cell.via?.entryKey).toBe("006-006-00-X");
+    expect(cell.review).toEqual([
+      { entryKey: "006-006-01-6", entryName: "HCN …%", condition: "…%" },
+    ]);
+  });
+
+  it("条件付きの項目しか無ければ厳しいほうを採り、全部を要確認に並べる", () => {
+    const rows = [
+      row("NITE", "SKIN_CORR_IRRIT", "CLASSIFIED", "2", {
+        entryKey: "n-a",
+        entryName: "粉",
+        conditionText: "粉体",
+      }),
+      row("NITE", "SKIN_CORR_IRRIT", "CLASSIFIED", "1", {
+        entryKey: "n-b",
+        entryName: "液",
+        conditionText: "液体",
+      }),
+    ];
+    const cell = cellOf(adoptFor(rules, rows, [], "JP"), "SKIN_CORR_IRRIT");
+    expect(cell.items.map((i) => i.category)).toEqual(["1"]);
+    expect(cell.review?.map((r) => r.entryKey).sort()).toEqual(["n-a", "n-b"]);
+  });
+
+  it("条件の無い項目だけなら要確認は付かない", () => {
+    const cell = cellOf(
+      adoptFor(rules, [row("NITE", "CARC", "CLASSIFIED", "2")], [], "JP"),
+      "CARC",
+    );
+    expect(cell.review).toBeUndefined();
   });
 });

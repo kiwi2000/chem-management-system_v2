@@ -14,6 +14,8 @@ export interface AdoptedCellDto {
    */
   via: { linkedBy: string | null; entryKey: string; entryName: string; note: string | null } | null;
   reason?: string;
+  /** 要確認: 条件付きの項目（濃度・形態）が当たっている */
+  review?: { entryKey: string; entryName: string; condition: string }[];
 }
 
 export interface GhsDataRowDto {

@@ -169,6 +169,7 @@ async function list(req: Request, actor: Actor): Promise<Response> {
                 }
               : null,
             reason: c.reason,
+            ...(c.review ? { review: c.review } : {}),
           },
         ]),
       ),

@@ -177,6 +177,15 @@ interface SdsMessages {
       differs: string;
       legend: string;
       none: string;
+      /** 採用の列と「判定修正」（法規制判定と同じ形。§9-5） */
+      adoptedCol: string;
+      correct: string;
+      clearOverride: string;
+      needsReview: string;
+      reviewHint: (items: string) => string;
+      notAdopted: string;
+      adoptedMark: string;
+      overrideReason: (reason: string) => string;
     };
     status: Record<
       "CLASSIFIED" | "NOT_CLASSIFIED" | "CANNOT_CLASSIFY" | "NOT_APPLICABLE" | "NOT_EVALUATED",
@@ -335,6 +344,14 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         legend:
           "「非該当」は、出典に記載はあるが区分が付かない項目（区分に該当しない・分類できない・分類対象外）。「データなし」は、その出典がその項目に何も書いていない項目。黄色のセルと ≠ は、該当どうしで区分の文字が出典間で違う行（読み替えは段 1 で）。",
         none: "この CAS の分類は取り込まれていません。",
+        adoptedCol: "採用",
+        correct: "判定修正",
+        clearOverride: "上書きを消す",
+        needsReview: "要確認",
+        reviewHint: (items) => `条件付きの項目があります（機械では決めていません）: ${items}`,
+        notAdopted: "採用していない値",
+        adoptedMark: "採用",
+        overrideReason: (reason) => `自社判定の理由: ${reason}`,
       },
       status: {
         CLASSIFIED: "該当",
@@ -496,6 +513,14 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         legend:
           "“Not classified” shows classes the source addresses without assigning a category (not classified, classification not possible, not applicable). “No data” shows classes the source says nothing about. Yellow cells and ≠ mark rows whose categories differ between sources (cross-revision mapping comes in stage 1).",
         none: "No classification has been imported for this CAS.",
+        adoptedCol: "Adopted",
+        correct: "Correct",
+        clearOverride: "Remove override",
+        needsReview: "Review",
+        reviewHint: (items) => `Conditional entries exist (not decided automatically): ${items}`,
+        notAdopted: "Not adopted",
+        adoptedMark: "Adopted",
+        overrideReason: (reason) => `Reason for own classification: ${reason}`,
       },
       status: {
         CLASSIFIED: "Classified",

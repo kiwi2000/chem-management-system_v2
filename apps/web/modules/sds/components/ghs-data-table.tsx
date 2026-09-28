@@ -7,6 +7,7 @@ import {
   type Locale,
   type TableState,
 } from "@chem/shared";
+import { CircleHelp } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
@@ -133,12 +134,30 @@ export function GhsDataTable({
           {via}
         </span>
       );
+      // 条件付きの項目が当たる（機械では決めきれない）→ 要確認の印
+      const review = c.review ? (
+        <span
+          className="ml-1 inline-flex items-center align-middle text-red-700 dark:text-red-400"
+          title={t.ghs.section.reviewHint(
+            c.review
+              .map(
+                (r) =>
+                  `${r.entryKey} ${r.entryName}${r.condition !== r.entryName ? `（${r.condition}）` : ""}`,
+              )
+              .join("、"),
+          )}
+          aria-label={t.ghs.section.needsReview}
+        >
+          <CircleHelp className="size-3" />
+        </span>
+      ) : null;
       // 該当以外は出典の言葉だけ（列が狭いので、出典の印は自社判定のときだけ添える）
       if (c.status !== "CLASSIFIED") {
         return (
           <span className="text-muted-foreground text-xs">
             {t.ghs.status[c.status]}
             {(c.from === "OVERRIDE" || via) && tag}
+            {review}
           </span>
         );
       }
@@ -156,6 +175,7 @@ export function GhsDataTable({
             </span>
           ))}
           {tag}
+          {review}
         </span>
       );
     },
