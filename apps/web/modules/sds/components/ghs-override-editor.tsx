@@ -142,7 +142,7 @@ export function GhsOverrideEditor({
     if (!c || c.status === "NOT_EVALUATED") return all.ghs.status.NOT_EVALUATED;
     const from = c.from ? ` (${all.data.sourceShort[c.from] ?? c.from})` : "";
     if (c.status !== "CLASSIFIED") return `${all.ghs.status[c.status]}${from}`;
-    return `${c.items.map((it) => categoryText(cls, it.category, ja)).join("、")}${from}`;
+    return `${c.items.map((it) => categoryText(cls, it.category, ja, all.ghs.section.classifiedUnspecified)).join("、")}${from}`;
   };
 
   return (

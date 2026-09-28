@@ -29,8 +29,14 @@ const STORAGE_KEY = "chem.table.sdsGhsData";
 /** 選んだ国を端末に覚える */
 const COUNTRY_KEY = "chem.sds.ghsData.country";
 
-/** 区分の短い表示（カタログの日本語名「〜 区分2」→「区分2」。英語は区分そのもの） */
-export function categoryText(hazardClass: string, category: string, ja: boolean): string {
+/** 区分の短い表示（カタログの日本語名「〜 区分2」→「区分2」。英語は区分そのもの。区分の記載なしは出典の言葉） */
+export function categoryText(
+  hazardClass: string,
+  category: string,
+  ja: boolean,
+  unspecified: string,
+): string {
+  if (category === "UNSPEC") return unspecified;
   const k = GHS_CATALOG.find((c) => c.code === hazardClass)?.categories.find(
     (x) => x.category === category,
   );
@@ -97,7 +103,7 @@ export function GhsDataTable({
           {c.items.map((it, i) => (
             <span key={it.category}>
               {i > 0 && "、"}
-              {categoryText(hazardClass, it.category, ja)}
+              {categoryText(hazardClass, it.category, ja, t.ghs.section.classifiedUnspecified)}
               {it.targetOrgans && (
                 <span className="text-muted-foreground ml-1 text-[10px] font-normal">
                   {it.targetOrgans}

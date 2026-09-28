@@ -22,6 +22,35 @@ export interface GhsDataRowDto {
   cells: Record<string, AdoptedCellDto>;
 }
 
+/** 出典ごとの表の 1 行（出典の項目そのまま） */
+export interface GhsSourceRowDto {
+  id: string;
+  sourceKey: string;
+  subKey: string;
+  name: string;
+  nameEn: string | null;
+  cas: string[];
+  ecNumber: string | null;
+  conditionText: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  /** CAS で結び付く物質マスタの物質（見られるものだけ） */
+  substances: { id: string; code: string }[];
+  /** クラスコード → その項目の分類 */
+  cells: Record<
+    string,
+    {
+      status: GhsStatus;
+      items: {
+        category: string;
+        targetOrgans: string | null;
+        hCodes: string | null;
+        minimumClassification: string | null;
+      }[];
+    }
+  >;
+}
+
 export interface OverrideDto {
   hazardClass: string;
   category: string;

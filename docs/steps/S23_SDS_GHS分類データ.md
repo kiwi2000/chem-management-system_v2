@@ -386,6 +386,7 @@ STOT 単回 区分 3 の H は標的臓器の文（気道刺激性→H335、麻�
 | 画面 | `/sds/ghs-data`（`pages/ghs-data.tsx`、`components/ghs-data-table.tsx`・`ghs-override-editor.tsx`・`ghs-adoption-rules.tsx`） | 共通の表。物質コード・名称・CAS で絞り込み・並べ替え。クラス 39 列は短い見出しで横に流す（共通の表に列ごとの `minWidth` を足した） |
 | API | `GET/PUT /api/modules/sds/ghs-data`, `…/rules`, `…/overrides`（`ghs-data-api.ts`） | 見るのは `SUBSTANCE_VIEW`（物質の公開状態の絞りも同じ）、自社判定は `SUBSTANCE_EDIT`、採用順は `ADMIN` |
 | メニュー | `manifest.ts`（親「SDS 作成」＋子「GHS データ」「GHS 取り込み」） | 本体側に `ModuleNavItem.children` を足した |
+| 出典ごとのタブ | `components/ghs-data-tabs.tsx`・`ghs-source-table.tsx`、`GET /api/modules/sds/ghs-data/source?sourceCode=` | 行＝出典の項目（識別子・版）。閉じた項目も出す（適用終了で絞る）。メニューは 2 段までなので 3 段目はタブ（下に続ける／セレクトより、出典が一目で分かるため。2026-09-28 決定）。物質との結び付きは CAS だけ |
 
 **勝手に決めた点**: 自社判定の保存は「その物質 × 効く国」の上書きを丸ごと置き換え、理由は 1 つ（クラスごとに分けていない）。
 上書きの H コードはカタログの既定から引く。1 クラスに複数区分の上書き（例: 生殖毒性 1A ＋ 授乳）はまだ画面から入れられない。

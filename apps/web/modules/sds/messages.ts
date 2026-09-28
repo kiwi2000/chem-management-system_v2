@@ -21,6 +21,22 @@ interface SdsMessages {
     empty: string;
     /** セルに添える出典の短い名前 */
     sourceShort: Record<string, string>;
+    /** 上の切り替え: 物質（採用結果）と、出典ごとの項目そのまま */
+    tabs: { substances: string; label: string };
+    source: {
+      lead: (name: string) => string;
+      columns: {
+        key: string;
+        name: string;
+        cas: string;
+        ec: string;
+        condition: string;
+        from: string;
+        to: string;
+        substances: string;
+      };
+      empty: string;
+    };
     edit: {
       title: (code: string, name: string) => string;
       hazardClass: string;
@@ -160,6 +176,22 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       columns: { code: "物質コード", name: "名称", cas: "CAS番号" },
       empty: "該当する物質がありません",
       sourceShort: { NITE: "NITE", EU_ANNEX_VI: "EU", OVERRIDE: "自社" },
+      tabs: { substances: "物質", label: "表示するデータ" },
+      source: {
+        lead: (name) =>
+          `${name} の項目をそのまま並べます（出典の識別子ごと。物質マスタに無い CAS も出ます）。適用終了が入っている行は、新しい版に置き換わった項目です。`,
+        columns: {
+          key: "識別子",
+          name: "出典での名称",
+          cas: "CAS番号",
+          ec: "EC番号",
+          condition: "条件",
+          from: "適用開始",
+          to: "適用終了",
+          substances: "物質コード",
+        },
+        empty: "項目がありません",
+      },
       edit: {
         title: (code, name) => `自社判定: ${code} ${name}`,
         hazardClass: "危険有害性クラス",
@@ -290,6 +322,22 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       columns: { code: "Substance code", name: "Name", cas: "CAS number" },
       empty: "No matching substances",
       sourceShort: { NITE: "NITE", EU_ANNEX_VI: "EU", OVERRIDE: "own" },
+      tabs: { substances: "Substances", label: "Data to show" },
+      source: {
+        lead: (name) =>
+          `Entries of ${name} as published (one row per source identifier; CAS numbers absent from the substance master appear too). Rows with an end date were superseded by a newer version.`,
+        columns: {
+          key: "Identifier",
+          name: "Name in source",
+          cas: "CAS number",
+          ec: "EC number",
+          condition: "Condition",
+          from: "Effective from",
+          to: "Effective to",
+          substances: "Substance codes",
+        },
+        empty: "No entries",
+      },
       edit: {
         title: (code, name) => `Own classification: ${code} ${name}`,
         hazardClass: "Hazard class",
