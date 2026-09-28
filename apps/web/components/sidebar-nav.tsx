@@ -42,6 +42,7 @@ import { useI18n } from "@/lib/i18n-client";
 import { withModuleNav } from "@/lib/module-nav";
 import { cn } from "@/lib/utils";
 import { MODULES } from "@/modules/registry.generated";
+import type { ModuleNavItem } from "@/modules/types";
 
 interface NavItem {
   /** 押したときに開く画面。配下をまとめるだけの行では持たない */
@@ -241,14 +242,20 @@ const NAV_ITEMS: NavItem[] = withModuleNav(
   ITEMS,
   MODULES,
   (item) => item.key === "documents",
-  (nav) => ({
+  toNavItem,
+);
+
+/** モジュールの項目を本体の形に（配下も同じ形で） */
+function toNavItem(nav: ModuleNavItem): NavItem {
+  return {
     href: nav.href,
     label: nav.label,
     icon: nav.icon,
     needs: nav.needs,
     match: nav.match,
-  }),
-);
+    children: nav.children?.map(toNavItem),
+  };
+}
 
 function isActive(pathname: string, item: NavItem): boolean {
   if (!item.href) return false;

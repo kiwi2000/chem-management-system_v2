@@ -8,8 +8,51 @@ import type { Locale } from "@chem/shared";
  */
 interface SdsMessages {
   nav: string;
+  navGhsData: string;
+  navGhsImport: string;
   title: string;
   preparing: string;
+  /** GHS データ（物質 × 採用した分類の一覧、自社判定の登録、国ごとの採用順） */
+  data: {
+    title: string;
+    lead: string;
+    country: string;
+    columns: { code: string; name: string; cas: string };
+    empty: string;
+    /** セルに添える出典の短い名前 */
+    sourceShort: Record<string, string>;
+    edit: {
+      title: (code: string, name: string) => string;
+      hazardClass: string;
+      adopted: string;
+      override: string;
+      none: string;
+      category: string;
+      organs: string;
+      reason: string;
+      reasonHint: string;
+      country: string;
+      allCountries: string;
+      onlyCountry: (name: string) => string;
+      save: string;
+      cancel: string;
+      saved: string;
+      needReason: string;
+      needCategory: (cls: string) => string;
+      existing: (n: number) => string;
+    };
+    rules: {
+      title: string;
+      lead: string;
+      up: string;
+      down: string;
+      fill: string;
+      save: string;
+      saved: string;
+      isDefault: string;
+      adminOnly: string;
+    };
+  };
   /** GHS 分類データの取り込み（S23 段 0） */
   ghs: {
     title: string;
@@ -107,7 +150,49 @@ interface SdsMessages {
 export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
   ja: {
     nav: "SDS 作成",
+    navGhsData: "GHS データ",
+    navGhsImport: "GHS 取り込み",
     title: "SDS 作成",
+    data: {
+      title: "GHS データ",
+      lead: "物質ごとに、選んだ国の採用順で採った GHS 分類を並べます。行末の鉛筆から自社判定を登録できます（出典より優先されます）。",
+      country: "SDS の対象の国",
+      columns: { code: "物質コード", name: "名称", cas: "CAS番号" },
+      empty: "該当する物質がありません",
+      sourceShort: { NITE: "NITE", EU_ANNEX_VI: "EU", OVERRIDE: "自社" },
+      edit: {
+        title: (code, name) => `自社判定: ${code} ${name}`,
+        hazardClass: "危険有害性クラス",
+        adopted: "採用中",
+        override: "自社判定",
+        none: "（上書きしない）",
+        category: "区分",
+        organs: "標的臓器",
+        reason: "理由",
+        reasonHint:
+          "出典と違う分類を採る根拠（試験報告書・仕入先 SDS など）。SDS の第 16 項と監査に使います",
+        country: "効く国",
+        allCountries: "全ての国",
+        onlyCountry: (name) => `${name} 向けだけ`,
+        save: "保存",
+        cancel: "キャンセル",
+        saved: "自社判定を保存しました。",
+        needReason: "理由を入れてください",
+        needCategory: (cls) => `「${cls}」の区分を選んでください`,
+        existing: (n) => `登録済みの自社判定 ${n} 件`,
+      },
+      rules: {
+        title: "出典の採用順",
+        lead: "上から順に、その項目を評価している最初の出典を採ります。出典に記載の無い項目だけ次の出典で埋めます。",
+        up: "上へ",
+        down: "下へ",
+        fill: "「分類できない」も次の出典で埋める",
+        save: "保存",
+        saved: "採用順を保存しました。",
+        isDefault: "まだ保存していません（既定の並び: その国の出典が先頭）。",
+        adminOnly: "採用順を変えられるのはシステム管理者だけです。",
+      },
+    },
     preparing: "SDS を作る機能は準備中です。まず、物質の GHS 分類の土台から作っています。",
     ghs: {
       title: "GHS 分類データ",
@@ -195,7 +280,49 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
   },
   en: {
     nav: "SDS authoring",
+    navGhsData: "GHS data",
+    navGhsImport: "GHS import",
     title: "SDS authoring",
+    data: {
+      title: "GHS data",
+      lead: "For each substance, the GHS classification adopted under the selected country's source order. Use the pencil at the end of a row to register your own classification (it takes precedence over the sources).",
+      country: "Target country of the SDS",
+      columns: { code: "Substance code", name: "Name", cas: "CAS number" },
+      empty: "No matching substances",
+      sourceShort: { NITE: "NITE", EU_ANNEX_VI: "EU", OVERRIDE: "own" },
+      edit: {
+        title: (code, name) => `Own classification: ${code} ${name}`,
+        hazardClass: "Hazard class",
+        adopted: "Adopted",
+        override: "Own classification",
+        none: "(no override)",
+        category: "Category",
+        organs: "Target organs",
+        reason: "Reason",
+        reasonHint:
+          "Why you depart from the sources (test report, supplier SDS, …). Used in SDS section 16 and the audit log",
+        country: "Applies to",
+        allCountries: "All countries",
+        onlyCountry: (name) => `${name} only`,
+        save: "Save",
+        cancel: "Cancel",
+        saved: "Own classification saved.",
+        needReason: "Enter the reason",
+        needCategory: (cls) => `Choose a category for “${cls}”`,
+        existing: (n) => `${n} own classification(s) registered`,
+      },
+      rules: {
+        title: "Source order",
+        lead: "Sources are consulted top to bottom; the first one that addresses a class is adopted. Only classes a source says nothing about fall through to the next source.",
+        up: "Up",
+        down: "Down",
+        fill: "Also fall through when the source says “classification not possible”",
+        save: "Save",
+        saved: "Source order saved.",
+        isDefault: "Not saved yet (default order: the country's own source first).",
+        adminOnly: "Only system administrators can change the source order.",
+      },
+    },
     preparing:
       "SDS authoring is in preparation. The first piece being built is the substance GHS classification data.",
     ghs: {

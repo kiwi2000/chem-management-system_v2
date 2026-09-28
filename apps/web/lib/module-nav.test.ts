@@ -9,7 +9,7 @@ interface Item {
 }
 
 const items: Item[] = [{ key: "home", href: "/" }, { key: "documents" }, { key: "news" }];
-const toItem = (n: { href: string }): Item => ({ href: n.href });
+const toItem = (n: { href?: string }): Item => ({ href: n.href });
 const sds: ModuleManifest = {
   id: "sds",
   nav: [{ href: "/sds", label: { ja: "SDS 作成", en: "SDS" }, icon: FileBadge }],

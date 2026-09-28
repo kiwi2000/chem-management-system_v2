@@ -10,6 +10,7 @@ import {
   previewImport,
   type SourceCode,
 } from "./ghs/import-service";
+import { ghsDataApi } from "./ghs-data-api";
 import { fieldOf, fileOf, parseMultipart } from "./lib/multipart";
 import { sdsMessages } from "./messages";
 
@@ -21,6 +22,7 @@ export const GHS_IMPORT_FILE_MAX_MB = 32;
  *
  *   POST ghs/import   … multipart: sourceCode / label / publishedOn / step(preview|apply) / file / rationale?
  *   GET  ghs/releases … 取り込みの記録
+ *   ghs-data…         … GHS データの一覧・自社判定・採用順（ghs-data-api.ts）
  *
  * 取り込みはシステム管理者だけ（権限を足すのは、権限にモジュールの印を持たせる仕組みができてから）
  */
@@ -28,6 +30,7 @@ export async function sdsApi(req: Request, path: string[], actor: Actor): Promis
   const key = `${req.method} ${path.join("/")}`;
   if (key === "GET ghs/releases") return listReleases();
   if (key === "POST ghs/import") return importGhs(req, actor);
+  if (path[0] === "ghs-data") return ghsDataApi(req, path, actor);
   return null;
 }
 

@@ -354,7 +354,7 @@ export function DataTable<T>({
   // 詰めすぎると読めなくなるので、ここまでしか縮めない（これより狭い画面ではスクロールする）
   const minTableWidth = Math.min(
     selectWidth + dataSum,
-    selectWidth + MIN_COLUMN_WIDTH * columns.length,
+    selectWidth + columns.reduce((sum, c) => sum + (c.minWidth ?? MIN_COLUMN_WIDTH), 0),
   );
   /**
    * 指定した幅と実際に描かれる幅の比。

@@ -14,8 +14,12 @@ export interface CatalogClass {
   code: string;
   nameJa: string;
   nameEn: string;
-  /** EU 風の略号（区分を後ろに付ける） */
+  /** 一覧の列の見出しに使う短い名前（GHS データの表。無ければ nameJa） */
+  shortJa?: string;
+  /** EU 風の略号（区分を後ろに付ける）。英語の一覧ではこれを見出しにする */
   abbrevEn: string;
+  /** 略号が同じになるクラス（急性毒性の経路）の、英語の一覧の見出し */
+  shortEn?: string;
   /** 区分と既定の H コード。区分の並びは危険の強い順 */
   categories: {
     category: string;
@@ -75,6 +79,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "CHEM_UNST_GAS",
     nameJa: "化学的に不安定なガス",
+    shortJa: "化学不安定ガス",
     nameEn: "Chemically unstable gases",
     abbrevEn: "Chem. Unst. Gas",
     categories: [cat("A", ["H230"], { from: "4" }), cat("B", ["H231"], { from: "4" })],
@@ -130,6 +135,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "SELF_REACT",
     nameJa: "自己反応性化学品",
+    shortJa: "自己反応性",
     nameEn: "Self-reactive substances and mixtures",
     abbrevEn: "Self-react.",
     categories: [
@@ -159,6 +165,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "SELF_HEAT",
     nameJa: "自己発熱性化学品",
+    shortJa: "自己発熱性",
     nameEn: "Self-heating substances and mixtures",
     abbrevEn: "Self-heat.",
     categories: [cat("1", ["H251"]), cat("2", ["H252"])],
@@ -166,6 +173,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "WATER_REACT",
     nameJa: "水反応可燃性化学品",
+    shortJa: "水反応可燃性",
     nameEn: "Substances and mixtures which, in contact with water, emit flammable gases",
     abbrevEn: "Water-react.",
     categories: [cat("1", ["H260"]), cat("2", ["H261"]), cat("3", ["H261"])],
@@ -202,6 +210,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "MET_CORR",
     nameJa: "金属腐食性化学品",
+    shortJa: "金属腐食性",
     nameEn: "Corrosive to metals",
     abbrevEn: "Met. Corr.",
     categories: [cat("1", ["H290"])],
@@ -222,8 +231,10 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "ACUTE_TOX_ORAL",
     nameJa: "急性毒性（経口）",
+    shortJa: "急性毒性 経口",
     nameEn: "Acute toxicity (oral)",
     abbrevEn: "Acute Tox.",
+    shortEn: "Acute Tox. oral",
     categories: [
       cat("1", ["H300"]),
       cat("2", ["H300"]),
@@ -235,8 +246,10 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "ACUTE_TOX_DERMAL",
     nameJa: "急性毒性（経皮）",
+    shortJa: "急性毒性 経皮",
     nameEn: "Acute toxicity (dermal)",
     abbrevEn: "Acute Tox.",
+    shortEn: "Acute Tox. dermal",
     categories: [
       cat("1", ["H310"]),
       cat("2", ["H310"]),
@@ -248,8 +261,10 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "ACUTE_TOX_INHAL_GAS",
     nameJa: "急性毒性（吸入：ガス）",
+    shortJa: "急性毒性 吸入ガス",
     nameEn: "Acute toxicity (inhalation: gases)",
     abbrevEn: "Acute Tox.",
+    shortEn: "Acute Tox. inh. gas",
     categories: [
       cat("1", ["H330"]),
       cat("2", ["H330"]),
@@ -261,8 +276,10 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "ACUTE_TOX_INHAL_VAPOUR",
     nameJa: "急性毒性（吸入：蒸気）",
+    shortJa: "急性毒性 吸入蒸気",
     nameEn: "Acute toxicity (inhalation: vapours)",
     abbrevEn: "Acute Tox.",
+    shortEn: "Acute Tox. inh. vapour",
     categories: [
       cat("1", ["H330"]),
       cat("2", ["H330"]),
@@ -274,8 +291,10 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "ACUTE_TOX_INHAL_DUST",
     nameJa: "急性毒性（吸入：粉塵、ミスト）",
+    shortJa: "急性毒性 吸入粉塵",
     nameEn: "Acute toxicity (inhalation: dusts and mists)",
     abbrevEn: "Acute Tox.",
+    shortEn: "Acute Tox. inh. dust",
     categories: [
       cat("1", ["H330"]),
       cat("2", ["H330"]),
@@ -288,8 +307,10 @@ export const GHS_CATALOG: CatalogClass[] = [
     // EU 附属書VI は吸入の経路（ガス・蒸気・粉塵）を分けない
     code: "ACUTE_TOX_INHAL",
     nameJa: "急性毒性（吸入：経路の記載なし）",
+    shortJa: "急性毒性 吸入",
     nameEn: "Acute toxicity (inhalation, route not stated)",
     abbrevEn: "Acute Tox.",
+    shortEn: "Acute Tox. inh.",
     categories: [
       cat("1", ["H330"]),
       cat("2", ["H330"]),
@@ -301,6 +322,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "SKIN_CORR_IRRIT",
     nameJa: "皮膚腐食性／刺激性",
+    shortJa: "皮膚腐食／刺激",
     nameEn: "Skin corrosion/irritation",
     abbrevEn: "Skin Corr./Irrit.",
     categories: [
@@ -315,6 +337,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "EYE_DAM_IRRIT",
     nameJa: "眼に対する重篤な損傷性／眼刺激性",
+    shortJa: "眼損傷／刺激",
     nameEn: "Serious eye damage/eye irritation",
     abbrevEn: "Eye Dam./Irrit.",
     categories: [cat("1", ["H318"]), cat("2", ["H319"]), cat("2A", ["H319"]), cat("2B", ["H320"])],
@@ -336,6 +359,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "MUTA",
     nameJa: "生殖細胞変異原性",
+    shortJa: "変異原性",
     nameEn: "Germ cell mutagenicity",
     abbrevEn: "Muta.",
     categories: [cat("1", ["H340"]), cat("1A", ["H340"]), cat("1B", ["H340"]), cat("2", ["H341"])],
@@ -366,6 +390,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "STOT_SE",
     nameJa: "特定標的臓器毒性（単回暴露）",
+    shortJa: "STOT 単回",
     nameEn: "Specific target organ toxicity (single exposure)",
     abbrevEn: "STOT SE",
     // 区分 3 の H は標的臓器の文で決まる（気道刺激性 H335／麻酔作用 H336）ので、ここには書かない
@@ -374,6 +399,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "STOT_RE",
     nameJa: "特定標的臓器毒性（反復暴露）",
+    shortJa: "STOT 反復",
     nameEn: "Specific target organ toxicity (repeated exposure)",
     abbrevEn: "STOT RE",
     categories: [cat("1", ["H372"]), cat("2", ["H373"])],
@@ -389,6 +415,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "AQUATIC_ACUTE",
     nameJa: "水生環境有害性 短期（急性）",
+    shortJa: "水生 急性",
     nameEn: "Hazardous to the aquatic environment (acute)",
     abbrevEn: "Aquatic Acute",
     categories: [cat("1", ["H400"]), cat("2", ["H401"]), cat("3", ["H402"])],
@@ -396,6 +423,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "AQUATIC_CHRONIC",
     nameJa: "水生環境有害性 長期（慢性）",
+    shortJa: "水生 慢性",
     nameEn: "Hazardous to the aquatic environment (chronic)",
     abbrevEn: "Aquatic Chronic",
     categories: [cat("1", ["H410"]), cat("2", ["H411"]), cat("3", ["H412"]), cat("4", ["H413"])],
@@ -403,6 +431,7 @@ export const GHS_CATALOG: CatalogClass[] = [
   {
     code: "OZONE",
     nameJa: "オゾン層への有害性",
+    shortJa: "オゾン層",
     nameEn: "Hazardous to the ozone layer",
     abbrevEn: "Ozone",
     categories: [cat("1", ["H420"])],

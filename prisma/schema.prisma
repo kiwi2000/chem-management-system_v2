@@ -1077,7 +1077,8 @@ model Substance {
   compositionLines CompositionLine[]
   impurityType     ImpurityType             @relation(fields: [impurityTypeId], references: [id])
 
-  prtrMeasured PrtrMeasured[]
+  prtrMeasured    PrtrMeasured[]
+  sdsGhsOverrides SdsGhsOverride[]
 
   @@index([casNormalized])
   @@index([impurityTypeId])
@@ -3452,4 +3453,51 @@ model SdsGhsImportIssue {
 
   @@index([releaseId])
   @@map("sds_ghs_import_issues")
+}
+
+/**
+ * 物質ごとの上書き（自社判定。S23 4-9）。**物質コード単位・クラス単位。**
+ * 出典の分類より優先する。country が空なら全部の国に効く。理由は必須（第 16 項・監査）。
+ * 出典の版が変わったら review_required を立てる（消さない）
+ */
+model SdsGhsOverride {
+  id             String            @id @default(cuid())
+  substanceId    String            @map("substance_id")
+  hazardClass    String            @map("hazard_class") @db.VarChar(40)
+  category       String            @default("") @db.VarChar(10)
+  status         SdsGhsClassStatus
+  targetOrgans   String?           @map("target_organs") @db.VarChar(200)
+  hCodes         String?           @map("h_codes") @db.VarChar(60)
+  /**
+   * 空＝全部の国に効く。指定すればその国だけ
+   */
+  country        String            @default("") @db.VarChar(20)
+  reason         String
+  evidenceRef    String?           @map("evidence_ref") @db.VarChar(300)
+  decidedBy      String?           @map("decided_by")
+  decidedAt      DateTime          @default(now()) @map("decided_at")
+  reviewRequired Boolean           @default(false) @map("review_required")
+  reviewNote     String?           @map("review_note")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  substance Substance @relation(fields: [substanceId], references: [id], onDelete: Cascade)
+
+  @@unique([substanceId, hazardClass, category, country])
+  @@index([substanceId])
+  @@map("sds_ghs_overrides")
+}
+
+/**
+ * 国ごとの出典の採用順（S23 §5-3）。priority の小さい順に見て、その項目を評価している最初の出典を採る。
+ * fill_cannot_classify が真なら「分類できない」も次の出典で埋める
+ */
+model SdsGhsAdoptionRule {
+  id                 String  @id @default(cuid())
+  country            String  @db.VarChar(20)
+  sourceCode         String  @map("source_code") @db.VarChar(40)
+  priority           Int
+  fillCannotClassify Boolean @default(false) @map("fill_cannot_classify")
+
+  @@unique([country, sourceCode])
+  @@map("sds_ghs_adoption_rules")
 }

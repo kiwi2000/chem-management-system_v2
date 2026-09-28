@@ -1,8 +1,8 @@
 # S23 SDS 作成 — 段 0: 物質の GHS 分類データの取り込み（データ項目の案）
 
-> **状態: 段 0 を実装中（2026-09-28。SDS あり版）。** 表は 8 つ全部作った。読み手は NITE 統合版と EU 附属書VI（ECHA の Excel）。
-> 物質の詳細に読み取り専用の欄を出す所まで。残り（EU の読み手・濃度限界・上書き・採用規則・混合物計算）は未着手。
-> 実装の要点は §9。
+> **状態: 段 0 を実装中（2026-09-28。SDS あり版）。** 表は 10 個（分類データ 8 つ＋上書き・採用順）。読み手は NITE 統合版と EU 附属書VI（ECHA の Excel）。
+> 物質の詳細の比較表（出典別）と、「GHS データ」の画面（物質 × 採用した分類、自社判定、国ごとの採用順）まで。
+> 残り（濃度限界の解析・読み替え・導出／検出・混合物計算）は未着手。実装の要点は §9。
 > 原典の検証は `docs/GHS分類の原典/検証結果_DB項目.md`。設計の経緯はメモリ `chem-sds-ghs-design`。
 > SDS 作成はオプション機能（決定 0016）。表は共通の DB に `sds_ghs_` の名前で作り、画面・API・取り込みは `apps/web/modules/sds/` に置く。
 
@@ -375,3 +375,18 @@ STOT 単回 区分 3 の H は標的臓器の文（気道刺激性→H335、麻�
 - 「Press. Gas」「Expl.」のように区分の無い書き方は `UNSPEC`。「Ozone」は区分 1、「Lact.」は REPR/LACT
 - 濃度限界・M 係数・ATE は `limits_raw` に原文のまま（移行 `20260928140000_sds_ghs_entry_limits_raw`）。解析は段 1
 - GHS 改訂版は行に付けていない（ATP ごとに決めるのは段 1）。`classified_in` に ATP コード
+
+### 9-3. GHS データの画面・自社判定・国ごとの採用順（2026-09-28）
+
+| 何を | どこに | 備考 |
+| --- | --- | --- |
+| 表 2 つ（4-9 の上書き、採用順） | `SdsGhsOverride`・`SdsGhsAdoptionRule`、移行 `20260928160000_sds_ghs_overrides_and_adoption_rules` | 4-9 のうち `effective_from/to` は持たせていない（§5-2 で物質は最新だけと決めたため）。一意は `(substance, hazard_class, category, country)` |
+| 採用の計算 | `modules/sds/ghs/adopt.ts` | §5-3 の 1・2 段目。上書き（国指定 → 全ての国の順）→ 採用順に出典を見て、そのクラスを評価している最初の出典。`fill_cannot_classify` なら「分類できない」も次で埋める。3 段目以降（読み替え・導出・検出）は未実装 |
+| 国の一覧 | `modules/sds/ghs/countries.ts` | JP / EU / GB / KR / CN / TW / US / AU / その他。既定の採用順は「その国の出典が先頭、あとは出典の並び順」 |
+| 画面 | `/sds/ghs-data`（`pages/ghs-data.tsx`、`components/ghs-data-table.tsx`・`ghs-override-editor.tsx`・`ghs-adoption-rules.tsx`） | 共通の表。物質コード・名称・CAS で絞り込み・並べ替え。クラス 39 列は短い見出しで横に流す（共通の表に列ごとの `minWidth` を足した） |
+| API | `GET/PUT /api/modules/sds/ghs-data`, `…/rules`, `…/overrides`（`ghs-data-api.ts`） | 見るのは `SUBSTANCE_VIEW`（物質の公開状態の絞りも同じ）、自社判定は `SUBSTANCE_EDIT`、採用順は `ADMIN` |
+| メニュー | `manifest.ts`（親「SDS 作成」＋子「GHS データ」「GHS 取り込み」） | 本体側に `ModuleNavItem.children` を足した |
+
+**勝手に決めた点**: 自社判定の保存は「その物質 × 効く国」の上書きを丸ごと置き換え、理由は 1 つ（クラスごとに分けていない）。
+上書きの H コードはカタログの既定から引く。1 クラスに複数区分の上書き（例: 生殖毒性 1A ＋ 授乳）はまだ画面から入れられない。
+`evidence_ref`・`review_required` は表にあるが画面には出していない（取り込みが立てる仕組みは段 1）。

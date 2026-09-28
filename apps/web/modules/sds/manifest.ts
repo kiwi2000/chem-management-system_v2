@@ -1,4 +1,4 @@
-import { FileBadge } from "lucide-react";
+import { Database, FileBadge, Upload } from "lucide-react";
 import type { ModuleManifest } from "../types";
 import { SDS_MESSAGES } from "./messages";
 
@@ -10,10 +10,24 @@ const sds: ModuleManifest = {
   id: "sds",
   nav: [
     {
-      href: "/sds",
       label: { ja: SDS_MESSAGES.ja.nav, en: SDS_MESSAGES.en.nav },
       icon: FileBadge,
       match: ["/sds"],
+      children: [
+        {
+          href: "/sds/ghs-data",
+          label: { ja: SDS_MESSAGES.ja.navGhsData, en: SDS_MESSAGES.en.navGhsData },
+          icon: Database,
+          needs: "SUBSTANCE_VIEW",
+          match: ["/sds/ghs-data"],
+        },
+        {
+          href: "/sds/ghs",
+          label: { ja: SDS_MESSAGES.ja.navGhsImport, en: SDS_MESSAGES.en.navGhsImport },
+          icon: Upload,
+          match: ["/sds/ghs"],
+        },
+      ],
     },
   ],
 };

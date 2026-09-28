@@ -49,6 +49,11 @@ export interface TableColumn<T> {
   filterVariant?: { key: string; label: string };
   /** 既定の列幅（px）。利用者がドラッグで変えた幅は端末に記憶される */
   width?: number;
+  /**
+   * 画面が狭いときにここまでしか詰めない幅（px。既定は MIN_COLUMN_WIDTH）。
+   * 列が何十もある表（GHS データなど）で、詰めて読めなくなるより横に流すほうがよいときに使う
+   */
+  minWidth?: number;
   /** 1セルに複数行を出す（省略記号で切らず、行の高さを伸ばす） */
   multiline?: boolean;
   /**

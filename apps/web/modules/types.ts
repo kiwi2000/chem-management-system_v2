@@ -20,13 +20,16 @@ import type { Actor } from "@/lib/authz";
 
 /** メニューの 1 行。文言は本体の辞書に入れず、モジュールが両言語ぶん持つ */
 export interface ModuleNavItem {
-  href: string;
+  /** 押したときに開く画面。配下をまとめるだけの行では持たない */
+  href?: string;
   label: Record<Locale, string>;
   icon: LucideIcon;
   /** この権限が無い人には出さない。並びなら、どれか 1 つあればよい */
   needs?: Permission | Permission[];
   /** この接頭辞のパスでも選択中扱いにする */
   match?: string[];
+  /** 配下に置く項目（本体のメニューと同じく字下げして並ぶ） */
+  children?: ModuleNavItem[];
 }
 
 /** クライアントでも読み込む宣言（`<id>/manifest.ts` の default export） */
