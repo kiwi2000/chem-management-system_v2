@@ -1,7 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Prisma, SdsGhsClassStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { todayInJapan } from "@/lib/judgement-date";
 import { GHS_CATALOG } from "./catalog-data";
+import { readEuAnnexVi } from "./eu-annex-vi";
 import {
   NITE_COLUMNS,
   contentHashOf,
@@ -13,16 +15,19 @@ import {
 /**
  * GHS 分類データの取り込み（S23 段 0）。
  *
- * 出どころが配った 1 回分（公表）を読み、いま有効な項目と突き合わせて
+ * 出典が配った 1 回分（公表）を読み、いま有効な項目と突き合わせて
  * **追加・変更・変わらず・見当たらず** に分け、「取り込む」で反映する。
  *
- * - 変更: 古い項目に適用終了日（公表日の前日）を入れ、新しい項目を足す。古い行は残す（判定対象日で引くため）
+ * 出典は 2 種類ある。
+ * - 行に日付を持たない（NITE）: 項目の鍵は識別子。変更は「古い項目を公表日の前日で閉じ、新しい項目を足す」
+ * - 行に適用日を持つ（EU 附属書VI の ATP）: 項目の鍵は識別子＋適用開始日。同じ鍵で中身が変わるのは訂正なので
+ *   その場で書き換える。新しい適用日の行が来たら、それより前の開いている行を前日で閉じる
  * - 変わらず: 「最後に確認した公表」だけ更新
  * - 見当たらず（丸ごと配布に載らなくなった）: 閉じずに要確認に出す。消えた＝撤回とは限らない
  * - 読めなかったセル: 要確認に残す。取り込みは止めない
  */
 
-/** いま読める出どころ。ほかの国は読み手ができたときに足す */
+/** いま読める出典。ほかの国は読み手ができたときに足す（列は sds_ghs_sources と同じ） */
 export const SOURCES = [
   {
     code: "NITE",
@@ -39,11 +44,32 @@ export const SOURCES = [
       "ラベル・SDS 作成時の引用・複写は自由（各ページの記載）。製品への組み込み・再配布は明文なし。https://www.chem-info.nite.go.jp/chem/ghs/",
     sortOrder: 10,
   },
+  {
+    code: "EU_ANNEX_VI",
+    nameJa: "EU CLP 附属書VI（調和分類）",
+    nameEn: "EU CLP Annex VI (harmonised classification)",
+    country: "EU",
+    provider: "PUBLIC",
+    delivery: "FULL",
+    legalStatus: "BINDING",
+    identifierKind: "INDEX_NO",
+    coversAllClasses: false,
+    defaultGhsRevision: null,
+    licenseNote:
+      "ECHA 配布の Excel は「informative purposes not including commercial activities or reproduction」。官報（CC BY 4.0）にも同じ内容。CAS 番号の情報は ACS の財産（法令対応の目的のみ）。https://echa.europa.eu/information-on-chemicals/annex-vi-to-clp",
+    sortOrder: 20,
+  },
 ] as const;
 
 export type SourceCode = (typeof SOURCES)[number]["code"];
 
-/** 出どころ・カタログ・辞書の初期データを DB に入れる（何度呼んでもよい） */
+/** 出典ごとの読み方（DB の列ではないもの） */
+const SOURCE_OPTIONS: Record<SourceCode, { versionedRows: boolean }> = {
+  NITE: { versionedRows: false },
+  EU_ANNEX_VI: { versionedRows: true },
+};
+
+/** 出典・カタログ・辞書の初期データを DB に入れる（何度呼んでもよい） */
 export async function ensureSeed(): Promise<void> {
   for (const s of SOURCES) {
     await prisma.sdsGhsSource.upsert({
@@ -54,6 +80,8 @@ export async function ensureSeed(): Promise<void> {
         nameEn: s.nameEn,
         licenseNote: s.licenseNote,
         sortOrder: s.sortOrder,
+        legalStatus: s.legalStatus,
+        coversAllClasses: s.coversAllClasses,
       },
     });
   }
@@ -122,42 +150,65 @@ export interface Diff {
   fileIssues: string[];
 }
 
+function keyOf(
+  sourceCode: SourceCode,
+  e: { sourceKey: string; subKey: string; effectiveFrom?: string },
+): string {
+  const base = `${e.sourceKey}\u0000${e.subKey}`;
+  return SOURCE_OPTIONS[sourceCode].versionedRows ? `${base}\u0000${e.effectiveFrom ?? ""}` : base;
+}
+
 /** ファイルを読んで、いまの状態との差分を出す。DB は読むだけ */
 export async function previewImport(input: ImportInput): Promise<Diff> {
-  const rationale = input.rationale ? await readNiteRationale(input.rationale) : undefined;
-  const result = await readNiteMain(input.main, rationale);
-  if (result.issues.length > 0) {
-    return {
-      parsed: 0,
-      added: [],
-      changed: [],
-      unchanged: [],
-      disappeared: [],
-      issues: [],
-      fileIssues: result.issues,
-    };
-  }
-  const source = await prisma.sdsGhsSource.findUniqueOrThrow({ where: { code: input.sourceCode } });
-  const open = await prisma.sdsGhsEntry.findMany({
-    where: { sourceId: source.id, effectiveTo: null },
-    select: { id: true, sourceKey: true, subKey: true, name: true, contentHash: true },
-  });
-  const openBy = new Map(open.map((e) => [`${e.sourceKey}\u0000${e.subKey}`, e]));
-  const seen = new Set<string>();
-  const diff: Diff = {
-    parsed: result.entries.length,
+  const empty = (fileIssues: string[]): Diff => ({
+    parsed: 0,
     added: [],
     changed: [],
     unchanged: [],
     disappeared: [],
     issues: [],
-    fileIssues: [],
-  };
+    fileIssues,
+  });
+  let result;
+  if (input.sourceCode === "NITE") {
+    const rationale = input.rationale ? await readNiteRationale(input.rationale) : undefined;
+    result = await readNiteMain(input.main, rationale);
+  } else {
+    result = await readEuAnnexVi(input.main, todayInJapan());
+  }
+  if (result.issues.length > 0) return empty(result.issues);
+
+  const source = await prisma.sdsGhsSource.findUniqueOrThrow({ where: { code: input.sourceCode } });
+  const today = new Date(`${todayInJapan()}T00:00:00Z`);
+  // いま効いている行と、これから効く行。閉じた行（終了日が過去）は突き合わせない
+  const open = await prisma.sdsGhsEntry.findMany({
+    where: { sourceId: source.id, OR: [{ effectiveTo: null }, { effectiveTo: { gte: today } }] },
+    select: {
+      id: true,
+      sourceKey: true,
+      subKey: true,
+      name: true,
+      contentHash: true,
+      effectiveFrom: true,
+    },
+  });
+  const openBy = new Map(
+    open.map((e) => [
+      keyOf(input.sourceCode, {
+        sourceKey: e.sourceKey,
+        subKey: e.subKey,
+        effectiveFrom: e.effectiveFrom.toISOString().slice(0, 10),
+      }),
+      e,
+    ]),
+  );
+  const seen = new Set<string>();
+  const diff: Diff = { ...empty([]), parsed: result.entries.length };
   for (const e of result.entries) {
-    const key = `${e.sourceKey}\u0000${e.subKey}`;
+    const key = keyOf(input.sourceCode, e);
     if (seen.has(key)) {
       diff.issues.push(
-        `${e.sourceKey}${e.subKey}: 同じ物質 ID が 2 回出ています（後のものは読み飛ばし）`,
+        `${e.sourceKey}${e.subKey}: 同じ識別子が 2 回出ています（後のものは読み飛ばし）`,
       );
       continue;
     }
@@ -185,6 +236,64 @@ function dayBefore(day: string): Date {
   return d;
 }
 
+function toDate(day: string): Date {
+  return new Date(`${day}T00:00:00Z`);
+}
+
+function entryRow(
+  e: ParsedEntry,
+  id: string,
+  sourceId: string,
+  releaseId: string,
+  publishedOn: string,
+): Prisma.SdsGhsEntryCreateManyInput {
+  return {
+    id,
+    sourceId,
+    sourceKey: e.sourceKey,
+    subKey: e.subKey,
+    name: e.name.slice(0, 500),
+    nameEn: e.nameEn?.slice(0, 500) ?? null,
+    ecNumber: e.ecNumber?.slice(0, 20) ?? null,
+    conditionText: e.conditionText?.slice(0, 200) ?? null,
+    effectiveFrom: toDate(e.effectiveFrom ?? publishedOn),
+    effectiveTo: e.effectiveTo ? toDate(e.effectiveTo) : null,
+    releaseInId: releaseId,
+    releaseLastSeenId: releaseId,
+    amendingAct: e.amendingAct?.slice(0, 40) ?? null,
+    notesRaw: e.notesRaw?.slice(0, 200) ?? null,
+    labellingRaw: e.labellingRaw ?? null,
+    limitsRaw: e.limitsRaw ?? null,
+    rawRow: e.rawRow,
+    contentHash: contentHashOf(e),
+  };
+}
+
+function childRows(e: ParsedEntry, entryId: string) {
+  const cas: Prisma.SdsGhsEntryCasCreateManyInput[] = e.cas.map((c, i) => ({
+    entryId,
+    casNormalized: c.normalized,
+    casRaw: c.raw.slice(0, 30),
+    ordinal: i + 1,
+    origin: "SOURCE",
+  }));
+  const cls: Prisma.SdsGhsClassificationCreateManyInput[] = e.classifications.map((c) => ({
+    entryId,
+    hazardClass: c.hazardClass,
+    category: c.category,
+    status: c.status as SdsGhsClassStatus,
+    targetOrgans: c.targetOrgans?.slice(0, 200) ?? null,
+    hCodes: c.hCodes.length ? c.hCodes.join(",") : null,
+    hCodesOrigin: c.hCodes.length ? (c.hCodesOrigin ?? "CATALOG") : null,
+    minimumClassification: c.minimumClassification?.slice(0, 3) ?? null,
+    ghsRevision: c.ghsRevision ?? null,
+    classifiedIn: c.classifiedIn?.slice(0, 40) ?? null,
+    rationale: c.rationale || null,
+    rawClassText: c.rawClassText.slice(0, 200),
+  }));
+  return { cas, cls };
+}
+
 /**
  * 下見の結果をそのまま DB に反映する。公表の記録を作り、項目・CAS・分類を足す。
  * 3,500 物質 × 35 クラスで 12 万行になるので、id を先に決めて createMany でまとめて入れる
@@ -195,52 +304,22 @@ export async function applyImport(
   actorId: string,
 ): Promise<{ releaseId: string }> {
   const source = await prisma.sdsGhsSource.findUniqueOrThrow({ where: { code: input.sourceCode } });
-  const publishedOn = new Date(`${input.publishedOn}T00:00:00Z`);
+  const versioned = SOURCE_OPTIONS[input.sourceCode].versionedRows;
+  const publishedOn = toDate(input.publishedOn);
   const sha = createHash("sha256").update(input.main).digest("hex");
   const releaseId = randomUUID();
 
-  const fresh = [...diff.added, ...diff.changed.map((c) => c.next)];
+  // 追加（と、日付を持たない出典の変更）は新しい項目
+  const fresh = versioned ? diff.added : [...diff.added, ...diff.changed.map((c) => c.next)];
   const entryRows: Prisma.SdsGhsEntryCreateManyInput[] = [];
   const casRows: Prisma.SdsGhsEntryCasCreateManyInput[] = [];
   const classRows: Prisma.SdsGhsClassificationCreateManyInput[] = [];
   for (const e of fresh) {
     const id = randomUUID();
-    entryRows.push({
-      id,
-      sourceId: source.id,
-      sourceKey: e.sourceKey,
-      subKey: e.subKey,
-      name: e.name.slice(0, 500),
-      effectiveFrom: publishedOn,
-      releaseInId: releaseId,
-      releaseLastSeenId: releaseId,
-      rawRow: e.rawRow,
-      contentHash: contentHashOf(e),
-    });
-    e.cas.forEach((c, i) =>
-      casRows.push({
-        entryId: id,
-        casNormalized: c.normalized,
-        casRaw: c.raw.slice(0, 30),
-        ordinal: i + 1,
-        origin: "SOURCE",
-      }),
-    );
-    for (const c of e.classifications) {
-      classRows.push({
-        entryId: id,
-        hazardClass: c.hazardClass,
-        category: c.category,
-        status: c.status as SdsGhsClassStatus,
-        targetOrgans: c.targetOrgans?.slice(0, 200) ?? null,
-        hCodes: c.hCodes.length ? c.hCodes.join(",") : null,
-        hCodesOrigin: c.hCodes.length ? "CATALOG" : null,
-        ghsRevision: c.ghsRevision ?? null,
-        classifiedIn: c.classifiedIn?.slice(0, 40) ?? null,
-        rationale: c.rationale || null,
-        rawClassText: c.rawClassText.slice(0, 200),
-      });
-    }
+    entryRows.push(entryRow(e, id, source.id, releaseId, input.publishedOn));
+    const { cas, cls } = childRows(e, id);
+    casRows.push(...cas);
+    classRows.push(...cls);
   }
   const issueRows: Prisma.SdsGhsImportIssueCreateManyInput[] = [
     ...diff.issues.map((detail) => ({ releaseId, kind: "UNKNOWN_TERM" as const, detail })),
@@ -266,7 +345,7 @@ export async function applyImport(
           addedCount: diff.added.length,
           changedCount: diff.changed.length,
           unchangedCount: diff.unchanged.length,
-          closedCount: 0,
+          closedCount: versioned ? 0 : diff.changed.length,
           issueCount: issueRows.length,
         },
       });
@@ -277,15 +356,45 @@ export async function applyImport(
           data: { releaseLastSeenId: releaseId },
         });
       }
-      // 変更: 古い項目を閉じる（公表日の前日まで）
-      for (const ids of chunks(
-        diff.changed.map((c) => c.prevId),
-        1000,
-      )) {
-        await tx.sdsGhsEntry.updateMany({
-          where: { id: { in: ids } },
-          data: { effectiveTo: dayBefore(input.publishedOn) },
-        });
+      if (versioned) {
+        // 同じ適用日で中身が変わった＝訂正。その場で書き換える（版は増やさない）
+        for (const c of diff.changed) {
+          await tx.sdsGhsEntryCas.deleteMany({ where: { entryId: c.prevId } });
+          await tx.sdsGhsClassification.deleteMany({ where: { entryId: c.prevId } });
+          const row = entryRow(c.next, c.prevId, source.id, releaseId, input.publishedOn);
+          const { id: _id, releaseInId: _in, ...data } = row;
+          void _id;
+          void _in;
+          await tx.sdsGhsEntry.update({ where: { id: c.prevId }, data });
+          const { cas, cls } = childRows(c.next, c.prevId);
+          if (cas.length) await tx.sdsGhsEntryCas.createMany({ data: cas });
+          if (cls.length) await tx.sdsGhsClassification.createMany({ data: cls });
+        }
+        // 新しい適用日の行が来たら、同じ識別子でそれより前の開いている行を前日で閉じる
+        for (const e of diff.added) {
+          if (!e.effectiveFrom) continue;
+          await tx.sdsGhsEntry.updateMany({
+            where: {
+              sourceId: source.id,
+              sourceKey: e.sourceKey,
+              subKey: e.subKey,
+              effectiveFrom: { lt: toDate(e.effectiveFrom) },
+              effectiveTo: null,
+            },
+            data: { effectiveTo: dayBefore(e.effectiveFrom) },
+          });
+        }
+      } else {
+        // 変更: 古い項目を閉じる（公表日の前日まで）
+        for (const ids of chunks(
+          diff.changed.map((c) => c.prevId),
+          1000,
+        )) {
+          await tx.sdsGhsEntry.updateMany({
+            where: { id: { in: ids } },
+            data: { effectiveTo: dayBefore(input.publishedOn) },
+          });
+        }
       }
       for (const b of chunks(entryRows, 500)) await tx.sdsGhsEntry.createMany({ data: b });
       for (const b of chunks(casRows, 1000)) await tx.sdsGhsEntryCas.createMany({ data: b });

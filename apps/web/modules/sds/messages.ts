@@ -31,6 +31,7 @@ interface SdsMessages {
     import: {
       title: string;
       hint: string;
+      hintEu: string;
       source: string;
       label: string;
       publishedOn: string;
@@ -78,6 +79,7 @@ interface SdsMessages {
       };
       showAll: string;
       showClassifiedOnly: string;
+      legend: string;
       none: string;
     };
     status: Record<
@@ -112,6 +114,8 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       import: {
         title: "取り込み",
         hint: "NITE の「NITE統合版 GHS分類結果」の Excel（区分一覧）を選びます。根拠一覧の Excel も選ぶと、分類年度と GHS 改訂版が入ります。先に「下見」で追加・変更の件数を確かめてから「取り込む」を押してください。",
+        hintEu:
+          "ECHA の「Table of harmonised entries in Annex VI to CLP」の Excel（annex_vi_clp_table_atpNN_en.xlsx。History シート付き）を選びます。いま効いている版と、これから効く版（将来の ATP）を取り込み、適用日は行ごとに入ります。先に「下見」で件数を確かめてから「取り込む」を押してください。",
         source: "出典",
         label: "公表の名前",
         publishedOn: "公表日",
@@ -152,6 +156,8 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         },
         showAll: "該当しない項目も表示",
         showClassifiedOnly: "該当する項目だけ表示",
+        legend:
+          "薄い字は出典の言葉（「区分に該当しない」「分類できない」など）。斜体の「記載なし」は、その出典がその項目に何も書いていないこと。",
         none: "この CAS の分類は取り込まれていません。",
       },
       status: {
@@ -159,7 +165,7 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         NOT_CLASSIFIED: "区分に該当しない",
         CANNOT_CLASSIFY: "分類できない",
         NOT_APPLICABLE: "分類対象外",
-        NOT_EVALUATED: "未評価",
+        NOT_EVALUATED: "記載なし",
       },
     },
   },
@@ -188,6 +194,8 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       import: {
         title: "Import",
         hint: "Choose the NITE consolidated classification Excel (category list). Adding the rationale Excel fills in the classification year and GHS revision. Run “Preview” first to see the counts, then “Import”.",
+        hintEu:
+          "Choose ECHA’s “Table of harmonised entries in Annex VI to CLP” Excel (annex_vi_clp_table_atpNN_en.xlsx, with the History sheet). The current and upcoming (future ATP) versions are imported, with application dates per row. Run “Preview” first, then “Import”.",
         source: "Source",
         label: "Release name",
         publishedOn: "Published on",
@@ -229,6 +237,8 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         },
         showAll: "Show non-classified items too",
         showClassifiedOnly: "Show classified items only",
+        legend:
+          "Grey text is the source's own wording (e.g. “not classified”, “classification not possible”). Italic “not stated” means the source says nothing about that class.",
         none: "No classification has been imported for this CAS.",
       },
       status: {
@@ -236,7 +246,7 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         NOT_CLASSIFIED: "Not classified",
         CANNOT_CLASSIFY: "Classification not possible",
         NOT_APPLICABLE: "Not applicable",
-        NOT_EVALUATED: "Not evaluated",
+        NOT_EVALUATED: "Not stated",
       },
     },
   },

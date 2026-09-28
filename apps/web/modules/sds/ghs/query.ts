@@ -18,6 +18,24 @@ export interface GhsClassificationRow {
   targetOrgans: string | null;
   ghsRevision: string | null;
   classifiedIn: string | null;
+  /** 出典の文字列そのまま（該当しない・分類できない等は、出典の言葉で見せる） */
+  rawClassText: string;
+}
+
+export interface GhsClassDef {
+  code: string;
+  nameJa: string;
+  nameEn: string;
+}
+
+/** カタログのクラス一覧（表示の並び順）。出典に載っていない項目を「記載なし」として並べるため */
+export async function listGhsClasses(): Promise<GhsClassDef[]> {
+  const rows = await prisma.sdsGhsHazardCatalog.findMany({
+    where: { category: "" },
+    orderBy: { sortOrder: "asc" },
+    select: { hazardClass: true, nameJa: true, nameEn: true },
+  });
+  return rows.map((r) => ({ code: r.hazardClass, nameJa: r.nameJa, nameEn: r.nameEn }));
 }
 
 export interface GhsSourceBlock {
@@ -93,6 +111,7 @@ export async function classificationsForCas(
           targetOrgans: c.targetOrgans,
           ghsRevision: c.ghsRevision,
           classifiedIn: c.classifiedIn,
+          rawClassText: c.rawClassText,
         };
       })
       .sort(

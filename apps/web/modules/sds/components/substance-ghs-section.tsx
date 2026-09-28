@@ -12,22 +12,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { GhsSourceBlock } from "../ghs/query";
+import type { GhsClassDef, GhsClassificationRow, GhsSourceBlock } from "../ghs/query";
 import { sdsMessages } from "../messages";
 
 /**
  * 物質の詳細に出す GHS 分類（出どころ別、読み取り専用）。
- * 既定では「該当」だけを見せ、ボタンで「該当しない・分類できない・対象外・未評価」も出す
- * （NITE は 35 項目すべてに値があるので、全部出すと長いため）
+ * 既定では「該当」だけを見せ、ボタンで全項目を出す（NITE は 35 項目すべてに値があるので、全部出すと長いため）。
+ * 「状態」の列は持たない。区分の列に、該当なら区分、出典が「該当しない」「分類できない」等と書いていればその言葉、
+ * 出典に何も無ければ「記載なし」を出し、**出典の言葉と、情報が無いこととを取り違えない**ようにする（2026-09-28 指示）
  */
+/** 区分の日本語: カタログの名前が「〜 区分2」なら「区分2」、それ以外（液化ガス・等級1.1・追加区分（授乳））はそのまま */
+function categoryLabelJa(r: GhsClassificationRow): string {
+  const name = r.categoryNameJa ?? r.category;
+  const m = name.match(/区分[0-9A-Z.]+$/);
+  return m ? m[0] : name;
+}
+
 export function SubstanceGhsSectionView({
   locale,
   asOf,
   blocks,
+  classes,
 }: {
   locale: Locale;
   asOf: string;
   blocks: GhsSourceBlock[];
+  /** カタログの全クラス（表示の並び順）。全項目を出すときの骨組み */
+  classes: GhsClassDef[];
 }) {
   const t = sdsMessages(locale).ghs;
   const [showAll, setShowAll] = useState(false);
@@ -50,7 +61,29 @@ export function SubstanceGhsSectionView({
           </Button>
         </div>
         {blocks.map((b) => {
-          const rows = showAll ? b.rows : b.rows.filter((r) => r.status === "CLASSIFIED");
+          const rows: GhsClassificationRow[] = showAll
+            ? classes.flatMap((c) => {
+                const have = b.rows.filter((r) => r.hazardClass === c.code);
+                if (have.length > 0) return have;
+                // 出典がこの項目に何も書いていない
+                return [
+                  {
+                    hazardClass: c.code,
+                    classNameJa: c.nameJa,
+                    classNameEn: c.nameEn,
+                    category: "",
+                    categoryNameJa: null,
+                    categoryNameEn: null,
+                    status: "NOT_EVALUATED" as const,
+                    hCodes: null,
+                    targetOrgans: null,
+                    ghsRevision: null,
+                    classifiedIn: null,
+                    rawClassText: "",
+                  },
+                ];
+              })
+            : b.rows.filter((r) => r.status === "CLASSIFIED");
           return (
             <div key={`${b.sourceCode}-${b.sourceKey}`} className="space-y-1">
               <p className="text-sm font-medium">
@@ -71,7 +104,6 @@ export function SubstanceGhsSectionView({
                   <TableRow>
                     <TableHead>{t.section.columns.hazardClass}</TableHead>
                     <TableHead>{t.section.columns.category}</TableHead>
-                    <TableHead>{t.section.columns.status}</TableHead>
                     <TableHead>{t.section.columns.hCodes}</TableHead>
                     <TableHead>{t.section.columns.targetOrgans}</TableHead>
                     <TableHead>{t.section.columns.revision}</TableHead>
@@ -83,13 +115,22 @@ export function SubstanceGhsSectionView({
                     <TableRow key={`${r.hazardClass}|${r.category}`}>
                       <TableCell>{ja ? r.classNameJa : r.classNameEn}</TableCell>
                       <TableCell>
-                        {r.category
-                          ? ja
-                            ? (r.categoryNameJa?.replace(/^.*区分/, "区分") ?? r.category)
-                            : r.category
-                          : ""}
+                        {r.status === "CLASSIFIED" ? (
+                          ja ? (
+                            categoryLabelJa(r)
+                          ) : (
+                            r.category
+                          )
+                        ) : r.status === "NOT_EVALUATED" ? (
+                          <span className="text-muted-foreground/70 italic">
+                            {t.status.NOT_EVALUATED}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {r.rawClassText || t.status[r.status]}
+                          </span>
+                        )}
                       </TableCell>
-                      <TableCell>{t.status[r.status]}</TableCell>
                       <TableCell className="tabular-nums">
                         {r.hCodes?.replaceAll(",", " ") ?? ""}
                       </TableCell>
@@ -103,6 +144,7 @@ export function SubstanceGhsSectionView({
             </div>
           );
         })}
+        {showAll && <p className="text-muted-foreground text-xs">{t.section.legend}</p>}
       </CardContent>
     </Card>
   );

@@ -31,6 +31,9 @@ export interface ParsedClassification {
   ghsRevision?: string;
   classifiedIn?: string;
   rationale?: string;
+  /** 最小分類の印（EU の * ** ***）と、H コードが原典に書いてあったか */
+  minimumClassification?: string;
+  hCodesOrigin?: "SOURCE" | "CATALOG";
 }
 
 export interface ParsedEntry {
@@ -43,6 +46,16 @@ export interface ParsedEntry {
   classifications: ParsedClassification[];
   rawRow: string;
   issues: string[];
+  /** 行ごとの適用開始日・終了日（EU の ATP のように出典が持つとき。無ければ公表の日付） */
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  nameEn?: string;
+  ecNumber?: string;
+  conditionText?: string;
+  notesRaw?: string;
+  amendingAct?: string;
+  labellingRaw?: string;
+  limitsRaw?: string;
 }
 
 export interface ParseResult {
@@ -399,6 +412,16 @@ export function contentHashOf(e: ParsedEntry): string {
     )
     .sort();
   return createHash("sha256")
-    .update(JSON.stringify([e.cas.map((c) => c.normalized), e.name, cls]))
+    .update(
+      JSON.stringify([
+        e.cas.map((c) => c.normalized),
+        e.name,
+        cls,
+        e.effectiveFrom ?? "",
+        e.effectiveTo ?? "",
+        e.notesRaw ?? "",
+        e.limitsRaw ?? "",
+      ]),
+    )
     .digest("hex");
 }

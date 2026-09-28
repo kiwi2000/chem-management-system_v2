@@ -78,7 +78,7 @@ export function GhsImportForm({
 
   return (
     <div className="space-y-3">
-      <p className="text-muted-foreground text-sm">{t.hint}</p>
+      <p className="text-muted-foreground text-sm">{sourceCode === "NITE" ? t.hint : t.hintEu}</p>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -123,7 +123,7 @@ export function GhsImportForm({
           <Label htmlFor="ghs-main">{t.mainFile}</Label>
           <Input id="ghs-main" ref={mainRef} type="file" accept=".xlsx" />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1" hidden={sourceCode !== "NITE"}>
           <Label htmlFor="ghs-rationale">
             {t.rationaleFile} <span className="text-muted-foreground">({t.optional})</span>
           </Label>

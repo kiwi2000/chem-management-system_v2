@@ -47,6 +47,10 @@ export const GHS_CATALOG: CatalogClass[] = [
       cat("1.4", ["H204"], { nameJa: "等級1.4", nameEn: "Division 1.4" }),
       cat("1.5", ["H205"], { nameJa: "等級1.5", nameEn: "Division 1.5" }),
       cat("1.6", [], { nameJa: "等級1.6", nameEn: "Division 1.6" }),
+      cat("UNSPEC", [], {
+        nameJa: "爆発物（等級の記載なし）",
+        nameEn: "Explosive (division not stated)",
+      }),
     ],
   },
   {
@@ -102,6 +106,11 @@ export const GHS_CATALOG: CatalogClass[] = [
         nameEn: "Refrigerated liquefied gas",
       }),
       cat("DISSOLVED", ["H280"], { nameJa: "溶解ガス", nameEn: "Dissolved gas" }),
+      // EU 附属書VI は「Press. Gas」とだけ書き、種類を分けない
+      cat("UNSPEC", ["H280"], {
+        nameJa: "高圧ガス（種類の記載なし）",
+        nameEn: "Gas under pressure (type not stated)",
+      }),
     ],
   },
   {
@@ -263,6 +272,20 @@ export const GHS_CATALOG: CatalogClass[] = [
     ],
   },
   {
+    // EU 附属書VI は吸入の経路（ガス・蒸気・粉塵）を分けない
+    code: "ACUTE_TOX_INHAL",
+    nameJa: "急性毒性（吸入）",
+    nameEn: "Acute toxicity (inhalation)",
+    abbrevEn: "Acute Tox.",
+    categories: [
+      cat("1", ["H330"]),
+      cat("2", ["H330"]),
+      cat("3", ["H331"]),
+      cat("4", ["H332"]),
+      cat("5", ["H333"]),
+    ],
+  },
+  {
     code: "ACUTE_TOX_INHAL_DUST",
     nameJa: "急性毒性（吸入：粉塵、ミスト）",
     nameEn: "Acute toxicity (inhalation: dusts and mists)",
@@ -335,7 +358,7 @@ export const GHS_CATALOG: CatalogClass[] = [
       cat("1B", ["H360"]),
       cat("2", ["H361"]),
       cat("LACT", ["H362"], {
-        nameJa: "授乳に対するまたは授乳を介した影響に関する追加区分",
+        nameJa: "追加区分（授乳）",
         nameEn: "Additional category for effects on or via lactation",
       }),
     ],

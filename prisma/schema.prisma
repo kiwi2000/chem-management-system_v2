@@ -255,6 +255,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -3318,6 +3319,10 @@ model SdsGhsEntry {
   notesRaw     String? @map("notes_raw") @db.VarChar(200)
   notes        String? @db.VarChar(100)
   labellingRaw String? @map("labelling_raw")
+  /**
+   * 濃度限界・M 係数・ATE の原文（EU の「M, SCL, ATE」列）。解析して別表に起こすのは段 1
+   */
+  limitsRaw    String? @map("limits_raw")
   /**
    * 原典の 1 行をそのまま（タブ区切り）。正規化に失敗しても失わない
    */

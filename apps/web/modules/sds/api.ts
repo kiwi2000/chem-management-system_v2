@@ -100,7 +100,8 @@ async function importGhs(req: Request, actor: Actor): Promise<Response> {
   let diff;
   try {
     diff = await previewImport(input);
-  } catch {
+  } catch (err) {
+    console.error("sds ghs import: reader failed", err);
     return jsonError(400, "unreadable", t.unreadable);
   }
   if (diff.fileIssues.length > 0) {
