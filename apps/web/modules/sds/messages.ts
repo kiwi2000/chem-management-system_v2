@@ -80,6 +80,20 @@ interface SdsMessages {
       /** 「非該当」: 出典に記載はあるが区分が付かない項目も出す。「データなし」: 出典に記載の無い項目も出す */
       showNotClassified: string;
       showNoData: string;
+      /** 「出典で異なる行だけ」「H コード表示」「改訂版・年度表示」（比較の表。S23 §5-4） */
+      showDiffOnly: string;
+      showHCodes: string;
+      showRevision: string;
+      /** 列の見出し: 現行の版／将来の版（適用日から） */
+      current: string;
+      from: (day: string) => string;
+      acquiredShort: (importedOn: string) => string;
+      /** 区分の記載が無い該当（EU の Press. Gas など） */
+      classifiedUnspecified: string;
+      /** 改訂版・年度の 1 行 */
+      revisionLine: (revision: string | null, classifiedIn: string | null) => string;
+      /** 出典間で区分が違う行の印の説明 */
+      differs: string;
       legend: string;
       none: string;
     };
@@ -156,8 +170,18 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         },
         showNotClassified: "非該当",
         showNoData: "データなし",
+        showDiffOnly: "出典で異なる行だけ",
+        showHCodes: "H コード表示",
+        showRevision: "改訂版・年度表示",
+        current: "現行",
+        from: (day) => `${day}〜`,
+        acquiredShort: (importedOn) => `取得 ${importedOn}`,
+        classifiedUnspecified: "該当（区分の記載なし）",
+        revisionLine: (revision, classifiedIn) =>
+          [revision ? `${revision} 版` : null, classifiedIn].filter(Boolean).join("・"),
+        differs: "出典で区分が異なる",
         legend:
-          "「非該当」は、出典に記載はあるが区分が付かない項目（区分に該当しない・分類できない・分類対象外）。「データなし」は、その出典がその項目に何も書いていない項目。",
+          "「非該当」は、出典に記載はあるが区分が付かない項目（区分に該当しない・分類できない・分類対象外）。「データなし」は、その出典がその項目に何も書いていない項目。黄色のセルと ≠ は、該当どうしで区分の文字が出典間で違う行（読み替えは段 1 で）。",
         none: "この CAS の分類は取り込まれていません。",
       },
       status: {
@@ -236,8 +260,18 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         },
         showNotClassified: "Not classified",
         showNoData: "No data",
+        showDiffOnly: "Only rows that differ between sources",
+        showHCodes: "Show H codes",
+        showRevision: "Show GHS revision / year",
+        current: "current",
+        from: (day) => `from ${day}`,
+        acquiredShort: (importedOn) => `acquired ${importedOn}`,
+        classifiedUnspecified: "Classified (category not stated)",
+        revisionLine: (revision, classifiedIn) =>
+          [revision ? `rev. ${revision}` : null, classifiedIn].filter(Boolean).join(" · "),
+        differs: "Category differs between sources",
         legend:
-          "“Not classified” shows classes the source addresses without assigning a category (not classified, classification not possible, not applicable). “No data” shows classes the source says nothing about.",
+          "“Not classified” shows classes the source addresses without assigning a category (not classified, classification not possible, not applicable). “No data” shows classes the source says nothing about. Yellow cells and ≠ mark rows whose categories differ between sources (cross-revision mapping comes in stage 1).",
         none: "No classification has been imported for this CAS.",
       },
       status: {

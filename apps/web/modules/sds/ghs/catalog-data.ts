@@ -272,10 +272,9 @@ export const GHS_CATALOG: CatalogClass[] = [
     ],
   },
   {
-    // EU 附属書VI は吸入の経路（ガス・蒸気・粉塵）を分けない
-    code: "ACUTE_TOX_INHAL",
-    nameJa: "急性毒性（吸入）",
-    nameEn: "Acute toxicity (inhalation)",
+    code: "ACUTE_TOX_INHAL_DUST",
+    nameJa: "急性毒性（吸入：粉塵、ミスト）",
+    nameEn: "Acute toxicity (inhalation: dusts and mists)",
     abbrevEn: "Acute Tox.",
     categories: [
       cat("1", ["H330"]),
@@ -286,9 +285,10 @@ export const GHS_CATALOG: CatalogClass[] = [
     ],
   },
   {
-    code: "ACUTE_TOX_INHAL_DUST",
-    nameJa: "急性毒性（吸入：粉塵、ミスト）",
-    nameEn: "Acute toxicity (inhalation: dusts and mists)",
+    // EU 附属書VI は吸入の経路（ガス・蒸気・粉塵）を分けない
+    code: "ACUTE_TOX_INHAL",
+    nameJa: "急性毒性（吸入：経路の記載なし）",
+    nameEn: "Acute toxicity (inhalation, route not stated)",
     abbrevEn: "Acute Tox.",
     categories: [
       cat("1", ["H330"]),

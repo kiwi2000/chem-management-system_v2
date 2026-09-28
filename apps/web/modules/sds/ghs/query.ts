@@ -20,6 +20,8 @@ export interface GhsClassificationRow {
   classifiedIn: string | null;
   /** 出典の文字列そのまま（該当しない・分類できない等は、出典の言葉で見せる） */
   rawClassText: string;
+  /** 最小分類の印（EU の * ** ***） */
+  minimumClassification: string | null;
 }
 
 export interface GhsClassDef {
@@ -45,7 +47,14 @@ export interface GhsSourceBlock {
   /** 項目の名前（出どころが付けた物質名） */
   entryName: string;
   sourceKey: string;
+  /** 枝番・条件・改正（列の見出しに出す） */
+  subKey: string;
+  conditionText: string | null;
+  amendingAct: string | null;
   effectiveFrom: string;
+  effectiveTo: string | null;
+  /** 判定対象日より後に効く項目（将来の ATP など） */
+  isFuture: boolean;
   releaseLabel: string;
   /** 最後にこの物質が載っていた公表（＝この行が最新であることを確認した公表）とその取り込み日時 */
   lastSeenLabel: string;
@@ -62,10 +71,8 @@ export async function classificationsForCas(
   const links = await prisma.sdsGhsEntryCas.findMany({
     where: {
       casNormalized,
-      entry: {
-        effectiveFrom: { lte: day },
-        OR: [{ effectiveTo: null }, { effectiveTo: { gte: day } }],
-      },
+      // いま効いている項目と、これから効く項目。閉じた項目（終了日が過去）は出さない
+      entry: { OR: [{ effectiveTo: null }, { effectiveTo: { gte: day } }] },
     },
     include: {
       entry: {
@@ -89,8 +96,13 @@ export async function classificationsForCas(
     sourceNameJa: entry.source.nameJa,
     sourceNameEn: entry.source.nameEn,
     entryName: entry.name,
-    sourceKey: entry.sourceKey + entry.subKey,
+    sourceKey: entry.sourceKey,
+    subKey: entry.subKey,
+    conditionText: entry.conditionText,
+    amendingAct: entry.amendingAct,
     effectiveFrom: entry.effectiveFrom.toISOString().slice(0, 10),
+    effectiveTo: entry.effectiveTo?.toISOString().slice(0, 10) ?? null,
+    isFuture: entry.effectiveFrom > day,
     releaseLabel: entry.releaseIn.label,
     lastSeenLabel: entry.releaseLastSeen.label,
     lastSeenPublishedOn: entry.releaseLastSeen.publishedOn.toISOString().slice(0, 10),
@@ -112,6 +124,7 @@ export async function classificationsForCas(
           ghsRevision: c.ghsRevision,
           classifiedIn: c.classifiedIn,
           rawClassText: c.rawClassText,
+          minimumClassification: c.minimumClassification,
         };
       })
       .sort(
@@ -120,7 +133,12 @@ export async function classificationsForCas(
           a.category.localeCompare(b.category),
       ),
   }));
+  const order = new Map(links.map(({ entry }) => [entry.source.code, entry.source.sortOrder]));
   return blocks.sort(
-    (a, b) => a.sourceCode.localeCompare(b.sourceCode) || a.sourceKey.localeCompare(b.sourceKey),
+    (a, b) =>
+      (order.get(a.sourceCode) ?? 0) - (order.get(b.sourceCode) ?? 0) ||
+      a.sourceKey.localeCompare(b.sourceKey) ||
+      a.subKey.localeCompare(b.subKey) ||
+      a.effectiveFrom.localeCompare(b.effectiveFrom),
   );
 }
