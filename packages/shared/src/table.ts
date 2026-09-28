@@ -252,10 +252,17 @@ export function splitTextTokens(raw: string): string[] {
   return out;
 }
 
+/**
+ * ハイフンの仲間（‐ ‑ ‒ – — ― − ー －）。文章からコピーした CAS に混ざる。
+ * 普通のハイフンに直してから分けないと、「1317‑36‑8」が 1317・36・8 の 3 つに割れる（2026-09-29 に起きた）。
+ * `normalizeCas` と同じ並び
+ */
+const DASHES = /[‐-―−ー－˗֊᠆]/g;
+
 export function splitNumericTokens(raw: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const token of raw.split(/[^0-9-]+/)) {
+  for (const token of raw.replace(DASHES, "-").split(/[^0-9-]+/)) {
     const v = token.replace(/^-+|-+$/g, "");
     if (v === "" || seen.has(v)) continue;
     seen.add(v);
