@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { cn } from "@/lib/utils";
 import type { ApiError, ListResponse } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 import { GHS_CATALOG } from "../ghs/catalog-data";
@@ -28,6 +29,8 @@ const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: 
 const STORAGE_KEY = "chem.table.sdsGhsData";
 /** 選んだ国を端末に覚える */
 const COUNTRY_KEY = "chem.sds.ghsData.country";
+/** 使う層（LOLI・自社判定）を端末に覚える */
+const LAYERS_KEY = "chem.sds.ghsData.layers";
 
 /** 区分の短い表示（カタログの日本語名「〜 区分2」→「区分2」。英語は区分そのもの。区分の記載なしは出典の言葉） */
 export function categoryText(
@@ -54,15 +57,42 @@ export function GhsDataTable({
   locale,
   canEdit,
   isAdmin,
+  linkLayers,
 }: {
   locale: Locale;
   canEdit: boolean;
   isAdmin: boolean;
+  /** 付け外しできる結び付きの層（取り込み済みのもの。"LOLI" など） */
+  linkLayers: string[];
 }) {
   const { m } = useI18n();
   const t = sdsMessages(locale);
   const ja = locale === "ja";
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
+  // 引くときに使う層。既定は全部（原典は常に）。端末に覚える
+  const [layers, setLayers] = useState<Set<string>>(() => new Set([...linkLayers, "OVERRIDE"]));
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LAYERS_KEY);
+      if (saved !== null) {
+        const set = new Set(saved.split(",").filter(Boolean));
+        setLayers(new Set([...set].filter((x) => x === "OVERRIDE" || linkLayers.includes(x))));
+      }
+    } catch {
+      /* 端末の保存領域が使えないときは既定のまま */
+    }
+  }, [linkLayers]);
+  const toggleLayer = (code: string, on: boolean) => {
+    const next = new Set(layers);
+    if (on) next.add(code);
+    else next.delete(code);
+    setLayers(next);
+    try {
+      localStorage.setItem(LAYERS_KEY, [...next].join(","));
+    } catch {
+      /* 覚えられなくても動く */
+    }
+  };
   const [data, setData] = useState<ListResponse<GhsDataRowDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<GhsDataRowDto | null>(null);
@@ -88,13 +118,27 @@ export function GhsDataTable({
     (hazardClass: string, c: AdoptedCellDto | undefined) => {
       if (!c || c.status === "NOT_EVALUATED") return null;
       const from = c.from ? (t.data.sourceShort[c.from] ?? c.from) : "";
-      const tag = <span className="text-muted-foreground ml-1 text-[10px]">{from}</span>;
+      // 結び付きの層で当たった項目は「EU·LOLI」のように層を添え、乗せると親の項目が読める
+      const via = c.via?.linkedBy ? `·${t.data.sourceShort[c.via.linkedBy] ?? c.via.linkedBy}` : "";
+      const tag = (
+        <span
+          className={cn("ml-1 text-[10px]", via ? "text-primary" : "text-muted-foreground")}
+          title={
+            c.via?.linkedBy
+              ? t.data.layers.viaTitle(c.via.linkedBy, c.via.entryKey, c.via.entryName)
+              : undefined
+          }
+        >
+          {from}
+          {via}
+        </span>
+      );
       // 該当以外は出典の言葉だけ（列が狭いので、出典の印は自社判定のときだけ添える）
       if (c.status !== "CLASSIFIED") {
         return (
           <span className="text-muted-foreground text-xs">
             {t.ghs.status[c.status]}
-            {c.from === "OVERRIDE" && tag}
+            {(c.from === "OVERRIDE" || via) && tag}
           </span>
         );
       }
@@ -167,7 +211,7 @@ export function GhsDataTable({
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
   const load = useCallback(async () => {
     const res = await fetch(
-      `/api/modules/sds/ghs-data?${query}&country=${encodeURIComponent(country)}`,
+      `/api/modules/sds/ghs-data?${query}&country=${encodeURIComponent(country)}&layers=${encodeURIComponent([...layers].join(","))}`,
     );
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
@@ -178,7 +222,7 @@ export function GhsDataTable({
     }
     setError(null);
     setData((await res.json()) as ListResponse<GhsDataRowDto>);
-  }, [query, country, m]);
+  }, [query, country, layers, m]);
   useEffect(() => {
     if (ready) void load();
   }, [ready, load]);
@@ -204,6 +248,29 @@ export function GhsDataTable({
             </option>
           ))}
         </select>
+        <span className="text-muted-foreground ml-4 text-sm">{t.data.layers.title}</span>
+        <label className="flex items-center gap-1 text-sm">
+          <input type="checkbox" checked disabled />
+          {t.data.layers.original}
+        </label>
+        {linkLayers.map((code) => (
+          <label key={code} className="flex items-center gap-1 text-sm">
+            <input
+              type="checkbox"
+              checked={layers.has(code)}
+              onChange={(e) => toggleLayer(code, e.target.checked)}
+            />
+            {t.data.sourceShort[code] ?? code}
+          </label>
+        ))}
+        <label className="flex items-center gap-1 text-sm">
+          <input
+            type="checkbox"
+            checked={layers.has("OVERRIDE")}
+            onChange={(e) => toggleLayer("OVERRIDE", e.target.checked)}
+          />
+          {t.data.layers.override}
+        </label>
       </div>
       <DataTable
         storageKey={STORAGE_KEY}

@@ -5,11 +5,13 @@ import { prisma } from "@/lib/db";
 import { getLocale, getServerMessages } from "@/lib/i18n";
 import {
   SOURCES,
+  SOURCE_OPTIONS,
   applyImport,
   ensureSeed,
   previewImport,
   type SourceCode,
 } from "./ghs/import-service";
+import { applyLinkImport, parseLinksTsv, previewLinkImport } from "./ghs/links";
 import { ghsDataApi } from "./ghs-data-api";
 import { fieldOf, fileOf, parseMultipart } from "./lib/multipart";
 import { sdsMessages } from "./messages";
@@ -92,6 +94,19 @@ async function importGhs(req: Request, actor: Actor): Promise<Response> {
   }
 
   await ensureSeed();
+  if (SOURCE_OPTIONS[sourceCode as SourceCode].kind === "links") {
+    return importLinks(
+      {
+        label: label.slice(0, 120),
+        publishedOn,
+        fileName: (file.filename ?? "").slice(0, 255),
+        file: file.data,
+      },
+      fieldOf(parts, "step") === "apply",
+      actor,
+      sourceCode,
+    );
+  }
   const input = {
     sourceCode: sourceCode as SourceCode,
     label: label.slice(0, 120),
@@ -149,6 +164,64 @@ async function importGhs(req: Request, actor: Actor): Promise<Response> {
       fileName: input.fileName,
       added: summary.added,
       changed: summary.changed,
+    },
+  });
+  return Response.json({ applied: true, releaseId, ...summary });
+}
+
+/** 結び付きだけのデータ種（LOLI の TSV）。下見 → 取り込む の 2 段は同じ */
+async function importLinks(
+  input: { label: string; publishedOn: string; fileName: string; file: Buffer },
+  apply: boolean,
+  actor: Actor,
+  sourceCode: string,
+): Promise<Response> {
+  const parsed = parseLinksTsv(input.file);
+  const diff = await previewLinkImport(parsed);
+  const summary = {
+    parsed: diff.parsed,
+    added: diff.added.length,
+    changed: 0,
+    unchanged: diff.unchanged.length,
+    disappeared: diff.removed.length,
+    issues: diff.issues.length + diff.unknownKey.length,
+    // 結び付きの取り込みだけが持つ数
+    links: {
+      inSource: diff.inSource,
+      skipped: diff.skippedPseudo + diff.skippedInvalid,
+      unknown: diff.unknownKey.length,
+    },
+    samples: [
+      ...diff.added.slice(0, 10).map((r) => ({
+        kind: "added",
+        key: `${r.targetSource} ${r.key} ← ${r.casRaw}`,
+        name: r.note ?? "",
+      })),
+      ...diff.removed
+        .slice(0, 10)
+        .map((r) => ({ kind: "removed", key: `${r.key} ← ${r.casRaw}`, name: "" })),
+    ],
+    issueSamples: [
+      ...diff.issues.slice(0, 10),
+      ...diff.unknownKey
+        .slice(0, 10)
+        .map((r) => `${r.targetSource} ${r.key} ← ${r.casRaw}: 親の識別子が出典にありません`),
+    ],
+  };
+  if (!apply) return Response.json({ applied: false, ...summary });
+  const { releaseId } = await applyLinkImport(input, diff, actor.user.id);
+  await writeAudit({
+    entity: "sds_ghs_release",
+    entityId: releaseId,
+    action: "import",
+    actorId: actor.user.id,
+    diff: {
+      sourceCode,
+      label: input.label,
+      publishedOn: input.publishedOn,
+      fileName: input.fileName,
+      added: summary.added,
+      removed: summary.disappeared,
     },
   });
   return Response.json({ applied: true, releaseId, ...summary });

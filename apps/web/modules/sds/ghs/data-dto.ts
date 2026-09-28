@@ -8,6 +8,11 @@ export interface AdoptedCellDto {
   items: { category: string; targetOrgans: string | null; hCodes: string | null }[];
   /** `OVERRIDE`（自社判定）か出典のコード。データなしなら null */
   from: string | null;
+  /**
+   * 出典のとき、その項目にどう結び付いたか。linkedBy が null なら原典の CAS、
+   * "LOLI" なら LOLI の展開（entryKey・entryName は当てた項目＝総称なら親）
+   */
+  via: { linkedBy: string | null; entryKey: string; entryName: string; note: string | null } | null;
   reason?: string;
 }
 
@@ -34,8 +39,8 @@ export interface GhsSourceRowDto {
   conditionText: string | null;
   effectiveFrom: string;
   effectiveTo: string | null;
-  /** CAS で結び付く物質マスタの物質（見られるものだけ） */
-  substances: { id: string; code: string }[];
+  /** CAS で結び付く物質マスタの物質（見られるものだけ）。via は結び付きの層（"LOLI"）。原典なら null */
+  substances: { id: string; code: string; via: string | null }[];
   /** クラスコード → その項目の分類 */
   cells: Record<
     string,

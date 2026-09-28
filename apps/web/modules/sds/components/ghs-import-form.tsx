@@ -20,6 +20,8 @@ interface Summary {
   issues: number;
   samples: { kind: string; key: string; name: string }[];
   issueSamples: string[];
+  /** 結び付きの取り込み（LOLI）だけが返す */
+  links?: { inSource: number; skipped: number; unknown: number };
 }
 
 /**
@@ -78,7 +80,9 @@ export function GhsImportForm({
 
   return (
     <div className="space-y-3">
-      <p className="text-muted-foreground text-sm">{sourceCode === "NITE" ? t.hint : t.hintEu}</p>
+      <p className="text-muted-foreground text-sm">
+        {sourceCode === "NITE" ? t.hint : sourceCode === "LOLI" ? t.hintLoli : t.hintEu}
+      </p>
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -120,8 +124,13 @@ export function GhsImportForm({
         </div>
         <div />
         <div className="space-y-1">
-          <Label htmlFor="ghs-main">{t.mainFile}</Label>
-          <Input id="ghs-main" ref={mainRef} type="file" accept=".xlsx" />
+          <Label htmlFor="ghs-main">{sourceCode === "LOLI" ? t.linkFile : t.mainFile}</Label>
+          <Input
+            id="ghs-main"
+            ref={mainRef}
+            type="file"
+            accept={sourceCode === "LOLI" ? ".tsv,.txt" : ".xlsx"}
+          />
         </div>
         <div className="space-y-1" hidden={sourceCode !== "NITE"}>
           <Label htmlFor="ghs-rationale">
@@ -151,14 +160,24 @@ export function GhsImportForm({
         <div className="space-y-2 text-sm">
           <p className={result.applied ? "font-medium" : undefined}>
             {result.applied ? t.applied(label) + " " : ""}
-            {t.previewResult(
-              result.parsed,
-              result.added,
-              result.changed,
-              result.unchanged,
-              result.disappeared,
-              result.issues,
-            )}
+            {result.links
+              ? t.linkResult(
+                  result.parsed,
+                  result.added,
+                  result.unchanged,
+                  result.disappeared,
+                  result.links.inSource,
+                  result.links.skipped,
+                  result.links.unknown,
+                )
+              : t.previewResult(
+                  result.parsed,
+                  result.added,
+                  result.changed,
+                  result.unchanged,
+                  result.disappeared,
+                  result.issues,
+                )}
           </p>
           {result.samples.length > 0 && (
             <div>

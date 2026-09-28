@@ -7,7 +7,12 @@ import { todayInJapan } from "@/lib/judgement-date";
 import { SUBSTANCE_COLUMNS } from "@/lib/list-columns";
 import { visibilityWhere } from "@/lib/substance-service";
 import { buildOrderBy, buildWhere, type QueryColumn } from "@/lib/table-query";
-import { adoptForSubstances, defaultRules } from "./ghs/adopt";
+import {
+  DEFAULT_ADOPT_OPTIONS,
+  adoptForSubstances,
+  defaultRules,
+  type AdoptOptions,
+} from "./ghs/adopt";
 import { CATALOG_BY_CODE } from "./ghs/catalog-data";
 import { DEFAULT_COUNTRY, SDS_COUNTRIES } from "./ghs/countries";
 import type {
@@ -18,7 +23,7 @@ import type {
   SaveOverridesInput,
   SaveRulesInput,
 } from "./ghs/data-dto";
-import { SOURCES } from "./ghs/import-service";
+import { SOURCES, SOURCE_OPTIONS } from "./ghs/import-service";
 import { sdsMessages } from "./messages";
 
 /**
@@ -36,6 +41,8 @@ import { sdsMessages } from "./messages";
 const KEYS = new Set(["code", "casNumber", "nameJa", "nameEn"]);
 export const GHS_DATA_COLUMNS = SUBSTANCE_COLUMNS.filter((c) => KEYS.has(c.key));
 const DEFAULT_STATE = emptyTableState([{ column: "code", direction: "asc" }]);
+
+type SubstanceRef = GhsSourceRowDto["substances"][number];
 
 /** 出典ごとの表の列（sds_ghs_entries） */
 export const GHS_SOURCE_COLUMNS: QueryColumn[] = [
@@ -60,6 +67,29 @@ const SOURCE_DEFAULT_STATE = emptyTableState([
   { column: "sourceKey", direction: "asc" },
   { column: "effectiveFrom", direction: "asc" },
 ]);
+
+/**
+ * 引くときに使う層（画面の切り替え）。`layers=LOLI,OVERRIDE` のように渡す。
+ * 無ければ既定（LOLI と自社判定を使う）。原典の層は常に使う
+ */
+function layersOf(req: Request): AdoptOptions {
+  const raw = new URL(req.url).searchParams.get("layers");
+  if (raw === null) return DEFAULT_ADOPT_OPTIONS;
+  const set = new Set(
+    raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+  return {
+    linkLayers: new Set([...set].filter((s) => s !== "OVERRIDE" && LINK_LAYERS.includes(s))),
+    useOverrides: set.has("OVERRIDE"),
+  };
+}
+/** 選べる結び付きの層（項目を持たないデータ種のコード） */
+export const LINK_LAYERS = SOURCES.filter((s) => SOURCE_OPTIONS[s.code].kind === "links").map(
+  (s) => s.code as string,
+);
 
 function countryOf(req: Request): string {
   const c = new URL(req.url).searchParams.get("country") ?? DEFAULT_COUNTRY;
@@ -113,7 +143,7 @@ async function list(req: Request, actor: Actor): Promise<Response> {
     }),
     prisma.substance.count({ where }),
   ]);
-  const adopted = await adoptForSubstances(items, country, todayInJapan());
+  const adopted = await adoptForSubstances(items, country, todayInJapan(), layersOf(req));
   const rows: GhsDataRowDto[] = items.map((s) => {
     const cells = adopted.get(s.id) ?? [];
     return {
@@ -126,7 +156,20 @@ async function list(req: Request, actor: Actor): Promise<Response> {
       cells: Object.fromEntries(
         cells.map((c) => [
           c.hazardClass,
-          { status: c.status, items: c.items, from: c.from, reason: c.reason },
+          {
+            status: c.status,
+            items: c.items,
+            from: c.from,
+            via: c.via
+              ? {
+                  linkedBy: c.via.linkedBy,
+                  entryKey: c.via.entryKey,
+                  entryName: c.via.entryName,
+                  note: c.via.note,
+                }
+              : null,
+            reason: c.reason,
+          },
         ]),
       ),
     };
@@ -182,8 +225,29 @@ async function listSource(req: Request, actor: Actor): Promise<Response> {
     }),
     prisma.sdsGhsEntry.count({ where }),
   ]);
-  // CAS で結び付く物質（このページの行ぶんだけ。見られる物質だけ）
-  const casList = [...new Set(entries.flatMap((e) => e.cas.map((c) => c.casNormalized)))];
+  // CAS で結び付く物質（このページの行ぶんだけ。見られる物質だけ）。結び付きの層（LOLI）の CAS も含める
+  const keyLinks = entries.length
+    ? await prisma.sdsGhsKeyLink.findMany({
+        where: {
+          sourceId: source.id,
+          sourceKey: { in: [...new Set(entries.map((e) => e.sourceKey))] },
+          linkedBy: { in: LINK_LAYERS },
+        },
+        select: { sourceKey: true, casNormalized: true, linkedBy: true },
+      })
+    : [];
+  const linksByKey = new Map<string, { casNormalized: string; linkedBy: string }[]>();
+  for (const k of keyLinks) {
+    let list = linksByKey.get(k.sourceKey);
+    if (!list) linksByKey.set(k.sourceKey, (list = []));
+    list.push(k);
+  }
+  const casList = [
+    ...new Set([
+      ...entries.flatMap((e) => e.cas.map((c) => c.casNormalized)),
+      ...keyLinks.map((k) => k.casNormalized),
+    ]),
+  ];
   const substances = casList.length
     ? await prisma.substance.findMany({
         where: { casNormalized: { in: casList }, deletedAt: null, ...visibilityWhere(actor) },
@@ -224,9 +288,18 @@ async function listSource(req: Request, actor: Actor): Promise<Response> {
       effectiveFrom: e.effectiveFrom.toISOString().slice(0, 10),
       effectiveTo: e.effectiveTo?.toISOString().slice(0, 10) ?? null,
       substances: [
-        ...new Map(
-          e.cas.flatMap((c) => byCas.get(c.casNormalized) ?? []).map((s) => [s.id, s]),
-        ).values(),
+        ...new Map<string, SubstanceRef>([
+          // 原典の CAS で結び付く物質が先。結び付きの層（LOLI）で結ばれた物質には層の印
+          ...e.cas
+            .flatMap((c) => byCas.get(c.casNormalized) ?? [])
+            .map((s): [string, SubstanceRef] => [s.id, { ...s, via: null }]),
+          ...(linksByKey.get(e.sourceKey) ?? []).flatMap((k) =>
+            (byCas.get(k.casNormalized) ?? []).map((s): [string, SubstanceRef] => [
+              s.id,
+              { ...s, via: k.linkedBy },
+            ]),
+          ),
+        ]).values(),
       ],
       cells,
     };
@@ -266,7 +339,10 @@ async function putRules(req: Request, actor: Actor): Promise<Response> {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
   const country = SDS_COUNTRIES.some((c) => c.code === body?.country) ? body.country : null;
-  const codes = new Set<string>(SOURCES.map((s) => s.code));
+  // 採用順に並べるのは項目を配る出典だけ（結び付きだけのデータ種は層の切り替えで扱う）
+  const codes = new Set<string>(
+    SOURCES.filter((s) => SOURCE_OPTIONS[s.code].kind === "entries").map((s) => s.code),
+  );
   if (
     !country ||
     !Array.isArray(body.rules) ||

@@ -454,3 +454,10 @@ export function classSortOrder(hazardClass: string): number {
   const i = GHS_CATALOG.findIndex((c) => c.code === hazardClass);
   return i < 0 ? 999 : i;
 }
+
+/** 区分の厳しさの順（カタログの並びは危険の強い順）。小さいほど厳しい。カタログに無い区分は最後 */
+export function categoryRank(hazardClass: string, category: string): number {
+  const i =
+    CATALOG_BY_CODE.get(hazardClass)?.categories.findIndex((k) => k.category === category) ?? -1;
+  return i < 0 ? 999 : i;
+}

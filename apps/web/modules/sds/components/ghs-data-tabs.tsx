@@ -19,12 +19,15 @@ export function GhsDataTabs({
   canEdit,
   isAdmin,
   sources,
+  linkLayers,
 }: {
   locale: Locale;
   canEdit: boolean;
   isAdmin: boolean;
   /** 取り込み済みの出典（1 件も取り込んでいない出典は出さない） */
   sources: { code: string; name: string }[];
+  /** 付け外しできる結び付きの層（"LOLI" など） */
+  linkLayers: string[];
 }) {
   const t = sdsMessages(locale).data;
   const [tab, setTab] = useState("substances");
@@ -71,7 +74,12 @@ export function GhsDataTabs({
       {tab === "substances" ? (
         <>
           <p className="text-muted-foreground text-sm">{t.lead}</p>
-          <GhsDataTable locale={locale} canEdit={canEdit} isAdmin={isAdmin} />
+          <GhsDataTable
+            locale={locale}
+            canEdit={canEdit}
+            isAdmin={isAdmin}
+            linkLayers={linkLayers}
+          />
         </>
       ) : (
         <GhsSourceTable

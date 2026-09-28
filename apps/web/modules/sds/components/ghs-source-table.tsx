@@ -106,9 +106,15 @@ export function GhsSourceTable({
               <Link
                 href={`/substances/${s.id}`}
                 className="text-primary underline-offset-2 hover:underline"
+                title={s.via ? t.data.layers.viaTag(t.data.sourceShort[s.via] ?? s.via) : undefined}
               >
                 {s.code}
               </Link>
+              {s.via && (
+                <span className="text-muted-foreground ml-0.5 text-[10px]">
+                  {t.data.sourceShort[s.via] ?? s.via}
+                </span>
+              )}
             </span>
           )),
       },

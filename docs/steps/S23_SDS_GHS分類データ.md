@@ -391,3 +391,22 @@ STOT 単回 区分 3 の H は標的臓器の文（気道刺激性→H335、麻�
 **勝手に決めた点**: 自社判定の保存は「その物質 × 効く国」の上書きを丸ごと置き換え、理由は 1 つ（クラスごとに分けていない）。
 上書きの H コードはカタログの既定から引く。1 クラスに複数区分の上書き（例: 生殖毒性 1A ＋ 授乳）はまだ画面から入れられない。
 `evidence_ref`・`review_required` は表にあるが画面には出していない（取り込みが立てる仕組みは段 1）。
+
+### 9-4. 結び付きの層（LOLI の展開）と、使う層の切り替え（2026-09-28）
+
+前提の決定: **LOLI は正しい前提で使う**（候補扱い・要確認にしない）。ただし「原典に載っている結び付き」か
+「LOLI 独自の結び付き」かは必ず区別して持ち、間違っていれば利用者が自社判定で上書きできること（メモリ `chem-loli-trusted`）。
+
+| 何を | どこに | 備考 |
+| --- | --- | --- |
+| 結び付きの表 `sds_ghs_key_links` | `SdsGhsKeyLink`、移行 `20260928190000_sds_ghs_key_links` | **識別子（source × source_key）に結ぶ**。項目の行（版ごと）に結ぶと取り込み直しで消えるため。`origin`（EXPANSION／MANUAL）・`linked_by`（"LOLI"／"USER"）・`release_id`（LOLI の公表。消せば結び付きも消える）・`note`（「As 鉛化合物 [RR-…]」） |
+| LOLI のデータ種 | `import-service.ts` の `SOURCES`（code `LOLI`、kind `links`） | 項目は持たず結び付きだけ。採用順には並べない。`SdsGhsIssueKind.UNKNOWN_KEY` を足した |
+| 取り出し | `scripts/loli-dump-ghs-links.sh`（`scripts/sql/loli-ghs-links.sql`） | ListData 4204（EU）・4171（日本）の CAS × refno × remark。refno が親の識別子（Index No／m-nite-…）。remark の `[RR-…]` は LOLI の擬似 CAS で鍵ではない |
+| 取り込み | `/sds/ghs` で出典「LOLI（CAS の結び付き）」＋ TSV。`ghs/links.ts` | 丸ごと配布。原典に既に載っている CAS は取り込まない（7,337 組）。RR-／UN／NA／PMN と形の合わない CAS は読み飛ばし（3,206）。親が原典に無い行は要確認 UNKNOWN_KEY（146。EU 2 件＋NITE 統合版に無い ID）。実データ: 20,213 組 |
+| 採用の計算 | `ghs/adopt.ts`（`sourceRowsForCas`・`pickWithinSource`） | 同じ出典で複数の項目が当たるとき **原典の結び付き → LOLI の展開** の順（総称の「別掲のものを除く」の実装）。それでも複数なら**クラスごとに厳しいほうの区分**（カタログの並び順）。使う層は呼び出し側が渡す（`AdoptOptions`。原典は常に） |
+| 画面 | `GET ghs-data?layers=LOLI,OVERRIDE`。物質タブの「使うデータ」（原典＝固定・LOLI・自社判定）。セルの印「EU·LOLI」（乗せると親の項目）。物質の詳細の比較表は LOLI 経由の項目を別の列にし、見出しに「LOLI 経由」、チェックで付け外し。出典タブの物質コード列にも LOLI で結ばれた物質（印付き） | 層の選択は端末に覚える。既定は全部使う |
+
+**勝手に決めた点**: NITE の枝番（a/b/c）は LOLI の refno に無いので、識別子だけで結ぶ（枝番違いの項目すべてに当たる）。
+LOLI の一覧が同じ CAS を複数の親に結ぶときは全部当てて厳しいほうを採る。UN 番号などを CAS 欄に入れた行は黙って読み飛ばす（件数だけ出す）。
+使う層の既定は「全部」（LOLI は正しい前提のため）。SDS を作るときにどの層を使うかは、段 1 で国ごとの設定に置く（いまは画面の切り替えだけ）。
+

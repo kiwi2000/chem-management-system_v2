@@ -59,15 +59,37 @@ export const SOURCES = [
       "ECHA 配布の Excel は「informative purposes not including commercial activities or reproduction」。官報（CC BY 4.0）にも同じ内容。CAS 番号の情報は ACS の財産（法令対応の目的のみ）。https://echa.europa.eu/information-on-chemicals/annex-vi-to-clp",
     sortOrder: 20,
   },
+  {
+    // 分類の中身は持たない。原典の項目と CAS の結び付き（LOLI の展開）だけを配るデータ種（S23 §9-4）
+    code: "LOLI",
+    nameJa: "LOLI（CAS の結び付き）",
+    nameEn: "LOLI (CAS links)",
+    country: "*",
+    provider: "LOLI",
+    delivery: "FULL",
+    legalStatus: "REFERENCE",
+    identifierKind: "CAS",
+    coversAllClasses: false,
+    defaultGhsRevision: null,
+    licenseNote:
+      "Verisk 3E の契約に基づく。LOLI を契約していないお客さんに渡すときは、このデータ種の公表を消す（結び付きも一緒に消える）",
+    sortOrder: 900,
+  },
 ] as const;
 
 export type SourceCode = (typeof SOURCES)[number]["code"];
 
-/** 出典ごとの読み方（DB の列ではないもの） */
-const SOURCE_OPTIONS: Record<SourceCode, { versionedRows: boolean }> = {
-  NITE: { versionedRows: false },
-  EU_ANNEX_VI: { versionedRows: true },
+/** 出典ごとの読み方（DB の列ではないもの）。kind=links は項目を持たず、結び付きだけを取り込む */
+export const SOURCE_OPTIONS: Record<
+  SourceCode,
+  { kind: "entries" | "links"; versionedRows: boolean }
+> = {
+  NITE: { kind: "entries", versionedRows: false },
+  EU_ANNEX_VI: { kind: "entries", versionedRows: true },
+  LOLI: { kind: "links", versionedRows: false },
 };
+/** 項目を配る出典のコード（結び付きだけのデータ種を除く） */
+export type EntrySourceCode = "NITE" | "EU_ANNEX_VI";
 
 /** 出典・カタログ・辞書の初期データを DB に入れる（何度呼んでもよい） */
 export async function ensureSeed(): Promise<void> {

@@ -39,7 +39,7 @@ interface RowModel {
 
 export function SubstanceGhsSectionView({
   locale,
-  blocks,
+  blocks: allBlocks,
   classes,
 }: {
   locale: Locale;
@@ -47,8 +47,19 @@ export function SubstanceGhsSectionView({
   /** カタログの全クラス（表示の並び順） */
   classes: GhsClassDef[];
 }) {
-  const t = sdsMessages(locale).ghs;
+  const all = sdsMessages(locale);
+  const t = all.ghs;
   const ja = locale === "ja";
+  // 結び付きの層（LOLI など）で当たった列の付け外し。既定は出す
+  const linkLayers = useMemo(
+    () => [...new Set(allBlocks.map((b) => b.linkedBy).filter((x): x is string => !!x))],
+    [allBlocks],
+  );
+  const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
+  const blocks = useMemo(
+    () => allBlocks.filter((b) => !b.linkedBy || !hiddenLayers.has(b.linkedBy)),
+    [allBlocks, hiddenLayers],
+  );
   const [showNotClassified, setShowNotClassified] = useState(false);
   const [showNoData, setShowNoData] = useState(false);
   const [showDiffOnly, setShowDiffOnly] = useState(false);
@@ -109,6 +120,17 @@ export function SubstanceGhsSectionView({
           <span className="text-muted-foreground">|</span>
           {check(t.section.showHCodes, showHCodes, setShowHCodes)}
           {check(t.section.showRevision, showRevision, setShowRevision)}
+          {linkLayers.length > 0 && <span className="text-muted-foreground">|</span>}
+          {linkLayers.map((code) =>
+            check(all.data.sourceShort[code] ?? code, !hiddenLayers.has(code), (v) =>
+              setHiddenLayers((prev) => {
+                const next = new Set(prev);
+                if (v) next.delete(code);
+                else next.add(code);
+                return next;
+              }),
+            ),
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-max min-w-full border-collapse text-sm">
@@ -139,9 +161,16 @@ export function SubstanceGhsSectionView({
                         "min-w-[8rem] border-b px-2 py-1 text-left font-normal",
                         b.isFuture && "text-muted-foreground",
                       )}
-                      title={`${b.entryName}\n${b.releaseLabel}`}
+                      title={`${b.entryName}\n${b.releaseLabel}${b.linkNote ? `\n${b.linkNote}` : ""}`}
                     >
-                      <div className="font-medium">{ja ? b.sourceNameJa : b.sourceNameEn}</div>
+                      <div className="font-medium">
+                        {ja ? b.sourceNameJa : b.sourceNameEn}
+                        {b.linkedBy && (
+                          <span className="text-primary ml-1 text-xs font-normal">
+                            {all.data.layers.viaTag(all.data.sourceShort[b.linkedBy] ?? b.linkedBy)}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-muted-foreground text-xs">
                         {key}
                         {version && ` ・ ${version}`}

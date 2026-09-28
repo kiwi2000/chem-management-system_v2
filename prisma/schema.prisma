@@ -3194,6 +3194,10 @@ enum SdsGhsIssueKind {
   DISAPPEARED
   DUPLICATE_CAS
   INVALID_CAS
+  /**
+   * 結び付きの取り込みで、親の識別子が出典に無かった
+   */
+  UNKNOWN_KEY
 }
 
 enum SdsGhsAliasKind {
@@ -3235,6 +3239,7 @@ model SdsGhsSource {
 
   releases SdsGhsRelease[]
   entries  SdsGhsEntry[]
+  keyLinks SdsGhsKeyLink[]
 
   @@map("sds_ghs_sources")
 }
@@ -3274,9 +3279,45 @@ model SdsGhsRelease {
   entriesIn   SdsGhsEntry[]       @relation("ReleaseIn")
   entriesSeen SdsGhsEntry[]       @relation("ReleaseLastSeen")
   issues      SdsGhsImportIssue[]
+  keyLinks    SdsGhsKeyLink[]
 
   @@index([sourceId, publishedOn])
   @@map("sds_ghs_releases")
+}
+
+/**
+ * 出典の項目（識別子）と CAS の結び付きのうち、**原典以外の層**（S23 §9-4、2026-09-28）。
+ * 原典の CAS は項目の行（SdsGhsEntryCas）に付く。こちらは**識別子に結ぶ**ので、出典を取り込み直して
+ * 版が増えても結び付きが残る。引くときに (source, sourceKey) で有効な項目へつなぐ。
+ * - origin=EXPANSION, linkedBy="LOLI": LOLI の一覧が「As 〈親〉」で広げた結び付き。release で丸ごと消せる
+ * - origin=MANUAL: 人が「この物質（CAS）にはこの項目を当てる」と決めたもの（段 4 で）
+ */
+model SdsGhsKeyLink {
+  id            String          @id @default(cuid())
+  sourceId      String          @map("source_id")
+  sourceKey     String          @map("source_key") @db.VarChar(60)
+  casNormalized String          @map("cas_normalized") @db.VarChar(20)
+  casRaw        String          @map("cas_raw") @db.VarChar(30)
+  origin        SdsGhsCasOrigin
+  /**
+   * 誰が結んだか（データ種のコード "LOLI"、人なら "USER"）。お客さんに渡すとき、この単位で消す
+   */
+  linkedBy      String          @map("linked_by") @db.VarChar(40)
+  releaseId     String?         @map("release_id")
+  /**
+   * 根拠の原文（LOLI の remark「As 鉛化合物 [RR-…]」、人の理由）
+   */
+  note          String?         @db.VarChar(300)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  createdBy     String?         @map("created_by")
+
+  source  SdsGhsSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  release SdsGhsRelease? @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, sourceKey, casNormalized, linkedBy])
+  @@index([casNormalized])
+  @@index([sourceId, sourceKey])
+  @@map("sds_ghs_key_links")
 }
 
 /**

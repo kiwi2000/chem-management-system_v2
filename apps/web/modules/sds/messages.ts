@@ -23,6 +23,16 @@ interface SdsMessages {
     sourceShort: Record<string, string>;
     /** 上の切り替え: 物質（採用結果）と、出典ごとの項目そのまま */
     tabs: { substances: string; label: string };
+    /** 引くときに使う層（原典は常に。結び付きの層と自社判定を付け外し） */
+    layers: {
+      title: string;
+      original: string;
+      override: string;
+      /** セルの印に添える説明: 「LOLI の結び付き: 〈親の項目〉」 */
+      viaTitle: (linkedBy: string, entryKey: string, entryName: string) => string;
+      /** 物質コードの列で、結び付きの層で結ばれた物質に添える印 */
+      viaTag: (linkedBy: string) => string;
+    };
     source: {
       lead: (name: string) => string;
       columns: {
@@ -91,6 +101,18 @@ interface SdsMessages {
       title: string;
       hint: string;
       hintEu: string;
+      /** 結び付きだけのデータ種（LOLI の TSV） */
+      hintLoli: string;
+      linkFile: string;
+      linkResult: (
+        parsed: number,
+        added: number,
+        unchanged: number,
+        removed: number,
+        inSource: number,
+        skipped: number,
+        unknown: number,
+      ) => string;
       source: string;
       label: string;
       publishedOn: string;
@@ -175,8 +197,16 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       country: "SDS の対象の国",
       columns: { code: "物質コード", name: "名称", cas: "CAS番号" },
       empty: "該当する物質がありません",
-      sourceShort: { NITE: "NITE", EU_ANNEX_VI: "EU", OVERRIDE: "自社" },
+      sourceShort: { NITE: "NITE", EU_ANNEX_VI: "EU", LOLI: "LOLI", OVERRIDE: "自社" },
       tabs: { substances: "物質", label: "表示するデータ" },
+      layers: {
+        title: "使うデータ",
+        original: "原典",
+        override: "自社判定",
+        viaTitle: (linkedBy, entryKey, entryName) =>
+          `${linkedBy} の結び付き: ${entryKey} ${entryName}`,
+        viaTag: (linkedBy) => `${linkedBy} 経由`,
+      },
       source: {
         lead: (name) =>
           `${name} の項目をそのまま並べます（出典の識別子ごと。物質マスタに無い CAS も出ます）。適用終了が入っている行は、新しい版に置き換わった項目です。`,
@@ -248,6 +278,11 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         hint: "NITE の「NITE統合版 GHS分類結果」の Excel（区分一覧）を選びます。根拠一覧の Excel も選ぶと、分類年度と GHS 改訂版が入ります。先に「下見」で追加・変更の件数を確かめてから「取り込む」を押してください。",
         hintEu:
           "ECHA の「Table of harmonised entries in Annex VI to CLP」の Excel（annex_vi_clp_table_atpNN_en.xlsx。History シート付き）を選びます。いま効いている版と、これから効く版（将来の ATP）を取り込み、適用日は行ごとに入ります。先に「下見」で件数を確かめてから「取り込む」を押してください。",
+        hintLoli:
+          "LOLI の GHS 複合一覧から取り出した結び付きの TSV（scripts/loli-dump-ghs-links.sh の出力）を選びます。CAS と原典の項目（附属書VI の Index 番号・NITE の物質 ID）の結び付きだけを取り込み、分類の中身は原典のままです。原典に既に載っている CAS は取り込みません。前回の一覧に無くなった結び付きは消えます。",
+        linkFile: "結び付き（TSV）",
+        linkResult: (parsed, added, unchanged, removed, inSource, skipped, unknown) =>
+          `読み取り ${parsed} 組: 追加 ${added}・変わらず ${unchanged}・消える ${removed}・原典に載っている ${inSource}・読み飛ばし ${skipped}・親が無い ${unknown}`,
         source: "出典",
         label: "公表の名前",
         publishedOn: "公表日",
@@ -321,8 +356,16 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
       country: "Target country of the SDS",
       columns: { code: "Substance code", name: "Name", cas: "CAS number" },
       empty: "No matching substances",
-      sourceShort: { NITE: "NITE", EU_ANNEX_VI: "EU", OVERRIDE: "own" },
+      sourceShort: { NITE: "NITE", EU_ANNEX_VI: "EU", LOLI: "LOLI", OVERRIDE: "own" },
       tabs: { substances: "Substances", label: "Data to show" },
+      layers: {
+        title: "Data in use",
+        original: "Originals",
+        override: "Own classification",
+        viaTitle: (linkedBy, entryKey, entryName) =>
+          `Linked by ${linkedBy}: ${entryKey} ${entryName}`,
+        viaTag: (linkedBy) => `via ${linkedBy}`,
+      },
       source: {
         lead: (name) =>
           `Entries of ${name} as published (one row per source identifier; CAS numbers absent from the substance master appear too). Rows with an end date were superseded by a newer version.`,
@@ -395,6 +438,11 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
         hint: "Choose the NITE consolidated classification Excel (category list). Adding the rationale Excel fills in the classification year and GHS revision. Run “Preview” first to see the counts, then “Import”.",
         hintEu:
           "Choose ECHA’s “Table of harmonised entries in Annex VI to CLP” Excel (annex_vi_clp_table_atpNN_en.xlsx, with the History sheet). The current and upcoming (future ATP) versions are imported, with application dates per row. Run “Preview” first, then “Import”.",
+        hintLoli:
+          "Choose the links TSV extracted from LOLI’s GHS composite lists (output of scripts/loli-dump-ghs-links.sh). Only the links between CAS numbers and the original entries (Annex VI index numbers, NITE substance IDs) are imported; the classifications themselves stay those of the originals. CAS numbers already listed in the original are skipped. Links missing from the new list are removed.",
+        linkFile: "Links (TSV)",
+        linkResult: (parsed, added, unchanged, removed, inSource, skipped, unknown) =>
+          `${parsed} pairs read: ${added} added, ${unchanged} unchanged, ${removed} removed, ${inSource} already in the original, ${skipped} skipped, ${unknown} without a parent entry`,
         source: "Source",
         label: "Release name",
         publishedOn: "Published on",

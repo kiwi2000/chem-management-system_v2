@@ -4,19 +4,44 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
 const { adoptFor, defaultRules } = await import("./adopt");
+type SourceRow = import("./adopt").SourceRow;
 
 const rules = [
   { sourceCode: "NITE", priority: 1, fillCannotClassify: false },
   { sourceCode: "EU_ANNEX_VI", priority: 2, fillCannotClassify: false },
 ];
+type Status = SourceRow["status"];
 const row = (
   sourceCode: string,
   hazardClass: string,
-  status: "CLASSIFIED" | "NOT_CLASSIFIED" | "CANNOT_CLASSIFY" | "NOT_APPLICABLE" | "NOT_EVALUATED",
+  status: Status,
   category = "",
-) => ({ sourceCode, hazardClass, category, status, targetOrgans: null, hCodes: null });
+  link: Partial<
+    Pick<SourceRow, "entryKey" | "entryName" | "linkOrigin" | "linkedBy" | "linkNote">
+  > = {},
+): SourceRow => ({
+  sourceCode,
+  entryKey: link.entryKey ?? `${sourceCode}-1`,
+  entryName: link.entryName ?? "x",
+  hazardClass,
+  category,
+  status,
+  targetOrgans: null,
+  hCodes: null,
+  linkOrigin: link.linkOrigin ?? "SOURCE",
+  linkedBy: link.linkedBy ?? null,
+  linkNote: link.linkNote ?? null,
+});
 const cellOf = (cells: ReturnType<typeof adoptFor>, cls: string) =>
   cells.find((c) => c.hazardClass === cls)!;
+/** LOLI の展開で親の項目に結んだ行 */
+const viaLoli = (entryKey: string, entryName: string) => ({
+  entryKey,
+  entryName,
+  linkOrigin: "EXPANSION" as const,
+  linkedBy: "LOLI",
+  linkNote: `As ${entryName} [RR-1]`,
+});
 
 describe("adoptFor（S23 §5-3 の 1・2 段目）", () => {
   it("上書きが最優先。国指定のものが「全ての国」のものより先", () => {
@@ -58,6 +83,7 @@ describe("adoptFor（S23 §5-3 の 1・2 段目）", () => {
     expect(cell.from).toBe("NITE");
     expect(cell.status).toBe("NOT_CLASSIFIED");
     expect(cell.items).toEqual([]);
+    expect(cell.via?.linkedBy).toBeNull();
   });
 
   it("先の出典が見ていないクラスだけ次の出典で埋める", () => {
@@ -93,11 +119,68 @@ describe("adoptFor（S23 §5-3 の 1・2 段目）", () => {
     const cell = cellOf(adoptFor(rules, [], [], "JP"), "OZONE");
     expect(cell.status).toBe("NOT_EVALUATED");
     expect(cell.from).toBeNull();
+    expect(cell.via).toBeNull();
   });
 
-  it("既定の採用順は、その国の出典が先頭", () => {
+  it("既定の採用順は、その国の出典が先頭。結び付きだけのデータ種（LOLI）は並ばない", () => {
     expect(defaultRules("EU").map((r) => r.sourceCode)).toEqual(["EU_ANNEX_VI", "NITE"]);
     expect(defaultRules("JP").map((r) => r.sourceCode)).toEqual(["NITE", "EU_ANNEX_VI"]);
     expect(defaultRules("KR").map((r) => r.sourceCode)).toEqual(["NITE", "EU_ANNEX_VI"]);
+  });
+});
+
+describe("adoptFor（§9-4 結び付きの層）", () => {
+  it("同じ出典では、原典に直接載っている結び付きを LOLI の展開より先に見る（総称の「別掲のものを除く」）", () => {
+    const rows = [
+      row("EU_ANNEX_VI", "REPR", "CLASSIFIED", "1A", viaLoli("082-001-00-6", "lead compounds")),
+      row("EU_ANNEX_VI", "REPR", "CLASSIFIED", "2", {
+        entryKey: "082-002-00-1",
+        entryName: "lead alkyls",
+      }),
+    ];
+    const cell = cellOf(adoptFor(rules, rows, [], "EU"), "REPR");
+    expect(cell.items.map((i) => i.category)).toEqual(["2"]);
+    expect(cell.via?.linkedBy).toBeNull();
+    expect(cell.via?.entryKey).toBe("082-002-00-1");
+  });
+
+  it("LOLI の展開だけで当たるときはそれを採り、来かたに LOLI と親の項目が付く", () => {
+    const rows = [
+      row("EU_ANNEX_VI", "REPR", "CLASSIFIED", "1A", viaLoli("082-001-00-6", "lead compounds")),
+    ];
+    const cell = cellOf(adoptFor(rules, rows, [], "EU"), "REPR");
+    expect(cell.from).toBe("EU_ANNEX_VI");
+    expect(cell.items.map((i) => i.category)).toEqual(["1A"]);
+    expect(cell.via).toMatchObject({
+      linkedBy: "LOLI",
+      entryKey: "082-001-00-6",
+      entryName: "lead compounds",
+    });
+  });
+
+  it("1 つの CAS が複数の総称に当たるときは、クラスごとに厳しいほうの区分を採る", () => {
+    const rows = [
+      row("EU_ANNEX_VI", "ACUTE_TOX_ORAL", "CLASSIFIED", "4", viaLoli("A", "compounds A")),
+      row("EU_ANNEX_VI", "ACUTE_TOX_ORAL", "CLASSIFIED", "3", viaLoli("B", "compounds B")),
+      row("EU_ANNEX_VI", "AQUATIC_CHRONIC", "CLASSIFIED", "1", viaLoli("A", "compounds A")),
+      row("EU_ANNEX_VI", "AQUATIC_CHRONIC", "NOT_CLASSIFIED", "", viaLoli("B", "compounds B")),
+    ];
+    const cells = adoptFor(rules, rows, [], "EU");
+    const oral = cellOf(cells, "ACUTE_TOX_ORAL");
+    expect(oral.items.map((i) => i.category)).toEqual(["3"]);
+    expect(oral.via?.entryKey).toBe("B");
+    const chronic = cellOf(cells, "AQUATIC_CHRONIC");
+    expect(chronic.items.map((i) => i.category)).toEqual(["1"]);
+    expect(chronic.via?.entryKey).toBe("A");
+  });
+
+  it("該当と該当以外が混じる項目では該当を、該当が無ければ「区分に該当しない」を「分類できない」より先に採る", () => {
+    const rows = [
+      row("NITE", "CARC", "CANNOT_CLASSIFY", "", { entryKey: "n1" }),
+      row("NITE", "CARC", "NOT_CLASSIFIED", "", { entryKey: "n2" }),
+    ];
+    const cell = cellOf(adoptFor(rules, rows, [], "JP"), "CARC");
+    expect(cell.status).toBe("NOT_CLASSIFIED");
+    expect(cell.via?.entryKey).toBe("n2");
   });
 });
