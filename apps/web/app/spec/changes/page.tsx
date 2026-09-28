@@ -29,6 +29,16 @@ export default function ManualChangesPage() {
         <T>「フィードバック」</T>から書き残してください。直す判断の材料になります。
       </Note>
 
+      <Section title="2026-09-28（2回目）　配色「スカイ」の上の帯を少し明るくしました">
+        <Sub title="変わったところ">
+          <List
+            items={[
+              "個人設定の配色で「スカイ」を選んでいるとき、上の帯の下半分の濃い青をわずかに明るくしました。ほかの配色は変わりません",
+            ]}
+          />
+        </Sub>
+      </Section>
+
       <Section title="2026-09-28　10 MB を超える添付ファイルが付けられなかったのを直しました">
         <Sub title="直したところ">
           <List
