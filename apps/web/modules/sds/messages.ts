@@ -195,7 +195,7 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
     },
     preparing: "SDS を作る機能は準備中です。まず、物質の GHS 分類の土台から作っています。",
     ghs: {
-      title: "GHS 分類データ",
+      title: "GHS 取り込み",
       lead: "国の機関が公表している物質ごとの GHS 分類を取り込みます。取り込んだ分類は、物質の詳細に出典別に出ます。",
       linkFromHome: "GHS 分類データの取り込み",
       releases: "取り込みの記録",
@@ -326,7 +326,7 @@ export const SDS_MESSAGES: Record<Locale, SdsMessages> = {
     preparing:
       "SDS authoring is in preparation. The first piece being built is the substance GHS classification data.",
     ghs: {
-      title: "GHS classification data",
+      title: "GHS import",
       lead: "Import the substance-level GHS classifications published by national authorities. Imported classifications appear on each substance's detail page, by source.",
       linkFromHome: "Import GHS classification data",
       releases: "Import history",
