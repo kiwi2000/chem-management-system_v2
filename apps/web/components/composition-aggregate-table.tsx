@@ -920,7 +920,11 @@ export function CompositionAggregateTable({
                       className={cn(
                         CELL,
                         "align-bottom font-medium",
-                        at < FROZEN ? "table-head-solid" : "relative",
+                        /*
+                          貼り付けた見出しは自分の塗りで thead の上の線（影）を隠してしまうので、
+                          上の線は自分で引く（右の「該当法規制」などは透けて見えている。2026-09-29 指摘）
+                        */
+                        at < FROZEN ? "table-head-solid border-t" : "relative",
                         frozen.className,
                         className,
                       )}
