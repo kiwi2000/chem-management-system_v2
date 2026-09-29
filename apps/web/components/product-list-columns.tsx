@@ -272,6 +272,16 @@ export function useProductListColumns({
               sortable: false,
               filterFullWidth: true,
             },
+            {
+              // 原材料のコード（2026-09-30 指示）。展開・合算前と反応後の行にだけ原材料がある
+              key: "materialCodes",
+              header: m.table.materialCodes,
+              kind: "list" as const,
+              tokens: "text" as const,
+              filterOnly: true,
+              sortable: false,
+              filterFullWidth: true,
+            },
           ]
         : []),
       {
@@ -376,6 +386,7 @@ export function useProductListColumns({
         ? [
             { title: m.table.compositionSection, keys: ["compositionScope"] },
             ["casNumbers", "substanceNames"],
+            ["materialCodes"],
           ]
         : []),
       { title: m.judgements.title, keys: REGULATION_KEYS },

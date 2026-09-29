@@ -162,6 +162,27 @@ describe("組成をたどる絞り込みが見る組成の種類（S24）", () =
     });
   });
 
+  it("原材料コードは、原材料の行を持つ種類（展開・合算前・反応後）だけで当たる", () => {
+    const mat = { childProduct: { codeNormalized: { contains: "MX-VAR" } } };
+    const f = { materialCodes: { kind: "list" as const, op: "any" as const, values: ["mx-var"] } };
+    expect(buildWhere(productColumns("v1", true, ["registered"]), f)).toEqual({
+      AND: [
+        {
+          OR: [
+            { preReactionAt: null, compositionLines: { some: mat } },
+            { preReactionAt: { not: null }, preReactionLines: { some: mat } },
+          ],
+        },
+      ],
+    });
+    expect(buildWhere(productColumns("v1", true, ["post"]), f)).toEqual({
+      AND: [{ preReactionAt: { not: null }, compositionLines: { some: mat } }],
+    });
+    expect(buildWhere(productColumns("v1", true, ["final"]), f)).toEqual({
+      AND: [{ id: { in: [] } }],
+    });
+  });
+
   it("探す組成の指定そのものは条件を作らない", () => {
     expect(
       buildWhere(productColumns("v1", true, ["post"]), {

@@ -258,6 +258,28 @@ function scopedLines(kinds: CompositionKind[], p: LinePredicates): Record<string
   );
 }
 
+/** 原材料のコードで探す条件。原材料の行を持つ種類（展開・合算前・反応後）だけが当たる */
+function materialCondition(kinds: CompositionKind[], code: string): Record<string, unknown> {
+  const line = { childProduct: { codeNormalized: { contains: code } } };
+  const list = (kinds.length === 0 ? [...COMPOSITION_KINDS] : kinds).filter(
+    (k) => k === "registered" || k === "post",
+  );
+  if (list.length === 0) return { id: { in: [] } };
+  return combine(
+    list.map((k) =>
+      k === "registered"
+        ? {
+            OR: [
+              { preReactionAt: null, compositionLines: { some: line } },
+              { preReactionAt: { not: null }, preReactionLines: { some: line } },
+            ],
+          }
+        : { preReactionAt: { not: null }, compositionLines: { some: line } },
+    ),
+    "any",
+  );
+}
+
 /** 名前の部分一致（別名も見る）。物質の行に対する条件 */
 function substanceNameMatch(w: string): Record<string, unknown> {
   return {
@@ -443,8 +465,27 @@ function productCompositionColumns(
         f.kind === "list" ? substanceNameCondition(f.values, f.op, scope, nameLookup) : null,
     },
     /*
+      原材料のコードで探す（2026-09-30 指示）。原材料の行があるのは展開・合算前（登録組成・反応前の写し）と
+      反応後（開けなかった原材料が残ることがある）だけ。展開・合算後・最終組成には無いので、それだけを
+      選んでいると 1 件も当たらない。コードは正規化して部分一致
+    */
+    {
+      key: "materialCodes",
+      kind: "list",
+      field: "codeNormalized",
+      normalize: normalizeCode,
+      sortable: false,
+      custom: (f) => {
+        if (f.kind !== "list") return null;
+        const values = [...new Set(f.values.map(normalizeCode).filter((v) => v !== ""))];
+        if (values.length === 0) return null;
+        const each = values.map((v) => materialCondition(scope, v));
+        return combine(each, f.op);
+      },
+    },
+    /*
       探す組成の種類（展開・合算前／展開・合算後／反応後／最終組成）。それ自体は条件を作らず、
-      上の 2 つの条件の向き先を決める（`compositionScopeOf` で読み、`productColumns` に渡す）
+      上の 3 つの条件の向き先を決める（`compositionScopeOf` で読み、`productColumns` に渡す）
     */
     {
       key: "compositionScope",

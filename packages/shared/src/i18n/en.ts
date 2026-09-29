@@ -298,6 +298,7 @@ export const en: Messages = {
     },
     casNumbers: "CAS numbers",
     substanceNames: "Substance name",
+    materialCodes: "Raw material code",
     savedFilters: "Saved filters",
     save: "Save",
     load: "Load",
