@@ -1954,7 +1954,7 @@ export const en: Messages = {
         "Reverted to the pre-reaction composition. The post-reaction entries have been discarded.",
       diff: {
         title: "Difference from pre-reaction",
-        same: "No difference from pre-reaction (no substance was removed, added or given a different percentage in the post-reaction input).",
+        same: "No difference",
         none: "None",
         removed: "Removed substances",
         added: "New substances",
