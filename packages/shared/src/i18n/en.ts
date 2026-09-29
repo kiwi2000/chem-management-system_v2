@@ -1925,6 +1925,7 @@ export const en: Messages = {
       `The total comes to less than 100% (total ${total}% — undisclosed or remainder)`,
     referencedByProducts: (n: number) =>
       `Cannot delete: it is used in ${n} composition${n === 1 ? "" : "s"}`,
+    sortHint: "Click to sort; click again to reverse; a third click restores the original order",
     usedAsMaterialWarning: (n: number) =>
       `This product is used as a raw material in ${n} composition${n === 1 ? "" : "s"} (those references stay as they are)`,
     postReaction: {
@@ -1932,8 +1933,8 @@ export const en: Messages = {
       confirm:
         "The current composition will be copied and kept as the pre-reaction composition, and this table becomes the post-reaction composition for editing. If raw materials are included, the expanded / CAS-aggregated table (one row per substance) becomes the starting point. From then on, regulatory judgements and all other calculations use the post-reaction composition. Continue?",
       confirmLabel: "Start post-reaction composition",
-      afterBadge: "post-reaction",
-      beforeTitle: "Pre-reaction composition",
+      afterTitle: "Composition (post-reaction)",
+      beforeTitle: "Composition (pre-reaction)",
       copiedAt: (at: string, by: string | null) => `Copied ${at}${by ? ` (${by})` : ""}`,
       started:
         "The pre-reaction composition has been saved. Edit this table as the post-reaction composition.",

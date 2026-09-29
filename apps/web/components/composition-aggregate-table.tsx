@@ -1,7 +1,15 @@
 "use client";
 
 import { pickName, pickStatutoryName } from "@chem/shared";
-import { ChevronDown, ChevronRight, CircleHelp, TriangleAlert } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
+  ChevronsUpDown,
+  CircleHelp,
+  TriangleAlert,
+} from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CELL_CLIP, OPAQUE_MUTED_40, OPAQUE_MUTED_50 } from "@/components/ui/table";
@@ -515,6 +523,16 @@ export function CompositionAggregateTable({
    * 閉じているあいだは、当たっている区分の数だけの1列。見出しを押すと地域ごとに分かれる
    */
   const [regOpen, setRegOpen] = useState(false);
+  /** 並べ替え。null は元の順（重量%の多い順） */
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const toggleSort = (key: string) =>
+    setSort((prev) => {
+      const first = key === "contentPct" ? "desc" : "asc";
+      const second = first === "asc" ? "desc" : "asc";
+      if (!prev || prev.key !== key) return { key, dir: first };
+      if (prev.dir === first) return { key, dir: second };
+      return null;
+    });
   /**
    * 押して開いているセル。**区分まで分けた列だけ**開ける。
    * 地域でまとめた列は区分がいくつも重なっており、どれを見せるか決まらない
@@ -711,9 +729,27 @@ export function CompositionAggregateTable({
    * **合計は出さない。**絞った行だけを足した数字を「合計」と書くと、
    * 製品全体の合計と取り違える。
    */
-  const visible = focus
+  const filtered = focus
     ? data.rows.filter((r) => r.regulations.some((x) => x.categoryId === focus.categoryId))
     : data.rows;
+  // 並べ替え（2026-09-29 指示。全列）。押すたびに 昇順 → 降順 → 元の順（重量%は多い順から）。元の順は重量%の多い順
+  const visible = sort
+    ? [...filtered].sort((a, b) => {
+        const dir = sort.dir === "asc" ? 1 : -1;
+        if (sort.key === "contentPct") return (Number(a.totalPct) - Number(b.totalPct)) * dir;
+        const text = (r: (typeof filtered)[number]) =>
+          sort.key === "casNumber"
+            ? (r.casNumber ?? "")
+            : sort.key === "substanceId"
+              ? r.code
+              : sort.key === "name"
+                ? pickName(locale, r.nameJa, r.nameEn)
+                : sort.key === "rank"
+                  ? (r.scoreRank ?? "")
+                  : (r.note ?? "");
+        return text(a).localeCompare(text(b), locale) * dir;
+      })
+    : filtered;
 
   const toggle = (key: string) => {
     const next = new Set(open);
@@ -891,7 +927,23 @@ export function CompositionAggregateTable({
                       // 左に貼り付ける見出しは、上と左の両方で貼り付く角なので前に出す
                       style={frozen.style ? { ...frozen.style, zIndex: 30 } : undefined}
                     >
-                      {label(m)}
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(key)}
+                        className="inline-flex max-w-full items-center gap-1 hover:opacity-75"
+                        title={`${label(m)} — ${m.composition.sortHint}`}
+                      >
+                        <span className="truncate">{label(m)}</span>
+                        {sort?.key === key ? (
+                          sort.dir === "asc" ? (
+                            <ArrowUp className="size-3.5 shrink-0" />
+                          ) : (
+                            <ArrowDown className="size-3.5 shrink-0" />
+                          )
+                        ) : (
+                          <ChevronsUpDown className="size-3.5 shrink-0 opacity-40" />
+                        )}
+                      </button>
                       {cols.handle(key, `${label(m)} ${m.table.resize}`)}
                     </th>
                   );

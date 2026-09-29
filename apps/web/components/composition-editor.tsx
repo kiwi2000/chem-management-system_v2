@@ -12,6 +12,8 @@ import {
   type TextOperator,
 } from "@chem/shared";
 import {
+  ArrowDown,
+  ArrowUp,
   ChevronsDownUp,
   ChevronsUpDown,
   CircleHelp,
@@ -21,6 +23,7 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompositionAggregateTable } from "@/components/composition-aggregate-table";
 import { SourceChip, type SourceInfo } from "@/components/source-chip";
@@ -38,7 +41,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditingBadge } from "@/components/editing-badge";
 import { RejudgeButton } from "@/components/rejudge-button";
 import { EditButton } from "@/components/edit-button";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -83,6 +85,9 @@ const NAME_OPS = ["contains", "startsWith", "endsWith", "equals"] as const;
 /** 名称を探す範囲。既定は主名称の日本語だけ */
 const NAME_SCOPES = ["mainJa", "all"] as const;
 type NameScope = (typeof NAME_SCOPES)[number];
+
+/** 読むときに並べ替えられる列 */
+type SortKey = "elementId" | "casNumber" | "elementName" | "contentPct" | "note";
 
 /** 画面が持つ行。保存するまで id を持たない行があるので、並べ替え用の鍵を別に振る */
 interface Row {
@@ -198,6 +203,12 @@ export function CompositionEditor({
 }: Props) {
   const { m, locale } = useI18n();
   const isPre = source === "pre-reaction";
+  const pathname = usePathname();
+  /**
+   * 読むときの並べ替え（2026-09-29 指示。全列）。押すたびに 昇順 → 降順 → 元の順（重量%は 多い順 → 少ない順 → 元の順）。
+   * 直しているあいだは付けない。並びは「つかんで動かす」で保存される順そのもので、並べ替えと衝突するため
+   */
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" } | null>(null);
 
   // 条件をクリアしたあと、ID欄へカーソルを戻すために持つ
   const searchRef = useRef<HTMLInputElement>(null);
@@ -630,6 +641,64 @@ export function CompositionEditor({
         .map((r) => ({ path: r.key, productId: r.element.id })),
     [rows],
   );
+  /** 表に出す並び。直しているときと、並べ替えていないときは登録した順 */
+  const displayRows = useMemo(() => {
+    if (!rows || editing || !sort) return rows ?? [];
+    const dir = sort.dir === "asc" ? 1 : -1;
+    const text = (r: Row) => {
+      switch (sort.key) {
+        case "elementId":
+          return r.element.code;
+        case "casNumber":
+          return r.element.casNumber ?? "";
+        case "elementName":
+          return pickName(locale, r.element.nameJa, r.element.nameEn);
+        default:
+          return r.note;
+      }
+    };
+    return [...rows].sort((a, b) => {
+      if (sort.key === "contentPct") {
+        const x = a.contentPct === "" ? Number.NEGATIVE_INFINITY : Number(a.contentPct);
+        const y = b.contentPct === "" ? Number.NEGATIVE_INFINITY : Number(b.contentPct);
+        return (x - y) * dir;
+      }
+      return text(a).localeCompare(text(b), locale) * dir;
+    });
+  }, [rows, editing, sort, locale]);
+  const toggleSort = (key: SortKey) =>
+    setSort((prev) => {
+      // 重量%は多い順から。ほかは昇順から。3 回目で元の順
+      const first = key === "contentPct" ? "desc" : "asc";
+      const second = first === "asc" ? "desc" : "asc";
+      if (!prev || prev.key !== key) return { key, dir: first };
+      if (prev.dir === first) return { key, dir: second };
+      return null;
+    });
+  /** 見出しの文字。読むときは押して並べ替えられる */
+  const sortHead = (key: SortKey, label: string) =>
+    editing ? (
+      label
+    ) : (
+      <button
+        type="button"
+        onClick={() => toggleSort(key)}
+        className="inline-flex max-w-full items-center justify-center gap-1 hover:opacity-75"
+        title={`${label} — ${m.composition.sortHint}`}
+      >
+        <span className="truncate">{label}</span>
+        {sort?.key === key ? (
+          sort.dir === "asc" ? (
+            <ArrowUp className="size-3.5 shrink-0" />
+          ) : (
+            <ArrowDown className="size-3.5 shrink-0" />
+          )
+        ) : (
+          <ChevronsUpDown className="size-3.5 shrink-0 opacity-40" />
+        )}
+      </button>
+    );
+
   /** 展開行が結合に使う列の数 */
   const columnCount = (editing ? 7 : 5) + (showWithin ? 1 : 0);
 
@@ -673,7 +742,28 @@ export function CompositionEditor({
 
   return (
     <>
-      <Card>
+      {/*
+        反応前組成は反応後の上に置く（2026-09-29 指示）。同じ部品を読むだけの状態で使う
+      */}
+      {preReaction && !isPre && (
+        <CompositionEditor
+          productId={productId}
+          settings={settings}
+          editing={false}
+          source="pre-reaction"
+          subtitle={m.composition.postReaction.copiedAt(
+            new Date(preReaction.at).toLocaleString(locale),
+            preReaction.byName,
+          )}
+        />
+      )}
+      {/*
+        カードの開閉は見出しの文字を鍵に端末へ覚えている。見出しが「組成」→「組成（反応後）」に変わっても
+        閉じないよう、鍵は「組成」に固定する（反応前は自分の鍵）
+      */}
+      <Card
+        storageKey={`chem.card.${pathname}.${isPre ? m.composition.postReaction.beforeTitle : m.composition.title}`}
+      >
         <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
           {/*
             カード（Card）の見出しの文字は「組成」のまま。カードの開閉は見出しの文字を鍵に端末へ覚えているので、
@@ -681,11 +771,12 @@ export function CompositionEditor({
           */}
           <span className="flex items-center gap-2">
             <CardTitle className="text-base">
-              {isPre ? m.composition.postReaction.beforeTitle : m.composition.title}
+              {isPre
+                ? m.composition.postReaction.beforeTitle
+                : preReaction
+                  ? m.composition.postReaction.afterTitle
+                  : m.composition.title}
             </CardTitle>
-            {!isPre && preReaction && (
-              <Badge variant="secondary">{m.composition.postReaction.afterBadge}</Badge>
-            )}
             {subtitle && <span className="text-muted-foreground text-xs">{subtitle}</span>}
           </span>
           <div className="flex items-center gap-1">
@@ -767,19 +858,19 @@ export function CompositionEditor({
                     {/* 行をつかんで並べ替えるためのつまみ。幅は固定（つまみの大きさで決まる） */}
                     {editing && <th className={cn(CELL, "w-8")} />}
                     <th className={cn(CELL, "relative font-medium")}>
-                      {m.composition.elementId}
+                      {sortHead("elementId", m.composition.elementId)}
                       {cols.handle("elementId", `${m.composition.elementId} ${m.table.resize}`)}
                     </th>
                     <th className={cn(CELL, "relative font-medium")}>
-                      {m.composition.casNumber}
+                      {sortHead("casNumber", m.composition.casNumber)}
                       {cols.handle("casNumber", `${m.composition.casNumber} ${m.table.resize}`)}
                     </th>
                     <th className={cn(CELL, "relative font-medium")}>
-                      {m.composition.elementName}
+                      {sortHead("elementName", m.composition.elementName)}
                       {cols.handle("elementName", `${m.composition.elementName} ${m.table.resize}`)}
                     </th>
                     <th className={cn(CELL, "relative text-center font-medium whitespace-nowrap")}>
-                      {m.composition.contentPct}
+                      {sortHead("contentPct", m.composition.contentPct)}
                       {/* 列が2つ並ぶときだけ、どちらの重量%かを添える */}
                       {showWithin && (
                         <span className="block text-xs font-normal opacity-80">
@@ -803,7 +894,7 @@ export function CompositionEditor({
                       </th>
                     )}
                     <th className={cn(CELL, "relative font-medium")}>
-                      {m.composition.note}
+                      {sortHead("note", m.composition.note)}
                       {cols.handle("note", `${m.composition.note} ${m.table.resize}`)}
                     </th>
                     {/* 行の操作は、直しているときだけ出す。幅は中身で決まる */}
@@ -811,7 +902,7 @@ export function CompositionEditor({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, i) => (
+                  {displayRows.map((r, i) => (
                     <Fragment key={r.key}>
                       <tr
                         className={cn(
@@ -1558,18 +1649,6 @@ export function CompositionEditor({
         </CardContent>
       </Card>
       {/* 反応前組成（写し）。反応後の表のすぐ下に、読み取り専用で並べる */}
-      {preReaction && !isPre && (
-        <CompositionEditor
-          productId={productId}
-          settings={settings}
-          editing={false}
-          source="pre-reaction"
-          subtitle={m.composition.postReaction.copiedAt(
-            new Date(preReaction.at).toLocaleString(locale),
-            preReaction.byName,
-          )}
-        />
-      )}
     </>
   );
 }
