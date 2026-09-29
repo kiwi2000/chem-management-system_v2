@@ -10,8 +10,12 @@ import type { AppSettings } from "./settings";
  * 保存するのはあくまで1段だけで、展開は見せかたの話（記録は置き換えない）。
  */
 
-/** 1製品あたりの行数の上限 */
-export const COMPOSITION_MAX_LINES = 100;
+/**
+ * 1製品あたりの行数の上限。
+ * 反応後の組成は原材料を展開・CAS 合算した行をそのまま登録組成に写し取るので（S24）、
+ * 直接並べる行の目安（100 で十分）より大きく取る。2026-09-29 指示で 100 → 500
+ */
+export const COMPOSITION_MAX_LINES = 500;
 
 /**
  * 展開してたどれる深さの上限。
