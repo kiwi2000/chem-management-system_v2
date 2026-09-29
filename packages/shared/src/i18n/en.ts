@@ -1934,7 +1934,7 @@ export const en: Messages = {
     postReaction: {
       button: "Enter post-reaction composition",
       confirm:
-        "The current composition is kept as the pre-reaction composition, and a copy of it becomes the post-reaction composition that you can edit. The post-reaction composition consists of the substances after raw-material expansion and CAS aggregation; it cannot contain raw materials.\nRegulatory judgements for the product are made on the post-reaction composition.",
+        "The current composition is kept as the pre-reaction composition, and you edit a copy of it to create the post-reaction composition. The post-reaction composition consists of the substances after raw-material expansion and CAS aggregation; it cannot contain raw materials.\nRegulatory judgements for the product are made on the post-reaction composition.",
       confirmLabel: "Enter post-reaction composition",
       afterTitle: "Composition (post-reaction)",
       beforeTitle: "Composition (pre-reaction)",
