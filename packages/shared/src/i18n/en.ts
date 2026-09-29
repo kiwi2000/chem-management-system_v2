@@ -1920,6 +1920,8 @@ export const en: Messages = {
       `"${label}" cannot be used in a composition because it is not marked as a raw material`,
     errorCycle:
       "This would create a cycle: one of the raw materials leads back to this product itself",
+    errorMaterialInPostReaction: (codes: string) =>
+      `Raw materials cannot be added to a post-reaction composition (substances only): ${codes}`,
     warnEmpty: "The composition is empty",
     warnSumOver: (total: string) => `The total comes to more than 100% (total ${total}%)`,
     warnSumUnder: (total: string) =>
@@ -1943,6 +1945,8 @@ export const en: Messages = {
         "The pre-reaction composition has been saved and the expanded / CAS-aggregated table (one row per substance) is now the starting point. Edit this table as the post-reaction composition.",
       alreadyStarted: "This product already has a post-reaction composition",
       undoButton: "Revert to pre-reaction",
+      substanceOnly:
+        "Only substances can be added to a post-reaction composition (raw materials are not searched)",
       undoConfirm:
         "The pre-reaction composition is restored as the registered composition and the post-reaction entries are discarded. To change the recipe, revert first, edit, then press “Enter post-reaction composition” again. Continue?",
       undoLabel: "Revert to pre-reaction",

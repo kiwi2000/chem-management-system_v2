@@ -157,6 +157,28 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (childIds.length > 0 && (await wouldCreateCycle(id, childIds))) {
     errors.push(m.composition.errorCycle);
   }
+  /*
+    反応後の組成（写しがある製品）に原材料は足せない。物質だけ（2026-09-29 指示）。
+    写し取ったときに残った「開けなかった原材料」の行はそのまま置けるので、**いま無い原材料だけ**断る
+  */
+  if (product.preReactionAt && childIds.length > 0) {
+    const kept = new Set(
+      (
+        await prisma.compositionLine.findMany({
+          where: { parentProductId: id, childProductId: { not: null } },
+          select: { childProductId: true },
+        })
+      ).map((l) => l.childProductId),
+    );
+    const added = childIds.filter((cid) => !kept.has(cid));
+    if (added.length > 0) {
+      const codes = await prisma.product.findMany({
+        where: { id: { in: added } },
+        select: { code: true },
+      });
+      errors.push(m.composition.errorMaterialInPostReaction(codes.map((c) => c.code).join(", ")));
+    }
+  }
 
   if (errors.length > 0) {
     return jsonError(400, "composition_invalid", errors[0] ?? m.errors.validation, { errors });

@@ -251,6 +251,8 @@ export function CompositionEditor({
   /** 反応前組成（写し）。あれば上の表は「反応後」（S24） */
   const [preReaction, setPreReaction] = useState<CompositionResponse["preReaction"]>(null);
   const [starting, setStarting] = useState(false);
+  /** この表が「反応後」か（写しがあり、自分は写しでない）。原材料は足せず、物質だけ（2026-09-29 指示） */
+  const postReaction = Boolean(preReaction) && !isPre;
   const ask = useConfirm();
 
   // 追加用の検索
@@ -414,7 +416,8 @@ export function CompositionEditor({
         nameOp: target.nameOp,
         nameScope: target.nameScope,
         substance: target.substance ? "1" : "0",
-        product: target.product ? "1" : "0",
+        // 反応後の組成に原材料は足せない（2026-09-29 指示）。物質だけを探す
+        product: target.product && !postReaction ? "1" : "0",
         exclude: productId,
         page: String(page),
         size: String(size),
@@ -1569,14 +1572,21 @@ export function CompositionEditor({
                         />
                         {m.composition.kindSubstance}
                       </label>
-                      <label className="flex items-center gap-1.5">
-                        <input
-                          type="checkbox"
-                          checked={cond.product}
-                          onChange={(e) => setCond({ ...cond, product: e.target.checked })}
-                        />
-                        {m.composition.kindProduct}
-                      </label>
+                      {/* 反応後の組成には原材料を足せない。選べないものは出さず、理由を添える */}
+                      {postReaction ? (
+                        <span className="text-muted-foreground text-xs">
+                          {m.composition.postReaction.substanceOnly}
+                        </span>
+                      ) : (
+                        <label className="flex items-center gap-1.5">
+                          <input
+                            type="checkbox"
+                            checked={cond.product}
+                            onChange={(e) => setCond({ ...cond, product: e.target.checked })}
+                          />
+                          {m.composition.kindProduct}
+                        </label>
+                      )}
                     </div>
                   </div>
 
