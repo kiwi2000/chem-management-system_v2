@@ -272,6 +272,8 @@ export function CompositionEditor({
     );
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
+      // 反応前に戻した直後、消えゆく反応前の表が引き直して 404 になることがある。すぐ消えるので何も出さない
+      if (isPre && res.status === 404) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
       setLoadError(body?.error.message ?? m.errors.loadFailed(res.status));
       setRows([]);
@@ -348,6 +350,8 @@ export function CompositionEditor({
           : m.composition.postReaction.started,
       );
       await load();
+      // 写し取ったら、そのまま反応後を直せるように編集に入る
+      onRequestEdit?.();
     } finally {
       setStarting(false);
     }
@@ -814,21 +818,6 @@ export function CompositionEditor({
             {subtitle && <span className="text-muted-foreground text-xs">{subtitle}</span>}
           </span>
           <div className="flex items-center gap-1">
-            {/*
-            反応後の組成入力（S24）。編集中で、まだ写しが無いときだけ。
-            押すといまの組成が反応前として写し取られ、この表が反応後になる
-          */}
-            {editing && !preReaction && !isPre && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={starting}
-                onClick={() => void startPostReaction()}
-              >
-                {m.composition.postReaction.button}
-              </Button>
-            )}
             {/* 反応前に戻す。反応後を直しているとき（編集中）だけ */}
             {editing && preReaction && !isPre && (
               <Button
@@ -1354,6 +1343,25 @@ export function CompositionEditor({
               {preReaction && !isPre && (
                 <PreReactionDiff productId={productId} refreshKey={stamp ?? ""} />
               )}
+            </div>
+          )}
+
+          {/*
+            反応後の組成入力（S24）。読んでいるときに、原材料展開・CAS 合算の表の下
+            （表が 1 つだけのときは組成の表の下）に置く（2026-09-29 指示）。写しが無い製品だけ。
+            押すといまの組成が反応前として写し取られ、この表が反応後になって編集に入る
+          */}
+          {!editing && !isPre && canEdit && !preReaction && (rows?.length ?? 0) > 0 && (
+            <div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={starting}
+                onClick={() => void startPostReaction()}
+              >
+                {m.composition.postReaction.button}
+              </Button>
             </div>
           )}
 
