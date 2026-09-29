@@ -303,10 +303,14 @@ export const ja = {
     reorderColumn: "引いて並べ替える",
     hiddenCount: (n: number) => `${n} 列を隠しています`,
     compositionSection: "組成情報",
-    /** CAS番号・物質名が見る組成（S24。2026-09-30 指示）。チェック 2 つ、両方で「どちらか」 */
+    /** CAS番号・物質名が見る組成の種類（S24。2026-09-30 指示）。押した種類だけを探す */
     compositionScope: "探す組成",
-    compositionScopeAfter: "反応後組成",
-    compositionScopeBefore: "反応前組成",
+    compositionKinds: {
+      registered: "展開・合算前",
+      expanded: "展開・合算後",
+      post: "反応後",
+      final: "最終組成",
+    },
     casNumbers: "CAS番号",
     substanceNames: "物質名",
     savedFilters: "保存した条件",

@@ -256,6 +256,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -1236,19 +1237,23 @@ model Product {
   /**
    * この製品の組成（何が入っているか）。反応後の組成を入れた製品では、これが反応後
    */
-  compositionLines CompositionLine[] @relation("ProductComposition")
+  compositionLines          CompositionLine[]                 @relation("ProductComposition")
   /**
    * 反応前組成（写し。表示だけ。計算には使わない）
    */
-  preReactionLines ProductPreReactionLine[] @relation("ProductPreReaction")
+  preReactionLines          ProductPreReactionLine[]          @relation("ProductPreReaction")
+  /**
+   * 反応前の写しを展開・CAS 合算した結果（写しと同時に凍結）。一覧の「展開・合算後」の検索に使う
+   */
+  preReactionExpansionLines ProductPreReactionExpansionLine[] @relation("ProductPreReactionExpansion")
   /**
    * この製品を原材料として使っている反応前組成行（逆参照）
    */
-  usedInPreReaction ProductPreReactionLine[] @relation("PreReactionMaterial")
+  usedInPreReaction         ProductPreReactionLine[]          @relation("PreReactionMaterial")
   /**
    * この製品を原材料として使っている組成行（逆参照）
    */
-  usedAsMaterialIn CompositionLine[] @relation("ProductAsMaterial")
+  usedAsMaterialIn          CompositionLine[]                 @relation("ProductAsMaterial")
 
   /**
    * 末端まで下ろして CAS でまとめた結果。組成が変わったら作り直す
@@ -1423,6 +1428,28 @@ model ProductPreReactionLine {
   @@index([substanceId])
   @@index([childProductId])
   @@map("product_pre_reaction_lines")
+}
+
+/**
+ * 反応前の写し（product_pre_reaction_lines）を展開・CAS 合算した結果（S24。2026-09-30）。
+ * 写しを取った時点で作り、写しと一緒に凍結する。**判定には使わない。**一覧の絞り込みで
+ * 「展開・合算後」を反応後を入れた製品についても探せるようにするためだけの表。
+ * 行の形は product_expansion_lines に合わせる（代表物質の id は CAS の有無にかかわらず入れる）
+ */
+model ProductPreReactionExpansionLine {
+  id             String  @id @default(cuid())
+  productId      String  @map("product_id")
+  casNormalized  String? @map("cas_normalized") @db.VarChar(20)
+  substanceId    String? @map("substance_id")
+  impurityTypeId String  @default("ip-none") @map("impurity_type_id")
+  totalPct       Decimal @map("total_pct") @db.Decimal(9, 6)
+
+  product Product @relation("ProductPreReactionExpansion", fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([casNormalized])
+  @@index([substanceId])
+  @@map("product_pre_reaction_expansion_lines")
 }
 
 // ---------- 金属換算係数 ----------

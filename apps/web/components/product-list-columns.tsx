@@ -236,18 +236,20 @@ export function useProductListColumns({
         ? [
             {
               /*
-                CAS番号・物質名が見る組成（反応後／反応前）。チェック 2 つ。両方（既定）はどちらかに
-                当たれば該当。反応後組成の無い製品は、どちらを選んでも自分の組成で探される（S24）
+                CAS番号・物質名が見る組成の種類（S24。2026-09-30 指示）。押した種類だけを探し、
+                その種類を持たない製品は当たらない。何も押していなければどれかに当たれば出す
               */
               key: "compositionScope",
               header: m.table.compositionScope,
               kind: "enum" as const,
               filterOnly: true,
               sortable: false,
-              filterLabelHidden: true,
+              filterAsButtons: true,
               options: [
-                { value: "after", label: m.table.compositionScopeAfter },
-                { value: "before", label: m.table.compositionScopeBefore },
+                { value: "registered", label: m.table.compositionKinds.registered },
+                { value: "expanded", label: m.table.compositionKinds.expanded },
+                { value: "post", label: m.table.compositionKinds.post },
+                { value: "final", label: m.table.compositionKinds.final },
               ],
             },
             {

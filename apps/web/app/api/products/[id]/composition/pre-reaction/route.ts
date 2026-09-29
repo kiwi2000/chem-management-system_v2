@@ -1,4 +1,4 @@
-import { normalizeCode } from "@chem/shared";
+import { normalizeCas, normalizeCode } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
@@ -56,14 +56,25 @@ export async function POST(_req: Request, { params }: Ctx) {
         note: string | null;
       }[]
     | null = null;
+  /*
+    展開・合算の結果は、原材料の有無にかかわらず写しと一緒に凍結する（product_pre_reaction_expansion_lines）。
+    一覧の絞り込み「展開・合算後」が、反応後を入れた製品についても探せるようにするため（判定には使わない）
+  */
+  const agg = await aggregateComposition(actor, id);
+  const codes = [...new Set(agg.rows.map((r) => normalizeCode(r.code)))];
+  const substances = await prisma.substance.findMany({
+    where: { codeNormalized: { in: codes }, deletedAt: null },
+    select: { id: true, codeNormalized: true },
+  });
+  const idByCode = new Map(substances.map((s) => [s.codeNormalized, s.id]));
+  const expansionRows = agg.rows.map((r) => ({
+    productId: id,
+    casNormalized: r.casNumber ? normalizeCas(r.casNumber) : null,
+    substanceId: idByCode.get(normalizeCode(r.code)) ?? null,
+    impurityTypeId: r.impurityTypeId,
+    totalPct: r.totalPct,
+  }));
   if (hasMaterials) {
-    const agg = await aggregateComposition(actor, id);
-    const codes = [...new Set(agg.rows.map((r) => normalizeCode(r.code)))];
-    const substances = await prisma.substance.findMany({
-      where: { codeNormalized: { in: codes }, deletedAt: null },
-      select: { id: true, codeNormalized: true },
-    });
-    const idByCode = new Map(substances.map((s) => [s.codeNormalized, s.id]));
     next = [];
     for (const r of agg.rows) {
       const substanceId = idByCode.get(normalizeCode(r.code));
@@ -99,6 +110,8 @@ export async function POST(_req: Request, { params }: Ctx) {
         displayOrder: l.displayOrder,
       })),
     }),
+    prisma.productPreReactionExpansionLine.deleteMany({ where: { productId: id } }),
+    prisma.productPreReactionExpansionLine.createMany({ data: expansionRows }),
     ...(next
       ? [
           prisma.compositionLine.deleteMany({ where: { parentProductId: id } }),
@@ -180,6 +193,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       })),
     }),
     prisma.productPreReactionLine.deleteMany({ where: { productId: id } }),
+    prisma.productPreReactionExpansionLine.deleteMany({ where: { productId: id } }),
     prisma.product.update({
       where: { id },
       data: { preReactionAt: null, preReactionBy: null, updatedBy: actor.user.id },

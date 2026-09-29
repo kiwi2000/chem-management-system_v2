@@ -90,51 +90,82 @@ describe("組成をたどる絞り込み", () => {
   });
 });
 
-describe("組成をたどる絞り込みが見る組成（反応後／反応前。S24）", () => {
+describe("組成をたどる絞り込みが見る組成の種類（S24）", () => {
   const cas = { substance: { casNormalized: "7440-31-5" } };
+  const exp = { casNormalized: "7440-31-5" };
   const filters = {
     casNumbers: { kind: "list" as const, op: "any" as const, values: ["7440-31-5"] },
   };
+  const registered = {
+    OR: [
+      { preReactionAt: null, compositionLines: { some: cas } },
+      { preReactionAt: { not: null }, preReactionLines: { some: cas } },
+    ],
+  };
+  const expanded = {
+    OR: [
+      { preReactionAt: null, expansion: { is: { lines: { some: exp } } } },
+      { preReactionAt: { not: null }, preReactionExpansionLines: { some: exp } },
+    ],
+  };
+  const post = { preReactionAt: { not: null }, compositionLines: { some: cas } };
+  const final = { expansion: { is: { lines: { some: exp } } } };
 
-  it("未指定・両方は「どちらか」。登録組成か反応前の写しに当たれば該当", () => {
-    expect(compositionScopeOf({})).toBe("either");
+  it("値を読む。知らない値は捨て、空はすべて", () => {
+    expect(compositionScopeOf({})).toEqual([]);
     expect(
-      compositionScopeOf({ compositionScope: { kind: "enum", values: ["after", "before"] } }),
-    ).toBe("either");
-    expect(buildWhere(productColumns("v1", true, "either"), filters)).toEqual({
-      AND: [{ OR: [{ compositionLines: { some: cas } }, { preReactionLines: { some: cas } }] }],
+      compositionScopeOf({
+        compositionScope: { kind: "enum", values: ["post", "なにか", "final"] },
+      }),
+    ).toEqual(["post", "final"]);
+  });
+
+  it("展開・合算前は、写しが無ければ登録組成、あれば写し", () => {
+    expect(buildWhere(productColumns("v1", true, ["registered"]), filters)).toEqual({
+      AND: [registered],
     });
   });
 
-  it("反応後は登録組成だけ（写しの無い製品はそれが唯一の組成）", () => {
-    expect(compositionScopeOf({ compositionScope: { kind: "enum", values: ["after"] } })).toBe(
-      "after",
-    );
-    expect(buildWhere(productColumns("v1", true, "after"), filters)).toEqual({
-      AND: [{ compositionLines: { some: cas } }],
+  it("展開・合算後は、写しが無ければ判定用の展開結果、あれば写しの展開結果", () => {
+    expect(buildWhere(productColumns("v1", true, ["expanded"]), filters)).toEqual({
+      AND: [expanded],
     });
   });
 
-  it("反応前は、写しがあれば写し、無ければ登録組成", () => {
-    expect(compositionScopeOf({ compositionScope: { kind: "enum", values: ["before"] } })).toBe(
-      "before",
-    );
-    expect(buildWhere(productColumns("v1", true, "before"), filters)).toEqual({
-      AND: [
-        {
-          OR: [
-            { preReactionAt: { not: null }, preReactionLines: { some: cas } },
-            { preReactionAt: null, compositionLines: { some: cas } },
-          ],
-        },
-      ],
+  it("反応後は、写しのある製品の登録組成だけ（持たない製品は当たらない）", () => {
+    expect(buildWhere(productColumns("v1", true, ["post"]), filters)).toEqual({ AND: [post] });
+  });
+
+  it("最終組成は判定に使っている展開結果", () => {
+    expect(buildWhere(productColumns("v1", true, ["final"]), filters)).toEqual({ AND: [final] });
+  });
+
+  it("複数の種類はどれかに当たれば該当。指定なしはすべての種類", () => {
+    expect(buildWhere(productColumns("v1", true, ["post", "final"]), filters)).toEqual({
+      AND: [{ OR: [post, final] }],
+    });
+    expect(buildWhere(productColumns("v1", true, []), filters)).toEqual({
+      AND: [{ OR: [registered, expanded, post, final] }],
+    });
+  });
+
+  it("物質名は、展開結果の表では下調べした CAS・id で突き合わせる（無ければ 1 件も当たらない）", () => {
+    const names = {
+      substanceNames: { kind: "list" as const, op: "any" as const, values: ["すず"] },
+    };
+    const lookup = new Map([["すず", { cas: ["7440-31-5"], ids: [] }]]);
+    expect(buildWhere(productColumns("v1", true, ["final"], lookup), names)).toEqual({
+      AND: [{ expansion: { is: { lines: { some: { casNormalized: { in: ["7440-31-5"] } } } } } }],
+    });
+    expect(buildWhere(productColumns("v1", true, ["final"]), names)).toEqual({
+      AND: [{ expansion: { is: { lines: { some: { id: { in: [] } } } } } }],
     });
   });
 
   it("探す組成の指定そのものは条件を作らない", () => {
     expect(
-      buildWhere(productColumns("v1", true, "after"), {
-        compositionScope: { kind: "enum", values: ["after"] },
+      buildWhere(productColumns("v1", true, ["post"]), {
+        compositionScope: { kind: "enum", values: ["post"] },
       }),
     ).toEqual({});
   });

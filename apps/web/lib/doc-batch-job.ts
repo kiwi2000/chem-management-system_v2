@@ -26,10 +26,12 @@ import {
   productColumns,
   REGULATION_CATEGORY_COLUMNS,
   SUBSTANCE_COLUMNS,
+  substanceNameWords,
 } from "@/lib/list-columns";
 import { closeBrowser, internalBaseUrl, renderPdf } from "@/lib/pdf";
 import { makePrintToken } from "@/lib/print-token";
 import { visibilityWhere as productVisibility } from "@/lib/product-service";
+import { lookupSubstanceNames } from "@/lib/substance-name-lookup";
 import { getAppSettings } from "@/lib/settings";
 import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
@@ -171,6 +173,7 @@ export async function resolveTargetQuery(
       version?.id ?? null,
       withComposition,
       compositionScopeOf(state.filters),
+      withComposition ? await lookupSubstanceNames(substanceNameWords(state.filters)) : undefined,
     );
     return {
       kind: "where",

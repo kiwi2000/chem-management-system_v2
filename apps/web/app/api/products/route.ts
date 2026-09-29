@@ -4,7 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { getCurrentVersion } from "@/lib/current-version";
-import { compositionScopeOf, productColumns } from "@/lib/list-columns";
+import { compositionScopeOf, productColumns, substanceNameWords } from "@/lib/list-columns";
 import {
   productListInclude,
   childWrites,
@@ -12,6 +12,7 @@ import {
   toListItem,
   visibilityWhere,
 } from "@/lib/product-service";
+import { lookupSubstanceNames } from "@/lib/substance-name-lookup";
 import { validatePropertyValues } from "@/lib/property-values";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
@@ -37,11 +38,12 @@ export async function GET(req: Request) {
     keys.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
-  // 組成をたどる絞り込みが見る組成（反応後／反応前）は、絞り込みの値で決まる
+  // 組成をたどる絞り込みが見る組成の種類は絞り込みの値で決まる。物質名は展開結果の表のために先に物質を引く
   const columns = productColumns(
     version?.id ?? null,
     withComposition,
     compositionScopeOf(state.filters),
+    withComposition ? await lookupSubstanceNames(substanceNameWords(state.filters)) : undefined,
   );
 
   const where = {
