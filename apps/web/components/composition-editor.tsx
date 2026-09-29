@@ -44,6 +44,7 @@ import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirm } from "@/components/confirm-dialog";
+import { PreReactionDiff } from "@/components/pre-reaction-diff";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useJudgementControls } from "@/lib/judgement-controls";
@@ -287,6 +288,39 @@ export function CompositionEditor({
    * 「反応後の組成入力」。いまの組成を反応前として写し取り、この表を以後は反応後として編集する（S24）。
    * 登録組成の行は変えないので、判定や合算はそのまま。写しは 1 度だけ（戻す手段はまだ無い）ので先に確かめる
    */
+  /**
+   * 反応前に戻す（反応後の入力の取り消し）。写しを登録組成に戻して写しを消す。
+   * 反応後に入れた内容は消えるので、先に確かめる。配合を直して反応後を作り直すときもこれを使う（S24）
+   */
+  async function undoPostReaction() {
+    if (
+      !(await ask({
+        message: m.composition.postReaction.undoConfirm,
+        confirmLabel: m.composition.postReaction.undoLabel,
+        destructive: true,
+      }))
+    )
+      return;
+    setStarting(true);
+    setErrors([]);
+    try {
+      const res = await fetch(`/api/products/${productId}/composition/pre-reaction`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setErrors([body?.error.message ?? m.errors.saveFailed(res.status)]);
+        return;
+      }
+      setNotice(m.composition.postReaction.undone);
+      await load();
+      notifyJudgementsChanged();
+    } finally {
+      setStarting(false);
+    }
+  }
+
   async function startPostReaction() {
     if (
       !(await ask({
@@ -793,6 +827,18 @@ export function CompositionEditor({
                 onClick={() => void startPostReaction()}
               >
                 {m.composition.postReaction.button}
+              </Button>
+            )}
+            {/* 反応前に戻す。反応後を直しているとき（編集中）だけ */}
+            {editing && preReaction && !isPre && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={starting}
+                onClick={() => void undoPostReaction()}
+              >
+                {m.composition.postReaction.undoButton}
               </Button>
             )}
             {/*
@@ -1304,6 +1350,10 @@ export function CompositionEditor({
                 showAllInventories={allInventories}
                 onPreviousVersionChange={setPrevious}
               />
+              {/* 反応前との差分（S24 §3）。保存した内容で出す。印（stamp）が変わったら引き直す */}
+              {preReaction && !isPre && (
+                <PreReactionDiff productId={productId} refreshKey={stamp ?? ""} />
+              )}
             </div>
           )}
 

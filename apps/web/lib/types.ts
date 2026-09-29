@@ -519,6 +519,39 @@ export interface CompositionResponse {
   preReaction: PreReactionDto | null;
 }
 
+/** 反応前と反応後の差分（S24 §3）。合算した表どうしを CAS で突き合わせたもの */
+export interface CompositionDiffDto {
+  removed: {
+    casNumber: string | null;
+    code: string;
+    nameJa: string;
+    nameEn: string | null;
+    beforePct: string;
+  }[];
+  added: {
+    casNumber: string | null;
+    code: string;
+    nameJa: string;
+    nameEn: string | null;
+    afterPct: string;
+  }[];
+  changed: {
+    casNumber: string | null;
+    code: string;
+    nameJa: string;
+    nameEn: string | null;
+    beforePct: string;
+    afterPct: string;
+    /** 反応後 − 反応前 */
+    delta: string;
+  }[];
+  /** 金属換算係数を持つ元素ごとの量（重量%）。ずれていれば mismatch */
+  elements: { element: string; beforePct: string; afterPct: string; mismatch: boolean }[];
+  /** 展開できなかった原材料の数（この表が不完全なことの印） */
+  blockedBefore: number;
+  blockedAfter: number;
+}
+
 export interface PreReactionDto {
   /** 写し取った日時と人 */
   at: string;

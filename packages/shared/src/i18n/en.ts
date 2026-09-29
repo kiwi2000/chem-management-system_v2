@@ -1941,6 +1941,30 @@ export const en: Messages = {
       startedFromAggregate:
         "The pre-reaction composition has been saved and the expanded / CAS-aggregated table (one row per substance) is now the starting point. Edit this table as the post-reaction composition.",
       alreadyStarted: "This product already has a post-reaction composition",
+      undoButton: "Revert to pre-reaction",
+      undoConfirm:
+        "The pre-reaction composition is restored as the registered composition and the post-reaction entries are discarded. To change the recipe, revert first, edit, then press “Enter post-reaction composition” again. Continue?",
+      undoLabel: "Revert to pre-reaction",
+      undone:
+        "Reverted to the pre-reaction composition. The post-reaction entries have been discarded.",
+      diff: {
+        title: "Difference from pre-reaction",
+        same: "Same as pre-reaction (nothing removed, added or changed).",
+        none: "None",
+        removed: "Removed substances",
+        added: "New substances",
+        changed: "Changed substances",
+        beforePct: "Before %",
+        afterPct: "After %",
+        beforeAfter: "Before → after",
+        elements: "Element check (metal conversion)",
+        element: "Element",
+        elementOk: "Consistent before and after",
+        elementMismatch: (n: number) => `${n} element(s) do not balance (possible input error)`,
+        elementHint:
+          "For substances with a metal conversion factor, weight% × factor summed per element. Lead, tin, chromium etc. do not change in a reaction, so a mismatch suggests the post-reaction entries need review.",
+        blocked: "Some raw materials could not be expanded, so this difference is incomplete.",
+      },
     },
   },
 

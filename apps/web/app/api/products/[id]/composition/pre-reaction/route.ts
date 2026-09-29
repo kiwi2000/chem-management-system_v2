@@ -139,3 +139,62 @@ export async function POST(_req: Request, { params }: Ctx) {
     at: at.toISOString(),
   });
 }
+
+/**
+ * DELETE /api/products/[id]/composition/pre-reaction — 反応前に戻す（反応後の入力の取り消し）。
+ *
+ * 写しを登録組成へ戻し、写しと印を消す。反応後に入れた内容は残らない（画面で確かめてから呼ぶ）。
+ * 配合を直して反応後を作り直すときも、これで戻してから直し、もう一度「反応後の組成入力」を押す。
+ * 展開結果は作り直す
+ */
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const actor = await requirePermission("PRODUCT_EDIT");
+  if (actor instanceof Response) return actor;
+  const { id } = await params;
+  const m = await getServerMessages();
+
+  const product = await prisma.product.findFirst({
+    where: { id, deletedAt: null, ...visibilityWhere(actor) },
+  });
+  if (!product) return jsonError(404, "not_found", m.errors.notFound);
+  if (!canEditComposition(actor, product)) {
+    return jsonError(403, "forbidden", m.composition.withheldEdit);
+  }
+  if (!product.preReactionAt) return jsonError(404, "not_found", m.errors.notFound);
+
+  const snapshot = await prisma.productPreReactionLine.findMany({
+    where: { productId: id },
+    orderBy: { displayOrder: "asc" },
+  });
+  const postCount = await prisma.compositionLine.count({ where: { parentProductId: id } });
+  await prisma.$transaction([
+    prisma.compositionLine.deleteMany({ where: { parentProductId: id } }),
+    prisma.compositionLine.createMany({
+      data: snapshot.map((l) => ({
+        parentProductId: id,
+        substanceId: l.substanceId,
+        childProductId: l.childProductId,
+        contentPct: l.contentPct,
+        note: l.note,
+        displayOrder: l.displayOrder,
+      })),
+    }),
+    prisma.productPreReactionLine.deleteMany({ where: { productId: id } }),
+    prisma.product.update({
+      where: { id },
+      data: { preReactionAt: null, preReactionBy: null, updatedBy: actor.user.id },
+    }),
+  ]);
+  const recomputed = await recomputeFrom(id).catch((e: unknown) => {
+    console.error("展開結果の作り直しに失敗:", id, e);
+    return 0;
+  });
+  await writeAudit({
+    entity: "product_pre_reaction",
+    entityId: id,
+    action: "delete",
+    actorId: actor.user.id,
+    diff: { restoredLineCount: snapshot.length, discardedPostLineCount: postCount, recomputed },
+  });
+  return Response.json({ ok: true, restoredLineCount: snapshot.length });
+}
