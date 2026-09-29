@@ -2364,6 +2364,8 @@ export const en: Messages = {
   prtr: {
     title: "PRTR report data",
     lead: "Choose the organisation and fiscal year, pick the method, then enter the quantities (kg) per product. With measured values, also enter the measured amount per substance",
+    methodLabel: "Emission estimation method",
+    methodUnsaved: "Press “Save” to switch",
     organisation: "Organisation",
     noOrganisation:
       "You belong to no organisation, so nothing can be entered. Ask the system administrator to assign one under Users › Organisation",

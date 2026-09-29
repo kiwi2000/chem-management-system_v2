@@ -273,35 +273,6 @@ export function PrtrEntryScreen() {
                 ))}
               </select>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="prtr-method">{t.method}</Label>
-              <select
-                id="prtr-method"
-                value={method}
-                onChange={(e) => setMethod(e.target.value as PrtrMethod)}
-                className={SELECT}
-              >
-                {PRTR_METHODS.map((k) => (
-                  <option key={k} value={k}>
-                    {t.methods[k]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {method === "FACTOR" && (
-              <div className="space-y-1">
-                <Label htmlFor="prtr-factor">{t.factorPct}</Label>
-                <Input
-                  id="prtr-factor"
-                  inputMode="decimal"
-                  value={factorPct}
-                  onChange={(e) => setFactorPct(e.target.value)}
-                  aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
-                  className="h-8 w-32 font-mono"
-                />
-                <FieldError message={firstError(headErrors, "factorPct")} />
-              </div>
-            )}
             <div className="min-w-64 flex-1 space-y-1">
               <Label htmlFor="prtr-note">{t.note}</Label>
               <Input
@@ -324,10 +295,50 @@ export function PrtrEntryScreen() {
               {savingHead ? m.common.saving : m.common.save}
             </Button>
           </div>
-          <p className="text-muted-foreground text-xs">
-            {t.methodHints[method]}
-            {method === "FACTOR" && ` ${t.factorHint}`}
-          </p>
+          {/*
+            排出量算出方法はボタン 3 つを並べて選ぶ（2026-09-29 指示）。選んだ方法に応じた入力欄をその下に出す。
+            押しただけでは保存されない。「保存」で確定（入れてある数量の意味が変わるので、変更は一度確かめる）
+          */}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium">{t.methodLabel}</span>
+              <span role="group" aria-label={t.methodLabel} className="inline-flex flex-wrap gap-1">
+                {PRTR_METHODS.map((k) => (
+                  <Button
+                    key={k}
+                    type="button"
+                    size="sm"
+                    variant={method === k ? "default" : "outline"}
+                    aria-pressed={method === k}
+                    onClick={() => setMethod(k)}
+                  >
+                    {t.methods[k]}
+                  </Button>
+                ))}
+              </span>
+              {methodChanged && (
+                <span className="text-muted-foreground text-xs">{t.methodUnsaved}</span>
+              )}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {t.methodHints[method]}
+              {method === "FACTOR" && ` ${t.factorHint}`}
+            </p>
+            {method === "FACTOR" && (
+              <div className="space-y-1">
+                <Label htmlFor="prtr-factor">{t.factorPct}</Label>
+                <Input
+                  id="prtr-factor"
+                  inputMode="decimal"
+                  value={factorPct}
+                  onChange={(e) => setFactorPct(e.target.value)}
+                  aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
+                  className="h-8 w-32 font-mono"
+                />
+                <FieldError message={firstError(headErrors, "factorPct")} />
+              </div>
+            )}
+          </div>
           {askMethod && (
             <Alert>
               <AlertDescription className="flex flex-wrap items-center gap-3">
@@ -341,21 +352,25 @@ export function PrtrEntryScreen() {
               </AlertDescription>
             </Alert>
           )}
+          {/*
+            選んだ方法に応じた入力欄。数量は全方法、実測値は方法が実測値のときだけ。
+            頭（所属・年度・方法）を保存してから出る。2 つのカードは 1 つにまとめた（2026-09-29 指示）
+          */}
+          {entry && (
+            <QuantitySection
+              entryId={entry.id}
+              method={entry.method}
+              canSeeProducts={can("PRODUCT_VIEW")}
+              onChanged={load}
+            />
+          )}
+          {entry && entry.method === "MEASURED" && (
+            <MeasuredSection entryId={entry.id} onChanged={load} />
+          )}
         </CardContent>
       </Card>
 
-      {entry && (
-        <QuantitySection
-          entryId={entry.id}
-          method={entry.method}
-          canSeeProducts={can("PRODUCT_VIEW")}
-          onChanged={load}
-        />
-      )}
-      {/* 集計は入力の表の下。実測値のときは実測値の表も入力なので、その下に置く */}
-      {entry && entry.method === "MEASURED" && (
-        <MeasuredSection entryId={entry.id} onChanged={load} />
-      )}
+      {/* 集計は入力の下の別のカード */}
       {entry && <SummarySection entryId={entry.id} tick={tick} />}
     </div>
   );
@@ -728,17 +743,17 @@ function QuantitySection({
   }
 
   return (
-    <Card defaultOpen>
-      <CardHeader className="flex flex-row items-center justify-between gap-3">
+    <div className="space-y-3 border-t pt-4">
+      <div className="flex flex-row items-center justify-between gap-3">
         <div>
-          <CardTitle>{t.title}</CardTitle>
+          <p className="text-sm font-medium">{t.title}</p>
           <p className="text-muted-foreground mt-1 text-sm">
             {method === "MEASURED" ? t.shippedOptional : t.shippedRequired}
           </p>
         </div>
         <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
-      </CardHeader>
-      <CardContent className="space-y-3">
+      </div>
+      <div className="space-y-3">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -835,7 +850,7 @@ function QuantitySection({
             },
           }}
         />
-      </CardContent>
+      </div>
       {importing && (
         <PrtrImportDialog
           entryId={entryId}
@@ -848,7 +863,7 @@ function QuantitySection({
           }}
         />
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -1004,15 +1019,15 @@ function MeasuredSection({
   }
 
   return (
-    <Card defaultOpen>
-      <CardHeader className="flex flex-row items-center justify-between gap-3">
+    <div className="space-y-3 border-t pt-4">
+      <div className="flex flex-row items-center justify-between gap-3">
         <div>
-          <CardTitle>{t.title}</CardTitle>
+          <p className="text-sm font-medium">{t.title}</p>
           <p className="text-muted-foreground mt-1 text-sm">{m.prtr.methodHints.MEASURED}</p>
         </div>
         <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
-      </CardHeader>
-      <CardContent className="space-y-3">
+      </div>
+      <div className="space-y-3">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -1093,7 +1108,7 @@ function MeasuredSection({
             },
           }}
         />
-      </CardContent>
+      </div>
       {importing && (
         <PrtrImportDialog
           entryId={entryId}
@@ -1105,6 +1120,6 @@ function MeasuredSection({
           }}
         />
       )}
-    </Card>
+    </div>
   );
 }
