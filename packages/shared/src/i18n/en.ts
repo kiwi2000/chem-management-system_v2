@@ -1934,8 +1934,8 @@ export const en: Messages = {
     postReaction: {
       button: "Enter post-reaction composition",
       confirm:
-        "The current composition will be copied and kept as the pre-reaction composition, and this table becomes the post-reaction composition for editing. If raw materials are included, the expanded / CAS-aggregated table (one row per substance) becomes the starting point. From then on, regulatory judgements and all other calculations use the post-reaction composition. Continue?",
-      confirmLabel: "Start post-reaction composition",
+        "The current composition is kept as the pre-reaction composition, and a copy of it becomes the post-reaction composition that you can edit. The post-reaction composition consists of the substances after raw-material expansion and CAS aggregation; it cannot contain raw materials.\nRegulatory judgements for the product are made on the post-reaction composition.",
+      confirmLabel: "Enter post-reaction composition",
       afterTitle: "Composition (post-reaction)",
       beforeTitle: "Composition (pre-reaction)",
       copiedAt: (at: string, by: string | null) => `Copied ${at}${by ? ` (${by})` : ""}`,
