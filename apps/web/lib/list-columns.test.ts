@@ -183,6 +183,34 @@ describe("組成をたどる絞り込みが見る組成の種類（S24）", () =
     });
   });
 
+  it("原材料名は日本語名・英語名・別名の部分一致。当たる種類はコードと同じ", () => {
+    const match = { contains: "ワニス", mode: "insensitive" };
+    const f = {
+      materialNames: { kind: "list" as const, op: "any" as const, values: [" ワニス "] },
+    };
+    expect(buildWhere(productColumns("v1", true, ["post"]), f)).toEqual({
+      AND: [
+        {
+          preReactionAt: { not: null },
+          compositionLines: {
+            some: {
+              childProduct: {
+                OR: [
+                  { nameJa: match },
+                  { nameEn: match },
+                  { aliases: { some: { OR: [{ nameJa: match }, { nameEn: match }] } } },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    });
+    expect(buildWhere(productColumns("v1", true, ["expanded"]), f)).toEqual({
+      AND: [{ id: { in: [] } }],
+    });
+  });
+
   it("探す組成の指定そのものは条件を作らない", () => {
     expect(
       buildWhere(productColumns("v1", true, ["post"]), {

@@ -315,6 +315,7 @@ export const ja = {
     substanceNames: "物質名",
     /** 原材料のコードで探す（2026-09-30 指示）。原材料の行がある種類（展開・合算前・反応後）だけ */
     materialCodes: "原材料コード",
+    materialNames: "原材料名",
     savedFilters: "保存した条件",
     save: "保存",
     load: "読込",

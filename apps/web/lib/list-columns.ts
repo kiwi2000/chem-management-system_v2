@@ -259,8 +259,11 @@ function scopedLines(kinds: CompositionKind[], p: LinePredicates): Record<string
 }
 
 /** 原材料のコードで探す条件。原材料の行を持つ種類（展開・合算前・反応後）だけが当たる */
-function materialCondition(kinds: CompositionKind[], code: string): Record<string, unknown> {
-  const line = { childProduct: { codeNormalized: { contains: code } } };
+function materialCondition(
+  kinds: CompositionKind[],
+  child: Record<string, unknown>,
+): Record<string, unknown> {
+  const line = { childProduct: child };
   const list = (kinds.length === 0 ? [...COMPOSITION_KINDS] : kinds).filter(
     (k) => k === "registered" || k === "post",
   );
@@ -278,6 +281,18 @@ function materialCondition(kinds: CompositionKind[], code: string): Record<strin
     ),
     "any",
   );
+}
+
+/** 原材料の名前の部分一致（別名も見る）。原材料（製品）に対する条件 */
+function materialNameMatch(w: string): Record<string, unknown> {
+  const match = { contains: w, mode: "insensitive" as const };
+  return {
+    OR: [
+      { nameJa: match },
+      { nameEn: match },
+      { aliases: { some: { OR: [{ nameJa: match }, { nameEn: match }] } } },
+    ],
+  };
 }
 
 /** 名前の部分一致（別名も見る）。物質の行に対する条件 */
@@ -479,7 +494,23 @@ function productCompositionColumns(
         if (f.kind !== "list") return null;
         const values = [...new Set(f.values.map(normalizeCode).filter((v) => v !== ""))];
         if (values.length === 0) return null;
-        const each = values.map((v) => materialCondition(scope, v));
+        const each = values.map((v) =>
+          materialCondition(scope, { codeNormalized: { contains: v } }),
+        );
+        return combine(each, f.op);
+      },
+    },
+    // 原材料の名称で探す（2026-09-30 指示）。日本語名・英語名・別名の部分一致。当たる種類はコードと同じ
+    {
+      key: "materialNames",
+      kind: "list",
+      field: "nameJa",
+      sortable: false,
+      custom: (f) => {
+        if (f.kind !== "list") return null;
+        const words = [...new Set(f.values.map((v) => v.trim()).filter((v) => v !== ""))];
+        if (words.length === 0) return null;
+        const each = words.map((w) => materialCondition(scope, materialNameMatch(w)));
         return combine(each, f.op);
       },
     },

@@ -282,6 +282,16 @@ export function useProductListColumns({
               sortable: false,
               filterFullWidth: true,
             },
+            {
+              // 原材料の名称（別名も見る）。当たる種類はコードと同じ
+              key: "materialNames",
+              header: m.table.materialNames,
+              kind: "list" as const,
+              tokens: "text" as const,
+              filterOnly: true,
+              sortable: false,
+              filterFullWidth: true,
+            },
           ]
         : []),
       {
@@ -386,7 +396,7 @@ export function useProductListColumns({
         ? [
             { title: m.table.compositionSection, keys: ["compositionScope"] },
             ["casNumbers", "substanceNames"],
-            ["materialCodes"],
+            ["materialCodes", "materialNames"],
           ]
         : []),
       { title: m.judgements.title, keys: REGULATION_KEYS },
