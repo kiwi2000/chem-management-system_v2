@@ -97,6 +97,7 @@ export function toListItem(p: ProductListRow, versionId: string | null): Product
     aliasCount: p._count.aliases,
     publishState: p.publishState,
     usableAsMaterial: p.usableAsMaterial,
+    postReaction: p.preReactionAt !== null,
     modelValue: p.modelValue,
     uses: p.uses.map((u) => u.value),
     updatedAt: p.updatedAt.toISOString(),

@@ -457,6 +457,8 @@ export interface ProductListItemDto {
   aliasCount: number;
   /** 他製品の組成に部品として使えるか */
   usableAsMaterial: boolean;
+  /** 反応後組成を入れてあるか（反応前の写しがある。S24） */
+  postReaction: boolean;
   /** 型式。未選択は null */
   modelValue: string | null;
   /** 用途。表示順に並べた文字列 */

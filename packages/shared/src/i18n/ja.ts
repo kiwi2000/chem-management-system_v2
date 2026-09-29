@@ -303,6 +303,10 @@ export const ja = {
     reorderColumn: "引いて並べ替える",
     hiddenCount: (n: number) => `${n} 列を隠しています`,
     compositionSection: "組成情報",
+    /** CAS番号・物質名が見る組成（S24。2026-09-30 指示）。チェック 2 つ、両方で「どちらか」 */
+    compositionScope: "探す組成",
+    compositionScopeAfter: "反応後組成",
+    compositionScopeBefore: "反応前組成",
     casNumbers: "CAS番号",
     substanceNames: "物質名",
     savedFilters: "保存した条件",
@@ -2174,6 +2178,10 @@ export const ja = {
     /** 一覧の見出し（狭いのでアイコンで出す） */
     materialShort: "原材料",
     nonMaterial: "原材料以外",
+    /** 反応後組成の有無の列と、その絞り込み（S24。2026-09-30 指示） */
+    postReactionShort: "反応後",
+    postReactionHas: "反応後組成あり",
+    postReactionNone: "反応後組成なし",
     /** 保存はできるが注意してほしいこと（中身は S8 以降で増える） */
     editingElsewhere: (section: string) =>
       `${section}が編集中です。保存するか、変更を破棄してください。`,

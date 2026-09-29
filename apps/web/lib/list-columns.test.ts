@@ -3,6 +3,7 @@ import {
   CAS_LINK_COLUMNS,
   CAS_LINK_DIFF_COLUMNS,
   STATUTORY_SUBSTANCE_COLUMNS,
+  compositionScopeOf,
   productColumns,
   regulationCategoryColumns,
   statutorySubstanceColumns,
@@ -86,6 +87,64 @@ describe("組成をたどる絞り込み", () => {
     expect(
       buildWhere(cols, { casNumbers: { kind: "list", op: "any", values: ["7440-31-5"] } }),
     ).toEqual({});
+  });
+});
+
+describe("組成をたどる絞り込みが見る組成（反応後／反応前。S24）", () => {
+  const cas = { substance: { casNormalized: "7440-31-5" } };
+  const filters = {
+    casNumbers: { kind: "list" as const, op: "any" as const, values: ["7440-31-5"] },
+  };
+
+  it("未指定・両方は「どちらか」。登録組成か反応前の写しに当たれば該当", () => {
+    expect(compositionScopeOf({})).toBe("either");
+    expect(
+      compositionScopeOf({ compositionScope: { kind: "enum", values: ["after", "before"] } }),
+    ).toBe("either");
+    expect(buildWhere(productColumns("v1", true, "either"), filters)).toEqual({
+      AND: [{ OR: [{ compositionLines: { some: cas } }, { preReactionLines: { some: cas } }] }],
+    });
+  });
+
+  it("反応後は登録組成だけ（写しの無い製品はそれが唯一の組成）", () => {
+    expect(compositionScopeOf({ compositionScope: { kind: "enum", values: ["after"] } })).toBe(
+      "after",
+    );
+    expect(buildWhere(productColumns("v1", true, "after"), filters)).toEqual({
+      AND: [{ compositionLines: { some: cas } }],
+    });
+  });
+
+  it("反応前は、写しがあれば写し、無ければ登録組成", () => {
+    expect(compositionScopeOf({ compositionScope: { kind: "enum", values: ["before"] } })).toBe(
+      "before",
+    );
+    expect(buildWhere(productColumns("v1", true, "before"), filters)).toEqual({
+      AND: [
+        {
+          OR: [
+            { preReactionAt: { not: null }, preReactionLines: { some: cas } },
+            { preReactionAt: null, compositionLines: { some: cas } },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("探す組成の指定そのものは条件を作らない", () => {
+    expect(
+      buildWhere(productColumns("v1", true, "after"), {
+        compositionScope: { kind: "enum", values: ["after"] },
+      }),
+    ).toEqual({});
+  });
+});
+
+describe("反応後組成の有無の絞り込み", () => {
+  it("あり／なし／両方", () => {
+    expect(where("postReaction", ["true"])).toEqual({ AND: [{ preReactionAt: { not: null } }] });
+    expect(where("postReaction", ["false"])).toEqual({ AND: [{ preReactionAt: null }] });
+    expect(where("postReaction", ["true", "false"])).toEqual({});
   });
 });
 

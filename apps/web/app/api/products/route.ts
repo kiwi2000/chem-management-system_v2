@@ -4,7 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { getCurrentVersion } from "@/lib/current-version";
-import { productColumns } from "@/lib/list-columns";
+import { compositionScopeOf, productColumns } from "@/lib/list-columns";
 import {
   productListInclude,
   childWrites,
@@ -30,11 +30,18 @@ export async function GET(req: Request) {
 
   // 判定の列と絞り込みは、現在の法規制バージョンの行で見る。組成をたどる絞り込みは見られる人だけ
   const version = await getCurrentVersion();
-  const columns = productColumns(version?.id ?? null, actor.has("COMPOSITION_VIEW"));
+  const withComposition = actor.has("COMPOSITION_VIEW");
+  const keys = productColumns(version?.id ?? null, withComposition);
   const state = parseTableState(
     new URL(req.url).searchParams,
-    columns.map((c) => ({ key: c.key, kind: c.kind })),
+    keys.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
+  );
+  // 組成をたどる絞り込みが見る組成（反応後／反応前）は、絞り込みの値で決まる
+  const columns = productColumns(
+    version?.id ?? null,
+    withComposition,
+    compositionScopeOf(state.filters),
   );
 
   const where = {

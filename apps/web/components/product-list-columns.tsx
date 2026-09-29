@@ -23,7 +23,7 @@ export const PRODUCT_DEFAULT_STATE: TableState = emptyTableState([
 
 /** フィルターの並び（1行に置く列キー）。指定しない列は下に既定の並びで続く */
 const FILTER_LAYOUT: string[][] = [
-  ["code", "status", "publishState", "usableAsMaterial"],
+  ["code", "status", "publishState", "usableAsMaterial", "postReaction"],
   ["nameJa"],
   ["nameEn"],
   ["modelValue", "uses"],
@@ -163,6 +163,14 @@ export function useProductListColumns({
         filterLabelHidden: true,
       },
       {
+        // 反応後組成の有無（S24）。「原材料／原材料以外」と同じ形のチェック 2 つ（2026-09-30 指示）
+        ...boolColumn("postReaction", m.products.postReactionShort, (r) => r.postReaction, {
+          yes: m.products.postReactionHas,
+          no: m.products.postReactionNone,
+        }),
+        filterLabelHidden: true,
+      },
+      {
         key: "status",
         header: m.common.activeHeader,
         kind: "enum",
@@ -226,6 +234,22 @@ export function useProductListColumns({
       },
       ...(withComposition
         ? [
+            {
+              /*
+                CAS番号・物質名が見る組成（反応後／反応前）。チェック 2 つ。両方（既定）はどちらかに
+                当たれば該当。反応後組成の無い製品は、どちらを選んでも自分の組成で探される（S24）
+              */
+              key: "compositionScope",
+              header: m.table.compositionScope,
+              kind: "enum" as const,
+              filterOnly: true,
+              sortable: false,
+              filterLabelHidden: true,
+              options: [
+                { value: "after", label: m.table.compositionScopeAfter },
+                { value: "before", label: m.table.compositionScopeBefore },
+              ],
+            },
             {
               key: "casNumbers",
               header: m.table.casNumbers,
@@ -347,7 +371,10 @@ export function useProductListColumns({
       ...FILTER_LAYOUT.map((keys, i) => (i === 0 ? { title: m.products.basic, keys } : keys)),
       // 組成の節は、組成を見られる人にだけ
       ...(withComposition
-        ? [{ title: m.table.compositionSection, keys: ["casNumbers", "substanceNames"] }]
+        ? [
+            { title: m.table.compositionSection, keys: ["compositionScope"] },
+            ["casNumbers", "substanceNames"],
+          ]
         : []),
       { title: m.judgements.title, keys: REGULATION_KEYS },
     ],

@@ -22,6 +22,7 @@ import { renderDocument } from "@/lib/doc-render";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import {
   ORGANISATION_COLUMNS,
+  compositionScopeOf,
   productColumns,
   REGULATION_CATEGORY_COLUMNS,
   SUBSTANCE_COLUMNS,
@@ -159,11 +160,17 @@ export async function resolveTargetQuery(
   }
   if (target === "PRODUCT") {
     const version = await getCurrentVersion();
-    const columns = productColumns(version?.id ?? null, actor.has("COMPOSITION_VIEW"));
+    const withComposition = actor.has("COMPOSITION_VIEW");
+    const keys = productColumns(version?.id ?? null, withComposition);
     const state = parseTableState(
       params,
-      columns.map((c) => ({ key: c.key, kind: c.kind })),
+      keys.map((c) => ({ key: c.key, kind: c.kind })),
       LIST_DEFAULT,
+    );
+    const columns = productColumns(
+      version?.id ?? null,
+      withComposition,
+      compositionScopeOf(state.filters),
     );
     return {
       kind: "where",

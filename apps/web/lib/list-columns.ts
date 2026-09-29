@@ -1,4 +1,4 @@
-import { normalizeCas, normalizeCode, type ColumnFilter } from "@chem/shared";
+import { normalizeCas, normalizeCode, type ColumnFilter, type TableState } from "@chem/shared";
 import { notDisabledIn } from "@/lib/enabled-sources";
 import { anyOfTextCondition, type QueryColumn } from "@/lib/table-query";
 
@@ -181,35 +181,87 @@ function judgementCategoryNotCondition(
  * **別名も見る。**社内での呼び方でしか覚えていないことがあるため。
  * 日本語・英語・別名のどれかに当たれば、その物質を含む製品とみなす。
  */
+/**
+ * 組成をたどる絞り込みが見る組成（2026-09-30 指示。S24）。
+ * - after: 反応後（登録組成）。写しが無い製品は唯一の組成
+ * - before: 反応前（写し）。写しが無い製品は唯一の組成
+ * - either: どちらかに当たれば該当
+ *
+ * 写しが無い製品・原材料は、どれを選んでも自分の組成で探される
+ */
+export type CompositionScope = "after" | "before" | "either";
+
+/** 絞り込みの値から探す組成を決める。未指定・両方は「どちらか」 */
+export function compositionScopeOf(filters: TableState["filters"]): CompositionScope {
+  const f = filters.compositionScope;
+  if (!f || f.kind !== "enum") return "either";
+  const after = f.values.includes("after");
+  const before = f.values.includes("before");
+  if (after && !before) return "after";
+  if (before && !after) return "before";
+  return "either";
+}
+
+/** 組成の行（登録組成・反応前の写し）の条件を、探す組成に応じて製品の条件にする */
+function scopedLines(
+  scope: CompositionScope,
+  line: Record<string, unknown>,
+): Record<string, unknown> {
+  if (scope === "after") return { compositionLines: { some: line } };
+  if (scope === "before") {
+    return {
+      OR: [
+        { preReactionAt: { not: null }, preReactionLines: { some: line } },
+        { preReactionAt: null, compositionLines: { some: line } },
+      ],
+    };
+  }
+  return { OR: [{ compositionLines: { some: line } }, { preReactionLines: { some: line } }] };
+}
+
 function substanceNameCondition(
   values: string[],
   op: "all" | "any",
+  scope: CompositionScope,
 ): Record<string, unknown> | null {
   const words = [...new Set(values.map((v) => v.trim()).filter((v) => v !== ""))];
   if (words.length === 0) return null;
-  const each = words.map((w) => ({
-    compositionLines: {
-      some: {
-        substance: {
-          OR: [
-            { nameJa: { contains: w, mode: "insensitive" as const } },
-            { nameEn: { contains: w, mode: "insensitive" as const } },
-            {
-              aliases: {
-                some: {
-                  OR: [
-                    { nameJa: { contains: w, mode: "insensitive" as const } },
-                    { nameEn: { contains: w, mode: "insensitive" as const } },
-                  ],
-                },
+  const each = words.map((w) =>
+    scopedLines(scope, {
+      substance: {
+        OR: [
+          { nameJa: { contains: w, mode: "insensitive" as const } },
+          { nameEn: { contains: w, mode: "insensitive" as const } },
+          {
+            aliases: {
+              some: {
+                OR: [
+                  { nameJa: { contains: w, mode: "insensitive" as const } },
+                  { nameEn: { contains: w, mode: "insensitive" as const } },
+                ],
               },
             },
-          ],
-        },
+          },
+        ],
       },
-    },
-  }));
+    }),
+  );
+  return combine(each, op);
+}
+
+/** 値ごとの条件をまとめる。1 つなら包まない。all=すべて含む（AND）／any=いずれか（OR） */
+function combine(each: Record<string, unknown>[], op: "all" | "any"): Record<string, unknown> {
+  const only = each[0];
+  if (each.length === 1 && only) return only;
   return op === "all" ? { AND: each } : { OR: each };
+}
+
+/** 反応後組成の有無（あり=写しがある）。両方・未選択なら絞らない */
+function postReactionCondition(values: string[]): Record<string, unknown> | null {
+  const has = values.includes("true");
+  const none = values.includes("false");
+  if (has === none) return null;
+  return has ? { preReactionAt: { not: null } } : { preReactionAt: null };
 }
 
 /**
@@ -222,11 +274,16 @@ function substanceNameCondition(
  * 「このCASを含む製品」を探せれば、製品を開かなくても組成が分かってしまう。
  * 列定義に無いキーは絞り込みとして黙って捨てられる
  */
-export function productColumns(versionId: string | null, withComposition: boolean): QueryColumn[] {
+export function productColumns(
+  versionId: string | null,
+  withComposition: boolean,
+  /** 組成をたどる絞り込みが見る組成。絞り込みの値から `compositionScopeOf` で決める */
+  scope: CompositionScope = "either",
+): QueryColumn[] {
   const v = versionId ?? "";
   return [
     ...PRODUCT_PLAIN_COLUMNS,
-    ...(withComposition ? PRODUCT_COMPOSITION_COLUMNS : []),
+    ...(withComposition ? productCompositionColumns(scope) : []),
     // 判定は区分ごとの行を数えて決まるので、共通の組み立てには乗らない
     {
       key: "judgement",
@@ -283,6 +340,13 @@ const PRODUCT_PLAIN_COLUMNS: QueryColumn[] = [
     custom: (f) => (f.kind === "text" ? nameWithAliases("nameEn", f) : null),
   },
   { key: "usableAsMaterial", kind: "enum", field: "usableAsMaterial", booleanEnum: true },
+  // 反応後組成の有無（S24）。写しがある製品が「あり」
+  {
+    key: "postReaction",
+    kind: "enum",
+    field: "preReactionAt",
+    custom: (f) => (f.kind === "enum" ? postReactionCondition(f.values) : null),
+  },
   { key: "status", kind: "enum", field: "status" },
   { key: "publishState", kind: "enum", field: "publishState" },
   { key: "modelValue", kind: "enum", field: "modelValue" },
@@ -293,25 +357,44 @@ const PRODUCT_PLAIN_COLUMNS: QueryColumn[] = [
 ];
 
 /** 製品の一覧の列のうち、組成をたどるもの。組成を見られる人にだけ付ける */
-const PRODUCT_COMPOSITION_COLUMNS: QueryColumn[] = [
-  // 組成をたどって物質のCAS番号で探す。値は完全一致（正規化して突合）
-  {
-    key: "casNumbers",
-    kind: "list",
-    field: "casNormalized",
-    normalize: normalizeCas,
-    relationPath: ["compositionLines", "substance"],
-    sortable: false,
-  },
-  // 組成をたどって物質の名前で探す。こちらは部分一致（別名も見る）
-  {
-    key: "substanceNames",
-    kind: "list",
-    field: "nameJa",
-    sortable: false,
-    custom: (f) => (f.kind === "list" ? substanceNameCondition(f.values, f.op) : null),
-  },
-];
+function productCompositionColumns(scope: CompositionScope): QueryColumn[] {
+  return [
+    // 組成をたどって物質のCAS番号で探す。値は完全一致（正規化して突合）
+    {
+      key: "casNumbers",
+      kind: "list",
+      field: "casNormalized",
+      normalize: normalizeCas,
+      sortable: false,
+      custom: (f) => {
+        if (f.kind !== "list") return null;
+        const values = [...new Set(f.values.map(normalizeCas).filter((v) => v !== ""))];
+        if (values.length === 0) return null;
+        const each = values.map((v) => scopedLines(scope, { substance: { casNormalized: v } }));
+        return combine(each, f.op);
+      },
+    },
+    // 組成をたどって物質の名前で探す。こちらは部分一致（別名も見る）
+    {
+      key: "substanceNames",
+      kind: "list",
+      field: "nameJa",
+      sortable: false,
+      custom: (f) => (f.kind === "list" ? substanceNameCondition(f.values, f.op, scope) : null),
+    },
+    /*
+      探す組成（反応後／反応前）。それ自体は条件を作らず、上の 2 つの条件の向き先を決める
+      （`compositionScopeOf` で読み、`productColumns` に渡す）
+    */
+    {
+      key: "compositionScope",
+      kind: "enum",
+      field: "preReactionAt",
+      sortable: false,
+      custom: () => null,
+    },
+  ];
+}
 
 export const REGION_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
