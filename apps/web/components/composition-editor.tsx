@@ -20,9 +20,11 @@ import {
   Database,
   GitCompare,
   GripVertical,
+  Plus,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
+import { Dialog } from "@base-ui/react/dialog";
 import { usePathname } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompositionAggregateTable } from "@/components/composition-aggregate-table";
@@ -120,6 +122,11 @@ function toRow(l: CompositionLineDto, index: number): Row | null {
   };
 }
 
+/** 行の中身を 1 つの文字列にする。直したところがあるかを比べるためだけに使う */
+function snapshotOf(rows: Row[]): string {
+  return JSON.stringify(rows.map((r) => [r.kind, r.element.id, r.contentPct, r.note]));
+}
+
 /**
  * 原組成の編集。
  * 製品詳細の下に置き、製品本体とは別に保存する（行数が多いので、
@@ -127,8 +134,8 @@ function toRow(l: CompositionLineDto, index: number): Row | null {
  */
 /** 行をつかんで並べ替えるつまみの列。中身の大きさで決まるので、伸び縮みさせない */
 const DRAG_HANDLE_WIDTH = 32;
-/** 行を消すボタンの列。同上 */
-const ROW_ACTION_WIDTH = 44;
+/** 行を選ぶチェックの列。ほかの表（data-table）と同じ幅 */
+const SELECT_WIDTH = 28;
 
 /**
  * まとめて開く／閉じるボタン。表ごとに1つずつ置く。
@@ -232,6 +239,15 @@ export function CompositionEditor({
    */
   const [stale, setStale] = useState<{ byName: string | null; at: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
+  /**
+   * 直しているあいだにチェックした行（鍵）。表の上のごみ箱でまとめて消す
+   * （ほかの表と同じ作法。行ごとのごみ箱は置かない。2026-09-29 指示）
+   */
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  /** 組成検索の窓を出しているか。表の上の「＋」で開く */
+  const [searchOpen, setSearchOpen] = useState(false);
+  /** 読み込んだときの行の写し。「キャンセル」で、直したところがあるかを見るのに使う */
+  const baseline = useRef<string>("");
   /** 反応前組成（写し）。あれば上の表は「反応後」（S24） */
   const [preReaction, setPreReaction] = useState<CompositionResponse["preReaction"]>(null);
   const [starting, setStarting] = useState(false);
@@ -280,7 +296,10 @@ export function CompositionEditor({
       return;
     }
     const body = (await res.json()) as CompositionResponse & { canEdit: boolean; stamp?: string };
-    setRows(body.lines.map(toRow).filter((r) => r !== null));
+    const loaded = body.lines.map(toRow).filter((r) => r !== null);
+    setRows(loaded);
+    baseline.current = snapshotOf(loaded);
+    setSelected(new Set());
     setCanEdit(!isPre && body.canEdit);
     setStamp(body.stamp ?? null);
     setPreReaction(body.preReaction ?? null);
@@ -511,6 +530,39 @@ export function CompositionEditor({
       })),
     ]);
     setPicked(new Set());
+    // 足したら窓を閉じる。表に戻って重量%を入れる流れにする
+    setSearchOpen(false);
+  }
+
+  /** チェックした行をまとめて消す。保存するまでは確定しないので、ここでは確かめない */
+  function removeSelected() {
+    if (selected.size === 0) return;
+    setRows((prev) => prev?.filter((r) => !selected.has(r.key)) ?? prev);
+    setSelected(new Set());
+  }
+
+  /**
+   * 「キャンセル」。直したところがあれば、捨ててよいかを先に確かめる（2026-09-29 指示）。
+   * 何も直していなければそのまま編集を終える
+   */
+  async function onCancel() {
+    if (
+      rows &&
+      snapshotOf(rows) !== baseline.current &&
+      !(await ask({
+        message: m.composition.cancelConfirm,
+        confirmLabel: m.common.discard,
+        destructive: true,
+      }))
+    )
+      return;
+    setErrors([]);
+    setNotice(null);
+    setStale(null);
+    setSelected(new Set());
+    setSearchOpen(false);
+    onFinishEdit?.();
+    void load();
   }
 
   async function onSave(force = false) {
@@ -637,10 +689,10 @@ export function CompositionEditor({
     **原材料内の重量%は、出ているときだけ数に入れる。**
     いつも数に入れると、出ていない製品でも幅を取られて他の列が狭くなる。
   */
-  const extra = editing ? DRAG_HANDLE_WIDTH + ROW_ACTION_WIDTH : 0;
+  const extra = editing ? DRAG_HANDLE_WIDTH + SELECT_WIDTH : 0;
   const cols = useResizableColumns(
-    // 版を上げて、覚えている列幅を捨てる（含有率の列を広げた既定で始め直す）
-    "chem.table.composition.v3",
+    // 版を上げて、覚えている列幅を捨てる（備考の列を広げた既定で始め直す。2026-09-29 指示）
+    "chem.table.composition.v4",
     [
       { key: "elementId", width: 88 },
       { key: "casNumber", width: 96 },
@@ -648,7 +700,7 @@ export function CompositionEditor({
       // 含有率は小数第6位まで。「100.000001%」が、拡大表示でも隠れずに入る幅
       { key: "contentPct", width: 120 },
       ...(showWithin ? [{ key: "withinPct", width: 120 }] : []),
-      { key: "note", width: 160 },
+      { key: "note", width: 300 },
     ],
     // 下の展開表と同じ規則。並べて見るので、片方だけ詰まると行がずれて見える
     { shrinkToFit: false },
@@ -855,6 +907,44 @@ export function CompositionEditor({
         </CardHeader>
 
         <CardContent className="space-y-3">
+          {/*
+            直しているときの表の操作。ほかの表と同じく「＋ → ごみ箱」の順に表の上へ置く（2026-09-29 指示）。
+            「＋」は組成検索の窓を開き、ごみ箱はチェックした行をまとめて消す。
+            行が 1 つも無いときも、ここから足せるように表の外に置く
+          */}
+          {editing && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="text-primary border-primary/40 hover:bg-primary/10 hover:text-primary size-8"
+                title={m.composition.searchTitle}
+                aria-label={m.composition.searchTitle}
+                disabled={full}
+                onClick={() => setSearchOpen(true)}
+              >
+                <Plus className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-8"
+                title={m.table.deleteSelected}
+                aria-label={m.table.deleteSelected}
+                disabled={selected.size === 0}
+                onClick={removeSelected}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+              {full && (
+                <span className="text-muted-foreground text-xs">
+                  {m.validation.tooMany(COMPOSITION_MAX_LINES)}
+                </span>
+              )}
+            </div>
+          )}
           {rows === null ? (
             <p className="text-muted-foreground text-sm">{m.common.loading}</p>
           ) : rows.length === 0 ? (
@@ -886,8 +976,8 @@ export function CompositionEditor({
               */}
                 <colgroup>
                   {editing && <col style={{ width: DRAG_HANDLE_WIDTH }} />}
+                  {editing && <col style={{ width: SELECT_WIDTH }} />}
                   {cols.cols()}
-                  {editing && <col style={{ width: ROW_ACTION_WIDTH }} />}
                 </colgroup>
                 {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
                 <thead className="sticky top-0 z-20">
@@ -895,6 +985,26 @@ export function CompositionEditor({
                   <tr className="table-head-solid text-table-head-foreground text-center [&>th]:border-t">
                     {/* 行をつかんで並べ替えるためのつまみ。幅は固定（つまみの大きさで決まる） */}
                     {editing && <th className={cn(CELL, "w-8")} />}
+                    {/* まとめて選ぶチェック。ほかの表と同じ置き方 */}
+                    {editing && (
+                      <th className={cn(CELL, "px-0 text-center")}>
+                        <input
+                          type="checkbox"
+                          aria-label={m.table.selectAll}
+                          checked={rows.length > 0 && selected.size === rows.length}
+                          ref={(el) => {
+                            if (el)
+                              el.indeterminate = selected.size > 0 && selected.size < rows.length;
+                          }}
+                          onChange={(e) =>
+                            setSelected(
+                              e.target.checked ? new Set(rows.map((r) => r.key)) : new Set(),
+                            )
+                          }
+                          className="align-middle"
+                        />
+                      </th>
+                    )}
                     <th className={cn(CELL, "relative font-medium")}>
                       {sortHead("elementId", m.composition.elementId)}
                       {cols.handle("elementId", `${m.composition.elementId} ${m.table.resize}`)}
@@ -935,8 +1045,6 @@ export function CompositionEditor({
                       {sortHead("note", m.composition.note)}
                       {cols.handle("note", `${m.composition.note} ${m.table.resize}`)}
                     </th>
-                    {/* 行の操作は、直しているときだけ出す。幅は中身で決まる */}
-                    {editing && <th className={cn(CELL, "w-px")} />}
                   </tr>
                 </thead>
                 <tbody>
@@ -996,6 +1104,22 @@ export function CompositionEditor({
                             </button>
                           </td>
                         )}
+                        {editing && (
+                          <td className={cn(CELL, "px-0 text-center")}>
+                            <input
+                              type="checkbox"
+                              aria-label={m.table.selectRow}
+                              checked={selected.has(r.key)}
+                              onChange={(e) => {
+                                const next = new Set(selected);
+                                if (e.target.checked) next.add(r.key);
+                                else next.delete(r.key);
+                                setSelected(next);
+                              }}
+                              className="align-middle"
+                            />
+                          </td>
+                        )}
                         <td className={cn(CELL, "font-mono text-xs")}>
                           {/* 中身を持つ原材料だけ開ける。編集中は出さない */}
                           {!editing && r.element.hasComposition ? (
@@ -1042,7 +1166,7 @@ export function CompositionEditor({
                               onDoubleClick={() => fillToHundred(i)}
                               value={r.contentPct}
                               onChange={(e) => update(i, { contentPct: e.target.value })}
-                              className="h-8 w-20 text-right"
+                              className="h-7 w-full text-right text-sm"
                             />
                           ) : (
                             r.contentPct
@@ -1061,26 +1185,12 @@ export function CompositionEditor({
                               rows={1}
                               value={r.note}
                               onChange={(e) => update(i, { note: e.target.value })}
-                              className="border-input bg-background block min-h-8 w-full resize-y rounded-none border px-2 py-1 text-sm"
+                              className="border-input block h-7 min-h-7 w-full resize-y rounded-none border bg-transparent px-2 py-0.5 text-sm"
                             />
                           ) : (
                             <span className="text-muted-foreground text-xs">{r.note}</span>
                           )}
                         </td>
-                        {editing && (
-                          <td className={cn(CELL, "w-px px-1 text-center")}>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label={`${m.common.delete} ${r.element.code}`}
-                              className="text-destructive"
-                              onClick={() => setRows(rows.filter((_, j) => j !== i))}
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </td>
-                        )}
                       </tr>
                       {!editing && r.element.hasComposition && (
                         <CompositionTreeRows
@@ -1105,15 +1215,13 @@ export function CompositionEditor({
                 <tfoot>
                   <tr className="bg-muted/50">
                     {/* 合計は数字の真上に来るよう、重量%の1つ手前まで結合する */}
-                    <td className={cn(CELL, "text-right font-medium")} colSpan={editing ? 4 : 3}>
+                    <td className={cn(CELL, "text-right font-medium")} colSpan={editing ? 5 : 3}>
                       {m.composition.sumLabel}
                     </td>
                     <td className={cn(CELL, "text-right font-medium")}>{grandTotalPct}%</td>
                     {/* 合計は登録した行のぶんだけ。原材料内の値は足し合わせても意味を持たない */}
                     {showWithin && <td className={CELL} />}
                     <td className={CELL} />
-                    {/* 追加は下の「組成検索」で行うので、合計行に操作は置かない */}
-                    {editing && <td className={CELL} />}
                   </tr>
                 </tfoot>
               </table>
@@ -1368,264 +1476,290 @@ export function CompositionEditor({
             </div>
           )}
 
+          {/*
+            組成検索。表の上の「＋」で窓として開く（2026-09-29 指示）。以前は表の下に常に出していた。
+            条件と結果は閉じても残す（続けて足すときに打ち直さなくて済む）
+          */}
           {editing && (
-            <div className="space-y-3 rounded-md border p-3">
-              <p className="text-sm font-medium">{m.composition.searchTitle}</p>
+            <Dialog.Root open={searchOpen} onOpenChange={setSearchOpen}>
+              <Dialog.Portal>
+                <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/40 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+                <Dialog.Popup
+                  initialFocus={searchRef}
+                  className="bg-popover text-popover-foreground ring-foreground/10 fixed top-1/2 left-1/2 z-50 max-h-[90vh] w-[min(95vw,56rem)] -translate-x-1/2 -translate-y-1/2 space-y-3 overflow-y-auto rounded-xl p-5 shadow-lg ring-1 outline-none data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0"
+                >
+                  <Dialog.Title className="text-base font-semibold">
+                    {m.composition.searchTitle}
+                  </Dialog.Title>
 
-              {/* 見出しはどれも短いので、左の列は詰める。説明は入力欄の右に添える */}
-              <div className="grid gap-2 sm:grid-cols-[4rem_1fr]">
-                <label htmlFor="cand-id" className="self-center text-right text-sm">
-                  {m.composition.elementId}
-                </label>
-                <Input
-                  ref={searchRef}
-                  id="cand-id"
-                  value={cond.id}
-                  onChange={(e) => setCond({ ...cond, id: e.target.value })}
-                  className="w-full sm:w-64"
-                />
-
-                <label htmlFor="cand-cas" className="self-center text-right text-sm">
-                  {m.composition.casNumber}
-                </label>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Input
-                    id="cand-cas"
-                    value={cond.cas}
-                    onChange={(e) => setCond({ ...cond, cas: e.target.value })}
-                    className="w-full sm:w-64"
-                  />
-                  <p className="text-muted-foreground text-xs">{m.composition.casSearchHint}</p>
-                </div>
-
-                <label htmlFor="cand-name" className="self-center text-right text-sm">
-                  {m.composition.searchName}
-                </label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Input
-                    id="cand-name"
-                    value={cond.name}
-                    onChange={(e) => setCond({ ...cond, name: e.target.value })}
-                    className="w-full sm:w-64"
-                    autoComplete="off"
-                  />
-                  <select
-                    aria-label={m.composition.nameOp}
-                    value={cond.nameOp}
-                    onChange={(e) => setCond({ ...cond, nameOp: e.target.value as TextOperator })}
-                    className="border-input bg-background h-9 rounded-none border px-2 text-sm"
-                  >
-                    {NAME_OPS.map((op) => (
-                      <option key={op} value={op}>
-                        {m.table.operators[op]}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label={m.composition.nameScope}
-                    value={cond.nameScope}
-                    onChange={(e) => setCond({ ...cond, nameScope: e.target.value as NameScope })}
-                    className="border-input bg-background h-9 rounded-none border px-2 text-sm"
-                  >
-                    {NAME_SCOPES.map((sc) => (
-                      <option key={sc} value={sc}>
-                        {m.composition.nameScopes[sc]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <span className="self-center text-right text-sm">{m.composition.target}</span>
-                <div className="flex flex-wrap items-center gap-4 text-sm">
-                  <label className="flex items-center gap-1.5">
-                    <input
-                      type="checkbox"
-                      checked={cond.substance}
-                      onChange={(e) => setCond({ ...cond, substance: e.target.checked })}
+                  {/* 見出しはどれも短いので、左の列は詰める。説明は入力欄の右に添える */}
+                  <div className="grid gap-2 sm:grid-cols-[4rem_1fr]">
+                    <label htmlFor="cand-id" className="self-center text-right text-sm">
+                      {m.composition.elementId}
+                    </label>
+                    <Input
+                      ref={searchRef}
+                      id="cand-id"
+                      value={cond.id}
+                      onChange={(e) => setCond({ ...cond, id: e.target.value })}
+                      className="w-full sm:w-64"
                     />
-                    {m.composition.kindSubstance}
-                  </label>
-                  <label className="flex items-center gap-1.5">
-                    <input
-                      type="checkbox"
-                      checked={cond.product}
-                      onChange={(e) => setCond({ ...cond, product: e.target.checked })}
-                    />
-                    {m.composition.kindProduct}
-                  </label>
-                </div>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" size="sm" disabled={searching} onClick={() => void search()}>
-                  {searching ? m.composition.searching : m.common.search}
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={clearSearch}>
-                  {m.table.clear}
-                </Button>
-                {full && (
-                  <span className="text-muted-foreground text-xs">
-                    {m.validation.tooMany(COMPOSITION_MAX_LINES)}
-                  </span>
-                )}
-              </div>
+                    <label htmlFor="cand-cas" className="self-center text-right text-sm">
+                      {m.composition.casNumber}
+                    </label>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Input
+                        id="cand-cas"
+                        value={cond.cas}
+                        onChange={(e) => setCond({ ...cond, cas: e.target.value })}
+                        className="w-full sm:w-64"
+                      />
+                      <p className="text-muted-foreground text-xs">{m.composition.casSearchHint}</p>
+                    </div>
 
-              {candidates !== null &&
-                (candidates.length === 0 ? (
-                  <p className="text-muted-foreground text-xs">{m.composition.noCandidates}</p>
-                ) : (
-                  <>
-                    <ResizableBox
-                      storageKey="chem.box.compositionCandidates"
-                      defaultMaxHeight="16rem"
-                      className="rounded-md border"
+                    <label htmlFor="cand-name" className="self-center text-right text-sm">
+                      {m.composition.searchName}
+                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Input
+                        id="cand-name"
+                        value={cond.name}
+                        onChange={(e) => setCond({ ...cond, name: e.target.value })}
+                        className="w-full sm:w-64"
+                        autoComplete="off"
+                      />
+                      <select
+                        aria-label={m.composition.nameOp}
+                        value={cond.nameOp}
+                        onChange={(e) =>
+                          setCond({ ...cond, nameOp: e.target.value as TextOperator })
+                        }
+                        className="border-input bg-background h-9 rounded-none border px-2 text-sm"
+                      >
+                        {NAME_OPS.map((op) => (
+                          <option key={op} value={op}>
+                            {m.table.operators[op]}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        aria-label={m.composition.nameScope}
+                        value={cond.nameScope}
+                        onChange={(e) =>
+                          setCond({ ...cond, nameScope: e.target.value as NameScope })
+                        }
+                        className="border-input bg-background h-9 rounded-none border px-2 text-sm"
+                      >
+                        {NAME_SCOPES.map((sc) => (
+                          <option key={sc} value={sc}>
+                            {m.composition.nameScopes[sc]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <span className="self-center text-right text-sm">{m.composition.target}</span>
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                      <label className="flex items-center gap-1.5">
+                        <input
+                          type="checkbox"
+                          checked={cond.substance}
+                          onChange={(e) => setCond({ ...cond, substance: e.target.checked })}
+                        />
+                        {m.composition.kindSubstance}
+                      </label>
+                      <label className="flex items-center gap-1.5">
+                        <input
+                          type="checkbox"
+                          checked={cond.product}
+                          onChange={(e) => setCond({ ...cond, product: e.target.checked })}
+                        />
+                        {m.composition.kindProduct}
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={searching}
+                      onClick={() => void search()}
                     >
-                      <table className={cn("w-full border-collapse text-sm", CELL_CLIP)}>
-                        <thead>
-                          <tr className="bg-muted/50 border-b text-left">
-                            <th className={cn(CELL, "w-8 text-center")}>
-                              {/* まとめて選ぶ。追加済みのものは対象にしない */}
-                              <input
-                                type="checkbox"
-                                aria-label={m.composition.selectAll}
-                                title={m.composition.selectAll}
-                                disabled={full || selectable.length === 0}
-                                checked={allPicked}
-                                ref={(el) => {
-                                  if (el) el.indeterminate = !allPicked && picked.size > 0;
-                                }}
-                                onChange={(e) =>
-                                  setPicked(
-                                    e.target.checked
-                                      ? new Set(selectable.map((c) => `${c.kind}:${c.id}`))
-                                      : new Set(),
-                                  )
-                                }
-                              />
-                            </th>
-                            <th className={cn(CELL, "w-28 font-medium")}>
-                              {m.composition.elementId}
-                            </th>
-                            <th className={cn(CELL, "w-32 font-medium")}>
-                              {m.composition.casNumber}
-                            </th>
-                            <th className={cn(CELL, "font-medium")}>{m.composition.elementName}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {candidates.map((c) => {
-                            const key = `${c.kind}:${c.id}`;
-                            const added = alreadyAdded.has(key);
-                            return (
-                              <tr key={key} className={cn("border-b", added && "opacity-50")}>
-                                <td className={cn(CELL, "text-center")}>
+                      {searching ? m.composition.searching : m.common.search}
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" onClick={clearSearch}>
+                      {m.table.clear}
+                    </Button>
+                  </div>
+
+                  {candidates !== null &&
+                    (candidates.length === 0 ? (
+                      <p className="text-muted-foreground text-xs">{m.composition.noCandidates}</p>
+                    ) : (
+                      <>
+                        <ResizableBox
+                          storageKey="chem.box.compositionCandidates"
+                          defaultMaxHeight="16rem"
+                          className="rounded-md border"
+                        >
+                          <table className={cn("w-full border-collapse text-sm", CELL_CLIP)}>
+                            <thead>
+                              <tr className="bg-muted/50 border-b text-left">
+                                <th className={cn(CELL, "w-8 text-center")}>
+                                  {/* まとめて選ぶ。追加済みのものは対象にしない */}
                                   <input
                                     type="checkbox"
-                                    aria-label={c.code}
-                                    disabled={added || full}
-                                    checked={picked.has(key)}
-                                    onChange={(e) => {
-                                      const next = new Set(picked);
-                                      if (e.target.checked) next.add(key);
-                                      else next.delete(key);
-                                      setPicked(next);
+                                    aria-label={m.composition.selectAll}
+                                    title={m.composition.selectAll}
+                                    disabled={full || selectable.length === 0}
+                                    checked={allPicked}
+                                    ref={(el) => {
+                                      if (el) el.indeterminate = !allPicked && picked.size > 0;
                                     }}
+                                    onChange={(e) =>
+                                      setPicked(
+                                        e.target.checked
+                                          ? new Set(selectable.map((c) => `${c.kind}:${c.id}`))
+                                          : new Set(),
+                                      )
+                                    }
                                   />
-                                </td>
-                                <td className={cn(CELL, "font-mono text-xs")}>{c.code}</td>
-                                <td className={cn(CELL, "font-mono text-xs")}>
-                                  {c.casNumber ??
-                                    (c.kind === "product" ? (
-                                      <span className="text-muted-foreground font-sans">
-                                        {m.composition.kindProduct}
-                                      </span>
-                                    ) : (
-                                      <span className="text-muted-foreground font-sans">
-                                        {m.composition.noCas}
-                                      </span>
-                                    ))}
-                                </td>
-                                <td className={CELL}>
-                                  {pickName(locale, c.nameJa, c.nameEn)}
-                                  {added && (
-                                    <span className="text-muted-foreground ml-2 text-xs">
-                                      {m.composition.alreadyAdded}
-                                    </span>
-                                  )}
-                                </td>
+                                </th>
+                                <th className={cn(CELL, "w-28 font-medium")}>
+                                  {m.composition.elementId}
+                                </th>
+                                <th className={cn(CELL, "w-32 font-medium")}>
+                                  {m.composition.casNumber}
+                                </th>
+                                <th className={cn(CELL, "font-medium")}>
+                                  {m.composition.elementName}
+                                </th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </ResizableBox>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={picked.size === 0 || full}
-                        onClick={addPicked}
-                      >
-                        {m.composition.addSelected(picked.size)}
-                      </Button>
-                      {/* 当たった全件。多いときは、条件を絞り直す合図になる */}
-                      <span className="text-muted-foreground text-xs">
-                        {m.common.totalCount(candidateTotal)}
-                      </span>
-                      {/* 1ページの件数。ほかの表と同じ選択肢・同じ既定値 */}
-                      <label className="text-muted-foreground flex items-center gap-1 text-xs whitespace-nowrap">
-                        {m.table.pageSize}
-                        <select
-                          aria-label={m.table.pageSize}
-                          value={candidatePageSize}
-                          disabled={searching}
-                          onChange={(e) => {
-                            const next = Number(e.target.value);
-                            setCandidatePageSize(next);
-                            void runSearch(searchedCond ?? cond, 1, next);
-                          }}
-                          className="border-input bg-background h-8 rounded-none border px-1 text-xs"
-                        >
-                          {candidateSizes.map((n) => (
-                            <option key={n} value={n}>
-                              {m.table.perPage(n)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      {candidatePageCount > 1 && (
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            aria-label={m.table.prevPage}
-                            title={m.table.prevPage}
-                            disabled={searching || candidatePage <= 1}
-                            onClick={() => void runSearch(searchedCond ?? cond, candidatePage - 1)}
-                          >
-                            {m.table.prevMark}
-                          </Button>
-                          <span className="text-muted-foreground text-xs tabular-nums">
-                            {m.common.pageOf(candidatePage, candidatePageCount)}
+                            </thead>
+                            <tbody>
+                              {candidates.map((c) => {
+                                const key = `${c.kind}:${c.id}`;
+                                const added = alreadyAdded.has(key);
+                                return (
+                                  <tr key={key} className={cn("border-b", added && "opacity-50")}>
+                                    <td className={cn(CELL, "text-center")}>
+                                      <input
+                                        type="checkbox"
+                                        aria-label={c.code}
+                                        disabled={added || full}
+                                        checked={picked.has(key)}
+                                        onChange={(e) => {
+                                          const next = new Set(picked);
+                                          if (e.target.checked) next.add(key);
+                                          else next.delete(key);
+                                          setPicked(next);
+                                        }}
+                                      />
+                                    </td>
+                                    <td className={cn(CELL, "font-mono text-xs")}>{c.code}</td>
+                                    <td className={cn(CELL, "font-mono text-xs")}>
+                                      {c.casNumber ??
+                                        (c.kind === "product" ? (
+                                          <span className="text-muted-foreground font-sans">
+                                            {m.composition.kindProduct}
+                                          </span>
+                                        ) : (
+                                          <span className="text-muted-foreground font-sans">
+                                            {m.composition.noCas}
+                                          </span>
+                                        ))}
+                                    </td>
+                                    <td className={CELL}>
+                                      {pickName(locale, c.nameJa, c.nameEn)}
+                                      {added && (
+                                        <span className="text-muted-foreground ml-2 text-xs">
+                                          {m.composition.alreadyAdded}
+                                        </span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </ResizableBox>
+                        <div className="flex flex-wrap items-center gap-3">
+                          {/* 当たった全件。多いときは、条件を絞り直す合図になる */}
+                          <span className="text-muted-foreground text-xs">
+                            {m.common.totalCount(candidateTotal)}
                           </span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            aria-label={m.table.nextPage}
-                            title={m.table.nextPage}
-                            disabled={searching || candidatePage >= candidatePageCount}
-                            onClick={() => void runSearch(searchedCond ?? cond, candidatePage + 1)}
-                          >
-                            {m.table.nextMark}
-                          </Button>
+                          {/* 1ページの件数。ほかの表と同じ選択肢・同じ既定値 */}
+                          <label className="text-muted-foreground flex items-center gap-1 text-xs whitespace-nowrap">
+                            {m.table.pageSize}
+                            <select
+                              aria-label={m.table.pageSize}
+                              value={candidatePageSize}
+                              disabled={searching}
+                              onChange={(e) => {
+                                const next = Number(e.target.value);
+                                setCandidatePageSize(next);
+                                void runSearch(searchedCond ?? cond, 1, next);
+                              }}
+                              className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+                            >
+                              {candidateSizes.map((n) => (
+                                <option key={n} value={n}>
+                                  {m.table.perPage(n)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          {candidatePageCount > 1 && (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                aria-label={m.table.prevPage}
+                                title={m.table.prevPage}
+                                disabled={searching || candidatePage <= 1}
+                                onClick={() =>
+                                  void runSearch(searchedCond ?? cond, candidatePage - 1)
+                                }
+                              >
+                                {m.table.prevMark}
+                              </Button>
+                              <span className="text-muted-foreground text-xs tabular-nums">
+                                {m.common.pageOf(candidatePage, candidatePageCount)}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                aria-label={m.table.nextPage}
+                                title={m.table.nextPage}
+                                disabled={searching || candidatePage >= candidatePageCount}
+                                onClick={() =>
+                                  void runSearch(searchedCond ?? cond, candidatePage + 1)
+                                }
+                              >
+                                {m.table.nextMark}
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </>
-                ))}
-            </div>
+                      </>
+                    ))}
+
+                  {/* 窓の下。「追加」でチェックしたものを組成に足して閉じる。「閉じる」は何もせず戻る */}
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setSearchOpen(false)}>
+                      {m.common.close}
+                    </Button>
+                    <Button type="button" disabled={picked.size === 0 || full} onClick={addPicked}>
+                      {m.composition.add}
+                    </Button>
+                  </div>
+                </Dialog.Popup>
+              </Dialog.Portal>
+            </Dialog.Root>
           )}
 
           {errors.length > 0 && (
@@ -1693,17 +1827,14 @@ export function CompositionEditor({
               <Button type="button" disabled={saving} onClick={() => void onSave()}>
                 {saving ? m.common.saving : m.common.save}
               </Button>
+              {/* キャンセル。直したところがあれば、捨ててよいかを先に聞く */}
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  setErrors([]);
-                  setNotice(null);
-                  onFinishEdit?.();
-                  void load();
-                }}
+                disabled={saving}
+                onClick={() => void onCancel()}
               >
-                {m.common.discard}
+                {m.common.cancel}
               </Button>
             </div>
           )}
