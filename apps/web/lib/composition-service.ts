@@ -36,12 +36,14 @@ export const COMPOSITION_INCLUDE = {
   },
 } satisfies Prisma.CompositionLineInclude;
 
-type LineRow = Prisma.CompositionLineGetPayload<{ include: typeof COMPOSITION_INCLUDE }>;
+export type LineRow = Prisma.CompositionLineGetPayload<{ include: typeof COMPOSITION_INCLUDE }>;
 
-/** 反応前の組成（写し）も同じ関連で引く（S24）。列も関連名も登録組成と同じ */
+/** 反応前組成（写し）も同じ関連で引く（S24）。列も関連名も登録組成と同じ */
 export const PRE_REACTION_INCLUDE =
   COMPOSITION_INCLUDE satisfies Prisma.ProductPreReactionLineInclude;
-type PreLineRow = Prisma.ProductPreReactionLineGetPayload<{ include: typeof PRE_REACTION_INCLUDE }>;
+export type PreLineRow = Prisma.ProductPreReactionLineGetPayload<{
+  include: typeof PRE_REACTION_INCLUDE;
+}>;
 
 /**
  * 組成を見られるか。
@@ -88,7 +90,7 @@ export function toLineDto(l: LineRow | PreLineRow): CompositionLineDto {
 
 /** 一覧と、そこから計算できる合計をまとめて返す */
 export function toCompositionResponse(
-  lines: LineRow[],
+  lines: (LineRow | PreLineRow)[],
   settings: AppSettings,
   m: Messages,
 ): CompositionResponse {
@@ -200,7 +202,7 @@ export async function wouldCreateCycle(
 
 /**
  * この製品を原材料として使っている組成の数（削除済みの親は数えない）。
- * 反応前の組成（写し）からの参照も数える。写しだけに残っている原材料を消すと、反応前の表が欠けるため（S24）
+ * 反応前組成（写し）からの参照も数える。写しだけに残っている原材料を消すと、反応前の表が欠けるため（S24）
  */
 export async function countUsesAsMaterial(productId: string): Promise<number> {
   const [lines, pre] = await Promise.all([

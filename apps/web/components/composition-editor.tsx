@@ -42,7 +42,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirm } from "@/components/confirm-dialog";
-import { PreReactionComposition } from "@/components/pre-reaction-composition";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useJudgementControls } from "@/lib/judgement-controls";
@@ -69,6 +68,13 @@ interface Props {
   onRequestEdit?: () => void;
   /** 保存または破棄で、この節の編集を終えたとき */
   onFinishEdit?: () => void;
+  /**
+   * 反応前組成（写し）を、同じ見た目で読むだけ出す（S24）。
+   * 編集も「反応後の組成入力」も出さず、法規制に関わるもの（該当法規制の列・再計算・差分・含有率不足）も出さない
+   */
+  source?: "pre-reaction";
+  /** 見出しの右に添える短い説明（いつ・誰が写し取ったか） */
+  subtitle?: string;
 }
 
 /** 名称の突合で選べるもの。「空白」「空白でない」は候補探しに使わない */
@@ -187,8 +193,11 @@ export function CompositionEditor({
   editing: editable,
   onRequestEdit,
   onFinishEdit,
+  source,
+  subtitle,
 }: Props) {
   const { m, locale } = useI18n();
+  const isPre = source === "pre-reaction";
 
   // 条件をクリアしたあと、ID欄へカーソルを戻すために持つ
   const searchRef = useRef<HTMLInputElement>(null);
@@ -211,7 +220,7 @@ export function CompositionEditor({
    */
   const [stale, setStale] = useState<{ byName: string | null; at: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
-  /** 反応前の組成（写し）。あれば上の表は「反応後」（S24） */
+  /** 反応前組成（写し）。あれば上の表は「反応後」（S24） */
   const [preReaction, setPreReaction] = useState<CompositionResponse["preReaction"]>(null);
   const [starting, setStarting] = useState(false);
   const ask = useConfirm();
@@ -246,7 +255,9 @@ export function CompositionEditor({
 
   const load = useCallback(async () => {
     setLoadError(null);
-    const res = await fetch(`/api/products/${productId}/composition`);
+    const res = await fetch(
+      `/api/products/${productId}/composition${isPre ? "?source=pre-reaction" : ""}`,
+    );
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -256,10 +267,10 @@ export function CompositionEditor({
     }
     const body = (await res.json()) as CompositionResponse & { canEdit: boolean; stamp?: string };
     setRows(body.lines.map(toRow).filter((r) => r !== null));
-    setCanEdit(body.canEdit);
+    setCanEdit(!isPre && body.canEdit);
     setStamp(body.stamp ?? null);
     setPreReaction(body.preReaction ?? null);
-  }, [productId, m]);
+  }, [productId, m, isPre]);
 
   /**
    * 「反応後の組成入力」。いまの組成を反応前として写し取り、この表を以後は反応後として編集する（S24）。
@@ -669,17 +680,20 @@ export function CompositionEditor({
             文字を変えると押した瞬間にカードが閉じてしまう。「反応後」は横に印で添える（S24）
           */}
           <span className="flex items-center gap-2">
-            <CardTitle className="text-base">{m.composition.title}</CardTitle>
-            {preReaction && (
+            <CardTitle className="text-base">
+              {isPre ? m.composition.postReaction.beforeTitle : m.composition.title}
+            </CardTitle>
+            {!isPre && preReaction && (
               <Badge variant="secondary">{m.composition.postReaction.afterBadge}</Badge>
             )}
+            {subtitle && <span className="text-muted-foreground text-xs">{subtitle}</span>}
           </span>
           <div className="flex items-center gap-1">
             {/*
             反応後の組成入力（S24）。編集中で、まだ写しが無いときだけ。
             押すといまの組成が反応前として写し取られ、この表が反応後になる
           */}
-            {editing && !preReaction && (
+            {editing && !preReaction && !isPre && (
               <Button
                 type="button"
                 size="sm"
@@ -998,11 +1012,11 @@ export function CompositionEditor({
               左端がそろっていないと、2つの表が別のものに見える。
             */}
               <div className="space-y-1">
-                {(showRaw || controls.versionCode || controls.stale) && (
+                {(showRaw || (!isPre && (controls.versionCode || controls.stale))) && (
                   <p className="text-sm font-medium">
                     {showRaw && m.composition.aggregateTitle}
-                    {/* いつ・どのバージョンで出した判定か。下の判定表の見出しと同じ（2026-09-22 指示） */}
-                    {controls.versionCode && (
+                    {/* いつ・どのバージョンで出した判定か。下の判定表の見出しと同じ（2026-09-22 指示）。反応前では出さない */}
+                    {!isPre && controls.versionCode && (
                       <span
                         className={cn(
                           "text-muted-foreground text-xs font-normal",
@@ -1023,7 +1037,7 @@ export function CompositionEditor({
                       </span>
                     )}
                     {/* 前提が計算より後に変わった、または施行日・終了日を跨いだ。下の判定表と同じ注意 */}
-                    {controls.stale && (
+                    {!isPre && controls.stale && (
                       <span
                         className={cn(
                           "text-destructive inline-flex items-center gap-1 text-xs font-normal",
@@ -1068,14 +1082,16 @@ export function CompositionEditor({
                   インベントリの列を、番号として出すもの（既定）だけにするか全部出すか。
                   **物質の表と同じ切り替え**にする（2026-09-20 指示）
                 */}
-                  <label className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={allInventories}
-                      onChange={(e) => setAllInventories(e.target.checked)}
-                    />
-                    {m.substanceMatrix.showAllInventories}
-                  </label>
+                  {!isPre && (
+                    <label className="text-muted-foreground flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={allInventories}
+                        onChange={(e) => setAllInventories(e.target.checked)}
+                      />
+                      {m.substanceMatrix.showAllInventories}
+                    </label>
+                  )}
                   {showSources && sources.length > 0 && (
                     <span className="ml-[1em] inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                       {sources.map((s) => (
@@ -1088,87 +1104,94 @@ export function CompositionEditor({
                   )}
                   {/*
                   前のバージョンとの差分。**比べる相手が無ければ押せない。**
-                  押せてしまうと、差が無いのか比べていないのかが分からない
+                  押せてしまうと、差が無いのか比べていないのかが分からない。
+                  ここから下（差分・要確認・再計算・含有率不足）は法規制判定に関わるので、反応前組成では出さない（S24）
                 */}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    aria-pressed={showDiff}
-                    disabled={previous === null}
-                    title={
-                      previous === null ? m.composition.diffNoPrevious : m.composition.diffHint
-                    }
-                    onClick={() => setShowDiff((v) => !v)}
-                    className={cn(showDiff && "text-destructive hover:text-destructive font-bold")}
-                  >
-                    <GitCompare className="mr-1 size-3.5" />
-                    {m.composition.diffShow}
-                  </Button>
-                  {/*
+                  {!isPre && (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        aria-pressed={showDiff}
+                        disabled={previous === null}
+                        title={
+                          previous === null ? m.composition.diffNoPrevious : m.composition.diffHint
+                        }
+                        onClick={() => setShowDiff((v) => !v)}
+                        className={cn(
+                          showDiff && "text-destructive hover:text-destructive font-bold",
+                        )}
+                      >
+                        <GitCompare className="mr-1 size-3.5" />
+                        {m.composition.diffShow}
+                      </Button>
+                      {/*
                   表に出る「※」の意味。**ボタンではない**ので、押せる見た目にしない。
                   印そのものと同じ赤にして、表と結び付ける
                 */}
-                  <span
-                    className={cn(
-                      REVIEW_CLASS,
-                      "ml-[0.5em] inline-flex items-center gap-1 text-xs",
-                    )}
-                    title={m.judgements.needsReviewHint}
-                  >
-                    <CircleHelp className="size-3" />
-                    {/* 下の判定表と同じく件数を添える（2026-09-22 指示）。0 件なら印の意味だけ */}
-                    {controls.reviewCount > 0
-                      ? m.judgements.reviewCount(controls.reviewCount)
-                      : m.composition.reviewLegend}
-                  </span>
-                  {/*
+                      <span
+                        className={cn(
+                          REVIEW_CLASS,
+                          "ml-[0.5em] inline-flex items-center gap-1 text-xs",
+                        )}
+                        title={m.judgements.needsReviewHint}
+                      >
+                        <CircleHelp className="size-3" />
+                        {/* 下の判定表と同じく件数を添える（2026-09-22 指示）。0 件なら印の意味だけ */}
+                        {controls.reviewCount > 0
+                          ? m.judgements.reviewCount(controls.reviewCount)
+                          : m.composition.reviewLegend}
+                      </span>
+                      {/*
                   「要確認」の右に続けて、下の判定表と同じ操作を置く（2026-09-22 指示。右寄せにはしない）。
                   「再計算」は下の判定表と同じもの（押すと判定対象日を尋ねる。judgement-controls で共有）。
                   「含有率不足による非該当」はこの表の切り替え
                 */}
-                  <span className="ml-[0.5em] inline-flex flex-wrap items-center gap-1.5">
-                    {controls.canRejudge && (
-                      <RejudgeButton
-                        productId={productId}
-                        today={controls.today}
-                        onError={setRejudgeError}
-                      />
-                    )}
-                    {/*
+                      <span className="ml-[0.5em] inline-flex flex-wrap items-center gap-1.5">
+                        {controls.canRejudge && (
+                          <RejudgeButton
+                            productId={productId}
+                            today={controls.today}
+                            onError={setRejudgeError}
+                          />
+                        )}
+                        {/*
                     含有率が足りずに当たっていないものを出すかどうか。
                     既定は出さない。**当たっているものと混ぜて読ませない**ため。
                     押しているときは**背景ではなく字と印を橙の太字**にする。
                     表に出る印と同じ見た目にして、ボタンと表の印を結び付ける
                   */}
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      aria-pressed={showNearMiss}
-                      title={m.composition.nearMissHint}
-                      onClick={() => setShowNearMiss((v) => !v)}
-                      className={cn(
-                        // 触っている間の色（`hover:text-foreground`）に負けるので、そこも橙にする
-                        showNearMiss &&
-                          cn(
-                            NEAR_MISS_CLASS,
-                            "hover:text-orange-600 dark:hover:text-orange-400 font-bold",
-                          ),
-                      )}
-                    >
-                      <TriangleAlert className="mr-1 size-3.5" />
-                      {m.composition.nearMissShow}
-                    </Button>
-                    {/*
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          aria-pressed={showNearMiss}
+                          title={m.composition.nearMissHint}
+                          onClick={() => setShowNearMiss((v) => !v)}
+                          className={cn(
+                            // 触っている間の色（`hover:text-foreground`）に負けるので、そこも橙にする
+                            showNearMiss &&
+                              cn(
+                                NEAR_MISS_CLASS,
+                                "hover:text-orange-600 dark:hover:text-orange-400 font-bold",
+                              ),
+                          )}
+                        >
+                          <TriangleAlert className="mr-1 size-3.5" />
+                          {m.composition.nearMissShow}
+                        </Button>
+                        {/*
                     件数はボタンの**外**に出す（2026-09-19 指示）。
                     押しても何も変わらないことがあり、効いていないのか
                     そもそも無いのかが分からなかった
                   */}
-                    <span className="text-muted-foreground text-sm">
-                      {m.composition.nearMissCount(nearMissCount)}
-                    </span>
-                  </span>
+                        <span className="text-muted-foreground text-sm">
+                          {m.composition.nearMissCount(nearMissCount)}
+                        </span>
+                      </span>
+                    </>
+                  )}
                 </div>
                 {rejudgeError && (
                   <Alert variant="destructive">
@@ -1178,6 +1201,7 @@ export function CompositionEditor({
               </div>
               <CompositionAggregateTable
                 productId={productId}
+                source={source}
                 open={aggregateOpen}
                 onOpenChange={setAggregateOpen}
                 onExpandableChange={setAggregateKeys}
@@ -1533,8 +1557,19 @@ export function CompositionEditor({
           )}
         </CardContent>
       </Card>
-      {/* 反応前の組成（写し）。反応後の表のすぐ下に、読み取り専用で並べる */}
-      {preReaction && <PreReactionComposition data={preReaction} />}
+      {/* 反応前組成（写し）。反応後の表のすぐ下に、読み取り専用で並べる */}
+      {preReaction && !isPre && (
+        <CompositionEditor
+          productId={productId}
+          settings={settings}
+          editing={false}
+          source="pre-reaction"
+          subtitle={m.composition.postReaction.copiedAt(
+            new Date(preReaction.at).toLocaleString(locale),
+            preReaction.byName,
+          )}
+        />
+      )}
     </>
   );
 }

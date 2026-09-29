@@ -1238,11 +1238,11 @@ model Product {
    */
   compositionLines CompositionLine[] @relation("ProductComposition")
   /**
-   * 反応前の組成（写し。表示だけ。計算には使わない）
+   * 反応前組成（写し。表示だけ。計算には使わない）
    */
   preReactionLines ProductPreReactionLine[] @relation("ProductPreReaction")
   /**
-   * この製品を原材料として使っている反応前の組成行（逆参照）
+   * この製品を原材料として使っている反応前組成行（逆参照）
    */
   usedInPreReaction ProductPreReactionLine[] @relation("PreReactionMaterial")
   /**
@@ -1402,7 +1402,7 @@ model CompositionLine {
 }
 
 /**
- * 反応前の組成（S24）。「反応後の組成入力」を押した時点の登録組成の**写し**。
+ * 反応前組成（S24）。「反応後の組成入力」を押した時点の登録組成の**写し**。
  * 表示だけに使い、判定・合算・出力には使わない（それらは登録組成＝反応後を読む）。
  * 列は CompositionLine と同じ。参照されている物質・原材料は消させない（登録組成と同じ扱い）
  */

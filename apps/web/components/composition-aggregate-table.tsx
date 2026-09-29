@@ -106,6 +106,8 @@ const keyOf = (row: { casNumber: string | null; code: string; impurityTypeId?: s
 
 interface Props {
   productId: string;
+  /** 反応前組成（写し）を合算して出す。該当法規制の列は出さない（S24） */
+  source?: "pre-reaction";
   /** 開いている行。見出しの「展開」「閉じる」から操るので、状態は親が持つ */
   open: Set<string>;
   onOpenChange: (next: Set<string>) => void;
@@ -487,6 +489,7 @@ function leafColumns(
 
 export function CompositionAggregateTable({
   productId,
+  source,
   open,
   onOpenChange,
   onExpandableChange,
@@ -527,9 +530,13 @@ export function CompositionAggregateTable({
     列は**出しているものから作る**。赤字を出しているあいだは、
     そのためだけに当たっている区分も列に加える。切ると元の列に戻る
   */
-  const columnRows = (data?.rows ?? []).map((r) => ({
-    regulations: showNearMiss ? [...r.regulations, ...r.nearMiss] : r.regulations,
-  }));
+  // 反応前組成では該当法規制の列を作らない（判定は反応後の組成に対するものなので。S24）
+  const columnRows =
+    source === "pre-reaction"
+      ? []
+      : (data?.rows ?? []).map((r) => ({
+          regulations: showNearMiss ? [...r.regulations, ...r.nearMiss] : r.regulations,
+        }));
   const built = leafColumns(columnRows, openRegions, closedCountries, closedLaws, locale);
   /*
     **該当法規制ごと畳めるようにする**（2026-09-20 指示。インベントリと同じ）。
@@ -556,7 +563,11 @@ export function CompositionAggregateTable({
     番号を出すと決めてあるインベントリだけが並ぶ（インベントリの画面で決める）。
     **行が1件も無くても列は出す。**空欄と列の不在は意味が違う（載っていない、と読めるように）
   */
-  const inventories = (data?.inventories ?? []).filter((i) => showAllInventories || i.shown);
+  // 反応前組成ではインベントリの列も出さない（2026-09-29 指示）
+  const inventories =
+    source === "pre-reaction"
+      ? []
+      : (data?.inventories ?? []).filter((i) => showAllInventories || i.shown);
   /** インベントリの列を分けているか。**既定は閉じる**（2026-09-20 指示。横に長くしない） */
   const [invOpen, setInvOpen] = useState(false);
   const invCols =
@@ -575,7 +586,10 @@ export function CompositionAggregateTable({
     reset: resetHeads,
     changed: headsChanged,
   } = useColumnVisibility("chem.table.compositionAggregate.v4.columns");
-  const heads = HEADS.filter((h) => !hiddenHeads.has(h.key));
+  // ランクは当たっている規制区分の点数から来るので、反応前組成では出さない（法規制の情報は出さない。S24）
+  const heads = HEADS.filter(
+    (h) => !hiddenHeads.has(h.key) && !(source === "pre-reaction" && h.key === "rank"),
+  );
   const FROZEN = heads.length;
   /** 出している列の中での位置。貼り付ける列の座標はこれで引く */
   const headAt = (key: HeadKey) => heads.findIndex((h) => h.key === key);
@@ -597,7 +611,9 @@ export function CompositionAggregateTable({
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const res = await fetch(`/api/products/${productId}/composition/aggregate`).catch(() => null);
+      const res = await fetch(
+        `/api/products/${productId}/composition/aggregate${source === "pre-reaction" ? "?source=pre-reaction" : ""}`,
+      ).catch(() => null);
       if (!res || !alive) return;
       if (redirectIfUnauthorized(res)) return;
       if (!res.ok) {
@@ -611,7 +627,7 @@ export function CompositionAggregateTable({
     return () => {
       alive = false;
     };
-  }, [productId, m]);
+  }, [productId, source, m]);
 
   // 取れたら、開ける行の鍵を親に渡す（見出しのボタンを出すかどうかの判断に使う）
   useEffect(() => {

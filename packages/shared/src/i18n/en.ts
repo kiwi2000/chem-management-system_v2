@@ -1934,8 +1934,6 @@ export const en: Messages = {
       confirmLabel: "Start post-reaction composition",
       afterBadge: "post-reaction",
       beforeTitle: "Pre-reaction composition",
-      beforeHint:
-        "A copy of the composition at the moment “Enter post-reaction composition” was pressed. Display only; judgements and aggregation do not use it.",
       copiedAt: (at: string, by: string | null) => `Copied ${at}${by ? ` (${by})` : ""}`,
       started:
         "The pre-reaction composition has been saved. Edit this table as the post-reaction composition.",

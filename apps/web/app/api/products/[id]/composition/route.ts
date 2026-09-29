@@ -71,6 +71,15 @@ export async function GET(_req: Request, { params }: Ctx) {
   const settings = await getAppSettings();
   // 画面が持ち帰る印。保存時に添えて送り返してもらう
   const stamp = await compositionStamp(id);
+  // ?source=pre-reaction … 反応前組成（写し）そのものを組成の形で返す（同じ画面部品で読むため。S24）
+  if (new URL(_req.url).searchParams.get("source") === "pre-reaction") {
+    if (!product.preReactionAt) return jsonError(404, "not_found", m.errors.notFound);
+    return Response.json({
+      ...toCompositionResponse(preLines, settings, m),
+      canEdit: false,
+      stamp: stamp.stamp,
+    });
+  }
   const preReaction = product.preReactionAt
     ? {
         at: product.preReactionAt.toISOString(),

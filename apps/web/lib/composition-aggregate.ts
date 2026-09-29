@@ -8,7 +8,7 @@ import {
   ratioToFine,
   timesPct,
 } from "@chem/shared";
-import { COMPOSITION_INCLUDE } from "@/lib/composition-service";
+import { COMPOSITION_INCLUDE, type LineRow, type PreLineRow } from "@/lib/composition-service";
 import {
   casTypeKey,
   currentSources,
@@ -137,6 +137,13 @@ export async function expandComposition(
 export async function aggregateComposition(
   actor: Actor,
   rootProductId: string,
+  options: {
+    /**
+     * 根の製品の行を差し替える（反応前の組成の写しを合算するとき。S24）。
+     * 原材料の中身は登録組成から下ろす。省略すれば根も登録組成
+     */
+    rootLines?: (LineRow | PreLineRow)[];
+  } = {},
 ): Promise<CompositionAggregateDto> {
   const buckets = new Map<string, Bucket>();
   const blocked: CompositionAggregateDto["blocked"] = [];
@@ -152,11 +159,14 @@ export async function aggregateComposition(
     });
     if (!product) return { reason: "notFound" as const };
 
-    const lines = await prisma.compositionLine.findMany({
-      where: { parentProductId: productId },
-      include: COMPOSITION_INCLUDE,
-      orderBy: { displayOrder: "asc" },
-    });
+    const lines =
+      productId === rootProductId && options.rootLines
+        ? options.rootLines
+        : await prisma.compositionLine.findMany({
+            where: { parentProductId: productId },
+            include: COMPOSITION_INCLUDE,
+            orderBy: { displayOrder: "asc" },
+          });
     if (lines.length === 0) return { reason: "empty" as const };
     return { lines };
   }

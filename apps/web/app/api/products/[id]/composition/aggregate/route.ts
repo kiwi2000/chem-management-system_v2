@@ -1,7 +1,7 @@
 import { recordCompositionView } from "@/lib/access-log";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
-import { canViewComposition } from "@/lib/composition-service";
+import { PRE_REACTION_INCLUDE, canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { visibilityWhere } from "@/lib/product-service";
@@ -20,7 +20,7 @@ type Ctx = { params: Promise<{ id: string }> };
  * 見えかたの判定は1段のときと同じ。製品が見えなければ404、組成が非開示なら403。
  * 途中の原材料が見えない場合は止めずに、その枝を「開けなかった」として返す。
  */
-export async function GET(_req: Request, { params }: Ctx) {
+export async function GET(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRODUCT_VIEW");
   if (actor instanceof Response) return actor;
   const { id } = await params;
@@ -34,7 +34,18 @@ export async function GET(_req: Request, { params }: Ctx) {
     return jsonError(403, "forbidden", m.composition.withheld);
   }
 
-  const result = await aggregateComposition(actor, id);
+  // ?source=pre-reaction … 反応前の組成（写し）を根にして合算する（S24）。無い製品では 404
+  const source = new URL(req.url).searchParams.get("source");
+  let rootLines;
+  if (source === "pre-reaction") {
+    if (!product.preReactionAt) return jsonError(404, "not_found", m.errors.notFound);
+    rootLines = await prisma.productPreReactionLine.findMany({
+      where: { productId: id },
+      include: PRE_REACTION_INCLUDE,
+      orderBy: { displayOrder: "asc" },
+    });
+  }
+  const result = await aggregateComposition(actor, id, rootLines ? { rootLines } : {});
 
   // 見たことを残す。末端まで下ろした表なので、持ち出されたときの重みは1段より大きい
   await recordCompositionView({
