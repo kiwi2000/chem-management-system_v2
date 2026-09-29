@@ -38,6 +38,11 @@ export const COMPOSITION_INCLUDE = {
 
 type LineRow = Prisma.CompositionLineGetPayload<{ include: typeof COMPOSITION_INCLUDE }>;
 
+/** 反応前の組成（写し）も同じ関連で引く（S24）。列も関連名も登録組成と同じ */
+export const PRE_REACTION_INCLUDE =
+  COMPOSITION_INCLUDE satisfies Prisma.ProductPreReactionLineInclude;
+type PreLineRow = Prisma.ProductPreReactionLineGetPayload<{ include: typeof PRE_REACTION_INCLUDE }>;
+
 /**
  * 組成を見られるか。
  * 製品ごとの公開フラグは廃止したので、判定は権限だけで決まる。
@@ -51,7 +56,7 @@ export function canEditComposition(actor: Actor, product: Product): boolean {
   return actor.has("PRODUCT_EDIT") && canViewComposition(actor, product);
 }
 
-export function toLineDto(l: LineRow): CompositionLineDto {
+export function toLineDto(l: LineRow | PreLineRow): CompositionLineDto {
   return {
     id: l.id,
     substanceId: l.substanceId,
@@ -93,7 +98,8 @@ export function toCompositionResponse(
     settings,
     m,
   );
-  return { lines: items, totalPct: sum.totalPct };
+  // 反応前の写しは呼ぶ側が足す（無ければ null のまま）
+  return { lines: items, totalPct: sum.totalPct, preReaction: null };
 }
 
 /**
@@ -192,18 +198,33 @@ export async function wouldCreateCycle(
   return false;
 }
 
-/** この製品を原材料として使っている組成の数（削除済みの親は数えない） */
-export function countUsesAsMaterial(productId: string): Promise<number> {
-  return prisma.compositionLine.count({
-    where: { childProductId: productId, parentProduct: { deletedAt: null } },
-  });
+/**
+ * この製品を原材料として使っている組成の数（削除済みの親は数えない）。
+ * 反応前の組成（写し）からの参照も数える。写しだけに残っている原材料を消すと、反応前の表が欠けるため（S24）
+ */
+export async function countUsesAsMaterial(productId: string): Promise<number> {
+  const [lines, pre] = await Promise.all([
+    prisma.compositionLine.count({
+      where: { childProductId: productId, parentProduct: { deletedAt: null } },
+    }),
+    prisma.productPreReactionLine.count({
+      where: { childProductId: productId, product: { deletedAt: null } },
+    }),
+  ]);
+  return lines + pre;
 }
 
-/** この物質を使っている組成の数（削除済みの親は数えない） */
-export function countUsesOfSubstance(substanceId: string): Promise<number> {
-  return prisma.compositionLine.count({
-    where: { substanceId, parentProduct: { deletedAt: null } },
-  });
+/** この物質を使っている組成の数（削除済みの親は数えない）。反応前の写しからの参照も数える */
+export async function countUsesOfSubstance(substanceId: string): Promise<number> {
+  const [lines, pre] = await Promise.all([
+    prisma.compositionLine.count({
+      where: { substanceId, parentProduct: { deletedAt: null } },
+    }),
+    prisma.productPreReactionLine.count({
+      where: { substanceId, product: { deletedAt: null } },
+    }),
+  ]);
+  return lines + pre;
 }
 
 /** 入力から DB に書く行へ */

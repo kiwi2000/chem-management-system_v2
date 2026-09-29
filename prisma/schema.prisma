@@ -1075,6 +1075,7 @@ model Substance {
   gazetteNumbers   SubstanceGazetteNumber[]
   properties       SubstanceProperty[]
   compositionLines CompositionLine[]
+  preReactionLines ProductPreReactionLine[]
   impurityType     ImpurityType             @relation(fields: [impurityTypeId], references: [id])
 
   prtrMeasured    PrtrMeasured[]
@@ -1226,9 +1227,24 @@ model Product {
   uses        ProductUse[]
 
   /**
-   * この製品の組成（何が入っているか）
+   * 反応後の組成を入れ始めた日時と人（S24）。入っていれば、登録組成（compositionLines）は**反応後**で、
+   * 押した時点の組成の写しが preReactionLines（反応前）に凍結されている。空なら従来どおり
+   */
+  preReactionAt DateTime? @map("pre_reaction_at")
+  preReactionBy String?   @map("pre_reaction_by")
+
+  /**
+   * この製品の組成（何が入っているか）。反応後の組成を入れた製品では、これが反応後
    */
   compositionLines CompositionLine[] @relation("ProductComposition")
+  /**
+   * 反応前の組成（写し。表示だけ。計算には使わない）
+   */
+  preReactionLines ProductPreReactionLine[] @relation("ProductPreReaction")
+  /**
+   * この製品を原材料として使っている反応前の組成行（逆参照）
+   */
+  usedInPreReaction ProductPreReactionLine[] @relation("PreReactionMaterial")
   /**
    * この製品を原材料として使っている組成行（逆参照）
    */
@@ -1383,6 +1399,30 @@ model CompositionLine {
   @@index([substanceId])
   @@index([childProductId])
   @@map("composition_lines")
+}
+
+/**
+ * 反応前の組成（S24）。「反応後の組成入力」を押した時点の登録組成の**写し**。
+ * 表示だけに使い、判定・合算・出力には使わない（それらは登録組成＝反応後を読む）。
+ * 列は CompositionLine と同じ。参照されている物質・原材料は消させない（登録組成と同じ扱い）
+ */
+model ProductPreReactionLine {
+  id             String   @id @default(cuid())
+  productId      String   @map("product_id")
+  substanceId    String?  @map("substance_id")
+  childProductId String?  @map("child_product_id")
+  contentPct     Decimal? @map("content_pct") @db.Decimal(9, 6)
+  note           String?
+  displayOrder   Int      @default(0) @map("display_order")
+
+  product      Product    @relation("ProductPreReaction", fields: [productId], references: [id], onDelete: Cascade)
+  substance    Substance? @relation(fields: [substanceId], references: [id], onDelete: Restrict)
+  childProduct Product?   @relation("PreReactionMaterial", fields: [childProductId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@index([substanceId])
+  @@index([childProductId])
+  @@map("product_pre_reaction_lines")
 }
 
 // ---------- 金属換算係数 ----------

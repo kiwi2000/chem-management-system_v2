@@ -1,0 +1,141 @@
+import { normalizeCode } from "@chem/shared";
+import { writeAudit } from "@/lib/audit";
+import { jsonError, requirePermission } from "@/lib/authz";
+import { aggregateComposition } from "@/lib/composition-aggregate";
+import { canEditComposition } from "@/lib/composition-service";
+import { prisma } from "@/lib/db";
+import { recomputeFrom } from "@/lib/expansion-store";
+import { getServerMessages } from "@/lib/i18n";
+import { visibilityWhere } from "@/lib/product-service";
+
+export const dynamic = "force-dynamic";
+
+type Ctx = { params: Promise<{ id: string }> };
+
+/**
+ * POST /api/products/[id]/composition/pre-reaction — 「反応後の組成入力」を始める（S24）。
+ *
+ * いまの登録組成を**反応前として写し取って凍結**し、登録組成そのものを以後「反応後」として編集してもらう。
+ *
+ * 反応後の出発点は、原材料が含まれていれば**原材料展開・CAS 合算の表**（物質ごと。2026-09-29 指示）。
+ * 反応で原材料という単位は無くなるので、物質ごとの行から直し始めるほうが自然なため。
+ * 展開できなかった原材料（中身が無い・見えない）は、失わないよう原材料の行のまま残す。
+ * 原材料が無ければ登録組成はそのまま（写しを取るだけ）。
+ *
+ * 押せるのは組成を編集できる人。一度押した製品では 409（写しは 1 つ。戻す手段はまだ無い）
+ */
+export async function POST(_req: Request, { params }: Ctx) {
+  const actor = await requirePermission("PRODUCT_EDIT");
+  if (actor instanceof Response) return actor;
+  const { id } = await params;
+  const m = await getServerMessages();
+
+  const product = await prisma.product.findFirst({
+    where: { id, deletedAt: null, ...visibilityWhere(actor) },
+  });
+  if (!product) return jsonError(404, "not_found", m.errors.notFound);
+  if (!canEditComposition(actor, product)) {
+    return jsonError(403, "forbidden", m.composition.withheldEdit);
+  }
+  if (product.preReactionAt) {
+    return jsonError(409, "already_started", m.composition.postReaction.alreadyStarted);
+  }
+
+  const lines = await prisma.compositionLine.findMany({
+    where: { parentProductId: id },
+    orderBy: { displayOrder: "asc" },
+  });
+  const hasMaterials = lines.some((l) => l.childProductId !== null);
+
+  // 反応後の出発点: 原材料があれば合算の表（物質ごと）、無ければ登録組成のまま
+  let next:
+    | {
+        substanceId: string | null;
+        childProductId: string | null;
+        contentPct: string | null;
+        note: string | null;
+      }[]
+    | null = null;
+  if (hasMaterials) {
+    const agg = await aggregateComposition(actor, id);
+    const codes = [...new Set(agg.rows.map((r) => normalizeCode(r.code)))];
+    const substances = await prisma.substance.findMany({
+      where: { codeNormalized: { in: codes }, deletedAt: null },
+      select: { id: true, codeNormalized: true },
+    });
+    const idByCode = new Map(substances.map((s) => [s.codeNormalized, s.id]));
+    next = [];
+    for (const r of agg.rows) {
+      const substanceId = idByCode.get(normalizeCode(r.code));
+      if (!substanceId) continue; // 代表物質が引けない（消された直後など）。要確認に残す
+      next.push({ substanceId, childProductId: null, contentPct: r.totalPct, note: r.note });
+    }
+    // 展開できなかった原材料は、その行のまま残す（数字を失わない）
+    if (agg.blocked.length > 0) {
+      const blockedCodes = [...new Set(agg.blocked.map((b) => normalizeCode(b.code)))];
+      const children = await prisma.product.findMany({
+        where: { codeNormalized: { in: blockedCodes }, deletedAt: null },
+        select: { id: true, codeNormalized: true },
+      });
+      const childByCode = new Map(children.map((c) => [c.codeNormalized, c.id]));
+      for (const b of agg.blocked) {
+        const childProductId = childByCode.get(normalizeCode(b.code));
+        if (childProductId)
+          next.push({ substanceId: null, childProductId, contentPct: b.pct, note: null });
+      }
+    }
+  }
+
+  const at = new Date();
+  await prisma.$transaction([
+    prisma.productPreReactionLine.deleteMany({ where: { productId: id } }),
+    prisma.productPreReactionLine.createMany({
+      data: lines.map((l) => ({
+        productId: id,
+        substanceId: l.substanceId,
+        childProductId: l.childProductId,
+        contentPct: l.contentPct,
+        note: l.note,
+        displayOrder: l.displayOrder,
+      })),
+    }),
+    ...(next
+      ? [
+          prisma.compositionLine.deleteMany({ where: { parentProductId: id } }),
+          prisma.compositionLine.createMany({
+            data: next.map((l, i) => ({ ...l, parentProductId: id, displayOrder: i })),
+          }),
+        ]
+      : []),
+    prisma.product.update({
+      where: { id },
+      data: { preReactionAt: at, preReactionBy: actor.user.id, updatedBy: actor.user.id },
+    }),
+  ]);
+  // 登録組成を置き換えたときは展開結果も作り直す（中身は同じはずだが、行の形が変わっている）
+  const recomputed = next
+    ? await recomputeFrom(id).catch((e: unknown) => {
+        console.error("展開結果の作り直しに失敗:", id, e);
+        return 0;
+      })
+    : 0;
+  await writeAudit({
+    entity: "product_pre_reaction",
+    entityId: id,
+    action: "create",
+    actorId: actor.user.id,
+    diff: {
+      lineCount: lines.length,
+      fromAggregate: next !== null,
+      postLineCount: next?.length ?? lines.length,
+      recomputed,
+    },
+  });
+  return Response.json({
+    ok: true,
+    lineCount: lines.length,
+    fromAggregate: next !== null,
+    postLineCount: next?.length ?? lines.length,
+    at: at.toISOString(),
+  });
+}

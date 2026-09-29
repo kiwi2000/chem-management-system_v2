@@ -38,8 +38,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditingBadge } from "@/components/editing-badge";
 import { RejudgeButton } from "@/components/rejudge-button";
 import { EditButton } from "@/components/edit-button";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useConfirm } from "@/components/confirm-dialog";
+import { PreReactionComposition } from "@/components/pre-reaction-composition";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useJudgementControls } from "@/lib/judgement-controls";
@@ -208,6 +211,10 @@ export function CompositionEditor({
    */
   const [stale, setStale] = useState<{ byName: string | null; at: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
+  /** 反応前の組成（写し）。あれば上の表は「反応後」（S24） */
+  const [preReaction, setPreReaction] = useState<CompositionResponse["preReaction"]>(null);
+  const [starting, setStarting] = useState(false);
+  const ask = useConfirm();
 
   // 追加用の検索
   /** 検索の条件。入れた条件はすべて満たすものを探す */
@@ -251,7 +258,44 @@ export function CompositionEditor({
     setRows(body.lines.map(toRow).filter((r) => r !== null));
     setCanEdit(body.canEdit);
     setStamp(body.stamp ?? null);
+    setPreReaction(body.preReaction ?? null);
   }, [productId, m]);
+
+  /**
+   * 「反応後の組成入力」。いまの組成を反応前として写し取り、この表を以後は反応後として編集する（S24）。
+   * 登録組成の行は変えないので、判定や合算はそのまま。写しは 1 度だけ（戻す手段はまだ無い）ので先に確かめる
+   */
+  async function startPostReaction() {
+    if (
+      !(await ask({
+        message: m.composition.postReaction.confirm,
+        confirmLabel: m.composition.postReaction.confirmLabel,
+      }))
+    )
+      return;
+    setStarting(true);
+    setErrors([]);
+    try {
+      const res = await fetch(`/api/products/${productId}/composition/pre-reaction`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setErrors([body?.error.message ?? m.errors.saveFailed(res.status)]);
+        return;
+      }
+      const body = (await res.json()) as { fromAggregate?: boolean };
+      setNotice(
+        body.fromAggregate
+          ? m.composition.postReaction.startedFromAggregate
+          : m.composition.postReaction.started,
+      );
+      await load();
+    } finally {
+      setStarting(false);
+    }
+  }
 
   useEffect(() => {
     void load();
@@ -617,294 +661,323 @@ export function CompositionEditor({
   }
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
-        <CardTitle className="text-base">{m.composition.title}</CardTitle>
-        <div className="flex items-center gap-1">
+    <>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
           {/*
+            カード（Card）の見出しの文字は「組成」のまま。カードの開閉は見出しの文字を鍵に端末へ覚えているので、
+            文字を変えると押した瞬間にカードが閉じてしまう。「反応後」は横に印で添える（S24）
+          */}
+          <span className="flex items-center gap-2">
+            <CardTitle className="text-base">{m.composition.title}</CardTitle>
+            {preReaction && (
+              <Badge variant="secondary">{m.composition.postReaction.afterBadge}</Badge>
+            )}
+          </span>
+          <div className="flex items-center gap-1">
+            {/*
+            反応後の組成入力（S24）。編集中で、まだ写しが無いときだけ。
+            押すといまの組成が反応前として写し取られ、この表が反応後になる
+          */}
+            {editing && !preReaction && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={starting}
+                onClick={() => void startPostReaction()}
+              >
+                {m.composition.postReaction.button}
+              </Button>
+            )}
+            {/*
             「開」「閉」は行の先頭（他の表と同じ並び。2026-09-12 指示）。
             開くものが無ければ置いても押せないので出さない。
             **ここは登録組成の木だけを操る。**まとめた表は自分の見出しに同じ組を持つ。
             2つの表が同時に見えているので、どちらに効くのか分からないボタンは置かない
           */}
-          {showWithin && (
-            <ExpandButtons
-              m={m}
-              canExpand={!tree.expandingAll && !isFullyExpanded(tree, treeRoots)}
-              canCollapse={tree.open.size > 0}
-              onExpand={() => tree.expandAll(treeRoots)}
-              onCollapse={() => tree.collapseAll()}
-            />
-          )}
-          {onRequestEdit &&
-            canEdit &&
-            (editing ? <EditingBadge /> : <EditButton onClick={onRequestEdit} />)}
-        </div>
-      </CardHeader>
+            {showWithin && (
+              <ExpandButtons
+                m={m}
+                canExpand={!tree.expandingAll && !isFullyExpanded(tree, treeRoots)}
+                canCollapse={tree.open.size > 0}
+                onExpand={() => tree.expandAll(treeRoots)}
+                onCollapse={() => tree.collapseAll()}
+              />
+            )}
+            {onRequestEdit &&
+              canEdit &&
+              (editing ? <EditingBadge /> : <EditButton onClick={onRequestEdit} />)}
+          </div>
+        </CardHeader>
 
-      <CardContent className="space-y-3">
-        {rows === null ? (
-          <p className="text-muted-foreground text-sm">{m.common.loading}</p>
-        ) : rows.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
-        ) : !showRaw ? null : (
-          /*
+        <CardContent className="space-y-3">
+          {rows === null ? (
+            <p className="text-muted-foreground text-sm">{m.common.loading}</p>
+          ) : rows.length === 0 ? (
+            <p className="text-muted-foreground text-sm">{m.composition.empty}</p>
+          ) : !showRaw ? null : (
+            /*
             **箱に高さを決める。**行が多いと、横のスクロールバーが表のいちばん下に付き、
             そこまでページを送ると見出しが画面から消えていた。
             箱の中で行を送れば、見出しは上に貼り付いたまま、スクロールバーも下端にある
           */
-          <ResizableBox storageKey="chem.box.compositionEditor" scrollerRef={cols.scrollerRef}>
-            {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
-            {cols.peek}
-            {cols.stickyBar}
-            <table
-              {...cols.tableProps}
-              className={cn(
-                "table-fixed border-separate border-spacing-0 text-sm [&_tr>*:first-child]:border-l",
-                CELL_CLIP,
-                cols.tableProps.className,
-              )}
-              // 直しているときだけ出る前後の列のぶんを足す
-              style={{ width: (cols.tableProps.style.width ?? 0) + extra }}
-            >
-              {/*
+            <ResizableBox storageKey="chem.box.compositionEditor" scrollerRef={cols.scrollerRef}>
+              {/* 切れているセルにマウスを置いたとき、中身を全部出す吹き出し */}
+              {cols.peek}
+              {cols.stickyBar}
+              <table
+                {...cols.tableProps}
+                className={cn(
+                  "table-fixed border-separate border-spacing-0 text-sm [&_tr>*:first-child]:border-l",
+                  CELL_CLIP,
+                  cols.tableProps.className,
+                )}
+                // 直しているときだけ出る前後の列のぶんを足す
+                style={{ width: (cols.tableProps.style.width ?? 0) + extra }}
+              >
+                {/*
                 colgroup は列の並びと1対1で対応する。
                 **直しているときだけ出る前後の列も、ここに置くこと。**
                 置き忘れると、幅が1つずつずれて別の列に当たる。
               */}
-              <colgroup>
-                {editing && <col style={{ width: DRAG_HANDLE_WIDTH }} />}
-                {cols.cols()}
-                {editing && <col style={{ width: ROW_ACTION_WIDTH }} />}
-              </colgroup>
-              {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
-              <thead className="sticky top-0 z-20">
-                {/* **見出しの項目名は中央に寄せる**（2026-09-20 指示）。中身の寄せは変えない */}
-                <tr className="table-head-solid text-table-head-foreground text-center [&>th]:border-t">
-                  {/* 行をつかんで並べ替えるためのつまみ。幅は固定（つまみの大きさで決まる） */}
-                  {editing && <th className={cn(CELL, "w-8")} />}
-                  <th className={cn(CELL, "relative font-medium")}>
-                    {m.composition.elementId}
-                    {cols.handle("elementId", `${m.composition.elementId} ${m.table.resize}`)}
-                  </th>
-                  <th className={cn(CELL, "relative font-medium")}>
-                    {m.composition.casNumber}
-                    {cols.handle("casNumber", `${m.composition.casNumber} ${m.table.resize}`)}
-                  </th>
-                  <th className={cn(CELL, "relative font-medium")}>
-                    {m.composition.elementName}
-                    {cols.handle("elementName", `${m.composition.elementName} ${m.table.resize}`)}
-                  </th>
-                  <th className={cn(CELL, "relative text-center font-medium whitespace-nowrap")}>
-                    {m.composition.contentPct}
-                    {/* 列が2つ並ぶときだけ、どちらの重量%かを添える */}
-                    {showWithin && (
-                      <span className="block text-xs font-normal opacity-80">
-                        {m.composition.pctOfProduct}
-                      </span>
-                    )}
-                    {cols.handle("contentPct", `${m.composition.contentPct} ${m.table.resize}`)}
-                  </th>
-                  {showWithin && (
+                <colgroup>
+                  {editing && <col style={{ width: DRAG_HANDLE_WIDTH }} />}
+                  {cols.cols()}
+                  {editing && <col style={{ width: ROW_ACTION_WIDTH }} />}
+                </colgroup>
+                {/* 見出しは箱の上に貼り付ける。下の行が透けないよう、色は不透明にする */}
+                <thead className="sticky top-0 z-20">
+                  {/* **見出しの項目名は中央に寄せる**（2026-09-20 指示）。中身の寄せは変えない */}
+                  <tr className="table-head-solid text-table-head-foreground text-center [&>th]:border-t">
+                    {/* 行をつかんで並べ替えるためのつまみ。幅は固定（つまみの大きさで決まる） */}
+                    {editing && <th className={cn(CELL, "w-8")} />}
+                    <th className={cn(CELL, "relative font-medium")}>
+                      {m.composition.elementId}
+                      {cols.handle("elementId", `${m.composition.elementId} ${m.table.resize}`)}
+                    </th>
+                    <th className={cn(CELL, "relative font-medium")}>
+                      {m.composition.casNumber}
+                      {cols.handle("casNumber", `${m.composition.casNumber} ${m.table.resize}`)}
+                    </th>
+                    <th className={cn(CELL, "relative font-medium")}>
+                      {m.composition.elementName}
+                      {cols.handle("elementName", `${m.composition.elementName} ${m.table.resize}`)}
+                    </th>
                     <th className={cn(CELL, "relative text-center font-medium whitespace-nowrap")}>
                       {m.composition.contentPct}
-                      <span className="block text-xs font-normal opacity-80">
-                        {m.composition.pctWithinMaterial}
-                      </span>
-                      {cols.handle(
-                        "withinPct",
-                        `${m.composition.pctWithinMaterial} ${m.table.resize}`,
+                      {/* 列が2つ並ぶときだけ、どちらの重量%かを添える */}
+                      {showWithin && (
+                        <span className="block text-xs font-normal opacity-80">
+                          {m.composition.pctOfProduct}
+                        </span>
                       )}
+                      {cols.handle("contentPct", `${m.composition.contentPct} ${m.table.resize}`)}
                     </th>
-                  )}
-                  <th className={cn(CELL, "relative font-medium")}>
-                    {m.composition.note}
-                    {cols.handle("note", `${m.composition.note} ${m.table.resize}`)}
-                  </th>
-                  {/* 行の操作は、直しているときだけ出す。幅は中身で決まる */}
-                  {editing && <th className={cn(CELL, "w-px")} />}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, i) => (
-                  <Fragment key={r.key}>
-                    <tr
-                      className={cn(
-                        dragIndex === i && "opacity-40",
-                        // 落とす先の印。separate では行に線を引けないので、セルの上に引く
-                        overIndex === i &&
-                          dragIndex !== i &&
-                          "[&>td]:border-t-primary [&>td]:border-t-2",
-                      )}
-                      onDragOver={(e) => {
-                        if (dragIndex === null) return;
-                        // 既定では落とせないので、受け取れることを伝える
-                        e.preventDefault();
-                        setOverIndex(i);
-                      }}
-                      onDrop={(e) => {
-                        if (dragIndex === null) return;
-                        e.preventDefault();
-                        reorder(dragIndex, i);
-                        setDragIndex(null);
-                        setOverIndex(null);
-                      }}
-                    >
-                      {editing && (
-                        <td className={cn(CELL, "w-8 px-1")}>
-                          <button
-                            type="button"
-                            draggable
-                            aria-label={m.composition.dragHint}
-                            title={m.composition.dragHint}
-                            className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-                            onDragStart={(e) => {
-                              setDragIndex(i);
-                              e.dataTransfer.effectAllowed = "move";
-                              // Firefox は中身が空だと運べない
-                              e.dataTransfer.setData("text/plain", String(i));
-                              // つまみだけでなく行ごと動いて見えるようにする
-                              const tr = e.currentTarget.closest("tr");
-                              if (tr) e.dataTransfer.setDragImage(tr, 0, 0);
-                            }}
-                            onDragEnd={() => {
-                              setDragIndex(null);
-                              setOverIndex(null);
-                            }}
-                            // つかめない人のために、矢印キーでも動かせるようにする
-                            onKeyDown={(e) => {
-                              if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-                              e.preventDefault();
-                              move(i, e.key === "ArrowUp" ? -1 : 1);
-                            }}
-                          >
-                            <GripVertical className="size-4" />
-                          </button>
-                        </td>
-                      )}
-                      <td className={cn(CELL, "font-mono text-xs")}>
-                        {/* 中身を持つ原材料だけ開ける。編集中は出さない */}
-                        {!editing && r.element.hasComposition ? (
-                          <span className="inline-flex items-center gap-1">
-                            <ExpandToggle
-                              open={tree.open.has(r.key)}
-                              onClick={() => tree.toggle(r.key, r.element.id)}
-                              label={
-                                tree.open.has(r.key) ? m.composition.collapse : m.composition.expand
-                              }
-                            />
-                            {r.element.code}
-                          </span>
-                        ) : (
-                          r.element.code
+                    {showWithin && (
+                      <th
+                        className={cn(CELL, "relative text-center font-medium whitespace-nowrap")}
+                      >
+                        {m.composition.contentPct}
+                        <span className="block text-xs font-normal opacity-80">
+                          {m.composition.pctWithinMaterial}
+                        </span>
+                        {cols.handle(
+                          "withinPct",
+                          `${m.composition.pctWithinMaterial} ${m.table.resize}`,
                         )}
-                      </td>
-                      <td className={cn(CELL, "font-mono text-xs")}>
-                        {/* 原材料にCASは無いので淡く「原材料」と出す。CASの無い物質は空欄 */}
-                        {r.element.casNumber ??
-                          (r.kind === "product" ? (
-                            <span className="text-muted-foreground font-sans">
-                              {m.composition.kindProduct}
+                      </th>
+                    )}
+                    <th className={cn(CELL, "relative font-medium")}>
+                      {m.composition.note}
+                      {cols.handle("note", `${m.composition.note} ${m.table.resize}`)}
+                    </th>
+                    {/* 行の操作は、直しているときだけ出す。幅は中身で決まる */}
+                    {editing && <th className={cn(CELL, "w-px")} />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => (
+                    <Fragment key={r.key}>
+                      <tr
+                        className={cn(
+                          dragIndex === i && "opacity-40",
+                          // 落とす先の印。separate では行に線を引けないので、セルの上に引く
+                          overIndex === i &&
+                            dragIndex !== i &&
+                            "[&>td]:border-t-primary [&>td]:border-t-2",
+                        )}
+                        onDragOver={(e) => {
+                          if (dragIndex === null) return;
+                          // 既定では落とせないので、受け取れることを伝える
+                          e.preventDefault();
+                          setOverIndex(i);
+                        }}
+                        onDrop={(e) => {
+                          if (dragIndex === null) return;
+                          e.preventDefault();
+                          reorder(dragIndex, i);
+                          setDragIndex(null);
+                          setOverIndex(null);
+                        }}
+                      >
+                        {editing && (
+                          <td className={cn(CELL, "w-8 px-1")}>
+                            <button
+                              type="button"
+                              draggable
+                              aria-label={m.composition.dragHint}
+                              title={m.composition.dragHint}
+                              className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+                              onDragStart={(e) => {
+                                setDragIndex(i);
+                                e.dataTransfer.effectAllowed = "move";
+                                // Firefox は中身が空だと運べない
+                                e.dataTransfer.setData("text/plain", String(i));
+                                // つまみだけでなく行ごと動いて見えるようにする
+                                const tr = e.currentTarget.closest("tr");
+                                if (tr) e.dataTransfer.setDragImage(tr, 0, 0);
+                              }}
+                              onDragEnd={() => {
+                                setDragIndex(null);
+                                setOverIndex(null);
+                              }}
+                              // つかめない人のために、矢印キーでも動かせるようにする
+                              onKeyDown={(e) => {
+                                if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+                                e.preventDefault();
+                                move(i, e.key === "ArrowUp" ? -1 : 1);
+                              }}
+                            >
+                              <GripVertical className="size-4" />
+                            </button>
+                          </td>
+                        )}
+                        <td className={cn(CELL, "font-mono text-xs")}>
+                          {/* 中身を持つ原材料だけ開ける。編集中は出さない */}
+                          {!editing && r.element.hasComposition ? (
+                            <span className="inline-flex items-center gap-1">
+                              <ExpandToggle
+                                open={tree.open.has(r.key)}
+                                onClick={() => tree.toggle(r.key, r.element.id)}
+                                label={
+                                  tree.open.has(r.key)
+                                    ? m.composition.collapse
+                                    : m.composition.expand
+                                }
+                              />
+                              {r.element.code}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground font-sans">
-                              {m.composition.noCas}
-                            </span>
-                          ))}
-                      </td>
-                      <td className={CELL}>
-                        {pickName(locale, r.element.nameJa, r.element.nameEn)}
-                      </td>
-                      <td className={cn(CELL, "text-right")}>
-                        {editing ? (
-                          <Input
-                            aria-label={`${r.element.code} ${m.composition.contentPct}`}
-                            inputMode="decimal"
-                            // 過去に打った文字が候補として出るのを止める
-                            autoComplete="off"
-                            title={m.composition.fillHint}
-                            onDoubleClick={() => fillToHundred(i)}
-                            value={r.contentPct}
-                            onChange={(e) => update(i, { contentPct: e.target.value })}
-                            className="h-8 w-20 text-right"
-                          />
-                        ) : (
-                          r.contentPct
-                        )}
-                      </td>
-                      {showWithin && (
-                        // 登録した行には親の原材料が無いので、比べる相手がいない
-                        <td className={cn(CELL, "text-muted-foreground text-right")}>—</td>
-                      )}
-                      <td className={CELL}>
-                        {editing ? (
-                          // 長い備考も読めるよう、下へ引っぱって広げられるようにする
-                          <textarea
-                            aria-label={`${r.element.code} ${m.composition.note}`}
-                            maxLength={500}
-                            rows={1}
-                            value={r.note}
-                            onChange={(e) => update(i, { note: e.target.value })}
-                            className="border-input bg-background block min-h-8 w-full resize-y rounded-none border px-2 py-1 text-sm"
-                          />
-                        ) : (
-                          <span className="text-muted-foreground text-xs">{r.note}</span>
-                        )}
-                      </td>
-                      {editing && (
-                        <td className={cn(CELL, "w-px px-1 text-center")}>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`${m.common.delete} ${r.element.code}`}
-                            className="text-destructive"
-                            onClick={() => setRows(rows.filter((_, j) => j !== i))}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
+                            r.element.code
+                          )}
                         </td>
-                      )}
-                    </tr>
-                    {!editing && r.element.hasComposition && (
-                      <CompositionTreeRows
-                        tree={tree}
-                        path={r.key}
-                        ratio={
-                          ratioOfPct(r.contentPct || "0") ?? {
-                            num: 0n,
-                            den: 1n,
+                        <td className={cn(CELL, "font-mono text-xs")}>
+                          {/* 原材料にCASは無いので淡く「原材料」と出す。CASの無い物質は空欄 */}
+                          {r.element.casNumber ??
+                            (r.kind === "product" ? (
+                              <span className="text-muted-foreground font-sans">
+                                {m.composition.kindProduct}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground font-sans">
+                                {m.composition.noCas}
+                              </span>
+                            ))}
+                        </td>
+                        <td className={CELL}>
+                          {pickName(locale, r.element.nameJa, r.element.nameEn)}
+                        </td>
+                        <td className={cn(CELL, "text-right")}>
+                          {editing ? (
+                            <Input
+                              aria-label={`${r.element.code} ${m.composition.contentPct}`}
+                              inputMode="decimal"
+                              // 過去に打った文字が候補として出るのを止める
+                              autoComplete="off"
+                              title={m.composition.fillHint}
+                              onDoubleClick={() => fillToHundred(i)}
+                              value={r.contentPct}
+                              onChange={(e) => update(i, { contentPct: e.target.value })}
+                              className="h-8 w-20 text-right"
+                            />
+                          ) : (
+                            r.contentPct
+                          )}
+                        </td>
+                        {showWithin && (
+                          // 登録した行には親の原材料が無いので、比べる相手がいない
+                          <td className={cn(CELL, "text-muted-foreground text-right")}>—</td>
+                        )}
+                        <td className={CELL}>
+                          {editing ? (
+                            // 長い備考も読めるよう、下へ引っぱって広げられるようにする
+                            <textarea
+                              aria-label={`${r.element.code} ${m.composition.note}`}
+                              maxLength={500}
+                              rows={1}
+                              value={r.note}
+                              onChange={(e) => update(i, { note: e.target.value })}
+                              className="border-input bg-background block min-h-8 w-full resize-y rounded-none border px-2 py-1 text-sm"
+                            />
+                          ) : (
+                            <span className="text-muted-foreground text-xs">{r.note}</span>
+                          )}
+                        </td>
+                        {editing && (
+                          <td className={cn(CELL, "w-px px-1 text-center")}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`${m.common.delete} ${r.element.code}`}
+                              className="text-destructive"
+                              onClick={() => setRows(rows.filter((_, j) => j !== i))}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                      {!editing && r.element.hasComposition && (
+                        <CompositionTreeRows
+                          tree={tree}
+                          path={r.key}
+                          ratio={
+                            ratioOfPct(r.contentPct || "0") ?? {
+                              num: 0n,
+                              den: 1n,
+                            }
                           }
-                        }
-                        parentName={pickName(locale, r.element.nameJa, r.element.nameEn)}
-                        depth={1}
-                        colSpan={columnCount}
-                        showWithin={showWithin}
-                        cellClass={CELL}
-                      />
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-muted/50">
-                  {/* 合計は数字の真上に来るよう、重量%の1つ手前まで結合する */}
-                  <td className={cn(CELL, "text-right font-medium")} colSpan={editing ? 4 : 3}>
-                    {m.composition.sumLabel}
-                  </td>
-                  <td className={cn(CELL, "text-right font-medium")}>{grandTotalPct}%</td>
-                  {/* 合計は登録した行のぶんだけ。原材料内の値は足し合わせても意味を持たない */}
-                  {showWithin && <td className={CELL} />}
-                  <td className={CELL} />
-                  {/* 追加は下の「組成検索」で行うので、合計行に操作は置かない */}
-                  {editing && <td className={CELL} />}
-                </tr>
-              </tfoot>
-            </table>
-          </ResizableBox>
-        )}
+                          parentName={pickName(locale, r.element.nameJa, r.element.nameEn)}
+                          depth={1}
+                          colSpan={columnCount}
+                          showWithin={showWithin}
+                          cellClass={CELL}
+                        />
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-muted/50">
+                    {/* 合計は数字の真上に来るよう、重量%の1つ手前まで結合する */}
+                    <td className={cn(CELL, "text-right font-medium")} colSpan={editing ? 4 : 3}>
+                      {m.composition.sumLabel}
+                    </td>
+                    <td className={cn(CELL, "text-right font-medium")}>{grandTotalPct}%</td>
+                    {/* 合計は登録した行のぶんだけ。原材料内の値は足し合わせても意味を持たない */}
+                    {showWithin && <td className={CELL} />}
+                    <td className={CELL} />
+                    {/* 追加は下の「組成検索」で行うので、合計行に操作は置かない */}
+                    {editing && <td className={CELL} />}
+                  </tr>
+                </tfoot>
+              </table>
+            </ResizableBox>
+          )}
 
-        {/*
+          {/*
           まとめた表。**登録した組成の下に並べる。**
           上の表が「登録したそのまま」、下が「判定に使う値」。
           切り替えではなく並べるのは、**この2つを見比べたい場面が多い**ため
@@ -913,539 +986,555 @@ export function CompositionEditor({
           まとめても同じ表になるときは、**上の表のほうを出さない**（`showRaw`）。
           同じものを2つ並べても読む手間が増えるだけで、列の多いこちらを残す。
         */}
-        {showAggregate && (
-          /*
+          {showAggregate && (
+            /*
             上の表を出さないときは、区切り線も小見出しも要らない。
             まとめる相手がいないのだから「原材料展開・CAS合算」と名乗ると、
             **何かをまとめた表に見えてしまう**。札の「組成」がそのまま見出しになる
           */
-          <div className={cn("space-y-2", showRaw && "border-t pt-4")}>
-            {/*
+            <div className={cn("space-y-2", showRaw && "border-t pt-4")}>
+              {/*
               見出しとボタンの置き方は、上の「組成」の見出しと同じにする。
               左端がそろっていないと、2つの表が別のものに見える。
             */}
-            <div className="space-y-1">
-              {(showRaw || controls.versionCode || controls.stale) && (
-                <p className="text-sm font-medium">
-                  {showRaw && m.composition.aggregateTitle}
-                  {/* いつ・どのバージョンで出した判定か。下の判定表の見出しと同じ（2026-09-22 指示） */}
-                  {controls.versionCode && (
-                    <span
-                      className={cn("text-muted-foreground text-xs font-normal", showRaw && "ml-2")}
-                    >
-                      {[
-                        controls.versionCode,
-                        controls.computedAt
-                          ? m.judgements.computedAt(
-                              new Date(controls.computedAt).toLocaleString(locale),
-                            )
-                          : null,
-                        controls.judgedAsOf ? m.judgements.judgedAsOf(controls.judgedAsOf) : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" ・ ")}
-                    </span>
-                  )}
-                  {/* 前提が計算より後に変わった、または施行日・終了日を跨いだ。下の判定表と同じ注意 */}
-                  {controls.stale && (
-                    <span
-                      className={cn(
-                        "text-destructive inline-flex items-center gap-1 text-xs font-normal",
-                        (showRaw || controls.versionCode) && "ml-2",
-                      )}
-                      title={controls.staleByDate ? undefined : m.judgements.staleHint}
-                    >
-                      <TriangleAlert className="size-3" />
-                      {controls.staleByDate ? m.judgements.staleByDate : m.judgements.stale}
-                    </span>
-                  )}
-                </p>
-              )}
-              <div className="flex flex-wrap items-center gap-1.5">
-                {aggregateKeys.length > 0 && (
-                  <ExpandButtons
-                    m={m}
-                    canExpand={!aggregateKeys.every((k) => aggregateOpen.has(k))}
-                    canCollapse={aggregateOpen.size > 0}
-                    onExpand={() => setAggregateOpen(new Set(aggregateKeys))}
-                    onCollapse={() => setAggregateOpen(new Set())}
-                  />
+              <div className="space-y-1">
+                {(showRaw || controls.versionCode || controls.stale) && (
+                  <p className="text-sm font-medium">
+                    {showRaw && m.composition.aggregateTitle}
+                    {/* いつ・どのバージョンで出した判定か。下の判定表の見出しと同じ（2026-09-22 指示） */}
+                    {controls.versionCode && (
+                      <span
+                        className={cn(
+                          "text-muted-foreground text-xs font-normal",
+                          showRaw && "ml-2",
+                        )}
+                      >
+                        {[
+                          controls.versionCode,
+                          controls.computedAt
+                            ? m.judgements.computedAt(
+                                new Date(controls.computedAt).toLocaleString(locale),
+                              )
+                            : null,
+                          controls.judgedAsOf ? m.judgements.judgedAsOf(controls.judgedAsOf) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" ・ ")}
+                      </span>
+                    )}
+                    {/* 前提が計算より後に変わった、または施行日・終了日を跨いだ。下の判定表と同じ注意 */}
+                    {controls.stale && (
+                      <span
+                        className={cn(
+                          "text-destructive inline-flex items-center gap-1 text-xs font-normal",
+                          (showRaw || controls.versionCode) && "ml-2",
+                        )}
+                        title={controls.staleByDate ? undefined : m.judgements.staleHint}
+                      >
+                        <TriangleAlert className="size-3" />
+                        {controls.staleByDate ? m.judgements.staleByDate : m.judgements.stale}
+                      </span>
+                    )}
+                  </p>
                 )}
-                {/*
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {aggregateKeys.length > 0 && (
+                    <ExpandButtons
+                      m={m}
+                      canExpand={!aggregateKeys.every((k) => aggregateOpen.has(k))}
+                      canCollapse={aggregateOpen.size > 0}
+                      onExpand={() => setAggregateOpen(new Set(aggregateKeys))}
+                      onCollapse={() => setAggregateOpen(new Set())}
+                    />
+                  )}
+                  {/*
                   データソースの印を出すかどうか。押している間だけ、
                   **その印が何を指すのかをボタンの右に並べる**。
                   印は頭文字だけなので、並びを見ないと `C` が CHRIP か CFR か分からない
                 */}
-                <Button
-                  type="button"
-                  size="sm"
-                  // 押されているときは濃い塗り（aria-pressed の見た目。ほかの切り替えと同じ）
-                  variant="outline"
-                  aria-pressed={showSources}
-                  title={m.composition.sourceHint}
-                  onClick={() => setShowSources((v) => !v)}
-                >
-                  <Database className="mr-1 size-3.5" />
-                  {m.composition.sourceShow}
-                </Button>
-                {/*
+                  <Button
+                    type="button"
+                    size="sm"
+                    // 押されているときは濃い塗り（aria-pressed の見た目。ほかの切り替えと同じ）
+                    variant="outline"
+                    aria-pressed={showSources}
+                    title={m.composition.sourceHint}
+                    onClick={() => setShowSources((v) => !v)}
+                  >
+                    <Database className="mr-1 size-3.5" />
+                    {m.composition.sourceShow}
+                  </Button>
+                  {/*
                   インベントリの列を、番号として出すもの（既定）だけにするか全部出すか。
                   **物質の表と同じ切り替え**にする（2026-09-20 指示）
                 */}
-                <label className="text-muted-foreground flex items-center gap-1 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={allInventories}
-                    onChange={(e) => setAllInventories(e.target.checked)}
-                  />
-                  {m.substanceMatrix.showAllInventories}
-                </label>
-                {showSources && sources.length > 0 && (
-                  <span className="ml-[1em] inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    {sources.map((s) => (
-                      <span key={s.id} className="inline-flex items-center gap-1">
-                        <SourceChip source={s} />
-                        {s.code}
-                      </span>
-                    ))}
-                  </span>
-                )}
-                {/*
+                  <label className="text-muted-foreground flex items-center gap-1 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={allInventories}
+                      onChange={(e) => setAllInventories(e.target.checked)}
+                    />
+                    {m.substanceMatrix.showAllInventories}
+                  </label>
+                  {showSources && sources.length > 0 && (
+                    <span className="ml-[1em] inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                      {sources.map((s) => (
+                        <span key={s.id} className="inline-flex items-center gap-1">
+                          <SourceChip source={s} />
+                          {s.code}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                  {/*
                   前のバージョンとの差分。**比べる相手が無ければ押せない。**
                   押せてしまうと、差が無いのか比べていないのかが分からない
                 */}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  aria-pressed={showDiff}
-                  disabled={previous === null}
-                  title={previous === null ? m.composition.diffNoPrevious : m.composition.diffHint}
-                  onClick={() => setShowDiff((v) => !v)}
-                  className={cn(showDiff && "text-destructive hover:text-destructive font-bold")}
-                >
-                  <GitCompare className="mr-1 size-3.5" />
-                  {m.composition.diffShow}
-                </Button>
-                {/*
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    aria-pressed={showDiff}
+                    disabled={previous === null}
+                    title={
+                      previous === null ? m.composition.diffNoPrevious : m.composition.diffHint
+                    }
+                    onClick={() => setShowDiff((v) => !v)}
+                    className={cn(showDiff && "text-destructive hover:text-destructive font-bold")}
+                  >
+                    <GitCompare className="mr-1 size-3.5" />
+                    {m.composition.diffShow}
+                  </Button>
+                  {/*
                   表に出る「※」の意味。**ボタンではない**ので、押せる見た目にしない。
                   印そのものと同じ赤にして、表と結び付ける
                 */}
-                <span
-                  className={cn(REVIEW_CLASS, "ml-[0.5em] inline-flex items-center gap-1 text-xs")}
-                  title={m.judgements.needsReviewHint}
-                >
-                  <CircleHelp className="size-3" />
-                  {/* 下の判定表と同じく件数を添える（2026-09-22 指示）。0 件なら印の意味だけ */}
-                  {controls.reviewCount > 0
-                    ? m.judgements.reviewCount(controls.reviewCount)
-                    : m.composition.reviewLegend}
-                </span>
-                {/*
+                  <span
+                    className={cn(
+                      REVIEW_CLASS,
+                      "ml-[0.5em] inline-flex items-center gap-1 text-xs",
+                    )}
+                    title={m.judgements.needsReviewHint}
+                  >
+                    <CircleHelp className="size-3" />
+                    {/* 下の判定表と同じく件数を添える（2026-09-22 指示）。0 件なら印の意味だけ */}
+                    {controls.reviewCount > 0
+                      ? m.judgements.reviewCount(controls.reviewCount)
+                      : m.composition.reviewLegend}
+                  </span>
+                  {/*
                   「要確認」の右に続けて、下の判定表と同じ操作を置く（2026-09-22 指示。右寄せにはしない）。
                   「再計算」は下の判定表と同じもの（押すと判定対象日を尋ねる。judgement-controls で共有）。
                   「含有率不足による非該当」はこの表の切り替え
                 */}
-                <span className="ml-[0.5em] inline-flex flex-wrap items-center gap-1.5">
-                  {controls.canRejudge && (
-                    <RejudgeButton
-                      productId={productId}
-                      today={controls.today}
-                      onError={setRejudgeError}
-                    />
-                  )}
-                  {/*
+                  <span className="ml-[0.5em] inline-flex flex-wrap items-center gap-1.5">
+                    {controls.canRejudge && (
+                      <RejudgeButton
+                        productId={productId}
+                        today={controls.today}
+                        onError={setRejudgeError}
+                      />
+                    )}
+                    {/*
                     含有率が足りずに当たっていないものを出すかどうか。
                     既定は出さない。**当たっているものと混ぜて読ませない**ため。
                     押しているときは**背景ではなく字と印を橙の太字**にする。
                     表に出る印と同じ見た目にして、ボタンと表の印を結び付ける
                   */}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    aria-pressed={showNearMiss}
-                    title={m.composition.nearMissHint}
-                    onClick={() => setShowNearMiss((v) => !v)}
-                    className={cn(
-                      // 触っている間の色（`hover:text-foreground`）に負けるので、そこも橙にする
-                      showNearMiss &&
-                        cn(
-                          NEAR_MISS_CLASS,
-                          "hover:text-orange-600 dark:hover:text-orange-400 font-bold",
-                        ),
-                    )}
-                  >
-                    <TriangleAlert className="mr-1 size-3.5" />
-                    {m.composition.nearMissShow}
-                  </Button>
-                  {/*
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      aria-pressed={showNearMiss}
+                      title={m.composition.nearMissHint}
+                      onClick={() => setShowNearMiss((v) => !v)}
+                      className={cn(
+                        // 触っている間の色（`hover:text-foreground`）に負けるので、そこも橙にする
+                        showNearMiss &&
+                          cn(
+                            NEAR_MISS_CLASS,
+                            "hover:text-orange-600 dark:hover:text-orange-400 font-bold",
+                          ),
+                      )}
+                    >
+                      <TriangleAlert className="mr-1 size-3.5" />
+                      {m.composition.nearMissShow}
+                    </Button>
+                    {/*
                     件数はボタンの**外**に出す（2026-09-19 指示）。
                     押しても何も変わらないことがあり、効いていないのか
                     そもそも無いのかが分からなかった
                   */}
-                  <span className="text-muted-foreground text-sm">
-                    {m.composition.nearMissCount(nearMissCount)}
-                  </span>
-                </span>
-              </div>
-              {rejudgeError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{rejudgeError}</AlertDescription>
-                </Alert>
-              )}
-            </div>
-            <CompositionAggregateTable
-              productId={productId}
-              open={aggregateOpen}
-              onOpenChange={setAggregateOpen}
-              onExpandableChange={setAggregateKeys}
-              showNearMiss={showNearMiss}
-              showSources={showSources}
-              showDiff={showDiff}
-              onSourcesChange={setSources}
-              onNearMissCountChange={setNearMissCount}
-              showAllInventories={allInventories}
-              onPreviousVersionChange={setPrevious}
-            />
-          </div>
-        )}
-
-        {editing && (
-          <div className="space-y-3 rounded-md border p-3">
-            <p className="text-sm font-medium">{m.composition.searchTitle}</p>
-
-            {/* 見出しはどれも短いので、左の列は詰める。説明は入力欄の右に添える */}
-            <div className="grid gap-2 sm:grid-cols-[4rem_1fr]">
-              <label htmlFor="cand-id" className="self-center text-right text-sm">
-                {m.composition.elementId}
-              </label>
-              <Input
-                ref={searchRef}
-                id="cand-id"
-                value={cond.id}
-                onChange={(e) => setCond({ ...cond, id: e.target.value })}
-                className="w-full sm:w-64"
-              />
-
-              <label htmlFor="cand-cas" className="self-center text-right text-sm">
-                {m.composition.casNumber}
-              </label>
-              <div className="flex flex-wrap items-center gap-3">
-                <Input
-                  id="cand-cas"
-                  value={cond.cas}
-                  onChange={(e) => setCond({ ...cond, cas: e.target.value })}
-                  className="w-full sm:w-64"
-                />
-                <p className="text-muted-foreground text-xs">{m.composition.casSearchHint}</p>
-              </div>
-
-              <label htmlFor="cand-name" className="self-center text-right text-sm">
-                {m.composition.searchName}
-              </label>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  id="cand-name"
-                  value={cond.name}
-                  onChange={(e) => setCond({ ...cond, name: e.target.value })}
-                  className="w-full sm:w-64"
-                  autoComplete="off"
-                />
-                <select
-                  aria-label={m.composition.nameOp}
-                  value={cond.nameOp}
-                  onChange={(e) => setCond({ ...cond, nameOp: e.target.value as TextOperator })}
-                  className="border-input bg-background h-9 rounded-none border px-2 text-sm"
-                >
-                  {NAME_OPS.map((op) => (
-                    <option key={op} value={op}>
-                      {m.table.operators[op]}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  aria-label={m.composition.nameScope}
-                  value={cond.nameScope}
-                  onChange={(e) => setCond({ ...cond, nameScope: e.target.value as NameScope })}
-                  className="border-input bg-background h-9 rounded-none border px-2 text-sm"
-                >
-                  {NAME_SCOPES.map((sc) => (
-                    <option key={sc} value={sc}>
-                      {m.composition.nameScopes[sc]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <span className="self-center text-right text-sm">{m.composition.target}</span>
-              <div className="flex flex-wrap items-center gap-4 text-sm">
-                <label className="flex items-center gap-1.5">
-                  <input
-                    type="checkbox"
-                    checked={cond.substance}
-                    onChange={(e) => setCond({ ...cond, substance: e.target.checked })}
-                  />
-                  {m.composition.kindSubstance}
-                </label>
-                <label className="flex items-center gap-1.5">
-                  <input
-                    type="checkbox"
-                    checked={cond.product}
-                    onChange={(e) => setCond({ ...cond, product: e.target.checked })}
-                  />
-                  {m.composition.kindProduct}
-                </label>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button type="button" size="sm" disabled={searching} onClick={() => void search()}>
-                {searching ? m.composition.searching : m.common.search}
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={clearSearch}>
-                {m.table.clear}
-              </Button>
-              {full && (
-                <span className="text-muted-foreground text-xs">
-                  {m.validation.tooMany(COMPOSITION_MAX_LINES)}
-                </span>
-              )}
-            </div>
-
-            {candidates !== null &&
-              (candidates.length === 0 ? (
-                <p className="text-muted-foreground text-xs">{m.composition.noCandidates}</p>
-              ) : (
-                <>
-                  <ResizableBox
-                    storageKey="chem.box.compositionCandidates"
-                    defaultMaxHeight="16rem"
-                    className="rounded-md border"
-                  >
-                    <table className={cn("w-full border-collapse text-sm", CELL_CLIP)}>
-                      <thead>
-                        <tr className="bg-muted/50 border-b text-left">
-                          <th className={cn(CELL, "w-8 text-center")}>
-                            {/* まとめて選ぶ。追加済みのものは対象にしない */}
-                            <input
-                              type="checkbox"
-                              aria-label={m.composition.selectAll}
-                              title={m.composition.selectAll}
-                              disabled={full || selectable.length === 0}
-                              checked={allPicked}
-                              ref={(el) => {
-                                if (el) el.indeterminate = !allPicked && picked.size > 0;
-                              }}
-                              onChange={(e) =>
-                                setPicked(
-                                  e.target.checked
-                                    ? new Set(selectable.map((c) => `${c.kind}:${c.id}`))
-                                    : new Set(),
-                                )
-                              }
-                            />
-                          </th>
-                          <th className={cn(CELL, "w-28 font-medium")}>
-                            {m.composition.elementId}
-                          </th>
-                          <th className={cn(CELL, "w-32 font-medium")}>
-                            {m.composition.casNumber}
-                          </th>
-                          <th className={cn(CELL, "font-medium")}>{m.composition.elementName}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {candidates.map((c) => {
-                          const key = `${c.kind}:${c.id}`;
-                          const added = alreadyAdded.has(key);
-                          return (
-                            <tr key={key} className={cn("border-b", added && "opacity-50")}>
-                              <td className={cn(CELL, "text-center")}>
-                                <input
-                                  type="checkbox"
-                                  aria-label={c.code}
-                                  disabled={added || full}
-                                  checked={picked.has(key)}
-                                  onChange={(e) => {
-                                    const next = new Set(picked);
-                                    if (e.target.checked) next.add(key);
-                                    else next.delete(key);
-                                    setPicked(next);
-                                  }}
-                                />
-                              </td>
-                              <td className={cn(CELL, "font-mono text-xs")}>{c.code}</td>
-                              <td className={cn(CELL, "font-mono text-xs")}>
-                                {c.casNumber ??
-                                  (c.kind === "product" ? (
-                                    <span className="text-muted-foreground font-sans">
-                                      {m.composition.kindProduct}
-                                    </span>
-                                  ) : (
-                                    <span className="text-muted-foreground font-sans">
-                                      {m.composition.noCas}
-                                    </span>
-                                  ))}
-                              </td>
-                              <td className={CELL}>
-                                {pickName(locale, c.nameJa, c.nameEn)}
-                                {added && (
-                                  <span className="text-muted-foreground ml-2 text-xs">
-                                    {m.composition.alreadyAdded}
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </ResizableBox>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={picked.size === 0 || full}
-                      onClick={addPicked}
-                    >
-                      {m.composition.addSelected(picked.size)}
-                    </Button>
-                    {/* 当たった全件。多いときは、条件を絞り直す合図になる */}
-                    <span className="text-muted-foreground text-xs">
-                      {m.common.totalCount(candidateTotal)}
+                    <span className="text-muted-foreground text-sm">
+                      {m.composition.nearMissCount(nearMissCount)}
                     </span>
-                    {/* 1ページの件数。ほかの表と同じ選択肢・同じ既定値 */}
-                    <label className="text-muted-foreground flex items-center gap-1 text-xs whitespace-nowrap">
-                      {m.table.pageSize}
-                      <select
-                        aria-label={m.table.pageSize}
-                        value={candidatePageSize}
-                        disabled={searching}
-                        onChange={(e) => {
-                          const next = Number(e.target.value);
-                          setCandidatePageSize(next);
-                          void runSearch(searchedCond ?? cond, 1, next);
-                        }}
-                        className="border-input bg-background h-8 rounded-none border px-1 text-xs"
-                      >
-                        {candidateSizes.map((n) => (
-                          <option key={n} value={n}>
-                            {m.table.perPage(n)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    {candidatePageCount > 1 && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          aria-label={m.table.prevPage}
-                          title={m.table.prevPage}
-                          disabled={searching || candidatePage <= 1}
-                          onClick={() => void runSearch(searchedCond ?? cond, candidatePage - 1)}
-                        >
-                          {m.table.prevMark}
-                        </Button>
-                        <span className="text-muted-foreground text-xs tabular-nums">
-                          {m.common.pageOf(candidatePage, candidatePageCount)}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          aria-label={m.table.nextPage}
-                          title={m.table.nextPage}
-                          disabled={searching || candidatePage >= candidatePageCount}
-                          onClick={() => void runSearch(searchedCond ?? cond, candidatePage + 1)}
-                        >
-                          {m.table.nextMark}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ))}
-          </div>
-        )}
+                  </span>
+                </div>
+                {rejudgeError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{rejudgeError}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              <CompositionAggregateTable
+                productId={productId}
+                open={aggregateOpen}
+                onOpenChange={setAggregateOpen}
+                onExpandableChange={setAggregateKeys}
+                showNearMiss={showNearMiss}
+                showSources={showSources}
+                showDiff={showDiff}
+                onSourcesChange={setSources}
+                onNearMissCountChange={setNearMissCount}
+                showAllInventories={allInventories}
+                onPreviousVersionChange={setPrevious}
+              />
+            </div>
+          )}
 
-        {errors.length > 0 && (
-          <Alert variant="destructive">
-            <AlertDescription>
-              <ul className="list-disc pl-5">
-                {errors.map((e, i) => (
-                  <li key={i}>{e}</li>
+          {editing && (
+            <div className="space-y-3 rounded-md border p-3">
+              <p className="text-sm font-medium">{m.composition.searchTitle}</p>
+
+              {/* 見出しはどれも短いので、左の列は詰める。説明は入力欄の右に添える */}
+              <div className="grid gap-2 sm:grid-cols-[4rem_1fr]">
+                <label htmlFor="cand-id" className="self-center text-right text-sm">
+                  {m.composition.elementId}
+                </label>
+                <Input
+                  ref={searchRef}
+                  id="cand-id"
+                  value={cond.id}
+                  onChange={(e) => setCond({ ...cond, id: e.target.value })}
+                  className="w-full sm:w-64"
+                />
+
+                <label htmlFor="cand-cas" className="self-center text-right text-sm">
+                  {m.composition.casNumber}
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Input
+                    id="cand-cas"
+                    value={cond.cas}
+                    onChange={(e) => setCond({ ...cond, cas: e.target.value })}
+                    className="w-full sm:w-64"
+                  />
+                  <p className="text-muted-foreground text-xs">{m.composition.casSearchHint}</p>
+                </div>
+
+                <label htmlFor="cand-name" className="self-center text-right text-sm">
+                  {m.composition.searchName}
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    id="cand-name"
+                    value={cond.name}
+                    onChange={(e) => setCond({ ...cond, name: e.target.value })}
+                    className="w-full sm:w-64"
+                    autoComplete="off"
+                  />
+                  <select
+                    aria-label={m.composition.nameOp}
+                    value={cond.nameOp}
+                    onChange={(e) => setCond({ ...cond, nameOp: e.target.value as TextOperator })}
+                    className="border-input bg-background h-9 rounded-none border px-2 text-sm"
+                  >
+                    {NAME_OPS.map((op) => (
+                      <option key={op} value={op}>
+                        {m.table.operators[op]}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label={m.composition.nameScope}
+                    value={cond.nameScope}
+                    onChange={(e) => setCond({ ...cond, nameScope: e.target.value as NameScope })}
+                    className="border-input bg-background h-9 rounded-none border px-2 text-sm"
+                  >
+                    {NAME_SCOPES.map((sc) => (
+                      <option key={sc} value={sc}>
+                        {m.composition.nameScopes[sc]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <span className="self-center text-right text-sm">{m.composition.target}</span>
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <label className="flex items-center gap-1.5">
+                    <input
+                      type="checkbox"
+                      checked={cond.substance}
+                      onChange={(e) => setCond({ ...cond, substance: e.target.checked })}
+                    />
+                    {m.composition.kindSubstance}
+                  </label>
+                  <label className="flex items-center gap-1.5">
+                    <input
+                      type="checkbox"
+                      checked={cond.product}
+                      onChange={(e) => setCond({ ...cond, product: e.target.checked })}
+                    />
+                    {m.composition.kindProduct}
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" size="sm" disabled={searching} onClick={() => void search()}>
+                  {searching ? m.composition.searching : m.common.search}
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={clearSearch}>
+                  {m.table.clear}
+                </Button>
+                {full && (
+                  <span className="text-muted-foreground text-xs">
+                    {m.validation.tooMany(COMPOSITION_MAX_LINES)}
+                  </span>
+                )}
+              </div>
+
+              {candidates !== null &&
+                (candidates.length === 0 ? (
+                  <p className="text-muted-foreground text-xs">{m.composition.noCandidates}</p>
+                ) : (
+                  <>
+                    <ResizableBox
+                      storageKey="chem.box.compositionCandidates"
+                      defaultMaxHeight="16rem"
+                      className="rounded-md border"
+                    >
+                      <table className={cn("w-full border-collapse text-sm", CELL_CLIP)}>
+                        <thead>
+                          <tr className="bg-muted/50 border-b text-left">
+                            <th className={cn(CELL, "w-8 text-center")}>
+                              {/* まとめて選ぶ。追加済みのものは対象にしない */}
+                              <input
+                                type="checkbox"
+                                aria-label={m.composition.selectAll}
+                                title={m.composition.selectAll}
+                                disabled={full || selectable.length === 0}
+                                checked={allPicked}
+                                ref={(el) => {
+                                  if (el) el.indeterminate = !allPicked && picked.size > 0;
+                                }}
+                                onChange={(e) =>
+                                  setPicked(
+                                    e.target.checked
+                                      ? new Set(selectable.map((c) => `${c.kind}:${c.id}`))
+                                      : new Set(),
+                                  )
+                                }
+                              />
+                            </th>
+                            <th className={cn(CELL, "w-28 font-medium")}>
+                              {m.composition.elementId}
+                            </th>
+                            <th className={cn(CELL, "w-32 font-medium")}>
+                              {m.composition.casNumber}
+                            </th>
+                            <th className={cn(CELL, "font-medium")}>{m.composition.elementName}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {candidates.map((c) => {
+                            const key = `${c.kind}:${c.id}`;
+                            const added = alreadyAdded.has(key);
+                            return (
+                              <tr key={key} className={cn("border-b", added && "opacity-50")}>
+                                <td className={cn(CELL, "text-center")}>
+                                  <input
+                                    type="checkbox"
+                                    aria-label={c.code}
+                                    disabled={added || full}
+                                    checked={picked.has(key)}
+                                    onChange={(e) => {
+                                      const next = new Set(picked);
+                                      if (e.target.checked) next.add(key);
+                                      else next.delete(key);
+                                      setPicked(next);
+                                    }}
+                                  />
+                                </td>
+                                <td className={cn(CELL, "font-mono text-xs")}>{c.code}</td>
+                                <td className={cn(CELL, "font-mono text-xs")}>
+                                  {c.casNumber ??
+                                    (c.kind === "product" ? (
+                                      <span className="text-muted-foreground font-sans">
+                                        {m.composition.kindProduct}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground font-sans">
+                                        {m.composition.noCas}
+                                      </span>
+                                    ))}
+                                </td>
+                                <td className={CELL}>
+                                  {pickName(locale, c.nameJa, c.nameEn)}
+                                  {added && (
+                                    <span className="text-muted-foreground ml-2 text-xs">
+                                      {m.composition.alreadyAdded}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </ResizableBox>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={picked.size === 0 || full}
+                        onClick={addPicked}
+                      >
+                        {m.composition.addSelected(picked.size)}
+                      </Button>
+                      {/* 当たった全件。多いときは、条件を絞り直す合図になる */}
+                      <span className="text-muted-foreground text-xs">
+                        {m.common.totalCount(candidateTotal)}
+                      </span>
+                      {/* 1ページの件数。ほかの表と同じ選択肢・同じ既定値 */}
+                      <label className="text-muted-foreground flex items-center gap-1 text-xs whitespace-nowrap">
+                        {m.table.pageSize}
+                        <select
+                          aria-label={m.table.pageSize}
+                          value={candidatePageSize}
+                          disabled={searching}
+                          onChange={(e) => {
+                            const next = Number(e.target.value);
+                            setCandidatePageSize(next);
+                            void runSearch(searchedCond ?? cond, 1, next);
+                          }}
+                          className="border-input bg-background h-8 rounded-none border px-1 text-xs"
+                        >
+                          {candidateSizes.map((n) => (
+                            <option key={n} value={n}>
+                              {m.table.perPage(n)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      {candidatePageCount > 1 && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-label={m.table.prevPage}
+                            title={m.table.prevPage}
+                            disabled={searching || candidatePage <= 1}
+                            onClick={() => void runSearch(searchedCond ?? cond, candidatePage - 1)}
+                          >
+                            {m.table.prevMark}
+                          </Button>
+                          <span className="text-muted-foreground text-xs tabular-nums">
+                            {m.common.pageOf(candidatePage, candidatePageCount)}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            aria-label={m.table.nextPage}
+                            title={m.table.nextPage}
+                            disabled={searching || candidatePage >= candidatePageCount}
+                            onClick={() => void runSearch(searchedCond ?? cond, candidatePage + 1)}
+                          >
+                            {m.table.nextMark}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-        {notice && (
-          <Alert>
-            <AlertDescription>
-              <p className="font-medium">{notice}</p>
-              {warnings.length > 0 && (
-                <ul className="mt-1 list-disc pl-5">
-                  {warnings.map((w, i) => (
-                    <li key={i}>{w}</li>
+            </div>
+          )}
+
+          {errors.length > 0 && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                <ul className="list-disc pl-5">
+                  {errors.map((e, i) => (
+                    <li key={i}>{e}</li>
                   ))}
                 </ul>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
+              </AlertDescription>
+            </Alert>
+          )}
+          {notice && (
+            <Alert>
+              <AlertDescription>
+                <p className="font-medium">{notice}</p>
+                {warnings.length > 0 && (
+                  <ul className="mt-1 list-disc pl-5">
+                    {warnings.map((w, i) => (
+                      <li key={i}>{w}</li>
+                    ))}
+                  </ul>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
 
-        {/*
+          {/*
           ほかの人が先に保存していたときの知らせ。
           **保存は止めていない。**入力はそのまま残っているので、
           見たうえで「このまま保存する」か、そのまま直し続けるかを選べる
         */}
-        {stale && (
-          <Alert variant="destructive">
-            <AlertDescription className="space-y-2">
-              <p className="font-medium">{m.errors.staleEdit}</p>
-              <p>
-                {m.errors.staleEditDetail(
-                  stale.byName ?? "ほかの利用者",
-                  stale.at ? new Date(stale.at).toLocaleString(locale) : "-",
-                )}
-              </p>
-              <p>{m.errors.staleEditAsk}</p>
-              <div className="flex gap-2 pt-1">
-                <Button type="button" size="sm" disabled={saving} onClick={() => void onSave(true)}>
-                  {m.errors.staleEditSave}
-                </Button>
-                {/* 押しても閉じるだけ。入力はそのまま残る */}
-                <Button type="button" size="sm" variant="outline" onClick={() => setStale(null)}>
-                  {m.common.cancel}
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
+          {stale && (
+            <Alert variant="destructive">
+              <AlertDescription className="space-y-2">
+                <p className="font-medium">{m.errors.staleEdit}</p>
+                <p>
+                  {m.errors.staleEditDetail(
+                    stale.byName ?? "ほかの利用者",
+                    stale.at ? new Date(stale.at).toLocaleString(locale) : "-",
+                  )}
+                </p>
+                <p>{m.errors.staleEditAsk}</p>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={saving}
+                    onClick={() => void onSave(true)}
+                  >
+                    {m.errors.staleEditSave}
+                  </Button>
+                  {/* 押しても閉じるだけ。入力はそのまま残る */}
+                  <Button type="button" size="sm" variant="outline" onClick={() => setStale(null)}>
+                    {m.common.cancel}
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
-        {editing && (
-          <div className="flex gap-2">
-            <Button type="button" disabled={saving} onClick={() => void onSave()}>
-              {saving ? m.common.saving : m.common.save}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setErrors([]);
-                setNotice(null);
-                onFinishEdit?.();
-                void load();
-              }}
-            >
-              {m.common.discard}
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {editing && (
+            <div className="flex gap-2">
+              <Button type="button" disabled={saving} onClick={() => void onSave()}>
+                {saving ? m.common.saving : m.common.save}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setErrors([]);
+                  setNotice(null);
+                  onFinishEdit?.();
+                  void load();
+                }}
+              >
+                {m.common.discard}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      {/* 反応前の組成（写し）。反応後の表のすぐ下に、読み取り専用で並べる */}
+      {preReaction && <PreReactionComposition data={preReaction} />}
+    </>
   );
 }

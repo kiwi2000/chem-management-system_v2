@@ -512,6 +512,19 @@ export interface CompositionResponse {
   lines: CompositionLineDto[];
   /** 入力されている含有率の合計 */
   totalPct: string;
+  /**
+   * 反応前の組成（S24）。「反応後の組成入力」を押した製品だけ持つ。
+   * あれば `lines` は反応後。反応前は表示だけ（判定・合算・出力は反応後を使う）
+   */
+  preReaction: PreReactionDto | null;
+}
+
+export interface PreReactionDto {
+  /** 写し取った日時と人 */
+  at: string;
+  byName: string | null;
+  lines: CompositionLineDto[];
+  totalPct: string;
 }
 
 /**

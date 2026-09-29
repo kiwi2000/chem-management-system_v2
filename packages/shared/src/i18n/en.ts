@@ -1927,6 +1927,22 @@ export const en: Messages = {
       `Cannot delete: it is used in ${n} composition${n === 1 ? "" : "s"}`,
     usedAsMaterialWarning: (n: number) =>
       `This product is used as a raw material in ${n} composition${n === 1 ? "" : "s"} (those references stay as they are)`,
+    postReaction: {
+      button: "Enter post-reaction composition",
+      confirm:
+        "The current composition will be copied and kept as the pre-reaction composition, and this table becomes the post-reaction composition for editing. If raw materials are included, the expanded / CAS-aggregated table (one row per substance) becomes the starting point. From then on, regulatory judgements and all other calculations use the post-reaction composition. Continue?",
+      confirmLabel: "Start post-reaction composition",
+      afterBadge: "post-reaction",
+      beforeTitle: "Pre-reaction composition",
+      beforeHint:
+        "A copy of the composition at the moment “Enter post-reaction composition” was pressed. Display only; judgements and aggregation do not use it.",
+      copiedAt: (at: string, by: string | null) => `Copied ${at}${by ? ` (${by})` : ""}`,
+      started:
+        "The pre-reaction composition has been saved. Edit this table as the post-reaction composition.",
+      startedFromAggregate:
+        "The pre-reaction composition has been saved and the expanded / CAS-aggregated table (one row per substance) is now the starting point. Edit this table as the post-reaction composition.",
+      alreadyStarted: "This product already has a post-reaction composition",
+    },
   },
 
   propertyDefs: {

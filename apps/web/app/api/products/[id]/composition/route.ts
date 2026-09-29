@@ -5,15 +5,17 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import {
   COMPOSITION_INCLUDE,
+  PRE_REACTION_INCLUDE,
   canEditComposition,
   canViewComposition,
   lineWrites,
   toCompositionResponse,
+  toLineDto,
   validateReferences,
   wouldCreateCycle,
 } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
-import { compositionStamp, staleResponse } from "@/lib/edit-stamp";
+import { compositionStamp, nameOf, staleResponse } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { visibilityWhere } from "@/lib/product-service";
 import { getAppSettings } from "@/lib/settings";
@@ -49,20 +51,41 @@ export async function GET(_req: Request, { params }: Ctx) {
     include: COMPOSITION_INCLUDE,
     orderBy: ORDER,
   });
+  // 反応前の組成（写し）。「反応後の組成入力」を押した製品だけ持つ（S24）
+  const preLines = product.preReactionAt
+    ? await prisma.productPreReactionLine.findMany({
+        where: { productId: id },
+        include: PRE_REACTION_INCLUDE,
+        orderBy: ORDER,
+      })
+    : [];
 
   // 見たことを残す。誰が持ち出したかを後から追えるようにするため
   await recordCompositionView({
     productId: id,
     actorId: actor.user.id,
-    lineCount: lines.length,
+    lineCount: lines.length + preLines.length,
     expanded: false,
   });
 
   const settings = await getAppSettings();
   // 画面が持ち帰る印。保存時に添えて送り返してもらう
   const stamp = await compositionStamp(id);
+  const preReaction = product.preReactionAt
+    ? {
+        at: product.preReactionAt.toISOString(),
+        byName: product.preReactionBy ? await nameOf(product.preReactionBy) : null,
+        lines: preLines.map(toLineDto),
+        totalPct: validateCompositionSum(
+          preLines.map((l) => ({ contentPct: l.contentPct?.toString() ?? null })),
+          settings,
+          m,
+        ).totalPct,
+      }
+    : null;
   return Response.json({
     ...toCompositionResponse(lines, settings, m),
+    preReaction,
     canEdit: canEditComposition(actor, product),
     stamp: stamp.stamp,
   });
