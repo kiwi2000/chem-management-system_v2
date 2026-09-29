@@ -42,7 +42,7 @@ import { EditingBadge } from "@/components/editing-badge";
 import { RejudgeButton } from "@/components/rejudge-button";
 import { EditButton } from "@/components/edit-button";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, WhenCardOpen } from "@/components/ui/card";
 import { useConfirm } from "@/components/confirm-dialog";
 import { PreReactionDiff } from "@/components/pre-reaction-diff";
 import { Input } from "@/components/ui/input";
@@ -817,38 +817,41 @@ export function CompositionEditor({
             </CardTitle>
             {subtitle && <span className="text-muted-foreground text-xs">{subtitle}</span>}
           </span>
-          <div className="flex items-center gap-1">
-            {/* 反応前に戻す。反応後を直しているとき（編集中）だけ */}
-            {editing && preReaction && !isPre && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={starting}
-                onClick={() => void undoPostReaction()}
-              >
-                {m.composition.postReaction.undoButton}
-              </Button>
-            )}
-            {/*
+          {/* 見出しの右のボタンは、カードを開いているときだけ（閉じていると押しても何も見えない。2026-09-29 指示） */}
+          <WhenCardOpen>
+            <div className="flex items-center gap-1">
+              {/* 反応前に戻す。反応後を直しているとき（編集中）だけ */}
+              {editing && preReaction && !isPre && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={starting}
+                  onClick={() => void undoPostReaction()}
+                >
+                  {m.composition.postReaction.undoButton}
+                </Button>
+              )}
+              {/*
             「開」「閉」は行の先頭（他の表と同じ並び。2026-09-12 指示）。
             開くものが無ければ置いても押せないので出さない。
             **ここは登録組成の木だけを操る。**まとめた表は自分の見出しに同じ組を持つ。
             2つの表が同時に見えているので、どちらに効くのか分からないボタンは置かない
           */}
-            {showWithin && (
-              <ExpandButtons
-                m={m}
-                canExpand={!tree.expandingAll && !isFullyExpanded(tree, treeRoots)}
-                canCollapse={tree.open.size > 0}
-                onExpand={() => tree.expandAll(treeRoots)}
-                onCollapse={() => tree.collapseAll()}
-              />
-            )}
-            {onRequestEdit &&
-              canEdit &&
-              (editing ? <EditingBadge /> : <EditButton onClick={onRequestEdit} />)}
-          </div>
+              {showWithin && (
+                <ExpandButtons
+                  m={m}
+                  canExpand={!tree.expandingAll && !isFullyExpanded(tree, treeRoots)}
+                  canCollapse={tree.open.size > 0}
+                  onExpand={() => tree.expandAll(treeRoots)}
+                  onCollapse={() => tree.collapseAll()}
+                />
+              )}
+              {onRequestEdit &&
+                canEdit &&
+                (editing ? <EditingBadge /> : <EditButton onClick={onRequestEdit} />)}
+            </div>
+          </WhenCardOpen>
         </CardHeader>
 
         <CardContent className="space-y-3">

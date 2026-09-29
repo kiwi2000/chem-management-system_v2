@@ -15,7 +15,7 @@ import { RejudgeButton } from "@/components/rejudge-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, WhenCardOpen } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -431,87 +431,94 @@ export function ProductJudgements({
             </span>
           )}
         </CardTitle>
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          {/* 「開」「閉」は行の先頭（他の表と同じ並び。2026-09-12 指示）。国・法律・区分をまとめて開け閉めする */}
-          {countries.length > 0 && (
-            <div className="mr-auto flex items-center gap-1">
-              {!allJudgementOpen && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  title={m.composition.expandAllHint}
-                  onClick={() => {
-                    setOpenCountries(new Set(countries.map((c) => c.code)));
-                    setOpenLaws(new Set(lawKeys));
-                    setOpen(new Set(openable));
-                  }}
-                >
-                  <ChevronsUpDown className="mr-1 size-3.5" />
-                  {m.composition.expandAll}
-                </Button>
-              )}
-              {!noneJudgementOpen && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  title={m.composition.collapseAllHint}
-                  onClick={() => {
-                    setOpen(new Set());
-                    setOpenLaws(new Set());
-                    setOpenCountries(new Set());
-                  }}
-                >
-                  <ChevronsDownUp className="mr-1 size-3.5" />
-                  {m.composition.collapseAll}
-                </Button>
-              )}
-            </div>
-          )}
-          <span className="text-muted-foreground">
-            {m.judgements.summary(applicable.length, items.length)}
-          </span>
-          {/* 上の合算表の「? 要確認」と同じ見た目（赤字・印・件数。2026-09-22 指示） */}
-          {review.length > 0 && (
-            <span
-              className={cn(REVIEW_CLASS, "inline-flex items-center gap-1 text-xs")}
-              title={m.judgements.needsReviewHint}
-            >
-              <CircleHelp className="size-3" />
-              {m.judgements.reviewCount(review.length)}
+        {/* ボタンの行（開閉・件数・要確認・再計算・非該当の切り替え）は、カードを開いているときだけ（2026-09-29 指示） */}
+        <WhenCardOpen>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            {/* 「開」「閉」は行の先頭（他の表と同じ並び。2026-09-12 指示）。国・法律・区分をまとめて開け閉めする */}
+            {countries.length > 0 && (
+              <div className="mr-auto flex items-center gap-1">
+                {!allJudgementOpen && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    title={m.composition.expandAllHint}
+                    onClick={() => {
+                      setOpenCountries(new Set(countries.map((c) => c.code)));
+                      setOpenLaws(new Set(lawKeys));
+                      setOpen(new Set(openable));
+                    }}
+                  >
+                    <ChevronsUpDown className="mr-1 size-3.5" />
+                    {m.composition.expandAll}
+                  </Button>
+                )}
+                {!noneJudgementOpen && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    title={m.composition.collapseAllHint}
+                    onClick={() => {
+                      setOpen(new Set());
+                      setOpenLaws(new Set());
+                      setOpenCountries(new Set());
+                    }}
+                  >
+                    <ChevronsDownUp className="mr-1 size-3.5" />
+                    {m.composition.collapseAll}
+                  </Button>
+                )}
+              </div>
+            )}
+            <span className="text-muted-foreground">
+              {m.judgements.summary(applicable.length, items.length)}
             </span>
-          )}
-          {/*
+            {/* 上の合算表の「? 要確認」と同じ見た目（赤字・印・件数。2026-09-22 指示） */}
+            {review.length > 0 && (
+              <span
+                className={cn(REVIEW_CLASS, "inline-flex items-center gap-1 text-xs")}
+                title={m.judgements.needsReviewHint}
+              >
+                <CircleHelp className="size-3" />
+                {m.judgements.reviewCount(review.length)}
+              </span>
+            )}
+            {/*
             再計算。押すと判定対象日を尋ねてから判定し直す（既定は今日。2026-09-22 決定）。
             日付を選べる口でもあるので、前提が変わっていなくても常に出す（判定を直せる人に）
           */}
-          {canEdit && (
-            <RejudgeButton productId={productId} today={stamp?.today ?? null} onError={setError} />
-          )}
-          {/*
+            {canEdit && (
+              <RejudgeButton
+                productId={productId}
+                today={stamp?.today ?? null}
+                onError={setError}
+              />
+            )}
+            {/*
             非該当も出す切り替え。組成の表の「含有率不足による非該当」と同じ見せ方:
             押しているときは字と印を橙の太字にし、件数はボタンの外に出す（押しても増えないことがある）
           */}
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            aria-pressed={showNotApplicable}
-            title={m.judgements.notApplicableHint}
-            onClick={() => setShowNotApplicable((v) => !v)}
-            className={cn(
-              showNotApplicable &&
-                cn(NEAR_MISS_CLASS, "hover:text-orange-600 dark:hover:text-orange-400 font-bold"),
-            )}
-          >
-            <TriangleAlert className="mr-1 size-3.5" />
-            {m.judgements.notApplicableShow}
-          </Button>
-          <span className="text-muted-foreground text-sm">
-            {m.judgements.notApplicableCount(items.length - applicable.length)}
-          </span>
-        </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-pressed={showNotApplicable}
+              title={m.judgements.notApplicableHint}
+              onClick={() => setShowNotApplicable((v) => !v)}
+              className={cn(
+                showNotApplicable &&
+                  cn(NEAR_MISS_CLASS, "hover:text-orange-600 dark:hover:text-orange-400 font-bold"),
+              )}
+            >
+              <TriangleAlert className="mr-1 size-3.5" />
+              {m.judgements.notApplicableShow}
+            </Button>
+            <span className="text-muted-foreground text-sm">
+              {m.judgements.notApplicableCount(items.length - applicable.length)}
+            </span>
+          </div>
+        </WhenCardOpen>
       </CardHeader>
 
       <CardContent className="space-y-3">

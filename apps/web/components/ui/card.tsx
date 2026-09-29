@@ -547,4 +547,23 @@ function CardFooter({ className, hidden, ...props }: React.ComponentProps<"div">
   );
 }
 
-export { Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent };
+/**
+ * カードが開いているときだけ中身を出す（見出しの右のボタンなど）。
+ * 閉じている札に「編集」「すべて開く」が並んでいると、押しても何も見えないため（2026-09-29 指示。組成のカード）
+ */
+function WhenCardOpen({ children }: { children: React.ReactNode }) {
+  const card = React.useContext(CardContext);
+  if (card && !card.open) return null;
+  return <>{children}</>;
+}
+
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
+  WhenCardOpen,
+};
