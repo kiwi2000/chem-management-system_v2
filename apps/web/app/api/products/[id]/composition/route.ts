@@ -179,6 +179,26 @@ export async function PUT(req: Request, { params }: Ctx) {
       errors.push(m.composition.errorMaterialInPostReaction(codes.map((c) => c.code).join(", ")));
     }
   }
+  /*
+    反応後の組成では、同じ CAS の物質を 2 つ以上置けない（CAS 合算した形を保つ。2026-09-30 指示）。
+    CAS の無い物質は数えない
+  */
+  if (product.preReactionAt) {
+    const substanceIds = input.lines.map((l) => l.substanceId).filter((v) => v != null);
+    if (substanceIds.length > 1) {
+      const subs = await prisma.substance.findMany({
+        where: { id: { in: substanceIds } },
+        select: { id: true, casNormalized: true },
+      });
+      const byCas = new Map<string, number>();
+      for (const sub of subs) {
+        if (!sub.casNormalized) continue;
+        byCas.set(sub.casNormalized, (byCas.get(sub.casNormalized) ?? 0) + 1);
+      }
+      const dup = [...byCas.entries()].filter(([, n]) => n > 1).map(([cas]) => cas);
+      if (dup.length > 0) errors.push(m.composition.errorSameCasInPostReaction(dup.join(", ")));
+    }
+  }
 
   if (errors.length > 0) {
     return jsonError(400, "composition_invalid", errors[0] ?? m.errors.validation, { errors });

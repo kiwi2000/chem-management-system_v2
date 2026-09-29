@@ -3,6 +3,7 @@
 import {
   COMPOSITION_MAX_LINES,
   fromScaled,
+  normalizeCode,
   pickName,
   ratioOfPct,
   SCALED_HUNDRED,
@@ -512,7 +513,7 @@ export function CompositionEditor({
   /** 選んだ候補をまとめて組成に足す */
   function addPicked() {
     const targets = (candidates ?? []).filter(
-      (c) => picked.has(`${c.kind}:${c.id}`) && !alreadyAdded.has(`${c.kind}:${c.id}`),
+      (c) => picked.has(`${c.kind}:${c.id}`) && !isAdded(c),
     );
     if (targets.length === 0) return;
     setRows((prev) => [
@@ -802,12 +803,32 @@ export function CompositionEditor({
     () => new Set((rows ?? []).map((r) => `${r.kind}:${r.element.id}`)),
     [rows],
   );
+  /**
+   * 反応後の組成では、同じ CAS の物質を 2 つ以上置けない（CAS 合算した形を保つ。2026-09-30 指示）。
+   * 表にある物質の CAS。候補の同じ CAS は「追加済み」と同じ扱いにする（CAS の無い物質は対象外）
+   */
+  const casInRows = useMemo(
+    () =>
+      new Set(
+        postReaction
+          ? (rows ?? [])
+              .filter((r) => r.kind === "substance" && r.element.casNumber)
+              .map((r) => normalizeCode(r.element.casNumber ?? ""))
+          : [],
+      ),
+    [rows, postReaction],
+  );
+  /** 候補が既に組成にあるか（同じもの、または反応後では同じ CAS の物質） */
+  const isAdded = (c: CompositionCandidateDto) =>
+    alreadyAdded.has(`${c.kind}:${c.id}`) ||
+    (c.kind === "substance" && !!c.casNumber && casInRows.has(normalizeCode(c.casNumber)));
   const full = (rows?.length ?? 0) >= COMPOSITION_MAX_LINES;
 
   // 全選択の対象は、まだ組成に入っていない候補だけ
   const selectable = useMemo(
-    () => (candidates ?? []).filter((c) => !alreadyAdded.has(`${c.kind}:${c.id}`)),
-    [candidates, alreadyAdded],
+    () => (candidates ?? []).filter((c) => !isAdded(c)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isAdded は alreadyAdded と casInRows から決まる
+    [candidates, alreadyAdded, casInRows],
   );
   /** 何ページあるか。1ページに収まるなら送りは出さない */
   const candidatePageCount = Math.max(1, Math.ceil(candidateTotal / candidatePageSize));
@@ -1651,7 +1672,9 @@ export function CompositionEditor({
                             <tbody>
                               {candidates.map((c) => {
                                 const key = `${c.kind}:${c.id}`;
-                                const added = alreadyAdded.has(key);
+                                const added = isAdded(c);
+                                // 同じ物質ではなく、同じ CAS の別の物質が入っている（反応後だけ）
+                                const sameCas = added && !alreadyAdded.has(key);
                                 return (
                                   <tr key={key} className={cn("border-b", added && "opacity-50")}>
                                     <td className={cn(CELL, "text-center")}>
@@ -1685,7 +1708,9 @@ export function CompositionEditor({
                                       {pickName(locale, c.nameJa, c.nameEn)}
                                       {added && (
                                         <span className="text-muted-foreground ml-2 text-xs">
-                                          {m.composition.alreadyAdded}
+                                          {sameCas
+                                            ? m.composition.postReaction.sameCasAdded
+                                            : m.composition.alreadyAdded}
                                         </span>
                                       )}
                                     </td>

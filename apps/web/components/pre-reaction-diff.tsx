@@ -55,7 +55,6 @@ export function PreReactionDiff({
       </div>
     );
   }
-  const none = data.removed.length === 0 && data.added.length === 0 && data.changed.length === 0;
   const mismatches = data.elements.filter((e) => e.mismatch);
   const name = (r: { nameJa: string; nameEn: string | null }) =>
     pickName(locale, r.nameJa, r.nameEn);
@@ -67,45 +66,43 @@ export function PreReactionDiff({
       {(data.blockedBefore > 0 || data.blockedAfter > 0) && (
         <p className="text-destructive text-xs">{t.blocked}</p>
       )}
-      {none ? (
-        <p className="text-muted-foreground text-sm">{t.same}</p>
-      ) : (
-        <div className="grid gap-4 lg:grid-cols-3">
-          <DiffList
-            title={t.removed}
-            empty={t.none}
-            rows={data.removed.map((r) => ({
-              key: r.code,
-              cas: r.casNumber,
-              name: name(r),
-              value: pct(r.beforePct),
-            }))}
-            valueHead={t.beforePct}
-          />
-          <DiffList
-            title={t.added}
-            empty={t.none}
-            rows={data.added.map((r) => ({
-              key: r.code,
-              cas: r.casNumber,
-              name: name(r),
-              value: pct(r.afterPct),
-            }))}
-            valueHead={t.afterPct}
-          />
-          <DiffList
-            title={t.changed}
-            empty={t.none}
-            rows={data.changed.map((r) => ({
-              key: r.code,
-              cas: r.casNumber,
-              name: name(r),
-              value: `${r.beforePct}% → ${r.afterPct}% (${Number(r.delta) > 0 ? "+" : ""}${r.delta})`,
-            }))}
-            valueHead={t.beforeAfter}
-          />
-        </div>
-      )}
+      {/* 常に 3 つとも出す。該当が無いものは「なし」（2026-09-30 指示） */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <DiffList
+          title={t.removed}
+          empty={t.none}
+          rows={data.removed.map((r) => ({
+            key: r.code,
+            cas: r.casNumber,
+            name: name(r),
+            value: pct(r.beforePct),
+          }))}
+          valueHead={t.pctHead}
+        />
+        <DiffList
+          title={t.added}
+          empty={t.none}
+          rows={data.added.map((r) => ({
+            key: r.code,
+            cas: r.casNumber,
+            name: name(r),
+            value: pct(r.afterPct),
+          }))}
+          valueHead={t.pctHead}
+        />
+        <DiffList
+          title={t.changed}
+          empty={t.none}
+          rows={data.changed.map((r) => ({
+            key: r.code,
+            cas: r.casNumber,
+            name: name(r),
+            // 「% → %」だけ（差の数字は付けない。2026-09-29 指示）
+            value: `${r.beforePct}% → ${r.afterPct}%`,
+          }))}
+          valueHead={t.pctHead}
+        />
+      </div>
       {data.elements.length > 0 && (
         <div className="space-y-1">
           <p className="text-sm">

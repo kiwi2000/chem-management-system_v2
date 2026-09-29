@@ -1922,6 +1922,8 @@ export const en: Messages = {
       "This would create a cycle: one of the raw materials leads back to this product itself",
     errorMaterialInPostReaction: (codes: string) =>
       `Raw materials cannot be added to a post-reaction composition (substances only): ${codes}`,
+    errorSameCasInPostReaction: (cas: string) =>
+      `A post-reaction composition cannot contain more than one substance with the same CAS number: ${cas}`,
     warnEmpty: "The composition is empty",
     warnSumOver: (total: string) => `The total comes to more than 100% (total ${total}%)`,
     warnSumUnder: (total: string) =>
@@ -1934,7 +1936,7 @@ export const en: Messages = {
     postReaction: {
       button: "Enter post-reaction composition",
       confirm:
-        "The current composition is kept as the pre-reaction composition, and you edit a copy of it to create the post-reaction composition. The post-reaction composition consists of the substances after raw-material expansion and CAS aggregation; it cannot contain raw materials.\nRegulatory judgements for the product are made on the post-reaction composition.",
+        "The current composition is kept as the pre-reaction composition, and you edit a copy of it to create the post-reaction composition. The post-reaction composition cannot contain raw materials, nor more than one substance with the same CAS number.\nRegulatory judgements for the product are made on the post-reaction composition.",
       confirmLabel: "Enter post-reaction composition",
       afterTitle: "Composition (post-reaction)",
       beforeTitle: "Composition (pre-reaction)",
@@ -1945,6 +1947,7 @@ export const en: Messages = {
         "The pre-reaction composition has been saved and the expanded / CAS-aggregated table (one row per substance) is now the starting point. Edit this table as the post-reaction composition.",
       alreadyStarted: "This product already has a post-reaction composition",
       undoButton: "Revert to pre-reaction",
+      sameCasAdded: "A substance with the same CAS number is already registered",
       substanceOnly:
         "Only substances can be added to a post-reaction composition (raw materials are not searched)",
       undoConfirm:
@@ -1954,14 +1957,13 @@ export const en: Messages = {
         "Reverted to the pre-reaction composition. The post-reaction entries have been discarded.",
       diff: {
         title: "Difference from pre-reaction",
-        same: "No difference",
         none: "None",
-        removed: "Removed substances",
-        added: "New substances",
-        changed: "Changed substances",
+        removed: "Removed",
+        added: "Added",
+        changed: "Changed",
+        pctHead: "%",
         beforePct: "Before %",
         afterPct: "After %",
-        beforeAfter: "Before → after",
         elements: "Element check (metal conversion)",
         element: "Element",
         elementOk: "Consistent before and after",
