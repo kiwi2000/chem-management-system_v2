@@ -42,8 +42,6 @@ import { useTableState } from "@/lib/use-table-state";
 
 const Q_KEY = "chem.table.prtrQuantities";
 const M_KEY = "chem.table.prtrMeasured";
-/** 排出量算出方法の枠（ボタン・説明・排出係数）を出すか。2026-09-30 指示で一旦消している */
-const SHOW_METHOD = false;
 
 const Q_STATE: TableState = emptyTableState([{ column: "productCode", direction: "asc" }]);
 const M_STATE: TableState = emptyTableState([{ column: "officialNumber", direction: "asc" }]);
@@ -101,8 +99,8 @@ function FilePickButton({ label, onPick }: { label: string; onPick: (f: File) =>
 /**
  * PRTR 届出データの入力（S22）。
  *
- * 所属と年度を選び、方法（実測値・物質収支・排出係数）を決めて保存すると、
- * 製品ごとの数量（と、実測値のときは物質ごとの実測値）を入れられる。
+ * 所属と年度を選んで保存すると、排出量算出方法（実測値・物質収支・排出係数）の**タブ**が出る。
+ * 方法ごとに製品ごとの数量の表を持ち（実測値のタブは物質ごとの実測値も）、下の集計は 3 つの方法を足す（2026-09-30 指示）。
  * 入力は画面の 1 件登録と、ファイルの取り込み（列の割り当て付き）の両方
  */
 export function PrtrEntryScreen() {
@@ -116,14 +114,16 @@ export function PrtrEntryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // 頭（方法・係数・備考）
-  const [method, setMethod] = useState<PrtrMethod>("BALANCE");
+  // 頭（係数・備考）。係数は排出係数のタブの中で入れるが、保存は頭と同じ API（両方とも毎回送る）
   const [factorPct, setFactorPct] = useState("");
   const [note, setNote] = useState("");
   const [headErrors, setHeadErrors] = useState<FieldErrors>({});
   const [savingHead, setSavingHead] = useState(false);
-  /** 方法を変えるときの確認（入れてある数量の意味が変わる） */
-  const [askMethod, setAskMethod] = useState(false);
+  /**
+   * 開いている方法のタブ。所属・年度を変えたときは、行がある最初の方法（無ければ物質収支）を開く
+   */
+  const [tab, setTab] = useState<PrtrMethod>("BALANCE");
+  const pickedFor = useRef("");
   /** 数量や実測値が変わるたびに増やし、集計を読み直す合図にする */
   const [tick, setTick] = useState(0);
 
@@ -162,17 +162,25 @@ export function PrtrEntryScreen() {
     }
     const body = (await res.json()) as PrtrEntryDto;
     setData(body);
-    setMethod(body.entry?.method ?? "BALANCE");
     setFactorPct(body.entry?.factorPct ?? "");
     setNote(body.entry?.note ?? "");
     setHeadErrors({});
+    const key = `${orgId}:${fiscalYear}`;
+    if (pickedFor.current !== key) {
+      pickedFor.current = key;
+      const first = PRTR_METHODS.find(
+        (k) => body.quantityCounts[k] > 0 || (k === "MEASURED" && body.measuredCount > 0),
+      );
+      setTab(first ?? "BALANCE");
+    }
   }, [orgId, fiscalYear, m]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  async function saveHead() {
+  /** 頭（係数・備考）を保存する。頭の「保存」と、排出係数のタブの「保存」の両方から呼ぶ */
+  async function saveHead(savedMessage: string) {
     setError(null);
     setNotice(null);
     setHeadErrors({});
@@ -184,7 +192,6 @@ export function PrtrEntryScreen() {
         body: JSON.stringify({
           organisationId: orgId,
           fiscalYear,
-          method,
           factorPct: factorPct || null,
           note: note || null,
         }),
@@ -197,8 +204,7 @@ export function PrtrEntryScreen() {
         return;
       }
       setData((await res.json()) as PrtrEntryDto);
-      setNotice(t.headerSaved);
-      setAskMethod(false);
+      setNotice(savedMessage);
       setTick((n) => n + 1);
     } finally {
       setSavingHead(false);
@@ -206,8 +212,6 @@ export function PrtrEntryScreen() {
   }
 
   const entry = data?.entry ?? null;
-  const methodChanged = entry !== null && entry.method !== method;
-  const hasRows = (data?.quantityCount ?? 0) + (data?.measuredCount ?? 0) > 0;
 
   if (scope && scope.organisations.length === 0) {
     return (
@@ -291,26 +295,21 @@ export function PrtrEntryScreen() {
             <Button
               size="sm"
               disabled={savingHead || !orgId}
-              onClick={() => {
-                // 入れてあるものの意味が変わるので、方法の変更だけは一度確かめる
-                if (methodChanged && hasRows && !askMethod) setAskMethod(true);
-                else void saveHead();
-              }}
+              onClick={() => void saveHead(t.headerSaved)}
             >
               {savingHead ? m.common.saving : m.common.save}
             </Button>
           </div>
           {/*
-            排出量算出方法はボタン 3 つを並べて選ぶ（2026-09-29 指示）。選んだ方法に応じた入力欄をその下に出す。
-            押しただけでは保存されない。「保存」で確定（入れてある数量の意味が変わるので、変更は一度確かめる）。
-            **2026-09-30 指示で一旦画面から外す**（SHOW_METHOD）。方法の値・保存・確認の仕組みはそのまま
+            排出量算出方法のタブ（2026-09-30 指示）。方法ごとに入力の表を持ち、それぞれ別に計算して集計で足す。
+            タブを切り替えても行は消えない（別の表を見せているだけ）。件数はタブの横に出す
           */}
-          {SHOW_METHOD && (
-            <div className="space-y-2">
+          {entry && data && (
+            <div className="space-y-3 border-t pt-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-medium">{t.methodLabel}</span>
-                <span
-                  role="group"
+                <div
+                  role="tablist"
                   aria-label={t.methodLabel}
                   className="inline-flex flex-wrap gap-1"
                 >
@@ -318,66 +317,56 @@ export function PrtrEntryScreen() {
                     <Button
                       key={k}
                       type="button"
+                      role="tab"
                       size="sm"
-                      variant={method === k ? "default" : "outline"}
-                      aria-pressed={method === k}
-                      onClick={() => setMethod(k)}
+                      aria-selected={tab === k}
+                      variant={tab === k ? "default" : "outline"}
+                      onClick={() => setTab(k)}
                     >
                       {t.methods[k]}
+                      <span className="ml-1 text-xs opacity-80">({data.quantityCounts[k]})</span>
                     </Button>
                   ))}
-                </span>
-                {methodChanged && (
-                  <span className="text-muted-foreground text-xs">{t.methodUnsaved}</span>
-                )}
+                </div>
               </div>
               <p className="text-muted-foreground text-xs">
-                {t.methodHints[method]}
-                {method === "FACTOR" && ` ${t.factorHint}`}
+                {t.methodHints[tab]}
+                {tab === "FACTOR" && ` ${t.factorHint}`}
               </p>
-              {method === "FACTOR" && (
-                <div className="space-y-1">
-                  <Label htmlFor="prtr-factor">{t.factorPct}</Label>
-                  <Input
-                    id="prtr-factor"
-                    inputMode="decimal"
-                    value={factorPct}
-                    onChange={(e) => setFactorPct(e.target.value)}
-                    aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
-                    className="h-8 w-32 font-mono"
-                  />
-                  <FieldError message={firstError(headErrors, "factorPct")} />
+              {/* 排出係数のタブだけ、係数（所属 × 年度で 1 つ）を上に置く。「保存」は頭と同じ API */}
+              {tab === "FACTOR" && (
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="prtr-factor">{t.factorPct}</Label>
+                    <Input
+                      id="prtr-factor"
+                      inputMode="decimal"
+                      value={factorPct}
+                      onChange={(e) => setFactorPct(e.target.value)}
+                      aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
+                      className="h-8 w-32 font-mono"
+                    />
+                    <FieldError message={firstError(headErrors, "factorPct")} />
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={savingHead}
+                    onClick={() => void saveHead(t.factorSaved)}
+                  >
+                    {savingHead ? m.common.saving : m.common.save}
+                  </Button>
                 </div>
               )}
+              {/* タブごとに別の表。key で作り直し、表の状態（ページ・絞り込み）が混ざらないようにする */}
+              <QuantitySection
+                key={tab}
+                entryId={entry.id}
+                method={tab}
+                canSeeProducts={can("PRODUCT_VIEW")}
+                onChanged={load}
+              />
+              {tab === "MEASURED" && <MeasuredSection entryId={entry.id} onChanged={load} />}
             </div>
-          )}
-          {askMethod && (
-            <Alert>
-              <AlertDescription className="flex flex-wrap items-center gap-3">
-                <span>{t.changeMethodAsk}</span>
-                <Button size="sm" onClick={() => void saveHead()}>
-                  {m.common.ok}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setAskMethod(false)}>
-                  {m.common.cancel}
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-          {/*
-            選んだ方法に応じた入力欄。数量は全方法、実測値は方法が実測値のときだけ。
-            頭（所属・年度・方法）を保存してから出る。2 つのカードは 1 つにまとめた（2026-09-29 指示）
-          */}
-          {entry && (
-            <QuantitySection
-              entryId={entry.id}
-              method={entry.method}
-              canSeeProducts={can("PRODUCT_VIEW")}
-              onChanged={load}
-            />
-          )}
-          {entry && entry.method === "MEASURED" && (
-            <MeasuredSection entryId={entry.id} onChanged={load} />
           )}
         </CardContent>
       </Card>
@@ -461,6 +450,31 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         width: 130,
         className: "text-right font-mono tabular-nums",
         render: (r) => r.releaseKg ?? "",
+      },
+      // 排出量の内訳（方法ごと）。どの方法から来た量か分かるように（2026-09-30 指示）
+      {
+        key: "releaseMeasuredKg",
+        header: t.releaseMeasuredKg,
+        kind: "number",
+        width: 130,
+        className: "text-muted-foreground text-right font-mono text-xs tabular-nums",
+        render: (r) => r.releaseMeasuredKg ?? "",
+      },
+      {
+        key: "releaseBalanceKg",
+        header: t.releaseBalanceKg,
+        kind: "number",
+        width: 130,
+        className: "text-muted-foreground text-right font-mono text-xs tabular-nums",
+        render: (r) => r.releaseBalanceKg ?? "",
+      },
+      {
+        key: "releaseFactorKg",
+        header: t.releaseFactorKg,
+        kind: "number",
+        width: 130,
+        className: "text-muted-foreground text-right font-mono text-xs tabular-nums",
+        render: (r) => r.releaseFactorKg ?? "",
       },
       {
         key: "needsReport",
@@ -564,7 +578,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
             <AlertDescription>{t.unjudged(head.unjudgedProducts)}</AlertDescription>
           </Alert>
         )}
-        {head && head.method === "FACTOR" && head.factorPct === null && (
+        {head && head.factorMissing && (
           <Alert variant="destructive">
             <AlertDescription>{t.factorMissing}</AlertDescription>
           </Alert>
@@ -582,8 +596,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         />
         {head && (
           <p className="text-muted-foreground text-xs">
-            {t.releaseNote[head.method]}。
-            {t.thresholdNote(head.thresholdKg, head.thresholdSpecificKg)}
+            {t.releaseFormula}。{t.thresholdNote(head.thresholdKg, head.thresholdSpecificKg)}
           </p>
         )}
       </CardContent>
@@ -591,7 +604,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
   );
 }
 
-/** 製品ごとの数量 */
+/** 製品ごとの数量（方法＝タブごとに別の表） */
 function QuantitySection({
   entryId,
   method,
@@ -599,9 +612,10 @@ function QuantitySection({
   onChanged,
 }: {
   entryId: string;
+  /** この表の方法（タブ）。行はこの方法で登録し、読むときもこの方法の行だけ */
   method: PrtrMethod;
   canSeeProducts: boolean;
-  /** 件数が変わったことを上に知らせる（方法を変えるときの確認に使う） */
+  /** 件数が変わったことを上に知らせる（タブの横の件数と、集計の読み直しに使う） */
   onChanged: () => Promise<void>;
 }) {
   const { m, locale } = useI18n();
@@ -764,12 +778,15 @@ function QuantitySection({
     ],
     [t, m, locale, canSeeProducts],
   );
-  const { state, setState } = useTableState(Q_KEY, columns, Q_STATE, "q");
+  // 表の状態はタブごとに覚える（同じ鍵だと、別のタブのページや絞り込みを引き継いで空のページに出る）
+  const { state, setState } = useTableState(`${Q_KEY}.${method}`, columns, Q_STATE, "q");
 
   const loadRows = useCallback(async () => {
-    const res = await fetch(
-      `/api/prtr/entries/${entryId}/quantities?${serializeTableState(state, Q_STATE).toString()}`,
-    ).catch(() => null);
+    const params = serializeTableState(state, Q_STATE);
+    params.set("method", method);
+    const res = await fetch(`/api/prtr/entries/${entryId}/quantities?${params.toString()}`).catch(
+      () => null,
+    );
     if (!res?.ok) {
       if (res) {
         if (redirectIfUnauthorized(res)) return;
@@ -779,7 +796,7 @@ function QuantitySection({
       return;
     }
     setData((await res.json()) as ListResponse<PrtrQuantityDto>);
-  }, [entryId, state, m]);
+  }, [entryId, method, state, m]);
 
   useEffect(() => {
     void loadRows();
@@ -804,6 +821,7 @@ function QuantitySection({
           method: editing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            method,
             productCode: form.productCode,
             purchasedKg: form.purchasedKg,
             shippedKg: form.shippedKg || null,
@@ -1037,6 +1055,7 @@ function QuantitySection({
         <PrtrImportDialog
           entryId={entryId}
           kind="quantities"
+          method={method}
           file={importing}
           shippedRequired={method !== "MEASURED"}
           onClose={(applied) => {
@@ -1049,7 +1068,7 @@ function QuantitySection({
   );
 }
 
-/** 実測値（方法が実測値のときだけ） */
+/** 実測値（実測値のタブだけ） */
 function MeasuredSection({
   entryId,
   onChanged,

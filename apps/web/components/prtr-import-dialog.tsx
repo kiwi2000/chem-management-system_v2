@@ -5,6 +5,7 @@ import {
   PRTR_IMPORT_FIELDS,
   type PrtrImportKind,
   type PrtrImportMode,
+  type PrtrMethod,
 } from "@chem/shared";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -27,13 +28,16 @@ import type { ApiError, PrtrImportInspectDto, PrtrImportResultDto } from "@/lib/
 export function PrtrImportDialog({
   entryId,
   kind,
+  method,
   file,
   shippedRequired = false,
   onClose,
 }: {
   entryId: string;
-  /** どの表の「ファイル」から開いたか。**いま選ばれている方法に合わせて決まり、窓の中では変えない** */
+  /** どの表の「ファイル」から開いたか。**開いたタブ・表で決まり、窓の中では変えない** */
   kind: PrtrImportKind;
+  /** 数量の取り込み先の方法（タブ）。実測値の取り込みでは使わない */
+  method?: PrtrMethod;
   /** 選ばれたファイル */
   file: File;
   /** 出荷数量が要る方法か（物質収支・排出係数）。要るなら列が無いと進めない */
@@ -121,6 +125,7 @@ export function PrtrImportDialog({
     try {
       const body = (await send("run", {
         kind,
+        method,
         mapping: cleanMapping(),
         mode,
         overwrite,
@@ -148,6 +153,7 @@ export function PrtrImportDialog({
               {t.title}
               <span className="text-muted-foreground ml-3 text-sm font-normal">
                 {t.kinds[kind]}
+                {kind === "quantities" && method ? `（${m.prtr.methods[method]}）` : ""}
               </span>
             </CardTitle>
             <p className="text-muted-foreground mt-1 text-xs">{file.name}</p>

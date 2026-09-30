@@ -61,9 +61,6 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  if (parsed.data.kind === "measured" && entry.method !== "MEASURED") {
-    return jsonError(400, "validation_error", m.prtr.import.measuredNeedsMethod);
-  }
   const missing = missingRequired(parsed.data.kind, parsed.data.mapping);
   if (missing.length > 0) {
     const label = m.prtr.import.fields[missing[0] as keyof typeof m.prtr.import.fields];
@@ -80,6 +77,7 @@ export async function POST(req: Request, { params }: Ctx) {
       actorId: actor.user.id,
       diff: {
         kind: parsed.data.kind,
+        method: parsed.data.method ?? null,
         fileName: file.name,
         added: result.willAdd,
         updated: result.willUpdate,

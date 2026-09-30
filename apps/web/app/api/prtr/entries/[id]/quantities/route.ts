@@ -1,4 +1,10 @@
-import { emptyTableState, parseTableState, prtrQuantitySchema } from "@chem/shared";
+import {
+  emptyTableState,
+  parseTableState,
+  PRTR_METHODS,
+  prtrQuantitySchema,
+  type PrtrMethod,
+} from "@chem/shared";
 import { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
@@ -14,7 +20,10 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const DEFAULT_STATE = emptyTableState([{ column: "productCode", direction: "asc" }]);
 
-/** GET /api/prtr/entries/[id]/quantities — 製品ごとの数量の一覧（絞り込み・並べ替え・ページ送り） */
+/**
+ * GET /api/prtr/entries/[id]/quantities?method= — 製品ごとの数量の一覧（絞り込み・並べ替え・ページ送り）。
+ * `method`（実測値・物質収支・排出係数）で、そのタブの行だけにする。無ければ全部
+ */
 export async function GET(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
   if (actor instanceof Response) return actor;
@@ -25,12 +34,21 @@ export async function GET(req: Request, { params }: Ctx) {
   const denied = await requirePrtrOrg(actor, entry.organisationId);
   if (denied) return denied;
 
+  const url = new URL(req.url);
   const state = parseTableState(
-    new URL(req.url).searchParams,
+    url.searchParams,
     PRTR_QUANTITY_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
-  const where = { AND: [buildWhere(PRTR_QUANTITY_COLUMNS, state.filters)], entryId: id };
+  const methodParam = url.searchParams.get("method");
+  const method = (PRTR_METHODS as readonly string[]).includes(methodParam ?? "")
+    ? (methodParam as PrtrMethod)
+    : undefined;
+  const where = {
+    AND: [buildWhere(PRTR_QUANTITY_COLUMNS, state.filters)],
+    entryId: id,
+    ...(method ? { method } : {}),
+  };
   const [items, total] = await Promise.all([
     prisma.prtrQuantity.findMany({
       where,
@@ -51,7 +69,8 @@ export async function GET(req: Request, { params }: Ctx) {
 
 /**
  * POST /api/prtr/entries/[id]/quantities — 製品ごとの数量を 1 件足す（S22）。
- * 同じ製品が既にあれば上書きする（画面の 1 件登録は「同じ製品なら直す」の意味で使う）
+ * 方法（タブ）は本文の `method`。同じ方法に同じ製品が既にあれば上書きする
+ * （画面の 1 件登録は「同じ製品なら直す」の意味で使う）。出荷数量は実測値以外で要る
  */
 export async function POST(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
@@ -81,7 +100,7 @@ export async function POST(req: Request, { params }: Ctx) {
       fieldErrors: { productCode: [m.prtr.quantities.productNotFound(v.productCode)] },
     });
   }
-  if (entry.method !== "MEASURED" && v.shippedKg == null) {
+  if (v.method !== "MEASURED" && v.shippedKg == null) {
     return jsonError(400, "validation_error", m.prtr.quantities.shippedRequired, {
       fieldErrors: { shippedKg: [m.prtr.quantities.shippedRequired] },
     });
@@ -94,8 +113,8 @@ export async function POST(req: Request, { params }: Ctx) {
     updatedBy: actor.user.id,
   };
   const row = await prisma.prtrQuantity.upsert({
-    where: { entryId_productId: { entryId: id, productId: product.id } },
-    create: { entryId: id, productId: product.id, ...data },
+    where: { entryId_method_productId: { entryId: id, method: v.method, productId: product.id } },
+    create: { entryId: id, method: v.method, productId: product.id, ...data },
     update: data,
     include: QUANTITY_INCLUDE,
   });
@@ -104,7 +123,12 @@ export async function POST(req: Request, { params }: Ctx) {
     entityId: row.id,
     action: "update",
     actorId: actor.user.id,
-    diff: { product: product.code, purchasedKg: v.purchasedKg, shippedKg: v.shippedKg ?? null },
+    diff: {
+      product: product.code,
+      method: v.method,
+      purchasedKg: v.purchasedKg,
+      shippedKg: v.shippedKg ?? null,
+    },
   });
   return Response.json({ item: toQuantityDto(row) }, { status: 201 });
 }

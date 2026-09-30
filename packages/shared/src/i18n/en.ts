@@ -2382,9 +2382,8 @@ export const en: Messages = {
   /** PRTR report data entry (S22) */
   prtr: {
     title: "PRTR report data",
-    lead: "Choose the organisation and fiscal year, save, then enter the quantities (kg) per product",
+    lead: "Choose the organisation and fiscal year, save, then enter the quantities (kg) per product on each method tab. The summary adds the three methods together",
     methodLabel: "Emission estimation method",
-    methodUnsaved: "Press “Save” to switch",
     organisation: "Organisation",
     noOrganisation:
       "You belong to no organisation, so nothing can be entered. Ask the system administrator to assign one under Users › Organisation",
@@ -2406,10 +2405,9 @@ export const en: Messages = {
     },
     factorPct: "Emission factor (%)",
     factorHint: "Release kg ÷ shipped kg × 100. Same for every substance",
+    factorSaved: "Factor saved",
     note: "Note",
     headerSaved: "Saved",
-    changeMethodAsk:
-      "Changing the method changes what the entered quantities and measured values mean. They are kept as they are. Continue?",
     sources: { MANUAL: "Manual", IMPORT: "Import" },
     quantities: {
       title: "Quantities per product (kg)",
@@ -2458,7 +2456,6 @@ export const en: Messages = {
           "Choose a file with product code, product name, purchased and shipped columns (shipped is optional when the method is Measured)",
         measured: "Choose a file with substance code, substance name and measured columns",
       },
-      measuredNeedsMethod: "To import measured values, set the method to Measured and save first",
       file: "File (CSV / TSV / Excel)",
       step2: "Assign columns",
       headersHint:
@@ -2488,7 +2485,7 @@ export const en: Messages = {
       modeUpsertHint: "The same products are overwritten, the others added",
       modeReplace: "Replace",
       modeReplaceHint:
-        "Every quantity of this organisation and year is replaced (products not in the file are removed)",
+        "Replaces every quantity on this tab (products not in the file are removed; other tabs are untouched)",
       overwriteAsk: (n: number) => `${n} substance(s) already have a measured value. Overwrite?`,
       overwriteYes: "Overwrite",
       apply: "Import",
@@ -2517,6 +2514,9 @@ export const en: Messages = {
       handledKg: "Handled (kg)",
       shippedKg: "Shipped (kg)",
       releaseKg: "Release (kg)",
+      releaseMeasuredKg: "Measured part",
+      releaseBalanceKg: "Balance part",
+      releaseFactorKg: "Factor part",
       needsReport: "Report",
       needsReportYes: "Required",
       needsReportNo: "—",
@@ -2526,12 +2526,10 @@ export const en: Messages = {
         `${n} product(s) have no judgement yet, so they are not in the totals. Run the judgement and check again`,
       thresholdNote: (a: string, b: string) =>
         `A report is required when the handled amount reaches ${a} kg (${b} kg for Specified Class I)`,
-      releaseNote: {
-        MEASURED: "Release is the measured value as entered (blank when none)",
-        BALANCE: "Release = handled − shipped",
-        FACTOR: "Release = shipped × factor ÷ 100",
-      },
-      factorMissing: "No factor entered, so the release cannot be computed",
+      releaseFormula:
+        "Release is the sum of the three methods (measured as entered; mass balance = handled − shipped; emission factor = shipped × factor ÷ 100). Handled and shipped are also summed over the three methods",
+      factorMissing:
+        "The emission-factor tab has quantities but no factor, so that part of the release cannot be computed",
     },
     validation: {
       kg: "Enter a quantity of 0 or more (up to 3 decimals)",

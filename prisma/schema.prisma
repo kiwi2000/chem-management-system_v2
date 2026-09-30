@@ -257,6 +257,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -3030,17 +3031,17 @@ enum PrtrEntrySource {
  * 届出データの頭。所属 × 年度で 1 つ
  */
 model PrtrEntry {
-  id             String     @id @default(cuid())
-  organisationId String     @map("organisation_id")
+  id             String   @id @default(cuid())
+  organisationId String   @map("organisation_id")
   /**
    * 年度（4 月〜翌 3 月）。2025 なら 2025 年 4 月〜2026 年 3 月
    */
-  fiscalYear     Int        @map("fiscal_year")
-  method         PrtrMethod @default(BALANCE)
+  fiscalYear     Int      @map("fiscal_year")
   /**
-   * 排出係数（%）。方法が排出係数のときだけ。所属で 1 つ（全物質共通）
+   * 排出係数（%）。排出係数のタブの数量に使う。所属 × 年度で 1 つ（全物質共通）。
+   * 方法（実測値・物質収支・排出係数）は数量の行が持つ（2026-09-30。方法ごとに表を分け、集計で足す）
    */
-  factorPct      Decimal?   @map("factor_pct") @db.Decimal(9, 4)
+  factorPct      Decimal? @map("factor_pct") @db.Decimal(9, 4)
   note           String?
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -3058,11 +3059,13 @@ model PrtrEntry {
 }
 
 /**
- * 製品ごとの数量（kg）。購入数量はどの方法でも、出荷数量は物質収支・排出係数で要る
+ * 製品ごとの数量（kg）。**方法（タブ）ごとに別の行**（2026-09-30）。同じ製品を 2 つ以上の方法に入れてよい。
+ * 購入数量はどの方法でも、出荷数量は物質収支・排出係数で要る
  */
 model PrtrQuantity {
   id          String          @id @default(cuid())
   entryId     String          @map("entry_id")
+  method      PrtrMethod      @default(BALANCE)
   productId   String          @map("product_id")
   purchasedKg Decimal         @map("purchased_kg") @db.Decimal(18, 3)
   shippedKg   Decimal?        @map("shipped_kg") @db.Decimal(18, 3)
@@ -3075,7 +3078,7 @@ model PrtrQuantity {
   entry   PrtrEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   product Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
 
-  @@unique([entryId, productId])
+  @@unique([entryId, method, productId])
   @@index([productId])
   @@map("prtr_quantities")
 }
@@ -3120,18 +3123,21 @@ model PrtrSummary {
    */
   versionId String? @map("version_id")
 
-  method              PrtrMethod
-  factorPct           Decimal?   @map("factor_pct") @db.Decimal(9, 4)
+  factorPct           Decimal? @map("factor_pct") @db.Decimal(9, 4)
+  /**
+   * 排出係数のタブに数量があるのに係数が無い（その分の排出量が出せていない）
+   */
+  factorMissing       Boolean  @default(false) @map("factor_missing")
   /**
    * 数量を入れた製品の数と、そのうち現在の版で判定していない製品の数（集計に入っていない）
    */
-  productCount        Int        @map("product_count")
-  unjudgedProducts    Int        @map("unjudged_products")
+  productCount        Int      @map("product_count")
+  unjudgedProducts    Int      @map("unjudged_products")
   /**
    * 届出要否の閾値（kg）。第一種と特定第一種。集計した時点の値を残す
    */
-  thresholdKg         Decimal    @map("threshold_kg") @db.Decimal(18, 3)
-  thresholdSpecificKg Decimal    @map("threshold_specific_kg") @db.Decimal(18, 3)
+  thresholdKg         Decimal  @map("threshold_kg") @db.Decimal(18, 3)
+  thresholdSpecificKg Decimal  @map("threshold_specific_kg") @db.Decimal(18, 3)
 
   computedAt DateTime @default(now()) @map("computed_at")
   computedBy String?  @map("computed_by")
@@ -3152,27 +3158,33 @@ model PrtrSummaryRow {
   summaryId            String @map("summary_id")
   statutorySubstanceId String @map("statutory_substance_id")
 
-  specific     Boolean
+  specific          Boolean
   /**
    * この物質が当たった製品の数
    */
-  productCount Int      @map("product_count")
+  productCount      Int      @map("product_count")
   /**
    * 取扱量 = Σ 購入数量 × 含有率
    */
-  handledKg    Decimal  @map("handled_kg") @db.Decimal(18, 3)
+  handledKg         Decimal  @map("handled_kg") @db.Decimal(18, 3)
   /**
    * 出荷量 = Σ 出荷数量 × 含有率。実測値の方法では null
    */
-  shippedKg    Decimal? @map("shipped_kg") @db.Decimal(18, 3)
+  shippedKg         Decimal? @map("shipped_kg") @db.Decimal(18, 3)
   /**
-   * 排出量。方法ごとの式。実測値が無い物質・係数が無いときは null
+   * 排出量（3 つの方法の合計）。どの方法でも出せなければ null
    */
-  releaseKg    Decimal? @map("release_kg") @db.Decimal(18, 3)
+  releaseKg         Decimal? @map("release_kg") @db.Decimal(18, 3)
+  /**
+   * 排出量の内訳（方法ごと）。その方法の数量が無い・出せないときは null
+   */
+  releaseMeasuredKg Decimal? @map("release_measured_kg") @db.Decimal(18, 3)
+  releaseBalanceKg  Decimal? @map("release_balance_kg") @db.Decimal(18, 3)
+  releaseFactorKg   Decimal? @map("release_factor_kg") @db.Decimal(18, 3)
   /**
    * 届出要否（取扱量が閾値以上）
    */
-  needsReport  Boolean  @map("needs_report")
+  needsReport       Boolean  @map("needs_report")
 
   summary            PrtrSummary        @relation(fields: [summaryId], references: [id], onDelete: Cascade)
   statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id], onDelete: Cascade)

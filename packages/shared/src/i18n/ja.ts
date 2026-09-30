@@ -2508,16 +2508,15 @@ export const ja = {
   /** PRTR 届出データの入力（S22） */
   prtr: {
     title: "PRTR 届出データ",
-    lead: "所属と年度を選んで「保存」してから、製品ごとの数量（kg）を入れます",
+    lead: "所属と年度を選んで「保存」してから、排出量算出方法のタブごとに製品ごとの数量（kg）を入れます。集計は 3 つの方法の合計です",
     organisation: "所属",
     noOrganisation:
       "所属している組織が無いので入力できません。システム管理者に、ユーザー管理の「組織」で所属を割り当ててもらってください",
     fiscalYear: "年度",
     fiscalYearLabel: (y: number) => `${y} 年度（${y}/4〜${y + 1}/3）`,
     method: "方法",
-    /** 方法の 3 つのボタンの見出し（2026-09-29） */
+    /** 方法のタブの見出し（2026-09-30。方法ごとに入力の表を持ち、集計で足す） */
     methodLabel: "排出量算出方法",
-    methodUnsaved: "「保存」を押すと切り替わります",
     methods: {
       MEASURED: "実測値",
       BALANCE: "物質収支",
@@ -2531,10 +2530,9 @@ export const ja = {
     },
     factorPct: "排出係数（%）",
     factorHint: "排出量 kg ÷ 出荷量 kg × 100。全物質共通",
+    factorSaved: "係数を保存しました",
     note: "備考",
     headerSaved: "保存しました",
-    changeMethodAsk:
-      "方法を変えると、入れてある数量や実測値の意味が変わります。入れたものはそのまま残します。よろしいですか",
     sources: { MANUAL: "手入力", IMPORT: "取り込み" },
     quantities: {
       title: "製品ごとの数量（kg）",
@@ -2580,10 +2578,9 @@ export const ja = {
       kinds: { quantities: "製品ごとの数量", measured: "実測値" },
       expected: {
         quantities:
-          "製品コード・製品名・購入数量・出荷数量の列を持つファイルを選んでください（方法が実測値なら出荷数量は無くて構いません）",
+          "製品コード・製品名・購入数量・出荷数量の列を持つファイルを選んでください（実測値のタブでは出荷数量は無くて構いません）",
         measured: "物質コード・物質名・実測値の列を持つファイルを選んでください",
       },
-      measuredNeedsMethod: "実測値を取り込むには、方法を「実測値」にして保存してください",
       file: "ファイル（CSV / TSV / Excel）",
       step2: "列を割り当てる",
       headersHint:
@@ -2612,7 +2609,8 @@ export const ja = {
       modeUpsert: "上書き",
       modeUpsertHint: "同じ製品は上書きし、無い製品は追加します",
       modeReplace: "入れ替え",
-      modeReplaceHint: "この所属・年度の数量を全部入れ替えます（ファイルに無い製品は消えます）",
+      modeReplaceHint:
+        "このタブの数量を全部入れ替えます（ファイルに無い製品は消えます。ほかのタブは触りません）",
       overwriteAsk: (n: number) => `既に実測値がある物質が ${n} 件あります。上書きしますか`,
       overwriteYes: "上書きしてよい",
       apply: "インポート",
@@ -2627,7 +2625,7 @@ export const ja = {
     },
     summary: {
       title: "集計（第一種指定化学物質ごと）",
-      lead: "数量と、製品の判定結果（含有率）から出します。開くたびに集計し直して保存します",
+      lead: "3 つの方法の数量と、製品の判定結果（含有率）から出します。方法ごとに計算して足したものです。開くたびに集計し直して保存します",
       computedAt: (at: string) => `集計日時 ${at}`,
       versionLabel: (code: string) => `法規制バージョン ${code}`,
       recompute: "再計算",
@@ -2641,6 +2639,10 @@ export const ja = {
       handledKg: "取扱量（kg）",
       shippedKg: "出荷量（kg）",
       releaseKg: "排出量（kg）",
+      /** 排出量の内訳（方法ごと）。列の見出し */
+      releaseMeasuredKg: "内訳 実測値",
+      releaseBalanceKg: "内訳 物質収支",
+      releaseFactorKg: "内訳 排出係数",
       needsReport: "届出要否",
       needsReportYes: "要",
       needsReportNo: "—",
@@ -2650,12 +2652,10 @@ export const ja = {
         `判定がまだ無い製品が ${n} 件あります。集計に入っていないので、製品の判定を流してから見直してください`,
       thresholdNote: (a: string, b: string) =>
         `届出要否は取扱量が ${a} kg 以上（特定第一種は ${b} kg 以上）で「要」にします`,
-      releaseNote: {
-        MEASURED: "排出量は実測値そのままです（実測値の無い物質は空）",
-        BALANCE: "排出量 ＝ 取扱量 − 出荷量",
-        FACTOR: "排出量 ＝ 出荷量 × 係数 ÷ 100",
-      },
-      factorMissing: "係数が入っていないので排出量は出せません",
+      releaseFormula:
+        "排出量は 3 つの方法の合計です（実測値はそのまま、物質収支は 取扱量 − 出荷量、排出係数は 出荷量 × 係数 ÷ 100）。取扱量・出荷量も 3 つの方法の合計",
+      factorMissing:
+        "排出係数のタブに数量がありますが係数が入っていないので、その分の排出量は出せていません",
     },
     validation: {
       kg: "数量は 0 以上の数で入れてください（小数 3 桁まで）",

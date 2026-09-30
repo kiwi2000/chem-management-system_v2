@@ -1,9 +1,11 @@
 import {
   normalizeCode,
   PRTR_IMPORT_FIELDS,
+  PRTR_METHODS,
   type Messages,
   type PrtrImportInput,
   type PrtrImportKind,
+  type PrtrMethod,
 } from "@chem/shared";
 import {
   Prisma,
@@ -30,7 +32,8 @@ import type {
 /**
  * PRTR 届出データの入力（S22）。
  *
- * 所属（組織）× 年度で 1 組。製品ごとの数量と、実測値のときは物質ごとの kg。
+ * 所属（組織）× 年度で 1 組。方法（実測値・物質収支・排出係数）ごとに製品ごとの数量を持ち、
+ * 実測値のタブは物質ごとの kg も持つ。集計は 3 つの方法を足す（2026-09-30）。
  * 所属の絞り込み（誰がどこの分を入れられるか）は lib/authz.ts の `requirePrtrOrg` / `prtrOrgsOf`
  */
 
@@ -68,6 +71,7 @@ type MeasuredRow = PrtrMeasured & {
 export function toQuantityDto(q: QuantityRow): PrtrQuantityDto {
   return {
     id: q.id,
+    method: q.method,
     productId: q.productId,
     productCode: q.product.code,
     productNameJa: q.product.nameJa,
@@ -96,16 +100,25 @@ export function toMeasuredDto(x: MeasuredRow): PrtrMeasuredDto {
   };
 }
 
-/** 所属 × 年度の届出データの頭と件数。頭が無ければ entry は null */
+const EMPTY_COUNTS: Record<PrtrMethod, number> = { MEASURED: 0, BALANCE: 0, FACTOR: 0 };
+
+/** 所属 × 年度の届出データの頭と、方法（タブ）ごとの数量の件数。頭が無ければ entry は null */
 export async function loadEntry(organisationId: string, fiscalYear: number): Promise<PrtrEntryDto> {
   const entry = await prisma.prtrEntry.findUnique({
     where: { organisationId_fiscalYear: { organisationId, fiscalYear } },
-    include: { _count: { select: { quantities: true, measured: true } } },
+    include: { _count: { select: { measured: true } } },
   });
-  if (!entry) return { entry: null, quantityCount: 0, measuredCount: 0 };
+  if (!entry) return { entry: null, quantityCounts: { ...EMPTY_COUNTS }, measuredCount: 0 };
+  const grouped = await prisma.prtrQuantity.groupBy({
+    by: ["method"],
+    where: { entryId: entry.id },
+    _count: { _all: true },
+  });
+  const quantityCounts = { ...EMPTY_COUNTS };
+  for (const g of grouped) quantityCounts[g.method] = g._count._all;
   return {
     entry: toEntryHead(entry),
-    quantityCount: entry._count.quantities,
+    quantityCounts,
     measuredCount: entry._count.measured,
   };
 }
@@ -115,7 +128,6 @@ export function toEntryHead(e: PrtrEntry): NonNullable<PrtrEntryDto["entry"]> {
     id: e.id,
     organisationId: e.organisationId,
     fiscalYear: e.fiscalYear,
-    method: e.method,
     factorPct: e.factorPct?.toString() ?? null,
     note: e.note,
     updatedAt: e.updatedAt.toISOString(),
@@ -429,7 +441,8 @@ export function missingRequired(kind: PrtrImportKind, mapping: Record<string, nu
 
 /**
  * 取り込みの下見と実行。**下見（dryRun）は何も書かない。**
- * 数量: 重ね方は「上書き＋追加」か「全部入れ替え」。実測値: 既に値がある物質があれば上書きの答えを待つ
+ * 数量: 指定した方法（タブ）の表に入れる。重ね方は「上書き＋追加」か「そのタブを全部入れ替え」。
+ * 実測値: 既に値がある物質があれば上書きの答えを待つ
  */
 export async function runImport(
   entry: PrtrEntry,
@@ -452,10 +465,11 @@ export async function runImport(
   };
 
   if (input.kind === "quantities") {
-    const shippedRequired = entry.method !== "MEASURED";
+    const method = input.method ?? "BALANCE";
+    const shippedRequired = method !== "MEASURED";
     const parsed = await parseQuantities(rows, input.mapping, shippedRequired, m);
     const existing = await prisma.prtrQuantity.findMany({
-      where: { entryId: entry.id },
+      where: { entryId: entry.id, method },
       select: { id: true, productId: true },
     });
     const byProduct = new Map(existing.map((q) => [q.productId, q.id]));
@@ -471,8 +485,13 @@ export async function runImport(
 
     await prisma.$transaction(async (tx) => {
       if (mode === "replace") {
+        // 入れ替えは、そのタブ（方法）の中だけ。ほかのタブの行は触らない
         await tx.prtrQuantity.deleteMany({
-          where: { entryId: entry.id, productId: { notIn: parsed.ok.map((q) => q.productId) } },
+          where: {
+            entryId: entry.id,
+            method,
+            productId: { notIn: parsed.ok.map((q) => q.productId) },
+          },
         });
       }
       for (const q of parsed.ok) {
@@ -483,8 +502,10 @@ export async function runImport(
           updatedBy: actorId,
         };
         await tx.prtrQuantity.upsert({
-          where: { entryId_productId: { entryId: entry.id, productId: q.productId } },
-          create: { entryId: entry.id, productId: q.productId, ...data },
+          where: {
+            entryId_method_productId: { entryId: entry.id, method, productId: q.productId },
+          },
+          create: { entryId: entry.id, method, productId: q.productId, ...data },
           update: data,
         });
       }
@@ -557,21 +578,23 @@ const kg = (v: Prisma.Decimal) => v.toDecimalPlaces(3).toString();
  *
  * 含有率は製品の**判定結果**（現在の版、化管法 第一種・特定第一種で該当）から取る。
  * 裾切値未満の製品と、不純物種別で除外した物質はそこで落ちている。
- *   取扱量 = Σ 購入数量 × 含有率
- *   出荷量 = Σ 出荷数量 × 含有率（物質収支・排出係数）
- *   排出量 = 実測値そのまま ／ 取扱量 − 出荷量 ／ 出荷量 × 係数 ÷ 100
+ * 数量は方法（タブ）ごとに別の行なので、**方法ごとに計算してから足す**（2026-09-30 指示）:
+ *   取扱量 = Σ 購入数量 × 含有率（3 つの方法の合計）
+ *   出荷量 = Σ 出荷数量 × 含有率（3 つの方法の合計。入っている行だけ）
+ *   排出量 = 実測値そのまま ＋（物質収支の取扱量 − 物質収支の出荷量）＋ 排出係数の出荷量 × 係数 ÷ 100
+ *   どの方法でも出せなければ null。内訳（方法ごと）も一緒に残す
  * 特定第一種は第一種の一部なので、同じ物質が両方の区分で該当する。届出は物質 1 つに 1 行なので、
  * **法律上の番号（管理番号）で 1 行にまとめ**、特定第一種に入っていればその閾値（0.5 t）を使う。
- * 同じ製品が両方の区分で当たっても数量は 1 回しか足さない。
+ * 同じ製品が両方の区分で当たっても数量は 1 回しか足さない。届出要否は 3 つの方法の取扱量の合計で見る。
  * 判定がまだ無い製品（現在の版で判定していない製品）は数えて知らせ、集計には入れない
  */
 export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise<PrtrSummaryMeta> {
   const quantities = await prisma.prtrQuantity.findMany({
     where: { entryId: entry.id },
-    select: { productId: true, purchasedKg: true, shippedKg: true },
+    select: { productId: true, method: true, purchasedKg: true, shippedKg: true },
   });
-  const productIds = quantities.map((q) => q.productId);
-  const byProduct = new Map(quantities.map((q) => [q.productId, q]));
+  const productIds = [...new Set(quantities.map((q) => q.productId))];
+  const hasProduct = new Set(productIds);
 
   const version = await getCurrentVersion();
   const judgements =
@@ -607,14 +630,11 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
       : [],
   );
 
-  // 実測値の方法は、実測値のある物質も並べる（数量から当たらなくても）
-  const measured =
-    entry.method === "MEASURED"
-      ? await prisma.prtrMeasured.findMany({
-          where: { entryId: entry.id },
-          select: { statutorySubstanceId: true, measuredKg: true },
-        })
-      : [];
+  // 実測値のタブの物質は、数量から当たらなくても並べる
+  const measured = await prisma.prtrMeasured.findMany({
+    where: { entryId: entry.id },
+    select: { statutorySubstanceId: true, measuredKg: true },
+  });
 
   const ids = [
     ...new Set([
@@ -667,7 +687,7 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
   };
 
   for (const j of judgements) {
-    if (j.verdict !== "APPLICABLE" || !byProduct.has(j.productId)) continue;
+    if (j.verdict !== "APPLICABLE" || !hasProduct.has(j.productId)) continue;
     const g = groupFor(j.statutorySubstanceId);
     if (!g) continue;
     // 含有率: 合算した値があればそれ、無ければ CAS ごとの寄与を足す（根拠の行は通常 1 つ）
@@ -692,26 +712,52 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
   }
 
   const factor = entry.factorPct !== null ? D(entry.factorPct) : null;
+  const factorMissing = factor === null && quantities.some((q) => q.method === "FACTOR");
   const rows = [...groups.values()].map((g) => {
-    let handled = D(0);
-    let shipped = D(0);
-    for (const [productId, pct] of g.pctByProduct) {
-      const q = byProduct.get(productId)!;
-      handled = handled.plus(D(q.purchasedKg).mul(pct).div(100));
-      if (q.shippedKg !== null) shipped = shipped.plus(D(q.shippedKg).mul(pct).div(100));
+    // 方法ごとの取扱量・出荷量。その方法に数量の行があるかも覚える（無ければ内訳は null）
+    const handledBy: Record<PrtrMethod, Prisma.Decimal> = {
+      MEASURED: D(0),
+      BALANCE: D(0),
+      FACTOR: D(0),
+    };
+    const shippedBy: Record<PrtrMethod, Prisma.Decimal> = {
+      MEASURED: D(0),
+      BALANCE: D(0),
+      FACTOR: D(0),
+    };
+    const present: Record<PrtrMethod, boolean> = { MEASURED: false, BALANCE: false, FACTOR: false };
+    for (const q of quantities) {
+      const pct = g.pctByProduct.get(q.productId);
+      if (!pct) continue;
+      present[q.method] = true;
+      handledBy[q.method] = handledBy[q.method].plus(D(q.purchasedKg).mul(pct).div(100));
+      if (q.shippedKg !== null) {
+        shippedBy[q.method] = shippedBy[q.method].plus(D(q.shippedKg).mul(pct).div(100));
+      }
     }
+    const handled = PRTR_METHODS.reduce((sum, k) => sum.plus(handledBy[k]), D(0));
+    const shipped = PRTR_METHODS.reduce((sum, k) => sum.plus(shippedBy[k]), D(0));
+    // 内訳: 実測値はそのまま、物質収支は取扱量 − 出荷量、排出係数は出荷量 × 係数 ÷ 100
+    const releaseMeasured = g.measured;
+    const releaseBalance = present.BALANCE ? handledBy.BALANCE.minus(shippedBy.BALANCE) : null;
+    const releaseFactor =
+      present.FACTOR && factor !== null ? shippedBy.FACTOR.mul(factor).div(100) : null;
+    const parts = [releaseMeasured, releaseBalance, releaseFactor].filter(
+      (v): v is Prisma.Decimal => v !== null,
+    );
+    const release = parts.length === 0 ? null : parts.reduce((sum, v) => sum.plus(v), D(0));
     const threshold = D(g.specific ? PRTR_THRESHOLD_SPECIFIC_KG : PRTR_THRESHOLD_KG);
-    let release: Prisma.Decimal | null = null;
-    if (entry.method === "MEASURED") release = g.measured;
-    else if (entry.method === "BALANCE") release = handled.minus(shipped);
-    else if (factor !== null) release = shipped.mul(factor).div(100);
+    const r3 = (v: Prisma.Decimal | null) => (v === null ? null : v.toDecimalPlaces(3));
     return {
       statutorySubstanceId: g.name.id,
       specific: g.specific,
       productCount: g.pctByProduct.size,
       handledKg: handled.toDecimalPlaces(3),
-      shippedKg: entry.method === "MEASURED" ? null : shipped.toDecimalPlaces(3),
-      releaseKg: release === null ? null : release.toDecimalPlaces(3),
+      shippedKg: shipped.toDecimalPlaces(3),
+      releaseKg: r3(release),
+      releaseMeasuredKg: r3(releaseMeasured),
+      releaseBalanceKg: r3(releaseBalance),
+      releaseFactorKg: r3(releaseFactor),
       needsReport: handled.gte(threshold),
     };
   });
@@ -719,8 +765,8 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
   // 前の集計を消して、丸ごと入れ直す（途中で失敗したら前のものが残る）
   const head = {
     versionId: version?.id ?? null,
-    method: entry.method,
     factorPct: entry.factorPct,
+    factorMissing,
     productCount: productIds.length,
     unjudgedProducts: productIds.filter((id) => !judgedProducts.has(id)).length,
     thresholdKg: D(PRTR_THRESHOLD_KG),
@@ -761,8 +807,8 @@ export function toSummaryMeta(
   return {
     computedAt: x.computedAt.toISOString(),
     versionCode: x.version?.code ?? null,
-    method: x.method,
     factorPct: x.factorPct?.toString() ?? null,
+    factorMissing: x.factorMissing,
     productCount: x.productCount,
     unjudgedProducts: x.unjudgedProducts,
     thresholdKg: kg(x.thresholdKg),
@@ -790,6 +836,9 @@ export function toSummaryRowDto(
     handledKg: kg(r.handledKg),
     shippedKg: r.shippedKg === null ? null : kg(r.shippedKg),
     releaseKg: r.releaseKg === null ? null : kg(r.releaseKg),
+    releaseMeasuredKg: r.releaseMeasuredKg === null ? null : kg(r.releaseMeasuredKg),
+    releaseBalanceKg: r.releaseBalanceKg === null ? null : kg(r.releaseBalanceKg),
+    releaseFactorKg: r.releaseFactorKg === null ? null : kg(r.releaseFactorKg),
     needsReport: r.needsReport,
     productCount: r.productCount,
   };

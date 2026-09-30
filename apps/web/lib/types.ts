@@ -1343,6 +1343,8 @@ export interface PrtrScopeDto {
 
 export interface PrtrQuantityDto {
   id: string;
+  /** 方法（タブ）。方法ごとに別の行（2026-09-30） */
+  method: "MEASURED" | "BALANCE" | "FACTOR";
   productId: string;
   productCode: string;
   productNameJa: string;
@@ -1377,12 +1379,13 @@ export interface PrtrEntryDto {
     id: string;
     organisationId: string;
     fiscalYear: number;
-    method: "MEASURED" | "BALANCE" | "FACTOR";
+    /** 排出係数（%）。排出係数のタブで使う。所属 × 年度で 1 つ */
     factorPct: string | null;
     note: string | null;
     updatedAt: string;
   } | null;
-  quantityCount: number;
+  /** 方法（タブ）ごとの数量の件数 */
+  quantityCounts: { MEASURED: number; BALANCE: number; FACTOR: number };
   measuredCount: number;
 }
 
@@ -1422,10 +1425,14 @@ export interface PrtrSummaryRowDto {
   specific: boolean;
   /** 取扱量（Σ 購入数量 × 含有率）kg */
   handledKg: string;
-  /** 出荷量（Σ 出荷数量 × 含有率）kg。実測値の方法では null */
+  /** 出荷量（Σ 出荷数量 × 含有率）kg。3 つの方法の合計 */
   shippedKg: string | null;
-  /** 排出量 kg。方法ごとの式。実測値が無い物質は null */
+  /** 排出量 kg。3 つの方法の合計。どの方法でも出せなければ null */
   releaseKg: string | null;
+  /** 排出量の内訳（方法ごと）。その方法の数量が無い・出せないときは null */
+  releaseMeasuredKg: string | null;
+  releaseBalanceKg: string | null;
+  releaseFactorKg: string | null;
   /** 届出要否（取扱量が閾値以上） */
   needsReport: boolean;
   /** この物質が当たった製品の数 */
@@ -1438,9 +1445,10 @@ export interface PrtrSummaryMeta {
   computedAt: string;
   /** 判定に使った法規制バージョン（版を消していれば null） */
   versionCode: string | null;
-  method: "MEASURED" | "BALANCE" | "FACTOR";
   factorPct: string | null;
-  /** 数量を入れた製品の数 */
+  /** 排出係数のタブに数量があるのに係数が無い（その分の排出量が出せていない） */
+  factorMissing: boolean;
+  /** 数量を入れた製品の数（方法をまたいで数えて 1 つ） */
   productCount: number;
   /** 判定がまだ無い製品の数（判定を流すまで集計に入らない） */
   unjudgedProducts: number;

@@ -36,15 +36,17 @@ export async function PUT(req: Request, { params }: Ctx) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
+  // 製品と方法（タブ）は変えない。行が持つものをそのまま使う
   const parsed = prtrQuantitySchema(m).safeParse({
     ...(body as object),
     productCode: row.product.code,
+    method: row.method,
   });
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
-  if (row.entry.method !== "MEASURED" && v.shippedKg == null) {
+  if (row.method !== "MEASURED" && v.shippedKg == null) {
     return jsonError(400, "validation_error", m.prtr.quantities.shippedRequired, {
       fieldErrors: { shippedKg: [m.prtr.quantities.shippedRequired] },
     });

@@ -28,8 +28,9 @@ export async function GET(req: Request) {
 }
 
 /**
- * PUT /api/prtr/entries — 頭（方法・係数・備考）を入れる・直す。無ければ作る。
- * 方法を変えても、入れてある数量・実測値はそのまま残す（意味が変わることは画面で確かめる）
+ * PUT /api/prtr/entries — 頭（係数・備考）を入れる・直す。無ければ作る。
+ * 方法（実測値・物質収支・排出係数）は数量の行が持つので、ここには無い（2026-09-30）。
+ * 画面は係数と備考の両方を毎回送る（片方だけ送ると、もう片方が消える）
  */
 export async function PUT(req: Request) {
   const actor = await requirePermission("PRTR_ENTRY");
@@ -50,7 +51,7 @@ export async function PUT(req: Request) {
   const denied = await requirePrtrOrg(actor, v.organisationId);
   if (denied) return denied;
 
-  const factorPct = v.method === "FACTOR" && v.factorPct ? new Prisma.Decimal(v.factorPct) : null;
+  const factorPct = v.factorPct ? new Prisma.Decimal(v.factorPct) : null;
   const entry = await prisma.prtrEntry.upsert({
     where: {
       organisationId_fiscalYear: { organisationId: v.organisationId, fiscalYear: v.fiscalYear },
@@ -58,20 +59,19 @@ export async function PUT(req: Request) {
     create: {
       organisationId: v.organisationId,
       fiscalYear: v.fiscalYear,
-      method: v.method,
       factorPct,
       note: v.note ?? null,
       createdBy: actor.user.id,
       updatedBy: actor.user.id,
     },
-    update: { method: v.method, factorPct, note: v.note ?? null, updatedBy: actor.user.id },
+    update: { factorPct, note: v.note ?? null, updatedBy: actor.user.id },
   });
   await writeAudit({
     entity: "prtr_entries",
     entityId: entry.id,
     action: "update",
     actorId: actor.user.id,
-    diff: { fiscalYear: v.fiscalYear, method: v.method, factorPct: v.factorPct ?? null },
+    diff: { fiscalYear: v.fiscalYear, factorPct: v.factorPct ?? null },
   });
   return Response.json(await loadEntry(v.organisationId, v.fiscalYear));
 }

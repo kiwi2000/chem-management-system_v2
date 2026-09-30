@@ -4,8 +4,8 @@ import type { Messages } from "./i18n/ja";
 /**
  * PRTR 届出データの入力（S22）。
  *
- * 所属（組織マスタの組織）× 年度で 1 組。方法（実測値・物質収支・排出係数）を選び、
- * 製品ごとの数量と、実測値のときは物質ごとの kg を入れる。
+ * 所属（組織マスタの組織）× 年度で 1 組。方法（実測値・物質収支・排出係数）は**タブ**で、
+ * 方法ごとに製品ごとの数量の表を持ち（実測値のタブは物質ごとの実測値も）、集計は 3 つを足す（2026-09-30）。
  * 仕様は docs/steps/S22_PRTR集計と届出.md
  */
 
@@ -45,13 +45,12 @@ const optKg = (m: Messages) =>
     .optional()
     .refine((v) => v == null || /^\d{1,15}(\.\d{1,3})?$/.test(v), m.prtr.validation.kg);
 
-/** 届出データの頭（所属 × 年度）。方法が排出係数のときは係数が要る */
+/** 届出データの頭（所属 × 年度）。係数は入っていれば形を確かめる（排出係数のタブで使う） */
 export const prtrEntrySchema = (m: Messages) =>
   z
     .object({
       organisationId: z.string().trim().min(1, m.validation.required),
       fiscalYear: z.number().int().min(2000).max(2100),
-      method: z.enum(PRTR_METHODS),
       factorPct: z
         .string()
         .trim()
@@ -67,19 +66,16 @@ export const prtrEntrySchema = (m: Messages) =>
         .optional(),
     })
     .superRefine((v, ctx) => {
-      if (v.method === "FACTOR") {
-        if (v.factorPct == null) {
-          ctx.addIssue({ code: "custom", path: ["factorPct"], message: m.validation.required });
-        } else if (!factorSchema(m).safeParse(v.factorPct).success) {
-          ctx.addIssue({ code: "custom", path: ["factorPct"], message: m.prtr.validation.factor });
-        }
+      if (v.factorPct != null && !factorSchema(m).safeParse(v.factorPct).success) {
+        ctx.addIssue({ code: "custom", path: ["factorPct"], message: m.prtr.validation.factor });
       }
     });
 export type PrtrEntryInput = z.infer<ReturnType<typeof prtrEntrySchema>>;
 
-/** 製品ごとの数量。製品は製品コードで当てる */
+/** 製品ごとの数量。製品は製品コードで当てる。方法（タブ）は行が持つ */
 export const prtrQuantitySchema = (m: Messages) =>
   z.object({
+    method: z.enum(PRTR_METHODS),
     productCode: z.string().trim().min(1, m.validation.required).max(20, m.validation.tooLong(20)),
     purchasedKg: kgSchema(m),
     shippedKg: optKg(m),
@@ -147,16 +143,23 @@ export function guessColumn(headers: string[], aliases: string[]): number | null
 export const PRTR_IMPORT_MODES = ["upsert", "replace"] as const;
 export type PrtrImportMode = (typeof PRTR_IMPORT_MODES)[number];
 
-/** 取り込みの指示（列の割り当てと重ね方） */
-export const prtrImportSchema = z.object({
-  kind: z.enum(PRTR_IMPORT_KINDS),
-  /** 項目 → 列番号（0 始まり）。割り当てない項目は入れない */
-  mapping: z.record(z.string(), z.number().int().min(0)),
-  /** 数量の重ね方。実測値では使わない */
-  mode: z.enum(PRTR_IMPORT_MODES).optional(),
-  /** 実測値で、既に値がある物質を上書きしてよいと答えたか */
-  overwrite: z.boolean().optional(),
-  /** true なら下見だけ（何も書かない） */
-  dryRun: z.boolean().optional(),
-});
+/** 取り込みの指示（列の割り当てと重ね方）。数量はどの方法（タブ）に入れるかも要る */
+export const prtrImportSchema = z
+  .object({
+    kind: z.enum(PRTR_IMPORT_KINDS),
+    /** 数量の取り込み先の方法（タブ）。実測値の取り込みでは使わない */
+    method: z.enum(PRTR_METHODS).optional(),
+    /** 項目 → 列番号（0 始まり）。割り当てない項目は入れない */
+    mapping: z.record(z.string(), z.number().int().min(0)),
+    /** 数量の重ね方。実測値では使わない */
+    mode: z.enum(PRTR_IMPORT_MODES).optional(),
+    /** 実測値で、既に値がある物質を上書きしてよいと答えたか */
+    overwrite: z.boolean().optional(),
+    /** true なら下見だけ（何も書かない） */
+    dryRun: z.boolean().optional(),
+  })
+  .refine((v) => v.kind !== "quantities" || v.method !== undefined, {
+    path: ["method"],
+    message: "method is required for quantities",
+  });
 export type PrtrImportInput = z.infer<typeof prtrImportSchema>;
