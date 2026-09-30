@@ -2382,7 +2382,7 @@ export const en: Messages = {
   /** PRTR report data entry (S22) */
   prtr: {
     title: "PRTR report data",
-    lead: "Choose the organisation and fiscal year, pick the method, then enter the quantities (kg) per product. With measured values, also enter the measured amount per substance",
+    lead: "Choose the organisation and fiscal year, save, then enter the quantities (kg) per product",
     methodLabel: "Emission estimation method",
     methodUnsaved: "Press “Save” to switch",
     organisation: "Organisation",

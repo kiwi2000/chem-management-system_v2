@@ -42,6 +42,9 @@ import { useTableState } from "@/lib/use-table-state";
 
 const Q_KEY = "chem.table.prtrQuantities";
 const M_KEY = "chem.table.prtrMeasured";
+/** 排出量算出方法の枠（ボタン・説明・排出係数）を出すか。2026-09-30 指示で一旦消している */
+const SHOW_METHOD = false;
+
 const Q_STATE: TableState = emptyTableState([{ column: "productCode", direction: "asc" }]);
 const M_STATE: TableState = emptyTableState([{ column: "officialNumber", direction: "asc" }]);
 const S_KEY = "chem.table.prtrSummary";
@@ -299,48 +302,55 @@ export function PrtrEntryScreen() {
           </div>
           {/*
             排出量算出方法はボタン 3 つを並べて選ぶ（2026-09-29 指示）。選んだ方法に応じた入力欄をその下に出す。
-            押しただけでは保存されない。「保存」で確定（入れてある数量の意味が変わるので、変更は一度確かめる）
+            押しただけでは保存されない。「保存」で確定（入れてある数量の意味が変わるので、変更は一度確かめる）。
+            **2026-09-30 指示で一旦画面から外す**（SHOW_METHOD）。方法の値・保存・確認の仕組みはそのまま
           */}
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium">{t.methodLabel}</span>
-              <span role="group" aria-label={t.methodLabel} className="inline-flex flex-wrap gap-1">
-                {PRTR_METHODS.map((k) => (
-                  <Button
-                    key={k}
-                    type="button"
-                    size="sm"
-                    variant={method === k ? "default" : "outline"}
-                    aria-pressed={method === k}
-                    onClick={() => setMethod(k)}
-                  >
-                    {t.methods[k]}
-                  </Button>
-                ))}
-              </span>
-              {methodChanged && (
-                <span className="text-muted-foreground text-xs">{t.methodUnsaved}</span>
+          {SHOW_METHOD && (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium">{t.methodLabel}</span>
+                <span
+                  role="group"
+                  aria-label={t.methodLabel}
+                  className="inline-flex flex-wrap gap-1"
+                >
+                  {PRTR_METHODS.map((k) => (
+                    <Button
+                      key={k}
+                      type="button"
+                      size="sm"
+                      variant={method === k ? "default" : "outline"}
+                      aria-pressed={method === k}
+                      onClick={() => setMethod(k)}
+                    >
+                      {t.methods[k]}
+                    </Button>
+                  ))}
+                </span>
+                {methodChanged && (
+                  <span className="text-muted-foreground text-xs">{t.methodUnsaved}</span>
+                )}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                {t.methodHints[method]}
+                {method === "FACTOR" && ` ${t.factorHint}`}
+              </p>
+              {method === "FACTOR" && (
+                <div className="space-y-1">
+                  <Label htmlFor="prtr-factor">{t.factorPct}</Label>
+                  <Input
+                    id="prtr-factor"
+                    inputMode="decimal"
+                    value={factorPct}
+                    onChange={(e) => setFactorPct(e.target.value)}
+                    aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
+                    className="h-8 w-32 font-mono"
+                  />
+                  <FieldError message={firstError(headErrors, "factorPct")} />
+                </div>
               )}
             </div>
-            <p className="text-muted-foreground text-xs">
-              {t.methodHints[method]}
-              {method === "FACTOR" && ` ${t.factorHint}`}
-            </p>
-            {method === "FACTOR" && (
-              <div className="space-y-1">
-                <Label htmlFor="prtr-factor">{t.factorPct}</Label>
-                <Input
-                  id="prtr-factor"
-                  inputMode="decimal"
-                  value={factorPct}
-                  onChange={(e) => setFactorPct(e.target.value)}
-                  aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
-                  className="h-8 w-32 font-mono"
-                />
-                <FieldError message={firstError(headErrors, "factorPct")} />
-              </div>
-            )}
-          </div>
+          )}
           {askMethod && (
             <Alert>
               <AlertDescription className="flex flex-wrap items-center gap-3">
