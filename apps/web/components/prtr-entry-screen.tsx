@@ -639,28 +639,46 @@ function QuantitySection({
     };
   }, [form.productCode, canSeeProducts, locale]);
 
-  async function findProducts() {
+  /*
+    打つたびに探す（2026-09-30 指示。「検索」ボタンは無し）。打ち終わりを 300 ms 待ってから引き、
+    遅れて返った古い結果は捨てる。両方空なら候補を消す
+  */
+  useEffect(() => {
     const code = find.code.trim();
     const name = find.name.trim();
-    if (code === "" && name === "") return;
-    setFinding(true);
-    try {
-      const params = new URLSearchParams({ size: String(FIND_SIZE) });
-      if (code) params.set("f.code", `contains:${code}`);
-      // 名称は画面の言語の側で探す（日本語のときは日本語名、英語のときは英語名）
-      if (name) params.set(locale === "ja" ? "f.nameJa" : "f.nameEn", `contains:${name}`);
-      const res = await fetch(`/api/products?${params.toString()}`);
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        setFound({ items: [], total: 0 });
-        return;
-      }
-      const body = (await res.json()) as ListResponse<ProductListItemDto>;
-      setFound({ items: body.items, total: body.total });
-    } finally {
+    if (code === "" && name === "") {
+      setFound(null);
       setFinding(false);
+      return;
     }
-  }
+    let cancelled = false;
+    setFinding(true);
+    const handle = setTimeout(() => {
+      void (async () => {
+        try {
+          const params = new URLSearchParams({ size: String(FIND_SIZE) });
+          if (code) params.set("f.code", `contains:${code}`);
+          // 名称は画面の言語の側で探す（日本語のときは日本語名、英語のときは英語名）
+          if (name) params.set(locale === "ja" ? "f.nameJa" : "f.nameEn", `contains:${name}`);
+          const res = await fetch(`/api/products?${params.toString()}`);
+          if (cancelled) return;
+          if (!res.ok) {
+            if (redirectIfUnauthorized(res)) return;
+            setFound({ items: [], total: 0 });
+            return;
+          }
+          const body = (await res.json()) as ListResponse<ProductListItemDto>;
+          if (!cancelled) setFound({ items: body.items, total: body.total });
+        } finally {
+          if (!cancelled) setFinding(false);
+        }
+      })();
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [find.code, find.name, locale]);
 
   /** 探した製品を選ぶ。製品コードに入れて、購入数量の欄へ進む */
   function pickProduct(p: ProductListItemDto) {
@@ -841,9 +859,6 @@ function QuantitySection({
                   value={find.code}
                   autoComplete="off"
                   onChange={(e) => setFind({ ...find, code: e.target.value })}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void findProducts();
-                  }}
                   className="h-8 font-mono"
                 />
               </div>
@@ -854,20 +869,13 @@ function QuantitySection({
                   value={find.name}
                   autoComplete="off"
                   onChange={(e) => setFind({ ...find, name: e.target.value })}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void findProducts();
-                  }}
                   className="h-8"
                 />
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={finding || (find.code.trim() === "" && find.name.trim() === "")}
-                onClick={() => void findProducts()}
-              >
-                {finding ? t.find.searching : m.common.search}
-              </Button>
+              {/* 打っている途中の印。結果が返ると消える */}
+              {finding && (
+                <span className="text-muted-foreground pb-2 text-xs">{t.find.searching}</span>
+              )}
             </div>
             {found !== null &&
               (found.items.length === 0 ? (
