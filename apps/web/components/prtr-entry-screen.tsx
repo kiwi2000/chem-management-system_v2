@@ -39,6 +39,7 @@ import type {
 } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { cn } from "@/lib/utils";
 
 const Q_KEY = "chem.table.prtrQuantities";
 const M_KEY = "chem.table.prtrMeasured";
@@ -306,28 +307,31 @@ export function PrtrEntryScreen() {
           */}
           {entry && data && (
             <div className="space-y-3 border-t pt-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium">{t.methodLabel}</span>
-                <div
-                  role="tablist"
-                  aria-label={t.methodLabel}
-                  className="inline-flex flex-wrap gap-1"
-                >
-                  {PRTR_METHODS.map((k) => (
-                    <Button
-                      key={k}
-                      type="button"
-                      role="tab"
-                      size="sm"
-                      aria-selected={tab === k}
-                      variant={tab === k ? "default" : "outline"}
-                      onClick={() => setTab(k)}
-                    >
-                      {t.methods[k]}
-                      <span className="ml-1 text-xs opacity-80">({data.quantityCounts[k]})</span>
-                    </Button>
-                  ))}
-                </div>
+              <p className="text-sm font-medium">{t.methodLabel}</p>
+              {/* 下線つきのタブ（GHS データの表と同じ見た目）。選んだタブの下に、その方法の入力が並ぶ */}
+              <div
+                role="tablist"
+                aria-label={t.methodLabel}
+                className="flex flex-wrap gap-1 border-b"
+              >
+                {PRTR_METHODS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === k}
+                    className={cn(
+                      "-mb-px border-b-2 px-3 py-1.5 text-sm",
+                      tab === k
+                        ? "border-primary text-primary font-medium"
+                        : "text-muted-foreground hover:text-foreground border-transparent",
+                    )}
+                    onClick={() => setTab(k)}
+                  >
+                    {t.methods[k]}
+                    <span className="ml-1 text-xs opacity-80">({data.quantityCounts[k]})</span>
+                  </button>
+                ))}
               </div>
               <p className="text-muted-foreground text-xs">
                 {t.methodHints[tab]}
@@ -747,14 +751,19 @@ function QuantitySection({
         className: "text-right font-mono tabular-nums",
         render: (q) => q.purchasedKg,
       },
-      {
-        key: "shippedKg",
-        header: t.shippedKg,
-        kind: "number",
-        width: 120,
-        className: "text-right font-mono tabular-nums",
-        render: (q) => q.shippedKg ?? "",
-      },
+      // 出荷数量は物質収支・排出係数だけ。実測値のタブでは列も欄も出さない（2026-09-30 指示）
+      ...(method === "MEASURED"
+        ? []
+        : [
+            {
+              key: "shippedKg",
+              header: t.shippedKg,
+              kind: "number" as const,
+              width: 120,
+              className: "text-right font-mono tabular-nums",
+              render: (q: PrtrQuantityDto) => q.shippedKg ?? "",
+            },
+          ]),
       {
         key: "source",
         header: t.source,
@@ -776,7 +785,7 @@ function QuantitySection({
         render: (q) => new Date(q.updatedAt).toLocaleString(locale),
       },
     ],
-    [t, m, locale, canSeeProducts],
+    [t, m, locale, canSeeProducts, method],
   );
   // 表の状態はタブごとに覚える（同じ鍵だと、別のタブのページや絞り込みを引き継いで空のページに出る）
   const { state, setState } = useTableState(`${Q_KEY}.${method}`, columns, Q_STATE, "q");
@@ -824,7 +833,7 @@ function QuantitySection({
             method,
             productCode: form.productCode,
             purchasedKg: form.purchasedKg,
-            shippedKg: form.shippedKg || null,
+            shippedKg: method === "MEASURED" ? null : form.shippedKg || null,
           }),
         },
       );
@@ -983,18 +992,20 @@ function QuantitySection({
               />
               <FieldError message={firstError(fieldErrors, "purchasedKg")} />
             </div>
-            <div className="w-36 space-y-1">
-              <Label htmlFor="q-shipped">{t.shippedKg}</Label>
-              <Input
-                id="q-shipped"
-                inputMode="decimal"
-                value={form.shippedKg}
-                onChange={(e) => setForm({ ...form, shippedKg: e.target.value })}
-                aria-invalid={Boolean(firstError(fieldErrors, "shippedKg"))}
-                className="h-8 font-mono"
-              />
-              <FieldError message={firstError(fieldErrors, "shippedKg")} />
-            </div>
+            {method !== "MEASURED" && (
+              <div className="w-36 space-y-1">
+                <Label htmlFor="q-shipped">{t.shippedKg}</Label>
+                <Input
+                  id="q-shipped"
+                  inputMode="decimal"
+                  value={form.shippedKg}
+                  onChange={(e) => setForm({ ...form, shippedKg: e.target.value })}
+                  aria-invalid={Boolean(firstError(fieldErrors, "shippedKg"))}
+                  className="h-8 font-mono"
+                />
+                <FieldError message={firstError(fieldErrors, "shippedKg")} />
+              </div>
+            )}
             <div className="flex gap-2">
               <Button
                 size="sm"

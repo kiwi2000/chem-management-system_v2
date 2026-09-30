@@ -108,7 +108,9 @@ export async function POST(req: Request, { params }: Ctx) {
 
   const data = {
     purchasedKg: new Prisma.Decimal(v.purchasedKg),
-    shippedKg: v.shippedKg == null ? null : new Prisma.Decimal(v.shippedKg),
+    // 実測値のタブでは出荷数量を使わない（画面にも出さない）ので、送られてきても持たない
+    shippedKg:
+      v.method === "MEASURED" || v.shippedKg == null ? null : new Prisma.Decimal(v.shippedKg),
     source: "MANUAL" as const,
     updatedBy: actor.user.id,
   };

@@ -48,9 +48,10 @@ export function PrtrImportDialog({
   const { m } = useI18n();
   const t = m.prtr.import;
   // 出荷数量は方法しだいで必須になる。窓で止めないと、プレビューで全行「出荷数量が要ります」になる
-  const fields = PRTR_IMPORT_FIELDS[kind].map((f) =>
-    f.key === "shippedKg" && shippedRequired ? { ...f, required: true } : f,
-  );
+  const fields = PRTR_IMPORT_FIELDS[kind]
+    // 実測値のタブでは出荷数量を使わないので、割り当ての項目にも出さない
+    .filter((f) => !(f.key === "shippedKg" && kind === "quantities" && method === "MEASURED"))
+    .map((f) => (f.key === "shippedKg" && shippedRequired ? { ...f, required: true } : f));
   const [inspected, setInspected] = useState<PrtrImportInspectDto | null>(null);
   const [mapping, setMapping] = useState<Record<string, number | null>>({});
   const [mode, setMode] = useState<PrtrImportMode>("upsert");

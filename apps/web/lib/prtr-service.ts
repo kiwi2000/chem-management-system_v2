@@ -497,7 +497,9 @@ export async function runImport(
       for (const q of parsed.ok) {
         const data = {
           purchasedKg: new Prisma.Decimal(q.purchasedKg),
-          shippedKg: q.shippedKg === null ? null : new Prisma.Decimal(q.shippedKg),
+          // 実測値のタブでは出荷数量を使わない
+          shippedKg:
+            method === "MEASURED" || q.shippedKg === null ? null : new Prisma.Decimal(q.shippedKg),
           source: "IMPORT" as const,
           updatedBy: actorId,
         };

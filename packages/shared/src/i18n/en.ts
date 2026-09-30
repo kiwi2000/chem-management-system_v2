@@ -2429,7 +2429,8 @@ export const en: Messages = {
       empty: "No quantities yet",
       productNotFound: (code: string) => `Product code "${code}" is not registered`,
       shippedRequired: "This method needs the shipped quantity",
-      shippedOptional: "With measured values the shipped quantity is optional",
+      shippedOptional:
+        "On the Measured tab only the purchased quantity is entered (used for the handled amount and the reporting threshold)",
     },
     measured: {
       title: "Measured values (kg per year)",
@@ -2453,7 +2454,7 @@ export const en: Messages = {
       kinds: { quantities: "Quantities per product", measured: "Measured values" },
       expected: {
         quantities:
-          "Choose a file with product code, product name, purchased and shipped columns (shipped is optional when the method is Measured)",
+          "Choose a file with product code, product name, purchased and shipped columns (the Measured tab does not use shipped)",
         measured: "Choose a file with substance code, substance name and measured columns",
       },
       file: "File (CSV / TSV / Excel)",

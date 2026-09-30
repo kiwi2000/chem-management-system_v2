@@ -55,7 +55,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     where: { id: qid },
     data: {
       purchasedKg: new Prisma.Decimal(v.purchasedKg),
-      shippedKg: v.shippedKg == null ? null : new Prisma.Decimal(v.shippedKg),
+      shippedKg:
+        row.method === "MEASURED" || v.shippedKg == null ? null : new Prisma.Decimal(v.shippedKg),
       source: "MANUAL",
       updatedBy: actor.user.id,
     },

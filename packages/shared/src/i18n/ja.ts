@@ -2555,7 +2555,7 @@ export const ja = {
       empty: "数量が登録されていません",
       productNotFound: (code: string) => `製品コード「${code}」は登録されていません`,
       shippedRequired: "この方法では出荷数量が要ります",
-      shippedOptional: "実測値のときは出荷数量は任意です",
+      shippedOptional: "実測値のタブでは購入数量だけを入れます（取扱量と届出要否の判断に使います）",
     },
     measured: {
       title: "実測値（kg・年間）",
@@ -2578,7 +2578,7 @@ export const ja = {
       kinds: { quantities: "製品ごとの数量", measured: "実測値" },
       expected: {
         quantities:
-          "製品コード・製品名・購入数量・出荷数量の列を持つファイルを選んでください（実測値のタブでは出荷数量は無くて構いません）",
+          "製品コード・製品名・購入数量・出荷数量の列を持つファイルを選んでください（実測値のタブでは出荷数量は使いません）",
         measured: "物質コード・物質名・実測値の列を持つファイルを選んでください",
       },
       file: "ファイル（CSV / TSV / Excel）",
