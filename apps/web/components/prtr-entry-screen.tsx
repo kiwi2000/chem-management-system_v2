@@ -30,6 +30,7 @@ import type {
   ListResponse,
   PrtrEntryDto,
   PrtrMeasuredDto,
+  ProductListItemDto,
   PrtrQuantityDto,
   PrtrScopeDto,
   PrtrSummaryDto,
@@ -598,6 +599,45 @@ function QuantitySection({
   const [form, setForm] = useState({ id: "", productCode: "", purchasedKg: "", shippedKg: "" });
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
+  /*
+    製品を探して選ぶ（2026-09-30 指示）。追加行の上に置く。コードは打たなくても、コードの一部か名称で探して
+    「選ぶ」を押せば製品コードに入る。製品の一覧の API（PRODUCT_VIEW）を引くので、見られる人にだけ出す
+  */
+  const [find, setFind] = useState({ code: "", name: "" });
+  const [found, setFound] = useState<{ items: ProductListItemDto[]; total: number } | null>(null);
+  const [finding, setFinding] = useState(false);
+  const purchasedRef = useRef<HTMLInputElement>(null);
+  const FIND_SIZE = 20;
+
+  async function findProducts() {
+    const code = find.code.trim();
+    const name = find.name.trim();
+    if (code === "" && name === "") return;
+    setFinding(true);
+    try {
+      const params = new URLSearchParams({ size: String(FIND_SIZE) });
+      if (code) params.set("f.code", `contains:${code}`);
+      // 名称は画面の言語の側で探す（日本語のときは日本語名、英語のときは英語名）
+      if (name) params.set(locale === "ja" ? "f.nameJa" : "f.nameEn", `contains:${name}`);
+      const res = await fetch(`/api/products?${params.toString()}`);
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        setFound({ items: [], total: 0 });
+        return;
+      }
+      const body = (await res.json()) as ListResponse<ProductListItemDto>;
+      setFound({ items: body.items, total: body.total });
+    } finally {
+      setFinding(false);
+    }
+  }
+
+  /** 探した製品を選ぶ。製品コードに入れて、購入数量の欄へ進む */
+  function pickProduct(p: ProductListItemDto) {
+    setForm((prev) => ({ ...prev, productCode: p.code }));
+    setFieldErrors({});
+    purchasedRef.current?.focus();
+  }
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
@@ -759,6 +799,79 @@ function QuantitySection({
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+        {open && canSeeProducts && form.id === "" && (
+          <div className="border-border bg-muted/30 space-y-2 border p-3">
+            <p className="text-sm font-medium">{t.find.title}</p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-40 space-y-1">
+                <Label htmlFor="q-find-code">{t.productCode}</Label>
+                <Input
+                  id="q-find-code"
+                  value={find.code}
+                  autoComplete="off"
+                  onChange={(e) => setFind({ ...find, code: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void findProducts();
+                  }}
+                  className="h-8 font-mono"
+                />
+              </div>
+              <div className="w-64 space-y-1">
+                <Label htmlFor="q-find-name">{t.find.name}</Label>
+                <Input
+                  id="q-find-name"
+                  value={find.name}
+                  autoComplete="off"
+                  onChange={(e) => setFind({ ...find, name: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void findProducts();
+                  }}
+                  className="h-8"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={finding || (find.code.trim() === "" && find.name.trim() === "")}
+                onClick={() => void findProducts()}
+              >
+                {finding ? t.find.searching : m.common.search}
+              </Button>
+            </div>
+            {found !== null &&
+              (found.items.length === 0 ? (
+                <p className="text-muted-foreground text-xs">{t.find.none}</p>
+              ) : (
+                <div className="space-y-1">
+                  <ul className="divide-border bg-background max-h-56 divide-y overflow-y-auto border">
+                    {found.items.map((p) => (
+                      <li key={p.id} className="flex items-center gap-3 px-2 py-1 text-sm">
+                        <span className="w-40 shrink-0 font-mono text-xs">{p.code}</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {pickName(locale, p.nameJa, p.nameEn)}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7"
+                          aria-label={`${t.find.pick} ${p.code}`}
+                          onClick={() => pickProduct(p)}
+                        >
+                          {t.find.pick}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                  {/* 打ち切った件数。多いときは条件を足して絞る合図 */}
+                  {found.total > found.items.length && (
+                    <p className="text-muted-foreground text-xs">
+                      {t.find.more(found.total - found.items.length)}
+                    </p>
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
         {open && (
           <div className="border-border bg-muted/30 flex flex-wrap items-end gap-3 border p-3">
             <div className="w-40 space-y-1">
@@ -777,6 +890,7 @@ function QuantitySection({
             <div className="w-36 space-y-1">
               <Label htmlFor="q-purchased">{t.purchasedKg}</Label>
               <Input
+                ref={purchasedRef}
                 id="q-purchased"
                 inputMode="decimal"
                 value={form.purchasedKg}
@@ -823,6 +937,8 @@ function QuantitySection({
                   label: t.add,
                   onClick: () => {
                     setForm({ id: "", productCode: "", purchasedKg: "", shippedKg: "" });
+                    setFind({ code: "", name: "" });
+                    setFound(null);
                     setOpen(true);
                   },
                 }

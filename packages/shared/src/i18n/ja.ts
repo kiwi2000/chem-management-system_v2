@@ -2538,6 +2538,15 @@ export const ja = {
     sources: { MANUAL: "手入力", IMPORT: "取り込み" },
     quantities: {
       title: "製品ごとの数量（kg）",
+      /** 追加行の上の「製品を探す」（2026-09-30 指示）。コードの一部か名称で探して「選ぶ」 */
+      find: {
+        title: "製品を探す",
+        name: "名称",
+        searching: "検索中...",
+        pick: "選ぶ",
+        none: "該当するものがありません",
+        more: (n: number) => `ほかに ${n} 件あります。条件を足して絞ってください`,
+      },
       productCode: "製品コード",
       productName: "製品名",
       purchasedKg: "購入数量",

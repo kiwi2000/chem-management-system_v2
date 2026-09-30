@@ -2413,6 +2413,14 @@ export const en: Messages = {
     sources: { MANUAL: "Manual", IMPORT: "Import" },
     quantities: {
       title: "Quantities per product (kg)",
+      find: {
+        title: "Find a product",
+        name: "Name",
+        searching: "Searching...",
+        pick: "Select",
+        none: "No matches",
+        more: (n: number) => `${n} more. Add conditions to narrow down`,
+      },
       productCode: "Product code",
       productName: "Product",
       purchasedKg: "Purchased",
