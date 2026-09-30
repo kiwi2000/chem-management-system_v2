@@ -2543,7 +2543,7 @@ export const ja = {
         title: "製品検索",
         name: "名称",
         searching: "検索中...",
-        pick: "選ぶ",
+        pick: "選択",
         none: "該当するものがありません",
         more: (n: number) => `ほかに ${n} 件あります。条件を足して絞ってください`,
       },
