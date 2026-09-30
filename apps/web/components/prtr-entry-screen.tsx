@@ -3,6 +3,7 @@
 import {
   defaultPrtrFiscalYear,
   emptyTableState,
+  normalizeCode,
   pickName,
   pickStatutoryName,
   PRTR_METHODS,
@@ -608,6 +609,35 @@ function QuantitySection({
   const [finding, setFinding] = useState(false);
   const purchasedRef = useRef<HTMLInputElement>(null);
   const FIND_SIZE = 20;
+  /**
+   * 製品名（読み取り専用。2026-09-30 指示）。製品コードが変わるたびに引いて入れる。
+   * null＝まだ引いていない／コードが空、""＝そのコードの製品が無い
+   */
+  const [productName, setProductName] = useState<string | null>(null);
+  useEffect(() => {
+    const code = form.productCode.trim();
+    if (code === "") {
+      setProductName(null);
+      return;
+    }
+    // 製品を見られない人は引けない（直す行では、行が持つ名前をそのまま出す）
+    if (!canSeeProducts) return;
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      void (async () => {
+        const params = new URLSearchParams({ size: "1", "f.code": `equals:${code}` });
+        const res = await fetch(`/api/products?${params.toString()}`);
+        if (!res.ok || cancelled) return;
+        const body = (await res.json()) as ListResponse<ProductListItemDto>;
+        const hit = body.items.find((p) => normalizeCode(p.code) === normalizeCode(code));
+        if (!cancelled) setProductName(hit ? pickName(locale, hit.nameJa, hit.nameEn) : "");
+      })();
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [form.productCode, canSeeProducts, locale]);
 
   async function findProducts() {
     const code = find.code.trim();
@@ -635,6 +665,7 @@ function QuantitySection({
   /** 探した製品を選ぶ。製品コードに入れて、購入数量の欄へ進む */
   function pickProduct(p: ProductListItemDto) {
     setForm((prev) => ({ ...prev, productCode: p.code }));
+    setProductName(pickName(locale, p.nameJa, p.nameEn));
     setFieldErrors({});
     purchasedRef.current?.focus();
   }
@@ -887,6 +918,22 @@ function QuantitySection({
               />
               <FieldError message={firstError(fieldErrors, "productCode")} />
             </div>
+            {/* 製品名は読むだけ。コードを入れると自動で入る（2026-09-30 指示）。無いコードなら断りを出す */}
+            <div className="min-w-64 flex-1 space-y-1">
+              <Label htmlFor="q-name">{t.productName}</Label>
+              <Input
+                id="q-name"
+                value={productName ?? ""}
+                readOnly
+                tabIndex={-1}
+                className="bg-muted/50 h-8"
+              />
+              {productName === "" && (
+                <p className="text-destructive text-xs">
+                  {t.productNotFound(form.productCode.trim())}
+                </p>
+              )}
+            </div>
             <div className="w-36 space-y-1">
               <Label htmlFor="q-purchased">{t.purchasedKg}</Label>
               <Input
@@ -962,6 +1009,7 @@ function QuantitySection({
                 purchasedKg: q.purchasedKg,
                 shippedKg: q.shippedKg ?? "",
               });
+              setProductName(pickName(locale, q.productNameJa, q.productNameEn));
               setOpen(true);
             },
           }}

@@ -2414,7 +2414,7 @@ export const en: Messages = {
     quantities: {
       title: "Quantities per product (kg)",
       find: {
-        title: "Find a product",
+        title: "Product search",
         name: "Name",
         searching: "Searching...",
         pick: "Select",
