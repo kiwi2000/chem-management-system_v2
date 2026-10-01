@@ -258,6 +258,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -3059,8 +3060,8 @@ model PrtrEntry {
 }
 
 /**
- * 製品ごとの数量（kg）。**方法（タブ）ごとに別の行**（2026-09-30）。同じ製品を 2 つ以上の方法に入れてよい。
- * 購入数量はどの方法でも、出荷数量は物質収支・排出係数で要る
+ * 製品ごとの数量（kg）。所属 × 年度につき製品 1 行。`method` は**排出の数え方の印**（2026-10-01）:
+ * 実測で捕捉／物質収支／排出係数。購入数量は印によらず取扱量に、出荷数量は物質収支・排出係数の行だけ使う
  */
 model PrtrQuantity {
   id          String          @id @default(cuid())
@@ -3078,13 +3079,14 @@ model PrtrQuantity {
   entry   PrtrEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   product Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
 
-  @@unique([entryId, method, productId])
+  @@unique([entryId, productId])
   @@index([productId])
   @@map("prtr_quantities")
 }
 
 /**
- * 実測値（kg、年間）。第一種指定化学物質（化管法の法文物質名）ごと
+ * 物質ごとの数量（kg、年間）。第一種指定化学物質（化管法の法文物質名）ごとに
+ * 取扱量（直接入力）と実測排出量を持つ。どちらか 1 つは入っている（2026-10-01）
  */
 model PrtrMeasured {
   id                   String          @id @default(cuid())
@@ -3094,7 +3096,14 @@ model PrtrMeasured {
    * 利用者が入力した物質（物質マスタ）。画面にコードと名前を出すため。物質を消せば空になる
    */
   substanceId          String?         @map("substance_id")
-  measuredKg           Decimal         @map("measured_kg") @db.Decimal(18, 3)
+  /**
+   * 取扱量（直接入力）。製品からの換算に足す。排出量の計算には使わない
+   */
+  handledKg            Decimal?        @map("handled_kg") @db.Decimal(18, 3)
+  /**
+   * 実測排出量。排出量の実測の分
+   */
+  measuredKg           Decimal?        @map("measured_kg") @db.Decimal(18, 3)
   source               PrtrEntrySource @default(MANUAL)
 
   createdAt DateTime @default(now()) @map("created_at")

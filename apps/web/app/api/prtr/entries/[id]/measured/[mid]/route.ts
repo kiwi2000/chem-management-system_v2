@@ -18,7 +18,7 @@ async function load(id: string, mid: string) {
   });
 }
 
-/** PUT /api/prtr/entries/[id]/measured/[mid] — 実測値を直す（物質は変えない） */
+/** PUT /api/prtr/entries/[id]/measured/[mid] — 取扱量・実測排出量を直す（物質は変えない）。どちらか 1 つは要る */
 export async function PUT(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
   if (actor instanceof Response) return actor;
@@ -30,21 +30,37 @@ export async function PUT(req: Request, { params }: Ctx) {
   const denied = await requirePrtrOrg(actor, row.entry.organisationId);
   if (denied) return denied;
 
-  let body: { measuredKg?: unknown };
+  let body: { handledKg?: unknown; measuredKg?: unknown };
   try {
-    body = (await req.json()) as { measuredKg?: unknown };
+    body = (await req.json()) as { handledKg?: unknown; measuredKg?: unknown };
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
+  const handled = typeof body.handledKg === "string" ? body.handledKg.trim() : "";
   const kg = typeof body.measuredKg === "string" ? body.measuredKg.trim() : "";
-  if (!KG.test(kg)) {
+  if (handled !== "" && !KG.test(handled)) {
+    return jsonError(400, "validation_error", m.prtr.validation.kg, {
+      fieldErrors: { handledKg: [m.prtr.validation.kg] },
+    });
+  }
+  if (kg !== "" && !KG.test(kg)) {
     return jsonError(400, "validation_error", m.prtr.validation.kg, {
       fieldErrors: { measuredKg: [m.prtr.validation.kg] },
     });
   }
+  if (handled === "" && kg === "") {
+    return jsonError(400, "validation_error", m.prtr.validation.eitherKg, {
+      fieldErrors: { measuredKg: [m.prtr.validation.eitherKg] },
+    });
+  }
   const updated = await prisma.prtrMeasured.update({
     where: { id: mid },
-    data: { measuredKg: new Prisma.Decimal(kg), source: "MANUAL", updatedBy: actor.user.id },
+    data: {
+      handledKg: handled === "" ? null : new Prisma.Decimal(handled),
+      measuredKg: kg === "" ? null : new Prisma.Decimal(kg),
+      source: "MANUAL",
+      updatedBy: actor.user.id,
+    },
     include: MEASURED_INCLUDE,
   });
   await writeAudit({
@@ -52,7 +68,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     entityId: mid,
     action: "update",
     actorId: actor.user.id,
-    diff: { statutorySubstanceId: row.statutorySubstanceId, measuredKg: kg },
+    diff: {
+      statutorySubstanceId: row.statutorySubstanceId,
+      handledKg: handled || null,
+      measuredKg: kg || null,
+    },
   });
   return Response.json({ item: toMeasuredDto(updated) });
 }

@@ -39,7 +39,6 @@ import type {
 } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
-import { cn } from "@/lib/utils";
 
 const Q_KEY = "chem.table.prtrQuantities";
 const M_KEY = "chem.table.prtrMeasured";
@@ -55,7 +54,7 @@ const SELECT = "border-input bg-background h-8 rounded-none border px-2 text-sm"
 const IMPORT_ACCEPT = ".csv,.tsv,.txt,.xlsx";
 
 /**
- * 取り込み用のテンプレート（Excel）を落とす。全部の形（数量・実測値）がシートに分かれて 1 つに入っている。
+ * 取り込み用のテンプレート（Excel）を落とす。全部の形（製品ごと・物質ごと）がシートに分かれて 1 つに入っている。
  * 各シートの 1 行目の見出しが、そのまま列の割り当てに当たる
  */
 function TemplateButton() {
@@ -98,10 +97,11 @@ function FilePickButton({ label, onPick }: { label: string; onPick: (f: File) =>
 }
 
 /**
- * PRTR 届出データの入力（S22）。
+ * PRTR 届出データの入力（S22。2026-10-01 設計）。
  *
- * 所属と年度を選んで保存すると、排出量算出方法（実測値・物質収支・排出係数）の**タブ**が出る。
- * 方法ごとに製品ごとの数量の表を持ち（実測値のタブは物質ごとの実測値も）、下の集計は 3 つの方法を足す（2026-09-30 指示）。
+ * 所属と年度を選んで保存すると、**製品ごとの数量**（購入・出荷と「排出の数え方」の印）と
+ * **物質ごとの数量**（取扱量の直接入力・実測排出量）の 2 つの表が出る。
+ * 取扱量の入力と排出量の求め方は別のもので、集計で物質ごとに足す。
  * 入力は画面の 1 件登録と、ファイルの取り込み（列の割り当て付き）の両方
  */
 export function PrtrEntryScreen() {
@@ -115,17 +115,12 @@ export function PrtrEntryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // 頭（係数・備考）。係数は排出係数のタブの中で入れるが、保存は頭と同じ API（両方とも毎回送る）
+  // 頭（係数・備考）。係数は所属 × 年度で 1 つ（排出係数の印の製品に使う）
   const [factorPct, setFactorPct] = useState("");
   const [note, setNote] = useState("");
   const [headErrors, setHeadErrors] = useState<FieldErrors>({});
   const [savingHead, setSavingHead] = useState(false);
-  /**
-   * 開いている方法のタブ。所属・年度を変えたときは、行がある最初の方法（無ければ物質収支）を開く
-   */
-  const [tab, setTab] = useState<PrtrMethod>("BALANCE");
-  const pickedFor = useRef("");
-  /** 数量や実測値が変わるたびに増やし、集計を読み直す合図にする */
+  /** 数量が変わるたびに増やし、集計を読み直す合図にする */
   const [tick, setTick] = useState(0);
 
   const years = useMemo(() => {
@@ -166,22 +161,14 @@ export function PrtrEntryScreen() {
     setFactorPct(body.entry?.factorPct ?? "");
     setNote(body.entry?.note ?? "");
     setHeadErrors({});
-    const key = `${orgId}:${fiscalYear}`;
-    if (pickedFor.current !== key) {
-      pickedFor.current = key;
-      const first = PRTR_METHODS.find(
-        (k) => body.quantityCounts[k] > 0 || (k === "MEASURED" && body.measuredCount > 0),
-      );
-      setTab(first ?? "BALANCE");
-    }
   }, [orgId, fiscalYear, m]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  /** 頭（係数・備考）を保存する。頭の「保存」と、排出係数のタブの「保存」の両方から呼ぶ */
-  async function saveHead(savedMessage: string) {
+  /** 頭（係数・備考）を保存する。係数と備考は毎回両方送る（片方だけ送ると、もう片方が消える） */
+  async function saveHead() {
     setError(null);
     setNotice(null);
     setHeadErrors({});
@@ -205,7 +192,7 @@ export function PrtrEntryScreen() {
         return;
       }
       setData((await res.json()) as PrtrEntryDto);
-      setNotice(savedMessage);
+      setNotice(t.headerSaved);
       setTick((n) => n + 1);
     } finally {
       setSavingHead(false);
@@ -283,6 +270,22 @@ export function PrtrEntryScreen() {
                 ))}
               </select>
             </div>
+            {/* 排出係数は所属 × 年度で 1 つ。排出係数の印の製品に使う */}
+            <div className="space-y-1">
+              <Label htmlFor="prtr-factor" title={t.factorHint}>
+                {t.factorPct}
+              </Label>
+              <Input
+                id="prtr-factor"
+                inputMode="decimal"
+                value={factorPct}
+                title={t.factorHint}
+                onChange={(e) => setFactorPct(e.target.value)}
+                aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
+                className="h-8 w-28 font-mono"
+              />
+              <FieldError message={firstError(headErrors, "factorPct")} />
+            </div>
             <div className="min-w-64 flex-1 space-y-1">
               <Label htmlFor="prtr-note">{t.note}</Label>
               <Input
@@ -293,85 +296,22 @@ export function PrtrEntryScreen() {
                 className="h-8"
               />
             </div>
-            <Button
-              size="sm"
-              disabled={savingHead || !orgId}
-              onClick={() => void saveHead(t.headerSaved)}
-            >
+            <Button size="sm" disabled={savingHead || !orgId} onClick={() => void saveHead()}>
               {savingHead ? m.common.saving : m.common.save}
             </Button>
           </div>
           {/*
-            排出量算出方法のタブ（2026-09-30 指示）。方法ごとに入力の表を持ち、それぞれ別に計算して集計で足す。
-            タブを切り替えても行は消えない（別の表を見せているだけ）。件数はタブの横に出す
+            2 つの表（2026-10-01 設計）。製品ごとの数量＝取扱量のもと＋排出の数え方の印、
+            物質ごとの数量＝取扱量の直接入力と実測排出量。頭を保存してから出る
           */}
-          {entry && data && (
-            <div className="space-y-3 border-t pt-4">
-              <p className="text-sm font-medium">{t.methodLabel}</p>
-              {/* 下線つきのタブ（GHS データの表と同じ見た目）。選んだタブの下に、その方法の入力が並ぶ */}
-              <div
-                role="tablist"
-                aria-label={t.methodLabel}
-                className="flex flex-wrap gap-1 border-b"
-              >
-                {PRTR_METHODS.map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    role="tab"
-                    aria-selected={tab === k}
-                    className={cn(
-                      "-mb-px border-b-2 px-3 py-1.5 text-sm",
-                      tab === k
-                        ? "border-primary text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground border-transparent",
-                    )}
-                    onClick={() => setTab(k)}
-                  >
-                    {t.methods[k]}
-                    <span className="ml-1 text-xs opacity-80">({data.quantityCounts[k]})</span>
-                  </button>
-                ))}
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {t.methodHints[tab]}
-                {tab === "FACTOR" && ` ${t.factorHint}`}
-              </p>
-              {/* 排出係数のタブだけ、係数（所属 × 年度で 1 つ）を上に置く。「保存」は頭と同じ API */}
-              {tab === "FACTOR" && (
-                <div className="flex flex-wrap items-end gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="prtr-factor">{t.factorPct}</Label>
-                    <Input
-                      id="prtr-factor"
-                      inputMode="decimal"
-                      value={factorPct}
-                      onChange={(e) => setFactorPct(e.target.value)}
-                      aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
-                      className="h-8 w-32 font-mono"
-                    />
-                    <FieldError message={firstError(headErrors, "factorPct")} />
-                  </div>
-                  <Button
-                    size="sm"
-                    disabled={savingHead}
-                    onClick={() => void saveHead(t.factorSaved)}
-                  >
-                    {savingHead ? m.common.saving : m.common.save}
-                  </Button>
-                </div>
-              )}
-              {/* タブごとに別の表。key で作り直し、表の状態（ページ・絞り込み）が混ざらないようにする */}
-              <QuantitySection
-                key={tab}
-                entryId={entry.id}
-                method={tab}
-                canSeeProducts={can("PRODUCT_VIEW")}
-                onChanged={load}
-              />
-              {tab === "MEASURED" && <MeasuredSection entryId={entry.id} onChanged={load} />}
-            </div>
+          {entry && (
+            <QuantitySection
+              entryId={entry.id}
+              canSeeProducts={can("PRODUCT_VIEW")}
+              onChanged={load}
+            />
           )}
+          {entry && <SubstanceSection entryId={entry.id} onChanged={load} />}
         </CardContent>
       </Card>
 
@@ -382,7 +322,7 @@ export function PrtrEntryScreen() {
 }
 
 /**
- * 集計（第一種指定化学物質ごと）。開いたとき・数量や方法が変わったときに集計して保存し、
+ * 集計（第一種指定化学物質ごと）。開いたとき・数量が変わったときに集計して保存し、
  * 保存した行を一覧に出す。「再計算」でいつでも集計し直せる
  */
 function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
@@ -455,7 +395,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         className: "text-right font-mono tabular-nums",
         render: (r) => r.releaseKg ?? "",
       },
-      // 排出量の内訳（方法ごと）。どの方法から来た量か分かるように（2026-09-30 指示）
+      // 排出量の内訳（実測／物質収支／排出係数）。どの方法から来た量か分かるように
       {
         key: "releaseMeasuredKg",
         header: t.releaseMeasuredKg,
@@ -512,7 +452,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
     [m],
   );
 
-  /** 集計して保存する。開いたとき、数量や方法が変わったとき、「再計算」を押したとき */
+  /** 集計して保存する。開いたとき、数量が変わったとき、「再計算」を押したとき */
   const compute = useCallback(async () => {
     setComputing(true);
     try {
@@ -608,29 +548,33 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
   );
 }
 
-/** 製品ごとの数量（方法＝タブごとに別の表） */
+/** 製品ごとの数量（購入・出荷と、排出の数え方の印） */
 function QuantitySection({
   entryId,
-  method,
   canSeeProducts,
   onChanged,
 }: {
   entryId: string;
-  /** この表の方法（タブ）。行はこの方法で登録し、読むときもこの方法の行だけ */
-  method: PrtrMethod;
   canSeeProducts: boolean;
-  /** 件数が変わったことを上に知らせる（タブの横の件数と、集計の読み直しに使う） */
+  /** 件数が変わったことを上に知らせる（集計の読み直しに使う） */
   onChanged: () => Promise<void>;
 }) {
   const { m, locale } = useI18n();
   const t = m.prtr.quantities;
   const [data, setData] = useState<ListResponse<PrtrQuantityDto> | null>(null);
-  const [form, setForm] = useState({ id: "", productCode: "", purchasedKg: "", shippedKg: "" });
+  const emptyForm = {
+    id: "",
+    productCode: "",
+    purchasedKg: "",
+    shippedKg: "",
+    method: "BALANCE" as PrtrMethod,
+  };
+  const [form, setForm] = useState(emptyForm);
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
   /*
     製品を探して選ぶ（2026-09-30 指示）。追加行の上に置く。コードは打たなくても、コードの一部か名称で探して
-    「選ぶ」を押せば製品コードに入る。製品の一覧の API（PRODUCT_VIEW）を引くので、見られる人にだけ出す
+    「選択」を押せば製品コードに入る。製品の一覧の API（PRODUCT_VIEW）を引くので、見られる人にだけ出す
   */
   const [find, setFind] = useState({ code: "", name: "" });
   const [found, setFound] = useState<{ items: ProductListItemDto[]; total: number } | null>(null);
@@ -740,7 +684,7 @@ function QuantitySection({
         key: "productName",
         header: t.productName,
         kind: "text",
-        width: 280,
+        width: 260,
         render: (q) => pickName(locale, q.productNameJa, q.productNameEn),
       },
       {
@@ -751,19 +695,24 @@ function QuantitySection({
         className: "text-right font-mono tabular-nums",
         render: (q) => q.purchasedKg,
       },
-      // 出荷数量は物質収支・排出係数だけ。実測値のタブでは列も欄も出さない（2026-09-30 指示）
-      ...(method === "MEASURED"
-        ? []
-        : [
-            {
-              key: "shippedKg",
-              header: t.shippedKg,
-              kind: "number" as const,
-              width: 120,
-              className: "text-right font-mono tabular-nums",
-              render: (q: PrtrQuantityDto) => q.shippedKg ?? "",
-            },
-          ]),
+      {
+        key: "shippedKg",
+        header: t.shippedKg,
+        kind: "number",
+        width: 120,
+        className: "text-right font-mono tabular-nums",
+        render: (q) => q.shippedKg ?? "",
+      },
+      // 排出の数え方の印。実測で捕捉の製品は物質収支・排出係数に入らない
+      {
+        key: "method",
+        header: t.method,
+        kind: "enum",
+        width: 110,
+        className: "text-xs",
+        options: PRTR_METHODS.map((k) => ({ value: k, label: m.prtr.methods[k] })),
+        render: (q) => m.prtr.methods[q.method],
+      },
       {
         key: "source",
         header: t.source,
@@ -785,17 +734,14 @@ function QuantitySection({
         render: (q) => new Date(q.updatedAt).toLocaleString(locale),
       },
     ],
-    [t, m, locale, canSeeProducts, method],
+    [t, m, locale, canSeeProducts],
   );
-  // 表の状態はタブごとに覚える（同じ鍵だと、別のタブのページや絞り込みを引き継いで空のページに出る）
-  const { state, setState } = useTableState(`${Q_KEY}.${method}`, columns, Q_STATE, "q");
+  const { state, setState } = useTableState(Q_KEY, columns, Q_STATE, "q");
 
   const loadRows = useCallback(async () => {
-    const params = serializeTableState(state, Q_STATE);
-    params.set("method", method);
-    const res = await fetch(`/api/prtr/entries/${entryId}/quantities?${params.toString()}`).catch(
-      () => null,
-    );
+    const res = await fetch(
+      `/api/prtr/entries/${entryId}/quantities?${serializeTableState(state, Q_STATE).toString()}`,
+    ).catch(() => null);
     if (!res?.ok) {
       if (res) {
         if (redirectIfUnauthorized(res)) return;
@@ -805,7 +751,7 @@ function QuantitySection({
       return;
     }
     setData((await res.json()) as ListResponse<PrtrQuantityDto>);
-  }, [entryId, method, state, m]);
+  }, [entryId, state, m]);
 
   useEffect(() => {
     void loadRows();
@@ -830,10 +776,11 @@ function QuantitySection({
           method: editing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            method,
+            method: form.method,
             productCode: form.productCode,
             purchasedKg: form.purchasedKg,
-            shippedKg: method === "MEASURED" ? null : form.shippedKg || null,
+            // 実測で捕捉の製品は出荷数量を持たない
+            shippedKg: form.method === "MEASURED" ? null : form.shippedKg || null,
           }),
         },
       );
@@ -845,7 +792,7 @@ function QuantitySection({
         return;
       }
       setOpen(false);
-      setForm({ id: "", productCode: "", purchasedKg: "", shippedKg: "" });
+      setForm(emptyForm);
       await changed();
     } finally {
       setSaving(false);
@@ -873,9 +820,7 @@ function QuantitySection({
       <div className="flex flex-row items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium">{t.title}</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {method === "MEASURED" ? t.shippedOptional : t.shippedRequired}
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">{t.lead}</p>
         </div>
         <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
       </div>
@@ -979,6 +924,23 @@ function QuantitySection({
                 </p>
               )}
             </div>
+            {/* 排出の数え方の印。実測で捕捉なら出荷数量の欄は出さない */}
+            <div className="space-y-1">
+              <Label htmlFor="q-method">{t.method}</Label>
+              <select
+                id="q-method"
+                value={form.method}
+                title={m.prtr.methodHints[form.method]}
+                onChange={(e) => setForm({ ...form, method: e.target.value as PrtrMethod })}
+                className={SELECT}
+              >
+                {PRTR_METHODS.map((k) => (
+                  <option key={k} value={k}>
+                    {m.prtr.methods[k]}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="w-36 space-y-1">
               <Label htmlFor="q-purchased">{t.purchasedKg}</Label>
               <Input
@@ -992,7 +954,7 @@ function QuantitySection({
               />
               <FieldError message={firstError(fieldErrors, "purchasedKg")} />
             </div>
-            {method !== "MEASURED" && (
+            {form.method !== "MEASURED" && (
               <div className="w-36 space-y-1">
                 <Label htmlFor="q-shipped">{t.shippedKg}</Label>
                 <Input
@@ -1020,6 +982,9 @@ function QuantitySection({
                 {m.common.cancel}
               </Button>
             </div>
+            <p className="text-muted-foreground w-full text-xs">
+              {m.prtr.methodHints[form.method]}
+            </p>
           </div>
         )}
         <DataTable
@@ -1030,7 +995,7 @@ function QuantitySection({
               ? {
                   label: t.add,
                   onClick: () => {
-                    setForm({ id: "", productCode: "", purchasedKg: "", shippedKg: "" });
+                    setForm(emptyForm);
                     setFind({ code: "", name: "" });
                     setFound(null);
                     setOpen(true);
@@ -1055,6 +1020,7 @@ function QuantitySection({
                 productCode: q.productCode,
                 purchasedKg: q.purchasedKg,
                 shippedKg: q.shippedKg ?? "",
+                method: q.method,
               });
               setProductName(pickName(locale, q.productNameJa, q.productNameEn));
               setOpen(true);
@@ -1066,9 +1032,8 @@ function QuantitySection({
         <PrtrImportDialog
           entryId={entryId}
           kind="quantities"
-          method={method}
+          method="BALANCE"
           file={importing}
-          shippedRequired={method !== "MEASURED"}
           onClose={(applied) => {
             setImporting(null);
             if (applied) void changed();
@@ -1079,8 +1044,8 @@ function QuantitySection({
   );
 }
 
-/** 実測値（実測値のタブだけ） */
-function MeasuredSection({
+/** 物質ごとの数量（取扱量の直接入力・実測排出量） */
+function SubstanceSection({
   entryId,
   onChanged,
 }: {
@@ -1090,7 +1055,8 @@ function MeasuredSection({
   const { m, locale } = useI18n();
   const t = m.prtr.measured;
   const [data, setData] = useState<ListResponse<PrtrMeasuredDto> | null>(null);
-  const [form, setForm] = useState({ id: "", substanceCode: "", measuredKg: "" });
+  const emptyForm = { id: "", substanceCode: "", handledKg: "", measuredKg: "" };
+  const [form, setForm] = useState(emptyForm);
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1132,12 +1098,20 @@ function MeasuredSection({
           ),
       },
       {
+        key: "handledKg",
+        header: t.handledKg,
+        kind: "number",
+        width: 120,
+        className: "text-right font-mono tabular-nums",
+        render: (x) => x.handledKg ?? "",
+      },
+      {
         key: "measuredKg",
         header: t.measuredKg,
         kind: "number",
         width: 120,
         className: "text-right font-mono tabular-nums",
-        render: (x) => x.measuredKg,
+        render: (x) => x.measuredKg ?? "",
       },
       {
         key: "source",
@@ -1194,8 +1168,12 @@ function MeasuredSection({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             editing
-              ? { measuredKg: form.measuredKg }
-              : { substanceCode: form.substanceCode, measuredKg: form.measuredKg },
+              ? { handledKg: form.handledKg, measuredKg: form.measuredKg }
+              : {
+                  substanceCode: form.substanceCode,
+                  handledKg: form.handledKg || null,
+                  measuredKg: form.measuredKg || null,
+                },
           ),
         },
       );
@@ -1207,7 +1185,7 @@ function MeasuredSection({
         return;
       }
       setOpen(false);
-      setForm({ id: "", substanceCode: "", measuredKg: "" });
+      setForm(emptyForm);
       await changed();
     } finally {
       setSaving(false);
@@ -1230,12 +1208,17 @@ function MeasuredSection({
     await changed();
   }
 
+  const canSave =
+    !saving &&
+    (form.id !== "" || form.substanceCode.trim() !== "") &&
+    (form.handledKg.trim() !== "" || form.measuredKg.trim() !== "");
+
   return (
     <div className="space-y-3 border-t pt-4">
       <div className="flex flex-row items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium">{t.title}</p>
-          <p className="text-muted-foreground mt-1 text-sm">{m.prtr.methodHints.MEASURED}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{t.lead}</p>
         </div>
         <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
       </div>
@@ -1261,6 +1244,18 @@ function MeasuredSection({
               <FieldError message={firstError(fieldErrors, "substanceCode")} />
             </div>
             <div className="w-36 space-y-1">
+              <Label htmlFor="ms-handled">{t.handledKg}</Label>
+              <Input
+                id="ms-handled"
+                inputMode="decimal"
+                value={form.handledKg}
+                onChange={(e) => setForm({ ...form, handledKg: e.target.value })}
+                aria-invalid={Boolean(firstError(fieldErrors, "handledKg"))}
+                className="h-8 font-mono"
+              />
+              <FieldError message={firstError(fieldErrors, "handledKg")} />
+            </div>
+            <div className="w-36 space-y-1">
               <Label htmlFor="ms-kg">{t.measuredKg}</Label>
               <Input
                 id="ms-kg"
@@ -1273,15 +1268,7 @@ function MeasuredSection({
               <FieldError message={firstError(fieldErrors, "measuredKg")} />
             </div>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                disabled={
-                  saving ||
-                  (form.id === "" && form.substanceCode.trim() === "") ||
-                  form.measuredKg.trim() === ""
-                }
-                onClick={() => void save()}
-              >
+              <Button size="sm" disabled={!canSave} onClick={() => void save()}>
                 {saving ? m.common.saving : m.common.save}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
@@ -1297,7 +1284,7 @@ function MeasuredSection({
               ? {
                   label: t.add,
                   onClick: () => {
-                    setForm({ id: "", substanceCode: "", measuredKg: "" });
+                    setForm(emptyForm);
                     setOpen(true);
                   },
                 }
@@ -1315,7 +1302,12 @@ function MeasuredSection({
           onDeleteSelected={(sel) => void removeSelected(sel)}
           rowAction={{
             onClick: (x) => {
-              setForm({ id: x.id, substanceCode: x.substanceCode ?? "", measuredKg: x.measuredKg });
+              setForm({
+                id: x.id,
+                substanceCode: x.substanceCode ?? "",
+                handledKg: x.handledKg ?? "",
+                measuredKg: x.measuredKg ?? "",
+              });
               setOpen(true);
             },
           }}

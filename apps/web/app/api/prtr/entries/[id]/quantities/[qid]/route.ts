@@ -18,7 +18,7 @@ async function load(id: string, qid: string) {
   });
 }
 
-/** PUT /api/prtr/entries/[id]/quantities/[qid] — 数量を直す（製品は変えない） */
+/** PUT /api/prtr/entries/[id]/quantities/[qid] — 数量と印を直す（製品は変えない） */
 export async function PUT(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
   if (actor instanceof Response) return actor;
@@ -36,17 +36,17 @@ export async function PUT(req: Request, { params }: Ctx) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
-  // 製品と方法（タブ）は変えない。行が持つものをそのまま使う
+  // 製品は変えない。印は本文に無ければ行のまま
   const parsed = prtrQuantitySchema(m).safeParse({
+    method: row.method,
     ...(body as object),
     productCode: row.product.code,
-    method: row.method,
   });
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
-  if (row.method !== "MEASURED" && v.shippedKg == null) {
+  if (v.method !== "MEASURED" && v.shippedKg == null) {
     return jsonError(400, "validation_error", m.prtr.quantities.shippedRequired, {
       fieldErrors: { shippedKg: [m.prtr.quantities.shippedRequired] },
     });
@@ -54,9 +54,10 @@ export async function PUT(req: Request, { params }: Ctx) {
   const updated = await prisma.prtrQuantity.update({
     where: { id: qid },
     data: {
+      method: v.method,
       purchasedKg: new Prisma.Decimal(v.purchasedKg),
       shippedKg:
-        row.method === "MEASURED" || v.shippedKg == null ? null : new Prisma.Decimal(v.shippedKg),
+        v.method === "MEASURED" || v.shippedKg == null ? null : new Prisma.Decimal(v.shippedKg),
       source: "MANUAL",
       updatedBy: actor.user.id,
     },
@@ -67,7 +68,12 @@ export async function PUT(req: Request, { params }: Ctx) {
     entityId: qid,
     action: "update",
     actorId: actor.user.id,
-    diff: { product: row.product.code, purchasedKg: v.purchasedKg, shippedKg: v.shippedKg ?? null },
+    diff: {
+      product: row.product.code,
+      method: v.method,
+      purchasedKg: v.purchasedKg,
+      shippedKg: v.shippedKg ?? null,
+    },
   });
   return Response.json({ item: toQuantityDto(updated) });
 }

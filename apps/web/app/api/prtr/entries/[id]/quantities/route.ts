@@ -21,8 +21,8 @@ type Ctx = { params: Promise<{ id: string }> };
 const DEFAULT_STATE = emptyTableState([{ column: "productCode", direction: "asc" }]);
 
 /**
- * GET /api/prtr/entries/[id]/quantities?method= — 製品ごとの数量の一覧（絞り込み・並べ替え・ページ送り）。
- * `method`（実測値・物質収支・排出係数）で、そのタブの行だけにする。無ければ全部
+ * GET /api/prtr/entries/[id]/quantities — 製品ごとの数量の一覧（絞り込み・並べ替え・ページ送り）。
+ * `method`（排出の数え方の印）を付ければその行だけ。無ければ全部
  */
 export async function GET(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
@@ -69,8 +69,8 @@ export async function GET(req: Request, { params }: Ctx) {
 
 /**
  * POST /api/prtr/entries/[id]/quantities — 製品ごとの数量を 1 件足す（S22）。
- * 方法（タブ）は本文の `method`。同じ方法に同じ製品が既にあれば上書きする
- * （画面の 1 件登録は「同じ製品なら直す」の意味で使う）。出荷数量は実測値以外で要る
+ * `method` は排出の数え方の印。同じ製品が既にあれば上書きする（画面の 1 件登録は「同じ製品なら直す」の意味）。
+ * 出荷数量は実測で捕捉以外で要り、実測で捕捉では持たない
  */
 export async function POST(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
@@ -107,16 +107,17 @@ export async function POST(req: Request, { params }: Ctx) {
   }
 
   const data = {
+    method: v.method,
     purchasedKg: new Prisma.Decimal(v.purchasedKg),
-    // 実測値のタブでは出荷数量を使わない（画面にも出さない）ので、送られてきても持たない
+    // 実測で捕捉の製品は出荷数量を使わない（画面にも出さない）ので、送られてきても持たない
     shippedKg:
       v.method === "MEASURED" || v.shippedKg == null ? null : new Prisma.Decimal(v.shippedKg),
     source: "MANUAL" as const,
     updatedBy: actor.user.id,
   };
   const row = await prisma.prtrQuantity.upsert({
-    where: { entryId_method_productId: { entryId: id, method: v.method, productId: product.id } },
-    create: { entryId: id, method: v.method, productId: product.id, ...data },
+    where: { entryId_productId: { entryId: id, productId: product.id } },
+    create: { entryId: id, productId: product.id, ...data },
     update: data,
     include: QUANTITY_INCLUDE,
   });

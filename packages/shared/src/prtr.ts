@@ -4,13 +4,32 @@ import type { Messages } from "./i18n/ja";
 /**
  * PRTR 届出データの入力（S22）。
  *
- * 所属（組織マスタの組織）× 年度で 1 組。方法（実測値・物質収支・排出係数）は**タブ**で、
- * 方法ごとに製品ごとの数量の表を持ち（実測値のタブは物質ごとの実測値も）、集計は 3 つを足す（2026-09-30）。
+ * 所属（組織マスタの組織）× 年度で 1 組。製品ごとの数量（購入・出荷と、排出の数え方の印）と、
+ * 物質ごとの数量（取扱量の直接入力・実測排出量）を入れ、集計で物質ごとに足す（2026-10-01 設計）。
  * 仕様は docs/steps/S22_PRTR集計と届出.md
  */
 
+/** 排出の数え方（製品の行の印）: 実測で捕捉／物質収支／排出係数 */
 export const PRTR_METHODS = ["MEASURED", "BALANCE", "FACTOR"] as const;
 export type PrtrMethod = (typeof PRTR_METHODS)[number];
+
+/** 取り込みの列で印を書く言葉。大文字小文字・空白は無視して当てる */
+export const PRTR_METHOD_ALIASES: Record<PrtrMethod, string[]> = {
+  MEASURED: ["MEASURED", "実測で捕捉", "実測", "実測値", "measured"],
+  BALANCE: ["BALANCE", "物質収支", "収支", "balance", "mass balance"],
+  FACTOR: ["FACTOR", "排出係数", "係数", "factor", "emission factor"],
+};
+
+/** 印の言葉 → 印。当たらなければ null */
+export function parsePrtrMethod(text: string): PrtrMethod | null {
+  const norm = (x: string) => x.replace(/[\s\u3000]/g, "").toLowerCase();
+  const v = norm(text);
+  if (v === "") return null;
+  for (const k of PRTR_METHODS) {
+    if (PRTR_METHOD_ALIASES[k].some((a) => norm(a) === v)) return k;
+  }
+  return null;
+}
 
 /** 年度（4 月〜翌 3 月）。いま入っている年度 */
 export function currentFiscalYear(now = new Date()): number {
@@ -72,7 +91,7 @@ export const prtrEntrySchema = (m: Messages) =>
     });
 export type PrtrEntryInput = z.infer<ReturnType<typeof prtrEntrySchema>>;
 
-/** 製品ごとの数量。製品は製品コードで当てる。方法（タブ）は行が持つ */
+/** 製品ごとの数量。製品は製品コードで当てる。`method` は排出の数え方の印 */
 export const prtrQuantitySchema = (m: Messages) =>
   z.object({
     method: z.enum(PRTR_METHODS),
@@ -82,16 +101,25 @@ export const prtrQuantitySchema = (m: Messages) =>
   });
 export type PrtrQuantityInput = z.infer<ReturnType<typeof prtrQuantitySchema>>;
 
-/** 実測値。物質は本システムの物質コードで当て、化管法の第一種指定化学物質に変換する */
+/**
+ * 物質ごとの数量（取扱量の直接入力・実測排出量）。どちらか 1 つは要る。
+ * 物質は本システムの物質コードで当て、化管法の第一種指定化学物質に変換する
+ */
 export const prtrMeasuredSchema = (m: Messages) =>
-  z.object({
-    substanceCode: z
-      .string()
-      .trim()
-      .min(1, m.validation.required)
-      .max(50, m.validation.tooLong(50)),
-    measuredKg: kgSchema(m),
-  });
+  z
+    .object({
+      substanceCode: z
+        .string()
+        .trim()
+        .min(1, m.validation.required)
+        .max(50, m.validation.tooLong(50)),
+      handledKg: optKg(m),
+      measuredKg: optKg(m),
+    })
+    .refine((v) => v.handledKg != null || v.measuredKg != null, {
+      path: ["measuredKg"],
+      message: m.prtr.validation.eitherKg,
+    });
 export type PrtrMeasuredInput = z.infer<ReturnType<typeof prtrMeasuredSchema>>;
 
 /*
@@ -120,6 +148,8 @@ export const PRTR_IMPORT_FIELDS: Record<
       aliases: ["購入数量", "購入数量(kg)", "購入", "purchased"],
     },
     { key: "shippedKg", required: false, aliases: ["出荷数量", "出荷数量(kg)", "出荷", "shipped"] },
+    // 排出の数え方の印。列が無い行は窓で選んだ既定の印
+    { key: "method", required: false, aliases: ["排出の数え方", "数え方", "方法", "method"] },
   ],
   measured: [
     { key: "substanceCode", required: true, aliases: ["物質コード", "substance code", "code"] },
@@ -128,7 +158,13 @@ export const PRTR_IMPORT_FIELDS: Record<
       required: false,
       aliases: ["物質名", "物質名称", "substance name", "name"],
     },
-    { key: "measuredKg", required: true, aliases: ["実測値", "実測値(kg)", "排出量", "measured"] },
+    // 取扱量・実測排出量はどちらか 1 つが要る（行ごとに確かめる）
+    { key: "handledKg", required: false, aliases: ["取扱量", "取扱量(kg)", "handled"] },
+    {
+      key: "measuredKg",
+      required: false,
+      aliases: ["実測排出量", "実測排出量(kg)", "実測値", "実測値(kg)", "排出量", "measured"],
+    },
   ],
 };
 
@@ -147,7 +183,7 @@ export type PrtrImportMode = (typeof PRTR_IMPORT_MODES)[number];
 export const prtrImportSchema = z
   .object({
     kind: z.enum(PRTR_IMPORT_KINDS),
-    /** 数量の取り込み先の方法（タブ）。実測値の取り込みでは使わない */
+    /** 製品ごとの数量で、印の列が無い行に付ける既定の印。物質ごとの数量では使わない */
     method: z.enum(PRTR_METHODS).optional(),
     /** 項目 → 列番号（0 始まり）。割り当てない項目は入れない */
     mapping: z.record(z.string(), z.number().int().min(0)),

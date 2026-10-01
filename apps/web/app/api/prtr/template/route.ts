@@ -25,6 +25,7 @@ export async function GET() {
         { header: t.quantities.productName, width: 40 },
         { header: `${t.quantities.purchasedKg}(kg)`, width: 16 },
         { header: `${t.quantities.shippedKg}(kg)`, width: 16 },
+        { header: t.quantities.method, width: 16 },
       ],
     },
     {
@@ -32,6 +33,7 @@ export async function GET() {
       columns: [
         { header: t.measured.substanceCode, width: 20 },
         { header: t.measured.substanceName, width: 40 },
+        { header: `${t.measured.handledKg}(kg)`, width: 16 },
         { header: `${t.measured.measuredKg}(kg)`, width: 16 },
       ],
     },

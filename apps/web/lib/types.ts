@@ -1343,7 +1343,7 @@ export interface PrtrScopeDto {
 
 export interface PrtrQuantityDto {
   id: string;
-  /** 方法（タブ）。方法ごとに別の行（2026-09-30） */
+  /** 排出の数え方の印: 実測で捕捉／物質収支／排出係数（2026-10-01） */
   method: "MEASURED" | "BALANCE" | "FACTOR";
   productId: string;
   productCode: string;
@@ -1365,7 +1365,10 @@ export interface PrtrMeasuredDto {
   /** 利用者が入力した物質コード（同じ法文物質名に当たる代表の物質） */
   substanceCode: string | null;
   substanceNameJa: string | null;
-  measuredKg: string;
+  /** 取扱量（直接入力）kg。製品からの換算に足す */
+  handledKg: string | null;
+  /** 実測排出量 kg */
+  measuredKg: string | null;
   source: "MANUAL" | "IMPORT";
   updatedAt: string;
 }
@@ -1384,8 +1387,7 @@ export interface PrtrEntryDto {
     note: string | null;
     updatedAt: string;
   } | null;
-  /** 方法（タブ）ごとの数量の件数 */
-  quantityCounts: { MEASURED: number; BALANCE: number; FACTOR: number };
+  quantityCount: number;
   measuredCount: number;
 }
 
@@ -1446,7 +1448,7 @@ export interface PrtrSummaryMeta {
   /** 判定に使った法規制バージョン（版を消していれば null） */
   versionCode: string | null;
   factorPct: string | null;
-  /** 排出係数のタブに数量があるのに係数が無い（その分の排出量が出せていない） */
+  /** 排出係数の印の製品があるのに係数が無い（その分の排出量が出せていない） */
   factorMissing: boolean;
   /** 数量を入れた製品の数（方法をまたいで数えて 1 つ） */
   productCount: number;

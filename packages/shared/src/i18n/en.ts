@@ -2382,8 +2382,8 @@ export const en: Messages = {
   /** PRTR report data entry (S22) */
   prtr: {
     title: "PRTR report data",
-    lead: "Choose the organisation and fiscal year, save, then enter the quantities (kg) per product on each method tab. The summary adds the three methods together",
-    methodLabel: "Emission estimation method",
+    lead: "Choose the organisation and fiscal year, save, then enter quantities per product (purchased, shipped, how the release is counted) and per substance (handled amount, measured release). The summary adds them per substance",
+    methodLabel: "How the release is counted",
     organisation: "Organisation",
     noOrganisation:
       "You belong to no organisation, so nothing can be entered. Ask the system administrator to assign one under Users › Organisation",
@@ -2391,26 +2391,29 @@ export const en: Messages = {
     fiscalYearLabel: (y: number) => `FY${y} (${y}/4–${y + 1}/3)`,
     method: "Method",
     methods: {
-      MEASURED: "Measured",
+      MEASURED: "Covered by measurement",
       BALANCE: "Mass balance",
       FACTOR: "Emission factor",
     },
     methodHints: {
       MEASURED:
-        "The measured amount per substance (kg per year) is the release. Purchased quantities decide whether a report is needed",
-      BALANCE:
-        "Release = (purchased − shipped) × content. Enter purchased and shipped quantities per product",
+        "This product's release is counted by the measured release per substance (purchased goes to the handled amount only; no shipped quantity)",
+      BALANCE: "This product's release = (purchased − shipped) × content",
       FACTOR:
-        "Release = shipped × content × factor ÷ 100. One factor per organisation, for every substance",
+        "This product's release = shipped × content × factor ÷ 100. One factor per organisation and year",
     },
     factorPct: "Emission factor (%)",
-    factorHint: "Release kg ÷ shipped kg × 100. Same for every substance",
-    factorSaved: "Factor saved",
+    factorHint:
+      "Release kg ÷ shipped kg × 100. Same for every substance; used for products marked Emission factor",
     note: "Note",
     headerSaved: "Saved",
     sources: { MANUAL: "Manual", IMPORT: "Import" },
     quantities: {
       title: "Quantities per product (kg)",
+      lead: 'Purchased goes to the handled amount; shipped is used by mass balance and emission factor. "How the release is counted" decides which method counts this product\'s release',
+      method: "Release counted by",
+      methodUnknown: (text: string) =>
+        `Cannot read how the release is counted: "${text}" (measured / balance / factor)`,
       find: {
         title: "Product search",
         name: "Name",
@@ -2428,16 +2431,16 @@ export const en: Messages = {
       add: "Add one",
       empty: "No quantities yet",
       productNotFound: (code: string) => `Product code "${code}" is not registered`,
-      shippedRequired: "This method needs the shipped quantity",
-      shippedOptional:
-        "On the Measured tab only the purchased quantity is entered (used for the handled amount and the reporting threshold)",
+      shippedRequired: "Mass balance and emission factor need the shipped quantity",
     },
     measured: {
-      title: "Measured values (kg per year)",
+      title: "Quantities per substance (kg, per year)",
+      lead: "Handled amount is added to the amount converted from products. Measured release is the measured part of the release. Enter at least one",
       substanceCode: "Substance code",
       substanceName: "Substance",
       statutoryName: "Class I designated substance",
-      measuredKg: "Measured",
+      handledKg: "Handled",
+      measuredKg: "Measured release",
       add: "Add one",
       empty: "No measured values yet",
       substanceNotFound: (code: string) => `Substance code "${code}" is not registered`,
@@ -2451,12 +2454,14 @@ export const en: Messages = {
       template: "Template",
       templateFile: "PRTR_import_template",
       title: "Import from a file",
-      kinds: { quantities: "Quantities per product", measured: "Measured values" },
+      kinds: { quantities: "Quantities per product", measured: "Quantities per substance" },
       expected: {
         quantities:
-          "Choose a file with product code, product name, purchased and shipped columns (the Measured tab does not use shipped)",
-        measured: "Choose a file with substance code, substance name and measured columns",
+          "Choose a file with product code, product name, purchased, shipped and release-counted-by columns (rows without that column get the default chosen below)",
+        measured:
+          "Choose a file with substance code, substance name, handled and measured release columns",
       },
+      defaultMethod: "Release counted by (when the column is missing)",
       file: "File (CSV / TSV / Excel)",
       step2: "Assign columns",
       headersHint:
@@ -2470,9 +2475,11 @@ export const en: Messages = {
         productName: "Product name (check only)",
         purchasedKg: "Purchased (kg)",
         shippedKg: "Shipped (kg)",
+        method: "Release counted by",
         substanceCode: "Substance code",
         substanceName: "Substance name (check only)",
-        measuredKg: "Measured (kg)",
+        handledKg: "Handled (kg)",
+        measuredKg: "Measured release (kg)",
       },
       verify: "Verify",
       rows: (n: number) => `${n} rows`,
@@ -2486,7 +2493,7 @@ export const en: Messages = {
       modeUpsertHint: "The same products are overwritten, the others added",
       modeReplace: "Replace",
       modeReplaceHint:
-        "Replaces every quantity on this tab (products not in the file are removed; other tabs are untouched)",
+        "Replaces every quantity per product for this organisation and year (products not in the file are removed)",
       overwriteAsk: (n: number) => `${n} substance(s) already have a measured value. Overwrite?`,
       overwriteYes: "Overwrite",
       apply: "Import",
@@ -2528,14 +2535,15 @@ export const en: Messages = {
       thresholdNote: (a: string, b: string) =>
         `A report is required when the handled amount reaches ${a} kg (${b} kg for Specified Class I)`,
       releaseFormula:
-        "Release is the sum of the three methods (measured as entered; mass balance = handled − shipped; emission factor = shipped × factor ÷ 100). Handled and shipped are also summed over the three methods",
+        "Handled = purchased × content over all products + handled per substance. Release = measured release + (handled − shipped) for mass-balance products + shipped × factor ÷ 100 for emission-factor products (products covered by measurement are not counted again)",
       factorMissing:
-        "The emission-factor tab has quantities but no factor, so that part of the release cannot be computed",
+        "Some products are marked Emission factor but no factor is entered, so that part of the release cannot be computed",
     },
     validation: {
       kg: "Enter a quantity of 0 or more (up to 3 decimals)",
       factor: "Enter a factor of 0 or more (%, up to 4 decimals)",
-      duplicateRow: "Appears twice",
+      duplicateRow: "The same item appears twice",
+      eitherKg: "Enter the handled amount or the measured release",
     },
   },
   organisations: {

@@ -14,7 +14,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const DEFAULT_STATE = emptyTableState([{ column: "officialNumber", direction: "asc" }]);
 
-/** GET /api/prtr/entries/[id]/measured — 実測値の一覧（絞り込み・並べ替え・ページ送り） */
+/** GET /api/prtr/entries/[id]/measured — 物質ごとの数量（取扱量・実測排出量）の一覧 */
 export async function GET(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
   if (actor instanceof Response) return actor;
@@ -50,7 +50,7 @@ export async function GET(req: Request, { params }: Ctx) {
 }
 
 /**
- * POST /api/prtr/entries/[id]/measured — 実測値を 1 件足す（S22）。
+ * POST /api/prtr/entries/[id]/measured — 物質ごとの数量（取扱量の直接入力・実測排出量）を 1 件足す（S22）。
  * 物質コードで物質を当て、化管法の第一種指定化学物質に変換して持つ。
  * 同じ第一種指定化学物質が既にあれば断る（行末の鉛筆で直してもらう）
  */
@@ -101,7 +101,8 @@ export async function POST(req: Request, { params }: Ctx) {
       entryId: id,
       statutorySubstanceId: resolved.statutorySubstanceId,
       substanceId: resolved.substance.id,
-      measuredKg: new Prisma.Decimal(v.measuredKg),
+      handledKg: v.handledKg == null ? null : new Prisma.Decimal(v.handledKg),
+      measuredKg: v.measuredKg == null ? null : new Prisma.Decimal(v.measuredKg),
       source: "MANUAL",
       updatedBy: actor.user.id,
     },
@@ -112,7 +113,11 @@ export async function POST(req: Request, { params }: Ctx) {
     entityId: row.id,
     action: "create",
     actorId: actor.user.id,
-    diff: { substance: resolved.substance.code, measuredKg: v.measuredKg },
+    diff: {
+      substance: resolved.substance.code,
+      handledKg: v.handledKg ?? null,
+      measuredKg: v.measuredKg ?? null,
+    },
   });
   return Response.json({ item: toMeasuredDto(row) }, { status: 201 });
 }
