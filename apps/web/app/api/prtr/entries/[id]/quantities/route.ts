@@ -102,6 +102,10 @@ export async function POST(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 排出係数の区画は、係数を入れて保存してから（2026-10-02 指示）
+  if (v.method === "FACTOR" && entry.factorPct == null) {
+    return jsonError(400, "factor_empty", m.prtr.validation.factorEmpty);
+  }
   const product = await findProductByCode(v.productCode);
   if (!product) {
     return jsonError(400, "validation_error", m.prtr.quantities.productNotFound(v.productCode), {

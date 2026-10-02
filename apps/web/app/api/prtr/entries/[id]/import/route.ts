@@ -70,6 +70,14 @@ export async function POST(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.prtr.import.required(label));
   }
   if (inspected.rowCount === 0) return jsonError(400, "no_rows", m.prtr.import.noRows);
+  // 排出係数の区画への取り込みも、係数を入れて保存してから（2026-10-02 指示）
+  if (
+    parsed.data.kind === "quantities" &&
+    parsed.data.method === "FACTOR" &&
+    entry.factorPct == null
+  ) {
+    return jsonError(400, "factor_empty", m.prtr.validation.factorEmpty);
+  }
 
   const result = await runImport(entry, rows, parsed.data, actor.user.id, m);
   if (result.applied) {

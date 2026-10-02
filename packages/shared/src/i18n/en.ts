@@ -2430,6 +2430,7 @@ export const en: Messages = {
       add: "Add one",
       empty: "No quantities entered",
       productNotFound: (code: string) => `Product code "${code}" is not registered`,
+      factorEmptyHint: "Enter and save the emission factor to register products",
     },
     measured: {
       title: "Quantities per substance (kg/year)",
@@ -2442,8 +2443,8 @@ export const en: Messages = {
         searching: "Searching...",
         pick: "Select",
         none: "No matches",
-        over: (shown: number) =>
-          `More than ${shown} candidates. Only the first ${shown} are listed. Add conditions to narrow down`,
+        over: (shown: number, total: number) =>
+          `More than ${shown} candidates (${total} in total). Only the first ${shown} are listed. Add conditions to narrow down`,
         clear: "Clear",
       },
       substanceCode: "Substance code",
@@ -2567,6 +2568,7 @@ export const en: Messages = {
       kg: "Enter a quantity of 0 or more (up to 3 decimals)",
       factor: "Enter a factor (%) between 0 and 100 (up to 4 decimals)",
       factorRequired: "The emission factor section has products, so the factor is required",
+      factorEmpty: "The emission factor is empty. Enter and save the factor (%) first",
       duplicateRow: "The same item appears twice",
     },
   },

@@ -368,6 +368,7 @@ export function PrtrEntryScreen() {
                   entryId={entry.id}
                   method="FACTOR"
                   locked={locked}
+                  addBlocked={entry.factorPct == null}
                   canSeeProducts={can("PRODUCT_VIEW")}
                   onChanged={load}
                 />
@@ -728,6 +729,7 @@ function QuantitySection({
   entryId,
   method,
   locked,
+  addBlocked = false,
   canSeeProducts,
   onChanged,
 }: {
@@ -736,6 +738,8 @@ function QuantitySection({
   method: PrtrProductMethod;
   /** 集計が確定している（読み取り専用） */
   locked: boolean;
+  /** 排出係数の区画で係数が空のあいだ true。＋とインポートを出さず、入れかたの案内を出す（API も断る） */
+  addBlocked?: boolean;
   canSeeProducts: boolean;
   /** 件数が変わったことを上に知らせる（集計の読み直しに使う） */
   onChanged: () => Promise<void>;
@@ -988,7 +992,11 @@ function QuantitySection({
     <div className="space-y-3">
       <div className="flex flex-row items-center justify-between gap-3">
         <p className="text-sm font-medium">{t.title}</p>
-        <FilePickButton label={m.prtr.import.button} disabled={locked} onPick={setImporting} />
+        {addBlocked ? (
+          <span className="text-muted-foreground text-xs">{t.factorEmptyHint}</span>
+        ) : (
+          <FilePickButton label={m.prtr.import.button} disabled={locked} onPick={setImporting} />
+        )}
       </div>
       <div className="space-y-3">
         {error && (
@@ -1154,7 +1162,7 @@ function QuantitySection({
           storageKey={`${Q_KEY}.${method}`}
           // 1 件登録は、ほかの一覧と同じ表の上の「＋」から。確定中は出さない
           create={
-            !open && !locked
+            !open && !locked && !addBlocked
               ? {
                   label: t.add,
                   onClick: () => {
@@ -1237,7 +1245,7 @@ function MeasuredSection({
   const [find, setFind] = useState({ code: "", cas: "", name: "" });
   const [found, setFound] = useState<{
     items: PrtrSubstanceCandidateDto[];
-    truncated: boolean;
+    total: number;
   } | null>(null);
   const [finding, setFinding] = useState(false);
   /** 物質コードから引いた「物質名 → 第一種指定化学物質」。null＝未照会、""＝当たらない */
@@ -1263,12 +1271,12 @@ function MeasuredSection({
           if (cancelled) return;
           if (!res.ok) {
             if (redirectIfUnauthorized(res)) return;
-            setFound({ items: [], truncated: false });
+            setFound({ items: [], total: 0 });
             return;
           }
           const body = (await res.json()) as {
             items: PrtrSubstanceCandidateDto[];
-            truncated: boolean;
+            total: number;
           };
           if (!cancelled) setFound(body);
         } finally {
@@ -1552,12 +1560,12 @@ function MeasuredSection({
                       </li>
                     ))}
                   </ul>
-                  {found.truncated && (
+                  {found.total > found.items.length && (
                     <p
                       role="status"
                       className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200"
                     >
-                      {t.find.over(found.items.length)}
+                      {t.find.over(found.items.length, found.total)}
                     </p>
                   )}
                 </div>

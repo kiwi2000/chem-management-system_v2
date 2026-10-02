@@ -2561,6 +2561,8 @@ export const ja = {
       add: "1 件登録",
       empty: "数量が登録されていません",
       productNotFound: (code: string) => `製品コード「${code}」は登録されていません`,
+      /** 排出係数の区画で、係数が空のあいだ（＋とインポートの代わりに出す） */
+      factorEmptyHint: "排出係数を入れて保存すると、製品を登録できます",
     },
     measured: {
       title: "物質ごとの数量（kg・年間）",
@@ -2574,8 +2576,8 @@ export const ja = {
         searching: "検索中...",
         pick: "選択",
         none: "該当するものがありません",
-        over: (shown: number) =>
-          `候補が ${shown} 件を超えています。先頭の ${shown} 件だけ並べています。条件を足して絞ってください`,
+        over: (shown: number, total: number) =>
+          `候補が ${shown} 件を超えています（全 ${total} 件）。先頭の ${shown} 件だけ並べています。条件を足して絞ってください`,
         clear: "クリア",
       },
       substanceCode: "物質コード",
@@ -2701,6 +2703,7 @@ export const ja = {
       kg: "数量は 0 以上の数で入れてください（小数 3 桁まで）",
       factor: "係数は 0 以上 100 以下の数（%）で入れてください（小数 4 桁まで）",
       factorRequired: "排出係数の区画に製品があるので、排出係数を入れてください",
+      factorEmpty: "排出係数が空です。先に「排出係数（%）」を入れて保存してください",
       duplicateRow: "同じものが 2 回出てきます",
     },
   },

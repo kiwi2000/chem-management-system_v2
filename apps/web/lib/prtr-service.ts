@@ -176,6 +176,33 @@ export async function findProductByCode(code: string) {
   });
 }
 
+/** 現在の版で、化管法 第一種（C1）／特定第一種（SC1）の法文物質名に結び付く CAS リンクの条件 */
+function prtrLinkWhere(versionId: string): Prisma.StatutoryCasLinkWhereInput {
+  return {
+    versionId,
+    excluded: false,
+    ...notDisabledIn(versionId),
+    statutorySubstance: {
+      deletedAt: null,
+      regulationClass: {
+        category: { code: { in: ["C1", "SC1"] }, deletedAt: null, law: { code: "JP-PRTR" } },
+      },
+    },
+  };
+}
+
+/** 第一種指定化学物質に当たる CAS（正規化済み）の全体。物質検索の総数を数えるのに使う */
+async function prtrCasList(): Promise<string[]> {
+  const version = await getCurrentVersion();
+  if (!version) return [];
+  const links = await prisma.statutoryCasLink.findMany({
+    where: prtrLinkWhere(version.id),
+    select: { casNormalized: true },
+    distinct: ["casNormalized"],
+  });
+  return links.map((l) => l.casNormalized);
+}
+
 /** CAS（正規化済み）→ 現在の版で結び付く化管法 第一種（C1）／特定第一種（SC1）の法文物質名。C1 を優先 */
 async function prtrStatutoryByCas(
   casList: string[],
@@ -193,18 +220,7 @@ async function prtrStatutoryByCas(
   const version = await getCurrentVersion();
   if (!version) return out;
   const links = await prisma.statutoryCasLink.findMany({
-    where: {
-      versionId: version.id,
-      casNormalized: { in: casList },
-      excluded: false,
-      ...notDisabledIn(version.id),
-      statutorySubstance: {
-        deletedAt: null,
-        regulationClass: {
-          category: { code: { in: ["C1", "SC1"] }, deletedAt: null, law: { code: "JP-PRTR" } },
-        },
-      },
-    },
+    where: { ...prtrLinkWhere(version.id), casNormalized: { in: casList } },
     select: {
       casNormalized: true,
       statutorySubstanceId: true,
@@ -263,14 +279,13 @@ export async function resolveMeasuredSubstance(code: string): Promise<MeasuredRe
 
 /**
  * 実測値の区画の「物質検索」。コードの一部・CAS（完全一致）・名称の一部で物質を探し、
- * 化管法の第一種指定化学物質に当たるものだけを返す（最大 limit 件。当たらない物質は数に入れない）。
- * limit を超える候補があれば truncated を true にする（総数は数えない。画面は「超えている」とだけ出す）
+ * 化管法の第一種指定化学物質に当たるものだけを返す（最大 limit 件）。
+ * total は当たる物質の総数（画面は limit を超えたとき「全 N 件」と出す。製品検索と同じ形）
  */
 export async function searchPrtrSubstances(
   q: { code: string; cas: string; name: string },
   limit = 20,
-): Promise<{ items: PrtrSubstanceCandidateDto[]; truncated: boolean }> {
-  const where: Prisma.SubstanceWhereInput = { deletedAt: null, casNormalized: { not: null } };
+): Promise<{ items: PrtrSubstanceCandidateDto[]; total: number }> {
   const and: Prisma.SubstanceWhereInput[] = [];
   if (q.code) and.push({ codeNormalized: { contains: normalizeCode(q.code) } });
   if (q.cas) and.push({ casNormalized: normalizeCode(q.cas) });
@@ -284,34 +299,39 @@ export async function searchPrtrSubstances(
       ],
     });
   }
-  if (and.length === 0) return { items: [], truncated: false };
-  // 当たらない物質を落とすので、多めに引いてから絞る
-  const subs = await prisma.substance.findMany({
-    where: { ...where, AND: and },
-    select: {
-      id: true,
-      code: true,
-      nameJa: true,
-      nameEn: true,
-      casNumber: true,
-      casNormalized: true,
-    },
-    orderBy: { codeNormalized: "asc" },
-    take: limit * 5,
-  });
+  if (and.length === 0) return { items: [], total: 0 };
+  // 当たる物質だけを数えるため、第一種指定化学物質の CAS の全体で絞ってから引く
+  const prtrCas = await prtrCasList();
+  if (prtrCas.length === 0) return { items: [], total: 0 };
+  const where: Prisma.SubstanceWhereInput = {
+    deletedAt: null,
+    casNormalized: { in: prtrCas },
+    AND: and,
+  };
+  const [subs, total] = await Promise.all([
+    prisma.substance.findMany({
+      where,
+      select: {
+        id: true,
+        code: true,
+        nameJa: true,
+        nameEn: true,
+        casNumber: true,
+        casNormalized: true,
+      },
+      orderBy: { codeNormalized: "asc" },
+      take: limit,
+    }),
+    prisma.substance.count({ where }),
+  ]);
   const byCas = await prtrStatutoryByCas([
     ...new Set(subs.map((s) => s.casNormalized).filter((c): c is string => !!c)),
   ]);
-  const out: PrtrSubstanceCandidateDto[] = [];
-  let truncated = false;
+  const items: PrtrSubstanceCandidateDto[] = [];
   for (const s of subs) {
     const hit = s.casNormalized ? byCas.get(s.casNormalized) : undefined;
     if (!hit) continue;
-    if (out.length >= limit) {
-      truncated = true;
-      break;
-    }
-    out.push({
+    items.push({
       id: s.id,
       code: s.code,
       nameJa: s.nameJa,
@@ -323,7 +343,7 @@ export async function searchPrtrSubstances(
       statutoryNameOriginal: hit.nameOriginal,
     });
   }
-  return { items: out, truncated };
+  return { items, total };
 }
 
 // ── ファイルの読み取り ─────────────────────────────────
