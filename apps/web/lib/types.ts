@@ -1340,21 +1340,24 @@ export interface LinkVersionSourceDto {
 export interface PrtrScopeDto {
   organisations: { id: string; code: string; nameJa: string; nameEn: string | null }[];
 }
-
+/** 製品ごとの数量（物質収支・排出係数の区画。2026-10-02 設計） */
 export interface PrtrQuantityDto {
   id: string;
-  /** 排出の数え方の印: 実測で捕捉／物質収支／排出係数（2026-10-01） */
-  method: "MEASURED" | "BALANCE" | "FACTOR";
+  /** どの区画の行か */
+  method: "BALANCE" | "FACTOR";
   productId: string;
   productCode: string;
   productNameJa: string;
   productNameEn: string | null;
+  /** 取扱量 kg */
   purchasedKg: string;
+  /** 出荷量 kg */
   shippedKg: string | null;
   source: "MANUAL" | "IMPORT";
   updatedAt: string;
 }
 
+/** 実測値の区画: 物質ごとの取扱量（任意）と排出量 */
 export interface PrtrMeasuredDto {
   id: string;
   statutorySubstanceId: string;
@@ -1362,43 +1365,52 @@ export interface PrtrMeasuredDto {
   statutoryNameJa: string | null;
   statutoryNameEn: string | null;
   statutoryNameOriginal: string;
-  /** 利用者が入力した物質コード（同じ法文物質名に当たる代表の物質） */
   substanceCode: string | null;
   substanceNameJa: string | null;
-  /** 取扱量（直接入力）kg。製品からの換算に足す */
   handledKg: string | null;
-  /** 実測排出量 kg */
-  measuredKg: string | null;
+  measuredKg: string;
   source: "MANUAL" | "IMPORT";
   updatedAt: string;
 }
 
-/**
- * 所属 × 年度の届出データの頭。無ければ entry は null（まだ何も入れていない）。
- * 行は一覧の API（quantities / measured）で絞り込み・ページ送り付きで取る。件数は方法を変えるときの確認に使う
- */
+/** 実測値の区画の「物質検索」の候補。化管法の第一種指定化学物質に当たる物質だけ */
+export interface PrtrSubstanceCandidateDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  casNumber: string | null;
+  statutorySubstanceId: string;
+  officialNumber: string | null;
+  statutoryNameJa: string | null;
+  statutoryNameOriginal: string;
+}
+
 export interface PrtrEntryDto {
   entry: {
     id: string;
     organisationId: string;
     fiscalYear: number;
-    /** 排出係数（%）。排出係数のタブで使う。所属 × 年度で 1 つ */
+    /** 排出係数（%）。排出係数の区画で使う。所属 × 年度で 1 つ */
     factorPct: string | null;
     note: string | null;
     updatedAt: string;
   } | null;
-  quantityCount: number;
+  /** 区画ごとの行数 */
+  balanceCount: number;
+  factorCount: number;
   measuredCount: number;
+  /** 集計が確定しているか。確定中は入力を変えられない */
+  confirmed: boolean;
 }
 
-/** 取り込み: ファイルを読んだ結果（見出しと最初の数行） */
 export interface PrtrImportInspectDto {
   headers: string[];
+  /** 最初の数行（列の割り当ての手がかり） */
   sample: string[][];
   rowCount: number;
 }
 
-/** 取り込み: 下見と実行の結果 */
 export interface PrtrImportResultDto {
   readable: number;
   unreadable: number;
@@ -1416,7 +1428,6 @@ export interface PrtrImportResultDto {
   needsOverwrite: boolean;
 }
 
-/** 集計の 1 行: 第一種指定化学物質ごと */
 export interface PrtrSummaryRowDto {
   statutorySubstanceId: string;
   officialNumber: string | null;
@@ -1425,13 +1436,13 @@ export interface PrtrSummaryRowDto {
   nameOriginal: string;
   /** 特定第一種か */
   specific: boolean;
-  /** 取扱量（Σ 購入数量 × 含有率）kg */
+  /** 取扱量 kg（物質収支・排出係数の製品からの換算 ＋ 実測値の物質の取扱量） */
   handledKg: string;
-  /** 出荷量（Σ 出荷数量 × 含有率）kg。3 つの方法の合計 */
+  /** 出荷量 kg（物質収支・排出係数の製品からの換算）。画面には出さない */
   shippedKg: string | null;
   /** 排出量 kg。3 つの方法の合計。どの方法でも出せなければ null */
   releaseKg: string | null;
-  /** 排出量の内訳（方法ごと）。その方法の数量が無い・出せないときは null */
+  /** 排出量の内訳（方法ごと）。その方法の行が無い・出せないときは null */
   releaseMeasuredKg: string | null;
   releaseBalanceKg: string | null;
   releaseFactorKg: string | null;
@@ -1441,22 +1452,28 @@ export interface PrtrSummaryRowDto {
   productCount: number;
 }
 
-/** 所属 × 年度の集計の頭（保存したもの。行の絞り込みに関わらず全体の値） */
 export interface PrtrSummaryMeta {
-  /** 集計した日時 */
+  /** いまの集計を出した日時 */
   computedAt: string;
   /** 判定に使った法規制バージョン（版を消していれば null） */
   versionCode: string | null;
   factorPct: string | null;
-  /** 排出係数の印の製品があるのに係数が無い（その分の排出量が出せていない） */
+  /** 排出係数の区画に製品があるのに係数が無い（その分の排出量が出せていない） */
   factorMissing: boolean;
-  /** 数量を入れた製品の数（方法をまたいで数えて 1 つ） */
+  /** 数量を入れた製品の数（区画をまたいで数えて 1 つ） */
   productCount: number;
   /** 判定がまだ無い製品の数（判定を流すまで集計に入らない） */
   unjudgedProducts: number;
   /** 閾値（kg）。第一種と特定第一種 */
   thresholdKg: string;
   thresholdSpecificKg: string;
+  /** 保存した集計。保存していなければ null */
+  savedAt: string | null;
+  savedVersionCode: string | null;
+  /** 確定した日時。未確定なら null */
+  confirmedAt: string | null;
+  /** いまの集計が保存した集計と違うか（保存していなければ、行があれば true） */
+  unsavedChanges: boolean;
 }
 
 /** 集計の一覧の応答。行はほかの一覧と同じく絞り込み・並べ替え・ページ送り済み。まだ集計していなければ summary は null */

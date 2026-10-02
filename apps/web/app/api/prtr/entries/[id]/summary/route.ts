@@ -5,6 +5,7 @@ import { getServerMessages } from "@/lib/i18n";
 import { PRTR_SUMMARY_COLUMNS } from "@/lib/list-columns";
 import {
   summarizeEntry,
+  summaryDiffers,
   SUMMARY_HEAD_INCLUDE,
   SUMMARY_ROW_INCLUDE,
   toSummaryMeta,
@@ -32,26 +33,34 @@ async function scopedEntry(id: string) {
   return { actor, entry };
 }
 
-/** POST /api/prtr/entries/[id]/summary — 集計して保存する（S22）。前の集計は丸ごと置き換わる */
+/** POST /api/prtr/entries/[id]/summary — いまの集計を作り直す（S22）。保存した集計は触らない */
 export async function POST(_req: Request, { params }: Ctx) {
   const { id } = await params;
   const s = await scopedEntry(id);
   if (s instanceof Response) return s;
-  return Response.json(await summarizeEntry(s.entry, s.actor.user.id));
+  const meta = await summarizeEntry(s.entry, s.actor.user.id);
+  const summary = await prisma.prtrSummary.findUniqueOrThrow({ where: { entryId: id } });
+  meta.unsavedChanges = await summaryDiffers(summary.id, summary.savedAt);
+  return Response.json(meta);
 }
 
-/** GET /api/prtr/entries/[id]/summary — 保存した集計の一覧（絞り込み・並べ替え・ページ送り） */
+/**
+ * GET /api/prtr/entries/[id]/summary?saved=1 — 集計の一覧（絞り込み・並べ替え・ページ送り）。
+ * 既定はいまの集計。`saved=1` で保存した集計（未確定・確定）の行
+ */
 export async function GET(req: Request, { params }: Ctx) {
   const { id } = await params;
   const s = await scopedEntry(id);
   if (s instanceof Response) return s;
 
+  const url = new URL(req.url);
+  const saved = url.searchParams.get("saved") === "1";
   const summary = await prisma.prtrSummary.findUnique({
     where: { entryId: id },
     include: SUMMARY_HEAD_INCLUDE,
   });
   const state = parseTableState(
-    new URL(req.url).searchParams,
+    url.searchParams,
     PRTR_SUMMARY_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
     DEFAULT_STATE,
   );
@@ -65,8 +74,12 @@ export async function GET(req: Request, { params }: Ctx) {
     };
     return Response.json(empty);
   }
-  const where = { AND: [buildWhere(PRTR_SUMMARY_COLUMNS, state.filters)], summaryId: summary.id };
-  const [items, total] = await Promise.all([
+  const where = {
+    AND: [buildWhere(PRTR_SUMMARY_COLUMNS, state.filters)],
+    summaryId: summary.id,
+    saved,
+  };
+  const [items, total, meta] = await Promise.all([
     prisma.prtrSummaryRow.findMany({
       where,
       orderBy: [...buildOrderBy(PRTR_SUMMARY_COLUMNS, state.sort, DISPLAY_ORDER), { id: "asc" }],
@@ -75,13 +88,18 @@ export async function GET(req: Request, { params }: Ctx) {
       take: state.pageSize,
     }),
     prisma.prtrSummaryRow.count({ where }),
+    (async () => {
+      const x = toSummaryMeta(summary);
+      x.unsavedChanges = await summaryDiffers(summary.id, summary.savedAt);
+      return x;
+    })(),
   ]);
   const body: PrtrSummaryDto = {
     items: items.map(toSummaryRowDto),
     total,
     page: state.page,
     pageSize: state.pageSize,
-    summary: toSummaryMeta(summary),
+    summary: meta,
   };
   return Response.json(body);
 }

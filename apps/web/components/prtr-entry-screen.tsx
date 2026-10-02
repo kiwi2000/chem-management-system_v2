@@ -6,13 +6,13 @@ import {
   normalizeCode,
   pickName,
   pickStatutoryName,
-  PRTR_METHODS,
   serializeTableState,
-  type PrtrMethod,
+  type PrtrProductMethod,
   type TableState,
 } from "@chem/shared";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { FieldError } from "@/components/field-error";
@@ -34,6 +34,7 @@ import type {
   ProductListItemDto,
   PrtrQuantityDto,
   PrtrScopeDto,
+  PrtrSubstanceCandidateDto,
   PrtrSummaryDto,
   PrtrSummaryRowDto,
 } from "@/lib/types";
@@ -52,10 +53,12 @@ const S_STATE: TableState = emptyTableState([]);
 const SELECT = "border-input bg-background h-8 rounded-none border px-2 text-sm";
 /** 取り込めるファイル。OS の選択画面ではこれだけ選べる */
 const IMPORT_ACCEPT = ".csv,.tsv,.txt,.xlsx";
+/** 検索の候補の上限 */
+const FIND_SIZE = 20;
 
 /**
- * 取り込み用のテンプレート（Excel）を落とす。全部の形（製品ごと・物質ごと）がシートに分かれて 1 つに入っている。
- * 各シートの 1 行目の見出しが、そのまま列の割り当てに当たる
+ * 取り込み用のテンプレート（Excel）を落とす。表ごと（物質収支の製品・排出係数の製品・実測値の物質）に
+ * シートが分かれて 1 つに入っている。各シートの 1 行目の見出しが、そのまま列の割り当てに当たる
  */
 function TemplateButton() {
   const { m } = useI18n();
@@ -72,8 +75,16 @@ function TemplateButton() {
   );
 }
 
-/** 「ファイル」ボタン。押すと OS のファイル選択が開き、選ぶと取り込みの窓が開く */
-function FilePickButton({ label, onPick }: { label: string; onPick: (f: File) => void }) {
+/** 「インポート」ボタン。押すと OS のファイル選択が開き、選ぶと取り込みの窓が開く */
+function FilePickButton({
+  label,
+  disabled,
+  onPick,
+}: {
+  label: string;
+  disabled?: boolean;
+  onPick: (f: File) => void;
+}) {
   const ref = useRef<HTMLInputElement>(null);
   return (
     <>
@@ -89,7 +100,7 @@ function FilePickButton({ label, onPick }: { label: string; onPick: (f: File) =>
           if (f) onPick(f);
         }}
       />
-      <Button size="sm" variant="outline" onClick={() => ref.current?.click()}>
+      <Button size="sm" variant="outline" disabled={disabled} onClick={() => ref.current?.click()}>
         {label}
       </Button>
     </>
@@ -97,11 +108,13 @@ function FilePickButton({ label, onPick }: { label: string; onPick: (f: File) =>
 }
 
 /**
- * PRTR 届出データの入力（S22。2026-10-01 設計）。
+ * PRTR 届出データの入力（S22。2026-10-02 設計）。
  *
- * 所属と年度を選んで保存すると、**製品ごとの数量**（購入・出荷と「排出の数え方」の印）と
- * **物質ごとの数量**（取扱量の直接入力・実測排出量）の 2 つの表が出る。
- * 取扱量の入力と排出量の求め方は別のもので、集計で物質ごとに足す。
+ * 所属と年度を選んで保存すると、排出量の計算方法ごとの区画が出る:
+ *   1. 物質収支（製品ごとの取扱量・出荷量）
+ *   2. 排出係数（係数と、製品ごとの取扱量・出荷量）
+ *   3. 実測値（物質ごとの取扱量・排出量）
+ * 下の「排出量集計」が 3 つを物質ごとに足す。集計は「保存」で写しを残し、「確定」で入力を読み取り専用にする。
  * 入力は画面の 1 件登録と、ファイルの取り込み（列の割り当て付き）の両方
  */
 export function PrtrEntryScreen() {
@@ -115,7 +128,7 @@ export function PrtrEntryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // 頭（係数・備考）。係数は所属 × 年度で 1 つ（排出係数の印の製品に使う）
+  // 頭（係数・備考）。係数は排出係数の区画で入れるが、保存は頭と同じ API（両方とも毎回送る）
   const [factorPct, setFactorPct] = useState("");
   const [note, setNote] = useState("");
   const [headErrors, setHeadErrors] = useState<FieldErrors>({});
@@ -167,8 +180,8 @@ export function PrtrEntryScreen() {
     void load();
   }, [load]);
 
-  /** 頭（係数・備考）を保存する。係数と備考は毎回両方送る（片方だけ送ると、もう片方が消える） */
-  async function saveHead() {
+  /** 頭（係数・備考）を保存する。頭の「保存」と、排出係数の区画の「保存」の両方から呼ぶ */
+  async function saveHead(savedMessage: string) {
     setError(null);
     setNotice(null);
     setHeadErrors({});
@@ -192,7 +205,7 @@ export function PrtrEntryScreen() {
         return;
       }
       setData((await res.json()) as PrtrEntryDto);
-      setNotice(t.headerSaved);
+      setNotice(savedMessage);
       setTick((n) => n + 1);
     } finally {
       setSavingHead(false);
@@ -200,6 +213,8 @@ export function PrtrEntryScreen() {
   }
 
   const entry = data?.entry ?? null;
+  /** 集計が確定している。入力は読み取り専用 */
+  const locked = data?.confirmed ?? false;
 
   if (scope && scope.organisations.length === 0) {
     return (
@@ -239,6 +254,11 @@ export function PrtrEntryScreen() {
           <TemplateButton />
         </CardHeader>
         <CardContent className="space-y-4">
+          {locked && (
+            <Alert>
+              <AlertDescription>{t.locked}</AlertDescription>
+            </Alert>
+          )}
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1">
               <Label htmlFor="prtr-org">{t.organisation}</Label>
@@ -270,69 +290,126 @@ export function PrtrEntryScreen() {
                 ))}
               </select>
             </div>
-            {/* 排出係数は所属 × 年度で 1 つ。排出係数の印の製品に使う */}
-            <div className="space-y-1">
-              <Label htmlFor="prtr-factor" title={t.factorHint}>
-                {t.factorPct}
-              </Label>
-              <Input
-                id="prtr-factor"
-                inputMode="decimal"
-                value={factorPct}
-                title={t.factorHint}
-                onChange={(e) => setFactorPct(e.target.value)}
-                aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
-                className="h-8 w-28 font-mono"
-              />
-              <FieldError message={firstError(headErrors, "factorPct")} />
-            </div>
             <div className="min-w-64 flex-1 space-y-1">
               <Label htmlFor="prtr-note">{t.note}</Label>
               <Input
                 id="prtr-note"
                 value={note}
                 maxLength={2000}
+                disabled={locked}
                 onChange={(e) => setNote(e.target.value)}
                 className="h-8"
               />
             </div>
-            <Button size="sm" disabled={savingHead || !orgId} onClick={() => void saveHead()}>
+            <Button
+              size="sm"
+              disabled={savingHead || !orgId || locked}
+              onClick={() => void saveHead(t.headerSaved)}
+            >
               {savingHead ? m.common.saving : m.common.save}
             </Button>
           </div>
-          {/*
-            2 つの表（2026-10-01 設計）。製品ごとの数量＝取扱量のもと＋排出の数え方の印、
-            物質ごとの数量＝取扱量の直接入力と実測排出量。頭を保存してから出る
-          */}
+
           {entry && (
-            <QuantitySection
-              entryId={entry.id}
-              canSeeProducts={can("PRODUCT_VIEW")}
-              onChanged={load}
-            />
+            <>
+              {/* 1. 物質収支 */}
+              <section className="space-y-3 border-t pt-4">
+                <div>
+                  <p className="text-base font-semibold">1. {t.methods.BALANCE}</p>
+                  <p className="text-muted-foreground mt-1 text-sm">{t.methodHints.BALANCE}</p>
+                </div>
+                <QuantitySection
+                  entryId={entry.id}
+                  method="BALANCE"
+                  locked={locked}
+                  canSeeProducts={can("PRODUCT_VIEW")}
+                  onChanged={load}
+                />
+              </section>
+
+              {/* 2. 排出係数 */}
+              <section className="space-y-3 border-t pt-4">
+                <div>
+                  <p className="text-base font-semibold">2. {t.methods.FACTOR}</p>
+                  <p className="text-muted-foreground mt-1 text-sm">{t.methodHints.FACTOR}</p>
+                </div>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="prtr-factor">{t.factorPct}</Label>
+                    <Input
+                      id="prtr-factor"
+                      inputMode="decimal"
+                      value={factorPct}
+                      disabled={locked}
+                      onChange={(e) => setFactorPct(e.target.value)}
+                      aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
+                      className="h-8 w-32 font-mono"
+                    />
+                    <FieldError message={firstError(headErrors, "factorPct")} />
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={savingHead || locked}
+                    onClick={() => void saveHead(t.factorSaved)}
+                  >
+                    {savingHead ? m.common.saving : m.common.save}
+                  </Button>
+                  <span className="text-muted-foreground pb-2 text-xs">{t.factorHint}</span>
+                </div>
+                <QuantitySection
+                  entryId={entry.id}
+                  method="FACTOR"
+                  locked={locked}
+                  canSeeProducts={can("PRODUCT_VIEW")}
+                  onChanged={load}
+                />
+              </section>
+
+              {/* 3. 実測値 */}
+              <section className="space-y-3 border-t pt-4">
+                <div>
+                  <p className="text-base font-semibold">3. {t.methods.MEASURED}</p>
+                  <p className="text-muted-foreground mt-1 text-sm">{t.methodHints.MEASURED}</p>
+                </div>
+                <MeasuredSection entryId={entry.id} locked={locked} onChanged={load} />
+              </section>
+            </>
           )}
-          {entry && <SubstanceSection entryId={entry.id} onChanged={load} />}
         </CardContent>
       </Card>
 
-      {/* 集計は入力の下の別のカード */}
-      {entry && <SummarySection entryId={entry.id} tick={tick} />}
+      {/* 排出量集計は入力の下の別のカード */}
+      {entry && <SummarySection entryId={entry.id} tick={tick} onChanged={load} />}
     </div>
   );
 }
 
 /**
- * 集計（第一種指定化学物質ごと）。開いたとき・数量が変わったときに集計して保存し、
- * 保存した行を一覧に出す。「再計算」でいつでも集計し直せる
+ * 排出量集計（第一種指定化学物質ごと）。開いたとき・数量が変わったときに「いまの集計」を作り直して出す。
+ * 「保存」で写し（保存した集計・未確定）を残し、「確定」で入力を読み取り専用にする。「未確定に戻す」で戻す
  */
-function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
+function SummarySection({
+  entryId,
+  tick,
+  onChanged,
+}: {
+  entryId: string;
+  tick: number;
+  /** 確定・解除で入力の読み取り専用が変わるので、上に知らせる */
+  onChanged: () => Promise<void>;
+}) {
   const { m, locale } = useI18n();
   const t = m.prtr.summary;
+  const ask = useConfirm();
   const [data, setData] = useState<PrtrSummaryDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [computing, setComputing] = useState(false);
+  const [acting, setActing] = useState(false);
   /** 集計し直した回数。増えると一覧を読み直す */
   const [computed, setComputed] = useState(0);
+  /** 保存した集計を見ているか（既定はいまの集計） */
+  const [viewSaved, setViewSaved] = useState(false);
 
   const columns = useMemo<TableColumn<PrtrSummaryRowDto>[]>(
     () => [
@@ -348,7 +425,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         key: "name",
         header: t.name,
         kind: "text",
-        width: 340,
+        width: 300,
         render: (r) => pickStatutoryName(locale, r.nameOriginal, r.nameJa, r.nameEn),
       },
       {
@@ -380,14 +457,6 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         render: (r) => r.handledKg,
       },
       {
-        key: "shippedKg",
-        header: t.shippedKg,
-        kind: "number",
-        width: 130,
-        className: "text-right font-mono tabular-nums",
-        render: (r) => r.shippedKg ?? "",
-      },
-      {
         key: "releaseKg",
         header: t.releaseKg,
         kind: "number",
@@ -395,15 +464,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         className: "text-right font-mono tabular-nums",
         render: (r) => r.releaseKg ?? "",
       },
-      // 排出量の内訳（実測／物質収支／排出係数）。どの方法から来た量か分かるように
-      {
-        key: "releaseMeasuredKg",
-        header: t.releaseMeasuredKg,
-        kind: "number",
-        width: 130,
-        className: "text-muted-foreground text-right font-mono text-xs tabular-nums",
-        render: (r) => r.releaseMeasuredKg ?? "",
-      },
+      // 排出量の内訳（物質収支／排出係数／実測値）。どの方法から来た量か分かるように
       {
         key: "releaseBalanceKg",
         header: t.releaseBalanceKg,
@@ -419,6 +480,14 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
         width: 130,
         className: "text-muted-foreground text-right font-mono text-xs tabular-nums",
         render: (r) => r.releaseFactorKg ?? "",
+      },
+      {
+        key: "releaseMeasuredKg",
+        header: t.releaseMeasuredKg,
+        kind: "number",
+        width: 130,
+        className: "text-muted-foreground text-right font-mono text-xs tabular-nums",
+        render: (r) => r.releaseMeasuredKg ?? "",
       },
       {
         key: "needsReport",
@@ -452,7 +521,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
     [m],
   );
 
-  /** 集計して保存する。開いたとき、数量が変わったとき、「再計算」を押したとき */
+  /** いまの集計を作り直す。開いたとき、数量が変わったとき、「再計算」を押したとき */
   const compute = useCallback(async () => {
     setComputing(true);
     try {
@@ -474,21 +543,53 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
     void compute();
   }, [compute, tick]);
 
-  // 保存した行を、表の状態（絞り込み・並べ替え・ページ）で読む
+  // 行を、表の状態（絞り込み・並べ替え・ページ）で読む。保存した集計を見ているときはその行
   useEffect(() => {
     void (async () => {
-      const res = await fetch(
-        `/api/prtr/entries/${entryId}/summary?${serializeTableState(state, S_STATE).toString()}`,
-      ).catch(() => null);
+      const params = serializeTableState(state, S_STATE);
+      if (viewSaved) params.set("saved", "1");
+      const res = await fetch(`/api/prtr/entries/${entryId}/summary?${params.toString()}`).catch(
+        () => null,
+      );
       if (!res?.ok) {
         await showError(res);
         return;
       }
       setData((await res.json()) as PrtrSummaryDto);
     })();
-  }, [entryId, state, computed, showError]);
+  }, [entryId, state, computed, viewSaved, showError]);
+
+  /** 保存・確定・未確定に戻す */
+  async function act(action: "save" | "confirm" | "unconfirm") {
+    if (action === "confirm" && !(await ask({ message: t.confirmAsk, confirmLabel: t.confirm })))
+      return;
+    if (
+      action === "unconfirm" &&
+      !(await ask({ message: t.unconfirmAsk, confirmLabel: t.unconfirm }))
+    )
+      return;
+    setError(null);
+    setNotice(null);
+    setActing(true);
+    try {
+      const res = await fetch(`/api/prtr/entries/${entryId}/summary/${action}`, {
+        method: "POST",
+      }).catch(() => null);
+      if (!res?.ok) {
+        await showError(res);
+        return;
+      }
+      setNotice(action === "save" ? t.saved : action === "confirm" ? t.confirmed : t.unconfirmed);
+      setComputed((n) => n + 1);
+      // 確定・解除で入力の読み取り専用が変わる。保存はいまの集計も作り直している
+      await onChanged();
+    } finally {
+      setActing(false);
+    }
+  }
 
   const head = data?.summary ?? null;
+  const confirmed = head?.confirmedAt != null;
 
   return (
     <Card defaultOpen>
@@ -503,7 +604,7 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
                   head.versionCode ? t.versionLabel(head.versionCode) : null,
                 ]
                   .filter(Boolean)
-                  .join("　")
+                  .join(" ")
               : t.notComputed}
           </p>
         </div>
@@ -517,6 +618,11 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+        {notice && (
+          <Alert>
+            <AlertDescription>{notice}</AlertDescription>
+          </Alert>
+        )}
         {head && head.unjudgedProducts > 0 && (
           <Alert>
             <AlertDescription>{t.unjudged(head.unjudgedProducts)}</AlertDescription>
@@ -526,6 +632,67 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
           <Alert variant="destructive">
             <AlertDescription>{t.factorMissing}</AlertDescription>
           </Alert>
+        )}
+        {/*
+          保存と確定（2026-10-02 設計）。保存した集計の状態を 1 行で出し、右にボタン。
+          未保存の変更があれば知らせる。保存した集計はボタンで見られる
+        */}
+        {head && (
+          <div className="flex flex-wrap items-center gap-3 border-b pb-3 text-sm">
+            <span>
+              {head.savedAt
+                ? `${t.savedAt(new Date(head.savedAt).toLocaleString(locale))}（${
+                    confirmed ? t.statusConfirmed : t.statusDraft
+                  }）`
+                : t.notSaved}
+              {confirmed && head.confirmedAt && (
+                <span className="text-muted-foreground ml-2 text-xs">
+                  {t.confirmedAt(new Date(head.confirmedAt).toLocaleString(locale))}
+                </span>
+              )}
+            </span>
+            {head.savedAt && head.unsavedChanges && !confirmed && (
+              <Badge variant="destructive">{t.unsavedChanges}</Badge>
+            )}
+            <span className="flex-1" />
+            {head.savedAt && (
+              <Button size="sm" variant="outline" onClick={() => setViewSaved((v) => !v)}>
+                {viewSaved ? t.showCurrent : t.showSaved}
+              </Button>
+            )}
+            {!confirmed && (
+              <Button size="sm" disabled={acting} onClick={() => void act("save")}>
+                {t.save}
+              </Button>
+            )}
+            {!confirmed && head.savedAt && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={acting || head.unsavedChanges}
+                title={head.unsavedChanges ? t.unsavedChanges : undefined}
+                onClick={() => void act("confirm")}
+              >
+                {t.confirm}
+              </Button>
+            )}
+            {confirmed && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={acting}
+                onClick={() => void act("unconfirm")}
+              >
+                {t.unconfirm}
+              </Button>
+            )}
+          </div>
+        )}
+        {viewSaved && head?.savedAt && (
+          <p className="text-muted-foreground text-xs">
+            {t.viewingSaved}
+            {head.savedVersionCode ? ` ${t.versionLabel(head.savedVersionCode)}` : ""}
+          </p>
         )}
         <DataTable
           storageKey={S_KEY}
@@ -548,13 +715,19 @@ function SummarySection({ entryId, tick }: { entryId: string; tick: number }) {
   );
 }
 
-/** 製品ごとの数量（購入・出荷と、排出の数え方の印） */
+/** 製品ごとの数量（物質収支・排出係数の区画。区画ごとに別の表） */
 function QuantitySection({
   entryId,
+  method,
+  locked,
   canSeeProducts,
   onChanged,
 }: {
   entryId: string;
+  /** この表の区画。行はこの区画で登録し、読むときもこの区画の行だけ */
+  method: PrtrProductMethod;
+  /** 集計が確定している（読み取り専用） */
+  locked: boolean;
   canSeeProducts: boolean;
   /** 件数が変わったことを上に知らせる（集計の読み直しに使う） */
   onChanged: () => Promise<void>;
@@ -562,13 +735,7 @@ function QuantitySection({
   const { m, locale } = useI18n();
   const t = m.prtr.quantities;
   const [data, setData] = useState<ListResponse<PrtrQuantityDto> | null>(null);
-  const emptyForm = {
-    id: "",
-    productCode: "",
-    purchasedKg: "",
-    shippedKg: "",
-    method: "BALANCE" as PrtrMethod,
-  };
+  const emptyForm = { id: "", productCode: "", purchasedKg: "", shippedKg: "" };
   const [form, setForm] = useState(emptyForm);
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
@@ -580,9 +747,8 @@ function QuantitySection({
   const [found, setFound] = useState<{ items: ProductListItemDto[]; total: number } | null>(null);
   const [finding, setFinding] = useState(false);
   const purchasedRef = useRef<HTMLInputElement>(null);
-  const FIND_SIZE = 20;
   /**
-   * 製品名（読み取り専用。2026-09-30 指示）。製品コードが変わるたびに引いて入れる。
+   * 製品名（読み取り専用）。製品コードが変わるたびに引いて入れる。
    * null＝まだ引いていない／コードが空、""＝そのコードの製品が無い
    */
   const [productName, setProductName] = useState<string | null>(null);
@@ -612,7 +778,7 @@ function QuantitySection({
   }, [form.productCode, canSeeProducts, locale]);
 
   /*
-    打つたびに探す（2026-09-30 指示。「検索」ボタンは無し）。打ち終わりを 300 ms 待ってから引き、
+    打つたびに探す（「検索」ボタンは無し）。打ち終わりを 300 ms 待ってから引き、
     遅れて返った古い結果は捨てる。両方空なら候補を消す
   */
   useEffect(() => {
@@ -652,7 +818,7 @@ function QuantitySection({
     };
   }, [find.code, find.name, locale]);
 
-  /** 探した製品を選ぶ。製品コードに入れて、購入数量の欄へ進む */
+  /** 探した製品を選ぶ。製品コードに入れて、取扱量の欄へ進む */
   function pickProduct(p: ProductListItemDto) {
     setForm((prev) => ({ ...prev, productCode: p.code }));
     setProductName(pickName(locale, p.nameJa, p.nameEn));
@@ -684,7 +850,7 @@ function QuantitySection({
         key: "productName",
         header: t.productName,
         kind: "text",
-        width: 260,
+        width: 300,
         render: (q) => pickName(locale, q.productNameJa, q.productNameEn),
       },
       {
@@ -702,16 +868,6 @@ function QuantitySection({
         width: 120,
         className: "text-right font-mono tabular-nums",
         render: (q) => q.shippedKg ?? "",
-      },
-      // 排出の数え方の印。実測で捕捉の製品は物質収支・排出係数に入らない
-      {
-        key: "method",
-        header: t.method,
-        kind: "enum",
-        width: 110,
-        className: "text-xs",
-        options: PRTR_METHODS.map((k) => ({ value: k, label: m.prtr.methods[k] })),
-        render: (q) => m.prtr.methods[q.method],
       },
       {
         key: "source",
@@ -736,12 +892,20 @@ function QuantitySection({
     ],
     [t, m, locale, canSeeProducts],
   );
-  const { state, setState } = useTableState(Q_KEY, columns, Q_STATE, "q");
+  // 表の状態は区画ごとに覚える（同じ鍵だと、もう一方の表のページや絞り込みを引き継ぐ）
+  const { state, setState } = useTableState(
+    `${Q_KEY}.${method}`,
+    columns,
+    Q_STATE,
+    method === "FACTOR" ? "qf" : "qb",
+  );
 
   const loadRows = useCallback(async () => {
-    const res = await fetch(
-      `/api/prtr/entries/${entryId}/quantities?${serializeTableState(state, Q_STATE).toString()}`,
-    ).catch(() => null);
+    const params = serializeTableState(state, Q_STATE);
+    params.set("method", method);
+    const res = await fetch(`/api/prtr/entries/${entryId}/quantities?${params.toString()}`).catch(
+      () => null,
+    );
     if (!res?.ok) {
       if (res) {
         if (redirectIfUnauthorized(res)) return;
@@ -751,7 +915,7 @@ function QuantitySection({
       return;
     }
     setData((await res.json()) as ListResponse<PrtrQuantityDto>);
-  }, [entryId, state, m]);
+  }, [entryId, method, state, m]);
 
   useEffect(() => {
     void loadRows();
@@ -776,11 +940,10 @@ function QuantitySection({
           method: editing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            method: form.method,
+            method,
             productCode: form.productCode,
             purchasedKg: form.purchasedKg,
-            // 実測で捕捉の製品は出荷数量を持たない
-            shippedKg: form.method === "MEASURED" ? null : form.shippedKg || null,
+            shippedKg: form.shippedKg,
           }),
         },
       );
@@ -816,13 +979,10 @@ function QuantitySection({
   }
 
   return (
-    <div className="space-y-3 border-t pt-4">
+    <div className="space-y-3">
       <div className="flex flex-row items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium">{t.title}</p>
-          <p className="text-muted-foreground mt-1 text-sm">{t.lead}</p>
-        </div>
-        <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
+        <p className="text-sm font-medium">{t.title}</p>
+        <FilePickButton label={m.prtr.import.button} disabled={locked} onPick={setImporting} />
       </div>
       <div className="space-y-3">
         {error && (
@@ -835,9 +995,9 @@ function QuantitySection({
             <p className="text-sm font-medium">{t.find.title}</p>
             <div className="flex flex-wrap items-end gap-3">
               <div className="w-40 space-y-1">
-                <Label htmlFor="q-find-code">{t.productCode}</Label>
+                <Label htmlFor={`q-${method}-find-code`}>{t.productCode}</Label>
                 <Input
-                  id="q-find-code"
+                  id={`q-${method}-find-code`}
                   value={find.code}
                   autoComplete="off"
                   onChange={(e) => setFind({ ...find, code: e.target.value })}
@@ -845,16 +1005,15 @@ function QuantitySection({
                 />
               </div>
               <div className="w-64 space-y-1">
-                <Label htmlFor="q-find-name">{t.find.name}</Label>
+                <Label htmlFor={`q-${method}-find-name`}>{t.find.name}</Label>
                 <Input
-                  id="q-find-name"
+                  id={`q-${method}-find-name`}
                   value={find.name}
                   autoComplete="off"
                   onChange={(e) => setFind({ ...find, name: e.target.value })}
                   className="h-8"
                 />
               </div>
-              {/* 打っている途中の印。結果が返ると消える */}
               {finding && (
                 <span className="text-muted-foreground pb-2 text-xs">{t.find.searching}</span>
               )}
@@ -883,7 +1042,6 @@ function QuantitySection({
                       </li>
                     ))}
                   </ul>
-                  {/* 打ち切った件数。多いときは条件を足して絞る合図 */}
                   {found.total > found.items.length && (
                     <p className="text-muted-foreground text-xs">
                       {t.find.more(found.total - found.items.length)}
@@ -896,9 +1054,9 @@ function QuantitySection({
         {open && (
           <div className="border-border bg-muted/30 flex flex-wrap items-end gap-3 border p-3">
             <div className="w-40 space-y-1">
-              <Label htmlFor="q-code">{t.productCode}</Label>
+              <Label htmlFor={`q-${method}-code`}>{t.productCode}</Label>
               <Input
-                id="q-code"
+                id={`q-${method}-code`}
                 value={form.productCode}
                 maxLength={20}
                 disabled={form.id !== ""}
@@ -908,11 +1066,11 @@ function QuantitySection({
               />
               <FieldError message={firstError(fieldErrors, "productCode")} />
             </div>
-            {/* 製品名は読むだけ。コードを入れると自動で入る（2026-09-30 指示）。無いコードなら断りを出す */}
+            {/* 製品名は読むだけ。コードを入れると自動で入る。無いコードなら断りを出す */}
             <div className="min-w-64 flex-1 space-y-1">
-              <Label htmlFor="q-name">{t.productName}</Label>
+              <Label htmlFor={`q-${method}-name`}>{t.productName}</Label>
               <Input
-                id="q-name"
+                id={`q-${method}-name`}
                 value={productName ?? ""}
                 readOnly
                 tabIndex={-1}
@@ -924,28 +1082,11 @@ function QuantitySection({
                 </p>
               )}
             </div>
-            {/* 排出の数え方の印。実測で捕捉なら出荷数量の欄は出さない */}
-            <div className="space-y-1">
-              <Label htmlFor="q-method">{t.method}</Label>
-              <select
-                id="q-method"
-                value={form.method}
-                title={m.prtr.methodHints[form.method]}
-                onChange={(e) => setForm({ ...form, method: e.target.value as PrtrMethod })}
-                className={SELECT}
-              >
-                {PRTR_METHODS.map((k) => (
-                  <option key={k} value={k}>
-                    {m.prtr.methods[k]}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="w-36 space-y-1">
-              <Label htmlFor="q-purchased">{t.purchasedKg}</Label>
+              <Label htmlFor={`q-${method}-purchased`}>{t.purchasedKg}</Label>
               <Input
                 ref={purchasedRef}
-                id="q-purchased"
+                id={`q-${method}-purchased`}
                 inputMode="decimal"
                 value={form.purchasedKg}
                 onChange={(e) => setForm({ ...form, purchasedKg: e.target.value })}
@@ -954,25 +1095,26 @@ function QuantitySection({
               />
               <FieldError message={firstError(fieldErrors, "purchasedKg")} />
             </div>
-            {form.method !== "MEASURED" && (
-              <div className="w-36 space-y-1">
-                <Label htmlFor="q-shipped">{t.shippedKg}</Label>
-                <Input
-                  id="q-shipped"
-                  inputMode="decimal"
-                  value={form.shippedKg}
-                  onChange={(e) => setForm({ ...form, shippedKg: e.target.value })}
-                  aria-invalid={Boolean(firstError(fieldErrors, "shippedKg"))}
-                  className="h-8 font-mono"
-                />
-                <FieldError message={firstError(fieldErrors, "shippedKg")} />
-              </div>
-            )}
+            <div className="w-36 space-y-1">
+              <Label htmlFor={`q-${method}-shipped`}>{t.shippedKg}</Label>
+              <Input
+                id={`q-${method}-shipped`}
+                inputMode="decimal"
+                value={form.shippedKg}
+                onChange={(e) => setForm({ ...form, shippedKg: e.target.value })}
+                aria-invalid={Boolean(firstError(fieldErrors, "shippedKg"))}
+                className="h-8 font-mono"
+              />
+              <FieldError message={firstError(fieldErrors, "shippedKg")} />
+            </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
                 disabled={
-                  saving || form.productCode.trim() === "" || form.purchasedKg.trim() === ""
+                  saving ||
+                  form.productCode.trim() === "" ||
+                  form.purchasedKg.trim() === "" ||
+                  form.shippedKg.trim() === ""
                 }
                 onClick={() => void save()}
               >
@@ -982,16 +1124,13 @@ function QuantitySection({
                 {m.common.cancel}
               </Button>
             </div>
-            <p className="text-muted-foreground w-full text-xs">
-              {m.prtr.methodHints[form.method]}
-            </p>
           </div>
         )}
         <DataTable
-          storageKey={Q_KEY}
-          // 1 件登録は、ほかの一覧と同じ表の上の「＋」から
+          storageKey={`${Q_KEY}.${method}`}
+          // 1 件登録は、ほかの一覧と同じ表の上の「＋」から。確定中は出さない
           create={
-            !open
+            !open && !locked
               ? {
                   label: t.add,
                   onClick: () => {
@@ -1011,28 +1150,31 @@ function QuantitySection({
           defaultState={Q_STATE}
           onStateChange={setState}
           emptyMessage={t.empty}
-          selectable
-          onDeleteSelected={(sel) => void removeSelected(sel)}
-          rowAction={{
-            onClick: (q) => {
-              setForm({
-                id: q.id,
-                productCode: q.productCode,
-                purchasedKg: q.purchasedKg,
-                shippedKg: q.shippedKg ?? "",
-                method: q.method,
-              });
-              setProductName(pickName(locale, q.productNameJa, q.productNameEn));
-              setOpen(true);
-            },
-          }}
+          selectable={!locked}
+          onDeleteSelected={locked ? undefined : (sel) => void removeSelected(sel)}
+          rowAction={
+            locked
+              ? undefined
+              : {
+                  onClick: (q) => {
+                    setForm({
+                      id: q.id,
+                      productCode: q.productCode,
+                      purchasedKg: q.purchasedKg,
+                      shippedKg: q.shippedKg ?? "",
+                    });
+                    setProductName(pickName(locale, q.productNameJa, q.productNameEn));
+                    setOpen(true);
+                  },
+                }
+          }
         />
       </div>
       {importing && (
         <PrtrImportDialog
           entryId={entryId}
           kind="quantities"
-          method="BALANCE"
+          method={method}
           file={importing}
           onClose={(applied) => {
             setImporting(null);
@@ -1044,12 +1186,14 @@ function QuantitySection({
   );
 }
 
-/** 物質ごとの数量（取扱量の直接入力・実測排出量） */
-function SubstanceSection({
+/** 実測値の区画: 物質ごとの取扱量（任意）と排出量 */
+function MeasuredSection({
   entryId,
+  locked,
   onChanged,
 }: {
   entryId: string;
+  locked: boolean;
   onChanged: () => Promise<void>;
 }) {
   const { m, locale } = useI18n();
@@ -1062,6 +1206,87 @@ function SubstanceSection({
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
+  /*
+    物質検索（2026-10-02 設計）。コードの一部・CAS・名称で探し、第一種指定化学物質に当たる物質だけが並ぶ。
+    「選択」で物質コードが入る。打つたびに探す（300 ms 待ち、古い結果は捨てる）
+  */
+  const [find, setFind] = useState({ code: "", cas: "", name: "" });
+  const [found, setFound] = useState<PrtrSubstanceCandidateDto[] | null>(null);
+  const [finding, setFinding] = useState(false);
+  /** 物質コードから引いた「物質名 → 第一種指定化学物質」。null＝未照会、""＝当たらない */
+  const [resolved, setResolved] = useState<string | null>(null);
+  const handledRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const code = find.code.trim();
+    const cas = find.cas.trim();
+    const name = find.name.trim();
+    if (code === "" && cas === "" && name === "") {
+      setFound(null);
+      setFinding(false);
+      return;
+    }
+    let cancelled = false;
+    setFinding(true);
+    const handle = setTimeout(() => {
+      void (async () => {
+        try {
+          const params = new URLSearchParams({ code, cas, name });
+          const res = await fetch(`/api/prtr/substances?${params.toString()}`);
+          if (cancelled) return;
+          if (!res.ok) {
+            if (redirectIfUnauthorized(res)) return;
+            setFound([]);
+            return;
+          }
+          const body = (await res.json()) as { items: PrtrSubstanceCandidateDto[] };
+          if (!cancelled) setFound(body.items);
+        } finally {
+          if (!cancelled) setFinding(false);
+        }
+      })();
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [find.code, find.cas, find.name]);
+
+  // 物質コードを打ったときも、同じ検索で名前と第一種指定化学物質を引いて読み取り専用の欄に出す
+  useEffect(() => {
+    const code = form.substanceCode.trim();
+    if (code === "" || form.id !== "") {
+      if (code === "") setResolved(null);
+      return;
+    }
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      void (async () => {
+        const params = new URLSearchParams({ code, cas: "", name: "" });
+        const res = await fetch(`/api/prtr/substances?${params.toString()}`);
+        if (!res.ok || cancelled) return;
+        const body = (await res.json()) as { items: PrtrSubstanceCandidateDto[] };
+        const hit = body.items.find((s) => normalizeCode(s.code) === normalizeCode(code));
+        if (!cancelled) setResolved(hit ? labelOf(hit) : "");
+      })();
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- labelOf は locale だけに依る
+  }, [form.substanceCode, form.id, locale]);
+
+  /** 候補の 1 行の文字: 物質名 → 法律上の番号 第一種指定化学物質 */
+  const labelOf = (s: PrtrSubstanceCandidateDto) =>
+    `${pickName(locale, s.nameJa, s.nameEn)} → ${[s.officialNumber, pickStatutoryName(locale, s.statutoryNameOriginal, s.statutoryNameJa, null)].filter(Boolean).join(" ")}`;
+
+  function pickSubstance(s: PrtrSubstanceCandidateDto) {
+    setForm((prev) => ({ ...prev, substanceCode: s.code }));
+    setResolved(labelOf(s));
+    setFieldErrors({});
+    handledRef.current?.focus();
+  }
 
   const columns = useMemo<TableColumn<PrtrMeasuredDto>[]>(
     () => [
@@ -1077,7 +1302,7 @@ function SubstanceSection({
         key: "statutoryName",
         header: t.statutoryName,
         kind: "text",
-        width: 280,
+        width: 260,
         render: (x) =>
           pickStatutoryName(locale, x.statutoryNameOriginal, x.statutoryNameJa, x.statutoryNameEn),
       },
@@ -1085,17 +1310,16 @@ function SubstanceSection({
         key: "substanceCode",
         header: t.substanceCode,
         kind: "text",
+        width: 120,
+        className: "font-mono text-xs",
+        render: (x) => x.substanceCode ?? "",
+      },
+      {
+        key: "substanceName",
+        header: t.substanceName,
+        kind: "text",
         width: 200,
-        className: "text-xs",
-        render: (x) =>
-          x.substanceCode ? (
-            <>
-              <span className="font-mono">{x.substanceCode}</span>
-              <span className="text-muted-foreground ml-2">{x.substanceNameJa}</span>
-            </>
-          ) : (
-            ""
-          ),
+        render: (x) => x.substanceNameJa ?? "",
       },
       {
         key: "handledKg",
@@ -1111,7 +1335,7 @@ function SubstanceSection({
         kind: "number",
         width: 120,
         className: "text-right font-mono tabular-nums",
-        render: (x) => x.measuredKg ?? "",
+        render: (x) => x.measuredKg,
       },
       {
         key: "source",
@@ -1124,6 +1348,14 @@ function SubstanceSection({
           { value: "IMPORT", label: m.prtr.sources.IMPORT },
         ],
         render: (x) => m.prtr.sources[x.source],
+      },
+      {
+        key: "updatedAt",
+        header: m.prtr.quantities.updatedAt,
+        kind: "date",
+        width: 150,
+        className: "text-muted-foreground text-xs",
+        render: (x) => new Date(x.updatedAt).toLocaleString(locale),
       },
     ],
     [t, m, locale],
@@ -1172,7 +1404,7 @@ function SubstanceSection({
               : {
                   substanceCode: form.substanceCode,
                   handledKg: form.handledKg || null,
-                  measuredKg: form.measuredKg || null,
+                  measuredKg: form.measuredKg,
                 },
           ),
         },
@@ -1208,19 +1440,13 @@ function SubstanceSection({
     await changed();
   }
 
-  const canSave =
-    !saving &&
-    (form.id !== "" || form.substanceCode.trim() !== "") &&
-    (form.handledKg.trim() !== "" || form.measuredKg.trim() !== "");
+  const casLabel = (s: PrtrSubstanceCandidateDto) => s.casNumber ?? "";
 
   return (
-    <div className="space-y-3 border-t pt-4">
+    <div className="space-y-3">
       <div className="flex flex-row items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium">{t.title}</p>
-          <p className="text-muted-foreground mt-1 text-sm">{t.lead}</p>
-        </div>
-        <FilePickButton label={m.prtr.import.button} onPick={setImporting} />
+        <p className="text-sm font-medium">{t.title}</p>
+        <FilePickButton label={m.prtr.import.button} disabled={locked} onPick={setImporting} />
       </div>
       <div className="space-y-3">
         {error && (
@@ -1228,9 +1454,72 @@ function SubstanceSection({
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+        {open && form.id === "" && (
+          <div className="border-border bg-muted/30 space-y-2 border p-3">
+            <p className="text-sm font-medium">{t.find.title}</p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="w-36 space-y-1">
+                <Label htmlFor="ms-find-code">{t.find.code}</Label>
+                <Input
+                  id="ms-find-code"
+                  value={find.code}
+                  autoComplete="off"
+                  onChange={(e) => setFind({ ...find, code: e.target.value })}
+                  className="h-8 font-mono"
+                />
+              </div>
+              <div className="w-36 space-y-1">
+                <Label htmlFor="ms-find-cas">{t.find.cas}</Label>
+                <Input
+                  id="ms-find-cas"
+                  value={find.cas}
+                  autoComplete="off"
+                  onChange={(e) => setFind({ ...find, cas: e.target.value })}
+                  className="h-8 font-mono"
+                />
+              </div>
+              <div className="w-64 space-y-1">
+                <Label htmlFor="ms-find-name">{t.find.name}</Label>
+                <Input
+                  id="ms-find-name"
+                  value={find.name}
+                  autoComplete="off"
+                  onChange={(e) => setFind({ ...find, name: e.target.value })}
+                  className="h-8"
+                />
+              </div>
+              <span className="text-muted-foreground pb-2 text-xs">
+                {finding ? t.find.searching : t.find.hint}
+              </span>
+            </div>
+            {found !== null &&
+              (found.length === 0 ? (
+                <p className="text-muted-foreground text-xs">{t.find.none}</p>
+              ) : (
+                <ul className="divide-border bg-background max-h-56 divide-y overflow-y-auto border">
+                  {found.map((s) => (
+                    <li key={s.id} className="flex items-center gap-3 px-2 py-1 text-sm">
+                      <span className="w-28 shrink-0 font-mono text-xs">{s.code}</span>
+                      <span className="w-28 shrink-0 font-mono text-xs">{casLabel(s)}</span>
+                      <span className="min-w-0 flex-1 truncate">{labelOf(s)}</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        aria-label={`${t.find.pick} ${s.code}`}
+                        onClick={() => pickSubstance(s)}
+                      >
+                        {t.find.pick}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              ))}
+          </div>
+        )}
         {open && (
           <div className="border-border bg-muted/30 flex flex-wrap items-end gap-3 border p-3">
-            <div className="w-48 space-y-1">
+            <div className="w-40 space-y-1">
               <Label htmlFor="ms-code">{t.substanceCode}</Label>
               <Input
                 id="ms-code"
@@ -1243,9 +1532,28 @@ function SubstanceSection({
               />
               <FieldError message={firstError(fieldErrors, "substanceCode")} />
             </div>
+            {/* 物質名と第一種指定化学物質は読むだけ。コードを入れると自動で入る */}
+            {form.id === "" && (
+              <div className="min-w-64 flex-1 space-y-1">
+                <Label htmlFor="ms-resolved">{t.resolved}</Label>
+                <Input
+                  id="ms-resolved"
+                  value={resolved ?? ""}
+                  readOnly
+                  tabIndex={-1}
+                  className="bg-muted/50 h-8"
+                />
+                {resolved === "" && (
+                  <p className="text-destructive text-xs">
+                    {t.notPrtrSubstance(form.substanceCode.trim())}
+                  </p>
+                )}
+              </div>
+            )}
             <div className="w-36 space-y-1">
               <Label htmlFor="ms-handled">{t.handledKg}</Label>
               <Input
+                ref={handledRef}
                 id="ms-handled"
                 inputMode="decimal"
                 value={form.handledKg}
@@ -1268,7 +1576,15 @@ function SubstanceSection({
               <FieldError message={firstError(fieldErrors, "measuredKg")} />
             </div>
             <div className="flex gap-2">
-              <Button size="sm" disabled={!canSave} onClick={() => void save()}>
+              <Button
+                size="sm"
+                disabled={
+                  saving ||
+                  (form.id === "" && form.substanceCode.trim() === "") ||
+                  form.measuredKg.trim() === ""
+                }
+                onClick={() => void save()}
+              >
                 {saving ? m.common.saving : m.common.save}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
@@ -1280,11 +1596,14 @@ function SubstanceSection({
         <DataTable
           storageKey={M_KEY}
           create={
-            !open
+            !open && !locked
               ? {
                   label: t.add,
                   onClick: () => {
                     setForm(emptyForm);
+                    setFind({ code: "", cas: "", name: "" });
+                    setFound(null);
+                    setResolved(null);
                     setOpen(true);
                   },
                 }
@@ -1298,19 +1617,23 @@ function SubstanceSection({
           defaultState={M_STATE}
           onStateChange={setState}
           emptyMessage={t.empty}
-          selectable
-          onDeleteSelected={(sel) => void removeSelected(sel)}
-          rowAction={{
-            onClick: (x) => {
-              setForm({
-                id: x.id,
-                substanceCode: x.substanceCode ?? "",
-                handledKg: x.handledKg ?? "",
-                measuredKg: x.measuredKg ?? "",
-              });
-              setOpen(true);
-            },
-          }}
+          selectable={!locked}
+          onDeleteSelected={locked ? undefined : (sel) => void removeSelected(sel)}
+          rowAction={
+            locked
+              ? undefined
+              : {
+                  onClick: (x) => {
+                    setForm({
+                      id: x.id,
+                      substanceCode: x.substanceCode ?? "",
+                      handledKg: x.handledKg ?? "",
+                      measuredKg: x.measuredKg,
+                    });
+                    setOpen(true);
+                  },
+                }
+          }
         />
       </div>
       {importing && (

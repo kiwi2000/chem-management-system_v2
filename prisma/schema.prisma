@@ -259,6 +259,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -3060,8 +3061,9 @@ model PrtrEntry {
 }
 
 /**
- * 製品ごとの数量（kg）。所属 × 年度につき製品 1 行。`method` は**排出の数え方の印**（2026-10-01）:
- * 実測で捕捉／物質収支／排出係数。購入数量は印によらず取扱量に、出荷数量は物質収支・排出係数の行だけ使う
+ * 製品ごとの数量（kg）。計算方法の区画（`method`: 物質収支 BALANCE／排出係数 FACTOR）ごとに別の行（2026-10-02 設計）。
+ * 同じ製品を両方の区画に入れてよい。purchasedKg＝取扱量、shippedKg＝出荷量（どちらも要る）。
+ * 排出係数の区画の取扱量は届出要否の判断にだけ使う。MEASURED は使わない（実測値は物質の行）
  */
 model PrtrQuantity {
   id          String          @id @default(cuid())
@@ -3079,14 +3081,13 @@ model PrtrQuantity {
   entry   PrtrEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   product Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
 
-  @@unique([entryId, productId])
+  @@unique([entryId, method, productId])
   @@index([productId])
   @@map("prtr_quantities")
 }
 
 /**
- * 物質ごとの数量（kg、年間）。第一種指定化学物質（化管法の法文物質名）ごとに
- * 取扱量（直接入力）と実測排出量を持つ。どちらか 1 つは入っている（2026-10-01）
+ * 実測値の区画: 物質ごとの取扱量（任意）と排出量（測った値そのまま。必須）。第一種指定化学物質ごとに 1 行（2026-10-02 設計）
  */
 model PrtrMeasured {
   id                   String          @id @default(cuid())
@@ -3097,13 +3098,13 @@ model PrtrMeasured {
    */
   substanceId          String?         @map("substance_id")
   /**
-   * 取扱量（直接入力）。製品からの換算に足す。排出量の計算には使わない
+   * 取扱量（任意）。製品からの換算に足し、届出要否の判断に使う
    */
   handledKg            Decimal?        @map("handled_kg") @db.Decimal(18, 3)
   /**
-   * 実測排出量。排出量の実測の分
+   * 排出量（実測値そのまま）
    */
-  measuredKg           Decimal?        @map("measured_kg") @db.Decimal(18, 3)
+  measuredKg           Decimal         @map("measured_kg") @db.Decimal(18, 3)
   source               PrtrEntrySource @default(MANUAL)
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -3121,8 +3122,9 @@ model PrtrMeasured {
 }
 
 /**
- * 集計（所属 × 年度で 1 つ）。**集計するたびに丸ごと作り直して保存する。**
- * 届出書はこの表から作る。どの法規制バージョン・方法・係数で出したかを一緒に残す
+ * 排出量集計（所属 × 年度で 1 つ）。**いまの集計は開くたびに丸ごと作り直す**（行の saved=false）。
+ * 「保存」でその写しを saved=true の行として残し（未確定）、「確定」で confirmedAt を付ける。
+ * 確定中は入力（製品・物質・係数）を変えられない。届出書は保存した集計から作る（2026-10-02 設計）
  */
 model PrtrSummary {
   id        String  @id @default(cuid())
@@ -3151,6 +3153,19 @@ model PrtrSummary {
   computedAt DateTime @default(now()) @map("computed_at")
   computedBy String?  @map("computed_by")
 
+  /**
+   * 保存した集計（saved=true の行）の印。いつ・誰が・どの版・どの係数で。保存していなければ null
+   */
+  savedAt          DateTime? @map("saved_at")
+  savedBy          String?   @map("saved_by")
+  savedVersionCode String?   @map("saved_version_code")
+  savedFactorPct   Decimal?  @map("saved_factor_pct") @db.Decimal(9, 4)
+  /**
+   * 確定。付いているあいだは入力を変えられない。「未確定に戻す」で外す
+   */
+  confirmedAt      DateTime? @map("confirmed_at")
+  confirmedBy      String?   @map("confirmed_by")
+
   entry   PrtrEntry        @relation(fields: [entryId], references: [id], onDelete: Cascade)
   version LinkSetVersion?  @relation(fields: [versionId], references: [id], onDelete: SetNull)
   rows    PrtrSummaryRow[]
@@ -3163,9 +3178,13 @@ model PrtrSummary {
  * 同じ管理番号は 1 行にまとめてある（`specific` が特定第一種の印）
  */
 model PrtrSummaryRow {
-  id                   String @id @default(cuid())
-  summaryId            String @map("summary_id")
-  statutorySubstanceId String @map("statutory_substance_id")
+  id                   String  @id @default(cuid())
+  summaryId            String  @map("summary_id")
+  statutorySubstanceId String  @map("statutory_substance_id")
+  /**
+   * false＝いまの集計（開くたびに作り直す）、true＝保存した集計の写し
+   */
+  saved                Boolean @default(false)
 
   specific          Boolean
   /**
@@ -3198,7 +3217,7 @@ model PrtrSummaryRow {
   summary            PrtrSummary        @relation(fields: [summaryId], references: [id], onDelete: Cascade)
   statutorySubstance StatutorySubstance @relation(fields: [statutorySubstanceId], references: [id], onDelete: Cascade)
 
-  @@unique([summaryId, statutorySubstanceId])
+  @@unique([summaryId, statutorySubstanceId, saved])
   @@index([statutorySubstanceId])
   @@map("prtr_summary_rows")
 }

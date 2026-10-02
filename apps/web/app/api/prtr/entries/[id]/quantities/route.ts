@@ -1,9 +1,9 @@
 import {
   emptyTableState,
   parseTableState,
-  PRTR_METHODS,
+  PRTR_PRODUCT_METHODS,
   prtrQuantitySchema,
-  type PrtrMethod,
+  type PrtrProductMethod,
 } from "@chem/shared";
 import { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
@@ -11,7 +11,12 @@ import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { PRTR_QUANTITY_COLUMNS } from "@/lib/list-columns";
-import { findProductByCode, QUANTITY_INCLUDE, toQuantityDto } from "@/lib/prtr-service";
+import {
+  findProductByCode,
+  isConfirmed,
+  QUANTITY_INCLUDE,
+  toQuantityDto,
+} from "@/lib/prtr-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +26,8 @@ type Ctx = { params: Promise<{ id: string }> };
 const DEFAULT_STATE = emptyTableState([{ column: "productCode", direction: "asc" }]);
 
 /**
- * GET /api/prtr/entries/[id]/quantities — 製品ごとの数量の一覧（絞り込み・並べ替え・ページ送り）。
- * `method`（排出の数え方の印）を付ければその行だけ。無ければ全部
+ * GET /api/prtr/entries/[id]/quantities?method=BALANCE|FACTOR — 製品ごとの数量の一覧（絞り込み・並べ替え・ページ送り）。
+ * `method` で区画（物質収支／排出係数）を選ぶ。無ければ両方
  */
 export async function GET(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
@@ -41,8 +46,8 @@ export async function GET(req: Request, { params }: Ctx) {
     DEFAULT_STATE,
   );
   const methodParam = url.searchParams.get("method");
-  const method = (PRTR_METHODS as readonly string[]).includes(methodParam ?? "")
-    ? (methodParam as PrtrMethod)
+  const method = (PRTR_PRODUCT_METHODS as readonly string[]).includes(methodParam ?? "")
+    ? (methodParam as PrtrProductMethod)
     : undefined;
   const where = {
     AND: [buildWhere(PRTR_QUANTITY_COLUMNS, state.filters)],
@@ -69,8 +74,8 @@ export async function GET(req: Request, { params }: Ctx) {
 
 /**
  * POST /api/prtr/entries/[id]/quantities — 製品ごとの数量を 1 件足す（S22）。
- * `method` は排出の数え方の印。同じ製品が既にあれば上書きする（画面の 1 件登録は「同じ製品なら直す」の意味）。
- * 出荷数量は実測で捕捉以外で要り、実測で捕捉では持たない
+ * `method` は区画（物質収支／排出係数）。同じ区画に同じ製品が既にあれば上書きする
+ * （画面の 1 件登録は「同じ製品なら直す」の意味で使う）。取扱量・出荷量とも要る。確定中は断る
  */
 export async function POST(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
@@ -82,6 +87,7 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!entry) return jsonError(404, "not_found", m.errors.notFound);
   const denied = await requirePrtrOrg(actor, entry.organisationId);
   if (denied) return denied;
+  if (await isConfirmed(id)) return jsonError(409, "confirmed", m.prtr.locked);
 
   let body: unknown;
   try {
@@ -100,24 +106,16 @@ export async function POST(req: Request, { params }: Ctx) {
       fieldErrors: { productCode: [m.prtr.quantities.productNotFound(v.productCode)] },
     });
   }
-  if (v.method !== "MEASURED" && v.shippedKg == null) {
-    return jsonError(400, "validation_error", m.prtr.quantities.shippedRequired, {
-      fieldErrors: { shippedKg: [m.prtr.quantities.shippedRequired] },
-    });
-  }
 
   const data = {
-    method: v.method,
     purchasedKg: new Prisma.Decimal(v.purchasedKg),
-    // 実測で捕捉の製品は出荷数量を使わない（画面にも出さない）ので、送られてきても持たない
-    shippedKg:
-      v.method === "MEASURED" || v.shippedKg == null ? null : new Prisma.Decimal(v.shippedKg),
+    shippedKg: new Prisma.Decimal(v.shippedKg),
     source: "MANUAL" as const,
     updatedBy: actor.user.id,
   };
   const row = await prisma.prtrQuantity.upsert({
-    where: { entryId_productId: { entryId: id, productId: product.id } },
-    create: { entryId: id, productId: product.id, ...data },
+    where: { entryId_method_productId: { entryId: id, method: v.method, productId: product.id } },
+    create: { entryId: id, method: v.method, productId: product.id, ...data },
     update: data,
     include: QUANTITY_INCLUDE,
   });
@@ -130,7 +128,7 @@ export async function POST(req: Request, { params }: Ctx) {
       product: product.code,
       method: v.method,
       purchasedKg: v.purchasedKg,
-      shippedKg: v.shippedKg ?? null,
+      shippedKg: v.shippedKg,
     },
   });
   return Response.json({ item: toQuantityDto(row) }, { status: 201 });

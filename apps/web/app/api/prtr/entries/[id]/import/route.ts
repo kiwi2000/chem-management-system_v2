@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import {
   inspectRows,
+  isConfirmed,
   missingRequired,
   PRTR_IMPORT_FILE_MAX,
   readRows,
@@ -20,7 +21,8 @@ type Ctx = { params: Promise<{ id: string }> };
  *
  * multipart で `file` と `step` を受け取る。
  *   step=inspect … 1 行目を見出しとして読み、見出しと最初の数行を返す（列の割り当てに使う）
- *   step=run     … `input`（JSON: kind / mapping / mode / overwrite / dryRun）に従って下見か実行
+ *   step=run     … `input`（JSON: kind / method / mapping / mode / overwrite / dryRun）に従って下見か実行
+ * 取り込み先は表ごと（物質収支の製品・排出係数の製品・実測値の物質）。確定中は下見も実行も断る。
  * ファイルは毎回送り直す（サーバーに一時保存しない）。CSV / TSV / Excel（.xlsx）
  */
 export async function POST(req: Request, { params }: Ctx) {
@@ -33,6 +35,7 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!entry) return jsonError(404, "not_found", m.errors.notFound);
   const denied = await requirePrtrOrg(actor, entry.organisationId);
   if (denied) return denied;
+  if (await isConfirmed(id)) return jsonError(409, "confirmed", m.prtr.locked);
 
   let form: FormData;
   try {

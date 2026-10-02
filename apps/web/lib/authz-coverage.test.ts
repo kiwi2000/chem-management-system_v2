@@ -93,7 +93,8 @@ describe("API ルートの認可", () => {
  */
 describe("PRTR の API の所属の絞り込み", () => {
   /** 所属によらないもの（取り込みのテンプレートは誰が落としても同じ物） */
-  const SCOPE_FREE = new Set(["prtr/template/route.ts"]);
+  // テンプレートと物質検索は所属によらない（誰が呼んでも同じもの）。それ以外は所属の確認が要る
+  const SCOPE_FREE = new Set(["prtr/template/route.ts", "prtr/substances/route.ts"]);
   const files = findRouteFiles(API_DIR).filter((f) =>
     relative(API_DIR, f).split(sep).join("/").startsWith("prtr/"),
   );

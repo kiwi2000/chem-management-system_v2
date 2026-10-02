@@ -1,12 +1,10 @@
 import {
   normalizeCode,
-  parsePrtrMethod,
   PRTR_IMPORT_FIELDS,
-  PRTR_METHODS,
   type Messages,
   type PrtrImportInput,
   type PrtrImportKind,
-  type PrtrMethod,
+  type PrtrProductMethod,
 } from "@chem/shared";
 import {
   Prisma,
@@ -26,15 +24,19 @@ import type {
   PrtrImportResultDto,
   PrtrMeasuredDto,
   PrtrQuantityDto,
+  PrtrSubstanceCandidateDto,
   PrtrSummaryMeta,
   PrtrSummaryRowDto,
 } from "@/lib/types";
 
 /**
- * PRTR 届出データの入力（S22）。
+ * PRTR 届出データの入力（S22。2026-10-02 設計）。
  *
- * 所属（組織）× 年度で 1 組。製品ごとの数量（購入・出荷・排出の数え方の印）と、
- * 物質ごとの数量（取扱量の直接入力・実測排出量）。集計は物質ごとに足す（2026-10-01 設計）。
+ * 所属（組織）× 年度で 1 組。計算方法ごとの区画:
+ *   物質収支・排出係数 = 製品ごとの取扱量・出荷量（`prtr_quantities`、`method` で区画を分ける）
+ *   実測値 = 物質ごとの取扱量・排出量（`prtr_measured`）
+ * 排出量集計は 3 つの方法の排出量を物質ごとに足す。開くたびに計算し直す「いまの集計」と、
+ * 「保存」で写し取る「保存した集計」（未確定 → 確定）を同じ表に `saved` の印で持つ。
  * 所属の絞り込み（誰がどこの分を入れられるか）は lib/authz.ts の `requirePrtrOrg` / `prtrOrgsOf`
  */
 
@@ -72,7 +74,7 @@ type MeasuredRow = PrtrMeasured & {
 export function toQuantityDto(q: QuantityRow): PrtrQuantityDto {
   return {
     id: q.id,
-    method: q.method,
+    method: q.method === "FACTOR" ? "FACTOR" : "BALANCE",
     productId: q.productId,
     productCode: q.product.code,
     productNameJa: q.product.nameJa,
@@ -96,23 +98,36 @@ export function toMeasuredDto(x: MeasuredRow): PrtrMeasuredDto {
     substanceCode: substance?.code ?? null,
     substanceNameJa: substance?.nameJa ?? null,
     handledKg: x.handledKg?.toString() ?? null,
-    measuredKg: x.measuredKg?.toString() ?? null,
+    measuredKg: x.measuredKg.toString(),
     source: x.source,
     updatedAt: x.updatedAt.toISOString(),
   };
 }
 
-/** 所属 × 年度の届出データの頭と件数。頭が無ければ entry は null */
+/** 所属 × 年度の届出データの頭と件数、確定の状態。頭が無ければ entry は null */
 export async function loadEntry(organisationId: string, fiscalYear: number): Promise<PrtrEntryDto> {
   const entry = await prisma.prtrEntry.findUnique({
     where: { organisationId_fiscalYear: { organisationId, fiscalYear } },
-    include: { _count: { select: { quantities: true, measured: true } } },
+    include: {
+      _count: { select: { measured: true } },
+      summary: { select: { confirmedAt: true } },
+    },
   });
-  if (!entry) return { entry: null, quantityCount: 0, measuredCount: 0 };
+  if (!entry) {
+    return { entry: null, balanceCount: 0, factorCount: 0, measuredCount: 0, confirmed: false };
+  }
+  const grouped = await prisma.prtrQuantity.groupBy({
+    by: ["method"],
+    where: { entryId: entry.id },
+    _count: { _all: true },
+  });
+  const count = (k: string) => grouped.find((g) => g.method === k)?._count._all ?? 0;
   return {
     entry: toEntryHead(entry),
-    quantityCount: entry._count.quantities,
+    balanceCount: count("BALANCE"),
+    factorCount: count("FACTOR"),
     measuredCount: entry._count.measured,
+    confirmed: entry.summary?.confirmedAt != null,
   };
 }
 
@@ -127,6 +142,15 @@ export function toEntryHead(e: PrtrEntry): NonNullable<PrtrEntryDto["entry"]> {
   };
 }
 
+/** 集計が確定しているか。確定中は入力（製品・物質・係数）を変えられない */
+export async function isConfirmed(entryId: string): Promise<boolean> {
+  const s = await prisma.prtrSummary.findUnique({
+    where: { entryId },
+    select: { confirmedAt: true },
+  });
+  return s?.confirmedAt != null;
+}
+
 // ── 突合 ──────────────────────────────────────────────
 
 /** 製品コードで製品を当てる（消した製品は当てない） */
@@ -135,6 +159,63 @@ export async function findProductByCode(code: string) {
     where: { codeNormalized: normalizeCode(code), deletedAt: null },
     select: { id: true, code: true, nameJa: true, nameEn: true },
   });
+}
+
+/** CAS（正規化済み）→ 現在の版で結び付く化管法 第一種（C1）／特定第一種（SC1）の法文物質名。C1 を優先 */
+async function prtrStatutoryByCas(
+  casList: string[],
+): Promise<
+  Map<
+    string,
+    { id: string; officialNumber: string | null; nameJa: string | null; nameOriginal: string }
+  >
+> {
+  const out = new Map<
+    string,
+    { id: string; officialNumber: string | null; nameJa: string | null; nameOriginal: string }
+  >();
+  if (casList.length === 0) return out;
+  const version = await getCurrentVersion();
+  if (!version) return out;
+  const links = await prisma.statutoryCasLink.findMany({
+    where: {
+      versionId: version.id,
+      casNormalized: { in: casList },
+      excluded: false,
+      ...notDisabledIn(version.id),
+      statutorySubstance: {
+        deletedAt: null,
+        regulationClass: {
+          category: { code: { in: ["C1", "SC1"] }, deletedAt: null, law: { code: "JP-PRTR" } },
+        },
+      },
+    },
+    select: {
+      casNormalized: true,
+      statutorySubstanceId: true,
+      statutorySubstance: {
+        select: {
+          officialNumber: true,
+          nameJa: true,
+          nameOriginal: true,
+          regulationClass: { select: { category: { select: { code: true } } } },
+        },
+      },
+    },
+  });
+  for (const l of links) {
+    const cur = out.get(l.casNormalized);
+    const isC1 = l.statutorySubstance.regulationClass.category.code === "C1";
+    // どちらにも結び付けば C1 を採る（届出の別紙はどちらも同じ 1 枚）
+    if (cur && !isC1) continue;
+    out.set(l.casNormalized, {
+      id: l.statutorySubstanceId,
+      officialNumber: l.statutorySubstance.officialNumber,
+      nameJa: l.statutorySubstance.nameJa,
+      nameOriginal: l.statutorySubstance.nameOriginal,
+    });
+  }
+  return out;
 }
 
 export type MeasuredResolve =
@@ -147,8 +228,7 @@ export type MeasuredResolve =
 
 /**
  * 物質コード → 化管法の第一種指定化学物質（法文物質名）。
- * その物質の CAS が現在のバージョンで結び付く化管法 C1（第一種）か SC1（特定第一種）の法文物質名に当てる。
- * どちらにも結び付けば C1 を採る（届出の別紙はどちらも同じ 1 枚）
+ * その物質の CAS が現在のバージョンで結び付く化管法 C1（第一種）か SC1（特定第一種）の法文物質名に当てる
  */
 export async function resolveMeasuredSubstance(code: string): Promise<MeasuredResolve> {
   const substance = await prisma.substance.findFirst({
@@ -157,35 +237,73 @@ export async function resolveMeasuredSubstance(code: string): Promise<MeasuredRe
   });
   if (!substance) return { ok: false, reason: "substance_not_found" };
   if (!substance.casNormalized) return { ok: false, reason: "not_prtr" };
-  const version = await getCurrentVersion();
-  if (!version) return { ok: false, reason: "not_prtr" };
-  const links = await prisma.statutoryCasLink.findMany({
-    where: {
-      versionId: version.id,
-      casNormalized: substance.casNormalized,
-      excluded: false,
-      ...notDisabledIn(version.id),
-      statutorySubstance: {
-        deletedAt: null,
-        regulationClass: {
-          category: { code: { in: ["C1", "SC1"] }, deletedAt: null, law: { code: "JP-PRTR" } },
-        },
-      },
-    },
-    select: {
-      statutorySubstanceId: true,
-      statutorySubstance: {
-        select: { regulationClass: { select: { category: { select: { code: true } } } } },
-      },
-    },
-  });
-  if (links.length === 0) return { ok: false, reason: "not_prtr" };
-  const c1 = links.find((l) => l.statutorySubstance.regulationClass.category.code === "C1");
+  const hit = (await prtrStatutoryByCas([substance.casNormalized])).get(substance.casNormalized);
+  if (!hit) return { ok: false, reason: "not_prtr" };
   return {
     ok: true,
-    statutorySubstanceId: (c1 ?? links[0]!).statutorySubstanceId,
+    statutorySubstanceId: hit.id,
     substance: { id: substance.id, code: substance.code, nameJa: substance.nameJa },
   };
+}
+
+/**
+ * 実測値の区画の「物質検索」。コードの一部・CAS（完全一致）・名称の一部で物質を探し、
+ * 化管法の第一種指定化学物質に当たるものだけを返す（最大 limit 件。当たらない物質は数に入れない）
+ */
+export async function searchPrtrSubstances(
+  q: { code: string; cas: string; name: string },
+  limit = 20,
+): Promise<PrtrSubstanceCandidateDto[]> {
+  const where: Prisma.SubstanceWhereInput = { deletedAt: null, casNormalized: { not: null } };
+  const and: Prisma.SubstanceWhereInput[] = [];
+  if (q.code) and.push({ codeNormalized: { contains: normalizeCode(q.code) } });
+  if (q.cas) and.push({ casNormalized: normalizeCode(q.cas) });
+  if (q.name) {
+    const match = { contains: q.name, mode: "insensitive" as const };
+    and.push({
+      OR: [
+        { nameJa: match },
+        { nameEn: match },
+        { aliases: { some: { OR: [{ nameJa: match }, { nameEn: match }] } } },
+      ],
+    });
+  }
+  if (and.length === 0) return [];
+  // 当たらない物質を落とすので、多めに引いてから絞る
+  const subs = await prisma.substance.findMany({
+    where: { ...where, AND: and },
+    select: {
+      id: true,
+      code: true,
+      nameJa: true,
+      nameEn: true,
+      casNumber: true,
+      casNormalized: true,
+    },
+    orderBy: { codeNormalized: "asc" },
+    take: limit * 5,
+  });
+  const byCas = await prtrStatutoryByCas([
+    ...new Set(subs.map((s) => s.casNormalized).filter((c): c is string => !!c)),
+  ]);
+  const out: PrtrSubstanceCandidateDto[] = [];
+  for (const s of subs) {
+    const hit = s.casNormalized ? byCas.get(s.casNormalized) : undefined;
+    if (!hit) continue;
+    out.push({
+      id: s.id,
+      code: s.code,
+      nameJa: s.nameJa,
+      nameEn: s.nameEn,
+      casNumber: s.casNumber,
+      statutorySubstanceId: hit.id,
+      officialNumber: hit.officialNumber,
+      statutoryNameJa: hit.nameJa,
+      statutoryNameOriginal: hit.nameOriginal,
+    });
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 // ── ファイルの読み取り ─────────────────────────────────
@@ -301,10 +419,8 @@ interface ParsedQuantity {
   line: number;
   productId: string;
   productCode: string;
-  /** 排出の数え方の印 */
-  method: PrtrMethod;
   purchasedKg: string;
-  shippedKg: string | null;
+  shippedKg: string;
   nameMismatch: boolean;
 }
 
@@ -313,20 +429,16 @@ interface ParsedMeasured {
   statutorySubstanceId: string;
   substanceId: string;
   handledKg: string | null;
-  measuredKg: string | null;
+  measuredKg: string;
   nameMismatch: boolean;
 }
 
 const cellAt = (row: string[], i: number | undefined) => (i == null ? "" : (row[i] ?? "").trim());
 
-/**
- * 数量の取り込み。列の割り当てに従って読み、製品コードで当てる。
- * 排出の数え方の印は、列があればその言葉から、無ければ既定の印。実測で捕捉の行は出荷数量を持たない
- */
+/** 製品ごとの数量の取り込み。列の割り当てに従って読み、製品コードで当てる。取扱量・出荷量とも要る */
 async function parseQuantities(
   rows: string[][],
   mapping: Record<string, number>,
-  defaultMethod: PrtrMethod,
   m: Messages,
 ): Promise<{ ok: ParsedQuantity[]; errors: { line: number; message: string }[] }> {
   const ok: ParsedQuantity[] = [];
@@ -337,8 +449,7 @@ async function parseQuantities(
     const line = r + 1;
     const code = cellAt(row, mapping.productCode);
     const purchased = cellAt(row, mapping.purchasedKg).replace(/,/g, "");
-    let shipped = cellAt(row, mapping.shippedKg).replace(/,/g, "");
-    const methodText = cellAt(row, mapping.method);
+    const shipped = cellAt(row, mapping.shippedKg).replace(/,/g, "");
     if (code === "") {
       errors.push({ line, message: `${m.prtr.quantities.productCode}: ${m.validation.required}` });
       continue;
@@ -348,22 +459,12 @@ async function parseQuantities(
       errors.push({ line, message: m.prtr.quantities.productNotFound(code) });
       continue;
     }
-    const method = methodText === "" ? defaultMethod : parsePrtrMethod(methodText);
-    if (!method) {
-      errors.push({ line, message: m.prtr.quantities.methodUnknown(methodText) });
-      continue;
-    }
     if (!KG.test(purchased)) {
       errors.push({ line, message: `${m.prtr.quantities.purchasedKg}: ${m.prtr.validation.kg}` });
       continue;
     }
-    if (method === "MEASURED") shipped = "";
-    if (shipped !== "" && !KG.test(shipped)) {
+    if (!KG.test(shipped)) {
       errors.push({ line, message: `${m.prtr.quantities.shippedKg}: ${m.prtr.validation.kg}` });
-      continue;
-    }
-    if (shipped === "" && method !== "MEASURED") {
-      errors.push({ line, message: m.prtr.quantities.shippedRequired });
       continue;
     }
     const key = normalizeCode(code);
@@ -380,16 +481,15 @@ async function parseQuantities(
       line,
       productId: product.id,
       productCode: product.code,
-      method,
       purchasedKg: purchased,
-      shippedKg: shipped === "" ? null : shipped,
+      shippedKg: shipped,
       nameMismatch: name !== "" && name !== product.nameJa && name !== (product.nameEn ?? ""),
     });
   }
   return { ok, errors };
 }
 
-/** 物質ごとの数量の取り込み。物質コードで当て、第一種指定化学物質に変換する。取扱量・実測排出量のどちらかは要る */
+/** 実測値の区画の取り込み。物質コードで当て、第一種指定化学物質に変換する。排出量は要る、取扱量は任意 */
 async function parseMeasured(
   rows: string[][],
   mapping: Record<string, number>,
@@ -423,12 +523,8 @@ async function parseMeasured(
       errors.push({ line, message: `${m.prtr.measured.handledKg}: ${m.prtr.validation.kg}` });
       continue;
     }
-    if (kg !== "" && !KG.test(kg)) {
+    if (!KG.test(kg)) {
       errors.push({ line, message: `${m.prtr.measured.measuredKg}: ${m.prtr.validation.kg}` });
-      continue;
-    }
-    if (handled === "" && kg === "") {
-      errors.push({ line, message: m.prtr.validation.eitherKg });
       continue;
     }
     if (seen.has(resolved.statutorySubstanceId)) {
@@ -442,7 +538,7 @@ async function parseMeasured(
       statutorySubstanceId: resolved.statutorySubstanceId,
       substanceId: resolved.substance.id,
       handledKg: handled === "" ? null : handled,
-      measuredKg: kg === "" ? null : kg,
+      measuredKg: kg,
       nameMismatch: name !== "" && name !== resolved.substance.nameJa,
     });
   }
@@ -458,8 +554,8 @@ export function missingRequired(kind: PrtrImportKind, mapping: Record<string, nu
 
 /**
  * 取り込みの下見と実行。**下見（dryRun）は何も書かない。**
- * 製品ごとの数量: 印の列が無い行は既定の印。重ね方は「上書き＋追加」か「全部入れ替え」。
- * 物質ごとの数量: 既に行がある物質があれば上書きの答えを待つ
+ * 製品ごとの数量: 指定した区画（物質収支・排出係数）の表に入れる。重ね方は「上書き＋追加」か「その表を全部入れ替え」。
+ * 実測値: 既に行がある物質があれば上書きの答えを待つ
  */
 export async function runImport(
   entry: PrtrEntry,
@@ -482,9 +578,10 @@ export async function runImport(
   };
 
   if (input.kind === "quantities") {
-    const parsed = await parseQuantities(rows, input.mapping, input.method ?? "BALANCE", m);
+    const method: PrtrProductMethod = input.method ?? "BALANCE";
+    const parsed = await parseQuantities(rows, input.mapping, m);
     const existing = await prisma.prtrQuantity.findMany({
-      where: { entryId: entry.id },
+      where: { entryId: entry.id, method },
       select: { id: true, productId: true },
     });
     const byProduct = new Map(existing.map((q) => [q.productId, q.id]));
@@ -500,21 +597,27 @@ export async function runImport(
 
     await prisma.$transaction(async (tx) => {
       if (mode === "replace") {
+        // 入れ替えは、その区画の表の中だけ。もう一方の区画は触らない
         await tx.prtrQuantity.deleteMany({
-          where: { entryId: entry.id, productId: { notIn: parsed.ok.map((q) => q.productId) } },
+          where: {
+            entryId: entry.id,
+            method,
+            productId: { notIn: parsed.ok.map((q) => q.productId) },
+          },
         });
       }
       for (const q of parsed.ok) {
         const data = {
-          method: q.method,
           purchasedKg: new Prisma.Decimal(q.purchasedKg),
-          shippedKg: q.shippedKg === null ? null : new Prisma.Decimal(q.shippedKg),
+          shippedKg: new Prisma.Decimal(q.shippedKg),
           source: "IMPORT" as const,
           updatedBy: actorId,
         };
         await tx.prtrQuantity.upsert({
-          where: { entryId_productId: { entryId: entry.id, productId: q.productId } },
-          create: { entryId: entry.id, productId: q.productId, ...data },
+          where: {
+            entryId_method_productId: { entryId: entry.id, method, productId: q.productId },
+          },
+          create: { entryId: entry.id, method, productId: q.productId, ...data },
           update: data,
         });
       }
@@ -524,7 +627,7 @@ export async function runImport(
     return result;
   }
 
-  // 物質ごとの数量
+  // 実測値（物質ごとの取扱量・排出量）
   const parsed = await parseMeasured(rows, input.mapping, m);
   const existing = await prisma.prtrMeasured.findMany({
     where: { entryId: entry.id },
@@ -548,7 +651,7 @@ export async function runImport(
     for (const x of parsed.ok) {
       const data = {
         handledKg: x.handledKg === null ? null : new Prisma.Decimal(x.handledKg),
-        measuredKg: x.measuredKg === null ? null : new Prisma.Decimal(x.measuredKg),
+        measuredKg: new Prisma.Decimal(x.measuredKg),
         substanceId: x.substanceId,
         source: "IMPORT" as const,
         updatedBy: actorId,
@@ -584,19 +687,18 @@ const D = (v: string | number | Prisma.Decimal | null | undefined) => new Prisma
 const kg = (v: Prisma.Decimal) => v.toDecimalPlaces(3).toString();
 
 /**
- * 所属 × 年度の集計（第一種指定化学物質ごと）。**集計するたびに丸ごと作り直して保存する**（届出書はこの表から作る）。
+ * 所属 × 年度の「いまの集計」（第一種指定化学物質ごと）。**開くたびに丸ごと作り直して保存する**
+ * （`saved=false` の行。保存した集計 `saved=true` の行は触らない）。
  *
  * 含有率は製品の**判定結果**（現在の版、化管法 第一種・特定第一種で該当）から取る。
  * 裾切値未満の製品と、不純物種別で除外した物質はそこで落ちている。
- * 製品の行は「排出の数え方」の印（実測で捕捉／物質収支／排出係数）を持つ（2026-10-01 設計）:
- *   取扱量 = Σ 全製品の購入数量 × 含有率 ＋ 物質ごとの取扱量（直接入力）
- *   出荷量 = Σ（物質収支・排出係数の印の製品）出荷数量 × 含有率
- *   排出量 = 実測排出量 ＋（物質収支の印の製品: 取扱量 − 出荷量）＋（排出係数の印の製品: 出荷量 × 係数 ÷ 100）
- *   実測で捕捉の印の製品は、取扱量には入るが物質収支・排出係数には入れない（二重に数えない）。
- *   どれも出せなければ null。内訳（実測／物質収支／排出係数）も一緒に残す
+ *   取扱量 = 物質収支の製品の取扱量 × 含有率 ＋ 排出係数の製品の取扱量 × 含有率 ＋ 実測値の物質の取扱量
+ *   排出量 = 物質収支（取扱量 − 出荷量）× 含有率 ＋ 排出係数 出荷量 × 含有率 × 係数 ÷ 100 ＋ 実測値の排出量
+ *   排出係数の製品の取扱量は届出要否の判断にだけ使う（物質収支には入れない）。
+ *   どの方法でも出せなければ排出量は null。内訳（物質収支／排出係数／実測値）も残す
  * 特定第一種は第一種の一部なので、同じ物質が両方の区分で該当する。届出は物質 1 つに 1 行なので、
  * **法律上の番号（管理番号）で 1 行にまとめ**、特定第一種に入っていればその閾値（0.5 t）を使う。
- * 同じ製品が両方の区分で当たっても数量は 1 回しか足さない。届出要否は 3 つの方法の取扱量の合計で見る。
+ * 同じ製品が両方の区分で当たっても数量は 1 回しか足さない。届出要否は取扱量の合計で見る。
  * 判定がまだ無い製品（現在の版で判定していない製品）は数えて知らせ、集計には入れない
  */
 export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise<PrtrSummaryMeta> {
@@ -641,7 +743,7 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
       : [],
   );
 
-  // 物質ごとの数量（取扱量の直接入力・実測排出量）。数量から当たらない物質も並べる
+  // 実測値の区画（物質ごとの取扱量・排出量）。数量から当たらない物質も並べる
   const measured = await prisma.prtrMeasured.findMany({
     where: { entryId: entry.id },
     select: { statutorySubstanceId: true, handledKg: true, measuredKg: true },
@@ -678,9 +780,8 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
     specific: boolean;
     /** 製品ごとの含有率（%）。両方の区分で当たったときは大きいほう */
     pctByProduct: Map<string, Prisma.Decimal>;
-    /** 物質ごとの取扱量（直接入力）の合計 */
-    handledDirect: Prisma.Decimal | null;
-    /** 実測排出量の合計 */
+    /** 実測値の区画: 取扱量の合計・排出量の合計 */
+    handledDirect: Prisma.Decimal;
     measured: Prisma.Decimal | null;
   }
   const groups = new Map<string, Group>();
@@ -691,7 +792,7 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
     const specific = name.regulationClass.category.code === "SC1";
     let g = groups.get(key);
     if (!g) {
-      g = { name, specific, pctByProduct: new Map(), handledDirect: null, measured: null };
+      g = { name, specific, pctByProduct: new Map(), handledDirect: D(0), measured: null };
       groups.set(key, g);
     } else {
       if (specific) g.specific = true;
@@ -723,44 +824,40 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
   for (const x of measured) {
     const g = groupFor(x.statutorySubstanceId);
     if (!g) continue;
-    if (x.handledKg !== null) g.handledDirect = (g.handledDirect ?? D(0)).plus(D(x.handledKg));
-    if (x.measuredKg !== null) g.measured = (g.measured ?? D(0)).plus(D(x.measuredKg));
+    if (x.handledKg !== null) g.handledDirect = g.handledDirect.plus(D(x.handledKg));
+    g.measured = (g.measured ?? D(0)).plus(D(x.measuredKg));
   }
 
   const factor = entry.factorPct !== null ? D(entry.factorPct) : null;
   const factorMissing = factor === null && quantities.some((q) => q.method === "FACTOR");
   const rows = [...groups.values()].map((g) => {
-    // 方法ごとの取扱量・出荷量。その方法に数量の行があるかも覚える（無ければ内訳は null）
-    const handledBy: Record<PrtrMethod, Prisma.Decimal> = {
-      MEASURED: D(0),
-      BALANCE: D(0),
-      FACTOR: D(0),
-    };
-    const shippedBy: Record<PrtrMethod, Prisma.Decimal> = {
-      MEASURED: D(0),
-      BALANCE: D(0),
-      FACTOR: D(0),
-    };
-    const present: Record<PrtrMethod, boolean> = { MEASURED: false, BALANCE: false, FACTOR: false };
+    // 区画ごとの取扱量・出荷量（物質収支／排出係数）。その区画に行があるかも覚える（無ければ内訳は null）
+    let handledB = D(0);
+    let shippedB = D(0);
+    let handledF = D(0);
+    let shippedF = D(0);
+    let hasB = false;
+    let hasF = false;
     for (const q of quantities) {
       const pct = g.pctByProduct.get(q.productId);
       if (!pct) continue;
-      present[q.method] = true;
-      handledBy[q.method] = handledBy[q.method].plus(D(q.purchasedKg).mul(pct).div(100));
-      if (q.shippedKg !== null) {
-        shippedBy[q.method] = shippedBy[q.method].plus(D(q.shippedKg).mul(pct).div(100));
+      const handled = D(q.purchasedKg).mul(pct).div(100);
+      const shipped = D(q.shippedKg).mul(pct).div(100);
+      if (q.method === "FACTOR") {
+        hasF = true;
+        handledF = handledF.plus(handled);
+        shippedF = shippedF.plus(shipped);
+      } else {
+        hasB = true;
+        handledB = handledB.plus(handled);
+        shippedB = shippedB.plus(shipped);
       }
     }
-    // 取扱量は印によらず全製品 ＋ 直接入力。出荷量は物質収支・排出係数の印の製品だけ
-    const handled = PRTR_METHODS.reduce((sum, k) => sum.plus(handledBy[k]), D(0)).plus(
-      g.handledDirect ?? D(0),
-    );
-    const shipped = shippedBy.BALANCE.plus(shippedBy.FACTOR);
-    // 内訳: 実測値はそのまま、物質収支は取扱量 − 出荷量、排出係数は出荷量 × 係数 ÷ 100
+    const handled = handledB.plus(handledF).plus(g.handledDirect);
+    const shipped = shippedB.plus(shippedF);
+    const releaseBalance = hasB ? handledB.minus(shippedB) : null;
+    const releaseFactor = hasF && factor !== null ? shippedF.mul(factor).div(100) : null;
     const releaseMeasured = g.measured;
-    const releaseBalance = present.BALANCE ? handledBy.BALANCE.minus(shippedBy.BALANCE) : null;
-    const releaseFactor =
-      present.FACTOR && factor !== null ? shippedBy.FACTOR.mul(factor).div(100) : null;
     const parts = [releaseMeasured, releaseBalance, releaseFactor].filter(
       (v): v is Prisma.Decimal => v !== null,
     );
@@ -781,7 +878,7 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
     };
   });
 
-  // 前の集計を消して、丸ごと入れ直す（途中で失敗したら前のものが残る）
+  // いまの集計を消して、丸ごと入れ直す（保存した集計の行は残す）
   const head = {
     versionId: version?.id ?? null,
     factorPct: entry.factorPct,
@@ -799,10 +896,10 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
       create: { entryId: entry.id, ...head },
       update: head,
     });
-    await tx.prtrSummaryRow.deleteMany({ where: { summaryId: summary.id } });
+    await tx.prtrSummaryRow.deleteMany({ where: { summaryId: summary.id, saved: false } });
     if (rows.length) {
       await tx.prtrSummaryRow.createMany({
-        data: rows.map((r) => ({ summaryId: summary.id, ...r })),
+        data: rows.map((r) => ({ summaryId: summary.id, saved: false, ...r })),
       });
     }
     return tx.prtrSummary.findUniqueOrThrow({
@@ -811,6 +908,93 @@ export async function summarizeEntry(entry: PrtrEntry, actorId: string): Promise
     });
   });
   return toSummaryMeta(saved);
+}
+
+/** 行の中身を 1 つの文字列に。いまの集計と保存した集計が同じかを比べるためだけに使う */
+function rowsFingerprint(
+  rows: Pick<
+    PrtrSummaryRow,
+    | "statutorySubstanceId"
+    | "specific"
+    | "productCount"
+    | "handledKg"
+    | "shippedKg"
+    | "releaseKg"
+    | "releaseMeasuredKg"
+    | "releaseBalanceKg"
+    | "releaseFactorKg"
+    | "needsReport"
+  >[],
+): string {
+  return rows
+    .map((r) =>
+      [
+        r.statutorySubstanceId,
+        r.specific,
+        r.productCount,
+        r.handledKg.toString(),
+        r.shippedKg?.toString() ?? "",
+        r.releaseKg?.toString() ?? "",
+        r.releaseMeasuredKg?.toString() ?? "",
+        r.releaseBalanceKg?.toString() ?? "",
+        r.releaseFactorKg?.toString() ?? "",
+        r.needsReport,
+      ].join("|"),
+    )
+    .sort()
+    .join("\n");
+}
+
+/** いまの集計と保存した集計が違うか（保存していなければ、いまの集計に行があれば違う扱い） */
+export async function summaryDiffers(summaryId: string, savedAt: Date | null): Promise<boolean> {
+  const [working, saved] = await Promise.all([
+    prisma.prtrSummaryRow.findMany({ where: { summaryId, saved: false } }),
+    prisma.prtrSummaryRow.findMany({ where: { summaryId, saved: true } }),
+  ]);
+  if (savedAt === null) return working.length > 0;
+  return rowsFingerprint(working) !== rowsFingerprint(saved);
+}
+
+/**
+ * 「保存」: いまの集計を写し取って「保存した集計」にする（未確定になる）。
+ * 「確定」: 保存した集計を確定にする（入力は読み取り専用になる）。「未確定に戻す」: 確定を外す
+ */
+export async function saveSummary(entryId: string, actorId: string): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const summary = await tx.prtrSummary.findUniqueOrThrow({
+      where: { entryId },
+      include: { version: { select: { code: true } } },
+    });
+    const working = await tx.prtrSummaryRow.findMany({
+      where: { summaryId: summary.id, saved: false },
+    });
+    await tx.prtrSummaryRow.deleteMany({ where: { summaryId: summary.id, saved: true } });
+    if (working.length) {
+      await tx.prtrSummaryRow.createMany({
+        data: working.map(({ id: _id, ...r }) => ({ ...r, saved: true })),
+      });
+    }
+    await tx.prtrSummary.update({
+      where: { id: summary.id },
+      data: {
+        savedAt: new Date(),
+        savedBy: actorId,
+        savedVersionCode: summary.version?.code ?? null,
+        savedFactorPct: summary.factorPct,
+        confirmedAt: null,
+        confirmedBy: null,
+      },
+    });
+  });
+}
+
+export async function setConfirmed(entryId: string, actorId: string, on: boolean): Promise<void> {
+  await prisma.prtrSummary.update({
+    where: { entryId },
+    data: on
+      ? { confirmedAt: new Date(), confirmedBy: actorId }
+      : { confirmedAt: null, confirmedBy: null },
+  });
 }
 
 export const SUMMARY_HEAD_INCLUDE = { version: { select: { code: true } } } as const;
@@ -832,6 +1016,11 @@ export function toSummaryMeta(
     unjudgedProducts: x.unjudgedProducts,
     thresholdKg: kg(x.thresholdKg),
     thresholdSpecificKg: kg(x.thresholdSpecificKg),
+    savedAt: x.savedAt?.toISOString() ?? null,
+    savedVersionCode: x.savedVersionCode,
+    confirmedAt: x.confirmedAt?.toISOString() ?? null,
+    // 違うかどうかは API 側で付ける（行を読む必要があるため）
+    unsavedChanges: false,
   };
 }
 

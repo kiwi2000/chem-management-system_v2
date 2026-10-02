@@ -3,7 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { MEASURED_INCLUDE, toMeasuredDto } from "@/lib/prtr-service";
+import { isConfirmed, MEASURED_INCLUDE, toMeasuredDto } from "@/lib/prtr-service";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ async function load(id: string, mid: string) {
   });
 }
 
-/** PUT /api/prtr/entries/[id]/measured/[mid] — 取扱量・実測排出量を直す（物質は変えない）。どちらか 1 つは要る */
+/** PUT /api/prtr/entries/[id]/measured/[mid] — 取扱量（任意）・排出量を直す（物質は変えない）。確定中は断る */
 export async function PUT(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
   if (actor instanceof Response) return actor;
@@ -29,6 +29,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (!row) return jsonError(404, "not_found", m.errors.notFound);
   const denied = await requirePrtrOrg(actor, row.entry.organisationId);
   if (denied) return denied;
+  if (await isConfirmed(id)) return jsonError(409, "confirmed", m.prtr.locked);
 
   let body: { handledKg?: unknown; measuredKg?: unknown };
   try {
@@ -43,21 +44,16 @@ export async function PUT(req: Request, { params }: Ctx) {
       fieldErrors: { handledKg: [m.prtr.validation.kg] },
     });
   }
-  if (kg !== "" && !KG.test(kg)) {
+  if (!KG.test(kg)) {
     return jsonError(400, "validation_error", m.prtr.validation.kg, {
       fieldErrors: { measuredKg: [m.prtr.validation.kg] },
-    });
-  }
-  if (handled === "" && kg === "") {
-    return jsonError(400, "validation_error", m.prtr.validation.eitherKg, {
-      fieldErrors: { measuredKg: [m.prtr.validation.eitherKg] },
     });
   }
   const updated = await prisma.prtrMeasured.update({
     where: { id: mid },
     data: {
       handledKg: handled === "" ? null : new Prisma.Decimal(handled),
-      measuredKg: kg === "" ? null : new Prisma.Decimal(kg),
+      measuredKg: new Prisma.Decimal(kg),
       source: "MANUAL",
       updatedBy: actor.user.id,
     },
@@ -71,13 +67,13 @@ export async function PUT(req: Request, { params }: Ctx) {
     diff: {
       statutorySubstanceId: row.statutorySubstanceId,
       handledKg: handled || null,
-      measuredKg: kg || null,
+      measuredKg: kg,
     },
   });
   return Response.json({ item: toMeasuredDto(updated) });
 }
 
-/** DELETE /api/prtr/entries/[id]/measured/[mid] — 実測値を消す */
+/** DELETE /api/prtr/entries/[id]/measured/[mid] — 行を消す。確定中は断る */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
   if (actor instanceof Response) return actor;
@@ -88,6 +84,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   if (!row) return jsonError(404, "not_found", m.errors.notFound);
   const denied = await requirePrtrOrg(actor, row.entry.organisationId);
   if (denied) return denied;
+  if (await isConfirmed(id)) return jsonError(409, "confirmed", m.prtr.locked);
 
   await prisma.prtrMeasured.delete({ where: { id: mid } });
   await writeAudit({

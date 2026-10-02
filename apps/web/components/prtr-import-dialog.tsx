@@ -3,10 +3,9 @@
 import {
   guessColumn,
   PRTR_IMPORT_FIELDS,
-  PRTR_METHODS,
   type PrtrImportKind,
   type PrtrImportMode,
-  type PrtrMethod,
+  type PrtrProductMethod,
 } from "@chem/shared";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -31,29 +30,22 @@ export function PrtrImportDialog({
   kind,
   method,
   file,
-  shippedRequired = false,
   onClose,
 }: {
   entryId: string;
   /** どの表の「ファイル」から開いたか。**開いたタブ・表で決まり、窓の中では変えない** */
   kind: PrtrImportKind;
-  /** 製品ごとの数量で、印の列が無い行に付ける既定の印（窓の中で変えられる）。物質ごとの数量では使わない */
-  method?: PrtrMethod;
+  /** 製品ごとの数量の取り込み先の区画（物質収支／排出係数）。物質ごとの数量では使わない */
+  method?: PrtrProductMethod;
   /** 選ばれたファイル */
   file: File;
-  /** 出荷数量が要る方法か（物質収支・排出係数）。要るなら列が無いと進めない */
-  shippedRequired?: boolean;
   /** applied が true なら表を読み直す */
   onClose: (applied: boolean) => void;
 }) {
   const { m } = useI18n();
   const t = m.prtr.import;
   // 出荷数量は方法しだいで必須になる。窓で止めないと、プレビューで全行「出荷数量が要ります」になる
-  const fields = PRTR_IMPORT_FIELDS[kind].map((f) =>
-    f.key === "shippedKg" && shippedRequired ? { ...f, required: true } : f,
-  );
-  /** 印の列が無い行に付ける印。既定は物質収支 */
-  const [defaultMethod, setDefaultMethod] = useState<PrtrMethod>(method ?? "BALANCE");
+  const fields = PRTR_IMPORT_FIELDS[kind];
   const [inspected, setInspected] = useState<PrtrImportInspectDto | null>(null);
   const [mapping, setMapping] = useState<Record<string, number | null>>({});
   const [mode, setMode] = useState<PrtrImportMode>("upsert");
@@ -128,7 +120,7 @@ export function PrtrImportDialog({
     try {
       const body = (await send("run", {
         kind,
-        method: kind === "quantities" ? defaultMethod : undefined,
+        method: kind === "quantities" ? (method ?? "BALANCE") : undefined,
         mapping: cleanMapping(),
         mode,
         overwrite,
@@ -155,6 +147,7 @@ export function PrtrImportDialog({
             <CardTitle>
               {t.title}
               <span className="text-muted-foreground ml-3 text-sm font-normal">
+                {kind === "quantities" && method ? `${m.prtr.methods[method]} ` : ""}
                 {t.kinds[kind]}
               </span>
             </CardTitle>
@@ -299,28 +292,6 @@ export function PrtrImportDialog({
             </section>
           )}
 
-          {/* 製品ごとの数量: 印の列が無い行に付ける印 */}
-          {inspected && kind === "quantities" && (
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="font-medium">{t.defaultMethod}</span>
-              <select
-                aria-label={t.defaultMethod}
-                value={defaultMethod}
-                disabled={applied}
-                onChange={(e) => {
-                  setDefaultMethod(e.target.value as PrtrMethod);
-                  setResult(null);
-                }}
-                className="border-input bg-background h-8 rounded-none border px-2 text-sm"
-              >
-                {PRTR_METHODS.map((k) => (
-                  <option key={k} value={k}>
-                    {m.prtr.methods[k]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
           {/* 数量は重複時の処理を 1 行に（行数を取らない）。意味はマウスを置くと出る */}
           {inspected && kind === "quantities" && (
             <div className="flex flex-wrap items-center gap-4 text-sm">

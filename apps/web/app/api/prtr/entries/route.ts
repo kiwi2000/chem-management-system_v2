@@ -4,7 +4,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { loadEntry } from "@/lib/prtr-service";
+import { isConfirmed, loadEntry } from "@/lib/prtr-service";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +50,16 @@ export async function PUT(req: Request) {
   const v = parsed.data;
   const denied = await requirePrtrOrg(actor, v.organisationId);
   if (denied) return denied;
+  // 集計が確定しているあいだは、係数も備考も変えられない（入力は読み取り専用）
+  const existing = await prisma.prtrEntry.findUnique({
+    where: {
+      organisationId_fiscalYear: { organisationId: v.organisationId, fiscalYear: v.fiscalYear },
+    },
+    select: { id: true },
+  });
+  if (existing && (await isConfirmed(existing.id))) {
+    return jsonError(409, "confirmed", m.prtr.locked);
+  }
 
   const factorPct = v.factorPct ? new Prisma.Decimal(v.factorPct) : null;
   const entry = await prisma.prtrEntry.upsert({

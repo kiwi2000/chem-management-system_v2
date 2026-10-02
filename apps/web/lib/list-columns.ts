@@ -1217,8 +1217,6 @@ export const PRTR_QUANTITY_COLUMNS: QueryColumn[] = [
   { key: "productName", kind: "text", field: "nameJa", nested: "product", caseInsensitive: true },
   { key: "purchasedKg", kind: "number", field: "purchasedKg" },
   { key: "shippedKg", kind: "number", field: "shippedKg" },
-  // 排出の数え方の印（2026-10-01）
-  { key: "method", kind: "enum", field: "method" },
   { key: "source", kind: "enum", field: "source" },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];

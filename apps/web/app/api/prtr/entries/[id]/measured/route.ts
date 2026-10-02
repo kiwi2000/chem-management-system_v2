@@ -5,7 +5,12 @@ import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { PRTR_MEASURED_COLUMNS } from "@/lib/list-columns";
-import { MEASURED_INCLUDE, resolveMeasuredSubstance, toMeasuredDto } from "@/lib/prtr-service";
+import {
+  isConfirmed,
+  MEASURED_INCLUDE,
+  resolveMeasuredSubstance,
+  toMeasuredDto,
+} from "@/lib/prtr-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +19,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const DEFAULT_STATE = emptyTableState([{ column: "officialNumber", direction: "asc" }]);
 
-/** GET /api/prtr/entries/[id]/measured — 物質ごとの数量（取扱量・実測排出量）の一覧 */
+/** GET /api/prtr/entries/[id]/measured — 実測値の区画（物質ごとの取扱量・排出量）の一覧 */
 export async function GET(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
   if (actor instanceof Response) return actor;
@@ -50,9 +55,9 @@ export async function GET(req: Request, { params }: Ctx) {
 }
 
 /**
- * POST /api/prtr/entries/[id]/measured — 物質ごとの数量（取扱量の直接入力・実測排出量）を 1 件足す（S22）。
+ * POST /api/prtr/entries/[id]/measured — 実測値の区画に物質を 1 件足す（S22）。
  * 物質コードで物質を当て、化管法の第一種指定化学物質に変換して持つ。
- * 同じ第一種指定化学物質が既にあれば断る（行末の鉛筆で直してもらう）
+ * 同じ第一種指定化学物質が既にあれば断る（行末の鉛筆で直してもらう）。確定中は断る
  */
 export async function POST(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRTR_ENTRY");
@@ -64,6 +69,7 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!entry) return jsonError(404, "not_found", m.errors.notFound);
   const denied = await requirePrtrOrg(actor, entry.organisationId);
   if (denied) return denied;
+  if (await isConfirmed(id)) return jsonError(409, "confirmed", m.prtr.locked);
 
   let body: unknown;
   try {
@@ -102,7 +108,7 @@ export async function POST(req: Request, { params }: Ctx) {
       statutorySubstanceId: resolved.statutorySubstanceId,
       substanceId: resolved.substance.id,
       handledKg: v.handledKg == null ? null : new Prisma.Decimal(v.handledKg),
-      measuredKg: v.measuredKg == null ? null : new Prisma.Decimal(v.measuredKg),
+      measuredKg: new Prisma.Decimal(v.measuredKg),
       source: "MANUAL",
       updatedBy: actor.user.id,
     },
@@ -116,7 +122,7 @@ export async function POST(req: Request, { params }: Ctx) {
     diff: {
       substance: resolved.substance.code,
       handledKg: v.handledKg ?? null,
-      measuredKg: v.measuredKg ?? null,
+      measuredKg: v.measuredKg,
     },
   });
   return Response.json({ item: toMeasuredDto(row) }, { status: 201 });

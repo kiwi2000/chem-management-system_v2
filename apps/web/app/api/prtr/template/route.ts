@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/prtr/template — 取り込み用のテンプレート（Excel）を返す（S22）。
  *
- * **全部の形をシートに分けて 1 つのファイルにまとめる**（製品ごとの数量、実測値）。
+ * **表ごとにシートを分けて 1 つのファイルにまとめる**（物質収支の製品、排出係数の製品、実測値の物質）。
  * 各シートの 1 行目が見出しで、取り込みの列の割り当てにそのまま当たる名前にしてある。
  * 所属によらない（誰が落としても同じ物）ので、所属の確認は要らない
  */
@@ -17,19 +17,17 @@ export async function GET() {
   const m = await getServerMessages();
   const t = m.prtr;
 
+  const productColumns = [
+    { header: t.quantities.productCode, width: 20 },
+    { header: t.quantities.productName, width: 40 },
+    { header: `${t.quantities.purchasedKg}(kg)`, width: 16 },
+    { header: `${t.quantities.shippedKg}(kg)`, width: 16 },
+  ];
   const sheets: { name: string; columns: { header: string; width: number }[] }[] = [
+    { name: `${t.methods.BALANCE}_${t.import.kinds.quantities}`, columns: productColumns },
+    { name: `${t.methods.FACTOR}_${t.import.kinds.quantities}`, columns: productColumns },
     {
-      name: t.import.kinds.quantities,
-      columns: [
-        { header: t.quantities.productCode, width: 20 },
-        { header: t.quantities.productName, width: 40 },
-        { header: `${t.quantities.purchasedKg}(kg)`, width: 16 },
-        { header: `${t.quantities.shippedKg}(kg)`, width: 16 },
-        { header: t.quantities.method, width: 16 },
-      ],
-    },
-    {
-      name: t.import.kinds.measured,
+      name: `${t.methods.MEASURED}_${t.import.kinds.measured}`,
       columns: [
         { header: t.measured.substanceCode, width: 20 },
         { header: t.measured.substanceName, width: 40 },
