@@ -1,4 +1,5 @@
 import {
+  isBothZero,
   normalizeCode,
   PRTR_IMPORT_FIELDS,
   type Messages,
@@ -505,6 +506,10 @@ async function parseQuantities(
     }
     if (!KG.test(shipped)) {
       errors.push({ line, message: `${m.prtr.quantities.shippedKg}: ${m.prtr.validation.kg}` });
+      continue;
+    }
+    if (isBothZero(purchased, shipped)) {
+      errors.push({ line, message: m.prtr.validation.bothZero });
       continue;
     }
     const key = normalizeCode(code);

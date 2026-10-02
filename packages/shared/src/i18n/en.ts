@@ -2569,6 +2569,7 @@ export const en: Messages = {
       factor: "Enter a factor (%) between 0 and 100 (up to 4 decimals)",
       factorRequired: "The emission factor section has products, so the factor is required",
       factorEmpty: "The emission factor is empty. Enter and save the factor (%) first",
+      bothZero: "A row with both handled and shipped quantity 0 cannot be registered",
       duplicateRow: "The same item appears twice",
     },
   },

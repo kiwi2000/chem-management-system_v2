@@ -82,12 +82,27 @@ export type PrtrEntryInput = z.infer<ReturnType<typeof prtrEntrySchema>>;
 
 /** 製品ごとの数量（物質収支・排出係数の区画）。製品は製品コードで当てる。取扱量・出荷量とも要る */
 export const prtrQuantitySchema = (m: Messages) =>
-  z.object({
-    method: z.enum(PRTR_PRODUCT_METHODS),
-    productCode: z.string().trim().min(1, m.validation.required).max(20, m.validation.tooLong(20)),
-    purchasedKg: kgSchema(m),
-    shippedKg: kgSchema(m),
-  });
+  z
+    .object({
+      method: z.enum(PRTR_PRODUCT_METHODS),
+      productCode: z
+        .string()
+        .trim()
+        .min(1, m.validation.required)
+        .max(20, m.validation.tooLong(20)),
+      purchasedKg: kgSchema(m),
+      shippedKg: kgSchema(m),
+    })
+    // 両方 0 の行は意味が無いので断る（2026-10-02 指示）
+    .refine((v) => !isBothZero(v.purchasedKg, v.shippedKg), {
+      path: ["purchasedKg"],
+      message: m.prtr.validation.bothZero,
+    });
+
+/** 取扱量と出荷量がどちらも 0（"0"・"0.000" など）か */
+export function isBothZero(purchasedKg: string, shippedKg: string): boolean {
+  return Number(purchasedKg) === 0 && Number(shippedKg) === 0;
+}
 export type PrtrQuantityInput = z.infer<ReturnType<typeof prtrQuantitySchema>>;
 
 /**
