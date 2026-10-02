@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { jsonError } from "@/lib/authz";
 import { getServerMessages } from "@/lib/i18n";
+import { clientIp } from "@/lib/ip-allow";
 import { countryOf } from "@/lib/ip-country";
 import { needsWhois, requestWhois, whoisFor } from "@/lib/ip-whois";
 import { ACCESS_LOG_COLUMNS, SIGNIN_ACTIONS, TAKEOUT_ACTIONS } from "@/lib/access-log-shared";
@@ -76,7 +77,9 @@ export async function GET(req: Request) {
   const userOf = new Map(users.map((u) => [u.id, u]));
 
   // 接続元の組織（JPNIC）。ためてある結果を出し、無いもの・古いものは裏で調べ直す（待たない）
-  const ipOf = (l: (typeof logs)[number]) => ((l.diff ?? {}) as { ip?: string | null }).ip ?? null;
+  // 古い記録には「相手, 中継」の並びのまま入っているものがあるので、先頭（相手）で引く
+  const ipOf = (l: (typeof logs)[number]) =>
+    clientIp(((l.diff ?? {}) as { ip?: string | null }).ip ?? null);
   const pageIps = logs.map(ipOf).filter(needsWhois);
   const whois = await whoisFor(pageIps);
   requestWhois(pageIps.filter((ip) => !whois.get(ip) || whois.get(ip)!.stale));
@@ -111,10 +114,10 @@ export async function GET(req: Request) {
       ip: d.ip ?? null,
       country: countryOf(d.ip ?? null),
       userAgent: d.userAgent ?? null,
-      orgJa: (d.ip && whois.get(d.ip)?.info.orgJa) || null,
-      orgEn: (d.ip && whois.get(d.ip)?.info.orgEn) || null,
-      networkName: (d.ip && whois.get(d.ip)?.info.networkName) || null,
-      orgPending: needsWhois(d.ip ?? null) && !whois.has(d.ip ?? ""),
+      orgJa: whois.get(ipOf(l) ?? "")?.info.orgJa ?? null,
+      orgEn: whois.get(ipOf(l) ?? "")?.info.orgEn ?? null,
+      networkName: whois.get(ipOf(l) ?? "")?.info.networkName ?? null,
+      orgPending: needsWhois(ipOf(l)) && !whois.has(ipOf(l) ?? ""),
     };
   });
 

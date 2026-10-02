@@ -1,6 +1,7 @@
 import net from "node:net";
 import { parseIp, parseIpRule, ruleBounds } from "@chem/shared";
 import { prisma } from "@/lib/db";
+import { clientIp } from "@/lib/ip-allow";
 import { countryOf } from "@/lib/ip-country";
 
 /**
@@ -154,31 +155,38 @@ let chain: Promise<void> = Promise.resolve();
  * 日本以外・社内・すでに並んでいる・失敗して間もないものは並べない
  */
 export function requestWhois(ips: readonly (string | null)[]): void {
-  for (const ip of new Set(ips)) {
+  // 古い記録には「相手, 中継」の並びのまま入っているものがある。先頭が相手
+  for (const ip of new Set(ips.map(clientIp))) {
     if (!needsWhois(ip) || queued.has(ip)) continue;
     const until = failedUntil.get(ip);
     if (until && until > Date.now()) continue;
     queued.add(ip);
     chain = chain
-      .then(() => lookupAndStore(ip))
+      .then(() => lookupAndStore(ip).then(() => undefined))
       .catch(() => undefined)
       .finally(() => queued.delete(ip));
   }
 }
 
-async function lookupAndStore(ip: string): Promise<void> {
+/**
+ * 1 件を調べてためる。裏の列からと、既にある記録をまとめて埋めるスクリプト
+ * （scripts/backfill-ip-whois.ts）から呼ぶ。どちらも 1 件ずつ順に呼ぶこと
+ */
+export async function lookupAndStore(
+  ip: string,
+): Promise<"cached" | "found" | "none" | "failed" | "skipped"> {
   // 並んでいるあいだに、同じ範囲の別のアドレスで答えが入っていれば問い合わせない
   const cached = (await whoisFor([ip])).get(ip);
-  if (cached && !cached.stale) return;
+  if (cached && !cached.stale) return "cached";
   const parsed = parseIp(ip);
-  if (!parsed) return;
+  if (!parsed) return "skipped";
 
   let text: string;
   try {
     text = await queryJpnic(ip);
   } catch {
     failedUntil.set(ip, Date.now() + RETRY_AFTER_MS);
-    return;
+    return "failed";
   }
   const info = parseJpnic(text);
   const rule = info?.network ? parseIpRule(info.network) : null;
@@ -208,4 +216,5 @@ async function lookupAndStore(ip: string): Promise<void> {
   ]);
   failedUntil.delete(ip);
   await new Promise((r) => setTimeout(r, GAP_MS));
+  return info ? "found" : "none";
 }
