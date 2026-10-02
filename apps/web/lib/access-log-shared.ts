@@ -32,12 +32,15 @@ export const ACCESS_LOG_COLUMNS: QueryColumn[] = [
   /*
     接続元と使った機械は、記録の中（`diff`）に入っている。
     列として持っていないので、JSON をたどって絞る。
-
-    **場所（国）は絞れない。**IPから読んでいるだけで、記録には残っていないため。
-    絞れるように見せると、当たらない条件を打たせることになる
   */
   { key: "ip", kind: "text", field: "diff", custom: (f) => jsonContains("ip", f) },
   { key: "userAgent", kind: "text", field: "diff", custom: (f) => jsonContains("userAgent", f) },
+  /*
+    場所（国）と接続元の組織（JPNIC）は、記録に残っておらず IP から表示のたびに求める。
+    ここでは条件を受け取るだけで、絞り込みは API が組み立てる（access-log-computed-filter.ts。2026-10-02）
+  */
+  { key: "country", kind: "text", field: "diff", custom: () => null },
+  { key: "org", kind: "text", field: "diff", custom: () => null },
 ];
 
 /** 記録の中の1つの値を、文字の条件で絞る */

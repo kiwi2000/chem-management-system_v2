@@ -138,12 +138,13 @@ export default function AccessLogPage() {
         render: (r) => r.ip ?? "",
       },
       {
-        // 分かるのは割り当て国であって、その人が今いる場所ではない
+        // 分かるのは割り当て国であって、その人が今いる場所ではない。
+        // 絞り込みは画面に出ている国名（と国コード）で当てる
         key: "country",
         header: m.accessLog.place,
         kind: "text",
         sortable: false,
-        filterable: false,
+        filterPlaceholder: locale === "ja" ? "日本 / JP" : "Japan / JP",
         width: 110,
         render: (r) => countryName(r.country, locale, { local: m.accessLog.localPlace }),
       },
@@ -153,7 +154,8 @@ export default function AccessLogPage() {
         header: m.accessLog.org,
         kind: "text",
         sortable: false,
-        filterable: false,
+        // 日本語名・英語名・ネットワーク名のどれかで当てる
+        filterPlaceholder: "So-net / OCN",
         width: 200,
         className: "text-xs",
         render: (r) =>

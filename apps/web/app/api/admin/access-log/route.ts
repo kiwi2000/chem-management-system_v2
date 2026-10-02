@@ -3,9 +3,10 @@ import { writeAudit } from "@/lib/audit";
 import { requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { jsonError } from "@/lib/authz";
-import { getServerMessages } from "@/lib/i18n";
+import { getLocale, getServerMessages } from "@/lib/i18n";
 import { clientIp } from "@/lib/ip-allow";
 import { countryOf } from "@/lib/ip-country";
+import { computedIpCondition } from "@/lib/access-log-computed-filter";
 import { needsWhois, requestWhois, whoisFor } from "@/lib/ip-whois";
 import { ACCESS_LOG_COLUMNS, SIGNIN_ACTIONS, TAKEOUT_ACTIONS } from "@/lib/access-log-shared";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
@@ -40,8 +41,20 @@ export async function GET(req: Request) {
     AND で重ねる。素直に広げると、利用者が指定した action の条件が
     こちらの条件を上書きしてしまい、この画面に出るはずのない記録まで出てしまう。
   */
+  // 場所・接続元の組織は記録に無い値なので、当たる接続元IPを先に求めて絞る
+  const [locale, mm] = await Promise.all([getLocale(), getServerMessages()]);
+  const computed = await computedIpCondition(
+    state.filters,
+    ALL_ACTIONS,
+    locale,
+    mm.accessLog.localPlace,
+  );
   const where = {
-    AND: [{ action: { in: ALL_ACTIONS } }, buildWhere(ACCESS_LOG_COLUMNS, state.filters)],
+    AND: [
+      { action: { in: ALL_ACTIONS } },
+      buildWhere(ACCESS_LOG_COLUMNS, state.filters),
+      ...(computed ? [computed] : []),
+    ],
   };
 
   const [logs, total] = await Promise.all([
