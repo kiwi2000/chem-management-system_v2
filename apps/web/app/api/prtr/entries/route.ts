@@ -55,10 +55,16 @@ export async function PUT(req: Request) {
     where: {
       organisationId_fiscalYear: { organisationId: v.organisationId, fiscalYear: v.fiscalYear },
     },
-    select: { id: true },
+    select: { id: true, _count: { select: { quantities: { where: { method: "FACTOR" } } } } },
   });
   if (existing && (await isConfirmed(existing.id))) {
     return jsonError(409, "confirmed", m.prtr.locked);
+  }
+  // 排出係数の区画に製品があるあいだは、係数を空にできない（2026-10-02 指示）
+  if (existing && existing._count.quantities > 0 && v.factorPct == null) {
+    return jsonError(400, "validation_error", m.errors.validation, {
+      fieldErrors: { factorPct: [m.prtr.validation.factorRequired] },
+    });
   }
 
   const factorPct = v.factorPct ? new Prisma.Decimal(v.factorPct) : null;

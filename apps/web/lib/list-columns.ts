@@ -1217,7 +1217,6 @@ export const PRTR_QUANTITY_COLUMNS: QueryColumn[] = [
   { key: "productName", kind: "text", field: "nameJa", nested: "product", caseInsensitive: true },
   { key: "purchasedKg", kind: "number", field: "purchasedKg" },
   { key: "shippedKg", kind: "number", field: "shippedKg" },
-  { key: "source", kind: "enum", field: "source" },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 
@@ -1249,7 +1248,6 @@ export const PRTR_MEASURED_COLUMNS: QueryColumn[] = [
   },
   { key: "handledKg", kind: "number", field: "handledKg" },
   { key: "measuredKg", kind: "number", field: "measuredKg" },
-  { key: "source", kind: "enum", field: "source" },
 ];
 
 /** PRTR 集計（第一種指定化学物質ごと）。保存した行を、ほかの一覧と同じように絞る・並べる */

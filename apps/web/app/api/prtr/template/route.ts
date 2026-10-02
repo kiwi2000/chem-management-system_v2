@@ -20,8 +20,8 @@ export async function GET() {
   const productColumns = [
     { header: t.quantities.productCode, width: 20 },
     { header: t.quantities.productName, width: 40 },
-    { header: `${t.quantities.purchasedKg}(kg)`, width: 16 },
-    { header: `${t.quantities.shippedKg}(kg)`, width: 16 },
+    { header: t.quantities.purchasedKg, width: 16 },
+    { header: t.quantities.shippedKg, width: 16 },
   ];
   const sheets: { name: string; columns: { header: string; width: number }[] }[] = [
     { name: `${t.methods.BALANCE}_${t.import.kinds.quantities}`, columns: productColumns },
@@ -31,8 +31,8 @@ export async function GET() {
       columns: [
         { header: t.measured.substanceCode, width: 20 },
         { header: t.measured.substanceName, width: 40 },
-        { header: `${t.measured.handledKg}(kg)`, width: 16 },
-        { header: `${t.measured.measuredKg}(kg)`, width: 16 },
+        { header: t.measured.handledKg, width: 16 },
+        { header: t.measured.measuredKg, width: 16 },
       ],
     },
   ];

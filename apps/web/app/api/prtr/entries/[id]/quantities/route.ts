@@ -16,6 +16,7 @@ import {
   isConfirmed,
   QUANTITY_INCLUDE,
   toQuantityDto,
+  updaterNames,
 } from "@/lib/prtr-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
@@ -64,8 +65,9 @@ export async function GET(req: Request, { params }: Ctx) {
     }),
     prisma.prtrQuantity.count({ where }),
   ]);
+  const names = await updaterNames(items);
   return Response.json({
-    items: items.map(toQuantityDto),
+    items: items.map((q) => toQuantityDto(q, names)),
     total,
     page: state.page,
     pageSize: state.pageSize,
@@ -131,5 +133,5 @@ export async function POST(req: Request, { params }: Ctx) {
       shippedKg: v.shippedKg,
     },
   });
-  return Response.json({ item: toQuantityDto(row) }, { status: 201 });
+  return Response.json({ item: toQuantityDto(row, await updaterNames([row])) }, { status: 201 });
 }

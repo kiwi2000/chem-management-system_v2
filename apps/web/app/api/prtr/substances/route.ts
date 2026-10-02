@@ -17,6 +17,6 @@ export async function GET(req: Request) {
     cas: (url.searchParams.get("cas") ?? "").trim(),
     name: (url.searchParams.get("name") ?? "").trim(),
   };
-  const items = await searchPrtrSubstances(q, 20);
-  return Response.json({ items });
+  const { items, truncated } = await searchPrtrSubstances(q, 20);
+  return Response.json({ items, truncated });
 }

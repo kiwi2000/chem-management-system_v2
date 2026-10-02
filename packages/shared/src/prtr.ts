@@ -36,12 +36,13 @@ const kgSchema = (m: Messages) =>
     .trim()
     .regex(/^\d{1,15}(\.\d{1,3})?$/, m.prtr.validation.kg);
 
-/** 排出係数（%）。0 以上、小数 4 桁まで */
+/** 排出係数（%）。0 以上 100 以下、小数 4 桁まで（2026-10-02 指示）。区画に製品があるときの必須は API 側で見る */
 const factorSchema = (m: Messages) =>
   z
     .string()
     .trim()
-    .regex(/^\d{1,5}(\.\d{1,4})?$/, m.prtr.validation.factor);
+    .regex(/^\d{1,5}(\.\d{1,4})?$/, m.prtr.validation.factor)
+    .refine((v) => Number(v) <= 100, m.prtr.validation.factor);
 
 const optKg = (m: Messages) =>
   z
@@ -163,7 +164,7 @@ export const PRTR_IMPORT_FIELDS: Record<
 
 /** 見出しの文字が項目名と同じ列は最初から割り当てる。大文字小文字・全角半角の空白は無視 */
 export function guessColumn(headers: string[], aliases: string[]): number | null {
-  const norm = (s: string) => s.replace(/[\s　]/g, "").toLowerCase();
+  const norm = (s: string) => s.replace(/\s/g, "").toLowerCase();
   const wanted = aliases.map(norm);
   const i = headers.findIndex((h) => wanted.includes(norm(h)));
   return i >= 0 ? i : null;

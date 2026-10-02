@@ -10,6 +10,7 @@ import {
   MEASURED_INCLUDE,
   resolveMeasuredSubstance,
   toMeasuredDto,
+  updaterNames,
 } from "@/lib/prtr-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
@@ -46,8 +47,9 @@ export async function GET(req: Request, { params }: Ctx) {
     }),
     prisma.prtrMeasured.count({ where }),
   ]);
+  const names = await updaterNames(items);
   return Response.json({
-    items: items.map(toMeasuredDto),
+    items: items.map((x) => toMeasuredDto(x, names)),
     total,
     page: state.page,
     pageSize: state.pageSize,
@@ -125,5 +127,5 @@ export async function POST(req: Request, { params }: Ctx) {
       measuredKg: v.measuredKg,
     },
   });
-  return Response.json({ item: toMeasuredDto(row) }, { status: 201 });
+  return Response.json({ item: toMeasuredDto(row, await updaterNames([row])) }, { status: 201 });
 }

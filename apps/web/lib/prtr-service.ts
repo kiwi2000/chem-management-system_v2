@@ -71,7 +71,20 @@ type MeasuredRow = PrtrMeasured & {
   substance: { code: string; nameJa: string } | null;
 };
 
-export function toQuantityDto(q: QuantityRow): PrtrQuantityDto {
+/** 行を更新した人の名前（表示名が無ければメール）。消えた人は入らない。画面の「登録者」列に出す */
+export async function updaterNames(
+  rows: { updatedBy: string | null }[],
+): Promise<Map<string, string>> {
+  const ids = [...new Set(rows.map((r) => r.updatedBy).filter((x): x is string => Boolean(x)))];
+  if (ids.length === 0) return new Map();
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, displayName: true, email: true },
+  });
+  return new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
+}
+
+export function toQuantityDto(q: QuantityRow, names: Map<string, string>): PrtrQuantityDto {
   return {
     id: q.id,
     method: q.method === "FACTOR" ? "FACTOR" : "BALANCE",
@@ -82,11 +95,12 @@ export function toQuantityDto(q: QuantityRow): PrtrQuantityDto {
     purchasedKg: q.purchasedKg.toString(),
     shippedKg: q.shippedKg?.toString() ?? null,
     source: q.source,
+    updatedByName: q.updatedBy ? (names.get(q.updatedBy) ?? null) : null,
     updatedAt: q.updatedAt.toISOString(),
   };
 }
 
-export function toMeasuredDto(x: MeasuredRow): PrtrMeasuredDto {
+export function toMeasuredDto(x: MeasuredRow, names: Map<string, string>): PrtrMeasuredDto {
   const substance = x.substance;
   return {
     id: x.id,
@@ -100,6 +114,7 @@ export function toMeasuredDto(x: MeasuredRow): PrtrMeasuredDto {
     handledKg: x.handledKg?.toString() ?? null,
     measuredKg: x.measuredKg.toString(),
     source: x.source,
+    updatedByName: x.updatedBy ? (names.get(x.updatedBy) ?? null) : null,
     updatedAt: x.updatedAt.toISOString(),
   };
 }
@@ -248,12 +263,13 @@ export async function resolveMeasuredSubstance(code: string): Promise<MeasuredRe
 
 /**
  * 実測値の区画の「物質検索」。コードの一部・CAS（完全一致）・名称の一部で物質を探し、
- * 化管法の第一種指定化学物質に当たるものだけを返す（最大 limit 件。当たらない物質は数に入れない）
+ * 化管法の第一種指定化学物質に当たるものだけを返す（最大 limit 件。当たらない物質は数に入れない）。
+ * limit を超える候補があれば truncated を true にする（総数は数えない。画面は「超えている」とだけ出す）
  */
 export async function searchPrtrSubstances(
   q: { code: string; cas: string; name: string },
   limit = 20,
-): Promise<PrtrSubstanceCandidateDto[]> {
+): Promise<{ items: PrtrSubstanceCandidateDto[]; truncated: boolean }> {
   const where: Prisma.SubstanceWhereInput = { deletedAt: null, casNormalized: { not: null } };
   const and: Prisma.SubstanceWhereInput[] = [];
   if (q.code) and.push({ codeNormalized: { contains: normalizeCode(q.code) } });
@@ -268,7 +284,7 @@ export async function searchPrtrSubstances(
       ],
     });
   }
-  if (and.length === 0) return [];
+  if (and.length === 0) return { items: [], truncated: false };
   // 当たらない物質を落とすので、多めに引いてから絞る
   const subs = await prisma.substance.findMany({
     where: { ...where, AND: and },
@@ -287,9 +303,14 @@ export async function searchPrtrSubstances(
     ...new Set(subs.map((s) => s.casNormalized).filter((c): c is string => !!c)),
   ]);
   const out: PrtrSubstanceCandidateDto[] = [];
+  let truncated = false;
   for (const s of subs) {
     const hit = s.casNormalized ? byCas.get(s.casNormalized) : undefined;
     if (!hit) continue;
+    if (out.length >= limit) {
+      truncated = true;
+      break;
+    }
     out.push({
       id: s.id,
       code: s.code,
@@ -301,9 +322,8 @@ export async function searchPrtrSubstances(
       statutoryNameJa: hit.nameJa,
       statutoryNameOriginal: hit.nameOriginal,
     });
-    if (out.length >= limit) break;
   }
-  return out;
+  return { items: out, truncated };
 }
 
 // ── ファイルの読み取り ─────────────────────────────────

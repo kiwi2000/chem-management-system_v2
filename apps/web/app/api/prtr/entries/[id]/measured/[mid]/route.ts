@@ -3,7 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { isConfirmed, MEASURED_INCLUDE, toMeasuredDto } from "@/lib/prtr-service";
+import { isConfirmed, MEASURED_INCLUDE, toMeasuredDto, updaterNames } from "@/lib/prtr-service";
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +70,7 @@ export async function PUT(req: Request, { params }: Ctx) {
       measuredKg: kg,
     },
   });
-  return Response.json({ item: toMeasuredDto(updated) });
+  return Response.json({ item: toMeasuredDto(updated, await updaterNames([updated])) });
 }
 
 /** DELETE /api/prtr/entries/[id]/measured/[mid] — 行を消す。確定中は断る */

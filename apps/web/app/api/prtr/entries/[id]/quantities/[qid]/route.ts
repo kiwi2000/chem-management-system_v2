@@ -4,7 +4,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
-import { isConfirmed, QUANTITY_INCLUDE, toQuantityDto } from "@/lib/prtr-service";
+import { isConfirmed, QUANTITY_INCLUDE, toQuantityDto, updaterNames } from "@/lib/prtr-service";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +69,7 @@ export async function PUT(req: Request, { params }: Ctx) {
       shippedKg: v.shippedKg,
     },
   });
-  return Response.json({ item: toQuantityDto(updated) });
+  return Response.json({ item: toQuantityDto(updated, await updaterNames([updated])) });
 }
 
 /** DELETE /api/prtr/entries/[id]/quantities/[qid] — 数量を消す。確定中は断る */

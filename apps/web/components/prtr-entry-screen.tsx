@@ -41,6 +41,12 @@ import type {
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 
+/**
+ * 数値欄（取扱量・出荷量・排出量・排出係数）は 0 以上の数だけ受け付ける（2026-10-02 指示）。
+ * 負号や文字は打っても入らない。新しい行の既定は 0
+ */
+const isNonNegativeDraft = (v: string) => /^\d*\.?\d*$/.test(v);
+
 const Q_KEY = "chem.table.prtrQuantities";
 const M_KEY = "chem.table.prtrMeasured";
 
@@ -341,7 +347,9 @@ export function PrtrEntryScreen() {
                       inputMode="decimal"
                       value={factorPct}
                       disabled={locked}
-                      onChange={(e) => setFactorPct(e.target.value)}
+                      onChange={(e) => {
+                        if (isNonNegativeDraft(e.target.value)) setFactorPct(e.target.value);
+                      }}
                       aria-invalid={Boolean(firstError(headErrors, "factorPct"))}
                       className="h-8 w-32 font-mono"
                     />
@@ -735,7 +743,7 @@ function QuantitySection({
   const { m, locale } = useI18n();
   const t = m.prtr.quantities;
   const [data, setData] = useState<ListResponse<PrtrQuantityDto> | null>(null);
-  const emptyForm = { id: "", productCode: "", purchasedKg: "", shippedKg: "" };
+  const emptyForm = { id: "", productCode: "", purchasedKg: "0", shippedKg: "0" };
   const [form, setForm] = useState(emptyForm);
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
@@ -870,16 +878,14 @@ function QuantitySection({
         render: (q) => q.shippedKg ?? "",
       },
       {
-        key: "source",
-        header: t.source,
-        kind: "enum",
-        width: 90,
+        key: "updatedBy",
+        header: t.updatedBy,
+        kind: "text",
+        width: 120,
         className: "text-xs",
-        options: [
-          { value: "MANUAL", label: m.prtr.sources.MANUAL },
-          { value: "IMPORT", label: m.prtr.sources.IMPORT },
-        ],
-        render: (q) => m.prtr.sources[q.source],
+        sortable: false,
+        filterable: false,
+        render: (q) => q.updatedByName ?? "",
       },
       {
         key: "updatedAt",
@@ -890,7 +896,7 @@ function QuantitySection({
         render: (q) => new Date(q.updatedAt).toLocaleString(locale),
       },
     ],
-    [t, m, locale, canSeeProducts],
+    [t, locale, canSeeProducts],
   );
   // 表の状態は区画ごとに覚える（同じ鍵だと、もう一方の表のページや絞り込みを引き継ぐ）
   const { state, setState } = useTableState(
@@ -1014,6 +1020,15 @@ function QuantitySection({
                   className="h-8"
                 />
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                disabled={find.code === "" && find.name === ""}
+                onClick={() => setFind({ code: "", name: "" })}
+              >
+                {t.find.clear}
+              </Button>
               {finding && (
                 <span className="text-muted-foreground pb-2 text-xs">{t.find.searching}</span>
               )}
@@ -1043,8 +1058,11 @@ function QuantitySection({
                     ))}
                   </ul>
                   {found.total > found.items.length && (
-                    <p className="text-muted-foreground text-xs">
-                      {t.find.more(found.total - found.items.length)}
+                    <p
+                      role="status"
+                      className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                    >
+                      {t.find.over(found.items.length, found.total)}
                     </p>
                   )}
                 </div>
@@ -1089,7 +1107,10 @@ function QuantitySection({
                 id={`q-${method}-purchased`}
                 inputMode="decimal"
                 value={form.purchasedKg}
-                onChange={(e) => setForm({ ...form, purchasedKg: e.target.value })}
+                onChange={(e) => {
+                  if (isNonNegativeDraft(e.target.value))
+                    setForm({ ...form, purchasedKg: e.target.value });
+                }}
                 aria-invalid={Boolean(firstError(fieldErrors, "purchasedKg"))}
                 className="h-8 font-mono"
               />
@@ -1101,7 +1122,10 @@ function QuantitySection({
                 id={`q-${method}-shipped`}
                 inputMode="decimal"
                 value={form.shippedKg}
-                onChange={(e) => setForm({ ...form, shippedKg: e.target.value })}
+                onChange={(e) => {
+                  if (isNonNegativeDraft(e.target.value))
+                    setForm({ ...form, shippedKg: e.target.value });
+                }}
                 aria-invalid={Boolean(firstError(fieldErrors, "shippedKg"))}
                 className="h-8 font-mono"
               />
@@ -1199,7 +1223,7 @@ function MeasuredSection({
   const { m, locale } = useI18n();
   const t = m.prtr.measured;
   const [data, setData] = useState<ListResponse<PrtrMeasuredDto> | null>(null);
-  const emptyForm = { id: "", substanceCode: "", handledKg: "", measuredKg: "" };
+  const emptyForm = { id: "", substanceCode: "", handledKg: "0", measuredKg: "0" };
   const [form, setForm] = useState(emptyForm);
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
@@ -1211,7 +1235,10 @@ function MeasuredSection({
     「選択」で物質コードが入る。打つたびに探す（300 ms 待ち、古い結果は捨てる）
   */
   const [find, setFind] = useState({ code: "", cas: "", name: "" });
-  const [found, setFound] = useState<PrtrSubstanceCandidateDto[] | null>(null);
+  const [found, setFound] = useState<{
+    items: PrtrSubstanceCandidateDto[];
+    truncated: boolean;
+  } | null>(null);
   const [finding, setFinding] = useState(false);
   /** 物質コードから引いた「物質名 → 第一種指定化学物質」。null＝未照会、""＝当たらない */
   const [resolved, setResolved] = useState<string | null>(null);
@@ -1236,11 +1263,14 @@ function MeasuredSection({
           if (cancelled) return;
           if (!res.ok) {
             if (redirectIfUnauthorized(res)) return;
-            setFound([]);
+            setFound({ items: [], truncated: false });
             return;
           }
-          const body = (await res.json()) as { items: PrtrSubstanceCandidateDto[] };
-          if (!cancelled) setFound(body.items);
+          const body = (await res.json()) as {
+            items: PrtrSubstanceCandidateDto[];
+            truncated: boolean;
+          };
+          if (!cancelled) setFound(body);
         } finally {
           if (!cancelled) setFinding(false);
         }
@@ -1338,16 +1368,14 @@ function MeasuredSection({
         render: (x) => x.measuredKg,
       },
       {
-        key: "source",
-        header: m.prtr.quantities.source,
-        kind: "enum",
-        width: 90,
+        key: "updatedBy",
+        header: m.prtr.quantities.updatedBy,
+        kind: "text",
+        width: 120,
         className: "text-xs",
-        options: [
-          { value: "MANUAL", label: m.prtr.sources.MANUAL },
-          { value: "IMPORT", label: m.prtr.sources.IMPORT },
-        ],
-        render: (x) => m.prtr.sources[x.source],
+        sortable: false,
+        filterable: false,
+        render: (x) => x.updatedByName ?? "",
       },
       {
         key: "updatedAt",
@@ -1488,32 +1516,51 @@ function MeasuredSection({
                   className="h-8"
                 />
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                disabled={find.code === "" && find.cas === "" && find.name === ""}
+                onClick={() => setFind({ code: "", cas: "", name: "" })}
+              >
+                {t.find.clear}
+              </Button>
               <span className="text-muted-foreground pb-2 text-xs">
                 {finding ? t.find.searching : t.find.hint}
               </span>
             </div>
             {found !== null &&
-              (found.length === 0 ? (
+              (found.items.length === 0 ? (
                 <p className="text-muted-foreground text-xs">{t.find.none}</p>
               ) : (
-                <ul className="divide-border bg-background max-h-56 divide-y overflow-y-auto border">
-                  {found.map((s) => (
-                    <li key={s.id} className="flex items-center gap-3 px-2 py-1 text-sm">
-                      <span className="w-28 shrink-0 font-mono text-xs">{s.code}</span>
-                      <span className="w-28 shrink-0 font-mono text-xs">{casLabel(s)}</span>
-                      <span className="min-w-0 flex-1 truncate">{labelOf(s)}</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7"
-                        aria-label={`${t.find.pick} ${s.code}`}
-                        onClick={() => pickSubstance(s)}
-                      >
-                        {t.find.pick}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+                <div className="space-y-1">
+                  <ul className="divide-border bg-background max-h-56 divide-y overflow-y-auto border">
+                    {found.items.map((s) => (
+                      <li key={s.id} className="flex items-center gap-3 px-2 py-1 text-sm">
+                        <span className="w-28 shrink-0 font-mono text-xs">{s.code}</span>
+                        <span className="w-28 shrink-0 font-mono text-xs">{casLabel(s)}</span>
+                        <span className="min-w-0 flex-1 truncate">{labelOf(s)}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7"
+                          aria-label={`${t.find.pick} ${s.code}`}
+                          onClick={() => pickSubstance(s)}
+                        >
+                          {t.find.pick}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                  {found.truncated && (
+                    <p
+                      role="status"
+                      className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                    >
+                      {t.find.over(found.items.length)}
+                    </p>
+                  )}
+                </div>
               ))}
           </div>
         )}
@@ -1557,7 +1604,10 @@ function MeasuredSection({
                 id="ms-handled"
                 inputMode="decimal"
                 value={form.handledKg}
-                onChange={(e) => setForm({ ...form, handledKg: e.target.value })}
+                onChange={(e) => {
+                  if (isNonNegativeDraft(e.target.value))
+                    setForm({ ...form, handledKg: e.target.value });
+                }}
                 aria-invalid={Boolean(firstError(fieldErrors, "handledKg"))}
                 className="h-8 font-mono"
               />
@@ -1569,7 +1619,10 @@ function MeasuredSection({
                 id="ms-kg"
                 inputMode="decimal"
                 value={form.measuredKg}
-                onChange={(e) => setForm({ ...form, measuredKg: e.target.value })}
+                onChange={(e) => {
+                  if (isNonNegativeDraft(e.target.value))
+                    setForm({ ...form, measuredKg: e.target.value });
+                }}
                 aria-invalid={Boolean(firstError(fieldErrors, "measuredKg"))}
                 className="h-8 font-mono"
               />

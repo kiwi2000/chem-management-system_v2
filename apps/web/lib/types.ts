@@ -1354,6 +1354,8 @@ export interface PrtrQuantityDto {
   /** 出荷量 kg */
   shippedKg: string | null;
   source: "MANUAL" | "IMPORT";
+  /** 最後に登録・更新した人の名前。消えた人なら null */
+  updatedByName: string | null;
   updatedAt: string;
 }
 
@@ -1370,6 +1372,7 @@ export interface PrtrMeasuredDto {
   handledKg: string | null;
   measuredKg: string;
   source: "MANUAL" | "IMPORT";
+  updatedByName: string | null;
   updatedAt: string;
 }
 
