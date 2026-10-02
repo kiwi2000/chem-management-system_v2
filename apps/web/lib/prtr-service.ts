@@ -572,6 +572,10 @@ async function parseMeasured(
       errors.push({ line, message: `${m.prtr.measured.measuredKg}: ${m.prtr.validation.kg}` });
       continue;
     }
+    if (isBothZero(handled === "" ? "0" : handled, kg)) {
+      errors.push({ line, message: m.prtr.validation.bothZeroMeasured });
+      continue;
+    }
     if (seen.has(resolved.statutorySubstanceId)) {
       errors.push({ line, message: `${code}: ${m.prtr.validation.duplicateRow}` });
       continue;

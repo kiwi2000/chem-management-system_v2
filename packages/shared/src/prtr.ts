@@ -110,15 +110,21 @@ export type PrtrQuantityInput = z.infer<ReturnType<typeof prtrQuantitySchema>>;
  * 物質は本システムの物質コードで当て、化管法の第一種指定化学物質に変換する
  */
 export const prtrMeasuredSchema = (m: Messages) =>
-  z.object({
-    substanceCode: z
-      .string()
-      .trim()
-      .min(1, m.validation.required)
-      .max(50, m.validation.tooLong(50)),
-    handledKg: optKg(m),
-    measuredKg: kgSchema(m),
-  });
+  z
+    .object({
+      substanceCode: z
+        .string()
+        .trim()
+        .min(1, m.validation.required)
+        .max(50, m.validation.tooLong(50)),
+      handledKg: optKg(m),
+      measuredKg: kgSchema(m),
+    })
+    // 取扱量（空も 0 と見る）と排出量の両方が 0 の行は意味が無いので断る（2026-10-02 指示）
+    .refine((v) => !isBothZero(v.handledKg ?? "0", v.measuredKg), {
+      path: ["handledKg"],
+      message: m.prtr.validation.bothZeroMeasured,
+    });
 export type PrtrMeasuredInput = z.infer<ReturnType<typeof prtrMeasuredSchema>>;
 
 /*

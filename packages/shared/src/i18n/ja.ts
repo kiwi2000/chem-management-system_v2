@@ -2706,6 +2706,7 @@ export const ja = {
       factorEmpty: "排出係数が空です。先に「排出係数（%）」を入れて保存してください",
       duplicateRow: "同じものが 2 回出てきます",
       bothZero: "取扱量と出荷量の両方が 0 の行は登録できません",
+      bothZeroMeasured: "取扱量と排出量の両方が 0 の行は登録できません",
     },
   },
   organisations: {
