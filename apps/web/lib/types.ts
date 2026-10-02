@@ -564,6 +564,8 @@ export interface PreReactionDto {
   /** 写し取った日時と人 */
   at: string;
   byName: string | null;
+  /** 原材料の組成が変わって、反応前組成（展開・合算）が変わった日時。入っていれば反応後の書き換えを尋ねる */
+  changedAt: string | null;
   lines: CompositionLineDto[];
   totalPct: string;
 }

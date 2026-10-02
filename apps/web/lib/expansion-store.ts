@@ -138,5 +138,13 @@ export async function recomputeFrom(productId: string): Promise<number> {
     }
   }
 
+  /*
+    反応前の写しにこれらの製品を含む製品は、凍結した反応前の展開結果も作り直す（2026-10-03 指示）。
+    反応後組成は変えず、変わった印だけ付ける。部品どうしが読み込み合わないよう、ここで読み込む
+  */
+  const { refreshPreReactionsUsing } = await import("@/lib/pre-reaction-refresh");
+  await refreshPreReactionsUsing(targets).catch((e: unknown) => {
+    console.error("反応前の展開結果の作り直しに失敗:", productId, e);
+  });
   return targets.length;
 }

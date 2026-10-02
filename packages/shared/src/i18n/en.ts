@@ -1996,6 +1996,19 @@ export const en: Messages = {
       undoLabel: "Revert to pre-reaction",
       undone:
         "Reverted to the pre-reaction composition. The post-reaction entries have been discarded.",
+      changed: {
+        notice: (at: string) =>
+          `A raw material's composition changed, so the pre-reaction composition (expanded and summed by CAS) changed (${at}). The post-reaction composition is unchanged. Rewrite the post-reaction composition too?`,
+        rewrite: "Rewrite",
+        keep: "Keep as is",
+        how: "Choose how to rewrite",
+        editCurrent: "Edit the current post-reaction composition",
+        copyFromPre: "Copy the pre-reaction composition, then edit",
+        back: "Back",
+        kept: "The post-reaction composition was kept as is.",
+        copied:
+          "The pre-reaction composition (expanded and summed by CAS) was copied. Save to replace the post-reaction composition, or Cancel to keep the previous one.",
+      },
       diff: {
         title: "Difference from pre-reaction",
         none: "None",

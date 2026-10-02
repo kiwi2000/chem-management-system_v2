@@ -1,4 +1,3 @@
-import { normalizeCas, normalizeCode } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
@@ -6,6 +5,7 @@ import { canEditComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { recomputeFrom } from "@/lib/expansion-store";
 import { getServerMessages } from "@/lib/i18n";
+import { expansionRowsOf, postStartLines } from "@/lib/pre-reaction-refresh";
 import { visibilityWhere } from "@/lib/product-service";
 
 export const dynamic = "force-dynamic";
@@ -47,55 +47,14 @@ export async function POST(_req: Request, { params }: Ctx) {
   });
   const hasMaterials = lines.some((l) => l.childProductId !== null);
 
-  // 反応後の出発点: 原材料があれば合算の表（物質ごと）、無ければ登録組成のまま
-  let next:
-    | {
-        substanceId: string | null;
-        childProductId: string | null;
-        contentPct: string | null;
-        note: string | null;
-      }[]
-    | null = null;
   /*
     展開・合算の結果は、原材料の有無にかかわらず写しと一緒に凍結する（product_pre_reaction_expansion_lines）。
-    一覧の絞り込み「展開・合算後」が、反応後を入れた製品についても探せるようにするため（判定には使わない）
+    一覧の絞り込み「展開・合算後」が、反応後を入れた製品についても探せるようにするため（判定には使わない）。
+    反応後の出発点: 原材料があれば合算の表（物質ごと）、無ければ登録組成のまま
   */
   const agg = await aggregateComposition(actor, id);
-  const codes = [...new Set(agg.rows.map((r) => normalizeCode(r.code)))];
-  const substances = await prisma.substance.findMany({
-    where: { codeNormalized: { in: codes }, deletedAt: null },
-    select: { id: true, codeNormalized: true },
-  });
-  const idByCode = new Map(substances.map((s) => [s.codeNormalized, s.id]));
-  const expansionRows = agg.rows.map((r) => ({
-    productId: id,
-    casNormalized: r.casNumber ? normalizeCas(r.casNumber) : null,
-    substanceId: idByCode.get(normalizeCode(r.code)) ?? null,
-    impurityTypeId: r.impurityTypeId,
-    totalPct: r.totalPct,
-  }));
-  if (hasMaterials) {
-    next = [];
-    for (const r of agg.rows) {
-      const substanceId = idByCode.get(normalizeCode(r.code));
-      if (!substanceId) continue; // 代表物質が引けない（消された直後など）。要確認に残す
-      next.push({ substanceId, childProductId: null, contentPct: r.totalPct, note: r.note });
-    }
-    // 展開できなかった原材料は、その行のまま残す（数字を失わない）
-    if (agg.blocked.length > 0) {
-      const blockedCodes = [...new Set(agg.blocked.map((b) => normalizeCode(b.code)))];
-      const children = await prisma.product.findMany({
-        where: { codeNormalized: { in: blockedCodes }, deletedAt: null },
-        select: { id: true, codeNormalized: true },
-      });
-      const childByCode = new Map(children.map((c) => [c.codeNormalized, c.id]));
-      for (const b of agg.blocked) {
-        const childProductId = childByCode.get(normalizeCode(b.code));
-        if (childProductId)
-          next.push({ substanceId: null, childProductId, contentPct: b.pct, note: null });
-      }
-    }
-  }
+  const expansionRows = await expansionRowsOf(id, agg);
+  const next = hasMaterials ? await postStartLines(agg) : null;
 
   const at = new Date();
   await prisma.$transaction([
@@ -122,7 +81,12 @@ export async function POST(_req: Request, { params }: Ctx) {
       : []),
     prisma.product.update({
       where: { id },
-      data: { preReactionAt: at, preReactionBy: actor.user.id, updatedBy: actor.user.id },
+      data: {
+        preReactionAt: at,
+        preReactionBy: actor.user.id,
+        preReactionChangedAt: null,
+        updatedBy: actor.user.id,
+      },
     }),
   ]);
   // 登録組成を置き換えたときは展開結果も作り直す（中身は同じはずだが、行の形が変わっている）
@@ -196,7 +160,12 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     prisma.productPreReactionExpansionLine.deleteMany({ where: { productId: id } }),
     prisma.product.update({
       where: { id },
-      data: { preReactionAt: null, preReactionBy: null, updatedBy: actor.user.id },
+      data: {
+        preReactionAt: null,
+        preReactionBy: null,
+        preReactionChangedAt: null,
+        updatedBy: actor.user.id,
+      },
     }),
   ]);
   const recomputed = await recomputeFrom(id).catch((e: unknown) => {

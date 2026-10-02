@@ -135,6 +135,14 @@ function snapshotOf(rows: Row[]): string {
  */
 /** 行をつかんで並べ替えるつまみの列。中身の大きさで決まるので、伸び縮みさせない */
 const DRAG_HANDLE_WIDTH = 32;
+/** 反応後組成（登録組成）のカードの名前。カードの外の問いかけから開いて送るのに使う（2026-10-03） */
+const COMPOSITION_CARD_ID = "composition-card";
+
+/** カードを開いて、そこまで送る（カードは URL の「#名前」で開く作り。同じ名前でも開くよう知らせ直す） */
+function openCompositionCard() {
+  window.history.replaceState(null, "", `#${COMPOSITION_CARD_ID}`);
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
+}
 /** 行を選ぶチェックの列。ほかの表（data-table）と同じ幅 */
 const SELECT_WIDTH = 28;
 
@@ -252,6 +260,8 @@ export function CompositionEditor({
   /** 反応前組成（写し）。あれば上の表は「反応後」（S24） */
   const [preReaction, setPreReaction] = useState<CompositionResponse["preReaction"]>(null);
   const [starting, setStarting] = useState(false);
+  /** 「反応前組成が変わった」問いかけで「書き換える」を押したあと（書き換えかたを選ぶ段。2026-10-03） */
+  const [choosingRewrite, setChoosingRewrite] = useState(false);
   /** この表が「反応後」か（写しがあり、自分は写しでない）。原材料は足せず、物質だけ（2026-09-29 指示） */
   const postReaction = Boolean(preReaction) && !isPre;
   const ask = useConfirm();
@@ -340,6 +350,57 @@ export function CompositionEditor({
       setNotice(m.composition.postReaction.undone);
       await load();
       notifyJudgementsChanged();
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  /** 反応前組成が変わっても、反応後組成は「このままにする」。印を消すだけ（2026-10-03） */
+  async function keepPostReaction() {
+    setStarting(true);
+    setErrors([]);
+    try {
+      const res = await fetch(`/api/products/${productId}/composition/pre-reaction/keep`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setErrors([body?.error.message ?? m.errors.saveFailed(res.status)]);
+        return;
+      }
+      setChoosingRewrite(false);
+      setNotice(m.composition.postReaction.changed.kept);
+      await load();
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  /**
+   * 「反応前組成をコピーしてから編集する」。反応前のいまの原材料展開・CAS 合算を編集の欄に入れる。
+   * **保存するまでは何も変わらない。**キャンセルすれば以前の反応後組成に戻る（読み込んだときの写しと比べて確かめる）
+   */
+  async function copyPreThenEdit() {
+    setStarting(true);
+    setErrors([]);
+    try {
+      const res = await fetch(`/api/products/${productId}/composition/pre-reaction/draft`);
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setErrors([body?.error.message ?? m.errors.loadFailed(res.status)]);
+        return;
+      }
+      const body = (await res.json()) as { lines: CompositionLineDto[] };
+      const draft = body.lines
+        .map((l, i) => toRow({ ...l, id: `copy-${i}` }, i))
+        .filter((r) => r !== null);
+      setChoosingRewrite(false);
+      openCompositionCard();
+      onRequestEdit?.();
+      setRows(draft);
+      setNotice(m.composition.postReaction.changed.copied);
     } finally {
       setStarting(false);
     }
@@ -872,10 +933,84 @@ export function CompositionEditor({
         />
       )}
       {/*
+        原材料の組成が変わって反応前組成が変わったとき（2026-10-03 指示）。反応後組成は以前のまま残し、
+        書き換えるかを尋ねる。カードを閉じていても見えるよう、カードの外に出す。書き換えるなら「いまの反応後を編集」か「反応前をコピーしてから編集」を選ぶ。
+        直せない人には知らせだけ出す
+      */}
+      {!isPre && !editing && preReaction?.changedAt && (
+        <Alert>
+          <AlertDescription className="space-y-2">
+            <p>
+              {m.composition.postReaction.changed.notice(
+                new Date(preReaction.changedAt).toLocaleString(locale),
+              )}
+            </p>
+            {canEdit && onRequestEdit && !choosingRewrite && (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={starting}
+                  onClick={() => setChoosingRewrite(true)}
+                >
+                  {m.composition.postReaction.changed.rewrite}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={starting}
+                  onClick={() => void keepPostReaction()}
+                >
+                  {m.composition.postReaction.changed.keep}
+                </Button>
+              </div>
+            )}
+            {canEdit && onRequestEdit && choosingRewrite && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium">{m.composition.postReaction.changed.how}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={starting}
+                    onClick={() => {
+                      setChoosingRewrite(false);
+                      openCompositionCard();
+                      onRequestEdit();
+                    }}
+                  >
+                    {m.composition.postReaction.changed.editCurrent}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={starting}
+                    onClick={() => void copyPreThenEdit()}
+                  >
+                    {m.composition.postReaction.changed.copyFromPre}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={starting}
+                    onClick={() => setChoosingRewrite(false)}
+                  >
+                    {m.composition.postReaction.changed.back}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+      {/*
         カードの開閉は見出しの文字を鍵に端末へ覚えている。見出しが「組成」→「組成（反応後）」に変わっても
         閉じないよう、鍵は「組成」に固定する（反応前は自分の鍵）
       */}
       <Card
+        id={isPre ? undefined : COMPOSITION_CARD_ID}
         storageKey={`chem.card.${pathname}.${isPre ? m.composition.postReaction.beforeTitle : m.composition.title}`}
       >
         <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">

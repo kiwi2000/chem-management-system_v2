@@ -1263,6 +1263,11 @@ model Product {
    */
   preReactionAt DateTime? @map("pre_reaction_at")
   preReactionBy String?   @map("pre_reaction_by")
+  /**
+   * 原材料の組成が変わって、反応前組成（展開・合算）が写し取ったときから変わった日時（2026-10-03）。
+   * 入っていれば、反応後組成も書き換えるかを画面で尋ねる。反応後を保存する・「このままにする」で消える
+   */
+  preReactionChangedAt DateTime? @map("pre_reaction_changed_at")
 
   /**
    * この製品の組成（何が入っているか）。反応後の組成を入れた製品では、これが反応後

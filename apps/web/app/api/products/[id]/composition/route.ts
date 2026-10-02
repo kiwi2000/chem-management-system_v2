@@ -84,6 +84,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     ? {
         at: product.preReactionAt.toISOString(),
         byName: product.preReactionBy ? await nameOf(product.preReactionBy) : null,
+        changedAt: product.preReactionChangedAt?.toISOString() ?? null,
         lines: preLines.map(toLineDto),
         totalPct: validateCompositionSum(
           preLines.map((l) => ({ contentPct: l.contentPct?.toString() ?? null })),
@@ -210,7 +211,14 @@ export async function PUT(req: Request, { params }: Ctx) {
       data: lineWrites(input).map((l) => ({ ...l, parentProductId: id })),
     }),
     // 組成を変えたら製品の更新者・更新日時も動かす（一覧で更新に気づけるように）
-    prisma.product.update({ where: { id }, data: { updatedBy: actor.user.id } }),
+    // 反応後を保存したら「反応前組成が変わった」印は消す（見直したことになる。2026-10-03）
+    prisma.product.update({
+      where: { id },
+      data: {
+        updatedBy: actor.user.id,
+        ...(product.preReactionAt ? { preReactionChangedAt: null } : {}),
+      },
+    }),
   ]);
 
   /*
