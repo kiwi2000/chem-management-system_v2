@@ -148,6 +148,33 @@ export default function AccessLogPage() {
         render: (r) => countryName(r.country, locale, { local: m.accessLog.localPlace }),
       },
       {
+        // JPNIC の WHOIS で引いた持ち主。日本のアドレスだけ。下の小さい字はネットワーク名
+        key: "org",
+        header: m.accessLog.org,
+        kind: "text",
+        sortable: false,
+        filterable: false,
+        width: 200,
+        className: "text-xs",
+        render: (r) =>
+          r.orgPending ? (
+            <span className="text-muted-foreground">{m.accessLog.orgPending}</span>
+          ) : r.orgJa || r.orgEn || r.networkName ? (
+            <span className="block leading-tight">
+              <span className="block">
+                {(locale === "ja" ? r.orgJa || r.orgEn : r.orgEn || r.orgJa) ?? ""}
+              </span>
+              {r.networkName && (
+                <span className="text-muted-foreground block font-mono text-[11px]">
+                  {r.networkName}
+                </span>
+              )}
+            </span>
+          ) : (
+            ""
+          ),
+      },
+      {
         key: "userAgent",
         header: m.accessLog.device,
         kind: "text",

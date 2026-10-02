@@ -16,6 +16,7 @@ import {
 } from "./attachment";
 import { COMPOSITION_VALIDATION_MODES, type CompositionValidationMode } from "./composition";
 import { toScaled } from "./decimal";
+import { isValidIpRule } from "./ip-rules";
 import type { Messages } from "./i18n/ja";
 
 /**
@@ -48,6 +49,25 @@ export type MfaMethod = (typeof MFA_METHODS)[number];
  */
 export const CONDITIONAL_LINK_MODES = ["hit", "review"] as const;
 export type ConditionalLinkMode = (typeof CONDITIONAL_LINK_MODES)[number];
+
+/**
+ * 接続元IPアドレスによる制限（2026-10-02）。
+ *  off   … 使わない
+ *  allow … 許可リスト（ホワイトリスト）に載ったアドレスからだけ入れる
+ *  deny  … 拒否リスト（ブラックリスト）に載ったアドレスからは入れない
+ * 2 つのリストはどちらも持っておけ、使うのは選んだほうだけ
+ */
+export const IP_FILTER_MODES = ["off", "allow", "deny"] as const;
+export type IpFilterMode = (typeof IP_FILTER_MODES)[number];
+
+/** リストの 1 行。アドレス（または範囲）と、だれのものかのメモ */
+export interface IpRuleEntry {
+  address: string;
+  note: string;
+}
+
+/** リストの上限。桁外れの入力で入口の判定が重くならないように */
+export const IP_RULES_MAX = 200;
 
 export interface AppSettings {
   /**
@@ -114,6 +134,12 @@ export interface AppSettings {
    * 席を離れた端末が開いたままになるのを防ぐ。
    */
   sessionIdleMinutes: number;
+  /** 接続元IPアドレスによる制限のやりかた */
+  ipFilterMode: IpFilterMode;
+  /** 許可リスト（ホワイトリスト） */
+  ipAllowList: IpRuleEntry[];
+  /** 拒否リスト（ブラックリスト） */
+  ipDenyList: IpRuleEntry[];
   /**
    * 2要素認証を全員に求める。
    * 入にすると、利用者は「使わない」を選べなくなる。
@@ -206,6 +232,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   substanceApprovalRequired: false,
   productApprovalRequired: false,
   sessionIdleMinutes: 10,
+  ipFilterMode: "off",
+  ipAllowList: [],
+  ipDenyList: [],
   passwordExpiryDays: 0,
   passwordExpiryWarnDays: 0,
   passwordMinLength: 12,
@@ -306,13 +335,36 @@ export function parseOptionList(raw: string): string[] {
 export const formatOptionList = (values: string[]): string => values.join("\n");
 
 /**
+ * DB に入っている IP のリスト（JSON）を読む。読めない行は落とす（入口の判定を壊さないため）。
+ * 全体が読めなければ null（既定の空のリストに戻る）
+ */
+export function parseIpRuleEntries(raw: string): IpRuleEntry[] | null {
+  try {
+    const v: unknown = JSON.parse(raw);
+    if (!Array.isArray(v)) return null;
+    return v
+      .filter(
+        (e): e is IpRuleEntry =>
+          typeof e === "object" &&
+          e !== null &&
+          typeof (e as IpRuleEntry).address === "string" &&
+          isValidIpRule((e as IpRuleEntry).address),
+      )
+      .map((e) => ({ address: e.address.trim(), note: typeof e.note === "string" ? e.note : "" }))
+      .slice(0, IP_RULES_MAX);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * DB のキーと AppSettings の対応（値のハードコードを避けるため一元管理する）。
  * DB には文字列で入るので、読み書きの変換もここに持たせる。
  */
 interface SettingDef<K extends keyof AppSettings = keyof AppSettings> {
   field: K;
   key: string;
-  valueType: "BOOLEAN" | "STRING" | "NUMBER";
+  valueType: "BOOLEAN" | "STRING" | "NUMBER" | "JSON";
   /** DB の文字列 → 設定値。読めない値は既定にフォールバックさせるため null を返す */
   parse: (raw: string) => AppSettings[K] | null;
   /** 設定値 → DB の文字列。既定は String()。一覧のように単純変換できないものだけ指定する */
@@ -410,6 +462,27 @@ export const SETTING_DEFS: SettingDef[] = [
       if (!Number.isInteger(n)) return null;
       return n >= SESSION_IDLE_MIN && n <= SESSION_IDLE_MAX ? n : null;
     },
+  },
+  {
+    field: "ipFilterMode",
+    key: "security.ip_filter_mode",
+    valueType: "STRING",
+    parse: (raw) =>
+      (IP_FILTER_MODES as readonly string[]).includes(raw) ? (raw as IpFilterMode) : null,
+  },
+  {
+    field: "ipAllowList",
+    key: "security.ip_allow_list",
+    valueType: "JSON",
+    parse: parseIpRuleEntries,
+    format: (v) => JSON.stringify(v),
+  },
+  {
+    field: "ipDenyList",
+    key: "security.ip_deny_list",
+    valueType: "JSON",
+    parse: parseIpRuleEntries,
+    format: (v) => JSON.stringify(v),
   },
   boolDef("mfaRequired", "mfa.required"),
   boolDef("passwordRequireLetter", "password.require_letter"),
@@ -548,6 +621,21 @@ const scoreBoundSchema = (m: Messages) =>
     .trim()
     .regex(/^-?\d+(\.\d{1,3})?$/, m.validation.numberFormat);
 
+/** IP のリスト。アドレスは読める形だけ、メモは 100 文字まで、全体で IP_RULES_MAX 件まで */
+const ipRuleListSchema = (m: Messages) =>
+  z
+    .array(
+      z.object({
+        address: z
+          .string()
+          .trim()
+          .min(1, m.validation.required)
+          .refine(isValidIpRule, (v) => ({ message: m.settings.ipRuleInvalid(v) })),
+        note: z.string().trim().max(100, m.validation.tooLong(100)),
+      }),
+    )
+    .max(IP_RULES_MAX, m.settings.ipRulesTooMany(IP_RULES_MAX));
+
 export const settingsSchema = (m: Messages) =>
   z.object({
     maintenanceMode: z.boolean(),
@@ -573,6 +661,9 @@ export const settingsSchema = (m: Messages) =>
       .int()
       .min(SESSION_IDLE_MIN, m.settings.sessionIdleRange)
       .max(SESSION_IDLE_MAX, m.settings.sessionIdleRange),
+    ipFilterMode: z.enum(IP_FILTER_MODES),
+    ipAllowList: ipRuleListSchema(m),
+    ipDenyList: ipRuleListSchema(m),
     passwordExpiryDays: z
       .number()
       .int()

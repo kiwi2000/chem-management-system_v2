@@ -1,12 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { clientIp, ipVerdict, parseAllowList } from "@/lib/ip-allow";
+import { ipRulesAllow, loadIpFilterRules } from "@/lib/ip-filter";
 import { NONCE_HEADER, PATH_HEADER } from "@/lib/routes";
 
 /**
  * 画面の保護。
  * ここでは Cookie の有無だけを見る軽量チェックに留める。
- * 実際のセッション検証（DB照合・期限・無効化）は各ページ／API の getSessionUser() が行う
- * （middleware は Edge ランタイムで動くため DB に触れない）。
+ * 実際のセッション検証（DB照合・期限・無効化）は各ページ／API の getSessionUser() が行う。
+ * middleware は Node.js で動かしている（画面で決める接続元の制限を DB から読むため。2026-10-02）。
+ * ここで DB に触れるのは、その決まりの読み取り（10 秒に 1 回）だけにする
  *
  * Cookie は残っているがセッションが無効、という状態があり得る
  * （管理者による無効化・権限変更・期限切れ）。これは components/app-shell.tsx で拾い、
@@ -65,8 +67,7 @@ function contentSecurityPolicy(nonce: string) {
  * いることを見てから enforce に切り替える。いきなり弾くと、把握できていない
  * 場所から使っている人を締め出す。
  *
- * 記録は Railway の実行記録（ログ）に出す。middleware は Edge で動くので
- * データベースに触れないため。
+ * 記録は Railway の実行記録（ログ）に出す。
  */
 function checkIp(request: NextRequest, pathname: string): NextResponse | null {
   const allowList = parseAllowList(process.env.ALLOWED_IPS);
@@ -84,6 +85,21 @@ function checkIp(request: NextRequest, pathname: string): NextResponse | null {
   }
   if (!enforce) return null;
   // 何があるのかを外へ伝えない。ここにシステムがあること自体を悟らせない
+  return new NextResponse("Not Found", { status: 404 });
+}
+
+/**
+ * 画面（システム設定）で決めた接続元の制限（2026-10-02）。環境変数の制限を通ったあとに見る。
+ * 断るときの返しかたは環境変数のほうと同じ（何があるのかを外へ伝えない）
+ */
+async function checkIpRules(request: NextRequest, pathname: string): Promise<NextResponse | null> {
+  const ip = clientIp(request.headers.get("x-forwarded-for"));
+  const rules = await loadIpFilterRules();
+  if (ipRulesAllow(ip, rules)) return null;
+  if (shouldLog(`rules:${ip ?? "不明"}`)) {
+    // eslint-disable-next-line no-console
+    console.log(`[ip-rules] 断りました（${rules.mode}） ip=${ip ?? "不明"} path=${pathname}`);
+  }
   return new NextResponse("Not Found", { status: 404 });
 }
 
@@ -106,7 +122,7 @@ function shouldLog(ip: string | null): boolean {
   return true;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
   /*
@@ -121,7 +137,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers } });
   }
 
-  const blocked = checkIp(request, pathname);
+  const blocked = checkIp(request, pathname) ?? (await checkIpRules(request, pathname));
   if (blocked) return blocked;
 
   /*
@@ -156,6 +172,8 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // 画面で決める接続元の制限を DB から読むので Node.js で動かす（Next.js 15.5 から使える）
+  runtime: "nodejs",
   /*
     静的な部品を除くすべて。**API も通す**（接続元の判定を効かせるため）。
     稼働確認だけは、外の監視から叩けるように外しておく。

@@ -17,6 +17,7 @@ import {
   PASSWORD_MIN_LENGTH_FLOOR,
   APP_NAME_MAX,
   HEADER_ICON_POSITIONS,
+  IP_FILTER_MODES,
   IMAGE_FORMAT_POLICIES,
   IMAGE_MAX_EDGE_MAX,
   IMAGE_MAX_EDGE_MIN,
@@ -34,6 +35,7 @@ import {
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppIconField } from "@/components/app-icon-field";
+import { IpRuleListEditor } from "@/components/ip-rule-list-editor";
 import { LanguageSection } from "@/components/language-section";
 import { RejudgeSection } from "@/components/rejudge-section";
 import { ScoreSettingsSection } from "@/components/score-settings-section";
@@ -61,6 +63,8 @@ export default function SettingsPage() {
   const [kindsText, setKindsText] = useState("");
   // 承認を不要に切り替えたときに残る承認待の件数（種類ごと）
   const [pending, setPending] = useState<Record<string, number> | null>(null);
+  // いま接続しているアドレス。接続元の制限で自分を締め出さないための目安（サーバーが返す）
+  const [selfIp, setSelfIp] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -73,7 +77,9 @@ export default function SettingsPage() {
         setLoaded({ ...DEFAULT_SETTINGS });
         return;
       }
-      const fresh = ((await res.json()) as { settings: AppSettings }).settings;
+      const body = (await res.json()) as { settings: AppSettings; clientIp: string | null };
+      const fresh = body.settings;
+      setSelfIp(body.clientIp);
       setSettings(fresh);
       setLoaded(fresh);
       setModelOptionsText(formatOptionList(fresh.productModelOptions));
@@ -108,7 +114,13 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...settings, pendingResolution: resolution }),
+        body: JSON.stringify({
+          ...settings,
+          // 何も書いていない行（追加しただけの行）は送らない
+          ipAllowList: settings.ipAllowList.filter((r) => r.address.trim() || r.note.trim()),
+          ipDenyList: settings.ipDenyList.filter((r) => r.address.trim() || r.note.trim()),
+          pendingResolution: resolution,
+        }),
       });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -700,6 +712,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* セキュリティの区分（2026-10-02 指示）: 自動ログアウト・2要素認証・パスワード・アクセス制御 */}
+        <h2 className="border-t pt-4 text-lg font-semibold">{m.settings.securityGroup}</h2>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{m.settings.sessionSection}</CardTitle>
@@ -885,6 +900,47 @@ export default function SettingsPage() {
               <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryWarnHint}</p>
               <p className="text-muted-foreground text-xs">{m.settings.passwordExpiryWarnRange}</p>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card id="ip-filter">
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.ipFilterSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-sm">{m.settings.ipFilterHint}</p>
+            <div className="space-y-1 text-sm">
+              {IP_FILTER_MODES.map((v) => (
+                <label key={v} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="ipFilterMode"
+                    value={v}
+                    checked={settings.ipFilterMode === v}
+                    onChange={() => setSettings({ ...settings, ipFilterMode: v })}
+                  />
+                  {m.settings.ipFilterModes[v]}
+                </label>
+              ))}
+            </div>
+            <p className="text-xs font-medium">
+              {selfIp ? m.settings.ipCurrent(selfIp) : m.settings.ipCurrentUnknown}
+            </p>
+            <IpRuleListEditor
+              id="ip-allow-list"
+              title={m.settings.ipAllowList}
+              rows={settings.ipAllowList}
+              unused={settings.ipFilterMode !== "allow"}
+              onChange={(rows) => setSettings({ ...settings, ipAllowList: rows })}
+            />
+            <IpRuleListEditor
+              id="ip-deny-list"
+              title={m.settings.ipDenyList}
+              rows={settings.ipDenyList}
+              unused={settings.ipFilterMode !== "deny"}
+              onChange={(rows) => setSettings({ ...settings, ipDenyList: rows })}
+            />
+            <p className="text-muted-foreground text-xs">{m.settings.ipFormatHint}</p>
           </CardContent>
         </Card>
 

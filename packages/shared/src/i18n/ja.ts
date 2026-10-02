@@ -1066,6 +1066,9 @@ export const ja = {
     place: "場所",
     localPlace: "自分のPC",
     device: "OS/ブラウザ",
+    /** JPNIC の WHOIS で引いた、接続元のネットワークの持ち主（2026-10-02） */
+    org: "接続元の組織",
+    orgPending: "調べています",
     empty: "まだ記録がありません。",
     goneProduct: "（削除された製品）",
     lineCount: (n: number) => `${n} 行`,
@@ -1799,6 +1802,38 @@ export const ja = {
     sessionIdleHint:
       "席を離れた端末が開いたままになるのを防ぎます。この時間を過ぎてから操作すると、ログイン画面に戻ります。",
     sessionIdleRange: "1分から480分（8時間）までで指定してください",
+    /** 接続元IPアドレスによる制限（2026-10-02） */
+    /** システム設定の区分（2026-10-02） */
+    securityGroup: "セキュリティ",
+    ipFilterSection: "アクセス制御（接続元IPアドレス）",
+    ipFilterHint:
+      "どこからこのシステムにつながせるかを、接続元のIPアドレスで決めます。変えたら下の「保存」を押してください。反映まで 10 秒ほどかかります",
+    ipFilterModes: {
+      off: "使わない（どこからでも接続できる）",
+      allow: "許可リストを使う（ホワイトリスト。載っているアドレスからだけ接続できる）",
+      deny: "拒否リストを使う（ブラックリスト。載っているアドレスからは接続できない）",
+    },
+    ipAllowList: "許可リスト（ホワイトリスト）",
+    ipDenyList: "拒否リスト（ブラックリスト）",
+    ipListUnused: "いまは使っていません",
+    ipAddress: "IPアドレス・範囲",
+    ipNote: "メモ",
+    ipAdd: "行を追加",
+    ipRemove: "この行を消す",
+    ipListEmpty: "登録がありません",
+    ipFormatHint:
+      "書き方: 1 つなら 203.0.113.5、範囲なら 203.0.113.0/24。IPv6 も書けます（2001:db8::1、2001:db8:1234::/48）",
+    ipCurrent: (ip: string) => `いま接続しているアドレス: ${ip}`,
+    ipCurrentUnknown: "いま接続しているアドレスが分かりません",
+    ipRuleInvalid: (v: string) => `「${v}」はIPアドレスまたは範囲として読めません`,
+    ipRulesTooMany: (n: number) => `リストは ${n} 行までです`,
+    ipAllowEmpty: "許可リストが空です。空のまま使うと、だれも接続できなくなります",
+    ipSelfNotAllowed: (ip: string) =>
+      `いま接続しているアドレス（${ip}）が許可リストに無いので保存できません。保存すると、あなたも接続できなくなります`,
+    ipSelfUnknown:
+      "いま接続しているアドレスが分からないので、許可リストを使う設定にはできません（保存すると接続できなくなるおそれがあります）",
+    ipSelfDenied: (ip: string) =>
+      `いま接続しているアドレス（${ip}）が拒否リストに入っているので保存できません。保存すると、あなたも接続できなくなります`,
     passwordExpirySection: "パスワードの有効期限",
     passwordExpiryDays: "有効期限（日）",
     passwordExpiryHint:

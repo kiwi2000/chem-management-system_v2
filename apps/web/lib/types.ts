@@ -162,6 +162,12 @@ export interface AccessLogDto {
   /** 接続元のおよその国（2文字）。"local" は自分自身、null は分からない */
   country: string | null;
   userAgent: string | null;
+  /** JPNIC の WHOIS で引いた接続元の組織。日本のアドレスで、調べがついたものだけ */
+  orgJa: string | null;
+  orgEn: string | null;
+  networkName: string | null;
+  /** 日本のアドレスで、まだ調べがついていない（裏で調べている） */
+  orgPending: boolean;
 }
 
 /** 気になる動きの種類 */

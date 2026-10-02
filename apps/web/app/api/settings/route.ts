@@ -1,9 +1,10 @@
-import { settingsSaveSchema } from "@chem/shared";
+import { ipMatchesAny, settingsSaveSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { endNonAdminSessions } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { ensureWritableDir, resolveOutputDir } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
+import { clientIp } from "@/lib/ip-allow";
 import { countPending, resolvePending } from "@/lib/pending-resolution";
 import { getAppSettings, saveAppSettings } from "@/lib/settings";
 
@@ -14,10 +15,14 @@ export const dynamic = "force-dynamic";
  * 一般ユーザーの画面が設定を必要とする場合は、この API ではなく
  * サーバーコンポーネントから lib/settings.ts の getAppSettings() を呼んで値だけ渡すこと。
  */
-export async function GET() {
+export async function GET(req: Request) {
   const actor = await requireAdmin();
   if (actor instanceof Response) return actor;
-  return Response.json({ settings: await getAppSettings() });
+  // 接続元の制限を決めるとき、自分のアドレスが分からないと締め出しに気づけないので一緒に返す
+  return Response.json({
+    settings: await getAppSettings(),
+    clientIp: clientIp(req.headers.get("x-forwarded-for")),
+  });
 }
 
 /** PUT /api/settings — 設定の変更（システム管理者のみ） */
@@ -37,6 +42,35 @@ export async function PUT(req: Request) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const { pendingResolution, ...next } = parsed.data;
+
+  /*
+    接続元の制限で、保存した本人が締め出されないようにする（2026-10-02）。
+    入口は保存の 10 秒後には新しい決まりで判定するので、ここで止めないと
+    設定を直しに戻ってくることもできなくなる
+  */
+  const selfIp = clientIp(req.headers.get("x-forwarded-for"));
+  const ipError = (field: "ipAllowList" | "ipDenyList", message: string) =>
+    jsonError(400, "validation_error", message, {
+      formErrors: [],
+      fieldErrors: { [field]: [message] },
+    });
+  if (next.ipFilterMode === "allow") {
+    const allow = next.ipAllowList.map((e) => e.address);
+    if (allow.length === 0) return ipError("ipAllowList", m.settings.ipAllowEmpty);
+    if (!selfIp) return ipError("ipAllowList", m.settings.ipSelfUnknown);
+    if (!ipMatchesAny(selfIp, allow))
+      return ipError("ipAllowList", m.settings.ipSelfNotAllowed(selfIp));
+  }
+  if (next.ipFilterMode === "deny" && selfIp) {
+    if (
+      ipMatchesAny(
+        selfIp,
+        next.ipDenyList.map((e) => e.address),
+      )
+    ) {
+      return ipError("ipDenyList", m.settings.ipSelfDenied(selfIp));
+    }
+  }
 
   /**
    * 承認を「必要 → 不要」に切り替えると、承認待のものを承認する人がいなくなる。

@@ -1026,6 +1026,8 @@ export const en: Messages = {
     place: "Place",
     localPlace: "This machine",
     device: "OS / browser",
+    org: "Source organization",
+    orgPending: "Looking up",
     empty: "Nothing recorded yet.",
     goneProduct: "(deleted product)",
     lineCount: (n: number) => `${n} rows`,
@@ -1715,6 +1717,36 @@ export const en: Messages = {
     sessionIdleHint:
       "Stops an unattended device from staying signed in. Acting after this time returns you to the sign-in screen.",
     sessionIdleRange: "Choose between 1 and 480 minutes (8 hours)",
+    securityGroup: "Security",
+    ipFilterSection: "Access control (source IP address)",
+    ipFilterHint:
+      "Decide where this system can be reached from, by the source IP address. Press Save below after changing it. It takes about 10 seconds to apply",
+    ipFilterModes: {
+      off: "Off (reachable from anywhere)",
+      allow: "Use the allow list (only listed addresses can connect)",
+      deny: "Use the deny list (listed addresses cannot connect)",
+    },
+    ipAllowList: "Allow list",
+    ipDenyList: "Deny list",
+    ipListUnused: "Not in use",
+    ipAddress: "IP address or range",
+    ipNote: "Note",
+    ipAdd: "Add a row",
+    ipRemove: "Remove this row",
+    ipListEmpty: "Nothing registered",
+    ipFormatHint:
+      "Format: one address like 203.0.113.5, or a range like 203.0.113.0/24. IPv6 works too (2001:db8::1, 2001:db8:1234::/48)",
+    ipCurrent: (ip: string) => `Your current address: ${ip}`,
+    ipCurrentUnknown: "Your current address is unknown",
+    ipRuleInvalid: (v: string) => `"${v}" is not an IP address or range`,
+    ipRulesTooMany: (n: number) => `Up to ${n} rows`,
+    ipAllowEmpty: "The allow list is empty. Using it empty would lock everyone out",
+    ipSelfNotAllowed: (ip: string) =>
+      `Your current address (${ip}) is not on the allow list, so this was not saved. Saving would lock you out too`,
+    ipSelfUnknown:
+      "Your current address is unknown, so the allow list cannot be turned on (saving could lock you out)",
+    ipSelfDenied: (ip: string) =>
+      `Your current address (${ip}) is on the deny list, so this was not saved. Saving would lock you out too`,
     passwordExpirySection: "Password expiry",
     passwordExpiryDays: "Expires after (days)",
     passwordExpiryHint:

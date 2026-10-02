@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { jsonError } from "@/lib/authz";
 import { getServerMessages } from "@/lib/i18n";
 import { countryOf } from "@/lib/ip-country";
+import { needsWhois, requestWhois, whoisFor } from "@/lib/ip-whois";
 import { ACCESS_LOG_COLUMNS, SIGNIN_ACTIONS, TAKEOUT_ACTIONS } from "@/lib/access-log-shared";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import type { AccessLogDto } from "@/lib/types";
@@ -73,6 +74,12 @@ export async function GET(req: Request) {
     }),
   ]);
   const userOf = new Map(users.map((u) => [u.id, u]));
+
+  // 接続元の組織（JPNIC）。ためてある結果を出し、無いもの・古いものは裏で調べ直す（待たない）
+  const ipOf = (l: (typeof logs)[number]) => ((l.diff ?? {}) as { ip?: string | null }).ip ?? null;
+  const pageIps = logs.map(ipOf).filter(needsWhois);
+  const whois = await whoisFor(pageIps);
+  requestWhois(pageIps.filter((ip) => !whois.get(ip) || whois.get(ip)!.stale));
   const productOf = new Map(products.map((p) => [p.id, p]));
 
   const items: AccessLogDto[] = logs.map((l) => {
@@ -104,6 +111,10 @@ export async function GET(req: Request) {
       ip: d.ip ?? null,
       country: countryOf(d.ip ?? null),
       userAgent: d.userAgent ?? null,
+      orgJa: (d.ip && whois.get(d.ip)?.info.orgJa) || null,
+      orgEn: (d.ip && whois.get(d.ip)?.info.orgEn) || null,
+      networkName: (d.ip && whois.get(d.ip)?.info.networkName) || null,
+      orgPending: needsWhois(d.ip ?? null) && !whois.has(d.ip ?? ""),
     };
   });
 

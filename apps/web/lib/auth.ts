@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { passwordExpired } from "@/lib/pending-step";
 import { getAppSettings } from "@/lib/settings";
 import { clientIp } from "@/lib/ip-allow";
+import { requestWhois } from "@/lib/ip-whois";
 
 /**
  * 認証（自前実装・外部サービスに一切依存しない）。
@@ -91,8 +92,11 @@ export interface LoginSuccess {
 async function callerInfo(): Promise<{ ip: string | null; userAgent: string | null }> {
   try {
     const hdrs = await headers();
+    const ip = clientIp(hdrs.get("x-forwarded-for"));
+    // 外から来た日本のアドレスなら、持ち主（JPNIC）を裏で調べておく。待たない
+    requestWhois([ip]);
     return {
-      ip: clientIp(hdrs.get("x-forwarded-for")),
+      ip,
       userAgent: hdrs.get("user-agent")?.slice(0, 200) ?? null,
     };
   } catch {
