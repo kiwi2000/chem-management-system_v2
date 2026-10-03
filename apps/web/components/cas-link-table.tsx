@@ -34,11 +34,19 @@ import { cn } from "@/lib/utils";
 
 /** 既定は CAS 番号の順。サーバー側の既定と揃える（片方だけ変えると出てくる数がずれる） */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "casNumber", direction: "asc" }]);
-/** 差分モードは 種類 → CAS の順。増えた・消えた・変わった がまとまる */
-const DIFF_DEFAULT_STATE: TableState = emptyTableState([
-  { column: "kind", direction: "asc" },
-  { column: "casNumber", direction: "asc" },
-]);
+/**
+ * 差分モードは 種類 → CAS の順。増えた・消えた・変わった がまとまる。
+ * 開いたときは「追加・削除・変更」を押した状態にする（差分を見るのが目的なので）。
+ * 何も押していなければ、ほかの表と同じく全件（変更なしも）出す（2026-10-03 指示。
+ * 以前は何も押さなくても変更なしを隠していたので、「変更なし」だけのほうが全件より多く見えた）
+ */
+const DIFF_DEFAULT_STATE: TableState = {
+  ...emptyTableState([
+    { column: "kind", direction: "asc" },
+    { column: "casNumber", direction: "asc" },
+  ]),
+  filters: { kind: { kind: "enum", values: ["ADDED", "REMOVED", "CHANGED"] } },
+};
 
 const SELECT_CLASS = "border-input bg-background h-8 rounded-none border px-2 text-sm";
 
@@ -157,7 +165,7 @@ export function CasLinkTable({
               { value: "ADDED", label: m.casLinkTable.diffAdded, color: "#059669" },
               { value: "REMOVED", label: m.casLinkTable.diffRemoved, color: "#dc2626" },
               { value: "CHANGED", label: m.casLinkTable.diffChanged, color: "#f59e0b" },
-              // 変更なしは押したときだけ出る（何も押していなければ差分だけ）
+              // 開いたときは変更なし以外を押した状態。何も押していなければ全件
               { value: "UNCHANGED", label: m.casLinkTable.diffUnchanged, color: "#64748b" },
             ],
             className: "text-center",
@@ -428,6 +436,25 @@ export function CasLinkTable({
     "cl",
   );
   const query = useMemo(() => serializeTableState(state, fallback).toString(), [state, fallback]);
+
+  /*
+    差分に切り替えたら、種類の条件が無ければ「追加・削除・変更」で絞る。通常の表示に戻したら種類の条件は外す（2026-10-03）。
+    表の状態は通常の表示と差分で共通に覚えているので、切り替えただけでは差分の既定が効かない
+    （通常の表示の状態のまま、変更なしまで全件が出ていた）
+  */
+  const diffShown = useRef(false);
+  useEffect(() => {
+    if (!ready || diffShown.current === diffMode) return;
+    diffShown.current = diffMode;
+    const hasKind = Boolean(state.filters.kind);
+    if (diffMode === hasKind) return;
+    setState((prev) => {
+      const filters = { ...prev.filters };
+      if (diffMode) filters.kind = DIFF_DEFAULT_STATE.filters.kind!;
+      else delete filters.kind;
+      return { ...prev, filters, page: 1 };
+    });
+  }, [diffMode, ready, state.filters.kind, setState]);
 
   /*
     バージョン・データソース・比べる相手を替えたら1ページ目から。

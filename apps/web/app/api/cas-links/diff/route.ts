@@ -109,7 +109,8 @@ const sideOf = (l: Side | null): CasLinkSideDto | null =>
  * GET /api/cas-links/diff — 1つのバージョン × 1つのデータソースの対象CASを、別の版と突き合わせた差分。
  *
  * 外部データベースの「規制対象CAS」の表の差分モード。行は 増えた・消えた・変わった。
- * 「変更なし」の行も表にはあるが、絞り込みで押したときだけ出す（差分を見るのが目的なので）。
+ * 「変更なし」の行も表にある。画面は開いたとき「追加・削除・変更」で絞った状態で頼む（差分を見るのが目的なので）。
+ * 種類を絞っていなければ全件を返す
  * 差分そのものは `ensureDiffRun` が表に作っておき、ここはそれを絞り込み・並べ替え・ページングして返す。
  * 消えた行は今の版に無いので、比べた版の中身（該非・出典データ）を持たせる
  */
@@ -150,9 +151,8 @@ export async function GET(req: Request) {
     versionId,
     againstId,
     sourceId,
+    // 種類を絞っていなければ全件（変更なしも）。開いたときの「追加・削除・変更」は画面の既定の条件で付く
     ...buildWhere(CAS_LINK_DIFF_COLUMNS, state.filters),
-    // 種類を絞っていなければ「変更なし」は出さない。押して初めて出る
-    ...(state.filters.kind ? {} : { kind: { not: "UNCHANGED" as const } }),
   };
 
   const [rows, total, source] = await Promise.all([
