@@ -3,6 +3,7 @@
 import { emptyTableState, SOURCE_MARK_MAX, type TableState } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ColorPicker } from "@/components/color-picker";
+import { useConfirm } from "@/components/confirm-dialog";
 import { SourceChip } from "@/components/source-chip";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
@@ -33,6 +34,14 @@ const SELECT_CLASS = "border-input bg-background h-9 w-full rounded-none border 
  *
  * 取り込みも手入力も、この行があってはじめてできる。
  */
+/** 写し元にできる版（`/api/link-version-sources/copy-candidates`） */
+interface CopyCandidate {
+  versionId: string;
+  versionCode: string;
+  links: number;
+  inventoryRows: number;
+}
+
 export function DataSourceSection({
   versionId,
   versionCode,
@@ -61,7 +70,15 @@ export function DataSourceSection({
 
   /** 登録の欄。開いているときだけ出す */
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ sourceId: "", note: "" });
+  const [form, setForm] = useState({ sourceId: "", note: "", copyFrom: "" });
+  /**
+   * 別の版から写すときの写し元の候補（2026-10-04）。登録の欄では選んだ種別について、
+   * 鉛筆で開いた行ではその行の種別について引く
+   */
+  const [copyCands, setCopyCands] = useState<CopyCandidate[] | null>(null);
+  const [copyFrom, setCopyFrom] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
+  const ask = useConfirm();
   /** 説明だけは行の中で直せる */
   const [editingId, setEditingId] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -221,7 +238,14 @@ export function DataSourceSection({
         sortable: false,
         filterable: false,
         className: "text-muted-foreground text-center text-xs",
-        render: (r) => (r.loadedAt ? new Date(r.loadedAt).toLocaleDateString(locale) : ""),
+        render: (r) => (
+          <>
+            {r.loadedAt ? new Date(r.loadedAt).toLocaleDateString(locale) : ""}
+            {r.copiedFrom && (
+              <span className="block text-[11px]">{m.dataSources.copiedFrom(r.copiedFrom)}</span>
+            )}
+          </>
+        ),
       },
     ],
     // saveColor は毎回作られるが、中身は変わらないので手がかりに入れない
@@ -288,6 +312,70 @@ export function DataSourceSection({
     onSelect?.(items?.find((r) => r.id === selectedId) ?? null);
   }, [items, selectedId, onSelect]);
 
+  /** 写し元の候補を引く。種別が決まっていなければ空 */
+  const loadCopyCands = useCallback(
+    async (sourceId: string) => {
+      setCopyCands(null);
+      if (!versionId || !sourceId) return;
+      const res = await fetch(
+        `/api/link-version-sources/copy-candidates?versionId=${versionId}&sourceId=${sourceId}`,
+      );
+      if (!res.ok) {
+        setCopyCands([]);
+        return;
+      }
+      setCopyCands(((await res.json()) as { items: CopyCandidate[] }).items);
+    },
+    [versionId],
+  );
+
+  /**
+   * 写す（2026-10-04）。この版 × この種別の中身は入れ替えになるので、先に確かめる。
+   * 登録の直後に写すときは、中身が空なので消える件数は 0
+   */
+  async function copyInto(
+    row: { id: string; sourceCode: string; linkCount: number },
+    fromVersionId: string,
+  ) {
+    const from = copyCands?.find((c) => c.versionId === fromVersionId);
+    if (!from) return false;
+    if (
+      !(await ask({
+        message: m.dataSources.copyConfirm(
+          versionCode ?? "",
+          row.sourceCode,
+          from.versionCode,
+          row.linkCount,
+        ),
+        confirmLabel: m.dataSources.copyConfirmLabel,
+        destructive: row.linkCount > 0,
+      }))
+    )
+      return false;
+    setError(null);
+    setNotice(m.dataSources.copying);
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/link-version-sources/${row.id}/copy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromVersionId }),
+      });
+      if (!res.ok) {
+        if (redirectIfUnauthorized(res)) return false;
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setNotice(null);
+        setError(body?.error.message ?? m.errors.saveFailed(res.status));
+        return false;
+      }
+      const body = (await res.json()) as { links: number; from: string };
+      setNotice(m.dataSources.copied(body.from, body.links));
+      return true;
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function add() {
     setError(null);
     setSaving(true);
@@ -303,8 +391,16 @@ export function DataSourceSection({
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      // 「○○から写す」を選んでいれば、作った行へそのまま写す
+      if (form.copyFrom) {
+        const created = (await res.json()) as { id: string };
+        const code = sources.find((x) => x.id === form.sourceId)?.code ?? "";
+        setSaving(false);
+        await copyInto({ id: created.id, sourceCode: code, linkCount: 0 }, form.copyFrom);
+      }
       setAdding(false);
-      setForm({ sourceId: "", note: "" });
+      setForm({ sourceId: "", note: "", copyFrom: "" });
+      setCopyCands(null);
       void load();
     } finally {
       setSaving(false);
@@ -483,6 +579,14 @@ export function DataSourceSection({
   }
 
   const canAdd = versionId !== null && form.sourceId !== "";
+  const editingRow = editable ? (items?.find((r) => r.id === editingId) ?? null) : null;
+  // 鉛筆で開いたら、その行の種別で写し元を引く
+  useEffect(() => {
+    setCopyFrom("");
+    if (editingRow) void loadCopyCands(editingRow.sourceId);
+    // 行が替わったときだけ引く
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingRow?.id]);
 
   return (
     <section className="space-y-3">
@@ -490,6 +594,55 @@ export function DataSourceSection({
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {notice && (
+        <Alert>
+          <AlertDescription>{notice}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* 鉛筆で開いた行に、別の版から写す欄（2026-10-04）。中身は入れ替えになる */}
+      {editingRow && (
+        <div className="border-border bg-muted/30 flex flex-wrap items-end gap-3 border p-3">
+          <div className="w-80 space-y-1">
+            <Label htmlFor="ds-copy-edit">
+              {m.dataSources.copyFrom}（{editingRow.sourceCode}）
+            </Label>
+            {copyCands && copyCands.length === 0 ? (
+              <p className="text-muted-foreground text-xs">{m.dataSources.copyNone}</p>
+            ) : (
+              <select
+                id="ds-copy-edit"
+                value={copyFrom}
+                onChange={(e) => setCopyFrom(e.target.value)}
+                className={SELECT_CLASS + " w-full"}
+              >
+                <option value="">{m.dataSources.copySelect}</option>
+                {(copyCands ?? []).map((c) => (
+                  <option key={c.versionId} value={c.versionId}>
+                    {m.dataSources.copyOption(c.versionCode, c.links, c.inventoryRows)}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!copyFrom || saving}
+            onClick={() =>
+              void copyInto(editingRow, copyFrom).then((ok) => {
+                if (!ok) return;
+                setCopyFrom("");
+                setEditingId(null);
+                void load();
+              })
+            }
+          >
+            {m.dataSources.copyButton}
+          </Button>
+        </div>
       )}
 
       {/* 登録の欄。3つ選んで押すだけなので、1行に収める */}
@@ -500,7 +653,10 @@ export function DataSourceSection({
             <select
               id="ds-source"
               value={form.sourceId}
-              onChange={(e) => setForm({ ...form, sourceId: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, sourceId: e.target.value, copyFrom: "" });
+                void loadCopyCands(e.target.value);
+              }}
               className={SELECT_CLASS}
             >
               <option value="">{m.dataSources.selectSource}</option>
@@ -512,6 +668,25 @@ export function DataSourceSection({
               ))}
             </select>
           </div>
+          {/* 中身は空か、別の版の同じ種別から写すか（2026-10-04） */}
+          {form.sourceId && copyCands && copyCands.length > 0 && (
+            <div className="w-72 space-y-1">
+              <Label htmlFor="ds-copy">{m.dataSources.contents}</Label>
+              <select
+                id="ds-copy"
+                value={form.copyFrom}
+                onChange={(e) => setForm({ ...form, copyFrom: e.target.value })}
+                className={SELECT_CLASS + " w-full"}
+              >
+                <option value="">{m.dataSources.contentsEmpty}</option>
+                {copyCands.map((c) => (
+                  <option key={c.versionId} value={c.versionId}>
+                    {m.dataSources.copyOption(c.versionCode, c.links, c.inventoryRows)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="min-w-56 flex-1 space-y-1">
             <Label htmlFor="ds-note">{m.dataSources.note}</Label>
             <Input

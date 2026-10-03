@@ -2354,6 +2354,11 @@ model LinkVersionSource {
    * 取り込んだ日時。ファイルは種別ごとに届くので、バージョン単位ではなくここに持つ
    */
   loadedAt DateTime? @map("loaded_at")
+  /**
+   * 別の版から中身を写したとき、写し元の版のコード（2026-10-04）。画面の取込日の欄に添える。
+   * 写したあとで写し元を直しても、こちらは追いかけない（版はその時点の写し）
+   */
+  copiedFrom String? @map("copied_from") @db.VarChar(50)
 
   createdAt DateTime @default(now()) @map("created_at")
   createdBy String?  @map("created_by")

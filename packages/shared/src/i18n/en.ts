@@ -601,6 +601,22 @@ export const en: Messages = {
     inUseByLinks: (n: number) =>
       `This data source has ${n} link${n === 1 ? "" : "s"}. Delete them first`,
     selectSource: "Choose a type",
+    contents: "Contents",
+    contentsEmpty: "Start empty",
+    copyOption: (code: string, links: number, rows: number) =>
+      `Copy from ${code} (${links.toLocaleString()} links${rows ? `, ${rows.toLocaleString()} inventory rows` : ""})`,
+    copyFrom: "Copy from another version",
+    copySelect: "Choose the version to copy from",
+    copyButton: "Copy",
+    copyNone: "Nothing to copy (no other version has this type, or it is empty)",
+    copyNoSource: "That version cannot be copied (it lacks this type or is empty)",
+    copyConfirm: (to: string, source: string, from: string, now: number) =>
+      `Replace the ${source} contents of ${to} with those of ${from}.${now ? ` The current ${now.toLocaleString()} links will be removed.` : ""} Later changes to ${from} will not reach ${to}. Continue?`,
+    copyConfirmLabel: "Copy",
+    copying: "Copying…",
+    copied: (from: string, links: number) =>
+      `Copied from ${from} (${links.toLocaleString()} links). Press "Re-judge all products" in system settings to apply it to judgements`,
+    copiedFrom: (code: string) => `copied from ${code}`,
     enabled: "On",
     enabledHint:
       "Unticked, this type is treated as absent in this version (it appears in no judgement, screen, document or score). Its links stay, so ticking it again restores them",

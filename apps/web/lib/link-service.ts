@@ -92,6 +92,7 @@ export function toLinkVersionSourceDto(
     enabled: row.enabled,
     note: row.note,
     loadedAt: row.loadedAt?.toISOString() ?? null,
+    copiedFrom: row.copiedFrom,
     linkCount,
   };
 }

@@ -1338,6 +1338,8 @@ export interface LinkVersionSourceDto {
   enabled: boolean;
   note: string | null;
   loadedAt: string | null;
+  /** 別の版から中身を写したとき、写し元の版のコード（2026-10-04） */
+  copiedFrom: string | null;
   /** この組み合わせで入っているリンクの数 */
   linkCount: number;
 }

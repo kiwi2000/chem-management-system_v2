@@ -627,6 +627,23 @@ export const ja = {
     inUseByLinks: (n: number) =>
       `このデータソースにはリンクが${n}件あります。先にそちらを消してください`,
     selectSource: "種別を選んでください",
+    /** 別の版から中身を写す（2026-10-04） */
+    contents: "中身",
+    contentsEmpty: "空で作る",
+    copyOption: (code: string, links: number, rows: number) =>
+      `${code} から写す（リンク ${links.toLocaleString()} 件${rows ? `・インベントリ ${rows.toLocaleString()} 行` : ""}）`,
+    copyFrom: "別の版から写す",
+    copySelect: "写し元の版を選んでください",
+    copyButton: "写す",
+    copyNone: "写せる版がありません（同じ種別を持つほかの版が無いか、中身が空です）",
+    copyNoSource: "その版からは写せません（同じ種別が無いか、中身が空です）",
+    copyConfirm: (to: string, source: string, from: string, now: number) =>
+      `${to} の ${source} の中身を、${from} の ${source} の中身で置き換えます。${now ? `いまある ${now.toLocaleString()} 件のリンクは消えます。` : ""}写したあとで ${from} を直しても、${to} は変わりません。よろしいですか？`,
+    copyConfirmLabel: "写す",
+    copying: "写しています…",
+    copied: (from: string, links: number) =>
+      `${from} から写しました（リンク ${links.toLocaleString()} 件）。判定に効かせるには、システム設定の「全製品を判定し直す」を押してください`,
+    copiedFrom: (code: string) => `${code} から写し`,
     enabled: "有効",
     enabledHint:
       "外すと、このバージョンではこの種別を無いものとして扱います（判定・画面・帳票・スコアのどれにも出ません）。リンクは残るので、付け直せば戻ります",
