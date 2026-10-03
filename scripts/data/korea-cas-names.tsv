@@ -570,6 +570,7 @@
 102482-04-2		Vanadium, dichloro(2-hydroxypropanoato-O1,O2)-, (T-4)-
 102483-85-2		1,3-Isobenzofurandione, hexahydro-
 102489-37-2		2-Butynediamide
+10249-85-1		6,8-Dioxa-7-thia-5,9-distannatridecane, 5,5,9,9-tetrabutyl-, 7,7-dioxide
 102490-54-0		Sarin
 102496-08-2		Hydrogen bis[4-[[4-(ethylsulphonyl)-2-hydroxyphenyl]azo]-2,4-dihydro-5-methyl-2-phenyl-3H-pyrazol-3-onato(2-)]chromate(1-), compound with hexane-1,6-diamine (1:2)
 102500-64-1		Vanadium, oxo[sulfato(2-) .kappa.O]-
@@ -1092,6 +1093,7 @@
 106804-40-4	ガリウムヒ素リン（ＧａＡｓ０．６-１Ｐ０-０．４）	Gallium arsenide phosphide (GaAs0.6-1P0-0.4)
 106866-56-2		Chromate(1-), bis[4-[[4-(ethylsulfonyl)-2-hydroxyphenyl]azo]-2,4-dihydro-5-methyl-2-phenyl-3H-pyrazol-3-onato(2-)]-, hydrogen, compounds with hexamethylenediamine
 106870-78-4		Cargurophos
+106887-33-6		[N-(4-Chlorophenyl)-3-[2-[[1-(4-chlorophenyl)-4,5-dihydro-3-methyl-5-(oxo-kO)-1H-pyrazol-4-yl]methylene]hydrazinylidene-kN2]-alpha-cyano-1H-isoindole-3-acetamidato(2-)-kN2,kO3]nickel (primary CASRN is 71889-20-8)
 1069-83-6		Tetraethyldialuminoxane
 106917-52-6	２'，４-ジクロロ-α，α，α-トリフルオロ-４'-ニトロ-ｍ-トルエンスルホンアニリド	2',4-Dichloro-.alpha.,.alpha.,.alpha.-trifluoro-4'-nitro-m-toluenesulfonanilide
 106951-44-4	フェノールとトリフルオロボランの反応生成物	Phenol, reaction products with boron trifluoride
@@ -1993,6 +1995,7 @@
 1163687-50-0		Polyethylene glycol nonylphenyl ether
 116378-40-6		3-Amino-5-carboxybenzeneboronic acid
 116391-72-1		Cadmium, compound with nickel (2:5)
+116403-58-8		Triiodo-.lambda.(5)-stibanethione
 116443-03-9		Gallium arsenide
 116443-84-6	硫化ニッケル（ＮｉＳ１．０３）	Nickel sulfide (NiS1.03)
 116459-31-5		Benzenemethanaminium, N-ethyl-N-[4-[[4-[ethyl[(3-sulfophenyl)methyl]amino]phenyl]phenylmethylene]-2,5-cyclohexadien-1-ylidene]-3-sulfo-, inner salt, aluminum salt
@@ -2358,6 +2361,7 @@
 12005-70-8	ヒ化六ホウ素(B6As)	Boron arsenide (B6As)
 12005-75-3	ヒ化銅(Cu3As)	Copper arsenide (Cu3As)
 12005-81-1		Dysprosium arsenide (DyAs)
+12005-82-2	ヘキサフルオロヒ酸銀(I)	Silver(I) hexafluoroarsenate
 12005-86-6	ヘキサフルオロヒ酸ナトリウム	Sodium hexafluoride arsenate
 12005-88-8	ヒ化鉄(Fe2As)	Iron arsenide (Fe2As)
 12005-89-9		Gadolinium arsenide (GdAs)
@@ -2812,6 +2816,7 @@
 12058-66-1	スズ酸ナトリウム	Disodium stannate
 12058-86-5	アンチモン化ナトリウム(Na3Sb)	Antimony, compound with sodium (1:3)
 12059-14-2		Nickel silicide (Ni2Si)
+12059-19-7		Trinickel phosphide
 12059-23-3	Nickel, compound with tin (3:1)	Nickel, compound with tin (3:1)
 12059-89-1	酸化鉛	Lead oxide (Pb2O)
 12060-00-3	チタン酸鉛	Lead titanium oxide (PbTiO3)
@@ -3155,6 +3160,7 @@
 12210-98-9		Antimony, compound with samarium (3:4)
 12211-52-8	シアン化アンモニウム	Ammonium cyanide
 1221168-60-0		2-Propenenitrile
+12213-15-9		Nickel, bis[(phenyldiazenecarbothioic acid-.kappa.S) 2-phenylhydrazidato-.kappa.N2]-
 12213-61-5		C.I. Pigment Red 104
 12213-70-6		Cadmium selenide sulfide (Cd2SeS)
 12214-12-9	硫セレン化カドミウム	Cadmium selenide sulfide (Cd2SeS)
@@ -3441,6 +3447,7 @@
 123333-54-0	ペンタクロロフェノールナトリウム塩	Pentachlorophenol, sodium salt hydrate
 123333-98-2		Chromium(III) fluoride tetrahydrate
 123334-05-4		p-Toluenesulfonic acid, zinc salt hydrate
+123334-18-9	テトラフェニルアルソニウムクロライド塩酸塩	Tetraphenyl arsonium chloride hydrochloride
 123334-20-3	オキシド［スルファト-κＯ］バナジウム水和物	Vanadium, oxo[sulfato(2-)-O]-, hydrate
 123334-27-0		Trifluoro(2-methoxy-2-methylpropane)boron
 123334-29-2		Cobalt(II) acetylacetonate hydrate
@@ -3551,6 +3558,7 @@
 12397-06-7	塩基性硫酸鉛	Lead oxide sulfate (Pb4O3(SO4)), monohydrate
 12397-16-9		Rhenium selenide (Re2Se7)
 12397-51-2		Aluminate(3-), hexafluoro-, trisodium, (OC-6-11)-
+12397-66-9		Tin arsenide (Sn4As3)
 124-01-6	クロリド（２-エトキシエチル）水銀	2-Ethoxyethylmercury chloride
 124-02-7	ジアリルアミン	Diallylamine
 124-07-2	オクタン酸	Octanoic acid
@@ -3575,6 +3583,7 @@
 1240283-18-4		Diphosphoric acid, cobalt(2+) salt (1:2)
 12403-82-6	ジヒドロキシ［２，４，６-トリニトロ-１，３-ベンゼンジオラト（２-）］二鉛	Lead, dihydroxy[2,4,6-trinitro-1,3-benzenediolato(2-)]di-
 124057-60-9		Polyethylene glycol nonylphenyl ether
+12406-51-8		Mercury, phenyl[(phenyldiazenecarbothioic acid-.kappa.S) 2-phenylhydrazidato-.kappa.N2]-
 12408-33-2		Aluminum silicon hydroxide oxide (AlSi5(OH)O11)
 12408-39-8		Sodium dodecaoxopentasilicatealuminate
 12408-43-4		Dialuminium dibarium calcium hexaoxide
@@ -3697,6 +3706,7 @@
 12504-67-5		Silicon carbide
 12505-45-2		Aluminum, compound with holmium (2:1)
 12505-63-4		Iron arsenide (FeAs)
+12505-67-8		Diarsenic trioxide
 12505-77-0	一酸化ホウ素	Boron monoxide
 125054-47-9	スルフォニウム,S,S'-(チオジ-4,1-フェニレン)ビス[S,S-ビス[4(2-ヒドロキシエトキシ)フェニル]-,(OC-6-11)-ヘキサフルオロアンチモン(1-)(1:2塩)	Sulfonium, (thiodi-4,1-phenylene)bis[bis[4-(2-hydroxyethoxy)phenyl]-, bis[(OC-6-11)-hexafluoroantimonate(1-)]
 125061-94-1		Naphthalene, [difluoro(undecafluorocyclohexyl)methyl]heptadecafluorodecahydro-
@@ -3724,6 +3734,7 @@
 12519-85-6		Trihydrogen hydroxybis[orthosilicato(4-)]trinickelate(3-)
 125199-87-3		Stannane, dibutylbis[(1-oxododecyl)oxy]-
 12522-88-2		.beta.-Aluminum oxide
+12523-20-5		Arsenous acid, antimony(3+) salt (1:1)
 125233-42-3	クロム酸銅	Chromium copper oxide ((Cr,Cu)3O4)
 12524-03-7	ホウ化バナジウム	Vanadium boride (V5B6)
 125252-57-5	ビス［４-（ヒドロキシ-κ-Ｏ）-３-［［２-（ヒドロキシ-κ-Ｏ）-１-ナフチレニル］アゾ-κ-Ｎ１］ベンゼンスルホン酸アミド（２-）］コバルト酸（１-）リチウム	Cobaltate(1-), bis[4-hydroxy-3-[(2-hydroxy-1-naphthalenyl)azo]benzenesulfonamidato(2-)]-, lithium
@@ -4786,6 +4797,7 @@
 13302-00-6	（２-エチルヘキサノアト-κＯ）（フェニル）水銀	Mercury, (2-ethylhexanoato-O)phenyl-
 13302-06-2	トリブチル［（メチルスルホニル）オキシ］スタンナン	Tributyltin methanesulphonate
 13302-08-4	［（メチルスルホニル）オキシ］（トリフェニル）スタンナン	Stannane, ((methylsulfonyl)oxy)triphenyl-
+13302-14-2		Plumbane, tributylchloro-
 133073-29-7	ビス(ヘキサデシルリン酸)水素亜鉛ナトリウム	Sodium zinc hydrogen bis(hexadecylphosphate)
 13308-40-2		Oleic acid, chromium salt
 13308-51-5	リン酸ホウ素	Boron phosphate (B(PO4))
@@ -5072,6 +5084,7 @@
 13463-42-8	ソルベント オレンジ-５	Chromate(3-), bis[3-[(4,5-dihydro-3-methyl-5-oxo-1-phenyl-1H-pyrazol-4-yl)azo]-2-hydroxy-5-nitrobenzenesulfonato(3-)]-, trihydrogen
 134631-46-2		Nickel
 13464-28-3	リン酸第二水銀	Mercury(II) phosphate
+13464-31-8		Arsenic acid (H3AsO4), copper(2+) salt (1:1)
 13464-33-0		Zinc arsenate
 13464-35-2	メタ亜ヒ酸カリウム(KAsO2)	Potassium arsenite
 13464-37-4	亜ヒ酸三ナトリウム	Arsenous acid, trisodium salt
@@ -5100,6 +5113,7 @@
 13465-97-9		Diphosphoric acid, tetrasilver(1+) salt
 13465-98-0	亜硫酸銀(I)	Sulfurous acid, disilver(1+) salt
 134659-55-5		Zinc, bis[3,5-bis(1,1-dimethylethyl)-2-(hydroxy-.kappa.O)benzoato-.kappa.O]-, (T-4)-
+13466-06-3	亜ヒ酸ナトリウム	Arsonic acid, disodium salt
 13466-20-1	リン酸バリウム	Phosphoric acid, barium salt (2:1)
 13466-21-2	二リン酸二バリウム	Diphosphoric acid, barium salt (1:2)
 13466-24-5		Telluric acid (H2TeO4), barium salt (1:1)
@@ -5532,6 +5546,7 @@
 13780-18-2	亜セレン酸カルシウム	Selenious acid, calcium salt (1:1)
 13780-71-7	水酸化ボラン（ＢＨ（ＯＨ）２）	Boric acid (HB(OH)2)
 13782-01-9	ピグメントエロー40	Cobaltate(3-), hexakis(nitrito-N)-, tripotassium, (OC-6-11)-
+13782-02-0	ｃｉｓ-二塩化ペンタアンミン（ニトリト-Ｎ）コバルト	(OC-6-22)-Pentaammine(nitrito-N)cobalt dichloride
 13783-16-9		Aluminum hydroxide
 13783-64-7	フッ化ニッケル	Nickel fluoride (NiF)
 137853-10-2	酸化アンチモン（Ｓｂ２Ｏ４．３４）	Antimony oxide (Sb2O4.34)
@@ -6199,6 +6214,7 @@
 14414-68-7		Benzidine hydrochloride
 144188-76-1		Lithium pyrrolidinoborohydride
 14428-08-1		Nickel, bis[bis(2-ethylhexyl)carbamodithioato-S,S']-
+14429-85-7	三塩化カドミウムカリウム	Potassium trichlorocadmate
 144317-44-2	トリフェニルスルホニウム=ペルフルオロブタン-1-スルホナート	Triphenylsulfonium nonafluorobutanesulfonate
 14434-67-4		Nickel, bis(hexahydro-1H-azepine-1-carbodithioato-S,S')-, (SP-4-1)-
 1443531-60-9	（７-メトキシ-５-メチル-ベンゾチオフェン-２-イル）ボロン酸	(7-Methoxy-5-methyl-1-benzothiophen-2-yl)boronic acid
@@ -6807,6 +6823,7 @@
 15199-43-6		Di[(2H3)methyl] sulphate
 151994-98-8		Nickel(2+), [2,2'-(2,5,9,12-tetrathiatridecane-1,13-diyl)bis[pyridine]- N1,N1',S2,S2',S2'',S2''']-, bis[tetrafluoroborate(1-)]
 152-16-9	シュラーダン	Octamethylpyrophosphoramide
+1520-71-4	クロロ（トリプロピル）プルンバン	Plumbane, chlorotripropyl-
 1520-78-1	クロロ（トリメチル）プルンバン	Chlorotrimethylplumbane
 1520030-54-9		B-spiro[9H-Fluorene-9,8'-indolo[3,2,1-de]acridin]-2-ylboronic acid
 15201-05-5		Zincate(2-), tetrachloro-, (T-4)-
@@ -6846,6 +6863,7 @@
 152743-49-2		Phenol, 2,4,6-tris[(dimethylamino)methyl]-
 15275-08-8	トリ（シュウ酸）コバルト酸三カリウム・三水和物	Cobaltate(3-), tris[ethanedioato(2-)-O,O']-, tripotassium, trihydrate, (OC-6-11)-
 15275-09-9		Potassium chromium(III) oxalate trihydrate
+15276-40-1	六塩化カドミウムカリウム	(OC-6-11)-Tetrapotassium hexachlorocadmate
 152761-81-4		Antimony hydroxide
 15277-97-1	2,2',2''-ニトリロトリスエタノールホウ酸エステル	Boron, [[2,2',2''-nitrilotris[ethanolato]](3-)-N,O,O',O'']-, (T-4)-
 1528-01-4	トリブチル（メチル）スタンナン	Tributylmethylstannane
@@ -6889,7 +6907,7 @@
 1533423-50-5		Cyclohexanamine
 1533423-51-6		Benzenamine
 15336-98-8	ジアリルジブチルスズ	Diallyldibutylstannane
-15337-18-5	ビス(N-ジペンチルジチオカルバミド酸)亜鉛	Zinc, bis(dipentylcarbamodithioato-S,S')-, (T-4)-
+15337-18-5	Ｎ-ジアミルジチオカルバミン酸亜鉛	Zinc, bis(dipentylcarbamodithioato-S,S')-, (T-4)-
 15337-60-7	ラウリン酸カドリウムバリウム	Cadmium-barium laurate
 15339-36-3		Manganese dimethyldithiocarbamate
 15339-40-9	四フッ化ベリリウム酸バリウム	(T-4)-Barium tetrafluoroberyllate
@@ -7311,7 +7329,7 @@
 15928-77-5		Chromous sulfate pentahydrate
 15928-94-6		4-[Benzyl(methyl)amino]-2-chloro-5-methoxybenzenediazonium tetrachlorozincate (2:1)
 15930-11-7		Acetic acid, aluminium sodium salt
-15930-94-6	酸化テトラオキシドクロム酸二亜鉛一水和物	Zinc chromate hydroxide
+15930-94-6	テトラヒドロキシクロム酸亜鉛	Zinc chromate hydroxide
 15935-90-7		Barium metaborate
 159431-44-4		Ammonium bifluoride
 159474-76-7		2-Propenoic acid, isooctyl ester
@@ -7347,6 +7365,8 @@
 160305-97-5	３，４，５，６-テトラクロロ-Ｎ-［３-｛パーフルオロアルキル（Ｃ＝６～８）スルホニルオキシ｝フエニル］フタルアミド酸カリウム	Potassium 3,4,5,6-tetrachloro-N-[3-((perfluoroalkyl(C6-8)sulfonyloxy))phenyl]phthalamate
 16033-71-9		Propylene oxide
 160336-17-4	ブチル＝プロパ-２-エノアート及び２-｛メチル［（ペルフルオロアルキル）スルホニル］アミノ｝エチル＝プロパ-２-エノアート（ペルフルオロアルキル基の構造が直鎖であって、当該ペルフルオロアルキル基の炭素数が６のもの又は当該ペルフルオロアルキル基の炭素数が４から８までのものの混合物（ペルフルオロアルキル基の炭素数が６のものを含むものに限る。）に限る。）の共重合物	Polymer(butyl acrylate-2-[N-methyl-N-[perfluoroalkyl[C4-8]sulfonyl]amino]ethyl acrylate)
+16035-34-0	（４-ブロモブチル）（トリフェニル）プルンバン	Plumbane, (4-bromobutyl)triphenyl-
+16035-39-5	（４-アジドブチル）（トリフェニル）プルンバン	Plumbane, (4-azidobutyl)triphenyl-
 16036-87-6		Strychnine hypophosphite
 16037-50-6	塩化クロム酸カリウム	Chromate(1-), chlorotrioxo-, potassium, (T-4)-
 16038-15-6		Trisodium [2-[(4,6-dichloro-1,3,5-triazin-2-yl)amino]-5-hydroxy-6-[(2-hydroxy-5-sulphophenyl)azo]naphthalene-1,7-disulphonato(5-)]cuprate(3-)
@@ -7428,6 +7448,7 @@
 16122-27-3	ビス（トリフェニルスズ）フマル酸塩	(Z)-3,6-Dioxo-1,1,1,8,8,8-hexaphenyl-2,7-dioxa-1,8-distannaoct-4-ene
 161279-45-4		Cobalt stearate
 161279-65-8		Naphthenic acids, cobalt salts
+16128-42-0		1H-Imidazole, 1-(tributylplumbyl)-
 1612842-42-8		1-Butyl-3-dodecyl-1H-imidazolium salt with 1,1,1-trifluoro-N-[(trifluoromethyl)sulfonyl]methanesulfonamide (1:1)
 161288-32-0		Ammonium fluoride
 1613165-06-2		Methanesulfonamide, 1,1,1-trifluoro-N-[(trifluoromethyl)sulfonyl]-, lithium salt (1:1)
@@ -7516,6 +7537,7 @@
 16324-24-6		Aluminum, (2,4-pentanedionato-O,O')bis(2-propanolato)-, (T-4)-
 163269-30-5	３-（１-ベンゾチオフェン-２-イル）-４-オキソ-５，６-ジヒドロ-４Ｈ-１，４λ（４），２-オキサチアジン	3-(1-Benzothien-2-yl)-5,6-dihydro-1,4,2-oxathiazine 4-oxide
 1633026-84-2		Sodium methoxide
+16331-85-4		Caesium arsenate
 16337-64-7		Cuprate(4-), [29H,31H-phthalocyanine-2,9,16,23-tetracarboxylato(6-)-.kappa.N29, .kappa.N30, .kappa.N31, .kappa.N32]-, hydrogen (1:4), (SP-4-1)-
 16337-84-1	炭酸ニッケル	Nickel carbonates
 1633871-09-6		Aluminum yttrium oxide (Al5Y3O12)
@@ -7554,6 +7576,7 @@
 164144-91-6		Nickel oxide (Ni2O3)
 16415-09-1		2-Fluoro-4-methyl-1,3,2-dioxaphospholane
 1641546-65-7		Zinc oxide
+164170-84-7	ヒ酸二水素カリウム・1/5水和物	Arsenic acid (H3AsO4), monopotassium salt, 1/5 hydrate
 164220-57-9		.beta.-[4-(trans-4-Ethylcyclohexyl)phenyl]boronic acid
 164250-66-2		Iron zinc oxide (Fe2ZnO4)
 1642531-70-1		Aluminum oxide
@@ -7957,6 +7980,7 @@
 17443-29-7		Cobalt stearate
 174514-58-0		Aluminum zirconium octachlorohydrex glycine complex
 1746-01-6	2,3,7,8-テトラクロロベンゾ- p-ダイオキソン	2,3,7,8-Tetrachlorodibenzo-p-dioxin
+174645-81-9		1H-Imidazolium, 1-butyl-3-methyl-, (OC-6-11)-hexafluoroantimonate(1-) (1:1)
 174669-73-9		2-Fluoro-3-pyridineboronic acid
 17476-04-9		Lithium tri-tert-butoxyaluminohydride
 174778-59-7		Boronic acid, [5-[(aminoacetyl)amino]-2-(heptafluoropropyl)phenyl]-
@@ -7967,6 +7991,7 @@
 17500-49-1	テトラアンミン銅(2+) 二水酸化物	Tetraamminecopper(2+) dihydroxide
 17508-29-1	アリル（４-クロロフェニル）セレニド	4-(Allylseleno)-1-chlorobenzene
 1752-30-3	アセトンチオセミカルバゾン	Acetone thiosemicarbazone
+17522-78-0		Arsenic chloride (AsCl)
 17523-06-7	二酢酸ジブチルスズ	Bis(acetato)dibutyltin
 17523-24-9		Dichloronickel-triethylphosphine (1:2)
 175386-67-1		C.I. Pigment Blue 15
@@ -8021,6 +8046,7 @@
 177256-35-8		Cobalt
 1772606-15-1		Methanesulfonamide, 1,1,1-trifluoro-N-[(trifluoromethyl)sulfonyl]-, lithium salt (1:1)
 177279-28-6		Silver, [(.eta.2-ethenyl)triethylsilane](1,1,1,5,5,5-hexafluoro-2,4-pentanedionato-.kappa.O2, .kappa.O4)-
+17729-30-5		Tris(trimethylsilyl)arsine
 177322-39-3		Cupric hydroxide
 1773514-66-1	セレン化カドミウム（ＣｄＳｅ）とテトラデシルホスホン酸の反応生成物	Phosphonic acid, P-tetradecyl-, reaction products with cadmium selenide (CdSe)
 1773514-92-3	セレン化硫化カドミウム亜鉛、ドデカン酸及び（Ｚ）-オクタデカ-９-エン-１-アミンの反応生成物	Dodecanoic acid, reaction products with cadmium zinc selenide sulfide and oleylamine
@@ -8053,6 +8079,7 @@
 178452-71-6		Chromate(5-), bis[6-[[[4-[(1-butyl-5-cyano-1,6-dihydro-2-hydroxy-4-methyl-6-oxo-3-pyridinyl)azo]phenyl]sulfonyl]amino]-4-hydroxy-3-[(2-hydroxy-5-nitro-3-sulfophenyl)azo]-2-naphthalenesulfonato(4-)]-, pentasodium
 178452-72-7		Trisodium bis(6-amino-2-[4-(2-hydroxy-1-naphthylazo)phenylsulfonylamino]-3'-nitro-5'-sulfonatopyrimidine-5-azobenzene-2,4'-diolate) chromate(III)
 178459-70-6		Cyclobutane, octafluoro-
+17846-68-3		Stannane, azidotributyl-
 1785-43-9	クロリド（エタンチオラト）水銀	Mercury, chloro(ethanethiolato)-
 17852-69-6	３-｛２-［（１-エチル-６-メトキシキノリン-１-イウム-２-イル）メチリデン］-５-メトキシ-１，３-ベンゾセレナゾール-３（２Ｈ）-イル｝プロパン-１-スルホナート	1-Ethyl-6-methoxy-2-[[5-methoxy-3-(3-sulphonatopropyl)-3H-benzoselenazol-2-ylidene]methyl]quinolinium
 17852-98-1		2-Naphthalenecarboxylic acid, 3-hydroxy-4-[(4-methyl-2-sulfophenyl)azo]-, barium salt (1:1)
@@ -8717,7 +8744,7 @@
 2033048-35-8		Aluminum oxide
 20332-10-9	ジフェニル（スルファニリデン）スタンナン	Diphenylthioxostannane
 20334-41-2		Nicotine, mono(4-aminosalicylate)
-20346-77-4		stibane
+20346-77-4		Stibane
 20346-99-0		Rubidium tetrahydroborate(1-)
 2035-66-7	シアン化パラジウム	Palladium cyanide (Pd(CN)2)
 2036-15-9	水素化ジプロピルアルミニウム	Dipropylaluminum hydride
@@ -8993,6 +9020,7 @@
 213531-97-6		Copper-64(2+) N'-methyl-N-[(E)-[(3E)-3-[(N-methyl-C-sulfidocarbonimidoyl)hydrazinylidene]butan-2-ylidene]amino]carbamimidothioate
 213539-83-4		Copper lysinate
 2136-99-4	2,2',3,3',5,5',6,6'-オクタクロロビフェニル	2,2',3,3',5,5',6,6'-Octachlorobiphenyl
+21360-94-1	四塩化カドミウムナトリウム	(T-4)-Disodium tetrachlorocadmate
 21361-93-3		Pyridine, 3-(1-methyl-2-pyrrolidinyl)-, monohydrochloride, (S)-
 21368-35-4	三フッ化ホウ素・p-クレゾール錯体	Boron, trifluoro(4-methylphenol)-, (T-4)-
 213740-81-9	ビス（４-ｔｅｒｔ-ブチルフェニル）ヨードニウム＝トリデカフルオロヘキサン-１-スルホナート	Iodonium, bis[4-(1,1-dimethylethyl)phenyl]-, 1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluoro-1-hexanesulfonate (1:1)
@@ -9080,7 +9108,7 @@
 218-01-9	クリセン	Chrysene
 2180-65-6		Aluminum, tris(4-methylpentyl)-
 21800-13-5		Strychnidin-10-one, sulfate
-21806-61-1		5H-1,2-Oxathiole-2,2-dioxide
+21806-61-1	１，２λ６-オキサチオール-２，２（５Ｈ）-ジオン	5H-1,2-Oxathiole-2,2-dioxide
 2181002-91-3		2,2',3,3',4,6-Hexabromobiphenyl
 2181002-92-4		2,2',3,3',5,6-Hexabromobiphenyl
 2181002-93-5		2,2',3,4,4',6-Hexabromobiphenyl
@@ -9533,6 +9561,7 @@
 24308-84-7	ベンゼンスルフィン酸, 亜鉛塩	Benzenesulfinic acid, zinc salt
 243121-01-9		Hexamethylene-1,6-diisocyanate
 24325-23-3		D-Ribofuranose, 5-(dihydrogen phosphate), barium salt
+24343-41-7		Arsenous acid, gallium salt (1:1)
 24345-02-6	ベンゼンスルフィン酸, 4-メチル-, 亜鉛塩	Benzenesulfinic acid, 4-methyl-, zinc salt
 24345-60-6	カドミウム＝ジメタクリラート	Cadmium methacrylate
 24359-04-4	ビス(マレイン酸=1-テトラデシル)亜鉛	2-Butenedioic acid (Z)-, monotetradecyl ester, zinc salt
@@ -10194,6 +10223,7 @@
 27882-76-4		Chromium picolinate monohydrate
 27905-45-9	３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル＝アクリラート	2-Propenoic acid, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl ester
 2791-60-8		Trihexyltin chloride
+27911-69-9		Nickel sulfide (Ni7S6)
 27923-60-0		Niobate(2-), heptachloro-, lead(2+)
 279261-81-3	（３-クロロ-４-エトキシフェニル）（ジヒドロキシ）ボラン	3-Chloro-4-ethoxybenzeneboronic acid
 279262-11-2		4-(Methoxymethyl)phenylboronic acid
@@ -10253,6 +10283,7 @@
 283-56-7	トリエタノールアミン=ボレート	2,8,9-Trioxa-5-aza-1-borabicyclo[3.3.3]undecane
 28300-74-5	酒石酸アンチモンカリウム三水和物	Antimonate(2-), bis[.mu.-(2,3-dihydroxybutanedioato(4-)-O1,O2:O3,O4)]di-, dipotassium, trihydrate, stereoisomer
 28302-36-5	銅クロロフィリンナトリウム	Cuprate(3-), [18-carboxy-20-(carboxymethyl)-8-ethenyl-13-ethyl-12-formyl-2,3-dihydro-3,7,17-trimethyl-21H,23H-porphine-2-propanoato(5-)-N21,N22,N23,N24]-, trisodium, [SP-4-2-(2S-trans)]-
+28302-54-7	三塩化カドミウムカリウム一水和物	Potassium trichlorocadmate monohydrate
 28308-70-5	モノメチルスズ酸ポリマー	Distannoxane, 1,3-dimethyl-1,3-dioxo-
 2831346-46-2		Aluminum oxide
 28339-05-1	４，８-ジメチルデカン-１-オール	1-Decanol, 4,8-dimethyl-
@@ -10489,7 +10520,7 @@
 2991267-30-0		2-Propenoic acid, polymer with ethene and hexahydro-2H-azepin-2-one, zinc salt
 2991267-35-5		Boranetriamine, N,N',N''-tricyclohexyl-, homopolymer
 2991368-86-4		Cuprate(4-), [.mu.-[[3,3'-[(1-oxido-1,2-diazenediyl)bis[[2-(hydroxy-.kappa.O)-4,1-phenylene]-2,1-diazenediyl-.kappa.N1]]bis[4-(hydroxy-.kappa.O)-6-[(4-sulfophenyl)amino]-2-naphthalenesulfonato]](8-)]]di-, sodium (1:4)
-29935-35-1	ヘキサフルオロヒ酸リチウム	Arsenate(1-), hexafluoro-, lithium
+29935-35-1	六フッ化ヒ酸リチウム	Arsenate(1-), hexafluoro-, lithium
 2994-71-0		Cyclobutane, 1,1,2,2,3,4-hexafluoro-3,4-bis(trifluoromethyl)-
 29957-59-3		Boron, tribromo[thiobis[methane]]-, (T-4)-
 29961-99-7		Copper, tetraammminedichloro-
@@ -10606,6 +10637,7 @@
 306-94-5	パーフルオロデカリン	Naphthalene, octadecafluorodecahydro-
 306-95-6	パーフルオロ-メチルデカリン	1,1,2,2,3,3,4,4,4a,5,5,6,6,7,8,8,8a-Heptadecafluorodecahydro-7-(trifluoromethyl)naphthalene
 306-98-9	ペルフルオロ(1,2-ジメチルシクロヘキサン)	1,1,2,2,3,3,4,4,5,6-Decafluoro-5,6-bis(trifluoromethyl)cyclohexane
+30621-31-9		arsenic acid (H3AsO4), calcium salt(2:3), dihydrate
 30621-99-9		(1:1) Compound of 2-[(C8-18-alkyl)amino]-1-substituted propane and hydrogen bis[1-[(2-hydroxy-6-nitrophenyl)azo]-2-naphthalenolato(2-)]cobaltate(1-), branched or linear heptyl derivatives
 30623-04-2	硫酸カリウムカドミウム六水和物	Sulfuric acid, cadmium potassium salt (2:1:2), hexahydrate
 30638-08-5	スルホフタロシアニンコバルト(2+)	Cobaltate(1-), [29H,31H-phthalocyanine-C-sulfonato(3-)-N29,N30,N31,N32]-, hydrogen
@@ -10656,6 +10688,7 @@
 30745-55-2	ビス［（２-エチルヘキサノイル）オキシ］（ヒドロキシ）アルミニウム	Aluminum, bis(2-ethylhexanoato-O)hydroxy-
 30746-58-8	1,2,3,4-テトラクロロジベンゾ[b,e][1,4]ジオキシン	1,2,3,4-Tetrachlorodibenzodioxin
 307531-70-0		Cadmium, bis(2,4-pentanedionato-.kappa.O,.kappa.O')-, monohydrate, (T-4)-
+3076-54-8		Plumbane, tris(acetyloxy)phenyl-
 3076-91-3	マーキュリーオレンジ	Chloro[p-[(2-hydroxy-1-naphthyl)azo]phenyl]mercury
 30773-34-3		2-Propenoic acid, 2-methyl-, polymer with ethene and ethenyl acetate, zinc salt
 30776-59-1	テトラデシルベンゼンスルホン酸	Benzenesulfonic acid, tetradecyl-
@@ -10874,6 +10907,7 @@
 32579-69-4	３-ｔｅｒｔ-ブチル-２，２-ジメチルヘキサン-３-オール	3-Hexanol, 3-(1,1-dimethylethyl)-2,2-dimethyl-
 32579-70-7	３-ｔｅｒｔ-ブチル-２，２，５-トリメチルヘキサン-３-オール	3-Hexanol, 3-(1,1-dimethylethyl)-2,2,5-trimethyl-
 32588-54-8	２-（２-メチルブタ-２-イル）アントラセン-９，１０-ジオン	9,10-Anthracenedione, 2-(1,1-dimethylpropyl)-
+32593-99-0	三ヨウ化カドミウムアンモニウム	Ammonium triiodocadmate
 32598-10-0	2,3',4,4'-テトラクロロビフェニル	2,3',4,4'-Tetrachlorobiphenyl
 32598-11-1	2,3',4',5-テトラクロロビフェニル	2,3',4',5-Tetrachlorobiphenyl
 32598-12-2	2,4,4',6-テトラクロロビフェニル	2,4,4',6-Tetrachlorobiphenyl
@@ -10938,6 +10972,7 @@
 32978-79-3	トリエタノールアミン-ペンタ-クロロフェノラート	Triethanolamine-pentachlorophenolate
 32982-66-4		Magnesium bis(tetraethoxyaluminate)
 32990-64-0		Disubstituted benzenesulfonic acid salt nickel complex
+330-21-2		Tricyclo[3.3.1.1(3,7)]tetrastibazane
 330-54-1	ジウロン	Diuron
 330-55-2	リヌロン	Urea, N'-(3,4-dichlorophenyl)-N-methoxy-N-methyl-
 33004-01-2		Propylene
@@ -11100,9 +11135,11 @@
 33960-07-5	硝酸コバルト(3+)六水和物	Cobalt trinitrate hexahydrate
 33960-08-6	硝酸水銀(2+)水和物	Mercury(II) nitrate hydrate
 33966-50-6		sec-Butylamine
+33972-75-7	メタンアルソン酸鉄	Ferric methanarsonic acid
 33978-71-1	２-メチルウンデカン-５-オール	5-Undecanol, 2-methyl-
 33979-03-2	2,2',4,4',6,6'-ヘキサクロロビフェニル	2,2',4,4',6,6'-Hexachlorobiphenyl
 33991-41-2		Sulfonium, ethoxydimethyl-, tetrafluoroborate(1-)
+33992-49-3		Arsenenous acid, nickel(2+) salt
 33992-50-6	アンチモン酸ニッケル(NiSb2O4)	Antimony nickel oxide (Sb2NiO4)
 34010-85-0	ビス（トリフェニルホスファン-κＰ）銅（１＋）＝ボラヌイド	Bis(triphenylphosphine)copper tetrahydroborate
 34018-28-5	臭素酸鉛	Lead dibromate
@@ -11189,6 +11226,7 @@
 34588-40-4	2,3,6,７-テトラクロロナフタレン	2,3,6,7-Tetrachloronaphthalene
 346-80-5		2,4-Bis(4-methoxyphenyl)-6-phenylpyrylium tetrafluoroborate
 34624-53-8		Demeton
+346417-97-8		Cobalt lithium manganese nickel oxide
 3465-75-6	ビスデカン酸ジブチルスズ	Dibutylbis(decanoyloxy)stannane
 3465-77-8	酸化ビス[ジブチル(オクタデカノイルオキシ)スズ]	Distannoxane, 1,1,3,3-tetrabutyl-1,3-bis[(1-oxooctadecyl)oxy]-
 34664-47-6	ビス［３-［（４，５-ジヒドロ-３-メチル-５-オキソ-１-フェニル-１Ｈ-ピラゾール-４-イル）アゾ］-４-ヒドロキシベンゼンスルホン酸アミド（２-）］コバルト酸（１-）ナトリウム	Cobaltate(1-), bis[3-[(4,5-dihydro-3-methyl-5-oxo-1-phenyl-1H-pyrazol-4-yl)azo]-4-hydroxybenzenesulfonamidato(2-)]-, sodium, (OC-6-22')-
@@ -11352,6 +11390,7 @@
 35837-53-7	リン酸ジブチルバナジウム	Dibutyl hydrogen phosphate, vanadium salt
 35837-70-8	3,5,5-トリメチルヘキサン酸鉛(2+)	Lead bis(3,5,5-trimethylhexanoate)
 35854-94-5	1,3,5-トリブロモ-2-(2,4,6-トリブロモフェノキシ)ベンゼン	Benzene, 1,1'-oxybis[2,4,6-tribromo-
+3586-60-5		Arsenic dimethyldithiocarbamate
 3587-18-6	トリブチルフェノキシスズ	Tributylphenoxystannane
 358732-16-8		2-Propanol aluminum salt
 35884-05-0		(Dibutylamine)bis(dibutyldithiocarbamato-S,S')zinc
@@ -11409,7 +11448,7 @@
 36347-14-5		Bisphenol A epichlorohydrin polymer
 36352-77-9		Tricarbonyl[(1,2,3,4,5,6-.eta.)-m-toluidine]chromium
 36355-01-8	六臭化ビフェニル	Hexabromobiphenyl
-36355-97-2		Magnesium chlorate dihydrate
+36355-97-2	塩素酸マグネシウム二水和物	Magnesium chlorate dihydrate
 36362-00-2		Hydroxybis(octadec-9-enoato-O)aluminium, stereoisomer
 3639-19-8		Difetarsone
 36393-20-1		Dihydrogen bis[L-aspartato(2-)-N,O1]zincate(2-)
@@ -11589,6 +11628,7 @@
 37264-96-3		Cobalt carbonyl
 37265-21-7		Bisphenol A epichlorohydrin polymer
 37265-86-4	タングステン酸バリウムイットリウム	Barium tungsten yttrium oxide (Ba3WY2O9)
+37267-70-2		Antimony trimer
 37268-38-5		Aluminum alloy
 37269-74-2		Boron carbide (B4C)
 37270-82-9		Bisphenol A epichlorohydrin polymer
@@ -11689,6 +11729,7 @@
 37370-29-9		Benzoyl peroxide
 37382-15-3		Aluminum gallium arsenide ((Al,Ga)As)
 37382-24-4	酸化クロムコバルト	Chromium cobalt oxide
+37382-34-6		Triiodo-.lambda.(5)-stibanone
 37382-38-0		Lead titanium zirconium oxide (Pb(Ti,Zr(O3)
 37396-60-4		Copper carbonate, basic
 374-51-6		Propane, 1,1,1,3,3,3-hexafluoro-2,2-bis(trifluoromethyl)-
@@ -12301,6 +12342,7 @@
 41685-84-1	［３-［（２-メチル-１-オキソ-２-プロペニル）アミノ］フェニル］ホウ酸ホモポリマー	Boronic acid, [3-[(2-methyl-1-oxo-2-propenyl)amino]phenyl]-, homopolymer
 4170-30-3	2-ブテナール	Crotonaldehyde
 41741-86-0	ビス(2-{[3-メチル-5-(オキソ-κO)-1-フェニル-4,5-ジヒドロ-1Hーピラゾール-4-イル]ジアゼニル-κN1}ベンゾアート-κO)クロム酸(1-)ナトリウム	Chromate(1-), bis[2-[(4,5-dihydro-3-methyl-5-oxo-1-phenyl-1H-pyrazol-4-yl)azo]benzoato(2-)]-, sodium salt
+41743-88-8		Nickel perchlorate
 41749-18-2	２，５-ジエトキシ-４-（ｐ-トリルスルファニル）ベンゼンジアゾニウム＝テトラフルオロボラヌイド（１-）	Benzenediazonium, 2,5-diethoxy-4-[(4-methylphenyl)thio]-, tetrafluoroborate(1-)
 41751-89-7		Cobalt chlorophyllin
 41766-73-8		Benzidine dihydrofluoride
@@ -12314,6 +12356,7 @@
 41944-89-2		Nicotine pentachlorophenolate
 419536-33-7		B-[4-(9H-Carbazol-9-yl)phenyl]boronic acid
 4198-47-4	D-ガラクトース-6-リン酸バリウム塩	Galactose 6-(barium phosphate)
+41996-37-6		Arsenic chloride (AsCl2)
 41997-13-1	1-ヘキサンスルホンアミド、1,1,2,2,3,3,4,4,5,5,6,6,6-トリデカフルオロ	1-Hexanesulfonamide, 1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluoro-
 420-04-2	シアナミド	Cyanamide
 420-24-6		Arsine, difluoromethyl-
@@ -12325,6 +12368,7 @@
 42072-62-8	４-エチル-３，６-ジメチルオクタン-４-オール	4-Octanol, 4-ethyl-3,6-dimethyl-
 420849-75-8		Nickel dibutyldithiocarbamate
 421-07-8		Propane, 1,1,1-trifluoro-
+421-09-0		Bromo(trifluoromethyl)mercury
 421-50-1	2-プロパノン, 1,1,1-トリフルオロ-	2-Propanone, 1,1,1-trifluoro-
 42126-46-5		Nickel carbonyl
 42138-26-1		Strychnidin-10-one, mono[(+)-(3-dibenzofuranylsulfinyl)acetate]
@@ -12397,6 +12441,7 @@
 42930-67-6	３-ｔｅｒｔ-ブチル-２，２-ジメチルヘプタン-３-オール	3-Heptanol, 3-(1,1-dimethylethyl)-2,2-dimethyl-
 42939-70-8		Methylamine
 42939-72-0		Butylamine
+42977-21-9	１，１，１，２，２，３，３，４，４，５，５，６，６，７，７，８，８-ヘプタデカフルオロ-１０ -［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）ジスルファニル］デカン	Bis(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl) disulphide
 42978-77-8	トルイル酸コバルト塩	Benzoic acid, methyl-, cobalt salt
 4299-07-4	Ｎ-ブチル-１，２-ベンゾイソチアゾロン	2-n-Butyl-benzo[d]isothiazol-3-one
 430-66-0	1,1,2-トリフルオロエタン	1,1,2-Trifluoroethane
@@ -12412,6 +12457,7 @@
 431059-71-1		Sulfonium, diphenyl(2,4,6-trimethylphenyl)-, salt with 2,4-difluorobenzenesulfonic acid (1:1)
 43126-83-6		tert-Dodecanethiol, silver(1+) salt
 43134-64-1		Aluminum, bis(2-methylpropoxy)[(1-oxooctadecyl)oxy]-
+43135-86-0		Plumbane, triethyl[[(4-methylphenyl)sulfonyl]oxy]-
 43136-11-4		Aluminum hydroxide sulfate
 43136-18-1	１，１，３，３-テトラメチル-１，３-ビス（オレオイルオキシ）ジスタンノキサン	Distannoxane, 1,1,3,3-tetramethyl-1,3-bis[(1-oxo-9-octadecenyl)oxy]-, (Z,Z)-
 4325-51-3		Decane, 2-chloro-2-methyl-
@@ -12660,6 +12706,7 @@
 460731-19-5		Sulfonium, (4-methylphenyl)diphenyl-, salt with 1,1,1-trifluoro-N-[(trifluoromethyl)sulfonyl]methanesulfonamide (1:1)
 460739-39-3		Methyl 2-methyl-2-propenoate polymer with butyl 2-propenoate, ethyl 2-propenoate, zinc bis(2-methyl-2-propenoate) and zinc di-2-propenoate, 2,2'-azobis[2-methylbutanenitrile]- and 2,2'-azobis [2-methylpropanenitrile]-initiated
 460739-64-4		Methyl 2-methyl-2-propenoate polymer with ethyl 2-propenoate, zinc bis(2-methyl-2-propenoate) and zinc di-2-propenoate, 2,2'-azobis(2-methylbutanenitrile)- and 2,2'-azobis(2-methylpropanenitrile)-initiated
+461-40-5		Mercury, (nitrate-O)(trifluoromethyl)-
 461-44-9	三フッ化ホウ素と酢酸エチルの（１：１）付加物	Alkyl(C1-2) alkyl(C1-4) carboxylate complex salt of boron trifluoride
 461038-89-1		Zinc octanoate
 4611-62-5	2-エチル-1,2-ベンゾオキサゾリウム=テトラフルオロボレート	2-Ethyl-1,2-benzisoxazole tetrafluoroborate
@@ -12728,7 +12775,7 @@
 4756-53-0	ベンゼン-1,4-ジカルボン酸ビス(トリブチルスズ)	[(Terephthaloylbis(oxy)]bis(tributylstannane)
 4756-75-6	トリフェニルアンチモンオキサイド	Triphenylstibine oxide
 47562-29-8		Stannane, triphenyl[(phenylsulfinyl)oxy]-
-4759-48-2		Retinoic acid, 13-cis-
+4759-48-2	イソトレチノイン	Retinoic acid, 13-cis-
 47672-31-1	トリフェニルスタンニル＝デカノアート	Stannane, [(1-oxodecyl)oxy]triphenyl-
 47689-51-0	テトラフェノキシジボロキサン	Diboron tetraphenyl pentaoxide
 47726-62-5	［４，４'，６，６'-テトラクロロ-２，２'-（４，８-ジクロロベンゾ［１，２-ｄ：４，５-ｄ'］ビス［１，３］オキサゾール-２，６-ジイル-κＮ（３））（フェノラト-κＯ）フェノラト（２-）］ニッケル	[[2,2'-(4,8-Dichlorobenzo[1,2-d:4,5-d']bisoxazole-2,6-diyl)bis[4,6-dichlorophenolato]](2-)]nickel
@@ -13041,6 +13088,7 @@
 51350-73-3		Trihydrogen hexafluoroaluminate
 51351-67-8		Zinc, bis(O,O-dipentyl phosphorodithioato-S,S')-, (T-4)-
 51366-17-7		Basic copper chloride
+51366-60-0		Antimony, compound with chromium
 51375-45-2	トリクロロ（ドデシル）スタンナン	Trichlorododecylstannane
 51385-03-6		Pyridine, 3-(1-methyl-2-pyrrolidinyl)-, (S)-, [R-(R*,R*)]-2,3-dihydroxybutanedioate (2:1)
 51393-99-8		Bisphenol A epichlorohydrin polymer
@@ -13328,6 +13376,7 @@
 52683-07-5		Polyethylene glycol nonylphenyl ether
 52683-46-2		Phenol, 2,6-bis(1,1-dimethylethyl)-4-methyl-
 52683-56-4		Benomyl
+52684-23-8		2-Propenoic acid, 2-methyl-, methyl ester, polymer with tributyl((2-methyl-1-oxo-2-propenyl)oxy)stannane and ((2-methyl-1-oxo-2-enyl)oxy)tripropylstannane
 52685-95-7	３-（２-｛２-メチル-３-［３-（３-スルホプロピル）-１，３-ベンゾセレナゾール-２（３Ｈ）-イリデン］プロパ-１-エン-１-イル｝-１，３-ベンゾセレナゾール-３-イウム-３-イル）プロパン-１-スルホナート	Hydrogen 2-[2-methyl-3-[3-(3-sulphonatopropyl)-3H-benzoselenazol-2-ylidene]prop-1-enyl]-3-(3-sulphonatopropyl)benzoselenazolium
 52691-95-9	ビス(ジブチルジチオカルバミド酸)銅(2+)	Bis(dibutyldithiocarbamato-S,S')copper
 52697-21-9		Ammonium bifluoride
@@ -13503,7 +13552,7 @@
 53513-80-7		Lead, [3-mercapto-D-valinato(2-)-N,O,S]-
 53514-39-9	四フッ化ベリリウム酸カルシウム	(T-4)-Calcium tetrafluoroberyllate
 53515-73-4	プロパ-２-エン酸及び２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロオクチル＝２-メチルプロパ-２-エノアートの共重合物	2-Propenoic acid, 2-methyl-, 2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluorooctyl ester, polymer with 2-propenoic acid
-53517-98-9	Ｎ-［３-（パーフルオロオクタノイルアミド）プロピル］Ｎ，Ｎ，Ｎ-トリメチルアンモニウムクロライド	N-[3-(Perfluorooctanoylamido) propyl]-N,N,N-trimethylammonium chloride
+53517-98-9	Ｎ-［３-（パーフルオロオクタノイルアミド）プロピル］Ｎ，Ｎ，Ｎ-トリメチルアンモニウムクロライド	1-Propanaminium, N,N,N-trimethyl-3-[(2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluoro-1-oxooctyl)amino]-, chloride (1:1)
 53527-81-4		Nickel
 53529-09-2		Chromium lead oxide sulfate
 53529-37-6		Lindane
@@ -13641,7 +13690,7 @@
 542-83-6	シアン化カドミウム	Cadmium cyanide (Cd(CN)2)
 542-84-7	シアン化コバルト(2+)	Cobalt cyanide (Co(CN)2)
 542-88-1	ジクロロメチルエーテル	Bis(chloromethyl) ether
-54207-62-4	３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］プロパン酸	Propanoic acid, 3-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10, 10,10-heptadecafluorodecyl)thio]-
+54207-62-4	３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］プロパン酸	Propanoic acid, 3-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]-
 5421-48-7	アセトキシメルクリオ(II)ホスホン酸ジエチル	Mercury, (acetato-O)(diethyl phosphite-P)-
 54227-68-8		Disodium [4-[4,5-dihydro-4-[[2-hydroxy-5-[[2-(sulphooxy)ethyl]sulphonyl]phenyl]azo]-3-methyl-5-oxo-1H-pyrazol-1-yl]benzenesulphonato(4-)]cuprate(2-)
 5423-38-1	フタル酸ブチル銅(2+)塩	1,2-Benzenedicarboxylic acid, monobutyl ester, copper(2+) salt
@@ -13654,6 +13703,7 @@
 54253-62-2	ビス(メタンスルホン酸)銅(II)	Methanesulfonic acid, copper(2+) salt
 54261-67-5	亜鉛＝ビス［Ｏ，Ｏ-ビス（４-ドデシルフェニル）＝ホスホロジチオアート］	Zinc, bis[O,O-bis(dodecylphenyl) phosphorodithioato-S,S']-
 54262-78-1		Bis(2-ethylhexanoato-O)-.mu.-oxodizinc
+54277-95-1		Mercaptomethylmercury
 5428-90-0	クロリド（３-ピリジル）水銀	Mercury, chloro-3-pyridyl-
 54290-64-1		3,7-Bis(diethylamino)phenoxazin-5-ium chloride, compound with zinc chloride
 54295-90-8		Tetrakis(acetato-O)[.mu.4-(3',6'-dihydroxy-3-oxospiro[isobenzofuran-1(3H),9'-[9H]xanthene]-2',4',5',7'-tetrayl)]tetramercury
@@ -13670,6 +13720,7 @@
 5434-72-0	アビエチン酸鉛	Lead abietate
 54352-04-4		Aluminum Oxide
 54352-05-5		Bisphenol A epichlorohydrin polymer
+54359-92-1		Mercurate(1-), methylthioxo-
 5436-43-1	２，２'，４，４'-テトラブロモジフェニルエーテル	2,2',4,4'-Tetrabromodiphenyl ether
 54366-07-3		1-Butene
 54381-03-2	２-エチルウンデカン-１-オール	1-Undecanol, 2-ethyl-
@@ -13846,7 +13897,8 @@
 55401-12-2		Tetrabutylammonium bis(maleonitriledithiolato)nickel(III) complex
 55410-80-5		Tributyl(pentane-2,4-dionato-O,O')tin
 55425-27-9	ナトリウム＝３-［２-｛［３-（３-スルホナトプロピル）-１，３-ベンゾセレナゾール-３-イウム-２-イル］メチリデン｝-１，３-ベンゾセレナゾール-３（２Ｈ）-イル］プロパン-１-スルホナート	Benzoselenazolium, 3-(3-sulfopropyl)-2-[[3-(3-sulfopropyl)-2(3H)-benzoselenazolylidene]methyl]-, inner salt, sodium salt
-55427-54-8	１５，１５，１６，１６，１７，１７，１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２２-ヘプタデカフルオロ-３，６，９，１２-テトラオキサドコサン-１-オール	3,6,9,12-Tetraoxadocosan-1-ol, 15,15,16,16,17, 17,18,18,19,19,20,20,21,21,22,22,22-heptadecafluoro-
+55425-74-6	三塩化カドミウムナトリウム	Sodium trichlorocadmate
+55427-54-8	１５，１５，１６，１６，１７，１７，１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２２-ヘプタデカフルオロ-３，６，９，１２-テトラオキサドコサン-１-オール	15,15,16,16,17,17,18,18,19,19,20,20,21,21,22,22,22-Heptadecafluoro-3,6,9,12-tetraoxadocosan-1-ol
 5543-56-6		Warfarin
 5543-57-7		(S)-4-Hydroxy-3-(3-oxo-1-phenylbutyl)-2-benzopyrone
 5543-58-8		(R)-4-Hydroxy-3-(3-oxo-1-phenylbutyl)-2-benzopyrone
@@ -13989,6 +14041,7 @@
 56-55-3	ベンゾ[a]アントラセン	Benz[a]anthracene
 56-75-7	クロラムフェニコール	Chloramphenicol
 56004-61-6	o-キシレン-d10	(2H10)-o-Xylene
+560069-94-5		Antimony--gallium (1/1)
 5601-29-6	ビス［２-［（４，５-ジヒドロ-３-メチル-５-オキソ-１-フェニル-１Ｈ-ピラゾール-４-イル）アゾ］ベンゾアト（２）	Chromate(1-), bis[2-[(4,5-dihydro-3-methyl-5-oxo-1-phenyl-1H-pyrazol-4-yl)azo]benzoato(2-)]-, hydrogen
 56030-56-9	（±）-２，２'，３，４，４'，６-ヘキサクロロビフェニル	(.+-.)-2,2',3,4,4',6-Hexachlorobiphenyl
 56042-25-2		Trichlorfon
@@ -14028,6 +14081,9 @@
 56237-72-0		Chromate(1-), [2-(3-chlorophenyl)-2,4-dihydro-4-[[2-hydroxy-5-(methylsulfonyl)phenyl]azo]-5-methyl-3H-pyrazol-3-onato(2-)][methyl [7-hydroxy-8-[[2-hydroxy-5-(methylsulfonyl)phenyl]azo]-1-naphthalenyl]carbamato(2-)]-, hydrogen
 56237-73-1		Aluminum, (2-ethylhexanoato-O)oxo-
 56237-74-2		Aluminum, (2-ethylhexanoato-O)oxo-, homopolymer
+56240-91-6		9H-Carbazole, 9-(triphenylplumbyl)-
+56240-92-7		1H-Indole, 1-(triphenylplumbyl)-
+56240-93-8		1H-Pyrrole, 1-(triphenylplumbyl)-
 56253-60-2	トリメチル(フェニルセレノメチル)シラン	Trimethyl[(phenylseleno)methyl]silane
 56258-35-6		Bisphenol A epichlorohydrin polymer
 56271-77-3		.alpha.-D-Glucopyranosiduronic acid, (3.beta.,20.beta.)-20-carboxy-11-oxo-30-norolean-12-en-3-yl 2-O-.beta.-D-glucopyranuronosyl-, aluminum salt (3:1)
@@ -14123,7 +14179,7 @@
 56875-68-4	５，５-ジオクチル-１，９-ジオキサ-４，６-ジチア-５-スタンナシクロウンデカン-２，８-ジオン	2,2-Dioctyl-1,3-dioxa-6,9-dithia-2-stannacycloundecane-4,11-dione
 569-64-2	マラカイトグリーン	C.I. Basic Green 4
 56900-15-3	５-スルホイソフタル酸ジメチルのバリウム塩	1,3-Benzenedicarboxylic acid, 5-sulfo-, 1,3-dimethyl ester, barium salt (2:1)
-56900-98-2	２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］エトキシ｝エタノール	Ethanol, 2-[2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9, 10,10,10-heptadecafluorodecyl)oxy]ethoxy]-
+56900-98-2	２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］エトキシ｝エタノール	Ethanol, 2-[2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)oxy]ethoxy]-
 56902-79-5		Silicic acid, zinc zirconium salt
 569316-88-7		FYS-108
 569343-09-5		9,9-Dimethylfluorene-2-boronic acid pinacol ester
@@ -14241,7 +14297,7 @@
 57653-85-7	１，２，３，６，７，８-ヘキサクロロオキサントレン	1,2,3,6,7,8-Hexachlorodibenzo-p-dioxin
 57654-67-8		Stannane, butyltris[(2-ethyl-1-oxohexyl)oxy]-
 57655-28-4		2-Propenoic acid, 2-methyl-, polymer with methyl 2-propenoate and 2-propenenitrile, copper(2+) salt
-57670-46-9	カリウム＝２-（Ｎ-エチル-２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロオクタンアミド）エタン-１-スルホナート	Ethanesulfonic acid, 2-[ethyl(2,2,3,3,4,4,5,5,6,6, 7,7,8,8,8-pentadecafluoro-1-oxooctyl)amino]-, potassium salt (1:1)
+57670-46-9	カリウム＝２-（Ｎ-エチル-２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロオクタンアミド）エタン-１-スルホナート	Ethanesulfonic acid, 2-[ethyl(2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluoro-1-oxooctyl)amino]-, potassium salt (1:1)
 57673-50-4	ヒ化セレン化ゲルマニウム	Germanium arsenide selenide
 57674-14-3		Chromate(3-), bis[3-[(4,5-dihydro-3-methyl-5-oxo-1-phenyl-1H-pyrazol-4-yl)azo]-4-hydroxy-5-nitrobenzenesulfonato(3-)]-, trisodium
 57678-03-2	３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル＝二水素＝ホスファート	1-Decanol, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-, dihydrogen phosphate
@@ -14365,6 +14421,7 @@
 58591-12-1		Chromium oxide
 58591-45-0	酸化コバルトニッケル（ＣｏＮｉＯ２）	Cobalt nickel oxide (CoNiO2)
 58601-87-9		C.I. Direct Brown 95
+5863-72-9		Tributyltin propionate
 58636-10-5	ブチル［トリス（ドコサノイルオキシ）］錫	Stannane, butyltris[(1-oxodocosyl)oxy]-
 58672-61-0	4-(エチルベンジルアミノ)ベンゼンジアゾニウム・テトラフルオロボラート	Benzenediazonium, 4-[ethyl(phenylmethyl)amino]-, tetrafluoroborate(1-)
 58675-51-7		Copper(2+), tetraamminediaqua
@@ -14996,6 +15053,7 @@
 62010-31-5		Antimony silver oxide
 620168-37-8		Poly(oxy-1,2-ethanediyl), .alpha.-(isononylphenyl)-.omega.-hydroxy-
 62042-25-5		Lead diselenite
+6208-26-0	ビストリブチルスズオキサイド	Distannoxane, hexakis(2-methylpropyl)-
 62086-97-9		Dimethyl sulfate
 621-27-2	m-プロピルフェノール	m-Propylphenol
 621-78-3	トリス（ペンチルオキシ）ボラン	Tri-n-amyl borate
@@ -15087,6 +15145,7 @@
 627-44-1	ジエチル水銀	Diethylmercury
 627-53-2	ジエチルセレン	Ethane, 1,1'-selenobis-
 6270-99-1		2,5-Bis(chloromercury)furan
+62702-52-7	ヒ酸カリウム・３／２水和物	Tripotassium arsenate 3/2 hydrate
 62708-52-5		4H-Imidazol-4-one, 2-amino-1,5-dihydro-1-methyl-, compound with zinc chloride (ZnCl2) (2:1)
 627097-62-5		C.I. Direct Blue 6
 62712-14-5		Mancozeb
@@ -15114,7 +15173,7 @@
 62851-41-6		Antimony, [.mu.-[29H,31H-phthalocyaninato(2-)]]di-
 62865-26-3		Cadmium sulfide mixture with zinc sulfide
 628692-15-9		2-Methoxypyrimidine-5-boronic acid
-62880-96-0	ナトリウム＝２-｛３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］プロパンアミド｝-２-メチルプロパン-１-スルホナート	1-Propanesulfonic acid, 2-[[3-[(3,3,4,4,5,5,6,6, 7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]-1-oxopropyl]amino]-2-methyl-, sodium salt (1:1)
+62880-96-0	ナトリウム＝２-｛３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］プロパンアミド｝-２-メチルプロパン-１-スルホナート	1-Propanesulfonic acid, 2-[[3-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]-1-oxopropyl]amino]-2-methyl-, sodium salt (1:1)
 62880-98-2		1-Propanesulfonic acid, 2-[[3-[(3,3,4,4,5,5,6,6,7, 7,8,8,9,9,10,10,11,11,12,12,12-heneicosafluoro dodecyl)thio]-1-oxopropyl]amino]-2-methyl-, sodium salt (1:1)
 62887-23-4		Bisphenol A epichlorohydrin polymer
 629-14-1	１，２-ジエトキシエタン	Ethylene glycol diethyl ether
@@ -15274,7 +15333,7 @@
 63795-61-9		Selenium Se-75 norcholesterol
 63798-88-9		Polyethylene glycol nonylphenyl ether
 63799-24-6		Bisphenol A epichlorohydrin polymer
-638-03-9		m-Toluidinium chloride
+638-03-9	３－メチルアニリン一塩酸塩	m-Toluidinium chloride
 638-29-9	バレリルクロリド	Valeryl chloride
 638-38-0	酢酸マンガン（Ⅱ）	Manganese(II) acetate
 638-39-1	酢酸スズ(2+)	Tin(II) acetate
@@ -15322,6 +15381,7 @@
 63910-74-7		Chromate(1-), bis[5-(aminosulfonyl)-2-[[1-(3-chlorophenyl)-4,5-dihydro-3-methyl-5-oxo-1H-pyrazol-4-yl]azo]benzoato(2-)]-, hydrogen
 63915-76-4		Sodium beryllium malate
 63916-96-1	過塩素酸鉛	Lead(II) perchlorate, hexahydrate
+63916-98-3	トリエチル（オレオイルオキシ）プルンバン	Lead, triethyl-, oleate
 63918-97-8	スチフニン酸鉛	Lead styphnate
 6392-46-7	4-ジアリルアミノ-3,5-ジメチルフェニル-N-メチルカルバメート	Allyxycarb
 63936-56-1	ノナブロモジフェニルエーテル類	Benzene, pentabromo(tetrabromophenoxy)-
@@ -15529,6 +15589,7 @@
 64697-78-5		Mercury, bis(1-thio-.beta.-D-glucopyranosato-S)-
 64714-49-4		Mercury, phenyl(1-thio-.beta.-D-glucopyranosato-S)-
 64719-41-1		Pendimethalin
+64724-29-4		cis-Tributyl[2-ethoxyethenyl]stannane
 64741-36-2		Oils, tallow, barium salts
 64742-93-4	アスファルト	Asphalt, oxidized
 64754-96-7		Fatty acids, coco, barium salts
@@ -15545,6 +15606,7 @@
 64883-30-3		Copper(2+), bis(1,2-ethanediamine-N,N')-, salt with dodecylbenzenesulfonic acid (1:2)
 64885-48-9		Aluminum oxide silicate (Al6O5(SiO4)2)
 64885-57-0		Antimony, compound with indium (3:2)
+64885-58-1		Aluminium--antimony (2/3)
 64887-10-1		10,10'-Oxybisphenoxarsine
 64909-33-7	３-クロロ-４-（ジメチルアミノ）ベンゼンジアゾニウム＝テトラフルオロボラヌイド	Benzenediazonium, 3-chloro-4-(dimethylamino)-, tetrafluoroborate(1-)
 64926-50-7	ドデシル［トリス（｛２-［（イソオクチルオキシ）カルボニル］エチル｝スルファニル）］スタンナン	Triisooctyl 3,3',3''-[(dodecylstannylidyne)tris(thio)]tripropionate
@@ -15854,6 +15916,7 @@
 6711-48-4	ビス〔3-(ジメチルアミノ)プロピル〕アミン	1,3-Propanediamine, N'-[3-(dimethylamino)propyl]-N,N-dimethyl-
 67112-29-2		Sodium fluoride
 67116-13-6		Fluoroboric acid
+67163-62-6		Lithium nickel oxide
 6717-29-9		Chromate(5-), bis[8-[[5-[(diethylamino)sulfonyl]-2-hydroxyphenyl]azo]-7-hydroxy-1,3-naphthalenedisulfonato(4-)]-, tetrasodium hydrogen
 6717-36-8		Cuprate(5-), [3-[[5-(hydroxy-.kappa.O)-6-[[2-(hydroxy-.kappa.O)-4-[[4-[2-[4-[(4-methoxyphenyl)azo]-2-sulfophenyl]ethenyl]-3-sulfophenyl]azo]-6-sulfo-1-naphthalenyl]azo-.kappa.N1]-7-sulfo-2-naphthalenyl]amino]benzoato(7-)]-, pentasodium
 67177-88-2		[1-[(5-Ethoxycarbonyl-2-hydroxyphenyl)iminomethyl]-2-naphtholato-O1,N1,O2]copper
@@ -15880,7 +15943,7 @@
 673-24-5	三フッ化ホウ素-トリエタノールアミン錯体	Boron, trifluoro[2,2',2''-nitrilotris[ethanol]-N]-, (T-4)-
 67323-56-2	1,2,6,8-テトラクロロジベンゾ[b,e][1,4]ジオキシン	1,2,6,8-Tetrachlorodibenzo(b,e)(1,4)dioxin
 6733-54-6	1,2,4,5-テトラクロロナフタレン	1,2,4,5-Tetrachloronaphthalene
-67333-62-4	Ｎ-エチル-３-｛３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］-２-メチルプロパンアミド｝-Ｎ，Ｎ-ジメチルプロパン-１-アミニウムの塩	1-Propanaminium, N-ethyl-3-[[3-[(3,3,4,4,5, 5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl) thio]-2-methyl-1-oxopropyl]amino]-N,N-dimethyl-, ethyl sulfate (1:1)
+67333-62-4	Ｎ-エチル-３-｛３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］-２-メチルプロパンアミド｝-Ｎ，Ｎ-ジメチルプロパン-１-アミニウムの塩	1-Propanaminium, N-ethyl-3-[[3-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]-2-methyl-1-oxopropyl]amino]-N,N-dimethyl-, ethyl sulfate (1:1)
 67340-41-4	ピグメントブルー17	Cuprate(2-), [29H,31H-phthalocyanine-C,C-disulfonato(4-)-N29,N30,N31,N32]-, barium (1:1)
 673502-01-7		Bis{2-[iodo(dimethyl)stannyl]ethyl}(oxo)phenyl-.lambda.(5)-phosphane
 67352-35-6		Chromium, [3-[(4,5-dihydro-3-methyl-5-oxo-1-phenyl-1H-pyrazol-4-yl)azo]-2-hydroxy-5-nitrobenzenesulfonato(3-)]-
@@ -15908,7 +15971,7 @@
 67506-86-9		Bis(pentamethylcyclopentadienyl)manganese
 67517-48-0		1,2,3,4,8-Pentachlorodibenzofuran
 67523-25-5		2H-1-Benzopyran-2-one, 4-hydroxy-3-(3-oxo-1-phenylbutyl)-, thallium(1+) salt
-67535-33-5	２７，２７，２８，２８，２９，２９，２９，３０，３０，３１，３１，３２，３２，３３，３３，３４，３４，３４-ヘプタデカフルオロ-３，６，９，１２，１５，１８，２１，２４-オクタオキサテトラトリアコンタン-１-イル＝トリデカノアート	Tridecanoic acid, 27,27,28,28,29,29,30,30,31,31, 32,32,33,33,34,34,34-heptadecafluoro-3,6,9,12, 15,18,21,24-octaoxatetra triacont-1-yl ester
+67535-33-5	２７，２７，２８，２８，２９，２９，２９，３０，３０，３１，３１，３２，３２，３３，３３，３４，３４，３４-ヘプタデカフルオロ-３，６，９，１２，１５，１８，２１，２４-オクタオキサテトラトリアコンタン-１-イル＝トリデカノアート	Tridecanoic acid, 27,27,28,28,29,29,30,30,31,31,32,32,33,33,34,34,34-heptadecafluoro-3,6,9,12,15,18,21,24-octaoxatetratriacont-1-yl ester
 67536-44-1	1,1'-ビス[ヒドロキシメルクリオ(II)]-1,1'-ビ[2,4-ジメルクラ-3-オキサシクロブタン]	1,1'-Bis[hydroxymercurio(II)]-1,1'-bi[2,4-dimercura-3-oxacyclobutane]
 67542-72-7		Aluminum cerium magnesium terbium oxide
 67549-47-7	２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２９，２９，３０，３０，３１，３１，３１-ヘプタデカフルオロ-３，６，９，１２，１５，１８，２１-ヘプタオキサヘントリアコンタン-１-イル＝ヘキサデカノアート	11,14,17,20,23,26,29,32-Octaoxaoctatetracontan-33-one, 1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8-heptadecafluoro-
@@ -16446,6 +16509,7 @@
 68334-36-1	樹脂酸ニッケル塩	Resin acids and Rosin acids, nickel salts
 68334-57-6		Chromate(3-), bis[2-[3-[(2,3-dihydro-2-oxo-1H-indol-3-yl)azo]-4-hydroxybenzoyl]benzoato(3-)]-, trihydrogen
 68335-14-8		Fosthietan
+68336-15-2		Antimony potassium tungsten oxide
 68336-93-6		Aluminum, tris[N-(hydroxy-.kappa.O)-N-(nitroso-.kappa.O)benzenaminato]-
 68341-09-3		Copper(II) diacetyl-di(N4-methyl)thiosemicarbazone
 68348-77-6		Benzenediazonium, 4,4'-iminobis-, (T-4)-tetrachlorozincate(2-) (1:1)
@@ -17159,6 +17223,7 @@
 69012-25-5	アルミニウム-バナジウム合金スラッジ	Slags, aluminum-vanadium
 69012-26-6		Slags, brass-manufacturing
 69012-28-8		Slags, ferromanganese-manufacturing
+69012-29-9		Slags, ferronickel-manufacturing
 69012-33-5		Slags, silicomanganese-manufacturing
 69012-34-6	鉄-バナジウム合金スラッジ	Slags, steelmaking, vanadium
 69012-36-8		Slags, zinc sinter reduction
@@ -17319,6 +17384,7 @@
 69458-54-4		1-Octanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-, potassium salt
 69459-69-4		Antimony, compound with europium (2:1)
 69495-08-5		Boron nitride (BN)
+69507-43-3		Arsenenous acid, silver(1+) salt
 695165-22-1		Stannane, dibutyloxo-
 69524-96-5		Bis(4-benzoyl-2,4-dihydro-5-methyl-2-phenyl-3H-pyrazol-3-onato-O,O')nickel
 69537-35-5	ビス（ドデカノイルオキシ）（ジドデシル）スタンナン	Bis(dodecanoyloxy)didodecylstannane
@@ -17788,7 +17854,7 @@
 71617-30-6		Copper, [29H,31H-phthalocyanine-C,C,C-trisulfonamidato(2-)-N29,N30,N31,N32]-, trilithium salt
 71617-68-0		Cuprate(5-), [4-amino-5-hydroxy-6-[[5-hydroxy-6-[[2-hydroxy-3-sulfo-5-[[2-(sulfooxy)ethyl]sulfonyl]phenyl]azo]-7-sulfo-2-naphthalenyl]azo]-1,3-naphthalenedisulfonato(7-)]-, pentapotassium
 71617-70-4		Cuprate(3-), [.mu.-[5-[[4-[[6-[4-[(2-carboxyphenyl)azo]-4,5-dihydro-3-methyl-5-oxo-1H-pyrazol-1-yl]-2-hydroxy-4-sulfo-1-naphthalenyl]azo]-3-hydroxy-7-sulfo-1-naphthalenyl]azo]-2-hydroxybenzoato(7-)]]di-, trisodium
-71625-52-0	２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］エトキシ｝-Ｎ，Ｎ，Ｎ-トリメチルエタン-１-アミニウムの塩	Ethanaminium, 2-[2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9, 10,10,10-heptadecafluorodecyl)thio]ethoxy]-N,N,N-trimethyl-, iodide (1:1)
+71625-52-0	２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］エトキシ｝-Ｎ，Ｎ，Ｎ-トリメチルエタン-１-アミニウムの塩	Ethanaminium, 2-[2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]ethoxy]-N,N,N-trimethyl-, iodide (1:1)
 71630-92-7		Ashes, residues, rice husk
 71631-15-7		C.I. Pigment Black 30
 716377-02-5		Methanesulfonamide, 1,1,1-trifluoro-N-[(trifluoromethyl)sulfonyl]-, lithium salt (1:1)
@@ -17924,7 +17990,7 @@
 71998-76-0	1,2,4,6,8-ペンタクロロジベンゾ[b,e][1,4]ジオキシン	1,2,4,6,8-Pentachlorodibenzo(b,e)(1,4)dioxin
 719993-31-4		Fluorine
 72-20-8	エンドリン	Endrin
-72-43-5	１，１，１-トリクロロ-２，２-ビス（メトキシフェニル）エタン	Methoxychlor
+72-43-5	メトキシクロル	Methoxychlor
 72007-96-6		Vanadium, oxobis(2,4-pentanedionato-.kappa.O,.kappa.O')-, (SP-5-21)-
 72017-60-8		Acetic acid, bis(nitrilotri-, antimony complex
 72017-66-4		Chromate(2-), [4-[(5-chloro-2-hydroxy-3-nitrophenyl)azo]-2,4-dihydro-5-methyl-2-phenyl-3H-pyrazol-3-onato(2-)][3-[[1-(3-chlorophenyl)-4,5-dihydro-3-methyl-5-oxo-1H-pyrazol-4-yl]azo]-4-hydroxy-5-nitrobenzenesulfonato(3-)]-, disodium
@@ -18459,6 +18525,7 @@
 73138-31-5		Bark, coniferous, sulfited extract, zinc complexes
 73138-49-5		Fatty acids, montan-wax, zinc salts
 73141-48-7	2,2',3,4',5'-ペンタブロモビフェニル	1,1'-Biphenyl, 2,2',3,4',5'-pentabromo-
+73149-62-9		Diphenylarsorylbenzene;tributyl(isothiocyanato)stannane
 73156-15-7		1,1-Methylene bis(4-isocyanatocyclohexane)
 73156-86-2		Arsenous acid, copper(2+) salt, hydrate, (2:3:3)
 7318-78-7	ジクロロメチルボラン	Borane, dichloromethyl-
@@ -18598,6 +18665,7 @@
 73514-04-2		Chromate(3-), [3-[(4,5-dihydro-3-methyl-5-oxo-1-phenyl-1H-pyrazol-4-yl)azo]-2-hydroxy-5-nitrobenzenesulfonato(3-)][3-hydroxy-4-[(2-hydroxy-1-naphthalenyl)azo]-7-nitro-1-naphthalenesulfonato(3-)]-, triammonium
 73520-82-8	塩化スズ(2+)3/2水和物	Tin chloride (SnCl2), hydrate (2:3)
 73545-12-7		Sulfurous acid, zinc salt (1:1), reaction products with formaldehyde
+73548-15-9	p-(ヒドロキシメルクリ)ベンゼンスルホン酸ナトリウム	p-(Hydroxymercuri)benzenesulfonic acid sodium
 73559-41-8		Copper, [29H,31H-phthalocyaninetetrasulfonyl tetrachloridato(2-)-N29,N30,N31,N32]-, reaction products with N-cyclohexyl-1,3-propanediamine
 73559-51-0		Chromate(2-), [3-hydroxy-4-[(2-hydroxy-1-naphthalenyl)azo]-7-nitro-1-naphthalenesulfonato(3-)][N-[7-hydroxy-8-[(2-hydroxy-4-nitrophenyl)azo]-2-naphthalenyl]acetamidato(2-)]-, disodium
 73559-52-1		Chromate(2-), [3-[(4,5-dihydro-3-methyl-5-oxo-1-phenyl-1H-pyrazol-4-yl)azo]-4-hydroxybenzenesulfonamidato(2-)][3-hydroxy-4-[(2-hydroxy-1-naphthalenyl)azo]-7-nitro-1-naphthalenesulfonato(3-)]-, disodium
@@ -18627,6 +18695,7 @@
 73640-07-0	フッ化亜鉛（ＩＩ）水和物	Zinc fluoride hydrate
 73650-11-0		Cuprate(3-), [C-[[[5-[(4-amino-6-chloro-1,3,5-triazin-2-yl)amino]-2-sulfophenyl]amino]sulfonyl]-C-(aminosulfonyl)-29H,31H-phthalocyanine-C,C-disulfonato(5-)-N29,N30,N31,N32]-, trisodium
 73680-69-0		Benzyltriethylammonium pentachlorophenate
+73688-85-4	4-(4-ジメチルアミノフェニルアゾ)フェニルアルソン酸塩酸塩	4-(4-Dimethylaminophenylazo)phenylarsonic acid hydrochloride
 736989-98-3		3-(3-Hydroxyprop-1-yl)benzeneboronic acid
 7370-58-3		3,3'-Diselenodipropionic acid
 73728-19-5		Arsenic pentafluoride
@@ -18642,6 +18711,7 @@
 7378-99-6	ジメチルオクチルアミン	1-Octanamine, N,N-dimethyl-
 73800-74-5		L-Tyrosine, N-acetyl-.alpha.-(hydroxymethyl)-3-methoxy-O-methyl-, compound with strychnidin-10-one (1:1)
 73800-76-7		D-Tyrosine, N-acetyl-.alpha.-(hydroxymethyl)-3-methoxy-O-methyl-, compound with strychnidin-10-one (1:1)
+73826-06-9	｛４-［５-（２-ヒドロキシプロパン-２-イル）-１Ｈ-１，２，３-トリアゾール-１-イル］ブチル｝（トリフェニル）プルンバン	2-(1-(4-triphenylplumbylbutyl)-1H-1,2,3-triazol-5-yl)-2-propanol
 73830-73-6		Pentabarium bis(triphosphate)
 73836-75-6		Cuprate(2-), [21-carboxy-9-ethenyl-14-ethyl-13-formyl-4,8,18-trimethyl-20-oxo-3-phorbinepropanoato(4-)-N23,N24,N25,N26]-, disodium, [SP-4-2-[3S-(3.alpha.,4.beta.,21.beta.)]]-
 73852-17-2		2,6-Dichlorophenylboronic acid
@@ -18672,6 +18742,8 @@
 73927-99-8	トリプロピル［（トリクロロアセチル）オキシ］スタンナン	Tripropyltin trichloroacetate
 73928-11-7		Mercury, dianilino-
 73928-12-8		Mercury(II), ethyl(5-ethylmercuri-3-(1,2,4-thiadiazolyl)thio)-
+73928-17-3		Plumbane, [(4-aminobenzoyl)oxy]triethyl-
+73928-23-1		1H-Isoindole-1,3(2H)-dione, 4,5,6, 7-tetrachloro-2-(triethylplumbyl)-
 7393-43-3	テトラアリルスタンナン	Tetrallylstannane
 739339-56-1		Cuprate(3-), [2-[[[[3-[[4-chloro-6-[ethyl[4-[[2-(sulfooxy)ethyl]sulfonyl]phenyl]amino]-1,3,5-triazin-2-yl]amino]-2-(hydroxy-.kappa.O)-5-sulfophenyl]azo-.kappa.N2]phenylmethyl]azo-.kappa.N1]-4-sulfobenzoato(5-)-.kappa.O]-
 739352-37-5		2:1 Cobalt complex of 4-(5-ethylsulphonyl-2-hydroxy-phenylazo)-3-hydroxy-naphthalene-2-carboxylic acid phenylamide
@@ -18695,7 +18767,7 @@
 74007-80-0		Oxybis(dibutyl(2,4,5-trichlorophenoxy)tin)
 74037-18-6		Selenium, dichlorobis(2-ethoxycyclohexyl)-
 74038-45-2	ジエチル＝（｛［ビス（２-クロロプロポキシ）スチバノ］オキシ｝（４-メトキシフェニル）メチル）ホスホナート	Phosphonic acid, [hydroxy(4-methoxyphenyl)methyl]-, diethyl ester, compound with 2-chloro-1-propanol, antimony salt (1:2:1)
-74049-08-4	ポリ〔アクリル酸＝2-(ペルフルオロオクチル)エチル〕	Ethanol, 2-chloro-, phosphate (3:1), polymer with phosphorus oxide (P2O5) and ethylene oxide
+74049-08-4	ポリ［アクリル酸＝２-（ペルフルオロオクチル）エチル］	2-Propenoic acid, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl ester, homopolymer
 74051-88-0	ビス乳酸マンガン(2+)	Propanoic acid, 2-hydroxy-, manganese(2+) salt (2:1)
 74051-91-5		Chromate(4-), [4-hydroxy-3-[(2-hydroxy-5-nitro-3-sulfophenyl)azo]-6-[(sulfomethyl)amino]-2-naphthalenesulfonato(5-)][1-[(2-hydroxy-5-nitrophenyl)azo]-2-naphthalenolato(2-)]-, tetrahydrogen
 74063-47-1		Chromate(4-), [4-hydroxy-3-[(2-hydroxy-5-nitro-3-sulfophenyl)azo]-6-[(sulfomethyl)amino]-2-naphthalenesulfonato(5-)][1-[(2-hydroxy-5-nitrophenyl)azo]-2-naphthalenolato(2-)]-, tetrahydrogen, compound with 2,2'-iminobis[ethanol] (1:4)
@@ -19207,13 +19279,15 @@
 7681-83-6		Sodium 4-(glycolloylamino)phenylarsonate
 7681-91-6	バナジン酸トリメチル	Trimethoxyoxovanadium
 76829-05-5		Polyethylene glycol nonylphenyl ether
-76830-13-2	３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデカン-１-チオールを連鎖移動剤とする、プロパ-２-エンアミドの重合物	2-Propenamide, telomer with 3,3,4,4,5,5,6,6,7,7, 8,8,9,9,10,10,10-heptadecafluoro-1-decanethiol
+76830-13-2	３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデカン-１-チオールを連鎖移動剤とする、プロパ-２-エンアミドの重合物	2-Propenamide, telomer with 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-1-decanethiol
 76835-97-7	カドミウム＝ジトリコサ-２２-エノアート	22-Tricosenoic acid, cadmium salt
 76835-98-8	鉛（２＋）＝ジトリコサ-２２-エノアート	22-Tricosenoic acid, lead(II) salt
 768390-32-5		Zinc oxide
 76842-07-4	2,3,3',4',5'-ペンタクロロビフェニル	2,3,3',4',5'-Pentachlorobiphenyl
 76848-59-4		Benzene, 1-chloro-4-[(1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluorohexyl)sulfonyl]-
 76848-68-5		1H-Benzimidazolium, 1,3-diethyl-2-methyl-5-[(1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluorohexyl)sulfonyl]-, 4-methylbenzenesulfonate (1:1)
+76871-63-1		Arsenenous acid, neodymium(3+) salt
+76871-65-3		Arsenenous acid, lutetium(3+) salt
 76871-66-4		Arsenenous acid, cadmium neodymium(3+) salt (5:1:1)
 76873-78-4	二塩化（１，１-ジメチルエチル）ボラン	Borane, dichloro(1,1-dimethylethyl)-
 76899-34-8		Hydrogen chlorotrioxochromate(1-) , compound with 2,2'-bipyridine (1:1)
@@ -19267,6 +19341,7 @@
 7727-18-6	三塩化バナジル	Vanadium oxytrichloride
 7727-43-7	硫酸バリウム	Barium sulfate
 77271-60-4		Polyethylene glycol nonylphenyl ether
+77289-75-9	六塩化カドミウムマグネシウム十二水和物	(OC-6-11)-Dimagnesium hexachlorocadmate dodecahydrate
 773-01-3	２，４，６-トリメチルピリリウム＝テトラフルオロボラヌイド	Pyrylium, 2,4,6-trimethyl-, tetrafluoroborate(1-)
 7733-02-0	硫酸亜鉛	Zinc sulfate
 7738-94-5	クロム酸	Chromic acid (H2CrO4)
@@ -19357,7 +19432,7 @@
 7783-43-9		Selenium difluoride monoxide
 7783-46-2	フッ化鉛	Lead fluoride (PbF2)
 7783-47-3	フッ化第一スズ	Stannous fluoride
-7783-49-5	フッ化亜鉛	Zinc fluoride
+7783-49-5	弗化亜鉛	Zinc fluoride
 7783-53-1	フッ化マンガン(3+)	Manganese fluoride (MnF3)
 7783-55-3	三弗化燐	Phosphorus trifluoride
 7783-56-4	フッ化アンチモン(3+)	Antimony trifluoride
@@ -19388,7 +19463,7 @@
 7784-09-0	リン酸銀(1+)	Phosphoric acid, trisilver(1+) salt
 7784-11-4		Aluminum bromide, hexahydrate
 7784-13-6	塩化アルミニウム六水和物	Aluminium chloride, hexahydrate
-7784-15-8		Aluminum chlorate nonahydrate
+7784-15-8	塩素酸アルミニウム九水和物	Aluminum chlorate nonahydrate
 7784-16-9		Aluminium sodium tetrachloride
 7784-18-1	フッ化アルミニウム	Aluminum fluoride
 7784-19-2	六フッ化アルミン酸アンモニウム	Aluminate(3-), hexafluoro-, triammonium, (OC-6-11)-
@@ -19593,6 +19668,7 @@
 79151-78-3		Tris(2,2'-bipyridine)cobalt(II) bis(hexafluorophosphate)
 79152-56-0		Copper(1+), [5'-[[3-[4,5-dihydro-4-[(2-hydroxy-5-nitrophenyl)azo]-3-methyl-5-oxo-1H-pyrazol-1-yl]phenyl]azo]-1'-[3-(dimethylamino)propyl]-1',2'-dihydro-6'-hydroxy-4'-methyl-2'-oxo-1,3'-bipyridiniumato(2-)]-, salt with 2-hydroxypropanoic acid (1:2)
 79152-58-2		Cuprate(2-), [.mu.-[[7,7'-iminobis[3-[[4-[[4,6-bis[[3-(diethylamino)propyl]amino]-1,3,5-triazin-2-yl]amino]-2-hydroxyphenyl]azo]-4-hydroxy-2-naphthalenesulfonato]](6-)]]di-, dihydrogen, diacetate (salt)
+79159-76-5		Tributyl(2-phenylethenyl)stannane
 79176-81-1		Aluminum calcium oxide (Al2CaO4)
 79177-05-2		Dimethyl octadecyl benzyl ammonium chloride
 79215-57-9		Glutaraldehyde
@@ -19810,7 +19886,7 @@
 80460-73-7		4-Aminobenzeneboronic acid hydrochloride
 8047-36-7		Zinc oxide
 8047-69-6		Zinc oxide
-80475-33-8	３-（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデカン-１-スルホンアミド）-Ｎ，Ｎ-ジメチルプロパン-１-アミン＝Ｎ-オキシド	1-Decanesulfonamide, N-[3-(dimethyloxido amino)propyl]-3,3,4,4,5,5,6,6,7,7,8,8,9,9, 10,10,10-heptadecafluoro-
+80475-33-8	３-（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデカン-１-スルホンアミド）-Ｎ，Ｎ-ジメチルプロパン-１-アミン＝Ｎ-オキシド	1-Decanesulfonamide, N-[3-(dimethyloxidoamino)propyl]-3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-
 80476-37-5		Chromate(2-), [4-[4-[(5-chloro-2-hydroxyphenyl)azo]-4,5-dihydroxy-3-methyl-5-oxo-1H-pyrazol-1-yl]benzenesulfonato(3-)][4-[(5-chloro-2-hydroxyphenyl)azo]-2,4-dihydro-5-methyl-2-phenyl-3H-pyrazol-3-onato(2-)] -, dihydrogen
 8048-07-5	ピグメントエロー35	C.I. Pigment Yellow 35
 80481-35-2	アセト酢酸オレイルジイソプロポキシアルミニウム	(Octadec-9-enyl acetoacetato-O1',O3)dipropan-2-olatoaluminium
@@ -19889,6 +19965,7 @@
 80867-26-1		Zinc sulfate, dihydrate
 808739-25-5		Aluminum chloride hydroxide
 80879-64-7		Strychnidin-10-one, compound with methylarsonate (1:1)
+80883-02-9		Stannyloxy, tributyl
 80925-03-7		Methyl 17.alpha.-hydroxyyohimban-16.alpha.-carboxylate, methylarsonate (1:1)
 80966-32-1		Polyethylene glycol nonylphenyl ether
 80994-59-8		L-4-Boronophenylalanine
@@ -19998,6 +20075,7 @@
 82-66-6	ダイファシノン	Diphacinone
 82-68-8	ペンタクロロニトロベンゼン	Pentachloronitrobenzene
 820-60-0		N-Nitroso-N-methylurea
+82005-78-5		Arsenenous acid, cesium salt
 82010-74-0		Stearylamino-2-biphenylol zinc salt (2:1)
 82010-82-0		Copper oxide (CuO), mixture with copper oxide (Cu2O)
 82027-59-6		Copper, [[2,2',2''-(nitrilo-.kappa.N)tris[ethanol-.kappa.O]](2-)]-
@@ -20108,6 +20186,7 @@
 83061-29-4		Aluminate(3-), [orthosilicato(4-)-O]oxo-, calcium (2:3), monohydrate
 83061-30-7		Aluminate(3-), [orthosilicato(4-)-O]oxo-, calcium, hydrate (4:6:3)
 83130-01-2	アラニカルブ	Alanycarb
+83145-28-2		2-Ethylhexyl acrylate, methyl methacrylate and tributyltin methacrylate copolymer
 83202-85-1		Bisphenol A epichlorohydrin polymer
 832114-06-4		4-(4-Methylpiperazine-1-carbonyl)phenylboronic acid pinacol ester
 832114-08-6		2-(Dimethylamino)phenylboronic acid pinacol ester
@@ -20316,6 +20395,7 @@
 83864-24-8	［４-ヒドロキシ-３-［（２-ヒドロキシ-１-ナフタレニル）アゾ］ベンゼンスルホン酸アミド（２-）］［４-ヒドロキシ-３-［（５-ヒドロキシナフト［２，１-ｄ］-１，３-オキサチオール-４-イル）アゾ］ベンゼンスルホン酸アミド-ジオキシダト（２-）］コバルト酸（１-）アン	Cobaltate(1-), [4-hydroxy-3-[(2-hydroxy-1-naphthalenyl)azo]benzenesulfonamidato(2-)][4-hydroxy-3-[(5-hydroxynaphth[2,1-d]-1,3-oxathiol-4-yl)azo]benzenesulfonamide S,S-dioxidato(2-)]-, ammonium
 83864-26-0		Manganese, [3-hydroxy-4-[(2-methyl-4-sulfophenyl)azo]-2-naphthalenecarboxylato(2-)-O2,O3]-
 83874-62-8		Octamethylcyclotetrasiloxane
+83877-96-7		Arsenenous acid, antimony(3+) salt
 83896-77-9	二水素＝（ＯＣ-６-２１）-［（エチレンジニトリロ-κ（２）Ｎ，Ｎ'）テトラキス（アセタト-κＯ）］プルンバート（２-），水和物（２：３）	Plumbate(2-), [[N,N'-1,2-ethanediylbis[N-(carboxymethyl)glycinato]](4-)-N,N',O,O',ON,ON']-, dihydrogen, hydrate (2:3), (OC-6-21)-
 83897-77-2		(Butan-2-olato)(dioctyl phosphato-O'')(stearato-O)aluminium, branched and linear
 83897-78-3		(Dioctyl phosphato-O'')(propan-2-olato)(stearato-O)aluminium, branched and linear
@@ -20361,6 +20441,7 @@
 84-61-7	フタル酸ジシクロヘキシル	1,2-Benzenedicarboxylic acid, dicyclohexyl ester
 84-67-3	４，４'-ジアミノ-２，２'-ジメチル-１，１'-ジフェニル	2,2'-Dimethyl[1,1'-biphenyl]-4,4'-diamine
 84-69-5	フタル酸ジイソブチル	1,2-Benzenedicarboxylic acid, bis(2-methylpropyl) ester
+84-70-8		phenylmercuric phthalate
 84-74-2	フタル酸ジブチル	Dibutyl phthalate
 84-75-3	フタル酸ジヘキシル	1,2-Benzenedicarboxylic acid, dihexyl ester
 84000-94-2		Bis[3-[[4-[benzylmethylamino]phenyl]azo]-1,4-dimethyl-1H-1,2,4-triazolium] tetrachlorozincate(2-)
@@ -21213,6 +21294,8 @@
 85537-69-5		Bisphenol A epichlorohydrin polymer
 85539-83-9		1,4-Phenylenebis(methylene)selenocyanate
 85551-28-6		(Isononanoato-O)(neodecanoato-O)nickel
+85561-28-0		Arsenenous acid, cobalt(2+) salt
+85561-29-1		Arsenenous acid, manganese(2+) salt
 85561-43-9		chromium propionate
 85566-25-2		Fatty acids, C8-10-branched, cobalt salts
 85566-43-4		Fatty acids, sperm-oil, zinc salts
@@ -21398,6 +21481,7 @@
 85896-48-6		Sodium [5-chloro-2-hydroxy-3-[(1,2,3,4-tetrahydro-2,4-dioxoquinolin-3-yl)azo]benzene-1-sulphonato(3-)]chromate(1-)
 85896-49-7		Hydrogen [5-chloro-2-hydroxy-3-[(1,2,3,4-tetrahydro-2,4-dioxoquinolin-3-yl)azo]benzene-1-sulphonato(3-)]chromate(1-)
 85898-88-0		2,4-Toluenediamine
+85906-44-1		Arsenenous acid, rubidium salt
 859169-20-3		4-[(Ethoxycarbonyl)methyl]phenylboronic acid pinacol ester
 85938-40-5	ビス（｛［（Ｚ）-３-（イソプロポキシカルボニル）アクリロイル］オキシ｝）（ジオクチル）スタンナン	Isopropyl (Z,Z)-2-methyl-9,9-dioctyl-4,7,11-trioxo-3,8,10-trioxa-9-stannatetradeca-5,12-dien-14-oate
 85938-41-6	ジオクチル［ビス（テトラデカノイルオキシ）］スタンナン	Bis(myristoyloxy)dioctylstannane
@@ -21417,6 +21501,7 @@
 85940-15-4		Chromate(5-), bis[4-hydroxy-3-[(2-hydroxy-5-nitro-3-sulfophenyl)azo]-6-(phenylamino)-2-naphthalenesulfonato(4-)]-, potassium sodium
 85940-28-9		Phosphorodithioic acid, mixed O,O-bis(2-ethylhexyl and isobutyl and isopropyl) esters, zinc salts
 85941-57-7		Lead(II) azide
+85949-61-7		Arsenic acid (H3AsO4), calcium salt (7:10)
 859505-07-0		Barium titanium oxide (BaTiO3)
 85958-76-5	二水素＝［２-（｛４-オキシド-κＯ-３-［（２-オキシド-κＯ-１-ナフチル）ジアゼニル-κＮ（１）］フェニル｝スルホンアミド）ベンゾアト］（１-｛［２-オキシド-κＯ-５-（フェニルスルファモイル）フェニル］ジアゼニル-κＮ（２）｝ナフタレン-２-オラト-κＯ）コバルタート（２-）	Dihydrogen [4-hydroxy-3-[(2-hydroxy-1-naphthyl)azo]-N-phenylbenzenesulphonamidato(2-)][2-[[[4-hydroxy-3-[(2-hydroxy-1-naphthyl)azo]phenyl]sulphonyl]amino]benzoato(3-)]cobaltate(2-)
 85958-77-6		Sodium [5-[[1-(anilinocarbonyl)-2-oxopropyl]azo]-3-chloro-4-hydroxybenzene-1-sulphonato(3-)]chromate(1-)
@@ -21563,6 +21648,8 @@
 86755-24-0		Silicon carbide
 868-81-5	クロロジメトキシボラン	Borane, chlorodimethoxy-
 86831-40-5		Acetic acid, mercapto-, 2-ethoxyethyl ester, antimony(3+) salt
+86859-92-9		Arsenenous acid, praseodymium(3+) salt
+86859-93-0		Arsenenous acid, cerium(3+) salt
 869-24-9	2-クロロエチルジエチルアンモニウム=クロリド	Ethanamine, 2-chloro-N,N-diethyl-, hydrochloride
 869-29-4	ジアセトキシプロペン	Allylidene diacetate
 869-59-0	トリオクチルスタンナン	Trioctyltin hydride
@@ -21748,23 +21835,23 @@
 881842-18-8		Polyethylene glycol mono (1,1,3,3-tetramethylbutyl) phenyl ether
 88188-06-1		Methanesulfonic acid, 1,1,1-trifluoro-, trimethylsilyl ester
 882315-44-8		Iron zinc oxide (Fe2ZnO4)
-88243-09-8	１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２５-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５-ペンタオキサペンタコシル＝アセタート	3,6,9,12,15-Pentaoxapentacosan-1-ol, 18,18, 19,19,20,20,21,21,22,22,23,23,24,24,25,25,25-heptadecafluoropentamethyl-, acetate
-88243-10-1	２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２９，２９，３０，３０，３１，３１，３１-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５，１８，２１-ヘプタオキサヘントリアコンタン-１-オール	3,6,9,12,15,18,21-Heptaoxahentriacontan-1-ol, 24,24,25,25,26,26,27,27,28,28,29,29,30, 30,31,31,31-heptadecafluoropentamethyl-
-88243-11-2	２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２８-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５，１８-ヘキサオキサオクタコサン-１-オール	3,6,9,12,15,18-Hexaoxaoctacosan-1-ol, 21,21,22, 22,23,23,24,24,25,25,26,26,27,27,28,28,28-heptadecafluoropentamethyl-
-88243-12-3	２-［２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］（メチル）エトキシ｝（メチル）エトキシ］エタノール	Ethanol, 2-[2-[2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10, 10,10-heptadecafluorodecyl)oxy]methylethoxy] methylethoxy]-
-88243-13-4	２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］（メチル）エトキシ｝（メチル）エタノール	Propanol, [2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10, 10-heptadecafluorodecyl)oxy]methylethoxy]-
-88243-14-5	１５，１５，１６，１６，１７，１７，１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２２-ヘプタデカフルオロ（テトラメチル）-３，６，９，１２-テトラオキサドコサン-１-オール	3,6,9,12-Tetraoxadocosan-1-ol, 15,15,16,16,17, 17,18,18,19,19,20,20,21,21,22,22,22-heptadecafluorotetramethyl-
-88243-15-6	１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２５-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５-ペンタオキサペンタコサン-１-オール	3,6,9,12,15-Pentaoxapentacosan-1-ol, 18,18,19, 19,20,20,21,21,22,22,23,23,24,24,25,25,25-heptadecafluoropentamethyl-
-88243-16-7	２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２８-ヘプタデカフルオロ（ヘキサメチル）-３，６，９，１２，１５，１８-ヘキサオキサオクタコサン-１-オール	3,6,9,12,15,18-Hexaoxaoctacosan-1-ol, 21,21,22, 22,23,23,24,24,25,25,26,26,27,27,28,28,28-heptadecafluoro hexamethyl-
+88243-09-8	１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２５-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５-ペンタオキサペンタコシル＝アセタート	3,6,9,12,15-Pentaoxapentacosan-1-ol, 18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,25-heptadecafluoropentamethyl-, acetate
+88243-10-1	２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２９，２９，３０，３０，３１，３１，３１-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５，１８，２１-ヘプタオキサヘントリアコンタン-１-オール	3,6,9,12,15,18,21-Heptaoxahentriacontan-1-ol, 24,24,25,25,26,26,27,27,28,28,29,29,30,30,31,31,31-heptadecafluoropentamethyl-
+88243-11-2	２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２８-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５，１８-ヘキサオキサオクタコサン-１-オール	3,6,9,12,15,18-Hexaoxaoctacosan-1-ol, 21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,28-heptadecafluoropentamethyl-
+88243-12-3	２-［２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］（メチル）エトキシ｝（メチル）エトキシ］エタノール	Ethanol, 2-[2-[2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)oxy]methylethoxy]methylethoxy]-
+88243-13-4	２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］（メチル）エトキシ｝（メチル）エタノール	Propanol, [2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)oxy]methylethoxy]-
+88243-14-5	１５，１５，１６，１６，１７，１７，１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２２-ヘプタデカフルオロ（テトラメチル）-３，６，９，１２-テトラオキサドコサン-１-オール	3,6,9,12-Tetraoxadocosan-1-ol, 15,15,16,16,17,17,18,18,19,19,20,20,21,21,22,22,22-heptadecafluorotetramethyl-
+88243-15-6	１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２５-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５-ペンタオキサペンタコサン-１-オール	3,6,9,12,15-Pentaoxapentacosan-1-ol, 18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,25-heptadecafluoropentamethyl-
+88243-16-7	２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２８-ヘプタデカフルオロ（ヘキサメチル）-３，６，９，１２，１５，１８-ヘキサオキサオクタコサン-１-オール	3,6,9,12,15,18-Hexaoxaoctacosan-1-ol, 21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,28-heptadecafluorohexamethyl-
 88243-17-8	２７，２７，２８，２８，２９，２９，３０，３０，３１，３１，３２，３２，３３，３３，３４，３４，３４-ヘプタデカフルオロ（オクタメチル）-３，６，９，１２，１５，１８，２１，２４-オクタオキサテトラトリアコンタン-１-オール	3,6,9,12,15,18,21,24-Octaoxatetratriacontan-1-ol, 27,27,28,28,29,29,30,30,31,31,32,32,33,33,34,34,34-heptadecafluorooctamethyl-
-88247-39-6	２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２８-ヘプタデカフルオロ-３，６，９，１２，１５，１８-ヘキサオキサオクタコサン-１-オール	3,6,9,12,15,18-Hexaoxaoctacosan-1-ol, 21,21,22, 22,23,23,24,24,25,25,26,26,27,27,28,28,28-heptadecafluoro-
+88247-39-6	２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２８-ヘプタデカフルオロ-３，６，９，１２，１５，１８-ヘキサオキサオクタコサン-１-オール	3,6,9,12,15,18-Hexaoxaoctacosan-1-ol, 21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,28-heptadecafluoro-
 88247-40-9	２７，２７，２８，２８，２９，２９，３０，３０，３１，３１，３２，３２，３３，３３，３４，３４，３４-ヘプタデカフルオロ-３，６，９，１２，１５，１８，２１，２４-オクタオキサテトラトリアコンタン-１-オール	3,6,9,12,15,18,21,24-Octaoxatetratriacontan-1-ol, 27,27,28,28,29,29,30,30,31,31,32,32,33,33,34,34,34-heptadecafluoro-
 88250-32-2		1,6-Hexanediol diacrylate
 882507-89-3		1,2-Diazenedicarboxamide
 882523-85-5		Azodicarbonamide
 882670-69-1		5-Amino-2-methylphenylboronic acid pinacol ester
 882678-96-8		3-Amino-2-methylphenylboronic acid pinacol ester
-88271-22-1	１５，１５，１６，１６，１７，１７，１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２２-ヘプタデカフルオロ（ジメチル）-３，６，９，１２-テトラオキサドコサン-１-オール	3,6,9,12-Tetraoxadocosan-1-ol, 15,15,16,16,17, 17,18,18,19,19,20,20,21,21,22,22,22-heptadecafluorodimethyl-
+88271-22-1	１５，１５，１６，１６，１７，１７，１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２２-ヘプタデカフルオロ（ジメチル）-３，６，９，１２-テトラオキサドコサン-１-オール	3,6,9,12-Tetraoxadocosan-1-ol, 15,15,16,16,17,17,18,18,19,19,20,20,21,21,22,22,22-heptadecafluorodimethyl-
 88272-68-8		Chromium, acetate hydroxy sulfate aluminum complexes
 882878-51-5		Disodium [7-amino-4-(hydroxy-.kappa.O)-3-[[2-[[2-(hydroxy-.kappa.O)-5-sulfophenyl]azo-.kappa.N1]-4,5-dimethoxyphenyl]azo-.kappa.N1]-2-naphthalenesulfonato(4-)]cuprate(2-), reaction products with 2-[[4-[(2-aminopropyl)amino]-6-fluoro-1,3,5-triazin-2-yl]amino]-1,4-benzenedisulfonic acid disodium salt and 2,4,6-trifluoro-1,3,5-triazine
 88330-20-5		Pentahydrogen bis[5-[(4-amino-6-chloro-1,3,5-triazin-2-yl)amino]-4-hydroxy-3-[(2-hydroxy-5-nitrophenyl)azo]naphthalene-2,7-disulphonato(4-)]chromate(5-)
@@ -21775,6 +21862,7 @@
 88377-66-6	ビス［１-（５-クロロ-２-ヒドロキシフェニルアゾ）-２-ナフトラト-（Ｏ，Ｏ'）（２-）］クロム（ＩＩＩ）酸＝テトラデシルアンモニウム塩	Chromate(1-), bis[1-[(5-chloro-2-hydroxyphenyl)azo]-2-naphthalenolato(2-)]-, hydrogen, compound with 1-tetradecanamine (1:1)
 883882-22-2		Cobaltate(4-), [29H,31H-phthalocyanine-2,9,16,23-tetrasulfonato(6-)-.kappa.N29,.kappa.N30,.kappa.N31,.kappa.N32]-, tetrahydrogen, (SP-4-1)-
 884244-75-1		Benzenamine, 4-[(4-aminophenyl)(4-imino-2,5-cyclohexadien-1-ylidene)methyl]-2-methyl-, hydrochloride (1:1)
+88442-64-2		Arsenic acid (H3AsO4), copper(2+) salt (1:1), sesquihydrate
 884507-19-1		1-Methyl-1H-indole-6-boronic acid, pinacol ester
 884739-74-6		Aluminum sodium silicate
 88504-76-1		1,1-Methylene bis(4-isocyanatocyclohexane)
@@ -21823,8 +21911,10 @@
 890126-34-8		Saccharin
 89030-91-1		(Ethyl acetoacetato-O1',O3)(monoisopropyl phthalato-O2)(propan-2-olato)aluminium
 89030-95-5		Copper tripeptide-1
+89054-01-3		Arsenic acid (H3AsO4), copper(2+) salt (4:5)
 89054-03-5		Arsenic acid (H3AsO4), lead(2+) salt (4:5)
 89059-46-1		2,3,7,8-Tetrachlorodibenzofuran with 13C
+89067-81-2	ヒ酸カルシウム	Arsenic acid (H3AsO4), calcium salt (4:5)
 89073-35-8		Azodicarbonamide
 89125-89-3		Sulfur dioxide
 89139-22-0	トリニトロフタロシアニン銅(2+)	[Trinitro-29H,31H-phthalocyaninato(2-)-N29,N30,N31,N32]copper
@@ -22569,6 +22659,7 @@
 922735-42-0		Cobalt, compound with molybdenum (1:4)
 922735-43-1		Cobalt, compound with molybdenum (2:4)
 92275-85-9	ボラヌイド-κ（２）Ｈ，Ｈ'-ジヒドリド（トリメチルアミン-κＮ）アルミニウム	Aluminum borohydride trimethylamine
+92278-94-9		Arsenous acid, titanium salt
 923-14-8		Barium silver 2-(phosphonatooxy)acrylate
 92302-64-2		Copper, [29H,31H-phthalocyaninato(2-)-N29,N30,N31,N32]-, [[4-(sulfothio)phenyl]amino]sulfonyl derivatives, sodium salts
 92332-17-7	ホウ酸と（２-ブトキシエタノール製造由来の副生成物）の反応生成物	Boric acid (H3BO3), reaction products with by-products from manufacture of 2-butoxyethanol
@@ -22613,6 +22704,7 @@
 92731-36-7		Antimony alloy, dross
 92731-39-0		Copper, 2-naphthalenol-sodium sulfide (Na2(Sx)) reaction products complexes, thiosulfonated
 92760-41-3	Ｏ-（４-ブロモ-２-クロロフェニル）＝Ｏ-エチル＝Ｓ-プロピル＝ホスホロチオアート	Profenofos
+927810-08-0		Tributyl(4-methoxy-2-pyridyl)tin
 92786-62-4		Mercury
 92797-28-9		Fatty acids, C14-18 and C18-unsaturated, branched and linear, hydrogenated, cadmium salts
 92797-42-7		Bauxite (Al2O3.xH2O), calcined
@@ -22640,7 +22732,7 @@
 929897-93-8		Aluminum chloride hydroxide
 929898-03-3		Aluminum chloride hydroxide
 93-74-3		Nickel dibutyldithiocarbamate
-93-76-5	2,4,5-トリクロロフェノキシ酢酸	2,4,5-Trichlorophenoxyacetic acid
+93-76-5	２，４，５-T	2,4,5-Trichlorophenoxyacetic acid
 93028-24-1		Aluminum oxide (Al2O3), reaction products with sodium hydroxide
 93028-28-5		Benzenesulfonic acid, C10-60-alkyl derivatives, barium salts
 93028-31-0		Carbonic acid, reaction products with alumina
@@ -22656,6 +22748,7 @@
 93062-36-3		Cobalt, acetate borate complexes
 93062-37-4		Cobalt, borate C8-10-branched fatty acids complexes
 93062-53-4	ホスフィン酸のビス［ペルフルオロアルキル（Ｃ６～１２）］誘導体のアルミニウム塩	Phosphinic acid, bis(perfluoro-C6-12-alkyl) derivatives, aluminum salts
+93080-00-3		Arsonic acid, tin salt
 93085-22-4		Chlorine oxide (ClO2)
 93091-03-3		Antimony, compound with zinc (2:1)
 93094-94-1		2-Propenoic acid, 2-methyl-, polymer with butyl 2-propenoate and ethene, zinc salt
@@ -22740,6 +22833,7 @@
 936250-20-3		3-Methyl-1H-pyrazole-4-boronic acid pinacol ester
 936250-21-4		2-(4-tert-Butoxycarbonylpiperazin-1-yl)pyridine-4-boronic acid, pinacol ester
 936250-22-5		2-Amino-pyrimidinyl-5-boronic acid
+936576-64-6	μ（３）-ボラト-κＯ：κＯ'：κＯ''-トリス［（ネオデカノアト-κＯ）ニッケル］	Nickel, tris(neodecanoato-.kappa.O)[.mu.3-[orthoborato(3-)-.kappa.O:.kappa.O':.kappa.O'']]tri-
 93686-39-6		Nonanoic acid, branched, barium salt
 93686-40-9		Nonanoic acid, branched, cadmium salt
 93686-41-0		Nonanoic acid, branched, cobalt(2+) salt
@@ -22963,6 +23057,7 @@
 93925-26-9		Phosphoric acid, mixed butyl and hexyl diesters, barium salts
 93925-27-0	ブチルとヘキシルジエステル混合のリン酸鉛塩	Phosphoric acid, mixed butyl and hexyl diesters, lead(2+) salts
 93925-30-5		Phosphorodithioic acid, mixed O,O-bis(hexyl and isopropyl) esters, zinc salts
+93925-42-9	アルカリスタノシロキサン	Silicic acid (H4SiO4), tetraethyl ester, reaction products with bis(acetyloxy)dibutylstannane
 93925-43-0	ビス（アセチルオキシ）（ジオクチル）スタンナンとテトラエトキシシランの反応生成物	Silicic acid (H4SiO4), tetraethyl ester, reaction products with bis(acetyloxy)dioctylstannane
 93939-67-4		[29H,31H-Phthalocyanine-2,9,16,24-tetrathiolato(2-)-N29,N30,N31,N32]copper, tetrasodium salt
 93939-76-5		Tetrasodium [[[(3-amino-4-sulphophenyl)amino]sulphonyl]-29H,31H-phthalocyaninetrisulphonato(6-)-N29,N30,N31,N32]nickelate(4-)
@@ -23438,6 +23533,8 @@
 94817-80-8		2-Dodecanol, 4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11, 12,12,12-nonadecafluoro-1-[(1-methylpropyl) amino]-
 94825-20-4		Bis(nitrilotriacetic acid) antimony complex
 94839-07-3		3,4-(Methylenedioxy)phenylboronic acid
+94854-78-1		Arsenenous acid, ammonium copper salt
+94854-80-5		Arsenenous acid, ammonium zinc salt
 94857-33-7	（メタクリロイルオキシ）（トリフェニル）スタンナン・メチル＝メタクリラート・オクチル＝アクリラート重合物	Octyl acrylate-methyl methacrylate-triphenyltin methacrylate copolymer
 948592-80-1		2-Amino-5-methylbenzeneboronic acid, pinacol ester
 94891-35-7	１，３-ビス（ヒドロキシメチル）尿素とホウ酸とエチレングリコールとホルムアルデヒドとグルタルアルデヒドと１，３，４，６-テトラキス（ヒドロキシメチル）テトラヒドロイミダゾ［４，５-ｄ］イミダゾール-２，５（１Ｈ，３Ｈ）-ジオンの反応生成物	Boric acid (H3BO3), reaction products with N,N'-bis(hydroxymethyl)urea, ethylene glycol, formaldehyde, glutaraldehyde and tetrahydro-1,3,4,6-tetrakis(hydroxymethyl)imidazo[4,5-d]imidazole-2,5(1H,3H)-dione

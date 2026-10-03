@@ -11,7 +11,10 @@
 # こちらは CHRIP が政令の号で持っているので、そちらから結ぶ。
 set -uo pipefail
 cd "$(dirname "$0")/.."
+_LOLI_DB_ARG="${LOLI_DB:-}"
 set -a; . <(tr -d '\r' < .env.loli); set +a
+# 呼ぶ側が指定していれば、そちらを使う（新しい・過去のバージョンを取り込むため。2026-10-03 に足した）
+[ -n "$_LOLI_DB_ARG" ] && LOLI_DB="$_LOLI_DB_ARG"
 
 cat > scripts/sql/_jp-apa-special.sql <<'SQL'
 SET NOCOUNT ON;

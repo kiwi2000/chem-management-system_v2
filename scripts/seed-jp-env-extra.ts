@@ -28,7 +28,11 @@ import { statutoryNumber } from "./lib/statutory-number";
 
 const prisma = new PrismaClient();
 const CACHE = join(process.cwd(), ".cache", "laws");
-const VERSION_CODE = "2026Q3";
+/**
+ * 入れる先のバージョン。引数に `2026Q4` のように書けばその版、省くと 2026Q3（2026-10-03 に引数を足した。
+ * 新しい四半期の版を入れるとき、取り出しも `LOLI_DB=LOLI4_Datafeed_<版>` で同じ版から行うこと）
+ */
+const VERSION_CODE = process.argv.slice(2).find((a) => /^\d{4}Q\d$/i.test(a)) ?? "2026Q3";
 
 interface Def {
   law: string;
@@ -121,9 +125,48 @@ function readTsv(name: string): [string, string][] {
     .map((l) => l.split("\t") as [string, string]);
 }
 
+/**
+ * `--links-only`: 区分と法文物質名はそのまま、**指定した版 × LOLI のリンクだけ**を入れ替える（2026-10-03 に足した）。
+ * 新しい四半期の版を入れるときに使う。ふつうの --write は区分を丸ごと消して作り直すので、
+ * **ほかの版のリンクと、その区分の判定まで消える。**新しい版を足すときは必ずこちら
+ */
+async function replaceLinksOnly(
+  versionId: string,
+  sourceId: string,
+  wanted: { code: string; cas: string[] }[],
+): Promise<{ links: number; missing: string[] }> {
+  const subs = await prisma.statutorySubstance.findMany({
+    where: { codeNormalized: { in: wanted.map((w) => w.code) }, deletedAt: null },
+    select: { id: true, codeNormalized: true },
+  });
+  const idOf = new Map(subs.map((s) => [s.codeNormalized, s.id]));
+  const missing = wanted.filter((w) => !idOf.has(w.code)).map((w) => w.code);
+  await prisma.statutoryCasLink.deleteMany({
+    where: { versionId, sourceId, statutorySubstanceId: { in: subs.map((s) => s.id) } },
+  });
+  let links = 0;
+  for (const w of wanted) {
+    const id = idOf.get(w.code);
+    if (!id || w.cas.length === 0) continue;
+    const r = await prisma.statutoryCasLink.createMany({
+      data: w.cas.map((c) => ({
+        versionId,
+        statutorySubstanceId: id,
+        sourceId,
+        casNumber: c,
+        casNormalized: normalizeCas(c),
+      })),
+      skipDuplicates: true,
+    });
+    links += r.count;
+  }
+  return { links, missing };
+}
+
 async function main() {
   const write = process.argv.includes("--write");
   const remove = process.argv.includes("--remove");
+  const linksOnly = process.argv.includes("--links-only");
 
   const version = await prisma.linkSetVersion.findFirst({ where: { code: VERSION_CODE } });
   const source = await prisma.source.findFirst({ where: { codeNormalized: "LOLI" } });
@@ -141,7 +184,7 @@ async function main() {
       where: { lawId: law.id, code: def.code },
       select: { id: true },
     });
-    if (old && (write || remove)) {
+    if (old && (write || remove) && !linksOnly) {
       const subs = await prisma.statutorySubstance.findMany({
         where: { regulationClass: { categoryId: old.id } },
         select: { id: true },
@@ -171,6 +214,20 @@ async function main() {
         `${def.judged ? "" : "（判定に使わない）"}`,
     );
     if (!write) continue;
+    if (linksOnly) {
+      const r = await replaceLinksOnly(
+        version.id,
+        source.id,
+        items.map((item) => ({
+          code: `${def.law}-${def.code}-${item.number}`.toUpperCase(),
+          cas: casOf.get(item.number) ?? [],
+        })),
+      );
+      console.log(
+        `  ${VERSION_CODE} のリンクだけ入れ替え: ${r.links}件${r.missing.length ? `（法文物質名が無い: ${r.missing.join(", ")}）` : ""}`,
+      );
+      continue;
+    }
 
     const category = await prisma.regulationCategory.create({
       data: {

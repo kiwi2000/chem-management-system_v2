@@ -1333,6 +1333,7 @@
 12005-70-8	ヒ化六ホウ素(B6As)	Boron arsenide (B6As)	CAJ
 12005-75-3	ヒ化銅(Cu3As)	Copper arsenide (Cu3As)	CAJ
 12005-81-1	ヒ化ジスプロシウム (DyAs)	Dysprosium arsenide (DyAs)	CAJ
+12005-82-2	ヘキサフルオロヒ酸銀(I)	Silver(I) hexafluoroarsenate	CAJ
 12005-86-6	ヘキサフルオロヒ酸ナトリウム	Sodium hexafluoride arsenate	CAJ
 12005-88-8	ヒ化鉄(Fe2As)	Iron arsenide (Fe2As)	CAJ
 12005-89-9	ヒ化ガドリニウム (GdAs)	Gadolinium arsenide (GdAs)	CAJ
@@ -1641,6 +1642,7 @@
 12331-30-5	四塩化ジルコニウム	Zirconium tetrachloride	CAJ
 12333-97-0	鉛とスズの化合物（１：１）	Lead-tin alloys(1:1 alloy)	CAJ
 123333-54-0	ペンタクロロフェノールナトリウム塩	Pentachlorophenol, sodium salt hydrate	CAJ
+123334-18-9	テトラフェニルアルソニウムクロライド塩酸塩	Tetraphenyl arsonium chloride hydrochloride	CAJ
 123362-54-9		3-Butyn-2-ol	
 12337-16-5	オキシ硝酸ジルコニウム	Zirconium oxynitrate	CAJ
 12344-40-0	ヨウ化銀水銀	Mercury silver iodide	CAJ
@@ -1669,6 +1671,7 @@
 12396-99-5	二酸化硫黄	Sulfur dioxide	CAJ
 12397-00-1	二酸化セレン	Selenium dioxide	CAJ
 12397-06-7	塩基性硫酸鉛（三塩基性）	Lead oxide sulfate (Pb4O3(SO4)), monohydrate	CAJ
+12397-66-9		Tin arsenide (Sn4As3)	
 1239977-99-1	テトラエトキシシラン	Silicic acid (H4SiO4), tetraethyl ester	CAJ
 124-01-6	クロリド（２-エトキシエチル）水銀	2-Ethoxyethylmercury chloride	CAJ
 124-02-7	ジアリルアミン	Diallylamine	CAJ
@@ -1691,9 +1694,11 @@
 1240017-47-3	ジフェニルエーテルのオクタブロモ誘導体	Benzene, 1,1'-oxybis-, octabromo derivative	CAJ
 12403-82-6	ジヒドロキシ［２，４，６-トリニトロ-１，３-ベンゼンジオラト（２-）］二鉛	Lead, dihydroxy[2,4,6-trinitro-1,3-benzenediolato(2-)]di-	CAJ
 124057-60-9	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
+12406-51-8	フェニル[(フェニルジアゼンカルボチオ酸-.kappa.S) 2-フェニルヒドラジダト-.kappa.N2]水銀	Mercury, phenyl[(phenyldiazenecarbothioic acid-.kappa.S) 2-phenylhydrazidato-.kappa.N2]-	CAJ
 12412-92-9	鉛スズテルル化物 (PbSnTe2)	Lead tin telluride (PbSnTe2)	CAJ
 12412-94-1	鉛とジルコニウムの化合物（３：５）	Lead-zirconium alloys(3:5 alloy)	CAJ
 12413-45-5	石綿	Asbestos	CAJ
+12414-94-7	コバルト アルセノパイライト	Arsenopyrite, cobaltoan	CAJ
 12417-99-1	ヒ化銀(Ag3As)	Arsenargentite (Ag3As)	CAJ
 124222-18-0	残渣(貴金属精錬)	Residues, precious metal-refining	CAJ
 1242458-86-1	酸化ナトリウム (Na2O)	Sodium oxide (Na2O)	CAJ
@@ -1716,10 +1721,12 @@
 125022-34-6	テトラヒドロキシド-ジ-μ-ペルオキシド-１κＯ，２κＯ'-二ホウ酸二ナトリウム六水和物	Sodium perborate hexahydrate	CAJ
 12503-98-9	五酸化バナジウム	Vanadium pentoxide	CAJ
 12504-13-1	リン化ストロンチウム	Strontium phosphide	LOLI
+12505-67-8		Diarsenic trioxide	
 12508-72-4	水銀とカリウムの化合物 (2:1)	Mercury, compound with potassium (2:1)	CAJ
 125146-87-4		1,6-Hexanediamine, 2,2,4(or2,4,4)-trimethyl-	
 12515-76-3	塩化アンチモン	Antimony trichloride	CAJ
 125199-87-3	ジブチルビス[(1-オキソドデシル)オキシ]スタンナン	Stannane, dibutylbis[(1-oxododecyl)oxy]-	CAJ
+12523-20-5		Arsenous acid, antimony(3+) salt (1:1)	
 1252662-61-5	水酸化アンモニウム ((NH4)(OH))	Ammonium hydroxide ((NH4)(OH))	CAJ
 125289-32-9	亜硫酸	Sulfurous acid	CAJ
 12529-66-7	二水銀イミドオキシド	Dimercury imide oxide	CAJ
@@ -2130,6 +2137,7 @@
 1330-20-7	キシレン(異性体混合物)	Xylenes (o-, m-, p- isomers)	CAJ
 1330-78-5	リン酸トリス(メチルフェニル)	Phosphoric acid, tris(methylphenyl) esters	CAJ
 13302-00-6	（２-エチルヘキサノアト-κＯ）（フェニル）水銀	Mercury, (2-ethylhexanoato-O)phenyl-	CAJ
+13302-14-2		Plumbane, tributylchloro-	
 133097-00-4	ホウフッ化水素酸	Fluoroboric acid	CAJ
 1331-22-2	メチルシクロヘキサノン	Methylcyclohexanones	CAJ
 1331-23-3	メチルシクロヘキサノール	Methylcyclohexanol	CAJ
@@ -2276,6 +2284,8 @@
 13463-39-3	ニッケルカルボニル	Nickel carbonyl	CAJ
 13463-40-6	鉄カルボニル	Iron, pentacarbonyl-	CAJ
 13464-28-3	リン酸水銀(II)	Mercury(II) phosphate	CAJ
+13464-31-8		Arsenic acid (H3AsO4), copper(2+) salt (1:1)	
+13464-33-0		Zinc arsenate	
 13464-35-2	メタ亜ヒ酸カリウム(KAsO2)	Potassium arsenite	CAJ
 13464-37-4	亜ヒ酸三ナトリウム	Arsenous acid, trisodium salt	CAJ
 13464-38-5	ヒ酸ナトリウム（Ｎａ３ＡｓＯ４）	Arsenic acid (H3AsO4), trisodium salt	CAJ
@@ -2294,6 +2304,7 @@
 13465-37-7	チオシアン酸水銀(I)	Mercury thiocyanate	CAJ
 13465-94-6	亜硝酸バリウム	Nitrous acid, barium salt	CAJ
 13465-95-7	過塩素酸バリウム	Barium perchlorate	CAJ
+13466-06-3	亜ヒ酸ナトリウム	Arsonic acid, disodium salt	CAJ
 13466-27-8	塩化ベリリウム・四水和物	Beryllium chloride, tetrahydrate	CAJ
 13470-01-4		Iodic acid (HIO3), strontium salt	
 13470-05-8	硝酸ストロンチウム四水和物	Nitric acid, strontium salt, tetrahydrate	CAJ
@@ -2411,6 +2422,9 @@
 136675-26-8		2-Propanone, 1-phenyl-	
 136677-09-3	ポリ塩化ジベンゾ-パラ-ジオキシン	Polychlorinated dibenzo-p-dioxins	LOLI
 136677-10-6	ポリ塩化ジベンゾフラン（総称名）	Chlorinated dibenzofurans	LOLI
+13673-51-3	ペンタクロロフェニル=N2-[(ベンジルオキシ)カルボニル]-L-グルタミナート	N2-Benzyl pentachlorophenyl N2-carboxy-L-(2-aminoglutaramate)	CAJ
+13673-53-5	ペンタクロロフェニル=N-[(ベンジルオキシ)カルボニル]-L-イソロイシナート	Perchlorophenyl N-(benzyloxycarbonyl)-L-isoleucinate	CAJ
+13673-54-6	ペンタクロロフェニル=(2R)-2-{[(ベンジルオキシ)カルボニル]アミノ}-3-(ベンジルスルファニル)プロパノアート	Perchlorophenyl S-benzyl-N-(benzyloxycarbonyl)-L-cysteinate	CAJ
 13675-47-3	二クロム酸銅（ＩＩ）	Copper dichromate	CAJ
 136799-44-5	メソミル	Methomyl	CAJ
 13682-73-0	シアン化銅酸カリウム	Potassium cuprocyanide	CAJ
@@ -2813,6 +2827,7 @@
 1441-02-7		Pentachlorophenyl acetate	
 1441020-41-2	アクリル酸エチル	2-Propenoic acid, ethyl ester	CAJ
 1441148-55-5	硫化カドミウム (CdS)	Cadmium sulfide (CdS)	CAJ
+14429-85-7	三塩化カドミウムカリウム	Potassium trichlorocadmate	CAJ
 144313-52-0	O-オクチル=メチルホスホノフルオリダート	O-Octyl methyl phosphonofluoridate	LOLI
 144377-64-0	ジブチルオキソスタンナン	Stannane, dibutyloxo-	CAJ
 14445-91-1	二クロム酸アンモニウム（混合）	Chromic acid, ammonium salt	CAJ
@@ -3065,6 +3080,7 @@
 15199-43-6	ジ[(2H3)メチル]=スルファート	Di[(2H3)methyl] sulphate	CAJ
 152-16-9	オクタメチルピロホスホルアミド	Octamethylpyrophosphoramide	CAJ
 1520-57-6	塩化アセチル[1-13C]	Acetyl chloride [1-13C]	CAJ
+1520-71-4	クロロ（トリプロピル）プルンバン	Plumbane, chlorotripropyl-	CAJ
 1520-78-1	クロロ（トリメチル）プルンバン	Chlorotrimethylplumbane	CAJ
 152212-20-9	ジノセブ	Dinoseb	CAJ
 152264-12-5	ニトロセルローズ	Nitrocellulose	CAJ
@@ -3076,6 +3092,7 @@
 152463-65-5	亜硫酸	Sulfurous acid	CAJ
 15271-41-7		Bicyclo[2.2.1]heptane-2-carbonitrile, 5-chloro-6-((((methylamino)carbonyl)oxy)imino)-, (1S-(1-.alpha.,2-.beta.,4-.alpha.,5-.alpha.,6E))-	
 152758-95-7	ピリジン	Pyridine	CAJ
+15276-40-1	六塩化カドミウムカリウム	(OC-6-11)-Tetrapotassium hexachlorocadmate	CAJ
 15280-09-8	ビス(シアノ-C)金酸(1-)ナトリウム	Aurate(1-), bis(cyano-C)-, sodium	CAJ
 15282-88-9	ビス(2,4-ペンタンジオナト)鉛(2+)	Bis(pentane-2,4-dionato-O,O')lead	CAJ
 1529-41-5	3-クロロフェニルアセトニトリル	3-Chlorophenylacetonitrile	CAJ
@@ -3313,6 +3330,8 @@
 160305-97-5	３，４，５，６-テトラクロロ-Ｎ-［３-｛パーフルオロアルキル（Ｃ＝６～８）スルホニルオキシ｝フエニル］フタルアミド酸カリウム	Potassium 3,4,5,6-tetrachloro-N-[3-((perfluoroalkyl(C6-8)sulfonyloxy))phenyl]phthalamate	CAJ
 16033-71-9	プロピレンオキシド	Propylene oxide	CAJ
 160336-17-4	ブチル＝プロパ-２-エノアート及び２-｛メチル［（ペルフルオロアルキル）スルホニル］アミノ｝エチル＝プロパ-２-エノアート（ペルフルオロアルキル基の構造が直鎖であって、当該ペルフルオロアルキル基の炭素数が６のもの又は当該ペルフルオロアルキル基の炭素数が４から８までのものの混合物（ペルフルオロアルキル基の炭素数が６のものを含むものに限る。）に限る。）の共重合物	Polymer(butyl acrylate-2-[N-methyl-N-[perfluoroalkyl[C4-8]sulfonyl]amino]ethyl acrylate)	CAJ
+16035-34-0	（４-ブロモブチル）（トリフェニル）プルンバン	Plumbane, (4-bromobutyl)triphenyl-	CAJ
+16035-39-5	（４-アジドブチル）（トリフェニル）プルンバン	Plumbane, (4-azidobutyl)triphenyl-	CAJ
 16037-50-6	塩化クロム酸カリウム	Chromate(1-), chlorotrioxo-, potassium, (T-4)-	CAJ
 160371-18-6	ケイ素	Silicon	CAJ
 16038-76-9	ホスホン酸水素鉛	Phosphonic acid, lead salt	CAJ
@@ -3338,6 +3357,7 @@
 16123-82-3	ペルオキシ二炭酸C,C'-ビス(2-エチルヘキシル)	Peroxydicarbonic acid, C,C'-bis(2-ethylhexyl) ester	CAJ
 161279-65-8	ナフテン酸コバルト粉末	Naphthenic acids, cobalt salts	CAJ
 161279-90-9	2-ブトキシエタノール	Ethanol, 2-butoxy-	CAJ
+16128-42-0		1H-Imidazole, 1-(tributylplumbyl)-	
 161288-32-0	フッ化アンモニウム	Ammonium fluoride	CAJ
 161403-69-6	フッ化水素カリウム	Potassium bifluoride	CAJ
 16142-89-5	ヒ素セレン酸タリウム（Ｔｌ３ＡｓＳｅ３）	Arsenotriselenous acid, trithallium(1+) salt	CAJ
@@ -3383,6 +3403,7 @@
 1631149-30-8	テトラフルオロホウ酸	Borate(1-), tetrafluoro-, hydrogen (1:1)	CAJ
 1632-89-9	[2H4]アセトアルデヒド	[2H4]Acetaldehyde	CAJ
 1633026-84-2	ナトリウムメトキシド	Sodium methoxide	CAJ
+16331-85-4		Caesium arsenate	
 1633690-46-6	ビニルトリエトキシシラン	Silane, ethenyltriethoxy-	CAJ
 163392-20-9	ピリジン	Pyridine	CAJ
 1634-04-4	メチル tert-ブチル エーテル	Methyl tert-butyl ether	CAJ
@@ -3391,6 +3412,7 @@
 1638-26-2		1,1-Dimethylcyclopentane	
 16393-49-0	アンモニア水	Ammonium hydroxide	CAJ
 1640-89-7	エチル シクロペンタン	Ethyl cyclopentane	CAJ
+164170-84-7	ヒ酸(H3AsO4)二水素カリウム・１／５水和物	Arsenic acid (H3AsO4), monopotassium salt, 1/5 hydrate	CAJ
 16422-67-6		Rubidium fluoride hydrate	
 16450-50-3	アンチモン酸鉛(2+)	Diantimony lead tetroxide	CAJ
 1645316-98-8	セレン化カドミウム (CdSe)	Cadmium selenide (CdSe)	CAJ
@@ -3560,6 +3582,7 @@
 1746-01-6	2,3,7,8-テトラクロロベンゾ- p-ダイオキソン	2,3,7,8-Tetrachlorodibenzo-p-dioxin	CAJ
 17462-58-7	クロリド炭酸sec-ブチル	sec-Butyl chloroformate	CAJ
 174973-66-1	ベンゼン	Benzene	CAJ
+17522-78-0		Arsenic chloride (AsCl)	
 175446-71-6	メチルトリクロロシラン	Methyltrichlorosilane	CAJ
 175448-53-0	スラグ, 鉛製錬, 亜鉛還元	Slags, lead smelting, zinc-reduced	CAJ
 175463-14-6		7-3(Aminomethyl-4-(Z)-methoxyimino-1-pyrrolidinyl)-1-cyclopropyl-6-fluoro-1,4-dihydro-4-oxo-1,8-naphthylridine-3-carboxylic acid	
@@ -3584,6 +3607,7 @@
 17702-41-9	デカボラン	Decaborane	CAJ
 1772-02-7	p-[[4-[3-(2-アルソノ-4-ニトロフェニル)トリアゼン-1-イル]フェニル]アゾ]ベンゼンスルホン酸ナトリウム	Sodium p-[[4-[3-(2-arsono-4-nitrophenyl)triazen-1-yl]phenyl]azo]benzenesulphonate	CAJ
 1772-10-7	３-ｓｅｃ-ブチル-１-メチルベンゼン	Benzene, 1-methyl-3-(1-methylpropyl)-	CAJ
+17729-30-5		Tris(trimethylsilyl)arsine	
 1773514-66-1	セレン化カドミウム（ＣｄＳｅ）とテトラデシルホスホン酸の反応生成物	Phosphonic acid, P-tetradecyl-, reaction products with cadmium selenide (CdSe)	CAJ
 1773514-92-3	セレン化硫化カドミウム亜鉛、ドデカン酸及び（Ｚ）-オクタデカ-９-エン-１-アミンの反応生成物	Dodecanoic acid, reaction products with cadmium zinc selenide sulfide and oleylamine	CAJ
 1776-70-1	トリス(フェニルチオ)アルシン	Tris(phenylthio)arsine	CAJ
@@ -3742,6 +3766,7 @@
 18923-20-1	炭酸ガス	Carbon dioxide	CAJ
 1893-52-3	２-（Ｎ-エチル-１，１，２，２，３，３，４，４，５，５，６，６，６-トリデカフルオロヘキサン-１-スルホンアミド）エチル＝プロパ-２-エノアート	2-Propenoic acid, 2-[ethyl[(tridecafluorohexyl)sulfonyl]amino]ethyl ester	CAJ
 18936-17-9	2-メチルブチロニトリル	2-Methylbutyronitrile	CAJ
+18942-25-1		tert-Butyl pentachlorophenyl carbonate	
 18960-62-8	アニリン-1-13C	Aniline-1-13C	CAJ
 18961-44-9	プロピレンイミン	Propyleneimine	CAJ
 18961-45-0	プロピレンイミン	Propyleneimine	CAJ
@@ -3842,6 +3867,7 @@
 19708-89-5	テトラフルオロホウ酸亜鉛（Ｚｎ［ＢＦ４］２）	Borate(1-), tetrafluoro-, zinc (2:1)	CAJ
 19719-72-3	ビス(4-ブロモフェニル)水銀	Bis(4-bromophenyl)mercury	CAJ
 19742-57-5	アンモニウム＝２，２，３，３，４，４，５，５，６，７，７，７-ドデカフルオロ-６-（トリフルオロメチル）ヘプタノアート	Heptanoic acid, 2,2,3,3,4,4,5,5,6,7,7,7-dodecafluoro-6-(trifluoromethyl)-, ammonium salt (1:1)	CAJ
+19745-69-8		Acetic acid, 2,2-dichloro-, 2,3,4,5,6-pentachlorophenyl ester	
 19750-95-9	N'-(2-メチル-4-クロルフェニル)-N,N-ジメチルホルムアミジン塩酸塩	N'-(4-Chloro-o-tolyl)-N,N-dimethylformamidine monohydrochloride	CAJ
 197571-85-0		Benzenediazonium, 4-[(4-methoxyphenyl)amino]-, chloride (1:1)	
 19779-06-7	1-ヘキサノールナトリウム塩	1-Hexanol, sodium salt	CAJ
@@ -4039,6 +4065,7 @@
 21351-79-1	水酸化セシウム	Cesium hydroxide	LOLI
 213530-35-9	金属ナトリウム	Sodium	CAJ
 2136-99-4	2,2',3,3',5,5',6,6'-オクタクロロビフェニル	2,2',3,3',5,5',6,6'-Octachlorobiphenyl	CAJ
+21360-94-1	四塩化カドミウムナトリウム	(T-4)-Disodium tetrachlorocadmate	CAJ
 21369-64-2		n-Hexyllithium	
 213750-04-0	チタン(4+)=プロポキシド	1-Propanol, titanium(4+) salt	CAJ
 21395-82-4		Cyclooctene, (1Z)-	
@@ -4213,6 +4240,7 @@
 232259-02-8	過酢酸	Peracetic acid	CAJ
 232277-88-2		1,6-Hexanediamine, 2,2,4(or2,4,4)-trimethyl-	
 23232-50-0	硝酸ニッケル(2+)二水和物	Nickel dinitrate dihydrate	CAJ
+23234-97-1	ペンタクロロフェニル=N-{[(4-メトキシベンジル)オキシ]カルボニル}-L-セリナート	Pentachlorophenyl N-[[(4-methoxyphenyl)methoxy]carbonyl]-L-serinate	CAJ
 2323620-11-5	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
 23255-69-8		Fusarenon-X	
 23297-50-9		Tetraisopentylammonium thiocyanate	
@@ -4291,6 +4319,7 @@
 2431-50-7	2,3,4-トリクロロ-1-ブテン	1-Butene, 2,3,4-trichloro-	CAJ
 243121-01-9	ヘキサメチレン-1,6-ジイソシアネート	Hexamethylene-1,6-diisocyanate	CAJ
 24342-03-8	エン ナム	Isobutyl but-3-enoate	LOLI
+24343-41-7		Arsenous acid, gallium salt (1:1)	
 24345-60-6	カドミウム＝ジメタクリラート	Cadmium methacrylate	CAJ
 243464-31-5		Mevinphos	
 24347-12-4	セシウム	Cesium	CAJ
@@ -4634,6 +4663,7 @@
 2826961-24-2	アルミニウム粉	Aluminum	CAJ
 282727-82-6	4,4-ジオキシビス[3,3,5-トリメチル-1,2-ジオキソラン]	1,2-Dioxolane, 4,4-dioxybis[3,3,5-trimethyl-	CAJ
 28300-74-5	酒石酸アンチモニルカリウム (三水和物)	Antimonate(2-), bis[.mu.-(2,3-dihydroxybutanedioato(4-)-O1,O2:O3,O4)]di-, dipotassium, trihydrate, stereoisomer	CAJ
+28302-54-7	三塩化カドミウムカリウム・一水和物	Potassium trichlorocadmate monohydrate	CAJ
 283157-58-4	次亜塩素酸カルシウム(水和物又は水和混合物)	Calcium hypochlorite, hydrated or hydrated mixtures	CAJ
 2832056-54-7	アルミニウム粉	Aluminum	CAJ
 28324-52-9	ピナンヒドロパーオキシド	Pinane hydroperoxide	CAJ
@@ -4684,6 +4714,7 @@
 28767-59-1	三硫化二アンチモン	Antimony trisulfide	CAJ
 28772-56-7		Bromadiolone	
 28788-42-3	デカハイドロナフタレン-d18	Decahydronaphthalene-d18	CAJ
+2879-60-9		Acetic acid, 2,2,2-trichloro-, 2,3,4,5,6-pentachlorophenyl ester	
 28837-97-0	亜ヒ酸亜鉛（Ｚｎ３（ＡｓＯ３）２）	Arsenous acid, zinc salt (2:3)	CAJ
 2893-83-6	ヨウ素酸カリウム	Potassium iodate	CAJ
 28930-30-5		Benzene, 1,1'-thiobis-, hexanitro derivative	
@@ -4692,6 +4723,7 @@
 2896-10-8	トリ-p-トリルアルシン	Tri-p-tolylarsine	CAJ
 28980-47-4	ヒ酸アンチモン	Antimony arsenate	CAJ
 28980-48-5	亜ヒ酸アンチモン	Antimony arsenite	CAJ
+28990-85-4	ペンタクロロフェニル=(2S)-5-オキソピロリジン-2-カルボキシラート	Perchlorophenyl 5-oxo-L-prolinate	CAJ
 28995-89-3		1,3,6,8-Tetranitronaphthalene	
 29025-67-0		1-(p-Chlorophenyl)-2,8,9-trioxa-5-aza-1-silabicyclo[3.3.3]undecane	
 29027-17-6	２-クロロ-３-メチルアニリン	2-Chloro-m-toluidine	CAJ
@@ -4858,6 +4890,7 @@
 30586-18-6	ペンタメチルヘプタン	Pentamethylheptane	CAJ
 30593-65-8	O-1,3,3-トリメチルブチル=メチルホスホノフルオリダート	O-1,3,3-Trimethyl butyl methyl phosphonofluoridate	LOLI
 306-12-7	オキソフェナルシン	Oxophenarsine	CAJ
+30621-31-9		arsenic acid (H3AsO4), calcium salt(2:3), dihydrate	
 30623-04-2	硫酸カリウムカドミウム・六水和物	Sulfuric acid, cadmium potassium salt (2:1:2), hexahydrate	CAJ
 30676-83-6	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
 30685-43-9	メチルジゴキシン	Methyldigoxin	LOLI
@@ -4888,6 +4921,7 @@
 3074-77-9	3-エチル-4-メチルヘキサン	3-Methyl-4-ethylhexane	CAJ
 30746-58-8	1,2,3,4-テトラクロロジベンゾ[b,e][1,4]ジオキシン	1,2,3,4-Tetrachlorodibenzodioxin	CAJ
 307531-70-0	ビス(2,4-ペンタンジオナト-.kappa.O,.kappa.O')カドミウム一水和物, (T-4)-	Cadmium, bis(2,4-pentanedionato-.kappa.O,.kappa.O')-, monohydrate, (T-4)-	CAJ
+3076-54-8		Plumbane, tris(acetyloxy)phenyl-	
 3076-91-3	塩化[p-[(2-ヒドロキシ-1-ナフチル)アゾ]フェニル]水銀(2+)	Chloro[p-[(2-hydroxy-1-naphthyl)azo]phenyl]mercury	CAJ
 30784-30-6	4-(1,1-ジメチルヘプチル)フェノール	Phenol, 4-(1,1-dimethylheptyl)-	CAJ
 308-01-0	１-［２-（２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロオクタンアミド）エチル］ピリジン-１-イウム＝クロリド	Pyridinium, 1-[2-[(2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluoro-1-oxooctyl)amino]ethyl]-, chloride (1:1)	CAJ
@@ -4989,6 +5023,7 @@
 32536-52-0	オクタブロモジフェニルエーテル	Octabromodiphenyl ether	CAJ
 3254-63-5		Phosphoric acid, dimethyl 4-(methylthio)phenyl ester	
 32581-06-9		Sodium 2,6-dinitrophenolate	
+32593-99-0	三ヨウ化カドミウムアンモニウム	Ammonium triiodocadmate	CAJ
 32598-10-0	2,3',4,4'-テトラクロロビフェニル	2,3',4,4'-Tetrachlorobiphenyl	CAJ
 32598-11-1	2,3',4',5-テトラクロロビフェニル	2,3',4',5-Tetrachlorobiphenyl	CAJ
 32598-12-2	2,4,4',6-テトラクロロビフェニル	2,4,4',6-Tetrachlorobiphenyl	CAJ
@@ -5152,7 +5187,9 @@
 33940-95-3	ヒ酸(H3AsO4)鉛(4+)塩(2:1)一水和物	Arsenic acid (H3AsO4), lead(4+) salt (2:1), monohydrate	CAJ
 33960-08-6	硝酸水銀(2+)水和物	Mercury(II) nitrate hydrate	CAJ
 33966-50-6	sec-ブチルアミン	sec-Butylamine	CAJ
+33972-75-7	メタンアルソン酸鉄	Ferric methanarsonic acid	CAJ
 33979-03-2	2,2',4,4',6,6'-ヘキサクロロビフェニル	2,2',4,4',6,6'-Hexachlorobiphenyl	CAJ
+33992-49-3		Arsenenous acid, nickel(2+) salt	
 340127-82-4	ピクリン酸アンモニウム	Ammonium picrate	CAJ
 34018-28-5	臭素酸鉛	Lead dibromate	CAJ
 34100-40-8	（２Ｒ，３Ｒ）-酒石酸のカドミウム塩（１：？）	Cadmium [R-(R*,R*)]-tartrate	CAJ
@@ -5314,6 +5351,7 @@
 35830-81-0	硫酸鉛(2+)鉛(4+)塩(3:1:1)	Sulfuric acid, lead(2+) lead(4+) salt (3:1:1)	CAJ
 35837-70-8	3,5,5-トリメチルヘキサン酸鉛(2+)	Lead bis(3,5,5-trimethylhexanoate)	CAJ
 35854-94-5	1,3,5-トリブロモ-2-(2,4,6-トリブロモフェノキシ)ベンゼン	Benzene, 1,1'-oxybis[2,4,6-tribromo-	CAJ
+3586-60-5		Arsenic dimethyldithiocarbamate	
 35860-31-2	ヘキサニトロジフェニルアミ	Hexanitrodiphenylamine	CAJ
 35938-70-6	硝酸ビスマス(3+)	Nitric acid, bismuth(3+) salt	CAJ
 35973-13-8	o-ニトロアニソール	o-Nitroanisole	CAJ
@@ -5442,6 +5480,7 @@
 37333-30-5	硫酸タリウム(I)	Thallium(I) sulfate	CAJ
 37336-52-0	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
 37337-11-4	亜ヒ酸銅(I)	Copper(I) arsenite	CAJ
+37337-13-6	二ヒ酸三銅のクロム酸化物	Arsenic acid (H3AsO4) , copper(2+) salt (2:3) , chromated	CAJ
 3734-95-0		Cyanthoate	
 37340-23-1	カリウムアマルガム	Potassium-mercury amalgam	CAJ
 37340-67-3	（エチルアミン）トリフルオロホウ素	Boron, (ethanamine)trifluoro-, (T-4)-	CAJ
@@ -5759,10 +5798,12 @@
 41919-05-5	1,5-ヘキサジエン	1,5-Hexadiene	CAJ
 41935-39-1	パーオキシ二炭酸ジ（2-フェノキシエチル）	Bis(2-phenoxyethyl) peroxydicarbonate	CAJ
 419553-44-9	ジエチレントリアミン	Diethylenetriamine	CAJ
+41996-37-6		Arsenic chloride (AsCl2)	
 41997-13-1	１，１，２，２，３，３，４，４，５，５，６，６，６-トリデカフルオロヘキサン-１-スルホンアミド	1-Hexanesulfonamide, 1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluoro-	CAJ
 420-24-6	ジフルオロメチルアルシン	Arsine, difluoromethyl-	CAJ
 420-46-2	エタン, 1,1,1-トリフルオロ-	Ethane, 1,1,1-trifluoro-	CAJ
 42031-19-6	1-ブタノール	1-Butanol	CAJ
+421-09-0		Bromo(trifluoromethyl)mercury	
 421-50-1	2-プロパノン, 1,1,1-トリフルオロ-	2-Propanone, 1,1,1-trifluoro-	LOLI
 42126-46-5	ニッケルカルボニル	Nickel carbonyl	CAJ
 4213-45-0		1,4-Pentanediamine, N1,N1-bis(2-chloroethyl)-N4-(6-chloro-2-methoxy-9-acridinyl)-, dihydrochloride	
@@ -5794,12 +5835,14 @@
 42939-70-8	メチルアミン	Methylamine	CAJ
 42939-71-9	プロピルアミン	Propylamine	CAJ
 42939-72-0	ブチルアミン	Butylamine	CAJ
+42977-21-9	１，１，１，２，２，３，３，４，４，５，５，６，６，７，７，８，８-ヘプタデカフルオロ-１０ -［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）ジスルファニル］デカン	Bis(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl) disulphide	CAJ
 43031-21-6	エチルアミン	Ethylamine	CAJ
 43047-99-0		Dichlorodibenzofuran (mixed isomers)	
 43048-00-6		Trichlorodibenzofuran (mixed isomers)	
 43090-85-3	2-クロロ-2,4,4,6-テトラメチルヘプタン	Heptane, 2-chloro-2,4,4,6-tetramethyl-	CAJ
 43094-80-0	パラホルムアルデヒド-d	Paraformaldehyde-d	CAJ
 431-03-8	2,3-ブタンジオン	2,3-Butanedione	CAJ
+43135-86-0		Plumbane, triethyl[[(4-methylphenyl)sulfonyl]oxy]-	
 4316-42-1	１-ブチルイミダゾール	N-(n-Butyl)imidazole	LOLI
 4325-51-3	2-クロロ-2-メチルデカン	Decane, 2-chloro-2-methyl-	CAJ
 4342-36-3	トリブチルスズ　ベンゾエート	Tributyltin benzoate	CAJ
@@ -5912,6 +5955,7 @@
 45981-71-3	3-(アミノメチル)-3,5,5-トリメチルシクロヘキシルアミン	Cyclohexanemethanamine, 5-amino-1,3,3-trimethyl-	CAJ
 460-19-5	ジシアン	Ethanedinitrile	CAJ
 460091-27-4	Ｏ-２-エチルヘキシル＝イソプロピルホスホノフルオリダート	2-Ethylhexyl isopropylphosphonofluoridate	LOLI
+461-40-5		Mercury, (nitrate-O)(trifluoromethyl)-	
 462-06-6	フルオロベンゼン	Fluorobenzene	CAJ
 462-08-8	3-アミノピリジン	3-Aminopyridine	LOLI
 462-94-2	１，５－ペンタンジアミン	Pentamethylenediamine	LOLI
@@ -6352,6 +6396,8 @@
 535-55-7	ヘルモフェニル	mercuric sodium p-phenolsulfonate	CAJ
 535-89-7	2-クロロ-4-(ジメチルアミノ)-6-メチルピリミジン	Crimidine	LOLI
 53513-80-7		Lead, [3-mercapto-D-valinato(2-)-N,O,S]-	
+53515-73-4	プロパ-２-エン酸及び２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロオクチル＝２-メチルプロパ-２-エノアートの共重合物	2-Propenoic acid, 2-methyl-, 2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluorooctyl ester, polymer with 2-propenoic acid	CAJ
+53517-98-9	Ｎ-［３-（パーフルオロオクタノイルアミド）プロピル］Ｎ，Ｎ，Ｎ-トリメチルアンモニウムクロライド	1-Propanaminium, N,N,N-trimethyl-3-[(2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluoro-1-oxooctyl)amino]-, chloride (1:1)	CAJ
 53529-09-2		Chromium lead oxide sulfate	
 53529-37-6	ヘキサクロロシクロヘキサン	Lindane	CAJ
 53529-49-0	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
@@ -6461,9 +6507,11 @@
 542-88-1	ビス(クロロメチル)エーテル	Bis(chloromethyl) ether	CAJ
 542-90-5	エチルチオシアン酸	Ethyl thiocyanate	CAJ
 542-92-7	シクロペンタジエン	Cyclopentadiene	CAJ
+54207-62-4	３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］プロパン酸	Propanoic acid, 3-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]-	CAJ
 5421-48-7	（アセタト-κＯ）（ジエチル＝ホスフィット-κＰ）水銀	Mercury, (acetato-O)(diethyl phosphite-P)-	CAJ
 54230-22-7	2,3,4,6-テトラクロロビフェニル	2,3,4,6-Tetrachlorobiphenyl	CAJ
 5425-62-7	4-(2-クロロアセトアミド)フェニルアルソン酸	4-(2-Chloroacetamido)phenylarsonic acid	CAJ
+54277-95-1		Mercaptomethylmercury	
 5428-90-0	クロロ(ピリジン-3-イル)水銀	Mercury, chloro-3-pyridyl-	CAJ
 54295-90-8	テトラキス(アセタト-O)[.mu.4-(3',6'-ジヒドロキシ-3-オキソスピロ[イソベンゾフラン-1(3H),9'-[9H]キサンテン]-2',4',5',7'-テトライル)]四水銀	Tetrakis(acetato-O)[.mu.4-(3',6'-dihydroxy-3-oxospiro[isobenzofuran-1(3H),9'-[9H]xanthene]-2',4',5',7'-tetrayl)]tetramercury	CAJ
 543-20-4		Butanedioyl dichloride	
@@ -6478,6 +6526,7 @@
 54319-51-6	チタン	Titanium	CAJ
 54335-17-0	ジシクロペンタジエン	Dicyclopentadiene	CAJ
 5434-72-0	アビエチン酸鉛	Lead abietate	CAJ
+54359-92-1		Mercurate(1-), methylthioxo-	
 5436-43-1	２，２'，４，４'-テトラブロモジフェニルエーテル	2,2',4,4'-Tetrabromodiphenyl ether	CAJ
 54363-49-4	メチルペンタジエン	Methylpentadiene	CAJ
 54366-07-3	1-ブテン	1-Butene	CAJ
@@ -6517,6 +6566,7 @@
 54847-97-1	石油ナフサ	Naphtha	CAJ
 54862-84-9	塩化鉄(FeCl3)二水和物	Iron chloride (FeCl3), dihydrate	CAJ
 549-59-7	トリス[(8.alpha.,9R)-6'-メトキシシンコナン-9-オール]=ビス(アルセナート)	Tris[(8.alpha.,9R)-6'-methoxycinchonan-9-ol] bis(arsenate)	CAJ
+54950-06-0	ナトリウム＝１，４-ビス［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］-１，４-ジオキソブタン-２-スルホナート	Butanedioic acid, 2-sulfo-, 1,4-bis(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl) ester, sodium salt (1:1)	CAJ
 54985-54-5	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
 55-38-9	フェンチオン	Fenthion	CAJ
 55-63-0	ニトログリセリン	Nitroglycerin	CAJ
@@ -6551,6 +6601,8 @@
 554-12-1	プロピオン酸メチル	Propanoic acid, methyl ester	CAJ
 554-72-3	トリパルサミド	Tryparsamide	CAJ
 554-84-7	m-ニトロフェノール	m-Nitrophenol	CAJ
+55425-74-6	三塩化カドミウムナトリウム	Sodium trichlorocadmate	CAJ
+55427-54-8	１５，１５，１６，１６，１７，１７，１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２２-ヘプタデカフルオロ-３，６，９，１２-テトラオキサドコサン-１-オール	15,15,16,16,17,17,18,18,19,19,20,20,21,21,22,22,22-Heptadecafluoro-3,6,9,12-tetraoxadocosan-1-ol	CAJ
 5543-56-6	ワルファリン	Warfarin	CAJ
 5543-57-7	(S)-4-ヒドロキシ-3-(3-オキソ-1-フェニルブチル)-2-ベンゾピロン	(S)-4-Hydroxy-3-(3-oxo-1-phenylbutyl)-2-benzopyrone	CAJ
 55462-97-0	アジポニトリル	Hexanedinitrile	CAJ
@@ -6648,6 +6700,9 @@
 562-79-8	テトラシアノ白金酸二アンモニウム	Diammonium tetracyanoplatinate	CAJ
 562-81-2	バリウム＝（ＳＰ-４-１）-テトラシアニドプラチナート（２-）	Platinate(2-), tetrakis(cyano-C)-, barium (1:1), (SP-4-1)-	CAJ
 56227-20-4	亜硝酸ナトリウム	Sodium nitrite	CAJ
+56240-91-6		9H-Carbazole, 9-(triphenylplumbyl)-	
+56240-92-7		1H-Indole, 1-(triphenylplumbyl)-	
+56240-93-8		1H-Pyrrole, 1-(triphenylplumbyl)-	
 56275-41-3	フロンR-500	Ethane, 1,1-difluoro-, mixture with dichlorodifluoromethane	LOLI
 5628-99-9		N-Vinylethyleneimine	
 562836-84-4	メタクリル酸	Methacrylic acid	CAJ
@@ -6716,6 +6771,7 @@
 5683-74-9	フエリシアン塩	Iron cyanide (Fe(CN)3)	CAJ
 56870-07-6	五酸化バナジウム	Vanadium pentoxide	CAJ
 56875-27-5	エテンテトラカルボニトリル	Ethenetetracarbonitrile	CAJ
+56900-98-2	２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］エトキシ｝エタノール	Ethanol, 2-[2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)oxy]ethoxy]-	CAJ
 56940-56-8	4,4'-ジチオジアニリン	4,4'-Dithiodianiline	CAJ
 56958-48-6	1,1'-オキシビス[テトラブロモベンゼン]	Benzene, 1,1'-oxybis[tetrabromo-	CAJ
 56960-31-7		Arsinic acid, methyl-	
@@ -6776,7 +6832,9 @@
 57608-45-4	シクロトリメチレントリニトラミン	Cyclonite	CAJ
 57653-85-7	１，２，３，６，７，８-ヘキサクロロオキサントレン	1,2,3,6,7,8-Hexachlorodibenzo-p-dioxin	CAJ
 57658-36-3	5-メルカプトテトラゾール-1-酢酸	2,5-Dihydro-5-thioxo-1H-tetrazol-1-acetic acid	LOLI
+57670-46-9	カリウム＝２-（Ｎ-エチル-２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロオクタンアミド）エタン-１-スルホナート	Ethanesulfonic acid, 2-[ethyl(2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluoro-1-oxooctyl)amino]-, potassium salt (1:1)	CAJ
 57673-50-4	ゲルマニウム、セレン及びヒ素を含むガラス状態の物質	Germanium arsenide selenide	CAJ
+57678-03-2	３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル＝二水素＝ホスファート	1-Decanol, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-, dihydrogen phosphate	CAJ
 577-19-5	1-ブロモ-2-ニトロベンゼン	o-Nitrobromobenzene	LOLI
 577-71-9	3,4-ジニトロフェノール	3,4-Dinitrophenol	CAJ
 57755-20-1	メルカプト酢酸	Thioglycolic acid	CAJ
@@ -7343,6 +7401,7 @@
 627-58-7	1,5-ヘキサジエン, 2,5-ジメチル-	1,5-Hexadiene, 2,5-dimethyl-	LOLI
 627-63-4	塩化フマリル	Fumaryl chloride	CAJ
 6270-99-1	2,5-ビス(クロロ水銀)フラン	2,5-Bis(chloromercury)furan	CAJ
+62702-52-7	ヒ酸カリウム・３／２水和物	Tripotassium arsenate 3/2 hydrate	CAJ
 62715-48-4		Resin acids and Rosin acids, aluminum salts	
 6273-99-0	[.mu.-[オルトボラト(2-)-O:O']]ジフェニル二水銀	[.mu.-[Orthoborato(2-)-O:O']]diphenyldimercury	CAJ
 62744-41-6	（１，１，３，３-テトラメチルブチル）フェノール	(1,1,3,3-Tetramethylbutyl)phenol (mixed isomers)	CAJ
@@ -7362,6 +7421,7 @@
 62811-75-0	酢酸タリウム(III)1.5水和物	Thallium(III) acetate sesquihydrate	CAJ
 6283-24-5	（アセタト-κＯ）（４-アミノフェニル）水銀	Mercury, (acetato-O)(4-aminophenyl)-	CAJ
 62865-26-3	硫化カドミウムと硫化亜鉛の混合物	Cadmium sulfide mixture with zinc sulfide	CAJ
+62880-96-0	ナトリウム＝２-｛３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］プロパンアミド｝-２-メチルプロパン-１-スルホナート	1-Propanesulfonic acid, 2-[[3-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]-1-oxopropyl]amino]-2-methyl-, sodium salt (1:1)	CAJ
 62882-00-2		8-Methylisoquinoline	
 62882-01-3		5-Methylisoquinoline	
 62893-19-0		Cefoperazone	
@@ -7396,6 +7456,7 @@
 632-92-8		2,4,6-Trinitro-m-xylene	
 63217-32-3	4-(エチルアミノ)-2-メチルベンゼンジアゾニウム＝ヘキサフルオロアルセナート(1-)	Benzenediazonium, 4-(ethylamino)-2-methyl-, hexafluoroarsenate(1-)	CAJ
 63217-33-4	4-(ジエチルアミノ)-2-エトキシベンゼンジアゾニウム＝ヘキサフルオロアルセナート(1-)	Benzenediazonium, 4-(diethylamino)-2-ethoxy-, hexafluoroarsenate(1-)	CAJ
+63225-57-0	アンモニウム＝３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル＝スルファート	1-Decanol, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-, 1-(hydrogen sulfate), ammonium salt (1:1)	CAJ
 63241-54-3	ケロシン	Kerosene	CAJ
 63325-16-6	テトラヨード水銀酸(2-), (T-4)-, 二水素, 5-ヨード-2-ピリジンアミンとの化合物 (1:2)	Mercurate(2-), tetraiodo-, (T-4)-, dihydrogen, compound with 5-iodo-2-pyridinamine (1:2)	CAJ
 6336-12-5	（アセタト-κＯ）（１，３-ジメチル-２，６-ジオキソ-２，３，６，７-テトラヒドロ-１Ｈ-プリン-８-イル）水銀	Mercury, (acetato)(1,2,3,6-tetrahydro-1,3-dimethyl-2,6-dioxopurin-8-yl)-	CAJ
@@ -7464,6 +7525,7 @@
 63907-41-5	一酸化窒素と二酸化窒素の混合物	Nitric oxide and nitrogen tetroxide mixtures	LOLI
 63908-52-1	アクリロニトリル	Acrylonitrile	CAJ
 63916-96-1	過塩素酸鉛(II)	Lead(II) perchlorate, hexahydrate	CAJ
+63916-98-3	トリエチル（オレオイルオキシ）プルンバン	Lead, triethyl-, oleate	CAJ
 63918-89-8	ビス(2-クロロエチルチオエチル)エーテル	Bis(2-chloroethylthioethyl) ether	LOLI
 63918-90-1	ビス(2-クロロエチルチオメチル)エーテル	Bis(2-chloroethylthiomethyl) ether	LOLI
 63918-97-8	スチフニン酸鉛	Lead styphnate	CAJ
@@ -7595,6 +7657,7 @@
 65086-44-4	フッ化水素カリウム	Potassium bifluoride	CAJ
 65098-86-4	アゾジカルボンアミド	Azodicarbonamide	CAJ
 65098-87-5	アゾジカルボンアミド	Azodicarbonamide	CAJ
+65104-45-2	メチル＝２-メチルプロパ-２-エノアート、３，３，４，４，５，５，６，６，７，７，８，８，８-トリデカフルオロオクチル＝２-メチルプロパ-２-エノアート、３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル＝２-メチルプロパ- ２-エノアート、３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１１，１１，１２，１２，１２-ヘンイコサフルオロドデシル＝２-メチルプロパ-２-エノアート及び３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０	2-Propenoic acid, 2-methyl-, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,12-heneicosafluorododecyl ester, polymer with 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl 2-methyl-2-propenoate, methyl 2-methyl-2-propenoate, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,14-pentacosafluorotetradecyl 2-methyl-2-propenoate and 3,3,4,4,5,5,6,6,7,7,8,8,8-tridecafluorooctyl 2-methyl-2	CAJ
 65113-28-2	三硫化二ヒ素	Diarsenic trisulfide	CAJ
 65119-94-0	鉛（Ⅱ）ジ（１-ブタノラート）	Lead dibutanolate	CAJ
 65121-76-8	鉛（ＩＩ）＝ビス（２-メチル-４，６-ジニトロフェノラート）	Lead(2+) 4,6-dinitro-o-cresolate	CAJ
@@ -7710,6 +7773,7 @@
 67323-56-2	1,2,6,8-テトラクロロジベンゾ[b,e][1,4]ジオキシン	1,2,6,8-Tetrachlorodibenzo(b,e)(1,4)dioxin	CAJ
 67329-01-5		O,O-Diethyl O-(2,2-dichloro-1-.beta.-chloroethoxyvinyl) phosphate	
 6733-54-6	1,2,4,5-テトラクロロナフタレン	1,2,4,5-Tetrachloronaphthalene	CAJ
+67333-62-4	Ｎ-エチル-３-｛３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］-２-メチルプロパンアミド｝-Ｎ，Ｎ-ジメチルプロパン-１-アミニウムの塩	1-Propanaminium, N-ethyl-3-[[3-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]-2-methyl-1-oxopropyl]amino]-N,N-dimethyl-, ethyl sulfate (1:1)	CAJ
 67355-37-7	ビス(シアノ-.kappa.C)金酸カリウム	Aurate(1-), bis(cyano-.kappa.C)-, potassium	CAJ
 67375-30-8	rel-3α*-(2,2-ジクロロエテニル)-2,2-ジメチルシクロプロパン-1α*-カルボン酸(R)-α-シアノ-3-フェノキシベンジル	.alpha.-Cypermethrin	CAJ
 67382-92-7	ぎ酸	Formic acid	CAJ
@@ -7727,8 +7791,10 @@
 675120-38-4	テトラエチレンペンタミン	Tetraethylenepentamine	CAJ
 67517-48-0		1,2,3,4,8-Pentachlorodibenzofuran	
 67523-25-5	4-ヒドロキシ-3-(3-オキソ-1-フェニルブチル)-2H-1-ベンゾピラン-2-オンタリウム(1+)塩	2H-1-Benzopyran-2-one, 4-hydroxy-3-(3-oxo-1-phenylbutyl)-, thallium(1+) salt	CAJ
+67535-33-5	２７，２７，２８，２８，２９，２９，２９，３０，３０，３１，３１，３２，３２，３３，３３，３４，３４，３４-ヘプタデカフルオロ-３，６，９，１２，１５，１８，２１，２４-オクタオキサテトラトリアコンタン-１-イル＝トリデカノアート	Tridecanoic acid, 27,27,28,28,29,29,30,30,31,31,32,32,33,33,34,34,34-heptadecafluoro-3,6,9,12,15,18,21,24-octaoxatetratriacont-1-yl ester	CAJ
 67536-44-1	1,1'-ビス[ヒドロキシメルクリオ(II)]-1,1'-ビ[2,4-ジメルクラ-3-オキサシクロブタン]	1,1'-Bis[hydroxymercurio(II)]-1,1'-bi[2,4-dimercura-3-oxacyclobutane]	CAJ
 67539-62-2	2-メチル-3-ブチン-2-オール	2-Methyl-3-butyn-2-ol	CAJ
+67549-47-7	２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２９，２９，３０，３０，３１，３１，３１-ヘプタデカフルオロ-３，６，９，１２，１５，１８，２１-ヘプタオキサヘントリアコンタン-１-イル＝ヘキサデカノアート	11,14,17,20,23,26,29,32-Octaoxaoctatetracontan-33-one, 1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8-heptadecafluoro-	CAJ
 67562-39-4	1,2,3,4,6,7,8-ヘプタクロロジベンゾフラン	1,2,3,4,6,7,8-Heptachlorodibenzofuran	CAJ
 67562-40-7		1,2,4,6,7,8-Hexachlorodibenzofuran	
 67567-23-1	3,3-ジ（1,1-ジメチルプロピルパーオキシ）ブタン酸エチル	Butanoic acid, 3,3-bis[(1,1-dimethylpropyl)dioxy]-, ethyl ester	LOLI
@@ -7823,7 +7889,9 @@
 68155-47-5	ビス（２-メチル-２-プロペン酸）鉛（Ⅱ）とα-（２-メチル-１-オキソ-２-プロペニル）-ω-［（２-メチル-１-オキソ-２-プロペニル）オキソ］ポリ（オキソ-１，２-エタンジイル）の２-メチル-２-プロペン酸メチルエステルエテニルベンゼンポリマー	2-Propenoic acid, 2-methyl-, methyl ester, polymer with ethenylbenzene, lead(2+) bis(2-methyl-2-propenoate) and .alpha.-(2-methyl-1-oxo-2-propenyl)-.omega.-[(2-methyl-1-oxo-2-propenyl)oxy]poly(oxy-1,2-ethanediyl)	CAJ
 68157-62-0		Mustard gas	
 68187-37-1	鉛含有の２-エチルヘキサン酸と脂肪酸トール油の混合物	Lead, 2-ethylhexanoate tall-oil fatty acids complexes	CAJ
+68187-42-8	プロピオンアミドの３-｛［γ-ω-ペルフルオロアルキル（Ｃ４～１０）］スルファニル｝誘導体	Propanamide, 3-[(.gamma.-.omega.-perfluoro-C4-10-alkyl)thio] derivatives	CAJ
 68187-56-4	褐炭、二クロム酸ナトリウムとの反応生成物、中和物	Coal, brown, reaction products with sodium dichromate, neutralized	CAJ
+68188-12-5	γ-ω-ペルフルオロアルキル（Ｃ４～２０）＝ヨージド	Alkyl iodides, C4-20, .gamma.-.omega.-perfluoro	CAJ
 68194-04-7	2,2',4,6'-テトラクロロビフェニル	2,2',4,6'-Tetrachlorobiphenyl	CAJ
 68194-05-8	2,2',3,4',6-ペンタクロロビフェニル	2,2',3,4',6-Pentachlorobiphenyl	CAJ
 68194-06-9	2,2',4,5,6'-ペンタクロロビフェニル	2,2',4,5,6'-Pentachlorobiphenyl	CAJ
@@ -7878,6 +7946,7 @@
 68411-33-6	2-ニトロ-1,3-ベンゼンジオール鉛塩、塩基性	1,3-Benzenediol, 2-nitro-, lead salt, basic	CAJ
 68411-78-9	鉛含有の酸化鉛	Lead oxide (PbO), lead-containing	CAJ
 68412-54-4	α-分岐鎖ノニルフェニル-ω-ヒドロキシ-ポリ(オキシエチレン)	Polyethylene glycol branched nonylphenyl ether	CAJ
+68412-69-1	ホスフィン酸のビス［ペルフルオロアルキル（Ｃ６～１２）］誘導体	Phosphinic acid, bis(perfluoro-C6-12-alkyl) derivatives	CAJ
 6842-15-5	プロピレン四量体	Propylene tetramer	CAJ
 68424-76-0	油脂及びグリセリド油、メンヘーデン、鉛塩	Fats and Glyceridic oils, menhaden, lead salts	CAJ
 68441-39-4	4-(フェニルアミノ)ベンゼンジアゾニウム=硫酸塩(1:1)・ホルムアルデヒド重合物、塩化カドミウム錯体	Benzenediazonium, 4-(phenylamino)-, sulfate (1:1), polymer with formaldehyde, cadmium chloride complexes	CAJ
@@ -8114,6 +8183,7 @@
 69420-22-0	3-クロロ-1,2-プロパンジオール	3-Chloro-1,2-propanediol	CAJ
 69433-00-7		1,2,6,7,8-Pentachlorodibenzofuran	
 69458-54-4	ペルフルオロ-1-オクタンスルホン酸カリウム	1-Octanesulfonic acid, 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-, potassium salt	CAJ
+69507-43-3		Arsenenous acid, silver(1+) salt	
 695161-38-7	セレン化カドミウム	Cadmium selenide	CAJ
 695165-22-1	ジブチルオキソスタンナン	Stannane, dibutyloxo-	CAJ
 69523-06-4	フェロセリウム	Ferrocerium	CAJ
@@ -8214,6 +8284,7 @@
 70900-40-2	オクタン-１-チオールを連鎖移動剤とする、２-（１，１，２，２，３，３，４，４，５，５，５-ウンデカフルオロ-Ｎ-メチルペンタン-１-スルホンアミド）エチル＝プロパ-２-エノアート、２-（１，１，２，２，３，３，４，４，５，５，６，６，６-トリデカフルオロ-Ｎ-メチルヘキサン-１-スルホンアミド）エチル＝プロパ-２-エノアート、２-（１，１，２，２，３，３，４，４，４-ノナフルオロ-Ｎ-メチルブタン-１-スルホンアミド）エチル＝プロパ-２-エノアート、ブチル＝プロパ-２-エノアート、プロパン-１，２-ジイル	2-Propenoic acid, 2-methyl-, 2-[[[[5-[[[4-[[(heptadecafluorooctyl)sulfonyl]methylamino]butoxy]carbonyl]amino]-2-methylphenyl]amino]carbonyl]oxy]propyl ester, telomer with butyl 2-propenoate, 2-[[(heptadecafluorooctyl)sulfonyl]methylamino]ethyl 2-propenoate, 2-[[[[2-methyl-5-[[[4-[methyl[(nonafluorobutyl)sulfonyl]amino]butoxy]carbonyl]amino]phenyl]amino]carbonyl]oxy]propyl 2-methyl-2-propenoate, 2-	CAJ
 70936-97-9	イソホロンジイソシアナート	Isophorone diisocyanate	CAJ
 70938-84-0		O-Ethyl S-(2-diisopropylaminoethyl) methylphosphonothioate	
+70969-47-0	γ-ω-ペルフルオロチオール（Ｃ８～２０）とアクリルアミドのテロマー	Thiols, C8-20, .gamma.-.omega.-perfluoro, telomers with acrylamide	CAJ
 70995-63-0	ビス（Ｎ，Ｎ-ジプロピルジチオカルバミン酸-κＳ，κＳ'）鉛	Lead, bis(dipropylcarbamodithioato-S,S')-, (T-4)-	CAJ
 71-23-8	n-プロピルアルコール	n-Propanol	CAJ
 71-27-2	スキサメトニウム塩化物	Ethanaminium, 2,2'-[(1,4-dioxo-1,4-butanediyl)bis(oxy)]bis[N,N,N-trimethyl-, dichloride	LOLI
@@ -8249,6 +8320,8 @@
 7154-79-2	2,2,3,3-テトラメチルペンタン	Pentane, 2,2,3,3-tetramethyl-	CAJ
 71563-86-5		Propanoic acid, 2-mercapto-	
 71599-06-9	ビス［（Ｚ）-２-ブテン二酸モノオクタデシル］カドミウム（ＩＩ）	2-Butenedioic acid (2Z)-, monooctadecyl ester, cadmium salt	CAJ
+71608-61-2	４，４-ビス［（γ-ω-ペルフルオロアルキル（Ｃ＝８～２０））チオ］ペンタン酸と２，２'-イミノジエタノールの化合物	Pentanoic acid, 4,4-bis[(.gamma.-.omega.-perfluoro-C8-20-alkyl)thio] derivatives, compounds with diethanolamine	CAJ
+71625-52-0	２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］エトキシ｝-Ｎ，Ｎ，Ｎ-トリメチルエタン-１-アミニウムの塩	Ethanaminium, 2-[2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]ethoxy]-N,N,N-trimethyl-, iodide (1:1)	CAJ
 71629-74-8		2,4(or 2,6)-Dinitrophenol	
 71630-92-7		Ashes, residues, rice husk	
 71665-99-1	1,2,4,9-テトラクロロジベンゾ[b,e][1,4]ジオキシン	1,2,4,9-Tetrachlorodibenzo-p-dioxin	CAJ
@@ -8277,6 +8350,7 @@
 71925-17-2	1,2,3,7,9-ペンタクロロジベンゾ[b,e][1,4]ジオキシン	1,2,3,7,9-Pentachlorodibenzo(b,e)(1,4)dioxin	CAJ
 71928-15-9		Neon	
 71929-23-2	Thallium(3+) triformate	Thallium(3+) triformate	CHRIP
+71940-07-3	｛３-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）スルファニル］-２-ヒドロキシプロピル｝（トリメチル）アンモニウム＝クロリド	1-Propanaminium, 2-hydroxy-N,N,N-trimethyl-3-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)thio]-, chloride (1:1)	CAJ
 71954-29-5	３-アミノメチル-３，５，５-トリメチルシクロヘキシルアミン	Cyclohexanemethanamine, 5-amino-1,3,3-trimethyl-, (1R,5R)-rel-	CAJ
 71954-30-8	３-アミノメチル-３，５，５-トリメチルシクロヘキシルアミン	Cyclohexanemethanamine, 5-amino-1,3,3-trimethyl-, (1R,5S)-rel-	CAJ
 71998-72-6		1,3,6,8-Tetrachlorodibenzofuran	
@@ -8366,6 +8440,7 @@
 73491-34-6		Mercury(II) perchlorate trihydrate	
 73491-36-8	トリフルオロメタンスルホン酸タリウム(1+)	Thallium(1+) trifluoromethanesulfonate	CAJ
 73513-17-4	二亜塩素酸水銀(II)	Dichlorous acid mercury(II) salt	CAJ
+73548-15-9	p-(ヒドロキシメルクリ)ベンゼンスルホン酸ナトリウム	p-(Hydroxymercuri)benzenesulfonic acid sodium	CAJ
 73575-52-7	2,3',4,5'-テトラクロロビフェニル	2,3',4,5'-Tetrachlorobiphenyl	CAJ
 73575-53-8	2,3',4,5-テトラクロロビフェニル	2,3',4,5-Tetrachlorobiphenyl	CAJ
 73575-54-9	2,2',3,6,6'-ペンタクロロビフェニル	2,2',3,6,6'-Pentachlorobiphenyl	CAJ
@@ -8379,10 +8454,12 @@
 73663-77-1		[4-[Cyano(p-tolyl)methyl]phenyl]ammonium chloride	
 73666-77-0	HCFC-22	HCFC-22	CAJ
 73680-69-0		Benzyltriethylammonium pentachlorophenate	
+73688-85-4	4-(4-ジメチルアミノフェニルアゾ)フェニルアルソン酸塩酸塩	4-(4-Dimethylaminophenylazo)phenylarsonic acid hydrochloride	CAJ
 73772-32-4	ナトリウム＝３-｛Ｎ-［３-（ジメチルアミノ）プロピル］-１，１，２，２，３，３，４，４，５，５，６，６，６-トリデカフルオロヘキサン-１-スルホンアミド｝-２-ヒドロキシプロパン-１-スルホナート	1-Propanesulfonic acid, 3-[[3-(dimethylamino)propyl][(tridecafluorohexyl)sulfonyl]amino]-2-hydroxy-, monosodium salt	CAJ
 73772-33-5	Ｎ，Ｎ-ジメチル-３-（１，１，２，２，３，３，４，４，５，５，６，６，６-トリデカフルオロヘキサン-１-スルホンアミド）プロパン-１-アミニウム＝アセタート	1-Hexanesulfonamide, N-[3-(dimethylamino)propyl]-1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluoro-, monoacetate	CAJ
 73772-34-6	Ｎ-［３-（ジメチルアミノ）プロピル］-１，１，２，２，３，３，４，４，５，５，６，６，６-トリデカフルオロ-Ｎ-｛２-［２-（２-ヒドロキシエトキシ）エトキシ］エチル｝ヘキサン-１-スルホンアミド	1-Hexanesulfonamide, N-[3-(dimethylamino)propyl]-1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluoro-N-[2-[2-(2-hydroxyethoxy)ethoxy]ethyl]-	CAJ
 738-70-5	トリメトプリム	Trimethoprim	LOLI
+73826-06-9	｛４-［５-（２-ヒドロキシプロパン-２-イル）-１Ｈ-１，２，３-トリアゾール-１-イル］ブチル｝（トリフェニル）プルンバン	2-(1-(4-triphenylplumbylbutyl)-1H-1,2,3-triazol-5-yl)-2-propanol	CAJ
 73833-76-8		Heptanenitrile	
 73905-77-8	アゾジカルボンアミド	Azodicarbonamide	CAJ
 73912-61-5	三硫化二アンチモン	Antimony trisulfide	CAJ
@@ -8391,6 +8468,8 @@
 73926-89-3		Mercury, chloro(2-(3-methoxypropionamido)cyclohexyl)-	
 73928-11-7		Mercury, dianilino-	
 73928-12-8		Mercury(II), ethyl(5-ethylmercuri-3-(1,2,4-thiadiazolyl)thio)-	
+73928-17-3		Plumbane, [(4-aminobenzoyl)oxy]triethyl-	
+73928-23-1		1H-Isoindole-1,3(2H)-dione, 4,5,6, 7-tetrachloro-2-(triethylplumbyl)-	
 73941-35-2	カドミウム＝ビス（２，４，５-トリブロモ-１Ｈ-イミダゾール-１-イド）	Imidazole, 2,4,5-tribromo-, cadmium salt	CAJ
 73989-30-7	ジエチレントリアミン	Diethylenetriamine	CAJ
 74-55-5	エタンブトール	Ethambutol	CAJ
@@ -8410,6 +8489,7 @@
 74-98-6	プロパン	Propane	CAJ
 74-99-7	メチルアセチレン	Methylacetylene	CAJ
 74011-58-8	1-エチル-6-フルオロ-1,4-ジヒドロ-4-オキソ-7-(1-ピペラジニル)-1,8-ナフチリジン-3-カルボン酸	1-Ethyl-6-fluoro-1,4-dihydro-4-oxo-7-(1-piperazinyl)-1,8-naphthyridine-3-carboxylic acid	LOLI
+74049-08-4	ポリ〔アクリル酸＝2-(ペルフルオロオクチル)エチル〕	2-Propenoic acid, 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl ester, homopolymer	CAJ
 74069-67-3		Furan, tetrahydro-2-methyl-	
 740776-49-2	一酸化炭素	Carbon monoxide	CAJ
 74091-63-7	イソホロンジイソシアナート	Isophorone diisocyanate	CAJ
@@ -8513,6 +8593,7 @@
 74555-91-2	ニコチンC-11	Pyridine, 3-((2S)-1-(methyl-11C)-2-pyrrolidinyl)-	CAJ
 745765-07-5		Nitrogen	
 7460-12-0		Benzenemethanol, .alpha.-[1-(methylamino)ethyl]-, [S-(R*,R*)]-, sulfate (2:1) (salt)	
+74612-30-9	クロロ（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）ジ（メチル）シラン	3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-Heptadecafluorodecyldimethylchlorosilane	CAJ
 74618-51-2	ホウフッ化水素酸	Fluoroboric acid	CAJ
 74656-63-6	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
 74734-16-0	ヘキサメチレンテトラミン	Hexamethylenetetramine	CAJ
@@ -8689,6 +8770,7 @@
 764-13-6	2,5-ジメチル-2,4-ヘキサジエン	2,4-Hexadiene, 2,5-dimethyl-	CAJ
 764-35-2		Methyl propyl acetylene	
 764-41-0	1,4-ジクロロ-2-ブテン	1,4-Dichloro-2-butene	CAJ
+76407-89-1		Arsenic acid, copper(2+) salt (2:3)	
 7642-04-8	(Z)-オクタ-2-エン	(Z)-Oct-2-ene	CAJ
 7642-10-6	(Z)-3-ヘプテン	(Z)-3-Heptene	CAJ
 7645-25-2	ひ酸鉛	Lead arsenate, unspecified	CAJ
@@ -8727,11 +8809,14 @@
 7681-55-2	ヨウ素酸ナトリウム	Iodic acid (HIO3), sodium salt	CAJ
 7681-83-6		Sodium 4-(glycolloylamino)phenylarsonate	
 76829-05-5	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
+76830-13-2	３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデカン-１-チオールを連鎖移動剤とする、プロパ-２-エンアミドの重合物	2-Propenamide, telomer with 3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-1-decanethiol	CAJ
 76835-97-7	カドミウム＝ジトリコサ-２２-エノアート	22-Tricosenoic acid, cadmium salt	CAJ
 76835-98-8	鉛（２＋）＝ジトリコサ-２２-エノアート	22-Tricosenoic acid, lead(II) salt	CAJ
 76842-07-4	2,3,3',4',5'-ペンタクロロビフェニル	2,3,3',4',5'-Pentachlorobiphenyl	CAJ
 76848-59-4		Benzene, 1-chloro-4-[(1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluorohexyl)sulfonyl]-	
 76848-68-5		1H-Benzimidazolium, 1,3-diethyl-2-methyl-5-[(1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluorohexyl)sulfonyl]-, 4-methylbenzenesulfonate (1:1)	
+76871-63-1		Arsenenous acid, neodymium(3+) salt	
+76871-65-3		Arsenenous acid, lutetium(3+) salt	
 76871-66-4		Arsenenous acid, cadmium neodymium(3+) salt (5:1:1)	
 7688-21-3	cis-2-ヘキセン	cis-2-Hexene	CAJ
 76899-34-8		Hydrogen chlorotrioxochromate(1-) , compound with 2,2'-bipyridine (1:1)	
@@ -8766,6 +8851,7 @@
 771-29-9		Tetralin hydroperoxide	
 77104-00-8		1,10-Bis[N-(3-dimethylcarbamoxy-.alpha.-picolyl)-N-ethyl-N-methylammonio]decane-2,9-dione dibromide	
 77104-62-2		1-[N,N-Dimethyl-N-(2-hydroxy)ethylammonio]-10-[N-(3-dimethylcarbamoxy-.alpha.-picolinyl)-N,N-dimethylammonio]decane dibromide	
+77117-48-7	１，１，１，２，２，３，３，４，４，５，５，６，６，７，７，８，８-ヘプタデカフルオロデカン	Decane, 1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8-heptadecafluoro-	CAJ
 7717-46-6	オクタデカン酸鉛(4+)	Lead(4+) stearate	CAJ
 7718-54-9	塩化ニッケル(II)	Nickel(II) chloride	CAJ
 7718-98-1	三塩化バナジウム	Vanadium trichloride	CAJ
@@ -8784,6 +8870,7 @@
 7727-54-0	ペルオキソ二硫酸アンモニウム	Ammonium persulfate	CAJ
 77271-60-4	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
 77287-29-7	(R)-2-クロロプロピオン酸メチル	Methyl (R)-2-chloropropionate	CAJ
+77289-75-9	六塩化カドミウムマグネシウム・十二水和物	(OC-6-11)-Dimagnesium hexachlorocadmate dodecahydrate	CAJ
 773-82-0	ベンゾニトリル, ペンタフルオロ-	Benzonitrile, pentafluoro-	CAJ
 7731-28-4	ｃｉｓ-４-メチルシクロヘキサノール	cis-4-Methylcyclohexanol	CAJ
 7731-29-5	trans-4-メチルシクロヘキサノール	trans-4-Methylcyclohexanol	CAJ
@@ -9043,6 +9130,7 @@
 78375-48-1		Ethyl isocyanide, 2-(4-morpholinyl)-	
 784139-72-6	プロピオン酸	Propionic acid	CAJ
 78541-87-4		1-Propanone, 2-bromo-1-phenyl-	
+78560-44-8	トリクロロ（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）シラン	Silane, trichloro(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)-	CAJ
 78571-20-7	クロロデシル水銀	Chlorodecylmercury	CAJ
 786-19-6	カルボフェノチオン	Carbophenothion	CAJ
 78642-65-6	4,4'-メチレンビス(2-クロロアニリン)	4,4'-Methylenebis(2-chloroaniline)	CAJ
@@ -9241,6 +9329,7 @@
 80449-88-3		Brodifacoum	
 8046-70-6	硝酸第二水銀	Mercuric nitrate	CAJ
 8047-59-4		Calcium	
+80475-33-8	３-（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデカン-１-スルホンアミド）-Ｎ，Ｎ-ジメチルプロパン-１-アミン＝Ｎ-オキシド	1-Decanesulfonamide, N-[3-(dimethyloxidoamino)propyl]-3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluoro-	CAJ
 8048-07-5	Ｃ．Ｉ．ピグメントイエロー３５	C.I. Pigment Yellow 35	CAJ
 8049-20-5		Misch metal	
 8049-64-7	クロム酸鉛(II)	Lead(II) chromate	CAJ
@@ -9342,6 +9431,7 @@
 82005-08-1	3-メチルピリジン	3-Methylpyridine	CAJ
 82005-09-2	4-メチルピリジン	4-Methylpyridine	CAJ
 82005-10-5		Pyridine, 4-ethyl-	
+82005-78-5		Arsenenous acid, cesium salt	
 82009-34-5		Cilastatin	
 82030-42-0	シクロトリメチレントリニトラミン	Cyclonite	CAJ
 82041-23-4	酢酸ビニル	Vinyl Acetate	CAJ
@@ -9406,6 +9496,7 @@
 83-41-0	1,2-ジメチル-3-ニトロベンゼン	Benzene, 1,2-dimethyl-3-nitro-	CAJ
 83008-56-4	二酸化硫黄	Sulfur dioxide	CAJ
 83046-54-2	N,N,N-トリエチルエタンアミニウム-1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-ヘプタデカフルオロ-1-オクタンスルホナート	Ethanaminium, N,N,N-triethyl-, salt with 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-heptadecafluoro-1-octanesulfonic acid (1:1)	CAJ
+83048-65-1	ヘプタデカフルオロデシル-トリメトキシシラン	Heptadecafluorodecyl-trimethoxysilane	CAJ
 831-52-7	ピクラミン酸ナトリウム	Sodium picramate	LOLI
 83271-48-1	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
 83463-62-1	ブロモクロロアセトニトリル	Bromochloroacetonitrile	CAJ
@@ -9461,12 +9552,15 @@
 83847-49-8		Halon 1011	
 83857-41-4	モノクロトホス	Monocrotophos	CAJ
 83857-81-2	（エチルアミン）トリフルオロホウ素	Boron, (ethanamine)trifluoro-, (T-4)-	CAJ
+83877-96-7		Arsenenous acid, antimony(3+) salt	
 83896-77-9	鉛酸塩（2-）、[[N、N'-1,2-エタンジイルビス[N-（カルボキシメチル）グリシナト]]（4-）-N、N '、O、O'、ON、ON ']-、二水素 、水和物（2：3）、（OC-6-21）-	Plumbate(2-), [[N,N'-1,2-ethanediylbis[N-(carboxymethyl)glycinato]](4-)-N,N',O,O',ON,ON']-, dihydrogen, hydrate (2:3), (OC-6-21)-	CAJ
 83905-01-5		Azithromycin	
 84-58-2	4,5-ジクロロ-3,6-ジオキソ-1,4-シクロヘキサジエン-1,2-ジカルボニトリル	1,4-Cyclohexadiene-1,2-dicarbonitrile, 4,5-dichloro-3,6-dioxo-	CAJ
 84-69-5	フタル酸ジイソブチル	1,2-Benzenedicarboxylic acid, bis(2-methylpropyl) ester	CAJ
+84-70-8		phenylmercuric phthalate	
 84-95-7		1-Naphthalenamine, N,N-diethyl-	
 84029-43-6	Bis(acetato-O)[mu-[1,3-dioxane-2,5-diylbis(methylene)-C:C',O,O']]dimercury	Bis(acetato-O)[.mu.-[1,3-dioxane-2,5-diylbis(methylene)-c:c',O,O']]dimercury	CHRIP
+84029-60-7	ヘプタデカフルオロ-１-［（２，２，３，３，４，４，５，５，６，６，７，７，８，８，８ -ペンタデカフルオロオクチル）オキシ］ノネン	Heptadecafluoro-1-[(2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluorooctyl)oxy]nonene	CAJ
 84049-08-1	３-シクロヘキセン-１-カルバルデヒド	3-Cyclohexene-1-carboxaldehyde	CAJ
 84057-85-2	Thallium triarsenide	Thallium triarsenide	CHRIP
 84066-98-8	分岐型カルボン酸（炭素数５-２３）、脂肪酸（炭素数４-１０）混合物中の鉛	Lead, C5-23-branched carboxylate C4-10-fatty acid complexes	CAJ
@@ -9554,6 +9648,8 @@
 85536-22-7	塩化アルカン（Ｃ１２～１４）	Alkanes, C12-14, chloro	CAJ
 85536-79-4	ウラン酸鉛顔料	Lead uranate pigment	CAJ
 855526-88-4	2,5-ジメチル-2,5-ジ(2-エチルヘキサノイルペルオキシ)-ヘキサン	Hexaneperoxoic acid, 2-ethyl-, 1,1,4,4-tetramethyl-1,4-butanediyl ester	CAJ
+85561-28-0		Arsenenous acid, cobalt(2+) salt	
+85561-29-1		Arsenenous acid, manganese(2+) salt	
 85586-15-8	Fatty acids, C9-11-branched, cadmium salts	Fatty acids, C9-11-branched, cadmium salts	CHRIP
 855886-94-1		Biphenyl-2-yl-dichloroarsine	
 855924-73-1	亜硫酸水素ナトリウム	Sodium bisulfite	CAJ
@@ -9563,6 +9659,7 @@
 856062-06-1		Sulfanilic acid	
 856307-43-2	三酸化二ヒ素	Arsenic(III) trioxide	CAJ
 856307-56-7	トルエン-2,4-ジイソシアネート	Toluene-2,4-diisocyanate	CAJ
+85631-54-5	γ-ω-ペルフルオロアルキル（Ｃ＝８～１４）＝アクリラート	2-Propenoic acid, .gamma.-.omega.-perfluoro-C8-14-alkyl esters	CAJ
 856316-63-7	（エチルアミン）トリフルオロホウ素	Boron, (ethanamine)trifluoro-, (T-4)-	CAJ
 856565-65-6	五酸化二ヒ素	Arsenic(V) pentoxide	CAJ
 856577-72-5	亜硝酸ジシクロヘキシルアミン	Dicyclohexylamine nitrite	CAJ
@@ -9572,6 +9669,7 @@
 85665-66-3	カリウム＝Ｎ-プロピル-Ｎ-（１，１，２，２，３，３，４，４，５，５，６，６，６-トリデカフルオロヘキサン-１-スルホニル）グリシナート	Potassium n-propyl-N-[(tridecafluorohexyl)sulphonyl]glycinate	CAJ
 856770-63-3	水素＝（４-カルボキシラトベンゼン-１-イド-κＣ（１））（クロリド）メルクラート（１-）	Mercurate(1-), (4-carboxylatophenyl)chloro-, hydrogen	CAJ
 856793-27-6	ジシクロヘキシルアミン	Dicyclohexylamine	CAJ
+85681-64-7	2-プロペン酸, ペルフルオロ-C8-16-アルキル エステル	2-Propenoic acid, perfluoro-C8-16-alkyl esters	CAJ
 85681-73-8	塩素化パラフィン(C10-14)	Alkanes, C10-14, chloro	CAJ
 85682-01-5	２-（２，４，５，７-テトラブロモ-３-ケト-６-オキシ-３Ｈ-キサンテン-９-イル）-２，３，４，５-テトラクロロ安息香酸の鉛塩	Lead 2-(2,4,5,7-tetrabromo-3-keto-6-oxy-3H-xanthen-9-yl)-2,3,4,5-tetrachlorobenzoate	CAJ
 856824-67-4	4-ニトロフェノール	Phenol, 4-nitro-	CAJ
@@ -9596,7 +9694,10 @@
 858831-93-3	ベンジルアミン	Benzylamine	CAJ
 85898-88-0	2,4-トルエンジアミン	2,4-Toluenediamine	CAJ
 859039-00-2	ジエチレントリアミン	Diethylenetriamine	CAJ
+85906-44-1		Arsenenous acid, rubidium salt	
+85938-56-3	Ｎ-（３-アミノプロピル）-２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロオクタンアミド	N-(3-Aminopropyl)-2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluorooctanamide	CAJ
 85941-57-7		Lead(II) azide	
+85949-61-7		Arsenic acid (H3AsO4), calcium salt (7:10)	
 85958-86-7	Bis(5-oxo-L-prolinato-N1,O2)cadmium	Bis(5-oxo-L-prolinato-N1,O2)cadmium	CHRIP
 859759-62-9	1-ドデカンチオール	1-Dodecanethiol	CAJ
 85994-31-6	Bis(5-oxo-DL-prolinato-N1,O2)cadmium	Bis(5-oxo-DL-prolinato-N1,O2)cadmium	CHRIP
@@ -9638,6 +9739,8 @@
 868236-23-1		Peroxide, 1,1'-[1,3(or 1,4)-phenylenebis(1-methylethylidene)]bis[2-(1,1-dimethylethyl)	
 868272-85-9		3,3'-Diaminobenzidine tetrahydrochloride hydrate	
 86857-22-9	(3,3,5-トリメチルシクロヘキシリデン)ビス(tert-ブチルペルオキシド)	Peroxide, (3,3,5-trimethylcyclohexylidene)bis[(1,1-dimethylethyl)	CAJ
+86859-92-9		Arsenenous acid, praseodymium(3+) salt	
+86859-93-0		Arsenenous acid, cerium(3+) salt	
 86921-26-8	ヘキサフルオロリン酸	Phosphate(1-), hexafluoro-, hydrogen	CAJ
 86977-44-8	酪酸無水物	Butyric anhydride	CAJ
 87-08-1	（２Ｓ，５Ｒ，６Ｒ）-３，３-ジメチル-７-オキソ-６-（２-フェノキシアセトアミド）-４-チア-１-アザビシクロ［３．２．０］ヘプタン-２-カルボン酸	Phenoxymethylpenicillin	LOLI
@@ -9714,11 +9817,24 @@
 88161-12-0	ジクミルペルオキシド	Dicumyl peroxide	CAJ
 881842-02-0	ランタン	Lanthanum	CAJ
 88201-29-0	ペンタエリスリトール	Pentaerythritol	CAJ
+88243-09-8	１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２５-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５-ペンタオキサペンタコシル＝アセタート	3,6,9,12,15-Pentaoxapentacosan-1-ol, 18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,25-heptadecafluoropentamethyl-, acetate	CAJ
+88243-10-1	２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２９，２９，３０，３０，３１，３１，３１-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５，１８，２１-ヘプタオキサヘントリアコンタン-１-オール	3,6,9,12,15,18,21-Heptaoxahentriacontan-1-ol, 24,24,25,25,26,26,27,27,28,28,29,29,30,30,31,31,31-heptadecafluoropentamethyl-	CAJ
+88243-11-2	２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２８-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５，１８-ヘキサオキサオクタコサン-１-オール	3,6,9,12,15,18-Hexaoxaoctacosan-1-ol, 21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,28-heptadecafluoropentamethyl-	CAJ
+88243-12-3	２-［２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］（メチル）エトキシ｝（メチル）エトキシ］エタノール	Ethanol, 2-[2-[2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)oxy]methylethoxy]methylethoxy]-	CAJ
+88243-13-4	２-｛２-［（３，３，４，４，５，５，６，６，７，７，８，８，９，９，１０，１０，１０-ヘプタデカフルオロデシル）オキシ］（メチル）エトキシ｝（メチル）エタノール	Propanol, [2-[(3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,10-heptadecafluorodecyl)oxy]methylethoxy]-	CAJ
+88243-14-5	１５，１５，１６，１６，１７，１７，１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２２-ヘプタデカフルオロ（テトラメチル）-３，６，９，１２-テトラオキサドコサン-１-オール	3,6,9,12-Tetraoxadocosan-1-ol, 15,15,16,16,17,17,18,18,19,19,20,20,21,21,22,22,22-heptadecafluorotetramethyl-	CAJ
+88243-15-6	１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２５-ヘプタデカフルオロ（ペンタメチル）-３，６，９，１２，１５-ペンタオキサペンタコサン-１-オール	3,6,9,12,15-Pentaoxapentacosan-1-ol, 18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,25-heptadecafluoropentamethyl-	CAJ
+88243-16-7	２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２８-ヘプタデカフルオロ（ヘキサメチル）-３，６，９，１２，１５，１８-ヘキサオキサオクタコサン-１-オール	3,6,9,12,15,18-Hexaoxaoctacosan-1-ol, 21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,28-heptadecafluorohexamethyl-	CAJ
+88243-17-8	２７，２７，２８，２８，２９，２９，３０，３０，３１，３１，３２，３２，３３，３３，３４，３４，３４-ヘプタデカフルオロ（オクタメチル）-３，６，９，１２，１５，１８，２１，２４-オクタオキサテトラトリアコンタン-１-オール	3,6,9,12,15,18,21,24-Octaoxatetratriacontan-1-ol, 27,27,28,28,29,29,30,30,31,31,32,32,33,33,34,34,34-heptadecafluorooctamethyl-	CAJ
+88247-39-6	２１，２１，２２，２２，２３，２３，２４，２４，２５，２５，２６，２６，２７，２７，２８，２８，２８-ヘプタデカフルオロ-３，６，９，１２，１５，１８-ヘキサオキサオクタコサン-１-オール	3,6,9,12,15,18-Hexaoxaoctacosan-1-ol, 21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,28-heptadecafluoro-	CAJ
+88247-40-9	２７，２７，２８，２８，２９，２９，３０，３０，３１，３１，３２，３２，３３，３３，３４，３４，３４-ヘプタデカフルオロ-３，６，９，１２，１５，１８，２１，２４-オクタオキサテトラトリアコンタン-１-オール	3,6,9,12,15,18,21,24-Octaoxatetratriacontan-1-ol, 27,27,28,28,29,29,30,30,31,31,32,32,33,33,34,34,34-heptadecafluoro-	CAJ
 882507-89-3	1,2-ジアゼンジカルボキサミド	1,2-Diazenedicarboxamide	CAJ
 882523-85-5	アゾジカルボンアミド	Azodicarbonamide	CAJ
 882528-56-5		Nitrogen	
+88271-22-1	１５，１５，１６，１６，１７，１７，１８，１８，１９，１９，２０，２０，２１，２１，２２，２２，２２-ヘプタデカフルオロ（ジメチル）-３，６，９，１２-テトラオキサドコサン-１-オール	3,6,9,12-Tetraoxadocosan-1-ol, 15,15,16,16,17,17,18,18,19,19,20,20,21,21,22,22,22-heptadecafluorodimethyl-	CAJ
 88357-62-4	ヘキサメチレン-1,6-ジイソシアネート	Hexamethylene-1,6-diisocyanate	CAJ
 88386-25-8	ニトロセルローズ	Nitrocellulose	CAJ
+88442-64-2		Arsenic acid (H3AsO4), copper(2+) salt (1:1), sesquihydrate	
 88528-25-0	4,4'-オキシビスベンゼンスルホニルヒドラジド	Benzenesulfonic acid, 4,4'-oxybis-, dihydrazide	CAJ
 88542-81-8	モルホリン	Morpholine	CAJ
 88562-25-8		Benzeneacetonitrile, 2,6-dichloro-.alpha.-oxo-	
@@ -9738,8 +9854,10 @@
 89-75-8	2,4-ジクロロ安息香酸クロリド	Benzoyl chloride, 2,4-dichloro-	LOLI
 89-87-2	ベンゼン, 2,4-ジメチル-1-ニトロ-	Benzene, 2,4-dimethyl-1-nitro-	CAJ
 89-92-9	α-ブロモ-o-キシレン	.alpha.-Bromo-o-xylene	LOLI
+89054-01-3		Arsenic acid (H3AsO4), copper(2+) salt (4:5)	
 89054-03-5	ヒ酸 (H3AsO4), 鉛(2+)塩 (4:5)	Arsenic acid (H3AsO4), lead(2+) salt (4:5)	CAJ
 89059-46-1		2,3,7,8-Tetrachlorodibenzofuran with 13C	
+89067-81-2	ヒ酸カルシウム (As4Ca5H2O16)	Arsenic acid (H3AsO4), calcium salt (4:5)	CAJ
 89073-35-8	アゾジカルボンアミド	Azodicarbonamide	CAJ
 89125-89-3	二酸化硫黄	Sulfur dioxide	CAJ
 89140-31-8	過炭酸ナトリウム	Sodium percarbonate	CAJ
@@ -9754,6 +9872,7 @@
 895-85-2	４-メチルベンゾイック　ペルオキシ無水物	Bis(4-methylbenzoyl) peroxide	CAJ
 89513-75-7	三フッ化ホウ素ジエチルエーテル錯体, (T-4)-	Boron, trifluoro[1,1'-oxybis[ethane]]-, (T-4)-	CAJ
 89521-44-8	ビス(ペルクロリルベンジルアミノ)水銀(II)	Bis(perchlorylbenzylamino) mercury(II)	CAJ
+89685-61-0	ナトリウム＝３-（Ｎ-エチル-２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロオクタンアミド）プロパン-１-スルホナート	1-Propanesulfonic acid, 3-[ethyl(2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluoro-1-oxooctyl)amino]-, sodium salt	CAJ
 89698-92-0	トルエンジイソシアネート	Toluene diisocyanate	CAJ
 89759-80-8	酢酸カドミウム水和物	Cadmium acetate hydrate	CAJ
 89830-27-3	亜硫酸水素ナトリウム	Sodium bisulfite	CAJ
@@ -9764,6 +9883,7 @@
 89863-56-9	2-[1-(ニトロメチル)-2-[(1,1,2,2,3,3,4,4,5,5,6,6,6-トリデカフルオロヘキシル)スルホニル]エチル]フラン	Furan, 2-[1-(nitromethyl)-2-[(1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluorohexyl)sulfonyl]ethyl]-	CAJ
 89863-63-8	3-[1-(2-チエニル)-2-[(1,1,2,2,3,3,4,4,5,5,6,6,6-トリデカフルオロヘキシル)スルホニル]エチル]-2,4-ペンタンジオン	2,4-Pentanedione, 3-[1-(2-thienyl)-2-[(1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluorohexyl)sulfonyl]ethyl]-	CAJ
 89863-64-9	3-[1-(2-フラニル)-2-[(1,1,2,2,3,3,4,4,5,5,6,6,6-トリデカフルオロヘキシル)スルホニル]エチル]-2,4-ペンタンジオン	2,4-Pentanedione, 3-[1-(2-furanyl)-2-[(1,1,2,2,3,3,4,4,5,5,6,6,6-tridecafluorohexyl)sulfonyl]ethyl]-	CAJ
+89932-71-8	２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロ-Ｎ- （１４-ヒドロキシ-３，６，９，１２-テトラオキサテトラデカン-１-イル）オクタンアミド	Octanamide, 2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluoro-N-(14-hydroxy-3,6,9,12-tetraoxatetradec-1-yl)-	CAJ
 89961-29-5	２，４，４-トリメチルペンタン-２-アミン	2-Pentanamine, 2,4,4-trimethyl-	CAJ
 90-02-8	２－ヒドロキシベンズアルデヒド	Salicylaldehyde	CHRIP
 90-03-9	２-（クロロ水銀）フェノール	Mercury, chloro(2-hydroxyphenyl)-	CAJ
@@ -9793,6 +9913,7 @@
 9014-83-9	テトラフルオロエテン	Tetrafluoroethene	CAJ
 90149-16-9	過塩素酸	Perchloric acid	CAJ
 9016-45-9	ω-ヒドロキシ-α-(ノニルフェニル)-ポリ(オキシ-1,2-エタンジイル)	Poly(oxy-1,2-ethanediyl), .alpha.-(nonylphenyl)-.omega.-hydroxy-	CAJ
+90179-39-8	［Ｎ，Ｎ-ジメチル-３-（２，２，３，３，４，４，５，５，６，６，７，７，８，８，８-ペンタデカフルオロオクタンアミド）プロパン-１-アミニウムイル］アセタート	1-Propanaminium, N-(carboxymethyl)-N,N-dimethyl-3-[(2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-pentadecafluoro-1-oxooctyl)amino]-, inner salt	CAJ
 90193-67-2	ポリブロモジフェニルエーテル	Brominated diphenyl ethers	LOLI
 90193-83-2	塩基性１，２-ベンゼンジカルボン酸鉛（Ⅱ）塩	1,2-Benzenedicarboxylic acid, lead(2+) salt, basic	CAJ
 90194-35-7	ベンゼンスルホン酸のモノ-C10-13-アルキル誘導体のカドミウム塩	Benzenesulfonic acid, mono-C10-13-alkyl derivatives, cadmium salts	CAJ
@@ -9956,6 +10077,7 @@
 92203-03-7	Phosphoric acid, reaction products with aluminum hydroxide, chromium oxide (CrO3) and diethanolamine	Phosphoric acid, reaction products with aluminum hydroxide, chromium oxide (CrO3) and diethanolamine	CHRIP
 92257-06-2	Fatty acids, C8-10-branched, cadmium salts	Fatty acids, C8-10-branched, cadmium salts	CHRIP
 92257-11-9	Leach residues, zinc refining flue dust, cadmium-thallium ppt.	Leach residues, zinc refining flue dust, cadmium-thallium precipitate	CHRIP
+92278-94-9		Arsenous acid, titanium salt	
 92341-04-3		1,3,4,8-Tetrachlorodibenzofuran	
 92341-05-4		1,3,4,6,7,9-Hexachlorodibenzofuran	
 92341-06-5		1,2,3,6,7,9-Hexachlorodibenzofuran	
@@ -10000,6 +10122,7 @@
 930-28-9	シクロペンタン, クロロ-	Cyclopentane, chloro-	CAJ
 930-68-7	2-シクロヘキセン-1-オン	2-Cyclohexene-1-one	CAJ
 93037-13-9		Nitrogen	
+93080-00-3		Arsonic acid, tin salt	
 93085-22-4	二酸化塩素	Chlorine oxide (ClO2)	CAJ
 93095-76-2	ポリエチレングリコールノニルフェニルエーテル	Polyethylene glycol nonylphenyl ether	CAJ
 931-53-3	イソシアノシクロヘキサン	Cyclohexyl isocyanide	LOLI
@@ -10145,6 +10268,8 @@
 947-33-1		Mephosfolan	
 94700-17-1	ジエチレントリアミン	Diethylenetriamine	CAJ
 94765-75-0	d-リモネン	Cyclohexene, 1-methyl-4-(1-methylethenyl)-, (4R)-	CAJ
+94854-78-1		Arsenenous acid, ammonium copper salt	
+94854-80-5		Arsenenous acid, ammonium zinc salt	
 94896-77-2	tert-ブチルアミン	tert-Butylamine	CAJ
 95-03-4		Benzenamine, 5-chloro-2-methoxy-	
 95-06-7	スルファレート	Sulfallate	LOLI

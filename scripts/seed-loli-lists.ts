@@ -310,11 +310,19 @@ async function main() {
       .filter((c): c is string => !!c),
   );
 
+  // 入れる先のバージョン。引数に `2026Q4` のように書けばその版、省くと現在のバージョン（2026-10-03 に引数を足した）
+  const versionArg = process.argv.slice(2).find((a) => /^\d{4}Q\d$/i.test(a));
   const version = await prisma.linkSetVersion.findFirst({
-    where: { isCurrent: true, deletedAt: null },
+    where: versionArg
+      ? { codeNormalized: versionArg.toUpperCase(), deletedAt: null }
+      : { isCurrent: true, deletedAt: null },
     select: { id: true, code: true },
   });
-  if (!version) throw new Error("現在のバージョンが決まっていません");
+  if (!version) {
+    throw new Error(
+      versionArg ? `バージョン ${versionArg} がありません` : "現在のバージョンが決まっていません",
+    );
+  }
   const source = await prisma.source.findFirst({
     where: { codeNormalized: SOURCE_CODE, deletedAt: null },
     select: { id: true, code: true },
