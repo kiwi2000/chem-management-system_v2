@@ -19,7 +19,11 @@ import { altNumbers, normalizeNumber, normalizeName } from "./lib/chrip-match.mj
 
 const prisma = new PrismaClient();
 const DIR = ".cache/chrip/detail";
-const VERSION_CODE = "2026Q3";
+/**
+ * 入れる先のバージョン。引数に `2026Q4` のように書けばその版、省くと 2026Q3（2026-10-04 に引数を足した）。
+ * 版 × CHRIP の行（データソース）は先に作っておく（外部データベースの画面の「＋」）
+ */
+const VERSION_CODE = process.argv.slice(2).find((a) => /^\d{4}Q\d$/i.test(a)) ?? "2026Q3";
 const SOURCE_CODE = "CHRIP";
 const CODE_PREFIX = "CAS-";
 /** CAS番号を持たない物質に付ける独自コードの頭。CHRIP の物質IDをそのまま使う */
