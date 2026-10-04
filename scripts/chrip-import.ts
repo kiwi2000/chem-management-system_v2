@@ -3,6 +3,10 @@
  *
  *   node --env-file=.env node_modules/tsx/dist/cli.mjs scripts/chrip-import.ts        下見
  *   ... scripts/chrip-import.ts --write                                              書き込み
+ *   ... scripts/chrip-import.ts 2026Q4 --write --known-only                          物質マスタにある物質だけ
+ *
+ * `--known-only` … 物質マスタに既にある物質（CAS・独自コード）の詳細だけを読む。**物質は新しく作らない。**
+ * 詳細を取っている途中で、システムにある物質のぶんだけ先に入れるときに使う（2026-10-04）
  *
  * 入れるもの
  *   1. **物質マスタ** … そのCASが無ければ作る（コードは CAS-<CAS番号>）
@@ -64,6 +68,18 @@ const LAW_OF: Record<string, string> = {
 
 async function main() {
   const write = process.argv.includes("--write");
+  const knownOnly = process.argv.includes("--known-only");
+  /** --known-only のとき、物質マスタにある鍵（cas_normalized） */
+  const master = knownOnly
+    ? new Set(
+        (
+          await prisma.substance.findMany({
+            where: { deletedAt: null, casNormalized: { not: null } },
+            select: { casNormalized: true },
+          })
+        ).map((s) => s.casNormalized!),
+      )
+    : null;
 
   const [version, source] = await Promise.all([
     prisma.linkSetVersion.findFirst({
@@ -120,6 +136,7 @@ async function main() {
     noHit: 0,
     noCas: 0,
     ownCode: 0,
+    notInMaster: 0,
   };
   const misses: string[] = [];
 
@@ -139,6 +156,10 @@ async function main() {
     const casNormalized = casNumber ? normalizeCas(casNumber) : "";
     if (!casNormalized) {
       tally.noCas++;
+      continue;
+    }
+    if (master && !master.has(casNormalized)) {
+      tally.notInMaster++;
       continue;
     }
     if (!hasCas) tally.ownCode++;
@@ -221,6 +242,10 @@ async function main() {
   );
 
   console.log(`読んだ詳細: ${tally.files.toLocaleString()} 件`);
+  if (master)
+    console.log(
+      `  物質マスタに無いので飛ばした（--known-only）: ${tally.notInMaster.toLocaleString()} 件`,
+    );
   console.log(
     `  当てにいった対応: ${tally.entries.toLocaleString()}（番号 ${tally.byNum.toLocaleString()} / 名前 ${tally.byName.toLocaleString()} / 当たらず ${tally.noHit.toLocaleString()}）`,
   );
