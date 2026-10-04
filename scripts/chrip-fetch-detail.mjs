@@ -88,7 +88,18 @@ const already = new Set(
     .map((f) => f.replace(/\.html$/, "")),
 );
 const unopenable = existsSync(UNOPENABLE) ? JSON.parse(readFileSync(UNOPENABLE, "utf8")) : [];
-const todo = ids.filter((id) => !already.has(id) && !unopenable.includes(id));
+/**
+ * 別の機械で取得済みの物質（1 行 1 件の CHRIP_ID）。取得を途中で別の機械へ移すとき、
+ * 取れたファイルを運ばずに一覧だけ渡して飛ばす（2026-10-04。評価機へ移したとき）
+ */
+const DONE_ELSEWHERE = ".cache/chrip/done-elsewhere.txt";
+const elsewhere = new Set(
+  existsSync(DONE_ELSEWHERE)
+    ? readFileSync(DONE_ELSEWHERE, "utf8").split(/\r?\n/).filter(Boolean)
+    : [],
+);
+if (elsewhere.size) console.log(`別の機械で取得済み: ${elsewhere.size.toLocaleString()} 件`);
+const todo = ids.filter((id) => !already.has(id) && !elsewhere.has(id) && !unopenable.includes(id));
 console.log(
   `対象 ${ids.length.toLocaleString()} 件 / 取得済み ${already.size.toLocaleString()} 件 / これから ${todo.length.toLocaleString()} 件`,
 );
