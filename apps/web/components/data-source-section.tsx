@@ -293,6 +293,20 @@ export function DataSourceSection({
   }, [loadChoices, reloadToken]);
 
   /*
+    バージョンを替えたら、編集中・登録中をやめて普通の表示に戻す（「キャンセル」と同じ。2026-10-04）。
+    残すと、開いていた行が新しいバージョンに無いまま「保存」「キャンセル」が出て「＋」が隠れ、
+    編集中だと気づけない。登録の欄の写し元の候補も前のバージョンのものになる
+  */
+  useEffect(() => {
+    setEditingId(null);
+    setMarkEditingId(null);
+    setAdding(false);
+    setForm({ sourceId: "", note: "", copyFrom: "" });
+    setCopyCands(null);
+    setNotice(null);
+  }, [versionId]);
+
+  /*
     読み込んだら、選んでいる行が無ければ望みの行（無ければ優先度1位）を選ぶ。
     バージョンを替えたときは前の行が無くなるので、同じ道で選び直す。
     下の対象CASの表は選んだ行で決まるので、何も選ばれていない時間を作らない
