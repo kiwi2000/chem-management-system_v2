@@ -1,10 +1,8 @@
 "use client";
 
-import { emptyTableState, SOURCE_MARK_MAX, type TableState } from "@chem/shared";
+import { emptyTableState, type TableState } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ColorPicker } from "@/components/color-picker";
 import { useConfirm } from "@/components/confirm-dialog";
-import { SourceChip } from "@/components/source-chip";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -82,9 +80,6 @@ export function DataSourceSection({
   /** 説明だけは行の中で直せる */
   const [editingId, setEditingId] = useState<string | null>(null);
   const [note, setNote] = useState("");
-  /** 印に出す文字。押すと入力欄になる */
-  const [markEditingId, setMarkEditingId] = useState<string | null>(null);
-  const [mark, setMark] = useState("");
 
   const columns = useMemo<TableColumn<LinkVersionSourceDto>[]>(
     () => [
@@ -97,84 +92,6 @@ export function DataSourceSection({
         filterable: false,
         className: "font-mono text-xs",
         render: (r) => r.sourceCode,
-      },
-      {
-        /*
-          色。**種別そのものの持ちものなので、どのバージョンでも同じ色**になる。
-          ここで変えると、ほかのバージョンの同じ種別も変わる。
-          押せるのは、行末の鉛筆で編集中の行だけ（2026-09-22 指示。見ているだけのつもりで変わらないように）
-        */
-        key: "sourceColor",
-        header: m.sources.color,
-        kind: "text",
-        width: 52,
-        sortable: false,
-        filterable: false,
-        className: "text-center",
-        render: (r) => (
-          <ColorPicker
-            value={r.sourceColor}
-            disabled={!editable || r.id !== editingId}
-            label={m.sources.colorPick}
-            clearLabel={m.sources.colorNone}
-            customLabel={m.sources.colorCustom}
-            locale={locale}
-            onChange={(color) => void saveColor(r, color)}
-          />
-        ),
-      },
-      {
-        /*
-          印に出す文字。**1文字とは限らない。**
-          決めていなければコードの頭文字を使うので、空でも困らない
-        */
-        key: "sourceMark",
-        header: m.sources.mark,
-        kind: "text",
-        width: 96,
-        sortable: false,
-        filterable: false,
-        render: (r) =>
-          r.id === markEditingId ? (
-            <Input
-              // 押してすぐ打てるようにする。もう一度押させると、直すたびに2手かかる
-              autoFocus
-              value={mark}
-              maxLength={SOURCE_MARK_MAX}
-              aria-label={m.sources.mark}
-              onChange={(e) => setMark(e.target.value)}
-              onBlur={() => void saveMark(r)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void saveMark(r);
-                if (e.key === "Escape") setMarkEditingId(null);
-              }}
-              className="h-7 w-full text-sm"
-            />
-          ) : (
-            <button
-              type="button"
-              disabled={!editable}
-              title={m.sources.markEdit}
-              onClick={() => {
-                setMarkEditingId(r.id);
-                setMark(r.sourceMark ?? "");
-              }}
-              className="flex items-center gap-1.5"
-            >
-              <SourceChip
-                source={{
-                  id: r.sourceId,
-                  code: r.sourceCode,
-                  color: r.sourceColor,
-                  mark: r.sourceMark,
-                }}
-              />
-              {/* 印は必須。空のものは赤字で知らせ、押して入れてもらう */}
-              {!r.sourceMark && (
-                <span className="text-destructive text-xs">{m.sources.markMissing}</span>
-              )}
-            </button>
-          ),
       },
       {
         /*
@@ -248,9 +165,9 @@ export function DataSourceSection({
         ),
       },
     ],
-    // saveColor は毎回作られるが、中身は変わらないので手がかりに入れない
+    // toggleEnabled は毎回作られるが、中身は変わらないので手がかりに入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [m, locale, editingId, note, markEditingId, mark, editable, saving, sources],
+    [m, locale, editingId, note, editable, saving],
   );
 
   const { state, setState, ready } = useTableState(
@@ -299,7 +216,6 @@ export function DataSourceSection({
   */
   useEffect(() => {
     setEditingId(null);
-    setMarkEditingId(null);
     setAdding(false);
     setForm({ sourceId: "", note: "", copyFrom: "" });
     setCopyCands(null);
@@ -416,82 +332,6 @@ export function DataSourceSection({
       setForm({ sourceId: "", note: "", copyFrom: "" });
       setCopyCands(null);
       void load();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  /**
-   * 色を保存する。**書き換えるのは種別そのもの**（`/api/sources`）で、
-   * バージョン × 種別の行ではない。どのバージョンでも同じ色にするため。
-   *
-   * 保存できたら、いま出している行にもその場で反映する。
-   * 引き直すと、開いている選択の欄が閉じて選んだ手応えが消える
-   */
-  async function saveColor(row: LinkVersionSourceDto, color: string | null) {
-    // 印が必須になったので、無いまま色だけ直すと保存できない。先に印を入れてもらう
-    if (!row.sourceMark) {
-      setError(m.sources.markFirst);
-      return;
-    }
-    const type = sources.find((x) => x.id === row.sourceId);
-    if (!type) return;
-    setError(null);
-    setSaving(true);
-    try {
-      const res = await fetch("/api/sources/" + row.sourceId, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: type.code, note: type.note, color, mark: type.mark }),
-      });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.saveFailed(res.status));
-        return;
-      }
-      // 同じ種別の行はまとめて塗り替える
-      setItems(
-        (prev) =>
-          prev?.map((r) => (r.sourceId === row.sourceId ? { ...r, sourceColor: color } : r)) ??
-          prev,
-      );
-      setSources((prev) => prev.map((x) => (x.id === row.sourceId ? { ...x, color } : x)));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  /** 印に出す文字を保存する。色と同じく、書き換えるのは種別そのもの */
-  async function saveMark(row: LinkVersionSourceDto) {
-    const type = sources.find((x) => x.id === row.sourceId);
-    // 空では保存しない（印は必須）。入力欄は開いたままにして、赤字で知らせる
-    if (!mark.trim()) {
-      setError(m.validation.required);
-      return;
-    }
-    setMarkEditingId(null);
-    if (!type || (row.sourceMark ?? "") === mark.trim()) return;
-    setError(null);
-    setSaving(true);
-    try {
-      const res = await fetch("/api/sources/" + row.sourceId, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: type.code, note: type.note, color: type.color, mark }),
-      });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.saveFailed(res.status));
-        return;
-      }
-      const saved = mark.trim() || null;
-      setItems(
-        (prev) =>
-          prev?.map((x) => (x.sourceId === row.sourceId ? { ...x, sourceMark: saved } : x)) ?? prev,
-      );
-      setSources((prev) => prev.map((x) => (x.id === row.sourceId ? { ...x, mark: saved } : x)));
     } finally {
       setSaving(false);
     }

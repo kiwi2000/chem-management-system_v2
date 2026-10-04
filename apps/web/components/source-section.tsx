@@ -7,6 +7,8 @@ import {
   type TableState,
 } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ColorPicker } from "@/components/color-picker";
+import { SourceChip } from "@/components/source-chip";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -32,10 +34,17 @@ interface Draft {
   note: string;
   /** 印に出す文字。必須（頭文字で代用しない） */
   mark: string;
+  /** 画面で使う色（`#rrggbb`）。決めていなければ null */
+  color: string | null;
 }
-const EMPTY: Draft = { code: "", note: "", mark: "" };
+const EMPTY: Draft = { code: "", note: "", mark: "", color: null };
 
-const toDraft = (s: SourceDto): Draft => ({ code: s.code, note: s.note ?? "", mark: s.mark ?? "" });
+const toDraft = (s: SourceDto): Draft => ({
+  code: s.code,
+  note: s.note ?? "",
+  mark: s.mark ?? "",
+  color: s.color,
+});
 
 /** 表の中の入力欄。行の高さを変えないよう小さめにする */
 const CELL_INPUT = "h-7 w-full text-sm";
@@ -47,7 +56,7 @@ const CELL_INPUT = "h-7 w-full text-sm";
  * 件数が少ないので、別のフォームを開かずに表の行のまま書き換える。
  */
 export function SourceSection({ onChanged }: { onChanged?: () => void }) {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -102,10 +111,36 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
           ),
       },
       {
+        /*
+          色と印は**種別そのものの持ちもの**で、どのバージョンでも同じに出る（2026-10-04 に、
+          バージョンごとのデータソースの表からここへ移した）。
+          直せるのは行末の鉛筆で編集中の行だけ。見ているだけのつもりで変わらないように
+        */
+        key: "color",
+        header: m.sources.color,
+        kind: "text",
+        width: 52,
+        sortable: false,
+        filterable: false,
+        className: "text-center",
+        render: (s) => (
+          <ColorPicker
+            value={editing(s) ? draft.color : s.color}
+            disabled={!editing(s)}
+            label={m.sources.colorPick}
+            clearLabel={m.sources.colorNone}
+            customLabel={m.sources.colorCustom}
+            locale={locale}
+            onChange={(color) => setDraft({ ...draft, color })}
+          />
+        ),
+      },
+      {
+        /* 印に出す文字。1文字とは限らない。必須 */
         key: "mark",
         header: m.sources.mark,
         kind: "text",
-        width: 88,
+        width: 96,
         sortable: false,
         filterable: false,
         render: (s) =>
@@ -119,11 +154,15 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
               className={CELL_INPUT}
             />
           ) : (
-            (s.mark ?? "")
+            <span className="flex items-center gap-1.5">
+              <SourceChip source={{ id: s.id, code: s.code, color: s.color, mark: s.mark }} />
+              {/* 印は必須。空のものは赤字で知らせ、鉛筆で開いて入れてもらう */}
+              {!s.mark && <span className="text-destructive text-xs">{m.sources.markMissing}</span>}
+            </span>
           ),
       },
     ];
-  }, [m, editingId, draft]);
+  }, [m, locale, editingId, draft]);
 
   const { state, setState, ready } = useTableState("chem.table.sources", columns, DEFAULT_STATE);
 
@@ -180,8 +219,7 @@ export function SourceSection({ onChanged }: { onChanged?: () => void }) {
         body: JSON.stringify({
           code: draft.code,
           note: draft.note || null,
-          // 色はここでは直さない。送らないと消えてしまうので、いまの値をそのまま返す
-          color: data?.items.find((x) => x.id === editingId)?.color ?? null,
+          color: draft.color,
           mark: draft.mark,
         }),
       });
