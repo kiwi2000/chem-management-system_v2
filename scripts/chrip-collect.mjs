@@ -9,9 +9,12 @@
  *
  * 一覧を何回かに分けて取ったときは、同じ物質がいくつものファイルに出てくる。CHRIP_ID でまとめる。
  *
- * **CAS 番号の無い物質は拾わない**（2026-10-04 指示）。詳細を取っても組成に打てず、取り込みで使わない
+ * **CAS 番号の無い物質は、取り込みで法文物質名に結ぶ法規制（`LINKED_REGULATIONS`）に●があるものだけ拾う**
+ * （2026-10-04 指示）。石油留分のような CAS の付かない物質で、独自コード `CHRIP-<CHRIP_ID>` で結ぶ（4b-4）。
+ * それ以外の CAS の無い物質は、組成に打てず判定にも使わないので拾わない
  */
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { LINKED_REGULATIONS } from "./lib/chrip-sources.mjs";
 import { readSheet } from "./lib/xlsx-read.mjs";
 
 const DIR = ".cache/chrip/list";
@@ -42,12 +45,17 @@ for (const f of files) {
 const CAS = /^\d{2,7}-\d{2}-\d$/;
 const allCas = process.argv.includes("--all-cas");
 const hitAny = [...byId].filter(([, v]) => v.hits.length > 0);
-const hit = [...byId].filter(([, v]) => CAS.test(v.cas.trim()) && (allCas || v.hits.length > 0));
+const hit = [...byId].filter(([, v]) =>
+  CAS.test(v.cas.trim())
+    ? allCas || v.hits.length > 0
+    : v.hits.some((h) => LINKED_REGULATIONS.has(h)),
+);
+const noCas = hit.filter(([, v]) => !CAS.test(v.cas.trim())).length;
 writeFileSync(".cache/chrip/hits.json", JSON.stringify(Object.fromEntries(hit), null, 1));
 console.log(`読んだファイル: ${files.length} 本 / 行: ${rowsRead.toLocaleString()}`);
 console.log(`物質（重複なし）: ${byId.size.toLocaleString()}`);
 console.log(
-  `どれかに該当: ${hitAny.length.toLocaleString()} / 拾ったもの（CAS あり${allCas ? "・●が無いものも" : ""}）: ${hit.length.toLocaleString()}`,
+  `どれかに該当: ${hitAny.length.toLocaleString()} / 拾ったもの: ${hit.length.toLocaleString()}（うち CAS なし ${noCas.toLocaleString()}${allCas ? "。CAS ありは●が無いものも" : ""}）`,
 );
 const perLaw = new Map();
 for (const [, v] of hit) for (const h of v.hits) perLaw.set(h, (perLaw.get(h) ?? 0) + 1);

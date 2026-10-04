@@ -10,6 +10,7 @@
  * 一覧の取得と同じ作り。ゆっくり行き、落ちたら待ち、途中から続けられる。
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { LINKED_REGULATIONS } from "./lib/chrip-sources.mjs";
 
 const OUT = ".cache/chrip/detail";
 const BASE = "https://www.chem-info.nite.go.jp/chem/chrip/chrip_search/srhChripIdLst";
@@ -48,31 +49,7 @@ const hits = JSON.parse(readFileSync(".cache/chrip/hits.json", "utf8"));
    2 … 番号を持つ物質（化審法の既存・新規公示、安衛法の名称公表など）と、化管法の旧版・化審法の取消優先評価
    3 … それ以外（EC・TSCA インベントリ、REACH 登録物質、用途だけのもの）
 */
-const RANK_1 = new Set([
-  "化審法：第一種特定化学物質",
-  "化審法：第二種特定化学物質",
-  "化審法：監視化学物質",
-  "化審法：優先評価化学物質",
-  "化審法：特定一般化学物質",
-  "化管法 (令和５年度分以降の排出量等の把握や令和５年度以降のSDS提供の対象)",
-  "毒物及び劇物取締法",
-  "安衛法：製造等が禁止される有害物等",
-  "安衛法：製造の許可を受けるべき有害物",
-  "安衛法：名称等を表示し、又は通知すべき危険物及び有害物（ラベル表示・SDS交付義務対象物質）",
-  "安衛法：特定化学物質等（特化則）",
-  "安衛法：有機溶剤等（有機則）",
-  "化学兵器の禁止及び特定物質の規制等に関する法律（化学兵器禁止法）",
-  "大気汚染防止法",
-  "水質汚濁防止法",
-  "土壌汚染対策法",
-  "REACH：高懸念物質（SVHC）",
-  "REACH：制限物質",
-  "EU：CLP調和分類",
-  "TSCA：化学物質及び混合物の優先度付け、リスク評価並びに規制",
-  "中国：危険化学品目録（２０１５版）",
-  "韓国：化評法( K-REACH)／化管法：有害化学物質、重点管理物質",
-  "韓国：化評法( K-REACH)：その他",
-]);
+const RANK_1 = LINKED_REGULATIONS;
 const RANK_2 =
   /^(化審法：既存化学物質|化審法：新規公示化学物質|化審法：（取消）|安衛法：名称公表化学物質|安衛法：新規名称公表化学物質|化管法 \(令和４年度)/;
 const rankOf = (list) => {
