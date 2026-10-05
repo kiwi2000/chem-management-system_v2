@@ -2503,6 +2503,10 @@ model StatutoryCasLinkDiff {
 
   @@unique([versionId, againstId, sourceId, statutorySubstanceId, casNormalized])
   @@index([versionId, againstId, sourceId, kind])
+  /// リンクを消すと、その行を指す控えを探して消す（onDelete: Cascade）。索引が無いと控え全体（2026-10 で 91 万行）を
+  /// リンク1件ごとに読み、取り込み直しが何十分もかかった（2026-10-05 に足した）
+  @@index([currentLinkId])
+  @@index([previousLinkId])
   @@map("statutory_cas_link_diffs")
 }
 
