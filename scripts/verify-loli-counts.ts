@@ -191,6 +191,18 @@ function keysOf(row: Row): number | null {
   for (const line of readFileSync(path, "utf-8").split("\n")) {
     const raw = line.split("\t")[0]?.trim();
     if (!raw) continue;
+    /*
+      `||` で並んだ鍵（SVHC の「EC番号 || 親のCAS || LU:名前 …」。2026-10-05）は同じ物質の別の書き方なので、
+      先頭の1つだけ数える（以前の「EC番号、無ければ親のCAS」と同じ数え方）
+    */
+    if (raw.includes("||")) {
+      const first = raw
+        .split("||")
+        .map((p) => p.trim())
+        .find(Boolean);
+      if (first) keys.add(first.toUpperCase());
+      continue;
+    }
     for (const part of raw.split(",")) {
       let k = part.trim();
       if (k === "") continue;
