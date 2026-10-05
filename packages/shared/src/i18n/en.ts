@@ -1031,10 +1031,10 @@ export const en: Messages = {
 
   accessLog: {
     title: "Access records",
-    lead: "Who signed in, when, from where, and whose composition they opened — in one timeline. Filter by type to see just one kind.",
+    lead: "Who signed in, when, from where, and whose composition they opened — in one timeline. Filter by action to see just one kind.",
     analysis: "Analysis",
     at: "When",
-    action: "Type",
+    action: "Action",
     actor: "User",
     target: "Target",
     detail: "Details",

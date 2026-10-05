@@ -55,6 +55,16 @@ export default function AccessLogPage() {
         // 日付だけでは足りない。何時何分に起きたかが手がかりになる
         render: (r) => new Date(r.at).toLocaleString(locale),
       },
+      // ユーザーを操作より先に置く（誰が → 何をしたか の順で読む。2026-10-05）
+      {
+        key: "actorId",
+        header: m.accessLog.actor,
+        kind: "enum",
+        width: 130,
+        options: users.map((u) => ({ value: u.id, label: u.displayName ?? u.email })),
+        // ログインの失敗では利用者が分からないことがある。試されたアドレスを出す
+        render: (r) => r.actorName ?? r.email ?? "",
+      },
       {
         key: "action",
         header: m.accessLog.action,
@@ -77,15 +87,6 @@ export default function AccessLogPage() {
             {actionLabel(m, r)}
           </span>
         ),
-      },
-      {
-        key: "actorId",
-        header: m.accessLog.actor,
-        kind: "enum",
-        width: 130,
-        options: users.map((u) => ({ value: u.id, label: u.displayName ?? u.email })),
-        // ログインの失敗では利用者が分からないことがある。試されたアドレスを出す
-        render: (r) => r.actorName ?? r.email ?? "",
       },
       {
         key: "target",
