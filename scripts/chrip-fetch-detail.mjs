@@ -20,9 +20,15 @@ const WAIT = 2500;
 /**
  * **メンテナンスの待ちかた**（2026-10-04）。CHRIP はときどき 1 時間ほど止まる。
  * 取れなかったら、いつも開ける物質（`CANARY`）のページでサイト全体が止まっているかを見て、
- * 止まっていればそのページだけを `PROBE` おきに見て、開けるようになるまで待つ。待つ間はほかに何も取りに行かない
+ * 止まっていればそのページだけを `PROBE` おきに見て、開けるようになるまで待つ。待つ間はほかに何も取りに行かない。
+ *
+ * **1 回開けなかっただけでは止まっていると決めない**（2026-10-06）。夜中の CHRIP は遅く、混んで一時的に
+ * 応答が間に合わないことがある（10/6 1:54 に、動いているのに「止まっている」と判断して 10 分休んだ）。
+ * `RECHECK` おいてもう一度見て、2 回とも開けなかったときだけ止まっているとする。
+ * 開けなかった理由（応答なし・エラーのページなど）は記録に残す
  */
 const PROBE = 10 * 60 * 1000;
+const RECHECK = 60 * 1000;
 const CANARY = "C005-019-00A";
 /** サイトは動いているのに開けない物質（削除されたなど）。2 回試してだめなら記録して先へ進む */
 const UNOPENABLE = ".cache/chrip/unopenable.json";
@@ -106,7 +112,7 @@ console.log(
 console.log(`見込み: 約${Math.round((todo.length * (WAIT + 1500)) / 3600000)}時間`);
 console.log(`始めた時刻: ${new Date().toLocaleString("ja-JP")}`);
 
-/** 1 件取る。詳細ページなら HTML、取れなければ null */
+/** 1 件取る。詳細ページなら `{ html }`、取れなければ `{ why }`（開けなかった理由） */
 async function fetchDetail(cid) {
   try {
     const res = await fetch(`${BASE}?${new URLSearchParams({ _e_slt: "", cid, shMd: "0" })}`, {
@@ -121,20 +127,38 @@ async function fetchDetail(cid) {
       2万文字を境にすると正常なページを失敗とみなしてしまう（実際にそうなった）。
       エラーページは「システムエラー」と書いてあり、CHRIP_ID を含まない
     */
-    return res.ok && html.includes("CHRIP_ID") && !html.includes("システムエラー") ? html : null;
-  } catch {
-    return null;
+    if (res.ok && html.includes("CHRIP_ID") && !html.includes("システムエラー")) return { html };
+    if (!res.ok) return { why: `HTTP ${res.status}` };
+    if (html.includes("システムエラー")) return { why: "エラーのページ" };
+    return { why: `詳細ページでない（${html.length}文字）` };
+  } catch (e) {
+    return {
+      why: e?.name === "TimeoutError" ? "2分待っても応答なし" : `通信できない（${e?.name ?? e}）`,
+    };
   }
 }
 
-/** サイト全体が動いているか。セッションを取り直して、いつも開ける物質のページを見る */
-async function siteUp() {
+/** いつも開ける物質のページを1回見る。開けなければ理由を返す */
+async function probeOnce() {
   try {
     await newSession();
-  } catch {
-    return false;
+  } catch (e) {
+    return `入口でセッションが取れない（${e?.message ?? e}）`;
   }
-  return (await fetchDetail(CANARY)) !== null;
+  const r = await fetchDetail(CANARY);
+  return r.html ? null : r.why;
+}
+
+/** サイト全体が動いているか。開けなければ `RECHECK` おいてもう一度見る。2 回とも開けなければ止まっている */
+async function siteUp() {
+  const first = await probeOnce();
+  if (first === null) return true;
+  console.log(`  確認用のページが開けない（${first}）→ ${RECHECK / 60000}分後にもう一度見る`);
+  await sleep(RECHECK);
+  const second = await probeOnce();
+  if (second === null) return true;
+  console.log(`  もう一度も開けない（${second}）`);
+  return false;
 }
 
 /** 開けるようになるまで待つ。PROBE おきに 1 ページだけ見る */
@@ -153,9 +177,9 @@ await newSession().catch(() => {});
 let got = 0;
 for (const cid of todo) {
   for (let tries = 1; ; tries++) {
-    const html = await fetchDetail(cid);
-    if (html) {
-      writeFileSync(`${OUT}/${cid}.html`, html);
+    const r = await fetchDetail(cid);
+    if (r.html) {
+      writeFileSync(`${OUT}/${cid}.html`, r.html);
       got++;
       if (got % 500 === 0)
         console.log(
@@ -163,6 +187,7 @@ for (const cid of todo) {
         );
       break;
     }
+    console.log(`${cid}: 開けない（${r.why}。${new Date().toLocaleString("ja-JP")}）`);
     await sleep(WAIT);
     if (!(await siteUp())) {
       // メンテナンス。明けたら同じ物質からやり直す（試した回数は数え直す）
