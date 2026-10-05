@@ -11,9 +11,11 @@
  * 取り出しかたは `scripts/sql/` の同名のSQLを参照。
  * 同じバージョン・同じデータソースへの取り込みは**入れ替え**なので、先に消してから入れる。
  *
- *   node --env-file=.env node_modules/tsx/dist/cli.mjs scripts/seed-cas-links.ts [バージョンコード] [区分コード...]
+ *   node --env-file=.env node_modules/tsx/dist/cli.mjs scripts/seed-cas-links.ts [バージョンコード] [区分コード...] [--dry-run] [--keep-loaded-at]
  *
  * バージョンコードを省くと 2026Q3。区分コードを省くと全部。データソースは LOLI 固定。
+ *   --dry-run         書き込まない。区分ごとの件数と、合わなかった番号を全部出す（取り込みの前の確かめに使う）
+ *   --keep-loaded-at  データソースの取込日を書き換えない（一部の区分だけ入れ直すとき。2026-10-05）
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -60,6 +62,14 @@ interface Job {
   bracketAlt?: boolean;
   /** 0埋めを外すか。LOLI は `0305` のように桁を揃えていることがある */
   unpad?: boolean;
+  /**
+   * 鍵の欄に `||` で並んだものを、**同じ物質の別の書き方として前から順に試す**（最初に見つかったものだけ）。
+   * `LU:` `AS:` で始まるものは番号ではなく**項目の名前**で、こちらの法文物質名の原文と突き合わせる（`matchName`）。
+   * SVHC は「EC番号 || 親のCAS || LU:含まれる項目の名前」を並べて取り出している（2026-10-05）
+   */
+  alternatives?: boolean;
+  /** こちらの番号のほかに、その法文物質名を指す番号（番号 → 別の番号の並び）。SVHC の EC・CAS の一覧 */
+  extraKeys?: () => [string, string[]][];
   /**
    * 条件つきのリンクを書いた取り出し。
    *
@@ -479,9 +489,22 @@ const JOBS: Job[] = [
     category: "SVHC",
     tsv: "loli-eu-svhc.tsv",
     matchBy: "number",
+    alternatives: true,
+    extraKeys: svhcIdentifiers,
     spec: { kind: "plain" },
   },
 ];
+
+/** ECHA の候補リスト（`scripts/data/eu.json`）の、項目ごとの EC番号と CAS の一覧 */
+function svhcIdentifiers(): [string, string[]][] {
+  const items = JSON.parse(readFileSync(join(process.cwd(), "scripts/data/eu.json"), "utf-8")) as {
+    section: string;
+    number: string;
+    ec: string;
+    cas: string[];
+  }[];
+  return items.filter((x) => x.section === "SVHC").map((x) => [x.number, [x.ec, ...x.cas]]);
+}
 
 /**
  * LOLI 側の鍵を、こちらの番号の書き方にそろえる。合わなければ空。
@@ -534,6 +557,78 @@ function resolveKey(k: string, byKey: Map<string, string>, job: Job): string | n
   return byKey.has(m[1]!) ? m[1]! : null;
 }
 
+/**
+ * 名前の書き方の違いをならす。SVHC の項目名は LOLI と ECHA（こちらの原文）で少しずつ違う。
+ * 先頭の CAS・EC番号、角括弧、「(.+-.)」（± の書き換え）、「>=」（≥）、引用符・商標記号をそろえる
+ */
+function normName(s: string): string {
+  let t = s
+    .normalize("NFKC")
+    .toLowerCase()
+    // LOLI は「(±)」を「(.+-.)」と書く
+    .replace(/\(\.\+-\.\)/g, "(±)")
+    // ECHA は「derivs.」と略す（Dioctyltin dilaurate の項目）
+    .replace(/\bderivatives\b/g, "derivs.")
+    .replace(/>=/g, "≥")
+    .replace(/[[\]"“”'‘’™]/g, " ")
+    // カンマの後の空白の有無がそろっていない（`Sodium perborate,perboric acid`）
+    .replace(/\s*,\s*/g, ", ")
+    .replace(/\s+/g, " ")
+    .trim();
+  // 先頭に CAS や EC番号が付いている原文がある（`10141-05-6 Cobalt(II) dinitrate`）
+  for (;;) {
+    const m = /^(\d{2,7}-\d{2}-\d|\d{3}-\d{3}-\d)\s+/.exec(t);
+    if (!m) break;
+    t = t.slice(m[0].length);
+  }
+  return t;
+}
+
+/**
+ * LOLI が略称で書く項目名 → ECHA の正式名の頭。書き方のならしでは届かないものだけを置く（2026-10-05）
+ */
+const NAME_ALIAS: Record<string, string> = {
+  // ECHA「Reaction mass of 2-ethylhexyl 10-ethyl-4,4-dioctyl-7-oxo-8-oxa-3,5-dithia-4-stannatetradecanoate and …」
+  "Reaction mass of DOTE and MOTE":
+    "Reaction mass of 2-ethylhexyl 10-ethyl-4,4-dioctyl-7-oxo-8-oxa-3,5-dithia-4-stannatetradecanoate and",
+  // 注記「As 4-(1,1,3,3-Tetramethylbutyl)phenol, ethoxylated polymers [RR-108704-3]」（9046-29-1）
+  "4-(1,1,3,3-Tetramethylbutyl)phenol, ethoxylated polymers":
+    "4-(1,1,3,3-tetramethylbutyl)phenol, ethoxylated covering",
+  // 注記「As Perfluorobutanesulfonic acid salts [RR-164389-6]」（60453-92-1）
+  "Perfluorobutanesulfonic acid salts": "Perfluorobutane sulfonic acid (PFBS) and its salts",
+};
+
+/**
+ * 項目の名前から、こちらの法文物質名を1つ探す。**1つに決まるときだけ**返す。
+ *
+ * 名前が同じか、片方がもう片方の頭と一致するもの（こちらの原文は後ろに説明が続くことがある。
+ * `Perfluorohexane-1-sulphonic acid and its salts PFHxS`）。
+ * 頭が一致した続きが「,」なら別の項目（`4-Nonylphenol, branched and linear, ethoxylated` は
+ * `4-Nonylphenol, branched and linear` の続きではない）として外す
+ */
+function matchName(name: string, names: { id: string; name: string }[]): string | null {
+  const q = normName(NAME_ALIAS[name.trim()] ?? name);
+  if (q.length < 6) return null;
+  const exact = names.filter((n) => n.name === q);
+  if (exact.length === 1) return exact[0]!.id;
+  if (exact.length > 1) return null;
+  const cont = (long: string, short: string) =>
+    long.startsWith(short) && !/^\s*,/.test(long.slice(short.length));
+  const hits = names.filter((n) => cont(n.name, q) || cont(q, n.name));
+  if (hits.length === 1) return hits[0]!.id;
+  if (hits.length > 1) return null;
+  /*
+    それでも無ければ、頭の立体の印（cis- / trans-）と位置番号（`1,6,7,…-`）を両方から外して
+    もう一度だけ比べる。ECHA は「cis- と trans- をすべて含む」1項目にまとめ、
+    LOLI は cis- / trans- ごとの名前で並べていることがある
+  */
+  const bare = (t: string) => t.replace(/^(cis-|trans-)/, "").replace(/^[\d,]+-(?=[a-z(])/, "");
+  const qb = bare(q);
+  if (qb === q || qb.length < 6) return null;
+  const hits2 = names.filter((n) => cont(bare(n.name), qb) || cont(qb, bare(n.name)));
+  return hits2.length === 1 ? hits2[0]!.id : null;
+}
+
 /** LOLI の Cas 欄には UN番号や社内番号（RR-…）も混ざる。CASの形をしたものだけ採る */
 const CAS_SHAPE = /^\d{2,7}-\d{2}-\d$/;
 
@@ -546,7 +641,7 @@ const GAZETTE = /官報公示整理番号[:：]\s*([0-9]+-[0-9]+)/;
  * `append` は「前の中身を消さない」。**同じ区分に取り出しが2つあるとき**に使う
  * （毒劇法は指定令と法別表の2本立て。消してしまうと後の1本しか残らない）
  */
-async function run(job: Job, versionId: string, sourceId: string, append = false) {
+async function run(job: Job, versionId: string, sourceId: string, append = false, dryRun = false) {
   const substances = await prisma.statutorySubstance.findMany({
     where: {
       deletedAt: null,
@@ -557,8 +652,12 @@ async function run(job: Job, versionId: string, sourceId: string, append = false
         },
       },
     },
-    select: { id: true, code: true, officialNumber: true, note: true },
+    select: { id: true, code: true, officialNumber: true, note: true, nameOriginal: true },
   });
+  /** 名前で突き合わせるときの、こちらの法文物質名の原文 */
+  const names = substances
+    .filter((s) => s.nameOriginal)
+    .map((s) => ({ id: s.id, name: normName(s.nameOriginal!) }));
 
   // 鍵 → 法文物質名。同じ鍵が2つ以上あることは無い前提で、あれば先勝ちにする
   const byKey = new Map<string, string>();
@@ -568,6 +667,20 @@ async function run(job: Job, versionId: string, sourceId: string, append = false
     if (key && job.stripPrefixRe) key = key.replace(new RegExp(job.stripPrefixRe), "");
     if (key && job.unpad) key = key.replace(/\d+/g, (d) => String(Number(d)));
     if (key && !byKey.has(key)) byKey.set(key, s.id);
+  }
+  /*
+    **項目の別の番号も手がかりにする**（2026-10-05）。SVHC の項目は ECHA が EC番号と CAS を
+    いくつも挙げている（過ホウ酸ナトリウムは CAS 8 つ）が、こちらの番号はそのうち1つだけ。
+    LOLI が別の CAS や水和物の CAS で並べた行も、その項目として見つけられるようにする。
+    ECHA の番号はどれも1つの項目にしか出ない（2026-10-05 に確かめた）。番号で引けるものを上書きはしない
+  */
+  if (job.extraKeys) {
+    const idOfNumber = new Map(substances.map((s) => [s.officialNumber ?? "", s.id] as const));
+    for (const [number, ids] of job.extraKeys()) {
+      const id = idOfNumber.get(number);
+      if (!id) continue;
+      for (const k of ids) if (k && !byKey.has(k)) byKey.set(k, id);
+    }
   }
 
   /** 条件つきの組。`鍵` と `CAS` をタブでつないだ形。備考に印を残す */
@@ -602,7 +715,27 @@ async function run(job: Job, versionId: string, sourceId: string, append = false
       skippedShape += 1;
       continue;
     }
-    const mapped = toKeys(key, job);
+    let mapped: string[];
+    if (job.alternatives) {
+      // 前から順に試し、最初に見つかった1つだけを使う。どれも無ければ欄ごと「合わない」に数える
+      const parts = key
+        .split("||")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      const hit = parts.find((m) => {
+        if (m.startsWith("LU:") || m.startsWith("AS:")) {
+          // 名前で見つかったら、その名前を鍵として控えておく（下で番号と同じように引ける）
+          const id = byKey.get(m) ?? matchName(m.slice(3), names);
+          if (id) byKey.set(m, id);
+          return id !== null;
+        }
+        const r = resolveKey(m, byKey, job);
+        return r !== null && byKey.has(r);
+      });
+      mapped = hit ? [hit] : [];
+    } else {
+      mapped = toKeys(key, job);
+    }
     if (mapped.length === 0) {
       missed.add(key);
       continue;
@@ -629,31 +762,37 @@ async function run(job: Job, versionId: string, sourceId: string, append = false
 
   // このバージョン・このデータソース・この区分ぶんは入れ替え。前の中身は残さない
   // **ただし append のときは消さない。**同じ区分の2本目だから
-  const removed = append
-    ? { count: 0 }
-    : await prisma.statutoryCasLink.deleteMany({
-        where: { versionId, sourceId, statutorySubstanceId: { in: substances.map((s) => s.id) } },
-      });
-  await prisma.statutoryCasLink.createMany({
-    data: data.map((d) => ({ ...d, versionId, sourceId })),
-    skipDuplicates: true,
-  });
+  const removed =
+    append || dryRun
+      ? { count: 0 }
+      : await prisma.statutoryCasLink.deleteMany({
+          where: { versionId, sourceId, statutorySubstanceId: { in: substances.map((s) => s.id) } },
+        });
+  if (!dryRun) {
+    await prisma.statutoryCasLink.createMany({
+      data: data.map((d) => ({ ...d, versionId, sourceId })),
+      skipDuplicates: true,
+    });
+  }
 
   const linked = new Set(data.map((d) => d.statutorySubstanceId)).size;
   const cond = data.filter((d) => d.note !== null).length;
   console.log(
-    `${job.law} ${job.category}: ${removed.count} 件を消し ${data.length} 件を入れました` +
+    `${dryRun ? "（下見）" : ""}${job.law} ${job.category}（${job.tsv}）: ${removed.count} 件を消し ${data.length} 件を入れました` +
       (cond > 0 ? `（うち条件つき ${cond} 件）` : "") +
       `（法文物質名 ${linked}/${substances.length} 件に結び付き、` +
       `CASの形でない ${skippedShape} 件、番号が合わない ${missed.size} 種を飛ばしました）`,
   );
-  if (missed.size > 0 && missed.size <= 10) {
-    console.log(`  合わなかった番号: ${[...missed].join(", ")}`);
+  if (missed.size > 0 && (dryRun || missed.size <= 10)) {
+    console.log(`  合わなかった番号: ${[...missed].sort().join(", ")}`);
   }
 }
 
 async function main() {
-  const [versionArg, ...only] = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const dryRun = args.includes("--dry-run");
+  const keepLoadedAt = args.includes("--keep-loaded-at");
+  const [versionArg, ...only] = args.filter((a) => !a.startsWith("--"));
   const versionCode = versionArg ?? "2026Q3";
 
   const version = await prisma.linkSetVersion.findFirst({
@@ -666,16 +805,19 @@ async function main() {
   if (!source) throw new Error(`データソース種別 ${SOURCE_CODE} がありません`);
 
   const jobs = only.length > 0 ? JOBS.filter((j) => only.includes(j.category)) : JOBS;
-  console.log(`${version.code} × ${source.code} に取り込みます（${jobs.length} 区分）`);
+  console.log(
+    `${version.code} × ${source.code} に${dryRun ? "取り込む下見をします" : "取り込みます"}（${jobs.length} 区分）`,
+  );
   // **同じ区分に取り出しが2つあることがある**（毒劇法）。2本目からは消さずに足す
   const done = new Set<string>();
   for (const job of jobs) {
     const key = `${job.law}/${job.category}`;
-    await run(job, version.id, source.id, done.has(key));
+    await run(job, version.id, source.id, done.has(key), dryRun);
     done.add(key);
   }
 
-  // 取り込んだ日付を、そのデータソースの行に控える
+  // 取り込んだ日付を、そのデータソースの行に控える（下見と、一部の入れ直しのときは控えない）
+  if (dryRun || keepLoadedAt) return;
   await prisma.linkVersionSource.updateMany({
     where: { versionId: version.id, sourceId: source.id },
     data: { loadedAt: new Date() },

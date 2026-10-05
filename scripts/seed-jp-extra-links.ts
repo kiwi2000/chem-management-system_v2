@@ -159,18 +159,35 @@ async function main() {
   console.log(`  入れ先: ${version.code} × ${source.code}\n`);
 
   /** 物質マスタの日本語名から CAS を引く。オゾン層保護法の突き合わせに使う */
-  const master = await prisma.substance.findMany({
-    where: { deletedAt: null, casNormalized: { not: null } },
-    select: { casNumber: true, nameJa: true, nameEn: true },
-  });
-  const casOfName = new Map<string, string>();
-  const casOfEnName = new Map<string, string>();
+  /*
+    **CAS の形をした物質だけを使う**（2026-10-05）。CHRIP の CAS の無い物質（コード `CHRIP-…`）は
+    法文と同じ名前を持つので（「トリクロロトリフルオロエタン（別名ＣＦＣ－１１３）」）、拾うと本物の CAS に
+    たどり着けず、その号の行が1件も入らなかった（2026Q4 で CFC-113 の 9 件が抜けた）。
+    同じ名前の物質が複数あるので、CAS の順に並べてから先勝ちにする（取り込むたびに選ぶ物質が変わらないように）
+  */
+  const master = (
+    await prisma.substance.findMany({
+      where: { deletedAt: null, casNormalized: { not: null } },
+      select: { casNumber: true, nameJa: true, nameEn: true },
+    })
+  )
+    .filter((s) => s.casNumber && CAS_SHAPE.test(s.casNumber))
+    .sort((a, b) => (a.casNumber! < b.casNumber! ? -1 : a.casNumber! > b.casNumber! ? 1 : 0));
+  /*
+    **同じ名前の物質は全部集める**（2026-10-05）。物質マスタには同じ名前の物質がいくつもある
+    （「トリクロロペンタフルオロプロパン」は 1599-41-3・28109-69-5 など）。1つだけ選ぶと、
+    LOLI がほかの CAS で並べた行がその号に入らない（CFC-215 の 28109-69-5 が抜けていた）
+  */
+  const casOfName = new Map<string, string[]>();
+  const casOfEnName = new Map<string, string[]>();
+  const push = (m: Map<string, string[]>, k: string, v: string) =>
+    m.set(k, [...(m.get(k) ?? []), v]);
   for (const s of master) {
     if (!s.casNumber) continue;
     const ja = normName(s.nameJa ?? "");
-    if (ja && !casOfName.has(ja)) casOfName.set(ja, s.casNumber);
+    if (ja) push(casOfName, ja, s.casNumber);
     const en = normName(s.nameEn ?? "");
-    if (en && !casOfEnName.has(en)) casOfEnName.set(en, s.casNumber);
+    if (en) push(casOfEnName, en, s.casNumber);
   }
 
   let total = 0;
@@ -256,16 +273,18 @@ async function main() {
     const idOfNumber = new Map(subs.map((s) => [s.officialNumber ?? "", s.id] as const));
     const idOfCas = new Map<string, string>();
     for (const s of subs) {
-      const cas = casOfName.get(normName(s.nameJa ?? ""));
-      if (cas) idOfCas.set(normalizeCas(cas), s.id);
+      for (const cas of casOfName.get(normName(s.nameJa ?? "")) ?? []) {
+        const k = normalizeCas(cas);
+        if (!idOfCas.has(k)) idOfCas.set(k, s.id);
+      }
     }
     /*
       LOLI は親をCASではなく英語名で持つことがある（`Dichlorotetrafluoroethane`）。
       物質マスタの英語名から CAS に直して当てる
     */
     const idOfEnName = new Map<string, string>();
-    for (const [k, cas] of casOfEnName) {
-      const id = idOfCas.get(normalizeCas(cas));
+    for (const [k, list] of casOfEnName) {
+      const id = list.map((cas) => idOfCas.get(normalizeCas(cas))).find(Boolean);
       if (id) idOfEnName.set(k, id);
     }
 
@@ -296,7 +315,18 @@ async function main() {
       if (!owner) {
         owner = [key, ...list].map((c) => idOfCas.get(normalizeCas(c))).find(Boolean) ?? null;
       }
-      if (!owner) owner = idOfEnName.get(normName(label || key)) ?? null;
+      if (!owner) {
+        /*
+          英語名は単数・複数がそろっていない（LOLI `Dichlorotetrafluoroethane`、物質マスタ
+          `Dichlorotetrafluoroethanes`）。どちらでも引く（CFC-114 の 76-14-2・374-07-2 が 2026Q3 から抜けていた）
+        */
+        const en = normName(label || key);
+        owner =
+          idOfEnName.get(en) ??
+          idOfEnName.get(`${en}s`) ??
+          idOfEnName.get(en.replace(/s$/, "")) ??
+          null;
+      }
       // その項に物質が1つしかないときは号が無い。全部そこへ
       if (!owner && subs.length === 1) owner = subs[0].id;
       if (!owner) {

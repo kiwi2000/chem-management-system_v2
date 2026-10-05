@@ -115,13 +115,18 @@ fi
 
 # --- 毒劇法 -----------------------------------------------------------------
 # **鍵が2種類ある。**指定令（`Order Article 1-17`）と法の別表（`Law Table 1-1`）
+#
+# **区分（category）が空の行がある**（2026Q4 で 638-03-9 の 1 行。2026Q3 は Deleterious だった）。
+# 番号の頭が区分を表すので、空のときは番号で決める。指定令は第1条＝毒物・第2条＝劇物・第3条＝特定毒物、
+# 法別表は別表第1＝毒物・第2＝劇物・第3＝特定毒物（2026Q3・2026Q4 の全行でこの対応が成り立つことを確かめた）
+NOCAT="ISNULL(LTRIM(RTRIM($CAT)),'')=''"
 if want pdsca; then
   echo "毒劇法（指定令）"
-  dump loli-pdsca-tox   1015 "REPLACE($CODE,'Order Article ','')" "AND $CAT='Poisonous'   AND $CODE LIKE 'Order Article%'"
-  dump loli-pdsca-del   1015 "REPLACE($CODE,'Order Article ','')" "AND $CAT='Deleterious' AND $CODE LIKE 'Order Article%'"
+  dump loli-pdsca-tox   1015 "REPLACE($CODE,'Order Article ','')" "AND ($CAT='Poisonous'   OR ($NOCAT AND $CODE LIKE 'Order Article 1-%')) AND $CODE LIKE 'Order Article%'"
+  dump loli-pdsca-del   1015 "REPLACE($CODE,'Order Article ','')" "AND ($CAT='Deleterious' OR ($NOCAT AND $CODE LIKE 'Order Article 2-%')) AND $CODE LIKE 'Order Article%'"
   echo "毒劇法（法別表）"
-  dump loli-pdsca-tox-l 1015 "REPLACE($CODE,'Law Table ','')"     "AND $CAT='Poisonous'   AND $CODE LIKE 'Law Table%'"
-  dump loli-pdsca-del-l 1015 "REPLACE($CODE,'Law Table ','')"     "AND $CAT='Deleterious' AND $CODE LIKE 'Law Table%'"
+  dump loli-pdsca-tox-l 1015 "REPLACE($CODE,'Law Table ','')"     "AND ($CAT='Poisonous'   OR ($NOCAT AND $CODE LIKE 'Law Table 1-%')) AND $CODE LIKE 'Law Table%'"
+  dump loli-pdsca-del-l 1015 "REPLACE($CODE,'Law Table ','')"     "AND ($CAT='Deleterious' OR ($NOCAT AND $CODE LIKE 'Law Table 2-%')) AND $CODE LIKE 'Law Table%'"
 fi
 
 # --- 安衛法 -----------------------------------------------------------------
@@ -190,8 +195,18 @@ if want eu; then
   # （`18[a]` は項18の枝ではなく、項 `18a`（水銀）だった。第4章 4-2d）
   dump loli-eu-annex14 3614 "$ADD"
   dump loli-eu-annex17 2459 "$ADD"
-  # 認可候補（SVHC）は refno が EC番号。無い行は総称の親（CAS）で引く
-  dump loli-eu-svhc    3611 "COALESCE(NULLIF($REFNO,''), $PARENT)"
+  # 認可候補（SVHC）は refno が EC番号。無い行は総称の親（CAS）で引く。
+  # **鍵は「EC番号 || 親のCAS || LU:含まれる項目の名前」の3つを並べ、取り込む側で前から順に試す**（2026-10-05）。
+  #   - 2026Q4 で LOLI が refno に EC番号を入れる行を増やした（1522-92-5 → 622-370-8 など）。
+  #     こちらの番号は「EC番号、無ければCAS」なので、EC番号だけで引くと CAS で持っている物質が見つからない
+  #   - 項目に含まれる個々の物質（水和物・塩など）は refno が無いか自分の EC番号で、
+  #     どの項目かは listedunder（項目の名前）にしか無い（2026Q3 から 587 件が抜けていた）
+  #   - 注記「As <項目の名前> [RR-…]」にしか項目が書かれていない行もある。その名前を4つ目に並べる（AS:）
+  #   - 注記に項目の略称だけが書かれている行もある（64685-81-0「Reaction mass of DOTE and MOTE」）。5つ目（AS:）
+  # 名前にカンマが入るので、区切りは `||`
+  LU="r.value('(listedunder)[1]','varchar(1000)')"
+  ASNAME="CASE WHEN $QPOS > 5 THEN LTRIM(RTRIM(SUBSTRING($REM, 4, LEN($REM)-$QPOS-4))) END"
+  dump loli-eu-svhc    3611 "CONCAT(NULLIF(LTRIM(RTRIM($REFNO)),''), '||', $PARENT, '||', 'LU:' + NULLIF(LTRIM(RTRIM($LU)),''), '||', 'AS:' + NULLIF($ASNAME,''), '||', 'AS:' + NULLIF(LTRIM(RTRIM(r.value('(remark)[1]','varchar(1000)'))),''))"
   # **CLP 附属書VI だけ一覧に Index番号が無い。**物質側の別名の番号から引く
   dump_key loli-eu-clp6 Annex
 fi
