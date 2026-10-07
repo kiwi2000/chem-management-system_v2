@@ -619,7 +619,7 @@ export const ja = {
     rank: "優先度",
     note: "説明",
     loadedAt: "取込日",
-    linkCount: "リンク",
+    linkCount: "リンク数",
     empty: "データソースが登録されていません",
     add: "＋ データソース",
     addTitle: "データソースの新規登録",
