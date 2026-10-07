@@ -589,6 +589,7 @@ export const en: Messages = {
     version: "Version",
     source: "Type",
     priority: "Order",
+    rank: "Priority",
     note: "Description",
     loadedAt: "Imported",
     linkCount: "Links",

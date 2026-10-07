@@ -84,6 +84,20 @@ export function DataSourceSection({
   const columns = useMemo<TableColumn<LinkVersionSourceDto>[]>(
     () => [
       {
+        /*
+          優先度（2026-10-07 指示）。**表に並んだ順に上から 1, 2, … と振るだけ**で、ほかの列とは連動しない。
+          表は優先の順に並ぶ（取っ手で動かすと読み直す）ので、番号がそのまま判定で当てる順になる
+        */
+        key: "rank",
+        header: m.dataSources.rank,
+        kind: "number",
+        width: 84,
+        sortable: false,
+        filterable: false,
+        className: "text-center tabular-nums",
+        render: (r) => (items ?? []).findIndex((x) => x.id === r.id) + 1,
+      },
+      {
         key: "sourceCode",
         header: m.dataSources.source,
         kind: "text",
@@ -167,7 +181,7 @@ export function DataSourceSection({
     ],
     // toggleEnabled は毎回作られるが、中身は変わらないので手がかりに入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [m, locale, editingId, note, editable, saving],
+    [m, locale, editingId, note, editable, saving, items],
   );
 
   const { state, setState, ready } = useTableState(

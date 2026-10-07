@@ -615,6 +615,8 @@ export const ja = {
     version: "バージョン",
     source: "種別",
     priority: "優先",
+    /** 表の先頭の番号。上から 1, 2, …（2026-10-07） */
+    rank: "優先度",
     note: "説明",
     loadedAt: "取込日",
     linkCount: "リンク",
