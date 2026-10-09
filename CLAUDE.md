@@ -16,7 +16,7 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 
 | 層     | 採用                                                             | 注意                                                     |
 | ------ | ---------------------------------------------------------------- | -------------------------------------------------------- |
-| アプリ | Next.js 15 App Router / React 19 / TypeScript strict             | 画面とAPIを同一プロジェクトに置く                        |
+| アプリ | Next.js 16 App Router / React 19 / TypeScript strict             | 画面とAPIを同一プロジェクトに置く                        |
 | DB     | PostgreSQL 16（Docker）                                          | MySQL / SQL Server へ切替可能な書き方を保つ              |
 | ORM    | **Prisma 6 系に固定**                                            | 7系は datasource の書式が変わり動かない                  |
 | UI     | shadcn/ui（`base-nova` style）＋ `@base-ui/react` ＋ Tailwind v4 | `components/ui/*` は v1 から移植済み。CLI で再取得しない |
@@ -88,7 +88,7 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 2. **相対 import に `.js` 拡張子を付けない**。Next.js のモジュール解決が失敗する
 3. ルートの `.env` は `apps/web/next.config.mjs` の `loadRootEnv()` が読む（Next.js は `apps/web` 直下しか自動で読まない）
 4. `next.config.mjs` の `transpilePackages` に workspace パッケージを列挙する。追加時は忘れずに
-5. **dev サーバーを起動したまま `next build` しない**（`.next` を共有して `__webpack_modules__ is not a function` になる）。壊れたら dev を止めて `.next` を削除
+5. **dev サーバーと `next build` は同時に動かしてよい**（Next.js 16 から dev は `.next/dev` に書く。2026-10-09 確認）。15 までは `.next` を共有して壊れた。`prisma generate` は dev を止めてから
 6. Docker Desktop は他プロジェクトと共有。起動に失敗しても独断で触らない
 
 ## 6. コマンド

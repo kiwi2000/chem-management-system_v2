@@ -232,7 +232,7 @@ ssh -i ~/.ssh/chem-eval -o BatchMode=yes -o ConnectTimeout=10 Administrator@192.
 
 返ってきた `commit` が今回出した版と違えば、次の順で更新する（全部で 15 分ほど）。
 
-1. **開発サーバーを止める**（`next build` と `.next` を共有するため。動いたまま組むと壊れる）
+1. **開発サーバーは止めなくてよい**（Next.js 16 から dev は `.next/dev` に書き、インストールセットは別のフォルダで組む。2026-10-09 確認。開発サーバーは CHRIP の取り込みなどで動き続けている）
 2. **インストールセットを組む。** PowerShell ツールから流す（Bash ツールだと `\` が化けて始まらない）。
    10 分ほどかかるのでバックグラウンドで。記録は `out\build-install-set-N.log`（N は連番）
 
@@ -266,7 +266,7 @@ ssh -i ~/.ssh/chem-eval -o BatchMode=yes -o ConnectTimeout=10 Administrator@192.
    `/api/health` が `{"ok":true,"db":"up"}`。更新スクリプトの http 側の応答確認は起動直後だと
    タイムアウトすることがある（https 側が通っていれば、数秒待って確かめ直す）
 6. **記録を残す。** `docs/評価機更新記録_WindowsServer_<日付>.md` に届いた版・ログの要点・気づきを追記する
-   （git には入れない）。開発サーバーを起こし直す
+   （git には入れない）。
 
 評価機に届かなかったときは、その旨と「次に動いたときに更新が要る」ことを利用者への報告に入れる。
 
@@ -276,8 +276,7 @@ ssh -i ~/.ssh/chem-eval -o BatchMode=yes -o ConnectTimeout=10 Administrator@192.
   データの操作が要るときは、画面から実施してもらう
 - ローカルDBの検証データは、`scripts/seed-sample.ts` で入れ直せる
   （`--remove` で消える。`SB-` / `MT-` / `PR-` のコードだけを対象にする）
-- 開発サーバーが動いている間に `prisma generate` や `next build` を走らせると
-  `.next` が壊れる。先に止める
+- 開発サーバーが動いている間に `prisma generate` を走らせると、Prisma の部品が掴まれていて失敗する。先に止める
 - **本番のDBにはトンネルで繋げる。** `DATABASE_URL` は
   `postgres.railway.internal` なので直接は届かないが、次のコマンドで
   暗号化トンネルが開く（公開プロキシを有効にする必要はない）。

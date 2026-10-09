@@ -97,9 +97,10 @@ const CANDIDATES = ["data/ip-country.bin", "apps/web/data/ip-country.bin"];
 function readTable(): Buffer {
   const tried: string[] = [];
   for (const rel of CANDIDATES) {
-    const path = resolve(process.cwd(), rel);
+    // 動かすときに読む表なので、組み立て（Turbopack）には辿らせない（辿るとプロジェクト全体を読み込もうとする）
+    const path = resolve(/*turbopackIgnore: true*/ process.cwd(), rel);
     try {
-      return readFileSync(path);
+      return readFileSync(/*turbopackIgnore: true*/ path);
     } catch {
       tried.push(path);
     }
@@ -119,7 +120,7 @@ const LOOPBACK = "local";
  */
 export function countryOf(raw: string | null): string | null {
   if (!raw) return null;
-  // 並んでいるときは先頭が相手（middleware と同じ見かた）
+  // 並んでいるときは先頭が相手（proxy と同じ見かた）
   const ip = (raw.split(",")[0] ?? "").trim().toLowerCase();
   if (!ip) return null;
   if (ip === "::1" || ip === "127.0.0.1" || ip.startsWith("127.")) return LOOPBACK;

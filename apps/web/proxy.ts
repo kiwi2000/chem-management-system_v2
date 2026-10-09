@@ -7,7 +7,8 @@ import { NONCE_HEADER, PATH_HEADER } from "@/lib/routes";
  * 画面の保護。
  * ここでは Cookie の有無だけを見る軽量チェックに留める。
  * 実際のセッション検証（DB照合・期限・無効化）は各ページ／API の getSessionUser() が行う。
- * middleware は Node.js で動かしている（画面で決める接続元の制限を DB から読むため。2026-10-02）。
+ * Node.js で動く（画面で決める接続元の制限を DB から読むため。2026-10-02）。
+ * Next.js 16 で名前が middleware から proxy に変わった（2026-10-09）。
  * ここで DB に触れるのは、その決まりの読み取り（10 秒に 1 回）だけにする
  *
  * Cookie は残っているがセッションが無効、という状態があり得る
@@ -122,7 +123,7 @@ function shouldLog(ip: string | null): boolean {
   return true;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
   /*
@@ -172,8 +173,10 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // 画面で決める接続元の制限を DB から読むので Node.js で動かす（Next.js 15.5 から使える）
-  runtime: "nodejs",
+  /*
+    Node.js で動く（Next.js 16 の proxy は Node.js 固定で、指定できない。2026-10-09 に middleware から改名）。
+    画面で決める接続元の制限を DB から読むため、Node.js であることが要る
+  */
   /*
     静的な部品を除くすべて。**API も通す**（接続元の判定を効かせるため）。
     稼働確認だけは、外の監視から叩けるように外しておく。

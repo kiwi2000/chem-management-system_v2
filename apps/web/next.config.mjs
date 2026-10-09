@@ -33,10 +33,8 @@ const nextConfig = {
   */
   serverExternalPackages: ["exceljs", "jszip"],
 
-  // ESLint はリポジトリルートの eslint.config.mjs で `npm run lint` として実行する。
-  // next build 内蔵の lint はルート設定を検出できず警告を出すだけなので無効化する。
-  eslint: { ignoreDuringBuilds: true },
-
+  // ESLint はリポジトリルートの eslint.config.mjs で `npm run lint` として実行する
+  // （Next.js 16 で next build は lint をしなくなり、`eslint` の設定も廃止された）。
   // 開発時に画面の左下へ出る Next.js のボタンを消す。
   // 画面の見た目を確認するときに邪魔になるため（本番には元から出ない）。
   devIndicators: false,
@@ -45,16 +43,17 @@ const nextConfig = {
   poweredByHeader: false,
 
   /*
-    middleware を通る要求の本文は、既定で 10 MB で**黙って切られる**（Next.js の
-    middlewareClientMaxBodySize）。この middleware は API も通すので、添付ファイル（システム設定で
-    100 MB まで）や取り込みのファイルがそこで壊れる。設定の上限より広く取る（2026-09-28 に実際に起きた）
+    proxy（Next.js 15 までの middleware）を通る要求の本文は、既定で 10 MB で**黙って切られる**
+    （proxyClientMaxBodySize。15 までは middlewareClientMaxBodySize）。この proxy は API も通すので、
+    添付ファイル（システム設定で 100 MB まで）や取り込みのファイルがそこで壊れる。設定の上限より広く取る
+    （2026-09-28 に実際に起きた）。**名前が変わったら必ず追いかける**（古い名前のままだと 10 MB に戻る）
   */
-  experimental: { middlewareClientMaxBodySize: "128mb" },
+  experimental: { proxyClientMaxBodySize: "128mb" },
 
   /*
     どの応答にも付ける守りのヘッダ。
     中身の実行を縛る Content-Security-Policy だけは、要求ごとに違う印（nonce）を
-    埋める必要があるので middleware.ts の側で付ける。
+    埋める必要があるので proxy.ts の側で付ける。
   */
   async headers() {
     return [

@@ -34,7 +34,7 @@ const SYSTEM_THEME_SCRIPT = `try{if(matchMedia('(prefers-color-scheme: dark)').m
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const h = await headers();
-  // middleware が要求ごとに作る使い捨ての印。これが付いた script だけが実行できる
+  // proxy（入口）が要求ごとに作る使い捨ての印。これが付いた script だけが実行できる
   const nonce = h.get(NONCE_HEADER) ?? undefined;
 
   /*
