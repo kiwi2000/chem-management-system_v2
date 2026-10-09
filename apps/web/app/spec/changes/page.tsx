@@ -29,6 +29,12 @@ export default function ManualChangesPage() {
         <T>「フィードバック」</T>から書き残してください。直す判断の材料になります。
       </Note>
 
+      <Section title="2026-10-09　内部の基盤を新しくしました">
+        <Sub title="変わったところ">
+          <List items={["内部の基盤を新しくしました。画面と操作は変わりません"]} />
+        </Sub>
+      </Section>
+
       <Section title="2026-10-07　データソースの表に「優先度」の列を足し、法規制データ 2026Q4 に CHRIP を入れました">
         <Sub title="変わったところ">
           <List
