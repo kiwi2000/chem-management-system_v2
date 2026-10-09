@@ -1,4 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
+  // TypeScript 6 から @types/node を自動で読まなくなった（URLSearchParams などに要る）
+  "compilerOptions": { "types": ["node"] },
   "include": ["src/**/*.ts"]
 }
