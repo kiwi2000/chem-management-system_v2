@@ -3,7 +3,7 @@
 #   powershell -ExecutionPolicy Bypass -File <セット>\scripts\00-prereqs.ps1 -Installers <セット>\installers
 #
 # インストールセットの installers\ にある公式インストーラーを使う（インターネットは要らない）:
-#   node-*-x64.msi                  Node.js 22 LTS。PATH に通す
+#   node-*-x64.msi                  Node.js 24 LTS。PATH に通す
 #   vc_redist.x64.exe               Microsoft Visual C++ ランタイム（PostgreSQL の実行に要る）
 #   postgresql-16.*-windows-x64-binaries.zip  PostgreSQL 16 の公式バイナリ。展開して initdb・サービス登録（ポート 5432、サービス postgresql-x64-16）
 #   caddy_*_windows_amd64.zip       caddy.exe を C:\chem\caddy\ に置く

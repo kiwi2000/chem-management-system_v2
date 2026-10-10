@@ -930,7 +930,7 @@ docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
           <tr><td class="k">README.txt</td><td>最初に読むもの。順番が書いてあります</td></tr>
           <tr><td class="k">手順書.html</td><td>この手順書</td></tr>
           <tr><td class="k">app\</td><td>組み立て済みのアプリ。<b>お客さま側で組み立て（npm）は行いません</b></td></tr>
-          <tr><td class="k">installers\</td><td>Node.js 22 / PostgreSQL 16 / Caddy / NSSM の公式インストーラー</td></tr>
+          <tr><td class="k">installers\</td><td>Node.js 24 / PostgreSQL 16 / Caddy / NSSM の公式インストーラー</td></tr>
           <tr><td class="k">scripts\</td><td><code>install.ps1</code>（初回）、<code>update.ps1</code>（更新）、<code>check.ps1</code>（状態の確認）</td></tr>
           <tr><td class="k">SHA256SUMS.txt</td><td>ファイルが壊れていないかを照らし合わせるためのもの</td></tr>
         </tbody>
@@ -989,7 +989,7 @@ Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
             <table>
               <thead><tr><th>見出し</th><th>すること</th></tr></thead>
               <tbody>
-                <tr><td class="k">W1 前提ソフト</td><td>Node.js 22・PostgreSQL 16（ポート 5432、pgAdmin は入れません）・Caddy・NSSM を入れます。入っているものは飛ばします</td></tr>
+                <tr><td class="k">W1 前提ソフト</td><td>Node.js 24・PostgreSQL 16（ポート 5432、pgAdmin は入れません）・Caddy・NSSM を入れます。入っているものは飛ばします</td></tr>
                 <tr><td class="k">W2 データベース</td><td>業務用のユーザー <code>chem</code> とデータベース <code>chem</code> を <b>UTF-8</b> で作ります</td></tr>
                 <tr><td class="k">W3 アプリの配置</td><td><code>app\</code> を <code>C:\chem</code> に写し、<code>C:\chem\.env</code> を作ります</td></tr>
                 <tr><td class="k">W4 データベースの表</td><td>表を作ります（<code>prisma migrate deploy</code>）</td></tr>

@@ -1,7 +1,7 @@
 # 本番用イメージ（Next.jsアプリ＋PDF変換用LibreOffice同梱・Q-DOC4）
 # ビルド:   docker compose -f compose.prod.yml --env-file .env.prod build
 
-FROM node:22-slim
+FROM node:24-slim
 
 # 日本語フォント＋Prisma実行に必要なOpenSSL
 # Note: LibreOffice（Q-DOC4用）はまだ未実装のため、将来の実装時に追加
