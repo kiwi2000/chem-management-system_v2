@@ -2,7 +2,8 @@
 
 このファイルは「毎回必要な、変わらない事実」だけを置く（**200行未満を維持**）。
 確定した仕様は `docs/steps/SXX.md`、設計判断の理由は `docs/decisions/` に書く。ここに進捗ログを増やさない。
-資料はすべて `docs/` に置く。md・html から作った PDF・docx は**元のファイルと同じフォルダ**に置く（`docs/out/` は使わない）。
+資料はすべて `docs/` に置く。
+開発全体の共通事項は `dev/CLAUDE.md`、開発以外も含む共通事項は `~/.claude/CLAUDE.md` にある（2026-10-12 に共通分をそちらへ移した）。
 
 ## 1. これは何か
 
@@ -34,8 +35,6 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 ```
 
 - **承認前**は `prisma migrate reset` でマイグレーションを作り直してよい。**承認後は前進のみ**
-- 迷う細部は暫定実装して動かしてから決める。些細な判断は自分で決め、実装後に「勝手に決めた点」として報告する
-- **不具合や「おかしい」という指摘を受けたら、直す前に必ず確認する**（2026-10-03 指示）。原因と直し方（画面・動きがどう変わるか）を先に示し、了承を得てから直す
 
 **各ステップの完了条件（DoD）**: `npm run typecheck` / `npm run lint` / `npm test`（既存分も全部）/ `npm run build` / ブラウザ実操作での確認 / `docs/steps/SXX.md` / commit
 
@@ -54,7 +53,6 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
   - **システム設定** `/admin/settings` … 全員に効く。管理者のみ
 - **機密（非公開製品・非公開組成）はサーバー側で除外してから返す。** クライアントで隠すのは不可。TSV/ドキュメント出力にも同じマスキングを適用する
 - パスワードは Argon2id。セッションはトークン生値を httpOnly Cookie、DBには SHA-256 ハッシュのみ保存
-- `.env` は絶対にコミットしない
 
 ### データ
 
@@ -77,19 +75,15 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 
 ### 実装
 
-- 共通化は同じものを3回書いてから。早すぎる抽象化は作り直しのコストが大きい
-- 既存コードのスタイル（命名・コメント密度）に合わせる。コメントは日本語
 - **画面に出る文字列を直接書かない。** `packages/shared/src/i18n/ja.ts` にキーを足し、
   `en.ts` にも英語を入れる（入れ忘れはビルドで落ちる）。使い方は `docs/steps/S18_多言語UI基盤.md`
 
 ## 5. 環境（Windows 11 + WSL2）— 過去に詰まった点
 
-1. **`DATABASE_URL` のホストは `127.0.0.1`**。`localhost` は IPv6(`::1`) に解決され Docker 公開ポートに繋がらない
-2. **相対 import に `.js` 拡張子を付けない**。Next.js のモジュール解決が失敗する
-3. ルートの `.env` は `apps/web/next.config.mjs` の `loadRootEnv()` が読む（Next.js は `apps/web` 直下しか自動で読まない）
-4. `next.config.mjs` の `transpilePackages` に workspace パッケージを列挙する。追加時は忘れずに
-5. **dev サーバーと `next build` は同時に動かしてよい**（Next.js 16 から dev は `.next/dev` に書く。2026-10-09 確認）。15 までは `.next` を共有して壊れた。`prisma generate` は dev を止めてから
-6. Docker Desktop は他プロジェクトと共有。起動に失敗しても独断で触らない
+1. **相対 import に `.js` 拡張子を付けない**。Next.js のモジュール解決が失敗する
+2. ルートの `.env` は `apps/web/next.config.mjs` の `loadRootEnv()` が読む（Next.js は `apps/web` 直下しか自動で読まない）
+3. `next.config.mjs` の `transpilePackages` に workspace パッケージを列挙する。追加時は忘れずに
+4. **dev サーバーと `next build` は同時に動かしてよい**（Next.js 16 から dev は `.next/dev` に書く。2026-10-09 確認）。15 までは `.next` を共有して壊れた。`prisma generate` は dev を止めてから
 
 ## 6. コマンド
 
