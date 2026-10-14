@@ -141,6 +141,10 @@ export function ProductJudgements({
     today: string | null;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** インベントリごとの結論。組成を見られない人の表の下に出す（物質ごとの番号は届かない） */
+  const [inventories, setInventories] = useState<
+    { id: string; label: string; result: "allListed" | "review" }[]
+  >([]);
   /** いま根拠を書いている判定の行（id）。null なら誰も書いていない */
   const [editing, setEditing] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -201,8 +205,11 @@ export function ProductJudgements({
       judged?: boolean;
       judgedAsOf?: string | null;
       today?: string | null;
+      /** 組成を見られない人にだけ届く、インベントリごとの結論（2026-10-14） */
+      inventories?: { id: string; label: string; result: "allListed" | "review" }[];
     };
     setItems(body.items);
+    setInventories(body.inventories ?? []);
     setStamp({
       computedAt: body.computedAt,
       versionCode: body.versionCode,
@@ -956,6 +963,32 @@ export function ProductJudgements({
               </TableBody>
             </Table>
           </ResizableBox>
+        )}
+        {/*
+          組成を見られない人には、表の下にインベントリごとの結論を出す（2026-10-14 指示）。
+          最終組成の表のいちばん下と同じ「全て該当」「要確認」。物質ごとの番号は出さない
+        */}
+        {restricted && inventories.length > 0 && (
+          <table className="mt-4 border-collapse text-sm">
+            <thead>
+              <tr className="table-head-solid text-table-head-foreground">
+                <th className={cn(CELL, "text-left font-medium")}>{m.nav.inventories}</th>
+                <th className={cn(CELL, "text-left font-medium")}>{m.judgements.verdict}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inventories.map((i) => (
+                <tr key={i.id}>
+                  <td className={CELL}>{i.label}</td>
+                  <td className={cn(CELL, "font-medium", i.result === "review" && REVIEW_CLASS)}>
+                    {i.result === "allListed"
+                      ? m.composition.footAllListed
+                      : m.composition.footReview}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </CardContent>
     </Card>

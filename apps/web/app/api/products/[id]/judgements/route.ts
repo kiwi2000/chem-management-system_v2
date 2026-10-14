@@ -3,6 +3,7 @@ import { canViewComposition } from "@/lib/composition-service";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { inventoryConclusions } from "@/lib/inventory-conclusion";
 import { collapseToCategories } from "@/lib/judgement-collapse";
 import { toJudgementDtos } from "@/lib/judgement-service";
 import { dayOf, todayInJapan } from "@/lib/judgement-date";
@@ -92,6 +93,11 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   return Response.json({
     items,
+    /*
+      組成を見られない人には、インベントリごとの結論（全て該当／要確認）だけを添える（2026-10-14 指示）。
+      物質ごとの番号は送らない。組成を見られる人は、最終組成の表の右で番号まで見る
+    */
+    inventories: withComposition || !judged ? [] : await inventoryConclusions(id),
     computedAt,
     versionCode: current?.code ?? null,
     stale,

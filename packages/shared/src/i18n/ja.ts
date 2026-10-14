@@ -1190,7 +1190,7 @@ export const ja = {
     noneRelated: "この製品に入っている物質は、どの法規制の法文物質名にも関わりません（該当なし）。",
     summary: (hit: number, total: number) => `${total} 件中 ${hit} 件に該当`,
     /** 組成を見る権限の無い人の表。全体の件数（〜件中）は出さない（2026-10-14 指示） */
-    summaryHitOnly: (hit: number) => `${hit} 件に該当`,
+    summaryHitOnly: (hit: number) => `${hit} 件該当`,
     reviewCount: (n: number) => `要確認 ${n} 件`,
     empty: "まだ判定していません。組成を登録すると判定されます。",
     aggregated: "合算",
