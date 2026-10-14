@@ -22,6 +22,7 @@ import { DiffChip, SourceChips, type SourceInfo } from "@/components/source-chip
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { useColumnVisibility } from "@/lib/use-column-visibility";
+import { inventoryFoot, regulationFoot } from "@/lib/aggregate-footer";
 import { HIT_CLASS, NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
 import type {
   ApiError,
@@ -1380,12 +1381,18 @@ export function CompositionAggregateTable({
                               key={i.id}
                               className={cn(
                                 CELL,
-                                "font-mono text-xs",
-                                // 載っていない印は、規制の列と同じ見せかたにそろえる
-                                got.length === 0 && "text-center",
+                                /*
+                                  番号は、規制の列で区分まで分けたときの名前（法文物質名）と同じ字・大きさにする。
+                                  色だけ黒（2026-10-14 指示）。載っていない印は規制の列と同じ字・色・大きさ
+                                */
+                                got.length > 0 ? "text-left text-xs" : "text-center",
                               )}
                             >
-                              {got.length > 0 ? got.map((n) => n.number).join("、") : "—"}
+                              {got.length > 0 ? (
+                                got.map((n) => n.number).join("、")
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
                             </td>
                           );
                         })
@@ -1398,7 +1405,11 @@ export function CompositionAggregateTable({
                                 .filter((n) => inventories.some((i) => i.id === n.inventoryId))
                                 .map((n) => n.inventoryId),
                             );
-                            return ids.size > 0 ? ids.size.toLocaleString(locale) : "—";
+                            return ids.size > 0 ? (
+                              ids.size.toLocaleString(locale)
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            );
                           })()}
                         </td>
                       ) : null}
@@ -1537,12 +1548,54 @@ export function CompositionAggregateTable({
                       </>
                     );
                   })()}
-                  {leaves.map((c) => (
-                    <td key={c.key} className={CELL} />
-                  ))}
-                  {invCols.map((c) => (
-                    <td key={c.key} className={CELL} />
-                  ))}
+                  {/*
+                    製品全体で見た結論（2026-10-14 指示）。区分まで分けた列だけに出す。
+                    地域でまとめた列は、中身の違う区分を 1 つにまとめた結論になり意味を持たないので出さない
+                  */}
+                  {leaves.map((c) => {
+                    if (c.categoryId === null) return <td key={c.key} className={CELL} />;
+                    const foot = regulationFoot(data.rows, c.categoryIds, data.judged);
+                    return (
+                      <td
+                        key={c.key}
+                        className={cn(
+                          CELL,
+                          "text-center font-medium",
+                          foot === "review" && REVIEW_CLASS,
+                          foot === "notJudged" && "text-muted-foreground",
+                        )}
+                      >
+                        {
+                          {
+                            applicable: m.composition.footApplicable,
+                            review: m.composition.footReview,
+                            notApplicable: m.composition.footNotApplicable,
+                            notJudged: m.composition.footNotJudged,
+                          }[foot]
+                        }
+                      </td>
+                    );
+                  })}
+                  {/* インベントリも、列を分けているときだけ。全部の組成が載っているかを出す */}
+                  {invCols.map((c) => {
+                    const inventoryId = c.key.startsWith("inv:") ? c.key.slice(4) : "";
+                    if (!invOpen) return <td key={c.key} className={CELL} />;
+                    const foot = inventoryFoot(data.rows, inventoryId, data.incomplete);
+                    return (
+                      <td
+                        key={c.key}
+                        className={cn(
+                          CELL,
+                          "text-center font-medium",
+                          foot === "review" && REVIEW_CLASS,
+                        )}
+                      >
+                        {foot === "allListed"
+                          ? m.composition.footAllListed
+                          : m.composition.footReview}
+                      </td>
+                    );
+                  })}
                 </tr>
               </tfoot>
             )}

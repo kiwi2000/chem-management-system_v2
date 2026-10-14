@@ -1977,6 +1977,12 @@ export const ja = {
     dragHint: "つかんで上下に動かすと順番を変えられます（矢印キーでも動かせます）",
     fillHint: "ダブルクリックすると、合計が100%になる値が入ります",
     sumLabel: "合計",
+    /** 最終組成の表のいちばん下。製品全体で見た結論（2026-10-14） */
+    footApplicable: "該当",
+    footReview: "要確認",
+    footNotApplicable: "非該当",
+    footNotJudged: "未判定",
+    footAllListed: "全て該当",
     contentPct: "重量%",
     /** 重量%の列が2つ並ぶときの、それぞれの副題 */
     pctOfProduct: "製品全体",

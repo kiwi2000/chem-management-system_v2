@@ -923,6 +923,13 @@ export interface CompositionAggregateDto {
    * （インベントリの画面の「番号として出す」）。並びもそこで決めた順
    */
   inventories: { id: string; label: string; source: string; shown: boolean }[];
+  /** この製品を判定したことがあるか。表のいちばん下で「未判定」を出すのに使う */
+  judged: boolean;
+  /**
+   * 中身の分からない分があるか（開けなかった原材料・深さで打ち切った枝・合計が 100% に届かない）。
+   * 分からない分はインベントリの番号を引けないので、表のいちばん下を「要確認」にする
+   */
+  incomplete: boolean;
 }
 
 /** 言語。法規制の「原文の言語」で選ぶ */

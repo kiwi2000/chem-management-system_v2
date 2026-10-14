@@ -269,6 +269,9 @@ export async function aggregateComposition(
       sources: await currentSources(),
       previousVersion: (await previousVersion())?.code ?? null,
       inventories: await listInventoryColumns(),
+      // 根の組成が開けないときは行が無い。表は出ないが、形はそろえる
+      judged: false,
+      incomplete: true,
     };
   }
 
@@ -308,7 +311,7 @@ export async function aggregateComposition(
   */
   const judged = await prisma.productExpansion.findUnique({
     where: { productId: rootProductId },
-    select: { judgedAsOf: true },
+    select: { judgedAsOf: true, judgedAt: true },
   });
   const nearMiss = await nearMissByCas(rootProductId, casKeys, dayOf(judged?.judgedAsOf));
   // インベントリの番号（化審法番号・EC番号など）。物質の画面と同じ引きかた
@@ -367,5 +370,12 @@ export async function aggregateComposition(
     previousVersion: (await previousVersion())?.code ?? null,
     // 表の右に出すインベントリの列。行が無くても列は出す
     inventories: await listInventoryColumns(),
+    judged: judged?.judgedAt != null,
+    /*
+      合計は行ごとに丸めた値を足すので、100% ちょうどでも 1 行あたり最大 0.5 単位ずれる。
+      行の数ぶんの幅を見て、それでも届かないときだけ「分からない分がある」とする
+    */
+    incomplete:
+      blocked.length > 0 || truncated > 0 || total + BigInt(buckets.size) < ratioToFine(RATIO_ONE),
   };
 }
