@@ -416,8 +416,17 @@ export function ProductJudgements({
   const allCountriesOpen = countries.every((c) => openCountries.has(c.code));
   const allLawsOpen = lawKeys.every((k) => openLaws.has(k));
   /** 国・法律・区分がすべて開いているか（「開」を出さない条件）／どれも開いていないか（「閉」を出さない条件） */
-  const allJudgementOpen = allCountriesOpen && allLawsOpen && openable.every((id) => open.has(id));
-  const noneJudgementOpen = open.size === 0 && openCountries.size === 0 && openLaws.size === 0;
+  /*
+    組成を見られない人の表は、いちばん外側に「該当法規制」「インベントリ」のまとまりがある。
+    「すべて開く」「すべて閉じる」もそこまで含めて数える（2026-10-14 指示。足したときに抜けていた）
+  */
+  const groupsAllOpen = !restricted || (regGroupOpen && (inventories.length === 0 || invGroupOpen));
+  const groupsAllClosed =
+    !restricted || (!regGroupOpen && (inventories.length === 0 || !invGroupOpen));
+  const allJudgementOpen =
+    allCountriesOpen && allLawsOpen && openable.every((id) => open.has(id)) && groupsAllOpen;
+  const noneJudgementOpen =
+    open.size === 0 && openCountries.size === 0 && openLaws.size === 0 && groupsAllClosed;
 
   const toggle = (categoryId: string) => {
     const next = new Set(open);
@@ -486,6 +495,8 @@ export function ProductJudgements({
                       setOpenCountries(new Set(countries.map((c) => c.code)));
                       setOpenLaws(new Set(lawKeys));
                       setOpen(new Set(openable));
+                      setRegGroupOpen(true);
+                      setInvGroupOpen(true);
                     }}
                   >
                     <ChevronsUpDown className="mr-1 size-3.5" />
@@ -502,6 +513,8 @@ export function ProductJudgements({
                       setOpen(new Set());
                       setOpenLaws(new Set());
                       setOpenCountries(new Set());
+                      setRegGroupOpen(false);
+                      setInvGroupOpen(false);
                     }}
                   >
                     <ChevronsDownUp className="mr-1 size-3.5" />
