@@ -1141,6 +1141,7 @@ export const en: Messages = {
     noneRelated:
       "None of the substances in this product relate to any statutory substance (not applicable).",
     summary: (hit: number, total: number) => `${hit} of ${total} apply`,
+    summaryHitOnly: (hit: number) => `${hit} apply`,
     reviewCount: (n: number) => `${n} to check`,
     empty: "Not judged yet. Register a composition and it will be judged.",
     aggregated: "Summed",

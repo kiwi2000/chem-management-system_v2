@@ -3,6 +3,7 @@ import { canViewComposition } from "@/lib/composition-service";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { collapseToCategories } from "@/lib/judgement-collapse";
 import { toJudgementDtos } from "@/lib/judgement-service";
 import { dayOf, todayInJapan } from "@/lib/judgement-date";
 import { visibilityWhere } from "@/lib/product-service";
@@ -38,16 +39,26 @@ export async function GET(_req: Request, { params }: Ctx) {
     （前の版の結果を出すと、その版の結果のように読まれてしまう。実際に起きた）
   */
   const current = await getCurrentVersion();
-  const items = current
-    ? await toJudgementDtos(id, canViewComposition(actor, product), current.id)
-    : [];
+  const withComposition = canViewComposition(actor, product);
+  const rows = current ? await toJudgementDtos(id, withComposition, current.id) : [];
+  /*
+    組成を見られない人には、規制区分ごとの結論 1 つにまとめてから返す（2026-10-14 指示）。
+    法文物質名・番号など、物質を推し量れる情報はここで消す（画面で隠すだけにしない）
+  */
+  /*
+    非該当の区分も送らない（2026-10-14 指示「含有率不足による非該当は出さない」）。
+    含有率が足りずに外れたこと自体が、何かが入っている手がかりになる
+  */
+  const items = withComposition
+    ? rows
+    : collapseToCategories(rows).filter((j) => j.verdict === "APPLICABLE");
 
   /*
     **いつ・どの前提で出した判定か**を添える。
     法規制側のデータを変えても判定は自動でやり直されないので、
     計算日時より後に前提が変わっていれば「古い可能性がある」と画面で伝える
   */
-  const computedAt = items.reduce<string | null>(
+  const computedAt = rows.reduce<string | null>(
     (acc, j) => (acc === null || j.computedAt > acc ? j.computedAt : acc),
     null,
   );
@@ -60,14 +71,14 @@ export async function GET(_req: Request, { params }: Ctx) {
       ])
     : [null, false];
   const stale =
-    (items.length > 0 &&
+    (rows.length > 0 &&
       computedAt !== null &&
       changedAt !== null &&
       changedAt.toISOString() > computedAt) ||
     crossed;
   // この版の判定は無いが、別の版では判定してある（＝切り替えたまま判定し直していない）
   const judgedElsewhere =
-    items.length === 0 &&
+    rows.length === 0 &&
     (await prisma.productJudgement.findFirst({
       where: { productId: id },
       select: { id: true },

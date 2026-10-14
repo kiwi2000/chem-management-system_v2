@@ -87,6 +87,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <ProductJudgements
               productId={item.id}
               canEdit={canEditComposition(actor, item)}
+              canViewComposition={canViewComposition(actor, item)}
               version={linkVersion?.code ?? null}
             />
             {/*

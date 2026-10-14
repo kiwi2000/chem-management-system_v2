@@ -95,13 +95,28 @@ const HEADS: { key: string; width: number; label: (m: M) => string; className?: 
  */
 const ACTION_COLUMN = { key: "actions", width: 224 };
 
+/**
+ * 組成を見る権限の無い人の表の列（2026-10-14 指示）。
+ * 番号・法文物質名と、重量% から右の列は出さない。規制区分の右に、区分ごとの結論を 1 つ出す
+ */
+const RESTRICTED_HEADS: typeof HEADS = [
+  ...HEADS.slice(0, 4),
+  { key: "result", width: 96, label: (m) => m.judgements.verdict },
+];
+
 export function ProductJudgements({
   productId,
   canEdit,
+  canViewComposition,
   version,
 }: {
   productId: string;
   canEdit: boolean;
+  /**
+   * 組成を見られるか。見られない人には、サーバーが規制区分ごとの結論 1 つにまとめた判定を返す。
+   * 画面もそれに合わせて、規制区分と結論だけの表にする
+   */
+  canViewComposition: boolean;
   /**
    * この判定に使った法規制のバージョン。
    * **どのバージョンで出した結果かが分からないと、印刷して人に渡せない。**
@@ -155,10 +170,12 @@ export function ProductJudgements({
     bindJudgementControls(productId);
   }, [productId]);
   // 列幅は一覧と同じ規則。操作の列は、出るときだけ幅を数に入れる
+  const restricted = !canViewComposition;
+  const heads = restricted ? RESTRICTED_HEADS : HEADS;
   const cols = useResizableColumns(
-    // 末尾の版を上げると、覚えている列幅を捨てて既定から始め直す
-    "chem.table.productJudgements.v5",
-    [...HEADS, ...(canEdit ? [ACTION_COLUMN] : [])],
+    // 末尾の版を上げると、覚えている列幅を捨てて既定から始め直す。列の違う表は別に覚える
+    restricted ? "chem.table.productJudgements.restricted.v1" : "chem.table.productJudgements.v5",
+    [...heads, ...(canEdit ? [ACTION_COLUMN] : [])],
     // 幅を詰めない。詰めると製品ごと・画面幅ごとに列の位置が動いて見比べられない
     { shrinkToFit: false, rowLabel: m.table.resizeRows },
   );
@@ -369,7 +386,9 @@ export function ProductJudgements({
   const categoryTotals = tally((j) => j.categoryId);
   const summaryText = (t: Totals | undefined) =>
     [
-      m.judgements.summary(t?.applicable ?? 0, t?.total ?? 0),
+      restricted
+        ? m.judgements.summaryHitOnly(t?.applicable ?? 0)
+        : m.judgements.summary(t?.applicable ?? 0, t?.total ?? 0),
       t && t.review > 0 ? m.judgements.reviewCount(t.review) : null,
     ]
       .filter(Boolean)
@@ -472,7 +491,9 @@ export function ProductJudgements({
               </div>
             )}
             <span className="text-muted-foreground">
-              {m.judgements.summary(applicable.length, items.length)}
+              {restricted
+                ? m.judgements.summaryHitOnly(applicable.length)
+                : m.judgements.summary(applicable.length, items.length)}
             </span>
             {/* 上の合算表の「? 要確認」と同じ見た目（赤字・印・件数。2026-09-22 指示） */}
             {review.length > 0 && (
@@ -499,24 +520,32 @@ export function ProductJudgements({
             非該当も出す切り替え。組成の表の「含有率不足による非該当」と同じ見せ方:
             押しているときは字と印を橙の太字にし、件数はボタンの外に出す（押しても増えないことがある）
           */}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              aria-pressed={showNotApplicable}
-              title={m.judgements.notApplicableHint}
-              onClick={() => setShowNotApplicable((v) => !v)}
-              className={cn(
-                showNotApplicable &&
-                  cn(NEAR_MISS_CLASS, "hover:text-orange-600 dark:hover:text-orange-400 font-bold"),
-              )}
-            >
-              <TriangleAlert className="mr-1 size-3.5" />
-              {m.judgements.notApplicableShow}
-            </Button>
-            <span className="text-muted-foreground text-sm">
-              {m.judgements.notApplicableCount(items.length - applicable.length)}
-            </span>
+            {/* 組成を見られない人には出さない（2026-10-14 指示。非該当の区分はサーバーが送ってこない） */}
+            {!restricted && (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-pressed={showNotApplicable}
+                  title={m.judgements.notApplicableHint}
+                  onClick={() => setShowNotApplicable((v) => !v)}
+                  className={cn(
+                    showNotApplicable &&
+                      cn(
+                        NEAR_MISS_CLASS,
+                        "hover:text-orange-600 dark:hover:text-orange-400 font-bold",
+                      ),
+                  )}
+                >
+                  <TriangleAlert className="mr-1 size-3.5" />
+                  {m.judgements.notApplicableShow}
+                </Button>
+                <span className="text-muted-foreground text-sm">
+                  {m.judgements.notApplicableCount(items.length - applicable.length)}
+                </span>
+              </>
+            )}
           </div>
         </WhenCardOpen>
       </CardHeader>
@@ -583,7 +612,7 @@ export function ProductJudgements({
               >
                 {/* 色と枠線は組成の表にそろえる。並べて見るので、別物に見えると困る */}
                 <TableRow className="hover:bg-transparent [&>th]:border-t">
-                  {HEADS.map(({ key, label, className }, i) => (
+                  {heads.map(({ key, label, className }, i) => (
                     <TableHead key={key} className={cn(CELL, "relative h-auto", className)}>
                       {/* 行の高さのつまみは、いちばん左の見出しに1つだけ */}
                       {i === 0 && cols.rowHandle()}
@@ -643,7 +672,7 @@ export function ProductJudgements({
                         </TableCell>
                         <TableCell
                           className={cn(CELL, "text-muted-foreground align-top text-xs")}
-                          colSpan={HEADS.length - 2 + (canEdit ? 1 : 0)}
+                          colSpan={heads.length - 2 + (canEdit ? 1 : 0)}
                         >
                           {summaryText(t)}
                         </TableCell>
@@ -679,13 +708,49 @@ export function ProductJudgements({
                                 </TableCell>
                                 <TableCell
                                   className={cn(CELL, "text-muted-foreground align-top text-xs")}
-                                  colSpan={HEADS.length - 3 + (canEdit ? 1 : 0)}
+                                  colSpan={heads.length - 3 + (canEdit ? 1 : 0)}
                                 >
                                   {summaryText(lawTotals.get(l.key))}
                                 </TableCell>
                               </TableRow>
                               {lawOpen &&
                                 l.categories.map((g) => {
+                                  /*
+                                    組成を見る権限の無い人の表（2026-10-14 指示）。規制区分の名前と結論だけ。
+                                    行はサーバーが区分ごとに 1 つにまとめてある（法文物質名などは届かない）
+                                  */
+                                  if (restricted) {
+                                    const one = g.items[0]!;
+                                    const ce = categoryEffective(g);
+                                    return (
+                                      <TableRow key={g.categoryId}>
+                                        <TableCell className={cn(CELL, "align-top")}>
+                                          <OneLine
+                                            text={g.label}
+                                            dimmed={one.effective !== "IN_FORCE"}
+                                          />
+                                          {ce && (
+                                            <Badge variant="outline" className="mt-1">
+                                              {effectiveLabel(m, ce)}
+                                            </Badge>
+                                          )}
+                                        </TableCell>
+                                        <TableCell
+                                          className={cn(
+                                            CELL,
+                                            "align-top font-medium",
+                                            one.needsReview && REVIEW_CLASS,
+                                          )}
+                                        >
+                                          {one.needsReview
+                                            ? m.judgements.needsReview
+                                            : one.verdict === "APPLICABLE"
+                                              ? m.judgements.applicable
+                                              : m.judgements.notApplicable}
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  }
                                   const opened = open.has(g.categoryId);
                                   const many = childrenOf(g) > 0;
                                   /*
