@@ -8,6 +8,10 @@
  * `--known-only` … 物質マスタに既にある物質（CAS・独自コード）の詳細だけを読む。**物質は新しく作らない。**
  * 詳細を取っている途中で、システムにある物質のぶんだけ先に入れるときに使う（2026-10-04）
  *
+ * `--links-only` … 全部の詳細を読んでリンクは全部入れるが、**物質は新しく作らない。**
+ * 物質マスタに無い CAS のリンクも入る（組成にその CAS の物質が登録されたとき、すぐ判定に効く）。
+ * 2026Q4 の全件が取れ終わったあと、システムに無い物質のぶんを足すのに使った（2026-10-14）
+ *
  * 入れるもの
  *   1. **物質マスタ** … そのCASが無ければ作る（コードは CAS-<CAS番号>）
  *   2. **CASリンク** … バージョン 2026Q3・データソース CHRIP で、法文物質名に結び付ける
@@ -69,6 +73,7 @@ const LAW_OF: Record<string, string> = {
 async function main() {
   const write = process.argv.includes("--write");
   const knownOnly = process.argv.includes("--known-only");
+  const linksOnly = process.argv.includes("--links-only");
   /** --known-only のとき、物質マスタにある鍵（cas_normalized） */
   const master = knownOnly
     ? new Set(
@@ -266,8 +271,12 @@ async function main() {
     return;
   }
 
-  // 1. 物質マスタ
-  if (newCas.length) {
+  // 1. 物質マスタ（--links-only のときは作らない）
+  if (linksOnly) {
+    console.log(
+      `物質は作らない（--links-only）: 物質マスタに無い ${newCas.length.toLocaleString()} 件`,
+    );
+  } else if (newCas.length) {
     await prisma.substance.createMany({
       data: newCas.map((cas) => {
         const w = wantSubstance.get(cas)!;
