@@ -10,11 +10,12 @@ import { listInventoryColumns, listNumbersByCas } from "@/lib/substance-numbers"
  *
  * 組成は、判定に使った展開（`ProductExpansion`）をもとにする。判定結果と同じ時点の中身で、
  * 見ている人の権限で原材料が開けないことにも左右されない（返すのは結論だけ）。
- * インベントリは、最終組成の表で最初から出ているもの（「番号として出す」と決めたもの）だけ
+ * インベントリは全部返し、最終組成の表で最初から出ているもの（「番号として出す」と決めたもの）に
+ * `shown` を立てる。画面の「全てのインベントリを表示」で切り替える（2026-10-14 指示）
  */
 export async function inventoryConclusions(
   productId: string,
-): Promise<{ id: string; label: string; result: InventoryFoot }[]> {
+): Promise<{ id: string; label: string; result: InventoryFoot; shown: boolean }[]> {
   const expansion = await prisma.productExpansion.findUnique({
     where: { productId },
     select: {
@@ -25,7 +26,7 @@ export async function inventoryConclusions(
   });
   if (!expansion) return [];
 
-  const inventories = (await listInventoryColumns()).filter((i) => i.shown);
+  const inventories = await listInventoryColumns();
   if (inventories.length === 0) return [];
 
   const numbers = await listNumbersByCas(
@@ -42,5 +43,6 @@ export async function inventoryConclusions(
     id: i.id,
     label: i.label,
     result: inventoryFoot(rows, i.id, incomplete),
+    shown: i.shown,
   }));
 }
