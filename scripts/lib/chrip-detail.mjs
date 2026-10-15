@@ -60,10 +60,19 @@ const KEYS = [
   "カテゴリ",
   "化学物質名称",
   "対象となる範囲（％）",
+  // 中国（危険化学品目録）は「番号」「品名」（2026-10-15 に足した。それまでは読めておらず 15 件しか結べていなかった）
+  "番号",
+  "品名",
 ];
 
 /** 呼び方の違いを1つに寄せる。使う側が場合分けしなくて済むように */
 const SAME_AS = { 法律又は政令番号: "政令番号", 法律又は政令名称: "政令名称" };
+
+/**
+ * 中国の箱の中だけで使う読み替え。「番号」「品名」はありふれた語なので、
+ * ほかの情報源では読まない（ほかの箱で拾うと、記載の切り分けを狂わせる）
+ */
+const CN_ONLY = { 番号: "政令番号", 品名: "政令名称" };
 
 export function parseDetail(html) {
   const ls = lines(html);
@@ -85,10 +94,12 @@ export function parseDetail(html) {
       continue;
     }
     if (source && KEYS.includes(l)) {
+      const china = source.startsWith("中国");
+      if (l in CN_ONLY && !china) continue;
       const v = ls[i + 1];
       // 次が項目名なら、その項目は空
       if (!v || KEYS.includes(v) || SOURCE_HEAD.test(v)) continue;
-      const key = SAME_AS[l] ?? l;
+      const key = (china ? CN_ONLY[l] : undefined) ?? SAME_AS[l] ?? l;
       // 同じ項目名がもう一度出た＝次の記載が始まった
       if (!current || key in current.fields) {
         current = { source, fields: {} };

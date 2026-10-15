@@ -68,7 +68,24 @@ const LAW_OF: Record<string, string> = {
   "TSCA：化学物質及び混合物の優先度付け、リスク評価並びに規制": "US-TSCA",
   "中国：危険化学品目録（２０１５版）": "CN-HAZCHEM",
   // 韓国は項目名が違う（政令番号ではなくNIER番号）。scripts/seed-chrip-korea.ts が入れる
+  // 以下 2026-10-15 に足した（手順書 4b-6「まだ入れていないが、入れられるもの」）
+  特定物質等の規制等によるオゾン層の保護に関する法律: "JP-OZONE",
+  "安衛法：鉛等／四アルキル鉛等": "JP-ISHA:LEAD",
+  "安衛法：皮膚等障害化学物質等及び特別規則に基づく不浸透性の保護具等の使用義務物質":
+    "JP-ISHA:SKIN",
+  "安衛法：がん原性物質（安衛則）（作業記録等の３０年保存対象物質）": "JP-ISHA:CARC30",
 };
+
+/**
+ * **区分を決め打ちする情報源**（`法律:区分`）。法律の中のどの区分にも同じ名前が出うるので、
+ * 法律で引くと別の区分（表示対象物質など）に当たってしまう。
+ * 皮膚等障害とがん原性物質は、厚労省の対応表から作った法文物質名の番号欄に CAS 番号が入っている
+ * （第8章）。CHRIP にはどちらも政令番号が無いので、**そのページの CAS 番号で、その区分の中だけを引く**
+ */
+const BY_PAGE_CAS = new Set(["JP-ISHA:SKIN", "JP-ISHA:CARC30"]);
+
+/** 法文物質名の「（別名…）」を外した名前。オゾン層保護法は法文物質名に別名を添えて持っている */
+const withoutAlias = (s: string) => s.replace(/[（(]別名[^）)]*[）)]/g, "");
 
 async function main() {
   const write = process.argv.includes("--write");
@@ -107,19 +124,37 @@ async function main() {
       officialNumber: true,
       nameJa: true,
       nameOriginal: true,
-      regulationClass: { select: { category: { select: { law: { select: { code: true } } } } } },
+      regulationClass: {
+        select: { category: { select: { code: true, law: { select: { code: true } } } } },
+      },
     },
   });
   const byNum = new Map<string, string[]>();
   const byName = new Map<string, string[]>();
-  const push = (m: Map<string, string[]>, k: string, v: string) =>
-    m.set(k, [...(m.get(k) ?? []), v]);
+  const push = (m: Map<string, string[]>, k: string, v: string) => {
+    const cur = m.get(k) ?? [];
+    if (!cur.includes(v)) m.set(k, [...cur, v]);
+  };
   for (const s of subs) {
     const law = s.regulationClass.category.law.code;
+    // 法律で引く鍵と、区分を決め打ちした情報源のための「法律:区分」で引く鍵の両方を作る
+    const keys = [law, `${law}:${s.regulationClass.category.code}`];
     const n = normalizeNumber(s.officialNumber);
-    if (n) push(byNum, `${law}|${n}`, s.id);
-    const nm = normalizeName(s.nameJa ?? s.nameOriginal);
-    if (nm) push(byName, `${law}|${nm}`, s.id);
+    const raw = s.nameJa ?? s.nameOriginal;
+    const nm = normalizeName(raw);
+    const plain = normalizeName(withoutAlias(raw));
+    for (const k of keys) {
+      if (n) push(byNum, `${k}|${n}`, s.id);
+      if (nm) push(byName, `${k}|${nm}`, s.id);
+      if (plain && plain !== nm) push(byName, `${k}|${plain}`, s.id);
+    }
+  }
+  /** 番号欄に CAS 番号を持つ区分（BY_PAGE_CAS）を、その CAS で引く */
+  const byCas = new Map<string, string[]>();
+  for (const s of subs) {
+    const k = `${s.regulationClass.category.law.code}:${s.regulationClass.category.code}`;
+    if (BY_PAGE_CAS.has(k) && s.officialNumber && looksLikeCas(normalizeCas(s.officialNumber)))
+      push(byCas, `${k}|${normalizeCas(s.officialNumber)}`, s.id);
   }
 
   /** 出したい形: 法文物質名 × CAS */
@@ -196,6 +231,23 @@ async function main() {
         continue;
       }
       tally.entries++;
+      // 区分を決め打ちし、そのページの CAS 番号で引く情報源（皮膚等障害・がん原性物質）
+      if (BY_PAGE_CAS.has(law)) {
+        const ids = hasCas ? byCas.get(`${law}|${casNormalized}`) : undefined;
+        if (ids?.length) {
+          tally.byNum++;
+          for (const id of ids)
+            links.set(`${id}|${casNormalized}`, {
+              statutorySubstanceId: id,
+              casNumber,
+              casNormalized,
+            });
+        } else {
+          tally.noHit++;
+          misses.push(`${law}\t(CAS)\t${(e.fields["政令名称"] ?? "").slice(0, 40)}\t${casNumber}`);
+        }
+        continue;
+      }
       const num = normalizeNumber(e.fields["政令番号"]);
       const nm = normalizeName(e.fields["政令名称"]);
       let ids = num ? byNum.get(`${law}|${num}`) : undefined;

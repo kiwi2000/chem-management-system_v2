@@ -23,6 +23,12 @@
  *
  * 同じ号を CHRIP は `1`・`97-1-119(1)`、LOLI は `001`・`97-1-119 (1)` と書く。
  * 桁と空白をそろえて見比べ、同じ号なら既にある法文物質名を使う（`numberKey`）。
+ *
+ * ## 入れる版と、物質マスタに無い CAS（2026-10-15）
+ *
+ * 引数に `2026Q4` のように版を書けばその版へ入れる（省くと現在のバージョン）。
+ * `--links-only` を付けると、物質マスタに無い CAS にもリンクを付ける（物質は作らない）。
+ * `chrip-import.ts --links-only` と同じ考え方で、2026Q4 は物質を作らずにリンクだけ入れたため
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -127,12 +133,18 @@ async function main() {
   const write = process.argv.includes("--write");
   console.log(write ? "書き込みます" : "下見（--write で書き込み）");
 
+  const versionArg = process.argv.slice(2).find((a) => /^\d{4}Q\d$/i.test(a));
+  const linksOnly = process.argv.includes("--links-only");
   const data = JSON.parse(
     readFileSync(join(process.cwd(), "scripts/data/chrip-korea.json"), "utf-8"),
   ) as { items: Item[] };
 
   const [version, source, country] = await Promise.all([
-    prisma.linkSetVersion.findFirst({ where: { isCurrent: true, deletedAt: null } }),
+    prisma.linkSetVersion.findFirst({
+      where: versionArg
+        ? { code: versionArg.toUpperCase(), deletedAt: null }
+        : { isCurrent: true, deletedAt: null },
+    }),
     prisma.source.findFirst({
       where: { codeNormalized: normalizeCode(SOURCE_CODE), deletedAt: null },
       select: { id: true },
@@ -260,7 +272,7 @@ async function main() {
       let links = 0;
       for (const [i, item] of items.entries()) {
         const usable = [...new Set(item.cas.filter((c) => CAS_SHAPE.test(c)))];
-        const linkable = usable.filter((c) => known.has(normalizeCas(c)));
+        const linkable = linksOnly ? usable : usable.filter((c) => known.has(normalizeCas(c)));
         tally.noMaster += usable.length - linkable.length;
         if (!write || !classId) {
           links += linkable.length;

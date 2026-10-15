@@ -80,4 +80,15 @@ describe("parseDetail", () => {
     expect(d.entries[0].fields["政令番号"]).toBeUndefined();
     expect(d.entries[0].fields["政令名称"]).toBe("鉛及びその化合物");
   });
+
+  it("中国の「番号」「品名」を政令番号・政令名称として読む（ほかの情報源では読まない）", () => {
+    const d = parseDetail(
+      page(`<h3>中国：危険化学品目録（２０１５版）</h3><dl>
+        <dt>番号</dt><dd>822</dd><dt>品名</dt><dd>クロム酸鉛</dd></dl>
+        <h3>大気汚染防止法</h3><dl>
+        <dt>番号</dt><dd>99</dd><dt>政令名称</dt><dd>鉛及びその化合物</dd></dl>`),
+    );
+    expect(d.entries[0].fields).toEqual({ 政令番号: "822", 政令名称: "クロム酸鉛" });
+    expect(d.entries[1].fields).toEqual({ 政令名称: "鉛及びその化合物" });
+  });
 });

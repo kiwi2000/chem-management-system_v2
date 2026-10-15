@@ -19,6 +19,9 @@
  * （アトラジン 2A、Volume 140 In prep.）で並べているので、グループをまたいで刊行済みの評価
  * （アトラジン 3）の法文物質名へ結ぶ。刊行済みの評価が無いもの（アラクロールなど）は結ばない。
  * 出典データの文章は CHRIP に書いてあるとおり残す。
+ *
+ * `--links-only`（2026-10-15）… 物質マスタに無い CAS にもリンクを付ける（物質は作らない）。
+ * 2026Q4 は物質を作らずにリンクだけ入れたので、物質マスタで絞ると大半が落ちる
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -77,6 +80,7 @@ function volumeNumber(volume: string): string | null {
 
 async function main() {
   const write = process.argv.includes("--write");
+  const linksOnly = process.argv.includes("--links-only");
   console.log(write ? "書き込みます" : "下見（--write で書き込み）");
 
   const versionArg = process.argv.slice(2).find((a) => /^\d{4}Q\d$/i.test(a));
@@ -178,10 +182,9 @@ async function main() {
     let notInMaster = 0;
     let count = 0;
     for (const [agent, rs] of byAgent) {
-      const usable = rs.filter((r) => CAS_SHAPE.test(r.cas) && master.has(normalizeCas(r.cas)));
-      notInMaster += rs.filter(
-        (r) => CAS_SHAPE.test(r.cas) && !master.has(normalizeCas(r.cas)),
-      ).length;
+      const inMaster = (r: { cas: string }) => linksOnly || master.has(normalizeCas(r.cas));
+      const usable = rs.filter((r) => CAS_SHAPE.test(r.cas) && inMaster(r));
+      notInMaster += rs.filter((r) => CAS_SHAPE.test(r.cas) && !inMaster(r)).length;
       if (usable.length === 0) continue;
 
       const ownCas = usable.length === 1 ? (usable[0]?.cas ?? null) : null;
