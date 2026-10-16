@@ -11,7 +11,11 @@ import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { VersionSourcePicker, type VersionSource } from "@/components/version-source-picker";
+import {
+  pickedSourceOf,
+  VersionSourcePicker,
+  type VersionSource,
+} from "@/components/version-source-picker";
 import type { ApiError, InventoryDto, InventoryRowDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
@@ -30,6 +34,9 @@ const EMPTY: Draft = { sourceId: "", casNumber: "", value: "" };
 
 const CELL_INPUT = "h-7 w-full text-sm";
 
+/** 「同じ CAS を 1 行にまとめる」を端末に覚える（2026-10-17） */
+const GROUP_KEY = "chem.inventoryRows.group";
+
 /**
  * インベントリの該当物質（CASと番号の対応）。
  *
@@ -38,6 +45,10 @@ const CELL_INPUT = "h-7 w-full text-sm";
  *
  * 同じCASが複数のデータソースから来ていることがある。どれが採られるかは
  * バージョンごとの優先度で決まるので、「採用」の欄でそれを見せる。
+ *
+ * データソースの選択肢は「採用」（使われている値）・「すべて」（全部のデータソース）・1 つずつ（2026-10-17）。
+ * 「同じ CAS を 1 行にまとめる」で、同じ CAS × データソースの値を「(1)-123, (2)-345」と並べられる。
+ * まとめているあいだは、行が 1 つの値ではなくなるので直せない・消せない
  */
 export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
   const { m, locale } = useI18n();
@@ -56,6 +67,26 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  /** 同じ CAS × データソースを 1 行にまとめるか。既定はまとめる（見るときはこのほうが読みやすい） */
+  const [group, setGroup] = useState(true);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(GROUP_KEY);
+      if (saved !== null) setGroup(saved === "1");
+    } catch {
+      /* 端末の保存領域が使えないときは既定のまま */
+    }
+  }, []);
+  const chooseGroup = (v: boolean) => {
+    setGroup(v);
+    try {
+      localStorage.setItem(GROUP_KEY, v ? "1" : "0");
+    } catch {
+      /* 覚えられなくても動く */
+    }
+  };
+  // まとめているあいだは直さない（1 行が 1 つの値ではない）
+  const canEditRows = editable && !group;
 
   const columns = useMemo<TableColumn<InventoryRowDto>[]>(() => {
     const editing = (r: InventoryRowDto) => r.id === editingId;
@@ -97,6 +128,15 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
           ) : (
             r.value
           ),
+      },
+      {
+        // どのデータソースの行か（2026-10-17）。「すべて」で見ているときは、同じ CAS が並ぶ
+        key: "sourceCode",
+        header: m.inventories.source,
+        kind: "text",
+        width: 110,
+        className: "font-mono text-xs",
+        render: (r) => r.sourceCode,
       },
       {
         key: "used",
@@ -163,6 +203,7 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
     const params = new URLSearchParams(query);
     params.set("versionId", picked.versionId);
     if (picked.sourceId) params.set("sourceId", picked.sourceId);
+    if (group) params.set("group", "1");
     const res = await fetch(`/api/inventories/${inventoryId}/rows?${params.toString()}`);
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
@@ -172,7 +213,7 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
       return;
     }
     setData((await res.json()) as ListResponse<InventoryRowDto>);
-  }, [inventoryId, query, m, picked]);
+  }, [inventoryId, query, m, picked, group]);
 
   useEffect(() => {
     if (ready) void load();
@@ -190,7 +231,7 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
     setError(null);
     setWarnings([]);
     // 入る先は、いま選んでいるバージョンとデータソース
-    const d: Draft = { ...EMPTY, sourceId: picked?.sourceId ?? "" };
+    const d: Draft = { ...EMPTY, sourceId: pickedSourceOf(picked) ?? "" };
     setDraft(d);
     setOriginal(d);
     setEditingId(NEW_ID);
@@ -226,8 +267,8 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
           method: creating ? "POST" : "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            // データソースは表の上で選んだもの。行ごとには持たせない
-            sourceId: picked?.sourceId ?? draft.sourceId,
+            // データソースは表の上で選んだもの。「採用」「すべて」で見ているときは、その行のもの
+            sourceId: pickedSourceOf(picked) ?? draft.sourceId,
             casNumber: draft.casNumber,
             value: draft.value,
           }),
@@ -276,7 +317,7 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
         ? [
             {
               id: NEW_ID,
-              sourceId: picked?.sourceId ?? "",
+              sourceId: pickedSourceOf(picked) ?? "",
               sourceCode: "",
               used: false,
               casNumber: "",
@@ -331,10 +372,12 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
         defaultState={DEFAULT_STATE}
         onStateChange={setState}
         emptyMessage={m.inventories.rowsEmpty}
-        selectable={editable}
+        selectable={canEditRows}
         onDeleteSelected={onDeleteSelected}
-        // データソースが決まらないと、足しても入れる先がない
-        create={editable && !editingId && picked?.sourceId ? { onClick: startNew } : undefined}
+        // データソースが決まらないと、足しても入れる先がない（「採用」「すべて」では足せない）
+        create={
+          canEditRows && !editingId && pickedSourceOf(picked) ? { onClick: startNew } : undefined
+        }
         headerActions={
           <div className="flex flex-wrap items-center gap-2">
             {editable && editingId && (
@@ -355,11 +398,24 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
               value={picked}
               onChange={setPicked}
               mergedLabel={m.casLinks.merged}
+              allLabel={m.casLinks.allSources}
             />
+            <label className="flex items-center gap-1.5 text-sm">
+              <input
+                type="checkbox"
+                checked={group}
+                disabled={editingId !== null}
+                onChange={(e) => chooseGroup(e.target.checked)}
+              />
+              {m.inventories.groupByCas}
+            </label>
+            {editable && group && (
+              <span className="text-muted-foreground text-xs">{m.inventories.groupedNoEdit}</span>
+            )}
           </div>
         }
         rowAction={
-          editable ? { onClick: startEdit, disabled: () => editingId !== null } : undefined
+          canEditRows ? { onClick: startEdit, disabled: () => editingId !== null } : undefined
         }
       />
       <p className="text-muted-foreground text-xs">{m.inventories.deleteNote}</p>

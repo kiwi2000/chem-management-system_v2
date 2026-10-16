@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
+import { ALL_SOURCES } from "@/lib/all-sources";
 import type { LinkSetVersionDto, LinkVersionSourceDto, ListResponse } from "@/lib/types";
 
 /** 表の上に置く選択欄。表の見出しの高さに合わせる */
@@ -11,6 +12,14 @@ const SELECT_CLASS = "border-input bg-background h-8 rounded-none border px-2 te
 export interface VersionSource {
   versionId: string;
   sourceId: string;
+}
+
+/**
+ * 1 つのデータソースを選んでいるときだけ、その id。「採用」（空）と「すべて」では null。
+ * 行を足す先・直したときの入れ先を決めるのに使う（「採用」「すべて」は入れ先にならない）
+ */
+export function pickedSourceOf(v: VersionSource | null): string | null {
+  return v?.sourceId && v.sourceId !== ALL_SOURCES ? v.sourceId : null;
 }
 
 /**
@@ -37,11 +46,17 @@ export function VersionSourcePicker({
    * **渡さない画面では出ない。**合算の意味を持たない表もあるため
    */
   mergedLabel,
+  /**
+   * 「すべて」の名前（2026-10-17）。渡すと「採用」のすぐ下に出る（値は `ALL_SOURCES`）。
+   * 全部のデータソースの行を、採られていない行も含めて出す
+   */
+  allLabel,
 }: {
   value: VersionSource | null;
   onChange: (next: VersionSource) => void;
   hint?: string;
   mergedLabel?: string;
+  allLabel?: string;
 }) {
   const { m } = useI18n();
   const [versions, setVersions] = useState<LinkSetVersionDto[]>([]);
@@ -86,11 +101,13 @@ export function VersionSourcePicker({
         出さない画面では、優先度がいちばん高いものへ寄せる
       */
       const stillThere =
-        items.some((s) => s.sourceId === keep) || (mergedLabel !== undefined && keep === "");
+        items.some((s) => s.sourceId === keep) ||
+        (mergedLabel !== undefined && keep === "") ||
+        (allLabel !== undefined && keep === ALL_SOURCES);
       const next = stillThere ? keep : (items[0]?.sourceId ?? "");
       if (next !== keep) onChange({ versionId, sourceId: next });
     },
-    [onChange, mergedLabel],
+    [onChange, mergedLabel, allLabel],
   );
 
   useEffect(() => {
@@ -132,6 +149,7 @@ export function VersionSourcePicker({
       >
         {/* 合算はいちばん上。ふだん見たいのは、優先度で解いたあとの結果 */}
         {mergedLabel !== undefined && <option value="">{mergedLabel}</option>}
+        {allLabel !== undefined && <option value={ALL_SOURCES}>{allLabel}</option>}
         {sources.length === 0 && mergedLabel === undefined && (
           <option value="">{m.casLinks.noSourceInVersion}</option>
         )}

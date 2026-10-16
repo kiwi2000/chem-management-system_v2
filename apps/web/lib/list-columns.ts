@@ -1081,6 +1081,8 @@ export const INVENTORY_COLUMNS: QueryColumn[] = [
 export const INVENTORY_ROW_COLUMNS: QueryColumn[] = [
   { key: "casNumber", kind: "text", field: "casNormalized", normalize: normalizeCas },
   { key: "value", kind: "text", field: "value", caseInsensitive: true },
+  // データソース（2026-10-17）。行は SQL で引く（lib/merged-rows-sql.ts の source_code）ので、field は使わない
+  { key: "sourceCode", kind: "text", field: "sourceCode", caseInsensitive: true },
   { key: "updatedAt", kind: "date", field: "updatedAt" },
 ];
 

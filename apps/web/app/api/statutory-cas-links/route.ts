@@ -12,6 +12,7 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { listCasLinks } from "@/lib/link-service";
 import type { StatutoryCasLinkDto } from "@/lib/types";
+import { ALL_SOURCES } from "@/lib/all-sources";
 
 export const dynamic = "force-dynamic";
 
@@ -84,14 +85,17 @@ export async function GET(req: Request) {
   const all = await listCasLinks(version.id, statutorySubstanceId);
   const sourceId = params.get("sourceId");
   /*
-    データソースを名指ししないときは**合算**。
+    データソースを名指ししないときは**採用**。
     全部のデータソースを優先度の順に当てて、CASごとに採られた1行だけを返す。
-
-    ここで全行を返していたときは、下位のデータソースの負けた行まで並び、
-    「いま効いているのはどれか」が読めなかった。
-    1つずつ見たいときは、データソースを選んでもらう
+    `__all` は**すべて**（2026-10-17）。全部のデータソースの行を、採られていない行も含めて返す
+    （「使用」の印でどれが効いているかが分かる）。1つずつ見たいときは、データソースを選んでもらう
   */
-  const picked = sourceId ? all.filter((l) => l.sourceId === sourceId) : all.filter((l) => l.used);
+  const picked =
+    sourceId === ALL_SOURCES
+      ? all
+      : sourceId
+        ? all.filter((l) => l.sourceId === sourceId)
+        : all.filter((l) => l.used);
 
   /*
     絞り込みと並べ替えは**手元で行う。**1つの法文物質名ぶんは1回で引き切っており、

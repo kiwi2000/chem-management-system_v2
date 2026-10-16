@@ -13,7 +13,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import { VersionSourcePicker, type VersionSource } from "@/components/version-source-picker";
+import {
+  pickedSourceOf,
+  VersionSourcePicker,
+  type VersionSource,
+} from "@/components/version-source-picker";
 import type {
   ApiError,
   ListResponse,
@@ -293,7 +297,7 @@ export function CasLinkSection({
   function startNew() {
     setError(null);
     // 入る先は、表の上で選んでいるバージョンとデータソース
-    setDraft({ ...EMPTY, sourceId: picked?.sourceId ?? "" });
+    setDraft({ ...EMPTY, sourceId: pickedSourceOf(picked) ?? "" });
     setEditingId("new");
   }
 
@@ -323,8 +327,8 @@ export function CasLinkSection({
           body: JSON.stringify({
             versionId: version.id,
             statutorySubstanceId: substance.id,
-            // データソースは表の上で選んだもの。入力欄には出さない
-            sourceId: picked?.sourceId ?? draft.sourceId,
+            // データソースは表の上で選んだもの。「採用」「すべて」で見ているときは、その行のもの
+            sourceId: pickedSourceOf(picked) ?? draft.sourceId,
             casNumber: draft.casNumber,
             excluded: draft.excluded,
             note: draft.note || null,
@@ -436,7 +440,9 @@ export function CasLinkSection({
         onDeleteSelected={onDeleteSelected}
         // データソースが決まらないと、足しても入れる先がない
         create={
-          editable && !editingId && version && picked?.sourceId ? { onClick: startNew } : undefined
+          editable && !editingId && version && pickedSourceOf(picked)
+            ? { onClick: startNew }
+            : undefined
         }
         headerActions={
           /* インベントリの中身と同じ並び・同じ順（バージョン → データソース） */
@@ -444,6 +450,7 @@ export function CasLinkSection({
             value={picked}
             onChange={onPickedChange}
             mergedLabel={m.casLinks.merged}
+            allLabel={m.casLinks.allSources}
           />
         }
         // 編集は行の右端の鉛筆から

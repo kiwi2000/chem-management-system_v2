@@ -1265,6 +1265,8 @@ export interface InventoryRowDto {
   updatedAt: string;
   /** このCASを持つ物質（物理FKは無く、正規化CASで突き合わせた結果） */
   matchedSubstance: { id: string; code: string; nameJa: string; nameEn: string | null } | null;
+  /** 同じ CAS × データソースを 1 行にまとめた行（直せない・消せない。2026-10-17） */
+  grouped?: boolean;
 }
 
 /** 元素。法文物質名の「換算先」で選ぶ */

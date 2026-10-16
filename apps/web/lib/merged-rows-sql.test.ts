@@ -106,3 +106,40 @@ describe("合算の1ページを引くSQL", () => {
     expect(build("size=25").sql).toContain("count(*) OVER () AS total");
   });
 });
+
+describe("採用・すべて・1 つのデータソースと、同じ CAS のまとめ（2026-10-17）", () => {
+  const state = parseTableState(new URLSearchParams("size=25"), COLS, DEFAULT_STATE);
+  it("採用は優先度のいちばん高いデータソースの行だけ", () => {
+    expect(mergedPageQuery("v1", "inv1", state, { mode: { kind: "adopted" } }).sql).toContain(
+      "WHERE rk = 1",
+    );
+  });
+  it("すべては全部のデータソースの行。採られているかは印で返す", () => {
+    const { sql } = mergedPageQuery("v1", "inv1", state, { mode: { kind: "all" } });
+    expect(sql).toContain("WHERE TRUE");
+    expect(sql).toContain("(rk = 1) AS used");
+  });
+  it("1 つのデータソースは id を値として渡す", () => {
+    const { sql, values } = mergedPageQuery("v1", "inv1", state, {
+      mode: { kind: "source", sourceId: "s9" },
+    });
+    expect(values).toContain("s9");
+    expect(sql).not.toContain("s9");
+  });
+  it("まとめると、同じ CAS × データソースの値を「, 」で並べて 1 行にする", () => {
+    const { sql } = mergedPageQuery("v1", "inv1", state, { mode: { kind: "all" }, group: true });
+    expect(sql).toContain("GROUP BY cas_normalized, source_id");
+    expect(sql).toContain("string_agg(value, ', '");
+    expect(sql).toContain("bool_or(rk = 1) AS used");
+  });
+  it("データソースの列でも絞り込める（大文字小文字を区別しない）", () => {
+    const s2 = parseTableState(
+      new URLSearchParams("size=25&f.sourceCode=equals:loli"),
+      [...COLS, { key: "sourceCode", kind: "text" as const }],
+      DEFAULT_STATE,
+    );
+    const { sql, values } = mergedPageQuery("v1", "inv1", s2, { mode: { kind: "all" } });
+    expect(sql).toContain("source_code");
+    expect(values).toContain("loli");
+  });
+});

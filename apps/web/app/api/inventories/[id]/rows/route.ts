@@ -5,8 +5,8 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { currentVersion, findSubstanceByCas, sourcesOfVersion } from "@/lib/inventory-service";
 import { INVENTORY_ROW_COLUMNS } from "@/lib/list-columns";
-import { mergedPageQuery, type MergedRow } from "@/lib/merged-rows-sql";
-import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { ALL_SOURCES } from "@/lib/all-sources";
+import { mergedPageQuery, type InventoryRowsMode, type MergedRow } from "@/lib/merged-rows-sql";
 import type { InventoryRowDto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +16,10 @@ const DEFAULT_STATE = emptyTableState([{ column: "casNumber", direction: "asc" }
 /**
  * GET /api/inventories/[id]/rows — インベントリの該当物質。
  *
- * **バージョン × データソースの組を1つだけ見る。**対象CAS（`statutory_cas_links`）の
- * 画面と同じ決めかたで、どちらも表の上のプルダウンで選ぶ。混ぜて出すと、
- * 同じCASが何行も並んでどれが効いているのか読めなくなる。
+ * **バージョンは1つだけ見る。**データソースは「採用」「すべて」か、1つ（対象CAS の画面と同じ選び方）。
+ * 表の上のプルダウンで選ぶ。
  *
- * 省いたときはバージョンが現在のもの、データソースは優先度がいちばん高いもの。
+ * 省いたときはバージョンが現在のもの、データソースは採用。
  * インベントリはURLで決まる（フィルターには置かない）。
  */
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -49,14 +48,22 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   }
 
   /*
-    データソースは**そのバージョンに並んでいるものから選ぶ**。
-    名指ししないときは**合算**（全部を優先度の順に当てて、CASごとに採られたデータソースの行だけ）。
-    並んでいるものに無いidを渡されたときも合算に落とす
+    データソースは**そのバージョンに並んでいるものから選ぶ**（2026-10-17 に 3 通りにした）。
+    - 名指ししない … **採用**（全部を優先度の順に当てて、CASごとに採られたデータソースの行だけ）
+    - `__all` … **すべて**（並んでいる全部のデータソースの行。採られていない行も出す）
+    - データソースの id … そのデータソースの行だけ
+    並んでいるものに無いidを渡されたときは採用に落とす。
+    `group=1` で、同じ CAS × データソースの行を 1 行にまとめる（値は「(1)-123, (2)-345」）
   */
   const sources = await sourcesOfVersion(version.id);
   const askedSource = params.get("sourceId");
-  const sourceId = askedSource && sources.some((s) => s.id === askedSource) ? askedSource : null;
-  const merged = sourceId === null;
+  const mode: InventoryRowsMode =
+    askedSource === ALL_SOURCES
+      ? { kind: "all" }
+      : askedSource && sources.some((s) => s.id === askedSource)
+        ? { kind: "source", sourceId: askedSource }
+        : { kind: "adopted" };
+  const group = params.get("group") === "1";
 
   const state = parseTableState(
     params,
@@ -64,128 +71,39 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     DEFAULT_STATE,
   );
 
-  const rank = new Map(sources.map((s) => [s.id, s.priority]));
-  const rankOf = (sourceId: string) => rank.get(sourceId) ?? Number.MAX_SAFE_INTEGER;
-
-  if (merged) {
-    return Response.json(await mergedPage(id, version, state, sources));
-  }
-
-  const where = {
-    versionId: version.id,
-    inventoryId: id,
-    sourceId,
-    ...buildWhere(INVENTORY_ROW_COLUMNS, state.filters),
-  };
-
-  const [items, total] = await Promise.all([
-    prisma.inventoryRow.findMany({
-      where,
-      orderBy: buildOrderBy(INVENTORY_ROW_COLUMNS, state.sort, { casNormalized: "asc" }),
-      skip: (state.page - 1) * state.pageSize,
-      take: state.pageSize,
-      select: {
-        id: true,
-        sourceId: true,
-        casNumber: true,
-        casNormalized: true,
-        value: true,
-        updatedAt: true,
-        source: { select: { code: true } },
-      },
-    }),
-    prisma.inventoryRow.count({ where }),
-  ]);
-
-  // 一覧に出ている分だけ物質を引く（全件を持ってこない）
-  const byCas = await findSubstanceByCas(items.map((r) => r.casNormalized));
-
   /*
-    採られるかどうかは、**表に出ている行だけでは決められない。**
-    選んでいないデータソースにも同じCASの行があるかもしれないので、
-    そのバージョンの全データソースぶんを引き直して見る
+    **データベース側で解く。**「CASごとにいちばん優先度の高いデータソースの行」は窓関数で書ける
+    （`lib/merged-rows-sql.ts`）。絞り込み・並べ替え・ページ送り・まとめも同じ問い合わせに乗るので、
+    画面に出す行だけが返ってくる
   */
-  const sameCas = await prisma.inventoryRow.findMany({
-    where: {
-      versionId: version.id,
-      inventoryId: id,
-      casNormalized: { in: [...new Set(items.map((r) => r.casNormalized))] },
-    },
-    select: { casNormalized: true, sourceId: true },
-  });
-  const best = new Map<string, number>();
-  for (const r of sameCas) {
-    const cur = best.get(r.casNormalized);
-    const v = rankOf(r.sourceId);
-    if (cur === undefined || v < cur) best.set(r.casNormalized, v);
-  }
-
-  const dto: InventoryRowDto[] = items.map((r) => ({
-    id: r.id,
-    sourceId: r.sourceId,
-    sourceCode: r.source.code,
-    used: rankOf(r.sourceId) === best.get(r.casNormalized),
-    casNumber: r.casNumber,
-    value: r.value,
-    updatedAt: r.updatedAt.toISOString(),
-    matchedSubstance: byCas.get(r.casNormalized) ?? null,
-  }));
-
-  return Response.json({
-    items: dto,
-    total,
-    page: state.page,
-    pageSize: state.pageSize,
-    version: { id: version.id, code: version.code },
-    sourceId,
-  });
-}
-
-/**
- * 合算の1ページぶん。
- *
- * **データベース側で解く。**「CASごとにいちばん優先度の高いデータソースの行」は窓関数で書ける
- * （`lib/merged-rows-sql.ts`）。絞り込み・並べ替え・ページ送りも同じ問い合わせに乗るので、
- * 画面に出す25行だけが返ってくる。
- *
- * 前は全行をアプリに運んでから解いていた。13万行で0.7秒、運ぶ時間がほとんどだった。
- * 窓関数にしてから（2026-10-16）は、開発用 DB の最後のページで0.9秒（実測）。
- */
-async function mergedPage(
-  inventoryId: string,
-  version: { id: string; code: string },
-  state: ReturnType<typeof parseTableState>,
-  sources: { id: string; code: string }[],
-) {
-  const codeOf = new Map(sources.map((s) => [s.id, s.code]));
-
-  const { sql, values } = mergedPageQuery(version.id, inventoryId, state);
+  const { sql, values } = mergedPageQuery(version.id, id, state, { mode, group });
   const rows = await prisma.$queryRawUnsafe<MergedRow[]>(sql, ...values);
 
   // 件数は1ページぶんと一緒に返ってくる。行が無ければ0件
   const total = rows.length > 0 ? Number(rows[0]!.total) : 0;
+  // 一覧に出ている分だけ物質を引く（全件を持ってこない）
   const byCas = await findSubstanceByCas(rows.map((r) => r.cas_normalized));
 
   const items: InventoryRowDto[] = rows.map((r) => ({
     id: r.id,
     sourceId: r.source_id,
-    sourceCode: codeOf.get(r.source_id) ?? "",
-    // 合算に残っている時点で、その行が採られたもの
-    used: true,
+    sourceCode: r.source_code,
+    used: r.used,
     casNumber: r.cas_number,
     value: r.value,
     updatedAt: r.updated_at.toISOString(),
     matchedSubstance: byCas.get(r.cas_normalized) ?? null,
+    grouped: group,
   }));
 
-  return {
+  return Response.json({
     items,
     total,
     page: state.page,
     pageSize: state.pageSize,
     version: { id: version.id, code: version.code },
-    sourceId: null,
-  };
+    sourceId: mode.kind === "source" ? mode.sourceId : mode.kind === "all" ? ALL_SOURCES : null,
+  });
 }
 
 /**
