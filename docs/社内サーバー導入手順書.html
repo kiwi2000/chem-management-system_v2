@@ -498,10 +498,7 @@ sudo usermod -aG docker $USER
               Ubuntu の標準のパッケージを使う場合は、<code>docker.io</code> と <code>docker-compose-v2</code> の<b>2つ</b>が要ります。
             </p>
           </div>
-          <p>
-            <b>Docker の記録が際限なく増えないように</b>、<code>/etc/docker/daemon.json</code> に次を書いて <code>sudo systemctl restart docker</code> することをおすすめします。
-          </p>
-<pre>{ "log-driver": "json-file", "log-opts": { "max-size": "10m", "max-file": "3" } }</pre>
+          <p class="dim">このシステムのコンテナの記録は、1つあたり 10MB × 3 までに抑える設定にしてあります。</p>
 <pre><span class="c"># 入ったことの確認。バージョンが2つとも表示されればOK</span>
 docker --version
 docker compose version</pre>
@@ -780,7 +777,7 @@ crontab -e</pre>
 <pre>0 3 * * * bash /opt/chem/scripts/backup-db.sh &gt;&gt; /var/log/chem-backup.log 2&gt;&amp;1</pre>
           <p>
             <code>/var/backups/chem/</code> に <code>chem_年月日_時分秒.sql.gz</code> が1日1つ増えます。<b>14日より古いものは自動で消えます。</b>
-            <span class="dim">（<code>bash</code> を付けて呼ぶのは、更新でファイルを置き直しても動き続けるようにするためです）</span>
+            <span class="dim">（<code>bash</code> を付けて呼ぶと、ファイルの実行権に関係なく動きます）</span>
           </p>
           <div class="box warn">
             <h4>IMPORTANT</h4>
@@ -833,7 +830,7 @@ ls -lh /var/backups/chem/</pre>
         <caption>定期的にお願いすること</caption>
         <thead><tr><th>いつ</th><th>すること</th><th>やりかた</th></tr></thead>
         <tbody>
-          <tr><td>毎日</td><td>バックアップの確認</td><td>前日のファイルが <code>/var/backups/chem/</code> と NAS にあるか。<code>/var/log/chem-backup.log</code> に失敗が出ていないか</td></tr>
+          <tr><td>毎日</td><td>バックアップの確認</td><td>前日のファイルが <code>/var/backups/chem/</code> と NAS にあるか。<code>/var/log/chem-backup.log</code> に失敗が出ていないか（Windows は <code>C:\chem\logs\backup.log</code>）</td></tr>
           <tr><td>毎月</td><td>ディスクの空きを見る</td><td><code>df -h</code>。使用率80%を超えたらご連絡ください</td></tr>
           <tr><td>更新のあと</td><td>古いイメージの片付け</td><td><code>docker image prune -f</code>（更新のたびに前の版のイメージが残るため）</td></tr>
           <tr><td>年1回</td><td>アクセス記録の整理</td><td>画面から古い分を削除します。自動では消えません（やり方はユーザーマニュアル）</td></tr>
@@ -987,7 +984,7 @@ Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
             <h4>先に確かめること</h4>
             <ul>
               <li><b>80 / 443 番を使うソフトが動いていないこと</b>（IIS など）。動いていると入口が起動しません</li>
-              <li><b>Node.js がすでに入っていないこと。</b>入っていると、その版のまま使われます。入っている場合は先にご相談ください</li>
+              <li><b>Node.js がすでに入っている場合は、版が 24 であること。</b>別の版が入っていると、導入は止まってお知らせします（入っていなければ、セットのものを入れます）</li>
               <li>時刻が合っていること（記録の時刻、バックアップ、2要素認証に影響します）</li>
             </ul>
           </div>
@@ -1096,7 +1093,7 @@ Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
           <tr><td><b>Windows Update</b></td><td>再起動の時間帯を業務時間の外に設定してください。サービスは自動起動なので、再起動しても戻ります</td></tr>
           <tr><td><b>ウイルス対策</b></td><td><code>C:\chem</code>・<code>C:\Program Files\PostgreSQL\16\data</code>・<code>C:\backups\chem</code> を<b>リアルタイム検査の対象外</b>にすることを検討してください。データベースの書き込みが遅くなることがあります</td></tr>
           <tr><td><b>守るもの</b></td><td>第6章の図3のとおり。<code>C:\chem\.env</code>（設定。控えをサーバーの外へ）と、毎日のバックアップ（NAS へ複製）。帳票の PDF（<code>C:\chem\data\documents</code>。画面の設定で別のフォルダーにもできます）と証明書の元（<code>C:\ProgramData\caddy</code>）は、残すなら複製してください。帳票の PDF は更新では消えません</td></tr>
-          <tr><td><b>アプリの記録</b></td><td><code>C:\chem\logs\chem-app.log</code>（10MB で切り替わります）</td></tr>
+          <tr><td><b>記録</b></td><td>アプリは <code>C:\chem\logs\chem-app.log</code>（10MB で切り替わります）。毎日のバックアップは <code>C:\chem\logs\backup.log</code> に、成功も失敗も1行ずつ残ります</td></tr>
           <tr><td><b>締め出されたとき</b></td><td>アプリの画面で決めた接続の制限で入れなくなったときは、<code>C:\chem\.env</code> に <code>IP_RULES_OFF=1</code> の1行を足し、管理者の PowerShell で <code>C:\chem\nssm\nssm.exe restart chem-app</code>。画面で直したら、その行を消してもう一度 restart します</td></tr>
           <tr><td><b>パスワードを忘れた・ロックされた</b></td><td>管理者の PowerShell で次の3行（1行目は設定ファイルからデータベースの接続先を読む）。<br><code>cd C:\chem</code><br><code>$env:DATABASE_URL = (Select-String -Path .env -Pattern '^DATABASE_URL="?([^"]+)').Matches[0].Groups[1].Value</code><br><code>npx tsx scripts/set-password.ts <i>メールアドレス</i> '<i>新しいパスワード</i>'</code></td></tr>
         </tbody>

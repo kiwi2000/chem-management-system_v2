@@ -11,9 +11,17 @@
 # - db / app はポートを一切公開しない（外部から到達できるのは Caddy の 80/443 のみ）
 # - VPN(Tailscale)運用ではVPSのファイアウォールで 80/443 も Tailscale IF に限定する
 
+# 各コンテナの記録（docker logs）の大きさに上限を付ける。付けないと際限なく増えてディスクを埋める（2026-10-16）
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
+    logging: *logging
     restart: always
     environment:
       POSTGRES_USER: chem
@@ -29,6 +37,7 @@ services:
     # ports: なし（アプリコンテナからのみ到達可）
 
   app:
+    logging: *logging
     # 名前を固定する。オフラインのサーバーでは docker load したこの名前のイメージをそのまま使う（--build 無しで up）
     image: chem-app:latest
     build:
@@ -52,6 +61,7 @@ services:
 
   caddy:
     image: caddy:2-alpine
+    logging: *logging
     restart: always
     ports:
       - "${HTTP_PORT:-80}:80"

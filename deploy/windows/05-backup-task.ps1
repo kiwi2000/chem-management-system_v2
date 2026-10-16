@@ -4,7 +4,8 @@
 #
 # 管理者で実行する。本体は scripts\backup-db.ps1（毎日 3:00、SYSTEM で実行、14 日保持）。
 # パスワードは .env から読むので、タスクにもここにも書かない。
-# バックアップは同じ機械の中（C:\backups\chem）にできる。**別の機器への複製は backup-db.ps1 の末尾を見て設定する。**
+# バックアップは同じ機械の中（C:\backups\chem）にできる。動いた記録は C:\chem\logs\backup.log。
+# **別の機器への複製は、別のタスクで設定する**（backup-db.ps1 に書き足すと更新で元に戻る。導入手順書 第10章 10-4）。
 
 #Requires -RunAsAdministrator
 [CmdletBinding()]

@@ -35,7 +35,15 @@ Write-Step "Node.js"
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $node) { Update-PathFromMachine; $node = Get-Command node -ErrorAction SilentlyContinue }
 if ($node) {
-  Write-Ok "すでにあります: $(& node -v)"
+  # 入っている版をそのまま使う。**大きい版（24 など）が同梱のものと違えば止める**（別の版で動かすと、
+  # 組み立て済みのアプリの部品が読めないことがある。2026-10-16 の見直しで見つかった）
+  $have = (& node -v).Trim()
+  $msiName = Split-Path -Leaf (Find-Installer "node-*-x64.msi")
+  if ($msiName -match 'node-v(\d+)\.') { $wantMajor = $Matches[1] } else { throw "同梱の Node.js の版が読めません: $msiName" }
+  if ($have -notmatch "^v$wantMajor\.") {
+    throw "Node.js $have が入っています。このシステムは Node.js $wantMajor で動きます。入っている Node.js を使うほかのソフトが無ければアンインストールしてから、もう一度実行してください（分からなければご相談ください）"
+  }
+  Write-Ok "すでにあります: $have"
 } else {
   $msi = Find-Installer "node-*-x64.msi"
   Write-Host "    入れています: $(Split-Path -Leaf $msi)（1〜2 分）"
