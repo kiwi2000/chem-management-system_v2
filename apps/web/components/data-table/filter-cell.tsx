@@ -18,6 +18,7 @@ import { useOutsideClose } from "@/lib/use-outside-close";
 import { ImeInput, ImeTextarea } from "./ime-field";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
+import { SelectAllCheckbox, selectAllState } from "@/components/select-all-checkbox";
 import { Button } from "@/components/ui/button";
 import type { TableColumn } from "./types";
 
@@ -45,9 +46,15 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
     目当ての区分まで送らずに済むようにする。**閉じるたびに空へ戻す
   */
   const [optionQuery, setOptionQuery] = useState("");
+  /*
+    選択肢の小窓で「すべて選択」を外した直後（2026-10-16）。**絞らない（＝すべて）状態のまま、
+    印だけを全部外して見せる。**ここから1つ入れると、その1つだけで絞る。閉じたら元に戻す
+  */
+  const [enumNone, setEnumNone] = useState(false);
   const closeEnum = useCallback(() => {
     setEnumOpen(false);
     setOptionQuery("");
+    setEnumNone(false);
   }, []);
   const enumBoxRef = useOutsideClose<HTMLDivElement>(enumOpen, closeEnum);
   useEffect(() => {
@@ -120,6 +127,34 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
                   />
                   <Search className="text-muted-foreground pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2" />
                 </div>
+                {/*
+                  「すべて選択」は**いま見えている選択肢**に効く（探す欄で絞っていれば、絞った分だけ）。
+                  見えていない選択肢の選択はそのまま残す
+                */}
+                {shown.length > 0 && (
+                  <SelectAllCheckbox
+                    className="mb-1 text-xs"
+                    label={m.table.checkAll}
+                    state={selectAllState(
+                      shown.filter((o) => appliedValues.includes(o.value)).length,
+                      shown.length,
+                    )}
+                    onSelectAll={() => {
+                      const next = [
+                        ...appliedValues,
+                        ...shown.map((o) => o.value).filter((v) => !appliedValues.includes(v)),
+                      ];
+                      onChange({ kind: "list", op: mode, values: next });
+                    }}
+                    onClearAll={() => {
+                      const off = new Set(shown.map((o) => o.value));
+                      const next = appliedValues.filter((v) => !off.has(v));
+                      onChange(
+                        next.length > 0 ? { kind: "list", op: mode, values: next } : undefined,
+                      );
+                    }}
+                  />
+                )}
                 <div className="max-h-64 space-y-1 overflow-y-auto">
                   {shown.length === 0 ? (
                     <p className="text-muted-foreground px-1 py-2 text-xs">
@@ -207,6 +242,7 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
      * 全部選ばれた状態と、1つも選ばれていない状態は、どちらも「絞らない」に落とす。
      */
     const toggle = (value_: string, checked: boolean) => {
+      setEnumNone(false);
       if (selected.length === 0) {
         const only = checked ? [value_] : options.map((o) => o.value).filter((v) => v !== value_);
         onChange(only.length === 0 ? undefined : { kind: "enum", values: only });
@@ -216,6 +252,12 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
       const all = next.length === 0 || next.length === options.length;
       onChange(all ? undefined : { kind: "enum", values: next });
     };
+    /*
+      印の付けかた。**絞っていない（＝すべて）ときは全部に印を付ける**（2026-10-16。「すべて選択」を
+      付けたので、見た目と意味をそろえた。それまでは全部外れて見えていた）。
+      「すべて選択」を外した直後だけは、全部外れて見せる
+    */
+    const enumChecked = (v: string) => (selected.length === 0 ? !enumNone : selected.includes(v));
 
     /*
       ボタンの並び。**押すと対象になり、色が決まっていればその色が付く。**
@@ -275,7 +317,7 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
         <button
           type="button"
           aria-expanded={enumOpen}
-          onClick={() => setEnumOpen((v) => !v)}
+          onClick={() => (enumOpen ? closeEnum() : setEnumOpen(true))}
           className="border-input bg-background flex h-8 w-full cursor-pointer items-center truncate rounded-none border px-2 text-xs"
           title={label}
         >
@@ -283,11 +325,21 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
         </button>
         {enumOpen && (
           <div className="bg-background absolute z-20 mt-1 min-w-40 space-y-1 rounded-md border p-2 shadow-md">
+            <SelectAllCheckbox
+              className="text-xs"
+              label={m.table.checkAll}
+              state={selected.length === 0 ? (enumNone ? "none" : "all") : "some"}
+              onSelectAll={() => {
+                setEnumNone(false);
+                onChange(undefined);
+              }}
+              onClearAll={() => setEnumNone(true)}
+            />
             {options.map((o) => (
               <label key={o.value} className="flex items-center gap-2 text-xs">
                 <input
                   type="checkbox"
-                  checked={selected.includes(o.value)}
+                  checked={enumChecked(o.value)}
                   onChange={(e) => toggle(o.value, e.target.checked)}
                 />
                 {o.label}

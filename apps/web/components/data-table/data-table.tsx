@@ -237,6 +237,7 @@ export function DataTable<T>({
     hidden: hiddenColumns,
     order: columnOrder,
     toggle: toggleColumn,
+    setHiddenKeys: setHiddenColumns,
     moveTo: moveColumn,
     reset: resetColumns,
     changed: columnsChanged,
@@ -624,6 +625,7 @@ export function DataTable<T>({
           orderedColumns={orderedForPicker}
           hiddenColumns={hiddenForPicker}
           onToggleColumn={toggleColumn}
+          onSetHiddenColumns={setHiddenColumns}
           onMoveColumn={(key, dir) =>
             moveColumn(
               columns.map((c) => c.key),

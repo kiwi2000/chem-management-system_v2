@@ -335,6 +335,7 @@ export const en: Messages = {
     all: "All",
     optionSearch: "Find an option",
     optionSearchEmpty: "No match",
+    checkAll: "Select all",
     firstPage: "First page",
     prevMark: "<",
     nextMark: ">",

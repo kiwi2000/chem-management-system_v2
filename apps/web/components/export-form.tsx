@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n-client";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
+import { SelectAllCheckbox, selectAllState } from "@/components/select-all-checkbox";
 
 type Kind = "REGULATION_LIST" | "PRODUCTS" | "SUBSTANCES" | "DATA_SET";
 const KINDS: Kind[] = ["REGULATION_LIST", "PRODUCTS", "SUBSTANCES", "DATA_SET"];
@@ -112,6 +113,17 @@ export function ExportForm({ laws, sources }: { laws: ExportOption[]; sources: E
               {m.importExport.exportSources}
             </span>
             <div className="flex flex-wrap gap-3">
+              {/* 横に並ぶので、区切りは下ではなく右に引く */}
+              <SelectAllCheckbox
+                className="border-r border-b-0 pr-3 pb-0"
+                label={m.table.checkAll}
+                state={selectAllState(
+                  sources.filter((x) => picked.includes(x.code)).length,
+                  sources.length,
+                )}
+                onSelectAll={() => setPicked(sources.map((x) => x.code))}
+                onClearAll={() => setPicked([])}
+              />
               {sources.map((s) => (
                 <label key={s.code} className="flex items-center gap-1">
                   <input

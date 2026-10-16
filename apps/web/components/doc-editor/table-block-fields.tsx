@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n-client";
 import { useDocCategories } from "@/lib/use-doc-fields";
 import { cn } from "@/lib/utils";
+import { SelectAllCheckbox, selectAllState } from "@/components/select-all-checkbox";
 
 const SELECT = "border-input h-7 rounded-none border bg-transparent px-2 text-sm";
 
@@ -150,6 +151,16 @@ export function TableBlockFields({
       {/* 出す列。チェックで出し入れし、▲▼で並べ替える */}
       <div className="space-y-1">
         <p className="text-sm">{m.docEditor.tableColumns}</p>
+        <SelectAllCheckbox
+          className="text-sm"
+          label={m.table.checkAll}
+          state={selectAllState(
+            ordered.filter((k) => b.columns.includes(k)).length,
+            ordered.length,
+          )}
+          onSelectAll={() => commit(ordered, new Set(ordered))}
+          onClearAll={() => commit(ordered, new Set())}
+        />
         <ul className="space-y-1">
           {ordered.map((key) => {
             const on = b.columns.includes(key);
@@ -220,6 +231,17 @@ export function TableBlockFields({
               </span>
             )}
           </p>
+          {/* 全部外すと「何も付けない＝全部出す」に戻る（下の説明のとおり） */}
+          <SelectAllCheckbox
+            className="text-sm"
+            label={m.table.checkAll}
+            state={selectAllState(
+              categories.filter((c) => pickedCats.includes(c.id)).length,
+              categories.length,
+            )}
+            onSelectAll={() => onChange({ ...b, categoryIds: categories.map((c) => c.id) })}
+            onClearAll={() => onChange({ ...b, categoryIds: undefined })}
+          />
           <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
             {lawGroups.map((g) => (
               <div key={g.label}>

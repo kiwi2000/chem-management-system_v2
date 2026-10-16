@@ -4,6 +4,7 @@ import { kindLabelOf, ORGANISATION_KINDS, pickName, type OrganisationKind } from
 import { useMemo } from "react";
 import { useI18n } from "@/lib/i18n-client";
 import type { OrganisationDto } from "@/lib/types";
+import { SelectAllCheckbox, selectAllState } from "@/components/select-all-checkbox";
 
 /**
  * 利用者に割り当てる組織の選択。**種別を問わず何件でも。**
@@ -66,31 +67,43 @@ export function OrganisationPicker({
     return <p className="text-muted-foreground text-sm">{m.users.noOrganisations}</p>;
   }
 
+  // 「すべて選択」が触るのは、ここに並んでいる組織だけ（使わない設定の組織は入れない）
+  const listed = groups.flatMap((g) => g.items.map((o) => o.id));
   return (
-    <div className="flex flex-wrap gap-x-8 gap-y-3">
-      {groups.map((g) => (
-        <fieldset key={g.key} className="min-w-40 space-y-1">
-          <legend className="text-muted-foreground mb-1 text-xs font-medium">{g.label}</legend>
-          {g.items.map((o) => (
-            <label
-              key={o.id}
-              className={
-                disabled
-                  ? "text-muted-foreground flex items-center gap-2 text-sm"
-                  : "flex items-center gap-2 text-sm"
-              }
-            >
-              <input
-                type="checkbox"
-                checked={value.includes(o.id)}
-                disabled={disabled}
-                onChange={(e) => toggle(o.id, e.target.checked)}
-              />
-              {pickName(locale, o.nameJa, o.nameEn)}
-            </label>
-          ))}
-        </fieldset>
-      ))}
+    <div className="space-y-2">
+      <SelectAllCheckbox
+        className="text-sm"
+        label={m.table.checkAll}
+        disabled={disabled}
+        state={selectAllState(listed.filter((id) => value.includes(id)).length, listed.length)}
+        onSelectAll={() => onChange([...value, ...listed.filter((id) => !value.includes(id))])}
+        onClearAll={() => onChange(value.filter((id) => !listed.includes(id)))}
+      />
+      <div className="flex flex-wrap gap-x-8 gap-y-3">
+        {groups.map((g) => (
+          <fieldset key={g.key} className="min-w-40 space-y-1">
+            <legend className="text-muted-foreground mb-1 text-xs font-medium">{g.label}</legend>
+            {g.items.map((o) => (
+              <label
+                key={o.id}
+                className={
+                  disabled
+                    ? "text-muted-foreground flex items-center gap-2 text-sm"
+                    : "flex items-center gap-2 text-sm"
+                }
+              >
+                <input
+                  type="checkbox"
+                  checked={value.includes(o.id)}
+                  disabled={disabled}
+                  onChange={(e) => toggle(o.id, e.target.checked)}
+                />
+                {pickName(locale, o.nameJa, o.nameEn)}
+              </label>
+            ))}
+          </fieldset>
+        ))}
+      </div>
     </div>
   );
 }

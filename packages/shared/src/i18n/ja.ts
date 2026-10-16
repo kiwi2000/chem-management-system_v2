@@ -354,6 +354,8 @@ export const ja = {
     /** 選択肢が多い列（規制区分など）で、打った文字を含むものだけに絞る欄 */
     optionSearch: "選択肢を探す",
     optionSearchEmpty: "見つかりません",
+    /** チェックボックスが並ぶ一覧の先頭。1つで全選択と全解除を兼ねる（2026-10-16 指示） */
+    checkAll: "すべて選択",
     firstPage: "最初のページ",
     /** ページ送りのボタンに出す記号。読み上げには prevPage / nextPage を使う */
     prevMark: "<",

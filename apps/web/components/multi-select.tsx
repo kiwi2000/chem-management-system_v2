@@ -3,6 +3,8 @@
 import { ChevronDown } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useOutsideClose } from "@/lib/use-outside-close";
+import { useI18n } from "@/lib/i18n-client";
+import { SelectAllCheckbox, selectAllState } from "@/components/select-all-checkbox";
 
 interface Props {
   id: string;
@@ -31,6 +33,7 @@ export function MultiSelect({
   placeholder,
   ariaLabel,
 }: Props) {
+  const { m } = useI18n();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   // 開きっぱなしで他の入力を隠さないよう、外側のクリックと Esc で閉じる
@@ -63,6 +66,21 @@ export function MultiSelect({
       {open && (
         <div className="bg-background absolute z-20 mt-1 max-h-60 w-64 overflow-auto rounded-md border p-2 shadow-md">
           {options.length === 0 && <p className="text-muted-foreground p-1 text-xs">—</p>}
+          {options.length > 0 && (
+            <SelectAllCheckbox
+              className="mb-1 p-1 text-sm"
+              label={m.table.checkAll}
+              state={selectAllState(
+                options.filter((o) => values.includes(o)).length,
+                options.length,
+              )}
+              // 選択肢から消された値（設定で外した用途など）は、全部入れるときも残す
+              onSelectAll={() =>
+                onChange([...options, ...values.filter((v) => !options.includes(v))])
+              }
+              onClearAll={() => onChange([])}
+            />
+          )}
           {options.map((o) => (
             <label key={o} className="flex items-center gap-2 rounded p-1 text-sm hover:bg-accent">
               <input type="checkbox" checked={values.includes(o)} onChange={() => toggle(o)} />

@@ -81,6 +81,12 @@ export function useColumnVisibility(storageKey: string) {
     [hidden, write],
   );
 
+  /** 隠す列をまとめて決める（「すべて選択」で全部出す・全部外す。2026-10-16） */
+  const setHiddenKeys = useCallback(
+    (keys: string[]) => write(new Set(keys), order),
+    [order, write],
+  );
+
   /** 出し入れも並びも、決めていない状態に戻す */
   const reset = useCallback(() => write(new Set(), []), [write]);
 
@@ -88,6 +94,7 @@ export function useColumnVisibility(storageKey: string) {
     hidden,
     order,
     toggle,
+    setHiddenKeys,
     moveTo,
     reset,
     changed: hidden.size > 0 || order.length > 0,

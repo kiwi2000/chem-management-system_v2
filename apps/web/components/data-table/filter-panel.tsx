@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { FilterCell } from "./filter-cell";
 import { SavedFilters } from "./saved-filters";
 import type { TableColumn } from "./types";
+import { SelectAllCheckbox, selectAllState } from "@/components/select-all-checkbox";
 
 interface Props<T> {
   columns: TableColumn<T>[];
@@ -43,6 +44,8 @@ interface Props<T> {
   /** いま隠している列 */
   hiddenColumns: Set<string>;
   onToggleColumn: (key: string) => void;
+  /** 隠す列をまとめて決める（「すべて選択」） */
+  onSetHiddenColumns: (keys: string[]) => void;
   /** 掴んだ位置から落とした位置へ。どちらも「出している列」の中での番号 */
   onMoveColumn: (from: number, to: number) => void;
   onResetColumns: () => void;
@@ -75,6 +78,7 @@ export function FilterPanel<T>({
   orderedColumns,
   hiddenColumns,
   onToggleColumn,
+  onSetHiddenColumns,
   onMoveColumn,
   onResetColumns,
   columnsChanged,
@@ -249,6 +253,20 @@ export function FilterPanel<T>({
             並べ替えは**つまみを引く**。上下のボタンだと、離れた場所へ動かすのに
             何度も押すことになる
           */}
+          {/*
+            「すべて選択」（2026-10-16）。外すときも**先頭の1列だけは残す**
+            （1列も出ていない表にはできない。1つずつ外すときと同じ決まり）
+          */}
+          <SelectAllCheckbox
+            className="text-sm"
+            label={m.table.checkAll}
+            state={selectAllState(
+              orderedColumns.filter((c) => !hiddenColumns.has(c.key)).length,
+              orderedColumns.length,
+            )}
+            onSelectAll={() => onSetHiddenColumns([])}
+            onClearAll={() => onSetHiddenColumns(orderedColumns.slice(1).map((c) => c.key))}
+          />
           <ul className="space-y-1">
             {orderedColumns.map((c) => {
               const shown = !hiddenColumns.has(c.key);

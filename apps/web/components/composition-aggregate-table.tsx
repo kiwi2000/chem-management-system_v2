@@ -22,6 +22,7 @@ import { DiffChip, SourceChips, type SourceInfo } from "@/components/source-chip
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { useColumnVisibility } from "@/lib/use-column-visibility";
+import { SelectAllCheckbox, selectAllState } from "@/components/select-all-checkbox";
 import { inventoryFoot, regulationFoot } from "@/lib/aggregate-footer";
 import { HIT_CLASS, NEAR_MISS_CLASS, REVIEW_CLASS } from "@/lib/mark-styles";
 import type {
@@ -602,6 +603,7 @@ export function CompositionAggregateTable({
   const {
     hidden: hiddenHeads,
     toggle: toggleHead,
+    setHiddenKeys: setHiddenHeads,
     reset: resetHeads,
     changed: headsChanged,
   } = useColumnVisibility("chem.table.compositionAggregate.v4.columns");
@@ -839,6 +841,17 @@ export function CompositionAggregateTable({
                   {m.table.resetColumns}
                 </Button>
               </div>
+              {/* 「すべて選択」。外すときも先頭の1列（CAS番号）だけは残す（1つずつ外すときと同じ決まり） */}
+              <SelectAllCheckbox
+                className="text-sm"
+                label={m.table.checkAll}
+                state={selectAllState(
+                  HEADS.filter((h) => !hiddenHeads.has(h.key)).length,
+                  HEADS.length,
+                )}
+                onSelectAll={() => setHiddenHeads([])}
+                onClearAll={() => setHiddenHeads(HEADS.slice(1).map((h) => h.key))}
+              />
               <ul className="flex flex-wrap gap-x-6 gap-y-1">
                 {HEADS.map((h) => {
                   const shown = !hiddenHeads.has(h.key);
