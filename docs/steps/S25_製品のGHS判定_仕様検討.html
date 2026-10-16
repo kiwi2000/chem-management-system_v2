@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>製品のGHS判定 仕様</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 左に目次、右に本文の 1 本組み。GHS の赤い菱形を見出しの印にだけ使う */
+:root {
+  --bg: #fbfbfc;
+  --surface: #f1f2f5;
+  --line: #d9dce3;
+  --fg: #1d2129;
+  --muted: #5d6472;
+  --accent: #c41e2e;
+  --accent-soft: #fbe9ea;
+  --rec: #1f6b4f;
+  --rec-soft: #e3f2ea;
+  --ask: #8a5a00;
+  --ask-soft: #fdf1d8;
+  --f-display: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  --f-body: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14161b; --surface: #1d2027; --line: #333844; --fg: #e6e8ee; --muted: #9aa1b0;
+    --accent: #ff6b74; --accent-soft: #3a1d21; --rec: #6fd3a6; --rec-soft: #17322a;
+    --ask: #f0c060; --ask-soft: #3a2f16; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14161b; --surface: #1d2027; --line: #333844; --fg: #e6e8ee; --muted: #9aa1b0;
+  --accent: #ff6b74; --accent-soft: #3a1d21; --rec: #6fd3a6; --rec-soft: #17322a;
+  --ask: #f0c060; --ask-soft: #3a2f16; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--f-body); font-size: 15px; line-height: 1.8;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; }
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; } nav.toc { position: static !important; } }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 13px; }
+nav.toc .lbl { font-size: 11px; letter-spacing: .12em; color: var(--muted); margin-bottom: 8px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a { color: var(--muted); text-decoration: none; display: block; padding: 3px 8px; border-left: 2px solid var(--line); }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--fg); border-left-color: var(--accent); outline: none; }
+main { min-width: 0; display: grid; gap: 48px; }
+header.doc { display: grid; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 24px; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; color: var(--accent); font-weight: 700; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(26px, 4vw, 36px); line-height: 1.35; margin: 0; text-wrap: balance; }
+.lead { color: var(--muted); max-width: 44em; margin: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 500; }
+section { display: grid; gap: 16px; scroll-margin-top: 24px; }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 22px; margin: 0; display: flex; align-items: center; gap: 12px; text-wrap: balance; }
+h2 .no { font-family: var(--f-mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+h2::before { content: ""; width: 11px; height: 11px; flex: none; border: 2px solid var(--accent); transform: rotate(45deg); }
+h3 { font-family: var(--f-display); font-weight: 700; font-size: 17px; margin: 16px 0 0; display: flex; gap: 10px; align-items: baseline; }
+h3 .no { font-family: var(--f-mono); font-size: 13px; color: var(--muted); font-weight: 500; }
+p { margin: 0; max-width: 46em; }
+ul { margin: 0; padding-left: 1.3em; max-width: 46em; display: grid; gap: 4px; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.65; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+th { background: var(--surface); font-weight: 500; font-size: 13px; color: var(--muted); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+td.nowrap { white-space: nowrap; }
+tr.rec td { background: var(--rec-soft); }
+.chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 3px; letter-spacing: .04em; white-space: nowrap; vertical-align: 1px; }
+.chip.rec { background: var(--rec-soft); color: var(--rec); border: 1px solid currentColor; }
+.chip.ask { background: var(--ask-soft); color: var(--ask); border: 1px solid currentColor; }
+.chip.chk { background: var(--accent-soft); color: var(--accent); border: 1px solid currentColor; }
+.note { background: var(--rec-soft); border-left: 3px solid var(--rec); padding: 12px 16px; max-width: 46em; }
+.note.ask { background: var(--ask-soft); border-left-color: var(--ask); }
+.note b { font-weight: 700; }
+code { font-family: var(--f-mono); font-size: .9em; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
+.formula { font-family: var(--f-mono); background: var(--surface); padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+
+/* 流れの図 */
+.flow { display: grid; gap: 10px; }
+.flow .inputs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .flow .inputs { grid-template-columns: minmax(0, 1fr); } }
+.box { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 12px 14px; font-size: 13.5px; line-height: 1.7; min-width: 0; }
+.box h4 { margin: 0 0 6px; font-size: 14px; font-family: var(--f-display); }
+.box ul { padding-left: 1.1em; gap: 0; }
+.box .tag { font-size: 11px; color: var(--muted); }
+.arrow { text-align: center; color: var(--accent); font-size: 18px; line-height: 1; }
+.box.core { border: 2px solid var(--accent); background: var(--bg); }
+.box.out { background: var(--bg); }
+
+/* 区分の段 */
+.ladder { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.ladder .step { display: grid; grid-template-columns: 44px minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); border-bottom: 1px solid var(--line); font-size: 14px; }
+.ladder .step:last-child { border-bottom: 0; }
+.ladder .step > div { padding: 10px 12px; min-width: 0; }
+.ladder .step .n { font-family: var(--f-mono); color: var(--accent); font-weight: 500; text-align: center; background: var(--surface); }
+.ladder .head { background: var(--surface); color: var(--muted); font-size: 13px; }
+@media (max-width: 640px) {
+  .ladder .step { grid-template-columns: 36px minmax(0, 1fr); }
+  .ladder .step > div:nth-child(n+3) { grid-column: 2; padding-top: 0; }
+  .ladder .step > div:nth-child(3)::before { content: "日本: "; color: var(--muted); }
+  .ladder .step > div:nth-child(4)::before { content: "EU: "; color: var(--muted); }
+  .ladder .head { display: none; }
+}
+
+/* 決めていただきたいこと */
+ol.decide { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-top: 1px solid var(--line); counter-reset: d; }
+ol.decide li { counter-increment: d; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+ol.decide li::before { content: counter(d); font-family: var(--f-mono); font-size: 20px; color: var(--accent); line-height: 1.4; }
+ol.decide .q { font-weight: 500; }
+ol.decide .r { font-size: 13.5px; color: var(--muted); }
+ol.decide .ref { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+
+dl.terms { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 24px; margin: 0; max-width: 46em; }
+dl.terms dt { font-weight: 700; }
+dl.terms dd { margin: 0; color: var(--fg); }
+@media (max-width: 520px) { dl.terms { grid-template-columns: minmax(0, 1fr); gap: 2px; } dl.terms dd { margin-bottom: 8px; } }
+.src { font-size: 13px; display: grid; gap: 6px; }
+.src a { color: var(--accent); word-break: break-all; }
+footer { font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav class="toc" aria-label="目次">
+    <div class="lbl">目次</div>
+    <ol>
+      <li><a href="#s1">1. 何を作るか</a></li>
+      <li><a href="#s2-1">2-1. 改訂版</a></li>
+      <li><a href="#s2-2">2-2. 国の順</a></li>
+      <li><a href="#s2-3">2-3. 物質の分類の採り方</a></li>
+      <li><a href="#s2-4">2-4. ビルディングブロック</a></li>
+      <li><a href="#s2-5">2-5. 濃度限界</a></li>
+      <li><a href="#s2-6">2-6. 計算の中身</a></li>
+      <li><a href="#s2-7">2-7. 毒性値の入手先</a></li>
+      <li><a href="#s2-8">2-8. 製品の側</a></li>
+      <li><a href="#s3">3. いまあるデータ</a></li>
+      <li><a href="#s4">4. 作る順</a></li>
+      <li><a href="#s5">5. 決めていただきたいこと</a></li>
+      <li><a href="#s6">6. 要確認</a></li>
+      <li><a href="#s8">7. 用語</a></li>
+      <li><a href="#s9">8. 出典</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="doc">
+      <div class="eyebrow">化学物質管理システム v2 ・ 仕様の検討（S25）</div>
+      <h1>製品の GHS 判定（混合物の GHS 分類）</h1>
+      <p class="lead">製品の組成と、成分の物質の GHS 分類から、製品の危険有害性のクラスと区分を自動で出す機能の仕様案です。まだ何も作っていません。§5 の 8 点を決めてから作り始めます。</p>
+      <div class="meta">
+        <span>作成 <b class="mono">2026-10-17</b></span>
+        <span>置き場所 <b>SDS あり版（sds.ca-japan.jp）だけ</b></span>
+        <span>入力 <b>物質の GHS 分類データ（標準）</b></span>
+      </div>
+      <div class="meta">
+        <span><span class="chip rec">おすすめ</span> こちらの推奨案</span>
+        <span><span class="chip ask">決めること</span> ご判断が要るもの</span>
+        <span><span class="chip chk">要確認</span> 一次資料で確かめきれていないもの</span>
+      </div>
+    </header>
+
+    <section id="s1">
+      <h2><span class="no">1</span>何を作るか</h2>
+      <p>製品（混合物）の GHS 分類を自動で出し、のちに SDS の第 2 項（ラベル要素）・第 3 項（組成）・第 11〜12 項の材料にします。</p>
+      <div class="flow" role="img" aria-label="物質の分類・製品の組成・国の設定の 3 つを入力に計算し、結果を保存して SDS に使う流れ">
+        <div class="inputs">
+          <div class="box"><h4>物質の GHS 分類</h4><span class="tag">標準の機能</span>
+            <ul><li>出典（附属書 VI・NITE など）</li><li>自社判定</li><li>濃度限界・M 係数・ATE（まだ無い）</li></ul></div>
+          <div class="box"><h4>製品の組成</h4><span class="tag">最終組成</span>
+            <ul><li>成分の CAS と含有率</li><li>中身の分からない割合</li><li>製品の性状（引火点など。まだ無い）</li></ul></div>
+          <div class="box"><h4>国の設定</h4><span class="tag">どこの国向けか</span>
+            <ul><li>GHS の改訂版</li><li>採用する区分（ビルディングブロック）</li><li>濃度限界の組・計算の決まり</li></ul></div>
+        </div>
+        <div class="arrow" aria-hidden="true">▼</div>
+        <div class="box core"><h4>製品の GHS 判定（計算）</h4>
+          <ul><li>クラスごとの区分と、そう決めた根拠（どの成分の何 % が効いたか）</li>
+          <li>計算できないクラスには「人が入れる」印（試験データ・つなぎの原則）</li></ul></div>
+        <div class="arrow" aria-hidden="true">▼</div>
+        <div class="box out"><h4>結果を入力ごと保存（判定対象日付き）→ のちに SDS</h4></div>
+      </div>
+      <p>判定の考え方は<b>法規制の判定と同じ形</b>にそろえます（判定対象日を持つ、入力ごと保存する、人の判断を上書きで重ねる、出どころの印を出す）。利用者が覚え直さなくて済むようにするためです。</p>
+    </section>
+
+    <section id="s2-1">
+      <h2><span class="no">2-1</span>どの GHS の改訂版（パープルブック）を土台にするか</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>案</th><th>中身</th><th>良いところ</th><th>気になるところ</th></tr></thead>
+        <tbody>
+          <tr class="rec"><td class="nowrap"><b>A</b> <span class="chip rec">おすすめ</span></td><td><b>Rev.9 の全区分を計算の土台</b>にし、国ごとに「採用する区分」で絞る</td><td>日本の JIS Z 7252:2025（Rev.9）と同じ。EU・米国・カナダ・豪州・台湾の多くはその一部になる</td><td>Rev.10（2023）・Rev.11（2025）の差分は後から足す</td></tr>
+          <tr><td><b>B</b></td><td>最新の Rev.11 を土台</td><td>いちばん新しい</td><td>採用している国がまだ無い。土台と各国の差が大きい</td></tr>
+          <tr><td><b>C</b></td><td>国ごとに別々の計算</td><td>各国に厳密</td><td>作る量が国の数だけ増える</td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li>日本は <b>JIS Z 7252:2025（2025-12-25 改正、Rev.9）</b>。旧 2019 年版（Rev.6）も <b class="mono">2030-12-24</b> まで使えます。国の設定に「日本（JIS 2025）」「日本（JIS 2019）」の 2 つを持ち、判定対象日で使える期間を決める案です。</li>
+        <li>改訂版は<b>国の設定の持ち物</b>にします。物質の分類の行には持たせず、出典の版のまま読み替えます（§2-4）。</li>
+      </ul>
+    </section>
+
+    <section id="s2-2">
+      <h2><span class="no">2-2</span>どの国向けに判定するか（最初に作る国の順）</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>順</th><th>国の設定</th><th>理由</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="nowrap"><b>日本（JIS 2025 / JIS 2019）</b></td><td>主な利用者。NITE の分類ロジック資料（Gmiccs）が「JIS ルール」「UN ルール」の両方の濃度限界を公開していて、答え合わせができる</td></tr>
+          <tr><td class="num">2</td><td class="nowrap"><b>EU（CLP）</b></td><td>調和分類（附属書 VI）に従う義務がある。輸出先として多い。新しいクラス（ED・PBT・PMT）は混合物 <span class="mono">2026-05-01</span> から（既存品は <span class="mono">2028-05-01</span> まで猶予）</td></tr>
+          <tr><td class="num">3</td><td class="nowrap">米国（OSHA HCS 2024）・カナダ（WHMIS）</td><td>Rev.7＋8 の一部。環境有害性を扱わない。米国の混合物の期限は <span class="mono">2027-11-19</span></td></tr>
+          <tr><td class="num">4</td><td class="nowrap">中国・韓国・台湾・英国・豪州</td><td>版や濃度限界に <span class="chip chk">要確認</span> が多い。確かめてから</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><b>おすすめ:</b> 1 → 2 の順で作り、3・4 は国の設定を足すだけで済む形にしておきます。</div>
+    </section>
+
+    <section id="s2-3">
+      <h2><span class="no">2-3</span>成分の物質の分類を、どこから採るか</h2>
+      <p>物質の分類には、すでに<b>国ごとの「出典の採用順」と「自社判定」</b>の仕組みがあります（GHS分類データの画面）。製品の判定はこれをそのまま使い、上の段から順に見ます。</p>
+      <div class="ladder" role="table" aria-label="物質の分類を採る順">
+        <div class="step head" role="row"><div class="n" role="columnheader">段</div><div role="columnheader">何を</div><div role="columnheader">日本向けの既定（案）</div><div role="columnheader">EU 向けの既定（案）</div></div>
+        <div class="step" role="row"><div class="n">1</div><div>自社判定（人が決めたもの）</div><div>最優先</div><div>最優先。ただし<b>附属書 VI より緩めることはできない</b>（附属書 VI は最低線）</div></div>
+        <div class="step" role="row"><div class="n">2</div><div>従う義務のある一覧</div><div>—（NITE の分類は参考で、義務ではない）</div><div><b>附属書 VI</b>（載っているクラスだけ）</div></div>
+        <div class="step" role="row"><div class="n">3</div><div>その国の公的な分類</div><div><b>NITE 政府分類</b></div><div>—</div></div>
+        <div class="step" role="row"><div class="n">4</div><div><b>補う出典</b>（段 2・3 に無いクラスを埋める） <span class="chip ask">決めること</span></div><div>EU 附属書 VI</div><div>NITE（参考として）</div></div>
+        <div class="step" role="row"><div class="n">5</div><div>どこにも無い</div><div>「データなし」。製品の判定では<b>分類に効かない成分</b>として数え、印を出す</div><div>同じ</div></div>
+      </div>
+      <ul>
+        <li><b>補うのはクラスごと</b>にします（物質ごとに丸ごと乗り換えない）。補った値には「補った」の印を付け、製品の結果の根拠にも出します。</li>
+        <li><b>補ってよいかどうかを国の設定で切り替え</b>られるようにします（既定は「補う」。厳しくしたいお客さんは「補わない」）。</li>
+        <li>濃度限界・M 係数・ATE も、<b>同じクラス・同じ区分のときだけ</b>別の出典から借りてよいことにします（S23 §5-3 の決まり）。</li>
+      </ul>
+      <div class="note ask"><b>決めていただきたいこと:</b> 補う出典の順（段 4）。とくに、日本向けで EU 附属書 VI を補いに使ってよいか、EU 向けで NITE を補いに使ってよいか。EU 向けは自社の責任で分類する建前なので、印を付けたうえで使う案です。</div>
+    </section>
+
+    <section id="s2-4">
+      <h2><span class="no">2-4</span>ビルディングブロック（採用する区分）はどこの国のものか</h2>
+      <p><b>判定する国（製品の出し先）のものを使います。</b>物質の分類がどこの国の出典から来ても、製品の結果はその国の区分の組に合わせます。</p>
+      <div class="tbl"><table>
+        <thead><tr><th>例</th><th>扱い</th></tr></thead>
+        <tbody>
+          <tr><td>EU 向けの判定で、急性毒性 区分 5 の成分（NITE から採った）</td><td>EU は区分 5 を採用しないので、計算の結果が区分 5 の範囲なら「区分に該当しない」</td></tr>
+          <tr><td>日本向けの判定で、EU の「眼 区分 2」（2A/2B を分けない）</td><td>日本は 2A/2B を分ける。<b>2A として扱う</b>（安全側）。印を付ける</td></tr>
+          <tr><td>日本向けで、EU の「吸入（経路の記載なし）」</td><td>気体・蒸気・粉じんのどれかに決められない。<b>製品の物理状態から決める</b>か、人に確かめてもらう <span class="chip ask">決めること</span></td></tr>
+        </tbody>
+      </table></div>
+      <h3>各国が採用しない主な区分</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>国</th><th>採用しない主な区分</th></tr></thead>
+        <tbody>
+          <tr><td class="nowrap">日本 JIS 2025</td><td>急性毒性 5、皮膚刺激 3、誤えん 2 の 3 つだけ（ほかは全部採用）</td></tr>
+          <tr><td class="nowrap">EU</td><td>急性毒性 5、皮膚 3、眼 2A/2B の分割、引火性液体 4、誤えん 2、水生 急性 2/3。EU 独自の EUH 文・新クラス（ED・PBT・PMT）がある</td></tr>
+          <tr><td class="nowrap">米国・カナダ</td><td>急性毒性 5、皮膚 3、誤えん 2、<b>環境有害性すべて</b>。独自のクラス（HNOC・単純窒息剤・可燃性粉じん）</td></tr>
+          <tr><td class="nowrap">豪州</td><td>急性毒性 5、皮膚 3、誤えん 2、可燃性ガス 2、水生のすべて、オゾン層</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="s2-5">
+      <h2><span class="no">2-5</span>濃度限界（混合物をその区分にする成分の含有率）</h2>
+      <p><b>計算の決まりは共通にし、濃度限界の組だけを国の設定で差し替えます。</b>日本の公的な道具（Gmiccs）も同じ作りです。</p>
+      <div class="tbl"><table>
+        <thead><tr><th>成分の区分</th><th>日本 JIS ルール</th><th>日本 UN ルール</th><th>EU・英国</th><th>米国</th></tr></thead>
+        <tbody>
+          <tr><td class="nowrap">発がん性 1 ／ 2</td><td class="num">0.1% ／ 1%</td><td class="num">0.1% ／ 0.1%</td><td class="num">0.1% ／ 1%</td><td class="num">0.1% ／ 0.1%</td></tr>
+          <tr><td class="nowrap">生殖毒性 1 ／ 2</td><td class="num">0.3% ／ 3%</td><td class="num">0.1% ／ 0.1%</td><td class="num">0.3% ／ 3%</td><td class="num">0.1% ／ 0.1%</td></tr>
+          <tr><td class="nowrap">特定標的臓器 1 の成分</td><td>10% 以上→区分 1<br>1〜10%→区分 2</td><td class="num">1%</td><td>JIS と同じ</td><td>1% 以上→区分 1</td></tr>
+          <tr><td class="nowrap">感作性 1A ／ 1・1B</td><td class="num">0.1% ／ 1%</td><td class="num">0.1% ／ 0.1%</td><td class="num">0.1% ／ 1%</td><td class="num">0.1% ／ 1%</td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li>日本向けは「JIS ルール」と「UN ルール」のどちらを既定にするかを決めます <span class="chip ask">決めること</span>。おすすめは <b>JIS ルール</b>（安衛法の実務で多い）。</li>
+        <li>物質ごとの<b>特定濃度限界（SCL）</b>があれば、そちらを優先します（EU・英国は義務）。</li>
+        <li>安衛法の<b>裾切値</b>（SDS を出す義務の含有率）は GHS の濃度限界とは別ものです。法規制の判定のほうにすでにあるので混ぜません。</li>
+      </ul>
+    </section>
+
+    <section id="s2-6">
+      <h2><span class="no">2-6</span>計算の中身（どの国でもほぼ共通）</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>クラス</th><th>計算</th></tr></thead>
+        <tbody>
+          <tr><td class="nowrap">急性毒性</td><td><span class="formula">100 / ATEmix = Σ(含有率 ÷ ATE)</span>。毒性の分からない成分が 10% を超えるときは補正の式。区分しか分からない成分は<b>区分から換算した ATE</b>（GHS 表 3.1.2）を使う。分からない成分が 1% 以上なら「急性毒性が未知の成分 x%」をラベル・SDS に書く</td></tr>
+          <tr><td class="nowrap">皮膚腐食性・刺激性</td><td>区分 1 の合計 5% 以上→区分 1。1〜5% か <span class="formula">10×区分1＋区分2</span> が 10% 以上→区分 2。<b>pH ≤2 か ≥11.5 は 1% 以上で区分 1</b>（加算しない）</td></tr>
+          <tr><td class="nowrap">眼</td><td>眼 1＋皮膚 1 の合計 3% 以上→区分 1。1〜3% か <span class="formula">10×(眼1＋皮膚1)＋眼2</span> が 10% 以上→区分 2（2A）</td></tr>
+          <tr><td>発がん性・生殖・変異原性・感作性・特定標的臓器 1/2</td><td>濃度限界（§2-5）を超える成分が 1 つでもあれば、その区分</td></tr>
+          <tr><td class="nowrap">特定標的臓器 3</td><td>気道刺激・麻酔作用ごとに合計し、20% 以上で区分 3 の目安</td></tr>
+          <tr><td class="nowrap">誤えん</td><td>区分 1 の成分の合計 10% 以上、かつ 40℃ の動粘性率 20.5 mm²/s 以下</td></tr>
+          <tr><td class="nowrap">水生環境</td><td><b>M 係数で重み付けした合計</b>（例: <span class="formula">急性1×M</span> が 25% 以上→急性 1）。毒性値がある成分は加算の式</td></tr>
+          <tr><td class="nowrap">物理化学的危険性</td><td><b>原則、製品そのものの試験</b>。計算できるのは引火性液体（引火点・初留点）くらい。ほかは人が入れる</td></tr>
+          <tr><td class="nowrap">つなぎの原則</td><td>自動ではしない。人が「試験済みの似た製品から」と理由を付けて上書きする</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="s2-7">
+      <h2><span class="no">2-7</span>毒性値（ATE・LD50・M 係数・SCL）をどこから持ってくるか</h2>
+      <p><b>いまのシステムには、数値として持っているものがありません</b>（§3）。持ってくる先の候補は次のとおりです。</p>
+      <div class="tbl"><table>
+        <thead><tr><th>データ</th><th>候補</th><th>状態</th></tr></thead>
+        <tbody>
+          <tr><td class="nowrap">ATE</td><td>① EU 附属書 VI の ATE の欄 ② 英国 GB MCL ③ 区分からの換算値（GHS 表 3.1.2） ④ 自社で入れる LD50/LC50</td><td>①② は原文の文字のまま保存済み（解析していない）。③ は計算で出せる</td></tr>
+          <tr><td class="nowrap">LD50・LC50</td><td>① NITE の分類根拠の文章 ② 自社で入れる</td><td>① は文章の中にあるだけ。数値に起こすのは難しい（書き方がまちまち）</td></tr>
+          <tr><td class="nowrap">SCL</td><td>EU 附属書 VI・英国 GB MCL</td><td>原文の文字のまま保存済み（解析していない）</td></tr>
+          <tr><td class="nowrap">M 係数</td><td>EU 附属書 VI・英国 GB MCL・<b>韓国の分類一覧</b>（M 係数の列あり）・<b>LOLI の「Japan - GHS - M係数」</b>（ListID 9076）</td><td>韓国・LOLI は未取得</td></tr>
+          <tr><td>水生の毒性値（L(E)C50・NOEC）・急速分解性</td><td>自社で入れる</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><b>おすすめの順:</b> まず ③ 区分からの換算値で急性毒性を計算できるようにします（データが要らない）。次に EU・英国の文字を解析して ATE・SCL・M 係数を表に起こします。LD50 などの実測値は<b>物質ごとに人が入れる欄</b>を用意します。NITE の根拠文の解析は後回しにします（手間の割に確実でない）。</div>
+    </section>
+
+    <section id="s2-8">
+      <h2><span class="no">2-8</span>製品の側に足りないもの</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>項目</th><th>いま</th><th>案</th></tr></thead>
+        <tbody>
+          <tr><td>含有率の範囲（○〜○%）</td><td>1 つの値だけ</td><td>SDS には範囲で書くことが多い。<b>判定は上限で計算</b>（安全側）する案。範囲の欄を足すかは SDS のときに決める</td></tr>
+          <tr><td>中身の分からない割合</td><td>最終組成の「不明」として持っている</td><td>そのまま「毒性が未知の成分」に使う</td></tr>
+          <tr><td>性状（物理状態・引火点・初留点・pH・40℃ の動粘性率・蒸気圧）</td><td>専用の欄が無い（拡張属性で入れられるだけ）</td><td>製品に<b>GHS 用の性状の欄</b>を足す（SDS の第 9 項にもそのまま使える）</td></tr>
+          <tr><td>試験データ・人の判断</td><td>無い</td><td>製品 × クラスごとの<b>上書き</b>（理由・根拠付き）。物質の自社判定と同じ形</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="s3">
+      <h2><span class="no">3</span>いまあるデータ（2026-10-17 の洗い出し）</h2>
+      <ul>
+        <li><b>物質の分類:</b> 出典 3 つ（NITE・EU 附属書 VI・LOLI のリンク）。クラス・区分・H 文・標的臓器・最低限の分類（EU の <code>*</code>）・根拠の文章（NITE）・有効期間を持つ。</li>
+        <li><b>国ごとの採用順と自社判定:</b> ある。ただし自社判定には SCL・M 係数・ATE を入れる欄が無い。</li>
+        <li><b>SCL・M 係数・ATE・LD50:</b> <b>数値として持っていない。</b>EU の分は原文の文字のまま、NITE の分は根拠の文章の中。</li>
+        <li><b>区分のカタログ:</b> 39 クラス。急性毒性 5・皮膚 3・眼 2A/2B・水生 急性 2/3・慢性 4 はある。<b>Rev.10 の爆発物の新区分・Rev.9 の加圧下化学品・EU の新クラス（ED・PBT・PMT）は無い</b>。どの版に基づくかの印も無い。</li>
+        <li><b>製品:</b> 最終組成（CAS ごとの合計の含有率）と不明の割合はある。含有率の範囲・性状は無い。</li>
+      </ul>
+    </section>
+
+    <section id="s4">
+      <h2><span class="no">4</span>作る順（案）</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>段</th><th>中身</th><th>これでできること</th></tr></thead>
+        <tbody>
+          <tr><td class="num"><b>1</b></td><td>計算の核（Rev.9）＋国の設定「日本 JIS 2025」。健康有害性と環境有害性の濃度限界・加算、急性毒性は区分からの換算値。結果を入力ごと保存</td><td>製品の画面に「GHS 判定（日本）」が出る。根拠（どの成分が何 % で効いたか）が見える</td></tr>
+          <tr><td class="num">2</td><td>製品 × クラスの上書き（試験データ・つなぎの原則）、製品の性状の欄、引火性液体の判定</td><td>物理化学的危険性の一部と、人の判断を足せる</td></tr>
+          <tr><td class="num">3</td><td>SCL・M 係数・ATE を表に起こす（EU・英国の解析、韓国・LOLI の M 係数）、物質の毒性値の入力欄</td><td>計算が実際の値で正確になる</td></tr>
+          <tr><td class="num">4</td><td>国の設定「EU（CLP）」、次に米国・カナダ。区分の読み替え・EU 独自の文</td><td>輸出先ごとに判定できる</td></tr>
+          <tr><td class="num">5</td><td>ラベル要素（H 文・P 文・絵表示・注意喚起語。各国語）</td><td>SDS の第 2 項の材料がそろう → SDS 作成へ</td></tr>
+        </tbody>
+      </table></div>
+      <p>答え合わせ: 段 1 の結果を、<b>NITE の Gmiccs（JIS 2025 版）</b>で同じ製品を判定した結果と比べます。</p>
+    </section>
+
+    <section id="s5">
+      <h2><span class="no">5</span>決めていただきたいこと</h2>
+      <ol class="decide">
+        <li><div><div class="q">計算の土台を Rev.9（JIS 2025 と同じ）にしてよいか</div><div class="r">おすすめ: はい（案 A）</div><div class="ref">§2-1</div></div></li>
+        <li><div><div class="q">最初に作る国を日本 → EU の順にしてよいか。日本は JIS 2025 と JIS 2019 の両方を持つか</div><div class="r">おすすめ: 日本 → EU。日本は 2 つとも持ち、判定対象日で使い分ける</div><div class="ref">§2-1・§2-2</div></div></li>
+        <li><div><div class="q">日本向けの濃度限界の既定を JIS ルールにするか、UN ルールにするか</div><div class="r">おすすめ: JIS ルール</div><div class="ref">§2-5</div></div></li>
+        <li><div><div class="q">物質の分類が足りないときに、別の国の出典で補うか。補うならどの順か</div><div class="r">案: 補う（クラスごと・印付き・国の設定で切り替え可）。日本向けは EU 附属書 VI、EU 向けは NITE</div><div class="ref">§2-3</div></div></li>
+        <li><div><div class="q">毒性値は、まず区分からの換算値で始め、実測値は人が入れる形にしてよいか</div><div class="r">おすすめ: はい</div><div class="ref">§2-7</div></div></li>
+        <li><div><div class="q">毒性の分からない成分が多いときに「分類できない」とするか</div><div class="r">Gmiccs は 0.1% 以上の未知成分で「分類できない」にしている。GHS 本文は補正の式で計算する</div><div class="ref">§2-6</div></div></li>
+        <li><div><div class="q">物理化学的危険性・つなぎの原則は、人が入れる形（自動にしない）でよいか</div><div class="r">おすすめ: はい</div><div class="ref">§2-6</div></div></li>
+        <li><div><div class="q">含有率は上限で計算してよいか</div><div class="r">おすすめ: はい（安全側）。範囲の欄を足すかは SDS のときに決める</div><div class="ref">§2-8</div></div></li>
+      </ol>
+    </section>
+
+    <section id="s6">
+      <h2><span class="no">6</span>まだ確かめていないこと <span class="chip chk">要確認</span></h2>
+      <div class="tbl"><table>
+        <thead><tr><th>国</th><th>確かめること</th></tr></thead>
+        <tbody>
+          <tr><td>韓国</td><td>準拠する改訂版（Rev.4 か Rev.6 か）と濃度限界</td></tr>
+          <tr><td>中国</td><td>有害性ごとの基準（GB 30000.2〜29、Rev.4）の改訂予定と採用する区分</td></tr>
+          <tr><td>EU</td><td>最近の ATP の適用日（一次資料）、加圧下化学品（Rev.8）を採用したか</td></tr>
+          <tr><td>カナダ</td><td>特定標的臓器の濃度限界、引火性液体 区分 4</td></tr>
+          <tr><td>豪州</td><td>発がん性 区分 2 の濃度限界</td></tr>
+          <tr><td>台湾</td><td>労働部の規則の Rev.8 への改正の施行日</td></tr>
+          <tr><td>日本</td><td>JIS で SCL をどう扱うか</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="s8">
+      <h2><span class="no">7</span>用語</h2>
+      <dl class="terms">
+        <dt>パープルブック</dt><dd>国連の GHS の本文。2 年ごとに改訂（Rev.9 は 2021、Rev.10 は 2023、Rev.11 は 2025）</dd>
+        <dt>ビルディングブロック</dt><dd>国が GHS の区分のうち、どれを採用するか（採用しない区分は使わない）</dd>
+        <dt>ATE</dt><dd>急性毒性推定値。LD50 などから、または区分から換算して決める</dd>
+        <dt>SCL</dt><dd>特定濃度限界。物質ごとに決められた、一般の濃度限界と違う値</dd>
+        <dt>M 係数</dt><dd>水生環境有害性の強い物質の重み（1・10・100…）</dd>
+        <dt>つなぎの原則</dt><dd>試験済みの似た混合物の結果から推定してよい決まり</dd>
+      </dl>
+    </section>
+
+    <section id="s9">
+      <h2><span class="no">8</span>主な出典（調査 2026-10-17）</h2>
+      <div class="src">
+        <div><b>日本</b>: <a href="https://www.nite.go.jp/chem/chemimaga/fy2025/01-16_758.html">NITE お知らせ</a> ・ <a href="https://www.ghs.nite.go.jp/link/ja/contents/2025/gmiccs_logic_ja_JIS2025_GHSrev9_20260330.pdf">Gmiccs 分類ロジック（Rev.9 / JIS 2025）</a> ・ <a href="https://webdesk.jsa.or.jp/books/W11M0090/index/?bunsyo_id=JIS+Z+7252:2025">日本規格協会 JIS Z 7252:2025</a></div>
+        <div><b>EU</b>: <a href="https://eur-lex.europa.eu/eli/reg_del/2023/707/oj">Reg. 2023/707</a> ・ <a href="https://eur-lex.europa.eu/eli/reg/2024/2865/oj/eng">Reg. 2024/2865</a> ・ <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32025R2439">Reg. 2025/2439</a></div>
+        <div><b>英国</b>: <a href="https://www.hse.gov.uk/chemical-classification/legal/changes-gb-clp-regulation.htm">GB CLP の変更</a> ・ <a href="https://www.hse.gov.uk/chemical-classification/classification/mcl-list.htm">GB MCL 一覧</a></div>
+        <div><b>米国</b>: <a href="https://www.osha.gov/laws-regs/federalregister/2024-05-20">HCS 2024 官報</a> ・ <a href="https://www.osha.gov/hazcom/rulemaking/extension">期限の延長</a> ・ <a href="https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.1200AppA">1910.1200 附属書 A</a></div>
+        <div><b>カナダ</b>: <a href="https://www.canada.ca/en/health-canada/services/environmental-workplace-health/occupational-health-safety/workplace-hazardous-materials-information-system/amendments-hazardous-products-regulations.html">Hazardous Products Regulations の改正</a></div>
+        <div><b>中国</b>: <a href="https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=C008AEDBFD9A16F3C5BEB671C20618DD">GB 規格</a></div>
+        <div><b>韓国</b>: <a href="https://www.moel.go.kr/info/lawinfo/instruction/view.do?bbs_seq=20260401303">雇用労働部 告示</a></div>
+        <div><b>台湾</b>: <a href="https://ghs.osha.gov.tw/CHT/intro/AnnounceData4Detail.aspx?id=432">職安署 公告</a></div>
+        <div><b>豪州</b>: <a href="https://www.safeworkaustralia.gov.au/safety-topic/hazards/chemicals/classifying-chemicals/transition-ghs7">Safe Work Australia GHS7 への移行</a></div>
+      </div>
+    </section>
+
+    <footer>元の資料: docs/steps/S25_製品のGHS判定_仕様検討.md（2026-10-17）。検討の段階の案で、決定ではありません。</footer>
+  </main>
+</div>
+</body>
+</html>
