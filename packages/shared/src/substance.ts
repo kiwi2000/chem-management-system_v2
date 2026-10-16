@@ -8,8 +8,13 @@ export type GazetteLawKind = (typeof GAZETTE_LAW_KINDS)[number];
 export const SUBSTANCE_STATUSES = ["ACTIVE", "DISCONTINUED"] as const;
 export type SubstanceStatus = (typeof SUBSTANCE_STATUSES)[number];
 
-export const PROPERTY_DATA_TYPES = ["NUMBER", "TEXT"] as const;
+/** 拡張属性の種類。CHOICE は管理者が登録した選択肢から選ぶ（2026-10-17） */
+export const PROPERTY_DATA_TYPES = ["NUMBER", "TEXT", "CHOICE"] as const;
 export type PropertyDataType = (typeof PROPERTY_DATA_TYPES)[number];
+
+/** 拡張属性のまとまり。画面ではこの順に並べ、まとまりごとに開け閉めする */
+export const PROPERTY_GROUPS = ["PHYSICAL", "HEALTH", "ENVIRONMENT", "OTHER"] as const;
+export type PropertyGroup = (typeof PROPERTY_GROUPS)[number];
 
 /** 拡張属性の項目定義が、物質と製品のどちらのものか */
 export const PROPERTY_TARGETS = ["SUBSTANCE", "PRODUCT"] as const;
@@ -32,6 +37,9 @@ export const propertyValuesSchema = z
       valueText: emptyToNull(z.string().trim().max(2000)).optional(),
       valueNum: emptyToNull(decimalString).optional(),
       unit: emptyToNull(z.string().trim().max(50)).optional(),
+      /** 測定の条件。選択肢のコードか、「その他」の自由記入のどちらか一方 */
+      conditionCode: emptyToNull(z.string().trim().max(50)).optional(),
+      conditionText: emptyToNull(z.string().trim().max(200)).optional(),
     }),
   )
   .max(200);
@@ -96,6 +104,22 @@ export const substanceSchema = (m: Messages) =>
 
 export type SubstanceInput = z.infer<ReturnType<typeof substanceSchema>>;
 
+/**
+ * 拡張属性の選択肢の並び。`id` が無いものは新しく足す。
+ * コードは保存した値との対応なので、既にあるものは変えない（サーバーで据え置く）
+ */
+const propertyOptionsSchema = (m: Messages) =>
+  z
+    .array(
+      z.object({
+        id: z.string().min(1).optional(),
+        labelJa: z.string().trim().min(1, m.validation.required).max(100),
+        labelEn: emptyToNull(z.string().trim().max(100)).optional(),
+        activeFlag: z.boolean().default(true),
+      }),
+    )
+    .max(100, m.validation.tooMany(100));
+
 /** 拡張属性の項目定義（管理者が作る）。物質用と製品用を target で分ける */
 export const propertyDefSchema = (m: Messages) =>
   z.object({
@@ -112,6 +136,11 @@ export const propertyDefSchema = (m: Messages) =>
     defaultUnit: emptyToNull(z.string().trim().max(50)).optional(),
     displayOrder: z.number().int().min(0).max(9999),
     activeFlag: z.boolean(),
+    group: z.enum(PROPERTY_GROUPS).default("OTHER"),
+    /** 値の選択肢（種類が CHOICE のとき）。並びの順が表示順 */
+    valueOptions: propertyOptionsSchema(m).default([]),
+    /** 測定の条件の選択肢。無ければ条件は自由に書く */
+    conditionOptions: propertyOptionsSchema(m).default([]),
   });
 
 export type PropertyDefInput = z.infer<ReturnType<typeof propertyDefSchema>>;

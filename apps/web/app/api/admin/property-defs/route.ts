@@ -4,7 +4,11 @@ import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { PROPERTY_DEF_COLUMNS } from "@/lib/list-columns";
-import { PROPERTY_DEF_COUNT, toPropertyDefDto } from "@/lib/property-def-service";
+import {
+  PROPERTY_DEF_COUNT,
+  syncPropertyOptions,
+  toPropertyDefDto,
+} from "@/lib/property-def-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -66,18 +70,28 @@ export async function POST(req: Request) {
     where: { target_key: { target: v.target, key: v.key } },
   });
   if (clash) return jsonError(409, "duplicate_key", m.errors.duplicateKey(v.key));
+  if (v.dataType === "CHOICE" && v.valueOptions.length === 0) {
+    return jsonError(400, "validation_error", m.propertyDefs.choiceNeedsOptions);
+  }
 
-  const created = await prisma.propertyDef.create({
-    data: {
-      target: v.target,
-      key: v.key,
-      labelJa: v.labelJa,
-      labelEn: v.labelEn ?? null,
-      dataType: v.dataType,
-      defaultUnit: v.defaultUnit ?? null,
-      displayOrder: v.displayOrder,
-      activeFlag: v.activeFlag,
-    },
+  // 管理者が足す項目は、システムの項目にはならない（system_flag は移行で入れたものだけ）
+  const created = await prisma.$transaction(async (tx) => {
+    const def = await tx.propertyDef.create({
+      data: {
+        target: v.target,
+        key: v.key,
+        labelJa: v.labelJa,
+        labelEn: v.labelEn ?? null,
+        dataType: v.dataType,
+        defaultUnit: v.defaultUnit ?? null,
+        displayOrder: v.displayOrder,
+        activeFlag: v.activeFlag,
+        group: v.group,
+      },
+    });
+    if (v.dataType === "CHOICE") await syncPropertyOptions(tx, def, "VALUE", v.valueOptions);
+    await syncPropertyOptions(tx, def, "CONDITION", v.conditionOptions);
+    return def;
   });
 
   await writeAudit({

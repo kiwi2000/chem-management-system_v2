@@ -12,6 +12,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AliasList } from "@/components/alias-list";
+import {
+  initialPropertyDraft,
+  propertyBody,
+  PropertyFields,
+  type PropertyDraft,
+} from "@/components/property-fields";
 import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -179,19 +185,10 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
   const [gazette] = useState<GazetteRow[]>(
     initial?.gazetteNumbers.map((g) => ({ lawKind: g.lawKind, number: g.number })) ?? [],
   );
-  // 拡張属性は「定義ID → 入力値（文字列）」で持つ。数値も文字列のまま送る
-  const [propValues, setPropValues] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    for (const p of initial?.properties ?? []) {
-      init[p.propertyDefId] = p.valueNum ?? p.valueText ?? "";
-    }
-    return init;
-  });
-  const [propUnits, setPropUnits] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    for (const p of initial?.properties ?? []) if (p.unit) init[p.propertyDefId] = p.unit;
-    return init;
-  });
+  // 拡張属性は「定義ID → 書きかけ（値・単位・条件）」で持つ。数値も文字列のまま送る
+  const [propDraft, setPropDraft] = useState<PropertyDraft>(() =>
+    initialPropertyDraft(initial?.properties),
+  );
 
   const [error, setError] = useState<string | null>(null);
   // どの項目が悪いのかを、その欄の下に出す
@@ -216,18 +213,7 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
         ...subNamesEn.filter((n) => n.trim() !== "").map((n) => ({ nameJa: null, nameEn: n })),
       ],
       gazetteNumbers: gazette.filter((g) => g.number.trim() !== ""),
-      properties: defs
-        .map((d) => {
-          const raw = (propValues[d.id] ?? "").trim();
-          if (raw === "") return null;
-          return {
-            propertyDefId: d.id,
-            valueText: d.dataType === "TEXT" ? raw : null,
-            valueNum: d.dataType === "NUMBER" ? raw : null,
-            unit: propUnits[d.id] || d.defaultUnit || null,
-          };
-        })
-        .filter((p) => p !== null),
+      properties: propertyBody(defs, propDraft),
     };
   }
 
@@ -654,33 +640,13 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
             <CardHeader>
               <CardTitle className="text-base">{m.substances.properties}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {defs.length === 0 && (
-                <p className="text-muted-foreground text-sm">{m.substances.propertiesEmpty}</p>
-              )}
-              {defs.map((d) => (
-                <div key={d.id} className="flex flex-wrap items-center gap-2">
-                  <Label htmlFor={`prop-${d.id}`} className="w-48">
-                    {pickName(locale, d.labelJa, d.labelEn)}
-                  </Label>
-                  <Input
-                    id={`prop-${d.id}`}
-                    inputMode={d.dataType === "NUMBER" ? "decimal" : "text"}
-                    value={propValues[d.id] ?? ""}
-                    onChange={(e) => setPropValues({ ...propValues, [d.id]: e.target.value })}
-                    className="w-64"
-                  />
-                  {d.dataType === "NUMBER" && (
-                    <Input
-                      aria-label={`${pickName(locale, d.labelJa, d.labelEn)} ${m.common.unit}`}
-                      value={propUnits[d.id] ?? d.defaultUnit ?? ""}
-                      onChange={(e) => setPropUnits({ ...propUnits, [d.id]: e.target.value })}
-                      className="w-28"
-                      placeholder={m.common.unit}
-                    />
-                  )}
-                </div>
-              ))}
+            <CardContent>
+              <PropertyFields
+                defs={defs}
+                draft={propDraft}
+                onChange={setPropDraft}
+                readOnly={readOnly}
+              />
             </CardContent>
           </Card>
         </fieldset>

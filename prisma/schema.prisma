@@ -110,9 +110,31 @@ enum ProductStatus {
   DISCONTINUED
 }
 
+/**
+ * 拡張属性の種類。CHOICE は管理者が登録した選択肢から選ぶ（値の表の value_text に選択肢のコードを入れる。2026-10-17）
+ */
 enum PropertyDataType {
   NUMBER
   TEXT
+  CHOICE
+}
+
+/**
+ * 拡張属性のまとまり。画面ではまとまりごとに開け閉めする（2026-10-17）
+ */
+enum PropertyGroup {
+  PHYSICAL
+  HEALTH
+  ENVIRONMENT
+  OTHER
+}
+
+/**
+ * 拡張属性の選択肢が、値のものか条件のものか
+ */
+enum PropertyOptionKind {
+  VALUE
+  CONDITION
 }
 
 enum SettingValueType {
@@ -240,6 +262,7 @@ model User {
    * 組織の所属。1人1つ。null=未所属
    */
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -552,7 +575,6 @@ model SubstanceRankBand {
 
 /**
  * 接続元IPアドレスの WHOIS（JPNIC）の結果をためておく表（2026-10-02）。
- *
  * 同じアドレスを何度も問い合わせないため。JPNIC はネットワークの範囲ごとに答えるので、
  * 範囲で持ち、同じ範囲の別のアドレスも問い合わせずに済ませる。
  * 範囲の端は、桁をそろえた 16 進の文字列（IPv4 は 8 桁・IPv6 は 32 桁）で持つ。
@@ -561,11 +583,15 @@ model SubstanceRankBand {
  */
 model IpWhois {
   id          String   @id @default(cuid())
-  /** 4 か 6 */
+  /**
+   * 4 か 6
+   */
   family      Int
   rangeStart  String   @map("range_start") @db.VarChar(32)
   rangeEnd    String   @map("range_end") @db.VarChar(32)
-  /** JPNIC が返したネットワークアドレス（1.0.16.0/24 など） */
+  /**
+   * JPNIC が返したネットワークアドレス（1.0.16.0/24 など）
+   */
   network     String?  @db.VarChar(64)
   networkName String?  @map("network_name") @db.VarChar(200)
   orgJa       String?  @map("org_ja") @db.VarChar(300)
@@ -1175,17 +1201,50 @@ model PropertyDef {
   defaultUnit  String?          @map("default_unit") @db.VarChar(50)
   displayOrder Int              @default(0) @map("display_order")
   activeFlag   Boolean          @default(true) @map("active_flag")
+  /**
+   * 画面で開け閉めするまとまり
+   */
+  group        PropertyGroup    @default(OTHER)
+  /**
+   * システムが最初から入れた項目（GHS 判定・SDS がキーで読む）。消せず、種類も変えられない。
+   * 名前・単位・表示順・まとまり・選択肢・「使わない」は変えてよい（2026-10-17）
+   */
+  systemFlag   Boolean          @default(false) @map("system_flag")
   createdAt    DateTime         @default(now()) @map("created_at")
   updatedAt    DateTime         @updatedAt @map("updated_at")
 
   substanceValues SubstanceProperty[]
   productValues   ProductProperty[]
+  options         PropertyOption[]
 
   /**
    * キーは用途ごとに一意。物質と製品で同じキーを使ってよい
    */
   @@unique([target, key])
   @@map("property_defs")
+}
+
+/**
+ * 拡張属性の選択肢（2026-10-17）。
+ * - VALUE … 種類が CHOICE の項目で選べる値。値の表の value_text にコードを入れる
+ * - CONDITION … 測定の条件（引火点＝密閉式／開放式 など）。値の表の condition_code にコードを入れる。
+ * 合うものが無いときは「その他」で condition_text に自由に書く
+ * コードは保存した値との対応なので変えない。名前は変えてよい。使われている選択肢は消さずに「使わない」にする
+ */
+model PropertyOption {
+  id            String             @id @default(cuid())
+  propertyDefId String             @map("property_def_id")
+  kind          PropertyOptionKind
+  code          String             @db.VarChar(50)
+  labelJa       String             @map("label_ja") @db.VarChar(100)
+  labelEn       String?            @map("label_en") @db.VarChar(100)
+  displayOrder  Int                @default(0) @map("display_order")
+  activeFlag    Boolean            @default(true) @map("active_flag")
+
+  def PropertyDef @relation(fields: [propertyDefId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyDefId, kind, code])
+  @@map("property_options")
 }
 
 /**
@@ -1199,6 +1258,11 @@ model SubstanceProperty {
   valueText     String?  @map("value_text")
   valueNum      Decimal? @map("value_num") @db.Decimal(18, 6)
   unit          String?  @db.VarChar(50)
+  /**
+   * 測定の条件。選択肢のコード（condition_code）か、「その他」の自由記入（condition_text）。空なら場所を取らない
+   */
+  conditionCode String?  @map("condition_code") @db.VarChar(50)
+  conditionText String?  @map("condition_text") @db.VarChar(200)
 
   substance Substance   @relation(fields: [substanceId], references: [id], onDelete: Cascade)
   def       PropertyDef @relation(fields: [propertyDefId], references: [id], onDelete: Cascade)
@@ -1261,8 +1325,8 @@ model Product {
    * 反応後の組成を入れ始めた日時と人（S24）。入っていれば、登録組成（compositionLines）は**反応後**で、
    * 押した時点の組成の写しが preReactionLines（反応前）に凍結されている。空なら従来どおり
    */
-  preReactionAt DateTime? @map("pre_reaction_at")
-  preReactionBy String?   @map("pre_reaction_by")
+  preReactionAt        DateTime? @map("pre_reaction_at")
+  preReactionBy        String?   @map("pre_reaction_by")
   /**
    * 原材料の組成が変わって、反応前組成（展開・合算）が写し取ったときから変わった日時（2026-10-03）。
    * 入っていれば、反応後組成も書き換えるかを画面で尋ねる。反応後を保存する・「このままにする」で消える
@@ -1396,6 +1460,11 @@ model ProductProperty {
   valueText     String?  @map("value_text")
   valueNum      Decimal? @map("value_num") @db.Decimal(18, 6)
   unit          String?  @db.VarChar(50)
+  /**
+   * 測定の条件。選択肢のコード（condition_code）か、「その他」の自由記入（condition_text）。空なら場所を取らない
+   */
+  conditionCode String?  @map("condition_code") @db.VarChar(50)
+  conditionText String?  @map("condition_text") @db.VarChar(200)
 
   product Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   def     PropertyDef @relation(fields: [propertyDefId], references: [id], onDelete: Cascade)
@@ -2353,12 +2422,12 @@ model LinkVersionSource {
   /**
    * 取り込んだ日時。ファイルは種別ごとに届くので、バージョン単位ではなくここに持つ
    */
-  loadedAt DateTime? @map("loaded_at")
+  loadedAt   DateTime? @map("loaded_at")
   /**
    * 別の版から中身を写したとき、写し元の版のコード（2026-10-04）。画面の取込日の欄に添える。
    * 写したあとで写し元を直しても、こちらは追いかけない（版はその時点の写し）
    */
-  copiedFrom String? @map("copied_from") @db.VarChar(50)
+  copiedFrom String?   @map("copied_from") @db.VarChar(50)
 
   createdAt DateTime @default(now()) @map("created_at")
   createdBy String?  @map("created_by")

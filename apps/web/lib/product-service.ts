@@ -123,6 +123,8 @@ export function toDetail(p: ProductWithRelations, versionId: string | null): Pro
       valueText: v.valueText,
       valueNum: v.valueNum?.toString() ?? null,
       unit: v.unit,
+      conditionCode: v.conditionCode,
+      conditionText: v.conditionText,
     })),
   };
 }

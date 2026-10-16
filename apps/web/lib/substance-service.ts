@@ -96,6 +96,8 @@ export function toDetail(s: SubstanceWithRelations): SubstanceDetailDto {
       valueText: p.valueText,
       valueNum: p.valueNum?.toString() ?? null,
       unit: p.unit,
+      conditionCode: p.conditionCode,
+      conditionText: p.conditionText,
     })),
   };
 }

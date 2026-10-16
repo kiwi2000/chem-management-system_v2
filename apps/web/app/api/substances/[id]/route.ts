@@ -73,7 +73,10 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "duplicate_gazette", m.errors.duplicateGazette);
   }
 
-  const defs = await prisma.propertyDef.findMany({ where: { target: "SUBSTANCE" } });
+  const defs = await prisma.propertyDef.findMany({
+    where: { target: "SUBSTANCE" },
+    include: { options: true },
+  });
   const propErrors = validatePropertyValues(input.properties, defs, m);
   if (propErrors.length > 0) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);

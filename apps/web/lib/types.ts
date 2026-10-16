@@ -14,6 +14,7 @@ import type {
   ProductStatus,
   PublishState,
   PropertyDataType,
+  PropertyGroup,
   PropertyTarget,
   SubstanceStatus,
   ThresholdBasis,
@@ -449,6 +450,9 @@ export interface PropertyValueDto {
   valueText: string | null;
   valueNum: string | null;
   unit: string | null;
+  /** 測定の条件。選択肢のコードか、「その他」の自由記入 */
+  conditionCode: string | null;
+  conditionText: string | null;
 }
 
 export interface ProductListItemDto {
@@ -1201,6 +1205,24 @@ export interface PropertyDefDto {
   activeFlag: boolean;
   /** この項目に値が入っている件数（削除の影響を知らせるため）。用途側だけを数える */
   valueCount: number;
+  /** 画面で開け閉めするまとまり */
+  group: PropertyGroup;
+  /** システムが最初から入れた項目。消せず、種類も変えられない */
+  systemFlag: boolean;
+  /** 値の選択肢（種類が CHOICE のとき）。「使わない」にしたものも含む（入力済みの値を読むため） */
+  valueOptions: PropertyOptionDto[];
+  /** 測定の条件の選択肢。空なら条件は自由に書く */
+  conditionOptions: PropertyOptionDto[];
+}
+
+/** 拡張属性の選択肢 */
+export interface PropertyOptionDto {
+  id: string;
+  /** 保存した値との対応。変えない */
+  code: string;
+  labelJa: string;
+  labelEn: string | null;
+  activeFlag: boolean;
 }
 
 export interface NewsDto {

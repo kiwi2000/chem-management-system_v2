@@ -1031,6 +1031,9 @@ export const PROPERTY_DEF_COLUMNS: QueryColumn[] = [
   { key: "defaultUnit", kind: "text", field: "defaultUnit", caseInsensitive: true },
   { key: "displayOrder", kind: "number", field: "displayOrder" },
   { key: "activeFlag", kind: "enum", field: "activeFlag", booleanEnum: true },
+  // まとまり・システムの項目の印（2026-10-17）
+  { key: "group", kind: "enum", field: "group" },
+  { key: "systemFlag", kind: "enum", field: "systemFlag", booleanEnum: true },
 ];
 
 export const ELEMENT_COLUMNS: QueryColumn[] = [

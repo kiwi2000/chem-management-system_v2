@@ -2207,6 +2207,43 @@ export const ja = {
     deleteConfirm: (label: string) =>
       `項目「${label}」を削除しますか？入力済みの値もすべて消えます`,
     valueCount: (n: number) => `${n} 件で入力済み`,
+    // 選択肢・まとまり・システムの項目（2026-10-17）
+    typeChoice: "選択肢",
+    group: "まとまり",
+    groups: {
+      PHYSICAL: "物理的・化学的性質",
+      HEALTH: "健康への影響（毒性）",
+      ENVIRONMENT: "環境への影響",
+      OTHER: "その他",
+    },
+    valueOptions: "選べる値",
+    valueOptionsHint: "種類が「選択肢」のとき、入力する人はこの中から選びます",
+    conditionOptions: "測定の条件",
+    conditionOptionsHint:
+      "引火点の測り方（密閉式・開放式）など。登録しておくと、入力する人は選択肢から選び、合わないときは「その他」で書きます。登録しなければ自由に書きます",
+    addOption: "選択肢を足す",
+    removeOption: "外す",
+    optionLabelJa: "名前（日本語）",
+    optionLabelEn: "名前（English）",
+    optionActive: "使う",
+    optionKeepHint: "入力済みの値で使われている選択肢は、外すと「使わない」になります",
+    choiceNeedsOptions: "種類が「選択肢」のときは、選べる値を 1 つ以上登録してください",
+    system: "システムの項目",
+    systemHint:
+      "GHS 判定や SDS が使う項目です。削除と種類の変更はできません。名前・単位・表示順・まとまり・選択肢・「使う」は変えられます",
+    systemCannotDelete: (label: string) =>
+      `「${label}」はシステムの項目なので削除できません。使わないときは「この項目を使う」を外してください`,
+  },
+
+  /** 物質・製品の画面の拡張属性の欄（2026-10-17） */
+  propertyValues: {
+    condition: "条件",
+    conditionNone: "（指定なし）",
+    conditionOther: "その他",
+    conditionOtherPlaceholder: "条件を書く",
+    choiceNone: "（選ばない）",
+    noValues: "入力された項目はありません",
+    inactiveOption: "（使わない選択肢）",
   },
 
   /** 製品・原材料の添付ファイル（2026-09-27） */
@@ -2431,6 +2468,9 @@ export const ja = {
       `${cas} と ${element} の組み合わせは既に登録されています`,
     propertyTypeMismatch: (label: string) => `「${label}」の値の種類が定義と合っていません`,
     unknownProperty: "定義されていない項目が含まれています",
+    propertyChoiceUnknown: (label: string) => `「${label}」は選択肢から選んでください`,
+    propertyConditionUnknown: (label: string) =>
+      `「${label}」の条件は選択肢から選ぶか、「その他」を選んで書いてください`,
     casRequired: "CAS番号は必須です（システム設定で変更できます）",
     casFormatInvalid: "CASの形式ではありません（例: 7439-92-1）。システム設定で緩められます",
     casCheckDigitInvalid: "チェックデジットが合っていません。システム設定で緩められます",

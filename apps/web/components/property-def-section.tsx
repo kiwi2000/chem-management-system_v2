@@ -3,8 +3,10 @@
 import {
   emptyTableState,
   pickName,
+  PROPERTY_GROUPS,
   serializeTableState,
   type PropertyDataType,
+  type PropertyGroup,
   type PropertyTarget,
   type TableState,
 } from "@chem/shared";
@@ -19,13 +21,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import type { ApiError, ListResponse, PropertyDefDto } from "@/lib/types";
+import type { ApiError, ListResponse, PropertyDefDto, PropertyOptionDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 
 /** 用途は節ごとに固定なので、並びは表示順だけでよい */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
 const selectClass = "border-input bg-background h-9 rounded-none border px-2 text-sm";
+
+/** 選択肢の書きかけ。`id` が無いものは新しく足す */
+interface OptionDraft {
+  id?: string;
+  labelJa: string;
+  labelEn: string;
+  activeFlag: boolean;
+}
+
+const toOptionDraft = (o: PropertyOptionDto): OptionDraft => ({
+  id: o.id,
+  labelJa: o.labelJa,
+  labelEn: o.labelEn ?? "",
+  activeFlag: o.activeFlag,
+});
+
+/** 名前の空いた行は送らない（足しかけて使わなかった行） */
+const toOptionBody = (list: OptionDraft[]) =>
+  list
+    .filter((o) => o.labelJa.trim() !== "")
+    .map((o) => ({
+      ...(o.id ? { id: o.id } : {}),
+      labelJa: o.labelJa,
+      labelEn: o.labelEn || null,
+      activeFlag: o.activeFlag,
+    }));
 
 interface Props {
   target: PropertyTarget;
@@ -55,12 +83,26 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
       defaultUnit: "",
       displayOrder: 0,
       activeFlag: true,
+      group: "OTHER" as PropertyGroup,
+      systemFlag: false,
+      valueOptions: [] as OptionDraft[],
+      conditionOptions: [] as OptionDraft[],
     }),
     [],
   );
   const [form, setForm] = useState({ ...emptyForm });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const typeLabel = useCallback(
+    (t: PropertyDataType) =>
+      t === "NUMBER"
+        ? m.propertyDefs.typeNumber
+        : t === "CHOICE"
+          ? m.propertyDefs.typeChoice
+          : m.propertyDefs.typeText,
+    [m],
+  );
 
   const columns = useMemo<TableColumn<PropertyDefDto>[]>(
     () => [
@@ -88,6 +130,14 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
         render: (d) => (
           <>
             {pickName(locale, d.labelJa, d.labelEn)}
+            {d.systemFlag && (
+              <span
+                className="text-muted-foreground ml-2 border px-1 text-xs"
+                title={m.propertyDefs.systemHint}
+              >
+                {m.propertyDefs.system}
+              </span>
+            )}
             {d.valueCount > 0 && (
               <span className="text-muted-foreground ml-2 text-xs">
                 {m.propertyDefs.valueCount(d.valueCount)}
@@ -104,9 +154,17 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
         options: [
           { value: "TEXT", label: m.propertyDefs.typeText },
           { value: "NUMBER", label: m.propertyDefs.typeNumber },
+          { value: "CHOICE", label: m.propertyDefs.typeChoice },
         ],
-        render: (d) =>
-          d.dataType === "NUMBER" ? m.propertyDefs.typeNumber : m.propertyDefs.typeText,
+        render: (d) => typeLabel(d.dataType),
+      },
+      {
+        key: "group",
+        header: m.propertyDefs.group,
+        kind: "enum",
+        width: 170,
+        options: PROPERTY_GROUPS.map((g) => ({ value: g, label: m.propertyDefs.groups[g] })),
+        render: (d) => m.propertyDefs.groups[d.group],
       },
       {
         key: "defaultUnit",
@@ -134,7 +192,7 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
         ),
       },
     ],
-    [m, locale],
+    [m, locale, typeLabel],
   );
 
   // 1画面に表が2つあるので、URLのクエリを用途ごとに分ける
@@ -190,6 +248,9 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
             defaultUnit: form.defaultUnit || null,
             displayOrder: Number(form.displayOrder) || 0,
             activeFlag: form.activeFlag,
+            group: form.group,
+            valueOptions: form.dataType === "CHOICE" ? toOptionBody(form.valueOptions) : [],
+            conditionOptions: form.dataType === "TEXT" ? [] : toOptionBody(form.conditionOptions),
           }),
         },
       );
@@ -209,7 +270,12 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
   /** 確認は共通テーブル側で出す（入力済みの値も消える点は画面の説明で伝える） */
   async function onDeleteSelected(targets: PropertyDefDto[]) {
     setError(null);
-    for (const d of targets) {
+    // システムの項目は消せない（サーバーも断る）。ほかの項目だけ消して、そのことを知らせる
+    const locked = targets.find((d) => d.systemFlag);
+    if (locked) {
+      setError(m.propertyDefs.systemCannotDelete(pickName(locale, locked.labelJa, locked.labelEn)));
+    }
+    for (const d of targets.filter((x) => !x.systemFlag)) {
       const res = await fetch(`/api/admin/property-defs/${d.id}`, { method: "DELETE" });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -290,6 +356,8 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
                 <select
                   id={fieldId("dataType")}
                   value={form.dataType}
+                  // システムの項目は、GHS 判定・SDS が種類を前提に読むので変えさせない
+                  disabled={form.systemFlag}
                   onChange={(e) =>
                     setForm({ ...form, dataType: e.target.value as PropertyDataType })
                   }
@@ -297,6 +365,22 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
                 >
                   <option value="TEXT">{m.propertyDefs.typeText}</option>
                   <option value="NUMBER">{m.propertyDefs.typeNumber}</option>
+                  <option value="CHOICE">{m.propertyDefs.typeChoice}</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={fieldId("group")}>{m.propertyDefs.group}</Label>
+                <select
+                  id={fieldId("group")}
+                  value={form.group}
+                  onChange={(e) => setForm({ ...form, group: e.target.value as PropertyGroup })}
+                  className={selectClass}
+                >
+                  {PROPERTY_GROUPS.map((g) => (
+                    <option key={g} value={g}>
+                      {m.propertyDefs.groups[g]}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-2">
@@ -334,6 +418,27 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
                 {m.propertyDefs.activeFlag}
               </label>
             </div>
+            {form.systemFlag && (
+              <p className="text-muted-foreground text-xs">{m.propertyDefs.systemHint}</p>
+            )}
+            {form.dataType === "CHOICE" && (
+              <OptionListEditor
+                idPrefix={fieldId("value-opt")}
+                title={m.propertyDefs.valueOptions}
+                hint={m.propertyDefs.valueOptionsHint}
+                items={form.valueOptions}
+                onChange={(valueOptions) => setForm({ ...form, valueOptions })}
+              />
+            )}
+            {form.dataType !== "TEXT" && (
+              <OptionListEditor
+                idPrefix={fieldId("cond-opt")}
+                title={m.propertyDefs.conditionOptions}
+                hint={m.propertyDefs.conditionOptionsHint}
+                items={form.conditionOptions}
+                onChange={(conditionOptions) => setForm({ ...form, conditionOptions })}
+              />
+            )}
             <div className="flex gap-2">
               <Button type="submit" disabled={saving}>
                 {saving ? m.common.saving : m.common.save}
@@ -373,10 +478,94 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
               defaultUnit: d.defaultUnit ?? "",
               displayOrder: d.displayOrder,
               activeFlag: d.activeFlag,
+              group: d.group,
+              systemFlag: d.systemFlag,
+              valueOptions: d.valueOptions.map(toOptionDraft),
+              conditionOptions: d.conditionOptions.map(toOptionDraft),
             });
           },
         }}
       />
     </section>
+  );
+}
+
+/**
+ * 選択肢の並びの編集（値の選択肢・測定の条件の選択肢で同じ形）。
+ * 並びの順が表示順。外した選択肢は、入力済みの値で使われていればサーバーが「使わない」にして残す
+ */
+function OptionListEditor({
+  idPrefix,
+  title,
+  hint,
+  items,
+  onChange,
+}: {
+  idPrefix: string;
+  title: string;
+  hint: string;
+  items: OptionDraft[];
+  onChange: (items: OptionDraft[]) => void;
+}) {
+  const { m } = useI18n();
+  const patch = (i: number, p: Partial<OptionDraft>) =>
+    onChange(items.map((o, j) => (j === i ? { ...o, ...p } : o)));
+
+  return (
+    <fieldset className="space-y-2 border p-3">
+      <legend className="px-1 text-sm font-medium">{title}</legend>
+      <p className="text-muted-foreground text-xs">{hint}</p>
+      {items.map((o, i) => (
+        <div key={o.id ?? `new-${i}`} className="flex flex-wrap items-center gap-2">
+          <Input
+            id={`${idPrefix}-${i}-ja`}
+            aria-label={m.propertyDefs.optionLabelJa}
+            placeholder={m.propertyDefs.optionLabelJa}
+            maxLength={100}
+            value={o.labelJa}
+            onChange={(e) => patch(i, { labelJa: e.target.value })}
+            className="w-48"
+          />
+          <Input
+            id={`${idPrefix}-${i}-en`}
+            aria-label={m.propertyDefs.optionLabelEn}
+            placeholder={m.propertyDefs.optionLabelEn}
+            maxLength={100}
+            value={o.labelEn}
+            onChange={(e) => patch(i, { labelEn: e.target.value })}
+            className="w-48"
+          />
+          <label className="flex items-center gap-1 text-sm">
+            <input
+              type="checkbox"
+              checked={o.activeFlag}
+              onChange={(e) => patch(i, { activeFlag: e.target.checked })}
+            />
+            {m.propertyDefs.optionActive}
+          </label>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => onChange(items.filter((_, j) => j !== i))}
+          >
+            {m.propertyDefs.removeOption}
+          </Button>
+        </div>
+      ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => onChange([...items, { labelJa: "", labelEn: "", activeFlag: true }])}
+        >
+          {m.propertyDefs.addOption}
+        </Button>
+        {items.some((o) => o.id) && (
+          <span className="text-muted-foreground text-xs">{m.propertyDefs.optionKeepHint}</span>
+        )}
+      </div>
+    </fieldset>
   );
 }

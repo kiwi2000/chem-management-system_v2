@@ -67,7 +67,10 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const input = parsed.data;
 
-  const defs = await prisma.propertyDef.findMany({ where: { target: "PRODUCT" } });
+  const defs = await prisma.propertyDef.findMany({
+    where: { target: "PRODUCT" },
+    include: { options: true },
+  });
   const propErrors = validatePropertyValues(input.properties, defs, m);
   if (propErrors.length > 0) {
     return jsonError(400, "validation_error", propErrors[0] ?? m.errors.validation);

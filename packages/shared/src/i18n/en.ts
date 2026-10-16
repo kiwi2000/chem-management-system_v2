@@ -2081,6 +2081,41 @@ export const en: Messages = {
     deleteConfirm: (label: string) =>
       `Delete the property "${label}"? All values entered for it are removed as well`,
     valueCount: (n: number) => `entered on ${n} record${n === 1 ? "" : "s"}`,
+    typeChoice: "Choice",
+    group: "Group",
+    groups: {
+      PHYSICAL: "Physical and chemical properties",
+      HEALTH: "Health effects (toxicity)",
+      ENVIRONMENT: "Environmental effects",
+      OTHER: "Other",
+    },
+    valueOptions: "Choices",
+    valueOptionsHint: "When the type is Choice, people entering data pick one of these",
+    conditionOptions: "Test conditions",
+    conditionOptionsHint:
+      "For example, how the flash point was measured (closed cup / open cup). When registered, people pick one, or choose Other and type it. When none are registered, the condition is typed freely",
+    addOption: "Add a choice",
+    removeOption: "Remove",
+    optionLabelJa: "Name (Japanese)",
+    optionLabelEn: "Name (English)",
+    optionActive: "In use",
+    optionKeepHint: "A choice already used in entered values becomes not in use when removed",
+    choiceNeedsOptions: "When the type is Choice, register at least one choice",
+    system: "System property",
+    systemHint:
+      "Used by GHS classification and SDS. It cannot be deleted and its type cannot be changed. The name, unit, display order, group, choices and In use can be changed",
+    systemCannotDelete: (label: string) =>
+      `"${label}" is a system property and cannot be deleted. To stop using it, clear "Use this property"`,
+  },
+
+  propertyValues: {
+    condition: "Condition",
+    conditionNone: "(not specified)",
+    conditionOther: "Other",
+    conditionOtherPlaceholder: "Type the condition",
+    choiceNone: "(none)",
+    noValues: "No values have been entered",
+    inactiveOption: "(choice not in use)",
   },
 
   attachments: {
@@ -2299,6 +2334,9 @@ export const en: Messages = {
       `A factor for ${cas} and ${element} already exists`,
     propertyTypeMismatch: (label: string) => `The value of "${label}" does not match its type`,
     unknownProperty: "The request contains a property that is not defined",
+    propertyChoiceUnknown: (label: string) => `Pick "${label}" from the choices`,
+    propertyConditionUnknown: (label: string) =>
+      `Pick the condition of "${label}" from the choices, or choose Other and type it`,
     casRequired: "A CAS number is required (this can be changed in the system settings)",
     casFormatInvalid:
       "The CAS number format is not valid (e.g. 7439-92-1). This can be relaxed in the system settings",

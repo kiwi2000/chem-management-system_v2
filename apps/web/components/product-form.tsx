@@ -1,11 +1,16 @@
 "use client";
 
-import { pickName } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { AliasList } from "@/components/alias-list";
+import {
+  initialPropertyDraft,
+  propertyBody,
+  PropertyFields,
+  type PropertyDraft,
+} from "@/components/property-fields";
 import { FieldError } from "@/components/field-error";
 import { MultiSelect } from "@/components/multi-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -62,7 +67,7 @@ export function ProductForm({
   settings,
 }: Props) {
   const router = useRouter();
-  const { m, locale } = useI18n();
+  const { m } = useI18n();
   /**
    * 新規登録は「基本情報 → 組成 → 備考」の順に進める。
    * 組成の入力には製品のIDが要るので、基本情報の段で先に登録してしまう。
@@ -94,19 +99,10 @@ export function ProductForm({
   const [aliasesEn, setAliasesEn] = useState<string[]>(
     initial?.aliases.flatMap((a) => (a.nameEn ? [a.nameEn] : [])) ?? [],
   );
-  // 拡張属性は「定義ID → 入力値（文字列）」で持つ。数値も文字列のまま送る
-  const [propValues, setPropValues] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    for (const p of initial?.properties ?? []) {
-      init[p.propertyDefId] = p.valueNum ?? p.valueText ?? "";
-    }
-    return init;
-  });
-  const [propUnits, setPropUnits] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    for (const p of initial?.properties ?? []) if (p.unit) init[p.propertyDefId] = p.unit;
-    return init;
-  });
+  // 拡張属性は「定義ID → 書きかけ（値・単位・条件）」で持つ。数値も文字列のまま送る
+  const [propDraft, setPropDraft] = useState<PropertyDraft>(() =>
+    initialPropertyDraft(initial?.properties),
+  );
 
   const [step, setStep] = useState(1);
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -133,18 +129,7 @@ export function ProductForm({
         ...aliasesJa.filter((n) => n.trim() !== "").map((n) => ({ nameJa: n, nameEn: null })),
         ...aliasesEn.filter((n) => n.trim() !== "").map((n) => ({ nameJa: null, nameEn: n })),
       ],
-      properties: defs
-        .map((d) => {
-          const raw = (propValues[d.id] ?? "").trim();
-          if (raw === "") return null;
-          return {
-            propertyDefId: d.id,
-            valueText: d.dataType === "TEXT" ? raw : null,
-            valueNum: d.dataType === "NUMBER" ? raw : null,
-            unit: propUnits[d.id] || d.defaultUnit || null,
-          };
-        })
-        .filter((p) => p !== null),
+      properties: propertyBody(defs, propDraft),
     };
   }
 
@@ -181,14 +166,7 @@ export function ProductForm({
       setUses(initial?.uses ?? []);
       setAliasesJa(initial?.aliases.flatMap((a) => (a.nameJa ? [a.nameJa] : [])) ?? []);
       setAliasesEn(initial?.aliases.flatMap((a) => (a.nameEn ? [a.nameEn] : [])) ?? []);
-      const vals: Record<string, string> = {};
-      const units: Record<string, string> = {};
-      for (const p of initial?.properties ?? []) {
-        vals[p.propertyDefId] = p.valueNum ?? p.valueText ?? "";
-        if (p.unit) units[p.propertyDefId] = p.unit;
-      }
-      setPropValues(vals);
-      setPropUnits(units);
+      setPropDraft(initialPropertyDraft(initial?.properties));
     }
     if (sec === "note") setNote(initial?.note ?? "");
     setError(null);
@@ -451,35 +429,6 @@ export function ProductForm({
                         disabled={!isEditing("basic")}
                       />
                     </div>
-                    {defs.map((d) => (
-                      <div key={d.id} className="space-y-2">
-                        <Label htmlFor={`prop-${d.id}`}>
-                          {pickName(locale, d.labelJa, d.labelEn)}
-                        </Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            id={`prop-${d.id}`}
-                            inputMode={d.dataType === "NUMBER" ? "decimal" : "text"}
-                            value={propValues[d.id] ?? ""}
-                            onChange={(e) =>
-                              setPropValues({ ...propValues, [d.id]: e.target.value })
-                            }
-                            className="w-48"
-                          />
-                          {d.dataType === "NUMBER" && (
-                            <Input
-                              aria-label={`${pickName(locale, d.labelJa, d.labelEn)} ${m.common.unit}`}
-                              value={propUnits[d.id] ?? d.defaultUnit ?? ""}
-                              onChange={(e) =>
-                                setPropUnits({ ...propUnits, [d.id]: e.target.value })
-                              }
-                              className="w-28"
-                              placeholder={m.common.unit}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    ))}
                   </div>
 
                   <div className="space-y-2">
@@ -524,6 +473,17 @@ export function ProductForm({
                     values={aliasesEn}
                     onChange={setAliasesEn}
                   />
+
+                  {/* 拡張属性。項目が増えたので、まとまりごとに開け閉めする形で基本情報の最後に置く（2026-10-17） */}
+                  <div className="space-y-2">
+                    <Label>{m.products.properties}</Label>
+                    <PropertyFields
+                      defs={defs}
+                      draft={propDraft}
+                      onChange={setPropDraft}
+                      readOnly={!isEditing("basic")}
+                    />
+                  </div>
                 </fieldset>
                 {sectionButtons("basic")}
               </CardContent>
