@@ -14,6 +14,7 @@ import { GHS_CATALOG } from "@/lib/ghs/catalog-data";
 import type { GhsSourceRowDto } from "@/lib/ghs/data-dto";
 import { ghsMessages } from "@/lib/ghs/messages";
 import { categoryText } from "./ghs-data-table";
+import { GhsLayerChip, type GhsLayerMarks } from "./ghs-marks";
 
 const DEFAULT_STATE: TableState = emptyTableState([
   { column: "sourceKey", direction: "asc" },
@@ -28,10 +29,13 @@ export function GhsSourceTable({
   locale,
   sourceCode,
   sourceName,
+  marks,
 }: {
   locale: Locale;
   sourceCode: string;
   sourceName: string;
+  /** 層の印（法規制の画面と同じ L など） */
+  marks: GhsLayerMarks;
 }) {
   const { m } = useI18n();
   const t = ghsMessages(locale);
@@ -111,9 +115,13 @@ export function GhsSourceTable({
                 {s.code}
               </Link>
               {s.via && (
-                <span className="text-muted-foreground ml-0.5 text-[10px]">
-                  {t.data.sourceShort[s.via] ?? s.via}
-                </span>
+                <GhsLayerChip
+                  layer={s.via}
+                  marks={marks}
+                  fallback={t.data.sourceShort[s.via] ?? s.via}
+                  title={t.data.layers.viaTag(t.data.sourceShort[s.via] ?? s.via)}
+                  className="text-muted-foreground ml-0.5"
+                />
               )}
             </span>
           )),
@@ -152,7 +160,7 @@ export function GhsSourceTable({
         },
       })),
     ],
-    [t, ja],
+    [t, ja, marks],
   );
 
   const { state, setState, ready } = useTableState(storageKey, columns, DEFAULT_STATE, "src");

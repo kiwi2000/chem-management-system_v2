@@ -16,7 +16,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
-import { cn } from "@/lib/utils";
 import type { ApiError, ListResponse } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 import { GHS_CATALOG } from "@/lib/ghs/catalog-data";
@@ -25,6 +24,7 @@ import type { AdoptedCellDto, GhsDataRowDto } from "@/lib/ghs/data-dto";
 import { ghsMessages } from "@/lib/ghs/messages";
 import { GhsAdoptionRules } from "./ghs-adoption-rules";
 import { GhsOverrideEditor } from "./ghs-override-editor";
+import { GhsLayerChip, type GhsLayerMarks } from "./ghs-marks";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
 const STORAGE_KEY = "chem.table.sdsGhsData";
@@ -59,12 +59,15 @@ export function GhsDataTable({
   canEdit,
   isAdmin,
   linkLayers,
+  marks,
 }: {
   locale: Locale;
   canEdit: boolean;
   isAdmin: boolean;
   /** 付け外しできる結び付きの層（取り込み済みのもの。"LOLI" など） */
   linkLayers: string[];
+  /** 層の印（法規制の画面と同じ L・U など） */
+  marks: GhsLayerMarks;
 }) {
   const { m } = useI18n();
   const t = ghsMessages(locale);
@@ -118,22 +121,36 @@ export function GhsDataTable({
   const cell = useCallback(
     (hazardClass: string, c: AdoptedCellDto | undefined) => {
       if (!c || c.status === "NOT_EVALUATED") return null;
-      const from = c.from ? (t.data.sourceShort[c.from] ?? c.from) : "";
-      // 結び付きの層で当たった項目は「EU·LOLI」のように層を添え、乗せると親の項目が読める
-      const via = c.via?.linkedBy ? `·${t.data.sourceShort[c.via.linkedBy] ?? c.via.linkedBy}` : "";
-      const tag = (
-        <span
-          className={cn("ml-1 text-[10px]", via ? "text-primary" : "text-muted-foreground")}
-          title={
-            c.via?.linkedBy
-              ? t.data.layers.viaTitle(c.via.linkedBy, c.via.entryKey, c.via.entryName)
-              : undefined
-          }
-        >
-          {from}
-          {via}
-        </span>
-      );
+      /*
+        出典の印。**結び付きの層（LOLI）と自社判定は、法規制の画面と同じ印（L・U）をセルの先頭に置く**
+        （2026-10-17 指示。それまでは後ろに「EU·LOLI」の文字で、乗せないと分からず、狭い列では切れて見えなかった）。
+        原典の名前（NITE・EU）は後ろに小さく添える。印に乗せると親の項目が読める
+      */
+      const own = c.from === "OVERRIDE";
+      const from = c.from && !own ? (t.data.sourceShort[c.from] ?? c.from) : "";
+      const chips =
+        own || c.via?.linkedBy ? (
+          <span className="mr-1 inline-flex gap-0.5 align-[-0.15em]">
+            {own && (
+              <GhsLayerChip
+                layer="OVERRIDE"
+                marks={marks}
+                fallback={t.data.sourceShort.OVERRIDE ?? "OVERRIDE"}
+              />
+            )}
+            {c.via?.linkedBy && (
+              <GhsLayerChip
+                layer={c.via.linkedBy}
+                marks={marks}
+                fallback={t.data.sourceShort[c.via.linkedBy] ?? c.via.linkedBy}
+                title={t.data.layers.viaTitle(c.via.linkedBy, c.via.entryKey, c.via.entryName)}
+              />
+            )}
+          </span>
+        ) : null;
+      const tag = from ? (
+        <span className="text-muted-foreground ml-1 text-[10px] font-normal">{from}</span>
+      ) : null;
       // 条件付きの項目が当たる（機械では決めきれない）→ 要確認の印
       const review = c.review ? (
         <span
@@ -151,18 +168,19 @@ export function GhsDataTable({
           <CircleHelp className="size-3" />
         </span>
       ) : null;
-      // 該当以外は出典の言葉だけ（列が狭いので、出典の印は自社判定のときだけ添える）
+      // 該当以外は出典の言葉だけ（列が狭いので原典の名前は添えず、L・U の印だけを先頭に置く）
       if (c.status !== "CLASSIFIED") {
         return (
           <span className="text-muted-foreground text-xs">
+            {chips}
             {t.ghs.status[c.status]}
-            {(c.from === "OVERRIDE" || via) && tag}
             {review}
           </span>
         );
       }
       return (
         <span className={c.from === "OVERRIDE" ? "font-medium text-primary" : "font-medium"}>
+          {chips}
           {c.items.map((it, i) => (
             <span key={it.category}>
               {i > 0 && "、"}
@@ -179,7 +197,7 @@ export function GhsDataTable({
         </span>
       );
     },
-    [t, ja],
+    [t, ja, marks],
   );
 
   const columns = useMemo<TableColumn<GhsDataRowDto>[]>(
@@ -281,6 +299,7 @@ export function GhsDataTable({
               onChange={(e) => toggleLayer(code, e.target.checked)}
             />
             {t.data.sourceShort[code] ?? code}
+            <GhsLayerChip layer={code} marks={marks} fallback="" />
           </label>
         ))}
         <label className="flex items-center gap-1 text-sm">
@@ -290,6 +309,7 @@ export function GhsDataTable({
             onChange={(e) => toggleLayer("OVERRIDE", e.target.checked)}
           />
           {t.data.layers.override}
+          <GhsLayerChip layer="OVERRIDE" marks={marks} fallback="" />
         </label>
       </div>
       <DataTable

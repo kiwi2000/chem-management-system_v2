@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { todayInJapan } from "@/lib/judgement-date";
 import type { Locale } from "@chem/shared";
 import { SubstanceGhsSectionView } from "./substance-ghs-section";
+import { ghsLayerMarks } from "@/lib/ghs/marks";
 import { classificationsForCas, listGhsClasses } from "@/lib/ghs/query";
 
 /**
@@ -23,10 +24,11 @@ export async function GhsSubstanceSection({
   const asOf = todayInJapan();
   const blocks = await classificationsForCas(casNormalized, asOf);
   if (blocks.length === 0) return null;
-  const [classes, actor, substance] = await Promise.all([
+  const [classes, actor, substance, marks] = await Promise.all([
     listGhsClasses(),
     getActor(),
     prisma.substance.findUnique({ where: { id: substanceId }, select: { code: true } }),
+    ghsLayerMarks(),
   ]);
   if (!substance) return null;
   return (
@@ -37,6 +39,7 @@ export async function GhsSubstanceSection({
       substanceId={substanceId}
       substanceCode={substance.code}
       canEdit={actor?.has("SUBSTANCE_EDIT") ?? false}
+      marks={marks}
     />
   );
 }

@@ -4,6 +4,7 @@ import type { Locale } from "@chem/shared";
 import { GhsDataTabs } from "./ghs-data-tabs";
 import { LINK_LAYERS } from "@/lib/ghs/data-api";
 import { SOURCES } from "@/lib/ghs/import-service";
+import { ghsLayerMarks } from "@/lib/ghs/marks";
 import { ghsMessages } from "@/lib/ghs/messages";
 
 /**
@@ -41,6 +42,7 @@ export async function GhsDataPage({ locale }: { locale: Locale }) {
           name: locale === "ja" ? s.nameJa : s.nameEn,
         }))}
         linkLayers={linkLayers.map((s) => s.code)}
+        marks={await ghsLayerMarks()}
         importSources={SOURCES.map((s) => ({
           code: s.code,
           name: locale === "ja" ? s.nameJa : s.nameEn,

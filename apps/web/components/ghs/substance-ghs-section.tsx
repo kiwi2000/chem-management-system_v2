@@ -14,6 +14,7 @@ import { DEFAULT_COUNTRY, SDS_COUNTRIES, countryName } from "@/lib/ghs/countries
 import type { AdoptedCellDto, GhsDataRowDto, GhsStatus, OverrideDto } from "@/lib/ghs/data-dto";
 import type { GhsClassDef, GhsClassificationRow, GhsSourceBlock } from "@/lib/ghs/query";
 import { ghsMessages, type GhsMessages } from "@/lib/ghs/messages";
+import { GhsLayerChip, type GhsLayerMarks } from "./ghs-marks";
 
 /**
  * 物質の詳細に出す GHS 分類（出典別）。S23 §5-4 の比較の表に、§9-5 で「採用」の列と「判定修正」を足した
@@ -74,8 +75,11 @@ export function SubstanceGhsSectionView({
   substanceId,
   substanceCode,
   canEdit,
+  marks,
 }: {
   locale: Locale;
+  /** 層の印（法規制の画面と同じ L・U など。2026-10-17） */
+  marks: GhsLayerMarks;
   blocks: GhsSourceBlock[];
   /** カタログの全クラス（表示の並び順） */
   classes: GhsClassDef[];
@@ -182,10 +186,17 @@ export function SubstanceGhsSectionView({
   const perSource = new Map<string, number>();
   for (const b of blocks) perSource.set(b.sourceCode, (perSource.get(b.sourceCode) ?? 0) + 1);
 
-  const check = (label: string, value: boolean, set: (v: boolean) => void, key?: string) => (
+  const check = (
+    label: string,
+    value: boolean,
+    set: (v: boolean) => void,
+    key?: string,
+    chip?: React.ReactNode,
+  ) => (
     <label key={key} className="flex items-center gap-1.5">
       <input type="checkbox" checked={value} onChange={(e) => set(e.target.checked)} />
       {label}
+      {chip}
     </label>
   );
 
@@ -237,6 +248,7 @@ export function SubstanceGhsSectionView({
                   return next;
                 }),
               code,
+              <GhsLayerChip layer={code} marks={marks} fallback="" />,
             ),
           )}
         </div>
@@ -280,9 +292,17 @@ export function SubstanceGhsSectionView({
                       <div className="font-medium">
                         {ja ? b.sourceNameJa : b.sourceNameEn}
                         {b.linkedBy && (
-                          <span className="text-primary ml-1 text-xs font-normal">
-                            {all.data.layers.viaTag(all.data.sourceShort[b.linkedBy] ?? b.linkedBy)}
-                          </span>
+                          <GhsLayerChip
+                            layer={b.linkedBy}
+                            marks={marks}
+                            fallback={all.data.layers.viaTag(
+                              all.data.sourceShort[b.linkedBy] ?? b.linkedBy,
+                            )}
+                            title={all.data.layers.viaTag(
+                              all.data.sourceShort[b.linkedBy] ?? b.linkedBy,
+                            )}
+                            className="ml-1 align-[-0.1em] text-xs font-normal"
+                          />
                         )}
                       </div>
                       <div className="text-muted-foreground text-xs">
@@ -318,6 +338,7 @@ export function SubstanceGhsSectionView({
                     showHCodes={showHCodes}
                     showRevision={showRevision}
                     canEdit={canEdit}
+                    marks={marks}
                     editing={editing === row.cls.code}
                     onEdit={() => setEditing(editing === row.cls.code ? null : row.cls.code)}
                     editor={
@@ -363,6 +384,7 @@ function Row({
   showHCodes,
   showRevision,
   canEdit,
+  marks,
   editing,
   onEdit,
   editor,
@@ -379,13 +401,15 @@ function Row({
   showHCodes: boolean;
   showRevision: boolean;
   canEdit: boolean;
+  marks: GhsLayerMarks;
   editing: boolean;
   onEdit: () => void;
   editor: React.ReactNode;
 }) {
   const a = adopted;
-  const from = a?.from ? (all.data.sourceShort[a.from] ?? a.from) : "";
-  const via = a?.via?.linkedBy ? `·${all.data.sourceShort[a.via.linkedBy] ?? a.via.linkedBy}` : "";
+  // 原典は「NITE」「EU」の文字、LOLI の結び付きと自社判定は法規制の画面と同じ印（一覧と同じ見せ方。2026-10-17）
+  const own = a?.from === "OVERRIDE";
+  const from = a?.from && !own ? (all.data.sourceShort[a.from] ?? a.from) : "";
   return (
     <>
       <tr className="border-b align-top">
@@ -402,6 +426,27 @@ function Row({
         </th>
         {/* 採用: 一覧と同じ見せ方（区分＋出典の印。自社判定は色付き。条件付きは要確認） */}
         <td className={cn("px-2 py-1", a?.from === "OVERRIDE" && "text-primary")}>
+          {/* LOLI の結び付きと自社判定の印は先頭に（一覧と同じ。2026-10-17） */}
+          {a && a.status !== "NOT_EVALUATED" && (own || a.via?.linkedBy) && (
+            <span className="mr-1 inline-flex gap-0.5 align-[-0.15em]">
+              {own && (
+                <GhsLayerChip
+                  layer="OVERRIDE"
+                  marks={marks}
+                  fallback={all.data.sourceShort.OVERRIDE ?? "OVERRIDE"}
+                  title={a.reason ? t.section.overrideReason(a.reason) : undefined}
+                />
+              )}
+              {a.via?.linkedBy && (
+                <GhsLayerChip
+                  layer={a.via.linkedBy}
+                  marks={marks}
+                  fallback={all.data.sourceShort[a.via.linkedBy] ?? a.via.linkedBy}
+                  title={all.data.layers.viaTitle(a.via.linkedBy, a.via.entryKey, a.via.entryName)}
+                />
+              )}
+            </span>
+          )}
           {!a || a.status === "NOT_EVALUATED" ? (
             <span className="text-muted-foreground/70 italic">{t.status.NOT_EVALUATED}</span>
           ) : a.status !== "CLASSIFIED" ? (
@@ -426,20 +471,8 @@ function Row({
               ))}
             </span>
           )}
-          {a && a.status !== "NOT_EVALUATED" && (
-            <span
-              className={cn("ml-1 text-[10px]", via ? "text-primary" : "text-muted-foreground")}
-              title={
-                a.from === "OVERRIDE" && a.reason
-                  ? t.section.overrideReason(a.reason)
-                  : a.via?.linkedBy
-                    ? all.data.layers.viaTitle(a.via.linkedBy, a.via.entryKey, a.via.entryName)
-                    : undefined
-              }
-            >
-              {from}
-              {via}
-            </span>
+          {a && a.status !== "NOT_EVALUATED" && from && (
+            <span className="text-muted-foreground ml-1 text-[10px]">{from}</span>
           )}
           {a?.review && (
             <span

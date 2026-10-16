@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ghsMessages } from "@/lib/ghs/messages";
 import { GhsDataTable } from "./ghs-data-table";
+import type { GhsLayerMarks } from "./ghs-marks";
 import { GhsReleases } from "./ghs-releases";
 import { GhsSourceTable } from "./ghs-source-table";
 
@@ -26,6 +27,7 @@ export function GhsDataTabs({
   sources,
   linkLayers,
   importSources,
+  marks,
 }: {
   locale: Locale;
   canEdit: boolean;
@@ -36,6 +38,8 @@ export function GhsDataTabs({
   linkLayers: string[];
   /** 取り込める出典（取り込みのタブの入力欄に並べる） */
   importSources: { code: string; name: string }[];
+  /** 層の印（法規制の画面と同じ L・U など） */
+  marks: GhsLayerMarks;
 }) {
   const t = ghsMessages(locale).data;
   const [tab, setTab] = useState("substances");
@@ -95,6 +99,7 @@ export function GhsDataTabs({
             canEdit={canEdit}
             isAdmin={isAdmin}
             linkLayers={linkLayers}
+            marks={marks}
           />
         </>
       ) : tab === IMPORT_TAB ? (
@@ -105,6 +110,7 @@ export function GhsDataTabs({
           locale={locale}
           sourceCode={tab}
           sourceName={sources.find((s) => s.code === tab)?.name ?? tab}
+          marks={marks}
         />
       )}
     </div>
