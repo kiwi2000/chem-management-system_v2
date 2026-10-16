@@ -34,13 +34,22 @@ describe("合算の1ページを引くSQL", () => {
   it("同じCASの行どうしの順番も決め切る（ページ送りで行が入れ替わらない）", () => {
     const { sql } = build("size=25");
     expect(sql).toContain(
-      'ORDER BY cas_normalized COLLATE "chem_natural", value COLLATE "chem_natural", id',
+      'ORDER BY cas_normalized COLLATE "chem_natural", rk, value COLLATE "chem_natural", id',
     );
+  });
+
+  it("同じCASの中では、優先度の高いデータソースの行を先に出す（まとめても同じ）", () => {
+    const state = parseTableState(new URLSearchParams("size=25"), COLS, DEFAULT_STATE);
+    for (const group of [false, true]) {
+      const { sql } = mergedPageQuery("v1", "inv1", state, { mode: { kind: "all" }, group });
+      expect(sql).toMatch(/ORDER BY cas_normalized COLLATE "chem_natural", rk,/);
+      expect(sql).toMatch(group ? /min\(rk\) AS rk/ : /1 AS n, rk/);
+    }
   });
 
   it("既定はCAS番号の昇順。数字は数として読む", () => {
     const { sql } = build("size=25");
-    expect(sql).toMatch(/ORDER BY cas_normalized COLLATE "chem_natural", value/);
+    expect(sql).toMatch(/ORDER BY cas_normalized COLLATE "chem_natural", rk, value/);
   });
 
   it("降順を指定すると DESC が付く", () => {

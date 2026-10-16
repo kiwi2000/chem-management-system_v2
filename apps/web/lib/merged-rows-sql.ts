@@ -118,6 +118,9 @@ function buildWhere(filters: TableState["filters"], bind: Bind): string {
  * そこを決めずに置くと、ページを送るたびに並びが入れ替わって、
  * 同じ行が二度出たり出なかったりする。最後にCAS番号と id を足して決め切る
  * （同じCASに番号が2つ以上あると、CAS番号だけでは決まらない）
+ *
+ * **同じCASの中では、優先度の高いデータソースの行を先に出す**（`rk` の順。2026-10-17 指示）。
+ * 「すべて」で LOLI と CHRIP が並ぶとき、採られているほうが上に来る
  */
 function buildOrder(sort: TableState["sort"]): string {
   const tieBreak = `cas_normalized ${NATURAL}`;
@@ -125,11 +128,11 @@ function buildOrder(sort: TableState["sort"]): string {
   const col = rule ? COLUMN[rule.column] : undefined;
   if (!col || col === "cas_normalized") {
     const dir = rule && rule.direction === "desc" ? " DESC" : "";
-    return `${tieBreak}${dir}, value ${NATURAL}, id`;
+    return `${tieBreak}${dir}, rk, value ${NATURAL}, id`;
   }
   const dir = rule && rule.direction === "desc" ? " DESC" : "";
   const first = col === "updated_at" ? `updated_at${dir}` : `${col} ${NATURAL}${dir}`;
-  return `${first}, ${tieBreak}, id`;
+  return `${first}, ${tieBreak}, rk, id`;
 }
 
 export interface MergedRow {
@@ -197,11 +200,12 @@ export function mergedPageQuery(
     ? `SELECT ('g:' || cas_normalized || ':' || source_id) AS id, source_id,
               min(source_code) AS source_code, min(cas_number) AS cas_number, cas_normalized,
               string_agg(value, ', ' ORDER BY value ${NATURAL}) AS value,
-              max(updated_at) AS updated_at, bool_or(rk = 1) AS used, count(*)::int AS n
+              max(updated_at) AS updated_at, bool_or(rk = 1) AS used, count(*)::int AS n,
+              min(rk) AS rk
        FROM filtered
        GROUP BY cas_normalized, source_id`
     : `SELECT id, source_id, source_code, cas_number, cas_normalized, value, updated_at,
-              (rk = 1) AS used, 1 AS n
+              (rk = 1) AS used, 1 AS n, rk
        FROM filtered`;
 
   const sql = `
