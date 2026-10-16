@@ -54,7 +54,8 @@ Start-Sleep -Seconds 3
 Write-Ok "chem-app: $((Get-Service chem-app).Status)"
 
 Write-Step "ファイルの入れ替え（$appSrc → $Root）"
-& robocopy $appSrc $Root /MIR /XF .env /XD logs secrets caddy nssm /NFL /NDL /NJH /NP /R:2 /W:2 | Select-Object -Last 8
+# data（作った帳票の PDF の既定の置き場所）は残す。道筋で書く（名前だけだと node_modules の中の data まで外れる）
+& robocopy $appSrc $Root /MIR /XF .env /XD logs secrets caddy nssm (Join-Path $Root "data") /NFL /NDL /NJH /NP /R:2 /W:2 | Select-Object -Last 8
 if ($LASTEXITCODE -ge 8) { throw "robocopy が失敗しました（終了コード $LASTEXITCODE）" }
 Write-Ok "版 $($new.version) を置きました"
 

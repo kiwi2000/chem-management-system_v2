@@ -1,4 +1,4 @@
-# 本番構成（VPS想定）: Caddy(HTTPS) → app(Next.js+LibreOffice) → db(PostgreSQL)
+# 本番構成（VPS・社内サーバー想定）: Caddy(HTTPS) → app(Next.js＋帳票 PDF 用の Chromium) → db(PostgreSQL)
 #
 # 使い方（VPS上）:
 #   cp .env.prod.example .env.prod   → 値を編集（DB_PASSWORD は必ず変更）
@@ -37,6 +37,14 @@ services:
     restart: always
     environment:
       DATABASE_URL: postgresql://chem:${DB_PASSWORD}@db:5432/chem?schema=public
+      # 接続元の制限（.env.prod で決める）。ここに書かないとアプリに届かない（--env-file は compose の中の ${} を埋めるだけ）
+      ALLOWED_IPS: ${ALLOWED_IPS:-}
+      IP_FILTER_MODE: ${IP_FILTER_MODE:-monitor}
+      # 画面の設定（システム設定 › セキュリティ › アクセス制御）で締め出されたときの戻り道。1 にして up -d で作り直す
+      IP_RULES_OFF: ${IP_RULES_OFF:-}
+    volumes:
+      # 作った帳票の PDF（既定の置き場所 /app/data/documents）。入れ物を作り直しても残す
+      - app-data:/app/data
     depends_on:
       db:
         condition: service_healthy
@@ -57,5 +65,6 @@ services:
 
 volumes:
   db-data:
+  app-data:
   caddy-data:
   caddy-config:

@@ -103,7 +103,8 @@ Write-Host ""
 Write-Host "━━ W3 アプリの配置 ━━" -ForegroundColor Magenta
 Write-Step "robocopy $appSrc → $Root（数分）"
 # .env・記録・秘密は残す。/MIR で古いファイルを消す（更新でも同じ）
-& robocopy $appSrc $Root /MIR /XF .env /XD logs secrets caddy nssm /NFL /NDL /NJH /NP /R:2 /W:2 | Select-Object -Last 8
+# data（作った帳票の PDF の既定の置き場所）も残す。名前だけで書くと node_modules の中の data まで外れるので、道筋で書く
+& robocopy $appSrc $Root /MIR /XF .env /XD logs secrets caddy nssm (Join-Path $Root "data") /NFL /NDL /NJH /NP /R:2 /W:2 | Select-Object -Last 8
 if ($LASTEXITCODE -ge 8) { throw "robocopy が失敗しました（終了コード $LASTEXITCODE）" }
 Write-Ok "置きました（版 $($manifest.version)）"
 if (-not (Test-Path $envFile)) {

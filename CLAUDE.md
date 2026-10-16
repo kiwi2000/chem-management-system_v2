@@ -81,6 +81,12 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 
 - **画面に出る文字列を直接書かない。** `packages/shared/src/i18n/ja.ts` にキーを足し、
   `en.ts` にも英語を入れる（入れ忘れはビルドで落ちる）。使い方は `docs/steps/S18_多言語UI基盤.md`
+- **導入先で動く作りは、3 つの入れ方（Railway・Docker・Windows Server）で確かめる。**2026-10-16 に次の 3 つが見つかった
+  - ファイルを書く場所は、更新で消えないこと（Windows は robocopy の `/XD`、Docker は保存領域）。
+    見つけ方: `writeFile` / `mkdir` を grep し、書く先が `compose.prod.yml` の `volumes` と `update.ps1` の `/XD` に入っているか
+  - 環境変数は `compose.prod.yml` の `environment` に書かないと Docker のアプリに届かない（`.env.prod` は compose の `${}` を埋めるだけ）。
+    見つけ方: `process.env.` を grep し、1 つずつ `compose.prod.yml` と `.env.*.example` にあるか
+  - 道筋を `process.cwd()` から作らない（サービスは apps/web で動く）。`appRoot()`（`lib/doc-files.ts`）を使う。見つけ方: `process.cwd()` を grep
 
 ## 5. 環境（Windows 11 + WSL2）— 過去に詰まった点
 

@@ -10,6 +10,8 @@ docs
 deploy
 out
 **/out
+# 作った帳票の PDF（実行時の置き場所。compose.prod.yml では保存領域 app-data）。apps/web/data は外さない
+/data
 *.log
 *.tsbuildinfo
 docker-compose.yml

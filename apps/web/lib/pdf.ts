@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Browser } from "playwright";
+import { appRoot } from "@/lib/doc-files";
 
 /**
  * 帳票の PDF 化。**画面の紙面（HTML）を、サーバー側の Chromium でそのまま PDF にする**（2026-09-16 指示）。
@@ -14,10 +15,14 @@ import type { Browser } from "playwright";
  * 実行時に外へは出ない。ページは自分自身（127.0.0.1）から読む
  */
 
-/** 同梱の Chromium は node_modules の中（PLAYWRIGHT_BROWSERS_PATH=0 で入れる）。環境の指定が無ければそこを見る */
+/**
+ * 同梱の Chromium は node_modules の中（PLAYWRIGHT_BROWSERS_PATH=0 で入れる）。環境の指定が無ければそこを見る。
+ * **アプリのフォルダーから探す。**サービスは apps/web を作業フォルダーにして動くが、node_modules は
+ * その上（C:\chem）にある。作業フォルダーで探して見つからず、同梱の Chromium を使えていなかった（2026-10-16）
+ */
 function ensureBrowsersPath() {
   if (process.env.PLAYWRIGHT_BROWSERS_PATH) return;
-  const local = join(process.cwd(), "node_modules", "playwright-core", ".local-browsers");
+  const local = join(appRoot(), "node_modules", "playwright-core", ".local-browsers");
   if (existsSync(local)) process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
 }
 
