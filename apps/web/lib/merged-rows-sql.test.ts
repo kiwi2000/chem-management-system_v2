@@ -22,15 +22,25 @@ describe("合算の1ページを引くSQL", () => {
     expect(sql).not.toContain("inv1");
   });
 
-  it("CASごとに優先度のいちばん高い行だけ残す", () => {
+  it("CASごとに優先度のいちばん高いデータソースを選び、そのデータソースの行は全部残す", () => {
     const { sql } = build("size=25");
-    expect(sql).toContain("DISTINCT ON");
-    expect(sql).toContain("lvs.priority NULLS LAST");
+    // 1行だけ残す DISTINCT ON だと、同じCASの2つ目以降の番号が消える（2026-10-16）
+    expect(sql).not.toContain("DISTINCT ON");
+    expect(sql).toContain("PARTITION BY r.cas_normalized");
+    expect(sql).toContain("lvs.priority NULLS LAST, r.source_id");
+    expect(sql).toContain("rk = 1");
+  });
+
+  it("同じCASの行どうしの順番も決め切る（ページ送りで行が入れ替わらない）", () => {
+    const { sql } = build("size=25");
+    expect(sql).toContain(
+      'ORDER BY cas_normalized COLLATE "chem_natural", value COLLATE "chem_natural", id',
+    );
   });
 
   it("既定はCAS番号の昇順。数字は数として読む", () => {
     const { sql } = build("size=25");
-    expect(sql).toMatch(/ORDER BY cas_normalized COLLATE "chem_natural"\s*$/m);
+    expect(sql).toMatch(/ORDER BY cas_normalized COLLATE "chem_natural", value/);
   });
 
   it("降順を指定すると DESC が付く", () => {

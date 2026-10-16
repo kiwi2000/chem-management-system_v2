@@ -87,6 +87,9 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
   - 環境変数は `compose.prod.yml` の `environment` に書かないと Docker のアプリに届かない（`.env.prod` は compose の `${}` を埋めるだけ）。
     見つけ方: `process.env.` を grep し、1 つずつ `compose.prod.yml` と `.env.*.example` にあるか
   - 道筋を `process.cwd()` から作らない（サービスは apps/web で動く）。`appRoot()`（`lib/doc-files.ts`）を使う。見つけ方: `process.cwd()` を grep
+- **データソースの合算は「CAS ごとに最優先のデータソースを選び、その行は全部」。CAS ごとに 1 行にしない。**
+  1 つの物質に番号が 2 つ以上ある（化審法番号など）。`DISTINCT ON (cas)` で 2 つ目以降が消え、合算が LOLI 単独より少なくなっていた（2026-10-16）。
+  見つけ方: `DISTINCT ON` を grep し、残す単位が本当に 1 行でよいか確かめる。合算と各データソースの件数を比べる（合算 ≧ 最優先のソース）
 
 ## 5. 環境（Windows 11 + WSL2）— 過去に詰まった点
 

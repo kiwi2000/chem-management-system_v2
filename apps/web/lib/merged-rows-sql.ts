@@ -111,7 +111,8 @@ function buildWhere(filters: TableState["filters"], bind: Bind): string {
  *
  * **同じ値が並んだときの順番まで決める。**値や更新日には同じものがいくつもあり、
  * そこを決めずに置くと、ページを送るたびに並びが入れ替わって、
- * 同じ行が二度出たり出なかったりする。最後にCAS番号を足して決め切る
+ * 同じ行が二度出たり出なかったりする。最後にCAS番号と id を足して決め切る
+ * （同じCASに番号が2つ以上あると、CAS番号だけでは決まらない）
  */
 function buildOrder(sort: TableState["sort"]): string {
   const tieBreak = `cas_normalized ${NATURAL}`;
@@ -119,11 +120,11 @@ function buildOrder(sort: TableState["sort"]): string {
   const col = rule ? COLUMN[rule.column] : undefined;
   if (!col || col === "cas_normalized") {
     const dir = rule && rule.direction === "desc" ? " DESC" : "";
-    return `${tieBreak}${dir}`;
+    return `${tieBreak}${dir}, value ${NATURAL}, id`;
   }
   const dir = rule && rule.direction === "desc" ? " DESC" : "";
   const first = col === "updated_at" ? `updated_at${dir}` : `${col} ${NATURAL}${dir}`;
-  return `${first}, ${tieBreak}`;
+  return `${first}, ${tieBreak}, id`;
 }
 
 export interface MergedRow {
@@ -140,8 +141,11 @@ export interface MergedRow {
 /**
  * 合算の1ページを引くSQLと、そこに渡す値。
  *
- * `DISTINCT ON` の並びは外側の並べ替えと同じにしておく。そうするとデータベースが
- * 並べ直さずに済み、最後のページでも最初のページと同じ速さで返る（実測でどちらも0.29秒）。
+ * **CASごとに優先度のいちばん高いデータソースを1つ選び、そのデータソースの行は全部残す。**
+ * 1つの物質に番号が2つ以上あることがある（化審法番号の (2)-1675 と (2)-1679 など）。
+ * 以前は `DISTINCT ON` でCASごとに1行だけ残していて、2つ目以降の番号が合算から消え、
+ * 合算の件数がLOLI単独より少なくなっていた（2026-10-16。ENCS で LOLI 96,117 行に対し合算 86,450 行）。
+ * 物質の画面の番号（`listNumbersByCas`）と同じ選び方にそろえた。
  */
 export function mergedPageQuery(
   versionId: string,
@@ -157,9 +161,14 @@ export function mergedPageQuery(
   const offset = bind.add((state.page - 1) * state.pageSize);
 
   const sql = `
-    WITH winner AS (
-      SELECT DISTINCT ON (r.cas_normalized ${NATURAL})
-             r.id, r.source_id, r.cas_number, r.cas_normalized, r.value, r.updated_at
+    WITH ranked AS (
+      SELECT r.id, r.source_id, r.cas_number, r.cas_normalized, r.value, r.updated_at,
+             -- CASごとにデータソースへ順位を付ける。同じデータソースの行は同じ順位になる。
+             -- 優先度まで同じデータソースが並んだら（並んでいないもの同士など）、source_id で1つに決める
+             rank() OVER (
+               PARTITION BY r.cas_normalized
+               ORDER BY lvs.priority NULLS LAST, r.source_id
+             ) AS rk
       FROM inventory_rows r
       -- 優先度は組み合わせの表にある。並んでいないデータソースは最後に回す
       LEFT JOIN link_version_sources lvs
@@ -167,8 +176,11 @@ export function mergedPageQuery(
       WHERE r.version_id = ${version} AND r.inventory_id = ${inventory}
         -- 無効にしたデータソースの行は無いものとして扱う（並んでいないものは従来どおり最後に回す）
         AND (lvs.enabled IS NULL OR lvs.enabled = true)
-      -- 優先度まで同じ行があるときの順番も決めておく（どれが残るかを毎回同じにする）
-      ORDER BY r.cas_normalized ${NATURAL}, lvs.priority NULLS LAST, r.value, r.id
+    ),
+    winner AS (
+      SELECT id, source_id, cas_number, cas_normalized, value, updated_at
+      FROM ranked
+      WHERE rk = 1
     )
     SELECT *, count(*) OVER () AS total
     FROM winner
