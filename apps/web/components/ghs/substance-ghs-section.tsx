@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import type { ApiError } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { GHS_CATALOG } from "../ghs/catalog-data";
-import { DEFAULT_COUNTRY, SDS_COUNTRIES, countryName } from "../ghs/countries";
-import type { AdoptedCellDto, GhsDataRowDto, GhsStatus, OverrideDto } from "../ghs/data-dto";
-import type { GhsClassDef, GhsClassificationRow, GhsSourceBlock } from "../ghs/query";
-import { sdsMessages } from "../messages";
+import { GHS_CATALOG } from "@/lib/ghs/catalog-data";
+import { DEFAULT_COUNTRY, SDS_COUNTRIES, countryName } from "@/lib/ghs/countries";
+import type { AdoptedCellDto, GhsDataRowDto, GhsStatus, OverrideDto } from "@/lib/ghs/data-dto";
+import type { GhsClassDef, GhsClassificationRow, GhsSourceBlock } from "@/lib/ghs/query";
+import { ghsMessages, type GhsMessages } from "@/lib/ghs/messages";
 
 /**
  * 物質の詳細に出す GHS 分類（出典別）。S23 §5-4 の比較の表に、§9-5 で「採用」の列と「判定修正」を足した
@@ -84,7 +84,7 @@ export function SubstanceGhsSectionView({
   /** 判定修正（自社判定）ができるか */
   canEdit: boolean;
 }) {
-  const all = sdsMessages(locale);
+  const all = ghsMessages(locale);
   const t = all.ghs;
   const te = all.data.edit;
   const ja = locale === "ja";
@@ -131,9 +131,9 @@ export function SubstanceGhsSectionView({
   const load = useCallback(async () => {
     const [a, o] = await Promise.all([
       fetch(
-        `/api/modules/sds/ghs-data?f.code=${encodeURIComponent(`equals:${substanceCode}`)}&country=${encodeURIComponent(country)}&layers=${encodeURIComponent(layersParam)}`,
+        `/api/ghs-data?f.code=${encodeURIComponent(`equals:${substanceCode}`)}&country=${encodeURIComponent(country)}&layers=${encodeURIComponent(layersParam)}`,
       ),
-      fetch(`/api/modules/sds/ghs-data/overrides?substanceId=${encodeURIComponent(substanceId)}`),
+      fetch(`/api/ghs-data/overrides?substanceId=${encodeURIComponent(substanceId)}`),
     ]);
     if (!a.ok || !o.ok) {
       redirectIfUnauthorized(a.ok ? o : a);
@@ -350,7 +350,7 @@ export function SubstanceGhsSectionView({
   );
 }
 
-type Msgs = ReturnType<typeof sdsMessages>;
+type Msgs = GhsMessages;
 
 function Row({
   row,
@@ -574,7 +574,7 @@ function OverrideRowEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const all = sdsMessages(locale);
+  const all = ghsMessages(locale);
   const te = all.data.edit;
   const t = all.ghs;
   const ja = locale === "ja";
@@ -635,7 +635,7 @@ function OverrideRowEditor({
     if (items.length > 0 && !reason.trim()) return setError(te.needReason);
     setBusy(true);
     try {
-      const res = await fetch("/api/modules/sds/ghs-data/overrides", {
+      const res = await fetch("/api/ghs-data/overrides", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ substanceId, country: scope, reason: reason.trim(), items }),

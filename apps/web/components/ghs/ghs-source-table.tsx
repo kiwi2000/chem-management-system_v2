@@ -10,9 +10,9 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
-import { GHS_CATALOG } from "../ghs/catalog-data";
-import type { GhsSourceRowDto } from "../ghs/data-dto";
-import { sdsMessages } from "../messages";
+import { GHS_CATALOG } from "@/lib/ghs/catalog-data";
+import type { GhsSourceRowDto } from "@/lib/ghs/data-dto";
+import { ghsMessages } from "@/lib/ghs/messages";
 import { categoryText } from "./ghs-data-table";
 
 const DEFAULT_STATE: TableState = emptyTableState([
@@ -34,7 +34,7 @@ export function GhsSourceTable({
   sourceName: string;
 }) {
   const { m } = useI18n();
-  const t = sdsMessages(locale);
+  const t = ghsMessages(locale);
   const ja = locale === "ja";
   const storageKey = `chem.table.sdsGhsSource.${sourceCode}`;
   const [data, setData] = useState<ListResponse<GhsSourceRowDto> | null>(null);
@@ -159,7 +159,7 @@ export function GhsSourceTable({
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
   const load = useCallback(async () => {
     const res = await fetch(
-      `/api/modules/sds/ghs-data/source?sourceCode=${encodeURIComponent(sourceCode)}&${query}`,
+      `/api/ghs-data/source?sourceCode=${encodeURIComponent(sourceCode)}&${query}`,
     );
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import type { ApiError } from "@/lib/types";
-import { sdsMessages } from "../messages";
+import { ghsMessages } from "@/lib/ghs/messages";
 
 interface Summary {
   applied: boolean;
@@ -37,7 +37,7 @@ export function GhsImportForm({
   sources: { code: string; name: string }[];
   onApplied?: () => void;
 }) {
-  const t = sdsMessages(locale).ghs.import;
+  const t = ghsMessages(locale).ghs.import;
   const [sourceCode, setSourceCode] = useState(sources[0]?.code ?? "NITE");
   const [label, setLabel] = useState("");
   const [publishedOn, setPublishedOn] = useState("");
@@ -63,7 +63,7 @@ export function GhsImportForm({
     if (rationale) form.append("rationale", rationale);
     setBusy(step);
     try {
-      const res = await fetch("/api/modules/sds/ghs/import", { method: "POST", body: form });
+      const res = await fetch("/api/ghs/import", { method: "POST", body: form });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;

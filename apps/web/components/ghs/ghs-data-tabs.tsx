@@ -3,15 +3,20 @@
 import type { Locale } from "@chem/shared";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { sdsMessages } from "../messages";
+import { ghsMessages } from "@/lib/ghs/messages";
 import { GhsDataTable } from "./ghs-data-table";
+import { GhsReleases } from "./ghs-releases";
 import { GhsSourceTable } from "./ghs-source-table";
 
+/** 取り込みのタブ。出典のコードと重ならない名前にする */
+const IMPORT_TAB = "__import";
+
 /** 選んだ切り替えを端末に覚える */
-const TAB_KEY = "chem.sds.ghsData.tab";
+const TAB_KEY = "chem.ghsData.tab";
 
 /**
- * GHS データの切り替え: 「物質」（物質マスタ起点。国の採用順＋自社判定）と、取り込み済みの出典ごとの表。
+ * GHS分類データの切り替え: 「物質」（物質マスタ起点。国の採用順＋自社判定）と、取り込み済みの出典ごとの表、
+ * いちばん右に「取り込み」（取り込みの記録。入力欄は管理者だけ。2026-10-16 に別の画面からここへ移した）。
  * メニューは 2 段までなので、3 つ目の階層は画面の中のタブで持つ（2026-09-28 指示）
  */
 export function GhsDataTabs({
@@ -20,6 +25,7 @@ export function GhsDataTabs({
   isAdmin,
   sources,
   linkLayers,
+  importSources,
 }: {
   locale: Locale;
   canEdit: boolean;
@@ -28,13 +34,19 @@ export function GhsDataTabs({
   sources: { code: string; name: string }[];
   /** 付け外しできる結び付きの層（"LOLI" など） */
   linkLayers: string[];
+  /** 取り込める出典（取り込みのタブの入力欄に並べる） */
+  importSources: { code: string; name: string }[];
 }) {
-  const t = sdsMessages(locale).data;
+  const t = ghsMessages(locale).data;
   const [tab, setTab] = useState("substances");
   useEffect(() => {
     try {
       const saved = localStorage.getItem(TAB_KEY);
-      if (saved && (saved === "substances" || sources.some((s) => s.code === saved))) setTab(saved);
+      if (
+        saved &&
+        (saved === "substances" || saved === IMPORT_TAB || sources.some((s) => s.code === saved))
+      )
+        setTab(saved);
     } catch {
       /* 端末の保存領域が使えないときは「物質」のまま */
     }
@@ -47,7 +59,11 @@ export function GhsDataTabs({
       /* 覚えられなくても動く */
     }
   };
-  const tabs = [{ code: "substances", name: t.tabs.substances }, ...sources];
+  const tabs = [
+    { code: "substances", name: t.tabs.substances },
+    ...sources,
+    { code: IMPORT_TAB, name: t.tabs.import },
+  ];
   const tabClass = (active: boolean) =>
     cn(
       "-mb-px border-b-2 px-3 py-1.5 text-sm",
@@ -81,6 +97,8 @@ export function GhsDataTabs({
             linkLayers={linkLayers}
           />
         </>
+      ) : tab === IMPORT_TAB ? (
+        <GhsReleases locale={locale} isAdmin={isAdmin} sources={importSources} />
       ) : (
         <GhsSourceTable
           key={tab}

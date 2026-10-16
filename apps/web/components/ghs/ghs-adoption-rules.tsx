@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import type { ApiError } from "@/lib/types";
-import type { AdoptionRuleDto } from "../ghs/data-dto";
-import { countryName } from "../ghs/countries";
-import { sdsMessages } from "../messages";
+import type { AdoptionRuleDto } from "@/lib/ghs/data-dto";
+import { countryName } from "@/lib/ghs/countries";
+import { ghsMessages } from "@/lib/ghs/messages";
 
 interface RulesDto {
   country: string;
@@ -34,7 +34,7 @@ export function GhsAdoptionRules({
   isAdmin: boolean;
   onSaved?: () => void;
 }) {
-  const t = sdsMessages(locale).data.rules;
+  const t = ghsMessages(locale).data.rules;
   const [data, setData] = useState<RulesDto | null>(null);
   const [rules, setRules] = useState<AdoptionRuleDto[]>([]);
   const [dirty, setDirty] = useState(false);
@@ -45,9 +45,7 @@ export function GhsAdoptionRules({
   const load = useCallback(async () => {
     setError(null);
     setNotice(null);
-    const res = await fetch(
-      `/api/modules/sds/ghs-data/rules?country=${encodeURIComponent(country)}`,
-    );
+    const res = await fetch(`/api/ghs-data/rules?country=${encodeURIComponent(country)}`);
     if (!res.ok) {
       redirectIfUnauthorized(res);
       setData(null);
@@ -79,7 +77,7 @@ export function GhsAdoptionRules({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/modules/sds/ghs-data/rules", {
+      const res = await fetch("/api/ghs-data/rules", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

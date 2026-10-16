@@ -1,20 +1,24 @@
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { todayInJapan } from "@/lib/judgement-date";
-import type { ModuleSubstanceSectionProps } from "../types";
-import { SubstanceGhsSectionView } from "./components/substance-ghs-section";
-import { classificationsForCas, listGhsClasses } from "./ghs/query";
+import type { Locale } from "@chem/shared";
+import { SubstanceGhsSectionView } from "./substance-ghs-section";
+import { classificationsForCas, listGhsClasses } from "@/lib/ghs/query";
 
 /**
- * 物質の詳細に差し込む「GHS 分類（出どころ別）」。今日の日付で有効な項目を、物質の CAS で引く。
+ * 物質の詳細の「GHS 分類（出どころ別）」（2026-10-16 に SDS のモジュールから標準へ移した）。今日の日付で有効な項目を、物質の CAS で引く。
  * CAS が無い物質、取り込みが無い CAS では何も出さない。
  * 採用の結果と自社判定（判定修正）は画面側が API から引く（§9-5）
  */
-export async function SdsGhsSubstanceSection({
+export async function GhsSubstanceSection({
   substanceId,
   casNormalized,
   locale,
-}: ModuleSubstanceSectionProps) {
+}: {
+  substanceId: string;
+  casNormalized: string | null;
+  locale: Locale;
+}) {
   if (!casNormalized) return null;
   const asOf = todayInJapan();
   const blocks = await classificationsForCas(casNormalized, asOf);

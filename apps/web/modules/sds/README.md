@@ -3,32 +3,22 @@
 特定のお客さんにだけ渡すオプション（決定 0016）。本体はこのフォルダを直接読まず、`scripts/gen-modules.mjs` が作る
 差込口の一覧（`../registry*.generated.ts`）だけで結ぶ。SDS なし版の配布物には、このフォルダごと入らない。
 
+**2026-10-16 に、物質の GHS 分類データ（一覧・取り込み・自社判定・国ごとの採用順・物質の詳細の欄）を標準へ移した**
+（利用者の指示。画面は「法規制 › GHS分類データ」`/ghs-data`、部品は `apps/web/lib/ghs/`・`apps/web/components/ghs/`、
+API は `/api/ghs/…`・`/api/ghs-data/…`、文言は本体の辞書の `ghsData`、説明は本体のマニュアルの「GHS分類データを見る」）。
+**混合物の GHS 分類と SDS の作成は標準に入れず、このモジュールに作る**（他社と機能が重なり、別に売るため）。
+
 - 有効にする: 環境変数 `CHEM_MODULES=sds`（Railway のサービス `sds`）か、配布物の `enabled.json`。dev・typecheck・test は常に全部
-- 画面: `/sds`（入口）、`/sds/ghs`（GHS 分類データの取り込みと記録）
-- API: `/api/modules/sds/ghs/import`（POST、管理者だけ）、`/api/modules/sds/ghs/releases`（GET）
-- 物質の詳細に「GHS 分類（出典別）」の欄を差し込む（`substance-section.tsx`）
+- 画面: `/sds`（入口。いまは準備中の案内と GHS分類データへの入口だけ）。前の道筋 `/sds/ghs`・`/sds/ghs-data` は `/ghs-data` へ送る
 - 文言は `messages.ts`（両言語）。本体の辞書には入れない
-- 表は本体の DB の `sds_ghs_*`（`prisma/schema.prisma` の末尾）。お客さんに渡すときは、権利の無い出どころを
-  `sds_ghs_sources` から消せば、公表・項目・分類まで cascade で消える
-
-## 中身
-
-| 場所                    | 役割                                                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| `ghs/catalog-data.ts`   | 危険有害性クラス・区分のカタログ（共通コード・日本語名・英語略号・既定の H コード）    |
-| `ghs/nite.ts`           | NITE 統合版（区分一覧）と根拠一覧の読み手。1 セルの読み方は `nite.test.ts`             |
-| `ghs/eu-annex-vi.ts`    | EU 附属書VI（ECHA の Excel の History シート）の読み手。版と適用日は行ごと             |
-| `ghs/import-service.ts` | 差分（追加・変更・変わらず・見当たらず）と反映。出どころ・カタログの初期データ         |
-| `ghs/query.ts`          | CAS × 判定対象日で分類を引く（物質の詳細、のちの混合物計算）                           |
-| `ghs/adopt.ts`          | 国ごとの出典の採用順で、物質 × クラスの分類を 1 つに決める（自社判定が最優先）         |
-| `ghs/links.ts`          | 結び付きだけのデータ種（LOLI）の取り込み。識別子 × CAS × 出どころ（sds_ghs_key_links） |
-| `ghs/countries.ts`      | SDS の対象の国（管轄）の一覧                                                           |
-| `api.ts`                | モジュールの API（取り込み）。GHS データの API は `ghs-data-api.ts`                    |
-| `pages/` `components/`  | 画面                                                                                   |
-
-設計と経緯: `docs/steps/S23_SDS_GHS分類データ.md`、原典の検証: `docs/GHS分類の原典/検証結果_DB項目.md`。
+- 表の `sds_ghs_*`（`prisma/schema.prisma` の末尾）は名前をそのまま残している（GHS 分類データは標準になったが、表の名前を変えると移行が要るため）
 
 ## 変更履歴（このモジュールの分。本体の変更履歴には書かない）
+
+### 2026-10-16　GHS 分類データを標準へ移した
+
+- 一覧・取り込み・自社判定・採用順・物質の詳細の欄を本体へ移した。このモジュールに残るのは SDS 作成の入口だけ
+- 下の 2026-09-28 までの記録は、移す前のこのモジュールでの経緯
 
 ### 2026-09-28（5回目）　物質の詳細に「採用」の列と「判定修正」、適用条件の要確認
 

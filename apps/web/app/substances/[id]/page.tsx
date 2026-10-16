@@ -14,6 +14,7 @@ import { getAppSettings } from "@/lib/settings";
 import { buildSubstanceMatrix } from "@/lib/substance-matrix";
 import { listNumbers } from "@/lib/substance-numbers";
 import { SERVER_MODULES } from "@/modules/registry.server.generated";
+import { GhsSubstanceSection } from "@/components/ghs/substance-section";
 import {
   SUBSTANCE_INCLUDE,
   canEditSubstance,
@@ -88,7 +89,14 @@ export default async function SubstanceDetailPage({ params }: { params: Promise<
 
       <SubstanceMatrixSection data={matrix} />
 
-      {/* モジュール（差込口）が足す欄。SDS 作成の GHS 分類など。モジュールが無ければ何も出ない */}
+      {/* GHS 分類（出どころ別）。2026-10-16 から標準（CAS が無い・取り込みが無い物質では何も出ない） */}
+      <GhsSubstanceSection
+        substanceId={item.id}
+        casNormalized={item.casNormalized}
+        locale={locale}
+      />
+
+      {/* モジュール（差込口）が足す欄。モジュールが無ければ何も出ない */}
       {SERVER_MODULES.flatMap((mod) =>
         (mod.substanceSections ?? []).map((Section, i) => (
           <Section

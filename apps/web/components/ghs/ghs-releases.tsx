@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { GhsImportForm } from "./ghs-import-form";
-import { sdsMessages } from "../messages";
+import { ghsMessages } from "@/lib/ghs/messages";
 
 interface ReleaseDto {
   id: string;
@@ -40,11 +40,11 @@ export function GhsReleases({
   isAdmin: boolean;
   sources: { code: string; name: string }[];
 }) {
-  const t = sdsMessages(locale).ghs;
+  const t = ghsMessages(locale).ghs;
   const [items, setItems] = useState<ReleaseDto[] | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/modules/sds/ghs/releases");
+    const res = await fetch("/api/ghs/releases");
     if (!res.ok) {
       redirectIfUnauthorized(res);
       setItems([]);

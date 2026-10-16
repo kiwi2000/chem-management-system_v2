@@ -9,10 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import type { ApiError } from "@/lib/types";
-import { GHS_CATALOG } from "../ghs/catalog-data";
-import { countryName } from "../ghs/countries";
-import type { GhsDataRowDto, GhsStatus, OverrideDto } from "../ghs/data-dto";
-import { sdsMessages } from "../messages";
+import { GHS_CATALOG } from "@/lib/ghs/catalog-data";
+import { countryName } from "@/lib/ghs/countries";
+import type { GhsDataRowDto, GhsStatus, OverrideDto } from "@/lib/ghs/data-dto";
+import { ghsMessages } from "@/lib/ghs/messages";
 import { categoryText } from "./ghs-data-table";
 
 /** 1 クラスぶんの入力。status が null なら「上書きしない」 */
@@ -41,7 +41,7 @@ export function GhsOverrideEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const all = sdsMessages(locale);
+  const all = ghsMessages(locale);
   const t = all.data.edit;
   const ja = locale === "ja";
   /** 効く国: ""＝全ての国、それ以外＝いま選んでいる国だけ */
@@ -56,9 +56,7 @@ export function GhsOverrideEditor({
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const res = await fetch(
-        `/api/modules/sds/ghs-data/overrides?substanceId=${encodeURIComponent(row.id)}`,
-      );
+      const res = await fetch(`/api/ghs-data/overrides?substanceId=${encodeURIComponent(row.id)}`);
       if (!res.ok) {
         redirectIfUnauthorized(res);
         if (alive) setExisting([]);
@@ -120,7 +118,7 @@ export function GhsOverrideEditor({
     }
     setBusy(true);
     try {
-      const res = await fetch("/api/modules/sds/ghs-data/overrides", {
+      const res = await fetch("/api/ghs-data/overrides", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ substanceId: row.id, country: scope, reason: reason.trim(), items }),

@@ -29,6 +29,7 @@ import {
   Settings,
   Sigma,
   Tags,
+  TriangleAlert,
   Upload,
   UserCog,
   Users,
@@ -93,6 +94,15 @@ const ITEMS: NavItem[] = [
         icon: BookMarked,
         needs: "REGULATION_VIEW",
         match: ["/inventories"],
+      },
+      // 物質の GHS 分類（2026-10-16 に SDS のモジュールから標準へ。インベントリと同じく物質に付く外部のデータ）。
+      // 見るのは物質を見られる人。取り込みはこの画面の中（管理者だけ）
+      {
+        href: "/ghs-data",
+        key: "ghsData",
+        icon: TriangleAlert,
+        needs: "SUBSTANCE_VIEW",
+        match: ["/ghs-data"],
       },
       // 外から取り込むCASの対応データ。バージョン・情報源・取込・差分をここで扱う
       // （自社で作ったぶんも、システムの外で管理するものなので同じ扱い）

@@ -12,9 +12,9 @@ import {
   adoptForSubstances,
   defaultRules,
   type AdoptOptions,
-} from "./ghs/adopt";
-import { CATALOG_BY_CODE } from "./ghs/catalog-data";
-import { DEFAULT_COUNTRY, SDS_COUNTRIES } from "./ghs/countries";
+} from "./adopt";
+import { CATALOG_BY_CODE } from "./catalog-data";
+import { DEFAULT_COUNTRY, SDS_COUNTRIES } from "./countries";
 import type {
   AdoptionRuleDto,
   GhsDataRowDto,
@@ -22,12 +22,12 @@ import type {
   OverrideDto,
   SaveOverridesInput,
   SaveRulesInput,
-} from "./ghs/data-dto";
-import { SOURCES, SOURCE_OPTIONS } from "./ghs/import-service";
-import { sdsMessages } from "./messages";
+} from "./data-dto";
+import { SOURCES, SOURCE_OPTIONS } from "./import-service";
+import { ghsMessages } from "@/lib/ghs/messages";
 
 /**
- * GHS データの API（/api/modules/sds/ghs-data…）。
+ * GHS データの API（/api/ghs-data…）。
  *
  *   GET ghs-data?…&country=JP   … 物質の一覧（共通の表の状態）＋その国の採用順で採った分類
  *   GET ghs-data/rules?country= … 採用順（保存が無ければ既定）
@@ -332,7 +332,7 @@ async function getRules(req: Request, actor: Actor): Promise<Response> {
 async function putRules(req: Request, actor: Actor): Promise<Response> {
   const [m, locale] = await Promise.all([getServerMessages(), getLocale()]);
   if (!actor.has("ADMIN"))
-    return jsonError(403, "forbidden", sdsMessages(locale).data.rules.adminOnly);
+    return jsonError(403, "forbidden", ghsMessages(locale).data.rules.adminOnly);
   let body: SaveRulesInput;
   try {
     body = (await req.json()) as SaveRulesInput;
@@ -395,7 +395,7 @@ async function getOverrides(req: Request, actor: Actor): Promise<Response> {
 
 async function putOverrides(req: Request, actor: Actor): Promise<Response> {
   const [m, locale] = await Promise.all([getServerMessages(), getLocale()]);
-  const t = sdsMessages(locale).data.edit;
+  const t = ghsMessages(locale).data.edit;
   if (!actor.has("SUBSTANCE_EDIT")) return jsonError(403, "forbidden", m.errors.forbidden);
   let body: SaveOverridesInput;
   try {

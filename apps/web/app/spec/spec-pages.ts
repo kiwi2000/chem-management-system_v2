@@ -10,6 +10,7 @@ export const SPEC_PAGES = [
   { href: "/spec/products", label: "製品・原材料を登録する" },
   { href: "/spec/laws", label: "法規制を登録する" },
   { href: "/spec/inventories", label: "インベントリを扱う" },
+  { href: "/spec/ghs-data", label: "GHS分類データを見る" },
   { href: "/spec/judgements", label: "法規制の判定を見る" },
   { href: "/spec/documents", label: "ドキュメントを作る" },
   { href: "/spec/images", label: "画像ライブラリ" },

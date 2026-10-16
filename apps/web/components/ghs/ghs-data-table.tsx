@@ -19,10 +19,10 @@ import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
 import type { ApiError, ListResponse } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
-import { GHS_CATALOG } from "../ghs/catalog-data";
-import { DEFAULT_COUNTRY, SDS_COUNTRIES } from "../ghs/countries";
-import type { AdoptedCellDto, GhsDataRowDto } from "../ghs/data-dto";
-import { sdsMessages } from "../messages";
+import { GHS_CATALOG } from "@/lib/ghs/catalog-data";
+import { DEFAULT_COUNTRY, SDS_COUNTRIES } from "@/lib/ghs/countries";
+import type { AdoptedCellDto, GhsDataRowDto } from "@/lib/ghs/data-dto";
+import { ghsMessages } from "@/lib/ghs/messages";
 import { GhsAdoptionRules } from "./ghs-adoption-rules";
 import { GhsOverrideEditor } from "./ghs-override-editor";
 
@@ -67,7 +67,7 @@ export function GhsDataTable({
   linkLayers: string[];
 }) {
   const { m } = useI18n();
-  const t = sdsMessages(locale);
+  const t = ghsMessages(locale);
   const ja = locale === "ja";
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
   // 引くときに使う層。既定は全部（原典は常に）。端末に覚える
@@ -231,7 +231,7 @@ export function GhsDataTable({
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
   const load = useCallback(async () => {
     const res = await fetch(
-      `/api/modules/sds/ghs-data?${query}&country=${encodeURIComponent(country)}&layers=${encodeURIComponent([...layers].join(","))}`,
+      `/api/ghs-data?${query}&country=${encodeURIComponent(country)}&layers=${encodeURIComponent([...layers].join(","))}`,
     );
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;

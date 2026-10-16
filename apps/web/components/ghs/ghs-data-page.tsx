@@ -1,13 +1,17 @@
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import type { ModulePageProps } from "../../types";
-import { GhsDataTabs } from "../components/ghs-data-tabs";
-import { LINK_LAYERS } from "../ghs-data-api";
-import { sdsMessages } from "../messages";
+import type { Locale } from "@chem/shared";
+import { GhsDataTabs } from "./ghs-data-tabs";
+import { LINK_LAYERS } from "@/lib/ghs/data-api";
+import { SOURCES } from "@/lib/ghs/import-service";
+import { ghsMessages } from "@/lib/ghs/messages";
 
-/** /sds/ghs-data — 物質 × 採用した GHS 分類の一覧。自社判定の登録と、国ごとの出典の採用順 */
-export async function SdsGhsDataPage({ locale }: ModulePageProps) {
-  const t = sdsMessages(locale);
+/**
+ * /ghs-data — 物質 × 採用した GHS 分類の一覧。自社判定の登録と、国ごとの出典の採用順、取り込み（タブ）。
+ * 2026-10-16 に SDS のモジュールから標準へ移した（混合物の分類と SDS の作成はモジュールに残す）
+ */
+export async function GhsDataPage({ locale }: { locale: Locale }) {
+  const t = ghsMessages(locale);
   const actor = await getActor();
   // 見るのは物質を見られる人。中身は API 側でも同じ権限で確かめる
   if (!actor?.has("SUBSTANCE_VIEW")) return null;
@@ -37,6 +41,10 @@ export async function SdsGhsDataPage({ locale }: ModulePageProps) {
           name: locale === "ja" ? s.nameJa : s.nameEn,
         }))}
         linkLayers={linkLayers.map((s) => s.code)}
+        importSources={SOURCES.map((s) => ({
+          code: s.code,
+          name: locale === "ja" ? s.nameJa : s.nameEn,
+        }))}
       />
     </div>
   );

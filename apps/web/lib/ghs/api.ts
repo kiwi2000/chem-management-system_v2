@@ -10,25 +10,26 @@ import {
   ensureSeed,
   previewImport,
   type SourceCode,
-} from "./ghs/import-service";
-import { applyLinkImport, parseLinksTsv, previewLinkImport } from "./ghs/links";
-import { ghsDataApi } from "./ghs-data-api";
-import { fieldOf, fileOf, parseMultipart } from "./lib/multipart";
-import { sdsMessages } from "./messages";
+} from "./import-service";
+import { applyLinkImport, parseLinksTsv, previewLinkImport } from "./links";
+import { ghsDataApi } from "./data-api";
+import { fieldOf, fileOf, parseMultipart } from "./multipart";
+import { ghsMessages } from "@/lib/ghs/messages";
 
 /** 1 ファイルの上限。根拠一覧が 10 MB 強ある */
 export const GHS_IMPORT_FILE_MAX_MB = 32;
 
 /**
- * SDS モジュールの API（/api/modules/sds/…）。ログイン済みは本体が確かめている。
+ * GHS 分類データの API。ログイン済みは呼び出す側（`app/api/ghs`・`app/api/ghs-data`）で確かめている。
+ * 2026-10-16 に SDS のモジュールから標準へ移した（道筋は /api/modules/sds/… から /api/… へ）。
  *
- *   POST ghs/import   … multipart: sourceCode / label / publishedOn / step(preview|apply) / file / rationale?
- *   GET  ghs/releases … 取り込みの記録
- *   ghs-data…         … GHS データの一覧・自社判定・採用順（ghs-data-api.ts）
+ *   POST /api/ghs/import   … multipart: sourceCode / label / publishedOn / step(preview|apply) / file / rationale?
+ *   GET  /api/ghs/releases … 取り込みの記録
+ *   /api/ghs-data…         … GHS分類データの一覧・自社判定・採用順（data-api.ts）
  *
- * 取り込みはシステム管理者だけ（権限を足すのは、権限にモジュールの印を持たせる仕組みができてから）
+ * 取り込みはシステム管理者だけ
  */
-export async function sdsApi(req: Request, path: string[], actor: Actor): Promise<Response | null> {
+export async function ghsApi(req: Request, path: string[], actor: Actor): Promise<Response | null> {
   const key = `${req.method} ${path.join("/")}`;
   if (key === "GET ghs/releases") return listReleases();
   if (key === "POST ghs/import") return importGhs(req, actor);
@@ -62,7 +63,7 @@ async function listReleases(): Promise<Response> {
 
 async function importGhs(req: Request, actor: Actor): Promise<Response> {
   const [m, locale] = await Promise.all([getServerMessages(), getLocale()]);
-  const t = sdsMessages(locale).ghs.import;
+  const t = ghsMessages(locale).ghs.import;
   if (!actor.has("ADMIN")) return jsonError(403, "forbidden", t.adminOnly);
 
   // req.formData() は 10 MB のファイルで落ちるので、本文を丸ごと読んで自前で切る（lib/multipart.ts）
@@ -73,7 +74,7 @@ async function importGhs(req: Request, actor: Actor): Promise<Response> {
   const parts = parseMultipart(body, req.headers.get("content-type"));
   if (!parts) {
     console.error(
-      "sds ghs import: multipart parse failed",
+      "ghs import: multipart parse failed",
       body.length,
       req.headers.get("content-type"),
     );
@@ -119,7 +120,7 @@ async function importGhs(req: Request, actor: Actor): Promise<Response> {
   try {
     diff = await previewImport(input);
   } catch (err) {
-    console.error("sds ghs import: reader failed", err);
+    console.error("ghs import: reader failed", err);
     return jsonError(400, "unreadable", t.unreadable);
   }
   if (diff.fileIssues.length > 0) {

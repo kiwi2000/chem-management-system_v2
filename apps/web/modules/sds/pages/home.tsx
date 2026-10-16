@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ModulePageProps } from "../../types";
 import { sdsMessages } from "../messages";
 
-/** SDS 作成の入口。いまは GHS 分類データの取り込みへの入口だけ */
+/** SDS 作成の入口。いまは準備中の案内と、標準の GHS分類データへの入口だけ */
 export function SdsHomePage({ locale }: ModulePageProps) {
   const t = sdsMessages(locale);
   return (
@@ -11,8 +11,8 @@ export function SdsHomePage({ locale }: ModulePageProps) {
       <p className="text-muted-foreground">{t.preparing}</p>
       <ul className="list-disc pl-5">
         <li>
-          <Link href="/sds/ghs" className="text-primary underline-offset-2 hover:underline">
-            {t.ghs.linkFromHome}
+          <Link href="/ghs-data" className="text-primary underline-offset-2 hover:underline">
+            {t.linkGhsData}
           </Link>
         </li>
       </ul>
