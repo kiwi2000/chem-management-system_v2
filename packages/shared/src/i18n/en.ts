@@ -751,7 +751,7 @@ export const en: Messages = {
     orphan: "This data source is not listed for this version, so it is never used",
     currentVersion: "current",
     noSourceInVersion: "This set has no sources",
-    merged: "Merged",
+    merged: "All (by priority)",
     prevSubstance: "Previous statutory name",
     nextSubstance: "Next statutory name",
     backToList: "Back to the statutory name list",
