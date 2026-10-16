@@ -231,6 +231,20 @@
     thead th { background: #eee; }
   }
 </style>
+<style>
+  /* 2026-10-16 追加: 目次・図の説明・章の見出しの添え字 */
+  .toc { background: var(--surface); border: 1px solid var(--line); padding: 1rem 1.25rem; }
+  .toc-h { font-family: "BIZ UDPGothic", sans-serif; font-weight: 700; margin: 0 0 .4rem; }
+  .toc ol { list-style: none; padding-left: 0; gap: .15rem; max-width: none; columns: 2; display: block; }
+  .toc li { break-inside: avoid; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover, .toc a:focus-visible { text-decoration: underline; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .figure figcaption { font-size: .8rem; color: var(--ink-3); margin-top: .5rem; }
+  h2 .count { font-family: "Zen Kaku Gothic New", sans-serif; font-size: .8rem; font-weight: 400; color: var(--ink-3); margin-left: .5rem; }
+  section { display: flex; flex-direction: column; gap: 1.1rem; }
+  @media print { .toc { break-inside: avoid; } .toc a { color: #000; } }
+</style>
 
 <div class="page">
 
@@ -240,9 +254,9 @@
     <p class="lede">
       御社の社内サーバー1台にインストールし、社内LANから使えるようにするまでの手順です。
       <b>作業はサーバーの管理者権限を持つ方が行います。</b>所要時間はおよそ1時間です。
-      社内LANの中だけで使う限り、外部への通信はありません。
-      <b>0〜9 は Linux（推奨）の手順です。</b>Windows Server に入れる場合は
-      <b>10 に読み替えてください</b>（アプリのプログラムは同じものです）。
+      動いている間は、社内LANの外との通信はありません。
+      <b>第2章〜第9章は Linux（推奨）の手順です。</b>Windows Server に入れる場合は<b>第10章</b>を見てください（アプリのプログラムは同じものです）。
+      導入を決める前の確認には、別紙「社内サーバー導入要件」をお使いください。
     </p>
     <div class="facts">
       <span><b>対象</b> 社内サーバー 1台</span>
@@ -252,19 +266,39 @@
     </div>
   </header>
 
-  <section>
-    <h2>0. 導入前の確認</h2>
+  <nav class="toc" aria-label="目次">
+    <p class="toc-h">目次</p>
+    <ol>
+      <li><a href="#c0">第0章　導入前の確認</a></li>
+      <li><a href="#c1">第1章　システムの構成</a></li>
+      <li><a href="#c2">第2章　サーバーの準備（手順1〜4）</a></li>
+      <li><a href="#c3">第3章　アプリの配置と起動（手順5〜7）</a></li>
+      <li><a href="#c4">第4章　最初の管理者の作成（手順8）</a></li>
+      <li><a href="#c5">第5章　社内パソコンからの接続（手順9）</a></li>
+      <li><a href="#c6">第6章　毎日のバックアップ（手順10）</a></li>
+      <li><a href="#c7">第7章　導入完了の確認</a></li>
+      <li><a href="#c8">第8章　導入後の運用・復元</a></li>
+      <li><a href="#c9">第9章　うまくいかないとき</a></li>
+      <li><a href="#c10">第10章　Windows Server への導入（手順 10-1〜10-4）</a></li>
+      <li><a href="#update">第11章　更新の手順</a></li>
+    </ol>
+    <p class="dim">「第N章」は章、「手順N」は作業の番号です。</p>
+  </nav>
+
+  <section id="c0">
+    <h2>第0章　導入前の確認</h2>
 
     <div class="scroll">
       <table>
-        <caption>ご用意いただくもの</caption>
+        <caption>ご用意いただくもの（詳しくは「社内サーバー導入要件」）</caption>
         <thead><tr><th>もの</th><th>要件</th></tr></thead>
         <tbody>
           <tr><td><b>サーバー</b></td><td>4コア / メモリ8GB / SSD 250GB 以上（推奨は8コア・16GB・NVMe 500GB）。物理でも仮想でも構いません</td></tr>
-          <tr><td><b>OS</b></td><td>Ubuntu Server 24.04 LTS、または RHEL系 9（AlmaLinux / Rocky Linux）。Windows Server 2019 / 2022 / 2025 にも入れられます（手順10）</td></tr>
-          <tr><td><b>ネットワーク</b></td><td>社内LANの固定IPアドレス1つ。<b>インターネット接続は必須ではありません</b></td></tr>
+          <tr><td><b>OS</b></td><td>Ubuntu Server 24.04 LTS、または RHEL系 9（AlmaLinux / Rocky Linux）。Windows Server 2019 / 2022 / 2025 にも入れられます（第10章）</td></tr>
+          <tr><td><b>ネットワーク</b></td><td>社内LANの固定IPアドレス1つ。社内DNSの名前があるとよりよい（第5章）</td></tr>
           <tr><td><b>電源</b></td><td>無停電電源装置（UPS）。停電でデータベースが壊れることを防ぎます</td></tr>
           <tr><td><b>バックアップ先</b></td><td>サーバーとは別の機器（社内NASなど）</td></tr>
+          <tr><td><b>利用者</b></td><td>20名ほどまで。それを超える、または製品が数万件になる見込みがある場合は、事前にご相談ください</td></tr>
         </tbody>
       </table>
     </div>
@@ -274,122 +308,103 @@
         <caption>こちらからお渡しするファイル</caption>
         <thead><tr><th>ファイル</th><th class="num">サイズ</th><th>説明</th></tr></thead>
         <tbody>
-          <tr><td class="k">chem-system-(ver).tar.gz</td><td class="num">約 2 MB</td><td>アプリ本体と起動用の設定ファイル（Linux 用）。<b>(ver) は、アプリのバージョン</b>（例 <code>chem-system-1.0.0.tar.gz</code>）</td></tr>
-          <tr><td class="k">chem-install-set-(ver)-win64.zip</td><td class="num">約 1.1 GB</td><td>Windows Server 用のインストールセット（手順10で使います）。組み立て済みのアプリ（帳票の PDF 化に使う Chromium を含む）と、Node.js・Visual C++ ランタイム・PostgreSQL・Caddy・NSSM、この手順書が入っています。<b>Windows Server にはこれだけをお使いください。</b><b>インターネットに繋がらないサーバーでも導入できます</b></td></tr>
-          <tr><td class="k">chem-images-(ver).tar</td><td class="num">約 2 GB</td><td>実行に使う Docker イメージ（帳票の PDF 化に使う Chromium を含む）。<b>サーバーがインターネットに繋がらない場合のみ</b>お渡しします</td></tr>
+          <tr><td class="k">chem-system-(ver).tar.gz</td><td class="num">約 2 MB</td><td>Linux 用のアプリ本体と起動用の設定ファイル。<b>(ver) はアプリのバージョン</b>（例 <code>chem-system-1.0.0.tar.gz</code>）</td></tr>
+          <tr><td class="k">chem-images-(ver).tar</td><td class="num">約 2 GB</td><td>Linux 用の、実行に使う Docker イメージ（帳票の PDF 化に使う Chromium を含む）。<b>サーバーがインターネットに繋がらない場合</b>にお渡しします</td></tr>
+          <tr><td class="k">chem-install-set-(ver)-win64.zip<br>（と .sha256）</td><td class="num">約 1.1 GB</td><td>Windows Server 用のインストールセット（第10章）。組み立て済みのアプリと、Node.js・Visual C++ ランタイム・PostgreSQL・Caddy・NSSM、この手順書が入っています。<b>インターネットに繋がらないサーバーでも導入できます</b></td></tr>
         </tbody>
       </table>
     </div>
+
+    <div class="scroll">
+      <table>
+        <caption>インターネットに繋がる Linux サーバーで、その場で組み立てる場合だけ通信する先（導入・更新の作業中のみ）</caption>
+        <thead><tr><th>何のため</th><th>行き先</th></tr></thead>
+        <tbody>
+          <tr><td>Docker を入れる</td><td class="k">get.docker.com・download.docker.com</td></tr>
+          <tr><td>土台のイメージ</td><td class="k">Docker Hub（node:24-slim・postgres:16-alpine・caddy:2-alpine）</td></tr>
+          <tr><td>組み立てに使う部品</td><td class="k">deb.debian.org・registry.npmjs.org・Chromium と Prisma の配布元</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim">
+      これらを開けられない場合は、イメージのファイル（<code>chem-images-(ver).tar</code>）をお渡しします。動き始めたあとは、どこにも通信しません
+      （例外として、社外の日本のアドレスから接続があったときだけ、記録に接続元の組織名を出すため JPNIC に問い合わせます。社内LANの中で使う限り起きません）。
+    </p>
   </section>
 
-  <section>
-    <h2>1. システムの構成</h2>
+  <section id="c1">
+    <h2>第1章　システムの構成</h2>
     <p>
-      サーバー1台の中で、<b>3つの入れ物（コンテナ）が役割を分けて動きます。</b>
-      入れ物は Docker が管理し、社内LANに開いているのは<b>入口のひとつだけ</b>です。
+      サーバー1台の中で、<b>3つのコンテナ（Docker が管理する、役割ごとの入れ物）</b>が分かれて動きます。
+      社内LANに開いているのは<b>入口のひとつだけ</b>です。
     </p>
 
-    <div class="figure">
-      <svg viewBox="0 0 880 512" role="img" aria-label="サーバー1台の中で Caddy・アプリ・データベースの3つのコンテナが動き、データベースの中身と帳票の PDF を入れ物の外に置く構成図" xmlns="http://www.w3.org/2000/svg">
+    <figure class="figure">
+      <svg viewBox="0 0 880 512" role="img" aria-label="サーバー1台の中で Caddy・アプリ・データベースの3つのコンテナが動き、データベースの中身と帳票の PDF をコンテナの外に置く構成図" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/>
           </marker>
         </defs>
-
-        <!-- 社員のパソコン -->
         <rect x="14" y="196" width="150" height="88" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
         <text x="89" y="230" class="t-name" text-anchor="middle">社員のパソコン</text>
         <text x="89" y="252" class="t-sub" text-anchor="middle">ブラウザ</text>
-        <text x="89" y="271" class="t-sub" text-anchor="middle">（5〜6台）</text>
-
-        <!-- LAN の線 -->
+        <text x="89" y="271" class="t-sub" text-anchor="middle">（20名ほどまで）</text>
         <line x1="164" y1="240" x2="228" y2="240" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
         <text x="196" y="230" class="t-port" text-anchor="middle">HTTPS</text>
         <text x="196" y="262" class="t-port" text-anchor="middle">443</text>
-
-        <!-- サーバー -->
         <rect x="230" y="20" width="514" height="472" rx="6" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.5"/>
         <text x="250" y="46" class="t-title">サーバー 1台</text>
         <text x="250" y="66" class="t-sub">Ubuntu Server 24.04 LTS ／ 社内LANの固定IP</text>
-
-        <!-- Docker -->
         <rect x="252" y="82" width="404" height="306" rx="5" fill="var(--ground)" stroke="var(--accent)" stroke-dasharray="5 4"/>
         <text x="270" y="104" class="t-label">Docker</text>
-
-        <!-- caddy -->
         <rect x="274" y="118" width="290" height="62" rx="4" fill="var(--accent-quiet)" stroke="var(--accent)"/>
         <text x="290" y="142" class="t-name">caddy</text>
         <text x="290" y="163" class="t-sub">社内LANへの入口。HTTPSにする</text>
-
-        <!-- app -->
         <rect x="274" y="212" width="290" height="62" rx="4" fill="var(--surface)" stroke="var(--line-strong)"/>
         <text x="290" y="236" class="t-name">app</text>
-        <text x="290" y="257" class="t-sub">画面と判定。Next.js</text>
-
-        <!-- db -->
+        <text x="290" y="257" class="t-sub">画面と判定。帳票の PDF も作る</text>
         <rect x="274" y="306" width="290" height="62" rx="4" fill="var(--surface)" stroke="var(--line-strong)"/>
         <text x="290" y="330" class="t-name">db</text>
         <text x="290" y="351" class="t-sub">PostgreSQL 16</text>
-
-        <!-- 縦の矢印 -->
         <line x1="330" y1="180" x2="330" y2="206" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
         <text x="344" y="199" class="t-port">3001</text>
         <line x1="330" y1="274" x2="330" y2="300" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
         <text x="344" y="293" class="t-port">5432</text>
-
-        <!-- 保存領域（ボリューム） -->
-        <g>
-          <path d="M584 312 a26 9 0 0 1 52 0 v44 a26 9 0 0 1 -52 0 z" fill="var(--surface-2)" stroke="var(--line-strong)"/>
-          <path d="M584 312 a26 9 0 0 0 52 0" fill="none" stroke="var(--line-strong)"/>
-          <text x="610" y="343" class="t-port" text-anchor="middle">db-data</text>
-        </g>
-        <line x1="564" y1="337" x2="580" y2="337" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
         <g>
           <path d="M578 218 a32 9 0 0 1 64 0 v44 a32 9 0 0 1 -64 0 z" fill="var(--surface-2)" stroke="var(--line-strong)"/>
           <path d="M578 218 a32 9 0 0 0 64 0" fill="none" stroke="var(--line-strong)"/>
           <text x="610" y="249" class="t-port" text-anchor="middle">app-data</text>
         </g>
         <line x1="564" y1="243" x2="574" y2="243" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
-
-        <!-- バックアップ -->
+        <g>
+          <path d="M584 312 a26 9 0 0 1 52 0 v44 a26 9 0 0 1 -52 0 z" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+          <path d="M584 312 a26 9 0 0 0 52 0" fill="none" stroke="var(--line-strong)"/>
+          <text x="610" y="343" class="t-port" text-anchor="middle">db-data</text>
+        </g>
+        <line x1="564" y1="337" x2="580" y2="337" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
         <rect x="252" y="406" width="404" height="62" rx="5" fill="var(--surface)" stroke="var(--line)"/>
         <text x="270" y="430" class="t-name">バックアップ（毎日3時）</text>
         <text x="270" y="451" class="t-sub">/var/backups/chem/ に1日1つ。14日で消える</text>
         <line x1="610" y1="368" x2="610" y2="400" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
-
-        <!-- 社内NAS -->
         <rect x="768" y="406" width="100" height="62" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
         <text x="818" y="432" class="t-name" text-anchor="middle">社内NAS</text>
         <text x="818" y="452" class="t-sub" text-anchor="middle">別の機器へ複製</text>
         <line x1="660" y1="437" x2="762" y2="437" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar)"/>
-
-        <!-- 外に出ているポートの注記 -->
         <text x="576" y="150" class="t-port">443 / 80</text>
         <text x="576" y="167" class="t-sub">だけ開く</text>
       </svg>
-    </div>
+      <figcaption>図1　Linux 版の構成。app と db は社内LANから直接は触れません。</figcaption>
+    </figure>
 
     <div class="scroll">
       <table>
         <caption>それぞれの役目</caption>
-        <thead><tr><th>入れ物</th><th>役目</th><th>社内LANから</th></tr></thead>
+        <thead><tr><th>コンテナ</th><th>役目</th><th>社内LANから</th></tr></thead>
         <tbody>
-          <tr>
-            <td class="k">caddy</td>
-            <td>社内LANからの接続を受け、暗号化（HTTPS）して <code>app</code> へ渡します</td>
-            <td><b>見えます</b>（443 / 80）</td>
-          </tr>
-          <tr>
-            <td class="k">app</td>
-            <td>画面の表示と法規制の判定。データが要るときは <code>db</code> に聞きます。作った帳票の PDF は <code>app-data</code> に置きます</td>
-            <td>見えません</td>
-          </tr>
-          <tr>
-            <td class="k">db</td>
-            <td>物質・製品・法規制・アクセス記録の保管。PostgreSQL 16</td>
-            <td>見えません</td>
-          </tr>
+          <tr><td class="k">caddy</td><td>社内LANからの接続を受け、暗号化（HTTPS）して <code>app</code> へ渡します。社内用の証明書もここで作ります</td><td><b>見えます</b>（443 / 80）</td></tr>
+          <tr><td class="k">app</td><td>画面の表示と法規制の判定。帳票の PDF も作り、<code>app-data</code> に置きます</td><td>見えません</td></tr>
+          <tr><td class="k">db</td><td>物質・製品・法規制・記録の保管。PostgreSQL 16。中身は <code>db-data</code> に置きます</td><td>見えません</td></tr>
         </tbody>
       </table>
     </div>
@@ -397,46 +412,30 @@
     <div class="box">
       <h4>POINT</h4>
       <ul>
-        <li><b>外から届くのは caddy だけです。</b><code>app</code> と <code>db</code> はサーバーの中でしか繋がらず、社内LANからも直接は触れません</li>
-        <li><b>データは入れ物の外に置いてあります</b>（データベースの中身は <code>db-data</code>、作った帳票の PDF は <code>app-data</code>）。アプリを新しくして入れ物を作り直しても、中身は消えません</li>
-        <li><b>社内LANの中だけで使う限り、インターネットへの通信はありません。</b>認証も自前で持っているため、外部のサービスを使いません。例外は1つだけで、<b>社外の日本のアドレスから接続があったとき</b>、アクセス記録に接続元の組織名を出すために JPNIC（日本のアドレスの登録機関）へ問い合わせます。社内LANからの接続では問い合わせません</li>
+        <li><b>データはコンテナの外に置いてあります</b>（<code>db-data</code>・<code>app-data</code>）。アプリを新しくしてコンテナを作り直しても、中身は消えません</li>
+        <li><b>認証も自前で持っているため、外部のサービスを使いません。</b>動いている間、社内LANの外との通信はありません</li>
       </ul>
     </div>
   </section>
 
-  <section>
-    <h2>2. サーバーの準備</h2>
+  <section id="c2">
+    <h2>第2章　サーバーの準備</h2>
     <div class="steps">
 
       <div class="step">
         <div class="no">1</div>
         <div class="body">
           <h3>サーバーの用意<span class="sub">OSのインストールまでは済ませておいてください</span></h3>
-          <p>
-            この手順書は、<b>次の状態から始めます。</b>
-            サーバー本体の調達とOSのインストールの方法は、この手順書では扱いません。
-          </p>
+          <p>この手順書は、<b>次の状態から始めます。</b>サーバー本体の調達とOSのインストールの方法は扱いません。</p>
           <div class="scroll">
             <table>
               <caption>始めるときの状態</caption>
               <thead><tr><th>項目</th><th>そろえておくこと</th></tr></thead>
               <tbody>
-                <tr>
-                  <td><b>OS</b></td>
-                  <td>Ubuntu Server 24.04 LTS（最小構成で構いません）、または RHEL系 9。<b>デスクトップ環境は要りません</b></td>
-                </tr>
-                <tr>
-                  <td><b>ネットワーク</b></td>
-                  <td>社内LANの<b>固定IPアドレス</b>が付いていること。DHCPで変わると、社員のパソコンから開けなくなります</td>
-                </tr>
-                <tr>
-                  <td><b>接続</b></td>
-                  <td>SSHで入れること。鍵での接続にし、<b>パスワードでの接続は止めておく</b>ことをおすすめします</td>
-                </tr>
-                <tr>
-                  <td><b>時刻</b></td>
-                  <td>時刻が合っていること（<code>timedatectl</code> で確認）。アクセス記録の時刻、バックアップの時間、2要素認証に影響します</td>
-                </tr>
+                <tr><td><b>OS</b></td><td>Ubuntu Server 24.04 LTS（最小構成で構いません）、または RHEL系 9。<b>デスクトップ環境は要りません</b></td></tr>
+                <tr><td><b>ネットワーク</b></td><td>社内LANの<b>固定IPアドレス</b>が付いていること。DHCPで変わると、社員のパソコンから開けなくなります</td></tr>
+                <tr><td><b>接続</b></td><td>管理者のパソコンから SSH で入れること。鍵での接続にし、<b>パスワードでの接続は止めておく</b>ことをおすすめします</td></tr>
+                <tr><td><b>時刻</b></td><td>時刻が合っていること（<code>timedatectl</code> で確認）。記録の時刻、バックアップの時間、2要素認証に影響します</td></tr>
               </tbody>
             </table>
           </div>
@@ -446,85 +445,29 @@
             <table>
               <thead><tr><th>ユーザー</th><th>役目</th></tr></thead>
               <tbody>
-                <tr>
-                  <td><b>導入作業をする人</b><br><span class="dim">1つ。例 <code>chemadmin</code></span></td>
-                  <td>
-                    <b><code>sudo</code> が使える一般ユーザー</b>を1つ用意します。
-                    このユーザーでログインして、以降の作業をすべて行います。
-                    手順3で <code>docker</code> グループにも入れます
-                  </td>
-                </tr>
-                <tr>
-                  <td><b><code>root</code></b></td>
-                  <td>
-                    <b>直接ログインしては使いません。</b>必要なときだけ <code>sudo</code> を通します。
-                    誤った操作でOSごと壊すことを防ぐためです
-                  </td>
-                </tr>
-                <tr>
-                  <td><b>システムの中で使われるもの</b></td>
-                  <td>
-                    アプリとデータベースは Docker の中で動き、<b>OSのユーザーは作りません。</b>
-                    システムを使う人（社員）のアカウントは、OSではなく<b>アプリの中</b>で管理します
-                  </td>
-                </tr>
+                <tr><td><b>導入作業をする人</b><br><span class="dim">1つ。例 <code>chemadmin</code></span></td><td><b><code>sudo</code> が使える一般ユーザー</b>を1つ用意します。このユーザーでログインして、以降の作業をすべて行います。手順3で <code>docker</code> グループにも入れます</td></tr>
+                <tr><td><b><code>root</code></b></td><td><b>直接ログインしては使いません。</b>必要なときだけ <code>sudo</code> を通します</td></tr>
+                <tr><td><b>システムを使う人</b></td><td>社員のアカウントは、OSではなく<b>アプリの中</b>で管理します。OSのユーザーは作りません</td></tr>
               </tbody>
             </table>
           </div>
 
-          <h4 class="minor">ディレクトリの構成</h4>
+          <h4 class="minor">導入したあとのサーバーの中</h4>
           <div class="scroll">
             <table>
-              <caption>導入したあと、サーバーの中はこうなります</caption>
               <thead><tr><th>場所</th><th>中身</th><th>消えると</th></tr></thead>
               <tbody>
-                <tr>
-                  <td class="k">/opt/chem/</td>
-                  <td>アプリ一式。展開したファイルと起動用の設定が入ります</td>
-                  <td>お渡ししたファイルから戻せます</td>
-                </tr>
-                <tr>
-                  <td class="k">/opt/chem/.env.prod</td>
-                  <td><b>データベースのパスワードを書く設定ファイル。</b>このファイルだけは外に出さないでください</td>
-                  <td><b>戻せません。</b>控えを別に保管してください</td>
-                </tr>
-                <tr>
-                  <td class="k">/opt/chem/scripts/</td>
-                  <td>バックアップなどの補助スクリプト</td>
-                  <td>お渡ししたファイルから戻せます</td>
-                </tr>
-                <tr>
-                  <td class="k">/var/lib/docker/volumes/</td>
-                  <td><b>データベースの中身（db-data）。</b>Docker が管理します。直接さわらないでください</td>
-                  <td><b>バックアップから戻します</b></td>
-                </tr>
-                <tr>
-                  <td class="k">/var/lib/docker/volumes/<br>chem_app-data/</td>
-                  <td><b>作った帳票の PDF。</b>Docker が管理します。直接さわらないでください</td>
-                  <td>データベースのバックアップには入りません。残すなら別に複製します（手順10）</td>
-                </tr>
-                <tr>
-                  <td class="k">/var/backups/chem/</td>
-                  <td>毎日のバックアップ。14日より古いものは自動で消えます</td>
-                  <td>社内NASの複製から戻します</td>
-                </tr>
-                <tr>
-                  <td class="k">/var/log/chem-backup.log</td>
-                  <td>バックアップが動いた記録</td>
-                  <td>差し支えありません</td>
-                </tr>
+                <tr><td class="k">/opt/chem/</td><td>アプリ一式。展開したファイルと起動用の設定</td><td>お渡ししたファイルから戻せます</td></tr>
+                <tr><td class="k">/opt/chem/.env.prod</td><td><b>データベースのパスワードを書く設定ファイル。</b>このファイルだけは外に出さないでください</td><td><b>戻せません。</b>控えを別に保管してください</td></tr>
+                <tr><td class="k">Docker の保存領域<br>chem_db-data</td><td><b>データベースの中身。</b>Docker が管理します。直接さわらないでください</td><td><b>バックアップから戻します</b></td></tr>
+                <tr><td class="k">Docker の保存領域<br>chem_app-data</td><td><b>作った帳票の PDF</b></td><td>バックアップには入りません。残すなら別に複製します（第6章）</td></tr>
+                <tr><td class="k">Docker の保存領域<br>chem_caddy-data</td><td>社内用の証明書の元（ルート証明書）</td><td>作り直され、各パソコンに証明書を配り直すことになります</td></tr>
+                <tr><td class="k">/var/backups/chem/</td><td>毎日のバックアップ。14日より古いものは自動で消えます</td><td>社内NASの複製から戻します</td></tr>
+                <tr><td class="k">/var/log/chem-backup.log</td><td>バックアップが動いた記録</td><td>差し支えありません</td></tr>
               </tbody>
             </table>
           </div>
-          <div class="box warn">
-            <h4>IMPORTANT</h4>
-            <p>
-              <b>守るべきものは2つです。</b>
-              <code>/opt/chem/.env.prod</code>（設定）と、データベースの中身（毎日のバックアップ）。
-              この2つがあれば、サーバーが壊れても新しい機械で同じ状態に戻せます。
-              作った帳票の PDF も残したい場合は、その置き場所も複製してください（手順10）。
-            </p>
-          </div>
+          <p class="dim">保存領域の名前の頭の <code>chem_</code> は、アプリを置いたフォルダーの名前（<code>/opt/chem</code>）から付きます。</p>
         </div>
       </div>
 
@@ -536,7 +479,7 @@
 sudo apt update &amp;&amp; sudo apt -y upgrade
 sudo apt -y install unattended-upgrades</pre>
           <p>RHEL系の場合は <code>sudo dnf -y update</code> と <code>sudo dnf -y install dnf-automatic</code> です。</p>
-          <p><b>帳票の PDF 化について。</b>アプリはサーバーの中で Chromium（ブラウザ）を動かして PDF を作ります。Docker のイメージに入っているので、OS には何も入れなくて構いません。実行時に外へは出ません。</p>
+          <p>帳票の PDF を作るブラウザ（Chromium）は Docker のイメージに入っているので、OS には何も入れなくて構いません。</p>
         </div>
       </div>
 
@@ -549,13 +492,16 @@ curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
 <span class="c"># ここで一度ログインし直します（グループの変更を反映するため）</span></pre>
           <div class="box">
-            <h4>OFFLINE</h4>
+            <h4>OFFLINE（インターネットに繋がらないサーバー）</h4>
             <p>
-              インターネットに繋がらないサーバーでは、OSの提供元から
-              <code>docker-ce</code> のパッケージを別途入手して導入してください。
-              Ubuntu なら <code>docker.io</code> パッケージ（OSの標準リポジトリ）でも動きます。
+              Docker の公式のパッケージ（<code>docker-ce</code>・<code>docker-ce-cli</code>・<code>containerd.io</code>・<code>docker-compose-plugin</code>）を別の機械で入手し、サーバーに入れてください。
+              Ubuntu の標準のパッケージを使う場合は、<code>docker.io</code> と <code>docker-compose-v2</code> の<b>2つ</b>が要ります。
             </p>
           </div>
+          <p>
+            <b>Docker の記録が際限なく増えないように</b>、<code>/etc/docker/daemon.json</code> に次を書いて <code>sudo systemctl restart docker</code> することをおすすめします。
+          </p>
+<pre>{ "log-driver": "json-file", "log-opts": { "max-size": "10m", "max-file": "3" } }</pre>
 <pre><span class="c"># 入ったことの確認。バージョンが2つとも表示されればOK</span>
 docker --version
 docker compose version</pre>
@@ -566,35 +512,26 @@ docker compose version</pre>
         <div class="no">4</div>
         <div class="body">
           <h3>通信の入口の制限<span class="sub">社内LANからだけ入れるようにします</span></h3>
-<pre><span class="c"># 社内LANが 192.168.10.0/24 の場合の例。自社の範囲に読み替えてください</span>
-sudo ufw allow from 192.168.10.0/24 to any port 443 proto tcp
-sudo ufw allow from 192.168.10.0/24 to any port 80 proto tcp
-sudo ufw allow 22/tcp
-sudo ufw enable</pre>
           <div class="box warn">
             <h4>CAUTION</h4>
             <p>
-              <b>インターネットに向けて 80 / 443 を開けないでください。</b>
-              このシステムは社内LANの中だけで使う前提で作ってあります。
-              外部から使う必要がある場合は、VPN経由にしてください。
+              <b>インターネットに向けて 80 / 443 を開けないでください。</b>このシステムは社内LANの中だけで使う前提で作ってあります。
+              社外から使う必要がある場合は、御社の VPN で社内LANに入ってから開いてください。
             </p>
           </div>
-          <div class="box">
-            <h4>アプリの側でも制限できます（任意）</h4>
+<pre><span class="c"># SSH 以外を閉じます（Ubuntu の例。RHEL系は firewalld で同じことをします）</span>
+sudo ufw allow 22/tcp
+sudo ufw enable</pre>
+          <div class="box warn">
+            <h4>Docker とファイアウォール</h4>
             <p>
-              手順6で作る <code>.env.prod</code> の <code>ALLOWED_IPS</code> に許可する範囲を書くと、
-              アプリ自身も決まった場所からの接続だけを受け付けます。空のままなら制限しません。
-              <code>IP_FILTER_MODE</code> は、まず <code>monitor</code>（記録するだけ）で様子を見て、
-              問題が無ければ <code>enforce</code>（許可外を断る）に切り替えます。
-              締め出されたときは <code>ALLOWED_IPS</code> を空に戻して起動し直します。
-              <b><code>.env.prod</code> を直したあとは</b> <code>docker compose -f compose.prod.yml --env-file .env.prod up -d</code>
-              <b>で作り直してください</b>（<code>restart</code> では新しい値が効きません）。
+              <b>Docker が開けた 80 / 443 には、ufw の制限が効きません</b>（Docker が自分で通り道を作るため）。
+              入口を絞るときは、次のどちらか、または両方を使ってください。どちらも手順6で作る設定ファイルに書きます。
             </p>
-            <p>
-              システム管理者は、アプリの画面でも接続を許す・断るアドレスを決められます。
-              画面の設定で締め出されたときは、<code>.env.prod</code> に <code>IP_RULES_OFF=1</code> を足して上と同じく作り直すと、
-              画面の設定を見なくなります（設定の中身は消えません）。画面で直したら外して起動し直します。
-            </p>
+            <ul>
+              <li><b>サーバーの社内LAN側のアドレスでだけ待つ:</b> <code>HTTP_PORT=192.168.10.5:80</code>、<code>HTTPS_PORT=192.168.10.5:443</code>（サーバーのIPに読み替え）</li>
+              <li><b>アプリの側で、決まった範囲からだけ受け付ける:</b> <code>ALLOWED_IPS</code>（手順6）</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -602,16 +539,16 @@ sudo ufw enable</pre>
     </div>
   </section>
 
-  <section>
-    <h2>3. アプリの配置と起動</h2>
+  <section id="c3">
+    <h2>第3章　アプリの配置と起動</h2>
     <div class="steps">
 
       <div class="step">
         <div class="no">5</div>
         <div class="body">
-          <h3>ファイルの展開</h3>
+          <h3>ファイルの展開<span class="sub">お渡しした tar.gz をサーバーのホームに置いてから</span></h3>
 <pre>sudo mkdir -p /opt/chem &amp;&amp; sudo chown $USER /opt/chem
-tar xzf chem-system-(ver).tar.gz -C /opt/chem
+tar xzf ~/chem-system-(ver).tar.gz -C /opt/chem
 cd /opt/chem</pre>
         </div>
       </div>
@@ -619,39 +556,53 @@ cd /opt/chem</pre>
       <div class="step">
         <div class="no">6</div>
         <div class="body">
-          <h3>設定ファイルの作成<span class="sub">データベースのパスワードを決めます</span></h3>
+          <h3>設定ファイルの作成<span class="sub">データベースのパスワードと、入口の制限を決めます</span></h3>
 <pre>cp .env.prod.example .env.prod
 openssl rand -hex 24           <span class="c"># 出てきた文字列（英数字48文字）を控えます</span>
 nano .env.prod                 <span class="c"># DB_PASSWORD= の右側に貼り付けます</span></pre>
           <div class="box warn">
             <h4>IMPORTANT</h4>
             <p>
-              <b><code>DB_PASSWORD</code> は必ず変更してください。</b>
-              <b>英数字だけ</b>にしてください（<code>/</code> <code>+</code> <code>@</code> などが入ると、アプリがデータベースに繋がりません）。
-              この値は最初の起動でデータベースに焼き付きます。あとから変えるには
-              データベースを作り直すことになります。
+              <b><code>DB_PASSWORD</code> は必ず変更してください。</b><b>英数字だけ</b>にしてください（<code>/</code> <code>+</code> <code>@</code> などが入ると、アプリがデータベースに繋がりません）。
+              この値は最初の起動でデータベースに焼き付きます。あとから変えるにはデータベースを作り直すことになります。
             </p>
           </div>
+          <div class="scroll">
+            <table>
+              <caption>.env.prod で決められること（DB_PASSWORD のほかは任意）</caption>
+              <thead><tr><th>項目</th><th>意味</th></tr></thead>
+              <tbody>
+                <tr><td class="k">HTTP_PORT / HTTPS_PORT</td><td>待ち受けるポート。<code>サーバーのIP:443</code> のように書くと、そのアドレスでだけ待ちます（手順4）</td></tr>
+                <tr><td class="k">ALLOWED_IPS</td><td>接続を受け付けるアドレスの範囲（例 <code>192.168.10.0/24</code>）。空なら制限しません</td></tr>
+                <tr><td class="k">IP_FILTER_MODE</td><td><code>monitor</code>（範囲外を記録するだけ）で様子を見て、問題が無ければ <code>enforce</code>（範囲外を断る）に</td></tr>
+                <tr><td class="k">IP_RULES_OFF</td><td>アプリの画面で決めた接続の制限で入れなくなったときだけ <code>1</code> にします（画面の制限を見なくなる。画面で直したら外す）</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <b>.env.prod を直したあとは</b> <code>docker compose -f compose.prod.yml --env-file .env.prod up -d</code> <b>で作り直してください</b>（<code>restart</code> では新しい値が効きません）。
+            <code>ALLOWED_IPS</code> で締め出されたときは、空に戻して同じく作り直します。
+          </p>
         </div>
       </div>
 
       <div class="step">
         <div class="no">7</div>
         <div class="body">
-          <h3>起動<span class="sub">初回は10〜20分かかります</span></h3>
+          <h3>起動<span class="sub">その場で組み立てる場合、初回は10〜20分かかります</span></h3>
 <pre><span class="c"># インターネットに繋がる場合（その場でイメージを組み立てます）</span>
 docker compose -f compose.prod.yml --env-file .env.prod up -d --build</pre>
           <div class="box">
             <h4>OFFLINE</h4>
-            <p>お渡しした Docker イメージのファイルから読み込みます。</p>
-<pre>docker load -i chem-images-(ver).tar
+            <p>お渡しした Docker イメージのファイルから読み込みます。<code>--build</code> は付けません。</p>
+<pre>docker load -i ~/chem-images-(ver).tar
 docker compose -f compose.prod.yml --env-file .env.prod up -d</pre>
           </div>
 <pre><span class="c"># 3つとも running になっていれば起動しています</span>
 docker compose -f compose.prod.yml --env-file .env.prod ps</pre>
           <div class="box check">
             <h4>CHECK</h4>
-            <p><code>db</code> / <code>app</code> / <code>caddy</code> の3つが <code>running</code> と表示されること。</p>
+            <p><code>db</code> / <code>app</code> / <code>caddy</code> の3つが <code>running</code> と表示されること。データベースの表は、起動のときに自動で作られます。</p>
           </div>
         </div>
       </div>
@@ -659,84 +610,164 @@ docker compose -f compose.prod.yml --env-file .env.prod ps</pre>
     </div>
   </section>
 
-  <section>
-    <h2>4. 最初の管理者の作成</h2>
+  <section id="c4">
+    <h2>第4章　最初の管理者の作成</h2>
     <div class="steps">
-
       <div class="step">
         <div class="no">8</div>
         <div class="body">
           <h3>最初の管理者の作成</h3>
-<pre>docker compose -f compose.prod.yml --env-file .env.prod exec app \
+<pre>cd /opt/chem
+docker compose -f compose.prod.yml --env-file .env.prod exec app \
   npx tsx scripts/set-password.ts admin@example.co.jp 'ここに12文字以上の強いパスワード' --create</pre>
           <p>
-            メールアドレスは御社のものに読み替えてください。
-            <b>この1人だけコマンドで作ります。</b>2人目からは管理画面から追加できます。
+            メールアドレスは御社のものに読み替えてください。<b>この1人だけコマンドで作ります。</b>2人目からは画面から追加できます。
             この管理者には<b>すべての権限</b>が付きます。パスワードは<b>12文字以上</b>が要ります。
           </p>
           <div class="box warn">
             <h4>CAUTION</h4>
             <p>
-              コマンドに書いたパスワードは端末の履歴に残ります。実行後に
-              <code>history -c</code> で消してください。
-              このパスワードはログイン後に、画面右上のメニューの「パスワードを変更する」から
-              本人が変えられます（変更を求める仕組みは働きません）。
+              コマンドに書いたパスワードは端末の履歴に残ります。実行後に <code>history -c</code> で消してください。
+              このパスワードは、ログイン後に本人が画面から変えられます。
+              <b>同じコマンドは、パスワードを忘れたときや、ログインのロックを外すときにも使えます</b>（<code>--create</code> を付けずに実行）。
             </p>
           </div>
         </div>
       </div>
-
     </div>
   </section>
 
-  <section>
-    <h2>5. 社内パソコンからの接続</h2>
+  <section id="c5">
+    <h2>第5章　社内パソコンからの接続</h2>
     <div class="steps">
-
       <div class="step">
         <div class="no">9</div>
         <div class="body">
-          <h3>ブラウザからの接続</h3>
+          <h3>ブラウザからの接続と証明書</h3>
           <p>
-            社内のパソコンから <code>https://<i>サーバーのIPアドレス</i>/</code> を開きます。
-            ログイン画面が出れば、ここまでは成功です。
+            社内のパソコンから <code>https://<i>サーバーのIPアドレスか名前</i>/</code> を開きます。ログイン画面が出れば、ここまでは成功です。
+            ブラウザは Microsoft Edge か Google Chrome の最新版をお使いください。
           </p>
-          <div class="box warn">
-            <h4>証明書の警告について</h4>
-            <p>
-              初回は<b>「この接続ではプライバシーが保護されません」という警告</b>が出ます。
-              社内専用のため、システムが自分で作った証明書を使っているためです。<b>通信は暗号化されています。</b>
-              警告を消すには、次の手順でサーバーの証明書を各パソコンに登録してください。
-            </p>
-          </div>
-<pre><span class="c"># サーバーで実行して、証明書のファイルを取り出します</span>
-docker compose -f compose.prod.yml --env-file .env.prod exec caddy \
-  cat /data/caddy/pki/authorities/local/root.crt &gt; chem-root.crt</pre>
           <p>
-            取り出した <code>chem-root.crt</code> を各パソコンに配り、
-            Windows では「信頼されたルート証明機関」に取り込みます。
-            台数が多い場合はグループポリシーで配布できます。
+            初回は<b>「この接続ではプライバシーが保護されません」</b>のような警告が出ます。社内専用のため、サーバーが自分で作った証明書を使っているためで、
+            <b>通信は暗号化されています。</b>警告を消すには、サーバーの<b>ルート証明書</b>を各パソコンに登録します（図2）。
           </p>
-          <div class="box">
-            <h4>社内のドメイン名を使う場合</h4>
-            <p>
-              社内DNSに <code>chem.<i>社内ドメイン</i></code> のような名前を登録しておくと、
-              IPアドレスではなく名前で開けます。<b>設定ファイルの書き換えは要りません</b>
-              （開かれた名前に合わせて証明書を作ります）。
-              <b>パスキー（指紋や顔などでのログイン）を使う予定があるなら、名前で開く必要があります。</b>
-              パスキーの仕組み上、IPアドレスでは登録できません。
-            </p>
+
+          <figure class="figure">
+            <svg viewBox="0 0 880 250" role="img" aria-label="サーバーが社内用の証明書を作り、ルート証明書を取り出して各パソコンの信頼されたルート証明機関に登録すると、名前で開いたときに警告が出なくなり、パスキーも使える" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/>
+                </marker>
+              </defs>
+              <rect x="10" y="20" width="200" height="96" rx="5" fill="var(--accent-quiet)" stroke="var(--accent)"/>
+              <text x="26" y="46" class="t-name">① サーバー（caddy）</text>
+              <text x="26" y="68" class="t-sub">社内用の認証局を持ち、</text>
+              <text x="26" y="86" class="t-sub">開かれた名前ごとに</text>
+              <text x="26" y="104" class="t-sub">証明書を自動で作る</text>
+              <line x1="210" y1="68" x2="246" y2="68" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar2)"/>
+              <rect x="250" y="20" width="200" height="96" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+              <text x="266" y="46" class="t-name">② ルート証明書を取り出す</text>
+              <text x="266" y="68" class="t-sub">Linux: 下のコマンド</text>
+              <text x="266" y="86" class="t-sub">Windows: C:\ProgramData\caddy\</text>
+              <text x="266" y="104" class="t-sub">　pki\authorities\local\root.crt</text>
+              <line x1="450" y1="68" x2="486" y2="68" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar2)"/>
+              <rect x="490" y="20" width="200" height="96" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+              <text x="506" y="46" class="t-name">③ 各パソコンに登録</text>
+              <text x="506" y="68" class="t-sub">「信頼されたルート証明機関」へ</text>
+              <text x="506" y="86" class="t-sub">台数が多ければグループポリシー</text>
+              <text x="506" y="104" class="t-sub">1台ずつなら certutil</text>
+              <line x1="690" y1="68" x2="726" y2="68" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar2)"/>
+              <rect x="730" y="20" width="140" height="96" rx="5" fill="var(--ok-quiet)" stroke="var(--ok)"/>
+              <text x="746" y="46" class="t-name">④ 警告が消える</text>
+              <text x="746" y="68" class="t-sub">ブラウザを開き直して</text>
+              <text x="746" y="86" class="t-sub">確かめる</text>
+
+              <rect x="10" y="140" width="860" height="96" rx="5" fill="var(--surface)" stroke="var(--line)"/>
+              <text x="26" y="166" class="t-name">名前で開くと、さらに</text>
+              <text x="26" y="190" class="t-sub">社内DNSに名前（例 chem.社内ドメイン）を登録するか、各パソコンの hosts に1行足すと、IPアドレスではなく名前で開けます。設定ファイルの書き換えは要りません。</text>
+              <text x="26" y="212" class="t-sub">指紋や顔でのログイン（パスキー）は、<tspan style="font-weight:700;fill:var(--ink)">名前で開き、かつ ③ を済ませて警告が出ていない</tspan>ときだけ使えます。パスワードでのログインは、警告があっても使えます。</text>
+            </svg>
+            <figcaption>図2　証明書の流れ。③ を済ませないと、ブラウザは警告を出し続けます。</figcaption>
+          </figure>
+
+<pre><span class="c"># サーバーで実行して、ルート証明書をファイルに取り出します（/opt/chem に chem-root.crt ができます）</span>
+cd /opt/chem
+docker compose -f compose.prod.yml --env-file .env.prod exec -T caddy \
+  cat /data/caddy/pki/authorities/local/root.crt &gt; chem-root.crt
+
+<span class="c"># 管理者のパソコン（Windows の PowerShell）でサーバーから受け取ります</span>
+scp chemadmin@<i>サーバーのIP</i>:/opt/chem/chem-root.crt .
+
+<span class="c"># 各パソコンで、管理者として登録します（グループポリシーで配る場合は不要）</span>
+certutil -addstore Root chem-root.crt</pre>
+          <div class="box check">
+            <h4>CHECK</h4>
+            <p>社内のパソコンで、ブラウザをすべて閉じて開き直し、<code>https://<i>名前</i>/</code> で警告が出ずにログイン画面が出ること。手順8で作った管理者でログインできること。</p>
           </div>
         </div>
       </div>
-
     </div>
   </section>
 
-  <section>
-    <h2>6. 毎日のバックアップの設定</h2>
-    <div class="steps">
+  <section id="c6">
+    <h2>第6章　毎日のバックアップ</h2>
+    <p>
+      サーバーが壊れたときに戻すために<b>守るもの</b>は、次の図のとおりです。<b>設定ファイルとデータベースのバックアップの2つ</b>があれば、新しいサーバーで同じ状態に戻せます。
+      帳票の PDF と証明書の元は、無くても動きますが、残しておくと手間が減ります。
+    </p>
 
+    <figure class="figure">
+      <svg viewBox="0 0 880 300" role="img" aria-label="守るものは4つ。設定ファイルは控えを別に保管、データベースは毎日バックアップして NAS へ複製、帳票の PDF と証明書の元は残すなら複製する" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/>
+          </marker>
+        </defs>
+        <text x="10" y="18" class="t-label">サーバーの中</text>
+        <text x="700" y="18" class="t-label">別の機器（社内NAS など）</text>
+
+        <!-- 1 設定 -->
+        <rect x="10" y="30" width="270" height="56" rx="5" fill="var(--surface)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text x="24" y="53" class="t-name">設定ファイル（必須）</text>
+        <text x="24" y="73" class="t-sub">/opt/chem/.env.prod・C:\chem\.env</text>
+        <line x1="280" y1="58" x2="694" y2="58" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar3)"/>
+        <text x="487" y="50" class="t-sub" text-anchor="middle">導入したときに1回、控えを取る（変えたらまた）</text>
+
+        <!-- 2 DB -->
+        <rect x="10" y="100" width="270" height="56" rx="5" fill="var(--surface)" stroke="var(--warn)" stroke-width="1.5"/>
+        <text x="24" y="123" class="t-name">データベース（必須）</text>
+        <text x="24" y="143" class="t-sub">物質・製品・判定・記録</text>
+        <line x1="280" y1="128" x2="326" y2="128" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar3)"/>
+        <text x="303" y="120" class="t-port" text-anchor="middle">3:00</text>
+        <rect x="330" y="100" width="256" height="56" rx="5" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="344" y="123" class="t-name">毎日のバックアップ</text>
+        <text x="344" y="143" class="t-sub">/var/backups/chem・C:\backups\chem（14日分）</text>
+        <line x1="586" y1="128" x2="694" y2="128" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar3)"/>
+        <text x="640" y="120" class="t-sub" text-anchor="middle">毎日複製</text>
+
+        <!-- 3 PDF -->
+        <rect x="10" y="170" width="270" height="56" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="24" y="193" class="t-name">作った帳票の PDF（任意）</text>
+        <text x="24" y="213" class="t-sub">chem_app-data・C:\chem\data\documents</text>
+        <line x1="280" y1="198" x2="694" y2="198" stroke="var(--line-strong)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ar3)"/>
+        <text x="487" y="190" class="t-sub" text-anchor="middle">データベースのバックアップには入らない。残すなら複製</text>
+
+        <!-- 4 CA -->
+        <rect x="10" y="240" width="270" height="56" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="24" y="263" class="t-name">証明書の元（任意）</text>
+        <text x="24" y="283" class="t-sub">chem_caddy-data・C:\ProgramData\caddy</text>
+        <line x1="280" y1="268" x2="694" y2="268" stroke="var(--line-strong)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ar3)"/>
+        <text x="487" y="260" class="t-sub" text-anchor="middle">失うと、各パソコンに証明書を配り直す</text>
+
+        <rect x="698" y="30" width="172" height="266" rx="6" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="784" y="160" class="t-name" text-anchor="middle">社内NAS など</text>
+        <text x="784" y="180" class="t-sub" text-anchor="middle">サーバーとは別の機器</text>
+      </svg>
+      <figcaption>図3　守るもの。上の2つ（太枠）は必ず、別の機器にも置いてください。</figcaption>
+    </figure>
+
+    <div class="steps">
       <div class="step">
         <div class="no">10</div>
         <div class="body">
@@ -744,208 +775,184 @@ docker compose -f compose.prod.yml --env-file .env.prod exec caddy \
 <pre><span class="c"># バックアップと記録の置き場所を、作業するユーザーが書ける形で先に作ります</span>
 sudo install -d -o $USER /var/backups/chem
 sudo install -o $USER /dev/null /var/log/chem-backup.log
-chmod +x /opt/chem/scripts/backup-db.sh
 crontab -e</pre>
           <p>開いたファイルの最後に、次の1行を足して保存します（毎日 深夜3時）。</p>
-<pre>0 3 * * * /opt/chem/scripts/backup-db.sh &gt;&gt; /var/log/chem-backup.log 2&gt;&amp;1</pre>
+<pre>0 3 * * * bash /opt/chem/scripts/backup-db.sh &gt;&gt; /var/log/chem-backup.log 2&gt;&amp;1</pre>
           <p>
-            <code>/var/backups/chem/</code> に、圧縮したファイルが1日1つ増えます。
-            <b>14日より古いものは自動で消えます。</b>
+            <code>/var/backups/chem/</code> に <code>chem_年月日_時分秒.sql.gz</code> が1日1つ増えます。<b>14日より古いものは自動で消えます。</b>
+            <span class="dim">（<code>bash</code> を付けて呼ぶのは、更新でファイルを置き直しても動き続けるようにするためです）</span>
           </p>
           <div class="box warn">
             <h4>IMPORTANT</h4>
             <p>
-              <b>サーバーとは別の機器へ複製してください。</b>同じサーバーの中だけに置いていると、
-              サーバーが壊れたときにデータも一緒に失われます。
-              社内NASへ毎日コピーする設定を、あわせてお願いします。
+              <b>サーバーとは別の機器へ複製してください。</b>同じサーバーの中だけに置いていると、サーバーが壊れたときにデータも一緒に失われます。
+              社内NASへ毎日コピーする設定を、<b>cron に別の行として</b>足してください（例: 4時に <code>rsync -a /var/backups/chem/ <i>NASのマウント先</i>/chem/</code>）。
+              <code>backup-db.sh</code> の中に書き足すと、アプリの更新で元に戻ります。
             </p>
           </div>
           <div class="box">
             <h4>帳票の PDF も残す場合</h4>
             <p>
-              作った帳票の PDF は、<b>データベースのバックアップには入りません</b>（データベースには置き場所だけを記録しています）。
-              残しておきたい場合は、<code>docker volume inspect chem_app-data</code> の <code>Mountpoint</code> に出るフォルダーも、
-              社内NASへの複製の対象に入れてください。
+              <code>docker volume inspect chem_app-data</code> の <code>Mountpoint</code> に出るフォルダーも、NAS への複製の対象に入れてください（読むには <code>sudo</code> が要ります）。
             </p>
           </div>
           <div class="box check">
             <h4>CHECK</h4>
             <p>その場で1回動かして、ファイルができることを確かめます。</p>
-<pre>/opt/chem/scripts/backup-db.sh
+<pre>bash /opt/chem/scripts/backup-db.sh
 ls -lh /var/backups/chem/</pre>
           </div>
         </div>
       </div>
-
     </div>
   </section>
 
-  <section>
-    <h2>7. 導入完了の確認</h2>
+  <section id="c7">
+    <h2>第7章　導入完了の確認</h2>
     <div class="final">
       <p>次のすべてができていれば、導入は完了です。</p>
       <ul>
-        <li><code>docker compose ... ps</code> で3つとも <code>running</code> になっている</li>
-        <li>社内のパソコンから <code>https://<i>サーバーのIP</i>/</code> でログインできる</li>
-        <li>バックアップのファイルが <code>/var/backups/chem/</code> にできている</li>
+        <li><code>docker compose -f compose.prod.yml --env-file .env.prod ps</code> で3つとも <code>running</code> になっている</li>
+        <li>社内のパソコンから <code>https://<i>サーバーの名前かIP</i>/</code> で、警告なしにログインできる</li>
+        <li>バックアップのファイルが <code>/var/backups/chem/</code> にでき、NAS にも複製されている</li>
+        <li><code>.env.prod</code> の控えを、サーバーの外に保管した</li>
         <li>サーバーを再起動しても、自動でアプリが立ち上がる（<code>sudo reboot</code> で確認）</li>
       </ul>
       <p>
-        <b>法規制のデータ（法律・規制区分・法文物質名・CAS番号とのリンク）は、この手順では入りません。</b>
-        物質や製品のデータも空の状態です。法規制のデータは導入のときにこちらが投入します。
-        投入が済むまで、判定は動きません。
+        <b>法規制のデータ（法律・規制区分・法文物質名と CAS 番号のリンク）は、この手順では入りません。</b>
+        物質や製品のデータも空の状態です。法規制のデータは導入のときにこちらが入れます。入るまで、判定は動きません。
       </p>
     </div>
   </section>
 
-  <section>
-    <h2>8. 導入後の運用</h2>
+  <section id="c8">
+    <h2>第8章　導入後の運用・復元</h2>
 
     <div class="scroll">
       <table>
         <caption>定期的にお願いすること</caption>
         <thead><tr><th>いつ</th><th>すること</th><th>やりかた</th></tr></thead>
         <tbody>
-          <tr>
-            <td>毎日</td><td>バックアップの確認</td>
-            <td>前日のファイルができているか。cronが動いていれば自動です</td>
-          </tr>
-          <tr>
-            <td>毎月</td><td>ディスクの空きを見る</td>
-            <td><code>df -h</code>。使用率80%を超えたらご連絡ください</td>
-          </tr>
-          <tr>
-            <td>年1回</td><td>アクセス記録の整理</td>
-            <td>管理画面の「アクセス記録」から古い分を削除します。自動では消えません</td>
-          </tr>
+          <tr><td>毎日</td><td>バックアップの確認</td><td>前日のファイルが <code>/var/backups/chem/</code> と NAS にあるか。<code>/var/log/chem-backup.log</code> に失敗が出ていないか</td></tr>
+          <tr><td>毎月</td><td>ディスクの空きを見る</td><td><code>df -h</code>。使用率80%を超えたらご連絡ください</td></tr>
+          <tr><td>更新のあと</td><td>古いイメージの片付け</td><td><code>docker image prune -f</code>（更新のたびに前の版のイメージが残るため）</td></tr>
+          <tr><td>年1回</td><td>アクセス記録の整理</td><td>画面から古い分を削除します。自動では消えません（やり方はユーザーマニュアル）</td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3>アプリの更新</h3>
-<pre>cd /opt/chem
-<span class="c"># 念のため、先にバックアップを取ります</span>
-./scripts/backup-db.sh
-<span class="c"># 新しいファイルを展開してから</span>
-docker compose -f compose.prod.yml --env-file .env.prod up -d --build</pre>
-    <p>
-      データベースの構造が変わる場合も、<b>起動時に自動で適用されます。</b>
-      作業中は1〜3分ほどアプリが止まります。
-    </p>
+    <p>アプリの更新は<b>第11章</b>を見てください。</p>
 
     <h3>バックアップからの復元</h3>
     <p>
-      復元は、データベースの中身を<b>バックアップを取った時点の内容に置き換えます</b>。
-      それ以降に入れたものは消えます。先にアプリを止めてから行ってください。
+      復元は、データベースの中身を<b>バックアップを取った時点の内容に置き換えます</b>。それ以降に入れたものは消えます。先にアプリを止めてから行います。
     </p>
 <pre>cd /opt/chem
 docker compose -f compose.prod.yml --env-file .env.prod stop app
-gunzip -c /var/backups/chem/chem_<i>日付</i>.sql.gz | \
-  docker compose -f compose.prod.yml --env-file .env.prod exec -T db \
-  psql -U chem chem
+gunzip -c /var/backups/chem/chem_<i>年月日_時分秒</i>.sql.gz | \
+  docker compose -f compose.prod.yml --env-file .env.prod exec -T db psql -U chem chem
 docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
+
+    <h3>サーバーが壊れたとき（新しいサーバーで戻す）</h3>
+    <ol>
+      <li>新しいサーバーで<b>手順1〜5</b>を行う</li>
+      <li>手順6の代わりに、<b>控えておいた <code>.env.prod</code> を <code>/opt/chem/</code> に置く</b>（パスワードが同じでないと戻せません）</li>
+      <li><b>手順7</b>で起動する</li>
+      <li>NAS から一番新しいバックアップを持ってきて、上の「復元」を行う</li>
+      <li>手順9（証明書）・手順10（バックアップ）を行う。証明書の元を残していなければ、各パソコンに配り直す</li>
+    </ol>
+    <p class="dim">所要の目安は1時間ほどです。</p>
   </section>
 
-  <section>
-    <h2>9. うまくいかないとき</h2>
+  <section id="c9">
+    <h2>第9章　うまくいかないとき</h2>
     <div class="scroll">
       <table>
         <thead><tr><th>症状</th><th>見るところ</th></tr></thead>
         <tbody>
-          <tr>
-            <td>ブラウザで開けない</td>
-            <td>サーバーで <code>docker compose ... ps</code>。3つとも running か。次にファイアウォール（<code>sudo ufw status</code>）で、そのパソコンのIPが許可されているか</td>
-          </tr>
-          <tr>
-            <td>「データベースに接続できません」と出る</td>
-            <td><code>docker compose ... logs db</code>。<code>.env.prod</code> の <code>DB_PASSWORD</code> を後から変えていないか</td>
-          </tr>
-          <tr>
-            <td>ログインできない</td>
-            <td>5回続けて間違えると一時的にロックされます。15分待つか、手順8のコマンドでパスワードを出し直してください</td>
-          </tr>
-          <tr>
-            <td>動きが遅い</td>
-            <td><code>free -h</code> でメモリの空き、<code>df -h</code> でディスクの空きを確認してください</td>
-          </tr>
-          <tr>
-            <td>アプリの記録を見たい</td>
-            <td><code>docker compose -f compose.prod.yml --env-file .env.prod logs -f app</code></td>
-          </tr>
+          <tr><td>ブラウザで開けない</td><td><code>docker compose -f compose.prod.yml --env-file .env.prod ps</code> で3つとも running か。<code>.env.prod</code> の <code>HTTPS_PORT</code>・<code>ALLOWED_IPS</code> で、そのパソコンが外れていないか</td></tr>
+          <tr><td>「データベースに接続できません」と出る</td><td><code>docker compose -f compose.prod.yml --env-file .env.prod logs db</code>。<code>DB_PASSWORD</code> を後から変えていないか、英数字以外が入っていないか</td></tr>
+          <tr><td>ログインできない</td><td>続けて間違えると一時的にロックされます。しばらく待つか、手順8のコマンド（<code>--create</code> なし）でパスワードを出し直してください</td></tr>
+          <tr><td>証明書の警告が消えない</td><td>ルート証明書を「信頼されたルート証明機関」に入れたか。ブラウザをすべて閉じて開き直したか</td></tr>
+          <tr><td>動きが遅い</td><td><code>free -h</code> でメモリの空き、<code>df -h</code> でディスクの空き</td></tr>
+          <tr><td>アプリの記録を見たい</td><td><code>docker compose -f compose.prod.yml --env-file .env.prod logs -f app</code></td></tr>
         </tbody>
       </table>
     </div>
-
     <div class="box">
       <h4>SUPPORT</h4>
       <p>
         解決しない場合は、<b>実行したコマンドと、画面に出たメッセージ</b>をそのままお送りください。
-        <code>docker compose -f compose.prod.yml --env-file .env.prod logs --tail 200 app</code>
-        の出力もあわせていただけると、原因を絞り込めます。
+        <code>docker compose -f compose.prod.yml --env-file .env.prod logs --tail 200 app</code> の出力もあわせていただけると、原因を絞り込めます。
       </p>
     </div>
   </section>
 
-
-  <section>
-    <h2>10. Windows Server への導入 <span class="count">Linux の代わりに</span></h2>
-    <p><b>帳票の PDF 化について。</b>導入セットには PDF を作るための Chromium が入っており、展開するだけで動きます（別のインストールは要りません。実行時に外へは出ません）。万一それが動かない場合は、Windows Server 2022 以降に最初から入っている Microsoft Edge を使って作ります。日本語の字は Windows のフォントで出ます。</p>
+  <section id="c10">
+    <h2>第10章　Windows Server への導入 <span class="count">Linux の代わりに</span></h2>
     <p>
-      ここまでは Linux での手順です。<b>Windows Server に入れる場合は、この節に読み替えてください。</b>
-      <b>アプリのプログラムは1行も変わりません。</b>変わるのは、入れ物（Docker）の代わりに
-      <b>3つを Windows のサービスとして常駐させる</b>ところです。
-      Windows Server 用は<b>インストールセット</b>（組み立て済みのアプリと、必要なソフトの
-      インストーラーを1つにまとめたもの）でお渡しします。<b>サーバーがインターネットに繋がっていなくても導入できます。</b>
+      <b>Windows Server に入れる場合は、第2章〜第9章の代わりにこの章を使います。</b>アプリのプログラムは Linux 版と同じです。
+      違うのは、Docker の代わりに<b>3つを Windows のサービスとして常駐させる</b>ところです。
+      必要なソフトはすべて<b>インストールセット</b>に入れてお渡しするので、<b>サーバーがインターネットに繋がっていなくても導入できます。</b>
     </p>
 
     <div class="box warn">
       <h4>IMPORTANT</h4>
       <p>
-        <b>仮想化（Hyper-V・WSL2・Docker）は使いません。</b>
-        Windows Server 2019 / 2022 / 2025 のいずれかで、管理者権限が要ります。
-        <b>この構成は Linux 版ほどの運用実績がありません。</b>
-        どちらでもよい場合は Linux 版をお勧めします。
+        <b>仮想化（Hyper-V・WSL2・Docker）は使いません。</b>Windows Server 2019 / 2022 / 2025 のいずれかで、管理者権限が要ります。
+        <b>この構成は Linux 版ほどの運用実績がありません。</b>どちらでもよい場合は Linux 版をお勧めします。
       </p>
     </div>
 
-    <div class="scroll">
-      <table>
-        <caption>Linux 版との対応</caption>
-        <thead><tr><th>役目</th><th>Linux 版</th><th>Windows Server 版</th></tr></thead>
-        <tbody>
-          <tr>
-            <td>データベース</td>
-            <td class="k">db コンテナ</td>
-            <td>PostgreSQL 16 を直接インストール（サービス <code>postgresql-x64-16</code>）</td>
-          </tr>
-          <tr>
-            <td>アプリ</td>
-            <td class="k">app コンテナ</td>
-            <td>Node.js で直接動かし、<code>nssm</code> でサービス登録（サービス <code>chem-app</code>）</td>
-          </tr>
-          <tr>
-            <td>入口（HTTPS）</td>
-            <td class="k">caddy コンテナ</td>
-            <td>Caddy の Windows 版をサービス登録（サービス <code>chem-caddy</code>）</td>
-          </tr>
-          <tr>
-            <td>自動起動・再起動</td>
-            <td>Docker が受け持つ</td>
-            <td>Windows のサービスが受け持つ</td>
-          </tr>
-          <tr>
-            <td>バックアップ</td>
-            <td class="k">backup-db.sh（cron）</td>
-            <td class="k">backup-db.ps1（タスクスケジューラ）</td>
-          </tr>
-          <tr>
-            <td>アプリの置き場所</td>
-            <td class="k">/opt/chem</td>
-            <td class="k">C:\chem（設定は C:\chem\.env、記録は C:\chem\logs\）</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <figure class="figure">
+      <svg viewBox="0 0 880 400" role="img" aria-label="Windows Server の中で chem-caddy・chem-app・postgresql-x64-16 の3つのサービスが動く。社内LANからは 443 と 80 だけを通し、毎日3時のバックアップを NAS へ複製する" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/>
+          </marker>
+        </defs>
+        <rect x="10" y="150" width="140" height="80" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="80" y="184" class="t-name" text-anchor="middle">社員のパソコン</text>
+        <text x="80" y="204" class="t-sub" text-anchor="middle">ブラウザ</text>
+        <line x1="150" y1="190" x2="210" y2="190" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar4)"/>
+        <text x="180" y="180" class="t-port" text-anchor="middle">443</text>
+
+        <rect x="214" y="16" width="656" height="370" rx="6" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.5"/>
+        <text x="232" y="42" class="t-title">Windows Server（C:\chem）</text>
+        <!-- ファイアウォール -->
+        <rect x="222" y="120" width="26" height="140" rx="3" fill="var(--warn-quiet)" stroke="var(--warn)"/>
+        <text x="222" y="282" class="t-sub">ファイアウォール：社内LANの範囲から 443 / 80 だけ通す</text>
+
+        <rect x="270" y="158" width="170" height="64" rx="4" fill="var(--accent-quiet)" stroke="var(--accent)"/>
+        <text x="284" y="182" class="t-name">chem-caddy</text>
+        <text x="284" y="202" class="t-sub">入口・HTTPS・証明書</text>
+        <line x1="440" y1="190" x2="474" y2="190" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar4)"/>
+
+        <rect x="478" y="158" width="170" height="64" rx="4" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="492" y="182" class="t-name">chem-app</text>
+        <text x="492" y="202" class="t-sub">127.0.0.1:3001 だけで待つ</text>
+        <line x1="648" y1="190" x2="682" y2="190" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar4)"/>
+
+        <rect x="686" y="158" width="170" height="64" rx="4" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="700" y="182" class="t-name">postgresql-x64-16</text>
+        <text x="700" y="202" class="t-sub">127.0.0.1:5432 だけで待つ</text>
+
+        <text x="270" y="76" class="t-sub">3つとも Windows のサービス（自動起動・落ちたら再起動）</text>
+        <text x="270" y="96" class="t-sub">設定 C:\chem\.env ／ 記録 C:\chem\logs\chem-app.log ／ 帳票の PDF C:\chem\data\documents</text>
+
+        <rect x="478" y="300" width="230" height="64" rx="5" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="492" y="324" class="t-name">毎日 3:00 のバックアップ</text>
+        <text x="492" y="344" class="t-sub">C:\backups\chem（14日分）</text>
+        <line x1="771" y1="222" x2="771" y2="250" stroke="var(--ink-3)" stroke-width="1.5"/>
+        <line x1="771" y1="250" x2="600" y2="250" stroke="var(--ink-3)" stroke-width="1.5"/>
+        <line x1="600" y1="250" x2="600" y2="296" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar4)"/>
+        <rect x="740" y="300" width="116" height="64" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="798" y="326" class="t-name" text-anchor="middle">社内NAS</text>
+        <text x="798" y="346" class="t-sub" text-anchor="middle">別のタスクで複製</text>
+        <line x1="708" y1="332" x2="736" y2="332" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar4)"/>
+      </svg>
+      <figcaption>図4　Windows Server 版の構成。アプリとデータベースはサーバーの中からしか繋がりません。</figcaption>
+    </figure>
 
     <div class="scroll">
       <table>
@@ -954,10 +961,10 @@ docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
         <tbody>
           <tr><td class="k">README.txt</td><td>最初に読むもの。順番が書いてあります</td></tr>
           <tr><td class="k">手順書.html</td><td>この手順書</td></tr>
-          <tr><td class="k">app\</td><td>組み立て済みのアプリ。<b>お客さま側で組み立て（npm）は行いません</b></td></tr>
+          <tr><td class="k">app\</td><td>組み立て済みのアプリ（帳票の PDF 化に使う Chromium を含む）。<b>サーバーで組み立ては行いません</b></td></tr>
           <tr><td class="k">installers\</td><td>Node.js 24.21.0・Visual C++ ランタイム・PostgreSQL 16.10（公式のバイナリ）・Caddy 2.11.4・NSSM 2.24 の、配布元の公式ファイル</td></tr>
-          <tr><td class="k">scripts\</td><td><code>install.ps1</code>（初回）、<code>update.ps1</code>（更新）、<code>check.ps1</code>（状態の確認）</td></tr>
-          <tr><td class="k">SHA256SUMS.txt</td><td>ファイルが壊れていないかを照らし合わせるためのもの</td></tr>
+          <tr><td class="k">scripts\</td><td><code>install.ps1</code>（初回）、<code>update.ps1</code>（更新）など</td></tr>
+          <tr><td class="k">SHA256SUMS.txt</td><td>セットの中のファイルの照合用</td></tr>
         </tbody>
       </table>
     </div>
@@ -965,30 +972,33 @@ docker compose -f compose.prod.yml --env-file .env.prod start app</pre>
     <div class="steps">
 
       <div class="step">
-        <div class="no">W1</div>
+        <div class="no">10-1</div>
         <div class="body">
-          <h3>セットの展開<span class="sub">C:\chem-install に置きます</span></h3>
+          <h3>セットの照合と展開<span class="sub">C:\chem-install に置きます</span></h3>
           <p>
-            お渡しした zip をサーバーにコピーし、管理者の PowerShell で展開します。
-            ファイルが多いので、Windows に入っている <code>tar</code> で展開します（<code>Expand-Archive</code> は 10 分近くかかります）。
+            お渡しした zip と <code>.sha256</code> をサーバーの <code>C:\</code> にコピーし、<b>管理者の PowerShell</b> で次を実行します。
+            1行目の出力と <code>.sha256</code> の中身が同じなら、ファイルは壊れていません。
           </p>
-<pre>tar -xf C:\chem-install-set-(ver)-win64.zip -C C:\
+<pre>(Get-FileHash C:\chem-install-set-(ver)-win64.zip).Hash.ToLower(); Get-Content C:\chem-install-set-(ver)-win64.zip.sha256
+tar -xf C:\chem-install-set-(ver)-win64.zip -C C:\
 Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
-          <div class="box check">
-            <h4>CHECK</h4>
-            <p><code>C:\chem-install</code> の下に <code>README.txt</code>・<code>手順書.html</code>・<code>app</code>・<code>installers</code>・<code>scripts</code> があること。</p>
+          <p class="dim">ファイルが多いので、Windows に入っている <code>tar</code> で展開します（<code>Expand-Archive</code> は 10 分近くかかります）。</p>
+          <div class="box warn">
+            <h4>先に確かめること</h4>
+            <ul>
+              <li><b>80 / 443 番を使うソフトが動いていないこと</b>（IIS など）。動いていると入口が起動しません</li>
+              <li><b>Node.js がすでに入っていないこと。</b>入っていると、その版のまま使われます。入っている場合は先にご相談ください</li>
+              <li>時刻が合っていること（記録の時刻、バックアップ、2要素認証に影響します）</li>
+            </ul>
           </div>
         </div>
       </div>
 
       <div class="step">
-        <div class="no">W2</div>
+        <div class="no">10-2</div>
         <div class="body">
           <h3>導入の実行<span class="sub">10〜15分かかります</span></h3>
-          <p>
-            管理者の PowerShell で次を実行します。<b>社内LANのアドレス範囲</b>と、
-            <b>最初の管理者（画面にログインする方）のメールアドレス</b>を自分のものに変えてください。
-          </p>
+          <p>管理者の PowerShell で次を実行します。<b>社内LANのアドレス範囲</b>と、<b>最初の管理者（画面にログインする方）のメールアドレス</b>を御社のものに変えてください。</p>
 <pre>powershell -ExecutionPolicy Bypass -File C:\chem-install\scripts\install.ps1 `
   -LanCidr 192.168.10.0/24 -AdminEmail admin@example.co.jp</pre>
           <p>途中で<b>3つのパスワードを聞かれます</b>。打った文字は画面に出ず、どこにも記録されません。</p>
@@ -996,97 +1006,83 @@ Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
             <table>
               <thead><tr><th>聞かれるもの</th><th>何のパスワードか</th><th>控え</th></tr></thead>
               <tbody>
-                <tr><td><b>postgres</b></td><td>データベースの管理ユーザー。復元などの保守で使います</td><td>必ず控える</td></tr>
-                <tr><td><b>chem</b></td><td>アプリがデータベースに繋ぐためのもの。<code>C:\chem\.env</code> に書き込まれます</td><td>控える（.env にも残ります）</td></tr>
-                <tr><td><b>最初の管理者</b></td><td>画面にログインするためのもの。ログイン後に画面から変えられます</td><td>本人に渡す</td></tr>
+                <tr><td><b>postgres</b></td><td>データベースの管理ユーザー。データベースそのものの保守で使います</td><td>必ず控える</td></tr>
+                <tr><td><b>chem</b></td><td>アプリがデータベースに繋ぐためのもの。<code>C:\chem\.env</code> に書き込まれます。復元にも使います</td><td>控える（.env にも残ります）</td></tr>
+                <tr><td><b>最初の管理者</b></td><td>画面にログインするためのもの。全権限が付きます。ログイン後に本人が画面から変えられます</td><td>本人に渡す</td></tr>
               </tbody>
             </table>
           </div>
           <div class="box warn">
             <h4>CAUTION</h4>
-            <p>
-              パスワードは <b>12文字以上</b>で、<b><code>@</code> <code>/</code> <code>'</code> を含めない</b>でください
-              （設定ファイルの読み取りが崩れます）。
-            </p>
+            <p>パスワードは <b>12文字以上</b>で、<b>英数字だけ</b>にしてください（記号が入ると、設定ファイルの読み取りや、データベースへの接続が崩れることがあります）。</p>
           </div>
-          <p>スクリプトは次の順に進みます。画面には <b>W1〜W8</b> の見出しで出ます。</p>
+          <p>スクリプトは次の順に進みます。画面にはこの<b>見出し（W1〜W8）</b>が出ます。</p>
           <div class="scroll">
             <table>
+              <caption>画面に出る見出し</caption>
               <thead><tr><th>見出し</th><th>すること</th></tr></thead>
               <tbody>
                 <tr><td class="k">W1 前提ソフト</td><td>Node.js 24・Visual C++ ランタイム・PostgreSQL 16（ポート 5432、pgAdmin は入れません）・Caddy・NSSM を入れます。入っているものは飛ばします</td></tr>
-                <tr><td class="k">W2 データベース</td><td>業務用のユーザー <code>chem</code> とデータベース <code>chem</code> を <b>UTF-8</b> で作ります</td></tr>
-                <tr><td class="k">W3 アプリの配置</td><td><code>app\</code> を <code>C:\chem</code> に写し、<code>C:\chem\.env</code> を作ります</td></tr>
-                <tr><td class="k">W4 データベースの表</td><td>表を作ります（<code>prisma migrate deploy</code>）</td></tr>
+                <tr><td class="k">W2 データベースとユーザー</td><td>業務用のユーザー <code>chem</code> とデータベース <code>chem</code> を <b>UTF-8</b> で作ります</td></tr>
+                <tr><td class="k">W3 アプリの配置</td><td><code>app\</code> を <code>C:\chem</code> に写し、<code>C:\chem\.env</code> を作ります（管理者と SYSTEM だけが読めます）</td></tr>
+                <tr><td class="k">W4 データベースの表</td><td>データベースの表を作ります</td></tr>
                 <tr><td class="k">W5 最初の管理者</td><td>指定したメールアドレスで、全権限の利用者を1人作ります</td></tr>
                 <tr><td class="k">W6 サービス</td><td><code>chem-app</code> と <code>chem-caddy</code> を登録し、起動します（自動起動・落ちたら再起動）</td></tr>
                 <tr><td class="k">W7 通信の入口</td><td>指定したLANからの 443（HTTPS）と 80（HTTPS へ転送）だけを開けます。データベースは開けません</td></tr>
-                <tr><td class="k">W8 バックアップ</td><td>毎日3時に <code>C:\backups\chem</code> へ取るタスクを登録し、その場で1回取ります</td></tr>
+                <tr><td class="k">W8 毎日のバックアップ</td><td>毎日3時に <code>C:\backups\chem</code> へ取るタスクを登録し、その場で1回取ります</td></tr>
               </tbody>
             </table>
           </div>
           <div class="box check">
             <h4>CHECK</h4>
-            <p>
-              最後の「状態」で、<code>chem-app</code>・<code>chem-caddy</code>・<code>postgresql-x64-16</code> が
-              <b>Running / Automatic</b>、<code>https://127.0.0.1/api/health</code> が <b>200</b> と
-              <code>{"ok":true,"db":"up"}</code> であること。
-            </p>
+            <p>最後の「状態」で、<code>chem-app</code>・<code>chem-caddy</code>・<code>postgresql-x64-16</code> が <b>Running / Automatic</b>、<code>https://127.0.0.1/api/health</code> が <b>200</b> と <code>{"ok":true,"db":"up"}</code> であること。</p>
           </div>
-          <p>
-            途中で止まったら、表示された原因を直してから<b>同じコマンドをもう一度</b>実行してください。
-            済んだところは飛ばします。
-          </p>
+          <p>途中で止まったら、表示された原因を直してから<b>同じコマンドをもう一度</b>実行してください。済んだところは飛ばします。</p>
         </div>
       </div>
 
       <div class="step">
-        <div class="no">W3</div>
+        <div class="no">10-3</div>
         <div class="body">
           <h3>社内パソコンからの接続<span class="sub">名前と証明書</span></h3>
           <p>
-            サーバーには<b>名前</b>で開くようにしてください（例 <code>chem.example.local</code>）。
-            社内の DNS に登録するか、各パソコンの <code>C:\Windows\System32\drivers\etc\hosts</code> に
-            <code>192.168.10.5 chem.example.local</code> のように1行足します。
-            <b>パスキー（指紋や顔でのログイン）は、IPアドレスでは登録できません。</b>
+            サーバーには<b>名前</b>で開くようにしてください（例 <code>chem.example.local</code>）。社内の DNS に登録するか、
+            各パソコンの <code>C:\Windows\System32\drivers\etc\hosts</code> に <code>192.168.10.5 chem.example.local</code> のように1行足します。
           </p>
           <p>
-            証明書はサーバーの中で作られます（社内用の認証局）。最初は「この接続は安全ではありません」と出ますが、
-            サーバーの <code>C:\ProgramData\caddy\pki\authorities\local\root.crt</code> を各パソコンの
-            <b>「信頼されたルート証明機関」</b>に入れると消えます（Linux 版の手順9と同じです）。
+            証明書の流れは Linux 版と同じです（第5章の図2）。ルート証明書はサーバーの
+            <code>C:\ProgramData\caddy\pki\authorities\local\root.crt</code> にあります。共有フォルダーなどで各パソコンに配り、登録します。
           </p>
-<pre>certutil -addstore Root root.crt      <span class="c"># 各パソコンで管理者として</span></pre>
+<pre>certutil -addstore Root root.crt      <span class="c"># 各パソコンで、管理者として（グループポリシーで配る場合は不要）</span></pre>
           <div class="box warn">
-            <h4>パスキーを使うなら、証明書の登録は必須です</h4>
+            <h4>HTTPS で開いてください</h4>
             <p>
-              ブラウザは、証明書の警告が出ているページでは<b>パスキーの登録・ログインを一切受け付けません</b>
-              （画面には「登録をやめました」と出ます）。上の登録を済ませ、<b>ブラウザをすべて閉じて開き直してから</b>
-              アドレスバーに警告が無いことを確かめてください。パスワードでのログインは、警告があっても使えます。
-            </p>
-          </div>
-          <div class="box warn">
-            <h4>HTTPS は必須です</h4>
-            <p>
-              ログインの記録は<b>HTTPS のときだけ</b>保たれる作りになっています。
-              <code>http://</code> や <code>:3001</code> で直接開かず、必ず <code>https://<i>名前</i>/</code> で開いてください。
+              ログインの記録は<b>HTTPS のときだけ</b>保たれる作りです。<code>http://</code> や <code>:3001</code> で直接開かず、必ず <code>https://<i>名前</i>/</code> で開いてください。
+              パスキー（指紋や顔でのログイン）は、名前で開き、証明書の警告が出ていないときだけ使えます。
             </p>
           </div>
           <div class="box check">
             <h4>CHECK</h4>
-            <p>社内パソコンで <code>https://<i>名前</i>/</code> を開き、W2 で決めた管理者でログインできること。ログイン後、右上の「ユーザーマニュアル」が開くこと。</p>
+            <p>社内パソコンでブラウザをすべて閉じて開き直し、<code>https://<i>名前</i>/</code> を警告なしで開けること。10-2 で決めた管理者でログインできること。</p>
           </div>
         </div>
       </div>
 
       <div class="step">
-        <div class="no">W4</div>
+        <div class="no">10-4</div>
         <div class="body">
-          <h3>状態の確認<span class="sub">いつでも使えます</span></h3>
+          <h3>状態の確認とバックアップの複製<span class="sub">いつでも使えます</span></h3>
 <pre>powershell -ExecutionPolicy Bypass -File C:\chem\deploy\windows\check.ps1</pre>
-          <p>
-            サービスの状態、アプリの応答、記録の末尾、空き容量をまとめて出します。
-            困ったときは、この出力をそのままお送りください。
-          </p>
+          <p>サービスの状態、アプリの応答、記録の末尾、空き容量をまとめて出します。困ったときは、この出力をそのままお送りください。</p>
+          <div class="box warn">
+            <h4>IMPORTANT</h4>
+            <p>
+              <b>バックアップ（<code>C:\backups\chem\chem_年月日_時分秒.sql.zip</code>）を、社内NASなど別の機器へ毎日複製してください。</b>
+              タスクスケジューラに<b>別のタスク</b>を作り、<code>robocopy C:\backups\chem \\NAS\共有\chem /E</code> のように写すのが簡単です
+              （<code>C:\chem\scripts\backup-db.ps1</code> に書き足すと、更新で元に戻ります）。
+              タスクを SYSTEM で動かす場合、NAS 側ではサーバーのコンピューター アカウントに書き込みを許してください。
+            </p>
+          </div>
         </div>
       </div>
 
@@ -1097,80 +1093,96 @@ Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
       <table>
         <thead><tr><th>項目</th><th>すること</th></tr></thead>
         <tbody>
-          <tr>
-            <td><b>Windows Update</b></td>
-            <td>再起動の時間帯を業務時間の外に設定してください。サービスは自動起動なので、再起動しても復帰します</td>
-          </tr>
-          <tr>
-            <td><b>ウイルス対策</b></td>
-            <td>
-              <code>C:\chem</code> と PostgreSQL のデータ領域を<b>リアルタイム検査の対象外</b>にすることを検討してください。
-              データベースの書き込みが遅くなることがあります
-            </td>
-          </tr>
-          <tr>
-            <td><b>守るべきもの</b></td>
-            <td>
-              <code>C:\chem\.env</code>（設定）と、データベースの中身（毎日のバックアップ <code>C:\backups\chem</code>）。
-              バックアップは<b>別の機器へ複製</b>してください（<code>scripts\backup-db.ps1</code> の末尾に社内NASへコピーする例）
-            </td>
-          </tr>
-          <tr>
-            <td><b>帳票の PDF</b></td>
-            <td>
-              作った PDF は <code>C:\chem\data\documents</code> に置かれます（アプリの画面の設定で <code>D:\chem-docs</code> のような別のフォルダーに変えられます）。
-              <b>データベースのバックアップには入りません。</b>残すなら、このフォルダーも別の機器へ複製してください。更新では消えません
-            </td>
-          </tr>
-          <tr>
-            <td><b>締め出されたとき</b></td>
-            <td>
-              アプリの画面で決めた接続の制限で入れなくなったときは、<code>C:\chem\.env</code> に
-              <code>IP_RULES_OFF=1</code> の1行を足し、管理者の PowerShell で <code>C:\chem\nssm\nssm.exe restart chem-app</code>。
-              画面で直したら、その行を消してもう一度 restart します
-            </td>
-          </tr>
-          <tr>
-            <td><b>アプリの記録</b></td>
-            <td><code>C:\chem\logs\chem-app.log</code>（10MB で切り替わります）。困ったときに追えます</td>
-          </tr>
+          <tr><td><b>Windows Update</b></td><td>再起動の時間帯を業務時間の外に設定してください。サービスは自動起動なので、再起動しても戻ります</td></tr>
+          <tr><td><b>ウイルス対策</b></td><td><code>C:\chem</code>・<code>C:\Program Files\PostgreSQL\16\data</code>・<code>C:\backups\chem</code> を<b>リアルタイム検査の対象外</b>にすることを検討してください。データベースの書き込みが遅くなることがあります</td></tr>
+          <tr><td><b>守るもの</b></td><td>第6章の図3のとおり。<code>C:\chem\.env</code>（設定。控えをサーバーの外へ）と、毎日のバックアップ（NAS へ複製）。帳票の PDF（<code>C:\chem\data\documents</code>。画面の設定で別のフォルダーにもできます）と証明書の元（<code>C:\ProgramData\caddy</code>）は、残すなら複製してください。帳票の PDF は更新では消えません</td></tr>
+          <tr><td><b>アプリの記録</b></td><td><code>C:\chem\logs\chem-app.log</code>（10MB で切り替わります）</td></tr>
+          <tr><td><b>締め出されたとき</b></td><td>アプリの画面で決めた接続の制限で入れなくなったときは、<code>C:\chem\.env</code> に <code>IP_RULES_OFF=1</code> の1行を足し、管理者の PowerShell で <code>C:\chem\nssm\nssm.exe restart chem-app</code>。画面で直したら、その行を消してもう一度 restart します</td></tr>
+          <tr><td><b>パスワードを忘れた・ロックされた</b></td><td>管理者の PowerShell で次の3行（1行目は設定ファイルからデータベースの接続先を読む）。<br><code>cd C:\chem</code><br><code>$env:DATABASE_URL = (Select-String -Path .env -Pattern '^DATABASE_URL="?([^"]+)').Matches[0].Groups[1].Value</code><br><code>npx tsx scripts/set-password.ts <i>メールアドレス</i> '<i>新しいパスワード</i>'</code></td></tr>
         </tbody>
       </table>
     </div>
 
-    <h3>更新のしかた</h3>
-    <p>
-      新しい版も<b>同じ形のセット</b>でお渡しします。W1 と同じように展開し（前のフォルダは消して構いません）、
-      管理者の PowerShell で次を実行します。5分ほどで終わります。
-    </p>
-<pre>powershell -ExecutionPolicy Bypass -File C:\chem-install\scripts\update.ps1</pre>
-    <p>
-      スクリプトは、いま入っている版と届いた版を比べて<b>データベースの表が変わるかどうか</b>を先に表示し、
-      バックアップを取り、アプリを止め、ファイルを入れ替え、表に足りない変更があれば足し、アプリを起動して状態を出します。
-      <b>設定（.env）・記録・バックアップ・作った帳票の PDF は残ります。</b>
-    </p>
-    <p>
-      うまくいかなかったときは、前の版のセットで同じ手順を行えば元の版に戻ります。
-      データベースを戻す必要があるときは、更新の直前に取ったバックアップから復元します（<code>scripts\backup-db.ps1</code> の頭にやり方）。
-      何を新しくするかで手順が違います。<b>場合ごとの手順は 11 を見てください</b>（法規制データだけの更新は画面から取り込みます）。
-    </p>
+    <h3>バックアップからの復元（Windows Server）</h3>
+    <p>データベースの中身を、バックアップを取った時点に置き換えます。それ以降に入れたものは消えます。<b>管理者の PowerShell</b> で行います。</p>
+<pre>C:\chem\nssm\nssm.exe stop chem-app
+Expand-Archive C:\backups\chem\chem_<i>年月日_時分秒</i>.sql.zip -DestinationPath C:\backups\restore
+$env:PGPASSWORD = '<i>chem のパスワード</i>'    <span class="c"># 10-2 で控えたもの（C:\chem\.env の DATABASE_URL にも入っています）</span>
+&amp; "C:\Program Files\PostgreSQL\16\bin\psql.exe" -h 127.0.0.1 -U chem -d chem -f C:\backups\restore\chem_<i>年月日_時分秒</i>.sql
+C:\chem\nssm\nssm.exe start chem-app</pre>
+    <p class="dim">サーバーが壊れたときは、新しいサーバーで 10-1〜10-2 を行い（chem のパスワードは前と同じにする）、そのあと上の復元を行います。</p>
   </section>
 
   <section id="update">
-    <h2>11. 更新の手順 <span class="count">場合ごと</span></h2>
+    <h2>第11章　更新の手順 <span class="count">場合ごと</span></h2>
     <p>
       導入したあとに何かを新しくするときの手順です。<b>何を新しくするかで手順が違います。</b>
       お渡しする「更新のご案内」に、どの場合に当たるかを書いてあります。案内が無いときは、届いたファイルの名前で見分けてください。
     </p>
+
+    <figure class="figure">
+      <svg viewBox="0 0 880 330" role="img" aria-label="届いたファイルで場合を分ける。アプリのセットならプログラムの更新で、バックアップ、置き換え、起動、確認の順。データセットなら画面から取り込み、判定し直す" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/>
+          </marker>
+        </defs>
+        <rect x="10" y="130" width="150" height="70" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="85" y="160" class="t-name" text-anchor="middle">届いたもの</text>
+        <text x="85" y="180" class="t-sub" text-anchor="middle">と「更新のご案内」</text>
+        <line x1="160" y1="150" x2="196" y2="72" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar5)"/>
+        <line x1="160" y1="180" x2="196" y2="258" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar5)"/>
+
+        <text x="204" y="24" class="t-label">プログラムの更新（11-1・11-2）</text>
+        <text x="204" y="42" class="t-sub">chem-system-(ver).tar.gz ／ chem-install-set-(ver)-win64.zip</text>
+        <rect x="204" y="52" width="140" height="56" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="274" y="76" class="t-name" text-anchor="middle">① バックアップ</text>
+        <text x="274" y="96" class="t-sub" text-anchor="middle">戻すときに使う</text>
+        <line x1="344" y1="80" x2="368" y2="80" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar5)"/>
+        <rect x="372" y="52" width="150" height="56" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="447" y="76" class="t-name" text-anchor="middle">② 置き換え</text>
+        <text x="447" y="96" class="t-sub" text-anchor="middle">前の版は残しておく</text>
+        <line x1="522" y1="80" x2="546" y2="80" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar5)"/>
+        <rect x="550" y="52" width="160" height="56" rx="5" fill="var(--accent-quiet)" stroke="var(--accent)"/>
+        <text x="630" y="76" class="t-name" text-anchor="middle">③ 起動</text>
+        <text x="630" y="96" class="t-sub" text-anchor="middle">表の変更は自動で当たる</text>
+        <line x1="710" y1="80" x2="734" y2="80" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar5)"/>
+        <rect x="738" y="52" width="132" height="56" rx="5" fill="var(--ok-quiet)" stroke="var(--ok)"/>
+        <text x="804" y="76" class="t-name" text-anchor="middle">④ 確認</text>
+        <text x="804" y="96" class="t-sub" text-anchor="middle">変更履歴の先頭</text>
+        <rect x="204" y="118" width="666" height="40" rx="5" fill="var(--warn-quiet)" stroke="var(--warn)"/>
+        <text x="220" y="143" class="t-sub" style="fill:var(--ink-2)">戻すとき: 前の版で ②③ をやり直す。データベースの構造（表）が変わった版（11-2）なら、そのあと ① から復元する</text>
+
+        <text x="204" y="196" class="t-label">データの更新（11-3）</text>
+        <text x="204" y="214" class="t-sub">chem-data-set-(日付).zip（法規制データの新しい版・法改正）</text>
+        <rect x="204" y="226" width="140" height="56" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="274" y="250" class="t-name" text-anchor="middle">① バックアップ</text>
+        <text x="274" y="270" class="t-sub" text-anchor="middle">念のため</text>
+        <line x1="344" y1="254" x2="368" y2="254" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar5)"/>
+        <rect x="372" y="226" width="150" height="56" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="447" y="250" class="t-name" text-anchor="middle">② 画面から取り込む</text>
+        <text x="447" y="270" class="t-sub" text-anchor="middle">アプリは止まらない</text>
+        <line x1="522" y1="254" x2="546" y2="254" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar5)"/>
+        <rect x="550" y="226" width="160" height="56" rx="5" fill="var(--accent-quiet)" stroke="var(--accent)"/>
+        <text x="630" y="250" class="t-name" text-anchor="middle">③ 判定し直す</text>
+        <text x="630" y="270" class="t-sub" text-anchor="middle">全製品をまとめて</text>
+        <line x1="710" y1="254" x2="734" y2="254" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#ar5)"/>
+        <rect x="738" y="226" width="132" height="56" rx="5" fill="var(--ok-quiet)" stroke="var(--ok)"/>
+        <text x="804" y="250" class="t-name" text-anchor="middle">④ 確認</text>
+        <text x="804" y="270" class="t-sub" text-anchor="middle">代表的な製品</text>
+        <text x="204" y="312" class="t-sub">サーバーの作業は ① だけ。②〜④ はシステム管理者が画面で行います（ユーザーマニュアル「データを出し入れする」）</text>
+      </svg>
+      <figcaption>図5　更新の流れ。プログラムかデータかで、作業する場所が違います。</figcaption>
+    </figure>
+
     <div class="scroll">
       <table>
-        <caption>4 つの場合</caption>
+        <caption>3つの場合</caption>
         <thead><tr><th>場合</th><th>届くもの</th><th>アプリが止まる時間</th><th>作業のあとの「判定し直し」</th></tr></thead>
         <tbody>
-          <tr><td class="k">11-1 プログラムの更新（表は変わらない）</td><td>アプリのセット（<code>chem-system-(ver).tar.gz</code> / <code>chem-install-set-(ver)-win64.zip</code>）</td><td>Linux 1〜3 分（組み立て中は動いています）、Windows 約 1 分</td><td>案内に書いてあるときだけ</td></tr>
-          <tr><td class="k">11-2 プログラムの更新（表が変わる）</td><td>同上。案内に「データベースの表が変わります」と書いてあります</td><td>同上＋表の変更に 1 分ほど</td><td>案内に書いてあるときだけ</td></tr>
-          <tr><td class="k">11-3 データソースの更新（LOLI・CHRIP の新しい版）</td><td>データセット（<code>chem-data-set-(日付).zip</code>）</td><td>止まりません（取り込みは読み取り 2〜3 分・反映 10 分ほど）</td><td><b>必ず押す</b></td></tr>
-          <tr><td class="k">11-4 法規制の変更（法律の改正）</td><td>データセット、または規制リスト（<code>.tsv</code>）</td><td>止まりません</td><td><b>必ず押す</b></td></tr>
+          <tr><td class="k">11-1 プログラムの更新<br>（データベースの構造は変わらない）</td><td>アプリのセット（<code>chem-system-(ver).tar.gz</code> / <code>chem-install-set-(ver)-win64.zip</code>）</td><td>Linux 1〜3 分（組み立ての間は動いています）、Windows 数分</td><td>案内に書いてあるときだけ</td></tr>
+          <tr><td class="k">11-2 プログラムの更新<br>（データベースの構造が変わる）</td><td>同上。案内に「データベースの構造が変わります」と書いてあります</td><td>同上＋1 分ほど</td><td>案内に書いてあるときだけ</td></tr>
+          <tr><td class="k">11-3 データの更新</td><td>データセット（<code>chem-data-set-(日付).zip</code>）。法規制データの新しい版、法律の改正など</td><td>止まりません</td><td><b>必ず行う</b></td></tr>
         </tbody>
       </table>
     </div>
@@ -1178,129 +1190,75 @@ Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install</pre>
     <h3>どの場合にも共通のこと</h3>
     <div class="scroll">
       <table>
-        <thead><tr><th>いつ</th><th>すること</th><th>Linux</th><th>Windows Server</th></tr></thead>
+        <thead><tr><th>いつ</th><th>すること</th></tr></thead>
         <tbody>
-          <tr><td class="k">前</td><td>利用者に「何時から何分止まる／判定が一時的に古くなる」と知らせる。判定し直しが走っている最中でないことを確かめる（システム設定 › 法規制の判定）</td><td colspan="2">—</td></tr>
-          <tr><td class="k">前</td><td><b>バックアップを取る</b>（更新に失敗したとき、ここに戻します）</td><td><code>cd /opt/chem &amp;&amp; ./scripts/backup-db.sh</code></td><td><code>update.ps1</code> が自動で取ります。データだけの更新のときは <code>powershell -ExecutionPolicy Bypass -File C:\chem\scripts\backup-db.ps1</code></td></tr>
-          <tr><td class="k">後</td><td>ログインして、ユーザーマニュアルの<b>「変更履歴」の先頭</b>が新しい版になっていることを見る（プログラムの更新のとき）</td><td colspan="2">ブラウザで</td></tr>
-          <tr><td class="k">後</td><td>アプリが動いていることを確かめる</td><td><code>docker compose -f compose.prod.yml --env-file .env.prod ps</code>（3 つとも running）</td><td><code>powershell -ExecutionPolicy Bypass -File C:\chem\deploy\windows\check.ps1</code>（Running と 200）</td></tr>
-          <tr><td class="k">後</td><td>判定し直しが要る場合は、<b>システム設定 › 法規制の判定 › 「全製品を判定し直す」</b>を押し、左のメニューの「要再計算」が消えるまで待つ（数百製品で数分）</td><td colspan="2">ブラウザで（システム管理者）</td></tr>
+          <tr><td class="k">前</td><td>利用者に「何時から何分止まる／判定が一時的に古くなる」と知らせる</td></tr>
+          <tr><td class="k">前</td><td><b>バックアップを取る</b>。Linux は <code>bash /opt/chem/scripts/backup-db.sh</code>。Windows はプログラムの更新なら <code>update.ps1</code> が自動で取ります。データだけの更新のときは管理者の PowerShell で <code>powershell -ExecutionPolicy Bypass -File C:\chem\scripts\backup-db.ps1</code></td></tr>
+          <tr><td class="k">後</td><td>ログインして、ユーザーマニュアルの<b>「変更履歴」の先頭</b>が新しい版になっていることを見る（プログラムの更新のとき）</td></tr>
+          <tr><td class="k">後</td><td>アプリが動いていることを確かめる。Linux は <code>docker compose -f compose.prod.yml --env-file .env.prod ps</code>（3 つとも running）、Windows は <code>check.ps1</code>（Running と 200）</td></tr>
         </tbody>
       </table>
     </div>
-    <div class="box warn">
-      <h4>CAUTION</h4>
-      <p>
-        更新は<b>システム管理者</b>が行います。データの取り込み（11-3・11-4）には
-        <b>「データを取り込める」権限</b>が要ります。手順で作った最初の管理者には付いていますが、
-        画面から追加した管理者には付いていないことがあるので、管理 › ユーザーで確かめてから始めてください。
-      </p>
-    </div>
 
-    <h3>11-1 プログラムの更新（データベースの表は変わらない）<span class="sub">不具合の修正・小さな機能追加</span></h3>
-    <p>いま入っている記録（製品・判定結果・利用者）はそのまま残ります。判定結果も変わりません。</p>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>手順</th><th>Linux</th><th>Windows Server</th></tr></thead>
-        <tbody>
-          <tr><td class="k">1 バックアップ</td><td><code>./scripts/backup-db.sh</code></td><td>（update.ps1 が取ります）</td></tr>
-          <tr><td class="k">2 ファイルを置く</td><td><code>cd /opt/chem &amp;&amp; tar -xzf ~/chem-system-(ver).tar.gz</code>（<code>.env.prod</code> は上書きされません）</td><td><code>tar -xf C:\chem-install-set-(ver)-win64.zip -C C:\</code> のあと、できたフォルダを <code>C:\chem-install</code> に改名（前のフォルダは消して構いません）</td></tr>
-          <tr><td class="k">3 入れ替え</td><td><code>docker compose -f compose.prod.yml --env-file .env.prod up -d --build</code>（組み立て 10〜20 分。止まるのは最後の 1〜3 分）</td><td><code>powershell -ExecutionPolicy Bypass -File C:\chem-install\scripts\update.ps1</code>（5 分ほど。画面に<b>「データベースの表は変わりません」</b>と出ます）</td></tr>
-          <tr><td class="k">4 確認</td><td colspan="2">上の「共通のこと」の「後」。判定し直しは案内にあるときだけ</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="box">
-      <h4>戻すとき</h4>
-      <p>前の版のセットで 2〜3 を行えば元の版に戻ります。データベースは触っていないので、そのままで大丈夫です。</p>
-    </div>
-
-    <h3>11-2 プログラムの更新（データベースの表が変わる）<span class="sub">案内に「表が変わります」とあるとき</span></h3>
+    <h3>11-1・11-2 プログラムの更新（Linux）</h3>
     <p>
-      手順は 11-1 と<b>同じ</b>です。違うのは次の 3 点だけです。
+      新しい版は<b>新しいフォルダーに展開して入れ替えます</b>（前の版のファイルが混ざらないように。前の版は戻すときのために残します）。
+      データベースの構造が変わる版でも、<b>起動のときに自動で当たります。</b>
     </p>
-    <ul>
-      <li><b>バックアップを必ず取ってから</b>始めます（Windows は update.ps1 が最初に取り、失敗したら止まります）。</li>
-      <li>表の変更は<b>自動で当たります</b>。Linux は起動のときに、Windows は update.ps1 の途中（「W4 データベースの表」）で行われ、画面に<b>「データベースの表が変わります」</b>と出ます。</li>
-      <li>いま入っている記録・判定結果は残ります。<b>案内に「判定し直してください」とあるとき</b>だけ、判定し直しを押してください（判定の決まりが変わった版です）。案内に「確認・修正の記録が消えます」とあれば、判定し直したあと要確認のものを見直してください。</li>
-    </ul>
+<pre><span class="c"># ① バックアップ</span>
+bash /opt/chem/scripts/backup-db.sh
+
+<span class="c"># ② 新しい版を別のフォルダーに展開し、設定ファイルを写してから入れ替える</span>
+sudo mkdir /opt/chem-new &amp;&amp; sudo chown $USER /opt/chem-new
+tar xzf ~/chem-system-(ver).tar.gz -C /opt/chem-new
+cp /opt/chem/.env.prod /opt/chem-new/
+sudo mv /opt/chem /opt/chem-old-$(date +%Y%m%d)
+sudo mv /opt/chem-new /opt/chem
+
+<span class="c"># ③ 起動（組み立て 10〜20 分。止まるのは最後の 1〜3 分）</span>
+cd /opt/chem
+docker compose -f compose.prod.yml --env-file .env.prod up -d --build
+<span class="c">#   インターネットに繋がらない場合は、--build の代わりに先に読み込む</span>
+<span class="c">#   docker load -i ~/chem-images-(ver).tar &amp;&amp; docker compose -f compose.prod.yml --env-file .env.prod up -d</span>
+
+<span class="c"># ④ 確認のあと、前の版のイメージを片付ける</span>
+docker compose -f compose.prod.yml --env-file .env.prod ps
+docker image prune -f</pre>
+    <p class="dim">保存領域（データベース・帳票の PDF・証明書）は、フォルダーの名前が同じ <code>chem</code> なので、そのまま引き継がれます。うまく動くことを確かめてしばらくしたら、<code>/opt/chem-old-日付</code> は消して構いません。</p>
+
+    <h3>11-1・11-2 プログラムの更新（Windows Server）</h3>
+<pre><span class="c"># 管理者の PowerShell で。前の版の展開フォルダーを消してから、新しいセットを展開する（前の版の zip は戻すときのために残す）</span>
+Remove-Item -Recurse -Force C:\chem-install
+tar -xf C:\chem-install-set-(ver)-win64.zip -C C:\
+Rename-Item C:\chem-install-set-(ver)-win64 C:\chem-install
+powershell -ExecutionPolicy Bypass -File C:\chem-install\scripts\update.ps1</pre>
+    <p>
+      <code>update.ps1</code> は、いま入っている版と届いた版を比べて<b>「データベースの表が変わります／変わりません」</b>を先に表示し、
+      バックアップを取り、アプリを止め、ファイルを入れ替え、表に足りない変更があれば足し、アプリを起動して状態を出します。数分で終わります。
+      <b>設定（.env）・記録・バックアップ・作った帳票の PDF は残ります。</b>
+    </p>
+
     <div class="box warn">
       <h4>戻すとき</h4>
-      <p>
-        表が変わったあとは、前の版のプログラムをそのまま戻しても動きません。
-        <b>前の版のセットで入れ替えたあと、1 で取ったバックアップからデータベースを復元</b>してください
-        （手順 8「バックアップからの復元」／ Windows は <code>C:\chem\scripts\backup-db.ps1</code> の頭にやり方）。
-        復元すると、更新のあとに入れた記録は消えます。
-      </p>
-    </div>
-
-    <h3>11-3 データソースの更新<span class="sub">LOLI・CHRIP の新しい版（四半期ごと）</span></h3>
-    <p>
-      プログラムは変えません。届いた<b>データセット</b>を画面から取り込みます。作業中もアプリは止まりません。
-      詳しい画面の説明はユーザーマニュアルの「データを出し入れする」にあります。
-    </p>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>手順</th><th>すること</th><th>確かめること</th></tr></thead>
-        <tbody>
-          <tr><td class="k">1</td><td>バックアップを取る（上の「共通のこと」）</td><td>ファイルができたこと</td></tr>
-          <tr><td class="k">2</td><td>左メニュー <b>データ入出力 › インポート</b> で <code>chem-data-set-(日付).zip</code> を選び「アップロード」</td><td>種類が<b>「データセット（法規制）」</b>と出ること。違うものと出たら「破棄」して、ファイルを確かめる</td></tr>
-          <tr><td class="k">3</td><td>「インポート」を押す（LOLI 1 版ぶんで 2〜3 分。裏で読み、終わると表が出ます）</td><td>件数の表で<b>「バージョン」に追加 1</b>、「結び付き（CAS）」に追加が多数。<b>「読めない」が 0</b> であること。初めての取り込みでは、地域・国・元素・金属換算係数・法律・区分・法文物質名も「追加」で並びます</td></tr>
-          <tr><td class="k">4</td><td>「要確認」の行があれば見る（御社が画面で直した法文物質名やリンクです。届いた値にしたい行だけ「反映する」に印を付ける）</td><td>印を付けていない「要確認」は、いまの値のまま残ります</td></tr>
-          <tr><td class="k">5</td><td>「反映」を押す（LOLI 1 版ぶんで 10 分ほど。裏で進み、その間もアプリは使えます）</td><td>状態が<b>「反映済」</b>、「失敗 0 件」</td></tr>
-          <tr><td class="k">6</td><td>左メニュー <b>法規制 › バージョン</b> で新しい版（例 2026Q4）を選び<b>「現在のバージョンにする」</b></td><td>上の帯の「法規制バージョン」が新しい版になること</td></tr>
-          <tr><td class="k">7</td><td><b>システム設定 › 法規制の判定 › 「全製品を判定し直す」</b></td><td>左メニューの「要再計算」が消えること</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="box">
-      <h4>判定結果はどうなるか</h4>
       <ul>
-        <li>判定結果は<b>版ごと</b>に保存されます。前の版の結果は消えず、製品の画面で版を切り替えて見比べられます。</li>
-        <li>「確認済」「上書き」など<b>人が付けた判断</b>は、当たった法文物質名と CAS の組が前と同じなら新しい版にも引き継がれます。組が変わった製品は<b>「要確認」</b>になり、理由に「判断を外した」と残ります。判定し直しのあと、要確認の製品を見てください。</li>
-        <li>取り込みは<b>足す・直すだけで、消しません</b>。前の版で御社が足したリンク（データソース USER）はそのまま残り、届いたデータより優先されます。</li>
+        <li><b>11-1（構造が変わらない版）:</b> 前の版で ②③ をやり直します。Linux は <code>/opt/chem</code> と <code>/opt/chem-old-日付</code> の名前を入れ替えて <code>up -d --build</code>、Windows は前の版の zip で上の手順を行います。データベースはそのままで大丈夫です。</li>
+        <li><b>11-2（構造が変わった版）:</b> 前の版のプログラムをそのまま戻しても動きません。前の版に入れ替えたあと、<b>① で取ったバックアップから復元</b>してください（Linux は第8章、Windows は第10章の「復元」）。更新のあとに入れた記録は消えます。</li>
       </ul>
     </div>
 
-    <h3>11-4 法規制の変更<span class="sub">法律の改正・新しい一覧・御社の社内基準</span></h3>
+    <h3>11-3 データの更新</h3>
     <p>
-      改正の内容によって、届くものと見るところが少し違います。取り込みの操作そのものは 11-3 の 2〜5 と同じです。
+      プログラムは変えません。届いた<b>データセット</b>を、システム管理者が<b>画面から取り込み</b>、全製品を判定し直します。作業中もアプリは止まりません。
+      画面の操作はユーザーマニュアルの「データを出し入れする」に、その回の注意は「更新のご案内」にあります。
     </p>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>改正の種類</th><th>届くもの・すること</th><th>判定結果の扱い</th></tr></thead>
-        <tbody>
-          <tr>
-            <td class="k">(a) 物質が増えただけ</td>
-            <td>データセット。取り込み → 反映 → <b>判定し直し</b>（版の切り替えは不要）</td>
-            <td>増えた物質を含む製品だけ結果が変わります。人の判断は引き継がれます</td>
-          </tr>
-          <tr>
-            <td class="k">(b) 中身が変わった（閾値・区分の移動・削除）</td>
-            <td>データセット。<b>新しい規制区分が足され、古い区分に適用終了日が入ります</b>（古い区分は消しません）。取り込み → 反映 → <b>判定し直し</b></td>
-            <td>新しい区分の結果が新しく作られます。<b>人の判断は区分ごとなので、新しい区分には引き継がれません。</b>判定し直しのあと、その法律の該当を見直してください。古い区分の結果はそのまま残ります</td>
-          </tr>
-          <tr>
-            <td class="k">(c) 御社の社内基準・独自の一覧</td>
-            <td>データ入出力 › エクスポートで「規制リスト」をデータソース USER で出し、行を直して（1 行 = 法文物質名 × CAS）インポート → 反映 → 判定し直し。列名と並びは変えないこと</td>
-            <td>(a)(b) と同じ。中身が変わるときは、画面で新しい区分を作って古い区分に適用終了日を入れてから、新しい区分の名前でリストを作ります</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <ul>
+      <li>取り込みには、取り込みの権限を持つ管理者が要ります。導入のとき（手順8・10-2）に作った管理者には付いています。</li>
+      <li>取り込みは<b>足す・直すだけで、消しません</b>。御社が画面で足したデータは残り、届いたデータより優先されます。</li>
+      <li>判定し直しは、製品が数百件なら数分です。終わったら、代表的な製品を 1〜2 件開いて、案内どおりの結果になっていることを見てください。</li>
+    </ul>
     <div class="box warn">
       <h4>CAUTION</h4>
-      <p>
-        <b>古い規制区分を消さないでください。</b>区分を消すと、その区分の判定結果（確認済の印を含む）も一緒に消えます。
-        古い区分は適用終了日で「もう効いていない」と分かるようにしてあります。
-      </p>
-    </div>
-    <div class="box check">
-      <h4>CHECK</h4>
-      <p>
-        11-3・11-4 が終わったら、代表的な製品を 1〜2 件開き、<b>判定対象日を入れずに</b>該当・非該当が案内どおりになっていることを見てください。
-        変わり目をまたぐ製品は、判定対象日に改正前の日付を入れると前の結果が見られます。
-      </p>
+      <p><b>古い規制区分を消さないでください。</b>区分を消すと、その区分の判定結果（確認済みの印を含む）も一緒に消えます。改正で使わなくなった区分は、適用終了日で区別してあります。</p>
     </div>
   </section>
 

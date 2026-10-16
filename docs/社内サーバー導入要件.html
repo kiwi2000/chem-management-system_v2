@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>社内サーバー導入要件</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* 社内サーバー導入手順書と同じ色・文字にそろえる */
+  :root {
+    --ground: #f5f6f9;
+    --surface: #ffffff;
+    --surface-2: #e9ebf2;
+    --ink: #16181f;
+    --ink-2: #454a5c;
+    --ink-3: #6f7488;
+    --line: #d9dce6;
+    --line-strong: #b0b5c6;
+    --accent: #39407a;
+    --accent-quiet: #e2e4f2;
+    --warn: #8a6a1c;
+    --warn-quiet: #f7f0dc;
+    --ok: #2f6b45;
+    --ok-quiet: #e2eee6;
+    --no: #a03a3a;
+    --measure: 64ch;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f1117;
+      --surface: #171a23;
+      --surface-2: #1f2330;
+      --ink: #e8eaf2;
+      --ink-2: #b2b7c8;
+      --ink-3: #848a9d;
+      --line: #2a2f3d;
+      --line-strong: #3d4354;
+      --accent: #97a0e0;
+      --accent-quiet: #1e2236;
+      --warn: #d9b463;
+      --warn-quiet: #2a2417;
+      --ok: #86c39c;
+      --ok-quiet: #17251c;
+      --no: #e08a8a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1117;
+    --surface: #171a23;
+    --surface-2: #1f2330;
+    --ink: #e8eaf2;
+    --ink-2: #b2b7c8;
+    --ink-3: #848a9d;
+    --line: #2a2f3d;
+    --line-strong: #3d4354;
+    --accent: #97a0e0;
+    --accent-quiet: #1e2236;
+    --warn: #d9b463;
+    --warn-quiet: #2a2417;
+    --ok: #86c39c;
+    --ok-quiet: #17251c;
+    --no: #e08a8a;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+  .page {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 3.5rem) clamp(1rem, 4vw, 2.5rem) 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+  code { font-size: .85em; background: var(--surface-2); padding: .1em .35em; border-radius: 2px; }
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+    font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); margin: 0;
+  }
+  h1 {
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-weight: 700; font-size: clamp(1.8rem, 5vw, 2.4rem); line-height: 1.35; margin: .4rem 0 0; text-wrap: balance;
+  }
+  .lede { max-width: var(--measure); color: var(--ink-2); margin: .9rem 0 0; }
+  .facts {
+    display: flex; flex-wrap: wrap; gap: .4rem 2rem; margin-top: 1.1rem; padding-top: .8rem;
+    border-top: 1px solid var(--line); color: var(--ink-3); font-size: .84rem;
+  }
+  .facts b { color: var(--ink-2); font-weight: 500; }
+  h2 {
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", sans-serif;
+    font-size: 1.3rem; font-weight: 700; line-height: 1.45; margin: 0 0 .9rem;
+    padding-bottom: .4rem; border-bottom: 2px solid var(--line-strong); text-wrap: balance;
+  }
+  p { margin: 0; max-width: var(--measure); }
+  section { display: flex; flex-direction: column; gap: .9rem; }
+
+  .scroll { overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td { padding: .5rem .9rem; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-size: .75rem; letter-spacing: .06em; color: var(--ink-3); font-weight: 700; background: var(--surface-2); white-space: nowrap; }
+  tbody th { font-weight: 700; white-space: nowrap; width: 9.5rem; }
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+  .yes { color: var(--ok); font-weight: 700; white-space: nowrap; }
+  .no { color: var(--no); font-weight: 700; white-space: nowrap; }
+  .dim { color: var(--ink-3); font-size: .85em; }
+
+  .box { border-left: 3px solid var(--line-strong); background: var(--surface); padding: .85rem 1.1rem; display: flex; flex-direction: column; gap: .4rem; }
+  .box.warn { border-left-color: var(--warn); background: var(--warn-quiet); }
+  .box h4 { margin: 0; font-size: .78rem; letter-spacing: .12em; font-family: "JetBrains Mono", monospace; color: var(--ink-3); }
+  .box.warn h4 { color: var(--warn); }
+  .box p { max-width: none; }
+
+  .figure { border: 1px solid var(--line); background: var(--surface); padding: .9rem; overflow-x: auto; }
+  .figure svg { display: block; width: 100%; min-width: 40rem; height: auto; }
+  .figure figcaption { font-size: .8rem; color: var(--ink-3); margin-top: .5rem; }
+  .figure .t-title { font-size: 14px; font-weight: 700; fill: var(--ink); font-family: "BIZ UDPGothic", sans-serif; }
+  .figure .t-name { font-size: 13px; font-weight: 700; fill: var(--ink); }
+  .figure .t-sub { font-size: 11px; fill: var(--ink-3); }
+  .figure .t-port { font-size: 11px; fill: var(--ink-2); font-family: "JetBrains Mono", monospace; }
+  .figure .t-ok { font-size: 11px; font-weight: 700; fill: var(--ok); }
+  .figure .t-no { font-size: 11px; font-weight: 700; fill: var(--no); }
+  .figure .t-zone { font-size: 12px; font-weight: 700; fill: var(--accent); font-family: "JetBrains Mono", monospace; letter-spacing: .08em; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .card { background: var(--surface); border: 1px solid var(--line); padding: .9rem 1.1rem; display: flex; flex-direction: column; gap: .4rem; }
+  .card h3 { margin: 0; font-family: "BIZ UDPGothic", sans-serif; font-size: 1rem; }
+  .card ul { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: .3rem; font-size: .9rem; }
+  .card li::marker { color: var(--accent); }
+  @media (max-width: 640px) { .split { grid-template-columns: 1fr; } }
+
+  .foot { border-top: 1px solid var(--line); padding-top: 1rem; color: var(--ink-3); font-size: .82rem; }
+
+  @media print {
+    /* 印刷は rem ごと縮める（見出し・表も rem で書いてあるため） */
+    html { font-size: 11px; }
+    body { background: #fff; color: #000; font-size: 1rem; line-height: 1.55; }
+    .page { max-width: none; padding: 0; gap: .8rem; }
+    section { gap: .5rem; }
+    .lede, p { max-width: none; }
+    .figure { padding: .4rem; }
+    .figure svg { max-height: 56mm; }
+    .card { padding: .5rem .8rem; }
+    .split { grid-template-columns: 1fr 1fr; gap: .6rem; }
+    .figure, .scroll, .box, .card { break-inside: avoid; }
+    h2 { margin-bottom: .5rem; break-after: avoid; }
+    .figure svg { min-width: 0; }
+    th, td { padding: .22rem .6rem; }
+    thead th { background: #eee; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">導入要件</p>
+    <h1>ケミカルコンプライアンス支援システム<br>社内サーバーに置くために必要なもの</h1>
+    <p class="lede">
+      このシステムを御社の社内LANのサーバーに置くとき、<b>事前にご用意いただくもの</b>と、<b>ネットワークの条件</b>をまとめたものです。
+      導入を決める前の確認と、サーバーの準備にお使いください。実際の作業の手順は、別にお渡しする「社内サーバー導入手順書」にあります。
+    </p>
+    <div class="facts">
+      <span><b>置き場所</b> 社内LANのサーバー 1台</span>
+      <span><b>インターネット</b> 不要</span>
+      <span><b>導入の作業</b> 約1時間</span>
+      <span><b>版</b> 2026-10-16</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>1. 全体の形</h2>
+    <p>
+      サーバー1台に、画面・判定・データベースのすべてが入ります。社員の方はパソコンのブラウザで開くだけで、パソコンにソフトを入れる必要はありません。
+      <b>社外とのやり取りはなく、インターネットに繋がっていなくても動きます。</b>
+    </p>
+    <figure class="figure">
+      <svg viewBox="0 0 860 380" role="img" aria-label="社内LANの中に、利用者のパソコン・管理者のパソコン・サーバー・NASがあり、利用者は HTTPS で接続し、毎日のバックアップを NAS へ複製する。インターネットとは繋がない" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/>
+          </marker>
+        </defs>
+
+        <!-- 社内LAN -->
+        <rect x="10" y="10" width="640" height="360" rx="8" fill="var(--ground)" stroke="var(--accent)" stroke-dasharray="6 4"/>
+        <text x="28" y="36" class="t-zone">社内LAN</text>
+
+        <!-- 利用者のパソコン（3台重ね） -->
+        <rect x="46" y="78" width="140" height="70" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <rect x="38" y="86" width="140" height="70" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <rect x="30" y="94" width="140" height="70" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="100" y="124" class="t-name" text-anchor="middle">利用者のパソコン</text>
+        <text x="100" y="144" class="t-sub" text-anchor="middle">ブラウザで開くだけ</text>
+
+        <!-- 管理者のパソコン -->
+        <rect x="30" y="248" width="140" height="62" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="100" y="274" class="t-name" text-anchor="middle">管理者のパソコン</text>
+        <text x="100" y="294" class="t-sub" text-anchor="middle">サーバーの保守に使う</text>
+
+        <!-- サーバー -->
+        <rect x="290" y="62" width="200" height="200" rx="6" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="390" y="88" class="t-title" text-anchor="middle">サーバー 1台</text>
+        <text x="390" y="106" class="t-sub" text-anchor="middle">固定IP・社内DNSの名前</text>
+        <rect x="308" y="118" width="164" height="32" rx="4" fill="var(--accent-quiet)" stroke="var(--accent)"/>
+        <text x="390" y="139" class="t-sub" text-anchor="middle" style="fill:var(--ink)">入口（HTTPS にする）</text>
+        <rect x="308" y="158" width="164" height="32" rx="4" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="390" y="179" class="t-sub" text-anchor="middle" style="fill:var(--ink)">アプリ（画面と判定）</text>
+        <rect x="308" y="198" width="164" height="32" rx="4" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="390" y="219" class="t-sub" text-anchor="middle" style="fill:var(--ink)">データベース</text>
+        <text x="390" y="250" class="t-sub" text-anchor="middle">外から見えるのは入口だけ</text>
+
+        <!-- 利用者 → サーバー -->
+        <line x1="172" y1="128" x2="300" y2="134" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#a1)"/>
+        <text x="236" y="118" class="t-port" text-anchor="middle">HTTPS 443</text>
+        <!-- 管理者 → サーバー -->
+        <line x1="172" y1="278" x2="296" y2="236" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a1)"/>
+        <text x="232" y="296" class="t-port" text-anchor="middle">SSH 22 / RDP</text>
+
+        <!-- NAS -->
+        <rect x="510" y="290" width="124" height="62" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="572" y="316" class="t-name" text-anchor="middle">社内NAS など</text>
+        <text x="572" y="336" class="t-sub" text-anchor="middle">バックアップの複製先</text>
+        <line x1="430" y1="262" x2="530" y2="292" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#a1)"/>
+        <text x="438" y="306" class="t-port">毎日 3:00</text>
+
+        <!-- UPS -->
+        <rect x="290" y="290" width="136" height="40" rx="5" fill="var(--surface)" stroke="var(--line)"/>
+        <text x="358" y="315" class="t-sub" text-anchor="middle">無停電電源装置（UPS）</text>
+
+        <!-- インターネット -->
+        <ellipse cx="760" cy="180" rx="84" ry="44" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="760" y="176" class="t-name" text-anchor="middle">インターネット</text>
+        <text x="760" y="196" class="t-sub" text-anchor="middle">使いません</text>
+        <line x1="492" y1="180" x2="672" y2="180" stroke="var(--line-strong)" stroke-width="1.5" stroke-dasharray="3 4"/>
+        <path d="M 572 168 l 24 24 M 596 168 l -24 24" stroke="var(--no)" stroke-width="2.5"/>
+        <text x="584" y="160" class="t-no" text-anchor="middle">繋がない</text>
+      </svg>
+      <figcaption>図1　置き方。インターネットとの線は要りません（外から入れないようにしてください）。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>2. サーバー</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>項目</th><th>最低</th><th>推奨</th></tr></thead>
+        <tbody>
+          <tr><th>CPU</th><td>4コア</td><td>8コア</td></tr>
+          <tr><th>メモリ</th><td>8 GB</td><td>16 GB</td></tr>
+          <tr><th>ディスク</th><td>SSD 250 GB</td><td>NVMe SSD 500 GB</td></tr>
+          <tr><th>形</th><td colspan="2">物理でも仮想でも構いません。他の業務と同居させる場合は、上の量をこのシステム用に空けてください</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>OS は次のどちらかです。<b>アプリは同じもの</b>で、入れ方だけが違います。</p>
+    <div class="split">
+      <div class="card">
+        <h3>A. Linux（推奨）</h3>
+        <ul>
+          <li>Ubuntu Server 24.04 LTS、または RHEL 系 9（AlmaLinux・Rocky Linux）</li>
+          <li>Docker の上で動かします（導入の手順で入れます）</li>
+          <li>インターネットに繋がらない場合は、実行用のファイル（Docker のイメージ）を別にお渡しします。Docker 本体は OS の提供元のものを入れていただきます</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>B. Windows Server</h3>
+        <ul>
+          <li>Windows Server 2019 / 2022 / 2025</li>
+          <li>Hyper-V・WSL・Docker は使いません。必要なソフトはすべて導入セットに入れてお渡しします</li>
+          <li>Linux 版ほどの運用実績はありません。どちらでもよい場合は A をお勧めします</li>
+        </ul>
+      </div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>そのほか</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><th>電源</th><td>無停電電源装置（UPS）。停電でデータベースが壊れることを防ぎます</td></tr>
+          <tr><th>時刻</th><td>社内の時刻サーバーなどで合わせておくこと。記録の時刻とバックアップ、2要素認証に使います</td></tr>
+          <tr><th>管理者の権限</th><td>導入と更新には、サーバーの管理者権限（Linux は sudo、Windows は Administrator）が要ります</td></tr>
+          <tr><th>ウイルス対策</th><td>Windows Server では、アプリとデータベースのフォルダーをリアルタイム検査の対象外にすることをお勧めします（書き込みが遅くなるため）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. ネットワーク</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>通信</th><th>向き</th><th>相手</th><th>要否</th></tr></thead>
+        <tbody>
+          <tr><th>HTTPS 443</th><td>社内 → サーバー</td><td>利用者のパソコン</td><td><span class="yes">開ける</span></td></tr>
+          <tr><th>HTTP 80</th><td>社内 → サーバー</td><td>利用者のパソコン（HTTPS へ転送するだけ）</td><td><span class="yes">開ける</span></td></tr>
+          <tr><th>SSH 22 / RDP 3389</th><td>社内 → サーバー</td><td>管理者のパソコン（保守用。御社の決まりで）</td><td>任意</td></tr>
+          <tr><th>データベース・アプリの内部</th><td>—</td><td>サーバーの中だけで使います</td><td><span class="no">開けない</span></td></tr>
+          <tr><th>インターネットから</th><td>社外 → サーバー</td><td>—</td><td><span class="no">開けない</span></td></tr>
+          <tr><th>サーバーから外へ</th><td>サーバー → 社外</td><td>動かすためには不要。OS の更新を当てるとき、Linux でアプリをその場で組み立てるとき（導入・更新の作業中だけ。実行用のファイルを使えば不要）</td><td>任意</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="scroll">
+      <table>
+        <tbody>
+          <tr><th>IPアドレス</th><td>社内LANの<b>固定IPアドレス</b>を1つ。変わると、社員の方が開けなくなります</td></tr>
+          <tr><th>名前</th><td>社内DNSに名前（例 <code>chem.社内ドメイン</code>）を登録することをお勧めします。<b>指紋や顔でのログイン（パスキー）は、名前で開かないと使えません</b></td></tr>
+          <tr><th>証明書</th><td>サーバーが社内用の証明書を自分で作ります。そのサーバーの「ルート証明書」を各パソコンに登録すると、ブラウザの警告が消えます（グループポリシーで配れます）</td></tr>
+          <tr><th>社外から使う</th><td>想定していません。必要な場合は、御社の VPN で社内LANに入ってから開いてください</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="dim">
+      社外の日本のアドレスから接続があったときだけ、記録に接続元の組織名を出すため、日本のアドレスの登録機関（JPNIC）に問い合わせます。社内LANの中だけで使う限り、この問い合わせは起きません。
+    </p>
+  </section>
+
+  <section>
+    <h2>4. 利用者のパソコン</h2>
+    <div class="scroll">
+      <table>
+        <tbody>
+          <tr><th>ブラウザ</th><td>Microsoft Edge または Google Chrome の最新版。パソコンにソフトを入れる必要はありません</td></tr>
+          <tr><th>台数</th><td>20名ほどまでを想定しています。それを超える、または製品が数万件になる見込みがある場合は、事前にご相談ください</td></tr>
+          <tr><th>証明書</th><td>上の「証明書」の登録をしておくと、警告なしで開けます</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. データとバックアップ</h2>
+    <figure class="figure">
+      <svg viewBox="0 0 860 150" role="img" aria-label="サーバーの中のデータベースを毎日3時にバックアップし、14日分を残して、社内NASへ複製する。帳票のPDFはバックアップに入らないので、残す場合は別に複製する" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-3)"/>
+          </marker>
+        </defs>
+        <rect x="10" y="20" width="160" height="54" rx="5" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="90" y="44" class="t-name" text-anchor="middle">データベース</text>
+        <text x="90" y="62" class="t-sub" text-anchor="middle">物質・製品・判定・記録</text>
+        <line x1="170" y1="47" x2="250" y2="47" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="210" y="38" class="t-port" text-anchor="middle">毎日 3:00</text>
+        <rect x="254" y="20" width="250" height="54" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="379" y="44" class="t-name" text-anchor="middle">サーバーの中のバックアップ</text>
+        <text x="379" y="62" class="t-sub" text-anchor="middle">1日1つ。14日より古いものは自動で消える</text>
+        <line x1="504" y1="47" x2="624" y2="47" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="564" y="38" class="t-port" text-anchor="middle">複製</text>
+        <text x="564" y="64" class="t-sub" text-anchor="middle">（御社で設定）</text>
+        <rect x="628" y="20" width="170" height="54" rx="5" fill="var(--surface)" stroke="var(--line-strong)"/>
+        <text x="713" y="44" class="t-name" text-anchor="middle">社内NAS など</text>
+        <text x="713" y="62" class="t-sub" text-anchor="middle">サーバーとは別の機器</text>
+
+        <rect x="10" y="92" width="160" height="44" rx="5" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+        <text x="90" y="119" class="t-name" text-anchor="middle">作った帳票の PDF</text>
+        <line x1="170" y1="122" x2="624" y2="122" stroke="var(--line-strong)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+        <text x="190" y="112" class="t-sub">バックアップには入りません。残す場合は、置き場所のフォルダーも複製してください</text>
+      </svg>
+      <figcaption>図2　バックアップの流れ。サーバーの中にだけ置くと、サーバーが壊れたときに一緒に失われます。</figcaption>
+    </figure>
+    <div class="scroll">
+      <table>
+        <tbody>
+          <tr><th>量の目安</th><td>アプリ一式が約 2 GB。データベースは法規制のデータを入れて数 GB で、製品・判定・記録の量に応じて増えます</td></tr>
+          <tr><th>守るもの</th><td>設定のファイル（データベースのパスワードを含む）と、毎日のバックアップ。この2つがあれば、別のサーバーで同じ状態に戻せます</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>6. 作業の分担</h2>
+    <div class="split">
+      <div class="card">
+        <h3>御社にご用意いただくもの</h3>
+        <ul>
+          <li>サーバー（2）と OS のインストール</li>
+          <li>固定IPアドレス・社内DNSの名前・通信の許可（3）</li>
+          <li>UPS、バックアップの複製先（NAS など）</li>
+          <li>導入の作業をする、サーバーの管理者権限を持つ方</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>こちらからお渡しするもの</h3>
+        <ul>
+          <li>アプリ一式（Linux 用は約 2 MB、Windows Server 用の導入セットは約 1.1 GB）</li>
+          <li>インターネットに繋がらない Linux サーバー向けの実行用ファイル（約 2 GB）</li>
+          <li>社内サーバー導入手順書</li>
+          <li>法規制のデータ（導入のときにこちらで入れます）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">
+    この資料は、導入の前の確認のためのものです。画面の使い方はアプリの中の「ユーザーマニュアル」に、導入の作業の手順は「社内サーバー導入手順書」にあります。
+  </p>
+</div>
+</body>
+</html>

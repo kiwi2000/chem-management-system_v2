@@ -1,0 +1,80 @@
+<svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="社員のパソコンから Tailscale VPN を通って VPS に入り、Caddy・アプリ・データベースの3つのコンテナが動く。データは db-data と app-data に置き、毎日バックアップしてオフサイトへ複製する">
+  <style>
+    text { font-family: "Yu Gothic UI", "Yu Gothic", Meiryo, "Hiragino Kaku Gothic ProN", sans-serif; }
+    .title { font-size: 15px; font-weight: 700; fill: #16181f; }
+    .name { font-size: 13px; font-weight: 700; fill: #16181f; }
+    .sub { font-size: 11px; fill: #6f7488; }
+    .port { font-size: 11px; fill: #454a5c; font-family: Consolas, "JetBrains Mono", monospace; }
+    .zone { font-size: 12px; font-weight: 700; fill: #39407a; letter-spacing: .06em; }
+    .no { font-size: 11px; font-weight: 700; fill: #a03a3a; }
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6f7488"/>
+    </marker>
+  </defs>
+  <rect width="900" height="420" fill="#ffffff"/>
+
+  <!-- 社員のパソコン -->
+  <rect x="16" y="150" width="150" height="80" rx="5" fill="#ffffff" stroke="#b0b5c6"/>
+  <text x="91" y="182" class="name" text-anchor="middle">社員のパソコン</text>
+  <text x="91" y="202" class="sub" text-anchor="middle">Tailscale を入れる</text>
+
+  <!-- VPN の管 -->
+  <rect x="176" y="172" width="120" height="36" rx="18" fill="#e2e4f2" stroke="#39407a"/>
+  <text x="236" y="195" class="port" text-anchor="middle">Tailscale VPN</text>
+  <line x1="166" y1="190" x2="176" y2="190" stroke="#6f7488" stroke-width="1.5"/>
+  <line x1="296" y1="190" x2="318" y2="190" stroke="#6f7488" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="236" y="160" class="sub" text-anchor="middle">インターネット越し</text>
+  <text x="236" y="230" class="no" text-anchor="middle">VPN の外からは入れない</text>
+
+  <!-- VPS -->
+  <rect x="322" y="16" width="560" height="388" rx="7" fill="#f5f6f9" stroke="#39407a" stroke-width="1.5"/>
+  <text x="340" y="42" class="title">VPS（国内）</text>
+  <text x="340" y="61" class="sub">Ubuntu 24.04 LTS ／ メモリ4GB以上 ／ NVMe 100GB〜 ／ ファイアウォールは SSH（鍵のみ）と Tailscale だけ許可</text>
+
+  <!-- docker compose -->
+  <rect x="340" y="78" width="524" height="226" rx="5" fill="#ffffff" stroke="#b0b5c6" stroke-dasharray="5 4"/>
+  <text x="356" y="99" class="zone">docker compose（compose.prod.yml）</text>
+
+  <rect x="358" y="114" width="150" height="66" rx="4" fill="#e2e4f2" stroke="#39407a"/>
+  <text x="374" y="139" class="name">caddy</text>
+  <text x="374" y="159" class="sub">入口。80/443・HTTPS</text>
+
+  <rect x="532" y="114" width="170" height="66" rx="4" fill="#ffffff" stroke="#b0b5c6"/>
+  <text x="548" y="139" class="name">app</text>
+  <text x="548" y="159" class="sub">Next.js＋Chromium（PDF化）</text>
+
+  <rect x="532" y="214" width="170" height="66" rx="4" fill="#ffffff" stroke="#b0b5c6"/>
+  <text x="548" y="239" class="name">db</text>
+  <text x="548" y="259" class="sub">PostgreSQL 16・ポート非公開</text>
+
+  <line x1="508" y1="147" x2="528" y2="147" stroke="#6f7488" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="520" y="109" class="port" text-anchor="middle">3001</text>
+  <line x1="617" y1="180" x2="617" y2="210" stroke="#6f7488" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="625" y="200" class="port">5432</text>
+
+  <!-- 保存領域 -->
+  <path d="M736 128 a40 9 0 0 1 80 0 v38 a40 9 0 0 1 -80 0 z" fill="#e9ebf2" stroke="#b0b5c6"/>
+  <path d="M736 128 a40 9 0 0 0 80 0" fill="none" stroke="#b0b5c6"/>
+  <text x="776" y="158" class="port" text-anchor="middle">app-data</text>
+  <text x="776" y="190" class="sub" text-anchor="middle">帳票の PDF</text>
+  <line x1="702" y1="147" x2="732" y2="147" stroke="#6f7488" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <path d="M736 228 a40 9 0 0 1 80 0 v38 a40 9 0 0 1 -80 0 z" fill="#e9ebf2" stroke="#b0b5c6"/>
+  <path d="M736 228 a40 9 0 0 0 80 0" fill="none" stroke="#b0b5c6"/>
+  <text x="776" y="258" class="port" text-anchor="middle">db-data</text>
+  <text x="776" y="290" class="sub" text-anchor="middle">データベース</text>
+  <line x1="702" y1="247" x2="732" y2="247" stroke="#6f7488" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <!-- バックアップ -->
+  <rect x="340" y="320" width="330" height="66" rx="5" fill="#ffffff" stroke="#d9dce6"/>
+  <text x="356" y="345" class="name">cron: scripts/backup-db.sh（毎日 3:00）</text>
+  <text x="356" y="365" class="sub">/var/backups/chem に 1日1つ・14世代</text>
+  <line x1="617" y1="280" x2="617" y2="316" stroke="#6f7488" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <rect x="704" y="320" width="160" height="66" rx="5" fill="#ffffff" stroke="#b0b5c6"/>
+  <text x="784" y="345" class="name" text-anchor="middle">オフサイト保管</text>
+  <text x="784" y="365" class="sub" text-anchor="middle">rclone → B2 など（推奨）</text>
+  <line x1="670" y1="353" x2="700" y2="353" stroke="#6f7488" stroke-width="1.5" marker-end="url(#ar)"/>
+</svg>
