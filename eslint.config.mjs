@@ -22,6 +22,7 @@ export default tseslint.config(
       "**/next-env.d.ts", // Next.js の自動生成ファイル
       "docs/**",
       ".cache/**", // 作業用スクリプトの置き場（git 管理外）
+      "temp/**", // 利用者が開いて見る一時物（git 管理外）
       ".claude/worktrees/**", // 作業用の別ツリー（本体と同じソースの写し）
       "apps/web/modules/*.generated.ts", // scripts/gen-modules.mjs が作る差込口の一覧
     ],

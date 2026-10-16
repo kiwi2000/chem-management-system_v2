@@ -30,6 +30,9 @@ coverage/
 # 照合に使う法令XMLの控え（scripts/verify-jp-laws.ts が作る）
 .cache/
 
+# 利用者が開いて見る一時物（dev/CLAUDE.md の一時物の決まり。2026-10-16 に Downloads/dev から移した）
+temp/
+
 # 目録の取り出し結果は大きすぎる（60MB超）。取り出し直せるので追わない
 scripts/data/loli-inventories.tsv
 
