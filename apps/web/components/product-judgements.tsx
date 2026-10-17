@@ -27,7 +27,9 @@ import {
 } from "@/components/ui/table";
 import { useResizableColumns } from "@/components/data-table/resizable-columns";
 import { ResizableBox } from "@/components/data-table/resizable-box";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { bindJudgementControls, publishJudgementState } from "@/lib/judgement-controls";
 import { JUDGEMENTS_CHANGED } from "@/lib/judgements-refresh";
 import { useI18n } from "@/lib/i18n-client";
@@ -157,6 +159,12 @@ export function ProductJudgements({
   const [editing, setEditing] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  /** ほかの人が先に確認・上書きしていた知らせと、「このまま保存する」で送り直す中身 */
+  const [stale, setStale] = useState<{
+    info: StaleEditInfo;
+    judgementId: string;
+    verdict?: "APPLICABLE" | "NOT_APPLICABLE";
+  } | null>(null);
   /**
    * 中身（法文物質名の行）を開いている区分。
    * **既定は全部閉じる。**当たった区分が何かをまず見せ、
@@ -264,21 +272,40 @@ export function ProductJudgements({
     return () => window.removeEventListener(JUDGEMENTS_CHANGED, onChanged);
   }, [load]);
 
-  async function decide(judgementId: string, verdict?: "APPLICABLE" | "NOT_APPLICABLE") {
+  async function decide(
+    judgementId: string,
+    verdict?: "APPLICABLE" | "NOT_APPLICABLE",
+    force = false,
+  ) {
     setBusy(true);
     setError(null);
+    if (!force) setStale(null);
     try {
+      // 楽観的ロックの印（決定の行の更新時刻。まだ無ければ "0"）
+      const stamp = items?.find((j) => j.id === judgementId)?.stamp ?? "0";
       const res = await fetch(`/api/products/${productId}/judgements/${judgementId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verdict, note: note.trim() || null }),
+        body: JSON.stringify({
+          verdict,
+          note: note.trim() || null,
+          stamp,
+          force: force || undefined,
+        }),
       });
+      // ほかの人が先に確認・上書きしていた。根拠の入力は残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale({ info: staleInfo, judgementId, verdict });
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      setStale(null);
       setEditing(null);
       setNote("");
       await load();
@@ -595,6 +622,12 @@ export function ProductJudgements({
       </CardHeader>
 
       <CardContent className="space-y-3">
+        <StaleEditNotice
+          stale={stale?.info ?? null}
+          saving={busy}
+          onForce={() => stale && void decide(stale.judgementId, stale.verdict, true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

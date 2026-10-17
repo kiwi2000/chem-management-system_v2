@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+import { parseEditStamp, StaleError, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { canEditComposition } from "@/lib/composition-service";
@@ -57,6 +59,9 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (note !== undefined && note !== null && typeof note !== "string") {
     return jsonError(400, "validation_error", m.errors.validation);
   }
+  // 楽観的ロックの印（決定の行の更新時刻。まだ決定が無ければ "0"）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   // 判断できるのは、現在のバージョンで保存してある判定だけ
   const version = await getCurrentVersion();
@@ -89,52 +94,68 @@ export async function PUT(req: Request, { params }: Ctx) {
   const decidedAt = new Date();
   const decidedNote = typeof note === "string" && note.trim() !== "" ? note.trim() : null;
 
-  await prisma.$transaction([
-    // 人の判断。判定し直しても、前提が同じあいだは引き継がれる
-    prisma.productDecision.upsert({
-      where: {
-        productId_categoryId_statutorySubstanceId: {
-          productId: id,
-          categoryId: current.categoryId,
-          statutorySubstanceId: current.statutorySubstanceId,
+  const unit = {
+    productId: id,
+    categoryId: current.categoryId,
+    statutorySubstanceId: current.statutorySubstanceId,
+  };
+  const decisionData = {
+    verdict: overridden ? next : null,
+    systemVerdict: current.systemVerdict,
+    premise: current.premise,
+    decidedBy: actor.user.id,
+    decidedAt,
+    decidedNote,
+  };
+  /*
+    ほかの人が先に確認・上書きしていないか（楽観的ロック。lib/edit-stamp.ts）。
+    決定の行があれば、その更新時刻が印のままのときだけ更新する。
+    まだ無ければ印 "0" で作る（そのあいだに誰かが作っていれば、一意制約で止まるので食い違いにする）
+  */
+  try {
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.productDecision.findUnique({
+        where: { productId_categoryId_statutorySubstanceId: unit },
+        select: { id: true },
+      });
+      if (existing) {
+        const gate = await tx.productDecision.updateMany({
+          where: { id: existing.id, ...stampWhere(lock) },
+          data: decisionData,
+        });
+        if (gate.count === 0) throw new StaleError();
+      } else {
+        if (!lock.force && lock.stamp !== "0") throw new StaleError();
+        // 人の判断。判定し直しても、前提が同じあいだは引き継がれる
+        await tx.productDecision.create({ data: { ...unit, ...decisionData } });
+      }
+      // 現在のバージョンの判定の行にも写して、画面にすぐ出す
+      await tx.productJudgement.update({
+        where: { id: current.id },
+        data: {
+          verdict: next,
+          // 人が触ったものは、システムが出したものと見分けが付くようにする
+          source: overridden ? "USER" : "SYSTEM",
+          needsReview: false,
+          // 「以前の判断を外した」は、判断し直したので消える。ほかの警告は残す
+          reviewReasons: current.reviewReasons.filter((r) => r !== "decisionDropped"),
+          decidedBy: actor.user.id,
+          decidedAt,
+          decidedNote,
         },
-      },
-      create: {
-        productId: id,
-        categoryId: current.categoryId,
-        statutorySubstanceId: current.statutorySubstanceId,
-        verdict: overridden ? next : null,
-        systemVerdict: current.systemVerdict,
-        premise: current.premise,
-        decidedBy: actor.user.id,
-        decidedAt,
-        decidedNote,
-      },
-      update: {
-        verdict: overridden ? next : null,
-        systemVerdict: current.systemVerdict,
-        premise: current.premise,
-        decidedBy: actor.user.id,
-        decidedAt,
-        decidedNote,
-      },
-    }),
-    // 現在のバージョンの判定の行にも写して、画面にすぐ出す
-    prisma.productJudgement.update({
-      where: { id: current.id },
-      data: {
-        verdict: next,
-        // 人が触ったものは、システムが出したものと見分けが付くようにする
-        source: overridden ? "USER" : "SYSTEM",
-        needsReview: false,
-        // 「以前の判断を外した」は、判断し直したので消える。ほかの警告は残す
-        reviewReasons: current.reviewReasons.filter((r) => r !== "decisionDropped"),
-        decidedBy: actor.user.id,
-        decidedAt,
-        decidedNote,
-      },
-    }),
-  ]);
+      });
+    });
+  } catch (err) {
+    const unique = err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+    if (err instanceof StaleError || unique) {
+      const row = await prisma.productDecision.findUnique({
+        where: { productId_categoryId_statutorySubstanceId: unit },
+        select: { updatedAt: true, decidedBy: true },
+      });
+      return staleFromRow(m, row ? { updatedAt: row.updatedAt, updatedBy: row.decidedBy } : null);
+    }
+    throw err;
+  }
 
   await writeAudit({
     entity: "product_judgements",
@@ -152,5 +173,14 @@ export async function PUT(req: Request, { params }: Ctx) {
     },
   });
 
-  return Response.json({ ok: true, verdict: next, changed });
+  const after = await prisma.productDecision.findUnique({
+    where: { productId_categoryId_statutorySubstanceId: unit },
+    select: { updatedAt: true },
+  });
+  return Response.json({
+    ok: true,
+    verdict: next,
+    changed,
+    stamp: after ? String(after.updatedAt.getTime()) : "0",
+  });
 }

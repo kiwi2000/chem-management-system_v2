@@ -45,11 +45,19 @@ export async function toJudgementDtos(
         decidedBy: true,
         decidedAt: true,
         decidedNote: true,
+        updatedAt: true,
       },
     }),
   ]);
   const decisionOf = new Map(
     decisions.map((d) => [unitKey(d.categoryId, d.statutorySubstanceId || null), d]),
+  );
+  // 楽観的ロックの印は決定の行の更新時刻。決定がまだ無い単位は "0"（lib/edit-stamp.ts）
+  const stampOf = new Map(
+    decisions.map((d) => [
+      unitKey(d.categoryId, d.statutorySubstanceId || null),
+      String(d.updatedAt.getTime()),
+    ]),
   );
   const dropped = new Map(
     rows
@@ -60,7 +68,7 @@ export async function toJudgementDtos(
         return d ? [[key, d] as const] : [];
       }),
   );
-  return buildJudgementDtos(rows, withHits, dropped);
+  return buildJudgementDtos(rows, withHits, dropped, stampOf);
 }
 
 /**
@@ -193,6 +201,7 @@ async function buildJudgementDtos(
   rows: JudgementRow[],
   withHits: boolean,
   dropped: Map<string, DroppedDecision>,
+  stampOf: Map<string, string>,
 ): Promise<ProductJudgementDto[]> {
   // 根拠を伏せる相手には、区分ごとに 1 行にまとめる（法文物質名の名前も根拠のうち）
   const shown = withHits ? rows : foldByCategory(rows);
@@ -253,6 +262,7 @@ async function buildJudgementDtos(
       const mark = effectiveMark(r, info ?? null);
       const inForce = r.effective === "IN_FORCE";
       return {
+        stamp: stampOf.get(unitKey(r.categoryId, r.statutorySubstanceId || null)) ?? "0",
         id: r.id,
         categoryId: r.categoryId,
         categoryScore: r.category.score.toString(),

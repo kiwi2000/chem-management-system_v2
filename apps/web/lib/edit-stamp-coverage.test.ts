@@ -23,9 +23,6 @@ const SERVER_ALLOWLIST = new Set([
   "auth/passkey/register/route.ts", // 本人のパスキーの登録
   // 取り込みの一時領域の「反映する」の印。取り込みを頼んだ本人が、反映前にだけ触る
   "import/[id]/rows/route.ts",
-  // 判定の確認・上書き。判定の行に更新時刻が無く、誰がいつ決めたかは決定の記録そのものに残る。
-  // 最後に確認した人の判断が勝つ（2026-10-18 決定。要るなら判定の行に更新時刻を足してから）
-  "products/[id]/judgements/[judgementId]/route.ts",
   // モジュール（SDS 版など）の API の中継。いまモジュールに更新の API は無い。
   // 足すときはモジュールの側で lib/edit-stamp.ts の印を確かめ、ここの検出も広げる
   "modules/[module]/[[...path]]/route.ts",
@@ -40,10 +37,7 @@ const CLIENT_ALLOWLIST = new Set([
   "components/passkey-section.tsx", // 本人のパスキー
   "app/login/page.tsx", // ログイン画面の言語・テーマ
   "components/import-job-screen.tsx", // 取り込みの一時領域（上の import/[id]/rows と同じ理由）
-  "components/product-judgements.tsx", // 判定の確認・上書き（上と同じ理由）
   "components/prtr-import-dialog.tsx", // 取り込み（PUT は使っていない。動詞を変数で持つだけ）
-  // SDS 版の GHS 採用順。表（SdsGhsAdoptionRule）に更新時刻が無い。要るなら列を足してから
-  "components/ghs/ghs-adoption-rules.tsx",
 ]);
 
 /**

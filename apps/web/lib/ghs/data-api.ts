@@ -327,6 +327,8 @@ async function getRules(req: Request, actor: Actor): Promise<Response> {
     saved: saved.length > 0,
     rules,
     sources: SOURCES.map((s) => ({ code: s.code, nameJa: s.nameJa, nameEn: s.nameEn })),
+    // 楽観的ロックの印（その国の行ぜんぶ。保存が無ければ "0:0"）
+    stamp: rowsStamp(saved),
   });
 }
 
@@ -353,6 +355,15 @@ async function putRules(req: Request, actor: Actor): Promise<Response> {
   ) {
     return jsonError(400, "validation_error", m.errors.validation);
   }
+  // ほかの管理者が先に保存していないか（楽観的ロック）。国ごとの行ぜんぶの印で比べる
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
+  const current = await prisma.sdsGhsAdoptionRule.findMany({
+    where: { country },
+    select: { updatedAt: true },
+    orderBy: { updatedAt: "desc" },
+  });
+  if (!lock.force && lock.stamp !== rowsStamp(current)) return staleFromRow(m, current[0]);
   await prisma.$transaction(async (tx) => {
     await tx.sdsGhsAdoptionRule.deleteMany({ where: { country } });
     await tx.sdsGhsAdoptionRule.createMany({
@@ -371,7 +382,11 @@ async function putRules(req: Request, actor: Actor): Promise<Response> {
     actorId: actor.user.id,
     diff: { country, rules: body.rules },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.sdsGhsAdoptionRule.findMany({
+    where: { country },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowsStamp(after) });
 }
 
 async function getOverrides(req: Request, actor: Actor): Promise<Response> {

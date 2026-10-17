@@ -7,6 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError } from "@/lib/types";
 import type { AdoptionRuleDto } from "@/lib/ghs/data-dto";
 import { countryName } from "@/lib/ghs/countries";
@@ -16,6 +18,8 @@ interface RulesDto {
   country: string;
   saved: boolean;
   rules: AdoptionRuleDto[];
+  /** 楽観的ロックの印。保存時にそのまま送り返す */
+  stamp: string;
   sources: { code: string; nameJa: string; nameEn: string }[];
 }
 
@@ -41,6 +45,8 @@ export function GhsAdoptionRules({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // ほかの管理者が先に保存していた知らせ
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -73,13 +79,11 @@ export function GhsAdoptionRules({
     setDirty(true);
   };
 
-  /*
-    楽観的ロックの印は送らない。採用順の表（SdsGhsAdoptionRule）に更新時刻が無く、印を作れないため。
-    管理者だけが触る国ごとの並び順で、後から保存した人の順が勝つ（lib/edit-stamp-coverage.test.ts の例外）
-  */
-  async function save() {
+  /** 保存。`force` は「このまま保存する」（ほかの管理者の変更を見たうえで上書きする） */
+  async function save(force = false) {
     setBusy(true);
     setError(null);
+    if (!force) setStale(null);
     try {
       const res = await fetch("/api/ghs-data/rules", {
         method: "PUT",
@@ -90,8 +94,17 @@ export function GhsAdoptionRules({
             sourceCode: r.sourceCode,
             fillCannotClassify: r.fillCannotClassify,
           })),
+          // 楽観的ロックの印（lib/edit-stamp.ts）
+          stamp: data?.stamp ?? "0:0",
+          force: force || undefined,
         }),
       });
+      // ほかの管理者が先に保存していた。並びはそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -122,6 +135,12 @@ export function GhsAdoptionRules({
         <p className="text-muted-foreground text-sm">{t.lead}</p>
         {!isAdmin && <p className="text-muted-foreground text-sm">{t.adminOnly}</p>}
         {data && !data.saved && <p className="text-muted-foreground text-sm">{t.isDefault}</p>}
+        <StaleEditNotice
+          stale={stale}
+          saving={busy}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

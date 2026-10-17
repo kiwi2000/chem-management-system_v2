@@ -264,6 +264,11 @@ export type JudgementEffectiveDto = "IN_FORCE" | "NOT_YET" | "EXPIRED";
  * 2026-09-15 決定）。根拠を伏せる相手には区分ごとに 1 行にまとめてある（法文物質名は null）
  */
 export interface ProductJudgementDto {
+  /**
+   * 楽観的ロックの印（lib/edit-stamp.ts）。確認・上書きのとき送り返す。
+   * 印は「人の判断の記録（決定）」の更新時刻。まだ決定が無ければ "0"
+   */
+  stamp: string;
   /** 判定の行の id。確認・修正はこれを相手にする（その場で計算した判定は `asof:` で始まる仮の値） */
   id: string;
   categoryId: string;

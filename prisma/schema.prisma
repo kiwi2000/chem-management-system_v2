@@ -283,6 +283,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -1004,6 +1005,10 @@ model ProductDecision {
    * そう判断した根拠。監査で問われたときに答えられるようにする
    */
   decidedNote String?  @map("decided_note")
+  /**
+   * 楽観的ロックの印（lib/edit-stamp.ts）。2026-10-18 に追加
+   */
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   product  Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
   category RegulationCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -3750,11 +3755,15 @@ model SdsGhsOverride {
  * fill_cannot_classify が真なら「分類できない」も次の出典で埋める
  */
 model SdsGhsAdoptionRule {
-  id                 String  @id @default(cuid())
-  country            String  @db.VarChar(20)
-  sourceCode         String  @map("source_code") @db.VarChar(40)
+  id                 String   @id @default(cuid())
+  country            String   @db.VarChar(20)
+  sourceCode         String   @map("source_code") @db.VarChar(40)
   priority           Int
-  fillCannotClassify Boolean @default(false) @map("fill_cannot_classify")
+  fillCannotClassify Boolean  @default(false) @map("fill_cannot_classify")
+  /**
+   * 楽観的ロックの印（lib/edit-stamp.ts）。2026-10-18 に追加
+   */
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@unique([country, sourceCode])
   @@map("sds_ghs_adoption_rules")
