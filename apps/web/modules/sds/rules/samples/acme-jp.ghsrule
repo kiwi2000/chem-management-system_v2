@@ -29,6 +29,10 @@ ruleset "ACME-JP" version 3 extends "JP-JIS2025" version 1 {
       mixture { "A" 99.5 % acute.oral 4; "X" 0.5 % unknown(acute.oral) }
       expect { acute.oral unclassifiable }
     }
+    test "急性毒性のデータが無い成分 0.5 % も未知として数え、分類できない" {
+      mixture { "A" 99.5 % acute.oral 4; "X" 0.5 % }
+      expect { acute.oral unclassifiable }
+    }
     test "区分 2 の成分だけ（50 % ＋ 50 %）は自社の決まりで区分 2" {
       mixture { "A" 50 % acute.oral 2; "B" 50 % acute.oral 2 }
       expect { acute.oral 2 }

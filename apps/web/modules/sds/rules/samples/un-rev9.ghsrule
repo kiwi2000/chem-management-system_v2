@@ -129,7 +129,7 @@ ruleset "UN-Rev9" version 1 {
         ate_of = coalesce(ate(oral), convert(category(acute.oral)))
         unknown_part = ingredients where unknown(acute.oral) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
-        unknown_total = all_ingredients where unknown(acute.oral)
+        unknown_total = all_ingredients where unknown(acute.oral) or not has_value(ate_of)
         if sum(conc of unknown_part) > 10 % then
           atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
         else
@@ -155,7 +155,7 @@ ruleset "UN-Rev9" version 1 {
         ate_of = coalesce(ate(dermal), convert(category(acute.dermal)))
         unknown_part = ingredients where unknown(acute.dermal) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
-        unknown_total = all_ingredients where unknown(acute.dermal)
+        unknown_total = all_ingredients where unknown(acute.dermal) or not has_value(ate_of)
         if sum(conc of unknown_part) > 10 % then
           atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
         else
@@ -187,7 +187,7 @@ ruleset "UN-Rev9" version 1 {
         ate_of = coalesce(ate(gas), convert(category(acute.gas)))
         unknown_part = ingredients where unknown(acute.gas) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
-        unknown_total = all_ingredients where unknown(acute.gas)
+        unknown_total = all_ingredients where unknown(acute.gas) or not has_value(ate_of)
         if sum(conc of unknown_part) > 10 % then
           atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
         else
@@ -217,7 +217,7 @@ ruleset "UN-Rev9" version 1 {
         ate_of = coalesce(ate(vapour), convert(category(acute.vapour)))
         unknown_part = ingredients where unknown(acute.vapour) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
-        unknown_total = all_ingredients where unknown(acute.vapour)
+        unknown_total = all_ingredients where unknown(acute.vapour) or not has_value(ate_of)
         if sum(conc of unknown_part) > 10 % then
           atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
         else
@@ -249,7 +249,7 @@ ruleset "UN-Rev9" version 1 {
         ate_of = coalesce(ate(dust), convert(category(acute.dust)))
         unknown_part = ingredients where unknown(acute.dust) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
-        unknown_total = all_ingredients where unknown(acute.dust)
+        unknown_total = all_ingredients where unknown(acute.dust) or not has_value(ate_of)
         if sum(conc of unknown_part) > 10 % then
           atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
         else
@@ -281,6 +281,8 @@ ruleset "UN-Rev9" version 1 {
           classify skin as 1
         else if sum(conc of non_additive where category(skin) == 2) >= 3 % then
           classify skin as 2
+        else if sum(conc of non_additive where category(skin) == 3) >= 3 % then
+          classify skin as 3
         else
           not_classified
       } else weighted_sum {
@@ -292,7 +294,7 @@ ruleset "UN-Rev9" version 1 {
         c3 = sum(conc of ingredients where category(skin) == 3)
         if c1 >= 5 % then
           // 細区分は、全成分に細区分のデータがあるときだけ付ける（3.2.3.3.4.1）。無ければ区分 1
-          classify skin as (if option(skin.subdivision) == split then (if c1a >= 5 % then 1A else if c1a + c1b >= 5 % then 1B else if c1a + c1b + c1c >= 5 % then 1C else 1) else 1)
+          classify skin as (if option(skin.subdivision) == split and not any(ingredients where category(skin) == 1) then (if c1a >= 5 % then 1A else if c1a + c1b >= 5 % then 1B else if c1a + c1b + c1c >= 5 % then 1C else 1) else 1)
         else if c1 >= 1 % or 10 * c1 + c2 >= 10 % then
           classify skin as 2
         else if 10 * c1 + c2 + c3 >= 10 % or c3 >= 10 % or 10 * c1 + c2 >= 1 % then
@@ -677,6 +679,14 @@ ruleset "UN-Rev9" version 1 {
     test "皮膚 1A が 5 % 以上なら 1A（UN は細区分を分ける）" {
       mixture { "A" 6 % skin 1A }
       expect { skin 1A }
+    }
+    test "皮膚 細区分なしの区分 1 の成分があれば、細区分を付けず区分 1（表 3.2.3 注）" {
+      mixture { "A" 6 % skin 1A; "B" 2 % skin 1 }
+      expect { skin 1 }
+    }
+    test "皮膚 加成方式が使えない区分 3 の成分 4 % は区分 3（表 3.2.4）" {
+      mixture { "A" 4 % skin 3 flag non_additive }
+      expect { skin 3 }
     }
     test "皮膚 区分 3 の成分 12 % は区分 3" {
       mixture { "A" 12 % skin 3 }
