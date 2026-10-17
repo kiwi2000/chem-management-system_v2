@@ -1,0 +1,69 @@
+term_en	term_ja	variants_ja	source	note
+Hazard class	危険有害性クラス	有害性クラス	第1.2章 定義; 本文各所	仮訳は「危険有害性クラス」が主。健康・環境の章では「有害性クラス」だけのことがある
+Hazard category	危険有害性区分	有害性区分; 危険性区分; 区分	第1.2章 定義; 1.4.10.5.2(a)	第1.2章の定義文の中でも「経口急性毒性には5つの有害性区分」「引火性液体には4つの危険性区分」と揺れる。表の中は「区分1」のように「区分」だけ
+Physical hazards	物理化学的危険性	物理的危険性	第2部の表題; 1.4.5.2	第2部の表題は「物理化学的危険性」。本文では「物理的危険性」も使う
+Health hazards	健康に対する有害性	健康有害性	第3部の表題; 1.4.10.3	部の表題は「健康に対する有害性」。シンボル名と本文では「健康有害性」
+Environmental hazards	環境に対する有害性	環境有害性	第4部の表題; 表1.5.2 14(e)	部の表題は「環境に対する有害性」。SDS 第14節の項目名は「環境有害性」
+Classification criteria	分類基準	判定基準	1.3.2.3; 各章 2.x.2/3.x.2 の見出し; 各章の表「判定基準」	章の見出し（例 2.8.2「分類基準」）は「分類基準」、表の列見出し（例 表2.2.1「可燃性ガスの判定基準」）は「判定基準」。英語はどちらも criteria
+Decision logic	判定論理		各章末の「判定論理 2.x」「判定論理 3.x」	
+Tiered approach	段階的アプローチ	段階的なアプローチ	図3.1.1; 3.1.3.3; 3.2.1.3	図の表題は「段階的なアプローチ」、本文は「段階的アプローチ」が多い
+Building block approach	選択可能方式		1.1.3.1.5	仮訳は「選択可能方式（Building block approach）」と原語を併記
+Competent authority	所管官庁		第1.2章 定義; 1.3.3.2 脚注1 ほか（124 か所）	
+Expert judgement	専門家の判断		1.3.2.4.8	
+Weight of evidence	証拠の重み付け	証拠の総合的な重み付け	1.3.2.4.9	1.3.2.4.9.1 本文では「証拠の総合的な重み付け」
+Evidence from humans	ヒトより得られた証拠	ヒトの経験	1.3.2.4.7	
+Substance	物質		第1.2章 定義	
+Mixture	混合物		第1.2章 定義	
+Alloy	合金		第1.2章 定義	GHS の分類では混合物とみなす
+Ingredient	成分		表1.5.2 第3節; 3.1.3 ほか	
+Relevant ingredients	考慮すべき成分	関連成分	3.1.3.3(a); 判定論理 3.2.1 脚注1; 3.1.3.6.1; 4.1.3.5.5	3.1.3.3 の定義では「考慮すべき成分」（かぎ括弧付き、1％以上の濃度の成分）。加算式（3.1.3.6.1）と第4.1章では「関連成分」
+Impurities and stabilizing additives	不純物および安定化添加物		表1.5.2 第3節(d)	
+Untested mixture	未試験の混合物		1.3.3.2.1	
+Tested mixture	試験された混合物		3.1.3.5.2 ほか（つなぎの原則）	
+Cut-off value / concentration limit	カットオフ値／濃度限界	カットオフ値/濃度限界; カットオフ値または濃度限界; カットオフ濃度レベル	1.3.3.2 見出し・脚注1; 表3.4.5・表3.5.1・表3.6.1・表3.7.1・表3.8.2・表3.9.3 の表題	脚注1: 「カットオフ値」および「濃度限界」は同意義であり、どちらを使用してもよい。文字起こしでは「濃度限界」の「濃」が落ちて「度限界」になる所がある
+Generic cut-off values / concentration limits	統一的なカットオフ値または濃度限界	一般的なカットオフ値/濃度限界; 一般的なカットオフ濃度レベル	1.3.3.2.1; 1.3.3.2.4	
+Specific concentration limits	特定の濃度限界		判定論理 3.2.1 脚注2（3.2.3.3.6 参照）	本文中の語は脚注にだけ出る
+Bridging principles	つなぎの原則		1.3.2.3.1 の (b)・(c)（混合物の分類で推奨する手順）; 3.1.3.5; 3.2.3.2; 3.3.3.2; 4.1.3.4 ほか（51 か所）	仮訳は「つなぎの原則（bridging principle）」と原語を併記
+Dilution	希釈		3.1.3.5.2; 3.2.3.2.2; 3.3.3.2.2	つなぎの原則の 1 つ目
+Batching	製造バッチ		3.1.3.5.3; 3.2.3.2.3; 3.3.3.2.3	つなぎの原則の 2 つ目
+Concentration of highly toxic mixtures	毒性の強い混合物の濃縮		3.1.3.5.4	つなぎの原則の 3 つ目（急性毒性）
+Concentration of mixtures of the highest corrosion/irritation category	最も強い腐食性/刺激性区分の混合物の濃縮		3.2.3.2.4	つなぎの原則の 3 つ目（皮膚腐食性/刺激性）
+Concentration of mixtures of the highest serious eye damage/eye irritation category	最も強い眼に対する重篤な損傷性/眼刺激性区分の混合物の濃縮		3.3.3.2.4	つなぎの原則の 3 つ目（眼）
+Interpolation within one hazard category	1つの有害性区分内での内挿	1つの有害性区分の中での内挿	3.1.3.5.5; 3.2.3.2.5; 3.3.3.2.5	つなぎの原則の 4 つ目
+Substantially similar mixtures	本質的に類似した混合物		3.1.3.5.6; 3.2.3.2.6; 3.3.3.2.6	つなぎの原則の 5 つ目
+Aerosols (bridging principle)	エアゾール		3.1.3.5.7; 3.2.3.2.7; 3.3.3.2.7	つなぎの原則の 6 つ目
+Additivity formula	加算式		3.1.3.6 見出し; 3.1.3.6.1; 判定論理 3.1.1	急性毒性の混合物の式
+Summation method	加算法		4.1.3.5.5 見出し; 判定論理 4.1.3	水生環境有害性の方法。4.1 の本文に「加算法または加算式」と並べて書く所がある
+Acute toxicity estimate (ATE)	急性毒性推定値（ATE）	急性毒性推定値	表1.5.2 第11節(d); 3.1.3.1; 表3.1.1	表3.1.1 の表題は文字起こしで「AT図」と化けている（原語 ATE）
+Acute toxicity point estimate	急性毒性点推定値		表3.1.2 表題	
+Acute toxicity range estimate	急性毒性範囲推定値		表3.1.2 表題・列見出し	
+Converted acute toxicity point estimate	変換値	変換した急性毒性点推定値	表3.1.2 列見出し; 3.1.3.6.1	
+M factor	毒性乗率M	M因子	表4.1.5 表題; 4.1.3.5.5.5; 判定論理 4.1	表4.1.5「混合物中の高毒性成分に関する毒性乗率M」。4.1.3.5.5 の本文では「該当するM因子をかけて」
+Synergistic or antagonistic effects	相乗または拮抗作用	相乗作用; 拮抗作用; 増強作用	1.3.3.3	
+Rapid degradability	急速分解性		4.1.1.6; 4.1.2 ほか（60 か所）	「急速分解性がある/ない」の形で使う
+Bioaccumulation potential	生物蓄積性		4.1.1.5; 表1.5.2 第12節(c)	SDS 第12節(c) Bioaccumulative potential も「生物蓄積性」
+Acute aquatic toxicity	急性水生毒性		4.1.1.1; 4.1.1.3	
+Chronic aquatic toxicity	慢性水生毒性		4.1.1.1; 4.1.1.4	
+Short-term (acute) / long-term (chronic) hazard	短期（急性）有害性／長期（慢性）有害性		表4.1.1; 附属書1 A1.29	
+Physical state	物理状態	物理的状態	表1.5.2 第9節; 1.4.6.3.2; 本文	表1.5.2 は「物理状態」、本文は「物理的状態」が多い（5 か所）
+Route of exposure	ばく露経路		1.3.2.4.9.4; 表1.5.2 第4節(a)・第11節(a)	仮訳は全て「ばく露」（ひらがな）。「暴露」は 0 か所。システムは「暴露」
+Exposure	ばく露		本文各所	同上
+Oral / Dermal / Inhalation	経口／経皮／吸入		表3.1.1; 附属書1 A1.18	急性毒性のばく露経路
+Gas / Vapour / Dust and mist (inhalation)	気体／蒸気／粉塵・ミスト		表3.1.1 列見出し; 判定論理 3.1.1「吸入(気体)」「吸入(蒸気)」「吸入(粉塵/ミスト)」	表3.1.1 の列は「気体」（本文の定義は「ガス」）
+Gas / Liquid / Solid	ガス／液体／固体	気体	第1.2章 定義	定義は「ガス」。表3.1.1 の列見出しや「固体」の定義文では「気体」
+Dust / Mist / Vapour	粉塵／ミスト／蒸気	粉じん	第1.2章 定義	表1.5.2 第2節(c)の例では「粉じん爆発危険性」とひらがな
+Hazard communication	危険有害性に関する情報の伝達	危険有害性情報の伝達	第1.4章・第1.5章の表題; 各章 2.x.3「危険有害性情報の伝達」	章の表題は「危険有害性に関する情報の伝達：表示」、各クラスの節見出しは「危険有害性情報の伝達」
+Labelling	表示	ラベル表示	第1.4章 表題; 各章「ラベル要素」の表	表の表題は「〜のラベル要素」または「〜のラベル表示要素」（例 表2.10.2・表2.13.2）と揺れる
+Label elements	ラベル要素	ラベル表示要素	第1.2章 定義; 各章の表 2.x.2	
+Supplemental information	補足情報		1.4.6.3「標準化されていない情報または補足情報の使用」	ラベルの補足情報
+Supplemental label element	補助的ラベル要素		第1.2章 定義	
+Confidential business information	営業秘密情報	営業秘密	1.4.8; 表1.5.2 第3節 注記	表1.5.2 の注記は「営業秘密情報に関する所管官庁の規則」
+Product identifier	製品特定名	製品特定手段	第1.2章 定義; 表1.5.2 第1節(a); A4.3.1.1	表1.5.2 は「GHS の製品特定手段」、第1.2章と A4.3.1.1 は「製品特定名」
+Chemical identity	化学的特定名		第1.2章 定義; 表1.5.2 第3節	
+Technical name	専門名		第1.2章 定義	
+Supplier	供給者		表1.5.2 第1節(d); 1.4.7.2.1	
+Manufacturer/distributor	製造者/流通業者		第1.2章 定義「補助的ラベル要素」	
+Safety data sheet (SDS)	安全データシート（SDS）		第1.2章 定義; 第1.5章	
+Manual of Tests and Criteria	試験方法および判定基準のマニュアル		第1.2章 定義	
+Additional category for effects on or via lactation	追加区分 授乳に対するまたは授乳を介した影響		附属書1 A1.25; 3.7	システムは「追加区分（授乳）」
+Standardization	標準化		1.4.6	

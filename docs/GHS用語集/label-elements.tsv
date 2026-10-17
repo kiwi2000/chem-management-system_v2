@@ -1,0 +1,41 @@
+kind	en	ja	source	note
+signal_word	Danger	危険	第1.2章 定義「注意喚起語」; 1.4.10.5.2(a)	より重大な危険有害性区分（主として区分 1 と 2）に用いる
+signal_word	Warning	警告	第1.2章 定義「注意喚起語」; 1.4.10.5.2(a)	より重大性の低い区分に用いる
+signal_word	No signal word	注意喚起語なし	附属書1 表A1.8・A1.15（タイプG）、A1.25（追加区分）、A1.29	表の欄の書き方
+pictogram	GHS01	GHS01	附属書3 表A3.4.1（仮訳 p.375）	コードはラベルにも SDS 第2節にも書かない（A3.4.1.3）
+symbol	Exploding bomb	爆弾の爆発	1.4.10.3; 附属書3 表A3.4.1	GHS01 のシンボル
+pictogram	GHS02	GHS02	附属書3 表A3.4.1	
+symbol	Flame	炎	1.4.10.3; 附属書3 表A3.4.1	GHS02 のシンボル
+pictogram	GHS03	GHS03	附属書3 表A3.4.1	
+symbol	Flame over circle	円上の炎	1.4.10.3; 附属書3 表A3.4.1	GHS03 のシンボル
+pictogram	GHS04	GHS04	附属書3 表A3.4.1	
+symbol	Gas cylinder	ガスボンベ	1.4.10.3; 附属書3 表A3.4.1	GHS04 のシンボル。文字起こしでは「スボンベ」と先頭の「ガ」が落ちている。PDF p.375 の画像で「ガスボンベ」を確認
+pictogram	GHS05	GHS05	附属書3 表A3.4.1	
+symbol	Corrosion	腐食性	1.4.10.3; 附属書3 表A3.4.1	GHS05 のシンボル
+pictogram	GHS06	GHS06	附属書3 表A3.4.1	
+symbol	Skull and crossbones	どくろ	1.4.10.3; 附属書3 表A3.4.1	GHS06 のシンボル
+pictogram	GHS07	GHS07	附属書3 表A3.4.1	
+symbol	Exclamation mark	感嘆符	1.4.10.3; 附属書3 表A3.4.1	GHS07 のシンボル
+pictogram	GHS08	GHS08	附属書3 表A3.4.1	
+symbol	Health hazard	健康有害性	1.4.10.3; 附属書3 表A3.4.1	GHS08 のシンボル。危険有害性の大分類（第3部「健康に対する有害性」）と同じ語
+pictogram	GHS09	GHS09	附属書3 表A3.4.1	
+symbol	Environment	環境	1.4.10.3; 附属書3 表A3.4.1	GHS09 のシンボル
+pictogram	No pictogram	絵表示なし	附属書1 表A1.2（区分2）、A1.3、A1.19（区分3）、A1.20（区分2B）ほか	表の欄の書き方
+pictogram	Not applicable / Not required	要求されない	附属書1 各表の「UN モデル規則クラスまたは区分」「UN モデル規則絵表示」欄	英語は表により Not applicable と Not required を使い分けるが、仮訳はどちらも「要求されない」
+result	Not classified	区分に該当しない	判定論理 2.2〜2.17、3.1〜4.1 の各図（仮訳 56 か所）	判定論理の「いいえ」側の結果。システムの status NOT_CLASSIFIED と同じ語
+result	Classification not possible	分類できない	判定論理 3.1.1（仮訳 PDF p.129、本文 p.123）	ATE が無い場合の結果。システムの status CANNOT_CLASSIFY と同じ語
+result	Classification not possible due to lack of sufficient data	十分なデータが不足しているために分類できない	判定論理 4.1.3（混合物の長期（慢性）有害性）	4.1 の判定論理の結果の欄
+result		分類対象外		システムの status NOT_APPLICABLE。原文・仮訳に対応する決まった言い方は見つからなかった（空欄）
+result	No hazard statement	危険有害性情報なし	附属書1 表A1.8・A1.15（タイプG）	表の欄の書き方
+result	None	なし	附属書1 表A1.8・A1.15（タイプG の危険有害性情報コード欄）	
+element	Label	ラベル	第1.2章 定義	
+element	Label element	ラベル要素	第1.2章 定義	例として絵表示、注意喚起語
+element	Supplemental label element	補助的ラベル要素	第1.2章 定義	GHS が要求・指定しない追加情報
+element	Symbol	シンボル	第1.2章 定義	
+element	Pictogram	絵表示	第1.2章 定義; 1.4.10.4	
+element	Hazard pictogram	危険有害性絵表示	附属書3 表A3.4.1 の見出し	
+element	Signal word	注意喚起語	第1.2章 定義; 1.4.10.5.2(a)	
+element	Hazard statement	危険有害性情報	第1.2章 定義; 1.4.10.5.2(b)	本文は別の担当
+element	Precautionary statement	注意書き	第1.2章 定義; 1.4.10.5.2(c)	本文は別の担当
+element	Product identifier	製品特定名	第1.2章 定義	表 1.5.2 では「GHS の製品特定手段」
+element	Hazard symbol	危険有害性シンボル	1.4.10.3 見出し	

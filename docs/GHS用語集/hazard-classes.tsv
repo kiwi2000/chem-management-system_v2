@@ -1,0 +1,38 @@
+chapter	name_en	name_ja	categories_en	categories_ja	system_name_ja	diff
+2.1	Explosives	爆発物	1, 2A, 2B, 2C	1、2A、2B、2C	爆発物	区分の体系が違う。仮訳（改訂9版）は区分 1・2A・2B・2C。システムは不安定爆発物・等級1.1〜1.6
+2.2	Flammable gases	可燃性ガス	1A (including pyrophoric gas, chemically unstable gas A/B), 1B, 2	1A（自然発火性ガス、化学的に不安定なガス A/B を含む）、1B、2	可燃性ガス	システムは 1・1A・1B・2 を持つ（catalog-data.ts では 1A・1B に from: "6" の印）。仮訳の区分は 1A・1B・2 で、区分 1 は無い
+2.2 (pyrophoric gases)	Pyrophoric gas	自然発火性ガス	(within 1A)	（1A の中）	自然発火性ガス	仮訳では可燃性ガス区分 1A の中の一つ。システムは別のクラス PYR_GAS（区分 1）として持つ
+2.2 (chemically unstable gases)	Chemically unstable gas	化学的に不安定なガス	A, B (within 1A)	A、B（1A の中）	化学的に不安定なガス	仮訳では可燃性ガス区分 1A の中の一つ。システムは別のクラス CHEM_UNST_GAS（A・B）として持つ
+2.3	Aerosols and chemicals under pressure	エアゾールおよび加圧下化学品	Aerosols: 1, 2, 3; Chemicals under pressure: 1, 2, 3	エアゾール：1、2、3；加圧下化学品：1、2、3	エアゾール	章の名前は「エアゾールおよび加圧下化学品」で、2.3.2 に加圧下化学品（区分 1〜3）がある。システムはエアゾールだけ
+2.3 (aerosols)	Aerosols	エアゾール	1, 2, 3	1、2、3	エアゾール	
+2.3 (chemicals under pressure)	Chemicals under pressure	加圧下化学品	1, 2, 3	1、2、3		システムに無い
+2.4	Oxidizing gases	酸化性ガス	1	1	酸化性ガス	
+2.5	Gases under pressure	高圧ガス	Compressed gas, Liquefied gas, Refrigerated liquefied gas, Dissolved gas	圧縮ガス、液化ガス、深冷液化ガス、溶解ガス	高圧ガス	システムは「高圧ガス（種類の記載なし）」も持つ（EU 附属書 VI 対応。仮訳には無い）
+2.6	Flammable liquids	引火性液体	1, 2, 3, 4	1、2、3、4	引火性液体	
+2.7	Flammable solids	可燃性固体	1, 2	1、2	可燃性固体	
+2.8	Self-reactive substances and mixtures	自己反応性物質および混合物	Type A, Type B, Type C, Type D, Type E, Type F, Type G	タイプA、タイプB、タイプC、タイプD、タイプE、タイプF、タイプG	自己反応性化学品	仮訳「自己反応性物質および混合物」、システム「自己反応性化学品」
+2.9	Pyrophoric liquids	自然発火性液体	1	1	自然発火性液体	
+2.10	Pyrophoric solids	自然発火性固体	1	1	自然発火性固体	
+2.11	Self-heating substances and mixtures	自己発熱性物質および混合物	1, 2	1、2	自己発熱性化学品	仮訳「自己発熱性物質および混合物」、システム「自己発熱性化学品」
+2.12	Substances and mixtures which, in contact with water, emit flammable gases	水反応可燃性物質および混合物	1, 2, 3	1、2、3	水反応可燃性化学品	仮訳「水反応可燃性物質および混合物」、システム「水反応可燃性化学品」
+2.13	Oxidizing liquids	酸化性液体	1, 2, 3	1、2、3	酸化性液体	
+2.14	Oxidizing solids	酸化性固体	1, 2, 3	1、2、3	酸化性固体	
+2.15	Organic peroxides	有機過酸化物	Type A, Type B, Type C, Type D, Type E, Type F, Type G	タイプA、タイプB、タイプC、タイプD、タイプE、タイプF、タイプG	有機過酸化物	
+2.16	Corrosive to metals	金属腐食性	1	1	金属腐食性化学品	仮訳「金属腐食性」（表 2.16.1 では「金属に対して腐食性である物質または混合物」）、システム「金属腐食性化学品」
+2.17	Desensitized explosives	鈍性化爆発物	1, 2, 3, 4	1、2、3、4	鈍性化爆発物	
+3.1	Acute toxicity	急性毒性	1, 2, 3, 4, 5 (each for oral, dermal, inhalation)	1、2、3、4、5（経口・経皮・吸入のそれぞれ）	急性毒性（経口）／急性毒性（経皮）／急性毒性（吸入：ガス）／急性毒性（吸入：蒸気）／急性毒性（吸入：粉塵、ミスト）／急性毒性（吸入：経路の記載なし）	仮訳は 1 クラス「急性毒性」の中でばく露経路（経口・経皮・吸入）を分ける。システムは経路ごとに別クラス（吸入はさらにガス・蒸気・粉塵ミストに分ける）。仮訳の表 3.1.1 の経路の呼び方は「経口」「経皮」「気体」「蒸気」「粉塵／ミスト」
+3.2	Skin corrosion/irritation	皮膚腐食性／刺激性	1 (1A, 1B, 1C), 2, 3	1（1A、1B、1C）、2、3	皮膚腐食性／刺激性	同じ（仮訳は章見出しが全角「／」、目次と附属書 1 は半角「/」）
+3.3	Serious eye damage/eye irritation	眼に対する重篤な損傷性／眼刺激性	1, 2/2A, 2B	1、2/2A、2B	眼に対する重篤な損傷性／眼刺激性	同じ（仮訳は章見出しが全角「／」、目次と附属書 1 は半角「/」）
+3.4	Respiratory or skin sensitization	呼吸器感作性または皮膚感作性	Respiratory: 1, 1A, 1B; Skin: 1, 1A, 1B	呼吸器感作性：1、1A、1B；皮膚感作性：1、1A、1B	呼吸器感作性／皮膚感作性	1 つの章に 2 つのクラス。システムは呼吸器感作性と皮膚感作性を別クラスで持つ（附属書 1 も A1.21・A1.22 に分ける）
+3.4 (respiratory)	Respiratory sensitization	呼吸器感作性	1, 1A, 1B	1、1A、1B	呼吸器感作性	
+3.4 (skin)	Skin sensitization	皮膚感作性	1, 1A, 1B	1、1A、1B	皮膚感作性	
+3.5	Germ cell mutagenicity	生殖細胞変異原性	1 (1A, 1B), 2	1（1A、1B）、2	生殖細胞変異原性	
+3.6	Carcinogenicity	発がん性	1 (1A, 1B), 2	1（1A、1B）、2	発がん性	
+3.7	Reproductive toxicity	生殖毒性	1 (1A, 1B), 2, Additional category for effects on or via lactation	1（1A、1B）、2、追加区分（授乳に対するまたは授乳を介した影響）	生殖毒性	区分名: 仮訳「追加区分 授乳に対するまたは授乳を介した影響」、システム「追加区分（授乳）」
+3.8	Specific target organ toxicity – single exposure	特定標的臓器毒性－単回ばく露	1, 2, 3	1、2、3	特定標的臓器毒性（単回暴露）	仮訳「特定標的臓器毒性－単回ばく露」（「ばく露」とひらがな、区切りは「－」）、システム「特定標的臓器毒性（単回暴露）」（「暴露」と漢字、丸括弧）
+3.9	Specific target organ toxicity – repeated exposure	特定標的臓器毒性－反復ばく露	1, 2	1、2	特定標的臓器毒性（反復暴露）	仮訳「特定標的臓器毒性－反復ばく露」、システム「特定標的臓器毒性（反復暴露）」（同上）
+3.10	Aspiration hazard	誤えん有害性	1, 2	1、2	誤えん有害性	
+4.1	Hazardous to the aquatic environment	水生環境有害性	Short-term (acute): Acute 1, Acute 2, Acute 3; Long-term (chronic): Chronic 1, Chronic 2, Chronic 3, Chronic 4	短期（急性）：急性 1、急性 2、急性 3；長期（慢性）：慢性 1、慢性 2、慢性 3、慢性 4	水生環境有害性 短期（急性）／水生環境有害性 長期（慢性）	仮訳は 1 クラスで、附属書 1 では「水生環境有害性、短期（急性）」「水生環境有害性、長期（慢性）」と読点で区切る。システムは 2 クラスに分け、区切りは空白。区分の呼び方は仮訳「急性 1」「慢性 1」、システムは「1」
+4.1 (short-term)	Hazardous to the aquatic environment, short-term (acute)	水生環境有害性、短期（急性）	Acute 1, Acute 2, Acute 3	急性 1、急性 2、急性 3	水生環境有害性 短期（急性）	読点「、」の有無。区分名は仮訳「急性 1〜3」、システム「1〜3」
+4.1 (long-term)	Hazardous to the aquatic environment, long-term (chronic)	水生環境有害性、長期（慢性）	Chronic 1, Chronic 2, Chronic 3, Chronic 4	慢性 1、慢性 2、慢性 3、慢性 4	水生環境有害性 長期（慢性）	読点「、」の有無。区分名は仮訳「慢性 1〜4」、システム「1〜4」
+4.2	Hazardous to the ozone layer	オゾン層への有害性	1	1	オゾン層への有害性	

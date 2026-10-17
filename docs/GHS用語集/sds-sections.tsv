@@ -1,0 +1,158 @@
+section	subsection	title_en	title_ja	source
+1		Identification of the substance or mixture and of the supplier	物質または混合物および会社情報	表1.5.2
+1		SECTION 1: Identification	第1節：物質または混合物および会社情報	A4.3.1
+2		Hazards identification	危険有害性の要約	表1.5.2
+2		SECTION 2: Hazard identification	第2節：危険有害性の要約	A4.3.2
+3		Composition/information on ingredients	組成および成分情報	表1.5.2
+3		SECTION 3: Composition/information on ingredients	第3節：組成および成分情報	A4.3.3
+4		First-aid measures	応急措置	表1.5.2
+4		SECTION 4: First-aid measures	第4節：応急措置	A4.3.4
+5		Fire-fighting measures	火災時の措置	表1.5.2
+5		SECTION 5: Fire-fighting measures	第5節：火災時の措置	A4.3.5
+6		Accidental release measures	漏出時の措置	表1.5.2
+6		SECTION 6: Accidental release measures	第6節：漏出時の措置	A4.3.6
+7		Handling and storage	取扱いおよび保管上の注意	表1.5.2
+7		SECTION 7: Handling and storage	第7節：取扱いおよび保管上の注意	A4.3.7
+8		Exposure controls/personal protection	ばく露防止および保護措置	表1.5.2
+8		SECTION 8: Exposure controls/personal protection	第8節：ばく露防止および保護措置	A4.3.8
+9		Physical and chemical properties	物理的および化学的性質	表1.5.2
+9		SECTION 9: Physical and chemical properties	第9節：物理的および化学的性質	A4.3.9
+10		Stability and reactivity	安定性および反応性	表1.5.2
+10		SECTION 10: Stability and reactivity	第10節：安定性および反応性	A4.3.10
+11		Toxicological information	有害性情報	表1.5.2
+11		SECTION 11: Toxicological information	第11節：有害性情報	A4.3.11
+12		Ecological information	環境影響情報	表1.5.2
+12		SECTION 12: Ecological information	第12節：環境影響情報	A4.3.12
+13		Disposal considerations	廃棄上の注意	表1.5.2
+13		SECTION 13: Disposal considerations	第13節：廃棄上の注意	A4.3.13
+14		Transport information	輸送上の注意	表1.5.2
+14		SECTION 14: Transport information	第14節：輸送上の注意	A4.3.14
+15		Regulatory information	適用法令	表1.5.2
+15		SECTION 15: Regulatory information	第15節：適用法令	A4.3.15
+16		Other information including information on preparation and revision of the SDS	SDS の作成と改訂に関する情報を含むその他の情報	表1.5.2
+16		SECTION 16: Other information	第16節：その他の情報	A4.3.16
+1	a	GHS product identifier	GHS の製品特定手段	表1.5.2
+1	b	Other means of identification	他の特定手段	表1.5.2
+1	c	Recommended use of the chemical and restrictions on use	化学品の推奨用途と使用上の制限	表1.5.2
+1	d	Supplier's details (including name, address, phone number etc.)	供給者の詳細（社名、住所、電話番号など）	表1.5.2
+1	e	Emergency phone number	緊急時の電話番号	表1.5.2
+2	a	GHS classification of the substance/mixture and any national or regional information	物質/混合物の GHS 分類と国/地域情報	表1.5.2
+2	b	GHS label elements, including precautionary statements	注意書きも含む GHS ラベル要素	表1.5.2
+2	c	Other hazards which do not result in classification (e.g. "dust explosion hazard") or are not covered by the GHS	分類に関係しない（例「粉じん爆発危険性」）または GHS で扱われない他の危険有害性	表1.5.2
+3	Substance (a)	Chemical identity	化学的特定名	表1.5.2
+3	Substance (b)	Common name, synonyms, etc.	慣用名、別名など	表1.5.2
+3	Substance (c)	CAS number and other unique identifiers	CAS 番号およびその他の特定名	表1.5.2
+3	Substance (d)	Impurities and stabilizing additives which are themselves classified and which contribute to the classification of the substance	それ自体が分類され、物質の分類に寄与する不純物および安定化添加物	表1.5.2
+3	Mixture	The chemical identity and concentration or concentration ranges of all ingredients which are hazardous within the meaning of the GHS and are present above their cut-off levels	GHS 対象の危険有害性があり、カットオフ値以上で存在するすべての成分の化学名と濃度または濃度範囲	表1.5.2
+4	a	Description of necessary measures, subdivided according to the different routes of exposure, i.e. inhalation, skin and eye contact and ingestion	異なるばく露経路、すなわち吸入、皮膚や眼との接触、および経口摂取に従って細分された必要な措置の記述	表1.5.2
+4	b	Most important symptoms/effects, acute and delayed	急性および遅延性の最も重要な症状/影響	表1.5.2
+4	c	Indication of immediate medical attention and special treatment needed, if necessary	必要な場合、応急処置および必要とされる特別な処置の指示	表1.5.2
+5	a	Suitable (and unsuitable) extinguishing media	適切な（および不適切な）消火剤	表1.5.2
+5	b	Specific hazards arising from the chemical (e.g. nature of any hazardous combustion products)	化学品から生じる特定の危険有害性（例えば、「有害燃焼生成物の性質」）	表1.5.2
+5	c	Special protective equipment and precautions for fire-fighters	消火作業者用の特別な保護具と予防措置	表1.5.2
+6	a	Personal precautions, protective equipment and emergency procedures	人体に対する予防措置、保護具および緊急時措置	表1.5.2
+6	b	Environmental precautions	環境に対する予防措置	表1.5.2
+6	c	Methods and materials for containment and cleaning up	封じ込めおよび浄化方法と機材	表1.5.2
+7	a	Precautions for safe handling	安全な取扱いのための予防措置	表1.5.2
+7	b	Conditions for safe storage, including any incompatibilities	混触危険性等、安全な保管条件	表1.5.2
+8	a	Control parameters e.g. occupational exposure limit values or biological limit values	職業ばく露限界値、生物学的限界値等の管理指標	表1.5.2
+8	b	Appropriate engineering controls	適切な工学的管理	表1.5.2
+8	c	Individual protection measures, such as personal protective equipment	個人用保護具などの個人保護措置	表1.5.2
+9		Physical state	物理状態	表1.5.2
+9		Colour	色	表1.5.2
+9		Odour	臭い	表1.5.2
+9		Melting point/freezing point	融点/凝固点	表1.5.2
+9		Boiling point or initial boiling point and boiling range	沸点または初留点および沸点範囲	表1.5.2
+9		Flammability	燃焼性	表1.5.2
+9		Lower and upper explosion limit/flammability limit	爆発下限および上限/引火限界	表1.5.2
+9		Flash point	引火点	表1.5.2
+9		Auto-ignition temperature	自然発火温度	表1.5.2
+9		Decomposition temperature	分解温度	表1.5.2
+9		pH	pH	表1.5.2
+9		Kinematic viscosity	動粘性率	表1.5.2
+9		Solubility	溶解度	表1.5.2
+9		Partition coefficient: n-octanol/water (log value)	分配係数：n-オクタノール/水（log 値）	表1.5.2
+9		Vapour pressure	蒸気圧	表1.5.2
+9		Density and/or relative density	密度および/または比重	表1.5.2
+9		Relative vapour density	蒸気比重	表1.5.2
+9		Particle characteristics	粒子特性	表1.5.2
+10	a	Reactivity	反応性	表1.5.2
+10	b	Chemical stability	化学的安定性	表1.5.2
+10	c	Possibility of hazardous reactions	危険有害反応性の可能性	表1.5.2
+10	d	Conditions to avoid (e.g. static discharge, shock or vibration)	避けるべき条件（静電放電、衝撃、振動等）	表1.5.2
+10	e	Incompatible materials	混触危険物質	表1.5.2
+10	f	Hazardous decomposition products	危険有害性のある分解生成物	表1.5.2
+11	a	Information on the likely routes of exposure (inhalation, ingestion, skin and eye contact)	可能性の高いばく露経路（吸入、経口摂取、皮膚および眼接触）に関する情報	表1.5.2
+11	b	Symptoms related to the physical, chemical and toxicological characteristics	物理的、化学的および毒性学的特性に関係した症状	表1.5.2
+11	c	Delayed and immediate effects and also chronic effects from short- and long-term exposure	短期および長期ばく露による遅発および即時影響、ならびに慢性影響	表1.5.2
+11	d	Numerical measures of toxicity (such as acute toxicity estimates)	毒性の数値的尺度（急性毒性推定値など）	表1.5.2
+12	a	Ecotoxicity (aquatic and terrestrial, where available)	生態毒性（利用可能な場合、水生および陸生）	表1.5.2
+12	b	Persistence and degradability	残留性と分解性	表1.5.2
+12	c	Bioaccumulative potential	生物蓄積性	表1.5.2
+12	d	Mobility in soil	土壌中の移動度	表1.5.2
+12	e	Other adverse effects	他の有害影響	表1.5.2
+13		Description of waste residues and information on their safe handling and methods of disposal, including the disposal of any contaminated packaging	廃棄残留物の記述とその安全な取扱いに関する情報、汚染容器包装の廃棄方法を含む	表1.5.2
+14	a	UN number	国連番号	表1.5.2
+14	b	UN proper shipping name	国連品名	表1.5.2
+14	c	Transport hazard class(es)	輸送における危険有害性クラス	表1.5.2
+14	d	Packing group, if applicable	容器等級（該当する場合）	表1.5.2
+14	e	Environmental hazards (e.g.: Marine pollutant (Yes/No))	環境有害性（例：海洋汚染物質（該当/非該当））	表1.5.2
+14	f	Transport in bulk according to IMO instruments	IMO 文書に基づいたばら積み輸送	表1.5.2
+14	g	Special precautions which a user needs to be aware of, or needs to comply with, in connection with transport or conveyance either within or outside their premises	使用者が構内もしくは構外の輸送または輸送手段に関連して知る必要がある、または従う必要がある特別の安全対策	表1.5.2
+15		Safety, health and environmental regulations specific for the product in question	当該製品に特有の安全、健康および環境に関する規則	表1.5.2
+1	1	GHS product identifier	GHS の製品特定名	A4.3.1.1
+1	2	Other means of identification	他の特定手段	A4.3.1.2
+1	3	Recommended use of the chemical and restrictions on use	化学品の推奨用途と使用上の制限	A4.3.1.3
+1	4	Supplier's details	供給者の詳細	A4.3.1.4
+1	5	Emergency phone number	緊急電話番号	A4.3.1.5
+2	1	Classification of the substance or mixture	物質または混合物の分類	A4.3.2.1
+2	2	GHS label elements, including precautionary statements	注意書きを含む GHS ラベル要素	A4.3.2.2
+2	3	Other hazards which do not result in classification	分類に結び付かない他の危険有害性	A4.3.2.3
+3	1	Substances	物質	A4.3.3.1
+3	1.1	Chemical identity of the substance	物質の化学的特定名	A4.3.3.1.1
+3	1.2	Common name, synonyms of the substance	物質の慣用名、別名	A4.3.3.1.2
+3	1.3	CAS number and other unique identifiers of the substance	物質の CAS 番号およびその他の特定名	A4.3.3.1.3
+3	2	Mixtures	混合物	A4.3.3.2
+4	1	Description of necessary first-aid measures	必要な応急措置の説明	A4.3.4.1
+4	2	Most important symptoms/effects, acute and delayed	最も重要な急性および遅発症状/影響	A4.3.4.2
+4	3	Indication of immediate medical attention and special treatment needed, if necessary	必要に応じた速やかな治療と必要とされる特別な治療の指示	A4.3.4.3
+5	1	Suitable extinguishing media	適切な消火剤	A4.3.5.1
+5	2	Specific hazards arising from the chemical	化学品から生じる特定の危険性	A4.3.5.2
+5	3	Special protective actions for fire-fighters	消防士用の特別な防具と予防措置	A4.3.5.3
+6	1	Personal precautions, protective equipment and emergency procedures	人への予防措置、防具、および応急処置法	A4.3.6.1
+6	2	Environmental precautions	環境上の予防措置	A4.3.6.2
+6	3	Methods and materials for containment and cleaning up	封じ込めと流出物洗浄の方法および用具	A4.3.6.3
+7	1	Precautions for safe handling	安全な取扱いのための予防措置	A4.3.7.1
+7	2	Conditions for safe storage, including any incompatibilities	混触危険性を含む、安全な保管条件	A4.3.7.2
+8	1	Control parameters	管理パラメーター	A4.3.8.1
+8	2	Appropriate engineering controls	適切な工学的管理方法	A4.3.8.2
+8	3	Individual protection measures, such as personal protective equipment (PPE)	個人用保護具 (PPE) などの個人保護措置	A4.3.8.3
+10	1	Reactivity	反応性	A4.3.10.1
+10	2	Chemical stability	化学的安定性	A4.3.10.2
+10	3	Possibility of hazardous reactions	危険有害反応可能性	A4.3.10.3
+10	4	Conditions to avoid	避けるべき条件	A4.3.10.4
+10	5	Incompatible materials	混触禁止物質	A4.3.10.5
+10	6	Hazardous decomposition products	有害な分解生成物	A4.3.10.6
+11	7	Information on the likely routes of exposure	可能性のあるばく露経路の情報	A4.3.11.7
+11	8	Symptoms related to the physical, chemical and toxicological characteristics	物理的、化学的および毒物学的特性に関連する症状	A4.3.11.8
+11	9	Delayed and immediate effects and also chronic effects from short- and long-term exposure	短期および長期ばく露による遅発的・即時的影響ならびに慢性的影響	A4.3.11.9
+11	10	Numerical measures of toxicity (such as acute toxicity estimates)	毒性の数値化(急性毒性の推定など)	A4.3.11.10
+11	11	Interactive effects	相互作用	A4.3.11.11
+11	12	Where specific chemical data are not available	特定の化学的データがない場合	A4.3.11.12
+11	13	Mixtures	混合物	A4.3.11.13
+11	14	Mixture versus ingredient information	混合物対成分情報	A4.3.11.14
+11	15	Other information	その他の情報	A4.3.11.15
+12	5	Toxicity	毒性	A4.3.12.5
+12	6	Persistence and degradability	残留性と分解性	A4.3.12.6
+12	7	Bioaccumulative potential	生物蓄積性	A4.3.12.7
+12	8	Mobility in soil	土壌中の移動性	A4.3.12.8
+12	9	Other adverse effects	他の有害影響	A4.3.12.9
+13	1	Disposal methods	廃棄方法	A4.3.13.1
+14	1	UN Number	国連番号	A4.3.14.1
+14	2	UN Proper Shipping Name	国連出荷名	A4.3.14.2
+14	3	Transport hazard class(es)	輸送時の危険性クラス	A4.3.14.3
+14	4	Packing group, if applicable	該当する場合、容器等級	A4.3.14.4
+14	5	Environmental hazards	環境有害性	A4.3.14.5
+14	6	Special precautions for user	使用者のための特別予防措置	A4.3.14.6
+14	7	Transport in bulk according to IMO instruments	IMO の方法によるばら積み輸送	A4.3.14.7
+15	1	Safety, health and environmental regulations specific for the product in question	該当製品に特有な安全、健康および環境に関する規制	A4.3.15.1
