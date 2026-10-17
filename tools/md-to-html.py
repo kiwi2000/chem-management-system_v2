@@ -13,6 +13,9 @@ md_text = open(src, encoding="utf-8").read()
 md_text = re.sub(r"⟦p\.([^⟧]+)⟧", r'<span class="pg">p.\1</span>', md_text)
 md_text = re.sub(r"⟦pdf\d+⟧", "", md_text)
 
+# JIS の「1) 2)」「a) b)」「(i) (ii)」の項目は、行が続くと 1 つの段落につながるので、1 項目ずつ段落に分ける
+md_text = re.sub(r"\n(?=(?:\d{1,2}\)|[a-z]\)|\([ivx]+\)|（[ivx]+）)\s)", "\n\n", md_text)
+
 # ```mermaid ... ``` → <pre class="mermaid">（markdown の fenced_code より先に抜いておく）
 blocks = []
 def stash(m):
