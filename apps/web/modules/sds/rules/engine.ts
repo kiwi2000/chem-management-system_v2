@@ -63,7 +63,8 @@ export type ResultNote =
 /** 処理系が足す文の種類。画面側で文言を付ける */
 export type ResultNoteCode =
   | "missing_value" // 計算に必要な値が無いので分類できない
-  | "excluded_category"; // 国連の式で出た区分をこの国では採らないので読み替えた（params: category, result）
+  | "excluded_category" // 国連の式で出た区分をこの国では採らないので読み替えた（params: category, result）
+  | "capped_at_ingredient"; // 式で出た区分が最も重い成分の区分より重かったので、その区分に止めた（params: computed, category）
 
 // ---------- 重ね合わせたルールセット ----------
 
@@ -263,8 +264,6 @@ interface Env {
   ingredient: Ingredient | null;
   /** 評価の回数の上限（無限の繰り返しを防ぐ） */
   budget: { n: number };
-  /** 帯の境目を軽い方の区分に入れる（classify by bands … open_boundary の中だけ true） */
-  openBoundary?: boolean;
 }
 
 const isExprNode = (v: unknown): v is ast.Expr =>
@@ -275,6 +274,8 @@ const isIngredients = (v: Value): v is Ingredient[] =>
 function num(v: Value, what: string): number {
   if (typeof v === "number") return v;
   if (v === null) return NaN;
+  // 区分の "2" のような数字の文字列は数値として扱う（最も重い区分を min で選ぶため）
+  if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
   throw new RuleError(`${what} は数値ではありません: ${String(v)}`);
 }
 
@@ -340,11 +341,11 @@ function binary(e: ast.BinaryExpr, env: Env): Value {
     case "<":
       return num(l, "比較") < num(r, "比較");
     case "<=":
-      return env.openBoundary ? num(l, "比較") < num(r, "比較") : num(l, "比較") <= num(r, "比較");
+      return num(l, "比較") <= num(r, "比較");
     case ">":
       return num(l, "比較") > num(r, "比較");
     case ">=":
-      return env.openBoundary ? num(l, "比較") > num(r, "比較") : num(l, "比較") >= num(r, "比較");
+      return num(l, "比較") >= num(r, "比較");
     case "+":
       return num(l, "加算") + num(r, "加算");
     case "-":
@@ -424,6 +425,18 @@ function call(e: ast.CallExpr, env: Env): Value {
       if (!table || v === null) return null;
       const hit = table.entries.find((en) => same(en.category, v));
       return hit ? hit.value.value : null;
+    }
+    case "band": {
+      // 値をこの決まりの帯に当てた区分（成分の実測 ATE から区分を出すときに使う）。帯に無ければ null
+      const v = evalExpr(args[0]!, env);
+      if (v === null || (typeof v === "number" && !Number.isFinite(v))) return null;
+      const inner: Env = { ...env, bindings: new Map(env.bindings) };
+      inner.bindings.set("ate", v);
+      inner.bindings.set("value", v);
+      for (const b of env.rule.bands ?? []) {
+        if (truthy(evalExpr(b.cond, inner))) return String(b.category);
+      }
+      return null;
     }
     case "coalesce":
       for (const a of args) {
@@ -512,16 +525,29 @@ function exec(s: ast.Stmt, env: Env, st: RunState) {
       return;
     }
     const bands = env.rule.bands ?? [];
-    const inner: Env = {
-      ...env,
-      bindings: new Map(env.bindings),
-      openBoundary: s.openBoundary === true,
-    };
+    const inner: Env = { ...env, bindings: new Map(env.bindings) };
     inner.bindings.set("ate", v);
     inner.bindings.set("value", v);
-    for (const b of bands) {
+    // 上限の区分（最も重い成分の区分）。帯の並びは重い方が先なので、その位置より前の帯は上限に止める
+    let capIndex = -1;
+    if (s.cap) {
+      const capValue = evalExpr(s.cap, env);
+      if (capValue !== null && !(typeof capValue === "number" && !Number.isFinite(capValue))) {
+        capIndex = bands.findIndex((b) => same(String(b.category), String(capValue)));
+      }
+    }
+    for (let i = 0; i < bands.length; i++) {
+      const b = bands[i]!;
       if (truthy(evalExpr(b.cond, inner))) {
-        st.result.outcome = { kind: "category", category: String(b.category) };
+        const pick = capIndex > i ? bands[capIndex]! : b;
+        if (pick !== b) {
+          st.result.notes.push({
+            code: "capped_at_ingredient",
+            params: { computed: String(b.category), category: String(pick.category) },
+            place: null,
+          });
+        }
+        st.result.outcome = { kind: "category", category: String(pick.category) };
         return;
       }
     }

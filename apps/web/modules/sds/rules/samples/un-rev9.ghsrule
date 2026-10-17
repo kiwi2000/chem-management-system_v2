@@ -110,8 +110,6 @@ ruleset "UN-Rev9" version 1 {
       source "H-13: 3.1.3.6.2.2"
     option acute.unknown_policy "未知成分が多いときの扱い" values [correction, unclassifiable_over(0.1 %)] safest correction
       source "H-14: 3.1.3.6.2.3（補正の式）。unclassifiable_over は Gmiccs の作り（原文に無い）"
-    option acute.boundary "変換値だけで出た ATE が帯の境目に乗ったとき（区分 2 の変換値 5 は「区分 1: ATE ≦ 5」に入る）" values [strict, ingredient_category] safest strict
-      source "表 3.1.1 と表 3.1.2 の境目。strict は表のとおり重い方、ingredient_category は成分の区分（軽い方）"
     option aquatic.unknown_statement "水生環境有害性が未知の成分の文をどこに書くか" values [label, sds, both, manufacturer] safest both
       source "E-09: 4.1.3.6"
   }
@@ -127,6 +125,8 @@ ruleset "UN-Rev9" version 1 {
       conversion ate { 1: 0.5, 2: 5, 3: 100, 4: 500, 5: 2500 }
       additivity {
         ate_of = coalesce(ate(oral), convert(category(acute.oral)))
+        // 成分の区分（区分が付いていればそれ、実測の ATE だけなら帯に当てた区分）
+        cat_of = coalesce(category(acute.oral), band(ate(oral)))
         unknown_part = ingredients where unknown(acute.oral) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
         unknown_total = all_ingredients where unknown(acute.oral) or not has_value(ate_of)
@@ -140,10 +140,9 @@ ruleset "UN-Rev9" version 1 {
         unclassifiable
       if sum(conc of unknown_part) >= 1 % then
         note "混合物の {sum(conc of unknown_part)} は急性毒性（経口）が未知の成分からなる" place option(acute.unknown_statement)
-      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(oral))) == 0 then
-        classify by bands(atemix) open_boundary
-      else
-        classify by bands(atemix)
+      // 混合物は最も重い成分の区分を超えない（式の性質。表の境目に乗った変換値や丸めで壊れないように守る。
+      // 国連 3.1.3.3 (c) と ECHA ガイダンス v6.0 表 3.1.2 注 1。2026-10-18 決定）
+      classify by bands(atemix) not_more_severe_than min(cat_of of known_part)
     }
 
     rule acute.dermal {
@@ -153,6 +152,8 @@ ruleset "UN-Rev9" version 1 {
       conversion ate { 1: 5, 2: 50, 3: 300, 4: 1100, 5: 2500 }
       additivity {
         ate_of = coalesce(ate(dermal), convert(category(acute.dermal)))
+        // 成分の区分（区分が付いていればそれ、実測の ATE だけなら帯に当てた区分）
+        cat_of = coalesce(category(acute.dermal), band(ate(dermal)))
         unknown_part = ingredients where unknown(acute.dermal) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
         unknown_total = all_ingredients where unknown(acute.dermal) or not has_value(ate_of)
@@ -166,10 +167,9 @@ ruleset "UN-Rev9" version 1 {
         unclassifiable
       if sum(conc of unknown_part) >= 1 % then
         note "混合物の {sum(conc of unknown_part)} は急性毒性（経皮）が未知の成分からなる" place option(acute.unknown_statement)
-      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(dermal))) == 0 then
-        classify by bands(atemix) open_boundary
-      else
-        classify by bands(atemix)
+      // 混合物は最も重い成分の区分を超えない（式の性質。表の境目に乗った変換値や丸めで壊れないように守る。
+      // 国連 3.1.3.3 (c) と ECHA ガイダンス v6.0 表 3.1.2 注 1。2026-10-18 決定）
+      classify by bands(atemix) not_more_severe_than min(cat_of of known_part)
     }
 
     // 吸入は、製品の形（気体・蒸気・粉じん／ミスト）ごとに別のクラス。製品の物理状態・形状で当てはまるものだけ計算する。
@@ -185,6 +185,8 @@ ruleset "UN-Rev9" version 1 {
       conversion ate { 1: 10, 2: 100, 3: 700, 4: 4500 }
       additivity {
         ate_of = coalesce(ate(gas), convert(category(acute.gas)))
+        // 成分の区分（区分が付いていればそれ、実測の ATE だけなら帯に当てた区分）
+        cat_of = coalesce(category(acute.gas), band(ate(gas)))
         unknown_part = ingredients where unknown(acute.gas) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
         unknown_total = all_ingredients where unknown(acute.gas) or not has_value(ate_of)
@@ -198,10 +200,9 @@ ruleset "UN-Rev9" version 1 {
         unclassifiable
       if sum(conc of unknown_part) >= 1 % then
         note "混合物の {sum(conc of unknown_part)} は急性毒性（吸入）が未知の成分からなる" place option(acute.unknown_statement)
-      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(gas))) == 0 then
-        classify by bands(atemix) open_boundary
-      else
-        classify by bands(atemix)
+      // 混合物は最も重い成分の区分を超えない（式の性質。表の境目に乗った変換値や丸めで壊れないように守る。
+      // 国連 3.1.3.3 (c) と ECHA ガイダンス v6.0 表 3.1.2 注 1。2026-10-18 決定）
+      classify by bands(atemix) not_more_severe_than min(cat_of of known_part)
     }
 
     rule acute.vapour {
@@ -215,6 +216,8 @@ ruleset "UN-Rev9" version 1 {
       conversion ate { 1: 0.05, 2: 0.5, 3: 3, 4: 11 }
       additivity {
         ate_of = coalesce(ate(vapour), convert(category(acute.vapour)))
+        // 成分の区分（区分が付いていればそれ、実測の ATE だけなら帯に当てた区分）
+        cat_of = coalesce(category(acute.vapour), band(ate(vapour)))
         unknown_part = ingredients where unknown(acute.vapour) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
         unknown_total = all_ingredients where unknown(acute.vapour) or not has_value(ate_of)
@@ -228,10 +231,9 @@ ruleset "UN-Rev9" version 1 {
         unclassifiable
       if sum(conc of unknown_part) >= 1 % then
         note "混合物の {sum(conc of unknown_part)} は急性毒性（吸入）が未知の成分からなる" place option(acute.unknown_statement)
-      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(vapour))) == 0 then
-        classify by bands(atemix) open_boundary
-      else
-        classify by bands(atemix)
+      // 混合物は最も重い成分の区分を超えない（式の性質。表の境目に乗った変換値や丸めで壊れないように守る。
+      // 国連 3.1.3.3 (c) と ECHA ガイダンス v6.0 表 3.1.2 注 1。2026-10-18 決定）
+      classify by bands(atemix) not_more_severe_than min(cat_of of known_part)
     }
 
     rule acute.dust {
@@ -247,6 +249,8 @@ ruleset "UN-Rev9" version 1 {
       conversion ate { 1: 0.005, 2: 0.05, 3: 0.5, 4: 1.5 }
       additivity {
         ate_of = coalesce(ate(dust), convert(category(acute.dust)))
+        // 成分の区分（区分が付いていればそれ、実測の ATE だけなら帯に当てた区分）
+        cat_of = coalesce(category(acute.dust), band(ate(dust)))
         unknown_part = ingredients where unknown(acute.dust) or not has_value(ate_of)
         known_part = ingredients where has_value(ate_of)
         unknown_total = all_ingredients where unknown(acute.dust) or not has_value(ate_of)
@@ -260,10 +264,9 @@ ruleset "UN-Rev9" version 1 {
         unclassifiable
       if sum(conc of unknown_part) >= 1 % then
         note "混合物の {sum(conc of unknown_part)} は急性毒性（吸入）が未知の成分からなる" place option(acute.unknown_statement)
-      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(dust))) == 0 then
-        classify by bands(atemix) open_boundary
-      else
-        classify by bands(atemix)
+      // 混合物は最も重い成分の区分を超えない（式の性質。表の境目に乗った変換値や丸めで壊れないように守る。
+      // 国連 3.1.3.3 (c) と ECHA ガイダンス v6.0 表 3.1.2 注 1。2026-10-18 決定）
+      classify by bands(atemix) not_more_severe_than min(cat_of of known_part)
     }
 
     // ======== 皮膚腐食性／刺激性（3.2）。pH の決め打ち → 加成方式が使えない成分があれば表 3.2.4 → 加成方式（表 3.2.3）========
@@ -811,9 +814,26 @@ ruleset "UN-Rev9" version 1 {
       mixture { "A" 5 % skin 2 }
       expect { skin 3 }
     }
-    test "急性経口 区分 2 の成分だけ（50 % ＋ 50 %）は、表のとおりなら ATE 5 で区分 1" {
+    test "急性経口 区分 2 の成分だけ（50 % ＋ 50 %）は区分 2（ATE 5 は表では区分 1 だが、最も重い成分の区分を超えない）" {
       mixture { "A" 50 % acute.oral 2; "B" 50 % acute.oral 2 }
+      expect { acute.oral 2 }
+    }
+    test "急性経口 ほぼ区分 2 にごく微量の区分 3 でも区分 2" {
+      mixture { "A" 99.99 % acute.oral 2; "B" 0.01 % acute.oral 3 flag relevant }
+      expect { acute.oral 2 }
+    }
+    test "急性経口 区分 2 に区分 1 が 5 % 入れば式のとおり区分 1（ATE 3.4）" {
+      mixture { "A" 95 % acute.oral 2; "B" 5 % acute.oral 1 }
       expect { acute.oral 1 }
+    }
+    test "急性経口 実測 ATE 4（区分 1 相当）の成分 100 % は区分 1" {
+      mixture { "A" 100 % ate.oral = 4 mg/kg }
+      expect { acute.oral 1 }
+    }
+    test "急性吸入 粉じん 区分 3 の成分だけは区分 3（変換値 0.5 は表では区分 2）" {
+      mixture { "A" 60 % acute.dust 3; "B" 40 % acute.dust 3 }
+      props { physical_state solid; form powder }
+      expect { acute.dust 3 }
     }
     test "水生 慢性 区分 1 成分 30 % → 区分 1" {
       mixture { "A" 30 % aquatic.chronic 1; "水" 70 % }

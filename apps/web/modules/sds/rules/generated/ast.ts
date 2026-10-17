@@ -90,11 +90,11 @@ export type GhsRulesKeywordNames =
     | "not"
     | "not_applicable"
     | "not_classified"
+    | "not_more_severe_than"
     | "note"
     | "of"
     | "omit"
     | "open"
-    | "open_boundary"
     | "option"
     | "options"
     | "or"
@@ -390,13 +390,13 @@ export function isClassesBlock(item: unknown): item is ClassesBlock {
 export interface ClassifyByBandsStmt extends langium.AstNode {
     readonly $container: Block | IfStmt;
     readonly $type: 'ClassifyByBandsStmt';
-    openBoundary: boolean;
+    cap?: Expr;
     value: Expr;
 }
 
 export const ClassifyByBandsStmt = {
     $type: 'ClassifyByBandsStmt',
-    openBoundary: 'openBoundary',
+    cap: 'cap',
     value: 'value'
 } as const;
 
@@ -1658,9 +1658,8 @@ export class GhsRulesAstReflection extends langium.AbstractAstReflection {
         ClassifyByBandsStmt: {
             name: ClassifyByBandsStmt.$type,
             properties: {
-                openBoundary: {
-                    name: ClassifyByBandsStmt.openBoundary,
-                    defaultValue: false,
+                cap: {
+                    name: ClassifyByBandsStmt.cap,
                     optional: true
                 },
                 value: {

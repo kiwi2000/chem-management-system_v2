@@ -2079,13 +2079,25 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "value": ")"
           },
           {
-            "$type": "Assignment",
-            "feature": "openBoundary",
-            "operator": "?=",
-            "terminal": {
-              "$type": "Keyword",
-              "value": "open_boundary"
-            },
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Keyword",
+                "value": "not_more_severe_than"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "cap",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@59"
+                  },
+                  "arguments": []
+                }
+              }
+            ],
             "cardinality": "?"
           }
         ]

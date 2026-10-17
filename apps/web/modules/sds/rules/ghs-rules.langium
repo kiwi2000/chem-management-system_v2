@@ -61,8 +61,9 @@ TypedBlock: kind=('precondition' | 'additivity' | 'weighted_sum' | 'threshold' |
 IfStmt: 'if' cond=Expr 'then' NL* then=Stmt (NL* 'else' NL* else=Stmt)?;
 AssignStmt: name=ID '=' value=Expr;
 ClassifyStmt: 'classify' class=ClassName 'as' category=Expr ('because' because=STRING)?;
-// open_boundary: 帯の境目の値（変換値がちょうど境目に乗る）を、重い方でなく軽い方の区分にする
-ClassifyByBandsStmt: 'classify' 'by' 'bands' '(' value=Expr ')' (openBoundary?='open_boundary')?;
+// not_more_severe_than 区分: 帯で出た区分がそれより重ければ、その区分に止める
+// （急性毒性の「混合物は最も重い成分の区分を超えない」。表の境目や丸めで壊れないように守る）
+ClassifyByBandsStmt: 'classify' 'by' 'bands' '(' value=Expr ')' ('not_more_severe_than' cap=Expr)?;
 NotClassifiedStmt: {infer NotClassifiedStmt} 'not_classified';
 UnclassifiableStmt: {infer UnclassifiableStmt} 'unclassifiable';
 // この製品には当てはまらないクラス（液体に可燃性ガスなど）

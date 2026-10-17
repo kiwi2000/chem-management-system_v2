@@ -40,7 +40,6 @@ ruleset "JP-JIS2025" version 1 extends "UN-Rev9" version 1 {
   choose acute.unknown_statement = sds open
   choose aquatic.unknown_statement = sds open
   choose acute.unknown_policy = correction open      // Gmiccs 式（0.1 % で分類できない）は自社のレイヤーで選べる
-  choose acute.boundary = strict open                // 境目の扱いは自社で選べる
 
   // ---- ラベル。Z 7253 6.3 c)「適用することが可能」＝任意 ----
   choose label.h_omission = manufacturer locked      // G-15
