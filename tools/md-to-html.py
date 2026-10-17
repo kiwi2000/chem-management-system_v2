@@ -23,6 +23,14 @@ def stash(m):
     return f"\n\nMERMAIDBLOCK{len(blocks) - 1}\n\n"
 md_text = re.sub(r"```mermaid\n(.*?)```", stash, md_text, flags=re.S)
 
+# 数式（$$…$$ と $…$）も markdown に触らせない（下線や * が強調に化けるため）。MathJax が描く
+maths = []
+def stash_math(m):
+    maths.append(m.group(0))
+    return f"MATHBLOCK{len(maths) - 1}X"
+md_text = re.sub(r"\$\$.*?\$\$", stash_math, md_text, flags=re.S)
+md_text = re.sub(r"(?<![\\$])\$(?!\s)[^$\n]{1,200}?(?<!\s)\$(?!\d)", stash_math, md_text)
+
 html = markdown.markdown(
     md_text,
     extensions=["tables", "fenced_code", "toc", "sane_lists", "md_in_html", "attr_list"],
@@ -31,6 +39,9 @@ html = markdown.markdown(
 for i, b in enumerate(blocks):
     esc = b.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     html = html.replace(f"<p>MERMAIDBLOCK{i}</p>", f'<pre class="mermaid">{esc}</pre>')
+for i, mth in enumerate(maths):
+    esc = mth.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    html = html.replace(f"MATHBLOCK{i}X", f'<span class="math">{esc}</span>')
 
 # 見出しに目に見えない印（§hN§）を埋める。PDF のしおりを付けるときにこの印でページを探す（規格自身の目次の文字に当たらないため）
 counter = [0]

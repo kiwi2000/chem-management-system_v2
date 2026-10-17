@@ -22,6 +22,23 @@ if (!html.includes("__mermaidDone")) {
 </script></body>`,
   );
 }
+// 数式（$$…$$ / $…$）があれば MathJax（tools/vendor/tex-svg.js。無ければ取る:
+// curl -L -o tools/vendor/tex-svg.js https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js）で描く
+if (html.includes('class="math"') && !html.includes("__mathDone")) {
+  const mj = new URL("./vendor/tex-svg.js", import.meta.url).href;
+  html = html.replace(
+    "</body>",
+    () => `<script>
+  window.MathJax = { tex: { inlineMath: [["$", "$"]], displayMath: [["$$", "$$"]] }, svg: { fontCache: "none" },
+    startup: { typeset: false } };
+</script>
+<script src="${mj}"></script>
+<script>
+  window.__mathDone = (window.MathJax.startup?.promise ?? Promise.resolve())
+    .then(() => MathJax.typesetPromise()).then(() => true).catch((e) => { console.error("mathjax", e); return false; });
+</script></body>`,
+  );
+}
 const tmp = input.replace(/\.html$/, ".render.html");
 writeFileSync(tmp, html);
 
@@ -30,6 +47,7 @@ const page = await browser.newPage();
 page.on("console", (m) => m.type() === "error" && console.error("page:", m.text()));
 await page.goto(pathToFileURL(tmp).href, { waitUntil: "load", timeout: 120000 });
 await page.evaluate(() => window.__mermaidDone ?? true);
+await page.evaluate(() => window.__mathDone ?? true);
 await page.evaluate(() => document.fonts.ready);
 await page.pdf({
   path: output,
