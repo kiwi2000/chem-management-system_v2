@@ -39,12 +39,13 @@ describe("レイヤーの重ね合わせ", () => {
     expect(m.problems).toEqual([]);
     expect(m.options.get("acute.category5")?.chosen?.name).toBe("exclude");
     expect(m.exclusions.map((e) => e.pattern.join("."))).toEqual(["acute.*.5", "skin.3"]);
-    // 変換値の表は日本の override で区分 5 の行が消えている
-    expect(m.rules.get("acute.oral")?.conversion?.entries.map((e) => e.category)).toEqual([
+    // 変換値の表は国連のまま（区分 5 の行も残る。成分の区分 5 はそのまま計算に入れる）
+    expect(m.rules.get("acute.oral")?.conversion?.entries.map((e) => String(e.category))).toEqual([
       "1",
       "2",
       "3",
       "4",
+      "5",
     ]);
     // 本文（加算式など）は国連のまま残っている
     expect(m.rules.get("acute.oral")?.body.length).toBeGreaterThan(0);

@@ -20,10 +20,8 @@ ruleset "JP-JIS2025" version 1 extends "UN-Rev9" version 1 {
   // Z 7253 6.3 c)「適用することが可能」＝任意
   choose label.h_omission = manufacturer locked
 
-  // 区分 5 の変換値は JIS に無い（表 B.2）。土台の表を差し替える
-  rule acute.oral override {
-    conversion ate { 1: 0.5, 2: 5, 3: 100, 4: 500 }
-  }
+  // 成分に付いている区分 5 は国連の変換値（2500）でそのまま計算に入れる。日本の採用区分は製品の結果にだけ当てる
+  // （上の exclude で読み替える。2026-10-17 決定）。変換値の表は差し替えない
 
   sds {
     // 濃度限界未満でも SDS に書く（Z 7252 B.4.3.4・B.6.3.2・B.7.3.2・B.8.4.4.1・B.9.3.4.1、Z 7253 D.4）
@@ -34,6 +32,15 @@ ruleset "JP-JIS2025" version 1 extends "UN-Rev9" version 1 {
   tests {
     test "区分 5 相当は区分に該当しない" {
       mixture { "A" 100 % ate.oral = 3000 mg/kg }
+      expect { acute.oral not_classified }
+    }
+    test "区分 5 の成分は国連の変換値で計算に入り、結果だけ日本の採用区分で読み替える" {
+      // 区分 5（ATE 2500）40 % ＋ 区分 4（ATE 500）60 % → ATEmix = 100 / (40/2500 + 60/500) = 735 → 区分 4
+      mixture { "A" 40 % acute.oral 5; "B" 60 % acute.oral 4 }
+      expect { acute.oral 4 }
+    }
+    test "区分 5 の成分だけなら国連では区分 5、日本では区分に該当しない" {
+      mixture { "A" 100 % acute.oral 5 }
       expect { acute.oral not_classified }
     }
     test "皮膚 区分 3 相当は区分に該当しない" {
