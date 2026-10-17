@@ -28,6 +28,7 @@ import {
   SUBSTANCE_COLUMNS,
   substanceNameWords,
 } from "@/lib/list-columns";
+import { laneFor, type LaneName } from "@/lib/doc-batch-lane";
 import { closeBrowser, internalBaseUrl, renderPdf } from "@/lib/pdf";
 import { makePrintToken } from "@/lib/print-token";
 import { visibilityWhere as productVisibility } from "@/lib/product-service";
@@ -59,28 +60,48 @@ import type { DocBatchJobDto } from "@/lib/types";
 /** これより長く生きている印が更新されなければ、途切れたとみなす */
 const STALE_MS = 60_000;
 
-const queue: string[] = [];
-let active: string | null = null;
+/**
+ * 待ち行列は 2 本（lib/doc-batch-lane.ts）。小さい仕事と大きい仕事を分け、
+ * それぞれ順に 1 つずつ走る。1 件ものが大きな仕事の後ろで待たされない
+ */
+interface Lane {
+  queue: string[];
+  active: string | null;
+}
+const lanes: Record<LaneName, Lane> = {
+  small: { queue: [], active: null },
+  large: { queue: [], active: null },
+};
 
-/** 待ち行列に入れる。空いていればすぐ走る */
-export function enqueueDocBatch(jobId: string): void {
-  if (active === jobId || queue.includes(jobId)) return;
-  queue.push(jobId);
-  void pump();
+/** 待っている仕事（全車線）。生きている印を書くときに使う */
+function waiting(): string[] {
+  return [...lanes.small.queue, ...lanes.large.queue];
 }
 
-async function pump(): Promise<void> {
-  if (active) return;
-  const next = queue.shift();
+function idle(): boolean {
+  return Object.values(lanes).every((l) => !l.active && l.queue.length === 0);
+}
+
+/** 待ち行列に入れる。空いていればすぐ走る。total は作る枚数（頼んだときに数えたもの） */
+export function enqueueDocBatch(jobId: string, total: number): void {
+  const lane = lanes[laneFor(total)];
+  if (Object.values(lanes).some((l) => l.active === jobId || l.queue.includes(jobId))) return;
+  lane.queue.push(jobId);
+  void pump(lane);
+}
+
+async function pump(lane: Lane): Promise<void> {
+  if (lane.active) return;
+  const next = lane.queue.shift();
   if (!next) return;
-  active = next;
+  lane.active = next;
   try {
     await run(next);
   } finally {
-    active = null;
-    // 続きが無ければブラウザを閉じてメモリを返す
-    if (queue.length === 0) await closeBrowser();
-    void pump();
+    lane.active = null;
+    // どの車線にも続きが無ければブラウザを閉じてメモリを返す
+    if (idle()) await closeBrowser();
+    void pump(lane);
   }
 }
 
@@ -91,9 +112,10 @@ async function heartbeat(jobId: string, data: Prisma.DocumentBatchJobUpdateManyM
     where: { id: jobId },
     data: { ...data, heartbeatAt: now },
   });
-  if (queue.length > 0) {
+  const rest = waiting();
+  if (rest.length > 0) {
     await prisma.documentBatchJob.updateMany({
-      where: { id: { in: [...queue] } },
+      where: { id: { in: rest } },
       data: { heartbeatAt: now },
     });
   }

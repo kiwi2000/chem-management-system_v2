@@ -1068,6 +1068,11 @@ export const en: Messages = {
     reasonLockedNow: "Locked after repeated failures",
     reasonBadPassword: "Wrong password",
     reasonBadTotp: "Wrong verification code",
+    archiveTitle: "Archived access log files",
+    archiveLead:
+      "Files written when records were tidied automatically under the retention setting. They open in a spreadsheet",
+    archiveEmpty: "No archived files",
+    archiveSize: (kb: number) => `${kb} KB`,
     purgeLabel: "days old and older",
     purgeDays: "Days",
     purgeRun: "Delete",
@@ -1741,6 +1746,23 @@ export const en: Messages = {
       "Stops an unattended device from staying signed in. Acting after this time returns you to the sign-in screen.",
     sessionIdleRange: "Choose between 1 and 480 minutes (8 hours)",
     securityGroup: "Security",
+    accessLogRetentionSection: "Access log retention",
+    accessLogRetentionDays: "Days to keep access log records",
+    accessLogRetentionHint:
+      "0 means nothing is tidied automatically. With a number of days, older access log records (sign-ins and take-outs) are tidied once a day. Records of data creation and changes are not affected",
+    accessLogRetentionRange: "Enter 0 (keep everything) or a value between 30 and 3650 days",
+    accessLogRetentionMode: "How to tidy",
+    accessLogRetentionModes: {
+      archive: "Write to a file, then delete (the files can be fetched from the access log screen)",
+      delete: "Delete only",
+    },
+    accessLogArchiveDir: "Folder for the written files",
+    accessLogArchiveDirHint:
+      "A location on the server. A relative path counts from the application folder. Keep it inside storage that survives updates",
+    accessLogRetentionLast: (at: string, count: number) => `Last run: ${at} (${count} records)`,
+    accessLogRetentionLastFile: (file: string) => `File written: ${file}`,
+    accessLogRetentionLastError: (err: string) => `The last run failed: ${err}`,
+    accessLogRetentionNever: "Never run yet",
     ipFilterSection: "Access control (source IP address)",
     ipFilterHint:
       "Decide where this system can be reached from, by the source IP address. Press Save below after changing it. It takes about 10 seconds to apply",

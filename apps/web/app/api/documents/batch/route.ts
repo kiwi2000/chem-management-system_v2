@@ -90,6 +90,6 @@ export async function POST(req: Request) {
     },
     select: { id: true },
   });
-  enqueueDocBatch(job.id);
+  enqueueDocBatch(job.id, total);
   return Response.json({ id: job.id, total }, { status: 201 });
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import type { RetentionState } from "@/lib/access-log-retention";
 import {
   COMPOSITION_VALIDATION_MODES,
   CONDITIONAL_LINK_MODES,
@@ -17,6 +18,8 @@ import {
   PASSWORD_MIN_LENGTH_FLOOR,
   APP_NAME_MAX,
   HEADER_ICON_POSITIONS,
+  ACCESS_LOG_RETENTION_DAYS_MAX,
+  ACCESS_LOG_RETENTION_MODES,
   IP_FILTER_MODES,
   IMAGE_FORMAT_POLICIES,
   IMAGE_MAX_EDGE_MAX,
@@ -65,6 +68,8 @@ export default function SettingsPage() {
   const [pending, setPending] = useState<Record<string, number> | null>(null);
   // いま接続しているアドレス。接続元の制限で自分を締め出さないための目安（サーバーが返す）
   const [selfIp, setSelfIp] = useState<string | null>(null);
+  // アクセス記録の片づけの前回の結果（見せるだけ）
+  const [retention, setRetention] = useState<RetentionState | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -77,9 +82,14 @@ export default function SettingsPage() {
         setLoaded({ ...DEFAULT_SETTINGS });
         return;
       }
-      const body = (await res.json()) as { settings: AppSettings; clientIp: string | null };
+      const body = (await res.json()) as {
+        settings: AppSettings;
+        clientIp: string | null;
+        accessLogRetention: RetentionState | null;
+      };
       const fresh = body.settings;
       setSelfIp(body.clientIp);
+      setRetention(body.accessLogRetention);
       setSettings(fresh);
       setLoaded(fresh);
       setModelOptionsText(formatOptionList(fresh.productModelOptions));
@@ -941,6 +951,69 @@ export default function SettingsPage() {
               onChange={(rows) => setSettings({ ...settings, ipDenyList: rows })}
             />
             <p className="text-muted-foreground text-xs">{m.settings.ipFormatHint}</p>
+          </CardContent>
+        </Card>
+
+        {/* アクセス記録の保存期間（2026-10-17 指示）。100 名規模で記録が溜まり続けないように */}
+        <Card id="access-log-retention">
+          <CardHeader>
+            <CardTitle className="text-base">{m.settings.accessLogRetentionSection}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="accessLogRetentionDays">{m.settings.accessLogRetentionDays}</Label>
+              <Input
+                id="accessLogRetentionDays"
+                type="number"
+                min={0}
+                max={ACCESS_LOG_RETENTION_DAYS_MAX}
+                step={1}
+                value={settings.accessLogRetentionDays}
+                onChange={(e) =>
+                  setSettings({ ...settings, accessLogRetentionDays: Number(e.target.value) })
+                }
+                className="w-28"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.accessLogRetentionHint}</p>
+              <p className="text-muted-foreground text-xs">{m.settings.accessLogRetentionRange}</p>
+            </div>
+            <div className="space-y-1 text-sm">
+              <p className="text-sm font-medium">{m.settings.accessLogRetentionMode}</p>
+              {ACCESS_LOG_RETENTION_MODES.map((v) => (
+                <label key={v} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="accessLogRetentionMode"
+                    value={v}
+                    checked={settings.accessLogRetentionMode === v}
+                    onChange={() => setSettings({ ...settings, accessLogRetentionMode: v })}
+                  />
+                  {m.settings.accessLogRetentionModes[v]}
+                </label>
+              ))}
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="accessLogArchiveDir">{m.settings.accessLogArchiveDir}</Label>
+              <Input
+                id="accessLogArchiveDir"
+                value={settings.accessLogArchiveDir}
+                onChange={(e) => setSettings({ ...settings, accessLogArchiveDir: e.target.value })}
+                disabled={settings.accessLogRetentionMode !== "archive"}
+                className="max-w-md"
+              />
+              <p className="text-muted-foreground text-xs">{m.settings.accessLogArchiveDirHint}</p>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {retention?.finishedAt
+                ? retention.error
+                  ? m.settings.accessLogRetentionLastError(retention.error)
+                  : m.settings.accessLogRetentionLast(
+                      new Date(retention.finishedAt).toLocaleString(),
+                      retention.count ?? 0,
+                    )
+                : m.settings.accessLogRetentionNever}
+              {retention?.file ? " " + m.settings.accessLogRetentionLastFile(retention.file) : ""}
+            </p>
           </CardContent>
         </Card>
 

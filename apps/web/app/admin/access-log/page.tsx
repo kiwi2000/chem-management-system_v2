@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { countryName } from "@/lib/country-name";
+import type { ArchiveFileInfo } from "@/lib/access-log-retention";
 import { useI18n } from "@/lib/i18n-client";
 import type { AccessLogDto, ApiError, ListResponse, UserSummaryDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
@@ -202,6 +203,14 @@ export default function AccessLogPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [purgeDays, setPurgeDays] = useState("");
+  // 保存期間で片づけたときに書き出したファイル
+  const [archives, setArchives] = useState<ArchiveFileInfo[]>([]);
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch("/api/admin/access-log/archive").catch(() => null);
+      if (res?.ok) setArchives(((await res.json()) as { items: ArchiveFileInfo[] }).items);
+    })();
+  }, []);
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
@@ -318,6 +327,25 @@ export default function AccessLogPage() {
           </div>
         }
       />
+
+      {archives.length > 0 && (
+        <div className="space-y-2 rounded-md border p-4">
+          <h2 className="text-sm font-semibold">{m.accessLog.archiveTitle}</h2>
+          <p className="text-muted-foreground text-xs">{m.accessLog.archiveLead}</p>
+          <ul className="space-y-1 text-sm">
+            {archives.map((f) => (
+              <li key={f.name} className="flex flex-wrap items-center gap-2">
+                <a className="underline" href={`/api/admin/access-log/archive/${f.name}`}>
+                  {f.name}
+                </a>
+                <span className="text-muted-foreground text-xs">
+                  {m.accessLog.archiveSize(Math.max(1, Math.round(f.size / 1024)))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

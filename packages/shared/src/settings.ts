@@ -60,6 +60,20 @@ export type ConditionalLinkMode = (typeof CONDITIONAL_LINK_MODES)[number];
 export const IP_FILTER_MODES = ["off", "allow", "deny"] as const;
 export type IpFilterMode = (typeof IP_FILTER_MODES)[number];
 
+/**
+ * アクセス記録の古い行の片づけかた（2026-10-17 指示）。
+ *  archive … ファイル（TSV）に書き出してから消す
+ *  delete  … 消すだけ
+ * 対象は画面の「アクセス記録」に出る行（ログインと持ち出し）だけ。データの作成・変更の記録は残す
+ */
+export const ACCESS_LOG_RETENTION_MODES = ["archive", "delete"] as const;
+export type AccessLogRetentionMode = (typeof ACCESS_LOG_RETENTION_MODES)[number];
+/** 自動で片づけるときの最短の日数。短すぎる打ち間違いで記録が消えないように */
+export const ACCESS_LOG_RETENTION_DAYS_MIN = 30;
+export const ACCESS_LOG_RETENTION_DAYS_MAX = 3650;
+/** 書き出し先の既定（アプリのフォルダーからの相対。導入先の保存領域の中） */
+export const DEFAULT_ACCESS_LOG_ARCHIVE_DIR = "data/access-log-archive";
+
 /** リストの 1 行。アドレス（または範囲）と、だれのものかのメモ */
 export interface IpRuleEntry {
   address: string;
@@ -136,6 +150,15 @@ export interface AppSettings {
   sessionIdleMinutes: number;
   /** 接続元IPアドレスによる制限のやりかた */
   ipFilterMode: IpFilterMode;
+  /**
+   * アクセス記録を何日ぶん残すか。**0 なら自動では片づけない**（既定。更新で突然消えないように）。
+   * 1 日 1 回、これより古い行を片づける
+   */
+  accessLogRetentionDays: number;
+  /** 片づけかた（書き出してから消す／消すだけ） */
+  accessLogRetentionMode: AccessLogRetentionMode;
+  /** 書き出し先のフォルダー。相対ならアプリのフォルダーから */
+  accessLogArchiveDir: string;
   /** 許可リスト（ホワイトリスト） */
   ipAllowList: IpRuleEntry[];
   /** 拒否リスト（ブラックリスト） */
@@ -233,6 +256,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   productApprovalRequired: false,
   sessionIdleMinutes: 10,
   ipFilterMode: "off",
+  accessLogRetentionDays: 0,
+  accessLogRetentionMode: "archive",
+  accessLogArchiveDir: DEFAULT_ACCESS_LOG_ARCHIVE_DIR,
   ipAllowList: [],
   ipDenyList: [],
   passwordExpiryDays: 0,
@@ -464,6 +490,33 @@ export const SETTING_DEFS: SettingDef[] = [
     },
   },
   {
+    field: "accessLogRetentionDays",
+    key: "access_log.retention_days",
+    valueType: "NUMBER",
+    parse: (raw) => {
+      const n = Number(raw);
+      if (!Number.isInteger(n)) return null;
+      return n === 0 || (n >= ACCESS_LOG_RETENTION_DAYS_MIN && n <= ACCESS_LOG_RETENTION_DAYS_MAX)
+        ? n
+        : null;
+    },
+  },
+  {
+    field: "accessLogRetentionMode",
+    key: "access_log.retention_mode",
+    valueType: "STRING",
+    parse: (raw) =>
+      (ACCESS_LOG_RETENTION_MODES as readonly string[]).includes(raw)
+        ? (raw as AccessLogRetentionMode)
+        : null,
+  },
+  {
+    field: "accessLogArchiveDir",
+    key: "access_log.archive_dir",
+    valueType: "STRING",
+    parse: (raw) => (raw.trim() === "" ? null : raw.trim()),
+  },
+  {
     field: "ipFilterMode",
     key: "security.ip_filter_mode",
     valueType: "STRING",
@@ -662,6 +715,21 @@ export const settingsSchema = (m: Messages) =>
       .min(SESSION_IDLE_MIN, m.settings.sessionIdleRange)
       .max(SESSION_IDLE_MAX, m.settings.sessionIdleRange),
     ipFilterMode: z.enum(IP_FILTER_MODES),
+    accessLogRetentionDays: z
+      .number()
+      .int()
+      .min(0, m.settings.accessLogRetentionRange)
+      .max(ACCESS_LOG_RETENTION_DAYS_MAX, m.settings.accessLogRetentionRange)
+      .refine(
+        (n) => n === 0 || n >= ACCESS_LOG_RETENTION_DAYS_MIN,
+        m.settings.accessLogRetentionRange,
+      ),
+    accessLogRetentionMode: z.enum(ACCESS_LOG_RETENTION_MODES),
+    accessLogArchiveDir: z
+      .string()
+      .trim()
+      .min(1, m.validation.required)
+      .max(500, m.validation.tooLong(500)),
     ipAllowList: ipRuleListSchema(m),
     ipDenyList: ipRuleListSchema(m),
     passwordExpiryDays: z

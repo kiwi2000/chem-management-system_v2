@@ -2,6 +2,7 @@ import { ipMatchesAny, settingsSaveSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { endNonAdminSessions } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
+import { archiveDir, readRetentionState } from "@/lib/access-log-retention";
 import { ensureWritableDir, resolveOutputDir } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
 import { clientIp } from "@/lib/ip-allow";
@@ -22,6 +23,8 @@ export async function GET(req: Request) {
   return Response.json({
     settings: await getAppSettings(),
     clientIp: clientIp(req.headers.get("x-forwarded-for")),
+    // アクセス記録の片づけの前回の結果（サーバーだけが書く値。画面は見せるだけ）
+    accessLogRetention: await readRetentionState(),
   });
 }
 
@@ -113,6 +116,19 @@ export async function PUT(req: Request) {
       formErrors: [],
       fieldErrors: { documentOutputDir: [m.settings.outputDirUnwritable(outDir)] },
     });
+  }
+
+  // アクセス記録の書き出し先も同じ。自動で片づける設定のときだけ確かめる
+  if (next.accessLogRetentionDays > 0 && next.accessLogRetentionMode === "archive") {
+    const dir = archiveDir(next.accessLogArchiveDir);
+    try {
+      await ensureWritableDir(dir);
+    } catch {
+      return jsonError(400, "validation_error", m.settings.outputDirUnwritable(dir), {
+        formErrors: [],
+        fieldErrors: { accessLogArchiveDir: [m.settings.outputDirUnwritable(dir)] },
+      });
+    }
   }
 
   // 画面から受けない値（アイコンを預けた時刻）は、いまの値を引き継ぐ

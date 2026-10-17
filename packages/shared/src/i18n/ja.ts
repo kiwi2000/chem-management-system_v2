@@ -1118,6 +1118,11 @@ export const ja = {
     reasonLockedNow: "失敗が続きロックした",
     reasonBadPassword: "パスワードが違う",
     reasonBadTotp: "認証コードが違う",
+    archiveTitle: "書き出したアクセス記録",
+    archiveLead:
+      "システム設定の保存期間で自動的に片づけたときに書き出したファイルです。開くと表計算ソフトで読めます",
+    archiveEmpty: "書き出したファイルはありません",
+    archiveSize: (kb: number) => `${kb} KB`,
     purgeLabel: "日以上前を削除",
     purgeDays: "日数",
     purgeRun: "削除",
@@ -1839,6 +1844,24 @@ export const ja = {
     /** 接続元IPアドレスによる制限（2026-10-02） */
     /** システム設定の区分（2026-10-02） */
     securityGroup: "セキュリティ",
+    accessLogRetentionSection: "アクセス記録の保存期間",
+    accessLogRetentionDays: "アクセス記録を残す日数",
+    accessLogRetentionHint:
+      "0 にすると自動では片づけません。日数を入れると、1 日 1 回、それより古いアクセス記録（ログインと持ち出し）を片づけます。データの作成・変更の記録は対象外です",
+    accessLogRetentionRange: "0（片づけない）か、30 日から 3650 日までで指定してください",
+    accessLogRetentionMode: "片づけかた",
+    accessLogRetentionModes: {
+      archive:
+        "ファイルに書き出してから消す（書き出したファイルはアクセス記録の画面から取り出せます）",
+      delete: "消すだけ",
+    },
+    accessLogArchiveDir: "書き出し先のフォルダー",
+    accessLogArchiveDirHint:
+      "サーバーの中の場所です。相対なら、アプリのフォルダーから数えます。更新で消えない保存領域の中に置いてください",
+    accessLogRetentionLast: (at: string, count: number) => `前回の片づけ: ${at}（${count} 件）`,
+    accessLogRetentionLastFile: (file: string) => `書き出したファイル: ${file}`,
+    accessLogRetentionLastError: (err: string) => `前回の片づけは失敗しました: ${err}`,
+    accessLogRetentionNever: "まだ片づけたことはありません",
     ipFilterSection: "アクセス制御（接続元IPアドレス）",
     ipFilterHint:
       "どこからこのシステムにつながせるかを、接続元のIPアドレスで決めます。変えたら下の「保存」を押してください。反映まで 10 秒ほどかかります",
