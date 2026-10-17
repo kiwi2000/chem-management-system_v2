@@ -1,0 +1,35 @@
+// お客さんの自社のルール（見本）。日本 JIS 2025 との違いだけ。S27 §3-3 の見本
+ruleset "ACME-JP" version 3 extends "JP-JIS2025" version 1 {
+  meta { title "○○化学 日本向け（社内規定 2026-04）" }
+
+  // Gmiccs と同じにしたい（未知成分 0.1 % 以上で分類できない）
+  choose acute.unknown_policy = unclassifiable_over(0.1 %)
+  choose acute.unknown_statement = both
+
+  // 加成方式が使えない成分の自社リスト（JIS は例示だけ）
+  flag non_additive for ingredients where cas in ["7664-93-9", "1310-73-2", "7647-01-0"]
+
+  // 製品のプロパティから自動で決める（S25 §2-10 の 3）
+  rule skin add {
+    if has_value(product.ph) and product.ph between 2 and 11.5 then
+      note "pH は中性域。pH による決め打ちはしない"
+  }
+
+  labels {
+    // P 文の選び方の既定（製造者の裁量）
+    p_statement P280 choose ["保護手袋", "保護眼鏡"] when product.physical_state == "liquid"
+    p_statement P280 choose ["保護手袋", "保護眼鏡", "保護マスク"] when product.form == "powder"
+    omit P241 note "国内規制でより詳細な規定がある（Z 7253 附属書 C）"
+  }
+
+  tests {
+    test "未知 0.5 % で分類できない（自社の決まり）" {
+      mixture { "A" 99.5 % acute.oral 4; "X" 0.5 % unknown(acute.oral) }
+      expect { acute.oral unclassifiable }
+    }
+    test "自社リストの強酸は加成方式を使わない" {
+      mixture { "硫酸" 2 % skin 1 flag non_additive; "水" 98 % flag no_acute_toxicity }
+      expect { skin 1 }
+    }
+  }
+}

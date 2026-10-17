@@ -1,0 +1,11 @@
+{
+  "projectName": "GhsRules",
+  "languages": [
+    {
+      "id": "ghs-rules",
+      "grammar": "ghs-rules.langium",
+      "fileExtensions": [".ghsrule"]
+    }
+  ],
+  "out": "generated"
+}

@@ -22,3 +22,4 @@ docs/ドキュメント一式.html
 
 # scripts/gen-modules.mjs が作る（手で直さない）
 apps/web/modules/*.generated.ts
+apps/web/modules/sds/rules/generated/
