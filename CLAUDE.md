@@ -56,6 +56,10 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 - 設定は2種類。混ぜないこと（`docs/steps/S16-2_個人設定.md`）
   - **個人設定** `/preferences` … 言語・テーマ。本人だけに効く。ログイン前でも変えられる
   - **システム設定** `/admin/settings` … 全員に効く。管理者のみ
+- **標準の画面・マニュアル・変更履歴の文言に、SDS 版だけの機能（製品の GHS 判定・SDS 作成）を書かない。**存在を知られないため
+  （決定 0016）。2026-10-17 に拡張属性の説明へ「GHS 判定や SDS が使う項目」と書きかけた。
+  見つけ方: `packages/shared/src/i18n/ja.ts`・`en.ts`・`app/spec/` を `GHS 判定|SDS 作成|GHS classification|SDS` で grep し、
+  モジュール（`apps/web/modules/`）の外に出ていないか見る。ソースの注釈・移行の SQL の注釈は残ってよい
 - **機密（非公開製品・非公開組成）はサーバー側で除外してから返す。** クライアントで隠すのは不可。TSV/ドキュメント出力にも同じマスキングを適用する
 - パスワードは Argon2id。セッションはトークン生値を httpOnly Cookie、DBには SHA-256 ハッシュのみ保存
 
@@ -64,6 +68,8 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 - 含有率・閾値などの数値に **Float を使わない**。DBは Decimal、計算は decimal.js
 - コード・CAS番号の突合と一意判定は `normalizeCode()`（trim＋大文字化）を通した値で行う。DBの照合順序差を吸収するため
 - 業務キー（製品コード等）はユーザーが付与する。内部キーは別に持つ
+- **列挙（enum）に値を足す移行と、その値を使う移行（初期データの投入など）は分ける。**PostgreSQL は、足した移行の中では新しい値を使えない
+  （例: `20261017090000_…` と `20261017090100_property_defaults`）
 
 ### 画面
 
@@ -102,6 +108,9 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 2. ルートの `.env` は `apps/web/next.config.mjs` の `loadRootEnv()` が読む（Next.js は `apps/web` 直下しか自動で読まない）
 3. `next.config.mjs` の `transpilePackages` に workspace パッケージを列挙する。追加時は忘れずに
 4. **dev サーバーと `next build` は同時に動かしてよい**（Next.js 16 から dev は `.next/dev` に書く。2026-10-09 確認）。15 までは `.next` を共有して壊れた。`prisma generate` は dev を止めてから
+5. **`npm run build`（とインストールセットの組み立て）のあとは `node scripts/gen-modules.mjs all`**。build がモジュールの一覧を空で作り直し、開発画面から SDS のメニューが消える
+6. **画面を確かめるときのアドレスは `http://localhost:3001`。**`127.0.0.1` だと dev が画面の部品を配らず、「読み込み中」のまま操作できない（2026-10-17）。
+   手順はスキル **check-screens**
 
 ## 6. コマンド
 
