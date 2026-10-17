@@ -67,11 +67,14 @@ blockquote p {{ margin: 0 0 1mm; }}
 blockquote.add, .add {{ border-left-color: var(--add); background: var(--add-bg); }}
 table {{ border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.2pt; line-height: 1.5; page-break-inside: auto; }}
 th, td {{ border: 1px solid var(--line); padding: 1.2mm 2mm; vertical-align: top; text-align: left; }}
-th {{ background: var(--band); font-weight: 700; }}
+th {{ background: var(--band); font-weight: 700; word-break: keep-all; }}
 tr {{ page-break-inside: avoid; }}
 thead {{ display: table-header-group; }}
 pre.mermaid {{ background: #fff; border: 1px solid var(--line); padding: 3mm; margin: 2mm 0 4mm; page-break-inside: avoid; text-align: center; }}
-pre.mermaid svg {{ max-width: 100%; height: auto; }}
+pre.mermaid svg {{ max-width: 100%; max-height: 235mm; width: auto; height: auto; }}
+/* 図の見出し（**図B.12－…** の段落）と図を同じページに置く */
+p:has(+ pre.mermaid), p:has(+ p + pre.mermaid), blockquote:has(+ pre.mermaid) {{ page-break-after: avoid; break-after: avoid; }}
+p:has(+ table), p:has(+ p + table) {{ page-break-after: avoid; break-after: avoid; }}
 code {{ font-family: "Consolas", "BIZ UDGothic", monospace; font-size: 9.2pt; }}
 .pg {{ display: inline-block; font-size: 7.5pt; color: var(--muted); border: 1px solid var(--line); border-radius: 2px; padding: 0 1mm; margin: 0 1mm; vertical-align: middle; }}
 strong {{ font-weight: 700; }}
