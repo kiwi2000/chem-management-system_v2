@@ -46,6 +46,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\auto-save-download.ps1
 内蔵ブラウザでも「しばらくお待ちください…」の確認で止まり、こちらでは通れない（確認を突破する操作はしない）。
 curl も 403。**利用者に自分のブラウザで取ってもらう**しかない。頼むときはファイル名・元・大きさを添える。
 
+- 国連 GHS の英語 PDF（Rev.9 本編 `GHS_Rev9E_0.pdf`・正誤表 `ST-SG-AC10-30-Rev9-Corr1E.pdf`）は 2026-10-17 に利用者が取って
+  `docs/GHS分類の原典/国連GHS文書/` に置いた。文字化けせず、PyMuPDF の `get_text()` で段落番号ごと検索できる
+
 ## 5. 手元の PC に受け口を開く方法は使えない
 
 ブラウザの中で取ったものを `localhost` の受け口に送る作り（node の小さな http サーバー）は、
