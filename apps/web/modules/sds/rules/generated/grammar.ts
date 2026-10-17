@@ -22,7 +22,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -38,7 +38,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@83"
+                "$ref": "#/rules@84"
               },
               "arguments": []
             }
@@ -54,7 +54,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@81"
+                "$ref": "#/rules@82"
               },
               "arguments": []
             }
@@ -73,7 +73,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@83"
+                    "$ref": "#/rules@84"
                   },
                   "arguments": []
                 }
@@ -89,7 +89,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@81"
+                    "$ref": "#/rules@82"
                   },
                   "arguments": []
                 }
@@ -104,7 +104,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -127,7 +127,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -142,7 +142,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -189,21 +189,21 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@35"
+              "$ref": "#/rules@36"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@44"
+              "$ref": "#/rules@45"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@49"
+              "$ref": "#/rules@50"
             },
             "arguments": []
           },
@@ -272,7 +272,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -295,7 +295,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -359,14 +359,14 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@83"
+                    "$ref": "#/rules@84"
                   },
                   "arguments": []
                 },
                 {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@78"
+                    "$ref": "#/rules@79"
                   },
                   "arguments": []
                 }
@@ -396,7 +396,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -419,7 +419,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -454,7 +454,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@69"
+                "$ref": "#/rules@70"
               },
               "arguments": []
             }
@@ -466,7 +466,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@83"
+                "$ref": "#/rules@84"
               },
               "arguments": []
             }
@@ -486,7 +486,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@72"
+                "$ref": "#/rules@73"
               },
               "arguments": []
             }
@@ -505,7 +505,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@72"
+                    "$ref": "#/rules@73"
                   },
                   "arguments": []
                 }
@@ -531,7 +531,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@79"
+                    "$ref": "#/rules@80"
                   },
                   "arguments": []
                 }
@@ -545,7 +545,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -561,7 +561,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@72"
+                    "$ref": "#/rules@73"
                   },
                   "arguments": []
                 }
@@ -581,7 +581,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@72"
+                    "$ref": "#/rules@73"
                   },
                   "arguments": []
                 }
@@ -600,7 +600,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@72"
+                        "$ref": "#/rules@73"
                       },
                       "arguments": []
                     }
@@ -638,7 +638,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -661,7 +661,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -696,7 +696,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@69"
+                "$ref": "#/rules@70"
               },
               "arguments": []
             }
@@ -708,7 +708,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@83"
+                "$ref": "#/rules@84"
               },
               "arguments": []
             }
@@ -787,7 +787,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -803,7 +803,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@83"
+                    "$ref": "#/rules@84"
                   },
                   "arguments": []
                 }
@@ -849,7 +849,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@68"
+                    "$ref": "#/rules@69"
                   },
                   "arguments": []
                 }
@@ -877,7 +877,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@82"
+              "$ref": "#/rules@83"
             },
             "arguments": []
           },
@@ -924,7 +924,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@70"
+                "$ref": "#/rules@71"
               },
               "arguments": []
             }
@@ -943,7 +943,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@73"
+                    "$ref": "#/rules@74"
                   },
                   "arguments": []
                 }
@@ -974,7 +974,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@70"
+                "$ref": "#/rules@71"
               },
               "arguments": []
             }
@@ -1002,7 +1002,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@69"
+                "$ref": "#/rules@70"
               },
               "arguments": []
             }
@@ -1065,7 +1065,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -1089,7 +1089,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@58"
+                "$ref": "#/rules@59"
               },
               "arguments": []
             }
@@ -1144,7 +1144,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -1167,7 +1167,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -1202,7 +1202,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@69"
+                "$ref": "#/rules@70"
               },
               "arguments": []
             }
@@ -1257,7 +1257,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -1280,7 +1280,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -1405,6 +1405,13 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
+              "$ref": "#/rules@35"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
               "$ref": "#/rules@17"
             },
             "arguments": []
@@ -1440,7 +1447,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@58"
+                "$ref": "#/rules@59"
               },
               "arguments": []
             }
@@ -1476,7 +1483,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@58"
+                "$ref": "#/rules@59"
               },
               "arguments": []
             }
@@ -1512,7 +1519,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@58"
+                "$ref": "#/rules@59"
               },
               "arguments": []
             }
@@ -1540,7 +1547,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -1567,7 +1574,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -1590,7 +1597,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -1618,7 +1625,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@72"
+                "$ref": "#/rules@73"
               },
               "arguments": []
             }
@@ -1634,7 +1641,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@58"
+                "$ref": "#/rules@59"
               },
               "arguments": []
             }
@@ -1662,7 +1669,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -1674,7 +1681,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -1701,7 +1708,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -1724,7 +1731,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -1752,7 +1759,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@72"
+                "$ref": "#/rules@73"
               },
               "arguments": []
             }
@@ -1768,7 +1775,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@68"
+                "$ref": "#/rules@69"
               },
               "arguments": []
             }
@@ -1854,7 +1861,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@58"
+                "$ref": "#/rules@59"
               },
               "arguments": []
             }
@@ -1866,7 +1873,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -1889,7 +1896,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -1901,7 +1908,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -1940,7 +1947,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -1956,7 +1963,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@58"
+                "$ref": "#/rules@59"
               },
               "arguments": []
             }
@@ -1984,7 +1991,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@69"
+                "$ref": "#/rules@70"
               },
               "arguments": []
             }
@@ -2000,7 +2007,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@58"
+                "$ref": "#/rules@59"
               },
               "arguments": []
             }
@@ -2019,7 +2026,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@83"
+                    "$ref": "#/rules@84"
                   },
                   "arguments": []
                 }
@@ -2062,7 +2069,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@58"
+                "$ref": "#/rules@59"
               },
               "arguments": []
             }
@@ -2070,6 +2077,16 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "Keyword",
             "value": ")"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "openBoundary",
+            "operator": "?=",
+            "terminal": {
+              "$type": "Keyword",
+              "value": "open_boundary"
+            },
+            "cardinality": "?"
           }
         ]
       },
@@ -2125,6 +2142,29 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
     },
     {
       "$type": "ParserRule",
+      "name": "NotApplicableStmt",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Action",
+            "inferredType": {
+              "$type": "InferredType",
+              "name": "NotApplicableStmt"
+            }
+          },
+          {
+            "$type": "Keyword",
+            "value": "not_applicable"
+          }
+        ]
+      },
+      "entry": false,
+      "fragment": false,
+      "parameters": []
+    },
+    {
+      "$type": "ParserRule",
       "name": "NeedsJudgementStmt",
       "definition": {
         "$type": "Group",
@@ -2140,7 +2180,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@83"
+                "$ref": "#/rules@84"
               },
               "arguments": []
             }
@@ -2168,7 +2208,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@83"
+                "$ref": "#/rules@84"
               },
               "arguments": []
             }
@@ -2187,7 +2227,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@58"
+                    "$ref": "#/rules@59"
                   },
                   "arguments": []
                 }
@@ -2218,7 +2258,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -2233,7 +2273,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@36"
+                    "$ref": "#/rules@37"
                   },
                   "arguments": []
                 }
@@ -2241,7 +2281,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -2268,14 +2308,14 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@37"
+              "$ref": "#/rules@38"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@39"
+              "$ref": "#/rules@40"
             },
             "arguments": []
           },
@@ -2289,13 +2329,6 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@42"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "RuleCall",
-            "rule": {
               "$ref": "#/rules@43"
             },
             "arguments": []
@@ -2303,7 +2336,14 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@40"
+              "$ref": "#/rules@44"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@41"
             },
             "arguments": []
           }
@@ -2330,7 +2370,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -2345,7 +2385,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@38"
+                    "$ref": "#/rules@39"
                   },
                   "arguments": []
                 }
@@ -2360,7 +2400,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                   {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@77"
+                      "$ref": "#/rules@78"
                     },
                     "arguments": [],
                     "cardinality": "*"
@@ -2372,7 +2412,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@38"
+                        "$ref": "#/rules@39"
                       },
                       "arguments": []
                     }
@@ -2388,7 +2428,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -2419,7 +2459,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -2435,7 +2475,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -2463,7 +2503,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -2475,7 +2515,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -2491,7 +2531,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -2499,7 +2539,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -2531,7 +2571,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -2546,7 +2586,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@41"
+                    "$ref": "#/rules@42"
                   },
                   "arguments": []
                 }
@@ -2561,7 +2601,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                   {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@77"
+                      "$ref": "#/rules@78"
                     },
                     "arguments": [],
                     "cardinality": "*"
@@ -2573,7 +2613,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@41"
+                        "$ref": "#/rules@42"
                       },
                       "arguments": []
                     }
@@ -2589,7 +2629,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -2620,7 +2660,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -2639,7 +2679,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@82"
+                    "$ref": "#/rules@83"
                   },
                   "arguments": []
                 }
@@ -2662,7 +2702,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -2685,7 +2725,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@70"
+                    "$ref": "#/rules@71"
                   },
                   "arguments": []
                 }
@@ -2704,7 +2744,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@70"
+                        "$ref": "#/rules@71"
                       },
                       "arguments": []
                     }
@@ -2742,7 +2782,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -2762,7 +2802,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@83"
+                "$ref": "#/rules@84"
               },
               "arguments": []
             }
@@ -2781,7 +2821,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@83"
+                    "$ref": "#/rules@84"
                   },
                   "arguments": []
                 }
@@ -2807,7 +2847,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@58"
+                    "$ref": "#/rules@59"
                   },
                   "arguments": []
                 }
@@ -2838,7 +2878,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -2857,7 +2897,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@58"
+                    "$ref": "#/rules@59"
                   },
                   "arguments": []
                 }
@@ -2879,7 +2919,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@83"
+                    "$ref": "#/rules@84"
                   },
                   "arguments": []
                 }
@@ -2910,7 +2950,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -2925,7 +2965,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@45"
+                    "$ref": "#/rules@46"
                   },
                   "arguments": []
                 }
@@ -2933,7 +2973,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -2960,14 +3000,14 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@46"
+              "$ref": "#/rules@47"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@48"
+              "$ref": "#/rules@49"
             },
             "arguments": []
           }
@@ -2994,7 +3034,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -3009,7 +3049,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@47"
+                    "$ref": "#/rules@48"
                   },
                   "arguments": []
                 }
@@ -3024,7 +3064,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                   {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@77"
+                      "$ref": "#/rules@78"
                     },
                     "arguments": [],
                     "cardinality": "*"
@@ -3036,7 +3076,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@47"
+                        "$ref": "#/rules@48"
                       },
                       "arguments": []
                     }
@@ -3052,7 +3092,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -3083,7 +3123,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@70"
+                "$ref": "#/rules@71"
               },
               "arguments": []
             }
@@ -3099,7 +3139,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@68"
+                "$ref": "#/rules@69"
               },
               "arguments": []
             }
@@ -3127,7 +3167,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@81"
+                "$ref": "#/rules@82"
               },
               "arguments": []
             }
@@ -3151,7 +3191,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -3170,7 +3210,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@82"
+                    "$ref": "#/rules@83"
                   },
                   "arguments": []
                 }
@@ -3205,7 +3245,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -3220,7 +3260,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@50"
+                    "$ref": "#/rules@51"
                   },
                   "arguments": []
                 }
@@ -3228,7 +3268,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -3263,7 +3303,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@83"
+                "$ref": "#/rules@84"
               },
               "arguments": []
             }
@@ -3275,7 +3315,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -3287,7 +3327,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@51"
+                "$ref": "#/rules@52"
               },
               "arguments": []
             }
@@ -3295,7 +3335,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -3310,7 +3350,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@54"
+                    "$ref": "#/rules@55"
                   },
                   "arguments": []
                 }
@@ -3318,7 +3358,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -3333,7 +3373,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@56"
+                "$ref": "#/rules@57"
               },
               "arguments": []
             }
@@ -3341,7 +3381,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -3373,7 +3413,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -3388,7 +3428,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@52"
+                    "$ref": "#/rules@53"
                   },
                   "arguments": []
                 }
@@ -3406,7 +3446,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                       {
                         "$type": "RuleCall",
                         "rule": {
-                          "$ref": "#/rules@77"
+                          "$ref": "#/rules@78"
                         },
                         "arguments": [],
                         "cardinality": "+"
@@ -3420,7 +3460,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@52"
+                        "$ref": "#/rules@53"
                       },
                       "arguments": []
                     }
@@ -3436,7 +3476,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -3467,7 +3507,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@83"
+                "$ref": "#/rules@84"
               },
               "arguments": []
             }
@@ -3479,7 +3519,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@68"
+                "$ref": "#/rules@69"
               },
               "arguments": []
             }
@@ -3491,7 +3531,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@53"
+                "$ref": "#/rules@54"
               },
               "arguments": []
             },
@@ -3537,7 +3577,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@69"
+                        "$ref": "#/rules@70"
                       },
                       "arguments": []
                     }
@@ -3572,7 +3612,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@82"
+                    "$ref": "#/rules@83"
                   },
                   "arguments": []
                 }
@@ -3596,7 +3636,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@69"
+                    "$ref": "#/rules@70"
                   },
                   "arguments": []
                 }
@@ -3618,7 +3658,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                         "terminal": {
                           "$type": "RuleCall",
                           "rule": {
-                            "$ref": "#/rules@68"
+                            "$ref": "#/rules@69"
                           },
                           "arguments": []
                         }
@@ -3632,7 +3672,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@72"
+                        "$ref": "#/rules@73"
                       },
                       "arguments": []
                     }
@@ -3664,7 +3704,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -3679,7 +3719,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@55"
+                    "$ref": "#/rules@56"
                   },
                   "arguments": []
                 }
@@ -3697,7 +3737,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                       {
                         "$type": "RuleCall",
                         "rule": {
-                          "$ref": "#/rules@77"
+                          "$ref": "#/rules@78"
                         },
                         "arguments": [],
                         "cardinality": "+"
@@ -3711,7 +3751,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@55"
+                        "$ref": "#/rules@56"
                       },
                       "arguments": []
                     }
@@ -3727,7 +3767,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -3758,7 +3798,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -3773,7 +3813,14 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@68"
+                    "$ref": "#/rules@69"
+                  },
+                  "arguments": []
+                },
+                {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@84"
                   },
                   "arguments": []
                 },
@@ -3781,13 +3828,6 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                   "$type": "RuleCall",
                   "rule": {
                     "$ref": "#/rules@83"
-                  },
-                  "arguments": []
-                },
-                {
-                  "$type": "RuleCall",
-                  "rule": {
-                    "$ref": "#/rules@82"
                   },
                   "arguments": []
                 }
@@ -3817,7 +3857,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": [],
             "cardinality": "*"
@@ -3832,7 +3872,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@57"
+                    "$ref": "#/rules@58"
                   },
                   "arguments": []
                 }
@@ -3854,7 +3894,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                       {
                         "$type": "RuleCall",
                         "rule": {
-                          "$ref": "#/rules@77"
+                          "$ref": "#/rules@78"
                         },
                         "arguments": [],
                         "cardinality": "+"
@@ -3868,7 +3908,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@57"
+                        "$ref": "#/rules@58"
                       },
                       "arguments": []
                     }
@@ -3879,7 +3919,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@77"
+                  "$ref": "#/rules@78"
                 },
                 "arguments": [],
                 "cardinality": "*"
@@ -3910,7 +3950,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@69"
+                "$ref": "#/rules@70"
               },
               "arguments": []
             }
@@ -3925,14 +3965,14 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@72"
+                    "$ref": "#/rules@73"
                   },
                   "arguments": []
                 },
                 {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@73"
+                    "$ref": "#/rules@74"
                   },
                   "arguments": []
                 }
@@ -3951,7 +3991,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
       "definition": {
         "$type": "RuleCall",
         "rule": {
-          "$ref": "#/rules@59"
+          "$ref": "#/rules@60"
         },
         "arguments": []
       },
@@ -3972,7 +4012,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@60"
+              "$ref": "#/rules@61"
             },
             "arguments": []
           },
@@ -3999,7 +4039,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@60"
+                    "$ref": "#/rules@61"
                   },
                   "arguments": []
                 }
@@ -4016,65 +4056,6 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
     {
       "$type": "ParserRule",
       "name": "OrExpr",
-      "inferredType": {
-        "$type": "InferredType",
-        "name": "Expr"
-      },
-      "definition": {
-        "$type": "Group",
-        "elements": [
-          {
-            "$type": "RuleCall",
-            "rule": {
-              "$ref": "#/rules@61"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "Group",
-            "elements": [
-              {
-                "$type": "Action",
-                "inferredType": {
-                  "$type": "InferredType",
-                  "name": "BinaryExpr"
-                },
-                "feature": "left",
-                "operator": "="
-              },
-              {
-                "$type": "Assignment",
-                "feature": "op",
-                "operator": "=",
-                "terminal": {
-                  "$type": "Keyword",
-                  "value": "or"
-                }
-              },
-              {
-                "$type": "Assignment",
-                "feature": "right",
-                "operator": "=",
-                "terminal": {
-                  "$type": "RuleCall",
-                  "rule": {
-                    "$ref": "#/rules@61"
-                  },
-                  "arguments": []
-                }
-              }
-            ],
-            "cardinality": "*"
-          }
-        ]
-      },
-      "entry": false,
-      "fragment": false,
-      "parameters": []
-    },
-    {
-      "$type": "ParserRule",
-      "name": "AndExpr",
       "inferredType": {
         "$type": "InferredType",
         "name": "Expr"
@@ -4107,7 +4088,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "operator": "=",
                 "terminal": {
                   "$type": "Keyword",
-                  "value": "and"
+                  "value": "or"
                 }
               },
               {
@@ -4118,6 +4099,65 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                   "$type": "RuleCall",
                   "rule": {
                     "$ref": "#/rules@62"
+                  },
+                  "arguments": []
+                }
+              }
+            ],
+            "cardinality": "*"
+          }
+        ]
+      },
+      "entry": false,
+      "fragment": false,
+      "parameters": []
+    },
+    {
+      "$type": "ParserRule",
+      "name": "AndExpr",
+      "inferredType": {
+        "$type": "InferredType",
+        "name": "Expr"
+      },
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@63"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Action",
+                "inferredType": {
+                  "$type": "InferredType",
+                  "name": "BinaryExpr"
+                },
+                "feature": "left",
+                "operator": "="
+              },
+              {
+                "$type": "Assignment",
+                "feature": "op",
+                "operator": "=",
+                "terminal": {
+                  "$type": "Keyword",
+                  "value": "and"
+                }
+              },
+              {
+                "$type": "Assignment",
+                "feature": "right",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@63"
                   },
                   "arguments": []
                 }
@@ -4167,7 +4207,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@62"
+                    "$ref": "#/rules@63"
                   },
                   "arguments": []
                 }
@@ -4177,7 +4217,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@63"
+              "$ref": "#/rules@64"
             },
             "arguments": []
           }
@@ -4200,7 +4240,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@64"
+              "$ref": "#/rules@65"
             },
             "arguments": []
           },
@@ -4264,7 +4304,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@64"
+                        "$ref": "#/rules@65"
                       },
                       "arguments": []
                     }
@@ -4294,7 +4334,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@64"
+                        "$ref": "#/rules@65"
                       },
                       "arguments": []
                     }
@@ -4310,7 +4350,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@64"
+                        "$ref": "#/rules@65"
                       },
                       "arguments": []
                     }
@@ -4339,7 +4379,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@65"
+              "$ref": "#/rules@66"
             },
             "arguments": []
           },
@@ -4380,7 +4420,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@65"
+                    "$ref": "#/rules@66"
                   },
                   "arguments": []
                 }
@@ -4407,7 +4447,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@66"
+              "$ref": "#/rules@67"
             },
             "arguments": []
           },
@@ -4448,7 +4488,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@66"
+                    "$ref": "#/rules@67"
                   },
                   "arguments": []
                 }
@@ -4498,7 +4538,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@66"
+                    "$ref": "#/rules@67"
                   },
                   "arguments": []
                 }
@@ -4508,7 +4548,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@67"
+              "$ref": "#/rules@68"
             },
             "arguments": []
           }
@@ -4538,7 +4578,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@58"
+                  "$ref": "#/rules@59"
                 },
                 "arguments": []
               },
@@ -4569,7 +4609,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@58"
+                    "$ref": "#/rules@59"
                   },
                   "arguments": []
                 }
@@ -4585,7 +4625,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@58"
+                    "$ref": "#/rules@59"
                   },
                   "arguments": []
                 }
@@ -4601,7 +4641,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@58"
+                    "$ref": "#/rules@59"
                   },
                   "arguments": []
                 }
@@ -4632,7 +4672,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@58"
+                        "$ref": "#/rules@59"
                       },
                       "arguments": []
                     }
@@ -4651,7 +4691,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                         "terminal": {
                           "$type": "RuleCall",
                           "rule": {
-                            "$ref": "#/rules@58"
+                            "$ref": "#/rules@59"
                           },
                           "arguments": []
                         }
@@ -4719,7 +4759,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@58"
+                    "$ref": "#/rules@59"
                   },
                   "arguments": []
                 }
@@ -4738,7 +4778,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@58"
+                        "$ref": "#/rules@59"
                       },
                       "arguments": []
                     }
@@ -4802,7 +4842,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@82"
+                        "$ref": "#/rules@83"
                       },
                       "arguments": []
                     },
@@ -4839,7 +4879,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@58"
+                        "$ref": "#/rules@59"
                       },
                       "arguments": []
                     }
@@ -4858,7 +4898,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                         "terminal": {
                           "$type": "RuleCall",
                           "rule": {
-                            "$ref": "#/rules@58"
+                            "$ref": "#/rules@59"
                           },
                           "arguments": []
                         }
@@ -4892,7 +4932,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@81"
+                    "$ref": "#/rules@82"
                   },
                   "arguments": []
                 }
@@ -4904,7 +4944,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@79"
+                    "$ref": "#/rules@80"
                   },
                   "arguments": []
                 },
@@ -4929,7 +4969,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@69"
+                    "$ref": "#/rules@70"
                   },
                   "arguments": []
                 }
@@ -4953,7 +4993,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@83"
+                    "$ref": "#/rules@84"
                   },
                   "arguments": []
                 }
@@ -5009,7 +5049,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@81"
+                "$ref": "#/rules@82"
               },
               "arguments": []
             }
@@ -5021,7 +5061,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@79"
+                "$ref": "#/rules@80"
               },
               "arguments": []
             },
@@ -5043,7 +5083,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@71"
+              "$ref": "#/rules@72"
             },
             "arguments": []
           },
@@ -5057,7 +5097,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@71"
+                  "$ref": "#/rules@72"
                 },
                 "arguments": []
               }
@@ -5080,7 +5120,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@71"
+              "$ref": "#/rules@72"
             },
             "arguments": []
           },
@@ -5097,7 +5137,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                   {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@71"
+                      "$ref": "#/rules@72"
                     },
                     "arguments": []
                   },
@@ -5126,6 +5166,13 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
+              "$ref": "#/rules@83"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
               "$ref": "#/rules@82"
             },
             "arguments": []
@@ -5134,13 +5181,6 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
             "$type": "RuleCall",
             "rule": {
               "$ref": "#/rules@81"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "RuleCall",
-            "rule": {
-              "$ref": "#/rules@80"
             },
             "arguments": []
           },
@@ -5176,6 +5216,13 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
+              "$ref": "#/rules@82"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
               "$ref": "#/rules@81"
             },
             "arguments": []
@@ -5183,14 +5230,7 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@80"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "RuleCall",
-            "rule": {
-              "$ref": "#/rules@82"
+              "$ref": "#/rules@83"
             },
             "arguments": []
           }
@@ -5214,6 +5254,10 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
           {
             "$type": "Keyword",
             "value": "unclassifiable"
+          },
+          {
+            "$type": "Keyword",
+            "value": "not_applicable"
           }
         ]
       },

@@ -38,7 +38,11 @@ describe("レイヤーの重ね合わせ", () => {
     expect(m.layers).toEqual(["UN-Rev9@1", "JP-JIS2025@1"]);
     expect(m.problems).toEqual([]);
     expect(m.options.get("acute.category5")?.chosen?.name).toBe("exclude");
-    expect(m.exclusions.map((e) => e.pattern.join("."))).toEqual(["acute.*.5", "skin.3"]);
+    expect(m.exclusions.map((e) => e.pattern.join("."))).toEqual([
+      "acute.*.5",
+      "skin.3",
+      "aspiration.2",
+    ]);
     // 変換値の表は国連のまま（区分 5 の行も残る。成分の区分 5 はそのまま計算に入れる）
     expect(m.rules.get("acute.oral")?.conversion?.entries.map((e) => String(e.category))).toEqual([
       "1",

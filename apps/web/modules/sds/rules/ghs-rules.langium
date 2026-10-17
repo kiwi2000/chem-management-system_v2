@@ -46,7 +46,7 @@ Block: '{' NL* (stmts+=Stmt NL*)* '}';
 Stmt:
     RelevantStmt | IgnoreStmt | NonAdditiveStmt | BandsStmt | ConvertStmt
     | TypedBlock | IfStmt | AssignStmt
-    | ClassifyStmt | ClassifyByBandsStmt | NotClassifiedStmt | UnclassifiableStmt
+    | ClassifyStmt | ClassifyByBandsStmt | NotClassifiedStmt | UnclassifiableStmt | NotApplicableStmt
     | NeedsJudgementStmt | NoteStmt | Block;
 
 RelevantStmt: 'consider' 'ingredients' 'where' cond=Expr;
@@ -61,9 +61,12 @@ TypedBlock: kind=('precondition' | 'additivity' | 'weighted_sum' | 'threshold' |
 IfStmt: 'if' cond=Expr 'then' NL* then=Stmt (NL* 'else' NL* else=Stmt)?;
 AssignStmt: name=ID '=' value=Expr;
 ClassifyStmt: 'classify' class=ClassName 'as' category=Expr ('because' because=STRING)?;
-ClassifyByBandsStmt: 'classify' 'by' 'bands' '(' value=Expr ')';
+// open_boundary: 帯の境目の値（変換値がちょうど境目に乗る）を、重い方でなく軽い方の区分にする
+ClassifyByBandsStmt: 'classify' 'by' 'bands' '(' value=Expr ')' (openBoundary?='open_boundary')?;
 NotClassifiedStmt: {infer NotClassifiedStmt} 'not_classified';
 UnclassifiableStmt: {infer UnclassifiableStmt} 'unclassifiable';
+// この製品には当てはまらないクラス（液体に可燃性ガスなど）
+NotApplicableStmt: {infer NotApplicableStmt} 'not_applicable';
 NeedsJudgementStmt: 'needs_judgement' reason=STRING;
 NoteStmt: 'note' text=STRING ('place' place=Expr)?;
 
@@ -132,7 +135,7 @@ ClassName returns string: NAMEPART ('.' NAMEPART)*;
 ClassPattern returns string: NAMEPART ('.' (NAMEPART | '*'))*;
 NAMEPART returns string: ID | NUMBER | CATEGORY | 'adopt' | 'exclude' | 'sds' | 'manual';
 Category returns string: NUMBER | CATEGORY | ID;
-ResultKind returns string: 'not_classified' | 'unclassifiable';
+ResultKind returns string: 'not_classified' | 'unclassifiable' | 'not_applicable';
 
 hidden terminal WS: /[ \t\r]+/;
 hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;

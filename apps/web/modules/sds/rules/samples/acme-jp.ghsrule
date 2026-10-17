@@ -5,6 +5,8 @@ ruleset "ACME-JP" version 3 extends "JP-JIS2025" version 1 {
   // Gmiccs と同じにしたい（未知成分 0.1 % 以上で分類できない）
   choose acute.unknown_policy = unclassifiable_over(0.1 %)
   choose acute.unknown_statement = both
+  // 区分 2 の成分だけの混合物を区分 1 にしない（境目は成分の区分）
+  choose acute.boundary = ingredient_category
 
   // 加成方式が使えない成分の自社リスト（JIS は例示だけ）
   flag non_additive for ingredients where cas in ["7664-93-9", "1310-73-2", "7647-01-0"]
@@ -26,6 +28,10 @@ ruleset "ACME-JP" version 3 extends "JP-JIS2025" version 1 {
     test "未知 0.5 % で分類できない（自社の決まり）" {
       mixture { "A" 99.5 % acute.oral 4; "X" 0.5 % unknown(acute.oral) }
       expect { acute.oral unclassifiable }
+    }
+    test "区分 2 の成分だけ（50 % ＋ 50 %）は自社の決まりで区分 2" {
+      mixture { "A" 50 % acute.oral 2; "B" 50 % acute.oral 2 }
+      expect { acute.oral 2 }
     }
     test "自社リストの強酸は加成方式を使わない" {
       mixture { "硫酸" 2 % skin 1 flag non_additive; "水" 98 % flag no_acute_toxicity }

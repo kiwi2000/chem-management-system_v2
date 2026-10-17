@@ -88,11 +88,13 @@ export type GhsRulesKeywordNames =
     | "needs_judgement"
     | "nonadditive"
     | "not"
+    | "not_applicable"
     | "not_classified"
     | "note"
     | "of"
     | "omit"
     | "open"
+    | "open_boundary"
     | "option"
     | "options"
     | "or"
@@ -388,11 +390,13 @@ export function isClassesBlock(item: unknown): item is ClassesBlock {
 export interface ClassifyByBandsStmt extends langium.AstNode {
     readonly $container: Block | IfStmt;
     readonly $type: 'ClassifyByBandsStmt';
+    openBoundary: boolean;
     value: Expr;
 }
 
 export const ClassifyByBandsStmt = {
     $type: 'ClassifyByBandsStmt',
+    openBoundary: 'openBoundary',
     value: 'value'
 } as const;
 
@@ -820,6 +824,19 @@ export function isNonAdditiveStmt(item: unknown): item is NonAdditiveStmt {
     return reflection.isInstance(item, NonAdditiveStmt.$type);
 }
 
+export interface NotApplicableStmt extends langium.AstNode {
+    readonly $container: Block | IfStmt;
+    readonly $type: 'NotApplicableStmt';
+}
+
+export const NotApplicableStmt = {
+    $type: 'NotApplicableStmt'
+} as const;
+
+export function isNotApplicableStmt(item: unknown): item is NotApplicableStmt {
+    return reflection.isInstance(item, NotApplicableStmt.$type);
+}
+
 export interface NotClassifiedStmt extends langium.AstNode {
     readonly $container: Block | IfStmt;
     readonly $type: 'NotClassifiedStmt';
@@ -1064,10 +1081,10 @@ export function isRelevantStmt(item: unknown): item is RelevantStmt {
     return reflection.isInstance(item, RelevantStmt.$type);
 }
 
-export type ResultKind = 'not_classified' | 'unclassifiable';
+export type ResultKind = 'not_applicable' | 'not_classified' | 'unclassifiable';
 
 export function isResultKind(item: unknown): item is ResultKind {
-    return item === 'not_classified' || item === 'unclassifiable';
+    return item === 'not_classified' || item === 'unclassifiable' || item === 'not_applicable';
 }
 
 export interface RuleDef extends langium.AstNode {
@@ -1210,7 +1227,7 @@ export function isSignalWordPrecedence(item: unknown): item is SignalWordPrecede
     return reflection.isInstance(item, SignalWordPrecedence.$type);
 }
 
-export type Stmt = AssignStmt | BandsStmt | Block | ClassifyByBandsStmt | ClassifyStmt | ConvertStmt | IfStmt | IgnoreStmt | NeedsJudgementStmt | NonAdditiveStmt | NotClassifiedStmt | NoteStmt | RelevantStmt | TypedBlock | UnclassifiableStmt;
+export type Stmt = AssignStmt | BandsStmt | Block | ClassifyByBandsStmt | ClassifyStmt | ConvertStmt | IfStmt | IgnoreStmt | NeedsJudgementStmt | NonAdditiveStmt | NotApplicableStmt | NotClassifiedStmt | NoteStmt | RelevantStmt | TypedBlock | UnclassifiableStmt;
 
 export const Stmt = {
     $type: 'Stmt'
@@ -1409,6 +1426,7 @@ export type GhsRulesAstType = {
     MixtureSpec: MixtureSpec
     NeedsJudgementStmt: NeedsJudgementStmt
     NonAdditiveStmt: NonAdditiveStmt
+    NotApplicableStmt: NotApplicableStmt
     NotClassifiedStmt: NotClassifiedStmt
     NoteStmt: NoteStmt
     NumberLit: NumberLit
@@ -1640,6 +1658,11 @@ export class GhsRulesAstReflection extends langium.AbstractAstReflection {
         ClassifyByBandsStmt: {
             name: ClassifyByBandsStmt.$type,
             properties: {
+                openBoundary: {
+                    name: ClassifyByBandsStmt.openBoundary,
+                    defaultValue: false,
+                    optional: true
+                },
                 value: {
                     name: ClassifyByBandsStmt.value
                 }
@@ -1935,6 +1958,12 @@ export class GhsRulesAstReflection extends langium.AbstractAstReflection {
                 cond: {
                     name: NonAdditiveStmt.cond
                 }
+            },
+            superTypes: [Stmt.$type]
+        },
+        NotApplicableStmt: {
+            name: NotApplicableStmt.$type,
+            properties: {
             },
             superTypes: [Stmt.$type]
         },

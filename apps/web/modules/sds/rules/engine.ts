@@ -29,7 +29,10 @@ export interface Mixture {
 // ---------- 結果 ----------
 
 export type Outcome =
-  { kind: "category"; category: string } | { kind: "not_classified" } | { kind: "unclassifiable" };
+  | { kind: "category"; category: string }
+  | { kind: "not_classified" }
+  | { kind: "unclassifiable" }
+  | { kind: "not_applicable" };
 
 export interface ClassResult {
   class: string;
@@ -195,7 +198,7 @@ export function merge(top: ast.Ruleset, registry: Map<string, ast.Ruleset>): Mer
   for (const o of m.options.values()) {
     if (!o.chosen) {
       if (layers.length === 1 && o.safest) {
-        o.chosen = o.safest;
+        o.chosen = resolveOptionValue(o, o.safest);
         o.chosenBy = "safest";
       } else if (layers.length > 1) m.problems.push(`選択点が未選択です: ${o.name}`);
     }
@@ -223,9 +226,15 @@ function choose(m: Merged, c: ast.ChooseStmt, layer: string) {
     m.problems.push(`選択点 ${c.option} に無い値です: ${c.value.name}（${layer}）`);
     return;
   }
-  o.chosen = c.value;
+  o.chosen = resolveOptionValue(o, c.value);
   o.chosenBy = layer;
   if (c.lock) o.lock = c.lock;
+}
+
+/** 選んだ値に引数が無ければ、宣言した値の引数（low(0.1 %) など）を使う */
+function resolveOptionValue(o: MergedOption, v: ast.OptionValue): ast.OptionValue {
+  if (v.arg) return v;
+  return o.values.find((d) => d.name === v.name) ?? v;
 }
 
 function mergeRule(m: Merged, def: ast.RuleDef, mode: "base" | "override" | "add") {
@@ -254,6 +263,8 @@ interface Env {
   ingredient: Ingredient | null;
   /** 評価の回数の上限（無限の繰り返しを防ぐ） */
   budget: { n: number };
+  /** 帯の境目を軽い方の区分に入れる（classify by bands … open_boundary の中だけ true） */
+  openBoundary?: boolean;
 }
 
 const isExprNode = (v: unknown): v is ast.Expr =>
@@ -329,11 +340,11 @@ function binary(e: ast.BinaryExpr, env: Env): Value {
     case "<":
       return num(l, "比較") < num(r, "比較");
     case "<=":
-      return num(l, "比較") <= num(r, "比較");
+      return env.openBoundary ? num(l, "比較") < num(r, "比較") : num(l, "比較") <= num(r, "比較");
     case ">":
       return num(l, "比較") > num(r, "比較");
     case ">=":
-      return num(l, "比較") >= num(r, "比較");
+      return env.openBoundary ? num(l, "比較") > num(r, "比較") : num(l, "比較") >= num(r, "比較");
     case "+":
       return num(l, "加算") + num(r, "加算");
     case "-":
@@ -398,6 +409,15 @@ function call(e: ast.CallExpr, env: Env): Value {
       const ing = needIngredient(env, "ate");
       return ing.values.get(`ate.${refName(0)}`) ?? null;
     }
+    case "value": {
+      // 成分の値（物質の拡張属性のキーそのまま。m_factor_acute、noec_chronic など）
+      const ing = needIngredient(env, "value");
+      return ing.values.get(refName(0)) ?? null;
+    }
+    case "has_flag": {
+      // 混合物のどれかの成分に印があるか（成分の外でも使える）
+      return env.mixture.ingredients.some((ing) => ing.flags.has(refName(0)));
+    }
     case "convert": {
       const v = evalExpr(args[0]!, env);
       const table = env.rule.conversion;
@@ -457,7 +477,11 @@ interface RunState {
 }
 
 function run(stmts: ast.Stmt[], env: Env, st: RunState) {
-  for (const s of stmts) exec(s, env, st);
+  for (const s of stmts) {
+    // 「この製品には当てはまらない」が決まったら、残りの文（note など）は実行しない
+    if (st.result.outcome?.kind === "not_applicable") return;
+    exec(s, env, st);
+  }
 }
 
 function exec(s: ast.Stmt, env: Env, st: RunState) {
@@ -488,7 +512,11 @@ function exec(s: ast.Stmt, env: Env, st: RunState) {
       return;
     }
     const bands = env.rule.bands ?? [];
-    const inner: Env = { ...env, bindings: new Map(env.bindings) };
+    const inner: Env = {
+      ...env,
+      bindings: new Map(env.bindings),
+      openBoundary: s.openBoundary === true,
+    };
     inner.bindings.set("ate", v);
     inner.bindings.set("value", v);
     for (const b of bands) {
@@ -502,6 +530,10 @@ function exec(s: ast.Stmt, env: Env, st: RunState) {
   }
   if (ast.isNotClassifiedStmt(s)) {
     if (!st.result.outcome) st.result.outcome = { kind: "not_classified" };
+    return;
+  }
+  if (ast.isNotApplicableStmt(s)) {
+    if (!st.result.outcome) st.result.outcome = { kind: "not_applicable" };
     return;
   }
   if (ast.isUnclassifiableStmt(s)) {

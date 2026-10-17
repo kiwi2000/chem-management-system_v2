@@ -1,4 +1,5 @@
-// 日本 JIS Z 7252:2025 / Z 7253:2025（JIS ルール）。国連 Rev.9 との違いだけ。S27 §3-2 の見本
+// 日本 JIS Z 7252:2025 / Z 7253:2025（JIS ルール）。国連 Rev.9 との違いだけ。S27 §3-2
+// 根拠は docs/GHS判定_JISの選び方_2026-10-17.md（G-／H-／E-／P- の番号）
 ruleset "JP-JIS2025" version 1 extends "UN-Rev9" version 1 {
   meta {
     title "日本 JIS Z 7252:2025 / Z 7253:2025（JIS ルール）"
@@ -6,26 +7,47 @@ ruleset "JP-JIS2025" version 1 extends "UN-Rev9" version 1 {
     note "旧 JIS 2019 は 2030-12-24 まで使える（別のルールセット JP-JIS2019）"
   }
 
-  // 採らない区分（Z 7252 表 1。結果は「区分に該当しない」）
+  // ---- 採らない区分（G-02、Z 7252 表 1）。結果は「区分に該当しない」。成分のデータは国連の区分のまま読む（S27 §8-3）----
   exclude acute.*.5 as not_classified
   exclude skin.3 as not_classified
+  exclude aspiration.2 as not_classified
 
-  choose acute.category5 = exclude locked
-  choose skin.category3 = exclude locked
-  choose skin.subdivision = split locked
-  // JIS は「分類結果に追記」とだけ（B.1.3.6 b) 2)）。置き場所は自社で変えてよい
+  // ---- 区分の採否 ----
+  choose acute.category5 = exclude locked            // H-01
+  choose skin.category3 = exclude locked             // H-18
+  choose aspiration.category2 = exclude locked       // H-43
+  choose skin.subdivision = split locked             // H-16（1A・1B・1C を採用）
+  choose eye.subdivision = split locked              // H-23（2A・2B を採用）
+  choose stot_se.category3 = adopt locked            // H-40
+  choose lactation.adopt = adopt locked              // H-36
+
+  // ---- 濃度限界（JIS は表の高い方の値）----
+  choose resp_sens.cat1_limit = high locked          // H-27: 1.0 %
+  choose resp_sens.cat1_limit_gas = high locked      // H-27: 0.2 %
+  choose skin_sens.cat1_limit = high locked          // H-27: 1.0 %
+  choose carc.cat2_limit = high locked               // H-32: 1.0 %（0.1 % 以上は SDS に記載が望ましい）
+  choose repr.cat1_limit = high locked               // H-34: 0.3 %
+  choose repr.cat2_limit = high locked               // H-35: 3.0 %
+  choose lactation.limit = high locked               // H-36: 0.3 %
+  choose stot_se.cat1_limit = high locked            // H-37: 10 %
+  choose stot_se.cat1_low_to_cat2 = yes locked       // H-38: 1.0 % 以上 10 % 未満は区分 2
+  choose stot_se.cat2_limit = high locked            // H-39: 10 %
+  choose stot_re.cat1_limit = high locked            // H-37
+  choose stot_re.cat1_low_to_cat2 = yes locked       // H-38
+  choose stot_re.cat2_limit = high locked            // H-39
+
+  // ---- 未知成分・境目。JIS は「分類結果に追記」とだけ（H-13、E-09）。置き場所は自社で変えてよい ----
   choose acute.unknown_statement = sds open
-  // Gmiccs 式（0.1 % で分類できない）は自社のレイヤーで選べる
-  choose acute.unknown_policy = correction open
-  // Z 7253 6.3 c)「適用することが可能」＝任意
-  choose label.h_omission = manufacturer locked
+  choose aquatic.unknown_statement = sds open
+  choose acute.unknown_policy = correction open      // Gmiccs 式（0.1 % で分類できない）は自社のレイヤーで選べる
+  choose acute.boundary = strict open                // 境目の扱いは自社で選べる
 
-  // 成分に付いている区分 5 は国連の変換値（2500）でそのまま計算に入れる。日本の採用区分は製品の結果にだけ当てる
-  // （上の exclude で読み替える。2026-10-17 決定）。変換値の表は差し替えない
+  // ---- ラベル。Z 7253 6.3 c)「適用することが可能」＝任意 ----
+  choose label.h_omission = manufacturer locked      // G-15
 
   sds {
     // 濃度限界未満でも SDS に書く（Z 7252 B.4.3.4・B.6.3.2・B.7.3.2・B.8.4.4.1・B.9.3.4.1、Z 7253 D.4）
-    list_ingredients_below_limit { carc.2 from 0.1 %; repr.* from 0.1 %; resp_sens.* from 0.1 %; skin_sens.* from 0.1 %; stot_se.2 from 1.0 %; stot_re.2 from 1.0 % }
+    list_ingredients_below_limit { carc.2 from 0.1 %; repr.* from 0.1 %; lactation.* from 0.1 %; resp_sens.* from 0.1 %; skin_sens.* from 0.1 %; stot_se.2 from 1.0 %; stot_re.2 from 1.0 % }
     section 15 from regulations [ISHA, PRTR, PDSCL]
   }
 
@@ -50,6 +72,47 @@ ruleset "JP-JIS2025" version 1 extends "UN-Rev9" version 1 {
     test "皮膚 加成方式は国連と同じ" {
       mixture { "A" 0.5 % skin 1 flag relevant; "B" 6 % skin 2 }
       expect { skin 2 }
+    }
+    test "呼吸器感作性 細区分なし 0.5 % は日本（1.0 %）では区分なし" {
+      mixture { "A" 0.5 % resp_sens 1 }
+      expect { resp_sens not_classified }
+    }
+    test "発がん性 区分 2 0.5 % は日本（1.0 %）では区分なし、1.0 % で区分 2" {
+      mixture { "A" 0.5 % carc 2; "B" 0.5 % carc 2 }
+      expect { carc 2 }
+    }
+    test "生殖毒性 1A 0.2 % は日本（0.3 %）では区分なし" {
+      mixture { "A" 0.2 % repr 1A }
+      expect { repr not_classified }
+    }
+    test "生殖毒性 区分 2 2.0 % は日本（3.0 %）では区分なし" {
+      mixture { "A" 2.0 % repr 2 }
+      expect { repr not_classified }
+    }
+    test "授乳影響 0.3 % で追加区分" {
+      mixture { "A" 0.3 % lactation additional }
+      expect { lactation additional }
+    }
+    test "STOT 単回 区分 1 成分 5 % は日本では区分 2（1〜10 %）" {
+      mixture { "A" 5 % stot_se 1 }
+      expect { stot_se 2 }
+    }
+    test "STOT 単回 区分 1 成分 10 % で区分 1" {
+      mixture { "A" 10 % stot_se 1 }
+      expect { stot_se 1 }
+    }
+    test "STOT 反復 区分 2 成分 2 % は日本（10 %）では区分なし" {
+      mixture { "A" 2 % stot_re 2 }
+      expect { stot_re not_classified }
+    }
+    test "誤えん 区分 2 相当は区分に該当しない" {
+      mixture { "A" 15 % aspiration 2; "B" 85 % }
+      props { physical_state liquid; kinematic_viscosity_40c 5 }
+      expect { aspiration not_classified }
+    }
+    test "水生 急性・慢性は国連と同じ" {
+      mixture { "A" 3 % aquatic.acute 1 m_factor_acute = 10 aquatic.chronic 1 m_factor_chronic = 10; "水" 97 % }
+      expect { aquatic.acute 1; aquatic.chronic 1 }
     }
   }
 }

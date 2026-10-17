@@ -1,33 +1,125 @@
-// 国連 GHS 改訂 9 版（抜粋。急性毒性（経口）と皮膚腐食性／刺激性）。S27 §3-1 の見本
+// 国連 GHS 改訂 9 版（2021）のルールセット。混合物の分類（全クラス）。S27 §3-1
+// 任されている所（選択点）は options に置き、国のレイヤーで choose する。
+// 成分の区分・値は国連の区分のまま読む。国が採らない区分は国のレイヤーの exclude で製品の結果だけ読み替える（§8-3）
 ruleset "UN-Rev9" version 1 {
   meta {
     title "国連 GHS 改訂 9 版（2021）"
-    revision "GHS Rev.9"
-    note "任されている所は options に選択点として置く。国のレイヤーで choose する"
+    revision "GHS Rev.9 + Corr.1"
+    note "健康・環境は成分からの計算、物理化学は試験データ（manual）。製品のプロパティで絞れる所だけ絞る"
   }
 
   classes {
+    // ---- 物理化学的危険性（第 2 部）----
+    class explosive "爆発物" categories [1, 2A, 2B, 2C]
+    class flammable_gas "可燃性ガス" categories [1A, 1B, 2]
+    class aerosol "エアゾール" categories [1, 2, 3]
+    class chemical_under_pressure "加圧下化学品" categories [1, 2, 3]
+    class oxidizing_gas "酸化性ガス" categories [1]
+    class gas_under_pressure "高圧ガス" categories [compressed, liquefied, refrigerated_liquefied, dissolved]
+    class flammable_liquid "引火性液体" categories [1, 2, 3, 4] unit ℃
+    class flammable_solid "可燃性固体" categories [1, 2]
+    class self_reactive "自己反応性化学品" categories [A, B, C, D, E, F, G]
+    class pyrophoric_liquid "自然発火性液体" categories [1]
+    class pyrophoric_solid "自然発火性固体" categories [1]
+    class self_heating "自己発熱性化学品" categories [1, 2]
+    class water_reactive "水反応可燃性化学品" categories [1, 2, 3]
+    class oxidizing_liquid "酸化性液体" categories [1, 2, 3]
+    class oxidizing_solid "酸化性固体" categories [1, 2, 3]
+    class organic_peroxide "有機過酸化物" categories [A, B, C, D, E, F, G]
+    class corrosive_to_metals "金属腐食性化学品" categories [1]
+    class desensitized_explosive "鈍性化爆発物" categories [1, 2, 3, 4]
+
+    // ---- 健康有害性（第 3 部）----
     class acute.oral "急性毒性（経口）" categories [1, 2, 3, 4, 5] unit mg/kg
     class acute.dermal "急性毒性（経皮）" categories [1, 2, 3, 4, 5] unit mg/kg
+    class acute.gas "急性毒性（吸入: 気体）" categories [1, 2, 3, 4, 5] unit ppmV
+    class acute.vapour "急性毒性（吸入: 蒸気）" categories [1, 2, 3, 4, 5] unit mg/L
+    class acute.dust "急性毒性（吸入: 粉じん・ミスト）" categories [1, 2, 3, 4, 5] unit mg/L
     class skin "皮膚腐食性／刺激性" categories [1, 1A, 1B, 1C, 2, 3]
       subcategories 1 -> [1A, 1B, 1C]
+    class eye "眼に対する重篤な損傷性／眼刺激性" categories [1, 2, 2A, 2B]
+      subcategories 2 -> [2A, 2B]
+    class resp_sens "呼吸器感作性" categories [1, 1A, 1B]
+      subcategories 1 -> [1A, 1B]
+    class skin_sens "皮膚感作性" categories [1, 1A, 1B]
+      subcategories 1 -> [1A, 1B]
+    class muta "生殖細胞変異原性" categories [1, 1A, 1B, 2]
+      subcategories 1 -> [1A, 1B]
+    class carc "発がん性" categories [1, 1A, 1B, 2]
+      subcategories 1 -> [1A, 1B]
+    class repr "生殖毒性" categories [1, 1A, 1B, 2]
+      subcategories 1 -> [1A, 1B]
+    class lactation "生殖毒性（授乳に対する又は授乳を介した影響）" categories [additional]
+    class stot_se "特定標的臓器毒性（単回ばく露）" categories [1, 2, 3]
+    class stot_re "特定標的臓器毒性（反復ばく露）" categories [1, 2]
+    class aspiration "誤えん有害性" categories [1, 2] unit mm2/s
+
+    // ---- 環境有害性（第 4 部）----
+    class aquatic.acute "水生環境有害性 短期（急性）" categories [1, 2, 3] unit mg/L
+    class aquatic.chronic "水生環境有害性 長期（慢性）" categories [1, 2, 3, 4] unit mg/L
+    class ozone "オゾン層への有害性" categories [1]
   }
 
   options {
+    // 区分の採否（ビルディングブロック）
     option acute.category5 "急性毒性 区分 5 を採るか" values [adopt, exclude] safest adopt
-      source "1.1.3.1.5.4, 3.1.2.5"
+      source "H-01: 1.1.3.1.5.4, 3.1.2.5"
     option skin.category3 "皮膚刺激性 区分 3 を採るか" values [adopt, exclude] safest adopt
-      source "3.2.2 (c)"
+      source "H-18: 3.2.2 (c)"
     option skin.subdivision "皮膚腐食性 1A/1B/1C を分けるか" values [split, merge] safest split
-      source "3.2.2 (a)"
-    option acute.unknown_statement "未知成分の文をどこに書くか" values [label, sds, both, manufacturer] safest both
-      source "3.1.3.6.2.2"
+      source "H-16: 3.2.2 (a)"
+    option eye.subdivision "眼刺激性 2A/2B を分けるか" values [split, merge] safest split
+      source "H-23: 3.3.2"
+    option stot_se.category3 "特定標的臓器毒性（単回）区分 3 を採るか" values [adopt, exclude] safest adopt
+      source "H-40: 1.1.3.1.5.4 NOTE 1, 3.8.3.4.3"
+    option lactation.adopt "授乳影響の追加区分を採るか" values [adopt, exclude] safest adopt
+      source "H-36: 1.1.3.1.5.4"
+    option aspiration.category2 "誤えん有害性 区分 2 を採るか" values [adopt, exclude] safest adopt
+      source "H-43: Table 3.10.1"
+
+    // 濃度限界の選択（表に 2 つの値が並ぶ所。安全側は低い方）
+    option resp_sens.cat1_limit "呼吸器感作性 区分 1（細区分なし）成分の濃度限界（固体・液体）" values [low(0.1 %), high(1.0 %)] safest low
+      source "H-27: Table 3.4.5, note 1"
+    option resp_sens.cat1_limit_gas "呼吸器感作性 区分 1 成分の濃度限界（気体）" values [low(0.1 %), high(0.2 %)] safest low
+      source "H-27: Table 3.4.5"
+    option skin_sens.cat1_limit "皮膚感作性 区分 1（細区分なし）成分の濃度限界" values [low(0.1 %), high(1.0 %)] safest low
+      source "H-27: Table 3.4.5"
+    option carc.cat2_limit "発がん性 区分 2 成分の濃度限界" values [low(0.1 %), high(1.0 %)] safest low
+      source "H-32: Table 3.6.1, note 1"
+    option repr.cat1_limit "生殖毒性 区分 1 成分の濃度限界" values [low(0.1 %), high(0.3 %)] safest low
+      source "H-34: Table 3.7.1, notes 1-2"
+    option repr.cat2_limit "生殖毒性 区分 2 成分の濃度限界" values [low(0.1 %), high(3.0 %)] safest low
+      source "H-35: Table 3.7.1, notes 3-4"
+    option lactation.limit "授乳影響の成分の濃度限界" values [low(0.1 %), high(0.3 %)] safest low
+      source "H-36: Table 3.7.1"
+    option stot_se.cat1_limit "特定標的臓器毒性（単回）区分 1 成分で混合物を区分 1 にする濃度" values [low(1.0 %), high(10 %)] safest low
+      source "H-37: Table 3.8.2, notes 1-2"
+    option stot_se.cat1_low_to_cat2 "区分 1 成分が 1〜10 % のとき混合物を区分 2 にするか" values [yes, no] safest yes
+      source "H-38: Table 3.8.2, note 3"
+    option stot_se.cat2_limit "特定標的臓器毒性（単回）区分 2 成分で混合物を区分 2 にする濃度" values [low(1.0 %), high(10 %)] safest low
+      source "H-39: Table 3.8.2, notes 4-5"
+    option stot_re.cat1_limit "特定標的臓器毒性（反復）区分 1 成分で混合物を区分 1 にする濃度" values [low(1.0 %), high(10 %)] safest low
+      source "H-37: Table 3.9.3, notes 1-2"
+    option stot_re.cat1_low_to_cat2 "区分 1 成分が 1〜10 % のとき混合物を区分 2 にするか（反復）" values [yes, no] safest yes
+      source "H-38: Table 3.9.3, note 3"
+    option stot_re.cat2_limit "特定標的臓器毒性（反復）区分 2 成分で混合物を区分 2 にする濃度" values [low(1.0 %), high(10 %)] safest low
+      source "H-39: Table 3.9.3, notes 4-5"
+
+    // 未知成分の文の置き場所と、未知成分の扱い
+    option acute.unknown_statement "急性毒性が未知の成分の文をどこに書くか" values [label, sds, both, manufacturer] safest both
+      source "H-13: 3.1.3.6.2.2"
     option acute.unknown_policy "未知成分が多いときの扱い" values [correction, unclassifiable_over(0.1 %)] safest correction
-      source "3.1.3.6.2.3（補正の式）。unclassifiable_over は Gmiccs の作り（原文に無い）"
+      source "H-14: 3.1.3.6.2.3（補正の式）。unclassifiable_over は Gmiccs の作り（原文に無い）"
+    option acute.boundary "変換値だけで出た ATE が帯の境目に乗ったとき（区分 2 の変換値 5 は「区分 1: ATE ≦ 5」に入る）" values [strict, ingredient_category] safest strict
+      source "表 3.1.1 と表 3.1.2 の境目。strict は表のとおり重い方、ingredient_category は成分の区分（軽い方）"
+    option aquatic.unknown_statement "水生環境有害性が未知の成分の文をどこに書くか" values [label, sds, both, manufacturer] safest both
+      source "E-09: 4.1.3.6"
   }
 
   rules {
-    // 急性毒性（経口）: 混合物の ATE を加算式で求め、区分に当てる
+    // ======== 急性毒性（3.1）。経路ごとに混合物の ATE を加算式で求め、区分に当てる ========
+    // 成分の ATE は、実測値 → 区分からの変換値（表 3.1.2）の順。どちらも無い成分は「未知」。
+    // 未知成分の合計が 10 % を超えたら補正の式（3.1.3.6.2.3）
     rule acute.oral {
       consider ingredients where conc >= 1 % or flagged(relevant)
       ignore ingredients where flagged(no_acute_toxicity)
@@ -35,23 +127,146 @@ ruleset "UN-Rev9" version 1 {
       conversion ate { 1: 0.5, 2: 5, 3: 100, 4: 500, 5: 2500 }
       additivity {
         ate_of = coalesce(ate(oral), convert(category(acute.oral)))
-        unknown_part = ingredients where unknown(acute.oral)
-        known_part = ingredients where not unknown(acute.oral)
-        // 1 % 未満の成分も含めた未知の合計（Gmiccs 式の 0.1 % の判断に使う）
+        unknown_part = ingredients where unknown(acute.oral) or not has_value(ate_of)
+        known_part = ingredients where has_value(ate_of)
         unknown_total = all_ingredients where unknown(acute.oral)
         if sum(conc of unknown_part) > 10 % then
           atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
         else
           atemix = 100 % / sum(conc / ate_of of known_part)
       }
+      if count(known_part) == 0 and count(unknown_part) == 0 then not_classified
       if option(acute.unknown_policy) == unclassifiable_over and sum(conc of unknown_total) >= option_arg(acute.unknown_policy) then
         unclassifiable
       if sum(conc of unknown_part) >= 1 % then
         note "混合物の {sum(conc of unknown_part)} は急性毒性（経口）が未知の成分からなる" place option(acute.unknown_statement)
-      classify by bands(atemix)
+      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(oral))) == 0 then
+        classify by bands(atemix) open_boundary
+      else
+        classify by bands(atemix)
     }
 
-    // 皮膚腐食性／刺激性: 加成方式。pH の決め打ちが先。加成方式が使えない成分があれば別の表
+    rule acute.dermal {
+      consider ingredients where conc >= 1 % or flagged(relevant)
+      ignore ingredients where flagged(no_acute_toxicity)
+      bands { 1: ate <= 50, 2: ate <= 200, 3: ate <= 1000, 4: ate <= 2000, 5: ate <= 5000 }
+      conversion ate { 1: 5, 2: 50, 3: 300, 4: 1100, 5: 2500 }
+      additivity {
+        ate_of = coalesce(ate(dermal), convert(category(acute.dermal)))
+        unknown_part = ingredients where unknown(acute.dermal) or not has_value(ate_of)
+        known_part = ingredients where has_value(ate_of)
+        unknown_total = all_ingredients where unknown(acute.dermal)
+        if sum(conc of unknown_part) > 10 % then
+          atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
+        else
+          atemix = 100 % / sum(conc / ate_of of known_part)
+      }
+      if count(known_part) == 0 and count(unknown_part) == 0 then not_classified
+      if option(acute.unknown_policy) == unclassifiable_over and sum(conc of unknown_total) >= option_arg(acute.unknown_policy) then
+        unclassifiable
+      if sum(conc of unknown_part) >= 1 % then
+        note "混合物の {sum(conc of unknown_part)} は急性毒性（経皮）が未知の成分からなる" place option(acute.unknown_statement)
+      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(dermal))) == 0 then
+        classify by bands(atemix) open_boundary
+      else
+        classify by bands(atemix)
+    }
+
+    // 吸入は、製品の形（気体・蒸気・粉じん／ミスト）ごとに別のクラス。製品の物理状態・形状で当てはまるものだけ計算する。
+    // 区分 5 の数値は国連に無い（経口・経皮の 2000〜5000 mg/kg 相当。所管官庁が定める）ので、吸入には区分 5 の帯を置かない
+    rule acute.gas {
+      precondition {
+        if has_value(product.physical_state) and product.physical_state != gas then not_applicable
+        if not has_value(product.physical_state) then needs_judgement "製品の物理状態が未設定。気体でなければ吸入（気体）は当てはまらない"
+      }
+      consider ingredients where conc >= 1 % or flagged(relevant)
+      ignore ingredients where flagged(no_acute_toxicity)
+      bands { 1: ate <= 100, 2: ate <= 500, 3: ate <= 2500, 4: ate <= 20000 }
+      conversion ate { 1: 10, 2: 100, 3: 700, 4: 4500 }
+      additivity {
+        ate_of = coalesce(ate(gas), convert(category(acute.gas)))
+        unknown_part = ingredients where unknown(acute.gas) or not has_value(ate_of)
+        known_part = ingredients where has_value(ate_of)
+        unknown_total = all_ingredients where unknown(acute.gas)
+        if sum(conc of unknown_part) > 10 % then
+          atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
+        else
+          atemix = 100 % / sum(conc / ate_of of known_part)
+      }
+      if count(known_part) == 0 and count(unknown_part) == 0 then not_classified
+      if option(acute.unknown_policy) == unclassifiable_over and sum(conc of unknown_total) >= option_arg(acute.unknown_policy) then
+        unclassifiable
+      if sum(conc of unknown_part) >= 1 % then
+        note "混合物の {sum(conc of unknown_part)} は急性毒性（吸入）が未知の成分からなる" place option(acute.unknown_statement)
+      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(gas))) == 0 then
+        classify by bands(atemix) open_boundary
+      else
+        classify by bands(atemix)
+    }
+
+    rule acute.vapour {
+      precondition {
+        if has_value(product.physical_state) and product.physical_state in [gas, solid] then not_applicable
+        if has_value(product.form) and product.form in [aerosol, powder, granule] then not_applicable
+      }
+      consider ingredients where conc >= 1 % or flagged(relevant)
+      ignore ingredients where flagged(no_acute_toxicity)
+      bands { 1: ate <= 0.5, 2: ate <= 2.0, 3: ate <= 10, 4: ate <= 20 }
+      conversion ate { 1: 0.05, 2: 0.5, 3: 3, 4: 11 }
+      additivity {
+        ate_of = coalesce(ate(vapour), convert(category(acute.vapour)))
+        unknown_part = ingredients where unknown(acute.vapour) or not has_value(ate_of)
+        known_part = ingredients where has_value(ate_of)
+        unknown_total = all_ingredients where unknown(acute.vapour)
+        if sum(conc of unknown_part) > 10 % then
+          atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
+        else
+          atemix = 100 % / sum(conc / ate_of of known_part)
+      }
+      if count(known_part) == 0 and count(unknown_part) == 0 then not_classified
+      if option(acute.unknown_policy) == unclassifiable_over and sum(conc of unknown_total) >= option_arg(acute.unknown_policy) then
+        unclassifiable
+      if sum(conc of unknown_part) >= 1 % then
+        note "混合物の {sum(conc of unknown_part)} は急性毒性（吸入）が未知の成分からなる" place option(acute.unknown_statement)
+      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(vapour))) == 0 then
+        classify by bands(atemix) open_boundary
+      else
+        classify by bands(atemix)
+    }
+
+    rule acute.dust {
+      precondition {
+        // 粉じん・ミスト: 粉体・粒状の固体、またはエアゾール（ミスト）。液体は形状がエアゾールのときだけ
+        if has_value(product.physical_state) and product.physical_state == gas then not_applicable
+        if has_value(product.physical_state) and product.physical_state == liquid and not (has_value(product.form) and product.form == aerosol) then not_applicable
+        if has_value(product.form) and not (product.form in [aerosol, powder, granule]) then not_applicable
+      }
+      consider ingredients where conc >= 1 % or flagged(relevant)
+      ignore ingredients where flagged(no_acute_toxicity)
+      bands { 1: ate <= 0.05, 2: ate <= 0.5, 3: ate <= 1.0, 4: ate <= 5 }
+      conversion ate { 1: 0.005, 2: 0.05, 3: 0.5, 4: 1.5 }
+      additivity {
+        ate_of = coalesce(ate(dust), convert(category(acute.dust)))
+        unknown_part = ingredients where unknown(acute.dust) or not has_value(ate_of)
+        known_part = ingredients where has_value(ate_of)
+        unknown_total = all_ingredients where unknown(acute.dust)
+        if sum(conc of unknown_part) > 10 % then
+          atemix = (100 % - sum(conc of unknown_part)) / sum(conc / ate_of of known_part)
+        else
+          atemix = 100 % / sum(conc / ate_of of known_part)
+      }
+      if count(known_part) == 0 and count(unknown_part) == 0 then not_classified
+      if option(acute.unknown_policy) == unclassifiable_over and sum(conc of unknown_total) >= option_arg(acute.unknown_policy) then
+        unclassifiable
+      if sum(conc of unknown_part) >= 1 % then
+        note "混合物の {sum(conc of unknown_part)} は急性毒性（吸入）が未知の成分からなる" place option(acute.unknown_statement)
+      if option(acute.boundary) == ingredient_category and count(known_part where has_value(ate(dust))) == 0 then
+        classify by bands(atemix) open_boundary
+      else
+        classify by bands(atemix)
+    }
+
+    // ======== 皮膚腐食性／刺激性（3.2）。pH の決め打ち → 加成方式が使えない成分があれば表 3.2.4 → 加成方式（表 3.2.3）========
     rule skin {
       consider ingredients where conc >= 1 % or flagged(relevant)
       precondition {
@@ -80,22 +295,377 @@ ruleset "UN-Rev9" version 1 {
           classify skin as (if option(skin.subdivision) == split then (if c1a >= 5 % then 1A else if c1a + c1b >= 5 % then 1B else if c1a + c1b + c1c >= 5 % then 1C else 1) else 1)
         else if c1 >= 1 % or 10 * c1 + c2 >= 10 % then
           classify skin as 2
-        else if 10 * c1 + c2 + c3 >= 10 % or c3 >= 10 % then
+        else if 10 * c1 + c2 + c3 >= 10 % or c3 >= 10 % or 10 * c1 + c2 >= 1 % then
+          // 表 3.2.3: 区分 2 の成分 1 % 以上 10 % 未満、(10×区分 1)＋区分 2 が 1 % 以上 10 % 未満も区分 3
           classify skin as 3
         else
           not_classified
+      }
+    }
+
+    // ======== 眼に対する重篤な損傷性／眼刺激性（3.3）。皮膚 区分 1 の成分も眼 区分 1 として数える（表 3.3.3）========
+    rule eye {
+      consider ingredients where conc >= 1 % or flagged(relevant)
+      precondition {
+        if has_value(product.ph) and (product.ph <= 2 or product.ph >= 11.5) then {
+          classify eye as 1 because "pH が 2 以下または 11.5 以上（3.3.3.1.3）"
+          needs_judgement "pH による決め打ち。酸・アルカリの予備量のデータがあれば見直す"
+        }
+      }
+      nonadditive ingredients where flagged(non_additive)
+      if any(non_additive) then {
+        if sum(conc of non_additive where category(skin) in [1, 1A, 1B, 1C] or category(eye) == 1) >= 1 % then
+          classify eye as 1
+        else if sum(conc of non_additive where category(eye) in [2, 2A, 2B]) >= 3 % then
+          classify eye as 2
+        else
+          not_classified
+      } else weighted_sum {
+        c1 = sum(conc of ingredients where category(skin) in [1, 1A, 1B, 1C] or category(eye) == 1)
+        c2 = sum(conc of ingredients where category(eye) in [2, 2A, 2B])
+        c2b = sum(conc of ingredients where category(eye) == 2B)
+        if c1 >= 3 % then
+          classify eye as 1
+        else if 10 * c1 + c2 >= 10 % then
+          // 考慮する成分が全部 2B なら 2B にしてよい（表 3.3.3 注 b）
+          classify eye as (if option(eye.subdivision) == split then (if c1 == 0 and c2b == c2 then 2B else 2A) else 2)
+        else
+          not_classified
+      }
+    }
+
+    // ======== 呼吸器感作性・皮膚感作性（3.4、表 3.4.5）。閾値方式 ========
+    rule resp_sens {
+      threshold {
+        is_gas = has_value(product.physical_state) and product.physical_state == gas
+        lim1 = (if is_gas then option_arg(resp_sens.cat1_limit_gas) else option_arg(resp_sens.cat1_limit))
+        lim1b = (if is_gas then 0.2 % else 1.0 %)
+        c1a = sum(conc of ingredients where category(resp_sens) == 1A)
+        c1b = sum(conc of ingredients where category(resp_sens) == 1B)
+        c1 = sum(conc of ingredients where category(resp_sens) == 1)
+        if c1a >= 0.1 % then classify resp_sens as 1A
+        else if c1b >= lim1b then classify resp_sens as 1B
+        else if c1 >= lim1 then classify resp_sens as 1
+        else not_classified
+      }
+    }
+
+    rule skin_sens {
+      threshold {
+        c1a = sum(conc of ingredients where category(skin_sens) == 1A)
+        c1b = sum(conc of ingredients where category(skin_sens) == 1B)
+        c1 = sum(conc of ingredients where category(skin_sens) == 1)
+        if c1a >= 0.1 % then classify skin_sens as 1A
+        else if c1b >= 1.0 % then classify skin_sens as 1B
+        else if c1 >= option_arg(skin_sens.cat1_limit) then classify skin_sens as 1
+        else not_classified
+      }
+    }
+
+    // ======== 生殖細胞変異原性（3.5、表 3.5.1）。1A/1B 0.1 %、区分 2 1.0 %（固定）========
+    rule muta {
+      threshold {
+        if sum(conc of ingredients where category(muta) == 1A) >= 0.1 % then classify muta as 1A
+        else if sum(conc of ingredients where category(muta) == 1B) >= 0.1 % then classify muta as 1B
+        else if sum(conc of ingredients where category(muta) == 1) >= 0.1 % then classify muta as 1
+        else if sum(conc of ingredients where category(muta) == 2) >= 1.0 % then classify muta as 2
+        else not_classified
+      }
+    }
+
+    // ======== 発がん性（3.6、表 3.6.1）。1A/1B 0.1 %、区分 2 は 0.1 % か 1.0 %（選択点）========
+    rule carc {
+      threshold {
+        if sum(conc of ingredients where category(carc) == 1A) >= 0.1 % then classify carc as 1A
+        else if sum(conc of ingredients where category(carc) == 1B) >= 0.1 % then classify carc as 1B
+        else if sum(conc of ingredients where category(carc) == 1) >= 0.1 % then classify carc as 1
+        else if sum(conc of ingredients where category(carc) == 2) >= option_arg(carc.cat2_limit) then classify carc as 2
+        else not_classified
+      }
+    }
+
+    // ======== 生殖毒性（3.7、表 3.7.1）。区分 1 は 0.1 % か 0.3 %、区分 2 は 0.1 % か 3.0 %（選択点）========
+    rule repr {
+      threshold {
+        if sum(conc of ingredients where category(repr) == 1A) >= option_arg(repr.cat1_limit) then classify repr as 1A
+        else if sum(conc of ingredients where category(repr) == 1B) >= option_arg(repr.cat1_limit) then classify repr as 1B
+        else if sum(conc of ingredients where category(repr) == 1) >= option_arg(repr.cat1_limit) then classify repr as 1
+        else if sum(conc of ingredients where category(repr) == 2) >= option_arg(repr.cat2_limit) then classify repr as 2
+        else not_classified
+      }
+    }
+
+    rule lactation {
+      threshold {
+        if option(lactation.adopt) == exclude then not_applicable
+        if sum(conc of ingredients where category(lactation) == additional) >= option_arg(lactation.limit) then classify lactation as additional
+        else not_classified
+      }
+    }
+
+    // ======== 特定標的臓器毒性 単回ばく露（3.8、表 3.8.2、区分 3 の 20 % は 3.8.3.4.3）========
+    rule stot_se {
+      threshold {
+        c1 = sum(conc of ingredients where category(stot_se) == 1)
+        c2 = sum(conc of ingredients where category(stot_se) == 2)
+        c3 = sum(conc of ingredients where category(stot_se) == 3)
+        if c1 >= option_arg(stot_se.cat1_limit) then classify stot_se as 1
+        else if c1 >= 1.0 % and option(stot_se.cat1_low_to_cat2) == yes then classify stot_se as 2
+        else if c2 >= option_arg(stot_se.cat2_limit) then classify stot_se as 2
+        else if option(stot_se.category3) == adopt and c3 >= 20 % then {
+          classify stot_se as 3
+          needs_judgement "区分 3（気道刺激性・麻酔作用）は 20 % の外挿。作用ごとに専門家の判断を優先する（3.8.3.4.3）"
+        }
+        else not_classified
+      }
+    }
+
+    // ======== 特定標的臓器毒性 反復ばく露（3.9、表 3.9.3）========
+    rule stot_re {
+      threshold {
+        c1 = sum(conc of ingredients where category(stot_re) == 1)
+        c2 = sum(conc of ingredients where category(stot_re) == 2)
+        if c1 >= option_arg(stot_re.cat1_limit) then classify stot_re as 1
+        else if c1 >= 1.0 % and option(stot_re.cat1_low_to_cat2) == yes then classify stot_re as 2
+        else if c2 >= option_arg(stot_re.cat2_limit) then classify stot_re as 2
+        else not_classified
+      }
+    }
+
+    // ======== 誤えん有害性（3.10、表 3.10.1・3.10.3.3）。区分 1 成分 10 % 以上かつ 40 ℃ の動粘性率 20.5 mm2/s 以下 ========
+    rule aspiration {
+      precondition {
+        if has_value(product.physical_state) and product.physical_state != liquid then not_applicable
+      }
+      threshold {
+        c1 = sum(conc of ingredients where category(aspiration) == 1)
+        c2 = sum(conc of ingredients where category(aspiration) == 2)
+        visc = product.kinematic_viscosity_40c
+        if c1 >= 10 % and has_value(visc) and visc <= 20.5 then classify aspiration as 1
+        else if c1 >= 10 % and not has_value(visc) then {
+          unclassifiable
+          needs_judgement "区分 1 の成分が 10 % 以上だが、40 ℃ の動粘性率が未設定"
+        }
+        else if option(aspiration.category2) == adopt and c2 >= 10 % and has_value(visc) and visc <= 14 then {
+          classify aspiration as 2
+          needs_judgement "区分 2 は表面張力・水溶性・沸点・揮発性を考えた専門家の判断が要る（3.10.3.3.3.2）"
+        }
+        else not_classified
+      }
+    }
+
+    // ======== 水生環境有害性（4.1）。合計法（表 4.1.3・4.1.4）。毒性乗率 M は成分の値（無ければ 1）========
+    rule aquatic.acute {
+      consider ingredients where conc >= 1 % or flagged(relevant) or (conc >= 0.1 % and category(aquatic.acute) == 1)
+      threshold {
+        m = coalesce(value(m_factor_acute), 1)
+        s1 = sum(conc * m of ingredients where category(aquatic.acute) == 1)
+        s2 = sum(conc of ingredients where category(aquatic.acute) == 2)
+        s3 = sum(conc of ingredients where category(aquatic.acute) == 3)
+        unknown_part = ingredients where unknown(aquatic.acute)
+        if s1 >= 25 % then classify aquatic.acute as 1
+        else if 10 * s1 + s2 >= 25 % then classify aquatic.acute as 2
+        else if 100 * s1 + 10 * s2 + s3 >= 25 % then classify aquatic.acute as 3
+        else not_classified
+        if count(unknown_part) > 0 then
+          note "混合物の {sum(conc of unknown_part)} は水生環境有害性が未知の成分からなる" place option(aquatic.unknown_statement)
+      }
+    }
+
+    rule aquatic.chronic {
+      consider ingredients where conc >= 1 % or flagged(relevant) or (conc >= 0.1 % and category(aquatic.chronic) == 1)
+      threshold {
+        m = coalesce(value(m_factor_chronic), 1)
+        s1 = sum(conc * m of ingredients where category(aquatic.chronic) == 1)
+        s2 = sum(conc of ingredients where category(aquatic.chronic) == 2)
+        s3 = sum(conc of ingredients where category(aquatic.chronic) == 3)
+        s4 = sum(conc of ingredients where category(aquatic.chronic) == 4)
+        unknown_part = ingredients where unknown(aquatic.chronic)
+        if s1 >= 25 % then classify aquatic.chronic as 1
+        else if 10 * s1 + s2 >= 25 % then classify aquatic.chronic as 2
+        else if 100 * s1 + 10 * s2 + s3 >= 25 % then classify aquatic.chronic as 3
+        else if sum(conc of ingredients where category(aquatic.chronic) in [1, 2, 3, 4]) >= 25 % then classify aquatic.chronic as 4
+        else not_classified
+        if count(unknown_part) > 0 then
+          note "混合物の {sum(conc of unknown_part)} は水生環境有害性が未知の成分からなる" place option(aquatic.unknown_statement)
+      }
+    }
+
+    // ======== オゾン層への有害性（4.2）。モントリオール議定書の物質 0.1 % 以上 ========
+    rule ozone {
+      threshold {
+        if sum(conc of ingredients where category(ozone) == 1) >= 0.1 % then classify ozone as 1
+        else not_classified
+      }
+    }
+
+    // ======== 物理化学的危険性（第 2 部）。混合物は試験データで決める（manual）。製品のプロパティで当てはまるかだけ絞る ========
+    rule flammable_liquid {
+      range {
+        if has_value(product.physical_state) and product.physical_state != liquid then not_applicable
+        fp = product.flash_point
+        ibp = product.initial_boiling_point
+        if not has_value(fp) then {
+          unclassifiable
+          needs_judgement "引火点が未設定（密閉式で測る。2.6.4.2）"
+        }
+        else if fp < 23 and has_value(ibp) and ibp <= 35 then classify flammable_liquid as 1
+        else if fp < 23 and has_value(ibp) and ibp > 35 then classify flammable_liquid as 2
+        else if fp < 23 and not has_value(ibp) then {
+          unclassifiable
+          needs_judgement "引火点 23 ℃ 未満。区分 1 と 2 を分けるには初留点が要る"
+        }
+        else if fp >= 23 and fp <= 60 then classify flammable_liquid as 3
+        else if fp > 60 and fp <= 93 then classify flammable_liquid as 4
+        else not_classified
+      }
+    }
+
+    rule flammable_gas {
+      manual {
+        if has_value(product.physical_state) and product.physical_state != gas then not_applicable
+        needs_judgement "ISO 10156 の試験・計算（燃焼範囲・燃焼速度）で分類する（2.2）"
+      }
+    }
+    rule oxidizing_gas {
+      manual {
+        if has_value(product.physical_state) and product.physical_state != gas then not_applicable
+        needs_judgement "ISO 10156 の試験・計算（酸化力）で分類する（2.4）"
+      }
+    }
+    rule gas_under_pressure {
+      manual {
+        if has_value(product.physical_state) and product.physical_state != gas then not_applicable
+        needs_judgement "容器内の圧力（20 ℃ で 200 kPa ゲージ以上）と臨界温度から、圧縮・液化・深冷液化・溶解のどれかを決める（2.5）"
+      }
+    }
+    rule aerosol {
+      manual {
+        if has_value(product.form) and product.form != aerosol then not_applicable
+        needs_judgement "可燃性成分の量・燃焼熱と、着火距離・密閉空間・泡の試験で分類する（2.3）"
+      }
+    }
+    rule chemical_under_pressure {
+      manual {
+        needs_judgement "加圧下化学品は可燃性成分の量と燃焼熱で分類する（2.3）。エアゾールでない加圧容器のときだけ"
+      }
+    }
+    rule explosive {
+      manual {
+        needs_judgement "試験シリーズ 1〜7 または専門家の判断で分類する（2.1）"
+      }
+    }
+    rule flammable_solid {
+      manual {
+        if has_value(product.physical_state) and product.physical_state != solid then not_applicable
+        needs_judgement "燃焼速度試験（N.1）で分類する（2.7）"
+      }
+    }
+    rule self_reactive {
+      manual {
+        needs_judgement "試験シリーズ A〜H で分類する（2.8）。爆発性基が無く発熱分解エネルギー 300 J/g 未満なら対象外"
+      }
+    }
+    rule pyrophoric_liquid {
+      manual {
+        if has_value(product.physical_state) and product.physical_state != liquid then not_applicable
+        needs_judgement "試験 N.3 で分類する（2.9）"
+      }
+    }
+    rule pyrophoric_solid {
+      manual {
+        if has_value(product.physical_state) and product.physical_state != solid then not_applicable
+        needs_judgement "試験 N.2 で分類する（2.10）"
+      }
+    }
+    rule self_heating {
+      manual {
+        if has_value(product.physical_state) and product.physical_state == gas then not_applicable
+        needs_judgement "試験 N.4 で分類する（2.11）"
+      }
+    }
+    rule water_reactive {
+      manual {
+        if has_value(product.physical_state) and product.physical_state == gas then not_applicable
+        needs_judgement "試験 N.5 で分類する（2.12）"
+      }
+    }
+    rule oxidizing_liquid {
+      manual {
+        if has_value(product.physical_state) and product.physical_state != liquid then not_applicable
+        needs_judgement "試験 O.2 で分類する（2.13）"
+      }
+    }
+    rule oxidizing_solid {
+      manual {
+        if has_value(product.physical_state) and product.physical_state != solid then not_applicable
+        needs_judgement "試験 O.1 または O.3 で分類する（2.14）"
+      }
+    }
+    rule organic_peroxide {
+      manual {
+        needs_judgement "試験シリーズ A〜H で分類する（2.15）。最も危険な成分と同じタイプとしてよいが SADT は測る"
+      }
+    }
+    rule corrosive_to_metals {
+      manual {
+        if has_value(product.physical_state) and product.physical_state == gas then not_applicable
+        needs_judgement "鋼・アルミの腐食速度試験（C.1）で分類する（2.16）"
+      }
+    }
+    rule desensitized_explosive {
+      manual {
+        needs_judgement "補正燃焼速度（試験 L.2）で分類する（2.17）"
       }
     }
   }
 
   labels {
     option label.h_omission "H 文の省略の規則を義務にするか" values [required, manufacturer] safest required
-      source "1.4.10.5.3.3"
+      source "G-15: 1.4.10.5.3.3"
     signal_word_precedence { danger over warning }
     h_precedence { H410 suppresses H400; H411 suppresses H401; H412 suppresses H402; H314 suppresses H318 }
   }
 
   tests {
+    // ---- 急性毒性 ----
+    test "急性経口 全成分が区分 3 の変換値" {
+      mixture { "A" 50 % acute.oral 3; "B" 50 % acute.oral 3 }
+      expect { acute.oral 3 }
+    }
+    test "急性経口 区分 5 の範囲は UN では区分 5" {
+      mixture { "A" 100 % ate.oral = 3000 mg/kg }
+      expect { acute.oral 5 }
+    }
+    test "急性経口 未知 20 % は補正の式（80 / 400 → ATE 400 → 区分 4）" {
+      mixture { "A" 80 % ate.oral = 400 mg/kg; "X" 20 % unknown(acute.oral) }
+      expect { acute.oral 4 }
+    }
+    test "急性経口 水だけなら区分に該当しない" {
+      mixture { "水" 100 % flag no_acute_toxicity }
+      expect { acute.oral not_classified }
+    }
+    test "急性経皮 区分 1 の成分 50 % → ATE 10 → 区分 1" {
+      mixture { "A" 50 % acute.dermal 1; "水" 50 % flag no_acute_toxicity }
+      expect { acute.dermal 1 }
+    }
+    test "急性吸入 液体の製品は蒸気で計算し、気体・粉じんは当てはまらない" {
+      mixture { "A" 100 % ate.vapour = 1.5 mg/L }
+      props { physical_state liquid }
+      expect { acute.vapour 2; acute.gas not_applicable; acute.dust not_applicable }
+    }
+    test "急性吸入 粉体の製品は粉じん・ミストで計算" {
+      mixture { "A" 100 % ate.dust = 0.3 mg/L }
+      props { physical_state solid; form powder }
+      expect { acute.dust 2; acute.vapour not_applicable }
+    }
+    test "急性吸入 気体の製品" {
+      mixture { "A" 100 % ate.gas = 2000 ppmV }
+      props { physical_state gas }
+      expect { acute.gas 3; acute.vapour not_applicable }
+    }
+
+    // ---- 皮膚・眼 ----
     test "皮膚 区分 1 の成分 6 %" {
       mixture { "A" 6 % skin 1 }
       expect { skin 1 }
@@ -108,18 +678,162 @@ ruleset "UN-Rev9" version 1 {
       mixture { "A" 6 % skin 1A }
       expect { skin 1A }
     }
-    test "急性経口 全成分が区分 3 の変換値" {
-      mixture { "A" 50 % acute.oral 3; "B" 50 % acute.oral 3 }
-      expect { acute.oral 3 }
+    test "皮膚 区分 3 の成分 12 % は区分 3" {
+      mixture { "A" 12 % skin 3 }
+      expect { skin 3 }
     }
-    test "急性経口 区分 5 の範囲は UN では区分 5" {
-      mixture { "A" 100 % ate.oral = 3000 mg/kg }
-      expect { acute.oral 5 }
-    }
-    test "pH 1.5 なら皮膚 区分 1" {
+    test "pH 1.5 なら皮膚・眼とも区分 1" {
       mixture { "A" 100 % skin 2 }
       props { ph 1.5 }
-      expect { skin 1 }
+      expect { skin 1; eye 1 }
+    }
+    test "眼 皮膚 区分 1 の成分 3 % は眼 区分 1" {
+      mixture { "A" 3 % skin 1B }
+      expect { eye 1 }
+    }
+    test "眼 区分 1 が 2 % → 10×2 = 20 ≧ 10 → 区分 2A" {
+      mixture { "A" 2 % eye 1 }
+      expect { eye 2A }
+    }
+    test "眼 考慮する成分が全部 2B なら 2B" {
+      mixture { "A" 10 % eye 2B; "B" 5 % eye 2B }
+      expect { eye 2B }
+    }
+    test "眼 2B と 2A が混ざれば 2A" {
+      mixture { "A" 10 % eye 2B; "B" 5 % eye 2A }
+      expect { eye 2A }
+    }
+
+    // ---- 感作性 ----
+    test "呼吸器感作性 1A 0.1 % で 1A" {
+      mixture { "A" 0.1 % resp_sens 1A }
+      expect { resp_sens 1A }
+    }
+    test "呼吸器感作性 細区分なし 0.5 % は安全側の既定（0.1 %）で区分 1" {
+      mixture { "A" 0.5 % resp_sens 1 }
+      expect { resp_sens 1 }
+    }
+    test "呼吸器感作性 気体の製品で 1B 0.3 % は 1B（気体は 0.2 %）" {
+      mixture { "A" 0.3 % resp_sens 1B }
+      props { physical_state gas }
+      expect { resp_sens 1B }
+    }
+    test "皮膚感作性 1B 0.5 % は区分なし、1.0 % で 1B" {
+      mixture { "A" 0.5 % skin_sens 1B; "B" 1.0 % skin_sens 1B }
+      expect { skin_sens 1B }
+    }
+
+    // ---- CMR ----
+    test "変異原性 1B 0.1 % で 1B、区分 2 は 1.0 % から" {
+      mixture { "A" 0.1 % muta 1B; "B" 0.5 % muta 2 }
+      expect { muta 1B }
+    }
+    test "変異原性 区分 2 だけ 0.5 % は区分なし" {
+      mixture { "A" 0.5 % muta 2 }
+      expect { muta not_classified }
+    }
+    test "発がん性 区分 2 0.5 % は安全側の既定（0.1 %）で区分 2" {
+      mixture { "A" 0.5 % carc 2 }
+      expect { carc 2 }
+    }
+    test "生殖毒性 1A 0.2 % は安全側の既定（0.1 %）で 1A" {
+      mixture { "A" 0.2 % repr 1A }
+      expect { repr 1A }
+    }
+    test "授乳影響 0.2 % は追加区分" {
+      mixture { "A" 0.2 % lactation additional }
+      expect { lactation additional }
+    }
+
+    // ---- 特定標的臓器 ----
+    test "STOT 単回 区分 1 成分 5 % は安全側の既定（1 %）で区分 1" {
+      mixture { "A" 5 % stot_se 1 }
+      expect { stot_se 1 }
+    }
+    test "STOT 単回 区分 3 成分 25 % は区分 3" {
+      mixture { "A" 25 % stot_se 3 }
+      expect { stot_se 3 }
+    }
+    test "STOT 反復 区分 2 成分 2 % は安全側の既定（1 %）で区分 2" {
+      mixture { "A" 2 % stot_re 2 }
+      expect { stot_re 2 }
+    }
+
+    // ---- 誤えん ----
+    test "誤えん 区分 1 成分 15 %、動粘性率 5 mm2/s なら区分 1" {
+      mixture { "A" 15 % aspiration 1; "B" 85 % }
+      props { physical_state liquid; kinematic_viscosity_40c 5 }
+      expect { aspiration 1 }
+    }
+    test "誤えん 動粘性率が無ければ分類できない" {
+      mixture { "A" 15 % aspiration 1; "B" 85 % }
+      props { physical_state liquid }
+      expect { aspiration unclassifiable }
+    }
+    test "誤えん 固体には当てはまらない" {
+      mixture { "A" 15 % aspiration 1; "B" 85 % }
+      props { physical_state solid }
+      expect { aspiration not_applicable }
+    }
+
+    // ---- 水生環境 ----
+    test "水生 急性 区分 1 成分 3 % に M=10 → 30 ≧ 25 → 区分 1" {
+      mixture { "A" 3 % aquatic.acute 1 m_factor_acute = 10; "水" 97 % }
+      expect { aquatic.acute 1 }
+    }
+    test "水生 急性 区分 1 成分 3 %（M=1）→ 10×3 = 30 ≧ 25 → 区分 2" {
+      mixture { "A" 3 % aquatic.acute 1; "水" 97 % }
+      expect { aquatic.acute 2 }
+    }
+    test "水生 急性 区分 1 が 0.1 % 以上なら考慮し、100×0.2 + 10×2 = 40 → 区分 3" {
+      mixture { "A" 0.2 % aquatic.acute 1; "B" 2 % aquatic.acute 2; "水" 97.8 % }
+      expect { aquatic.acute 3 }
+    }
+    test "水生 慢性 区分 2 成分 20 % は 10×20 ≧ 25 → 区分 3" {
+      mixture { "A" 20 % aquatic.chronic 2; "水" 80 % }
+      expect { aquatic.chronic 3 }
+    }
+    test "水生 慢性 区分 2 成分 2 % と区分 4 成分 24 % → 合計 26 ≧ 25 → 区分 4" {
+      mixture { "A" 2 % aquatic.chronic 2; "B" 24 % aquatic.chronic 4; "水" 74 % }
+      expect { aquatic.chronic 4 }
+    }
+    test "皮膚 区分 2 の成分 5 % は区分 3（表 3.2.3）" {
+      mixture { "A" 5 % skin 2 }
+      expect { skin 3 }
+    }
+    test "急性経口 区分 2 の成分だけ（50 % ＋ 50 %）は、表のとおりなら ATE 5 で区分 1" {
+      mixture { "A" 50 % acute.oral 2; "B" 50 % acute.oral 2 }
+      expect { acute.oral 1 }
+    }
+    test "水生 慢性 区分 1 成分 30 % → 区分 1" {
+      mixture { "A" 30 % aquatic.chronic 1; "水" 70 % }
+      expect { aquatic.chronic 1 }
+    }
+    test "オゾン層 0.1 % で区分 1" {
+      mixture { "A" 0.1 % ozone 1; "水" 99.9 % }
+      expect { ozone 1 }
+    }
+
+    // ---- 物理化学 ----
+    test "引火性液体 引火点 10 ℃・初留点 30 ℃ は区分 1" {
+      mixture { "A" 100 % }
+      props { physical_state liquid; flash_point 10; initial_boiling_point 30 }
+      expect { flammable_liquid 1; flammable_gas not_applicable; flammable_solid not_applicable }
+    }
+    test "引火性液体 引火点 50 ℃ は区分 3" {
+      mixture { "A" 100 % }
+      props { physical_state liquid; flash_point 50 }
+      expect { flammable_liquid 3 }
+    }
+    test "引火性液体 引火点 100 ℃ は区分に該当しない" {
+      mixture { "A" 100 % }
+      props { physical_state liquid; flash_point 100 }
+      expect { flammable_liquid not_classified }
+    }
+    test "固体の製品に引火性液体は当てはまらない" {
+      mixture { "A" 100 % }
+      props { physical_state solid }
+      expect { flammable_liquid not_applicable }
     }
   }
 }
