@@ -48,3 +48,6 @@ scripts/data/loli-ghs-links-*.tsv
 apps/web/modules/registry.generated.ts
 apps/web/modules/registry.server.generated.ts
 apps/web/modules/enabled.json
+
+# 組み直しの道具が読む外部の部品（jsDelivr から取る。tools/html-to-pdf.mjs の注釈参照）
+tools/vendor/
