@@ -29,6 +29,23 @@ def table_for(font_name):
         return GOTHIC
     return None
 
+NORMAL = (
+    (0x0020, 0x007E), (0x00A0, 0x024F), (0x2000, 0x206F), (0x2100, 0x22FF), (0x2460, 0x24FF),
+    (0x3000, 0x30FF), (0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF), (0xFF00, 0xFFEF),
+)
+
+def is_normal(c):
+    o = ord(c)
+    return any(a <= o <= b for a, b in NORMAL)
+
+def looks_garbled(chars):
+    """普通の日本語・英数字の範囲から外れた文字が 3 割以上あれば、化けていると見る"""
+    letters = [ch["c"] for ch in chars if not ch["c"].isspace()]
+    if not letters:
+        return False
+    odd = sum(1 for c in letters if not is_normal(c))
+    return odd / len(letters) >= 0.3
+
 def decode_page(page):
     raw = page.get_text("rawdict")
     lines = []
@@ -37,6 +54,9 @@ def decode_page(page):
             chars = []
             for span in line.get("spans", []):
                 table = table_for(span.get("font", ""))
+                # 字体の名前が同じでも、正しく読める文字列には触らない（ガイダンスの PDF で余計に化かした。2026-10-17）
+                if table is not None and not looks_garbled(span.get("chars", [])):
+                    table = None
                 for ch in span.get("chars", []):
                     c = ch["c"]
                     if table is not None:
