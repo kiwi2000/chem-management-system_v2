@@ -1,5 +1,6 @@
 import type { MetalConversionFactor } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { MetalFactorDto } from "@/lib/types";
 
 export function toMetalFactorDto(
@@ -7,6 +8,7 @@ export function toMetalFactorDto(
   matchedSubstances: { id: string; code: string; nameJa: string; nameEn: string | null }[],
 ): MetalFactorDto {
   return {
+    stamp: rowStamp(f),
     id: f.id,
     casNumber: f.casNumber,
     metalElement: f.metalElement,

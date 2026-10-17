@@ -12,12 +12,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type {
   ApiError,
   CasLinkDiffRowDto,
@@ -115,6 +117,8 @@ export function CasLinkTable({
     run: CasLinkDiffRunDto | null;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   /** 直している行の id。null なら閉じている */
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>({ casNumber: "", excluded: false, note: "" });
@@ -513,14 +517,16 @@ export function CasLinkTable({
 
   function startEdit(r: Row) {
     setError(null);
+    setStale(null);
     setDraft({ casNumber: r.casNumber, excluded: r.excluded, note: r.note ?? "" });
     setEditingId(r.id);
   }
 
-  async function save() {
+  async function save(force = false) {
     const row = data?.items.find((r) => r.id === editingId);
     if (!row) return;
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch(`/api/statutory-cas-links/${row.id}`, {
@@ -533,14 +539,24 @@ export function CasLinkTable({
           casNumber: draft.casNumber,
           excluded: draft.excluded,
           note: draft.note || null,
+          // 開いたときの印。食い違えば 409 で知らされる
+          stamp: row.stamp,
+          force: force || undefined,
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      setStale(null);
       setEditingId(null);
       setReloadTick((n) => n + 1);
     } finally {
@@ -573,6 +589,12 @@ export function CasLinkTable({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
 
       {/* 編集の欄。法文物質名の画面の「規制対象CAS」と同じ並び（項目が3つなので1行に収める） */}
       {editable && editingId && (

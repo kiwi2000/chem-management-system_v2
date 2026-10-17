@@ -4,10 +4,12 @@ import { documentTags, type DocumentTarget, type DocumentTemplateKind } from "@c
 import { Download, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, DocumentTemplateDto } from "@/lib/types";
 
 /**
@@ -33,26 +35,46 @@ export function TemplateFilePanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  /**
+   * ほかの人が先に保存していた知らせ（楽観的ロック）。選んだファイルは入力欄から消えるので、
+   * 「このまま保存する」で送り直せるよう別に持つ
+   */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
+  const pending = useRef<File | null>(null);
 
   const kind = template.kind as Exclude<DocumentTemplateKind, "BLOCK">;
   const accept = kind === "XLSX" ? ".xlsx" : ".docx";
   const groups = documentTags(template.target as DocumentTarget, locale, orgItems);
 
-  async function upload(file: File) {
+  /** 預ける。本文がファイルそのものなので、印は URL で送る。`force` は「このまま保存する」 */
+  async function upload(file: File, force = false) {
     setBusy(true);
     setError(null);
+    if (!force) setStale(null);
+    pending.current = file;
     try {
-      const res = await fetch(`/api/doc-templates/${template.id}/file`, {
+      const query = new URLSearchParams({ stamp: template.stamp });
+      if (force) query.set("force", "1");
+      const res = await fetch(`/api/doc-templates/${template.id}/file?${query.toString()}`, {
         method: "PUT",
         headers: { "x-file-name": encodeURIComponent(file.name) },
         body: file,
       });
+      // ほかの人が先に保存していた。選んだファイルは持ったまま、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      setStale(null);
+      pending.current = null;
+      // 読み直すと新しい印が template に入る
       onChanged();
     } finally {
       setBusy(false);
@@ -82,6 +104,17 @@ export function TemplateFilePanel({
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">{m.docTemplates.file.lead}</p>
 
+      <StaleEditNotice
+        stale={stale}
+        saving={busy}
+        onForce={() => {
+          if (pending.current) void upload(pending.current, true);
+        }}
+        onDismiss={() => {
+          setStale(null);
+          pending.current = null;
+        }}
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>

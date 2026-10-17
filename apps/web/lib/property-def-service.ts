@@ -1,4 +1,5 @@
 import type { Prisma, PropertyDef, PropertyOption } from "@prisma/client";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { PropertyDefDto, PropertyOptionDto } from "@/lib/types";
 
 /**
@@ -33,6 +34,7 @@ function toOptionDto(o: PropertyOption): PropertyOptionDto {
 
 export function toPropertyDefDto(d: WithCount): PropertyDefDto {
   return {
+    stamp: rowStamp(d),
     id: d.id,
     target: d.target,
     key: d.key,

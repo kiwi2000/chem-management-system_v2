@@ -11,6 +11,7 @@ import { ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type {
   ApiError,
   ImpurityExemptionsDto,
@@ -41,7 +43,8 @@ import { cn } from "@/lib/utils";
  * 設定を変えると判定の前提が変わるので、左下に「要再計算」が出る
  */
 
-const EMPTY_FORM = { id: "", code: "", nameJa: "", nameEn: "", note: "" };
+/** `stamp` は鉛筆で読み込んだ行の印（楽観的ロック）。新規のときは空 */
+const EMPTY_FORM = { id: "", stamp: "", code: "", nameJa: "", nameEn: "", note: "" };
 
 /** 件数が知れているので、並びは表示順のみ */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
@@ -56,6 +59,11 @@ export default function ImpurityTypesPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * ほかの人が先に保存していた知らせ（楽観的ロック）。
+   * 種別の保存と区分の付け外しの 2 つの送り先があるので、「このまま保存する」で何を送り直すかも持つ
+   */
+  const [stale, setStale] = useState<{ info: StaleEditInfo; retry: () => void } | null>(null);
   const [saving, setSaving] = useState(false);
 
   /** 法律 → 区分。除外の表はこの並びで出す */
@@ -186,31 +194,53 @@ export default function ImpurityTypesPage() {
     return out;
   }, [exempt]);
 
-  /** 区分の付け外し。1 回ごとに保存する */
-  async function toggleCategories(categoryIds: string[], next: boolean) {
+  /**
+   * 区分の付け外し。1 回ごとに保存する。
+   * 印は種別の行のもの。付け外しのたびに種別の行が動くので、応答の印で差し替えて次に備える
+   */
+  async function toggleCategories(categoryIds: string[], next: boolean, force = false) {
     if (!selectedId || categoryIds.length === 0) return;
+    const typeId = selectedId;
+    const current = types.find((p) => p.id === typeId);
+    if (!current) return;
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
-      const res = await fetch(`/api/impurity-types/${selectedId}/exemptions`, {
+      const res = await fetch(`/api/impurity-types/${typeId}/exemptions`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categoryIds, excluded: next }),
+        body: JSON.stringify({
+          categoryIds,
+          excluded: next,
+          stamp: current.stamp,
+          force: force || undefined,
+        }),
       });
+      // ほかの人が先に付け外していた。見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale({ info: staleInfo, retry: () => void toggleCategories(categoryIds, next, true) });
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
-      await loadExemptions(selectedId);
+      const { stamp } = (await res.json()) as { stamp: string };
+      setStale(null);
+      setTypes((prev) => prev.map((p) => (p.id === typeId ? { ...p, stamp } : p)));
+      await loadExemptions(typeId);
     } finally {
       setSaving(false);
     }
   }
 
-  async function saveType() {
+  async function saveType(force = false) {
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const creating = form.id === "";
@@ -222,14 +252,23 @@ export default function ImpurityTypesPage() {
           nameJa: form.nameJa,
           nameEn: form.nameEn || null,
           note: form.note || null,
+          // 編集のときだけ、読み込んだときの印を添える
+          ...(creating ? {} : { stamp: form.stamp, force: force || undefined }),
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale({ info: staleInfo, retry: () => void saveType(true) });
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      setStale(null);
       setAdding(false);
       setForm(EMPTY_FORM);
       await loadTypes();
@@ -265,6 +304,12 @@ export default function ImpurityTypesPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      <StaleEditNotice
+        stale={stale?.info ?? null}
+        saving={saving}
+        onForce={() => stale?.retry()}
+        onDismiss={() => setStale(null)}
+      />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3">
@@ -277,6 +322,7 @@ export default function ImpurityTypesPage() {
               size="sm"
               onClick={() => {
                 setForm(EMPTY_FORM);
+                setStale(null);
                 setAdding(true);
               }}
             >
@@ -356,11 +402,13 @@ export default function ImpurityTypesPage() {
                     onClick: (r) => {
                       setForm({
                         id: r.id,
+                        stamp: r.stamp,
                         code: r.code,
                         nameJa: r.nameJa,
                         nameEn: r.nameEn ?? "",
                         note: r.note ?? "",
                       });
+                      setStale(null);
                       setAdding(true);
                     },
                   }
@@ -451,6 +499,8 @@ export default function ImpurityTypesPage() {
           onClose={() => {
             setExceptionsFor(null);
             void loadExemptions(selected.id);
+            // 上書きの保存も種別の行を動かすので、印を取り直す（次の付け外しが食い違いにならないように）
+            void loadTypes();
           }}
           editable={editable}
         />

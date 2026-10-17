@@ -21,12 +21,14 @@ import {
   type NameDraft,
   type ThresholdDraft,
 } from "@/components/law-fields";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { slideClass, type SlideDir } from "@/components/category-header";
 import type {
   ApiError,
@@ -120,6 +122,16 @@ export function StatutorySubstanceSection({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック）。法文物質名の欄のぶん */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
+  /**
+   * 分類の欄のぶん。保存と「分けるのをやめる」の 2 つの送り先があるので、
+   * 「このまま保存する」で何を送り直すかも一緒に持つ
+   */
+  const [classStale, setClassStale] = useState<{
+    info: StaleEditInfo;
+    retry: () => void;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
 
   const columns = useMemo<TableColumn<StatutorySubstanceDto>[]>(
@@ -361,6 +373,7 @@ export function StatutorySubstanceSection({
    * こうすると、ぶら下がっている法文物質名を動かさずに分けられる。
    */
   function startAddClass() {
+    setClassStale(null);
     const only = classes.length === 1 ? classes[0] : undefined;
     if (only && !named(only)) {
       setClassDraft({
@@ -381,16 +394,19 @@ export function StatutorySubstanceSection({
   }
 
   function startEditClass(c: RegulationClassDto) {
+    setClassStale(null);
     setClassDraft({ id: c.id, code: c.code, ...toNameDraft(c, languages[0]?.code ?? "") });
   }
 
-  async function saveClass(e: React.FormEvent) {
-    e.preventDefault();
+  async function saveClass(force = false) {
     if (!classDraft || !category) return;
     setError(null);
+    if (!force) setClassStale(null);
     setSaving(true);
     try {
       const creating = classDraft.id === null;
+      // 編集のときだけ、開いたときの印を添える
+      const current = creating ? undefined : classes.find((c) => c.id === classDraft.id);
       const res = await fetch(
         creating ? "/api/regulation-classes" : `/api/regulation-classes/${classDraft.id}`,
         {
@@ -404,9 +420,16 @@ export function StatutorySubstanceSection({
             nameJa: classDraft.nameJa || null,
             nameEn: classDraft.nameEn || null,
             displayOrder: classes.length,
+            ...(current ? { stamp: current.stamp, force: force || undefined } : {}),
           }),
         },
       );
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setClassStale({ info: staleInfo, retry: () => void saveClass(true) });
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -427,16 +450,19 @@ export function StatutorySubstanceSection({
    * 名前だけを空にして受け皿に戻す。利用者から見れば「分けるのをやめた」だけで、
    * ぶら下がっている法文物質名はそのまま残る。
    */
-  async function deleteClass() {
+  async function deleteClass(force = false) {
     if (!classDraft?.id || !category) return;
     const target = classes.find((c) => c.id === classDraft.id);
     if (!target) return;
     const label = pickStatutoryName(locale, target.nameOriginal, target.nameJa, target.nameEn);
     const last = classes.length === 1;
     const text = last ? m.regulationClasses.undivideConfirm : m.regulationClasses.deleteConfirm;
-    if (!(await ask({ message: text(label, target.substanceCount), destructive: true }))) return;
+    // 「このまま保存する」で送り直すときは、もう確かめてあるので聞かない
+    if (!force && !(await ask({ message: text(label, target.substanceCount), destructive: true })))
+      return;
 
     setError(null);
+    if (!force) setClassStale(null);
     const res = await fetch(
       `/api/regulation-classes/${classDraft.id}`,
       last
@@ -451,10 +477,18 @@ export function StatutorySubstanceSection({
               nameJa: null,
               nameEn: null,
               displayOrder: target.displayOrder,
+              stamp: target.stamp,
+              force: force || undefined,
             }),
           }
         : { method: "DELETE" },
     );
+    // 受け皿に戻す書き換えを、ほかの人の変更の上に重ねないための知らせ
+    const staleInfo = await readStaleEdit(res);
+    if (staleInfo) {
+      setClassStale({ info: staleInfo, retry: () => void deleteClass(true) });
+      return;
+    }
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -469,6 +503,7 @@ export function StatutorySubstanceSection({
 
   function startNew() {
     setError(null);
+    setStale(null);
     // 閾値は空のまま（区分の既定値に従う）。区分を後から直せば、空の欄には伝わる
     setDraft({
       ...EMPTY,
@@ -480,6 +515,7 @@ export function StatutorySubstanceSection({
 
   function startEdit(s: StatutorySubstanceDto) {
     setError(null);
+    setStale(null);
     setDraft({
       code: s.code,
       officialNumber: s.officialNumber ?? "",
@@ -500,13 +536,15 @@ export function StatutorySubstanceSection({
     setEditingId(s.id);
   }
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(force = false) {
     if (!activeClassId) return;
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const creating = editingId === "new";
+      // 編集のときだけ、開いたときの印を添える
+      const current = creating ? undefined : data?.items.find((s) => s.id === editingId);
       const res = await fetch(
         creating ? "/api/statutory-substances" : `/api/statutory-substances/${editingId}`,
         {
@@ -530,9 +568,16 @@ export function StatutorySubstanceSection({
             effectiveTo: draft.effectiveTo || null,
             applicableCondition: draft.applicableCondition || null,
             note: draft.note || null,
+            ...(current ? { stamp: current.stamp, force: force || undefined } : {}),
           }),
         },
       );
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -618,7 +663,19 @@ export function StatutorySubstanceSection({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={saveClass} className="space-y-3">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void saveClass();
+              }}
+              className="space-y-3"
+            >
+              <StaleEditNotice
+                stale={classStale?.info ?? null}
+                saving={saving}
+                onForce={() => classStale?.retry()}
+                onDismiss={() => setClassStale(null)}
+              />
               <div className="flex flex-wrap items-start gap-3">
                 <NameFields
                   languages={languages}
@@ -678,7 +735,19 @@ export function StatutorySubstanceSection({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={save} className="space-y-3">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void save();
+              }}
+              className="space-y-3"
+            >
+              <StaleEditNotice
+                stale={stale}
+                saving={saving}
+                onForce={() => void save(true)}
+                onDismiss={() => setStale(null)}
+              />
               <div className="flex flex-wrap items-start gap-3">
                 <Field label={m.statutorySubstances.code} htmlFor="sub-code" className="w-40">
                   <Input

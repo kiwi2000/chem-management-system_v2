@@ -12,6 +12,7 @@ import {
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -21,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { useMe } from "@/lib/use-me";
 import type { ApiError, ListResponse, OrganisationDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
@@ -35,6 +37,8 @@ interface ItemDraft {
 
 const EMPTY_FORM = {
   id: "",
+  /** 読み込んだときの印（楽観的ロック）。既存のものを直すときだけ送る */
+  stamp: "",
   code: "",
   kind: "COMPANY" as OrganisationKind,
   kindLabel: "",
@@ -75,6 +79,8 @@ export function OrganisationSection() {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<ListResponse<OrganisationDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
   const columns = useMemo<TableColumn<OrganisationDto>[]>(
@@ -174,13 +180,14 @@ export function OrganisationSection() {
 
   function startNew() {
     setError(null);
+    setStale(null);
     setForm({ ...EMPTY_FORM, items: [] });
     setOpen(true);
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(force = false) {
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const editing = form.id !== "";
@@ -188,6 +195,8 @@ export function OrganisationSection() {
         method: editing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // 既存のものなら印を添える（楽観的ロック）。force は「このまま保存する」
+          ...(editing ? { stamp: form.stamp, force: force || undefined } : {}),
           code: form.code,
           kind: form.kind,
           // 「そのほか」以外では捨てる。種別を変えたときに古い呼び名が残らないように
@@ -200,6 +209,12 @@ export function OrganisationSection() {
           items: form.items.filter((x) => x.label.trim() !== ""),
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -250,6 +265,12 @@ export function OrganisationSection() {
 
   return (
     <section className="space-y-3">
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -264,7 +285,13 @@ export function OrganisationSection() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onSubmit} className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void save();
+              }}
+              className="space-y-4"
+            >
               <div className="flex flex-wrap items-end gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="org-code">{m.organisations.code}</Label>
@@ -447,6 +474,7 @@ export function OrganisationSection() {
                   variant="outline"
                   onClick={() => {
                     setForm({ ...EMPTY_FORM, items: [] });
+                    setStale(null);
                     setOpen(false);
                   }}
                 >
@@ -478,8 +506,10 @@ export function OrganisationSection() {
           editable
             ? {
                 onClick: (o) => {
+                  setStale(null);
                   setForm({
                     id: o.id,
+                    stamp: o.stamp,
                     code: o.code,
                     kind: o.kind,
                     kindLabel: o.kindLabel ?? "",

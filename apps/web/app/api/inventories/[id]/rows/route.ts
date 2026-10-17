@@ -2,6 +2,7 @@ import { emptyTableState, inventoryRowSchema, normalizeCas, parseTableState } fr
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { currentVersion, findSubstanceByCas, sourcesOfVersion } from "@/lib/inventory-service";
 import { INVENTORY_ROW_COLUMNS } from "@/lib/list-columns";
@@ -85,6 +86,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const byCas = await findSubstanceByCas(rows.map((r) => r.cas_normalized));
 
   const items: InventoryRowDto[] = rows.map((r) => ({
+    // まとめた行は更新時刻のいちばん新しいもの（直せないので印として使われることはない）
+    stamp: rowStamp({ updatedAt: r.updated_at }),
     id: r.id,
     sourceId: r.source_id,
     sourceCode: r.source_code,

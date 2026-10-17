@@ -2,6 +2,7 @@ import { lawSchema, normalizeCode } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,9 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
+  // ほかの人が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   const country = await prisma.country.findFirst({ where: { id: v.countryId, deletedAt: null } });
   if (!country) return jsonError(404, "not_found", m.errors.notFound);
@@ -39,8 +43,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     if (clash) return jsonError(409, "duplicate_law_code", m.laws.duplicateCode(v.code));
   }
 
-  await prisma.law.update({
-    where: { id },
+  const hit = await prisma.law.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       code: v.code,
       codeNormalized,
@@ -54,6 +58,9 @@ export async function PUT(req: Request, { params }: Ctx) {
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(m, await prisma.law.findUnique({ where: { id }, select: STAMP_SELECT }));
+  }
 
   await writeAudit({
     entity: "laws",
@@ -62,7 +69,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { code: v.code, nameOriginal: v.nameOriginal, countryId: v.countryId },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.law.findUniqueOrThrow({ where: { id }, select: { updatedAt: true } });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /** DELETE /api/laws/[id] — 論理削除。区分が残っているものは消せない */

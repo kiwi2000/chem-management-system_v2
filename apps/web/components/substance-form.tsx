@@ -28,6 +28,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import type { SubstanceNumber } from "@/lib/substance-numbers";
 import type {
   ApiError,
@@ -196,6 +198,9 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
   const fieldError = (key: string) => firstError(fieldErrors, key);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  // 楽観的ロックの印（lib/edit-stamp.ts）と、ほかの人が先に保存していた知らせ
+  const [stamp, setStamp] = useState<string | null>(initial?.stamp ?? null);
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
 
   function buildBody() {
     return {
@@ -219,16 +224,31 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    await save();
+  }
+
+  /** 保存。直すときは印を添える。`force` は「このまま保存する」（印が食い違っていても通す） */
+  async function save(force = false) {
     setError(null);
     setFieldErrors({});
     setWarnings([]);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch(initial ? `/api/substances/${initial.id}` : "/api/substances", {
         method: initial ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildBody()),
+        body: JSON.stringify({
+          ...buildBody(),
+          ...(initial ? { stamp: stamp ?? "", force: force || undefined } : {}),
+        }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -236,7 +256,9 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
         setFieldErrors(toFieldErrors(body?.error.details));
         return;
       }
-      const body = (await res.json()) as { warnings?: string[] };
+      const body = (await res.json()) as { warnings?: string[]; stamp?: string };
+      setStale(null);
+      if (body.stamp) setStamp(body.stamp);
       // 警告があるときは一覧に戻らず、その場で確認してもらう。
       // 保存は済んでいるので表示に戻す（続けて書き換えるなら「編集」を押し直す）
       if (body.warnings && body.warnings.length > 0) {
@@ -651,6 +673,12 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
           </Card>
         </fieldset>
 
+        <StaleEditNotice
+          stale={stale}
+          saving={saving}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

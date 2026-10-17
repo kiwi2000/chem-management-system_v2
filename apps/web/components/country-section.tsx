@@ -3,12 +3,14 @@
 import { emptyTableState, pickName, serializeTableState, type TableState } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, CountryDto, ListResponse, RegionDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
@@ -57,6 +59,10 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   /** 「クリア」で戻す先。編集を始めたときの値 */
   const [original, setOriginal] = useState<Draft>(EMPTY);
+  /** 編集を始めたときの印（楽観的ロック）。表を読み直しても、この値を送る */
+  const [editingStamp, setEditingStamp] = useState("");
+  /** ほかの人が先に保存していた知らせ */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
 
   const [data, setData] = useState<ListResponse<CountryDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -235,6 +241,7 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
     const start = { ...EMPTY, regionId: regions.length === 1 ? (regions[0]?.id ?? "") : "" };
     setDraft(start);
     setOriginal(start);
+    setStale(null);
     setEditingId(NEW_ID);
   }
 
@@ -244,17 +251,21 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
     const d = toDraft(c);
     setDraft(d);
     setOriginal(d);
+    setEditingStamp(c.stamp);
+    setStale(null);
     setEditingId(c.id);
   }
 
   function stopEdit() {
     setEditingId(null);
     setDraft(EMPTY);
+    setStale(null);
   }
 
-  async function save() {
+  async function save(force = false) {
     setError(null);
     setWarnings([]);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const creating = editingId === NEW_ID;
@@ -262,6 +273,8 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
         method: creating ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // 既存の行なら印を添える（楽観的ロック）。force は「このまま保存する」
+          ...(creating ? {} : { stamp: editingStamp, force: force || undefined }),
           code: draft.code,
           regionId: draft.regionId,
           nameJa: draft.nameJa,
@@ -269,6 +282,12 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
           displayOrder: Number(draft.displayOrder) || 0,
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -335,6 +354,7 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
       : editingId === NEW_ID
         ? [
             {
+              stamp: "",
               id: NEW_ID,
               code: "",
               regionId: "",
@@ -350,6 +370,12 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
 
   return (
     <section className="space-y-3">
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>

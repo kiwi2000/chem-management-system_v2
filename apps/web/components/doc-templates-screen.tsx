@@ -18,8 +18,10 @@ import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, DocumentTemplateDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
@@ -97,6 +99,9 @@ export function DocTemplatesScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [adding, setAdding] = useState(false);
+  /** 直している行の楽観的ロックの印（lib/edit-stamp.ts）と、ほかの人が先に保存していた知らせ */
+  const [editingStamp, setEditingStamp] = useState("");
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
 
   const [data, setData] = useState<ListResponse<DocumentTemplateDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -137,6 +142,8 @@ export function DocTemplatesScreen() {
     setError(null);
     setAdding(false);
     setEditingId(t.id);
+    setEditingStamp(t.stamp);
+    setStale(null);
     setDraft({
       code: t.code,
       nameJa: t.nameJa,
@@ -154,11 +161,14 @@ export function DocTemplatesScreen() {
     setAdding(false);
     setEditingId(null);
     setError(null);
+    setStale(null);
   }
 
-  async function save() {
+  /** 保存。直すときは印を添える。`force` は「このまま保存する」（印が食い違っていても通す） */
+  async function save(force = false) {
     setSaving(true);
     setError(null);
+    if (!force) setStale(null);
     try {
       const payload = {
         code: draft.code,
@@ -170,12 +180,19 @@ export function DocTemplatesScreen() {
         active: draft.active,
         usesRecipient: draft.usesRecipient,
         note: draft.note || null,
+        ...(adding ? {} : { stamp: editingStamp, force: force || undefined }),
       };
       const res = await fetch(adding ? "/api/doc-templates" : `/api/doc-templates/${editingId}`, {
         method: adding ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -433,6 +450,12 @@ export function DocTemplatesScreen() {
     <div className="w-full space-y-3 p-3 pb-10 lg:p-4 lg:pb-12">
       <p className="text-muted-foreground text-sm">{m.docTemplates.lead}</p>
 
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>

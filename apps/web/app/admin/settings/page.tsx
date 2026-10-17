@@ -1,5 +1,7 @@
 "use client";
 
+import { StaleEditNotice } from "@/components/stale-edit-notice";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { RetentionState } from "@/lib/access-log-retention";
 import {
   COMPOSITION_VALIDATION_MODES,
@@ -35,7 +37,7 @@ import {
   type ConditionalLinkMode,
   type PendingResolution,
 } from "@chem/shared";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppIconField } from "@/components/app-icon-field";
 import { IpRuleListEditor } from "@/components/ip-rule-list-editor";
@@ -70,9 +72,12 @@ export default function SettingsPage() {
   const [selfIp, setSelfIp] = useState<string | null>(null);
   // アクセス記録の片づけの前回の結果（見せるだけ）
   const [retention, setRetention] = useState<RetentionState | null>(null);
+  // 楽観的ロックの印と、ほかの管理者が先に保存していた知らせ
+  const [stamp, setStamp] = useState<string | null>(null);
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
 
-  useEffect(() => {
-    void (async () => {
+  const load = useCallback(async () => {
+    {
       const res = await fetch("/api/settings");
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -86,18 +91,25 @@ export default function SettingsPage() {
         settings: AppSettings;
         clientIp: string | null;
         accessLogRetention: RetentionState | null;
+        stamp: string;
       };
       const fresh = body.settings;
       setSelfIp(body.clientIp);
       setRetention(body.accessLogRetention);
+      setStamp(body.stamp);
+      setStale(null);
       setSettings(fresh);
       setLoaded(fresh);
       setModelOptionsText(formatOptionList(fresh.productModelOptions));
       setUseOptionsText(formatOptionList(fresh.productUseOptions));
       setExtensionsText(formatExtensionList(fresh.attachmentExtensions));
       setKindsText(formatOptionList(fresh.attachmentKinds));
-    })();
+    }
   }, [m]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   /**
    * 保存。承認を「必要 → 不要」に切り替えると承認待のものが宙に浮くので、
@@ -115,10 +127,11 @@ export default function SettingsPage() {
     setNotice(null);
   }
 
-  async function save(resolution?: Record<string, PendingResolution>) {
+  async function save(resolution?: Record<string, PendingResolution>, force = false) {
     if (!settings) return;
     setError(null);
     setNotice(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch("/api/settings", {
@@ -126,12 +139,21 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...settings,
+          // 楽観的ロックの印。ほかの管理者が先に保存していたら 409 で知らされる
+          stamp: stamp ?? "",
+          force: force || undefined,
           // 何も書いていない行（追加しただけの行）は送らない
           ipAllowList: settings.ipAllowList.filter((r) => r.address.trim() || r.note.trim()),
           ipDenyList: settings.ipDenyList.filter((r) => r.address.trim() || r.note.trim()),
           pendingResolution: resolution,
         }),
       });
+      // ほかの管理者が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -149,6 +171,9 @@ export default function SettingsPage() {
         setError((body?.error.message ?? m.errors.saveFailed(res.status)) + detail);
         return;
       }
+      const saved = (await res.json().catch(() => null)) as { stamp?: string } | null;
+      if (saved?.stamp) setStamp(saved.stamp);
+      setStale(null);
       setPending(null);
       // 保存できたら、破棄で戻す先も新しい内容にする
       setLoaded(settings);
@@ -695,6 +720,13 @@ export default function SettingsPage() {
           </Alert>
         )}
 
+        <StaleEditNotice
+          stale={stale}
+          saving={saving}
+          onForce={() => void save(undefined, true)}
+          onDismiss={() => setStale(null)}
+          onReload={() => void load()}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

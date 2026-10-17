@@ -1,6 +1,7 @@
 import { emptyTableState, parseTableState, type SortRule } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { notDisabledIn } from "@/lib/enabled-sources";
 import { getServerMessages } from "@/lib/i18n";
 import { statutoryHierarchyOrderBy } from "@/lib/law-order";
@@ -214,6 +215,7 @@ export async function GET(req: Request) {
     const law = cat.law;
     const rep = nameByCas.get(l.casNormalized);
     return {
+      stamp: rowStamp(l),
       id: l.id,
       versionId: l.versionId,
       sourceId: l.sourceId,

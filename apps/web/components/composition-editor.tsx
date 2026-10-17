@@ -48,8 +48,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, WhenCardOpen } from "@/components/ui/card";
 import { useConfirm } from "@/components/confirm-dialog";
 import { PreReactionDiff } from "@/components/pre-reaction-diff";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { useJudgementControls } from "@/lib/judgement-controls";
 import { notifyJudgementsChanged } from "@/lib/judgements-refresh";
 import { useI18n } from "@/lib/i18n-client";
@@ -243,10 +245,10 @@ export function CompositionEditor({
   /** 開いたときの内容の印。保存時に添えて送る */
   const [stamp, setStamp] = useState<string | null>(null);
   /**
-   * ほかの人が先に保存していたときの知らせ。
+   * ほかの人が先に保存していたときの知らせ（lib/stale-edit.ts）。
    * **保存は止めていない。**見てから決めてもらうために出す
    */
-  const [stale, setStale] = useState<{ byName: string | null; at: string | null } | null>(null);
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
   /**
    * 直しているあいだにチェックした行（鍵）。表の上のごみ箱でまとめて消す
@@ -656,17 +658,10 @@ export function CompositionEditor({
         ほかの人が先に保存していた。**入力はそのまま残す。**
         「このまま保存する」を押されたら force を付けて送り直す
       */
-      if (res.status === 409) {
-        const body = (await res.json().catch(() => null)) as {
-          error: { code: string; details?: { byName?: string | null; at?: string | null } };
-        } | null;
-        if (body?.error.code === "stale_edit") {
-          setStale({
-            byName: body.error.details?.byName ?? null,
-            at: body.error.details?.at ?? null,
-          });
-          return;
-        }
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
       }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -1963,34 +1958,12 @@ export function CompositionEditor({
           **保存は止めていない。**入力はそのまま残っているので、
           見たうえで「このまま保存する」か、そのまま直し続けるかを選べる
         */}
-          {stale && (
-            <Alert variant="destructive">
-              <AlertDescription className="space-y-2">
-                <p className="font-medium">{m.errors.staleEdit}</p>
-                <p>
-                  {m.errors.staleEditDetail(
-                    stale.byName ?? "ほかの利用者",
-                    stale.at ? new Date(stale.at).toLocaleString(locale) : "-",
-                  )}
-                </p>
-                <p>{m.errors.staleEditAsk}</p>
-                <div className="flex gap-2 pt-1">
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={saving}
-                    onClick={() => void onSave(true)}
-                  >
-                    {m.errors.staleEditSave}
-                  </Button>
-                  {/* 押しても閉じるだけ。入力はそのまま残る */}
-                  <Button type="button" size="sm" variant="outline" onClick={() => setStale(null)}>
-                    {m.common.cancel}
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+          <StaleEditNotice
+            stale={stale}
+            saving={saving}
+            onForce={() => void onSave(true)}
+            onDismiss={() => setStale(null)}
+          />
 
           {editing && (
             <div className="flex gap-2">

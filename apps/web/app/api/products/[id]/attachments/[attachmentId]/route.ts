@@ -9,6 +9,7 @@ import {
   visibleProduct,
 } from "@/lib/attachment-service";
 import { prisma } from "@/lib/db";
+import { STAMP_SELECT, parseEditStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { getAppSettings } from "@/lib/settings";
 
@@ -57,20 +58,33 @@ export async function PUT(req: Request, { params }: Ctx) {
     );
   }
   const next = parsed.data;
+  // ほかの人が先に保存していないか（楽観的ロック。lib/edit-stamp.ts）。印が無ければ断る
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
   // 種類は選択肢から。**いま付いている値はそのまま残してよい**（選択肢から消した値でも）
   const settings = await getAppSettings();
   if (next.kind !== row.kind && !settings.attachmentKinds.includes(next.kind)) {
     return jsonError(400, "validation_error", m.attachments.kindInvalid);
   }
 
-  const updated = await prisma.productAttachment.update({
-    where: { id: row.id },
+  // 印が合う行だけを直す。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.productAttachment.updateMany({
+    where: { id: row.id, ...stampWhere(lock) },
     data: {
       title: next.title,
       kind: next.kind,
       description: next.description || null,
       updatedBy: actor.user.id,
     },
+  });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.productAttachment.findUnique({ where: { id: row.id }, select: STAMP_SELECT }),
+    );
+  }
+  const updated = await prisma.productAttachment.findUniqueOrThrow({
+    where: { id: row.id },
     select: ATTACHMENT_SELECT,
   });
   await writeAudit({

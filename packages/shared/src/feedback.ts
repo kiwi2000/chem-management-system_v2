@@ -93,6 +93,8 @@ export interface FeedbackDto {
   createdByName: string | null;
   createdAt: string;
   updatedAt: string;
+  /** 楽観的ロックの印（apps/web/lib/edit-stamp.ts）。保存時にそのまま送り返す */
+  stamp: string;
   /** 自分がまだ見ていない書き込み・返信か */
   unread: boolean;
 }

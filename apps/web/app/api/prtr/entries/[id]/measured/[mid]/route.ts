@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { STAMP_SELECT, parseEditStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { isConfirmed, MEASURED_INCLUDE, toMeasuredDto, updaterNames } from "@/lib/prtr-service";
 
@@ -37,6 +38,9 @@ export async function PUT(req: Request, { params }: Ctx) {
   } catch {
     return jsonError(400, "invalid_json", m.errors.invalidJson);
   }
+  // ほかの人が先に保存していないか（楽観的ロック。lib/edit-stamp.ts）。印が無ければ断る
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
   const handled = typeof body.handledKg === "string" ? body.handledKg.trim() : "";
   const kg = typeof body.measuredKg === "string" ? body.measuredKg.trim() : "";
   if (handled !== "" && !KG.test(handled)) {
@@ -49,14 +53,24 @@ export async function PUT(req: Request, { params }: Ctx) {
       fieldErrors: { measuredKg: [m.prtr.validation.kg] },
     });
   }
-  const updated = await prisma.prtrMeasured.update({
-    where: { id: mid },
+  // 印が合う行だけを直す。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.prtrMeasured.updateMany({
+    where: { id: mid, ...stampWhere(lock) },
     data: {
       handledKg: handled === "" ? null : new Prisma.Decimal(handled),
       measuredKg: new Prisma.Decimal(kg),
       source: "MANUAL",
       updatedBy: actor.user.id,
     },
+  });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.prtrMeasured.findUnique({ where: { id: mid }, select: STAMP_SELECT }),
+    );
+  }
+  const updated = await prisma.prtrMeasured.findUniqueOrThrow({
+    where: { id: mid },
     include: MEASURED_INCLUDE,
   });
   await writeAudit({

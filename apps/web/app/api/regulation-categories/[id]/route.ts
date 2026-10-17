@@ -2,6 +2,7 @@ import { categoryScoreSchema, normalizeCode, regulationCategorySchema } from "@c
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { countByCategory } from "@/lib/law-service";
 import { recomputeScoresForCategory } from "@/lib/score-store";
@@ -36,6 +37,9 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
+  // ほかの人が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   /*
     スコアの範囲はシステム設定で決まる。**画面の作りに関わらずサーバーで確かめる。**
@@ -69,8 +73,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     }
   }
 
-  await prisma.regulationCategory.update({
-    where: { id },
+  const hit = await prisma.regulationCategory.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       code: v.code,
       codeNormalized,
@@ -95,6 +99,12 @@ export async function PUT(req: Request, { params }: Ctx) {
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.regulationCategory.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
 
   /*
     **スコアか「判定に使う」印が変わったら、その区分に当たっている物質を計算し直す。**
@@ -112,7 +122,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { code: v.code, nameOriginal: v.nameOriginal, lawId: v.lawId, score: score.data },
   });
-  return Response.json({ ok: true, rescored });
+  const after = await prisma.regulationCategory.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, rescored, stamp: rowStamp(after) });
 }
 
 /**

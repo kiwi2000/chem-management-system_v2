@@ -4,6 +4,14 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { countUsesAsMaterial } from "@/lib/composition-service";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
+import {
+  STAMP_SELECT,
+  StaleError,
+  parseEditStamp,
+  rowStamp,
+  staleFromRow,
+  stampWhere,
+} from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { writeApprovalEvent } from "@/lib/publish-service";
 import {
@@ -66,6 +74,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const input = parsed.data;
+  // ほかの人が先に保存していないか（楽観的ロック。lib/edit-stamp.ts）。印が無ければ断る
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   const defs = await prisma.propertyDef.findMany({
     where: { target: "PRODUCT" },
@@ -94,21 +105,40 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
 
   const children = childWrites(input);
-  await prisma.$transaction([
-    prisma.productAlias.deleteMany({ where: { productId: id } }),
-    prisma.productUse.deleteMany({ where: { productId: id } }),
-    prisma.productProperty.deleteMany({ where: { productId: id } }),
-    prisma.product.update({
-      where: { id },
-      data: {
-        ...base,
-        updatedBy: actor.user.id,
-        aliases: { create: children.aliases },
-        uses: { create: children.uses },
-        properties: { create: children.properties },
-      },
-    }),
-  ]);
+  /*
+    門番を最初に置く。印が食い違っていれば（＝ほかの人が先に保存していれば）何も書かずに 409。
+    門番が行をロックするので、同時に来た 2 つの保存のうち後の方は必ず食い違いになる
+  */
+  try {
+    await prisma.$transaction(async (tx) => {
+      const gate = await tx.product.updateMany({
+        where: { id, ...stampWhere(lock) },
+        data: { updatedBy: actor.user.id },
+      });
+      if (gate.count === 0) throw new StaleError();
+      await tx.productAlias.deleteMany({ where: { productId: id } });
+      await tx.productUse.deleteMany({ where: { productId: id } });
+      await tx.productProperty.deleteMany({ where: { productId: id } });
+      await tx.product.update({
+        where: { id },
+        data: {
+          ...base,
+          updatedBy: actor.user.id,
+          aliases: { create: children.aliases },
+          uses: { create: children.uses },
+          properties: { create: children.properties },
+        },
+      });
+    });
+  } catch (err) {
+    if (err instanceof StaleError) {
+      return staleFromRow(
+        m,
+        await prisma.product.findUnique({ where: { id }, select: STAMP_SELECT }),
+      );
+    }
+    throw err;
+  }
 
   await writeAudit({
     entity: "products",
@@ -139,7 +169,12 @@ export async function PUT(req: Request, { params }: Ctx) {
     const uses = await countUsesAsMaterial(id);
     if (uses > 0) warnings.push(m.composition.usedAsMaterialWarning(uses));
   }
-  return Response.json({ ok: true, warnings });
+  // 保存後の印。続けて直せるように返す
+  const after = await prisma.product.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, warnings, stamp: rowStamp(after) });
 }
 
 /**

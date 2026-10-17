@@ -2,6 +2,7 @@ import { linkVersionSourceSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { recomputeAllScores } from "@/lib/score-store";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -34,19 +35,28 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // ほかの人が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
   if (v.versionId !== existing.versionId || v.sourceId !== existing.sourceId) {
     return jsonError(409, "immutable", m.dataSources.cannotMove);
   }
 
   const enabledChanged = v.enabled !== undefined && v.enabled !== existing.enabled;
-  await prisma.linkVersionSource.update({
-    where: { id },
+  const hit = await prisma.linkVersionSource.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       note: v.note ?? null,
       ...(v.enabled === undefined ? {} : { enabled: v.enabled }),
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.linkVersionSource.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
   /*
     有効／無効を切り替えると、そのデータソースのリンクが点に入ったり外れたりする。
     取り込みのときと同じく、物質のスコアはここで計算し直す。
@@ -66,7 +76,11 @@ export async function PUT(req: Request, { params }: Ctx) {
       ...(enabledChanged ? { enabled: { from: existing.enabled, to: v.enabled } } : {}),
     },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.linkVersionSource.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /**

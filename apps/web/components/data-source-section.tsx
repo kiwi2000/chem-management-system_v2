@@ -5,12 +5,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, LinkVersionSourceDto, ListResponse, SourceDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
@@ -63,6 +65,11 @@ export function DataSourceSection({
   const [items, setItems] = useState<LinkVersionSourceDto[] | null>(null);
   const [sources, setSources] = useState<SourceDto[]>([]);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * ほかの人が先に保存していた知らせ（楽観的ロック）。
+   * 有効／無効の切り替えと説明の保存の 2 つの送り先があるので、「このまま保存する」で何を送り直すかも持つ
+   */
+  const [stale, setStale] = useState<{ info: StaleEditInfo; retry: () => void } | null>(null);
   const [saving, setSaving] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -355,8 +362,9 @@ export function DataSourceSection({
    * 有効／無効を切り替える。切り替えると判定は「要再計算」になる
    * （サーバーがこの行の更新日時で気づく。スコアはサーバーがその場で計算し直す）
    */
-  async function toggleEnabled(target: LinkVersionSourceDto) {
+  async function toggleEnabled(target: LinkVersionSourceDto, force = false) {
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch("/api/link-version-sources/" + target.id, {
@@ -367,24 +375,35 @@ export function DataSourceSection({
           sourceId: target.sourceId,
           note: target.note,
           enabled: !target.enabled,
+          // 開いたときの印。食い違えば 409 で知らされる
+          stamp: target.stamp,
+          force: force || undefined,
         }),
       });
+      // ほかの人が先に保存していた。見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale({ info: staleInfo, retry: () => void toggleEnabled(target, true) });
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      setStale(null);
       void load();
     } finally {
       setSaving(false);
     }
   }
 
-  async function saveNote() {
+  async function saveNote(force = false) {
     const target = items?.find((r) => r.id === editingId);
     if (!target) return;
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch("/api/link-version-sources/" + target.id, {
@@ -394,14 +413,23 @@ export function DataSourceSection({
           versionId: target.versionId,
           sourceId: target.sourceId,
           note: note || null,
+          stamp: target.stamp,
+          force: force || undefined,
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale({ info: staleInfo, retry: () => void saveNote(true) });
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      setStale(null);
       setEditingId(null);
       void load();
     } finally {
@@ -463,6 +491,12 @@ export function DataSourceSection({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      <StaleEditNotice
+        stale={stale?.info ?? null}
+        saving={saving}
+        onForce={() => stale?.retry()}
+        onDismiss={() => setStale(null)}
+      />
 
       {notice && (
         <Alert>

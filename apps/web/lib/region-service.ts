@@ -1,9 +1,11 @@
 import type { Region } from "@prisma/client";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { RegionDto } from "@/lib/types";
 
 /** 地域（アジア・欧州など）。国は含まない */
 export function toRegionDto(r: Region): RegionDto {
   return {
+    stamp: rowStamp(r),
     id: r.id,
     code: r.code,
     nameJa: r.nameJa,

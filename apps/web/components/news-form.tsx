@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditingBadge } from "@/components/editing-badge";
 import { EditButton } from "@/components/edit-button";
@@ -10,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, NewsDto } from "@/lib/types";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
@@ -38,17 +40,21 @@ export function NewsForm({ initial, canEdit }: Props) {
   const [publishFrom, setPublishFrom] = useState(initial?.publishFrom ?? "");
   const [publishUntil, setPublishUntil] = useState(initial?.publishUntil ?? "");
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(force = false) {
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch(initial ? `/api/news/${initial.id}` : "/api/news", {
         method: initial ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // 既存のものなら読み込んだときの印を添える（楽観的ロック）。force は「このまま保存する」
+          ...(initial ? { stamp: initial.stamp, force: force || undefined } : {}),
           titleJa,
           bodyJa,
           titleEn: titleEn || null,
@@ -59,6 +65,12 @@ export function NewsForm({ initial, canEdit }: Props) {
           publishUntil: publishUntil || null,
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -81,7 +93,13 @@ export function NewsForm({ initial, canEdit }: Props) {
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+        className="space-y-4"
+      >
         <fieldset disabled={readOnly} className="space-y-4">
           <Card>
             <CardContent className="space-y-4 pt-6">
@@ -178,6 +196,12 @@ export function NewsForm({ initial, canEdit }: Props) {
           </Card>
         </fieldset>
 
+        <StaleEditNotice
+          stale={stale}
+          saving={saving}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -195,6 +219,7 @@ export function NewsForm({ initial, canEdit }: Props) {
               variant="outline"
               onClick={() => {
                 // 既存の編集をやめるときは書きかけを捨てて表示に戻す
+                setStale(null);
                 if (initial) router.refresh();
                 else router.push("/news");
                 setEditing(!initial);

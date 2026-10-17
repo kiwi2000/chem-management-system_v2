@@ -2,6 +2,7 @@ import { emptyTableState, parseTableState, type SortRule } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { ensureDiffRun } from "@/lib/cas-link-diff";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { statutoryHierarchyOrderBy } from "@/lib/law-order";
 import { CAS_LINK_DIFF_COLUMNS } from "@/lib/list-columns";
@@ -237,6 +238,8 @@ export async function GET(req: Request) {
     // 表の通常の項目は今の版から。消えたものは今の版に無いので、比べた版のもので埋める
     const shown = d.currentLink ?? d.previousLink;
     return {
+      // 差分の表は見るだけ。印は通常の行と同じ形で埋めておく
+      stamp: rowStamp({ updatedAt: shown?.updatedAt ?? new Date() }),
       id: d.id,
       kind: KIND_OF[d.kind],
       current: sideOf(d.currentLink),

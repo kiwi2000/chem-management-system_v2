@@ -42,6 +42,8 @@ export interface MeDto {
 }
 
 export interface UserSummaryDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   email: string;
   displayName: string | null;
@@ -89,6 +91,8 @@ export interface SessionDto {
 
 /** 組織（会社・事業所）。帳票に載せる差出人の情報 */
 export interface OrganisationDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   /** 会社・部署・取引先・そのほか */
@@ -106,6 +110,8 @@ export interface OrganisationDto {
 }
 
 export interface GroupDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   kind: GroupKind;
   nameJa: string;
@@ -428,6 +434,8 @@ export interface SubstanceListItemDto {
 }
 
 export interface SubstanceDetailDto extends SubstanceListItemDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   mainNameJa: string;
   mainNameEn: string | null;
   subNames: { nameJa: string | null; nameEn: string | null }[];
@@ -486,6 +494,8 @@ export interface ProductListItemDto {
 }
 
 export interface ProductDetailDto extends ProductListItemDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   aliases: { nameJa: string | null; nameEn: string | null }[];
   properties: PropertyValueDto[];
 }
@@ -788,6 +798,8 @@ export interface AggregateRowDto {
  * 中身（ブロックの並び）まで載せる。編集画面がそのまま開くため
  */
 export interface DocumentTemplateDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   nameJa: string;
@@ -845,6 +857,8 @@ export interface GeneratedDocumentDto {
 /** 画像ライブラリの 1 枚。中身（バイト列）は一覧には載せず、/api/images/[id] で取る */
 /** 製品・原材料の添付ファイル（2026-09-27）。中身は含まない */
 export interface ProductAttachmentDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   /** 件名 */
   title: string;
@@ -861,6 +875,8 @@ export interface ProductAttachmentDto {
 }
 
 export interface ImageAssetDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   name: string;
   note: string | null;
@@ -938,6 +954,8 @@ export interface CompositionAggregateDto {
 
 /** 言語。法規制の「原文の言語」で選ぶ */
 export interface LanguageDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   /** ISO 639-1 を大文字にした2文字（JA, EN …） */
   code: string;
@@ -948,6 +966,8 @@ export interface LanguageDto {
 
 /** 地域（アジア・欧州など）。国は含まない */
 export interface RegionDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   nameJa: string;
@@ -957,6 +977,8 @@ export interface RegionDto {
 
 /** 国。法律の持ち主になる単位で、地域の配下に置く */
 export interface CountryDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   regionId: string;
@@ -969,6 +991,8 @@ export interface CountryDto {
 
 /** 法律。国の配下に置く */
 export interface LawDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   countryId: string;
@@ -990,6 +1014,8 @@ export interface LawDto {
 
 /** 区分。判定の骨組みで、閾値のひな型を持つ */
 export interface RegulationCategoryDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   lawId: string;
@@ -1028,6 +1054,8 @@ export interface RegulationCategoryDto {
 
 /** 分類。名前が無いものは画面に出さない受け皿 */
 export interface RegulationClassDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   categoryId: string;
@@ -1041,6 +1069,8 @@ export interface RegulationClassDto {
 
 /** 法文物質名。判定はこの行の閾値だけを読む */
 export interface StatutorySubstanceDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   classId: string;
@@ -1078,6 +1108,8 @@ export interface StatutorySubstanceDto {
 
 /** 法文物質名とCAS番号の結び付き。1つのCASにデータソースの数だけ行が並ぶ */
 export interface StatutoryCasLinkDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   versionId: string;
   statutorySubstanceId: string;
@@ -1108,6 +1140,8 @@ export interface StatutoryCasLinkDto {
  * 名前は原文・日本語・英語を全部返し、画面の言語で選ぶ
  */
 export interface CasLinkRowDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   versionId: string;
   sourceId: string;
@@ -1182,6 +1216,8 @@ export interface CasLinkDiffRunDto {
 }
 
 export interface MetalFactorDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   casNumber: string;
   metalElement: string;
@@ -1193,6 +1229,8 @@ export interface MetalFactorDto {
 }
 
 export interface PropertyDefDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   /** 物質用か製品用か。キーは用途ごとに一意 */
   target: PropertyTarget;
@@ -1226,6 +1264,8 @@ export interface PropertyOptionDto {
 }
 
 export interface NewsDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   titleJa: string;
   bodyJa: string;
@@ -1256,6 +1296,8 @@ export interface NewsDto {
  * 中身はバージョンごとに分かれるので、件数は**現在のバージョンのぶん**を返す。
  */
 export interface InventoryDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   countryId: string;
@@ -1276,6 +1318,8 @@ export interface InventoryDto {
 
 /** インベントリの1行。現在のバージョンのものだけを扱う */
 export interface InventoryRowDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   sourceId: string;
   sourceCode: string;
@@ -1293,6 +1337,8 @@ export interface InventoryRowDto {
 
 /** 元素。法文物質名の「換算先」で選ぶ */
 export interface ElementDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   symbol: string;
   atomicNumber: number;
   nameJa: string;
@@ -1301,6 +1347,8 @@ export interface ElementDto {
 
 /** 情報源（LOLI・CHRIP・自社データなど）。どのバージョンで使うかはバージョンの側で決める */
 export interface SourceDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   /** 説明。どんなデータで、どこまで載っているか */
@@ -1316,6 +1364,8 @@ export interface SourceDto {
  * 持つのはコードだけ。中身の件数はデータソースの側で見る
  */
 export interface LinkSetVersionDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   /** 判定に使うバージョン。システム全体で1件だけ */
@@ -1331,6 +1381,8 @@ export interface LinkSetVersionDto {
  * 不純物種別（S21）。物質の属性で、種別ごとに「どの規制区分で非該当にするか」を持つ
  */
 export interface ImpurityTypeDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   code: string;
   nameJa: string;
@@ -1354,6 +1406,8 @@ export interface ImpurityExemptionsDto {
 }
 
 export interface LinkVersionSourceDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   versionId: string;
   versionCode: string;
@@ -1383,6 +1437,8 @@ export interface PrtrScopeDto {
 }
 /** 製品ごとの数量（物質収支・排出係数の区画。2026-10-02 設計） */
 export interface PrtrQuantityDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   /** どの区画の行か */
   method: "BALANCE" | "FACTOR";
@@ -1402,6 +1458,8 @@ export interface PrtrQuantityDto {
 
 /** 実測値の区画: 物質ごとの取扱量（任意）と排出量 */
 export interface PrtrMeasuredDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   id: string;
   statutorySubstanceId: string;
   officialNumber: string | null;
@@ -1431,6 +1489,8 @@ export interface PrtrSubstanceCandidateDto {
 }
 
 export interface PrtrEntryDto {
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
+  stamp: string;
   entry: {
     id: string;
     organisationId: string;

@@ -2,6 +2,7 @@ import { expandPermissions, isPermission, type MfaMethod, type Permission } from
 import type { Group, Organisation, Permission as DbPermission, User } from "@prisma/client";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { sortOrganisations } from "@/lib/user-organisations";
 
@@ -37,6 +38,8 @@ export const USER_INCLUDE = {
 
 export function toUserSummary(u: UserWithPermissions) {
   return {
+    // 楽観的ロックの印（管理者の編集画面が保存時に送り返す）
+    stamp: rowStamp(u),
     id: u.id,
     email: u.email,
     displayName: u.displayName,

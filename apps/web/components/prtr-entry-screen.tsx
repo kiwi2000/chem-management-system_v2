@@ -17,6 +17,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { FieldError } from "@/components/field-error";
 import { PrtrImportDialog } from "@/components/prtr-import-dialog";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type {
   ApiError,
   ListResponse,
@@ -139,6 +141,9 @@ export function PrtrEntryScreen() {
   const [note, setNote] = useState("");
   const [headErrors, setHeadErrors] = useState<FieldErrors>({});
   const [savingHead, setSavingHead] = useState(false);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック。印は data.stamp が持つ）と、そのとき出す予定だった文言 */
+  const [staleHead, setStaleHead] = useState<StaleEditInfo | null>(null);
+  const staleSavedMessage = useRef("");
   /** 数量が変わるたびに増やし、集計を読み直す合図にする */
   const [tick, setTick] = useState(0);
 
@@ -186,11 +191,17 @@ export function PrtrEntryScreen() {
     void load();
   }, [load]);
 
-  /** 頭（係数・備考）を保存する。頭の「保存」と、排出係数の区画の「保存」の両方から呼ぶ */
-  async function saveHead(savedMessage: string) {
+  /**
+   * 頭（係数・備考）を保存する。頭の「保存」と、排出係数の区画の「保存」の両方から呼ぶ。
+   * 印（data.stamp）を添える。頭がまだ無いときの印は API 側で見ない（S29 §4-5）。
+   * `force` は「このまま保存する」（印が食い違っていても通す）
+   */
+  async function saveHead(savedMessage: string, force = false) {
     setError(null);
     setNotice(null);
     setHeadErrors({});
+    if (!force) setStaleHead(null);
+    staleSavedMessage.current = savedMessage;
     setSavingHead(true);
     try {
       const res = await fetch("/api/prtr/entries", {
@@ -201,8 +212,16 @@ export function PrtrEntryScreen() {
           fiscalYear,
           factorPct: factorPct || null,
           note: note || null,
+          stamp: data?.stamp ?? "",
+          force: force || undefined,
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStaleHead(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -210,6 +229,8 @@ export function PrtrEntryScreen() {
         setHeadErrors(toFieldErrors(body?.error.details));
         return;
       }
+      // 応答が新しい印を持つ。続けて直せる
+      setStaleHead(null);
       setData((await res.json()) as PrtrEntryDto);
       setNotice(savedMessage);
       setTick((n) => n + 1);
@@ -239,6 +260,12 @@ export function PrtrEntryScreen() {
 
   return (
     <div className="space-y-4">
+      <StaleEditNotice
+        stale={staleHead}
+        saving={savingHead}
+        onForce={() => void saveHead(staleSavedMessage.current, true)}
+        onDismiss={() => setStaleHead(null)}
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -747,10 +774,13 @@ function QuantitySection({
   const { m, locale } = useI18n();
   const t = m.prtr.quantities;
   const [data, setData] = useState<ListResponse<PrtrQuantityDto> | null>(null);
-  const emptyForm = { id: "", productCode: "", purchasedKg: "0", shippedKg: "0" };
+  // stamp は直している行の楽観的ロックの印（lib/edit-stamp.ts）。足すときは空
+  const emptyForm = { id: "", stamp: "", productCode: "", purchasedKg: "0", shippedKg: "0" };
   const [form, setForm] = useState(emptyForm);
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
+  /** ほかの人が先に保存していた知らせ */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   /*
     製品を探して選ぶ（2026-09-30 指示）。追加行の上に置く。コードは打たなくても、コードの一部か名称で探して
     「選択」を押せば製品コードに入る。製品の一覧の API（PRODUCT_VIEW）を引くので、見られる人にだけ出す
@@ -936,9 +966,11 @@ function QuantitySection({
     await Promise.all([loadRows(), onChanged()]);
   };
 
-  async function save() {
+  /** 保存。直すときは印を添える。`force` は「このまま保存する」（印が食い違っていても通す） */
+  async function save(force = false) {
     setError(null);
     setFieldErrors({});
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const editing = form.id !== "";
@@ -954,9 +986,16 @@ function QuantitySection({
             productCode: form.productCode,
             purchasedKg: form.purchasedKg,
             shippedKg: form.shippedKg,
+            ...(editing ? { stamp: form.stamp, force: force || undefined } : {}),
           }),
         },
       );
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -964,6 +1003,7 @@ function QuantitySection({
         setFieldErrors(toFieldErrors(body?.error.details));
         return;
       }
+      setStale(null);
       setOpen(false);
       setForm(emptyForm);
       await changed();
@@ -999,6 +1039,12 @@ function QuantitySection({
         )}
       </div>
       <div className="space-y-3">
+        <StaleEditNotice
+          stale={stale}
+          saving={saving}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -1191,6 +1237,7 @@ function QuantitySection({
                   onClick: (q) => {
                     setForm({
                       id: q.id,
+                      stamp: q.stamp,
                       productCode: q.productCode,
                       purchasedKg: q.purchasedKg,
                       shippedKg: q.shippedKg ?? "",
@@ -1231,13 +1278,16 @@ function MeasuredSection({
   const { m, locale } = useI18n();
   const t = m.prtr.measured;
   const [data, setData] = useState<ListResponse<PrtrMeasuredDto> | null>(null);
-  const emptyForm = { id: "", substanceCode: "", handledKg: "0", measuredKg: "0" };
+  // stamp は直している行の楽観的ロックの印（lib/edit-stamp.ts）。足すときは空
+  const emptyForm = { id: "", stamp: "", substanceCode: "", handledKg: "0", measuredKg: "0" };
   const [form, setForm] = useState(emptyForm);
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
+  /** ほかの人が先に保存していた知らせ */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   /*
     物質検索（2026-10-02 設計）。コードの一部・CAS・名称で探し、第一種指定化学物質に当たる物質だけが並ぶ。
     「選択」で物質コードが入る。打つたびに探す（300 ms 待ち、古い結果は捨てる）
@@ -1421,9 +1471,11 @@ function MeasuredSection({
     await Promise.all([loadRows(), onChanged()]);
   };
 
-  async function save() {
+  /** 保存。直すときは印を添える。`force` は「このまま保存する」（印が食い違っていても通す） */
+  async function save(force = false) {
     setError(null);
     setFieldErrors({});
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const editing = form.id !== "";
@@ -1436,7 +1488,12 @@ function MeasuredSection({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             editing
-              ? { handledKg: form.handledKg, measuredKg: form.measuredKg }
+              ? {
+                  handledKg: form.handledKg,
+                  measuredKg: form.measuredKg,
+                  stamp: form.stamp,
+                  force: force || undefined,
+                }
               : {
                   substanceCode: form.substanceCode,
                   handledKg: form.handledKg || null,
@@ -1445,6 +1502,12 @@ function MeasuredSection({
           ),
         },
       );
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -1452,6 +1515,7 @@ function MeasuredSection({
         setFieldErrors(toFieldErrors(body?.error.details));
         return;
       }
+      setStale(null);
       setOpen(false);
       setForm(emptyForm);
       await changed();
@@ -1485,6 +1549,12 @@ function MeasuredSection({
         <FilePickButton label={m.prtr.import.button} disabled={locked} onPick={setImporting} />
       </div>
       <div className="space-y-3">
+        <StaleEditNotice
+          stale={stale}
+          saving={saving}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -1687,6 +1757,7 @@ function MeasuredSection({
                   onClick: (x) => {
                     setForm({
                       id: x.id,
+                      stamp: x.stamp,
                       substanceCode: x.substanceCode ?? "",
                       handledKg: x.handledKg ?? "",
                       measuredKg: x.measuredKg,

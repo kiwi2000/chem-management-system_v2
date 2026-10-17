@@ -2,6 +2,7 @@ import { duplicateLabels, organisationSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, StaleError, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { ORG_INCLUDE, toOrganisationDto } from "@/lib/organisation-service";
 
@@ -40,6 +41,9 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   const dup = duplicateLabels(v.items);
   if (dup.length > 0) {
@@ -58,22 +62,40 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     項目は消してから入れ直す。**差分で当てない。**
     画面で消した行がサーバーに残ると、消したはずのものが帳票に出る
   */
-  await prisma.$transaction([
-    prisma.organisationItem.deleteMany({ where: { organisationId: id } }),
-    prisma.organisation.update({
-      where: { id },
-      data: {
-        code: v.code,
-        nameJa: v.nameJa,
-        nameEn: v.nameEn ?? null,
-        displayOrder: v.displayOrder,
-        activeFlag: v.activeFlag,
-        items: {
-          create: v.items.map((x, i) => ({ label: x.label, value: x.value, displayOrder: i })),
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 門番。印が合う行だけを更新し、当たらなければ（ほかの人が先に保存していれば）やめる
+      const gate = await tx.organisation.updateMany({
+        where: { id, ...stampWhere(lock) },
+        data: {
+          code: v.code,
+          nameJa: v.nameJa,
+          nameEn: v.nameEn ?? null,
+          displayOrder: v.displayOrder,
+          activeFlag: v.activeFlag,
         },
-      },
-    }),
-  ]);
+      });
+      if (gate.count === 0) throw new StaleError();
+      await tx.organisationItem.deleteMany({ where: { organisationId: id } });
+      await tx.organisationItem.createMany({
+        data: v.items.map((x, i) => ({
+          organisationId: id,
+          label: x.label,
+          value: x.value,
+          displayOrder: i,
+        })),
+      });
+    });
+  } catch (err) {
+    if (err instanceof StaleError) {
+      // 組織は更新者を持たないので、時刻だけ添える
+      return staleFromRow(
+        m,
+        await prisma.organisation.findUnique({ where: { id }, select: { updatedAt: true } }),
+      );
+    }
+    throw err;
+  }
 
   await writeAudit({
     entity: "organisations",
@@ -82,7 +104,11 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     actorId: actor.user.id,
     diff: { code: v.code, nameJa: v.nameJa, items: v.items.length },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.organisation.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /**

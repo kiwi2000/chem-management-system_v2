@@ -7,12 +7,14 @@ import { slideClass, type SlideDir } from "@/components/category-header";
 import { SubstancePeek } from "@/components/substance-peek";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import {
   pickedSourceOf,
   VersionSourcePicker,
@@ -86,6 +88,8 @@ export function CasLinkSection({
   const [shownId, setShownId] = useState<string | null>(null);
   const [data, setData] = useState<CasLinkResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
   /** 追加中は null 以外。編集中は行のid */
@@ -296,6 +300,7 @@ export function CasLinkSection({
 
   function startNew() {
     setError(null);
+    setStale(null);
     // 入る先は、表の上で選んでいるバージョンとデータソース
     setDraft({ ...EMPTY, sourceId: pickedSourceOf(picked) ?? "" });
     setEditingId("new");
@@ -303,6 +308,7 @@ export function CasLinkSection({
 
   function startEdit(r: StatutoryCasLinkDto) {
     setError(null);
+    setStale(null);
     setDraft({
       casNumber: r.casNumber,
       sourceId: r.sourceId,
@@ -312,13 +318,16 @@ export function CasLinkSection({
     setEditingId(r.id);
   }
 
-  async function save() {
+  async function save(force = false) {
     const version = data?.version;
     if (!version) return;
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const creating = editingId === "new";
+      // 編集のときだけ、開いたときの印を添える
+      const current = creating ? undefined : data?.items.find((r) => r.id === editingId);
       const res = await fetch(
         creating ? "/api/statutory-cas-links" : `/api/statutory-cas-links/${editingId}`,
         {
@@ -332,15 +341,23 @@ export function CasLinkSection({
             casNumber: draft.casNumber,
             excluded: draft.excluded,
             note: draft.note || null,
+            ...(current ? { stamp: current.stamp, force: force || undefined } : {}),
           }),
         },
       );
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      setStale(null);
       setEditingId(null);
       await reload();
     } finally {
@@ -373,6 +390,12 @@ export function CasLinkSection({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
       {data && version === null && (
         <Alert>
           <AlertDescription>{m.casLinks.noVersion}</AlertDescription>

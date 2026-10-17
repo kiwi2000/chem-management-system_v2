@@ -2,6 +2,7 @@ import { groupSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { GROUP_COUNT_SELECT } from "@/lib/group-service";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -37,12 +38,16 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   const inUse = existing._count.newsMembers + existing._count.news > 0;
   const kind = inUse && v.kind !== existing.kind ? existing.kind : v.kind;
 
-  await prisma.group.update({
-    where: { id },
+  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.group.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       kind,
       nameJa: v.nameJa,
@@ -51,6 +56,13 @@ export async function PUT(req: Request, { params }: Ctx) {
       activeFlag: v.activeFlag,
     },
   });
+  if (hit.count === 0) {
+    // グループは更新者を持たないので、時刻だけ添える
+    return staleFromRow(
+      m,
+      await prisma.group.findUnique({ where: { id }, select: { updatedAt: true } }),
+    );
+  }
 
   await writeAudit({
     entity: "groups",
@@ -59,7 +71,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { kind, nameJa: v.nameJa, activeFlag: v.activeFlag },
   });
-  return Response.json({ ok: true, kindLocked: kind !== v.kind });
+  const after = await prisma.group.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, kindLocked: kind !== v.kind, stamp: rowStamp(after) });
 }
 
 /**

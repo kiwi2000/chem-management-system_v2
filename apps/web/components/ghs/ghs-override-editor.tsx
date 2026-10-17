@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError } from "@/lib/types";
 import { GHS_CATALOG } from "@/lib/ghs/catalog-data";
 import { countryName } from "@/lib/ghs/countries";
@@ -51,6 +53,9 @@ export function GhsOverrideEditor({
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 楽観的ロックの印（この物質の自社判定ぜんぶで 1 つ）と、ほかの人が先に保存していた知らせ */
+  const [stamp, setStamp] = useState("");
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
 
   // 登録済みの上書きを読んで、効く国ごとの下書きに直す
   useEffect(() => {
@@ -62,8 +67,11 @@ export function GhsOverrideEditor({
         if (alive) setExisting([]);
         return;
       }
-      const body = (await res.json()) as { items: OverrideDto[] };
-      if (alive) setExisting(body.items);
+      const body = (await res.json()) as { items: OverrideDto[]; stamp: string };
+      if (alive) {
+        setExisting(body.items);
+        setStamp(body.stamp);
+      }
     })();
     return () => {
       alive = false;
@@ -98,8 +106,10 @@ export function GhsOverrideEditor({
       [cls]: { status: null, category: "", targetOrgans: "", ...d[cls], ...patch },
     }));
 
-  async function save() {
+  /** 保存。印を添える。`force` は「このまま保存する」（印が食い違っていても通す） */
+  async function save(force = false) {
     setError(null);
+    if (!force) setStale(null);
     const items = Object.entries(drafts)
       .filter(([, d]) => d.status !== null)
       .map(([hazardClass, d]) => ({
@@ -121,14 +131,28 @@ export function GhsOverrideEditor({
       const res = await fetch("/api/ghs-data/overrides", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ substanceId: row.id, country: scope, reason: reason.trim(), items }),
+        body: JSON.stringify({
+          substanceId: row.id,
+          country: scope,
+          reason: reason.trim(),
+          items,
+          stamp,
+          force: force || undefined,
+        }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? `HTTP ${res.status}`);
         return;
       }
+      setStale(null);
       onSaved();
     } finally {
       setBusy(false);
@@ -151,6 +175,12 @@ export function GhsOverrideEditor({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <StaleEditNotice
+          stale={stale}
+          saving={busy}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

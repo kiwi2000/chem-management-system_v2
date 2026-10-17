@@ -15,7 +15,7 @@ import {
   wouldCreateCycle,
 } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
-import { compositionStamp, nameOf, staleResponse } from "@/lib/edit-stamp";
+import { compositionStamp, nameOf, parseEditStamp, staleResponse } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { visibilityWhere } from "@/lib/product-service";
 import { getAppSettings } from "@/lib/settings";
@@ -133,14 +133,16 @@ export async function PUT(req: Request, { params }: Ctx) {
   const input = parsed.data;
 
   /*
-    **ほかの人が先に保存していないか。**止めるためではなく、
-    見てから決めてもらうため。「このまま保存する」を押されたら通す
+    **ほかの人が先に保存していないか**（楽観的ロック。lib/edit-stamp.ts）。印が無ければ断る。
+    食い違っていれば保存せずに知らせ、「このまま保存する」を押されたら通す
   */
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
   const before = await compositionStamp(id);
   const stale = staleResponse(m, {
-    sent: input.stamp,
+    sent: lock.stamp,
     now: before.stamp,
-    force: input.force === true,
+    force: lock.force,
     byName: before.byName,
     at: before.at,
   });

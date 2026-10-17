@@ -1,5 +1,6 @@
 import type { LinkSetVersion, LinkVersionSource, Source } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { notDisabledIn } from "@/lib/enabled-sources";
 import type {
   LinkSetVersionDto,
@@ -9,7 +10,7 @@ import type {
 } from "@/lib/types";
 
 export function toSourceDto(s: Source): SourceDto {
-  return { id: s.id, code: s.code, note: s.note, color: s.color, mark: s.mark };
+  return { stamp: rowStamp(s), id: s.id, code: s.code, note: s.note, color: s.color, mark: s.mark };
 }
 
 /** 基準日の文字（YYYY-MM-DD）を日付にする。時刻を持たない列なので UTC の 0 時に置く。読めなければ今日 */
@@ -21,6 +22,7 @@ export function asOfDate(s: string | undefined): Date {
 
 export function toLinkSetVersionDto(v: LinkSetVersion): LinkSetVersionDto {
   return {
+    stamp: rowStamp(v),
     id: v.id,
     code: v.code,
     isCurrent: v.isCurrent,
@@ -81,6 +83,7 @@ export function toLinkVersionSourceDto(
   linkCount: number,
 ): LinkVersionSourceDto {
   return {
+    stamp: rowStamp(row),
     id: row.id,
     versionId: row.versionId,
     versionCode: row.version.code,
@@ -155,6 +158,7 @@ export async function listCasLinks(
 
   return links
     .map((l) => ({
+      stamp: rowStamp(l),
       id: l.id,
       versionId: l.versionId,
       statutorySubstanceId: l.statutorySubstanceId,

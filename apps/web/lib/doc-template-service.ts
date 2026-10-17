@@ -1,6 +1,7 @@
 import { EMPTY_DOCUMENT, parseDocumentContent, unknownFields } from "@chem/shared";
 import type { DocumentContent, DocumentTarget } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { DocumentTemplateDto } from "@/lib/types";
 
 /**
@@ -43,6 +44,7 @@ export function toDocTemplateDto(row: Row): DocumentTemplateDto {
   const parsed = parseDocumentContent(row.content);
   const content = parsed ?? EMPTY_DOCUMENT;
   return {
+    stamp: rowStamp(row),
     id: row.id,
     code: row.code,
     nameJa: row.nameJa,

@@ -1,5 +1,6 @@
 import type { Group, News, OrganisationKind, User } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { NewsDto } from "@/lib/types";
 import { pickOrganisation } from "@/lib/user-organisations";
 
@@ -50,6 +51,7 @@ export function toNewsDto(n: NewsWithAuthor, actor: Actor): NewsDto {
     "DEPARTMENT",
   );
   return {
+    stamp: rowStamp(n),
     id: n.id,
     titleJa: n.titleJa,
     bodyJa: n.bodyJa,

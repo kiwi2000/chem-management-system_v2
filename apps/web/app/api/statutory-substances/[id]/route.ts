@@ -2,6 +2,7 @@ import { normalizeCode, statutorySubstanceSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { CATEGORY_THRESHOLD_SELECT, thresholdOrderError } from "@/lib/law-service";
 
@@ -33,6 +34,9 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
+  // ほかの人が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   const cls = await prisma.regulationClass.findFirst({
     where: { id: v.classId, deletedAt: null },
@@ -55,8 +59,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     }
   }
 
-  await prisma.statutorySubstance.update({
-    where: { id },
+  const hit = await prisma.statutorySubstance.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       code: v.code,
       codeNormalized,
@@ -78,6 +82,12 @@ export async function PUT(req: Request, { params }: Ctx) {
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.statutorySubstance.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
 
   await writeAudit({
     entity: "statutory_substances",
@@ -86,7 +96,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { code: v.code, nameOriginal: v.nameOriginal, classId: v.classId },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.statutorySubstance.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /**

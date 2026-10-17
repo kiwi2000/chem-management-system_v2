@@ -2,6 +2,7 @@ import { propertyDefSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, StaleError, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { PROPERTY_DEF_COUNT, syncPropertyOptions, valueCountOf } from "@/lib/property-def-service";
 
@@ -37,6 +38,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   const dataType =
     (existing.systemFlag || valueCountOf(existing) > 0) && v.dataType !== existing.dataType
@@ -46,23 +50,36 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.propertyDefs.choiceNeedsOptions);
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.propertyDef.update({
-      where: { id },
-      data: {
-        labelJa: v.labelJa,
-        labelEn: v.labelEn ?? null,
-        dataType,
-        defaultUnit: v.defaultUnit ?? null,
-        displayOrder: v.displayOrder,
-        activeFlag: v.activeFlag,
-        group: v.group,
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 門番。印が合う行だけを更新し、当たらなければ（ほかの人が先に保存していれば）やめる
+      const gate = await tx.propertyDef.updateMany({
+        where: { id, ...stampWhere(lock) },
+        data: {
+          labelJa: v.labelJa,
+          labelEn: v.labelEn ?? null,
+          dataType,
+          defaultUnit: v.defaultUnit ?? null,
+          displayOrder: v.displayOrder,
+          activeFlag: v.activeFlag,
+          group: v.group,
+        },
+      });
+      if (gate.count === 0) throw new StaleError();
+      // 選択肢でなくなった項目の値の選択肢は、並びを空にして片付ける（使われていれば「使わない」で残る）
+      await syncPropertyOptions(tx, existing, "VALUE", dataType === "CHOICE" ? v.valueOptions : []);
+      await syncPropertyOptions(tx, existing, "CONDITION", v.conditionOptions);
     });
-    // 選択肢でなくなった項目の値の選択肢は、並びを空にして片付ける（使われていれば「使わない」で残る）
-    await syncPropertyOptions(tx, existing, "VALUE", dataType === "CHOICE" ? v.valueOptions : []);
-    await syncPropertyOptions(tx, existing, "CONDITION", v.conditionOptions);
-  });
+  } catch (err) {
+    if (err instanceof StaleError) {
+      // 拡張属性の項目は更新者を持たないので、時刻だけ添える
+      return staleFromRow(
+        m,
+        await prisma.propertyDef.findUnique({ where: { id }, select: { updatedAt: true } }),
+      );
+    }
+    throw err;
+  }
 
   await writeAudit({
     entity: "property_defs",
@@ -71,7 +88,15 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { labelJa: v.labelJa, dataType, activeFlag: v.activeFlag },
   });
-  return Response.json({ ok: true, dataTypeLocked: dataType !== v.dataType });
+  const after = await prisma.propertyDef.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({
+    ok: true,
+    dataTypeLocked: dataType !== v.dataType,
+    stamp: rowStamp(after),
+  });
 }
 
 /** DELETE — 入力済みの値も一緒に消える（画面で件数を見せて確認する） */

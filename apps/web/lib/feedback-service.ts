@@ -1,6 +1,7 @@
 import type { FeedbackCommentDto, FeedbackDto } from "@chem/shared";
 import type { Feedback, FeedbackComment } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 
 /**
  * 未読の印を付けるための手がかり。
@@ -73,6 +74,7 @@ export async function toFeedbackDtos(
       createdByName: r.createdBy ? (nameById.get(r.createdBy) ?? null) : null,
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
+      stamp: rowStamp(r),
     };
   });
 }

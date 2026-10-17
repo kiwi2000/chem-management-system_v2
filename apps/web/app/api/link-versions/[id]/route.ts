@@ -2,6 +2,7 @@ import { linkSetVersionSchema, normalizeCode } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { asOfDate, ensureCurrentVersion } from "@/lib/link-service";
 
@@ -31,6 +32,9 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
+  // ほかの人が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   if (codeNormalized !== existing.codeNormalized) {
     const clash = await prisma.linkSetVersion.findFirst({
@@ -40,8 +44,8 @@ export async function PUT(req: Request, { params }: Ctx) {
       return jsonError(409, "duplicate_version_code", m.linkVersions.duplicateCode(v.code));
   }
 
-  await prisma.linkSetVersion.update({
-    where: { id },
+  const hit = await prisma.linkSetVersion.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       code: v.code,
       codeNormalized,
@@ -49,6 +53,12 @@ export async function PUT(req: Request, { params }: Ctx) {
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.linkSetVersion.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
 
   await ensureCurrentVersion(actor.user.id);
 
@@ -59,7 +69,12 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { code: v.code },
   });
-  return Response.json({ ok: true });
+  // 現在の版の付け替えでこの行がもう一度動くことがあるので、印はその後に引く
+  const after = await prisma.linkSetVersion.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /**

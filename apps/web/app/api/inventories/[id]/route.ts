@@ -2,6 +2,7 @@ import { inventorySchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { currentVersion } from "@/lib/inventory-service";
 import type { InventoryDto } from "@/lib/types";
@@ -39,6 +40,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     : 0;
 
   const dto: InventoryDto = {
+    stamp: rowStamp(item),
     id: item.id,
     code: item.code,
     countryId: item.countryId,
@@ -80,6 +82,9 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // ほかの人が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   const existing = await prisma.inventory.findFirst({ where: { id, deletedAt: null } });
   if (!existing) return jsonError(404, "not_found", m.errors.notFound);
@@ -90,8 +95,8 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     return jsonError(400, "validation_error", m.inventories.labelRequiredToShow);
   }
 
-  await prisma.inventory.update({
-    where: { id },
+  const hit = await prisma.inventory.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       nameJa: v.nameJa?.trim() ? v.nameJa.trim() : null,
       nameEn: v.nameEn?.trim() ? v.nameEn.trim() : null,
@@ -101,6 +106,12 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.inventory.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
 
   await writeAudit({
     entity: "inventories",
@@ -109,5 +120,9 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     actorId: actor.user.id,
     diff: { numberLabel, numberOrder: v.numberOrder, numberShown: v.numberShown },
   });
-  return Response.json({ id });
+  const after = await prisma.inventory.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ id, stamp: rowStamp(after) });
 }

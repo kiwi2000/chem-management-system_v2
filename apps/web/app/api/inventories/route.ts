@@ -1,6 +1,7 @@
 import { emptyTableState, parseTableState } from "@chem/shared";
 import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { currentVersion } from "@/lib/inventory-service";
 import { INVENTORY_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
@@ -68,6 +69,7 @@ export async function GET(req: Request) {
   }
 
   const dto: InventoryDto[] = items.map((i) => ({
+    stamp: rowStamp(i),
     id: i.id,
     code: i.code,
     countryId: i.countryId,

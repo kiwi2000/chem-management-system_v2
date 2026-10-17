@@ -1,6 +1,7 @@
 import { IMPURITY_NONE } from "@chem/shared";
 import type { ImpurityType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { ImpurityTypeDto } from "@/lib/types";
 
 /**
@@ -15,6 +16,7 @@ import type { ImpurityTypeDto } from "@/lib/types";
 
 export function toImpurityTypeDto(p: ImpurityType, substanceCount: number): ImpurityTypeDto {
   return {
+    stamp: rowStamp(p),
     id: p.id,
     code: p.code,
     nameJa: p.nameJa,

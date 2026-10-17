@@ -10,6 +10,7 @@ import JSZip from "jszip";
 import type { Actor } from "@/lib/authz";
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { canEditProduct, visibilityWhere } from "@/lib/product-service";
 import type { ProductAttachmentDto } from "@/lib/types";
 
@@ -177,6 +178,8 @@ export const ATTACHMENT_SELECT = {
   size: true,
   createdAt: true,
   createdBy: true,
+  // 楽観的ロックの印に使う
+  updatedAt: true,
 } as const;
 
 type AttachmentRow = {
@@ -189,6 +192,7 @@ type AttachmentRow = {
   size: number;
   createdAt: Date;
   createdBy: string | null;
+  updatedAt: Date;
 };
 
 /** 登録した人の名前を引いて DTO にする */
@@ -203,6 +207,7 @@ export async function toAttachmentDtos(rows: AttachmentRow[]): Promise<ProductAt
       : [];
   const nameOf = new Map(users.map((u) => [u.id, u.displayName ?? u.email]));
   return rows.map((r) => ({
+    stamp: rowStamp(r),
     id: r.id,
     title: r.title,
     kind: r.kind,

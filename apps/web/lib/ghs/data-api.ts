@@ -2,6 +2,7 @@ import { emptyTableState, normalizeCas, parseTableState } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, type Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowsStamp, staleFromRow } from "@/lib/edit-stamp";
 import { getLocale, getServerMessages } from "@/lib/i18n";
 import { todayInJapan } from "@/lib/judgement-date";
 import { SUBSTANCE_COLUMNS } from "@/lib/list-columns";
@@ -390,7 +391,17 @@ async function getOverrides(req: Request, actor: Actor): Promise<Response> {
     country: r.country,
     reason: r.reason,
   }));
-  return Response.json({ items });
+  // 楽観的ロックの印（その物質の自社判定ぜんぶで 1 つ）。保存時にそのまま送り返す
+  return Response.json({ items, stamp: rowsStamp(rows) });
+}
+
+/** 自社判定の印に要る行（その物質のぜんぶ）。新しい順なので先頭が最後に決めた行 */
+async function overrideStampRows(substanceId: string) {
+  return prisma.sdsGhsOverride.findMany({
+    where: { substanceId },
+    select: { updatedAt: true, decidedBy: true },
+    orderBy: { updatedAt: "desc" },
+  });
 }
 
 async function putOverrides(req: Request, actor: Actor): Promise<Response> {
@@ -414,6 +425,21 @@ async function putOverrides(req: Request, actor: Actor): Promise<Response> {
     return jsonError(400, "validation_error", m.errors.validation);
   const reason = String(body.reason ?? "").trim();
   if (body.items.length > 0 && !reason) return jsonError(400, "validation_error", t.needReason);
+  /*
+    ほかの人が先に保存していないか（楽観的ロック。lib/edit-stamp.ts）。印が無ければ断る。
+    自社判定は消して入れ直す複数行なので、その物質の行ぜんぶの印（行数と最新の更新時刻）で比べる。
+    ほかの国の上書きを同時に直したときも食い違いになる（物質 1 つを 1 件と見る）
+  */
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
+  const current = await overrideStampRows(substance.id);
+  if (!lock.force && lock.stamp !== rowsStamp(current)) {
+    const latest = current[0];
+    return staleFromRow(
+      m,
+      latest ? { updatedAt: latest.updatedAt, updatedBy: latest.decidedBy } : null,
+    );
+  }
   // 中身を確かめる: クラスはカタログにある、該当なら区分もカタログにある
   const rows: {
     hazardClass: string;
@@ -468,5 +494,10 @@ async function putOverrides(req: Request, actor: Actor): Promise<Response> {
     actorId: actor.user.id,
     diff: { substanceCode: substance.code, country, count: rows.length, reason },
   });
-  return Response.json({ ok: true, count: rows.length });
+  // 保存後の印。続けて直せるように返す
+  return Response.json({
+    ok: true,
+    count: rows.length,
+    stamp: rowsStamp(await overrideStampRows(substance.id)),
+  });
 }

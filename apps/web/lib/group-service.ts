@@ -1,4 +1,5 @@
 import type { Group } from "@prisma/client";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { GroupDto } from "@/lib/types";
 
 type WithCount = Group & {
@@ -11,6 +12,7 @@ type WithCount = Group & {
  */
 export function toGroupDto(g: WithCount): GroupDto {
   return {
+    stamp: rowStamp(g),
     id: g.id,
     kind: g.kind,
     nameJa: g.nameJa,

@@ -1,3 +1,4 @@
+import { parseEditStamp, rowsStamp, staleFromRow } from "@/lib/edit-stamp";
 import { rankBandSchema } from "@chem/shared";
 import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
@@ -26,6 +27,7 @@ export async function GET() {
     orderBy: { displayOrder: "asc" },
     select: {
       id: true,
+      updatedAt: true,
       label: true,
       lowerValue: true,
       lowerBound: true,
@@ -37,6 +39,8 @@ export async function GET() {
   });
 
   return Response.json({
+    // 楽観的ロックの印。保存時にそのまま送り返す
+    stamp: rowsStamp(bands),
     items: bands.map((b) => ({
       id: b.id,
       label: b.label,
@@ -75,6 +79,16 @@ export async function PUT(req: Request) {
 
   const items = parsed.data.items;
 
+  // ほかの管理者が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
+  const current = await prisma.substanceRankBand.findMany({
+    where: { deletedAt: null },
+    select: { updatedAt: true, updatedBy: true },
+    orderBy: { updatedAt: "desc" },
+  });
+  if (!lock.force && lock.stamp !== rowsStamp(current)) return staleFromRow(m, current[0]);
+
   await prisma.$transaction([
     // 消してから入れ直す。段には他から参照される鍵が無いので、これで済む
     prisma.substanceRankBand.deleteMany({}),
@@ -101,5 +115,9 @@ export async function PUT(req: Request) {
     diff: { count: items.length, labels: items.map((b) => b.label) },
   });
 
-  return Response.json({ ok: true, rescored });
+  const after = await prisma.substanceRankBand.findMany({
+    where: { deletedAt: null },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, rescored, stamp: rowsStamp(after) });
 }

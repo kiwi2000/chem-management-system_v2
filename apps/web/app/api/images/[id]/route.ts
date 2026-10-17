@@ -2,6 +2,7 @@ import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requireAnyPermission, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { IMAGE_SELECT, toImageDto, usageOf } from "@/lib/image-service";
 
@@ -68,14 +69,26 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
   const exists = await prisma.imageAsset.findUnique({ where: { id }, select: { id: true } });
   if (!exists) return jsonError(404, "not_found", m.errors.notFound);
 
-  const row = await prisma.imageAsset.update({
-    where: { id },
+  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.imageAsset.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: { name: parsed.data.name, note: parsed.data.note ?? null },
-    select: IMAGE_SELECT,
   });
+  if (hit.count === 0) {
+    // 画像は更新者を持たないので、時刻だけ添える
+    return staleFromRow(
+      m,
+      await prisma.imageAsset.findUnique({ where: { id }, select: { updatedAt: true } }),
+    );
+  }
+  // 更新後の行を返す（DTO の stamp が新しい印）
+  const row = await prisma.imageAsset.findUniqueOrThrow({ where: { id }, select: IMAGE_SELECT });
   const used = await usageOf([id]);
   return Response.json(toImageDto(row, used.get(id) ?? []));
 }

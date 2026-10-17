@@ -4,6 +4,7 @@ import { pickName } from "@chem/shared";
 import { Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, LanguageDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +66,10 @@ export function LanguageSection() {
   const [boxMax, setBoxMax] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  /** 編集を始めたときの印（楽観的ロック）。表を読み直しても、この値を送る */
+  const [editingStamp, setEditingStamp] = useState("");
+  /** ほかの人が先に保存していた知らせ */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -89,6 +95,7 @@ export function LanguageSection() {
     setError(null);
     const start = { ...EMPTY, displayOrder: ((items?.length ?? 0) + 1) * 10 };
     setDraft(start);
+    setStale(null);
     setEditingId(NEW_ID);
   }
 
@@ -96,16 +103,20 @@ export function LanguageSection() {
     setError(null);
     const d = { code: l.code, nameJa: l.nameJa, nameEn: l.nameEn, displayOrder: l.displayOrder };
     setDraft(d);
+    setEditingStamp(l.stamp);
+    setStale(null);
     setEditingId(l.id);
   }
 
   function stopEdit() {
     setEditingId(null);
     setDraft(EMPTY);
+    setStale(null);
   }
 
-  async function save() {
+  async function save(force = false) {
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const creating = editingId === NEW_ID;
@@ -113,12 +124,20 @@ export function LanguageSection() {
         method: creating ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // 既存の行なら印を添える（楽観的ロック）。force は「このまま保存する」
+          ...(creating ? {} : { stamp: editingStamp, force: force || undefined }),
           code: draft.code,
           nameJa: draft.nameJa,
           nameEn: draft.nameEn,
           displayOrder: Number(draft.displayOrder) || 0,
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -150,7 +169,10 @@ export function LanguageSection() {
   // 追加中は、まだ保存していない空の行を先頭に見せる
   const rows: LanguageDto[] =
     editingId === NEW_ID
-      ? [{ id: NEW_ID, code: "", nameJa: "", nameEn: "", displayOrder: 0 }, ...(items ?? [])]
+      ? [
+          { stamp: "", id: NEW_ID, code: "", nameJa: "", nameEn: "", displayOrder: 0 },
+          ...(items ?? []),
+        ]
       : (items ?? []);
 
   /** 見出しと最初の 7 行の高さを測って、箱の上限にする */
@@ -190,6 +212,12 @@ export function LanguageSection() {
       <CardContent className="space-y-3">
         <p className="text-muted-foreground text-sm">{m.languages.description}</p>
 
+        <StaleEditNotice
+          stale={stale}
+          saving={saving}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

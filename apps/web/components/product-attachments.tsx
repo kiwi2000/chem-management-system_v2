@@ -16,8 +16,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, ListResponse, ProductAttachmentDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 
@@ -39,6 +41,7 @@ const EMPTY: Draft = { title: "", kind: "", description: "" };
 
 /** 追加中に先頭へ出す、まだ保存していない行 */
 const NEW_ROW: ProductAttachmentDto = {
+  stamp: "",
   id: NEW_ID,
   title: "",
   kind: null,
@@ -96,6 +99,9 @@ export function ProductAttachments({
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** 直している行の楽観的ロックの印（lib/edit-stamp.ts）と、ほかの人が先に保存していた知らせ */
+  const [editingStamp, setEditingStamp] = useState("");
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   /** プレビューを開いている添付 */
   const [previewing, setPreviewing] = useState<ProductAttachmentDto | null>(null);
 
@@ -268,16 +274,21 @@ export function ProductAttachments({
     setDraft(d);
     setOriginal(d);
     setEditingId(a.id);
+    setEditingStamp(a.stamp);
+    setStale(null);
   }
 
   function stopEdit() {
     setEditingId(null);
     setDraft(EMPTY);
     setFile(null);
+    setStale(null);
   }
 
-  async function save() {
+  /** 保存。直すときは印を添える。`force` は「このまま保存する」（印が食い違っていても通す） */
+  async function save(force = false) {
     setError(null);
+    if (!force) setStale(null);
     const creating = editingId === NEW_ID;
     // 件名・種類・ファイルは必須（2026-09-27 指示）。件名に既定の値は入れない
     if (draft.title.trim() === "") {
@@ -310,8 +321,16 @@ export function ProductAttachments({
             title: draft.title,
             kind: draft.kind,
             description: draft.description || null,
+            stamp: editingStamp,
+            force: force || undefined,
           }),
         });
+      }
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
       }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
@@ -357,6 +376,12 @@ export function ProductAttachments({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <StaleEditNotice
+          stale={stale}
+          saving={saving}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

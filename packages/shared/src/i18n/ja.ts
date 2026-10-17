@@ -2451,6 +2451,10 @@ export const ja = {
       `${who} が ${at} に更新しています。あなたが開いたのは、それより前の内容です。`,
     staleEditAsk: "このまま保存すると、その変更はあなたの内容で置き換わります。",
     staleEditSave: "このまま保存する",
+    staleEditReload: "読み直す（いまの入力は消えます）",
+    staleEditSomeone: "ほかの利用者",
+    stampRequired:
+      "この画面は古い作りのため保存できません。画面を読み直してください（直らないときはシステム管理者へ）",
     publishStateMismatch: (states: string) => `${states}のものは、この操作の対象になりません`,
     pendingResolutionRequired: "承認待のものが残っています。扱いを選んでください",
     approvalRequired: "この種類のデータは承認が必要です",

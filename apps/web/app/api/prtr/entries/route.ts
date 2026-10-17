@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { STAMP_SELECT, parseEditStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { isConfirmed, loadEntry } from "@/lib/prtr-service";
 
@@ -68,23 +69,42 @@ export async function PUT(req: Request) {
   }
 
   const factorPct = v.factorPct ? new Prisma.Decimal(v.factorPct) : null;
-  const entry = await prisma.prtrEntry.upsert({
-    where: {
-      organisationId_fiscalYear: { organisationId: v.organisationId, fiscalYear: v.fiscalYear },
-    },
-    create: {
-      organisationId: v.organisationId,
-      fiscalYear: v.fiscalYear,
-      factorPct,
-      note: v.note ?? null,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-    update: { factorPct, note: v.note ?? null, updatedBy: actor.user.id },
-  });
+  let entryId: string;
+  if (existing) {
+    /*
+      頭があるときだけ印を要る（楽観的ロック。lib/edit-stamp.ts、S29 §4-5）。
+      印が合う行だけを直す。当たらなければ、ほかの人が先に保存している
+    */
+    const lock = parseEditStamp(body, m);
+    if (lock instanceof Response) return lock;
+    const hit = await prisma.prtrEntry.updateMany({
+      where: { id: existing.id, ...stampWhere(lock) },
+      data: { factorPct, note: v.note ?? null, updatedBy: actor.user.id },
+    });
+    if (hit.count === 0) {
+      return staleFromRow(
+        m,
+        await prisma.prtrEntry.findUnique({ where: { id: existing.id }, select: STAMP_SELECT }),
+      );
+    }
+    entryId = existing.id;
+  } else {
+    const created = await prisma.prtrEntry.create({
+      data: {
+        organisationId: v.organisationId,
+        fiscalYear: v.fiscalYear,
+        factorPct,
+        note: v.note ?? null,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+      select: { id: true },
+    });
+    entryId = created.id;
+  }
   await writeAudit({
     entity: "prtr_entries",
-    entityId: entry.id,
+    entityId: entryId,
     action: "update",
     actorId: actor.user.id,
     diff: { fiscalYear: v.fiscalYear, factorPct: v.factorPct ?? null },

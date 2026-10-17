@@ -2313,6 +2313,10 @@ export const en: Messages = {
       `${who} updated this at ${at}. What you opened is older than that.`,
     staleEditAsk: "Saving now replaces their changes with yours.",
     staleEditSave: "Save anyway",
+    staleEditReload: "Reload (your input will be lost)",
+    staleEditSomeone: "another user",
+    stampRequired:
+      "This screen is out of date and cannot save. Reload the page (if that does not help, contact your administrator)",
     publishStateMismatch: (states: string) =>
       `This action does not apply to items that are ${states}`,
     pendingResolutionRequired:

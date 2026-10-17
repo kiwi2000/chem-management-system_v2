@@ -2,6 +2,7 @@ import { feedbackStateSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { toCommentDtos, toFeedbackDtos } from "@/lib/feedback-service";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -61,11 +62,21 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
-  await prisma.feedback.update({
-    where: { id },
+  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.feedback.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: { ...v, updatedBy: actor.user.id },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.feedback.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
 
   await writeAudit({
     entity: "feedbacks",
@@ -74,7 +85,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { kind: v.kind, priority: v.priority, status: v.status },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.feedback.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /** DELETE /api/feedback/[id] — 論理削除 */

@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { CountryDto } from "@/lib/types";
 
 /** 一覧に地域名を出すので、地域を一緒に引く */
@@ -10,6 +11,7 @@ type CountryWithRegion = Prisma.CountryGetPayload<{ include: typeof COUNTRY_INCL
 
 export function toCountryDto(c: CountryWithRegion): CountryDto {
   return {
+    stamp: rowStamp(c),
     id: c.id,
     code: c.code,
     regionId: c.regionId,

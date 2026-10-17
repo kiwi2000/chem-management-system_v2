@@ -73,6 +73,10 @@ export function GhsAdoptionRules({
     setDirty(true);
   };
 
+  /*
+    楽観的ロックの印は送らない。採用順の表（SdsGhsAdoptionRule）に更新時刻が無く、印を作れないため。
+    管理者だけが触る国ごとの並び順で、後から保存した人の順が勝つ（lib/edit-stamp-coverage.test.ts の例外）
+  */
   async function save() {
     setBusy(true);
     setError(null);

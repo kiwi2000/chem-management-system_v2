@@ -1,10 +1,12 @@
 import type { Language } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { LanguageDto } from "@/lib/types";
 
 /** 言語。法規制の名称で「原文の言語」として選ぶ */
 export function toLanguageDto(l: Language): LanguageDto {
   return {
+    stamp: rowStamp(l),
     id: l.id,
     code: l.code,
     nameJa: l.nameJa,

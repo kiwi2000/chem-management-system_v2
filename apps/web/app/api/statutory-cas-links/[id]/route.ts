@@ -2,6 +2,7 @@ import { normalizeCas, statutoryCasLinkSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // ほかの人が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   const source = await prisma.source.findFirst({ where: { id: v.sourceId, deletedAt: null } });
   if (!source) return jsonError(404, "not_found", m.errors.notFound);
@@ -45,8 +49,8 @@ export async function PUT(req: Request, { params }: Ctx) {
   });
   if (dup) return jsonError(409, "duplicate", m.casLinks.duplicate);
 
-  await prisma.statutoryCasLink.update({
-    where: { id },
+  const hit = await prisma.statutoryCasLink.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       sourceId: v.sourceId,
       casNumber: v.casNumber,
@@ -56,6 +60,12 @@ export async function PUT(req: Request, { params }: Ctx) {
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.statutoryCasLink.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
 
   await writeAudit({
     entity: "statutory_cas_links",
@@ -68,7 +78,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     },
   });
 
-  return Response.json({ ok: true });
+  const after = await prisma.statutoryCasLink.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /** DELETE /api/statutory-cas-links/[id] — 消す。取り込み直しで作り直せるので物理削除 */

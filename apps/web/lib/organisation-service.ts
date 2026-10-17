@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { OrganisationDto } from "@/lib/types";
 
 /**
@@ -19,6 +20,7 @@ type Row = Prisma.OrganisationGetPayload<{ include: typeof ORG_INCLUDE }>;
 
 export function toOrganisationDto(row: Row): OrganisationDto {
   return {
+    stamp: rowStamp(row),
     id: row.id,
     code: row.code,
     kind: row.kind,

@@ -3,6 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { revokeAllSessions } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import {
   countActiveAdmins,
@@ -55,6 +56,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const { displayName, permissions, activeFlag, newsGroupId, organisationIds } = parsed.data;
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
   const next = expandPermissions(permissions);
 
   const groups = await resolveGroups(newsGroupId ?? null, next, organisationIds ?? []);
@@ -71,10 +75,19 @@ export async function PUT(req: Request, { params }: Ctx) {
     }
   }
 
-  await prisma.user.update({
-    where: { id },
+  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している。
+  // 所属と権限は利用者の行を触らないので、ここを通ってから書く
+  const hit = await prisma.user.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: { displayName: displayName ?? null, activeFlag, newsGroupId: groups.newsGroupId },
   });
+  if (hit.count === 0) {
+    // 利用者は更新者を持たないので、時刻だけ添える
+    return staleFromRow(
+      m,
+      await prisma.user.findUnique({ where: { id }, select: { updatedAt: true } }),
+    );
+  }
   await setOrganisations(id, groups.organisationIds);
   const granted = await setPermissions(id, next, actor.user.id);
 
@@ -88,7 +101,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { displayName, activeFlag, permissions: granted },
   });
-  return Response.json({ ok: true, permissions: granted });
+  const after = await prisma.user.findUniqueOrThrow({ where: { id }, select: { updatedAt: true } });
+  return Response.json({ ok: true, permissions: granted, stamp: rowStamp(after) });
 }
 
 /** DELETE /api/admin/users/[id] — 論理削除 */

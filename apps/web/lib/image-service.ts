@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import type { ImageAssetDto } from "@/lib/types";
 
 /**
@@ -17,6 +18,8 @@ export const IMAGE_SELECT = {
   height: true,
   size: true,
   createdAt: true,
+  // 楽観的ロックの印に使う
+  updatedAt: true,
 } satisfies Prisma.ImageAssetSelect;
 
 type ImageRow = Prisma.ImageAssetGetPayload<{ select: typeof IMAGE_SELECT }>;
@@ -51,6 +54,7 @@ export async function usageOf(ids: string[]): Promise<Map<string, ImageUsage[]>>
 
 export function toImageDto(r: ImageRow, usedBy: ImageUsage[]): ImageAssetDto {
   return {
+    stamp: rowStamp(r),
     id: r.id,
     name: r.name,
     note: r.note,

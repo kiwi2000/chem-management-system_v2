@@ -2,6 +2,14 @@ import { metalFactorSchema, normalizeCas } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import {
+  parseEditStamp,
+  rowStamp,
+  STAMP_SELECT,
+  StaleError,
+  staleFromRow,
+  stampWhere,
+} from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { findSubstancesByCas } from "@/lib/metal-factor-service";
 
@@ -33,10 +41,14 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
   const v = parsed.data;
   const casNormalized = normalizeCas(v.casNumber);
+  // ほかの人が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   // キー（CAS × 金属元素）を変えるときは、その組が空いているか確かめる
   const keyChanged =
     casNormalized !== existing.casNormalized || v.metalElement !== existing.metalElement;
+  let clashId: string | null = null;
   if (keyChanged) {
     const clash = await prisma.metalConversionFactor.findUnique({
       where: { casNormalized_metalElement: { casNormalized, metalElement: v.metalElement } },
@@ -49,19 +61,41 @@ export async function PUT(req: Request, { params }: Ctx) {
       );
     }
     // 論理削除済みの行が居座っている場合は、先に片付けてキーを空ける
-    if (clash) await prisma.metalConversionFactor.delete({ where: { id: clash.id } });
+    if (clash) clashId = clash.id;
   }
 
-  await prisma.metalConversionFactor.update({
-    where: { id },
-    data: {
-      casNumber: casNormalized,
-      casNormalized,
-      metalElement: v.metalElement,
-      ratioPct: v.ratioPct,
-      updatedBy: actor.user.id,
-    },
-  });
+  /*
+    居座っている行の片付けとこの行の書き換えを 1 つのトランザクションに入れ、
+    先頭の門番で食い違いを見る（食い違っていたら片付けもしない）
+  */
+  try {
+    await prisma.$transaction(async (tx) => {
+      const gate = await tx.metalConversionFactor.updateMany({
+        where: { id, ...stampWhere(lock) },
+        data: { updatedBy: actor.user.id },
+      });
+      if (gate.count === 0) throw new StaleError();
+      if (clashId) await tx.metalConversionFactor.delete({ where: { id: clashId } });
+      await tx.metalConversionFactor.update({
+        where: { id },
+        data: {
+          casNumber: casNormalized,
+          casNormalized,
+          metalElement: v.metalElement,
+          ratioPct: v.ratioPct,
+          updatedBy: actor.user.id,
+        },
+      });
+    });
+  } catch (err) {
+    if (err instanceof StaleError) {
+      return staleFromRow(
+        m,
+        await prisma.metalConversionFactor.findUnique({ where: { id }, select: STAMP_SELECT }),
+      );
+    }
+    throw err;
+  }
 
   const warnings: string[] = [];
   const matched = await findSubstancesByCas([casNormalized]);
@@ -76,7 +110,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { casNumber: casNormalized, metalElement: v.metalElement, ratioPct: v.ratioPct },
   });
-  return Response.json({ ok: true, warnings });
+  const after = await prisma.metalConversionFactor.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, warnings, stamp: rowStamp(after) });
 }
 
 /** DELETE /api/metal-factors/[id] — 論理削除（同じキーで登録し直すと復活する） */

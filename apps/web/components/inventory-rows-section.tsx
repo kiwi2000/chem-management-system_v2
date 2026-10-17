@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import {
   pickedSourceOf,
@@ -65,6 +67,8 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
 
   const [data, setData] = useState<ListResponse<InventoryRowDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   /** 同じ CAS × データソースを 1 行にまとめるか。既定はまとめる（見るときはこのほうが読みやすい） */
@@ -229,6 +233,7 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
 
   function startNew() {
     setError(null);
+    setStale(null);
     setWarnings([]);
     // 入る先は、いま選んでいるバージョンとデータソース
     const d: Draft = { ...EMPTY, sourceId: pickedSourceOf(picked) ?? "" };
@@ -239,6 +244,7 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
 
   function startEdit(r: InventoryRowDto) {
     setError(null);
+    setStale(null);
     setWarnings([]);
     const d: Draft = { sourceId: r.sourceId, casNumber: r.casNumber, value: r.value };
     setDraft(d);
@@ -248,16 +254,20 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
 
   function stopEdit() {
     setEditingId(null);
+    setStale(null);
     setDraft(EMPTY);
   }
 
-  async function save() {
+  async function save(force = false) {
     if (!editingId) return;
     setError(null);
+    if (!force) setStale(null);
     setWarnings([]);
     setSaving(true);
     try {
       const creating = editingId === NEW_ID;
+      // 編集のときだけ、開いたときの印を添える
+      const current = creating ? undefined : data?.items.find((r) => r.id === editingId);
       const q = picked?.versionId ? `?versionId=${picked.versionId}` : "";
       const res = await fetch(
         creating
@@ -271,9 +281,16 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
             sourceId: pickedSourceOf(picked) ?? draft.sourceId,
             casNumber: draft.casNumber,
             value: draft.value,
+            ...(current ? { stamp: current.stamp, force: force || undefined } : {}),
           }),
         },
       );
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -316,6 +333,8 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
       : editingId === NEW_ID
         ? [
             {
+              // 仮の行なので印は持たない（保存は POST で、印を使わない）
+              stamp: "",
               id: NEW_ID,
               sourceId: pickedSourceOf(picked) ?? "",
               sourceCode: "",
@@ -351,6 +370,12 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
       {warnings.length > 0 && (
         <Alert>
           <AlertDescription>

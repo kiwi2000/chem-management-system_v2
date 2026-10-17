@@ -92,6 +92,10 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 
 ### 実装
 
+- **編集の API（PUT / PATCH）には楽観的ロックを必ず入れる**（2026-10-18 指示。仕組みは `apps/web/lib/edit-stamp.ts`、記録は `docs/steps/S29_楽観的ロック.md`）。
+  DTO に `stamp` を持たせ、画面は保存時に `stamp` を送り返し、サーバーは `parseEditStamp` → `updateMany({ where: { id, ...stampWhere(lock) } })` の件数で
+  食い違いを見て 409 `stale_edit` を返す。画面は入力を残したまま `StaleEditNotice` を出す。
+  見つけ方: `apps/web/lib/edit-stamp-coverage.test.ts` が PUT / PATCH の route.ts と、PUT / PATCH を送る画面の付け忘れを検出する。例外は理由を書いてそこに載せる
 - **画面に出る文字列を直接書かない。** `packages/shared/src/i18n/ja.ts` にキーを足し、
   `en.ts` にも英語を入れる（入れ忘れはビルドで落ちる）。使い方は `docs/steps/S18_多言語UI基盤.md`
 - **導入先で動く作りは、3 つの入れ方（Railway・Docker・Windows Server）で確かめる。**2026-10-16 に次の 3 つが見つかった

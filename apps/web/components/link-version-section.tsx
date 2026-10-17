@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, LinkSetVersionDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { cn } from "@/lib/utils";
@@ -58,6 +60,8 @@ export function LinkVersionSection({
   const [originalAsOf, setOriginalAsOf] = useState("");
   const [data, setData] = useState<ListResponse<LinkSetVersionDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
   const columns = useMemo<TableColumn<LinkSetVersionDto>[]>(
@@ -209,6 +213,7 @@ export function LinkVersionSection({
 
   function startEdit(v: LinkSetVersionDto) {
     setError(null);
+    setStale(null);
     setCode(v.code);
     setOriginal(v.code);
     setAsOf(v.asOf);
@@ -218,20 +223,34 @@ export function LinkVersionSection({
 
   function stopEdit() {
     setEditingId(null);
+    setStale(null);
     setCode("");
     setAsOf("");
   }
 
-  async function save() {
+  async function save(force = false) {
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const creating = editingId === NEW_ID;
+      // 編集のときだけ、開いたときの印を添える
+      const current = creating ? undefined : data?.items.find((v) => v.id === editingId);
       const res = await fetch(creating ? "/api/link-versions" : "/api/link-versions/" + editingId, {
         method: creating ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, asOf: asOf || undefined }),
+        body: JSON.stringify({
+          code,
+          asOf: asOf || undefined,
+          ...(current ? { stamp: current.stamp, force: force || undefined } : {}),
+        }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -298,6 +317,8 @@ export function LinkVersionSection({
       : editingId === NEW_ID
         ? [
             {
+              // 仮の行なので印は持たない（保存は POST で、印を使わない）
+              stamp: "",
               id: NEW_ID,
               code: "",
               isCurrent: false,
@@ -315,6 +336,12 @@ export function LinkVersionSection({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
 
       <DataTable
         title={m.linkVersions.title}

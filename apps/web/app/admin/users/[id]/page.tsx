@@ -8,6 +8,7 @@ import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
 import { OrganisationPicker } from "@/components/organisation-picker";
 import { PermissionPicker } from "@/components/permission-picker";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditingBadge } from "@/components/editing-badge";
 import { EditButton } from "@/components/edit-button";
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { PAGE_SHELL, PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { firstError, summaryError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { passwordProblem } from "@/lib/password-check";
 import { usePasswordPolicy } from "@/lib/use-password-policy";
 import type { ApiError, MeDto, UserSummaryDto } from "@/lib/types";
@@ -51,6 +53,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [forceChange, setForceChange] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -80,16 +84,19 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   // 「他人のお知らせも編集できる」を選ぶと投稿もできるので、含意を展開して見る
   const canPost = expandPermissions(permissions).includes("NEWS_POST");
 
-  async function onSave(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(force = false) {
     setError(null);
     setNotice(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // 読み込んだときの印（楽観的ロック）。force は「このまま保存する」
+          stamp: item?.stamp ?? "",
+          force: force || undefined,
           displayName: displayName || null,
           permissions,
           activeFlag,
@@ -97,12 +104,21 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           newsGroupId: newsGroupId || null,
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      // 画面は開いたままなので、次の保存に備えて新しい印に差し替える
+      const { stamp } = (await res.json()) as { stamp: string };
+      setItem((prev) => (prev ? { ...prev, stamp } : prev));
       setNotice(m.common.saved);
       void load();
     } finally {
@@ -195,7 +211,13 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         {editing ? <EditingBadge /> : <EditButton onClick={() => setEditing(true)} />}
       </div>
 
-      <form onSubmit={onSave} className="space-y-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+        className="space-y-4"
+      >
         <fieldset disabled={!editing} className="space-y-4">
           <Card>
             <CardContent className="space-y-4 pt-6">
@@ -280,6 +302,12 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           </Card>
         </fieldset>
 
+        <StaleEditNotice
+          stale={stale}
+          saving={saving}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -303,6 +331,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               onClick={() => {
                 // 書きかけを捨てて表示に戻す
                 void load();
+                setStale(null);
                 setEditing(false);
               }}
             >

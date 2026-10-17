@@ -7,6 +7,7 @@ import {
 import type { Prisma } from "@prisma/client";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import type {
   LawDto,
   RegulationCategoryDto,
@@ -36,6 +37,7 @@ type LawRow = Prisma.LawGetPayload<{ include: typeof LAW_INCLUDE }>;
 
 export function toLawDto(l: LawRow): LawDto {
   return {
+    stamp: rowStamp(l),
     id: l.id,
     code: l.code,
     countryId: l.countryId,
@@ -98,6 +100,7 @@ export function toCategoryDto(
   counts: CategoryCounts | undefined,
 ): RegulationCategoryDto {
   return {
+    stamp: rowStamp(c),
     id: c.id,
     code: c.code,
     lawId: c.lawId,
@@ -131,6 +134,7 @@ type ClassRow = Prisma.RegulationClassGetPayload<{ include: typeof CLASS_INCLUDE
 
 export function toClassDto(c: ClassRow): RegulationClassDto {
   return {
+    stamp: rowStamp(c),
     id: c.id,
     code: c.code,
     categoryId: c.categoryId,
@@ -197,6 +201,7 @@ type SubstanceRow = Prisma.StatutorySubstanceGetPayload<{ include: typeof SUBSTA
 
 export function toStatutorySubstanceDto(s: SubstanceRow): StatutorySubstanceDto {
   return {
+    stamp: rowStamp(s),
     id: s.id,
     code: s.code,
     classId: s.classId,

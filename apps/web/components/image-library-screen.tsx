@@ -10,12 +10,14 @@ import { Upload } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, ImageAssetDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
@@ -55,8 +57,15 @@ export function ImageLibraryScreen() {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  /** 行の中で名前と備考を直す */
-  const [editing, setEditing] = useState<{ id: string; name: string; note: string } | null>(null);
+  /** 行の中で名前と備考を直す。stamp は鉛筆を押したときの印（楽観的ロック） */
+  const [editing, setEditing] = useState<{
+    id: string;
+    stamp: string;
+    name: string;
+    note: string;
+  } | null>(null);
+  /** ほかの人が先に保存していた知らせ */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -116,14 +125,27 @@ export function ImageLibraryScreen() {
     void load();
   }
 
-  async function saveEdit() {
+  async function saveEdit(force = false) {
     if (!editing) return;
     setError(null);
+    if (!force) setStale(null);
     const res = await fetch(`/api/images/${editing.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editing.name, note: editing.note || null }),
+      body: JSON.stringify({
+        // 鉛筆を押したときの印（楽観的ロック）。force は「このまま保存する」
+        stamp: editing.stamp,
+        force: force || undefined,
+        name: editing.name,
+        note: editing.note || null,
+      }),
     });
+    // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+    const staleInfo = await readStaleEdit(res);
+    if (staleInfo) {
+      setStale(staleInfo);
+      return;
+    }
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -131,6 +153,7 @@ export function ImageLibraryScreen() {
       return;
     }
     setEditing(null);
+    setStale(null);
     setNotice(m.images.saved);
     void load();
   }
@@ -291,6 +314,12 @@ export function ImageLibraryScreen() {
         <h1 className="text-2xl font-semibold">{m.images.title}</h1>
         <p className="text-muted-foreground text-sm">{m.images.lead}</p>
       </div>
+      <StaleEditNotice
+        stale={stale}
+        saving={busy}
+        onForce={() => void saveEdit(true)}
+        onDismiss={() => setStale(null)}
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -333,7 +362,12 @@ export function ImageLibraryScreen() {
         }
         rowAction={
           editable
-            ? { onClick: (r) => setEditing({ id: r.id, name: r.name, note: r.note ?? "" }) }
+            ? {
+                onClick: (r) => {
+                  setStale(null);
+                  setEditing({ id: r.id, stamp: r.stamp, name: r.name, note: r.note ?? "" });
+                },
+              }
             : undefined
         }
         hintText={m.images.uploadHint}

@@ -21,7 +21,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { CompositionEditor } from "@/components/composition-editor";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { cn } from "@/lib/utils";
 import type { AppSettings } from "@chem/shared";
 import type { ApiError, ProductDetailDto, PropertyDefDto } from "@/lib/types";
@@ -114,6 +116,22 @@ export function ProductForm({
   const fieldError = (key: string) => firstError(fieldErrors, key);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  /**
+   * 楽観的ロックの印（lib/edit-stamp.ts）と、ほかの人が先に保存していた知らせ。
+   * 新規登録の途中（基本情報を登録したあと）は印をまだ持っていないので、保存の前に読む
+   */
+  const [stamp, setStamp] = useState<string | null>(initial?.stamp ?? null);
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
+
+  /** いまの印を読み直す。組成を保存すると製品の更新時刻も動くので、組成の編集を終えたときにも呼ぶ */
+  async function refreshStamp(): Promise<string | null> {
+    if (!targetId) return null;
+    const res = await fetch(`/api/products/${targetId}`).catch(() => null);
+    if (!res?.ok) return null;
+    const body = (await res.json()) as { item: { stamp: string } };
+    setStamp(body.item.stamp);
+    return body.item.stamp;
+  }
 
   function buildBody() {
     return {
@@ -224,13 +242,32 @@ export function ProductForm({
     );
   }
 
-  /** 書き込みを1か所にまとめる。段によって作る／直すが変わるだけで、送る中身は同じ */
-  async function save(): Promise<{ id: string; warnings: string[] } | null> {
+  /**
+   * 書き込みを1か所にまとめる。段によって作る／直すが変わるだけで、送る中身は同じ。
+   * 直すときは印を添える。`force` は「このまま保存する」（印が食い違っていても通す）
+   */
+  async function save(force = false): Promise<{ id: string; warnings: string[] } | null> {
+    /*
+      直すときの印。新規登録の途中（基本情報を登録した直後の段）はまだ持っていないので、そのときだけ読む。
+      既存の製品を直すときは開いたときの印をそのまま送る（ここで読み直すと、ほかの人の変更を見逃す）
+    */
+    const lock = targetId
+      ? {
+          stamp: stamp ?? (initial ? "" : ((await refreshStamp()) ?? "")),
+          force: force || undefined,
+        }
+      : {};
     const res = await fetch(targetId ? `/api/products/${targetId}` : "/api/products", {
       method: targetId ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildBody()),
+      body: JSON.stringify({ ...buildBody(), ...lock }),
     });
+    // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+    const staleInfo = await readStaleEdit(res);
+    if (staleInfo) {
+      setStale(staleInfo);
+      return null;
+    }
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return null;
       const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -238,15 +275,23 @@ export function ProductForm({
       setFieldErrors(toFieldErrors(body?.error.details));
       return null;
     }
-    const body = (await res.json()) as { id?: string; warnings?: string[] };
+    const body = (await res.json()) as { id?: string; warnings?: string[]; stamp?: string };
+    setStale(null);
+    if (body.stamp) setStamp(body.stamp);
     return { id: body.id ?? targetId ?? "", warnings: body.warnings ?? [] };
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    await submit();
+  }
+
+  /** 保存して次へ進む。`force` は「このまま保存する」から */
+  async function submit(force = false) {
     setError(null);
     setFieldErrors({});
     setWarnings([]);
+    if (!force) setStale(null);
 
     // 組成の段は、エディタ側が自分で保存する。ここでは進むだけ
     if (wizard && step === 2) {
@@ -256,7 +301,7 @@ export function ProductForm({
 
     setSaving(true);
     try {
-      const done = await save();
+      const done = await save(force);
       if (!done) return;
 
       // 基本情報を登録できたら、そのIDで組成を入力させる
@@ -498,7 +543,11 @@ export function ProductForm({
               settings={settings}
               editing={isEditing("composition")}
               onRequestEdit={wizard ? undefined : () => tryEdit("composition")}
-              onFinishEdit={finishEditing}
+              onFinishEdit={() => {
+                finishEditing();
+                // 組成を保存すると製品の更新時刻も動く。次の基本情報の保存が食い違いにならないよう印を読み直す
+                void refreshStamp();
+              }}
             />
           )}
 
@@ -533,6 +582,12 @@ export function ProductForm({
           )}
         </div>
 
+        <StaleEditNotice
+          stale={stale}
+          saving={saving}
+          onForce={() => void submit(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

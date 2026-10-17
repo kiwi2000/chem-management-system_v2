@@ -12,6 +12,7 @@ import {
 } from "@chem/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -21,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, ListResponse, PropertyDefDto, PropertyOptionDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 
@@ -73,9 +75,11 @@ interface Props {
 export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceholder }: Props) {
   const { m, locale } = useI18n();
 
+  // stamp は読み込んだときの印（楽観的ロック）。既存のものを直すときだけ送る
   const emptyForm = useMemo(
     () => ({
       id: "",
+      stamp: "",
       key: "",
       labelJa: "",
       labelEn: "",
@@ -92,6 +96,8 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
   );
   const [form, setForm] = useState({ ...emptyForm });
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
   const typeLabel = useCallback(
@@ -228,9 +234,9 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
     if (ready) void load();
   }, [ready, load]);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(force = false) {
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const editing = form.id !== "";
@@ -240,6 +246,8 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
           method: editing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            // 既存のものなら印を添える（楽観的ロック）。force は「このまま保存する」
+            ...(editing ? { stamp: form.stamp, force: force || undefined } : {}),
             target,
             key: form.key,
             labelJa: form.labelJa,
@@ -254,6 +262,12 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
           }),
         },
       );
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -296,6 +310,12 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
         <p className="text-muted-foreground text-sm">{hint}</p>
       </div>
 
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -309,7 +329,13 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void save();
+            }}
+            className="space-y-4"
+          >
             <div className="flex flex-wrap gap-4">
               <div className="space-y-2">
                 <Label htmlFor={fieldId("key")}>{m.propertyDefs.key}</Label>
@@ -444,7 +470,14 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
                 {saving ? m.common.saving : m.common.save}
               </Button>
               {form.id !== "" && (
-                <Button type="button" variant="outline" onClick={() => setForm({ ...emptyForm })}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setForm({ ...emptyForm });
+                    setStale(null);
+                  }}
+                >
                   {m.common.discard}
                 </Button>
               )}
@@ -469,8 +502,10 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
         // この画面は詳細を別に持たないので、鉛筆で上のフォームに読み込む
         rowAction={{
           onClick: (d) => {
+            setStale(null);
             setForm({
               id: d.id,
+              stamp: d.stamp,
               key: d.key,
               labelJa: d.labelJa,
               labelEn: d.labelEn ?? "",

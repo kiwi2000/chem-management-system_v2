@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, ElementDto, ListResponse, MetalFactorDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
@@ -21,7 +23,8 @@ const DEFAULT_STATE: TableState = emptyTableState([
   { column: "metalElement", direction: "asc" },
 ]);
 
-const EMPTY_FORM = { id: "", casNumber: "", metalElement: "", ratioPct: "" };
+/** `stamp` は鉛筆で読み込んだ行の印（楽観的ロック）。新規のときは空 */
+const EMPTY_FORM = { id: "", stamp: "", casNumber: "", metalElement: "", ratioPct: "" };
 
 /**
  * 金属換算係数。
@@ -123,6 +126,8 @@ export default function MetalFactorsPage() {
    */
   const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -153,9 +158,9 @@ export default function MetalFactorsPage() {
     })();
   }, []);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(force = false) {
     setError(null);
+    if (!force) setStale(null);
     setWarnings([]);
     setSaving(true);
     try {
@@ -167,8 +172,16 @@ export default function MetalFactorsPage() {
           casNumber: form.casNumber,
           metalElement: form.metalElement,
           ratioPct: form.ratioPct,
+          // 編集のときだけ、読み込んだときの印を添える
+          ...(editing ? { stamp: form.stamp, force: force || undefined } : {}),
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -177,6 +190,7 @@ export default function MetalFactorsPage() {
       }
       const body = (await res.json()) as { warnings?: string[] };
       setWarnings(body.warnings ?? []);
+      setStale(null);
       setForm({ ...EMPTY_FORM });
       setFormOpen(false);
       void load();
@@ -210,6 +224,12 @@ export default function MetalFactorsPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
       {warnings.length > 0 && (
         <Alert>
           <AlertDescription>
@@ -228,6 +248,7 @@ export default function MetalFactorsPage() {
             type="button"
             onClick={() => {
               setForm({ ...EMPTY_FORM });
+              setStale(null);
               setFormOpen(true);
             }}
           >
@@ -244,7 +265,13 @@ export default function MetalFactorsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onSubmit} className="flex flex-wrap items-start gap-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void save();
+              }}
+              className="flex flex-wrap items-start gap-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="cas">{m.metalFactors.casNumber}</Label>
                 <Input
@@ -305,6 +332,7 @@ export default function MetalFactorsPage() {
                     variant="outline"
                     onClick={() => {
                       setForm({ ...EMPTY_FORM });
+                      setStale(null);
                       setFormOpen(false);
                     }}
                   >
@@ -338,10 +366,12 @@ export default function MetalFactorsPage() {
                 onClick: (f) => {
                   setForm({
                     id: f.id,
+                    stamp: f.stamp,
                     casNumber: f.casNumber,
                     metalElement: f.metalElement,
                     ratioPct: f.ratioPct,
                   });
+                  setStale(null);
                   setFormOpen(true);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 },

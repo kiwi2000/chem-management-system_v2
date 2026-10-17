@@ -18,6 +18,7 @@ import {
 import ExcelJS from "exceljs";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { notDisabledIn } from "@/lib/enabled-sources";
 import type {
   PrtrEntryDto,
@@ -87,6 +88,7 @@ export async function updaterNames(
 
 export function toQuantityDto(q: QuantityRow, names: Map<string, string>): PrtrQuantityDto {
   return {
+    stamp: rowStamp(q),
     id: q.id,
     method: q.method === "FACTOR" ? "FACTOR" : "BALANCE",
     productId: q.productId,
@@ -104,6 +106,7 @@ export function toQuantityDto(q: QuantityRow, names: Map<string, string>): PrtrQ
 export function toMeasuredDto(x: MeasuredRow, names: Map<string, string>): PrtrMeasuredDto {
   const substance = x.substance;
   return {
+    stamp: rowStamp(x),
     id: x.id,
     statutorySubstanceId: x.statutorySubstanceId,
     officialNumber: x.statutorySubstance.officialNumber,
@@ -130,7 +133,18 @@ export async function loadEntry(organisationId: string, fiscalYear: number): Pro
     },
   });
   if (!entry) {
-    return { entry: null, balanceCount: 0, factorCount: 0, measuredCount: 0, confirmed: false };
+    /*
+      頭がまだ無いときの印。空文字だと PUT の印の検査（1 文字以上）に通らないので、
+      「どの行にも当たらない」値を置く。その間に誰かが頭を作っていれば、保存は食い違いになる
+    */
+    return {
+      stamp: "0",
+      entry: null,
+      balanceCount: 0,
+      factorCount: 0,
+      measuredCount: 0,
+      confirmed: false,
+    };
   }
   const grouped = await prisma.prtrQuantity.groupBy({
     by: ["method"],
@@ -139,6 +153,7 @@ export async function loadEntry(organisationId: string, fiscalYear: number): Pro
   });
   const count = (k: string) => grouped.find((g) => g.method === k)?._count._all ?? 0;
   return {
+    stamp: rowStamp(entry),
     entry: toEntryHead(entry),
     balanceCount: count("BALANCE"),
     factorCount: count("FACTOR"),

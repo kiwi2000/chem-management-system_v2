@@ -2,6 +2,7 @@ import { newsSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { canEditNews, NEWS_INCLUDE, parseDateOnly, toNewsDto } from "@/lib/news-service";
 
@@ -52,9 +53,13 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
-  await prisma.news.update({
-    where: { id },
+  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.news.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       titleJa: v.titleJa,
       bodyJa: v.bodyJa,
@@ -66,6 +71,13 @@ export async function PUT(req: Request, { params }: Ctx) {
       publishUntil: parseDateOnly(v.publishUntil),
     },
   });
+  if (hit.count === 0) {
+    // お知らせは更新者を持たないので、時刻だけ添える
+    return staleFromRow(
+      m,
+      await prisma.news.findUnique({ where: { id }, select: { updatedAt: true } }),
+    );
+  }
 
   await writeAudit({
     entity: "news",
@@ -74,7 +86,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { titleJa: v.titleJa, status: v.status },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.news.findUniqueOrThrow({ where: { id }, select: { updatedAt: true } });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /** DELETE /api/news/[id] */

@@ -10,11 +10,13 @@ import { CopyTemplateDialog } from "@/components/doc-editor/copy-template-dialog
 import { DocumentSheet } from "@/components/doc-editor/document-view";
 import { FontSizeInput } from "@/components/doc-editor/font-size-input";
 import { PageSettingsPanel } from "@/components/doc-editor/page-settings-panel";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { PAGE_SHELL, PAGE_SHELL_STACKED } from "@/lib/page-shell";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { BlockStyleBar } from "@/components/doc-editor/block-style-bar";
 import { TemplateFilePanel } from "@/components/doc-editor/template-file-panel";
 import { renderDocument } from "@/lib/doc-render";
@@ -186,6 +188,8 @@ export function DocTemplateEditor({ id }: { id: string }) {
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック。印は template.stamp が持つ） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const router = useRouter();
   /** 複製の窓を開いているか */
   const [copyOpen, setCopyOpen] = useState(false);
@@ -348,23 +352,33 @@ export function DocTemplateEditor({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editable, content]);
 
-  async function save() {
-    if (!content) return;
+  /** 保存。印を添える。`force` は「このまま保存する」（印が食い違っていても通す） */
+  async function save(force = false) {
+    if (!content || !template) return;
     setSaving(true);
     setError(null);
+    if (!force) setStale(null);
     try {
       const res = await fetch(`/api/doc-templates/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, stamp: template.stamp, force: force || undefined }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      // 応答の DTO が新しい印を持つ。続けて直せる
       const body = (await res.json()) as DocumentTemplateDto;
+      setStale(null);
       setTemplate(body);
       setContent(body.content);
       setDirty(false);
@@ -607,6 +621,17 @@ export function DocTemplateEditor({ id }: { id: string }) {
           >
             {headerOpen ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
           </button>
+        </div>
+      )}
+
+      {stale && (
+        <div className="mt-2">
+          <StaleEditNotice
+            stale={stale}
+            saving={saving}
+            onForce={() => void save(true)}
+            onDismiss={() => setStale(null)}
+          />
         </div>
       )}
 

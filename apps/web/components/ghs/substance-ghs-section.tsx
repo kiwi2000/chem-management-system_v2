@@ -6,7 +6,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { GHS_CATALOG } from "@/lib/ghs/catalog-data";
@@ -128,6 +130,8 @@ export function SubstanceGhsSectionView({
   };
   const [adopted, setAdopted] = useState<Record<string, AdoptedCellDto> | null>(null);
   const [overrides, setOverrides] = useState<OverrideDto[]>([]);
+  /** 自社判定の楽観的ロックの印（この物質の自社判定ぜんぶで 1 つ）。判定修正の保存に添える */
+  const [overrideStamp, setOverrideStamp] = useState("");
   const layersParam = useMemo(
     () => [...linkLayers.filter((l) => !hiddenLayers.has(l)), "OVERRIDE"].join(","),
     [linkLayers, hiddenLayers],
@@ -145,7 +149,9 @@ export function SubstanceGhsSectionView({
     }
     const rows = ((await a.json()) as { items: GhsDataRowDto[] }).items;
     setAdopted(rows.find((r) => r.id === substanceId)?.cells ?? {});
-    setOverrides(((await o.json()) as { items: OverrideDto[] }).items);
+    const ov = (await o.json()) as { items: OverrideDto[]; stamp: string };
+    setOverrides(ov.items);
+    setOverrideStamp(ov.stamp);
   }, [substanceCode, substanceId, country, layersParam]);
   useEffect(() => {
     void load();
@@ -349,6 +355,7 @@ export function SubstanceGhsSectionView({
                           hazardClass={row.cls.code}
                           country={country}
                           overrides={overrides}
+                          stamp={overrideStamp}
                           colSpan={2 + blocks.length + 1}
                           onClose={() => setEditing(null)}
                           onSaved={() => {
@@ -594,6 +601,7 @@ function OverrideRowEditor({
   hazardClass,
   country,
   overrides,
+  stamp,
   colSpan,
   onClose,
   onSaved,
@@ -603,6 +611,8 @@ function OverrideRowEditor({
   hazardClass: string;
   country: string;
   overrides: OverrideDto[];
+  /** 楽観的ロックの印（lib/edit-stamp.ts）。読んだときの値をそのまま送り返す */
+  stamp: string;
   colSpan: number;
   onClose: () => void;
   onSaved: () => void;
@@ -627,6 +637,9 @@ function OverrideRowEditor({
   const [reason, setReason] = useState(overrides.find((o) => o.country === scope)?.reason ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ。「このまま保存する」のために、押した操作（消す／保存）も覚える */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
+  const [staleClear, setStaleClear] = useState(false);
 
   // 入力を始めたら、効く国を切り替えても下書きを消さない（切り替え前に打った区分が消える事故を防ぐ）
   const [dirty, setDirty] = useState(false);
@@ -640,8 +653,10 @@ function OverrideRowEditor({
     setOrgans(c?.targetOrgans ?? "");
   };
 
-  async function save(clear: boolean) {
+  /** 保存。印を添える。`force` は「このまま保存する」（印が食い違っていても通す） */
+  async function save(clear: boolean, force = false) {
     setError(null);
+    if (!force) setStale(null);
     // 同じ効く国のほかのクラスの上書きは保つ
     const others = overrides
       .filter((o) => o.country === scope && o.hazardClass !== hazardClass)
@@ -671,14 +686,29 @@ function OverrideRowEditor({
       const res = await fetch("/api/ghs-data/overrides", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ substanceId, country: scope, reason: reason.trim(), items }),
+        body: JSON.stringify({
+          substanceId,
+          country: scope,
+          reason: reason.trim(),
+          items,
+          stamp,
+          force: force || undefined,
+        }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        setStaleClear(clear);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? `HTTP ${res.status}`);
         return;
       }
+      setStale(null);
       onSaved();
     } finally {
       setBusy(false);
@@ -798,6 +828,16 @@ function OverrideRowEditor({
           </span>
         </div>
         {error && <p className="text-destructive mt-1 text-xs">{error}</p>}
+        {stale && (
+          <div className="mt-2">
+            <StaleEditNotice
+              stale={stale}
+              saving={busy}
+              onForce={() => void save(staleClear, true)}
+              onDismiss={() => setStale(null)}
+            />
+          </div>
+        )}
       </td>
     </tr>
   );

@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, CountryDto, InventoryDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
@@ -56,6 +58,8 @@ export function InventorySection() {
   const [countries, setCountries] = useState<CountryDto[]>([]);
   const [version, setVersion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
   const columns = useMemo<TableColumn<InventoryDto>[]>(() => {
@@ -241,6 +245,7 @@ export function InventorySection() {
 
   function startEdit(i: InventoryDto) {
     setError(null);
+    setStale(null);
     const d: Draft = {
       nameJa: i.nameJa ?? "",
       nameEn: i.nameEn ?? "",
@@ -254,12 +259,16 @@ export function InventorySection() {
 
   function stopEdit() {
     setEditingId(null);
+    setStale(null);
     setDraft(EMPTY);
   }
 
-  async function save() {
+  async function save(force = false) {
     if (!editingId) return;
+    const current = data?.items.find((i) => i.id === editingId);
+    if (!current) return;
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch(`/api/inventories/${editingId}`, {
@@ -271,8 +280,17 @@ export function InventorySection() {
           numberLabel: draft.numberLabel || null,
           numberOrder: Number(draft.numberOrder) || 0,
           numberShown: draft.numberShown,
+          // 開いたときの印。食い違えば 409 で知らされる
+          stamp: current.stamp,
+          force: force || undefined,
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -301,6 +319,12 @@ export function InventorySection() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      <StaleEditNotice
+        stale={stale}
+        saving={saving}
+        onForce={() => void save(true)}
+        onDismiss={() => setStale(null)}
+      />
 
       <DataTable
         title={m.inventories.title}

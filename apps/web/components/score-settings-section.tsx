@@ -1,5 +1,7 @@
 "use client";
 
+import { StaleEditNotice } from "@/components/stale-edit-notice";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { type RankBand, checkBands, describeBand } from "@chem/shared";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -24,6 +26,9 @@ import type { ApiError } from "@/lib/types";
 export function ScoreSettingsSection() {
   const { m } = useI18n();
   const [bands, setBands] = useState<RankBand[] | null>(null);
+  // 楽観的ロックの印と、ほかの人が先に保存していた知らせ
+  const [stamp, setStamp] = useState<string | null>(null);
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -37,7 +42,9 @@ export function ScoreSettingsSection() {
         setBands([]);
         return;
       }
-      setBands(((await res.json()) as { items: RankBand[] }).items);
+      const body = (await res.json()) as { items: RankBand[]; stamp: string };
+      setBands(body.items);
+      setStamp(body.stamp);
     })();
   }, [m]);
 
@@ -59,16 +66,19 @@ export function ScoreSettingsSection() {
     ]);
   }
 
-  async function save() {
+  async function save(force = false) {
     if (!bands) return;
     setError(null);
     setNotice(null);
+    if (!force) setStale(null);
     setBusy(true);
     try {
       const res = await fetch("/api/substance-rank-bands", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          stamp: stamp ?? "",
+          force: force || undefined,
           items: bands.map((b, i) => ({
             label: b.label,
             lowerValue: b.lowerValue ?? "",
@@ -80,13 +90,21 @@ export function ScoreSettingsSection() {
           })),
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
-      const { rescored } = (await res.json()) as { rescored: number };
+      const { rescored, stamp: next } = (await res.json()) as { rescored: number; stamp: string };
+      setStale(null);
+      setStamp(next);
       setNotice(m.score.recalcDone(rescored));
     } finally {
       setBusy(false);
@@ -125,6 +143,12 @@ export function ScoreSettingsSection() {
       <CardContent className="space-y-4">
         <p className="text-muted-foreground text-xs">{m.score.bandsHint}</p>
 
+        <StaleEditNotice
+          stale={stale}
+          saving={busy}
+          onForce={() => void save(true)}
+          onDismiss={() => setStale(null)}
+        />
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

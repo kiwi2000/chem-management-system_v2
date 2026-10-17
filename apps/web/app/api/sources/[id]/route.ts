@@ -2,6 +2,7 @@ import { normalizeCode, sourceSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
   const codeNormalized = normalizeCode(v.code);
 
   if (codeNormalized !== existing.codeNormalized) {
@@ -36,8 +40,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     if (clash) return jsonError(409, "duplicate_source_code", m.sources.duplicateCode(v.code));
   }
 
-  await prisma.source.update({
-    where: { id },
+  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.source.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       code: v.code,
       codeNormalized,
@@ -47,6 +52,9 @@ export async function PUT(req: Request, { params }: Ctx) {
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(m, await prisma.source.findUnique({ where: { id }, select: STAMP_SELECT }));
+  }
 
   await writeAudit({
     entity: "sources",
@@ -55,7 +63,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { code: v.code },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.source.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /**

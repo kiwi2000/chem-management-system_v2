@@ -2,6 +2,7 @@ import { elementSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
   if (v.symbol !== symbol) return jsonError(409, "immutable", m.elements.duplicateSymbol(v.symbol));
 
   if (v.atomicNumber !== existing.atomicNumber) {
@@ -39,8 +43,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     if (clash) return jsonError(409, "duplicate", m.elements.duplicateNumber(v.atomicNumber));
   }
 
-  await prisma.element.update({
-    where: { symbol },
+  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.element.updateMany({
+    where: { symbol, ...stampWhere(lock) },
     data: {
       atomicNumber: v.atomicNumber,
       nameJa: v.nameJa,
@@ -48,6 +53,12 @@ export async function PUT(req: Request, { params }: Ctx) {
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.element.findUnique({ where: { symbol }, select: STAMP_SELECT }),
+    );
+  }
 
   await writeAudit({
     entity: "elements",
@@ -56,7 +67,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { symbol, nameJa: v.nameJa },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.element.findUniqueOrThrow({
+    where: { symbol },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /**

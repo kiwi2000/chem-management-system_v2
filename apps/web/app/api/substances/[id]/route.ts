@@ -3,6 +3,14 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { countUsesOfSubstance } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
+import {
+  STAMP_SELECT,
+  StaleError,
+  parseEditStamp,
+  rowStamp,
+  staleFromRow,
+  stampWhere,
+} from "@/lib/edit-stamp";
 import { recomputeScoreForSubstance } from "@/lib/score-store";
 import { getServerMessages } from "@/lib/i18n";
 import { writeApprovalEvent } from "@/lib/publish-service";
@@ -68,6 +76,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const input = parsed.data;
+  // ほかの人が先に保存していないか（楽観的ロック。lib/edit-stamp.ts）。印が無ければ断る
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   if (hasDuplicateGazette(input)) {
     return jsonError(400, "duplicate_gazette", m.errors.duplicateGazette);
@@ -104,21 +115,40 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
 
   const children = childWrites(input);
-  await prisma.$transaction([
-    prisma.substanceAlias.deleteMany({ where: { substanceId: id } }),
-    prisma.substanceGazetteNumber.deleteMany({ where: { substanceId: id } }),
-    prisma.substanceProperty.deleteMany({ where: { substanceId: id } }),
-    prisma.substance.update({
-      where: { id },
-      data: {
-        ...base,
-        updatedBy: actor.user.id,
-        aliases: { create: children.aliases },
-        gazetteNumbers: { create: children.gazetteNumbers },
-        properties: { create: children.properties },
-      },
-    }),
-  ]);
+  /*
+    門番を最初に置く。印が食い違っていれば（＝ほかの人が先に保存していれば）何も書かずに 409。
+    門番が行をロックするので、同時に来た 2 つの保存のうち後の方は必ず食い違いになる
+  */
+  try {
+    await prisma.$transaction(async (tx) => {
+      const gate = await tx.substance.updateMany({
+        where: { id, ...stampWhere(lock) },
+        data: { updatedBy: actor.user.id },
+      });
+      if (gate.count === 0) throw new StaleError();
+      await tx.substanceAlias.deleteMany({ where: { substanceId: id } });
+      await tx.substanceGazetteNumber.deleteMany({ where: { substanceId: id } });
+      await tx.substanceProperty.deleteMany({ where: { substanceId: id } });
+      await tx.substance.update({
+        where: { id },
+        data: {
+          ...base,
+          updatedBy: actor.user.id,
+          aliases: { create: children.aliases },
+          gazetteNumbers: { create: children.gazetteNumbers },
+          properties: { create: children.properties },
+        },
+      });
+    });
+  } catch (err) {
+    if (err instanceof StaleError) {
+      return staleFromRow(
+        m,
+        await prisma.substance.findUnique({ where: { id }, select: STAMP_SELECT }),
+      );
+    }
+    throw err;
+  }
 
   /*
     **不純物種別を変えたら、判定の前提が変わる。**
@@ -202,7 +232,12 @@ export async function PUT(req: Request, { params }: Ctx) {
 
   // 更新でも同一CASの警告を出す（v1は登録時しか見ていなかった）
   const warnings = await collectWarnings(base.casNormalized, id, settings, m, base.impurityTypeId);
-  return Response.json({ ok: true, warnings });
+  // 保存後の印（代表の付け替えまで済んだあとの時刻）。続けて直せるように返す
+  const after = await prisma.substance.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, warnings, stamp: rowStamp(after) });
 }
 
 /**

@@ -1,6 +1,7 @@
 import { normalizeCode, type ProductInput, type PublishState } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
+import { rowStamp } from "@/lib/edit-stamp";
 import { propertyWrites } from "@/lib/property-values";
 import type { ProductDetailDto, ProductListItemDto } from "@/lib/types";
 
@@ -117,6 +118,7 @@ export function toListItem(p: ProductListRow, versionId: string | null): Product
 export function toDetail(p: ProductWithRelations, versionId: string | null): ProductDetailDto {
   return {
     ...toListItem(p, versionId),
+    stamp: rowStamp(p),
     aliases: p.aliases.map((a) => ({ nameJa: a.nameJa, nameEn: a.nameEn })),
     properties: p.properties.map((v) => ({
       propertyDefId: v.propertyDefId,

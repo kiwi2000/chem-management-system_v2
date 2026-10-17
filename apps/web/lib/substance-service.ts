@@ -11,6 +11,7 @@ import {
 import type { Prisma } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { propertyWrites } from "@/lib/property-values";
 import type { SubstanceDetailDto, SubstanceListItemDto } from "@/lib/types";
 
@@ -88,6 +89,7 @@ export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
 export function toDetail(s: SubstanceWithRelations): SubstanceDetailDto {
   return {
     ...toListItem(s),
+    stamp: rowStamp(s),
     mainNameJa: s.nameJa,
     mainNameEn: s.nameEn,
     subNames: s.aliases.map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn })),

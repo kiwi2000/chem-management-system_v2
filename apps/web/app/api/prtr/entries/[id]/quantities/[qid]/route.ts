@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, requirePrtrOrg } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { STAMP_SELECT, parseEditStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { isConfirmed, QUANTITY_INCLUDE, toQuantityDto, updaterNames } from "@/lib/prtr-service";
 
@@ -47,14 +48,27 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
-  const updated = await prisma.prtrQuantity.update({
-    where: { id: qid },
+  // ほかの人が先に保存していないか（楽観的ロック。lib/edit-stamp.ts）。印が無ければ断る
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
+  // 印が合う行だけを直す。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.prtrQuantity.updateMany({
+    where: { id: qid, ...stampWhere(lock) },
     data: {
       purchasedKg: new Prisma.Decimal(v.purchasedKg),
       shippedKg: new Prisma.Decimal(v.shippedKg),
       source: "MANUAL",
       updatedBy: actor.user.id,
     },
+  });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.prtrQuantity.findUnique({ where: { id: qid }, select: STAMP_SELECT }),
+    );
+  }
+  const updated = await prisma.prtrQuantity.findUniqueOrThrow({
+    where: { id: qid },
     include: QUANTITY_INCLUDE,
   });
   await writeAudit({

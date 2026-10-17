@@ -3,6 +3,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { inspectTemplateFile, TEMPLATE_FILE_MAX } from "@/lib/doc-fill";
 import { fileResponse } from "@/lib/doc-fill/response";
+import { STAMP_SELECT, parseEditStamp, rowStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { orgItemLabels } from "@/lib/organisation-service";
 
@@ -33,6 +34,16 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (row.kind === "BLOCK") {
     return jsonError(400, "validation_error", m.docTemplates.file.notFileKind);
   }
+  /*
+    ほかの人が先に保存していないか（楽観的ロック。lib/edit-stamp.ts）。
+    本文はファイルそのものなので、印は URL の `?stamp=`・`?force=1` で受ける（S29 §4-4）
+  */
+  const query = new URL(req.url).searchParams;
+  const lock = parseEditStamp(
+    { stamp: query.get("stamp") ?? undefined, force: query.get("force") === "1" },
+    m,
+  );
+  if (lock instanceof Response) return lock;
 
   const buf = Buffer.from(await req.arrayBuffer());
   if (buf.length === 0) return jsonError(400, "validation_error", m.errors.validation);
@@ -55,8 +66,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     .flatMap((x) => x.split("\\"));
   const name = parts.pop()?.slice(0, 255) || `${row.code}`;
 
-  await prisma.documentTemplate.update({
-    where: { id },
+  // 印が合う行だけを直す。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.documentTemplate.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       fileData: buf,
       fileName: name,
@@ -64,6 +76,12 @@ export async function PUT(req: Request, { params }: Ctx) {
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.documentTemplate.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
   await writeAudit({
     entity: "document_templates",
     entityId: id,
@@ -71,7 +89,18 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { file: name, bytes: buf.length },
   });
-  return Response.json({ ok: true, fileName: name, tags: found.tags, unknown: found.unknown });
+  // 保存後の印。続けて直せるように返す
+  const after = await prisma.documentTemplate.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({
+    ok: true,
+    fileName: name,
+    tags: found.tags,
+    unknown: found.unknown,
+    stamp: rowStamp(after),
+  });
 }
 
 /** GET — 預けたファイルをそのまま返す。直すときに落として使う */

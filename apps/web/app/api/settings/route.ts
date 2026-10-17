@@ -7,7 +7,8 @@ import { ensureWritableDir, resolveOutputDir } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
 import { clientIp } from "@/lib/ip-allow";
 import { countPending, resolvePending } from "@/lib/pending-resolution";
-import { getAppSettings, saveAppSettings } from "@/lib/settings";
+import { parseEditStamp, staleFromRow } from "@/lib/edit-stamp";
+import { getAppSettings, saveAppSettings, settingsStamp } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,8 @@ export async function GET(req: Request) {
     clientIp: clientIp(req.headers.get("x-forwarded-for")),
     // アクセス記録の片づけの前回の結果（サーバーだけが書く値。画面は見せるだけ）
     accessLogRetention: await readRetentionState(),
+    // 楽観的ロックの印。保存時にそのまま送り返す
+    stamp: (await settingsStamp()).stamp,
   });
 }
 
@@ -45,6 +48,12 @@ export async function PUT(req: Request) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const { pendingResolution, ...next } = parsed.data;
+
+  // ほかの管理者が先に保存していないか（楽観的ロック）。食い違えば保存せずに知らせる
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
+  const current = await settingsStamp();
+  if (!lock.force && lock.stamp !== current.stamp) return staleFromRow(m, current.latest);
 
   /*
     接続元の制限で、保存した本人が締め出されないようにする（2026-10-02）。
@@ -144,5 +153,5 @@ export async function PUT(req: Request) {
     actorId: actor.user.id,
     diff: { ...next, ...(endedSessions > 0 ? { endedSessions } : {}) },
   });
-  return Response.json({ ok: true, settings: next });
+  return Response.json({ ok: true, settings: next, stamp: (await settingsStamp()).stamp });
 }

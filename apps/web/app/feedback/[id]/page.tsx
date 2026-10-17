@@ -17,12 +17,14 @@ import { Reply, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { useMe } from "@/lib/use-me";
 import { PAGE_SHELL } from "@/lib/page-shell";
 import type { ApiError } from "@/lib/types";
@@ -62,6 +64,8 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
     status: FeedbackStatus;
   } | null>(null);
   const [savingState, setSavingState] = useState(false);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
 
   const [replyTo, setReplyTo] = useState<ReplyTarget>(undefined);
   const [replyBody, setReplyBody] = useState("");
@@ -107,22 +111,33 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
       state.priority !== detail.item.priority ||
       state.status !== detail.item.status);
 
-  async function saveState() {
-    if (!state) return;
+  async function saveState(force = false) {
+    if (!state || !detail) return;
     setError(null);
+    if (!force) setStale(null);
     setSavingState(true);
     try {
       const res = await fetch(`/api/feedback/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(state),
+        // 読み込んだときの印を添える（楽観的ロック）。force は「このまま保存する」
+        body: JSON.stringify({ ...state, stamp: detail.item.stamp, force: force || undefined }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      // 画面は開いたままなので、次の保存に備えて新しい印に差し替える
+      const { stamp } = (await res.json()) as { stamp: string };
+      setDetail((prev) => (prev ? { ...prev, item: { ...prev.item, stamp } } : prev));
       void load();
     } finally {
       setSavingState(false);
@@ -262,6 +277,12 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
         </Link>
       </div>
 
+      <StaleEditNotice
+        stale={stale}
+        saving={savingState}
+        onForce={() => void saveState(true)}
+        onDismiss={() => setStale(null)}
+      />
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -337,7 +358,7 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
                     type="button"
                     size="sm"
                     disabled={!stateChanged || savingState}
-                    onClick={saveState}
+                    onClick={() => void saveState()}
                   >
                     {savingState ? m.common.saving : m.common.save}
                   </Button>

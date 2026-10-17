@@ -2,6 +2,7 @@ import { inventoryRowSchema, normalizeCas } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { currentVersion } from "@/lib/inventory-service";
 
@@ -46,6 +47,9 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string; row
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // ほかの人が先に保存していないか（楽観的ロック）
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   const { version, row } = await targetRow(req, id, rowId);
   if (!version) return jsonError(409, "no_current_version", m.inventories.noCurrentVersion);
@@ -65,8 +69,8 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string; row
   });
   if (dup) return jsonError(409, "duplicate_row", m.inventories.duplicateRow);
 
-  await prisma.inventoryRow.update({
-    where: { id: rowId },
+  const hit = await prisma.inventoryRow.updateMany({
+    where: { id: rowId, ...stampWhere(lock) },
     data: {
       sourceId: v.sourceId,
       casNumber: v.casNumber,
@@ -75,6 +79,12 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string; row
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.inventoryRow.findUnique({ where: { id: rowId }, select: STAMP_SELECT }),
+    );
+  }
 
   await writeAudit({
     entity: "inventory_rows",
@@ -86,7 +96,11 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string; row
       after: { sourceId: v.sourceId, casNumber: v.casNumber, value: v.value },
     },
   });
-  return Response.json({ id: rowId });
+  const after = await prisma.inventoryRow.findUniqueOrThrow({
+    where: { id: rowId },
+    select: { updatedAt: true },
+  });
+  return Response.json({ id: rowId, stamp: rowStamp(after) });
 }
 
 /**

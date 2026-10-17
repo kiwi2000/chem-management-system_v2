@@ -3,11 +3,13 @@
 import { pickName } from "@chem/shared";
 import { useState } from "react";
 import { Field, NameFields, SELECT_CLASS, type NameDraft } from "@/components/law-fields";
+import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, CountryDto, LanguageDto, LawDto } from "@/lib/types";
 
 interface Draft extends NameDraft {
@@ -44,11 +46,13 @@ export function LawForm({
     note: initial?.note ?? "",
   }));
   const [error, setError] = useState<string | null>(null);
+  /** ほかの人が先に保存していた知らせ（楽観的ロック） */
+  const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(force = false) {
     setError(null);
+    if (!force) setStale(null);
     setSaving(true);
     try {
       const res = await fetch(initial ? `/api/laws/${initial.id}` : "/api/laws", {
@@ -63,14 +67,23 @@ export function LawForm({
           nameEn: draft.nameEn || null,
           displayOrder: Number(draft.displayOrder) || 0,
           note: draft.note || null,
+          // 編集のときだけ、開いたときの印を添える
+          ...(initial ? { stamp: initial.stamp, force: force || undefined } : {}),
         }),
       });
+      // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
+      const staleInfo = await readStaleEdit(res);
+      if (staleInfo) {
+        setStale(staleInfo);
+        return;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
+      setStale(null);
       onSaved();
     } finally {
       setSaving(false);
@@ -83,8 +96,20 @@ export function LawForm({
         <CardTitle className="text-base">{initial ? m.laws.editTitle : m.laws.newTitle}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={save} className="space-y-3">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save();
+          }}
+          className="space-y-3"
+        >
           {error && <p className="text-destructive text-sm">{error}</p>}
+          <StaleEditNotice
+            stale={stale}
+            saving={saving}
+            onForce={() => void save(true)}
+            onDismiss={() => setStale(null)}
+          />
 
           <div className="flex flex-wrap items-start gap-3">
             <Field label={m.laws.code} htmlFor="law-code" className="w-28">

@@ -1,6 +1,7 @@
 import { DEFAULT_SETTINGS, SETTING_DEFS, type AppSettings } from "@chem/shared";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { rowsStamp } from "@/lib/edit-stamp";
 
 /**
  * システム設定の読み書き。
@@ -26,6 +27,22 @@ export const getAppSettings = cache(async function getAppSettings(): Promise<App
   }
   return settings;
 });
+
+/**
+ * システム設定の印（楽観的ロック）。設定の行の更新時刻と行数。
+ * 2 人の管理者が同時に直して、片方の変更が黙って消えないようにする
+ */
+export async function settingsStamp(): Promise<{
+  stamp: string;
+  latest: { updatedAt: Date; updatedBy: string | null } | null;
+}> {
+  const rows = await prisma.systemSetting.findMany({
+    where: { key: { in: SETTING_DEFS.map((d) => d.key) } },
+    select: { updatedAt: true, updatedBy: true },
+    orderBy: { updatedAt: "desc" },
+  });
+  return { stamp: rowsStamp(rows), latest: rows[0] ?? null };
+}
 
 export async function saveAppSettings(next: AppSettings, actorId: string): Promise<void> {
   await prisma.$transaction(

@@ -2,6 +2,7 @@ import { languageSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { countLanguageUses } from "@/lib/language-service";
 
@@ -30,6 +31,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 楽観的ロックの印。無ければ 400
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
 
   if (v.code !== existing.code) {
     const clash = await prisma.language.findUnique({ where: { code: v.code } });
@@ -41,8 +45,9 @@ export async function PUT(req: Request, { params }: Ctx) {
     if (uses > 0) return jsonError(409, "referenced", m.languages.inUse(uses));
   }
 
-  await prisma.language.update({
-    where: { id },
+  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.language.updateMany({
+    where: { id, ...stampWhere(lock) },
     data: {
       code: v.code,
       nameJa: v.nameJa,
@@ -51,6 +56,12 @@ export async function PUT(req: Request, { params }: Ctx) {
       updatedBy: actor.user.id,
     },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.language.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
 
   await writeAudit({
     entity: "languages",
@@ -59,7 +70,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { code: v.code, nameJa: v.nameJa },
   });
-  return Response.json({ ok: true });
+  const after = await prisma.language.findUniqueOrThrow({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /** DELETE /api/languages/[id] — 論理削除。法規制で使われているものは消せない */

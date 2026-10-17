@@ -2,6 +2,7 @@ import { elementSchema, emptyTableState, parseTableState } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { rowStamp } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { ELEMENT_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
@@ -35,6 +36,8 @@ export async function GET(req: Request) {
 
   return Response.json({
     items: items.map((e) => ({
+      // 楽観的ロックの印。行の編集の保存時にそのまま送り返す
+      stamp: rowStamp(e),
       symbol: e.symbol,
       atomicNumber: e.atomicNumber,
       nameJa: e.nameJa,
