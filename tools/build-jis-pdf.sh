@@ -16,6 +16,7 @@ build() {
   done
   PYTHONIOENCODING=utf-8 python tools/md-to-html.py "$md" "$SRC/book-$code.html" "$title" "$sub"
   node tools/html-to-pdf.mjs "$SRC/book-$code.html" "$DEST/JIS_Z${code}_2025_読みやすい版.pdf" "JIS Z $code：2025　$title"
+  PYTHONIOENCODING=utf-8 python tools/pdf-add-outline.py "$SRC/book-$code.html" "$DEST/JIS_Z${code}_2025_読みやすい版.pdf"
   cp "$md" "$DEST/JIS_Z${code}_2025_読みやすい版.md"
 }
 
