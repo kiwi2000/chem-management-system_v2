@@ -2103,7 +2103,7 @@ export const en: Messages = {
     choiceNeedsOptions: "When the type is Choice, register at least one choice",
     system: "System property",
     systemHint:
-      "Used by GHS classification and SDS. It cannot be deleted and its type cannot be changed. The name, unit, display order, group, choices and In use can be changed",
+      "Provided by the system and used internally. It cannot be deleted and its type cannot be changed. The name, unit, display order, group, choices and In use can be changed",
     systemCannotDelete: (label: string) =>
       `"${label}" is a system property and cannot be deleted. To stop using it, clear "Use this property"`,
   },
