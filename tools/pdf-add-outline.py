@@ -12,26 +12,24 @@ html = open(html_path, encoding="utf-8").read()
 heads = []
 for m in re.finditer(r"<h([234])[^>]*>(.*?)</h\1>", html, flags=re.S):
     level = int(m.group(1)) - 1  # h2 → 1
-    text = re.sub(r"<[^>]+>", "", m.group(2))
+    inner = m.group(2)
+    mk = re.search(r"§h(\d+)§", inner)
+    text = re.sub(r"<[^>]+>", "", inner)
+    text = re.sub(r"§h\d+§", "", text)
     text = re.sub(r"\s+", " ", text).strip()
-    if text:
-        heads.append((level, text))
+    if text and mk:
+        heads.append((level, text, f"§h{mk.group(1)}§"))
 
 doc = pymupdf.open(pdf_path)
-page_texts = [re.sub(r"\s+", "", p.get_text()) for p in doc]
+# 見出しに埋めた印（§hN§。1pt の透明な文字）がどのページにあるかを引く
+page_of = {}
+for i, p in enumerate(doc):
+    for mk in re.findall(r"§h\d+§", p.get_text()):
+        page_of.setdefault(mk, i)
 toc = []
-cursor = 0  # 見出しは本文の順に出るので、前の見出しのページから先だけ探す
-for level, text in heads:
-    key = re.sub(r"\s+", "", text)[:40]
-    hit = None
-    for i in range(cursor, len(page_texts)):
-        if key in page_texts[i]:
-            hit = i
-            break
-    if hit is None:
-        continue
-    cursor = hit
-    toc.append([level, text, hit + 1])
+for level, text, mk in heads:
+    if mk in page_of:
+        toc.append([level, text, page_of[mk] + 1])
 
 # しおりの深さは飛ばせない（1 の次に 3 は不可）ので、詰める
 fixed = []

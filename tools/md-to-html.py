@@ -32,6 +32,13 @@ for i, b in enumerate(blocks):
     esc = b.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     html = html.replace(f"<p>MERMAIDBLOCK{i}</p>", f'<pre class="mermaid">{esc}</pre>')
 
+# 見出しに目に見えない印（§hN§）を埋める。PDF のしおりを付けるときにこの印でページを探す（規格自身の目次の文字に当たらないため）
+counter = [0]
+def mark(m):
+    counter[0] += 1
+    return f'<h{m.group(1)}{m.group(2)}><span class="hmark">§h{counter[0]}§</span>{m.group(3)}</h{m.group(1)}>'
+html = re.sub(r"<h([234])([^>]*)>(.*?)</h\1>", mark, html, flags=re.S)
+
 toc = ""
 m = re.search(r'<div class="toc">.*?</div>\n', html, flags=re.S)
 if m:
@@ -79,6 +86,7 @@ pre.mermaid svg {{ max-width: 100%; max-height: 235mm; width: auto; height: auto
 p:has(+ pre.mermaid), p:has(+ p + pre.mermaid), blockquote:has(+ pre.mermaid) {{ page-break-after: avoid; break-after: avoid; }}
 p:has(+ table), p:has(+ p + table) {{ page-break-after: avoid; break-after: avoid; }}
 code {{ font-family: "Consolas", "BIZ UDGothic", monospace; font-size: 9.2pt; }}
+.hmark {{ font-size: 1pt; color: transparent; position: absolute; }}
 .pg {{ display: inline-block; font-size: 7.5pt; color: var(--muted); border: 1px solid var(--line); border-radius: 2px; padding: 0 1mm; margin: 0 1mm; vertical-align: middle; }}
 strong {{ font-weight: 700; }}
 .note-attention {{ color: #a40000; }}
