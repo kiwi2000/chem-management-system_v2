@@ -26,6 +26,7 @@ export default tseslint.config(
       ".claude/worktrees/**", // 作業用の別ツリー（本体と同じソースの写し）
       "apps/web/modules/*.generated.ts", // scripts/gen-modules.mjs が作る差込口の一覧
       "apps/web/modules/sds/rules/generated/**", // langium が文法から作る解析の部品（npm run gen:rules -w apps/web）
+      "tools/vendor/**", // 帳票づくりに使う外部ライブラリの写し（git 管理外）
     ],
   },
   js.configs.recommended,

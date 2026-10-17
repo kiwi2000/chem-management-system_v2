@@ -34,8 +34,12 @@ export type Outcome =
 export interface ClassResult {
   class: string;
   outcome: Outcome | null;
-  /** 結果に添える文（未知成分の文など）と、その置き場所（選択点の値） */
-  notes: { text: string; place: string | null }[];
+  /**
+   * 結果に添える文と、その置き場所（選択点の値）。
+   * `text` はルールセットに書かれた文（`note "…"`）。処理系が足す文は `code` で返し、文言は画面側（モジュールの messages）で付ける
+   * （本体の辞書に SDS 版だけの言葉を入れないため）
+   */
+  notes: ResultNote[];
   /** 人の判断が要る理由 */
   judgement: string[];
   /** そう決めた理由（classify の because） */
@@ -43,6 +47,20 @@ export interface ClassResult {
   /** 採らない区分に当たって読み替えたとき */
   remapped?: { from: string; to: Outcome };
 }
+
+export type ResultNote =
+  | { text: string; code?: undefined; params?: undefined; place: string | null }
+  | {
+      text?: undefined;
+      code: ResultNoteCode;
+      params?: Record<string, string>;
+      place: string | null;
+    };
+
+/** 処理系が足す文の種類。画面側で文言を付ける */
+export type ResultNoteCode =
+  | "missing_value" // 計算に必要な値が無いので分類できない
+  | "excluded_category"; // 国連の式で出た区分をこの国では採らないので読み替えた（params: category, result）
 
 // ---------- 重ね合わせたルールセット ----------
 
@@ -466,7 +484,7 @@ function exec(s: ast.Stmt, env: Env, st: RunState) {
     const v = evalExpr(s.value, env);
     if (v === null || (typeof v === "number" && !Number.isFinite(v))) {
       st.result.outcome = { kind: "unclassifiable" };
-      st.result.notes.push({ text: "計算に必要な値が無いので分類できない", place: null });
+      st.result.notes.push({ code: "missing_value", place: null });
       return;
     }
     const bands = env.rule.bands ?? [];
@@ -572,7 +590,8 @@ export function classifyClass(merged: Merged, cls: string, mixture: Mixture): Cl
       result.remapped = { from: cat, to: { kind: ex.result } };
       result.outcome = { kind: ex.result };
       result.notes.push({
-        text: `区分 ${cat} はこの国では採用していないため「${ex.result === "not_classified" ? "区分に該当しない" : "分類できない"}」`,
+        code: "excluded_category",
+        params: { category: cat, result: ex.result },
         place: null,
       });
     }
@@ -653,7 +672,7 @@ function runTestsOn(merged: Merged, tests: Merged["tests"]): TestOutcome[] {
       if (got !== ex.result) {
         ok = false;
         details.push(
-          `${ex.class}: 期待 ${ex.result}、結果 ${got}${r.notes.length ? `（${r.notes.map((n) => n.text).join("／")}）` : ""}`,
+          `${ex.class}: 期待 ${ex.result}、結果 ${got}${r.notes.length ? `（${r.notes.map((n) => n.text ?? `${n.code}${n.params ? " " + JSON.stringify(n.params) : ""}`).join("／")}）` : ""}`,
         );
       }
     }
