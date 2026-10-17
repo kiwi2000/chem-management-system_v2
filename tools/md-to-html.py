@@ -98,6 +98,9 @@ p:has(+ pre.mermaid), p:has(+ p + pre.mermaid), blockquote:has(+ pre.mermaid) {{
 p:has(+ table), p:has(+ p + table) {{ page-break-after: avoid; break-after: avoid; }}
 code {{ font-family: "Consolas", "BIZ UDGothic", monospace; font-size: 9.2pt; }}
 .hmark {{ font-size: 1pt; color: transparent; position: absolute; }}
+img {{ max-width: 100%; height: auto; }}
+p img.fig {{ display: block; margin: 2mm auto 3mm; max-height: 235mm; width: auto; border: 1px solid var(--line); page-break-inside: avoid; }}
+img.pict {{ height: 8mm; width: 8mm; vertical-align: middle; margin-right: 1mm; }}
 .pg {{ display: inline-block; font-size: 7.5pt; color: var(--muted); border: 1px solid var(--line); border-radius: 2px; padding: 0 1mm; margin: 0 1mm; vertical-align: middle; }}
 strong {{ font-weight: 700; }}
 .note-attention {{ color: #a40000; }}

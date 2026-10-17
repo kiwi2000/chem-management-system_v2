@@ -14,9 +14,13 @@ build() {
     if [ ! -f "$SRC/out-$part.md" ]; then echo "無い: out-$part.md" >&2; return 1; fi
     cat "$SRC/out-$part.md" >> "$md"; printf '\n\n' >> "$md"
   done
-  PYTHONIOENCODING=utf-8 python tools/md-to-html.py "$md" "$SRC/book-$code.html" "$title" "$sub"
-  node tools/html-to-pdf.mjs "$SRC/book-$code.html" "$DEST/JIS_Z${code}_2025_読みやすい版.pdf" "JIS Z $code：2025　$title"
-  PYTHONIOENCODING=utf-8 python tools/pdf-add-outline.py "$SRC/book-$code.html" "$DEST/JIS_Z${code}_2025_読みやすい版.pdf"
+  # 原図・絵表示（$DEST/figs/）を差し込む。HTML は図への相対パスが効くよう $DEST に作る
+  PYTHONIOENCODING=utf-8 python tools/jis-insert-figures.py "$md" "$code" "$DEST"
+  local html="$DEST/JIS_Z${code}_2025_読みやすい版.html"
+  PYTHONIOENCODING=utf-8 python tools/md-to-html.py "$md" "$html" "$title" "$sub"
+  node tools/html-to-pdf.mjs "$html" "$DEST/JIS_Z${code}_2025_読みやすい版.pdf" "JIS Z $code：2025　$title"
+  PYTHONIOENCODING=utf-8 python tools/pdf-add-outline.py "$html" "$DEST/JIS_Z${code}_2025_読みやすい版.pdf"
+  rm -f "${html%.html}.render.html"
   cp "$md" "$DEST/JIS_Z${code}_2025_読みやすい版.md"
 }
 
