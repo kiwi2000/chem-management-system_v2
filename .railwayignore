@@ -1,0 +1,19 @@
+# railway up が送らないもの（CLI は .gitignore とこのファイルを見る。.dockerignore は見ない）。
+# 2026-10-19 に docs/ の原典 PDF（git 管理外）で 413 Payload Too Large になった
+node_modules
+**/node_modules
+.next
+**/.next
+.git
+.env
+.env.*
+docs
+deploy
+out
+**/out
+tools
+.cache
+temp
+scripts/data
+*.log
+*.tsbuildinfo
