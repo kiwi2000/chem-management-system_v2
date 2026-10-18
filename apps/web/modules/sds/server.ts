@@ -1,4 +1,6 @@
 import type { ModuleServer } from "../types";
+import { ProductGhsSection } from "./components/product-ghs-section";
+import { judgementApi } from "./lib/judgement-api";
 import { SdsHomePage } from "./pages/home";
 import { SdsGhsMovedPage } from "./pages/moved";
 
@@ -15,6 +17,10 @@ const sds: ModuleServer = {
     if (path.length === 1 && (path[0] === "ghs" || path[0] === "ghs-data")) return SdsGhsMovedPage;
     return null;
   },
+  // /api/modules/sds/ghs-judgement … 製品の GHS 判定（読む・計算する）
+  api: (req, path, actor) => judgementApi(req, path, actor),
+  // 製品の詳細の法規制判定の下に「GHS 判定（日本）」
+  productSections: [ProductGhsSection],
 };
 
 export default sds;

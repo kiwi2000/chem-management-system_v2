@@ -95,6 +95,8 @@ MixtureSpec: 'mixture' '{' NL* (items+=IngredientSpec ((';' | NL+) items+=Ingred
 IngredientSpec: name=STRING conc=NumberLit (facts+=IngredientFact)*;
 IngredientFact:
     {infer UnknownFact} 'unknown' ('(' class=ClassName ')')?
+    // 評価済みで「区分に該当しない」（未知ではない。加算式では毒性なしとして薄めるだけ）
+    | {infer NoHazardFact} 'no_hazard' '(' class=ClassName ')'
     | {infer FlagFact} 'flag' flag=ID
     | {infer KeyFact} key=ClassName ('=' value=NumberLit | category=Category);
 ProductSpec: 'props' '{' NL* (props+=ProductProp ((';' | NL+) props+=ProductProp)* (';')? NL*)? '}';
@@ -123,7 +125,7 @@ Primary infers Expr:
     | {infer ListExpr} '[' (items+=Expr (',' items+=Expr)*)? ']'
     | {infer AggregateExpr} fn=('sum' | 'count' | 'any' | 'max' | 'min') '(' first=Expr ('of' set=Expr)? ')'
     | {infer SetExpr} kind=('ingredients' | 'all_ingredients')
-    | {infer CallExpr} fn=(ID | 'option' | 'category' | 'unknown' | 'convert') '(' (args+=Expr (',' args+=Expr)*)? ')'
+    | {infer CallExpr} fn=(ID | 'option' | 'category' | 'unknown' | 'no_hazard' | 'convert') '(' (args+=Expr (',' args+=Expr)*)? ')'
     | {infer NumberLit} value=NUMBER (unit=UNIT)?
     | {infer RefExpr} ref=ClassName
     | {infer StringLit} value=STRING

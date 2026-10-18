@@ -1,5 +1,6 @@
 import { pickName } from "@chem/shared";
 import { notFound } from "next/navigation";
+import { SERVER_MODULES } from "@/modules/registry.server.generated";
 import { ApprovalHistory } from "@/components/approval-history";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PublishActions } from "@/components/publish-actions";
@@ -90,6 +91,18 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               canViewComposition={canViewComposition(actor, item)}
               version={linkVersion?.code ?? null}
             />
+            {/* モジュール（差込口）が足す欄（SDS 版の GHS 判定など）。モジュールが無ければ何も出ない */}
+            {SERVER_MODULES.flatMap((mod) =>
+              (mod.productSections ?? []).map((Section, i) => (
+                <Section
+                  key={`${mod.id}-${i}`}
+                  productId={item.id}
+                  locale={locale}
+                  canEdit={canEditComposition(actor, item)}
+                  canViewComposition={canViewComposition(actor, item)}
+                />
+              )),
+            )}
             {/*
               添付は組成を見られる人だけ。主な添付は原材料の SDS で、組成が書かれているため。
               見られない人には、この欄ごと出さない（2026-09-27 指示）

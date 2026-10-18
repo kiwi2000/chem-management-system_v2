@@ -52,6 +52,16 @@ export interface ModuleSubstanceSectionProps {
   locale: Locale;
 }
 
+/** 製品の詳細に差し込む欄が受け取るもの。製品が見える人にだけ描かれる */
+export interface ModuleProductSectionProps {
+  productId: string;
+  locale: Locale;
+  /** 組成を直せる人か（判定の計算も同じ範囲） */
+  canEdit: boolean;
+  /** 組成を見られる人か。見られない人には成分の名前・含有率・根拠を出さない */
+  canViewComposition: boolean;
+}
+
 /** サーバーだけが読み込む宣言（`<id>/server.ts` の default export） */
 export interface ModuleServer {
   id: string;
@@ -64,4 +74,6 @@ export interface ModuleServer {
   api?: (req: Request, path: string[], actor: Actor) => Promise<Response | null>;
   /** 物質の詳細の、法規制の表の下に差し込む欄（サーバーコンポーネント）。無ければ何も出ない */
   substanceSections?: ComponentType<ModuleSubstanceSectionProps>[];
+  /** 製品の詳細の、法規制判定の下に差し込む欄（サーバーコンポーネント）。無ければ何も出ない */
+  productSections?: ComponentType<ModuleProductSectionProps>[];
 }

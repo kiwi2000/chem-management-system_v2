@@ -16,6 +16,8 @@ export interface Ingredient {
   values: Map<string, number>;
   /** 毒性が未知のクラス。"*" は全部 */
   unknown: Set<string>;
+  /** 評価済みで「区分に該当しない」クラス（未知ではない）。省けば空 */
+  noHazard?: Set<string>;
   /** 成分の印（relevant・non_additive・no_acute_toxicity など。物質マスタの拡張属性から） */
   flags: Set<string>;
 }
@@ -49,7 +51,33 @@ export interface ClassResult {
   because: string[];
   /** 採らない区分に当たって読み替えたとき */
   remapped?: { from: string; to: Outcome };
+  /** 根拠（実行の記録）。classifyClass に trace: true を渡したときだけ */
+  trace?: TraceEntry[];
 }
+
+/**
+ * 根拠の 1 行。文言は持たず、種類と値だけ（画面側が言葉を付ける）。
+ * `text` はルールセットに書かれた式や条件そのもの（Langium の木から取る）
+ */
+export type TraceEntry =
+  | { kind: "consider"; ingredient: string; included: boolean; text: string }
+  | { kind: "ignore"; ingredient: string; excluded: boolean; text: string }
+  | { kind: "flag"; ingredient: string; flag: string }
+  | { kind: "assign"; name: string; value: TraceValue; text: string }
+  | {
+      kind: "assign_per_ingredient";
+      name: string;
+      text: string;
+      values: { ingredient: string; value: TraceValue }[];
+    }
+  | { kind: "if"; text: string; result: boolean }
+  | { kind: "classify"; category: string; because: string | null }
+  | { kind: "bands"; value: number; category: string | null; cappedTo: string | null }
+  | { kind: "option"; name: string; value: string | null; chosenBy: string | null }
+  | { kind: "outcome"; outcome: Outcome };
+
+/** 根拠に載せる値。成分の集合は名前の並びにする */
+export type TraceValue = number | string | boolean | null | string[];
 
 export type ResultNote =
   | { text: string; code?: undefined; params?: undefined; place: string | null }
@@ -264,6 +292,25 @@ interface Env {
   ingredient: Ingredient | null;
   /** 評価の回数の上限（無限の繰り返しを防ぐ） */
   budget: { n: number };
+  /** 根拠の記録先。無ければ記録しない */
+  trace?: TraceEntry[];
+  /** 読んだ選択点（根拠に 1 回だけ載せるため） */
+  tracedOptions?: Set<string>;
+}
+
+/** 成分ごとの式を成分の外で評価したときの印（根拠の記録で「成分ごとの値」に切り替えるため） */
+class NeedsIngredientError extends RuleError {}
+
+/** 木の文字列（ルールセットに書かれた式そのもの）。無ければ型の名前 */
+function textOf(node: ast.Expr | ast.Stmt): string {
+  return node.$cstNode?.text.replace(/\s+/g, " ").trim() ?? node.$type;
+}
+
+function toTraceValue(v: Value): TraceValue {
+  if (isIngredients(v)) return v.map((i) => i.name);
+  if (Array.isArray(v)) return (v as Value[]).map((x) => String(x));
+  if (typeof v === "number") return Number.isFinite(v) ? Number(v.toFixed(6)) : null;
+  return v;
 }
 
 const isExprNode = (v: unknown): v is ast.Expr =>
@@ -383,7 +430,9 @@ function aggregate(e: ast.AggregateExpr, env: Env): Value {
 
 function needIngredient(env: Env, what: string): Ingredient {
   if (!env.ingredient)
-    throw new RuleError(`${what} は成分ごとの式の中（sum(… of …) や where）でしか使えません`);
+    throw new NeedsIngredientError(
+      `${what} は成分ごとの式の中（sum(… of …) や where）でしか使えません`,
+    );
   return env.ingredient;
 }
 
@@ -401,6 +450,11 @@ function call(e: ast.CallExpr, env: Env): Value {
     case "unknown": {
       const ing = needIngredient(env, "unknown");
       return ing.unknown.has("*") || (args.length > 0 && ing.unknown.has(refName(0)));
+    }
+    case "no_hazard": {
+      // 評価済みで「区分に該当しない」。未知と区別する（加算式で未知に数えない）
+      const ing = needIngredient(env, "no_hazard");
+      return ing.noHazard?.has(refName(0)) ?? false;
     }
     case "category": {
       const ing = needIngredient(env, "category");
@@ -451,6 +505,15 @@ function call(e: ast.CallExpr, env: Env): Value {
     case "option": {
       const o = env.merged.options.get(refName(0));
       if (!o) throw new RuleError(`知らない選択点です: ${refName(0)}`);
+      if (env.trace && env.tracedOptions && !env.tracedOptions.has(o.name)) {
+        env.tracedOptions.add(o.name);
+        env.trace.push({
+          kind: "option",
+          name: o.name,
+          value: o.chosen?.name ?? null,
+          chosenBy: o.chosenBy ?? null,
+        });
+      }
       return o.chosen?.name ?? null;
     }
     case "option_arg": {
@@ -489,6 +552,40 @@ interface RunState {
   bands?: ast.Band[];
 }
 
+/**
+ * 代入の値を根拠に載せる。成分の外で評価できる式はその値、成分ごとの式（ate_of など）は考慮する成分ごとの値。
+ * 評価できない（データ不足など）ときは null
+ */
+function traceAssign(s: ast.AssignStmt, env: Env) {
+  const text = textOf(s.value);
+  const safe = (e: Env): Value | undefined => {
+    const saved = env.trace;
+    env.trace = undefined; // 記録のための評価では、条件や選択点を二重に記録しない
+    try {
+      return evalExpr(s.value, e);
+    } catch (err) {
+      if (err instanceof NeedsIngredientError) return undefined;
+      return null;
+    } finally {
+      env.trace = saved;
+    }
+  };
+  const v = safe(env);
+  if (v !== undefined) {
+    env.trace!.push({ kind: "assign", name: s.name, value: toTraceValue(v), text });
+    return;
+  }
+  env.trace!.push({
+    kind: "assign_per_ingredient",
+    name: s.name,
+    text,
+    values: env.relevant.map((ing) => ({
+      ingredient: ing.name,
+      value: toTraceValue(safe({ ...env, ingredient: ing }) ?? null),
+    })),
+  });
+}
+
 function run(stmts: ast.Stmt[], env: Env, st: RunState) {
   for (const s of stmts) {
     // 「この製品には当てはまらない」が決まったら、残りの文（note など）は実行しない
@@ -502,10 +599,13 @@ function exec(s: ast.Stmt, env: Env, st: RunState) {
   if (ast.isTypedBlock(s)) return run(s.body.stmts, env, st);
   if (ast.isAssignStmt(s)) {
     env.bindings.set(s.name, s.value);
+    if (env.trace) traceAssign(s, env);
     return;
   }
   if (ast.isIfStmt(s)) {
-    if (truthy(evalExpr(s.cond, env))) exec(s.then, env, st);
+    const hit = truthy(evalExpr(s.cond, env));
+    env.trace?.push({ kind: "if", text: textOf(s.cond), result: hit });
+    if (hit) exec(s.then, env, st);
     else if (s.else) exec(s.else, env, st);
     return;
   }
@@ -514,6 +614,7 @@ function exec(s: ast.Stmt, env: Env, st: RunState) {
     const cat = evalExpr(s.category, env);
     st.result.outcome = { kind: "category", category: String(cat) };
     if (s.because) st.result.because.push(s.because);
+    env.trace?.push({ kind: "classify", category: String(cat), because: s.because ?? null });
     return;
   }
   if (ast.isClassifyByBandsStmt(s)) {
@@ -540,6 +641,12 @@ function exec(s: ast.Stmt, env: Env, st: RunState) {
       const b = bands[i]!;
       if (truthy(evalExpr(b.cond, inner))) {
         const pick = capIndex > i ? bands[capIndex]! : b;
+        env.trace?.push({
+          kind: "bands",
+          value: num(v, "bands"),
+          category: String(b.category),
+          cappedTo: pick !== b ? String(pick.category) : null,
+        });
         if (pick !== b) {
           st.result.notes.push({
             code: "capped_at_ingredient",
@@ -551,6 +658,7 @@ function exec(s: ast.Stmt, env: Env, st: RunState) {
         return;
       }
     }
+    env.trace?.push({ kind: "bands", value: num(v, "bands"), category: null, cappedTo: null });
     st.result.outcome = { kind: "not_classified" };
     return;
   }
@@ -604,11 +712,17 @@ function matchExclusion(pattern: string[], cls: string, category: string): boole
   return pattern.every((p, i) => p === "*" || p === parts[i]);
 }
 
-/** 1 つのクラスを判定する */
-export function classifyClass(merged: Merged, cls: string, mixture: Mixture): ClassResult {
+/** 1 つのクラスを判定する。`opts.trace` で根拠（実行の記録）を result.trace に付ける */
+export function classifyClass(
+  merged: Merged,
+  cls: string,
+  mixture: Mixture,
+  opts: { trace?: boolean } = {},
+): ClassResult {
   const rule = merged.rules.get(cls);
   const result: ClassResult = { class: cls, outcome: null, notes: [], judgement: [], because: [] };
   if (!rule) return result;
+  const trace: TraceEntry[] | undefined = opts.trace ? [] : undefined;
   // 自社のレイヤーの flag を成分に付ける
   const ingredients = mixture.ingredients.map((ing) => ({ ...ing, flags: new Set(ing.flags) }));
   const baseEnv: Env = {
@@ -619,19 +733,33 @@ export function classifyClass(merged: Merged, cls: string, mixture: Mixture): Cl
     bindings: new Map(),
     ingredient: null,
     budget: { n: 0 },
+    trace,
+    tracedOptions: trace ? new Set() : undefined,
   };
   for (const f of merged.flags)
     for (const ing of ingredients)
-      if (truthy(evalExpr(f.cond, { ...baseEnv, ingredient: ing }))) ing.flags.add(f.flag);
+      if (truthy(evalExpr(f.cond, { ...baseEnv, ingredient: ing }))) {
+        ing.flags.add(f.flag);
+        trace?.push({ kind: "flag", ingredient: ing.name, flag: f.flag });
+      }
   let relevant = ingredients.filter((i) => i.conc > 0);
-  if (rule.consider)
-    relevant = relevant.filter((ing) =>
-      truthy(evalExpr(rule.consider!, { ...baseEnv, ingredient: ing })),
-    );
-  if (rule.ignore)
-    relevant = relevant.filter(
-      (ing) => !truthy(evalExpr(rule.ignore!, { ...baseEnv, ingredient: ing })),
-    );
+  if (rule.consider) {
+    const cond = rule.consider;
+    relevant = relevant.filter((ing) => {
+      const included = truthy(evalExpr(cond, { ...baseEnv, ingredient: ing }));
+      trace?.push({ kind: "consider", ingredient: ing.name, included, text: textOf(cond) });
+      return included;
+    });
+  }
+  if (rule.ignore) {
+    const cond = rule.ignore;
+    relevant = relevant.filter((ing) => {
+      const excluded = truthy(evalExpr(cond, { ...baseEnv, ingredient: ing }));
+      if (excluded)
+        trace?.push({ kind: "ignore", ingredient: ing.name, excluded, text: textOf(cond) });
+      return !excluded;
+    });
+  }
   const env: Env = { ...baseEnv, relevant };
   if (rule.nonAdditive)
     env.bindings.set(
@@ -653,6 +781,10 @@ export function classifyClass(merged: Merged, cls: string, mixture: Mixture): Cl
         place: null,
       });
     }
+  }
+  if (trace) {
+    if (result.outcome) trace.push({ kind: "outcome", outcome: result.outcome });
+    result.trace = trace;
   }
   return result;
 }
@@ -683,6 +815,7 @@ export function mixtureFromTest(t: ast.TestCase): Mixture {
     };
     for (const f of it.facts) {
       if (ast.isUnknownFact(f)) ing.unknown.add(f.class ?? "*");
+      else if (ast.isNoHazardFact(f)) (ing.noHazard ??= new Set()).add(f.class);
       else if (ast.isFlagFact(f)) ing.flags.add(f.flag);
       else if (ast.isKeyFact(f)) {
         if (f.value) ing.values.set(f.key, f.value.value);

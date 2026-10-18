@@ -7,7 +7,7 @@
     "build": "node ../../scripts/gen-modules.mjs && next build",
     "start": "next start -p 3001",
     "typecheck": "node ../../scripts/gen-modules.mjs all && tsc --noEmit",
-    "gen:rules": "langium generate -f modules/sds/rules/langium-config.json",
+    "gen:rules": "langium generate -f modules/sds/rules/langium-config.json && node modules/sds/generate.mjs",
     "test": "node ../../scripts/gen-modules.mjs all && vitest run"
   },
   "dependencies": {

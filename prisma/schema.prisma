@@ -1324,6 +1324,8 @@ model Product {
   aliases     ProductAlias[]
   properties  ProductProperty[]
   attachments ProductAttachment[]
+  /** SDS 版: 製品の GHS 判定（国ごと） */
+  sdsGhsJudgements SdsGhsProductJudgement[]
   uses        ProductUse[]
 
   /**
@@ -3754,6 +3756,32 @@ model SdsGhsOverride {
  * 国ごとの出典の採用順（S23 §5-3）。priority の小さい順に見て、その項目を評価している最初の出典を採る。
  * fill_cannot_classify が真なら「分類できない」も次の出典で埋める
  */
+/**
+ * 製品の GHS 判定（SDS 版。S27 §5 の 4）。**製品 × 国（レイヤー）で最新の計算結果を 1 行持つ。**
+ * inputs は計算に使った成分の写し（含有率・区分・出どころ・値・印・開けなかった原材料）、
+ * results はクラスごとの結果と根拠（実行の記録）。どちらも計算した時点のもので、あとから製品を直しても変わらない
+ */
+model SdsGhsProductJudgement {
+  id             String   @id @default(cuid())
+  productId      String   @map("product_id")
+  /** 国のレイヤーのコード（JP など） */
+  country        String   @db.VarChar(20)
+  rulesetName    String   @map("ruleset_name") @db.VarChar(60)
+  rulesetVersion Int      @map("ruleset_version")
+  /** 判定対象日（YYYY-MM-DD。成分の GHS 分類データをこの日で引いた） */
+  asOf           String   @map("as_of") @db.VarChar(10)
+  computedAt     DateTime @map("computed_at")
+  computedBy     String?  @map("computed_by")
+  inputs         Json
+  results        Json
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, country])
+  @@map("sds_ghs_product_judgements")
+}
+
 model SdsGhsAdoptionRule {
   id                 String   @id @default(cuid())
   country            String   @db.VarChar(20)

@@ -4,8 +4,8 @@
  ******************************************************************************/
 
 import type { LangiumSharedCoreServices, LangiumCoreServices, LangiumGeneratedCoreServices, LangiumGeneratedSharedCoreServices, LanguageMetaData, Module } from 'langium';
-import { GhsRulesAstReflection } from './ast.js';
-import { GhsRulesGrammar } from './grammar.js';
+import { GhsRulesAstReflection } from './ast';
+import { GhsRulesGrammar } from './grammar';
 
 export const GhsRulesLanguageMetaData = {
     languageId: 'ghs-rules',

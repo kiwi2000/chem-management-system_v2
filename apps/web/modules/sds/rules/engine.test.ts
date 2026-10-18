@@ -88,6 +88,67 @@ describe("ルールセットに書いた試験が全部通る", () => {
   }
 });
 
+describe("根拠（実行の記録）", () => {
+  it("未知 20 % の補正の式を通った道と途中の値、効いた選択点が残る", () => {
+    const m = merge(jp, registry);
+    const mixture: Mixture = {
+      ingredients: [
+        {
+          name: "A",
+          conc: 80,
+          categories: new Map(),
+          values: new Map([["ate.oral", 400]]),
+          unknown: new Set(),
+          flags: new Set(),
+        },
+        {
+          name: "X",
+          conc: 20,
+          categories: new Map(),
+          values: new Map(),
+          unknown: new Set(["acute.oral"]),
+          flags: new Set(),
+        },
+      ],
+      product: new Map(),
+    };
+    const r = classifyClass(m, "acute.oral", mixture, { trace: true });
+    expect(r.outcome).toEqual({ kind: "category", category: "4" });
+    const t = r.trace ?? [];
+    // 考慮した成分
+    expect(
+      t
+        .filter((e) => e.kind === "consider")
+        .map((e) => (e.kind === "consider" ? e.included : null)),
+    ).toEqual([true, true]);
+    // 成分ごとの値（ATE の出どころ）
+    const ateOf = t.find((e) => e.kind === "assign_per_ingredient" && e.name === "ate_of");
+    expect(ateOf && ateOf.kind === "assign_per_ingredient" ? ateOf.values : null).toEqual([
+      { ingredient: "A", value: 400 },
+      { ingredient: "X", value: null },
+    ]);
+    // 補正の式の条件が真で、ATEmix が 400
+    const branch = t.find((e) => e.kind === "if" && e.text.includes("> 10 %"));
+    expect(branch && branch.kind === "if" ? branch.result : null).toBe(true);
+    const atemix = t.find((e) => e.kind === "assign" && e.name === "atemix");
+    expect(atemix && atemix.kind === "assign" ? atemix.value : null).toBe(400);
+    // 効いた選択点と、それを選んだレイヤー
+    const opt = t.find((e) => e.kind === "option" && e.name === "acute.unknown_statement");
+    expect(opt && opt.kind === "option" ? [opt.value, opt.chosenBy] : null).toEqual([
+      "sds",
+      "JP-JIS2025@1",
+    ]);
+    // 帯に当てた記録と最後の結果
+    expect(t.some((e) => e.kind === "bands" && e.category === "4")).toBe(true);
+    expect(t.at(-1)).toEqual({ kind: "outcome", outcome: { kind: "category", category: "4" } });
+  });
+  it("記録を頼まなければ trace は付かない", () => {
+    const m = merge(jp, registry);
+    const r = classifyClass(m, "acute.oral", { ingredients: [], product: new Map() });
+    expect(r.trace).toBeUndefined();
+  });
+});
+
 describe("判定の中身", () => {
   const mix = (
     ings: Partial<{

@@ -86,6 +86,7 @@ export type GhsRulesKeywordNames =
     | "min"
     | "mixture"
     | "needs_judgement"
+    | "no_hazard"
     | "nonadditive"
     | "not"
     | "not_applicable"
@@ -312,7 +313,7 @@ export interface CallExpr extends langium.AstNode {
     readonly $container: AggregateExpr | AssignStmt | Band | BetweenExpr | BinaryExpr | CallExpr | ClassifyByBandsStmt | ClassifyStmt | FlagStmt | IfExpr | IfStmt | IgnoreStmt | ListExpr | NonAdditiveStmt | NoteStmt | OmitRule | PStatementRule | RelevantStmt | UnaryExpr | WhereExpr;
     readonly $type: 'CallExpr';
     args: Array<Expr>;
-    fn: 'category' | 'convert' | 'option' | 'unknown' | string;
+    fn: 'category' | 'convert' | 'no_hazard' | 'option' | 'unknown' | string;
 }
 
 export const CallExpr = {
@@ -641,7 +642,7 @@ export function isIgnoreStmt(item: unknown): item is IgnoreStmt {
     return reflection.isInstance(item, IgnoreStmt.$type);
 }
 
-export type IngredientFact = FlagFact | KeyFact | UnknownFact;
+export type IngredientFact = FlagFact | KeyFact | NoHazardFact | UnknownFact;
 
 export const IngredientFact = {
     $type: 'IngredientFact'
@@ -807,6 +808,21 @@ export const NeedsJudgementStmt = {
 
 export function isNeedsJudgementStmt(item: unknown): item is NeedsJudgementStmt {
     return reflection.isInstance(item, NeedsJudgementStmt.$type);
+}
+
+export interface NoHazardFact extends langium.AstNode {
+    readonly $container: IngredientSpec;
+    readonly $type: 'NoHazardFact';
+    class: ClassName;
+}
+
+export const NoHazardFact = {
+    $type: 'NoHazardFact',
+    class: 'class'
+} as const;
+
+export function isNoHazardFact(item: unknown): item is NoHazardFact {
+    return reflection.isInstance(item, NoHazardFact.$type);
 }
 
 export interface NonAdditiveStmt extends langium.AstNode {
@@ -1425,6 +1441,7 @@ export type GhsRulesAstType = {
     MetaEntry: MetaEntry
     MixtureSpec: MixtureSpec
     NeedsJudgementStmt: NeedsJudgementStmt
+    NoHazardFact: NoHazardFact
     NonAdditiveStmt: NonAdditiveStmt
     NotApplicableStmt: NotApplicableStmt
     NotClassifiedStmt: NotClassifiedStmt
@@ -1950,6 +1967,15 @@ export class GhsRulesAstReflection extends langium.AbstractAstReflection {
                 }
             },
             superTypes: [Stmt.$type]
+        },
+        NoHazardFact: {
+            name: NoHazardFact.$type,
+            properties: {
+                class: {
+                    name: NoHazardFact.class
+                }
+            },
+            superTypes: [IngredientFact.$type]
         },
         NonAdditiveStmt: {
             name: NonAdditiveStmt.$type,

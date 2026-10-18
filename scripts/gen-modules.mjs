@@ -11,7 +11,7 @@
 // フォルダが無いモジュールを指定したら止める（SDS なし版に SDS の指定が紛れ込んだとき、黙って組まないため）
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dir = join(root, "apps", "web", "modules");
@@ -73,3 +73,10 @@ mkdirSync(dir, { recursive: true });
 writeFileSync(join(dir, "registry.generated.ts"), manifest);
 writeFileSync(join(dir, "registry.server.generated.ts"), server);
 console.log(`gen-modules: ${wanted.length > 0 ? wanted.join(", ") : "(なし)"}`);
+
+// モジュールごとの生成（`modules/<id>/generate.mjs` があれば呼ぶ。SDS ならルールセットの本文の写し）。
+// 有効なモジュールだけ。見つかったもの全部ではないので、SDS なし版のビルドでは走らない
+for (const id of wanted) {
+  const gen = join(dir, id, "generate.mjs");
+  if (existsSync(gen)) await import(pathToFileURL(gen).href);
+}

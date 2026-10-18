@@ -3610,6 +3610,42 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                 "$type": "Action",
                 "inferredType": {
                   "$type": "InferredType",
+                  "name": "NoHazardFact"
+                }
+              },
+              {
+                "$type": "Keyword",
+                "value": "no_hazard"
+              },
+              {
+                "$type": "Keyword",
+                "value": "("
+              },
+              {
+                "$type": "Assignment",
+                "feature": "class",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@70"
+                  },
+                  "arguments": []
+                }
+              },
+              {
+                "$type": "Keyword",
+                "value": ")"
+              }
+            ]
+          },
+          {
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Action",
+                "inferredType": {
+                  "$type": "InferredType",
                   "name": "FlagFact"
                 }
               },
@@ -4869,6 +4905,10 @@ export const GhsRulesGrammar = (): Grammar => loadedGhsRulesGrammar ?? (loadedGh
                     {
                       "$type": "Keyword",
                       "value": "unknown"
+                    },
+                    {
+                      "$type": "Keyword",
+                      "value": "no_hazard"
                     },
                     {
                       "$type": "Keyword",
