@@ -63,7 +63,13 @@ export function ResizableBox({
    * 表の見出しを開くなどして行が増えたら、増えたぶんが隠れないよう箱を中身に合わせて広げる
    * （2026-09-11 指示）。中身が減れば元の高さ（決めた高さ・既定）に戻る。**覚えない**
    */
-  const [grown, setGrown] = useState<number | null>(null);
+  const [grown, setGrownState] = useState<number | null>(null);
+  /** 見張りの中（描画と別の時点）から、いま広げているかを読むための写し */
+  const grownRef = useRef<number | null>(null);
+  const setGrown = useCallback((v: number | null) => {
+    grownRef.current = v;
+    setGrownState(v);
+  }, []);
   const boxRef = useRef<HTMLDivElement | null>(null);
   /**
    * 中身を包む div。高さの変化はこれで見張る。
@@ -82,7 +88,7 @@ export function ResizableBox({
     } catch {
       // 壊れた値が入っていたら既定の高さで始める
     }
-  }, [storageKey]);
+  }, [storageKey, setGrown]);
 
   // 中身の高さを見張る。増えて箱からはみ出したら箱を広げ、減ったら元に戻す
   useEffect(() => {
@@ -92,14 +98,24 @@ export function ResizableBox({
     // 最初は測るだけ（開いた直後の中身は、決めた高さの中で送ればよい）
     // 中身の高さは包んだ div で測る（箱の scrollHeight は箱より小さくならず、減ったのが分からない）
     let last = inner.offsetHeight;
+    /**
+     * 広げる前の箱の高さ（決めた高さ・既定の上限で止まっていたときの中身の見える高さ）。
+     * 元に戻すのは、中身がここに収まるまで減ったときだけ。
+     * 「前より少しでも減ったら戻す」だと、広げて縦のスクロールバーが消える → 文章の折り返しが減って中身が少し縮む →
+     * 戻す → スクロールバーが出て中身が伸びる → また広げる、を毎フレーム繰り返して震える
+     * （マニュアルの検索結果で起きた。2026-10-19）
+     */
+    let base: number | null = null;
     const check = () => {
       const content = inner.offsetHeight;
       const prev = last;
       last = content;
       if (content > prev && content > el.clientHeight) {
+        // いま上限で止まっているなら、その高さが「元の高さ」
+        if (grownRef.current === null) base = el.clientHeight;
         // 枠線と横のスクロールバーのぶんを足す（height は枠線込みの値）
         setGrown(content + (el.offsetHeight - el.clientHeight));
-      } else if (content < prev) {
+      } else if (content < prev && grownRef.current !== null && base !== null && content <= base) {
         setGrown(null);
       }
     };
@@ -115,7 +131,7 @@ export function ResizableBox({
       mo.disconnect();
       ro?.disconnect();
     };
-  }, []);
+  }, [setGrown]);
 
   // 包んでいるカードを探す。つまみを絶対位置で置けるよう、カードを位置の基準にする
   useLayoutEffect(() => {
@@ -136,7 +152,7 @@ export function ResizableBox({
       // 手で決めたら、自動で広げたぶんは捨てる
       setGrown(null);
     },
-    [storageKey],
+    [storageKey, setGrown],
   );
 
   const reset = useCallback(() => {
@@ -147,7 +163,7 @@ export function ResizableBox({
     }
     setHeight(null);
     setGrown(null);
-  }, [storageKey]);
+  }, [storageKey, setGrown]);
 
   /** いまの高さ（px）。既定のままのときは実際に描かれている高さを測る */
   const current = () => boxRef.current?.getBoundingClientRect().height ?? MIN_HEIGHT;
