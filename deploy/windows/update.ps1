@@ -53,6 +53,28 @@ Write-Step "アプリを止める"
 Start-Sleep -Seconds 3
 Write-Ok "chem-app: $((Get-Service chem-app).Status)"
 
+# Node.js のセキュリティ更新（2026-10-22）。同梱の MSI が、入っているものより新しい同じ大きい版なら入れ替える
+# （大きい版が違うときは 00-prereqs.ps1 と同じく止める。別の版で組み立てたアプリの部品が読めないことがある）
+Write-Step "Node.js の版"
+$nodeMsi = Get-ChildItem (Join-Path $SetDir "installers") -Filter "node-*-x64.msi" -ErrorAction SilentlyContinue | Select-Object -First 1
+$nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+if ($nodeMsi -and $nodeCmd -and $nodeMsi.Name -match 'node-v(\d+\.\d+\.\d+)') {
+  $want = [version]$Matches[1]
+  $have = [version]((& node -v).Trim().TrimStart("v"))
+  if ($want.Major -ne $have.Major) {
+    throw "Node.js $have が入っていますが、このセットは Node.js $($want.Major) 用です。00-prereqs.ps1 の案内どおり入れ替えてから、もう一度実行してください"
+  } elseif ($want -gt $have) {
+    Write-Host "    $have → $want に入れ替えます（$($nodeMsi.Name)。1〜2 分）"
+    $p = Start-Process msiexec.exe -ArgumentList @("/i", "`"$($nodeMsi.FullName)`"", "/qn", "/norestart") -Wait -PassThru
+    if ($p.ExitCode -ne 0) { throw "Node.js の入れ替えが失敗しました（終了コード $($p.ExitCode)）" }
+    Write-Ok "入れ替えました: $(& node -v)"
+  } else {
+    Write-Ok "そのまま: $have（同梱 $want）"
+  }
+} else {
+  Write-Warn2 "Node.js の版を確かめられませんでした（同梱の MSI か node が見つかりません）"
+}
+
 Write-Step "ファイルの入れ替え（$appSrc → $Root）"
 # data（作った帳票の PDF の既定の置き場所）は残す。道筋で書く（名前だけだと node_modules の中の data まで外れる）
 & robocopy $appSrc $Root /MIR /XF .env /XD logs secrets caddy nssm (Join-Path $Root "data") /NFL /NDL /NJH /NP /R:2 /W:2 | Select-Object -Last 8
