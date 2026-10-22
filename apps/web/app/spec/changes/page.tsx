@@ -29,6 +29,14 @@ export default function ManualChangesPage() {
         <T>「フィードバック」</T>から書き残してください。直す判断の材料になります。
       </Note>
 
+      <Section title="2026-10-22　土台のセキュリティ更新">
+        <P>
+          画面や操作は変わりません。このシステムが載っている土台（Node.js・Next.js
+          と、その部品）に重い不具合の修正が出たので、すべて新しい版に入れ替えました。 Windows
+          版のインストールセットも、同梱する Node.js・PostgreSQL・Caddy を新しい版にしています。
+        </P>
+      </Section>
+
       <Section title="2026-10-20　マニュアルの検索結果が震える不具合を直しました">
         <Sub title="直した不具合">
           <List
