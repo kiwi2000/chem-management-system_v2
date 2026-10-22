@@ -75,6 +75,80 @@ if ($nodeMsi -and $nodeCmd -and $nodeMsi.Name -match 'node-v(\d+\.\d+\.\d+)') {
   Write-Warn2 "Node.js の版を確かめられませんでした（同梱の MSI か node が見つかりません）"
 }
 
+# PostgreSQL のセキュリティ更新（2026-10-22）。同梱の公式バイナリ zip が入っているものより新しい 16.x なら、
+# bin / lib / share を入れ替える（data はそのまま。同じ大きい版の中の入れ替えは、ファイルを置き換えるだけでよい）
+Write-Step "PostgreSQL の版"
+$pgRoot = "C:\Program Files\PostgreSQL\16"
+$pgZip = Get-ChildItem (Join-Path $SetDir "installers") -Filter "postgresql-16*-windows-x64-binaries.zip" -ErrorAction SilentlyContinue | Select-Object -First 1
+$pgExe = Join-Path $pgRoot "bin\postgres.exe"
+if ($pgZip -and (Test-Path $pgExe) -and $pgZip.Name -match 'postgresql-(16\.\d+)-') {
+  $pgWant = [version]$Matches[1]
+  $pgHaveText = (& $pgExe --version) -join " "
+  if ($pgHaveText -match '(\d+\.\d+)') { $pgHave = [version]$Matches[1] } else { $pgHave = $null }
+  if ($pgHave -and $pgWant -gt $pgHave) {
+    Write-Host "    $pgHave → $pgWant に入れ替えます（$($pgZip.Name)。1〜2 分）"
+    & $nssm stop chem-caddy | Out-Null
+    Stop-Service postgresql-x64-16 -ErrorAction Stop
+    $tmp = Join-Path $env:TEMP "pg-unzip"
+    if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+    & (Join-Path $env:SystemRoot "System32\tar.exe") -xf $pgZip.FullName -C $tmp "pgsql/bin" "pgsql/lib" "pgsql/share"
+    if ($LASTEXITCODE -ne 0) { throw "PostgreSQL の zip の展開が失敗しました（終了コード $LASTEXITCODE）" }
+    foreach ($d in @("bin", "lib", "share")) {
+      $old = Join-Path $pgRoot "$d.old"
+      if (Test-Path $old) { Remove-Item $old -Recurse -Force }
+      Rename-Item (Join-Path $pgRoot $d) "$d.old"
+      Move-Item (Join-Path $tmp "pgsql\$d") (Join-Path $pgRoot $d)
+    }
+    Remove-Item $tmp -Recurse -Force
+    # zip から出したフォルダは TEMP の権限を引きずる（00-prereqs.ps1 と同じ手当て）
+    & icacls $pgRoot /reset /T /Q | Out-Null
+    & icacls (Join-Path $pgRoot "data") /grant "NT AUTHORITY\NetworkService:(OI)(CI)F" /T /Q | Out-Null
+    Start-Service postgresql-x64-16 -ErrorAction Stop
+    Start-Sleep -Seconds 3
+    $after = (& $pgExe --version) -join " "
+    if ((Get-Service postgresql-x64-16).Status -ne "Running") { throw "PostgreSQL が起動しません。bin.old / lib.old / share.old を戻してください" }
+    foreach ($d in @("bin", "lib", "share")) { Remove-Item (Join-Path $pgRoot "$d.old") -Recurse -Force -ErrorAction SilentlyContinue }
+    Write-Ok "入れ替えました: $after"
+  } elseif ($pgHave) {
+    Write-Ok "そのまま: $pgHave（同梱 $pgWant）"
+  } else {
+    Write-Warn2 "入っている PostgreSQL の版が読めませんでした: $pgHaveText"
+  }
+} else {
+  Write-Warn2 "PostgreSQL の版を確かめられませんでした（同梱の zip か postgres.exe が見つかりません）"
+}
+
+# Caddy のセキュリティ更新（2026-10-22）。同梱の zip が新しければ caddy.exe を入れ替える（robocopy は caddy フォルダーを残すので、ここで行う）
+Write-Step "Caddy の版"
+$caddyExe = Join-Path $Root "caddy\caddy.exe"
+$caddyZip = Get-ChildItem (Join-Path $SetDir "installers") -Filter "caddy_*_windows_amd64.zip" -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($caddyZip -and (Test-Path $caddyExe) -and $caddyZip.Name -match 'caddy_(\d+\.\d+\.\d+)_') {
+  $cWant = [version]$Matches[1]
+  $cHaveText = (& $caddyExe version) -join " "
+  if ($cHaveText -match 'v?(\d+\.\d+\.\d+)') { $cHave = [version]$Matches[1] } else { $cHave = $null }
+  if ($cHave -and $cWant -gt $cHave) {
+    Write-Host "    $cHave → $cWant に入れ替えます（$($caddyZip.Name)）"
+    & $nssm stop chem-caddy | Out-Null
+    Start-Sleep -Seconds 2
+    $tmp = Join-Path $env:TEMP "caddy-unzip"
+    if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+    & (Join-Path $env:SystemRoot "System32\tar.exe") -xf $caddyZip.FullName -C $tmp "caddy.exe"
+    if ($LASTEXITCODE -ne 0) { throw "Caddy の zip の展開が失敗しました（終了コード $LASTEXITCODE）" }
+    Copy-Item (Join-Path $tmp "caddy.exe") $caddyExe -Force
+    Remove-Item $tmp -Recurse -Force
+    & $nssm start chem-caddy | Out-Null
+    Write-Ok "入れ替えました: $((& $caddyExe version) -join ' ')"
+  } elseif ($cHave) {
+    Write-Ok "そのまま: $cHave（同梱 $cWant）"
+  } else {
+    Write-Warn2 "入っている Caddy の版が読めませんでした: $cHaveText"
+  }
+} else {
+  Write-Warn2 "Caddy の版を確かめられませんでした（同梱の zip か caddy.exe が見つかりません）"
+}
+
 Write-Step "ファイルの入れ替え（$appSrc → $Root）"
 # data（作った帳票の PDF の既定の置き場所）は残す。道筋で書く（名前だけだと node_modules の中の data まで外れる）
 & robocopy $appSrc $Root /MIR /XF .env /XD logs secrets caddy nssm (Join-Path $Root "data") /NFL /NDL /NJH /NP /R:2 /W:2 | Select-Object -Last 8
