@@ -57,6 +57,7 @@ export async function toFeedbackDtos(
     const last = latest.get(r.id);
     return {
       id: r.id,
+      seqNo: r.seqNo,
       title: r.title,
       body: r.body,
       kind: r.kind,

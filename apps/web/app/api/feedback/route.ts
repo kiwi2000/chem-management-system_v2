@@ -1,4 +1,5 @@
 import { emptyTableState, feedbackSchema, parseTableState } from "@chem/shared";
+import { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.feedback.findMany({
       where,
-      orderBy: buildOrderBy(FEEDBACK_COLUMNS, state.sort, { updatedAt: "desc" }),
+      orderBy: buildOrderBy(FEEDBACK_COLUMNS, state.sort, { seqNo: "desc" }),
       skip: (state.page - 1) * state.pageSize,
       take: state.pageSize,
     }),
@@ -69,9 +70,24 @@ export async function POST(req: Request) {
   }
   const v = parsed.data;
 
-  const created = await prisma.feedback.create({
-    data: { ...v, createdBy: actor.user.id, updatedBy: actor.user.id },
-  });
+  // 通番は最大＋1。同時に 2 件来て同じ番号になったら、一意の制約で落ちるので取り直す
+  let created: { id: string } | null = null;
+  for (let attempt = 0; attempt < 5 && !created; attempt++) {
+    const top = await prisma.feedback.aggregate({ _max: { seqNo: true } });
+    try {
+      created = await prisma.feedback.create({
+        data: {
+          ...v,
+          seqNo: (top._max.seqNo ?? 0) + 1,
+          createdBy: actor.user.id,
+          updatedBy: actor.user.id,
+        },
+      });
+    } catch (e) {
+      if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")) throw e;
+    }
+  }
+  if (!created) return jsonError(409, "conflict", m.errors.saveFailed(409));
 
   await writeAudit({
     entity: "feedbacks",

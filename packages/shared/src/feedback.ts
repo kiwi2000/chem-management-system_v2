@@ -81,6 +81,8 @@ export type FeedbackCommentInput = z.infer<ReturnType<typeof feedbackCommentSche
 /** 一覧・詳細に出す形 */
 export interface FeedbackDto {
   id: string;
+  /** 通番。最初に書かれた順に 1 から（消したものは欠番） */
+  seqNo: number;
   title: string;
   body: string;
   kind: FeedbackKind;

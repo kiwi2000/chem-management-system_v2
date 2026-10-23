@@ -33,10 +33,12 @@ import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
 
 /** 直したものが上に来るほうが追いやすい */
-const DEFAULT_STATE: TableState = emptyTableState([{ column: "updatedAt", direction: "desc" }]);
+// 既定は通番の大きい順（後から書かれたものが上。2026-10-23 指示）
+const DEFAULT_STATE: TableState = emptyTableState([{ column: "seqNo", direction: "desc" }]);
 
 /** 「返事」の列を「返信」に変えたので、覚えている幅を捨てる */
-const STORAGE_KEY = "chem.table.feedback.v2";
+// v3: 通番の列を足し、既定の並びを通番にした（覚えている並びを捨てて、新しい既定から始める）
+const STORAGE_KEY = "chem.table.feedback.v3";
 
 const EMPTY_FORM = {
   title: "",
@@ -91,6 +93,16 @@ export default function FeedbackPage() {
               aria-label="未読"
             />
           ) : null,
+      },
+      {
+        // 通番。最初に書かれた順に 1 から（消したものは欠番）
+        key: "seqNo",
+        header: "No.",
+        kind: "number",
+        width: 56,
+        nullable: false,
+        className: "text-muted-foreground text-right tabular-nums",
+        render: (r) => r.seqNo,
       },
       {
         key: "title",

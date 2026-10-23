@@ -284,6 +284,7 @@ model User {
    * /**
    * /**
    * /**
+   * /**
    * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
    */
   newsGroupId           String?   @map("news_group_id")
@@ -1321,12 +1322,14 @@ model Product {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
-  aliases     ProductAlias[]
-  properties  ProductProperty[]
-  attachments ProductAttachment[]
-  /** SDS 版: 製品の GHS 判定（国ごと） */
+  aliases          ProductAlias[]
+  properties       ProductProperty[]
+  attachments      ProductAttachment[]
+  /**
+   * SDS 版: 製品の GHS 判定（国ごと）
+   */
   sdsGhsJudgements SdsGhsProductJudgement[]
-  uses        ProductUse[]
+  uses             ProductUse[]
 
   /**
    * 反応後の組成を入れ始めた日時と人（S24）。入っていれば、登録組成（compositionLines）は**反応後**で、
@@ -1758,6 +1761,11 @@ enum FeedbackStatus {
  */
 model Feedback {
   id       String           @id @default(cuid())
+  /**
+   * 通番。最初に書かれた順に 1 から振る（2026-10-23）。一覧の既定の並びと、やり取りで「何番の件」と呼ぶのに使う。
+   * 消しても番号は詰めない（欠番）。採番は作るときに最大＋1（MySQL・SQL Server でも同じ書き方で済むよう、自動採番の列にはしない）
+   */
+  seqNo    Int              @unique @map("seq_no")
   title    String           @db.VarChar(200)
   body     String           @db.Text
   kind     FeedbackKind
@@ -3764,11 +3772,15 @@ model SdsGhsOverride {
 model SdsGhsProductJudgement {
   id             String   @id @default(cuid())
   productId      String   @map("product_id")
-  /** 国のレイヤーのコード（JP など） */
+  /**
+   * 国のレイヤーのコード（JP など）
+   */
   country        String   @db.VarChar(20)
   rulesetName    String   @map("ruleset_name") @db.VarChar(60)
   rulesetVersion Int      @map("ruleset_version")
-  /** 判定対象日（YYYY-MM-DD。成分の GHS 分類データをこの日で引いた） */
+  /**
+   * 判定対象日（YYYY-MM-DD。成分の GHS 分類データをこの日で引いた）
+   */
   asOf           String   @map("as_of") @db.VarChar(10)
   computedAt     DateTime @map("computed_at")
   computedBy     String?  @map("computed_by")

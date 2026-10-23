@@ -918,6 +918,7 @@ export const NEWS_COLUMNS: QueryColumn[] = [
 ];
 
 export const FEEDBACK_COLUMNS: QueryColumn[] = [
+  { key: "seqNo", kind: "number", field: "seqNo" },
   { key: "title", kind: "text", field: "title", caseInsensitive: true },
   { key: "kind", kind: "enum", field: "kind" },
   { key: "priority", kind: "enum", field: "priority" },
