@@ -1,10 +1,15 @@
 # 本番用イメージ（Next.jsアプリ＋帳票の PDF 化に使う Chromium 同梱）
 # ビルド:   docker compose -f compose.prod.yml --env-file .env.prod build
 
-FROM node:24-slim
+# 土台は版まで書く（2026-10-22。「24 系の最新」の指定だと、ビルドする側が古い写しを使い回したときに
+# どの版で組まれたか外から分からない）。Node.js のセキュリティ更新が出たら、ここと
+# scripts/build-install-set.ps1 の MSI を一緒に上げる
+FROM node:24.22.1-slim
 
-# 日本語フォント＋Prisma実行に必要なOpenSSL
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# 日本語フォント＋Prisma実行に必要なOpenSSL。
+# OS の部品も、組むたびにセキュリティ更新を当てる（土台の写しが出たあとの修正を取り込む）
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
       openssl ca-certificates \
       fonts-noto-cjk \
   && rm -rf /var/lib/apt/lists/*
@@ -32,6 +37,9 @@ COPY . .
 ARG CHEM_MODULES=""
 ENV CHEM_MODULES=$CHEM_MODULES
 RUN npx prisma generate && npm run build -w apps/web
+
+# 組んだ版をビルドの記録に出す（反映を確かめるため。Railway のビルドの記録で読める）
+RUN echo "versions: node $(node -v) / npm $(npm -v) / next $(node -p "require('next/package.json').version") / react $(node -p "require('react/package.json').version") / prisma $(node -p "require('prisma/package.json').version") / playwright $(node -p "require('playwright/package.json').version") / openssl $(openssl version | cut -d' ' -f2)"
 
 ENV NODE_ENV=production
 # apps/web/package.json の start が 3001 で待つ（Caddyfile の reverse_proxy と合わせる）
