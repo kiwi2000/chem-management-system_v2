@@ -95,6 +95,12 @@ PYTHONIOENCODING=utf-8 python tools/pdf-decode-meti.py <pdf> <出力.txt>
   ずれ幅が一定でないので表では直せない）。改訂 6 版が要るときは、ページを画像にして目で読む
   （`pymupdf.open(pdf)[n].get_pixmap(dpi=110).save(png)` → Read）
 
+## EUR-Lex（EU の法令）を続けて取るとき（2026-10-24）
+
+- 本文は `https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:<番号>` で取れる。統合版の番号は `0` で始まり末尾に版の日付が付く（例 `02004L0037-20240408`）
+- **20 回ほど続けて取ると、サイトの防御で止められる**（書誌ページが特に止まりやすい）。止まったら内蔵ブラウザで同じページを開き直してから取り直す
+- 附属書の表が HTML では画像扱いで中身が無いことがある（2000/39/EC）。そのときは PDF 版を取る
+
 ## ECHA（欧州化学品庁）の表を取るとき（2026-10-24）
 
 - echa.europa.eu は curl を拒む（403）。内蔵ブラウザで開いて 2-2 の方法で保存する
