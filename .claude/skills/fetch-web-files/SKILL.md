@@ -1,57 +1,48 @@
 ---
 name: fetch-web-files
-description: 役所などのサイトから PDF を自分で取ってくる手順（WAF で curl が拒まれるサイト、内蔵ブラウザの保存の画面、Cloudflare のボット確認）と、経産省の GHS 仮訳 PDF の文字化けを復元して文字に起こす手順。「ダウンロードして」「この PDF を読んで」「資料を取ってきて」のときに参照する。
+description: 役所などのサイトから PDF・Excel を自分で取ってくる手順（保存の画面を出さずに作業用のフォルダへ直接保存する。curl が拒まれるサイト、Cloudflare のボット確認）と、経産省の GHS 仮訳 PDF の文字化けを復元して文字に起こす手順。「ダウンロードして」「この PDF を読んで」「資料を取ってきて」のときに参照する。
 ---
 
 # サイトからファイルを取ってきて読む
 
 利用者に「ダウンロードしておいて」と頼む前に、ここにある方法を順に試す（2026-10-17 指示。自分でやる）。
 
-## 1. まず curl（素直に取れるサイト）
+**保存の画面（「名前を付けて保存」）が出る取り方はしない**（2026-10-25 利用者の指示）。利用者が同じパソコンを操作している最中に
+保存の画面が割り込み、自動で押す仕組みが利用者の操作とぶつかって、取り違えや中途半端な保存が起きた（Downloads に `.tmp` が 19 個残った）。
+ファイルは画面に何も出さずに、作業用のフォルダ（`D:\cajdata\sources\...` など）へ**直接**保存する。方法は 1 と 2 だけ。
+
+## 1. curl で直接取る（基本）
 
 ```bash
-curl -s -o <保存先> -w "%{http_code} %{size_download}\n" -A "Mozilla/5.0" --max-time 600 "<URL>"
+curl -s -o <保存先> -w "%{http_code} %{size_download}\n" -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36" --max-time 600 "<URL>"
 ```
 
-取れたら `head -c 5` が `%PDF` であることを確かめる（403 の HTML を PDF の名前で保存してしまわないため）。
+- 取れたら中身を確かめる（PDF なら `head -c 5` が `%PDF`、Excel なら ZIP の頭 `PK`）。403 の HTML を PDF の名前で保存してしまわないため
+- 経産省（meti.go.jp）は以前 curl を拒んでいたが、2026-10-25 にはブラウザの UA を付けた curl でそのまま取れた（中身がブラウザで読んだものとハッシュで一致）
+- e-Gov、eCFR、EUR-Lex、条約事務局、EPA などは curl で取れる
 
-## 2. 403 や 202 で拒まれるサイト（AWS WAF など。経産省 meti.go.jp がこれ）
+## 2. ブラウザのページの中で読み込み、中身を受け取って保存する（curl が拒まれる小さなファイルだけ）
 
-内蔵ブラウザでそのサイトのページを開くと、WAF の通行証（Cookie）がブラウザに入る。それを curl に渡す。
+内蔵ブラウザで開いたそのサイトのページの中で `javascript_tool` からファイルを読み込み、中身を文字（base64）にして受け取り、こちらで書き込む。
+保存の画面は出ない。中身は会話を通るので、**数百 KB までのファイルだけ**に使う（それより大きいと会話の負担が大きすぎる）。
 
-1. `navigate` でそのサイトの普通のページを開く
-2. `javascript_tool` で `document.cookie.split("; ").find(c => c.startsWith("aws-waf-token="))` と `navigator.userAgent` を読む
-3. curl に `-A "<そのブラウザの UA>" -b "<aws-waf-token=...>"` を付けて取る。Referer と Accept も付けると通りやすい
+1. `tabs_create` で自分のタブを作り、そのサイトの普通のページを開く（2026-10-24 の決まり。最初のタブは共有）
+2. ページの中で読み込み、大きさと SHA-256 を先に出しておく
 
-- 通行証は会話に貼ってよい（サイトの訪問者用の印で、利用者の秘密ではない）。ただし必要な分だけ
-- 大きなファイル（数十 MB）や特定の道筋は、通行証があっても 202（0 バイト）で止められることがある。そのときは 3 へ
-- 通行証を curl に渡すこと自体が、Claude Code の自動の許可の判定で「ボット確認の回避」として止められることがある（2026-10-24）。そのときは 2-2 へ
+   ```js
+   const r = await fetch("<URL>"); const buf = new Uint8Array(await r.arrayBuffer());
+   const sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))].map(b => b.toString(16).padStart(2, "0")).join("");
+   let s = ""; for (let i = 0; i < buf.length; i += 8192) s += String.fromCharCode(...buf.subarray(i, i + 8192));
+   window.__caj = btoa(s); ({ status: r.status, size: buf.length, sha })
+   ```
+3. `window.__caj.slice(i, i + 60000)` を順に受け取り、つないで base64 から戻して保存する。保存したファイルの SHA-256 が 2 の値と同じことを確かめる
+4. 終わったら `tabs_close` で自分のタブを閉じる
 
-## 2-2. ページの中から読み込んで保存する（通行証の方法が止められたとき）
+大きなファイルで curl が拒まれるときは、利用者に取ってもらう（ファイル名・元・大きさを添えて頼む）。
 
-内蔵ブラウザで開いたそのサイトのページの中で、`javascript_tool` からファイルを読み込み、そのままファイルとして保存する。
-中身はサーバーが返したものそのまま。
-
-1. 3 の見張り（`tools/auto-save-download.ps1`）を**先に**背景で動かす。`-NamePattern` は**自分が付ける名前の頭だけ**に合うようにする
-   （例 `'^caj_eu_'`）。ほかの作業者の保存の画面を押さないため
-2. ページの中で `const r = await fetch("<URL>"); const b = await r.blob();` と読み、`URL.createObjectURL(b)` を `a.download = "caj_eu_<名前>"` の
-   リンクに入れて `click()` する。保存の画面が出て、見張りが押す
-3. 保存したら、中身（`%PDF` の頭、HTML なら表があるか）とハッシュを確かめる。終わったら見張りを止める
-
-## 3. 内蔵ブラウザで開いて、保存の画面を自動で押す（Windows）
-
-PDF のアドレスを `navigate` で開くと、Claude アプリに「名前を付けて保存」の画面が出る。
-`tools/auto-save-download.ps1` を**先に**背景で動かしておくと、決まった名前のファイルだけ自動で保存される。
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\auto-save-download.ps1 -Minutes 20 -NamePattern '\.(pdf|zip)$' -SaveDir 'C:\...\docs\GHS分類の原典\国連GHS文書'
-```
-
-- PowerShell ツールで `run_in_background: true`。終わったら TaskStop で止める
-- `-SaveDir` を付けると、その場所に保存される（ファイル名の欄に全体の道筋を入れてから押す）。同じ名前があれば押さない
-- Claude の窓の保存の画面だけに触る。上書きの確認には触らない
-- 元は voice_type プロジェクトの `auto-save-gemini.ps1`（別の会話で利用者から教わった）
-- `navigate` の結果が「responded with a file download」のときは、保存の画面が出ている。「navigated to」で中身が空のときは、ブラウザの中で PDF が開いただけ（保存されていない）。どちらも、見張りが動いていれば保存される
+- **ブラウザの通行証（Cookie）を curl に渡す方法は使わない。**Claude Code の自動の許可の判定で「ボット確認の回避」として止められる（2026-10-24）
+- **`navigate` でファイルのアドレスを開かない、ページの中でダウンロードのリンクを押させない。**保存の画面が出る
+- `tools/auto-save-download.ps1`（保存の画面を自動で押す見張り）は使わない。利用者の操作とぶつかる
 
 ## 4. Cloudflare のボット確認が出るサイト（unece.org など）
 
@@ -65,7 +56,7 @@ curl も 403。**利用者に自分のブラウザで取ってもらう**しか�
 
 JISC の JIS 検索（https://www.jisc.go.jp/app/jis/general/GnrJISSearch.html）で番号（例 `Z7253`）を引き、詳細画面の
 「音声PDF001」を押す。通常の PDF はログインが要るが、音声 PDF（読み上げ用）はログイン不要で、本文・附属書の文字が全部入っている
-（表の体裁は崩れる。図は無い）。保存の画面が出るので、3 の見張りを `-SaveDir docs\GHS分類の原典\JIS` で先に動かしておく。
+（表の体裁は崩れる。図は無い）。押すと保存の画面が出るので、**利用者に取ってもらう**（大きいので 2 の方法も使わない）。
 2026-10-17 に Z 7252:2025（186 ページ）と Z 7253:2025（107 ページ）を取った。文字は `pymupdf` の `get_text()` でそのまま読める。
 JIS の著作権は日本規格協会にある。読んで仕様を決めるのはよいが、文言を製品に収録するときは別に確かめる。
 
@@ -103,11 +94,12 @@ PYTHONIOENCODING=utf-8 python tools/pdf-decode-meti.py <pdf> <出力.txt>
 
 ## ECHA（欧州化学品庁）の表を取るとき（2026-10-24）
 
-- echa.europa.eu は curl を拒む（403）。内蔵ブラウザで開いて 2-2 の方法で保存する
+- **ECHA のデータは保留**（2026-10-25。ECHA の利用条件がデータベースの全部の写しを書面の許可なしに禁じている。regulatory-data の CLAUDE.md §5 の 8 番）
+- echa.europa.eu は curl を拒む（403）
 - 候補リストなどの表の「書き出し」（XLS など）のボタンは、押すと ECHA の利用条件への同意を求める画面が出る。**同意は利用者が決めることなので押さない**
 - 代わりに、表のページ（HTML）を 1 ページ 200 件の表示にして、ページごとに保存する。ページに書かれた総数と、読めた件数が合うことを確かめる
 
 ## 内蔵ブラウザを並行の作業者と使うとき（2026-10-24）
 
 - 内蔵ブラウザの最初のタブは、同じ会話のほかの作業者（サブエージェント）と共有される。途中でほかの作業者が別のサイトを開くことがある
-- **`tabs_create` で自分のタブを作り、その tabId を毎回指定して使う。**終わったら `tabs_close` で閉じ、見張りも止める
+- **`tabs_create` で自分のタブを作り、その tabId を毎回指定して使う。**終わったら `tabs_close` で閉じる
