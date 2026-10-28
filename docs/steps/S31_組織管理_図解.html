@@ -260,12 +260,12 @@ footer { font-size: 12.5px; color: var(--muted); }
       <div class="face">
         <div class="sym data">物</div>
         <h3>② データの所属先</h3>
-        <p>製品・原材料・物質は、1 つの組織に所属するか、どこにも所属しない「全社共通」のどちらかです。</p>
+        <p>製品・原材料・物質は、1 つの組織か、「全社」のどちらかに所属します。</p>
       </div>
       <div class="face">
         <div class="sym reach">範</div>
         <h3>③ 見える範囲</h3>
-        <p>手が届くのは、全社共通のデータ、自分の組織とその下の組織のデータ、それに「担当先」の組織とその下の組織のデータです。</p>
+        <p>手が届くのは、全社のデータ、自分の組織とその下の組織のデータ、それに「担当先」の組織とその下の組織のデータです。</p>
       </div>
       <div class="face">
         <div class="sym perm">権</div>
@@ -360,16 +360,16 @@ footer { font-size: 12.5px; color: var(--muted); }
       <div class="rule">
         <h3><span class="sym" style="background:var(--common-soft);color:var(--common)">物</span>データの所属先</h3>
         <ul>
-          <li>1 つの組織か「全社共通」。製品・原材料・物質で同じ決まり</li>
-          <li>作るときの既定は、システム設定で選ぶ（初めは全社共通）</li>
-          <li>全社共通にするには「全社共通のデータを作れる」権限が要る。無い人が作ると自分の組織のものになる</li>
+          <li>1 つの組織か「全社」。製品・原材料・物質で同じ決まり</li>
+          <li>作るときの既定は、システム設定で選ぶ（初めは全社）</li>
+          <li>全社に所属させるには「全社のデータを作れる」権限が要る。無い人が作ると自分の組織のものになる</li>
           <li>所属先を変えるには、元と新しい所属先の両方を直せることが要る</li>
         </ul>
       </div>
       <div class="rule">
         <h3><span class="sym" style="background:var(--reach-soft);color:var(--reach)">範</span>見える範囲</h3>
         <ul>
-          <li>全社共通のデータには、全員の手が届く</li>
+          <li>全社に所属するデータには、全員の手が届く</li>
           <li>自分の組織と、その下の組織（何段下でも）のデータに手が届く。上や横の組織には届かない</li>
           <li>組織に付けた「担当先」の組織とその下にも届く。担当先は、付けた組織の下の組織の人にも効く</li>
           <li>システム設定で「範囲を分けない」にすると、所属先に関係なく全部に届く（製品・原材料と物質で別々に選ぶ。所属先の記録は続く）</li>
@@ -380,7 +380,7 @@ footer { font-size: 12.5px; color: var(--muted); }
         <ul>
           <li>人に直接付けた権限と、所属する組織・その上の組織に付けた権限の足し合わせ</li>
           <li>上の組織に付けた権限を、下の組織だけ外すことはできない</li>
-          <li>「全社共通のデータを作れる」だけは人にしか付けられない</li>
+          <li>「全社のデータを作れる」だけは人にしか付けられない</li>
           <li>組成を見るには「製品を見られる」と「組成を見られる」の両方が要る</li>
         </ul>
       </div>
@@ -395,7 +395,7 @@ footer { font-size: 12.5px; color: var(--muted); }
 (function () {
   var PERM = {
     PV: "製品を見られる", PE: "製品を編集できる", CV: "組成を見られる",
-    SV: "物質を見られる", SE: "物質を編集できる", CC: "全社共通のデータを作れる"
+    SV: "物質を見られる", SE: "物質を編集できる", CC: "全社のデータを作れる"
   };
   // 編集できる権限は、見る権限を含む（いまのシステムと同じ）
   var IMPLIES = { PE: ["PV", "CV"], SE: ["SV"] };
@@ -421,7 +421,7 @@ footer { font-size: 12.5px; color: var(--muted); }
     A: "開発部長です。開発部にいるので、下の開発一課・開発二課のデータにも手が届きます。開発部に付けた「製品を編集できる」で、組成も見て直せます。",
     B: "開発一課と開発二課を兼務する課長です。上の開発部の権限が届くので組成も見て直せますが、開発部そのものの製品 D-01 には手が届きません。",
     C: "品質保証部です。品質保証部に担当先「○○化学」が付いているので、会社のすべてのデータに手が届きます。でも権限は「見る」だけなので、組成は見えず、直せません。",
-    D: "製造部です。手が届くのは製造部と全社共通のデータだけ。組成の権限が無いので、組成は見えません。",
+    D: "製造部です。手が届くのは製造部と全社のデータだけ。組成の権限が無いので、組成は見えません。",
     E: "開発一課です。E さんが足した物質 S-11 は開発一課のものなので、製造部の D さんからは見えません。"
   };
 
@@ -558,7 +558,7 @@ footer { font-size: 12.5px; color: var(--muted); }
     });
     var cg = el("g", { "class": "common", id: "tree-common" });
     cg.appendChild(el("rect", { x: 10, y: 350, width: 780, height: 70, rx: 8 }));
-    cg.appendChild(el("text", { "class": "t", x: 26, y: 374 }, "全社共通（どの組織にも所属しないデータ）"));
+    cg.appendChild(el("text", { "class": "t", x: 26, y: 374 }, "全社に所属するデータ"));
     gOrgs.appendChild(cg);
     chipRow(cg, 26, 386, 740, DATA.filter(function (d) { return d.owner === null; }).map(function (d) { return d.code; }));
     ORDER.forEach(function (id) {
@@ -633,7 +633,7 @@ footer { font-size: 12.5px; color: var(--muted); }
         c.g.classList.toggle("focus", focusCode === d.code);
         c.tip.textContent = r.see ? "見られる" : "見られない：" + r.why.join("、");
       }
-      var ownerText = d.owner === null ? '<span class="chip common">全社共通</span>' : ORGS[d.owner].name;
+      var ownerText = d.owner === null ? '<span class="chip common">全社</span>' : ORGS[d.owner].name;
       var tr = document.createElement("tr");
       if (focusCode === d.code) tr.className = "focus";
       tr.innerHTML = "<td>" + KIND[d.kind] + ' <span class="code">' + d.code + "</span>" + (r.why.length ? '<div class="why">' + r.why.join("／") + "</div>" : "") + "</td><td>" + ownerText + '</td><td class="c">' + mark(r.see) + '</td><td class="c">' + mark(r.comp) + '</td><td class="c">' + mark(r.edit) + "</td>";
@@ -650,7 +650,7 @@ footer { font-size: 12.5px; color: var(--muted); }
     });
     var rl = document.getElementById("reach-list"); rl.innerHTML = "";
     var li0 = document.createElement("li");
-    li0.innerHTML = '<span class="chip common">全社共通</span><span class="from">← 全員</span>';
+    li0.innerHTML = '<span class="chip common">全社</span><span class="from">← 全員</span>';
     rl.appendChild(li0);
     ORDER.forEach(function (id) {
       var why = reach[id] || (openP && openS ? "範囲を分けない設定" : null);
