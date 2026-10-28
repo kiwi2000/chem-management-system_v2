@@ -192,11 +192,11 @@ td .code { font-family: var(--f-mono); font-size: 12.5px; }
 .tree-hint { background: var(--common-soft); color: var(--common); border-radius: 8px; padding: 6px 12px; font-size: 13.5px; font-weight: 700; max-width: none; }
 .tree .chip-g rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 3 3; transition: fill .2s, stroke .2s; }
 .tree .chip-g text { font-family: var(--f-mono); font-size: 11.5px; fill: var(--muted); }
-.tree .chip-g.vis rect { fill: var(--reach); stroke: var(--reach); stroke-dasharray: none; }
-.tree .chip-g.vis text { fill: var(--surface); }
+.tree .chip-g.vis rect { fill: var(--reach-soft); stroke: var(--reach); stroke-dasharray: none; }
+.tree .chip-g.vis text { fill: var(--reach); }
 .tree .chip-g.focus rect { stroke: var(--person); stroke-width: 3; stroke-dasharray: none; }
 .tree .chip-g { cursor: pointer; }
-.legend .lv { border-color: var(--reach); background: var(--reach); border-radius: 8px; }
+.legend .lv { border-color: var(--reach); background: var(--reach-soft); border-radius: 8px; }
 .legend .lh { border-color: var(--line); background: var(--surface); border-style: dashed; border-radius: 8px; }
 tr.focus td { background: var(--person-soft); }
 tbody tr { cursor: pointer; }
@@ -215,16 +215,53 @@ tbody tr { cursor: pointer; }
 .q .ans.right { background: var(--reach-soft); }
 .q .ans.wrong { background: var(--no-soft); }
 .q .ans b { display: block; }
+/* 検討中のこと */
+.pending { background: var(--person-soft); border: 2px solid var(--person); border-radius: 12px; padding: 18px 20px; }
+.pending h2 { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.tag { display: inline-block; background: var(--person); color: var(--surface); font-family: var(--f-body); font-size: 13px; font-weight: 700; padding: 1px 10px; border-radius: 999px; letter-spacing: .04em; }
+.tag.sm { font-size: 11px; padding: 0 8px; margin-left: 6px; vertical-align: 1px; }
+.pending-list { margin: 0; padding-left: 1.4em; display: grid; gap: 12px; }
+.pending-list li { padding-left: 4px; }
+.pending-list b { display: block; font-family: var(--f-display); font-size: 15.5px; }
+.pending-list span { display: block; font-size: 14px; color: var(--ink); max-width: 72ch; }
+.pending-list em { display: inline-block; font-style: normal; font-weight: 700; color: var(--person); margin-left: 4px; }
+.tree .org.view rect.box { fill: var(--surface); stroke: var(--reach); stroke-width: 2; stroke-dasharray: 6 4; }
+.tree .chip-g.edit rect { fill: var(--reach); stroke: var(--reach); stroke-dasharray: none; }
+.tree .chip-g.edit text { fill: var(--surface); }
+.legend .lw { border-color: var(--reach); background: var(--surface); border-style: dashed; }
+.legend .le { border-color: var(--reach); background: var(--reach); border-radius: 8px; }
 footer { font-size: 12.5px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">化学物質管理システム　組織管理の仕様案（2026-10-28）</div>
+    <div class="eyebrow">化学物質管理システム　組織管理の仕様案（2026-10-29 時点）</div>
     <h1>組織管理のしくみ</h1>
     <p class="lead">誰が、どの製品・原材料・物質に、何をできるのか。それを決めるのが組織管理です。組織には 4 つの役目があり、それが組み合わさって決まります。</p>
   </header>
+
+  <section class="pending" aria-labelledby="s0">
+    <h2 id="s0"><span class="tag">検討中</span>まだ決まっていないこと</h2>
+    <ol class="pending-list">
+      <li>
+        <b>「全社のデータを作れる」権限を残すか</b>
+        <span>いちばん上の組織（全社）にデータを所属させるには、この権限が要る、という決まりです。いちばん上の組織にいる人の中でも、権限を持つ人だけが全社のデータを作れます。<em>おすすめ：残す</em></span>
+      </li>
+      <li>
+        <b>担当先より上の組織を、見るだけにするか</b>
+        <span>担当先は自分の組織と同じに扱うので、担当先とその下は直せます。担当先より上も、自分の組織と同じく見るだけにするかどうかです。<em>おすすめ：見るだけ（この図はおすすめどおりに描いています）</em></span>
+      </li>
+      <li>
+        <b>新しく入れる会社の既定（範囲を分けるか）</b>
+        <span>テスト環境には「範囲を分けない」で入れます。新しく入れる会社の既定は「分ける」のまま、と受け取っています。<em>確認待ち</em></span>
+      </li>
+      <li>
+        <b>起きたら考えること：原材料のマスタ担当者に、全部の組成が見えてしまう</b>
+        <span>全社の原材料を直す人は、いちばん上の組織に所属します。原材料を直すには「製品を編集できる」が要り、いまの決まりではそれに「組成を見られる」が付いてくるので、全部の製品の組成が見えます（例の F さん）。候補は「製品を編集できる」から組成を外すか、原材料と製品で編集の権限を分けることです。<em>困ったときに決める</em></span>
+      </li>
+    </ol>
+  </section>
 
   <section aria-labelledby="s1">
     <h2 id="s1">考え方は 1 つだけ</h2>
@@ -260,12 +297,12 @@ footer { font-size: 12.5px; color: var(--muted); }
       <div class="face">
         <div class="sym data">物</div>
         <h3>② データの所属先</h3>
-        <p>製品・原材料・物質は、1 つの組織か、「全社」のどちらかに所属します。</p>
+        <p>製品・原材料・物質は、必ずどれか 1 つの組織に所属します。いちばん上の組織が「全社」で、そこに所属するデータは全員から見えます。</p>
       </div>
       <div class="face">
         <div class="sym reach">範</div>
         <h3>③ 見える範囲</h3>
-        <p>手が届くのは、全社のデータ、自分の組織とその下の組織のデータ、それに「担当先」の組織とその下の組織のデータです。</p>
+        <p>自分の組織とその下は<b>見て直せます</b>。上の組織は<b>見るだけ</b>。横の組織には届きません。組織に付けた「担当先」は、自分の組織と同じに扱います。</p>
       </div>
       <div class="face">
         <div class="sym perm">権</div>
@@ -279,7 +316,7 @@ footer { font-size: 12.5px; color: var(--muted); }
     <h2 id="s3">例で確かめる</h2>
     <ol class="howto" aria-label="使い方">
       <li><b>人を押す</b>その人の目で会社を見たときの図に変わります</li>
-      <li><b>緑を見る</b>緑の組織に手が届き、緑のデータを見られます</li>
+      <li><b>色を見る</b>濃い緑は見て直せる、薄い緑は見るだけ、灰色は届かない</li>
       <li><b>スイッチを切る</b>「範囲を分けない」会社だとどうなるかが分かります</li>
     </ol>
     <div class="example" id="example">
@@ -299,7 +336,7 @@ footer { font-size: 12.5px; color: var(--muted); }
       </div>
 
       <div class="tree-scroll">
-        <svg class="tree" id="tree" viewBox="0 0 800 432" role="img" aria-label="例の会社の組織の図。○○化学の下に開発部・製造部・品質保証部、開発部の下に開発一課・開発二課がある">
+        <svg class="tree" id="tree" viewBox="0 0 800 340" role="img" aria-label="例の会社の組織の図。いちばん上の○○化学（全社）の下に開発部・製造部・品質保証部、開発部の下に開発一課・開発二課がある">
           <defs>
             <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path class="arrowhead" d="M0 0 L10 5 L0 10 z"/>
@@ -307,15 +344,17 @@ footer { font-size: 12.5px; color: var(--muted); }
           </defs>
           <path class="edge" d="M410 88 V108 M180 108 H675 M180 108 V128 M410 108 V128 M675 108 V128"/>
           <path class="edge" d="M180 200 V220 M97 220 H275 M97 220 V240 M275 220 V240"/>
-          <path class="assign" d="M735 128 C 775 70, 640 36, 489 46" marker-end="url(#arr)"/>
-          <text class="assign-label" x="596" y="80">担当先</text>
+          <path class="assign" d="M735 128 C 775 70, 690 36, 564 46" marker-end="url(#arr)"/>
+          <text class="assign-label" x="636" y="84">担当先</text>
           <g id="tree-orgs"></g>
         </svg>
       </div>
       <div class="legend">
         <span><i class="lm"></i>選んだ人の所属</span>
-        <span><i class="lr"></i>手が届く組織</span>
-        <span><i class="lv"></i>見られるデータ</span>
+        <span><i class="lr"></i>見て直せる組織</span>
+        <span><i class="lw"></i>見るだけの組織</span>
+        <span><i class="le"></i>見て直せるデータ</span>
+        <span><i class="lv"></i>見るだけのデータ</span>
         <span><i class="lh"></i>見られないデータ</span>
         <span><i class="lp"></i>紫の字は組織に付けた権限</span>
       </div>
@@ -355,24 +394,27 @@ footer { font-size: 12.5px; color: var(--muted); }
           <li>ふつう 1 つ。兼務なら複数の組織に所属できる</li>
           <li>複数に所属すると、権限も範囲も全部の組織の分の足し合わせになる</li>
           <li>異動は所属を付け替えるだけ。組織の権限も一緒に入れ替わる</li>
+          <li>上の組織のデータも直したい人は、上の組織にも所属させる（その下の横の組織も見えて直せるようになる）</li>
+          <li>お知らせの宛先も、この組織を使う</li>
         </ul>
       </div>
       <div class="rule">
         <h3><span class="sym" style="background:var(--common-soft);color:var(--common)">物</span>データの所属先</h3>
         <ul>
-          <li>1 つの組織か「全社」。製品・原材料・物質で同じ決まり</li>
-          <li>作るときの既定は、システム設定で選ぶ（初めは全社）</li>
-          <li>全社に所属させるには「全社のデータを作れる」権限が要る。無い人が作ると自分の組織のものになる</li>
+          <li>必ず 1 つの組織に所属する。いちばん上の組織が「全社」。製品・原材料・物質で同じ決まり</li>
+          <li>作るときの既定は、システム設定で「全社」か「作った人の所属先」を選ぶ（初めは全社）</li>
+          <li>全社に所属させるには「全社のデータを作れる」権限が要る。無い人が作ると自分の組織のものになる<span class="tag sm">検討中</span></li>
           <li>所属先を変えるには、元と新しい所属先の両方を直せることが要る</li>
         </ul>
       </div>
       <div class="rule">
         <h3><span class="sym" style="background:var(--reach-soft);color:var(--reach)">範</span>見える範囲</h3>
         <ul>
-          <li>全社に所属するデータには、全員の手が届く</li>
-          <li>自分の組織と、その下の組織（何段下でも）のデータに手が届く。上や横の組織には届かない</li>
-          <li>組織に付けた「担当先」の組織とその下にも届く。担当先は、付けた組織の下の組織の人にも効く</li>
-          <li>システム設定で「範囲を分けない」にすると、所属先に関係なく全部に届く（製品・原材料と物質で別々に選ぶ。所属先の記録は続く）</li>
+          <li>自分の組織と、その下の組織（何段下でも）のデータは見て直せる</li>
+          <li>上の組織（全社まで）のデータは見るだけ。直すと、それを使っている横の組織に影響が出るため</li>
+          <li>横の組織のデータには届かない</li>
+          <li>組織に付けた「担当先」とその下は、自分の組織と同じに扱う。担当先は、付けた組織の下の組織の人にも効く。担当先より上は見るだけ<span class="tag sm">検討中</span></li>
+          <li>システム設定で「範囲を分けない」にすると、所属先に関係なく、権限どおりに全部を見て直せる（製品・原材料と物質で別々に選ぶ。所属先の記録は続く）</li>
         </ul>
       </div>
       <div class="rule">
@@ -401,7 +443,7 @@ footer { font-size: 12.5px; color: var(--muted); }
   var IMPLIES = { PE: ["PV", "CV"], SE: ["SV"] };
 
   var ORGS = {
-    root: { name: "○○化学", parent: null, perms: ["SV"], assigned: [], x: 335, y: 16, w: 150 },
+    root: { name: "○○化学（全社）", parent: null, perms: ["SV"], assigned: [], x: 260, y: 16, w: 300 },
     dev:  { name: "開発部", parent: "root", perms: ["PE"], assigned: [], x: 105, y: 128, w: 150 },
     mfg:  { name: "製造部", parent: "root", perms: ["PV"], assigned: [], x: 335, y: 128, w: 150 },
     qa:   { name: "品質保証部", parent: "root", perms: ["PV"], assigned: ["root"], x: 590, y: 128, w: 170 },
@@ -411,24 +453,26 @@ footer { font-size: 12.5px; color: var(--muted); }
   var ORDER = ["root", "dev", "mfg", "qa", "dev1", "dev2"];
 
   var PEOPLE = [
-    { id: "A", label: "A さん（開発部長）", orgs: ["dev"], own: ["CC"] },
+    { id: "A", label: "A さん（開発部長）", orgs: ["dev"], own: [] },
     { id: "B", label: "B さん（課長・兼務）", orgs: ["dev1", "dev2"], own: [] },
     { id: "C", label: "C さん（品質保証）", orgs: ["qa"], own: [] },
     { id: "D", label: "D さん（製造）", orgs: ["mfg"], own: [] },
-    { id: "E", label: "E さん（開発一課）", orgs: ["dev1"], own: ["SE"] }
+    { id: "E", label: "E さん（開発一課）", orgs: ["dev1"], own: ["SE"] },
+    { id: "F", label: "F さん（資材管理）", orgs: ["root"], own: ["PE", "SE", "CC"] }
   ];
   var NOTES = {
-    A: "開発部長です。開発部にいるので、下の開発一課・開発二課のデータにも手が届きます。開発部に付けた「製品を編集できる」で、組成も見て直せます。",
-    B: "開発一課と開発二課を兼務する課長です。上の開発部の権限が届くので組成も見て直せますが、開発部そのものの製品 D-01 には手が届きません。",
-    C: "品質保証部です。品質保証部に担当先「○○化学」が付いているので、会社のすべてのデータに手が届きます。でも権限は「見る」だけなので、組成は見えず、直せません。",
-    D: "製造部です。手が届くのは製造部と全社のデータだけ。組成の権限が無いので、組成は見えません。",
-    E: "開発一課です。E さんが足した物質 S-11 は開発一課のものなので、製造部の D さんからは見えません。"
+    A: "開発部長です。開発部と、その下の開発一課・開発二課は見て直せます。上の○○化学（全社）のデータは見るだけ。製造部・品質保証部は横なので届きません。",
+    B: "開発一課と開発二課を兼務する課長です。両方の課は見て直せます。上の開発部の製品 D-01 と全社のデータは見えますが、直せません。直させたいときは、開発部にも所属させます。",
+    C: "品質保証部です。担当先「○○化学」が付いているので、会社のすべてのデータを自分の組織と同じに扱えます。でも権限は「製品を見られる」だけなので、見るだけで、組成も見えません。",
+    D: "製造部です。製造部のデータと、上の全社のデータが見えます（全社のものは見るだけ）。開発部と品質保証部は横なので届きません。組成の権限が無いので、組成は見えません。",
+    E: "開発一課です。自分の課の物質 S-11 も、上の開発部から届く権限で製品 D1-01 も直せます。全社の物質 S-01 は見るだけです。",
+    F: "資材管理の担当で、全社の原材料を直すために、いちばん上の○○化学に所属しています。すべてを見て直せますが、「製品を編集できる」に「組成を見られる」が付いてくるので、全部の製品の組成まで見えます（検討中の 4 番目）。"
   };
 
   var DATA = [
-    { code: "C-01", kind: "product", owner: null },
-    { code: "R-01", kind: "material", owner: null },
-    { code: "S-01", kind: "substance", owner: null },
+    { code: "C-01", kind: "product", owner: "root" },
+    { code: "R-01", kind: "material", owner: "root" },
+    { code: "S-01", kind: "substance", owner: "root" },
     { code: "D-01", kind: "product", owner: "dev" },
     { code: "D1-01", kind: "product", owner: "dev1" },
     { code: "S-11", kind: "substance", owner: "dev1" },
@@ -439,14 +483,18 @@ footer { font-size: 12.5px; color: var(--muted); }
   var KIND = { product: "製品", material: "原材料", substance: "物質" };
 
   var QUIZ = [
-    { who: "B", ask: "B さんは、上の開発部の製品 D-01 を見られる？", yes: false, code: "D-01",
-      why: "手が届くのは、自分の組織とその下の組織だけです。上の開発部には届きません（権限は上から届きますが、データは届きません）。" },
+    { who: "B", ask: "B さんは、上の開発部の製品 D-01 を直せる？", yes: false, code: "D-01",
+      why: "上の組織のデータは見えますが、直せません。直すと、同じものを使っている横の組織に影響が出るからです。直させたいときは、B さんを開発部にも所属させます。" },
+    { who: "D", ask: "D さんは、全社の原材料 R-01 を見られる？", yes: true, code: "R-01",
+      why: "全社はいちばん上の組織です。上の組織のデータは、下の全員から見えます（見るだけ）。" },
     { who: "C", ask: "C さんは、開発一課の製品 D1-01 の組成を見られる？", yes: false, code: "D1-01",
       why: "担当先のおかげで製品には手が届きますが、C さんには「組成を見られる」権限がありません。組成は、範囲と権限の両方がそろったときだけ見えます。" },
     { who: "E", ask: "E さんは、開発一課の製品 D1-01 を直せる？", yes: true, code: "D1-01",
       why: "E さん本人に付いているのは物質の権限だけですが、上の開発部に付けた「製品を編集できる」が届きます。" },
+    { who: "A", ask: "A さんは、製造部の製品 M-01 を見られる？", yes: false, code: "M-01",
+      why: "製造部は開発部から見て横の組織なので、部長でも届きません。上と下には届きますが、横には届きません。" },
     { who: "D", ask: "D さんは、E さんが足した物質 S-11 を見られる？", yes: false, code: "S-11",
-      why: "S-11 は開発一課のものなので、製造部の D さんには届きません。少しすると物質のスイッチが切れます（範囲を分けない）。そうすると見られるようになります。", after: { substance: false } }
+      why: "S-11 は開発一課のもので、製造部から見て横の枝にあるので届きません。少しすると物質のスイッチが切れます（範囲を分けない）。そうすると見られるようになります。", after: { substance: false } }
   ];
 
   var SVGNS = "http://www.w3.org/2000/svg";
@@ -479,20 +527,26 @@ footer { font-size: 12.5px; color: var(--muted); }
     });
     return map;
   }
-  // 範囲：所属する組織とその下 ＋ 所属する組織・その上の組織に付けた担当先とその下
+  /*
+    範囲。直せる組織 ＝ 所属する組織とその下 ＋ 担当先（所属する組織・その上の組織に付けたもの）とその下。
+    見るだけの組織 ＝ 直せる組織の上にある組織。横の組織には届かない
+  */
   function reachOf(p) {
-    var map = {};
-    function add(id, why) { if (!map[id]) map[id] = why; }
-    p.orgs.forEach(function (m) { add(m, "所属"); });
-    p.orgs.forEach(function (m) { descendantsOrSelf(m).forEach(function (d) { add(d, "所属する組織の下"); }); });
+    var edit = {}, view = {};
+    function addEdit(id, why) { if (!edit[id]) edit[id] = why; }
+    p.orgs.forEach(function (m) { addEdit(m, "所属"); });
+    p.orgs.forEach(function (m) { descendantsOrSelf(m).forEach(function (d) { addEdit(d, "所属する組織の下"); }); });
     p.orgs.forEach(function (m) {
       ancestorsOrSelf(m).forEach(function (a) {
         ORGS[a].assigned.forEach(function (t) {
-          descendantsOrSelf(t).forEach(function (d) { add(d, ORGS[a].name + "の担当先"); });
+          descendantsOrSelf(t).forEach(function (d) { addEdit(d, ORGS[a].name + "の担当先"); });
         });
       });
     });
-    return map;
+    Object.keys(edit).forEach(function (id) {
+      ancestorsOrSelf(id).forEach(function (a) { if (!edit[a] && !view[a]) view[a] = "上の組織"; });
+    });
+    return { edit: edit, view: view };
   }
 
   var swP = document.getElementById("sw-product"), swS = document.getElementById("sw-substance");
@@ -501,19 +555,17 @@ footer { font-size: 12.5px; color: var(--muted); }
   // 1 件のデータについて、できることと、できない理由
   function judge(d, perms, reach) {
     var split = d.kind === "substance" ? swS.checked : swP.checked;
-    var inReach = d.owner === null || !split || !!reach[d.owner];
+    var level = !split || reach.edit[d.owner] ? "edit" : reach.view[d.owner] ? "view" : null;
     var r = { why: [] }, lack = [];
-    if (!inReach) r.why.push("範囲の外（所属先に手が届かない）");
-    if (d.kind === "substance") {
-      r.see = inReach && !!perms.SV; r.comp = null; r.edit = inReach && !!perms.SE;
-      if (inReach && !perms.SV) lack.push("見る");
-      if (inReach && !perms.SE) lack.push("直す");
-    } else {
-      r.see = inReach && !!perms.PV; r.comp = r.see && !!perms.CV; r.edit = inReach && !!perms.PE;
-      if (inReach && !perms.PV) lack.push("見る");
-      if (r.see && !perms.CV) lack.push("組成を見る");
-      if (inReach && !perms.PE) lack.push("直す");
-    }
+    var vp = d.kind === "substance" ? "SV" : "PV", ep = d.kind === "substance" ? "SE" : "PE";
+    r.see = !!level && !!perms[vp];
+    r.edit = level === "edit" && !!perms[ep];
+    r.comp = d.kind === "substance" ? null : r.see && !!perms.CV;
+    if (!level) r.why.push("範囲の外（横の組織）");
+    if (level && !perms[vp]) lack.push("見る");
+    if (r.see && d.kind !== "substance" && !perms.CV) lack.push("組成を見る");
+    if (level === "view" && perms[ep]) r.why.push("上の組織のデータは見るだけ");
+    else if (level && !perms[ep]) lack.push("直す");
     if (lack.length) r.why.push("権限が無い：" + lack.join("・"));
     return r;
   }
@@ -556,11 +608,6 @@ footer { font-size: 12.5px; color: var(--muted); }
       var bottom = chipRow(g, o.x + 10, o.y + 46, o.w - 20, codes);
       if (bottom) g.firstChild.setAttribute("height", Math.max(72, bottom - o.y + 9));
     });
-    var cg = el("g", { "class": "common", id: "tree-common" });
-    cg.appendChild(el("rect", { x: 10, y: 350, width: 780, height: 70, rx: 8 }));
-    cg.appendChild(el("text", { "class": "t", x: 26, y: 374 }, "全社に所属するデータ"));
-    gOrgs.appendChild(cg);
-    chipRow(cg, 26, 386, 740, DATA.filter(function (d) { return d.owner === null; }).map(function (d) { return d.code; }));
     ORDER.forEach(function (id) {
       var o = ORGS[id], i = 0;
       PEOPLE.forEach(function (p) {
@@ -595,7 +642,7 @@ footer { font-size: 12.5px; color: var(--muted); }
   function render() {
     var p = PEOPLE.filter(function (x) { return x.id === current; })[0];
     var perms = permsOf(p), reach = reachOf(p);
-    var openP = !swP.checked, openS = !swS.checked;
+    var openP = !swP.checked, openS = !swS.checked, openAll = openP && openS;
 
     PEOPLE.forEach(function (x) {
       document.getElementById("person-" + x.id).setAttribute("aria-pressed", x.id === current ? "true" : "false");
@@ -614,29 +661,30 @@ footer { font-size: 12.5px; color: var(--muted); }
     var openKinds = [openP ? "製品・原材料" : "", openS ? "物質" : ""].filter(Boolean);
     hint.hidden = openKinds.length === 0;
     hint.textContent = openKinds.length === 2
-      ? "範囲を分けていないので、どの組織のデータにも手が届きます。できることは権限だけで決まります。"
-      : openKinds.length === 1 ? openKinds[0] + "は範囲を分けていないので、どの組織の" + openKinds[0] + "にも手が届きます。" : "";
+      ? "範囲を分けていないので、どの組織のデータにも手が届きます。見る・直すは権限だけで決まります。"
+      : openKinds.length === 1 ? openKinds[0] + "は範囲を分けていないので、どの組織の" + openKinds[0] + "も、権限どおりに見て直せます。" : "";
 
     ORDER.forEach(function (id) {
       var g = document.getElementById("org-" + id);
-      g.classList.toggle("reach", !!reach[id] || (openP && openS));
+      var editable = !!reach.edit[id] || openAll;
+      g.classList.toggle("reach", editable);
+      g.classList.toggle("view", !editable && !!reach.view[id]);
       g.classList.toggle("member", p.orgs.indexOf(id) >= 0);
     });
-    document.getElementById("tree-common").classList.add("reach");
 
     var rows = document.getElementById("data-rows"); rows.innerHTML = "";
     DATA.forEach(function (d) {
       var r = judge(d, perms, reach);
       var c = chipEls[d.code];
       if (c) {
-        c.g.classList.toggle("vis", !!r.see);
+        c.g.classList.toggle("edit", !!r.edit);
+        c.g.classList.toggle("vis", !!r.see && !r.edit);
         c.g.classList.toggle("focus", focusCode === d.code);
-        c.tip.textContent = r.see ? "見られる" : "見られない：" + r.why.join("、");
+        c.tip.textContent = r.edit ? "見て直せる" : r.see ? "見るだけ" + (r.why.length ? "：" + r.why.join("、") : "") : "見られない：" + r.why.join("、");
       }
-      var ownerText = d.owner === null ? '<span class="chip common">全社</span>' : ORGS[d.owner].name;
       var tr = document.createElement("tr");
       if (focusCode === d.code) tr.className = "focus";
-      tr.innerHTML = "<td>" + KIND[d.kind] + ' <span class="code">' + d.code + "</span>" + (r.why.length ? '<div class="why">' + r.why.join("／") + "</div>" : "") + "</td><td>" + ownerText + '</td><td class="c">' + mark(r.see) + '</td><td class="c">' + mark(r.comp) + '</td><td class="c">' + mark(r.edit) + "</td>";
+      tr.innerHTML = "<td>" + KIND[d.kind] + ' <span class="code">' + d.code + "</span>" + (r.why.length ? '<div class="why">' + r.why.join("／") + "</div>" : "") + "</td><td>" + ORGS[d.owner].name + '</td><td class="c">' + mark(r.see) + '</td><td class="c">' + mark(r.comp) + '</td><td class="c">' + mark(r.edit) + "</td>";
       tr.addEventListener("click", function () { focusOn(d.code); });
       rows.appendChild(tr);
     });
@@ -649,14 +697,12 @@ footer { font-size: 12.5px; color: var(--muted); }
       pl.appendChild(li);
     });
     var rl = document.getElementById("reach-list"); rl.innerHTML = "";
-    var li0 = document.createElement("li");
-    li0.innerHTML = '<span class="chip common">全社</span><span class="from">← 全員</span>';
-    rl.appendChild(li0);
     ORDER.forEach(function (id) {
-      var why = reach[id] || (openP && openS ? "範囲を分けない設定" : null);
+      var editWhy = reach.edit[id] || (openAll ? "範囲を分けない設定" : null);
+      var why = editWhy || reach.view[id];
       if (!why) return;
       var li = document.createElement("li");
-      li.innerHTML = '<span class="chip reach">' + ORGS[id].name + '</span><span class="from">← ' + why + "</span>";
+      li.innerHTML = '<span class="chip ' + (editWhy ? "reach" : "common") + '">' + ORGS[id].name + '</span><span class="from">' + (editWhy ? "見て直せる" : "見るだけ") + " ← " + why + "</span>";
       rl.appendChild(li);
     });
   }
