@@ -123,6 +123,8 @@ section { display: grid; gap: 18px; }
 .tree .org .data { font-family: var(--f-mono); font-size: 11.5px; fill: var(--muted); }
 .tree .org .operm { font-size: 11px; fill: var(--perm); }
 .tree .edge { stroke: var(--line); stroke-width: 2; fill: none; }
+.tree .org .oassign { font-size: 11px; fill: var(--reach); font-weight: 700; }
+.people.companies button { padding: 4px 14px; }
 .tree .assign { stroke: var(--reach); stroke-width: 2; fill: none; stroke-dasharray: 6 5; }
 .tree .assign-label { fill: var(--reach); font-size: 12px; font-weight: 700; }
 .tree .arrowhead { fill: var(--reach); }
@@ -325,6 +327,13 @@ footer { font-size: 12.5px; color: var(--muted); }
         <span class="label">人を選ぶ</span>
         <div class="people" id="people" role="group" aria-label="人を選ぶ"></div>
       </div>
+      <div class="controls">
+        <span class="label">会社の形</span>
+        <div class="people companies" role="group" aria-label="会社の形">
+          <button type="button" id="co-1">会社 1：開発部の全員が製造部全体を見る</button>
+          <button type="button" id="co-2">会社 2：課ごとに担当を分ける</button>
+        </div>
+      </div>
       <p class="callout" id="person-note" aria-live="polite"></p>
 
       <div class="tree-head">
@@ -337,16 +346,15 @@ footer { font-size: 12.5px; color: var(--muted); }
       </div>
 
       <div class="tree-scroll">
-        <svg class="tree" id="tree" viewBox="0 0 800 340" role="img" aria-label="例の会社の組織の図。いちばん上の○○化学（全社）の下に開発部・製造部・品質保証部、開発部の下に開発一課・開発二課がある">
+        <svg class="tree" id="tree" viewBox="0 0 960 372" role="img" aria-label="例の会社の組織の図。いちばん上の○○化学（全社）の下に開発部・製造部・品質保証部、開発部の下に開発一課・開発二課、製造部の下に製造一課・製造二課がある">
           <defs>
             <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path class="arrowhead" d="M0 0 L10 5 L0 10 z"/>
             </marker>
           </defs>
-          <path class="edge" d="M410 88 V108 M180 108 H673 M180 108 V128 M410 108 V128 M673 108 V128"/>
-          <path class="edge" d="M180 200 V220 M97 220 H275 M97 220 V240 M275 220 V240"/>
-          <path class="assign" d="M735 128 C 775 70, 690 36, 564 46" marker-end="url(#arr)"/>
-          <text class="assign-label" x="636" y="84">担当先</text>
+          <path class="edge" d="M480 88 V108 M191 108 H833 M191 108 V128 M555 108 V128 M833 108 V128"/>
+          <path class="edge" d="M191 200 V240 M101 240 H282 M101 240 V260 M282 240 V260"/>
+          <path class="edge" d="M555 200 V240 M470 240 H640 M470 240 V260 M640 240 V260"/>
           <g id="tree-orgs"></g>
         </svg>
       </div>
@@ -397,7 +405,7 @@ footer { font-size: 12.5px; color: var(--muted); }
           <li>複数に所属すると、権限も範囲も全部の組織の分の足し合わせになる</li>
           <li>異動は所属を付け替えるだけ。組織の権限も一緒に入れ替わる</li>
           <li>上の組織のデータも直したい人は、上の組織にも所属させる（その下の横の組織も見えて直せるようになる）</li>
-          <li>お知らせの宛先も、この組織を使う</li>
+          <li>お知らせの宛先も、この組織を使う。宛先の組織とその下の組織の人に届く</li>
         </ul>
       </div>
       <div class="rule">
@@ -406,7 +414,7 @@ footer { font-size: 12.5px; color: var(--muted); }
           <li>必ず 1 つの組織に所属する。いちばん上の組織が「全社」。製品・原材料・物質で同じ決まり</li>
           <li>作るときの既定は、システム設定で「全社」か「作った人の所属先」を選ぶ（初めは全社）</li>
           <li>全社に所属させるには「全社のデータを作れる」権限が要る。無い人が作ると自分の組織のものになる<span class="tag sm">検討中</span></li>
-          <li>所属先を変えるには、元と新しい所属先の両方を直せることが要る</li>
+          <li>所属先を移せる先は、自分が所属する組織とその下だけ（担当先へは移せない。課の人が部長から製品を隠せないように）。元の所属先も直せることが要る</li>
         </ul>
       </div>
       <div class="rule">
@@ -415,7 +423,7 @@ footer { font-size: 12.5px; color: var(--muted); }
           <li>自分の組織と、その下の組織（何段下でも）のデータは見て直せる</li>
           <li>上の組織（全社まで）のデータは見るだけ。直すと、それを使っている横の組織に影響が出るため</li>
           <li>横の組織のデータには届かない</li>
-          <li>組織に付けた「担当先」とその下は、自分の組織と同じに扱う。担当先は、付けた組織の下の組織の人にも効く。担当先より上は見るだけ<span class="tag sm">検討中</span></li>
+          <li>組織に付けた「担当先」とその下は、自分の組織と同じに扱う。担当先は、付けた組織に所属する人だけに効く（下の組織の人には効かない）。担当先より上は見るだけ<span class="tag sm">検討中</span></li>
           <li>システム設定で「範囲を分けない」にすると、所属先に関係なく、権限どおりに全部を見て直せる（製品・原材料と物質で別々に選ぶ。所属先の記録は続く）</li>
         </ul>
       </div>
@@ -429,7 +437,7 @@ footer { font-size: 12.5px; color: var(--muted); }
         </ul>
       </div>
     </div>
-    <p class="note">組成を見られない人には、組成の表・添付ファイル・判定の内訳（どの成分で当たったか）・組成を載せた帳票やデータの出力を出しません。製品として該当する法規制は見せますが、法文物質名は見せません。組成の中に、自分の手が届かない原材料・物質があるときは、その行のコード・CAS 番号・名前を伏せ、含有率だけを出して「見せられない成分があります」と表示します。</p>
+    <p class="note">組成を見られない人には、組成の表・添付ファイル・判定の内訳（どの成分で当たったか）・組成を載せた帳票やデータの出力を出しません。製品として該当する法規制は見せますが、法文物質名は見せません。組成の中に、自分の手が届かない原材料・物質があるときは、その行のコード・CAS 番号・名前を伏せ、含有率だけを出して「見せられない成分があります」と表示します。その製品を直せる人も、伏せた行は消すことも変えることもできません。</p>
   </section>
 
   <footer>この図は仕様案の説明用の例です。会社名・組織・人・データはすべて架空です。</footer>
@@ -445,30 +453,45 @@ footer { font-size: 12.5px; color: var(--muted); }
   var IMPLIES = { PE: ["PV", "CV"], SE: ["SV"] };
 
   var ORGS = {
-    root: { name: "○○化学（全社）", parent: null, perms: ["SV"], assigned: [], x: 260, y: 16, w: 300 },
-    dev:  { name: "開発部", parent: "root", perms: ["PE"], assigned: [], x: 105, y: 128, w: 150 },
-    mfg:  { name: "製造部", parent: "root", perms: ["PV"], assigned: [], x: 335, y: 128, w: 150 },
-    qa:   { name: "品質保証部", parent: "root", perms: ["PE", "SE"], assigned: ["root"], x: 552, y: 128, w: 242 },
-    dev1: { name: "開発一課", parent: "dev", perms: [], assigned: [], x: 10, y: 240, w: 175 },
-    dev2: { name: "開発二課", parent: "dev", perms: [], assigned: [], x: 195, y: 240, w: 160 }
+    root: { name: "○○化学（全社）", parent: null, perms: ["SV"], x: 330, y: 16, w: 300 },
+    dev:  { name: "開発部", parent: "root", perms: ["PE"], x: 116, y: 128, w: 150 },
+    mfg:  { name: "製造部", parent: "root", perms: ["PV"], x: 480, y: 128, w: 150 },
+    qa:   { name: "品質保証部", parent: "root", perms: ["PE", "SE"], x: 712, y: 128, w: 242 },
+    dev1: { name: "開発一課", parent: "dev", perms: [], x: 6, y: 260, w: 190 },
+    dev2: { name: "開発二課", parent: "dev", perms: [], x: 204, y: 260, w: 156 },
+    mfg1: { name: "製造一課", parent: "mfg", perms: [], x: 392, y: 260, w: 156 },
+    mfg2: { name: "製造二課", parent: "mfg", perms: [], x: 562, y: 260, w: 156 }
   };
-  var ORDER = ["root", "dev", "mfg", "qa", "dev1", "dev2"];
+  var ORDER = ["root", "dev", "mfg", "qa", "dev1", "dev2", "mfg1", "mfg2"];
+
+  // 会社の形ごとの担当先。担当先は、付けた組織に所属する人だけに効く（下の組織の人には効かない）
+  var COMPANIES = {
+    1: { qa: ["root"], dev: ["mfg"], dev1: ["mfg"], dev2: ["mfg"] },
+    2: { qa: ["root"], dev: ["mfg"], dev1: ["mfg1"], dev2: ["mfg2"] }
+  };
+  function assignedOf(id) { return COMPANIES[company][id] || []; }
 
   var PEOPLE = [
     { id: "A", label: "A さん（開発部長）", orgs: ["dev"], own: [] },
     { id: "B", label: "B さん（課長・兼務）", orgs: ["dev1", "dev2"], own: [] },
     { id: "C", label: "C さん（品質保証）", orgs: ["qa"], own: [] },
-    { id: "D", label: "D さん（製造）", orgs: ["mfg"], own: [] },
+    { id: "D", label: "D さん（製造部）", orgs: ["mfg"], own: [] },
     { id: "E", label: "E さん（開発一課）", orgs: ["dev1"], own: ["SE"] },
-    { id: "F", label: "F さん（資材管理）", orgs: ["root"], own: ["PE", "SE", "CC"] }
+    { id: "F", label: "F さん（資材管理）", orgs: ["root"], own: ["PE", "SE", "CC"] },
+    { id: "G", label: "G さん（開発二課）", orgs: ["dev2"], own: [] }
   ];
   var NOTES = {
-    A: "開発部長です。開発部と、その下の開発一課・開発二課は見て直せます。上の○○化学（全社）のデータは見るだけ。製造部・品質保証部は横なので届きません。",
-    B: "開発一課と開発二課を兼務する課長です。両方の課は見て直せます。上の開発部の製品 D-01 と全社のデータは見えますが、直せません。直させたいときは、開発部にも所属させます。",
+    A: { 1: "開発部長です。開発部とその下の課は見て直せます。開発部に付けた担当先「製造部」で、製造部と製造一課・製造二課も直せる範囲に入ります。上の全社のデータは見るだけです。",
+         2: "開発部長です。開発部とその下の課は見て直せます。開発部に付けた担当先「製造部」は、開発部に所属する A さんにだけ効き、製造部と製造一課・製造二課の両方に届きます。" },
+    B: { 1: "開発一課と開発二課を兼務する課長です。両方の課と、課に付けた担当先「製造部」の全体が直せる範囲です。上の開発部の製品 D-01 は見るだけです。",
+         2: "開発一課と開発二課を兼務する課長です。両方の課に所属しているので、両方の担当先（製造一課・製造二課）に届きます。上の開発部の製品 D-01 は見るだけです。" },
     C: "品質保証部です。担当先「○○化学」が付いているので、会社のすべてのデータが直せる範囲に入ります。品質保証部に付けた「製品を編集できる」「物質を編集できる」で、全部の製品と物質を見て直せ、組成も見られます。",
-    D: "製造部です。製造部のデータと、上の全社のデータが見えます（全社のものは見るだけ）。開発部と品質保証部は横なので届きません。組成の権限が無いので、組成は見えません。",
-    E: "開発一課です。自分の課の物質 S-11 も、上の開発部から届く権限で製品 D1-01 も直せます。全社の物質 S-01 は見るだけです。",
-    F: "資材管理の担当で、全社の原材料を直すために、いちばん上の○○化学に所属しています。すべてを見て直せますが、「製品を編集できる」に「組成を見られる」が付いてくるので、全部の製品の組成まで見えます（検討中の 4 番目）。"
+    D: "製造部です。製造部と、その下の製造一課・製造二課の製品が見えます。全社のデータは見るだけ。開発部・品質保証部は横なので届きません。組成の権限が無いので、組成は見えません。",
+    E: { 1: "開発一課です。開発一課と、担当先の製造部（製造一課・製造二課も）が直せる範囲です。自分の課の物質 S-11 も、上の開発部から届く権限で製品も直せます。",
+         2: "開発一課です。開発一課と、担当先の製造一課が直せる範囲です。製造二課には届きません。製造部そのものの製品 M-01 は、担当先より上なので見るだけです。" },
+    F: "資材管理の担当で、全社の原材料を直すために、いちばん上の○○化学に所属しています。すべてを見て直せますが、「製品を編集できる」に「組成を見られる」が付いてくるので、全部の製品の組成まで見えます（検討中の 4 番目）。",
+    G: { 1: "開発二課です。開発二課と、担当先の製造部全体が直せる範囲です。開発一課は横なので届きません。",
+         2: "開発二課です。開発二課と、担当先の製造二課が直せる範囲です。開発一課が担当する製造一課の製品は見られません。開発部に付けた担当先「製造部」は、開発部に所属する人にしか効かないからです。" }
   };
 
   var DATA = [
@@ -480,6 +503,8 @@ footer { font-size: 12.5px; color: var(--muted); }
     { code: "S-11", kind: "substance", owner: "dev1" },
     { code: "D2-01", kind: "product", owner: "dev2" },
     { code: "M-01", kind: "product", owner: "mfg" },
+    { code: "M1-01", kind: "product", owner: "mfg1" },
+    { code: "M2-01", kind: "product", owner: "mfg2" },
     { code: "Q-01", kind: "product", owner: "qa" }
   ];
   var KIND = { product: "製品", material: "原材料", substance: "物質" };
@@ -495,8 +520,10 @@ footer { font-size: 12.5px; color: var(--muted); }
       why: "自分の組織の製品なので範囲には入りますが、D さんには「組成を見られる」権限がありません。組成は、範囲と権限の両方がそろったときだけ見えます。" },
     { who: "E", ask: "E さんは、開発一課の製品 D1-01 を直せる？", yes: true, code: "D1-01",
       why: "E さん本人に付いているのは物質の権限だけですが、上の開発部に付けた「製品を編集できる」が届きます。" },
-    { who: "A", ask: "A さんは、製造部の製品 M-01 を見られる？", yes: false, code: "M-01",
-      why: "製造部は開発部から見て横の組織なので、部長でも届きません。上と下には届きますが、横には届きません。" },
+    { who: "G", company: 2, ask: "会社 2 で、G さん（開発二課）は製造一課の製品 M1-01 を見られる？", yes: false, code: "M1-01",
+      why: "開発二課の担当先は製造二課だけです。開発部に付けた担当先「製造部」は、開発部に所属する人（部長）にしか効かず、下の課の人には効きません。" },
+    { who: "A", company: 2, ask: "会社 2 で、開発部長の A さんは製造二課の製品 M2-01 を見られる？", yes: true, code: "M2-01",
+      why: "開発部に付けた担当先「製造部」は、開発部に所属する A さんに効きます。担当先は、その下の製造一課・製造二課にも届きます。" },
     { who: "D", ask: "D さんは、E さんが足した物質 S-11 を見られる？", yes: false, code: "S-11",
       why: "S-11 は開発一課のもので、製造部から見て横の枝にあるので届きません。少しすると物質のスイッチが切れます（範囲を分けない）。そうすると見られるようになります。", after: { substance: false } }
   ];
@@ -515,7 +542,7 @@ footer { font-size: 12.5px; color: var(--muted); }
     return r;
   }
 
-  // 権限：人に直接 ＋ 所属する組織とその上の組織に付けた権限
+  // 権限：人に直接 ＋ 所属する組織とその上の組織に付けた権限（組織の権限は下の組織の人にも効く）
   function permsOf(p) {
     var map = {};
     function add(code, from) {
@@ -532,7 +559,8 @@ footer { font-size: 12.5px; color: var(--muted); }
     return map;
   }
   /*
-    範囲。直せる組織 ＝ 所属する組織とその下 ＋ 担当先（所属する組織・その上の組織に付けたもの）とその下。
+    範囲。直せる組織 ＝ 所属する組織とその下 ＋ 所属する組織に付けた担当先とその下
+    （担当先は、付けた組織に所属する人だけに効く。上の組織の担当先は受け取らない）。
     見るだけの組織 ＝ 直せる組織の上にある組織。横の組織には届かない
   */
   function reachOf(p) {
@@ -541,10 +569,8 @@ footer { font-size: 12.5px; color: var(--muted); }
     p.orgs.forEach(function (m) { addEdit(m, "所属"); });
     p.orgs.forEach(function (m) { descendantsOrSelf(m).forEach(function (d) { addEdit(d, "所属する組織の下"); }); });
     p.orgs.forEach(function (m) {
-      ancestorsOrSelf(m).forEach(function (a) {
-        ORGS[a].assigned.forEach(function (t) {
-          descendantsOrSelf(t).forEach(function (d) { addEdit(d, ORGS[a].name + "の担当先"); });
-        });
+      assignedOf(m).forEach(function (t) {
+        descendantsOrSelf(t).forEach(function (d) { addEdit(d, ORGS[m].name + "の担当先"); });
       });
     });
     Object.keys(edit).forEach(function (id) {
@@ -554,7 +580,7 @@ footer { font-size: 12.5px; color: var(--muted); }
   }
 
   var swP = document.getElementById("sw-product"), swS = document.getElementById("sw-substance");
-  var current = "A", focusCode = null, afterTimer = null;
+  var current = "A", company = 1, focusCode = null, afterTimer = null;
 
   // 1 件のデータについて、できることと、できない理由
   function judge(d, perms, reach) {
@@ -604,13 +630,17 @@ footer { font-size: 12.5px; color: var(--muted); }
     ORDER.forEach(function (id) {
       var o = ORGS[id];
       var g = el("g", { "class": "org", id: "org-" + id });
-      g.appendChild(el("rect", { "class": "box", x: o.x, y: o.y, width: o.w, height: 72, rx: 8 }));
-      g.appendChild(el("text", { "class": "name", x: o.x + 12, y: o.y + 22 }, o.name));
-      if (o.perms.length) g.appendChild(el("text", { "class": "operm", x: o.x + 12, y: o.y + 39 }, "権限：" + o.perms.map(function (c) { return PERM[c]; }).join("・")));
+      var box = el("rect", { "class": "box", x: o.x, y: o.y, width: o.w, height: 72, rx: 8 });
+      g.appendChild(box);
+      var line = o.y + 22;
+      g.appendChild(el("text", { "class": "name", x: o.x + 12, y: line }, o.name));
+      if (o.perms.length) { line += 17; g.appendChild(el("text", { "class": "operm", x: o.x + 12, y: line }, "権限：" + o.perms.map(function (c) { return PERM[c]; }).join("・"))); }
+      var asg = assignedOf(id);
+      if (asg.length) { line += 17; g.appendChild(el("text", { "class": "oassign", x: o.x + 12, y: line }, "担当先：" + asg.map(function (t) { return ORGS[t].name; }).join("・"))); }
       gOrgs.appendChild(g);
       var codes = DATA.filter(function (d) { return d.owner === id; }).map(function (d) { return d.code; });
-      var bottom = chipRow(g, o.x + 10, o.y + 46, o.w - 20, codes);
-      if (bottom) g.firstChild.setAttribute("height", Math.max(72, bottom - o.y + 9));
+      var bottom = chipRow(g, o.x + 10, line + 8, o.w - 20, codes);
+      box.setAttribute("height", Math.max(72, (bottom || line + 6) - o.y + 9));
     });
     ORDER.forEach(function (id) {
       var o = ORGS[id], i = 0;
@@ -639,6 +669,10 @@ footer { font-size: 12.5px; color: var(--muted); }
     peopleBox.appendChild(b);
   });
   function select(id) { current = id; focusCode = null; render(); }
+  function setCompany(n) { company = n; buildTree(); render(); }
+  [1, 2].forEach(function (n) {
+    document.getElementById("co-" + n).addEventListener("click", function () { setCompany(n); });
+  });
   swP.addEventListener("change", render); swS.addEventListener("change", render);
 
   function mark(ok) { return ok === null ? '<span class="na">—</span>' : ok ? '<span class="ok" aria-label="できる">○</span>' : '<span class="ng" aria-label="できない">×</span>'; }
@@ -652,9 +686,11 @@ footer { font-size: 12.5px; color: var(--muted); }
       document.getElementById("person-" + x.id).setAttribute("aria-pressed", x.id === current ? "true" : "false");
       (badgeEls[x.id] || []).forEach(function (b) { b.classList.toggle("on", x.id === current); });
     });
+    [1, 2].forEach(function (n) { document.getElementById("co-" + n).setAttribute("aria-pressed", n === company ? "true" : "false"); });
     // 吹き出しの先を、選んだ人のボタンに向ける
     var note = document.getElementById("person-note");
-    note.textContent = NOTES[p.id];
+    var n = NOTES[p.id];
+    note.textContent = typeof n === "string" ? n : n[company];
     var btnNow = document.getElementById("person-" + p.id);
     var tipX = btnNow.getBoundingClientRect().left - note.getBoundingClientRect().left + 12;
     note.style.setProperty("--tip", Math.max(12, Math.min(tipX, note.clientWidth - 24)) + "px");
@@ -733,7 +769,9 @@ footer { font-size: 12.5px; color: var(--muted); }
       ans.innerHTML = "<b>" + (right ? "正解" : "ちがいます") + "。答えは「" + (q.yes ? "はい" : "いいえ") + "」</b>" + q.why;
       if (afterTimer) clearTimeout(afterTimer);
       swP.checked = true; swS.checked = true;
-      current = q.who; focusCode = q.code; render();
+      current = q.who; focusCode = q.code;
+      if ((q.company || 1) !== company) { company = q.company || 1; buildTree(); }
+      render();
       var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
       document.getElementById("example").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
       if (q.after && q.after.substance === false) {
