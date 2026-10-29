@@ -343,7 +343,7 @@ footer { font-size: 12.5px; color: var(--muted); }
               <path class="arrowhead" d="M0 0 L10 5 L0 10 z"/>
             </marker>
           </defs>
-          <path class="edge" d="M410 88 V108 M180 108 H675 M180 108 V128 M410 108 V128 M675 108 V128"/>
+          <path class="edge" d="M410 88 V108 M180 108 H676 M180 108 V128 M410 108 V128 M676 108 V128"/>
           <path class="edge" d="M180 200 V220 M97 220 H275 M97 220 V240 M275 220 V240"/>
           <path class="assign" d="M735 128 C 775 70, 690 36, 564 46" marker-end="url(#arr)"/>
           <text class="assign-label" x="636" y="84">担当先</text>
@@ -448,7 +448,7 @@ footer { font-size: 12.5px; color: var(--muted); }
     root: { name: "○○化学（全社）", parent: null, perms: ["SV"], assigned: [], x: 260, y: 16, w: 300 },
     dev:  { name: "開発部", parent: "root", perms: ["PE"], assigned: [], x: 105, y: 128, w: 150 },
     mfg:  { name: "製造部", parent: "root", perms: ["PV"], assigned: [], x: 335, y: 128, w: 150 },
-    qa:   { name: "品質保証部", parent: "root", perms: ["PE"], assigned: ["root"], x: 590, y: 128, w: 170 },
+    qa:   { name: "品質保証部", parent: "root", perms: ["PE", "SV"], assigned: ["root"], x: 562, y: 128, w: 228 },
     dev1: { name: "開発一課", parent: "dev", perms: [], assigned: [], x: 10, y: 240, w: 175 },
     dev2: { name: "開発二課", parent: "dev", perms: [], assigned: [], x: 195, y: 240, w: 160 }
   };
