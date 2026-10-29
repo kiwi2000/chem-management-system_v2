@@ -4,7 +4,7 @@ import type { Messages } from "./i18n/ja";
 /**
  * グループの用途。
  * NEWS = ホームのお知らせを見出しで区切るための分類
- * ORG  = 組織の所属（○○部 など）
+ * ORG  = 使っていない。組織の所属は「組織」へ移した（2026-08-30）。表の値に合わせて残してある
  */
 export const GROUP_KINDS = ["NEWS", "ORG"] as const;
 export type GroupKind = (typeof GROUP_KINDS)[number];
