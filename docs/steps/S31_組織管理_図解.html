@@ -230,6 +230,7 @@ tbody tr { cursor: pointer; }
 .tree .chip-g.edit text { fill: var(--surface); }
 .legend .lw { border-color: var(--reach); background: var(--surface); border-style: dashed; }
 .legend .le { border-color: var(--reach); background: var(--reach); border-radius: 8px; }
+.gap { font-size: 13px; color: var(--person); background: var(--person-soft); border-radius: 8px; padding: 4px 10px; max-width: none; }
 footer { font-size: 12.5px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -316,7 +317,7 @@ footer { font-size: 12.5px; color: var(--muted); }
     <h2 id="s3">例で確かめる</h2>
     <ol class="howto" aria-label="使い方">
       <li><b>人を押す</b>その人の目で会社を見たときの図に変わります</li>
-      <li><b>色を見る</b>濃い緑は見て直せる、薄い緑は見るだけ、灰色は届かない</li>
+      <li><b>色を見る</b>組織の色は範囲（濃い緑は直せる範囲、点線は見るだけ）。データの印は、権限まで合わせた結果</li>
       <li><b>スイッチを切る</b>「範囲を分けない」会社だとどうなるかが分かります</li>
     </ol>
     <div class="example" id="example">
@@ -351,8 +352,8 @@ footer { font-size: 12.5px; color: var(--muted); }
       </div>
       <div class="legend">
         <span><i class="lm"></i>選んだ人の所属</span>
-        <span><i class="lr"></i>見て直せる組織</span>
-        <span><i class="lw"></i>見るだけの組織</span>
+        <span><i class="lr"></i>直せる範囲の組織</span>
+        <span><i class="lw"></i>見るだけの範囲の組織</span>
         <span><i class="le"></i>見て直せるデータ</span>
         <span><i class="lv"></i>見るだけのデータ</span>
         <span><i class="lh"></i>見られないデータ</span>
@@ -364,6 +365,7 @@ footer { font-size: 12.5px; color: var(--muted); }
           <h3>持っている権限 <span class="k perm">何ができるか</span></h3>
           <ul class="plain" id="perm-list"></ul>
           <h3>手が届く組織 <span class="k reach">どのデータか</span></h3>
+          <p class="gap" id="reach-gap" hidden></p>
           <ul class="plain" id="reach-list"></ul>
         </div>
         <div class="panel">
@@ -446,7 +448,7 @@ footer { font-size: 12.5px; color: var(--muted); }
     root: { name: "○○化学（全社）", parent: null, perms: ["SV"], assigned: [], x: 260, y: 16, w: 300 },
     dev:  { name: "開発部", parent: "root", perms: ["PE"], assigned: [], x: 105, y: 128, w: 150 },
     mfg:  { name: "製造部", parent: "root", perms: ["PV"], assigned: [], x: 335, y: 128, w: 150 },
-    qa:   { name: "品質保証部", parent: "root", perms: ["PV"], assigned: ["root"], x: 590, y: 128, w: 170 },
+    qa:   { name: "品質保証部", parent: "root", perms: ["PE"], assigned: ["root"], x: 590, y: 128, w: 170 },
     dev1: { name: "開発一課", parent: "dev", perms: [], assigned: [], x: 10, y: 240, w: 175 },
     dev2: { name: "開発二課", parent: "dev", perms: [], assigned: [], x: 195, y: 240, w: 160 }
   };
@@ -463,7 +465,7 @@ footer { font-size: 12.5px; color: var(--muted); }
   var NOTES = {
     A: "開発部長です。開発部と、その下の開発一課・開発二課は見て直せます。上の○○化学（全社）のデータは見るだけ。製造部・品質保証部は横なので届きません。",
     B: "開発一課と開発二課を兼務する課長です。両方の課は見て直せます。上の開発部の製品 D-01 と全社のデータは見えますが、直せません。直させたいときは、開発部にも所属させます。",
-    C: "品質保証部です。担当先「○○化学」が付いているので、会社のすべてのデータを自分の組織と同じに扱えます。でも権限は「製品を見られる」だけなので、見るだけで、組成も見えません。",
+    C: "品質保証部です。担当先「○○化学」が付いているので、会社のすべてのデータが直せる範囲に入ります。品質保証部に付けた「製品を編集できる」で、全部の製品を見て直せ、組成も見られます。物質は「物質を編集できる」が無いので見るだけです。",
     D: "製造部です。製造部のデータと、上の全社のデータが見えます（全社のものは見るだけ）。開発部と品質保証部は横なので届きません。組成の権限が無いので、組成は見えません。",
     E: "開発一課です。自分の課の物質 S-11 も、上の開発部から届く権限で製品 D1-01 も直せます。全社の物質 S-01 は見るだけです。",
     F: "資材管理の担当で、全社の原材料を直すために、いちばん上の○○化学に所属しています。すべてを見て直せますが、「製品を編集できる」に「組成を見られる」が付いてくるので、全部の製品の組成まで見えます（検討中の 4 番目）。"
@@ -487,8 +489,10 @@ footer { font-size: 12.5px; color: var(--muted); }
       why: "上の組織のデータは見えますが、直せません。直すと、同じものを使っている横の組織に影響が出るからです。直させたいときは、B さんを開発部にも所属させます。" },
     { who: "D", ask: "D さんは、全社の原材料 R-01 を見られる？", yes: true, code: "R-01",
       why: "全社はいちばん上の組織です。上の組織のデータは、下の全員から見えます（見るだけ）。" },
-    { who: "C", ask: "C さんは、開発一課の製品 D1-01 の組成を見られる？", yes: false, code: "D1-01",
-      why: "担当先のおかげで製品には手が届きますが、C さんには「組成を見られる」権限がありません。組成は、範囲と権限の両方がそろったときだけ見えます。" },
+    { who: "C", ask: "C さんは、開発一課の製品 D1-01 の組成を見られる？", yes: true, code: "D1-01",
+      why: "担当先「○○化学」で開発一課も直せる範囲に入り、品質保証部に付けた「製品を編集できる」には「組成を見られる」が付いてきます。範囲と権限の両方がそろうので見られます。" },
+    { who: "D", ask: "D さんは、製造部の製品 M-01 の組成を見られる？", yes: false, code: "M-01",
+      why: "自分の組織の製品なので範囲には入りますが、D さんには「組成を見られる」権限がありません。組成は、範囲と権限の両方がそろったときだけ見えます。" },
     { who: "E", ask: "E さんは、開発一課の製品 D1-01 を直せる？", yes: true, code: "D1-01",
       why: "E さん本人に付いているのは物質の権限だけですが、上の開発部に付けた「製品を編集できる」が届きます。" },
     { who: "A", ask: "A さんは、製造部の製品 M-01 を見られる？", yes: false, code: "M-01",
@@ -697,12 +701,18 @@ footer { font-size: 12.5px; color: var(--muted); }
       pl.appendChild(li);
     });
     var rl = document.getElementById("reach-list"); rl.innerHTML = "";
+    // 範囲は直せても、編集の権限が無ければ見るだけ。範囲と結果の食い違いをここで言っておく
+    var noEdit = !perms.PE && !perms.SE ? "編集の権限が無いので、直せる範囲の中でも見るだけです。"
+      : !perms.PE ? "「製品を編集できる」が無いので、製品・原材料は直せる範囲の中でも見るだけです。"
+      : !perms.SE ? "「物質を編集できる」が無いので、物質は直せる範囲の中でも見るだけです。" : "";
+    var gap = document.getElementById("reach-gap");
+    gap.hidden = !noEdit; gap.textContent = noEdit;
     ORDER.forEach(function (id) {
       var editWhy = reach.edit[id] || (openAll ? "範囲を分けない設定" : null);
       var why = editWhy || reach.view[id];
       if (!why) return;
       var li = document.createElement("li");
-      li.innerHTML = '<span class="chip ' + (editWhy ? "reach" : "common") + '">' + ORGS[id].name + '</span><span class="from">' + (editWhy ? "見て直せる" : "見るだけ") + " ← " + why + "</span>";
+      li.innerHTML = '<span class="chip ' + (editWhy ? "reach" : "common") + '">' + ORGS[id].name + '</span><span class="from">' + (editWhy ? "直せる範囲" : "見るだけの範囲") + " ← " + why + "</span>";
       rl.appendChild(li);
     });
   }
