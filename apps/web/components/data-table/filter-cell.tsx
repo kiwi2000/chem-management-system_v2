@@ -51,9 +51,17 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
     印だけを全部外して見せる。**ここから1つ入れると、その1つだけで絞る。閉じたら元に戻す
   */
   const [enumNone, setEnumNone] = useState(false);
+  /*
+    選択肢の小窓の探す欄に文字が入っているか（2026-10-30）。**絞っていない（＝すべて）ときに探したら、
+    残った選択肢は印を外して見せる。**そこで「すべて選択」を押すと、探した分だけで絞れる
+    （「A社」と打って押せば A社の人だけ）。印を付けたまま見せると、押したときに「外す」が働き、
+    探した分**以外**で絞られてしまった
+  */
+  const [enumSearching, setEnumSearching] = useState(false);
   const closeEnum = useCallback(() => {
     setEnumOpen(false);
     setEnumNone(false);
+    setEnumSearching(false);
   }, []);
   /*
     「印だけ全部外す」をやめるのは、**選んだ条件が届いてから**（2026-10-30）。
@@ -224,7 +232,8 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
       付けたので、見た目と意味をそろえた。それまでは全部外れて見えていた）。
       「すべて選択」を外した直後だけは、全部外れて見せる
     */
-    const enumChecked = (v: string) => (selected.length === 0 ? !enumNone : selected.includes(v));
+    const enumChecked = (v: string) =>
+      selected.length === 0 ? !enumNone && !enumSearching : selected.includes(v);
 
     /*
       ボタンの並び。**押すと対象になり、色が決まっていればその色が付く。**
@@ -300,6 +309,7 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
               options={options}
               isChecked={enumChecked}
               onToggle={toggle}
+              onSearchingChange={setEnumSearching}
               onSelectAll={(shown) => {
                 const base = selected.length === 0 ? [] : selected;
                 const next = [...base, ...shown.filter((v) => !base.includes(v))];

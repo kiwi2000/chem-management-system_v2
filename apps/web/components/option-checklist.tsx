@@ -21,6 +21,7 @@ export function OptionChecklist({
   onToggle,
   onSelectAll,
   onClearAll,
+  onSearchingChange,
   size = "xs",
 }: {
   options: { value: string; label: string }[];
@@ -30,6 +31,8 @@ export function OptionChecklist({
   onSelectAll: (shown: string[]) => void;
   /** 見えている選択肢を全部外す */
   onClearAll: (shown: string[]) => void;
+  /** 探す欄に文字が入っているかが変わったとき（見せ方を変えたい呼び出し側のため） */
+  onSearchingChange?: (searching: boolean) => void;
   /** 文字の大きさ。表の絞り込みは xs、入力画面は sm */
   size?: "xs" | "sm";
 }) {
@@ -46,7 +49,10 @@ export function OptionChecklist({
       <div className="relative mb-1">
         <ImeInput
           value={query}
-          onValueChange={setQuery}
+          onValueChange={(next) => {
+            setQuery(next);
+            onSearchingChange?.(next.trim() !== "");
+          }}
           aria-label={m.table.optionSearch}
           placeholder={m.table.optionSearch}
           className={cn("h-8 pr-7", text)}
