@@ -12,17 +12,18 @@ import {
   splitNumericTokens,
   splitTextTokens,
 } from "@chem/shared";
-import { Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useOutsideClose } from "@/lib/use-outside-close";
 import { ImeInput, ImeTextarea } from "./ime-field";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
-import { SelectAllCheckbox, selectAllState } from "@/components/select-all-checkbox";
+import { OptionChecklist } from "@/components/option-checklist";
 import { Button } from "@/components/ui/button";
 import type { TableColumn } from "./types";
 
 const selectClass = "border-input bg-background h-8 w-20 shrink-0 rounded-none border px-1 text-xs";
+/** 選択肢の小窓。どの列でも同じ形にする（中身は OptionChecklist） */
+const popupClass = "bg-background absolute z-20 mt-1 min-w-64 rounded-md border p-2 shadow-md";
 
 interface Props<T> {
   column: TableColumn<T>;
@@ -42,10 +43,9 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
   // 選択肢の小窓。外側のクリックと Esc で閉じる
   const [enumOpen, setEnumOpen] = useState(false);
   /*
-    小窓の中の絞り込み（2026-09-17 指示）。**選択肢が多い列（規制区分）で、
-    目当ての区分まで送らずに済むようにする。**閉じるたびに空へ戻す
+    小窓の中の探す欄（2026-09-17 指示。2026-10-30 に選択肢の小窓すべてへ広げた）は
+    `OptionChecklist` が持つ。小窓を閉じるとその部品ごと消えるので、打った文字は空へ戻る
   */
-  const [optionQuery, setOptionQuery] = useState("");
   /*
     選択肢の小窓で「すべて選択」を外した直後（2026-10-16）。**絞らない（＝すべて）状態のまま、
     印だけを全部外して見せる。**ここから1つ入れると、その1つだけで絞る。閉じたら元に戻す
@@ -53,9 +53,17 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
   const [enumNone, setEnumNone] = useState(false);
   const closeEnum = useCallback(() => {
     setEnumOpen(false);
-    setOptionQuery("");
     setEnumNone(false);
   }, []);
+  /*
+    「印だけ全部外す」をやめるのは、**選んだ条件が届いてから**（2026-10-30）。
+    条件は URL を書き換えて届くので少し遅れる。押した瞬間にやめると、届くまでのあいだ
+    「絞らない（＝全部に印）」が見えてしまい、一瞬全部に印が付いてから1つに減っていた
+  */
+  const selectedEnumKey = value?.kind === "enum" ? value.values.join("|") : "";
+  useEffect(() => {
+    if (selectedEnumKey !== "") setEnumNone(false);
+  }, [selectedEnumKey]);
   const enumBoxRef = useOutsideClose<HTMLDivElement>(enumOpen, closeEnum);
   useEffect(() => {
     if (appliedOp) setPickedOp(appliedOp);
@@ -89,8 +97,6 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
     */
     if (column.options) {
       const options = column.options;
-      const q = optionQuery.trim().toLowerCase();
-      const shown = q === "" ? options : options.filter((o) => o.label.toLowerCase().includes(q));
       const toggle = (v: string, checked: boolean) => {
         const next = checked ? [...appliedValues, v] : appliedValues.filter((x) => x !== v);
         onChange(next.length > 0 ? { kind: "list", op: mode, values: next } : undefined);
@@ -115,64 +121,25 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
               {label}
             </button>
             {enumOpen && (
-              <div className="bg-background absolute z-20 min-w-64 rounded-md border p-2 shadow-md">
-                {/* 探す欄は上に固定し、下の一覧だけを送る */}
-                <div className="relative mb-1">
-                  <ImeInput
-                    value={optionQuery}
-                    onValueChange={setOptionQuery}
-                    aria-label={m.table.optionSearch}
-                    placeholder={m.table.optionSearch}
-                    className="h-8 pr-7 text-xs"
-                  />
-                  <Search className="text-muted-foreground pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2" />
-                </div>
-                {/*
-                  「すべて選択」は**いま見えている選択肢**に効く（探す欄で絞っていれば、絞った分だけ）。
-                  見えていない選択肢の選択はそのまま残す
-                */}
-                {shown.length > 0 && (
-                  <SelectAllCheckbox
-                    className="mb-1 text-xs"
-                    label={m.table.checkAll}
-                    state={selectAllState(
-                      shown.filter((o) => appliedValues.includes(o.value)).length,
-                      shown.length,
-                    )}
-                    onSelectAll={() => {
-                      const next = [
-                        ...appliedValues,
-                        ...shown.map((o) => o.value).filter((v) => !appliedValues.includes(v)),
-                      ];
-                      onChange({ kind: "list", op: mode, values: next });
-                    }}
-                    onClearAll={() => {
-                      const off = new Set(shown.map((o) => o.value));
-                      const next = appliedValues.filter((v) => !off.has(v));
-                      onChange(
-                        next.length > 0 ? { kind: "list", op: mode, values: next } : undefined,
-                      );
-                    }}
-                  />
-                )}
-                <div className="max-h-64 space-y-1 overflow-y-auto">
-                  {shown.length === 0 ? (
-                    <p className="text-muted-foreground px-1 py-2 text-xs">
-                      {m.table.optionSearchEmpty}
-                    </p>
-                  ) : (
-                    shown.map((o) => (
-                      <label key={o.value} className="flex items-center gap-2 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={appliedValues.includes(o.value)}
-                          onChange={(e) => toggle(o.value, e.target.checked)}
-                        />
-                        {o.label}
-                      </label>
-                    ))
-                  )}
-                </div>
+              <div className={popupClass}>
+                <OptionChecklist
+                  options={options}
+                  isChecked={(v) => appliedValues.includes(v)}
+                  onToggle={toggle}
+                  onSelectAll={(shown) => {
+                    const next = [
+                      ...appliedValues,
+                      ...shown.filter((v) => !appliedValues.includes(v)),
+                    ];
+                    onChange({ kind: "list", op: mode, values: next });
+                  }}
+                  onClearAll={(shown) => {
+                    const next = appliedValues.filter((v) => !shown.includes(v));
+                    onChange(
+                      next.length > 0 ? { kind: "list", op: mode, values: next } : undefined,
+                    );
+                  }}
+                />
               </div>
             )}
           </div>
@@ -242,7 +209,7 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
      * 全部選ばれた状態と、1つも選ばれていない状態は、どちらも「絞らない」に落とす。
      */
     const toggle = (value_: string, checked: boolean) => {
-      setEnumNone(false);
+      // 「印だけ全部外す」は、ここではやめない（条件が届いてからやめる。上の useEffect）
       if (selected.length === 0) {
         const only = checked ? [value_] : options.map((o) => o.value).filter((v) => v !== value_);
         onChange(only.length === 0 ? undefined : { kind: "enum", values: only });
@@ -324,27 +291,34 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
           {label}
         </button>
         {enumOpen && (
-          <div className="bg-background absolute z-20 mt-1 min-w-40 space-y-1 rounded-md border p-2 shadow-md">
-            <SelectAllCheckbox
-              className="text-xs"
-              label={m.table.checkAll}
-              state={selected.length === 0 ? (enumNone ? "none" : "all") : "some"}
-              onSelectAll={() => {
+          <div className={popupClass}>
+            {/*
+              「すべて選択」は見えている選択肢だけに効く（探す欄で「A社」と打てば A社の人だけ）。
+              選んだ結果が全部になったら「絞らない」に、1つも無くなったら「印だけ全部外す」に落とす
+            */}
+            <OptionChecklist
+              options={options}
+              isChecked={enumChecked}
+              onToggle={toggle}
+              onSelectAll={(shown) => {
+                const base = selected.length === 0 ? [] : selected;
+                const next = [...base, ...shown.filter((v) => !base.includes(v))];
                 setEnumNone(false);
-                onChange(undefined);
+                onChange(
+                  next.length >= options.length ? undefined : { kind: "enum", values: next },
+                );
               }}
-              onClearAll={() => setEnumNone(true)}
+              onClearAll={(shown) => {
+                const base = selected.length === 0 ? options.map((o) => o.value) : selected;
+                const next = base.filter((v) => !shown.includes(v));
+                if (next.length === 0) {
+                  setEnumNone(true);
+                  onChange(undefined);
+                  return;
+                }
+                onChange({ kind: "enum", values: next });
+              }}
             />
-            {options.map((o) => (
-              <label key={o.value} className="flex items-center gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={enumChecked(o.value)}
-                  onChange={(e) => toggle(o.value, e.target.checked)}
-                />
-                {o.label}
-              </label>
-            ))}
           </div>
         )}
       </div>
