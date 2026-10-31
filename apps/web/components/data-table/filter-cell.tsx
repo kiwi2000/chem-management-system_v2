@@ -215,17 +215,25 @@ export function FilterCell<T>({ column, value, onChange }: Props<T>) {
      * （入れたら「それだけ」、外したら「それ以外」。
      * 全部選ばれている扱いにして足すと、逆に全部に印が付いてしまう）
      * 全部選ばれた状態と、1つも選ばれていない状態は、どちらも「絞らない」に落とす。
+     * 1つも選ばれていないほうは、「すべて選択」で全部外したときと同じく印を全部外して見せる
+     * （2026-10-31。最後の1つを外した瞬間に全部へ印が付いていた）。
      */
     const toggle = (value_: string, checked: boolean) => {
       // 「印だけ全部外す」は、ここではやめない（条件が届いてからやめる。上の useEffect）
-      if (selected.length === 0) {
-        const only = checked ? [value_] : options.map((o) => o.value).filter((v) => v !== value_);
-        onChange(only.length === 0 ? undefined : { kind: "enum", values: only });
+      const next =
+        selected.length === 0
+          ? checked
+            ? [value_]
+            : options.map((o) => o.value).filter((v) => v !== value_)
+          : checked
+            ? [...selected, value_]
+            : selected.filter((v) => v !== value_);
+      if (next.length === 0) {
+        setEnumNone(true);
+        onChange(undefined);
         return;
       }
-      const next = checked ? [...selected, value_] : selected.filter((v) => v !== value_);
-      const all = next.length === 0 || next.length === options.length;
-      onChange(all ? undefined : { kind: "enum", values: next });
+      onChange(next.length === options.length ? undefined : { kind: "enum", values: next });
     };
     /*
       印の付けかた。**絞っていない（＝すべて）ときは全部に印を付ける**（2026-10-16。「すべて選択」を

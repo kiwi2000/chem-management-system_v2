@@ -79,7 +79,7 @@ export function useTableState(
     （ページ送りを置いていないので、切れたぶんに手が届かなくなる）
   */
   const wantsPreferred = fallback.pageSize === DEFAULT_PAGE_SIZE;
-  const state = useMemo(
+  const urlState = useMemo(
     () =>
       parseTableState(ownParams, columnDefs, {
         ...fallback,
@@ -89,6 +89,25 @@ export function useTableState(
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ownParams, columnDefs, prefs.defaultSize, wantsPreferred],
   );
+
+  /*
+    **書き換えた条件は、URL に届くまでここで覚えておき、そちらを返す**（2026-10-31）。
+    URL の書き換えは少し遅れて届く。届く前に次の操作をすると、古い条件から計算して送るので、
+    前の操作が消えていた（ユーザーの絞り込みで、続けて外したチェックが戻った）。
+    URL がこの条件に追いついたら覚えを捨て、以後は URL を正とする
+  */
+  const [pending, setPending] = useState<{ query: string; state: TableState } | null>(null);
+  const ownQuery = sortedQuery(ownParams);
+  useEffect(() => {
+    if (pending && pending.query === ownQuery) setPending(null);
+  }, [pending, ownQuery]);
+  // 戻る・進むで URL が変わったら、覚えていた条件より URL を立てる
+  useEffect(() => {
+    const drop = () => setPending(null);
+    window.addEventListener("popstate", drop);
+    return () => window.removeEventListener("popstate", drop);
+  }, []);
+  const state = pending?.state ?? urlState;
 
   /** 他の表のクエリを残したまま、この表のぶんだけ書き換える */
   const buildUrl = useCallback(
@@ -118,10 +137,13 @@ export function useTableState(
         own.set("size", String(next.pageSize));
       }
       window.localStorage.setItem(storageKey, own.toString());
+      // いまの URL と同じに戻したときは、URL が変わらず追いつきを待てないので覚えない
+      const query = sortedQuery(own);
+      setPending(query === ownQuery ? null : { query, state: next });
       router.push(buildUrl(own), { scroll: false });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [buildUrl, router, storageKey, effectiveSize],
+    [buildUrl, router, storageKey, effectiveSize, ownQuery],
   );
 
   // 条件なしで開かれたときだけ、前回の条件を復元する（1回だけ）
@@ -149,9 +171,17 @@ export function useTableState(
   );
 
   const reset = useCallback(() => {
+    setPending(null);
     window.localStorage.removeItem(storageKey);
     router.replace(buildUrl(new URLSearchParams()), { scroll: false });
   }, [buildUrl, router, storageKey]);
 
   return { state, setState, reset, ready };
+}
+
+/** 並びの違いを無視して比べるための、キー順に並べたクエリ文字列 */
+function sortedQuery(params: URLSearchParams): string {
+  const copy = new URLSearchParams(params);
+  copy.sort();
+  return copy.toString();
 }
