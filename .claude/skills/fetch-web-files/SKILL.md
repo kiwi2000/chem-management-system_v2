@@ -30,11 +30,18 @@ curl -s -o <保存先> -w "%{http_code} %{size_download}\n" -A "Mozilla/5.0 (Win
 2. ページの中で読み込み、大きさと SHA-256 を先に出しておく
 
    ```js
-   const r = await fetch("<URL>"); const buf = new Uint8Array(await r.arrayBuffer());
-   const sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))].map(b => b.toString(16).padStart(2, "0")).join("");
-   let s = ""; for (let i = 0; i < buf.length; i += 8192) s += String.fromCharCode(...buf.subarray(i, i + 8192));
-   window.__caj = btoa(s); ({ status: r.status, size: buf.length, sha })
+   const r = await fetch("<URL>");
+   const buf = new Uint8Array(await r.arrayBuffer());
+   const sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))]
+     .map((b) => b.toString(16).padStart(2, "0"))
+     .join("");
+   let s = "";
+   for (let i = 0; i < buf.length; i += 8192)
+     s += String.fromCharCode(...buf.subarray(i, i + 8192));
+   window.__caj = btoa(s);
+   ({ status: r.status, size: buf.length, sha });
    ```
+
 3. `window.__caj.slice(i, i + 60000)` を順に受け取り、つないで base64 から戻して保存する。保存したファイルの SHA-256 が 2 の値と同じことを確かめる
 4. 終わったら `tabs_close` で自分のタブを閉じる
 
