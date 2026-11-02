@@ -37,6 +37,8 @@ export function ApprovalHistory({
   const [total, setTotal] = useState(0);
   /** 権限が無いときは節ごと出さない（403 が返る） */
   const [forbidden, setForbidden] = useState(false);
+  /** いま出している件数が、絞り込んだときのものか。条件を外した直後は、読み直すまで古い件数が残る */
+  const [loadedFiltering, setLoadedFiltering] = useState(false);
 
   const label = useCallback(
     (action: string) =>
@@ -99,6 +101,7 @@ export function ApprovalHistory({
     DEFAULT_STATE,
   );
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
+  const filtering = Object.keys(state.filters).length > 0;
 
   const load = useCallback(async () => {
     const res = await fetch(
@@ -113,15 +116,19 @@ export function ApprovalHistory({
     const body = (await res.json()) as { items: Event[]; total: number };
     setItems(body.items);
     setTotal(body.total);
-  }, [entity, entityId, query]);
+    setLoadedFiltering(filtering);
+  }, [entity, entityId, query, filtering]);
 
   useEffect(() => {
     if (ready) void load();
   }, [ready, load]);
 
-  // 権限が無いときと、一度も申請されていないときは節ごと出さない
-  const filtering = Object.keys(state.filters).length > 0;
-  if (forbidden || items === null || (total === 0 && !filtering)) return null;
+  /*
+    権限が無いときと、一度も申請されていないときは節ごと出さない。
+    **0 件と分かるのは、絞り込まずに読んだときだけ。**絞り込んで 0 件のまま条件を外すと、
+    読み直すまで「絞り込みなしで 0 件」に見えて表ごと消え、開いていたフィルターの欄も閉じていた（2026-11-02）
+  */
+  if (forbidden || items === null || (total === 0 && !filtering && !loadedFiltering)) return null;
 
   return (
     <DataTable

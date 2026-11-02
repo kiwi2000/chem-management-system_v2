@@ -7,7 +7,7 @@ import {
   type ColumnKind,
   type TableState,
 } from "@chem/shared";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { usePageSizePrefs } from "@/lib/page-size-prefs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -29,7 +29,6 @@ export function useTableState(
   fallback: TableState,
   paramPrefix = "",
 ) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -95,6 +94,12 @@ export function useTableState(
     URL の書き換えは少し遅れて届く。届く前に次の操作をすると、古い条件から計算して送るので、
     前の操作が消えていた（ユーザーの絞り込みで、続けて外したチェックが戻った）。
     URL がこの条件に追いついたら覚えを捨て、以後は URL を正とする
+
+    **URL はブラウザに直接書かせる（`history.pushState`）。`router.push` は使わない**（2026-11-02）。
+    `router.push` を続けて呼ぶと、Next.js が後のほうを捨てることがあり、表は絞れているのに
+    URL だけ古い条件のまま残った（取り込み結果の画面で、文字の条件を 2 つ続けて入れたとき）。
+    一覧の条件はどの画面もサーバー側では読まず、画面がデータを取りに行くので、Next.js を通す必要がない。
+    直接書いても `useSearchParams` には Next.js が届けてくれる
   */
   const [pending, setPending] = useState<{ query: string; state: TableState } | null>(null);
   const ownQuery = sortedQuery(ownParams);
@@ -140,10 +145,10 @@ export function useTableState(
       // いまの URL と同じに戻したときは、URL が変わらず追いつきを待てないので覚えない
       const query = sortedQuery(own);
       setPending(query === ownQuery ? null : { query, state: next });
-      router.push(buildUrl(own), { scroll: false });
+      window.history.pushState(null, "", buildUrl(own));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [buildUrl, router, storageKey, effectiveSize, ownQuery],
+    [buildUrl, storageKey, effectiveSize, ownQuery],
   );
 
   // 条件なしで開かれたときだけ、前回の条件を復元する（1回だけ）
@@ -155,7 +160,7 @@ export function useTableState(
     if (!hasUrlState) {
       const saved = window.localStorage.getItem(storageKey);
       if (saved) {
-        router.replace(buildUrl(new URLSearchParams(saved)), { scroll: false });
+        window.history.replaceState(null, "", buildUrl(new URLSearchParams(saved)));
         setReady(true);
         return;
       }
@@ -163,7 +168,7 @@ export function useTableState(
     setReady(true);
     // buildUrl は searchParams に依存して毎回変わるが、この処理は初回だけ動かす
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasUrlState, storageKey, router]);
+  }, [hasUrlState, storageKey]);
 
   const setState = useCallback(
     (updater: (prev: TableState) => TableState) => write(updater(state)),
@@ -173,8 +178,8 @@ export function useTableState(
   const reset = useCallback(() => {
     setPending(null);
     window.localStorage.removeItem(storageKey);
-    router.replace(buildUrl(new URLSearchParams()), { scroll: false });
-  }, [buildUrl, router, storageKey]);
+    window.history.replaceState(null, "", buildUrl(new URLSearchParams()));
+  }, [buildUrl, storageKey]);
 
   return { state, setState, reset, ready };
 }
