@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { CasLinkTable } from "@/components/cas-link-table";
 import { DataSourceSection } from "@/components/data-source-section";
@@ -26,7 +26,6 @@ import type { LinkVersionSourceDto } from "@/lib/types";
  * `version` は id か "current"、`source` はデータソースの行の id
  */
 export default function ExternalDbPage() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -47,6 +46,9 @@ export default function ExternalDbPage() {
     選んだバージョン × データソースは URL にも書いておく。
     版の切り替わりなどで画面が丸ごと読み直されても、同じ組が選ばれた状態に戻る
     （件数を変えた拍子に USER に戻ってしまい、選び直しになったことがあった）
+
+    URL はブラウザに直接書かせる（一覧の条件と同じ。`lib/use-table-state.ts`）。
+    `router.replace` は続けて呼ぶと後のほうが捨てられることがある
   */
   const onSelectSource = useCallback(
     (row: LinkVersionSourceDto | null) => {
@@ -56,9 +58,9 @@ export default function ExternalDbPage() {
       if (next.get("version") === row.versionId && next.get("source") === row.id) return;
       next.set("version", row.versionId);
       next.set("source", row.id);
-      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+      window.history.replaceState(null, "", `${pathname}?${next.toString()}`);
     },
-    [router, pathname],
+    [pathname],
   );
 
   // 差分モードで比べる相手。URL に載せ、読み直しても同じ比べかたに戻る
@@ -69,9 +71,9 @@ export default function ExternalDbPage() {
       if (id) next.set("against", id);
       else next.delete("against");
       const qs = next.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
     },
-    [router, pathname],
+    [pathname],
   );
 
   return (
