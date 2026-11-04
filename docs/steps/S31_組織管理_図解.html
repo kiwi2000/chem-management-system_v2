@@ -3,12 +3,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>組織管理のしくみ</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap">
 <style>
-/* 縦に読む解説ページ。上から「考え方 → 4 つの関係 → 例で動かす → 決まりの一覧」 */
+/* 縦に読む解説ページ。上から「考え方 → 組織と権限グループ → 人を登録するとき → 権限グループの表 → データの所属先 → 組成の条件 → 例で動かす → 管理者と移し方」 */
 :root {
   --bg: #f3f5f2;
   --surface: #ffffff;
@@ -27,7 +26,6 @@
   --no-soft: #f6dddd;
   --f-display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
   --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
-  --f-mono: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -44,17 +42,8 @@
   --no: #ef8b8b; --no-soft: #432323; color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body {
-  background: var(--bg); color: var(--ink);
-  font-family: var(--f-body); font-size: 15px; line-height: 1.8;
-}
-.wrap {
-  max-width: 980px; margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 40px 64px;
-  display: grid; gap: 56px;
-}
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.8; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 40px 16px 64px; display: grid; gap: 56px; }
 h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.35; margin: 0; }
 h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 900; letter-spacing: .02em; }
 h2 { font-size: 22px; font-weight: 700; }
@@ -63,728 +52,402 @@ p { margin: 0; max-width: 68ch; }
 .eyebrow { font-size: 12px; letter-spacing: .12em; color: var(--muted); font-weight: 700; }
 .lead { color: var(--muted); margin-top: 10px; }
 section { display: grid; gap: 18px; }
-.mono { font-family: var(--f-mono); font-size: .92em; }
+.note { color: var(--muted); font-size: 13px; }
+.scroll { overflow-x: auto; }
 
-/* 考え方：2 つの物差し */
+/* 確認したいこと */
+.pending { background: var(--person-soft); border-radius: 12px; padding: 22px 22px 24px; }
+.tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .08em; background: var(--person); color: var(--surface); border-radius: 4px; padding: 1px 8px; margin-right: 10px; vertical-align: 3px; }
+.pending ol { margin: 0; padding-left: 1.6em; display: grid; gap: 12px; }
+.pending li b { display: block; }
+.pending li span { display: block; color: var(--muted); font-size: 14px; }
+.pending em { font-style: normal; font-weight: 700; color: var(--person); }
+
+/* 考え方 */
 .equation { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; }
 .eq-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.eq-box.person { border-top: 4px solid var(--person); }
 .eq-box.perm { border-top: 4px solid var(--perm); }
-.eq-box.reach { border-top: 4px solid var(--reach); }
 .eq-box.result { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .eq-box .big { font-family: var(--f-display); font-size: 20px; font-weight: 900; }
 .eq-box small { color: var(--muted); font-size: 13px; line-height: 1.6; }
 .eq-box.result small { color: inherit; opacity: .8; }
 .eq-op { font-family: var(--f-display); font-size: 28px; font-weight: 900; color: var(--muted); align-self: center; }
-@media (max-width: 720px) {
-  .equation { grid-template-columns: 1fr; }
-  .eq-op { justify-self: center; line-height: 1; }
-}
+@media (max-width: 720px) { .equation { grid-template-columns: 1fr; } .eq-op { justify-self: center; line-height: 1; } }
 
-/* 4 つの関係 */
-.four { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.face { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; grid-template-columns: 44px 1fr; gap: 4px 14px; }
-.face .sym { grid-row: span 2; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 900; font-size: 18px; }
-.face p { font-size: 14px; color: var(--muted); }
-.sym.person { background: var(--person-soft); color: var(--person); }
-.sym.data { background: var(--common-soft); color: var(--common); }
-.sym.reach { background: var(--reach-soft); color: var(--reach); }
-.sym.perm { background: var(--perm-soft); color: var(--perm); }
-@media (max-width: 720px) { .four { grid-template-columns: 1fr; } }
+/* 組織図とグループ */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 14px; align-content: start; }
+.panel h3 small { font-family: var(--f-body); font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 6px; }
+.tree { display: grid; gap: 14px; }
+.company { display: grid; gap: 8px; }
+.company > .node { justify-self: start; }
+.children { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 22px; border-left: 2px solid var(--line); margin-left: 12px; }
+.node { display: inline-block; border-radius: 6px; padding: 4px 12px; font-weight: 700; font-size: 14px; border: 1px solid var(--line); background: var(--bg); }
+.node.co { background: var(--common-soft); color: var(--common); border-color: transparent; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border-radius: 999px; padding: 4px 14px; font-weight: 700; font-size: 14px; background: var(--reach-soft); color: var(--reach); }
+.chip.all { background: var(--common-soft); color: var(--common); }
 
-/* 例：組織の図 */
-.example { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 18px; }
-.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
-.controls .label { font-size: 13px; color: var(--muted); font-weight: 700; }
-.people { display: flex; flex-wrap: wrap; gap: 8px; }
-.people button {
-  font: inherit; font-size: 14px; cursor: pointer;
-  border: 1.5px solid var(--line); background: var(--bg); color: var(--ink);
-  border-radius: 999px; padding: 4px 14px 4px 6px; display: inline-flex; gap: 8px; align-items: center;
-}
-.people button .dot { width: 24px; height: 24px; border-radius: 50%; background: var(--person-soft); color: var(--person); display: grid; place-items: center; font-weight: 700; font-family: var(--f-display); }
-.people button[aria-pressed="true"] { border-color: var(--person); background: var(--person-soft); }
-.people button[aria-pressed="true"] .dot { background: var(--person); color: var(--surface); }
-.people button:focus-visible, .switch input:focus-visible + span { outline: 3px solid var(--reach); outline-offset: 2px; }
-.switches { display: flex; flex-wrap: wrap; gap: 8px 18px; }
-.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
-.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.switch span.track { width: 36px; height: 20px; border-radius: 999px; background: var(--line); position: relative; flex: none; transition: background .15s; }
-.switch span.track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); transition: transform .15s; }
-.switch input:checked + span.track { background: var(--reach); }
-.switch input:checked + span.track::after { transform: translateX(16px); }
-
-.tree-scroll { overflow-x: auto; }
-.tree { width: 100%; min-width: 640px; height: auto; display: block; }
-.tree text { font-family: var(--f-body); fill: var(--ink); }
-.tree .org rect.box { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; transition: fill .2s, stroke .2s; }
-.tree .org.reach rect.box { fill: var(--reach-soft); stroke: var(--reach); stroke-width: 2.5; }
-.tree .org.member rect.box { stroke: var(--person); stroke-width: 3; }
-.tree .org .name { font-family: var(--f-display); font-weight: 700; font-size: 15px; }
-.tree .org .data { font-family: var(--f-mono); font-size: 11.5px; fill: var(--muted); }
-.tree .org .operm { font-size: 11px; fill: var(--perm); }
-.tree .edge { stroke: var(--line); stroke-width: 2; fill: none; }
-.tree .org .oassign { font-size: 11px; fill: var(--reach); font-weight: 700; }
-.people.companies button { padding: 4px 14px; }
-.tree .assign { stroke: var(--reach); stroke-width: 2; fill: none; stroke-dasharray: 6 5; }
-.tree .assign-label { fill: var(--reach); font-size: 12px; font-weight: 700; }
-.tree .arrowhead { fill: var(--reach); }
-.tree .badge circle { fill: var(--person-soft); stroke: var(--person); stroke-width: 1.5; }
-.tree .badge text { fill: var(--person); font-weight: 700; font-size: 12px; font-family: var(--f-display); }
-.tree .badge.on circle { fill: var(--person); }
-.tree .badge.on text { fill: var(--surface); }
-.tree .common > rect { fill: var(--common-soft); stroke: var(--common); stroke-width: 1.5; stroke-dasharray: 4 4; }
-.tree .common.reach > rect { stroke-dasharray: none; stroke-width: 2.5; }
-.tree .common text.t { fill: var(--common); font-weight: 700; font-family: var(--f-display); font-size: 14px; }
-.tree .common text.d { font-family: var(--f-mono); font-size: 11.5px; fill: var(--ink); }
-
-.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--muted); }
-.legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; border: 2px solid; }
-.legend .lm { border-color: var(--person); background: var(--bg); }
-.legend .lr { border-color: var(--reach); background: var(--reach-soft); }
-.legend .lc { border-color: var(--common); background: var(--common-soft); border-style: dashed; }
-.legend .lp { border: none; background: var(--perm-soft); }
-
-.result-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 18px; }
-@media (max-width: 760px) { .result-grid { grid-template-columns: 1fr; } }
-.panel { display: grid; gap: 10px; align-content: start; min-width: 0; }
-.panel h3 { display: flex; gap: 8px; align-items: center; }
-.panel h3 .k { font-size: 11px; padding: 1px 8px; border-radius: 999px; font-family: var(--f-body); }
-.k.perm { background: var(--perm-soft); color: var(--perm); }
-.k.reach { background: var(--reach-soft); color: var(--reach); }
-ul.plain { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-ul.plain li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: 14px; }
-.chip { display: inline-block; white-space: nowrap; padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; }
-.chip.perm { background: var(--perm-soft); color: var(--perm); }
-.chip.reach { background: var(--reach-soft); color: var(--reach); }
-.chip.common { background: var(--common-soft); color: var(--common); }
-.from { font-size: 12.5px; color: var(--muted); }
-.table-scroll { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
-th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
-th { font-size: 12px; color: var(--muted); font-weight: 700; white-space: nowrap; }
-td.c { text-align: center; width: 64px; }
-td .code { font-family: var(--f-mono); font-size: 12.5px; }
-.ok, .ng, .na { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-weight: 700; font-size: 14px; }
-.ok { background: var(--reach-soft); color: var(--reach); }
-.ng { background: var(--no-soft); color: var(--no); }
-.na { color: var(--muted); }
-.why { font-size: 12px; color: var(--muted); }
-.note { font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 12px; }
-
-/* 決まりの一覧 */
-.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+/* 部署の設定（表のひな形） */
+table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14px; }
+th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+thead th { background: var(--bg); font-weight: 700; font-size: 13px; }
+td.c, th.c { text-align: center; white-space: nowrap; }
+.mark { display: inline-block; width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--line); vertical-align: -4px; }
+.mark.on { background: var(--perm); border-color: var(--perm); position: relative; }
+.mark.on::after { content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px; border: solid var(--surface); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.mark.def { background: var(--perm-soft); border-color: var(--perm); }
+.mark.def::after { border-color: var(--perm); }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); }
+.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 720px) { .rules { grid-template-columns: 1fr; } }
-.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; }
-.rule h3 { display: flex; gap: 10px; align-items: center; }
-.rule h3 .sym { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; flex: none; }
-.rule ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: 14px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.rule b { font-family: var(--f-display); }
+.rule span { color: var(--muted); font-size: 14px; }
 
-/* 使い方・吹き出し・切り替え・データの札 */
-.howto { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; counter-reset: step; }
-.howto li { counter-increment: step; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 10px 46px; position: relative; font-size: 13px; color: var(--muted); line-height: 1.6; }
-.howto li::before { content: counter(step); position: absolute; left: 12px; top: 11px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-weight: 700; font-family: var(--f-display); font-size: 13px; }
-.howto b { display: block; color: var(--ink); font-size: 14px; }
-@media (max-width: 720px) { .howto { grid-template-columns: 1fr; } }
-.callout { background: var(--person-soft); color: var(--ink); border-radius: 10px; padding: 10px 14px; font-size: 14px; max-width: none; position: relative; }
-.callout::before { content: ""; position: absolute; top: -7px; left: var(--tip, 40px); width: 14px; height: 14px; background: var(--person-soft); transform: rotate(45deg); }
-.tree-head { display: grid; gap: 8px; }
-.switches .label { font-size: 13px; color: var(--muted); font-weight: 700; margin-right: 6px; }
-.switch .state { font-size: 12px; font-weight: 700; padding: 0 8px; border-radius: 999px; background: var(--reach-soft); color: var(--reach); }
-.switch input:not(:checked) ~ .state { background: var(--common-soft); color: var(--common); }
-.tree-hint { background: var(--common-soft); color: var(--common); border-radius: 8px; padding: 6px 12px; font-size: 13.5px; font-weight: 700; max-width: none; }
-.tree .chip-g rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 3 3; transition: fill .2s, stroke .2s; }
-.tree .chip-g text { font-family: var(--f-mono); font-size: 11.5px; fill: var(--muted); }
-.tree .chip-g.vis rect { fill: var(--reach-soft); stroke: var(--reach); stroke-dasharray: none; }
-.tree .chip-g.vis text { fill: var(--reach); }
-.tree .chip-g.focus rect { stroke: var(--person); stroke-width: 3; stroke-dasharray: none; }
-.tree .chip-g { cursor: pointer; }
-.legend .lv { border-color: var(--reach); background: var(--reach-soft); border-radius: 8px; }
-.legend .lh { border-color: var(--line); background: var(--surface); border-style: dashed; border-radius: 8px; }
-tr.focus td { background: var(--person-soft); }
-tbody tr { cursor: pointer; }
-.why { font-size: 12px; color: var(--muted); line-height: 1.5; }
-/* 試してみよう */
-.quiz { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-@media (max-width: 720px) { .quiz { grid-template-columns: 1fr; } }
-.q { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
-.q .who { font-size: 12px; font-weight: 700; color: var(--person); }
-.q .ask { font-family: var(--f-display); font-weight: 700; font-size: 16px; line-height: 1.5; }
-.q .btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.q button { font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 4px 18px; }
-.q button:hover { border-color: var(--ink); }
-.q button:focus-visible { outline: 3px solid var(--reach); outline-offset: 2px; }
-.q .ans { font-size: 14px; border-radius: 8px; padding: 8px 12px; }
-.q .ans.right { background: var(--reach-soft); }
-.q .ans.wrong { background: var(--no-soft); }
-.q .ans b { display: block; }
-/* 検討中のこと */
-.pending { background: var(--person-soft); border: 2px solid var(--person); border-radius: 12px; padding: 18px 20px; }
-.pending h2 { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.tag { display: inline-block; background: var(--person); color: var(--surface); font-family: var(--f-body); font-size: 13px; font-weight: 700; padding: 1px 10px; border-radius: 999px; letter-spacing: .04em; }
-.tag.sm { font-size: 11px; padding: 0 8px; margin-left: 6px; vertical-align: 1px; }
-.pending-list { margin: 0; padding-left: 1.4em; display: grid; gap: 12px; }
-.pending-list li { padding-left: 4px; }
-.pending-list b { display: block; font-family: var(--f-display); font-size: 15.5px; }
-.pending-list span { display: block; font-size: 14px; color: var(--ink); max-width: 72ch; }
-.pending-list em { display: inline-block; font-style: normal; font-weight: 700; color: var(--person); margin-left: 4px; }
-.tree .org.view rect.box { fill: var(--surface); stroke: var(--reach); stroke-width: 2; stroke-dasharray: 6 4; }
-.tree .chip-g.edit rect { fill: var(--reach); stroke: var(--reach); stroke-dasharray: none; }
-.tree .chip-g.edit text { fill: var(--surface); }
-.legend .lw { border-color: var(--reach); background: var(--surface); border-style: dashed; }
-.legend .le { border-color: var(--reach); background: var(--reach); border-radius: 8px; }
-.gap { font-size: 13px; color: var(--person); background: var(--person-soft); border-radius: 8px; padding: 4px 10px; max-width: none; }
-footer { font-size: 12.5px; color: var(--muted); }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* 組成の条件 */
+.who { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+@media (max-width: 720px) { .who { grid-template-columns: 1fr; } .who .arrow { justify-self: center; transform: rotate(90deg); } }
+.who .box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.who .box.b { box-shadow: inset 4px 0 0 var(--person); }
+.who .box.a { box-shadow: inset 4px 0 0 var(--reach); }
+.who .arrow { font-family: var(--f-display); font-weight: 900; color: var(--muted); font-size: 14px; text-align: center; }
+.gates { display: grid; gap: 10px; counter-reset: g; }
+.gate { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.gate .n { font-family: var(--f-display); font-weight: 900; font-size: 13px; background: var(--perm-soft); color: var(--perm); border-radius: 6px; padding: 2px 10px; white-space: nowrap; }
+.gate span { color: var(--muted); font-size: 14px; display: block; }
+.ok { background: var(--reach-soft); color: var(--reach); border-radius: 10px; padding: 12px 16px; font-weight: 700; }
+
+/* 例で確かめる */
+.people { display: flex; flex-wrap: wrap; gap: 8px; }
+.people button { font: inherit; font-size: 14px; font-weight: 700; padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--person); background: var(--surface); color: var(--person); cursor: pointer; }
+.people button[aria-pressed="true"] { background: var(--person); color: var(--surface); }
+.people button[aria-pressed="true"] .why { color: inherit; opacity: .85; }
+.people button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.yes { color: var(--reach); font-weight: 700; }
+.nope { color: var(--no); font-weight: 700; }
+.why { color: var(--muted); font-size: 13px; }
+.prods { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.prod { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; display: grid; gap: 4px; align-content: start; }
+.prod b { font-family: var(--f-display); }
+.prod .g { font-size: 12px; font-weight: 700; color: var(--reach); }
+.prod ul { margin: 0; padding-left: 1.2em; color: var(--muted); font-size: 13px; }
+
+/* 人を登録するとき */
+.flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; counter-reset: step; }
+@media (max-width: 720px) { .flow { grid-template-columns: 1fr; } }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; display: grid; gap: 4px; align-content: start; }
+.step b { font-family: var(--f-display); }
+.step b::before { counter-increment: step; content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; border-radius: 50%; background: var(--person); color: var(--surface); font-size: 13px; }
+.step span { color: var(--muted); font-size: 14px; }
+.orgs { display: flex; flex-wrap: wrap; gap: 8px; }
+.orgs button { font: inherit; font-size: 14px; font-weight: 700; padding: 6px 14px; border-radius: 6px; border: 1.5px solid var(--common); background: var(--surface); color: var(--common); cursor: pointer; }
+.orgs button[aria-pressed="true"] { background: var(--common); color: var(--surface); }
+.orgs button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.picked { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; }
+.picked .chips .chip { display: inline-flex; gap: 6px; align-items: center; }
+.picked .chips .chip::before { content: "✓"; }
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">化学物質管理システム　組織管理の仕様案（2026-10-29 時点）</div>
+    <div class="eyebrow">化学物質管理システム　組織管理の仕様案（2026-11-04 時点）</div>
     <h1>組織管理のしくみ</h1>
-    <p class="lead">誰が、どの製品・原材料・物質に、何をできるのか。それを決めるのが組織管理です。組織には 4 つの役目があり、それが組み合わさって決まります。</p>
+    <p class="lead">誰が、どの製品・原材料・物質に、何をできるのか。決めるのは「入っている権限グループ」と「権限グループの表」の 2 つだけです。細かいことは仕様案（S31_組織管理_仕様案.md）にあります。</p>
   </header>
-
-  <section class="pending" aria-labelledby="s0">
-    <h2 id="s0"><span class="tag">検討中</span>まだ決まっていないこと</h2>
-    <ol class="pending-list">
-      <li>
-        <b>「全社のデータを作れる」権限を残すか</b>
-        <span>いちばん上の組織（全社）にデータを所属させるには、この権限が要る、という決まりです。いちばん上の組織にいる人の中でも、権限を持つ人だけが全社のデータを作れます。<em>おすすめ：残す</em></span>
-      </li>
-      <li>
-        <b>担当先より上の組織を、見るだけにするか</b>
-        <span>担当先は自分の組織と同じに扱うので、担当先とその下は直せます。担当先より上も、自分の組織と同じく見るだけにするかどうかです。<em>おすすめ：見るだけ（この図はおすすめどおりに描いています）</em></span>
-      </li>
-      <li>
-        <b>新しく入れる会社の既定（範囲を分けるか）</b>
-        <span>テスト環境には「範囲を分けない」で入れます。新しく入れる会社の既定は「分ける」のまま、と受け取っています。<em>確認待ち</em></span>
-      </li>
-      <li>
-        <b>起きたら考えること：原材料のマスタ担当者に、全部の組成が見えてしまう</b>
-        <span>全社の原材料を直す人は、いちばん上の組織に所属します。原材料を直すには「製品を編集できる」が要り、いまの決まりではそれに「組成を見られる」が付いてくるので、全部の製品の組成が見えます（例の F さん）。候補は「製品を編集できる」から組成を外すか、原材料と製品で編集の権限を分けることです。<em>困ったときに決める</em></span>
-      </li>
-    </ol>
-  </section>
 
   <section aria-labelledby="s1">
     <h2 id="s1">考え方は 1 つだけ</h2>
     <div class="equation">
-      <div class="eq-box perm">
-        <span class="big">権限</span>
-        <span>何ができるか</span>
-        <small>製品を見る・組成を見る・直す、など。人と組織に付ける</small>
-      </div>
+      <div class="eq-box person"><div class="big">入っている権限グループ</div><small>1 つ以上。兼務の人は、兼務先の権限グループにも入る</small></div>
       <div class="eq-op" aria-hidden="true">×</div>
-      <div class="eq-box reach">
-        <span class="big">範囲</span>
-        <span>どのデータに手が届くか</span>
-        <small>データの所属先と、自分の所属で決まる</small>
-      </div>
+      <div class="eq-box perm"><div class="big">権限グループの表</div><small>どの権限グループのデータに、何ができるか</small></div>
       <div class="eq-op" aria-hidden="true">＝</div>
-      <div class="eq-box result">
-        <span class="big">できること</span>
-        <span>両方そろったときだけ</span>
-        <small>範囲の外のデータは、権限があっても見えない</small>
-      </div>
+      <div class="eq-box result"><div class="big">その人にできること</div><small>2 つ以上入っていれば、印を全部合わせたもの</small></div>
     </div>
+    <p>人に直接付ける権限はありません。例外はシステム管理者だけで、これは人に付けます。ただし、システム管理者という役目だけでは、製品・原材料・物質のデータは見られません。</p>
   </section>
 
   <section aria-labelledby="s2">
-    <h2 id="s2">組織の 4 つの役目</h2>
-    <div class="four">
-      <div class="face">
-        <div class="sym person">人</div>
-        <h3>① 人の所属先</h3>
-        <p>人はふつう 1 つの組織に所属します。2 つの部署を受け持つ管理職などは、複数の組織に所属できます。</p>
+    <h2 id="s2">組織図と権限グループは別もの</h2>
+    <div class="two">
+      <div class="panel">
+        <h3>組織<small>実際の組織図。何段でも</small></h3>
+        <div class="tree">
+          <div class="company"><span class="node co">A 社</span>
+            <div class="children"><span class="node">製造部 &gt; 第 1 課</span><span class="node">開発部</span><span class="node">品質保証部</span><span class="node">総務部</span></div>
+          </div>
+          <div class="company"><span class="node co">B 社</span>
+            <div class="children"><span class="node">開発部</span></div>
+          </div>
+        </div>
+        <p class="note">いちばん上は会社で、その下は会社ごとに自由です。人は必ず 1 つの組織に所属します。帳票の差出人・宛先にも使います（取引先や事業所も組織の 1 つ）。<b>権限とは関係ありません。</b></p>
       </div>
-      <div class="face">
-        <div class="sym data">物</div>
-        <h3>② データの所属先</h3>
-        <p>製品・原材料・物質は、必ずどれか 1 つの組織に所属します。いちばん上の組織が「全社」で、そこに所属するデータは全員から見えます。</p>
-      </div>
-      <div class="face">
-        <div class="sym reach">範</div>
-        <h3>③ 見える範囲</h3>
-        <p>自分の組織とその下は<b>見て直せます</b>。上の組織は<b>見るだけ</b>。横の組織には届きません。組織に付けた「担当先」は、自分の組織と同じに扱います。</p>
-      </div>
-      <div class="face">
-        <div class="sym perm">権</div>
-        <h3>④ 権限の出どころ</h3>
-        <p>その人の権限は、人に直接付けた権限と、所属する組織とその上の組織に付けた権限の足し合わせです。</p>
+      <div class="panel">
+        <h3>権限グループ<small>上下は無く、1 列</small></h3>
+        <div class="chips">
+          <span class="chip all">A 社 全体</span><span class="chip">製造部</span><span class="chip">開発部</span><span class="chip">品質保証部</span>
+          <span class="chip all">B 社 全体</span><span class="chip">B 社 開発部</span>
+        </div>
+        <p class="note">人に何ができるかを決め、データの持ち主にもなります。製品・原材料・物質は、どれか 1 つの権限グループに所属します。名前も分け方も自由で、「A 社 全体」のように会社の全員を入れるものも、ふつうの権限グループの 1 つです。</p>
       </div>
     </div>
   </section>
 
   <section aria-labelledby="s3">
-    <h2 id="s3">例で確かめる</h2>
-    <ol class="howto" aria-label="使い方">
-      <li><b>人を押す</b>その人の目で会社を見たときの図に変わります</li>
-      <li><b>色を見る</b>組織の色は範囲（濃い緑は直せる範囲、点線は見るだけ）。データの印は、権限まで合わせた結果</li>
-      <li><b>スイッチを切る</b>「範囲を分けない」会社だとどうなるかが分かります</li>
-    </ol>
-    <div class="example" id="example">
-      <div class="controls">
-        <span class="label">人を選ぶ</span>
-        <div class="people" id="people" role="group" aria-label="人を選ぶ"></div>
-      </div>
-      <div class="controls">
-        <span class="label">会社の形</span>
-        <div class="people companies" role="group" aria-label="会社の形">
-          <button type="button" id="co-1">会社 1：開発部の全員が製造部全体を見る</button>
-          <button type="button" id="co-2">会社 2：課ごとに担当を分ける</button>
+    <h2 id="s3">人を登録するとき</h2>
+    <div class="flow">
+      <div class="step"><b>組織を選ぶ</b><span>その人が所属する組織を 1 つ</span></div>
+      <div class="step"><b>権限グループが選ばれて出る</b><span>組織ごとにシステム設定で決めておく</span></div>
+      <div class="step"><b>直して保存</b><span>外したり足したりできる</span></div>
+    </div>
+    <div class="two">
+      <div class="panel">
+        <h3>最初に選ばれる権限グループ<small>組織ごとにシステム設定で決める。必要な組織にだけ設定する</small></h3>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>組織</th><th>最初に選ばれる権限グループ</th></tr></thead>
+            <tbody id="rules"></tbody>
+          </table>
         </div>
+        <p class="note">ある組織に設定した権限グループは、その下の部・課などの人を登録するときにも選ばれます。上の組織に設定したものも、一緒に選ばれます。例：製造部 第 1 課の人を登録すると、A 社に設定した「A 社 全体」と、製造部に設定した「製造部」の 2 つが選ばれた状態で出ます。</p>
       </div>
-      <p class="callout" id="person-note" aria-live="polite"></p>
-
-      <div class="tree-head">
-        <div class="switches" role="group" aria-label="システム設定「組織で見える範囲を分ける」">
-          <span class="label">システム設定「組織で見える範囲を分ける」</span>
-          <label class="switch"><input type="checkbox" id="sw-product" checked><span class="track"></span><span>製品・原材料</span><span class="state" id="st-product"></span></label>
-          <label class="switch"><input type="checkbox" id="sw-substance" checked><span class="track"></span><span>物質</span><span class="state" id="st-substance"></span></label>
-        </div>
-        <p class="tree-hint" id="tree-hint" hidden></p>
-      </div>
-
-      <div class="tree-scroll">
-        <svg class="tree" id="tree" viewBox="0 0 960 372" role="img" aria-label="例の会社の組織の図。いちばん上の○○化学（全社）の下に開発部・製造部・品質保証部、開発部の下に開発一課・開発二課、製造部の下に製造一課・製造二課がある">
-          <defs>
-            <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path class="arrowhead" d="M0 0 L10 5 L0 10 z"/>
-            </marker>
-          </defs>
-          <path class="edge" d="M480 88 V108 M191 108 H833 M191 108 V128 M555 108 V128 M833 108 V128"/>
-          <path class="edge" d="M191 200 V240 M101 240 H282 M101 240 V260 M282 240 V260"/>
-          <path class="edge" d="M555 200 V240 M470 240 H640 M470 240 V260 M640 240 V260"/>
-          <g id="tree-orgs"></g>
-        </svg>
-      </div>
-      <div class="legend">
-        <span><i class="lm"></i>選んだ人の所属</span>
-        <span><i class="lr"></i>直せる範囲の組織</span>
-        <span><i class="lw"></i>見るだけの範囲の組織</span>
-        <span><i class="le"></i>見て直せるデータ</span>
-        <span><i class="lv"></i>見るだけのデータ</span>
-        <span><i class="lh"></i>見られないデータ</span>
-        <span><i class="lp"></i>紫の字は組織に付けた権限</span>
-      </div>
-
-      <div class="result-grid">
-        <div class="panel">
-          <h3>持っている権限 <span class="k perm">何ができるか</span></h3>
-          <ul class="plain" id="perm-list"></ul>
-          <h3>手が届く組織 <span class="k reach">どのデータか</span></h3>
-          <p class="gap" id="reach-gap" hidden></p>
-          <ul class="plain" id="reach-list"></ul>
-        </div>
-        <div class="panel">
-          <h3>データごとにできること</h3>
-          <div class="table-scroll">
-            <table>
-              <thead><tr><th>データ</th><th>所属先</th><th class="c">見る</th><th class="c">組成</th><th class="c">直す</th></tr></thead>
-              <tbody id="data-rows"></tbody>
-            </table>
-          </div>
-        </div>
+      <div class="panel">
+        <h3>組織を選んでみる</h3>
+        <div class="orgs" id="orgs" role="group" aria-label="組織を選ぶ"></div>
+        <div class="picked"><span class="note">最初から選ばれる権限グループ</span><div class="chips" id="picked"></div></div>
       </div>
     </div>
-  </section>
-
-  <section aria-labelledby="s3q">
-    <h2 id="s3q">試してみよう</h2>
-    <p>答えを選ぶと、上の図がその場面に切り替わります。</p>
-    <div class="quiz" id="quiz"></div>
+    <div class="rules">
+      <div class="rule"><b>最初に選んでおくだけ</b><span>人の権限グループは人ごとに保存する。あとでこの設定を変えても、登録済みの人は変わらない。</span></div>
+      <div class="rule"><b>異動のとき</b><span>組織を変えると、権限グループが選び直され、新しい組織に設定されたものが選ばれた状態で出る。前の部署の権限が残らない。保存前に直せる。</span></div>
+    </div>
   </section>
 
   <section aria-labelledby="s4">
-    <h2 id="s4">決まりの一覧</h2>
-    <div class="rules">
-      <div class="rule">
-        <h3><span class="sym person" style="background:var(--person-soft);color:var(--person)">人</span>人の所属</h3>
-        <ul>
-          <li>ふつう 1 つ。兼務なら複数の組織に所属できる</li>
-          <li>複数に所属すると、権限も範囲も全部の組織の分の足し合わせになる</li>
-          <li>異動は所属を付け替えるだけ。組織の権限も一緒に入れ替わる</li>
-          <li>上の組織のデータも直したい人は、上の組織にも所属させる（その下の横の組織も見えて直せるようになる）</li>
-          <li>お知らせの宛先も、この組織を使う。宛先の組織とその下の組織の人に届く</li>
-        </ul>
-      </div>
-      <div class="rule">
-        <h3><span class="sym" style="background:var(--common-soft);color:var(--common)">物</span>データの所属先</h3>
-        <ul>
-          <li>必ず 1 つの組織に所属する。いちばん上の組織が「全社」。製品・原材料・物質で同じ決まり</li>
-          <li>作るときの既定は、システム設定で「全社」か「作った人の所属先」を選ぶ（初めは全社）</li>
-          <li>全社に所属させるには「全社のデータを作れる」権限が要る。無い人が作ると自分の組織のものになる<span class="tag sm">検討中</span></li>
-          <li>所属先を移せる先は、自分が所属する組織とその下だけ（担当先へは移せない。課の人が部長から製品を隠せないように）。元の所属先も直せることが要る</li>
-        </ul>
-      </div>
-      <div class="rule">
-        <h3><span class="sym" style="background:var(--reach-soft);color:var(--reach)">範</span>見える範囲</h3>
-        <ul>
-          <li>自分の組織と、その下の組織（何段下でも）のデータは見て直せる</li>
-          <li>上の組織（全社まで）のデータは見るだけ。直すと、それを使っている横の組織に影響が出るため</li>
-          <li>横の組織のデータには届かない</li>
-          <li>組織に付けた「担当先」とその下は、自分の組織と同じに扱う。担当先は、付けた組織に所属する人だけに効く（下の組織の人には効かない）。担当先より上は見るだけ<span class="tag sm">検討中</span></li>
-          <li>システム設定で「範囲を分けない」にすると、所属先に関係なく、権限どおりに全部を見て直せる（製品・原材料と物質で別々に選ぶ。所属先の記録は続く）</li>
-        </ul>
-      </div>
-      <div class="rule">
-        <h3><span class="sym" style="background:var(--perm-soft);color:var(--perm)">権</span>権限</h3>
-        <ul>
-          <li>人に直接付けた権限と、所属する組織・その上の組織に付けた権限の足し合わせ</li>
-          <li>上の組織に付けた権限を、下の組織だけ外すことはできない</li>
-          <li>「全社のデータを作れる」だけは人にしか付けられない</li>
-          <li>組成を見るには「製品を見られる」と「組成を見られる」の両方が要る</li>
-        </ul>
-      </div>
+    <h2 id="s4">権限グループの設定は表 1 枚</h2>
+    <p>行が相手の権限グループ、列が 6 つの印です。下は品質保証部の例です。相手は一覧から 1 つずつ選び、「すべて選択」も使えます。</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th rowspan="2">品質保証部の表<br>相手の権限グループ</th><th class="c" colspan="2">製品・原材料</th><th class="c" colspan="2">組成</th><th class="c" colspan="2">物質</th></tr>
+          <tr><th class="c">参照</th><th class="c">編集</th><th class="c">参照</th><th class="c">編集</th><th class="c">参照</th><th class="c">編集</th></tr>
+        </thead>
+        <tbody id="qa-table"></tbody>
+      </table>
     </div>
-    <p class="note">組成を見られない人には、組成の表・添付ファイル・判定の内訳（どの成分で当たったか）・組成を載せた帳票やデータの出力を出しません。製品として該当する法規制は見せますが、法文物質名は見せません。組成の中に、自分の手が届かない原材料・物質があるときは、その行のコード・CAS 番号・名前を伏せ、含有率だけを出して「見せられない成分があります」と表示します。編集の権限があっても、伏せた行を含む組成は編集できません（伏せた行が無くなるまで、組成を直せるのは全部の成分が見える人だけです）。</p>
+    <div class="rules">
+      <div class="rule"><b>最初の印は無し</b><span>新しく作った権限グループには何も付かない。作る画面で、管理者が表を見ながら付ける。</span></div>
+      <div class="rule"><b>印は連動する</b><span>編集を付けると参照も付く。組成の参照を付けると製品・原材料の参照も付く。組成は直せて製品は直せない形は許す。</span></div>
+      <div class="rule"><b>たどれるのは 1 段だけ</b><span>品質保証部が製造部を参照でき、製造部が開発部を参照できても、品質保証部は開発部を参照できない。</span></div>
+      <div class="rule"><b>表とは別の権限</b><span>承認・法規制・出力・取り込み・ドキュメント・お知らせ・PRTR なども権限グループに付ける。「できる・できない」だけの欄。</span></div>
+    </div>
   </section>
 
-  <footer>この図は仕様案の説明用の例です。会社名・組織・人・データはすべて架空です。</footer>
+  <section aria-labelledby="s5">
+    <h2 id="s5">データの所属先</h2>
+    <div class="rules">
+      <div class="rule"><b>作るとき</b><span>作る人が「編集」の印を持つ権限グループからだけ選べる。1 つなら自動で決まる。2 つ以上なら何も選ばれていない状態で出し、必ず選ばせる。</span></div>
+      <div class="rule"><b>移すとき</b><span>今の所属先と移す先の両方に「編集」の印がある人だけ。移せないときは管理者に依頼する（管理者用の権限グループに印を付けて移す）。</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s6">
+    <h2 id="s6">組成を見られる条件</h2>
+    <p>見る人が入っている権限グループ（B）と、製品の所属先の権限グループ（A）で決まります。印を持つのは B です。</p>
+    <div class="who">
+      <div class="box b"><b>B：見る人の権限グループ</b><br><span class="note">2 つ以上入っていれば、どれか 1 つでよい</span></div>
+      <div class="arrow" aria-hidden="true">B の表の A の行 →</div>
+      <div class="box a"><b>A：製品の所属先</b><br><span class="note">製品が所属する権限グループ</span></div>
+    </div>
+    <div class="gates">
+      <div class="gate"><span class="n">条件 1</span><div><b>製品・原材料 参照の印がある</b><span>条件 2 に印があれば連動で付いているので、実際には必ず満たす</span></div></div>
+      <div class="gate"><span class="n">条件 2</span><div><b>組成 参照の印がある</b><span>直すときは「組成 編集」の印</span></div></div>
+      <div class="gate"><span class="n">条件 3</span><div><b>組成の中身が全部見える</b><span>並ぶ物質と原材料が全部見えること。原材料の組成も、同じ条件で見えること</span></div></div>
+      <div class="ok">3 つとも満たせば、組成を見られる。1 つでも欠ければ、組成全体を見られず、直せない（製品のほかの項目は印どおり）</div>
+    </div>
+    <p class="note">組成を見られない人にも、製品として当たる規制区分は見せます。原因の物質や内訳、添付ファイル、CAS 番号での製品の絞り込みは見せません。</p>
+  </section>
+
+  <section aria-labelledby="s7">
+    <h2 id="s7">例で確かめる</h2>
+    <p>人を選ぶと、4 つの製品に何ができるかが出ます。人は、上の「最初に選ばれる権限グループ」のまま登録したものとします。</p>
+    <div class="prods" id="prods"></div>
+    <div class="people" id="people" role="group" aria-label="人を選ぶ"></div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>製品（所属先）</th><th class="c">見る</th><th class="c">直す</th><th class="c">組成を見る</th><th class="c">組成を直す</th><th>組成について</th></tr></thead>
+        <tbody id="result"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="s8">
+    <h2 id="s8">システム管理者と、今のデータの移し方</h2>
+    <div class="rules">
+      <div class="rule"><b>システム管理者</b><span>人に付ける。組織にも権限グループにも入っていなくてよい。役目だけではデータを見られないので、扱わせたいときは権限グループ（管理者用でもよい）に入れる。辞めた人は、ユーザーを止めてログインできなくする。</span></div>
+      <div class="rule"><b>今のデータの移し方</b><span>データは全部「全体」という権限グループへ。人は、今の権限の組み合わせが同じ人ごとに「移行 1」「移行 2」…の権限グループへ。移した日に、誰のできることも変わらない。権限グループは、移す処理が各環境の DB の中身から作る。</span></div>
+    </div>
+  </section>
 </div>
 
 <script>
-(function () {
-  var PERM = {
-    PV: "製品を見られる", PE: "製品を編集できる", CV: "組成を見られる",
-    SV: "物質を見られる", SE: "物質を編集できる", CC: "全社のデータを作れる"
-  };
-  // 編集できる権限は、見る権限を含む（いまのシステムと同じ）
-  var IMPLIES = { PE: ["PV", "CV"], SE: ["SV"] };
+// 権限グループ（データの持ち主）
+const G = {
+  aAll: "A 社 全体", aMfg: "製造部", aDev: "開発部", aQa: "品質保証部",
+  bAll: "B 社 全体", bDev: "B 社 開発部",
+};
+const KINDS = ["pv", "pe", "cv", "ce", "sv", "se"];
+// 連動：編集→参照、組成参照→製品参照
+function close(set) {
+  if (set.has("pe")) set.add("pv");
+  if (set.has("ce")) set.add("cv");
+  if (set.has("cv")) set.add("pv");
+  if (set.has("se")) set.add("sv");
+  return set;
+}
+// 権限グループの表。キーは相手の権限グループ、値はそこに付けた印
+const TABLES = {
+  aAll: { aAll: ["pv", "sv"] },
+  aMfg: { aMfg: ["pe", "se"] },
+  aDev: { aDev: ["pe", "ce", "se"] },
+  aQa: {
+    aAll: ["pe", "cv", "se"], aQa: ["pe", "se"], aMfg: ["pv", "ce"], aDev: ["cv"], bAll: ["pv"],
+  },
+  bAll: { bAll: ["pv", "sv"] },
+  bDev: { bDev: ["pe", "se"] },
+};
+// 組織と、最初に選ばれる権限グループ（システム設定）
+const ORGS = [
+  { id: "a", name: "A 社", rule: ["aAll"] },
+  { id: "aMfg", name: "A 社 > 製造部", parent: "a", rule: ["aMfg"] },
+  { id: "aMfg1", name: "A 社 > 製造部 > 第 1 課", parent: "aMfg" },
+  { id: "aDev", name: "A 社 > 開発部", parent: "a", rule: ["aDev"] },
+  { id: "aQa", name: "A 社 > 品質保証部", parent: "a", rule: ["aQa"] },
+  { id: "aGen", name: "A 社 > 総務部", parent: "a" },
+  { id: "b", name: "B 社", rule: ["bAll"] },
+  { id: "bDev", name: "B 社 > 開発部", parent: "b", rule: ["bDev"] },
+];
+const ORG = Object.fromEntries(ORGS.map((o) => [o.id, o]));
+// 上の組織に設定したものも一緒に選ぶ
+function defaults(orgId) {
+  const out = [];
+  for (let o = ORG[orgId]; o; o = ORG[o.parent]) for (const g of o.rule || []) if (!out.includes(g)) out.unshift(g);
+  return out;
+}
+// 物質と原材料・製品
+const SUB = {
+  ethanol: { name: "エタノール", g: "aAll" }, toluene: { name: "トルエン", g: "aAll" },
+  xylene: { name: "キシレン", g: "aAll" }, newN: { name: "新物質 N-1", g: "aDev" },
+  etac: { name: "酢酸エチル", g: "bAll" },
+};
+const MAT = { resin: { name: "樹脂 R", g: "aAll", rows: [{ s: "xylene" }] } };
+const PRODUCTS = [
+  { name: "洗浄剤 X", g: "aAll", rows: [{ s: "ethanol" }] },
+  { name: "塗料 Y", g: "aMfg", rows: [{ s: "toluene" }, { m: "resin" }] },
+  { name: "試作品 Z", g: "aDev", rows: [{ s: "newN" }, { s: "ethanol" }] },
+  { name: "接着剤 W", g: "bAll", rows: [{ s: "etac" }] },
+];
+const PEOPLE = [
+  { name: "製造部 第 1 課の人", groups: defaults("aMfg1") },
+  { name: "開発部の人", groups: defaults("aDev") },
+  { name: "品質保証部の人", groups: defaults("aQa") },
+  { name: "製造部で品質保証部も兼ねる人", groups: [...defaults("aMfg"), "aQa"] },
+  { name: "B 社 開発部の人", groups: defaults("bDev") },
+];
 
-  var ORGS = {
-    root: { name: "○○化学（全社）", parent: null, perms: ["SV"], x: 330, y: 16, w: 300 },
-    dev:  { name: "開発部", parent: "root", perms: ["PE"], x: 116, y: 128, w: 150 },
-    mfg:  { name: "製造部", parent: "root", perms: ["PV"], x: 480, y: 128, w: 150 },
-    qa:   { name: "品質保証部", parent: "root", perms: ["PE", "SE"], x: 712, y: 128, w: 242 },
-    dev1: { name: "開発一課", parent: "dev", perms: [], x: 6, y: 260, w: 190 },
-    dev2: { name: "開発二課", parent: "dev", perms: [], x: 204, y: 260, w: 156 },
-    mfg1: { name: "製造一課", parent: "mfg", perms: [], x: 392, y: 260, w: 156 },
-    mfg2: { name: "製造二課", parent: "mfg", perms: [], x: 562, y: 260, w: 156 }
-  };
-  var ORDER = ["root", "dev", "mfg", "qa", "dev1", "dev2", "mfg1", "mfg2"];
-
-  // 会社の形ごとの担当先。担当先は、付けた組織に所属する人だけに効く（下の組織の人には効かない）
-  var COMPANIES = {
-    1: { qa: ["root"], dev: ["mfg"], dev1: ["mfg"], dev2: ["mfg"] },
-    2: { qa: ["root"], dev: ["mfg"], dev1: ["mfg1"], dev2: ["mfg2"] }
-  };
-  function assignedOf(id) { return COMPANIES[company][id] || []; }
-
-  var PEOPLE = [
-    { id: "A", label: "A さん（開発部長）", orgs: ["dev"], own: [] },
-    { id: "B", label: "B さん（課長・兼務）", orgs: ["dev1", "dev2"], own: [] },
-    { id: "C", label: "C さん（品質保証）", orgs: ["qa"], own: [] },
-    { id: "D", label: "D さん（製造部）", orgs: ["mfg"], own: [] },
-    { id: "E", label: "E さん（開発一課）", orgs: ["dev1"], own: ["SE"] },
-    { id: "F", label: "F さん（資材管理）", orgs: ["root"], own: ["PE", "SE", "CC"] },
-    { id: "G", label: "G さん（開発二課）", orgs: ["dev2"], own: [] }
-  ];
-  var NOTES = {
-    A: { 1: "開発部長です。開発部とその下の課は見て直せます。開発部に付けた担当先「製造部」で、製造部と製造一課・製造二課も直せる範囲に入ります。上の全社のデータは見るだけです。",
-         2: "開発部長です。開発部とその下の課は見て直せます。開発部に付けた担当先「製造部」は、開発部に所属する A さんにだけ効き、製造部と製造一課・製造二課の両方に届きます。" },
-    B: { 1: "開発一課と開発二課を兼務する課長です。両方の課と、課に付けた担当先「製造部」の全体が直せる範囲です。上の開発部の製品 D-01 は見るだけです。",
-         2: "開発一課と開発二課を兼務する課長です。両方の課に所属しているので、両方の担当先（製造一課・製造二課）に届きます。上の開発部の製品 D-01 は見るだけです。" },
-    C: "品質保証部です。担当先「○○化学」が付いているので、会社のすべてのデータが直せる範囲に入ります。品質保証部に付けた「製品を編集できる」「物質を編集できる」で、全部の製品と物質を見て直せ、組成も見られます。",
-    D: "製造部です。製造部と、その下の製造一課・製造二課の製品が見えます。全社のデータは見るだけ。開発部・品質保証部は横なので届きません。組成の権限が無いので、組成は見えません。",
-    E: { 1: "開発一課です。開発一課と、担当先の製造部（製造一課・製造二課も）が直せる範囲です。自分の課の物質 S-11 も、上の開発部から届く権限で製品も直せます。",
-         2: "開発一課です。開発一課と、担当先の製造一課が直せる範囲です。製造二課には届きません。製造部そのものの製品 M-01 は、担当先より上なので見るだけです。" },
-    F: "資材管理の担当で、全社の原材料を直すために、いちばん上の○○化学に所属しています。すべてを見て直せますが、「製品を編集できる」に「組成を見られる」が付いてくるので、全部の製品の組成まで見えます（検討中の 4 番目）。",
-    G: { 1: "開発二課です。開発二課と、担当先の製造部全体が直せる範囲です。開発一課は横なので届きません。",
-         2: "開発二課です。開発二課と、担当先の製造二課が直せる範囲です。開発一課が担当する製造一課の製品は見られません。開発部に付けた担当先「製造部」は、開発部に所属する人にしか効かないからです。" }
-  };
-
-  var DATA = [
-    { code: "C-01", kind: "product", owner: "root" },
-    { code: "R-01", kind: "material", owner: "root" },
-    { code: "S-01", kind: "substance", owner: "root" },
-    { code: "D-01", kind: "product", owner: "dev" },
-    { code: "D1-01", kind: "product", owner: "dev1" },
-    { code: "S-11", kind: "substance", owner: "dev1" },
-    { code: "D2-01", kind: "product", owner: "dev2" },
-    { code: "M-01", kind: "product", owner: "mfg" },
-    { code: "M1-01", kind: "product", owner: "mfg1" },
-    { code: "M2-01", kind: "product", owner: "mfg2" },
-    { code: "Q-01", kind: "product", owner: "qa" }
-  ];
-  var KIND = { product: "製品", material: "原材料", substance: "物質" };
-
-  var QUIZ = [
-    { who: "B", ask: "B さんは、上の開発部の製品 D-01 を直せる？", yes: false, code: "D-01",
-      why: "上の組織のデータは見えますが、直せません。直すと、同じものを使っている横の組織に影響が出るからです。直させたいときは、B さんを開発部にも所属させます。" },
-    { who: "D", ask: "D さんは、全社の原材料 R-01 を見られる？", yes: true, code: "R-01",
-      why: "全社はいちばん上の組織です。上の組織のデータは、下の全員から見えます（見るだけ）。" },
-    { who: "C", ask: "C さんは、開発一課の製品 D1-01 の組成を見られる？", yes: true, code: "D1-01",
-      why: "担当先「○○化学」で開発一課も直せる範囲に入り、品質保証部に付けた「製品を編集できる」には「組成を見られる」が付いてきます。範囲と権限の両方がそろうので見られます。" },
-    { who: "D", ask: "D さんは、製造部の製品 M-01 の組成を見られる？", yes: false, code: "M-01",
-      why: "自分の組織の製品なので範囲には入りますが、D さんには「組成を見られる」権限がありません。組成は、範囲と権限の両方がそろったときだけ見えます。" },
-    { who: "E", ask: "E さんは、開発一課の製品 D1-01 を直せる？", yes: true, code: "D1-01",
-      why: "E さん本人に付いているのは物質の権限だけですが、上の開発部に付けた「製品を編集できる」が届きます。" },
-    { who: "G", company: 2, ask: "会社 2 で、G さん（開発二課）は製造一課の製品 M1-01 を見られる？", yes: false, code: "M1-01",
-      why: "開発二課の担当先は製造二課だけです。開発部に付けた担当先「製造部」は、開発部に所属する人（部長）にしか効かず、下の課の人には効きません。" },
-    { who: "A", company: 2, ask: "会社 2 で、開発部長の A さんは製造二課の製品 M2-01 を見られる？", yes: true, code: "M2-01",
-      why: "開発部に付けた担当先「製造部」は、開発部に所属する A さんに効きます。担当先は、その下の製造一課・製造二課にも届きます。" },
-    { who: "D", ask: "D さんは、E さんが足した物質 S-11 を見られる？", yes: false, code: "S-11",
-      why: "S-11 は開発一課のもので、製造部から見て横の枝にあるので届きません。少しすると物質のスイッチが切れます（範囲を分けない）。そうすると見られるようになります。", after: { substance: false } }
-  ];
-
-  var SVGNS = "http://www.w3.org/2000/svg";
-  function el(tag, attrs, text) {
-    var e = document.createElementNS(SVGNS, tag);
-    for (var k in attrs) e.setAttribute(k, attrs[k]);
-    if (text != null) e.textContent = text;
-    return e;
-  }
-  function ancestorsOrSelf(id) { var r = []; while (id) { r.push(id); id = ORGS[id].parent; } return r; }
-  function descendantsOrSelf(id) {
-    var r = [id];
-    ORDER.forEach(function (o) { if (ORGS[o].parent === id) r = r.concat(descendantsOrSelf(o)); });
-    return r;
-  }
-
-  // 権限：人に直接 ＋ 所属する組織とその上の組織に付けた権限（組織の権限は下の組織の人にも効く）
-  function permsOf(p) {
-    var map = {};
-    function add(code, from) {
-      if (!map[code]) map[code] = [];
-      if (map[code].indexOf(from) < 0) map[code].push(from);
-      (IMPLIES[code] || []).forEach(function (c) { add(c, from); });
+// 入っている権限グループの印を全部合わせる
+function marksOf(person, g) {
+  const set = new Set();
+  for (const grp of person.groups) for (const k of TABLES[grp][g] || []) set.add(k);
+  return close(set);
+}
+// 条件 3：組成の中身が全部見えるか。見えないものの名前を返す
+function hidden(person, rows) {
+  for (const r of rows) {
+    if (r.s) {
+      const s = SUB[r.s];
+      if (!marksOf(person, s.g).has("sv")) return s.name + "（" + G[s.g] + "の物質）";
+    } else {
+      const m = MAT[r.m];
+      const mk = marksOf(person, m.g);
+      if (!mk.has("pv")) return m.name + "（" + G[m.g] + "の原材料）";
+      if (!mk.has("cv")) return m.name + "の組成";
+      const inner = hidden(person, m.rows);
+      if (inner) return inner;
     }
-    p.own.forEach(function (c) { add(c, "人に直接"); });
-    p.orgs.forEach(function (m) {
-      ancestorsOrSelf(m).forEach(function (a) {
-        ORGS[a].perms.forEach(function (c) { add(c, ORGS[a].name + (a === m ? "（所属）" : "（上の組織）")); });
-      });
-    });
-    return map;
   }
-  /*
-    範囲。直せる組織 ＝ 所属する組織とその下 ＋ 所属する組織に付けた担当先とその下
-    （担当先は、付けた組織に所属する人だけに効く。上の組織の担当先は受け取らない）。
-    見るだけの組織 ＝ 直せる組織の上にある組織。横の組織には届かない
-  */
-  function reachOf(p) {
-    var edit = {}, view = {};
-    function addEdit(id, why) { if (!edit[id]) edit[id] = why; }
-    p.orgs.forEach(function (m) { addEdit(m, "所属"); });
-    p.orgs.forEach(function (m) { descendantsOrSelf(m).forEach(function (d) { addEdit(d, "所属する組織の下"); }); });
-    p.orgs.forEach(function (m) {
-      assignedOf(m).forEach(function (t) {
-        descendantsOrSelf(t).forEach(function (d) { addEdit(d, ORGS[m].name + "の担当先"); });
-      });
-    });
-    Object.keys(edit).forEach(function (id) {
-      ancestorsOrSelf(id).forEach(function (a) { if (!edit[a] && !view[a]) view[a] = "上の組織"; });
-    });
-    return { edit: edit, view: view };
-  }
+  return null;
+}
+function yn(b) { return b ? '<span class="yes">○</span>' : '<span class="nope">×</span>'; }
+const chip = (g) => '<span class="chip' + (g === "aAll" || g === "bAll" ? " all" : "") + '">' + G[g] + "</span>";
 
-  var swP = document.getElementById("sw-product"), swS = document.getElementById("sw-substance");
-  var current = "A", company = 1, focusCode = null, afterTimer = null;
-
-  // 1 件のデータについて、できることと、できない理由
-  function judge(d, perms, reach) {
-    var split = d.kind === "substance" ? swS.checked : swP.checked;
-    var level = !split || reach.edit[d.owner] ? "edit" : reach.view[d.owner] ? "view" : null;
-    var r = { why: [] }, lack = [];
-    var vp = d.kind === "substance" ? "SV" : "PV", ep = d.kind === "substance" ? "SE" : "PE";
-    r.see = !!level && !!perms[vp];
-    r.edit = level === "edit" && !!perms[ep];
-    r.comp = d.kind === "substance" ? null : r.see && !!perms.CV;
-    if (!level) r.why.push("範囲の外（横の組織）");
-    if (level && !perms[vp]) lack.push("見る");
-    if (r.see && d.kind !== "substance" && !perms.CV) lack.push("組成を見る");
-    if (level === "view" && perms[ep]) r.why.push("上の組織のデータは見るだけ");
-    else if (level && !perms[ep]) lack.push("直す");
-    if (lack.length) r.why.push("権限が無い：" + lack.join("・"));
-    return r;
-  }
-
-  // 組織図を描く（文字の幅を測ってデータの印を並べるので、字体が読み込まれたら描き直す）
-  var gOrgs = document.getElementById("tree-orgs");
-  var chipEls = {}, badgeEls = {};
-  function focusOn(code) { focusCode = code; render(); }
-  function chipRow(parent, x, y, maxW, codes) {
-    var cx = x, last = 0;
-    codes.forEach(function (code) {
-      var d = DATA.filter(function (v) { return v.code === code; })[0];
-      var g = el("g", { "class": "chip-g", tabindex: "0", role: "button" });
-      var rect = el("rect", { x: x, y: y, width: 10, height: 19, rx: 9.5 });
-      var t = el("text", { x: x, y: y + 13 }, KIND[d.kind] + " " + code);
-      var tip = el("title", {}, "");
-      g.appendChild(rect); g.appendChild(t); g.appendChild(tip);
-      parent.appendChild(g);
-      var w = (t.getComputedTextLength() || (code.length * 7 + 24)) + 16;
-      if (cx + w > x + maxW && cx > x) { cx = x; y += 23; }
-      rect.setAttribute("x", cx); rect.setAttribute("y", y); rect.setAttribute("width", w);
-      t.setAttribute("x", cx + 8); t.setAttribute("y", y + 13);
-      cx += w + 6; last = y + 19;
-      chipEls[code] = { g: g, tip: tip };
-      g.addEventListener("click", function () { focusOn(code); });
-      g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); focusOn(code); } });
-    });
-    return last;
-  }
-  function buildTree() {
-    gOrgs.textContent = ""; chipEls = {}; badgeEls = {};
-    ORDER.forEach(function (id) {
-      var o = ORGS[id];
-      var g = el("g", { "class": "org", id: "org-" + id });
-      var box = el("rect", { "class": "box", x: o.x, y: o.y, width: o.w, height: 72, rx: 8 });
-      g.appendChild(box);
-      var line = o.y + 22;
-      g.appendChild(el("text", { "class": "name", x: o.x + 12, y: line }, o.name));
-      if (o.perms.length) { line += 17; g.appendChild(el("text", { "class": "operm", x: o.x + 12, y: line }, "権限：" + o.perms.map(function (c) { return PERM[c]; }).join("・"))); }
-      var asg = assignedOf(id);
-      if (asg.length) { line += 17; g.appendChild(el("text", { "class": "oassign", x: o.x + 12, y: line }, "担当先：" + asg.map(function (t) { return ORGS[t].name; }).join("・"))); }
-      gOrgs.appendChild(g);
-      var codes = DATA.filter(function (d) { return d.owner === id; }).map(function (d) { return d.code; });
-      var bottom = chipRow(g, o.x + 10, line + 8, o.w - 20, codes);
-      box.setAttribute("height", Math.max(72, (bottom || line + 6) - o.y + 9));
-    });
-    ORDER.forEach(function (id) {
-      var o = ORGS[id], i = 0;
-      PEOPLE.forEach(function (p) {
-        if (p.orgs.indexOf(id) < 0) return;
-        var cx = o.x + o.w - 14 - i * 26, cy = o.y;
-        var b = el("g", { "class": "badge" });
-        b.appendChild(el("circle", { cx: cx, cy: cy, r: 11 }));
-        b.appendChild(el("text", { x: cx, y: cy + 4, "text-anchor": "middle" }, p.id));
-        b.appendChild(el("title", {}, p.label));
-        b.addEventListener("click", function () { select(p.id); });
-        b.style.cursor = "pointer";
-        gOrgs.appendChild(b);
-        (badgeEls[p.id] = badgeEls[p.id] || []).push(b);
-        i++;
-      });
-    });
-  }
-
-  var peopleBox = document.getElementById("people");
-  PEOPLE.forEach(function (p) {
-    var b = document.createElement("button");
-    b.type = "button"; b.id = "person-" + p.id;
-    b.innerHTML = '<span class="dot">' + p.id + "</span>" + p.label;
-    b.addEventListener("click", function () { select(p.id); });
-    peopleBox.appendChild(b);
+function renderRules() {
+  document.getElementById("rules").innerHTML = ORGS.filter((o) => o.rule)
+    .map((o) => "<tr><td>" + o.name + "</td><td>" + o.rule.map((g) => G[g]).join("、") + "</td></tr>").join("");
+}
+function renderOrgs() {
+  const box = document.getElementById("orgs");
+  box.innerHTML = ORGS.map((o) => '<button type="button" aria-pressed="false">' + o.name.replace(/^.* > /, "") + "</button>").join("");
+  box.querySelectorAll("button").forEach((b, i) => {
+    b.title = ORGS[i].name;
+    b.addEventListener("click", () => pickOrg(i));
   });
-  function select(id) { current = id; focusCode = null; render(); }
-  function setCompany(n) { company = n; buildTree(); render(); }
-  [1, 2].forEach(function (n) {
-    document.getElementById("co-" + n).addEventListener("click", function () { setCompany(n); });
-  });
-  swP.addEventListener("change", render); swS.addEventListener("change", render);
+}
+function pickOrg(idx) {
+  document.querySelectorAll("#orgs button").forEach((b, i) => b.setAttribute("aria-pressed", String(i === idx)));
+  const gs = defaults(ORGS[idx].id);
+  document.getElementById("picked").innerHTML = '<span class="note">' + ORGS[idx].name + "</span>" + gs.map(chip).join("");
+}
 
-  function mark(ok) { return ok === null ? '<span class="na">—</span>' : ok ? '<span class="ok" aria-label="できる">○</span>' : '<span class="ng" aria-label="できない">×</span>'; }
+function renderQa() {
+  const rows = ["aQa", "aAll", "aMfg", "aDev", "bAll"];
+  document.getElementById("qa-table").innerHTML = rows.map((g) => {
+    const all = close(new Set(TABLES.aQa[g]));
+    const cells = KINDS.map((k) => '<td class="c"><i class="' + (all.has(k) ? "mark on" : "mark") + '" aria-label="' + (all.has(k) ? "印あり" : "印なし") + '"></i></td>').join("");
+    return "<tr><th>" + G[g] + (g === "aQa" ? "（自分）" : "") + "</th>" + cells + "</tr>";
+  }).join("");
+}
 
-  function render() {
-    var p = PEOPLE.filter(function (x) { return x.id === current; })[0];
-    var perms = permsOf(p), reach = reachOf(p);
-    var openP = !swP.checked, openS = !swS.checked, openAll = openP && openS;
+function renderProds() {
+  const list = (rows) => rows.map((r) => r.s
+    ? "<li>" + SUB[r.s].name + "（" + G[SUB[r.s].g] + "）</li>"
+    : "<li>" + MAT[r.m].name + "（" + G[MAT[r.m].g] + "の原材料。中身：" + MAT[r.m].rows.map((x) => SUB[x.s].name).join("・") + "）</li>").join("");
+  document.getElementById("prods").innerHTML = PRODUCTS.map((p) =>
+    '<div class="prod"><span class="g">' + G[p.g] + 'に所属</span><b>' + p.name + "</b><ul>" + list(p.rows) + "</ul></div>").join("");
+}
 
-    PEOPLE.forEach(function (x) {
-      document.getElementById("person-" + x.id).setAttribute("aria-pressed", x.id === current ? "true" : "false");
-      (badgeEls[x.id] || []).forEach(function (b) { b.classList.toggle("on", x.id === current); });
-    });
-    [1, 2].forEach(function (n) { document.getElementById("co-" + n).setAttribute("aria-pressed", n === company ? "true" : "false"); });
-    // 吹き出しの先を、選んだ人のボタンに向ける
-    var note = document.getElementById("person-note");
-    var n = NOTES[p.id];
-    note.textContent = typeof n === "string" ? n : n[company];
-    var btnNow = document.getElementById("person-" + p.id);
-    var tipX = btnNow.getBoundingClientRect().left - note.getBoundingClientRect().left + 12;
-    note.style.setProperty("--tip", Math.max(12, Math.min(tipX, note.clientWidth - 24)) + "px");
-
-    document.getElementById("st-product").textContent = openP ? "分けない" : "分ける";
-    document.getElementById("st-substance").textContent = openS ? "分けない" : "分ける";
-    var hint = document.getElementById("tree-hint");
-    var openKinds = [openP ? "製品・原材料" : "", openS ? "物質" : ""].filter(Boolean);
-    hint.hidden = openKinds.length === 0;
-    hint.textContent = openKinds.length === 2
-      ? "範囲を分けていないので、どの組織のデータにも手が届きます。見る・直すは権限だけで決まります。"
-      : openKinds.length === 1 ? openKinds[0] + "は範囲を分けていないので、どの組織の" + openKinds[0] + "も、権限どおりに見て直せます。" : "";
-
-    ORDER.forEach(function (id) {
-      var g = document.getElementById("org-" + id);
-      var editable = !!reach.edit[id] || openAll;
-      g.classList.toggle("reach", editable);
-      g.classList.toggle("view", !editable && !!reach.view[id]);
-      g.classList.toggle("member", p.orgs.indexOf(id) >= 0);
-    });
-
-    var rows = document.getElementById("data-rows"); rows.innerHTML = "";
-    DATA.forEach(function (d) {
-      var r = judge(d, perms, reach);
-      var c = chipEls[d.code];
-      if (c) {
-        c.g.classList.toggle("edit", !!r.edit);
-        c.g.classList.toggle("vis", !!r.see && !r.edit);
-        c.g.classList.toggle("focus", focusCode === d.code);
-        c.tip.textContent = r.edit ? "見て直せる" : r.see ? "見るだけ" + (r.why.length ? "：" + r.why.join("、") : "") : "見られない：" + r.why.join("、");
-      }
-      var tr = document.createElement("tr");
-      if (focusCode === d.code) tr.className = "focus";
-      tr.innerHTML = "<td>" + KIND[d.kind] + ' <span class="code">' + d.code + "</span>" + (r.why.length ? '<div class="why">' + r.why.join("／") + "</div>" : "") + "</td><td>" + ORGS[d.owner].name + '</td><td class="c">' + mark(r.see) + '</td><td class="c">' + mark(r.comp) + '</td><td class="c">' + mark(r.edit) + "</td>";
-      tr.addEventListener("click", function () { focusOn(d.code); });
-      rows.appendChild(tr);
-    });
-
-    var pl = document.getElementById("perm-list"); pl.innerHTML = "";
-    Object.keys(PERM).forEach(function (code) {
-      if (!perms[code]) return;
-      var li = document.createElement("li");
-      li.innerHTML = '<span class="chip perm">' + PERM[code] + '</span><span class="from">← ' + perms[code].join("、") + "</span>";
-      pl.appendChild(li);
-    });
-    var rl = document.getElementById("reach-list"); rl.innerHTML = "";
-    // 範囲は直せても、編集の権限が無ければ見るだけ。範囲と結果の食い違いをここで言っておく
-    var noEdit = !perms.PE && !perms.SE ? "編集の権限が無いので、直せる範囲の中でも見るだけです。"
-      : !perms.PE ? "「製品を編集できる」が無いので、製品・原材料は直せる範囲の中でも見るだけです。"
-      : !perms.SE ? "「物質を編集できる」が無いので、物質は直せる範囲の中でも見るだけです。" : "";
-    var gap = document.getElementById("reach-gap");
-    gap.hidden = !noEdit; gap.textContent = noEdit;
-    ORDER.forEach(function (id) {
-      var editWhy = reach.edit[id] || (openAll ? "範囲を分けない設定" : null);
-      var why = editWhy || reach.view[id];
-      if (!why) return;
-      var li = document.createElement("li");
-      li.innerHTML = '<span class="chip ' + (editWhy ? "reach" : "common") + '">' + ORGS[id].name + '</span><span class="from">' + (editWhy ? "直せる範囲" : "見るだけの範囲") + " ← " + why + "</span>";
-      rl.appendChild(li);
-    });
-  }
-
-  // 試してみよう
-  var quizBox = document.getElementById("quiz");
-  QUIZ.forEach(function (q, i) {
-    var card = document.createElement("div");
-    card.className = "q";
-    var who = PEOPLE.filter(function (x) { return x.id === q.who; })[0].label;
-    card.innerHTML = '<div class="who">' + who + '</div><div class="ask">' + q.ask + '</div><div class="btns"><button type="button" id="q' + i + '-y">はい</button><button type="button" id="q' + i + '-n">いいえ</button></div><div class="ans" hidden></div>';
-    quizBox.appendChild(card);
-    function answer(yes) {
-      var ans = card.querySelector(".ans");
-      var right = yes === q.yes;
-      ans.hidden = false;
-      ans.className = "ans " + (right ? "right" : "wrong");
-      ans.innerHTML = "<b>" + (right ? "正解" : "ちがいます") + "。答えは「" + (q.yes ? "はい" : "いいえ") + "」</b>" + q.why;
-      if (afterTimer) clearTimeout(afterTimer);
-      swP.checked = true; swS.checked = true;
-      current = q.who; focusCode = q.code;
-      if ((q.company || 1) !== company) { company = q.company || 1; buildTree(); }
-      render();
-      var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-      document.getElementById("example").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-      if (q.after && q.after.substance === false) {
-        afterTimer = setTimeout(function () { swS.checked = false; render(); }, 2200);
-      }
+function render(idx) {
+  const person = PEOPLE[idx];
+  document.querySelectorAll("#people button").forEach((b, i) => b.setAttribute("aria-pressed", String(i === idx)));
+  const groups = person.groups.map((g) => G[g]).join("・");
+  document.getElementById("result").innerHTML = PRODUCTS.map((p) => {
+    const mk = marksOf(person, p.g);
+    const view = mk.has("pv");
+    let why;
+    let cv = false, ce = false;
+    if (!view) why = "入っている権限グループ（" + groups + "）のどの表にも「" + G[p.g] + "」の行が無い（製品そのものが見えない）";
+    else if (!mk.has("cv")) why = "条件 2 を満たさない：" + groups + "の表の「" + G[p.g] + "」の行に組成の印が無い";
+    else {
+      const h = hidden(person, p.rows);
+      if (h) why = "条件 3 を満たさない：" + h + "が見えない";
+      else { cv = true; ce = mk.has("ce"); why = ce ? "3 つの条件を満たし、組成の編集の印もある" : "3 つの条件を満たす。組成の編集の印は無い"; }
     }
-    card.querySelector("#q" + i + "-y").addEventListener("click", function () { answer(true); });
-    card.querySelector("#q" + i + "-n").addEventListener("click", function () { answer(false); });
-  });
+    return "<tr><th>" + p.name + '<br><span class="why">' + G[p.g] + "</span></th>" +
+      '<td class="c">' + yn(view) + '</td><td class="c">' + yn(mk.has("pe")) + "</td>" +
+      '<td class="c">' + yn(cv) + '</td><td class="c">' + yn(ce) + '</td><td class="why">' + why + "</td></tr>";
+  }).join("");
+}
 
-  buildTree();
-  render();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { buildTree(); render(); });
-  window.addEventListener("resize", function () { render(); });
-})();
+renderRules();
+renderOrgs();
+pickOrg(2);
+renderQa();
+renderProds();
+document.getElementById("people").innerHTML = PEOPLE.map((p) => '<button type="button" aria-pressed="false">' + p.name + "<br><span class=\"why\">" + p.groups.map((g) => G[g]).join("・") + "</span></button>").join("");
+document.querySelectorAll("#people button").forEach((b, i) => b.addEventListener("click", () => render(i)));
+render(2);
 </script>
+</html>
