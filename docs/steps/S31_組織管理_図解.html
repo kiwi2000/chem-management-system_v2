@@ -89,6 +89,7 @@ section { display: grid; gap: 18px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { border-radius: 999px; padding: 4px 14px; font-weight: 700; font-size: 14px; background: var(--reach-soft); color: var(--reach); }
 .chip.all { background: var(--common-soft); color: var(--common); }
+.chip.admin { background: var(--perm-soft); color: var(--perm); }
 
 /* 部署の設定（表のひな形） */
 table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14px; }
@@ -153,7 +154,7 @@ td.c, th.c { text-align: center; white-space: nowrap; }
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">化学物質管理システム　組織管理の仕様案（2026-11-04 時点）</div>
+    <div class="eyebrow">化学物質管理システム　組織管理の仕様案（2026-11-06 確定）</div>
     <h1>組織管理のしくみ</h1>
     <p class="lead">誰が、どの製品・原材料・物質に、何をできるのか。決めるのは「入っている権限グループ」と「権限グループの表」の 2 つだけです。細かいことは仕様案（S31_組織管理_仕様案.md）にあります。</p>
   </header>
@@ -161,13 +162,13 @@ td.c, th.c { text-align: center; white-space: nowrap; }
   <section aria-labelledby="s1">
     <h2 id="s1">考え方は 1 つだけ</h2>
     <div class="equation">
-      <div class="eq-box person"><div class="big">入っている権限グループ</div><small>1 つ以上。兼務の人は、兼務先の権限グループにも入る</small></div>
+      <div class="eq-box person"><div class="big">入っている権限グループ</div><small>いくつでも。兼務の人は、兼務先の権限グループにも入る</small></div>
       <div class="eq-op" aria-hidden="true">×</div>
       <div class="eq-box perm"><div class="big">権限グループの表</div><small>どの権限グループのデータに、何ができるか</small></div>
       <div class="eq-op" aria-hidden="true">＝</div>
       <div class="eq-box result"><div class="big">その人にできること</div><small>2 つ以上入っていれば、印を全部合わせたもの</small></div>
     </div>
-    <p>人に直接付ける権限はありません。例外はシステム管理者だけで、これは人に付けます。ただし、システム管理者という役目だけでは、製品・原材料・物質のデータは見られません。</p>
+    <p>人に直接付ける権限はありません。システム管理者も「システム管理グループ」という権限グループで表します。そこに入っている人は、表に関係なく何でもできます。</p>
   </section>
 
   <section aria-labelledby="s2">
@@ -189,9 +190,9 @@ td.c, th.c { text-align: center; white-space: nowrap; }
         <h3>権限グループ<small>上下は無く、1 列</small></h3>
         <div class="chips">
           <span class="chip all">A 社 全体</span><span class="chip">製造部</span><span class="chip">開発部</span><span class="chip">品質保証部</span>
-          <span class="chip all">B 社 全体</span><span class="chip">B 社 開発部</span>
+          <span class="chip all">B 社 全体</span><span class="chip">B 社 開発部</span><span class="chip admin">システム管理</span>
         </div>
-        <p class="note">人に何ができるかを決め、データの持ち主にもなります。製品・原材料・物質は、どれか 1 つの権限グループに所属します。名前も分け方も自由で、「A 社 全体」のように会社の全員を入れるものも、ふつうの権限グループの 1 つです。</p>
+        <p class="note">人に何ができるかを決め、データの持ち主にもなります。製品・原材料・物質は、どれか 1 つの権限グループに所属します。名前も分け方も自由で、「A 社 全体」のように会社の全員を入れるものも、ふつうの権限グループの 1 つです。コードと名前を持ち、コードは全体で一意です。「システム管理」だけは最初からあり、入っている人は何でもできます。</p>
       </div>
     </div>
   </section>
@@ -212,7 +213,7 @@ td.c, th.c { text-align: center; white-space: nowrap; }
             <tbody id="rules"></tbody>
           </table>
         </div>
-        <p class="note">ある組織に設定した権限グループは、その下の部・課などの人を登録するときにも選ばれます。上の組織に設定したものも、一緒に選ばれます。例：製造部 第 1 課の人を登録すると、A 社に設定した「A 社 全体」と、製造部に設定した「製造部」の 2 つが選ばれた状態で出ます。営業部 営業 1 課の人なら、営業部にも営業 1 課にも設定が無いので、「A 社 全体」だけです。</p>
+        <p class="note">ある組織に設定した権限グループは、その下の部・課などの人を登録するときにも選ばれます。上の組織に設定したものも、一緒に選ばれます。例：製造部 第 1 課の人を登録すると、A 社に設定した「A 社 全体」と、製造部に設定した「製造部」の 2 つが選ばれた状態で出ます。営業部 営業 1 課の人なら、営業部にも営業 1 課にも設定が無いので、「A 社 全体」だけです。システム管理グループは選べません。</p>
       </div>
       <div class="panel">
         <h3>組織を選んでみる</h3>
@@ -222,7 +223,7 @@ td.c, th.c { text-align: center; white-space: nowrap; }
     </div>
     <div class="rules">
       <div class="rule"><b>最初に選んでおくだけ</b><span>人の権限グループは人ごとに保存する。あとでこの設定を変えても、登録済みの人は変わらない。</span></div>
-      <div class="rule"><b>異動のとき</b><span>組織を変えると、権限グループが選び直され、新しい組織に設定されたものが選ばれた状態で出る。前の部署の権限が残らない。保存前に直せる。</span></div>
+      <div class="rule"><b>異動のとき</b><span>組織を変えると、権限グループが選び直され、新しい組織に設定されたものが選ばれた状態で出る。前の部署の権限が残らない。保存前に直せる。0 になっても、そのまま保存できる（その人は何も見られなくなる）。</span></div>
     </div>
   </section>
 
@@ -240,17 +241,23 @@ td.c, th.c { text-align: center; white-space: nowrap; }
     </div>
     <div class="rules">
       <div class="rule"><b>最初の印は無し</b><span>新しく作った権限グループには何も付かない。作る画面で、管理者が表を見ながら付ける。</span></div>
-      <div class="rule"><b>印は連動する</b><span>編集を付けると参照も付く。組成の参照を付けると製品・原材料の参照も付く。組成は直せて製品は直せない形は許す。</span></div>
+      <div class="rule"><b>印は連動する</b><span>編集を付けると参照も付く。組成の参照を付けると製品・原材料の参照も付く。組成は直せて製品は直せない形は許す。組成の参照を付けても物質の参照は付かない（組成を見るには同じ行の物質参照も要るので、表の画面に注意書きを出す）。</span></div>
       <div class="rule"><b>たどれるのは 1 段だけ</b><span>品質保証部が製造部を参照でき、製造部が開発部を参照できても、品質保証部は開発部を参照できない。</span></div>
-      <div class="rule"><b>表とは別の権限</b><span>承認・法規制・出力・取り込み・ドキュメント・お知らせ・PRTR なども権限グループに付ける。「できる・できない」だけの欄。</span></div>
+      <div class="rule"><b>表とは別の権限</b><span>承認・法規制・出力・取り込み・ドキュメント・お知らせ・フィードバック・組織の編集も権限グループに付ける。「できる・できない」だけの欄。未公開を見られるのは承認する人と作った本人だけ。PRTR は別途検討。</span></div>
+      <div class="rule"><b>コードと名前</b><span>コードは全体で一意。TSV の取り込み・出力で所属先を指すのに使う。</span></div>
+      <div class="rule"><b>消せるのは</b><span>入っている人がおらず、所属するデータも無い権限グループだけ。消すと、ほかの表の行と最初に選ばれる設定からも自動で消える。</span></div>
     </div>
   </section>
 
   <section aria-labelledby="s5">
     <h2 id="s5">データの所属先</h2>
     <div class="rules">
-      <div class="rule"><b>作るとき</b><span>作る人が「編集」の印を持つ権限グループからだけ選べる。1 つなら自動で決まる。2 つ以上なら何も選ばれていない状態で出し、必ず選ばせる。</span></div>
-      <div class="rule"><b>移すとき</b><span>今の所属先と移す先の両方に「編集」の印がある人だけ。移せないときは管理者に依頼する（管理者用の権限グループに印を付けて移す）。</span></div>
+      <div class="rule"><b>作るとき</b><span>作る人が「編集」の印を持つ権限グループからだけ選べる。1 つなら自動で決まる。2 つ以上なら何も選ばれていない状態で出し、必ず選ばせる。システム管理グループの人はどの権限グループでも選べる（必ず選ばせる）。</span></div>
+      <div class="rule"><b>移すとき</b><span>今の所属先と移す先の両方に「編集」の印がある人だけ。移せないときはシステム管理グループの人に依頼する（印に関係なく移せる）。原材料・物質を移すときは、使っている製品の件数を出して確認する。</span></div>
+      <div class="rule"><b>TSV で取り込むとき</b><span>「画面で選んだ所属先にする」か「TSV の所属先の列（コード）を使う」かを画面で選ぶ。列を使うときは、空・無いコード・編集の印が無い行だけエラーにして、ほかの行は取り込む。</span></div>
+      <div class="rule"><b>未公開と無効</b><span>未公開のものは、作った本人と承認する人だけに見える。無効（廃番）は隠さず全員に見える（一覧は既定で有効のみ）。組成に選べるのは公開済みで有効なものだけ。</span></div>
+      <div class="rule"><b>帳票（ドキュメント）</b><span>見られない情報を含む帳票は、作った本人も含めて誰も開けない。一覧の帳票は、載っている全部が見えること。</span></div>
+      <div class="rule"><b>コードの重なり</b><span>見えないものと同じコードは「このコードは使えません」。見えないところで使われていれば「ほかで使われているため消せません」。理由は言わない。</span></div>
     </div>
   </section>
 
@@ -265,7 +272,7 @@ td.c, th.c { text-align: center; white-space: nowrap; }
     <div class="gates">
       <div class="gate"><span class="n">条件 1</span><div><b>製品・原材料 参照の印がある</b><span>条件 2 に印があれば連動で付いているので、実際には必ず満たす</span></div></div>
       <div class="gate"><span class="n">条件 2</span><div><b>組成 参照の印がある</b><span>直すときは「組成 編集」の印</span></div></div>
-      <div class="gate"><span class="n">条件 3</span><div><b>組成の中身が全部見える</b><span>並ぶ物質と原材料が全部見えること。原材料の組成も、同じ条件で見えること</span></div></div>
+      <div class="gate"><span class="n">条件 3</span><div><b>組成の中身が全部見える</b><span>並ぶ物質と原材料が全部見えること。原材料の組成も、同じ条件で見えること。印だけで決まる（組成に入れられるのは公開済みで有効なものだけ。あとから無効になったものも隠さない）</span></div></div>
       <div class="ok">3 つとも満たせば、組成を見られる。1 つでも欠ければ、組成全体を見られず、直せない（製品のほかの項目は印どおり）</div>
     </div>
     <p class="note">組成を見られない人にも、製品として当たる規制区分は見せます。原因の物質や内訳、添付ファイル、CAS 番号での製品の絞り込みは見せません。</p>
@@ -285,10 +292,10 @@ td.c, th.c { text-align: center; white-space: nowrap; }
   </section>
 
   <section aria-labelledby="s8">
-    <h2 id="s8">システム管理者と、今のデータの移し方</h2>
+    <h2 id="s8">システム管理グループと、今のデータの移し方</h2>
     <div class="rules">
-      <div class="rule"><b>システム管理者</b><span>人に付ける。組織にも権限グループにも入っていなくてよい。役目だけではデータを見られないので、扱わせたいときは権限グループ（管理者用でもよい）に入れる。辞めた人は、ユーザーを止めてログインできなくする。</span></div>
-      <div class="rule"><b>今のデータの移し方</b><span>データは全部「全体」という権限グループへ。人は、今の権限の組み合わせが同じ人ごとに「移行 1」「移行 2」…の権限グループへ。移した日に、誰のできることも変わらない。権限グループは、移す処理が各環境の DB の中身から作る。</span></div>
+      <div class="rule"><b>システム管理グループ</b><span>最初からある特別な権限グループ。入っている人は、すべてのデータと組成を見て直せ、ほかの権限も全部持つ（表は無い）。消せず、最後の 1 人は外せない。組織には所属し、ほかの権限グループには入らなくてよい。辞めた人は、ユーザーを止めてログインできなくする。</span></div>
+      <div class="rule"><b>今のデータの移し方</b><span>データは全部「全体」という権限グループへ。人は、今の権限の組み合わせが同じ人ごとに「移行 1」「移行 2」…の権限グループへ。今の管理者はシステム管理グループへ。移した日に、誰のできることも変わらない（「無効・未公開も見られる」だけを持ち承認できない人が、他人の未公開を見られなくなるのが唯一の例外）。権限グループは、移す処理が各環境の DB の中身から作る。</span></div>
     </div>
   </section>
 </div>
