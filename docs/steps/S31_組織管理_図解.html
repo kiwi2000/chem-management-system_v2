@@ -177,7 +177,7 @@ td.c, th.c { text-align: center; white-space: nowrap; }
         <h3>組織<small>実際の組織図。何段でも</small></h3>
         <div class="tree">
           <div class="company"><span class="node co">A 社</span>
-            <div class="children"><span class="node">製造部 &gt; 第 1 課</span><span class="node">開発部</span><span class="node">品質保証部</span><span class="node">総務部</span></div>
+            <div class="children"><span class="node">製造部 &gt; 第 1 課</span><span class="node">開発部</span><span class="node">品質保証部</span><span class="node">営業部 &gt; 営業 1 課</span><span class="node">総務部</span></div>
           </div>
           <div class="company"><span class="node co">B 社</span>
             <div class="children"><span class="node">開発部</span></div>
@@ -212,7 +212,7 @@ td.c, th.c { text-align: center; white-space: nowrap; }
             <tbody id="rules"></tbody>
           </table>
         </div>
-        <p class="note">ある組織に設定した権限グループは、その下の部・課などの人を登録するときにも選ばれます。上の組織に設定したものも、一緒に選ばれます。例：製造部 第 1 課の人を登録すると、A 社に設定した「A 社 全体」と、製造部に設定した「製造部」の 2 つが選ばれた状態で出ます。</p>
+        <p class="note">ある組織に設定した権限グループは、その下の部・課などの人を登録するときにも選ばれます。上の組織に設定したものも、一緒に選ばれます。例：製造部 第 1 課の人を登録すると、A 社に設定した「A 社 全体」と、製造部に設定した「製造部」の 2 つが選ばれた状態で出ます。営業部 営業 1 課の人なら、営業部にも営業 1 課にも設定が無いので、「A 社 全体」だけです。</p>
       </div>
       <div class="panel">
         <h3>組織を選んでみる</h3>
@@ -326,6 +326,8 @@ const ORGS = [
   { id: "aMfg1", name: "A 社 > 製造部 > 第 1 課", parent: "aMfg" },
   { id: "aDev", name: "A 社 > 開発部", parent: "a", rule: ["aDev"] },
   { id: "aQa", name: "A 社 > 品質保証部", parent: "a", rule: ["aQa"] },
+  { id: "aSales", name: "A 社 > 営業部", parent: "a" },
+  { id: "aSales1", name: "A 社 > 営業部 > 営業 1 課", parent: "aSales" },
   { id: "aGen", name: "A 社 > 総務部", parent: "a" },
   { id: "b", name: "B 社", rule: ["bAll"] },
   { id: "bDev", name: "B 社 > 開発部", parent: "b", rule: ["bDev"] },
@@ -352,6 +354,7 @@ const PRODUCTS = [
 ];
 const PEOPLE = [
   { name: "製造部 第 1 課の人", groups: defaults("aMfg1") },
+  { name: "営業部 営業 1 課の人", groups: defaults("aSales1") },
   { name: "開発部の人", groups: defaults("aDev") },
   { name: "品質保証部の人", groups: defaults("aQa") },
   { name: "製造部で品質保証部も兼ねる人", groups: [...defaults("aMfg"), "aQa"] },
@@ -448,6 +451,6 @@ renderQa();
 renderProds();
 document.getElementById("people").innerHTML = PEOPLE.map((p) => '<button type="button" aria-pressed="false">' + p.name + "<br><span class=\"why\">" + p.groups.map((g) => G[g]).join("・") + "</span></button>").join("");
 document.querySelectorAll("#people button").forEach((b, i) => b.addEventListener("click", () => render(i)));
-render(2);
+render(3);
 </script>
 </html>
