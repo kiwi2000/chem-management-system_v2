@@ -40,7 +40,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     （前の版の結果を出すと、その版の結果のように読まれてしまう。実際に起きた）
   */
   const current = await getCurrentVersion();
-  const withComposition = canViewComposition(actor, product);
+  const withComposition = await canViewComposition(actor, product);
   const rows = current ? await toJudgementDtos(id, withComposition, current.id) : [];
   /*
     組成を見られない人には、規制区分ごとの結論 1 つにまとめてから返す（2026-10-14 指示）。

@@ -6,8 +6,18 @@ import {
   normalizeCode,
   parseTable,
 } from "@chem/shared";
+import { canOn } from "@/lib/authz";
+import { compositionAccessMany } from "@/lib/composition-access";
 import { prisma } from "@/lib/db";
-import { diffFields, editedByHuman, type StagedRow } from "@/lib/import/types";
+import {
+  diffFields,
+  editedByHuman,
+  resolveOwner,
+  type StageContext,
+  type StagedRow,
+} from "@/lib/import/types";
+import { visibilityWhere } from "@/lib/product-service";
+import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
 
 /**
  * 製品と組成の表（TSV）を一時領域の行にする。
@@ -27,6 +37,11 @@ export interface ProductPayload {
   usableAsMaterial: boolean;
   status: "ACTIVE" | "DISCONTINUED";
   note: string | null;
+  /**
+   * 所属先（S31。権限グループの id）。新しく作るときは必ず入る。
+   * 既にある製品で null なら所属先を変えない（「画面で選んだ所属先」のとき）
+   */
+  ownerGroupId?: string | null;
 }
 
 export interface CompositionPayload {
@@ -54,7 +69,10 @@ function yes(raw: string): boolean {
   return v === "1" || v === "true" || v === "○" || v === "はい" || v === "可" || v === "yes";
 }
 
-export async function stageProducts(text: string): Promise<{
+export async function stageProducts(
+  text: string,
+  ctx: StageContext,
+): Promise<{
   rows: StagedRow[];
   errors: { line: number; message: string }[];
   notes: string[];
@@ -92,15 +110,34 @@ export async function stageProducts(text: string): Promise<{
       status: true,
       note: true,
       updatedBy: true,
+      ownerGroupId: true,
       compositionLines: {
         select: { substanceId: true, childProductId: true, contentPct: true, note: true },
         orderBy: { displayOrder: "asc" },
       },
     },
   });
-  const productMap = new Map(products.map((p) => [p.codeNormalized, p]));
+  /*
+    S31: 取り込む人に見えない製品は、無いものとして扱わない（コードは全体で一意なので作れない）。
+    見えない製品と同じコードの行は「このコードは使えません」とだけ出す（見えないものの存在を知らせない）
+  */
+  const visibleIds = new Set(
+    (
+      await prisma.product.findMany({
+        where: { deletedAt: null, ...visibilityWhere(ctx.actor) },
+        select: { id: true },
+      })
+    ).map((p) => p.id),
+  );
+  const hiddenCodes = new Set(
+    products.filter((p) => !visibleIds.has(p.id)).map((p) => p.codeNormalized),
+  );
+  const productMap = new Map(
+    products.filter((p) => visibleIds.has(p.id)).map((p) => [p.codeNormalized, p]),
+  );
+  // 組成に使う物質は、取り込む人に見えるものだけから探す
   const substances = await prisma.substance.findMany({
-    where: { deletedAt: null },
+    where: { deletedAt: null, ...substanceVisibility(ctx.actor) },
     select: {
       id: true,
       codeNormalized: true,
@@ -122,7 +159,13 @@ export async function stageProducts(text: string): Promise<{
   const order: string[] = [];
   const byCode = new Map<
     string,
-    { line: number; product: ProductPayload; lines: CompositionPayload["lines"]; hasLines: boolean }
+    {
+      line: number;
+      product: ProductPayload;
+      lines: CompositionPayload["lines"];
+      hasLines: boolean;
+      ownerCode: string;
+    }
   >();
   table.rows.forEach((row, i) => {
     const line = table.lineNumbers[i]!;
@@ -132,6 +175,10 @@ export async function stageProducts(text: string): Promise<{
       return;
     }
     const codeN = normalizeCode(code);
+    if (hiddenCodes.has(codeN)) {
+      errors.push({ line, message: `製品「${code}」: このコードは使えません` });
+      return;
+    }
     let entry = byCode.get(codeN);
     if (!entry) {
       const existing = productMap.get(codeN);
@@ -169,6 +216,7 @@ export async function stageProducts(text: string): Promise<{
         },
         lines: [],
         hasLines: false,
+        ownerCode: normalizeCode(col(row, "owner")),
       };
       byCode.set(codeN, entry);
       order.push(codeN);
@@ -230,10 +278,28 @@ export async function stageProducts(text: string): Promise<{
     });
   });
 
+  // 組成に入れる原材料は、取り込む人が組成を見られるものだけ（画面の候補と同じ。仕様 10 章）
+  const childIds = [
+    ...new Set(
+      [...byCode.values()].flatMap((e) =>
+        e.lines.flatMap((l) => (l.childProductId ? [l.childProductId] : [])),
+      ),
+    ),
+  ];
+  const childAccess = await compositionAccessMany(ctx.actor, childIds);
+  const ownerCodeOf = new Map(ctx.owners.map((o) => [o.id, o.code]));
+
   const rows: StagedRow[] = [];
   for (const codeN of order) {
     const e = byCode.get(codeN)!;
     const cur = productMap.get(codeN);
+    // 所属先（S31 仕様 7 章）
+    const owner = resolveOwner(ctx, cur?.ownerGroupId ?? null, e.ownerCode, "productEdit");
+    if (typeof owner === "string") {
+      errors.push({ line: e.line, message: `製品「${e.product.code}」: ${owner}` });
+      continue;
+    }
+    e.product.ownerGroupId = owner.target;
     const base = {
       kind: "product" as const,
       keyPath: e.product.code,
@@ -244,6 +310,12 @@ export async function stageProducts(text: string): Promise<{
       rows.push({ ...base, action: "ADD", apply: true });
     } else {
       const diff = diffFields(cur, e.product as unknown as Record<string, unknown>, PRODUCT_FIELDS);
+      if (owner.target && owner.target !== cur.ownerGroupId) {
+        diff.ownerGroup = {
+          current: ownerCodeOf.get(cur.ownerGroupId) ?? "",
+          next: ownerCodeOf.get(owner.target) ?? "",
+        };
+      }
       if (Object.keys(diff).length === 0) rows.push({ ...base, action: "UNCHANGED", apply: false });
       else if (editedByHuman(cur.updatedBy))
         rows.push({
@@ -256,6 +328,15 @@ export async function stageProducts(text: string): Promise<{
       else rows.push({ ...base, action: "UPDATE", apply: true, diff });
     }
     if (e.hasLines) {
+      // 組成を直せるか: 所属先に「組成 編集」の印があり、入れる原材料の組成がどれも見えること
+      const ownerNow = owner.target ?? cur?.ownerGroupId ?? "";
+      const okLines = e.lines.every(
+        (l) => !l.childProductId || childAccess.get(l.childProductId) !== "hidden",
+      );
+      if (!canOn(ctx.actor, "compositionEdit", ownerNow) || !okLines) {
+        errors.push({ line: e.line, message: `製品「${e.product.code}」: 組成は直せません` });
+        continue;
+      }
       const payload: CompositionPayload = { productCode: e.product.code, lines: e.lines };
       const sig = (
         ls: { substanceId: string | null; childProductId: string | null; contentPct: unknown }[],

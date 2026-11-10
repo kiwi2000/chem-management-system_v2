@@ -6,6 +6,8 @@ import {
 } from "@chem/shared";
 import type { Prisma, Product } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
+import { compositionAccess } from "@/lib/composition-access";
+import { visibilityWhere as productVisibility } from "@/lib/product-service";
 import { prisma } from "@/lib/db";
 import type { CompositionLineDto, CompositionResponse } from "@/lib/types";
 
@@ -46,16 +48,22 @@ export type PreLineRow = Prisma.ProductPreReactionLineGetPayload<{
 }>;
 
 /**
- * 組成を見られるか。
- * 製品ごとの公開フラグは廃止したので、判定は権限だけで決まる。
+ * 組成を見られるか（S31 仕様 10 章の 3 つの条件。lib/composition-access.ts）。
+ * 製品の所属先の印と、組成の中身（物質・原材料）の所属先の印で決まる
  */
-export function canViewComposition(actor: Actor, _product: Product): boolean {
-  return actor.has("COMPOSITION_VIEW");
+export async function canViewComposition(
+  actor: Actor,
+  product: Pick<Product, "id">,
+): Promise<boolean> {
+  return (await compositionAccess(actor, product.id)) !== "hidden";
 }
 
-/** 組成を書き換えられるか。見えないものは編集させない */
-export function canEditComposition(actor: Actor, product: Product): boolean {
-  return actor.has("PRODUCT_EDIT") && canViewComposition(actor, product);
+/** 組成を書き換えられるか。所属先に「組成 編集」の印があり、中身が全部見えること */
+export async function canEditComposition(
+  actor: Actor,
+  product: Pick<Product, "id">,
+): Promise<boolean> {
+  return (await compositionAccess(actor, product.id)) === "edit";
 }
 
 export function toLineDto(l: LineRow | PreLineRow): CompositionLineDto {
@@ -238,4 +246,44 @@ export function lineWrites(input: CompositionInput) {
     note: l.note ?? null,
     displayOrder: i + 1,
   }));
+}
+
+/**
+ * この原材料・物質を組成に使っている製品（削除済みは除く。反応前の写しも含む）の id。
+ * 消すとき・所属先を移すときに使う（S31）
+ */
+export async function productsUsing(by: { childProductId: string } | { substanceId: string }) {
+  const where =
+    "childProductId" in by
+      ? { childProductId: by.childProductId }
+      : { substanceId: by.substanceId };
+  const [lines, pre] = await Promise.all([
+    prisma.compositionLine.findMany({
+      where: { ...where, parentProduct: { deletedAt: null } },
+      select: { parentProductId: true },
+    }),
+    prisma.productPreReactionLine.findMany({
+      where: { ...where, product: { deletedAt: null } },
+      select: { productId: true },
+    }),
+  ]);
+  return [...new Set([...lines.map((l) => l.parentProductId), ...pre.map((l) => l.productId)])];
+}
+
+/**
+ * 消せないときの文（S31 仕様 7 章）。使っている製品にその人が見られないものがあれば、
+ * 件数を言わずに「ほかで使われているため消せません」とだけ出す（見えないものの存在を知らせない）
+ */
+export async function referencedMessage(
+  actor: Actor,
+  users: string[],
+  m: Messages,
+): Promise<string> {
+  if (actor.isSystemAdmin) return m.composition.referencedByProducts(users.length);
+  const visible = await prisma.product.count({
+    where: { id: { in: users }, deletedAt: null, ...productVisibility(actor) },
+  });
+  return visible === users.length
+    ? m.composition.referencedByProducts(users.length)
+    : m.owner.usedElsewhere;
 }

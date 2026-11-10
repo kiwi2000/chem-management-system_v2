@@ -2,6 +2,7 @@ import { emptyTableState, parseTableState, productSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { compositionFilterLimit } from "@/lib/product-list-limit";
 import { getServerMessages } from "@/lib/i18n";
 import { resolveOwnerForCreate } from "@/lib/owner-group";
 import { getCurrentVersion } from "@/lib/current-version";
@@ -47,9 +48,15 @@ export async function GET(req: Request) {
     withComposition ? await lookupSubstanceNames(substanceNameWords(state.filters)) : undefined,
   );
 
+  // 組成をたどる絞り込みは、組成を見られる製品だけに限る（S31）
+  const compositionLimit = withComposition
+    ? await compositionFilterLimit(actor, version?.id ?? null, columns, state.filters)
+    : {};
+
   const where = {
     deletedAt: null,
     ...visibilityWhere(actor),
+    ...compositionLimit,
     ...buildWhere(columns, state.filters),
   };
 
@@ -101,8 +108,23 @@ export async function POST(req: Request) {
 
   // 新規登録は必ず作成中から始める（公開させるのは意識的な操作にする）
   const base = normalizeInput(input);
-  if (await prisma.product.findUnique({ where: { codeNormalized: base.codeNormalized } })) {
-    return jsonError(409, "duplicate_code", m.errors.duplicateProductCode(base.code));
+  const clash = await prisma.product.findUnique({
+    where: { codeNormalized: base.codeNormalized },
+    select: { id: true },
+  });
+  if (clash) {
+    // 見えないものと重なるときは理由を言わない（S31 仕様 7 章。見えないものの存在を知らせない）
+    const seen = await prisma.product.count({ where: { id: clash.id, ...visibilityWhere(actor) } });
+    return jsonError(
+      409,
+      "duplicate_code",
+      seen ? m.errors.duplicateProductCode(base.code) : m.owner.codeUnavailable,
+      {
+        fieldErrors: {
+          code: [seen ? m.errors.duplicateProductCode(base.code) : m.owner.codeUnavailable],
+        },
+      },
+    );
   }
 
   // 所属先（S31）。「製品・原材料 編集」の印を持つ権限グループから

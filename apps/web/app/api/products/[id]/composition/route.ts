@@ -42,7 +42,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!canViewComposition(actor, product)) {
+  if (!(await canViewComposition(actor, product))) {
     return jsonError(403, "forbidden", m.composition.withheld);
   }
 
@@ -96,7 +96,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   return Response.json({
     ...toCompositionResponse(lines, settings, m),
     preReaction,
-    canEdit: canEditComposition(actor, product),
+    canEdit: await canEditComposition(actor, product),
     stamp: stamp.stamp,
   });
 }
@@ -116,7 +116,7 @@ export async function PUT(req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!canEditComposition(actor, product)) {
+  if (!(await canEditComposition(actor, product))) {
     return jsonError(403, "forbidden", m.composition.withheldEdit);
   }
 

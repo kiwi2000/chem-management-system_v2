@@ -40,13 +40,15 @@ export default async function SavedDocumentPage({ params }: { params: Promise<{ 
       hasComposition: true,
       targetCode: true,
       targetRef: true,
+      contentProductIds: true,
+      contentSubstanceIds: true,
       generatedBy: true,
       template: { select: { code: true, nameJa: true, target: true } },
     },
   });
   if (!row) notFound();
   // 自分のものか、権限があれば他人のものも（lib/doc-access.ts）。見せないものは、あることも伝えない
-  if (!(await canAccessDocument(actor, row))) notFound();
+  if (!(await canAccessDocument(actor, { ...row, id }))) notFound();
   /*
     紙面を開くのは、落とすのと同じ扱い（印刷して保存できる。2026-09-17 指示）。
     **自分が作ったものは、作れる人なら開ける。**他人のぶんには権限が要る（同日 指示）

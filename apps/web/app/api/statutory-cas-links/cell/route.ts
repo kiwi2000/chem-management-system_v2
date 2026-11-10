@@ -1,6 +1,7 @@
 import { normalizeCas, toScaled } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { asElementOf, loadElementNames } from "@/lib/as-element";
+import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { notDisabledIn } from "@/lib/enabled-sources";
 import { MARK_CONDITIONAL_LINK, MARK_UNFILLED, loadFactors } from "@/lib/judge-store";
@@ -45,7 +46,8 @@ export async function GET(req: Request) {
     返す「当たり」「含有率不足」は、その製品にこの CAS がいくら入っているかから決めるので、
     製品の組成そのもの。製品を指定しなければ法律側のデータだけなので、誰でもよい
   */
-  if (productId && !actor.has("COMPOSITION_VIEW")) {
+  // S31: 組成を見られるかは製品ごとに違う（仕様 10 章の 3 つの条件）
+  if (productId && !(await canViewComposition(actor, { id: productId }))) {
     return jsonError(403, "forbidden", m.composition.withheld);
   }
 

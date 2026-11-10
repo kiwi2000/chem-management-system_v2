@@ -6,7 +6,7 @@ import {
   regulationCategorySchema,
 } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requirePermission } from "@/lib/authz";
+import { jsonError, requirePermission, scopeIds } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { getCurrentVersion } from "@/lib/current-version";
@@ -32,6 +32,7 @@ export async function GET(req: Request) {
   const columns = regulationCategoryColumns(version?.id ?? null, {
     seeAll: actor.has("APPROVE"),
     userId: actor.user.id,
+    ownerIds: scopeIds(actor, "substanceView"),
   });
   const state = parseTableState(
     new URL(req.url).searchParams,

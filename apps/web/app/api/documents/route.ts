@@ -1,7 +1,12 @@
 import { emptyTableState, parseTableState } from "@chem/shared";
 import { requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { creatorNames, documentWhere } from "@/lib/doc-access";
+import {
+  creatorNames,
+  DOC_ACCESS_SELECT,
+  documentWhere,
+  openableDocuments,
+} from "@/lib/doc-access";
 import { DOCUMENT_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import type { GeneratedDocumentDto } from "@/lib/types";
@@ -37,6 +42,7 @@ export async function GET(req: Request) {
       where,
       orderBy: buildOrderBy(DOCUMENT_COLUMNS, state.sort, { generatedAt: "desc" }),
       select: {
+        ...DOC_ACCESS_SELECT,
         id: true,
         targetCode: true,
         hasComposition: true,
@@ -55,6 +61,8 @@ export async function GET(req: Request) {
   ]);
 
   const names = await creatorNames(items.map((d) => d.generatedBy));
+  // 見られない情報を含む帳票は開けない（S31）。一覧には並べて「開けません」と出す
+  const openable = await openableDocuments(actor, items);
   return Response.json({
     items: items.map((d): GeneratedDocumentDto => ({
       id: d.id,
@@ -71,6 +79,7 @@ export async function GET(req: Request) {
       fileError: d.fileError,
       createdByName: (d.generatedBy && names.get(d.generatedBy)) || null,
       mine: d.generatedBy === actor.user.id,
+      openable: openable.has(d.id),
     })),
     total,
     page: state.page,

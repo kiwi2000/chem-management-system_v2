@@ -1,6 +1,6 @@
 import { normalizeCas } from "@chem/shared";
 import { casSiblings } from "@/lib/substance-service";
-import { requirePermission } from "@/lib/authz";
+import { ownerWhere, requirePermission } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,8 @@ export async function GET(req: Request) {
     normalizeCas(raw),
     url.searchParams.get("exclude"),
     url.searchParams.get("type") || undefined,
+    // 見えない物質の名前は返さない（S31。見えないものの存在を知らせない）
+    ownerWhere(actor, "substanceView"),
   );
   return Response.json({ items });
 }

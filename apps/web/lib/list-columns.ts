@@ -785,11 +785,14 @@ export const STATUTORY_SUBSTANCE_COLUMNS: QueryColumn[] = [
 
 /**
  * 「結び付いた物質の名前」で探すときの、見る人の情報。
- * 公開前の物質は、作った本人と INACTIVE_VIEW を持つ人にしか見せない（サーバー側で除く）
+ * 公開前の物質は、作った本人と承認する人にしか見せない。所属先に「物質 参照」の印が無い物質の名前でも当てない（S31）
  */
 export interface LinkNameViewer {
+  /** 公開前のものも見られる（承認する人） */
   seeAll: boolean;
   userId: string;
+  /** 見られる物質の所属先（権限グループの id）。null は全部（システム管理グループ） */
+  ownerIds?: string[] | null;
 }
 
 /**
@@ -817,6 +820,7 @@ function linkNameCondition(
   if (opts.viewer && !opts.viewer.seeAll) {
     each.push({ OR: [{ publishState: "PUBLISHED" }, { createdBy: opts.viewer.userId }] });
   }
+  if (opts.viewer?.ownerIds) each.push({ ownerGroupId: { in: opts.viewer.ownerIds } });
   return { AND: each };
 }
 

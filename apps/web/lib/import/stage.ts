@@ -1,13 +1,14 @@
 import { detectImportFile, isSnapshotLike, type Snapshot } from "@chem/shared";
 import type { ImportAction, ImportKind } from "@prisma/client";
 import JSZip from "jszip";
+import { actorOf } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { markDone, markRunning } from "@/lib/import/jobs";
 import { readRegulationList } from "@/lib/import/read-regulation-list";
 import { stageProducts } from "@/lib/import/stage-products";
 import { stageSnapshot } from "@/lib/import/stage-snapshot";
 import { stageSubstances } from "@/lib/import/stage-substances";
-import type { StageSummary, StagedRow } from "@/lib/import/types";
+import type { StageContext, StageSummary, StagedRow } from "@/lib/import/types";
 
 /**
  * 受け取ったファイルを読み、本体と突き合わせて一時領域（ImportRow）に入れる（決定 0011）。
@@ -56,6 +57,30 @@ function decode(bytes: Buffer): string {
       return bytes.toString("utf-8");
     }
   }
+}
+
+/**
+ * 製品・物質の取り込みの、取り込む人と所属先の決め方（S31）。
+ * 読み取りを頼んだ人（無ければファイルを出した人）の権限で突き合わせる
+ */
+async function stageContext(job: {
+  stagedBy: string | null;
+  createdBy: string;
+  ownerMode: string | null;
+  ownerGroupId: string | null;
+}): Promise<StageContext> {
+  const actor = await actorOf(job.stagedBy ?? job.createdBy);
+  if (!actor) throw new Error("取り込みを頼んだ人が見つかりません（止められたか消されています）");
+  const owners = await prisma.permissionGroup.findMany({
+    where: { isSystemAdmin: false },
+    select: { id: true, code: true },
+  });
+  return {
+    actor,
+    mode: job.ownerMode === "column" ? "column" : "fixed",
+    fixedOwner: job.ownerGroupId,
+    owners,
+  };
 }
 
 /** 裏で読み取りを始める。すでに走っていれば false */
@@ -144,13 +169,13 @@ async function runStage(jobId: string) {
       if (read.errors.length > 0) await emit(read.errors.map((e) => errorRow(e.line, e.message)));
       await stageSnapshot(read.snapshot, emit, { notes });
     } else if (job.kind === "PRODUCTS") {
-      const r = await stageProducts(unpacked.text);
+      const r = await stageProducts(unpacked.text, await stageContext(job));
       rowCount = r.count;
       notes.push(...r.notes);
       if (r.errors.length > 0) await emit(r.errors.map((e) => errorRow(e.line, e.message)));
       for (let i = 0; i < r.rows.length; i += 2000) await emit(r.rows.slice(i, i + 2000));
     } else {
-      const r = await stageSubstances(unpacked.text);
+      const r = await stageSubstances(unpacked.text, await stageContext(job));
       rowCount = r.count;
       notes.push(...r.notes);
       if (r.errors.length > 0) await emit(r.errors.map((e) => errorRow(e.line, e.message)));

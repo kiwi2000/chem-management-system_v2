@@ -69,6 +69,13 @@ export interface UserSummaryDto {
   passkeyCount: number;
 }
 
+/** 作る・移す・取り込むときに選べる所属先（S31） */
+export interface OwnerChoicesDto {
+  items: { id: string; code: string; nameJa: string; nameEn: string | null }[];
+  /** 1 つしか選べないとき、その id（自動で決まる）。システム管理グループの人は null */
+  autoPick: string | null;
+}
+
 /** 人の画面で選べる権限グループ（S31） */
 export interface PermissionGroupOptionDto {
   id: string;
@@ -891,6 +898,8 @@ export interface GeneratedDocumentDto {
   createdByName: string | null;
   /** 自分が作ったものか */
   mine: boolean;
+  /** 開けるか（S31。見られない製品・物質・組成が載っていれば、作った本人でも開けない） */
+  openable: boolean;
 }
 
 /** 画像ライブラリの 1 枚。中身（バイト列）は一覧には載せず、/api/images/[id] で取る */

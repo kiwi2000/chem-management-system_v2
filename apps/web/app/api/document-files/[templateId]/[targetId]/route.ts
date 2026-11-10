@@ -7,6 +7,7 @@ import {
 } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
+import { contentIdsFor } from "@/lib/doc-access";
 import { prisma } from "@/lib/db";
 import { collectFor } from "@/lib/doc-data";
 import { fillTemplateFile, inspectTemplateFile, TEMPLATE_EXT } from "@/lib/doc-fill";
@@ -117,6 +118,8 @@ export async function GET(
         */
         content: { file: { kind: row.kind, name } },
         hasComposition,
+        // 載せた製品・物質（S31。見られないものが載っていれば誰も開けない）
+        ...contentIdsFor(row.target, targetId, data),
         params: {
           version: data.values.get("doc.version") ?? "",
           ...(parties.companyId ? { companyId: parties.companyId } : {}),

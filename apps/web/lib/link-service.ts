@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import type { LinkSetVersion, LinkVersionSource, Source } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { rowStamp } from "@/lib/edit-stamp";
@@ -113,6 +114,8 @@ export function toLinkVersionSourceDto(
 export async function listCasLinks(
   versionId: string,
   statutorySubstanceId: string,
+  /** 名前を見せてよい物質の条件（S31。見えない物質の名前は出さない） */
+  substanceVisible: Prisma.SubstanceWhereInput = {},
 ): Promise<StatutoryCasLinkDto[]> {
   const [order, links] = await Promise.all([
     prisma.linkVersionSource.findMany({
@@ -139,6 +142,7 @@ export async function listCasLinks(
       deletedAt: null,
       isCasRepresentative: true,
       casNormalized: { in: [...new Set(links.map((l) => l.casNormalized))] },
+      ...substanceVisible,
     },
     select: { id: true, casNormalized: true, nameJa: true, nameEn: true },
   });

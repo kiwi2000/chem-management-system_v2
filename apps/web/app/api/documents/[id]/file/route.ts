@@ -27,12 +27,14 @@ export async function GET(_req: Request, { params }: Ctx) {
       generatedBy: true,
       hasComposition: true,
       targetRef: true,
+      contentProductIds: true,
+      contentSubstanceIds: true,
       fileName: true,
       filePath: true,
       template: { select: { target: true } },
     },
   });
-  if (!row || !(await canAccessDocument(actor, row))) {
+  if (!row || !(await canAccessDocument(actor, { ...row, id }))) {
     return jsonError(404, "not_found", m.errors.notFound);
   }
   // 他人のぶんを落とすには権限が要る。自分のぶんは作れる人なら落とせる

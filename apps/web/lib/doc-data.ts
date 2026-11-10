@@ -58,6 +58,9 @@ export interface DocData {
   listComposition?: boolean;
   /** 一覧の帳票の繰り返しの区間に流す、1 件ごとのデータ（選んだ順） */
   items?: DocData[];
+  /** 一覧の帳票に載せた製品・物質（S31。開けるかを決めるために帳票に記録する） */
+  productIds?: string[];
+  substanceIds?: string[];
 }
 
 function tableDef(key: DocumentTable, locale: Locale) {
@@ -261,7 +264,7 @@ export async function collectForProduct(
     法文物質名が並べば「この製品にその物質が入っている」と分かる。見られない人の帳票は、
     区分ごとの該非だけ（番号と法文物質名の欄は空）
   */
-  const withHits = canViewComposition(actor, product as never);
+  const withHits = await canViewComposition(actor, product as never);
   const judgements = version ? await toJudgementDtos(product.id, withHits, version.id) : [];
   const hit = judgements.filter((j) => j.verdict === "APPLICABLE");
   const hitCategories = new Set(hit.map((j) => j.categoryId)).size;
@@ -309,7 +312,7 @@ export async function collectForProduct(
     **組成は見られる人にだけ。**帳票は持ち出せる形なので、
     画面で伏せているものが紙に出ることがあってはならない
   */
-  if (canViewComposition(actor, product as never)) {
+  if (await canViewComposition(actor, product as never)) {
     const lines = await prisma.compositionLine.findMany({
       where: { parentProductId: product.id },
       orderBy: { displayOrder: "asc" },
@@ -540,6 +543,8 @@ export async function collectForList(
   const tables: RenderInput["tables"] = new Map();
   let count = 0;
   let listComposition = false;
+  let productIds: string[] = [];
+  let substanceIds: string[] = [];
 
   if (target === "PRODUCT_LIST") {
     const products = await prisma.product.findMany({
@@ -577,6 +582,7 @@ export async function collectForList(
     });
     if (query.kind === "ids") products.sort(byPicked);
     count = products.length;
+    productIds = products.map((p) => p.id);
     /*
       成分・CAS番号の列。**元の組成・展開後・CAS合算の 3 通り**（2026-09-16 指示）。
       見られない製品は空欄。元の組成で原材料（製品）の行は名前だけで CAS は無い
@@ -588,7 +594,7 @@ export async function collectForList(
       [...new Set(xs.map((x) => x.casNumber).filter((c): c is string => !!c))].join(sep);
     const compositions = new Map<string, Record<string, string>>();
     for (const p of products) {
-      if (!canViewComposition(actor, p as never)) continue;
+      if (!(await canViewComposition(actor, p as never))) continue;
       const lines = await prisma.compositionLine.findMany({
         where: { parentProductId: p.id },
         orderBy: { displayOrder: "asc" },
@@ -681,6 +687,7 @@ export async function collectForList(
     });
     if (query.kind === "ids") substances.sort(byPicked);
     count = substances.length;
+    substanceIds = substances.map((s) => s.id);
     tables.set("substanceList", {
       columns: tableDef("substanceList", locale),
       rows: substances.map((s) => ({
@@ -710,7 +717,16 @@ export async function collectForList(
       if (one) items.push(one);
     }
   }
-  return { code: "", values, tables, judgementWithBasis: false, listComposition, items };
+  return {
+    code: "",
+    values,
+    tables,
+    judgementWithBasis: false,
+    listComposition,
+    items,
+    productIds,
+    substanceIds,
+  };
 }
 
 /** 日付を紙面の言語で（日だけ） */

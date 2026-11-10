@@ -7,7 +7,14 @@ import {
   parseTable,
 } from "@chem/shared";
 import { prisma } from "@/lib/db";
-import { diffFields, editedByHuman, type StagedRow } from "@/lib/import/types";
+import {
+  diffFields,
+  editedByHuman,
+  resolveOwner,
+  type StageContext,
+  type StagedRow,
+} from "@/lib/import/types";
+import { visibilityWhere } from "@/lib/substance-service";
 
 /**
  * 物質の表（TSV）を一時領域の行にする。鍵は物質コード。
@@ -21,11 +28,19 @@ export interface SubstancePayload {
   casNumber: string | null;
   note: string | null;
   aliases: string[];
+  /**
+   * 所属先（S31。権限グループの id）。新しく作るときは必ず入る。
+   * 既にある物質で null なら所属先を変えない（「画面で選んだ所属先」のとき）
+   */
+  ownerGroupId?: string | null;
 }
 
 const FIELDS = ["nameJa", "nameEn", "casNumber", "note"] as const;
 
-export async function stageSubstances(text: string): Promise<{
+export async function stageSubstances(
+  text: string,
+  ctx: StageContext,
+): Promise<{
   rows: StagedRow[];
   errors: { line: number; message: string }[];
   notes: string[];
@@ -51,6 +66,8 @@ export async function stageSubstances(text: string): Promise<{
   const existing = await prisma.substance.findMany({
     where: { deletedAt: null },
     select: {
+      id: true,
+      ownerGroupId: true,
       codeNormalized: true,
       nameJa: true,
       nameEn: true,
@@ -59,7 +76,25 @@ export async function stageSubstances(text: string): Promise<{
       updatedBy: true,
     },
   });
-  const byCode = new Map(existing.map((s) => [s.codeNormalized, s]));
+  /*
+    S31: 取り込む人に見えない物質と同じコードの行は「このコードは使えません」とだけ出す
+    （コードは全体で一意。見えないものの存在を知らせない）
+  */
+  const visibleIds = new Set(
+    (
+      await prisma.substance.findMany({
+        where: { deletedAt: null, ...visibilityWhere(ctx.actor) },
+        select: { id: true },
+      })
+    ).map((s) => s.id),
+  );
+  const hiddenCodes = new Set(
+    existing.filter((s) => !visibleIds.has(s.id)).map((s) => s.codeNormalized),
+  );
+  const byCode = new Map(
+    existing.filter((s) => visibleIds.has(s.id)).map((s) => [s.codeNormalized, s]),
+  );
+  const ownerCodeOf = new Map(ctx.owners.map((o) => [o.id, o.code]));
   const rows: StagedRow[] = [];
   const seen = new Set<string>();
   table.rows.forEach((row, i) => {
@@ -71,6 +106,10 @@ export async function stageSubstances(text: string): Promise<{
       return;
     }
     const codeN = normalizeCode(code);
+    if (hiddenCodes.has(codeN)) {
+      errors.push({ line, message: `物質「${code}」: このコードは使えません` });
+      return;
+    }
     if (seen.has(codeN)) {
       errors.push({ line, message: `物質コード「${code}」が表の中で重複しています` });
       return;
@@ -95,12 +134,30 @@ export async function stageSubstances(text: string): Promise<{
             .filter(Boolean)
         : [],
     };
+    // 所属先（S31 仕様 7 章）
+    const owner = resolveOwner(
+      ctx,
+      cur?.ownerGroupId ?? null,
+      normalizeCode(col(row, "owner")),
+      "substanceEdit",
+    );
+    if (typeof owner === "string") {
+      errors.push({ line, message: `物質「${code}」: ${owner}` });
+      return;
+    }
+    payload.ownerGroupId = owner.target;
     const base = { kind: "substance_master" as const, keyPath: code, label: nameJa, payload };
     if (!cur) {
       rows.push({ ...base, action: "ADD", apply: true });
       return;
     }
     const diff = diffFields(cur, payload as unknown as Record<string, unknown>, FIELDS);
+    if (owner.target && owner.target !== cur.ownerGroupId) {
+      diff.ownerGroup = {
+        current: ownerCodeOf.get(cur.ownerGroupId) ?? "",
+        next: ownerCodeOf.get(owner.target) ?? "",
+      };
+    }
     if (Object.keys(diff).length === 0) rows.push({ ...base, action: "UNCHANGED", apply: false });
     else if (editedByHuman(cur.updatedBy))
       rows.push({

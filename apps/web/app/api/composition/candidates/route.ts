@@ -1,6 +1,9 @@
 import { normalizeCas, normalizeCode, TEXT_OPERATORS, type TextOperator } from "@chem/shared";
-import { requirePermission } from "@/lib/authz";
+import { hasMark, jsonError, ownerWhere, requireUser } from "@/lib/authz";
+import { filterCompositionVisible } from "@/lib/composition-access";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { getServerMessages } from "@/lib/i18n";
 import type { CompositionCandidateDto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -60,12 +63,18 @@ function nameWhere(name: string, op: TextOperator, wide: boolean) {
  * 「その CAS を組成に含む製品」を対象にする。目的の物質が入っている原材料を
  * 探したい、という使い方に合わせたもの。
  *
- * 権限は PRODUCT_EDIT。組成を組む以上、構成要素の名前が見えないと作業にならないため、
- * 物質の閲覧権限とは切り離している（返す情報をコードと名称に絞ることで釣り合いを取る）。
+ * S31 から、どこかの所属先に「組成 編集」の印がある人だけが使える。
+ * 出すのは、その人に見える物質（「物質 参照」の印がある所属先の、公開済みで有効なもの）と、
+ * その人が組成を見られる原材料（仕様 10 章の 3 つの条件を満たすもの）だけ。
+ * 見えない原材料を入れると、自分で組成を見られない製品ができるため
  */
 export async function GET(req: Request) {
-  const actor = await requirePermission("PRODUCT_EDIT");
+  const actor = await requireUser();
   if (actor instanceof Response) return actor;
+  if (!hasMark(actor, "compositionEdit")) {
+    const m = await getServerMessages();
+    return jsonError(403, "forbidden", m.errors.forbidden);
+  }
 
   const url = new URL(req.url);
   const id = (url.searchParams.get("id") ?? "").trim();
@@ -100,9 +109,10 @@ export async function GET(req: Request) {
     status: "ACTIVE" as const,
     publishState: "PUBLISHED" as const,
     ...(cas === "" ? {} : { casNormalized }),
+    ...ownerWhere(actor, "substanceView"),
     AND: common,
   };
-  const productWhere = {
+  const productWhere: Prisma.ProductWhereInput = {
     deletedAt: null,
     status: "ACTIVE" as const,
     // 公開されていないものは、まだ他の人に使わせない
@@ -116,6 +126,15 @@ export async function GET(req: Request) {
       : { compositionLines: { some: { substance: { casNormalized, deletedAt: null } } } }),
     AND: common,
   };
+  // 組成を見られる原材料だけ（条件 1〜3）。システム管理グループは全部
+  if (wantProduct && !actor.isSystemAdmin) {
+    const all = await prisma.product.findMany({ where: productWhere, select: { id: true } });
+    const visible = await filterCompositionVisible(
+      actor,
+      all.map((p) => p.id),
+    );
+    productWhere.AND = [...common, { id: { in: [...visible] } }] as Prisma.ProductWhereInput[];
+  }
 
   /*
     **並びは「物質を全部 → 原材料を全部」、それぞれコード順。**

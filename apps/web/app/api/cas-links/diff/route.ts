@@ -1,5 +1,5 @@
 import { emptyTableState, parseTableState, type SortRule } from "@chem/shared";
-import { jsonError, requirePermission } from "@/lib/authz";
+import { jsonError, ownerWhere, requirePermission } from "@/lib/authz";
 import { ensureDiffRun } from "@/lib/cas-link-diff";
 import { prisma } from "@/lib/db";
 import { rowStamp } from "@/lib/edit-stamp";
@@ -224,6 +224,8 @@ export async function GET(req: Request) {
             deletedAt: null,
             isCasRepresentative: true,
             casNormalized: { in: [...new Set(rows.map((r) => r.casNormalized))] },
+            // 見えない物質の名前は出さない（S31。所属先に「物質 参照」の印があるものだけ）
+            ...ownerWhere(actor, "substanceView"),
           },
           select: { id: true, casNormalized: true, nameJa: true, nameEn: true },
         });

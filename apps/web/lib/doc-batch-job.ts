@@ -15,7 +15,9 @@ import type { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
 import { actorOf, type Actor } from "@/lib/authz";
 import { getCurrentVersion } from "@/lib/current-version";
+import { contentIdsFor } from "@/lib/doc-access";
 import { prisma } from "@/lib/db";
+import { compositionFilterLimit } from "@/lib/product-list-limit";
 import { collectFor, collectForList, containsComposition, resolveOrgChoices } from "@/lib/doc-data";
 import { currentOutputDir, writePdfFile } from "@/lib/doc-files";
 import { renderDocument } from "@/lib/doc-render";
@@ -202,6 +204,10 @@ export async function resolveTargetQuery(
       where: {
         deletedAt: null,
         ...productVisibility(actor),
+        // 組成をたどる絞り込みは、組成を見られる製品だけに限る（S31）
+        ...(withComposition
+          ? await compositionFilterLimit(actor, version?.id ?? null, columns, state.filters)
+          : {}),
         ...buildWhere(columns, state.filters),
       },
       orderBy: buildOrderBy(columns, state.sort, { codeNormalized: "asc" }),
@@ -414,6 +420,8 @@ async function run(jobId: string): Promise<void> {
               // 出した紙面をそのまま残す。あとで開いたときに当時の内容が出る
               content: doc as unknown as object,
               hasComposition: containsComposition(content, data),
+              // 載せた製品・物質（S31。見られないものが載っていれば誰も開けない）
+              ...contentIdsFor(template.target, id, data),
               params: {
                 version,
                 ...(parties.companyId ? { companyId: parties.companyId } : {}),

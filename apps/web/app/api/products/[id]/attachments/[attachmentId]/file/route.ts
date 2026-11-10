@@ -26,7 +26,8 @@ export async function GET(req: Request, { params }: Ctx) {
 
   const product = await visibleProduct(actor, id);
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!canViewAttachments(actor, product)) return jsonError(403, "forbidden", m.errors.forbidden);
+  if (!(await canViewAttachments(actor, product)))
+    return jsonError(403, "forbidden", m.errors.forbidden);
   const row = await prisma.productAttachment.findFirst({
     where: { id: attachmentId, productId: id },
     select: { id: true, title: true, fileName: true, mime: true, data: true },

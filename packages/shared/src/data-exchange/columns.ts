@@ -54,6 +54,8 @@ export const PRODUCTS_COLUMNS: readonly ColumnDef[] = [
   { key: "uses", names: ["用途", "uses", "use"] },
   { key: "usableAsMaterial", names: ["原材料扱い", "usable_as_material"] },
   { key: "status", names: ["状態", "status"] },
+  // 所属先（S31）。権限グループのコード。取り込みで「TSV の所属先の列を使う」を選んだときに読む
+  { key: "owner", names: ["所属先", "owner", "owner_group"] },
   { key: "productNote", names: ["製品の備考", "product_note"] },
   { key: "cas", names: ["CAS", "CAS番号", "cas_number"] },
   { key: "substanceCode", names: ["物質コード", "substance_code", "substance code"] },
@@ -72,6 +74,8 @@ export const SUBSTANCES_COLUMNS: readonly ColumnDef[] = [
   { key: "nameEn", names: ["名称（英語）", "英名", "name_en"] },
   { key: "cas", names: ["CAS", "CAS番号", "cas_number"] },
   { key: "aliases", names: ["別名", "aliases"] },
+  // 所属先（S31）。権限グループのコード
+  { key: "owner", names: ["所属先", "owner", "owner_group"] },
   { key: "note", names: ["備考", "note", "remarks"] },
 ];
 

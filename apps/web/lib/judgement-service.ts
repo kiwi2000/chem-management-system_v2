@@ -477,10 +477,18 @@ function sumScores(values: string[]): string {
 export async function toMatchedProducts(
   categoryId: string,
   visibility: Prisma.ProductWhereInput,
-  withHits: boolean,
+  /**
+   * 根拠（どの CAS が何％効いたか）を見せる製品。`true` は全部、`false` は無し、
+   * 集合はその製品だけ（S31: 組成を見られるかは製品ごとに違う）
+   */
+  withHitsFor: boolean | ReadonlySet<string>,
   /** 現在の法規制バージョン。判定は版ごとにあるので、この版の行だけを見る */
   versionId: string,
 ): Promise<MatchedProductDto[]> {
+  const hitsOk = (productId: string) =>
+    typeof withHitsFor === "boolean" ? withHitsFor : withHitsFor.has(productId);
+  const withHits =
+    withHitsFor !== false && (typeof withHitsFor === "boolean" || withHitsFor.size > 0);
   const where = {
     categoryId,
     versionId,
@@ -510,8 +518,11 @@ export async function toMatchedProducts(
     : (await prisma.productJudgement.findMany({ where, select: { ...select, hits: false } })).map(
         (r) => ({ ...r, hits: [] }),
       );
-  // 伏せる相手には製品ごとに 1 行
-  const rows = withHits ? raw : foldByProduct(raw);
+  // 伏せる製品は製品ごとに 1 行
+  const rows = [
+    ...raw.filter((r) => hitsOk(r.product.id)),
+    ...foldByProduct(raw.filter((r) => !hitsOk(r.product.id))),
+  ];
 
   const infoOf = await loadSubstanceInfo(
     withHits ? [...new Set(rows.map((r) => r.statutorySubstanceId).filter((v) => v !== ""))] : [],
@@ -550,7 +561,7 @@ export async function toMatchedProducts(
           needsReview: r.needsReview,
           reviewReasons: r.reviewReasons,
           computedAt: r.computedAt.toISOString(),
-          hits: withHits
+          hits: hitsOk(r.product.id)
             ? r.hits.map((h): JudgementHitDto => ({
                 name: info ? (info.nameJa ?? info.nameOriginal) : null,
                 officialNumber: info?.officialNumber ?? null,
@@ -568,7 +579,7 @@ export async function toMatchedProducts(
                 effectiveTo: mark.effectiveTo,
               }))
             : [],
-          hitsWithheld: !withHits && r._count.hits > 0,
+          hitsWithheld: !hitsOk(r.product.id) && r._count.hits > 0,
           _sub: info?.officialNumber ?? "",
         };
       })

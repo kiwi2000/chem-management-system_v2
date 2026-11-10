@@ -114,8 +114,23 @@ export async function POST(req: Request) {
   const casError = validateCas(base.casNormalized, settings, m);
   if (casError) return jsonError(400, "validation_error", casError);
 
-  if (await prisma.substance.findUnique({ where: { codeNormalized: base.codeNormalized } })) {
-    return jsonError(409, "duplicate_code", m.errors.duplicateCode(base.code));
+  const clash = await prisma.substance.findUnique({
+    where: { codeNormalized: base.codeNormalized },
+    select: { id: true },
+  });
+  if (clash) {
+    // 見えないものと重なるときは理由を言わない（S31 仕様 7 章。見えないものの存在を知らせない）
+    const seen = await prisma.substance.count({
+      where: { id: clash.id, ...visibilityWhere(actor) },
+    });
+    return jsonError(
+      409,
+      "duplicate_code",
+      seen ? m.errors.duplicateCode(base.code) : m.owner.codeUnavailable,
+      {
+        fieldErrors: { code: [seen ? m.errors.duplicateCode(base.code) : m.owner.codeUnavailable] },
+      },
+    );
   }
 
   // 所属先（S31）。「物質 編集」の印を持つ権限グループから

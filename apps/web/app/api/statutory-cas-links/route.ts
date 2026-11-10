@@ -7,7 +7,7 @@ import {
   type ColumnKind,
 } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requirePermission } from "@/lib/authz";
+import { jsonError, ownerWhere, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { listCasLinks } from "@/lib/link-service";
@@ -82,7 +82,11 @@ export async function GET(req: Request) {
   // バージョンが1つも無ければ書きようが無い。空で返し、画面には登録を促す文言を出す
   if (!version) return Response.json({ items: [], total: 0, page: 1, pageSize: 0, version: null });
 
-  const all = await listCasLinks(version.id, statutorySubstanceId);
+  const all = await listCasLinks(
+    version.id,
+    statutorySubstanceId,
+    ownerWhere(actor, "substanceView"),
+  );
   const sourceId = params.get("sourceId");
   /*
     データソースを名指ししないときは**採用**。

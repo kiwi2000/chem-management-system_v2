@@ -287,6 +287,15 @@ export const ja = {
     label: "所属先",
     required: "所属先を選んでください",
     notAllowed: "この所属先は選べません",
+    usedElsewhere: "ほかで使われているため消せません",
+    codeUnavailable: "このコードは使えません",
+    choose: "（選んでください）",
+    noChoices: "選べる所属先がありません（「編集」の印を持つ権限グループに入っていません）",
+    importHow: "所属先の決め方",
+    importFixed: "画面で選んだ所属先にする",
+    importColumn: "TSV の「所属先」の列（権限グループのコード）を使う",
+    importHint:
+      "新しく作るものの所属先です。既にあるものは、「画面で選んだ所属先」では所属先を変えません。列を使うときは、列のコードへ移します（今の所属先と移す先の両方に「編集」の印が要ります）",
   },
   permissionPresets: {
     label: "よく使う組み合わせ",
@@ -1704,6 +1713,8 @@ export const ja = {
     /** PDF ファイル（2026-09-16 指示） */
     file: "ファイル",
     fileMaking: "作成中…",
+    notOpenable: "開けません",
+    notOpenableHint: "あなたが見られない製品・物質・組成が載っているため開けません",
     fileFailed: "PDF を作れませんでした",
     fileGone: "ファイルが見つかりません（消されています）",
     download: "ダウンロード",

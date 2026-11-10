@@ -8,6 +8,7 @@ import {
   type Snapshot,
 } from "@chem/shared";
 import type { Actor } from "@/lib/authz";
+import { filterCompositionVisible } from "@/lib/composition-access";
 import { prisma } from "@/lib/db";
 import { takeSnapshot } from "@/lib/import/snapshot";
 import { visibilityWhere } from "@/lib/product-service";
@@ -160,10 +161,10 @@ export async function exportRegulationList(filter: RegulationListFilter): Promis
 
 /**
  * 製品と組成。見られる製品だけ（visibilityWhere）。
- * 組成は「非公開の組成も見られる」人にだけ出す。無い人には製品の行だけ
+ * 組成は、その製品の組成を見られるとき（S31 仕様 10 章の 3 つの条件）だけ出す。見られない製品は製品の行だけ。
+ * 所属先（権限グループのコード）の列を含める（そのまま取り込みに使える）
  */
 export async function exportProducts(actor: Actor): Promise<string> {
-  const withComposition = actor.has("COMPOSITION_VIEW");
   const products = await prisma.product.findMany({
     where: { deletedAt: null, ...visibilityWhere(actor) },
     orderBy: { codeNormalized: "asc" },
@@ -173,8 +174,10 @@ export async function exportProducts(actor: Actor): Promise<string> {
       nameEn: true,
       modelValue: true,
       usableAsMaterial: true,
+      id: true,
       status: true,
       note: true,
+      ownerGroup: { select: { code: true } },
       uses: { orderBy: { displayOrder: "asc" }, select: { value: true } },
       // 組成は読んでおいて、権限が無ければ書き出さない（サーバーの外には出ない）
       compositionLines: {
@@ -188,6 +191,10 @@ export async function exportProducts(actor: Actor): Promise<string> {
       },
     },
   });
+  const compositionVisible = await filterCompositionVisible(
+    actor,
+    products.map((p) => p.id),
+  );
   const rows: (string | null)[][] = [];
   for (const p of products) {
     const base = [
@@ -198,9 +205,10 @@ export async function exportProducts(actor: Actor): Promise<string> {
       p.uses.map((u) => u.value).join("; "),
       p.usableAsMaterial ? "1" : "",
       p.status === "DISCONTINUED" ? "生産終了" : "有効",
+      p.ownerGroup.code,
       p.note,
     ];
-    const lines = withComposition ? p.compositionLines : [];
+    const lines = compositionVisible.has(p.id) ? p.compositionLines : [];
     if (lines.length === 0) {
       rows.push([...base, null, null, null, null, null]);
       continue;
@@ -224,7 +232,15 @@ export async function exportSubstances(actor: Actor): Promise<string> {
   const substances = await prisma.substance.findMany({
     where: { deletedAt: null, ...substanceVisibilityWhere(actor) },
     orderBy: { codeNormalized: "asc" },
-    select: { id: true, code: true, nameJa: true, nameEn: true, casNumber: true, note: true },
+    select: {
+      id: true,
+      code: true,
+      nameJa: true,
+      nameEn: true,
+      casNumber: true,
+      note: true,
+      ownerGroup: { select: { code: true } },
+    },
   });
   // 別名は別に読む（物質の select の中で並べ替えると Prisma の照会エンジンが落ちる。2026-09-15 に実際に起きた）
   const aliases = await prisma.substanceAlias.findMany({
@@ -246,6 +262,7 @@ export async function exportSubstances(actor: Actor): Promise<string> {
       s.nameEn,
       s.casNumber,
       (aliasesOf.get(s.id) ?? []).join("; "),
+      s.ownerGroup.code,
       s.note,
     ]),
   );

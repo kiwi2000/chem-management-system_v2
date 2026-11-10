@@ -229,6 +229,11 @@ export function canOn(actor: Actor, mark: PermissionMark, ownerGroupId: string):
   return actor.scope[mark].has(ownerGroupId);
 }
 
+/** どこかの所属先に、その印を持つか（入口の確かめ。組成の編集など、権限の名前が無い印に使う） */
+export function hasMark(actor: Actor, mark: PermissionMark): boolean {
+  return actor.scope === "all" || actor.scope[mark].size > 0;
+}
+
 /** その印を持つ所属先の id（システム管理グループは null = 全部） */
 export function scopeIds(actor: Actor, mark: PermissionMark): string[] | null {
   if (actor.scope === "all") return null;

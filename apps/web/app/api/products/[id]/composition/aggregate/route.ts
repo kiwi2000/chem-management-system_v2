@@ -30,7 +30,7 @@ export async function GET(req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!canViewComposition(actor, product)) {
+  if (!(await canViewComposition(actor, product))) {
     return jsonError(403, "forbidden", m.composition.withheld);
   }
 

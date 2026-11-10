@@ -35,7 +35,8 @@ export async function GET(req: Request, { params }: Ctx) {
 
   const product = await visibleProduct(actor, id);
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!canViewAttachments(actor, product)) return jsonError(403, "forbidden", m.errors.forbidden);
+  if (!(await canViewAttachments(actor, product)))
+    return jsonError(403, "forbidden", m.errors.forbidden);
 
   const state = parseTableState(
     new URL(req.url).searchParams,
@@ -73,7 +74,8 @@ export async function POST(req: Request, { params }: Ctx) {
 
   const product = await visibleProduct(actor, id);
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!canEditAttachments(actor, product)) return jsonError(403, "forbidden", m.errors.forbidden);
+  if (!(await canEditAttachments(actor, product)))
+    return jsonError(403, "forbidden", m.errors.forbidden);
 
   let form: FormData;
   try {

@@ -41,13 +41,15 @@ type SubstanceWithRelations = Prisma.SubstanceGetPayload<{ include: typeof SUBST
  * - 所属先に「物質 参照」の印があるものだけ
  * - 未公開のものは、作った本人と承認する人（`APPROVE`）にだけ見せる
  * - 無効は隠さない（組成に使われているものが読めなくなるため）
+ *
+ * **最上位に `AND` を使わない。**一覧では `{ ...visibilityWhere(actor), ...buildWhere(...) }` と混ぜて使い、
+ * `buildWhere` が `AND` を返すので、こちらも `AND` だと絞り込んだときに見える範囲の条件が消える。
+ * 所属先は `ownerGroupId`、公開の条件は `OR` のキーで返す（`visibility.test.ts` が見張る）
  */
 export function visibilityWhere(actor: Actor): Prisma.SubstanceWhereInput {
   const owner = ownerWhere(actor, "substanceView");
   if (actor.has("APPROVE")) return owner;
-  return {
-    AND: [owner, { OR: [{ publishState: "PUBLISHED" }, { createdBy: actor.user.id }] }],
-  };
+  return { ...owner, OR: [{ publishState: "PUBLISHED" }, { createdBy: actor.user.id }] };
 }
 
 /** 公開済のものだけを見せる条件（一覧の上の表・組成の候補） */
@@ -209,6 +211,8 @@ export function casSiblings(
   casNormalized: string,
   excludeId: string | null,
   impurityTypeId = IMPURITY_NONE,
+  /** 見せてよい範囲（S31。画面に返すときは見える物質だけに限る） */
+  visible: Prisma.SubstanceWhereInput = {},
 ) {
   return prisma.substance.findMany({
     where: {
@@ -216,6 +220,7 @@ export function casSiblings(
       impurityTypeId,
       deletedAt: null,
       ...(excludeId ? { id: { not: excludeId } } : {}),
+      ...visible,
     },
     select: {
       id: true,

@@ -23,7 +23,7 @@ export async function POST(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!canEditComposition(actor, product)) {
+  if (!(await canEditComposition(actor, product))) {
     return jsonError(403, "forbidden", m.composition.withheldEdit);
   }
   if (!product.preReactionAt) return jsonError(404, "not_found", m.errors.notFound);

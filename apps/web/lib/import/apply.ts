@@ -9,7 +9,7 @@ import type {
   ThresholdBound,
 } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
-import { actorOf } from "@/lib/authz";
+import { actorOf, canOn, type Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { expandProduct, findAffected, saveExpansion } from "@/lib/expansion-store";
 import { markDone, markRunning } from "@/lib/import/jobs";
@@ -18,7 +18,6 @@ import type { CompositionPayload, ProductPayload } from "@/lib/import/stage-prod
 import type { SubstancePayload } from "@/lib/import/stage-substances";
 import { importActor, type ApplySummary, type RowKind } from "@/lib/import/types";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
-import { ownerChoices } from "@/lib/owner-group";
 import { todayInJapan } from "@/lib/judgement-date";
 import { recomputeAllScores } from "@/lib/score-store";
 import { getAppSettings } from "@/lib/settings";
@@ -138,19 +137,13 @@ async function runApply(jobId: string, actorId: string) {
 }
 
 /**
- * 取り込みで新しく作るものの所属先（S31）。
- * TODO(S31 段 2): 取り込みの画面で「画面で選んだ所属先」「TSV の所属先の列」を選べるようにする。
- * それまでは、取り込んだ人が選べる所属先の先頭（コード順）にする
+ * 反映する人（S31）。所属先は読み取りのときに決めて行に入れてあるが、
+ * 反映する人が別のこともあるので、反映する人の印で確かめ直す
  */
-async function importOwner(
-  actorId: string,
-  mark: "productEdit" | "substanceEdit",
-): Promise<string> {
+async function applyActor(actorId: string): Promise<Actor> {
   const actor = await actorOf(actorId);
-  const choices = actor ? await ownerChoices(actor, mark) : [];
-  const first = choices[0];
-  if (!first) throw new Error("所属先にできる権限グループがありません");
-  return first.id;
+  if (!actor) throw new Error("反映する人が見つかりません（止められたか消されています）");
+  return actor;
 }
 
 interface Hooks {
@@ -742,16 +735,14 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
     createdBy: actorId,
     updatedBy: by,
     publishState: (settings.productApprovalRequired ? "DRAFT" : "PUBLISHED") as PublishState,
-    ownerGroupId: await importOwner(actorId, "productEdit"),
   };
-  const products = new Map(
-    (
-      await prisma.product.findMany({
-        where: { deletedAt: null },
-        select: { id: true, codeNormalized: true },
-      })
-    ).map((p) => [p.codeNormalized, p.id]),
-  );
+  const actor = await applyActor(actorId);
+  const all = await prisma.product.findMany({
+    where: { deletedAt: null },
+    select: { id: true, codeNormalized: true, ownerGroupId: true },
+  });
+  const products = new Map(all.map((p) => [p.codeNormalized, p.id]));
+  const ownerOf = new Map(all.map((p) => [p.id, p.ownerGroupId]));
   const touched = new Set<string>();
 
   for await (const page of rowsOf(jobId, "product")) {
@@ -767,6 +758,17 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
         note: p.note,
       };
       const id = products.get(codeN);
+      // 所属先（S31 仕様 7 章）。作るなら所属先に、直すなら今の所属先に、移すなら移す先にも「編集」の印が要る
+      const current = id ? (ownerOf.get(id) ?? null) : null;
+      const target = p.ownerGroupId ?? null;
+      if (
+        (current && !canOn(actor, "productEdit", current)) ||
+        (!current && !target) ||
+        (target && !canOn(actor, "productEdit", target))
+      ) {
+        await h.fail(row, `製品「${p.code}」は、この所属先では反映できません`);
+        continue;
+      }
       if (!id) {
         const c = await prisma.product.create({
           data: {
@@ -774,13 +776,19 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
             codeNormalized: codeN,
             ...data,
             ...audit,
+            ownerGroupId: target as string,
             uses: { create: p.uses.map((u, i) => ({ value: u, displayOrder: i + 1 })) },
           },
         });
         products.set(codeN, c.id);
+        ownerOf.set(c.id, target as string);
         touched.add(c.id);
       } else {
-        await prisma.product.update({ where: { id }, data: { ...data, updatedBy: by } });
+        await prisma.product.update({
+          where: { id },
+          data: { ...data, updatedBy: by, ...(target ? { ownerGroupId: target } : {}) },
+        });
+        if (target) ownerOf.set(id, target);
         if (p.uses.length > 0) {
           await prisma.productUse.deleteMany({ where: { productId: id } });
           await prisma.productUse.createMany({
@@ -799,6 +807,12 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
       const id = products.get(normalizeCode(p.productCode));
       if (!id) {
         await h.fail(row, `製品「${p.productCode}」がありません`);
+        continue;
+      }
+      // 組成を直すには、所属先に「組成 編集」の印が要る（S31。中身の確かめは読み取りで済ませてある）
+      const owner = ownerOf.get(id);
+      if (!owner || !canOn(actor, "compositionEdit", owner)) {
+        await h.fail(row, `製品「${p.productCode}」の組成は直せません`);
         continue;
       }
       await prisma.$transaction([
@@ -859,16 +873,14 @@ async function applySubstances(jobId: string, actorId: string, h: Hooks) {
     createdBy: actorId,
     updatedBy: by,
     publishState: (settings.substanceApprovalRequired ? "DRAFT" : "PUBLISHED") as PublishState,
-    ownerGroupId: await importOwner(actorId, "substanceEdit"),
   };
-  const existing = new Map(
-    (
-      await prisma.substance.findMany({
-        where: { deletedAt: null },
-        select: { id: true, codeNormalized: true },
-      })
-    ).map((s) => [s.codeNormalized, s.id]),
-  );
+  const actor = await applyActor(actorId);
+  const all = await prisma.substance.findMany({
+    where: { deletedAt: null },
+    select: { id: true, codeNormalized: true, ownerGroupId: true },
+  });
+  const existing = new Map(all.map((s) => [s.codeNormalized, s.id]));
+  const ownerOf = new Map(all.map((s) => [s.id, s.ownerGroupId]));
   for await (const page of rowsOf(jobId, "substance_master")) {
     for (const row of page) {
       const p = row.payload as SubstancePayload;
@@ -882,14 +894,34 @@ async function applySubstances(jobId: string, actorId: string, h: Hooks) {
         note: p.note,
       };
       let id = existing.get(codeN);
+      // 所属先（S31 仕様 7 章）。製品と同じ確かめ
+      const current = id ? (ownerOf.get(id) ?? null) : null;
+      const target = p.ownerGroupId ?? null;
+      if (
+        (current && !canOn(actor, "substanceEdit", current)) ||
+        (!current && !target) ||
+        (target && !canOn(actor, "substanceEdit", target))
+      ) {
+        await h.fail(row, `物質「${p.code}」は、この所属先では反映できません`);
+        continue;
+      }
       if (!id) {
         const s = await prisma.substance.create({
-          data: { code: p.code, codeNormalized: codeN, ...data, ...audit },
+          data: {
+            code: p.code,
+            codeNormalized: codeN,
+            ...data,
+            ...audit,
+            ownerGroupId: target as string,
+          },
         });
         id = s.id;
         existing.set(codeN, id);
       } else {
-        await prisma.substance.update({ where: { id }, data: { ...data, updatedBy: by } });
+        await prisma.substance.update({
+          where: { id },
+          data: { ...data, updatedBy: by, ...(target ? { ownerGroupId: target } : {}) },
+        });
       }
       if (p.aliases.length > 0) {
         const have = new Set(

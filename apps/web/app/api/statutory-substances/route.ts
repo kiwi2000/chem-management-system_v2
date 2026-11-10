@@ -5,7 +5,7 @@ import {
   statutorySubstanceSchema,
 } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
-import { jsonError, requirePermission } from "@/lib/authz";
+import { jsonError, requirePermission, scopeIds } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import {
@@ -35,6 +35,7 @@ export async function GET(req: Request) {
   const columns = statutorySubstanceColumns(version?.id ?? null, {
     seeAll: actor.has("APPROVE"),
     userId: actor.user.id,
+    ownerIds: scopeIds(actor, "substanceView"),
   });
   const state = parseTableState(
     new URL(req.url).searchParams,

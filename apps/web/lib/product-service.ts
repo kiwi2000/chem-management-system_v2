@@ -63,13 +63,15 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
  * （詳細は 403 ではなく 404。403 だと「その ID の製品は在る」と分かってしまうため）。
  *
  * 組成の構成要素として名前を出す場面には掛けない。組成を見られるかは組成の条件で決める（仕様 10 章）
+ *
+ * **最上位に `AND` を使わない。**一覧では `{ ...visibilityWhere(actor), ...buildWhere(...) }` と混ぜて使い、
+ * `buildWhere` が `AND` を返すので、こちらも `AND` だと絞り込んだときに見える範囲の条件が消える。
+ * 所属先は `ownerGroupId`、公開の条件は `OR` のキーで返す（`visibility.test.ts` が見張る）
  */
 export function visibilityWhere(actor: Actor): Prisma.ProductWhereInput {
   const owner = ownerWhere(actor, "productView");
   if (actor.has("APPROVE")) return owner;
-  return {
-    AND: [owner, { OR: [{ publishState: "PUBLISHED" }, { createdBy: actor.user.id }] }],
-  };
+  return { ...owner, OR: [{ publishState: "PUBLISHED" }, { createdBy: actor.user.id }] };
 }
 
 /** 公開済のものだけを見せる条件（一覧の上の表・組成の候補） */

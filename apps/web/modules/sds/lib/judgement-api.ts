@@ -49,10 +49,10 @@ export async function judgementApi(
     where: { id: productId, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  const full = canViewComposition(actor, product);
+  const full = await canViewComposition(actor, product);
 
   if (req.method === "POST") {
-    if (!canEditComposition(actor, product)) {
+    if (!(await canEditComposition(actor, product))) {
       return jsonError(403, "forbidden", m.composition.withheldEdit);
     }
     const dto = await computeProductJudgement(actor, productId, country);

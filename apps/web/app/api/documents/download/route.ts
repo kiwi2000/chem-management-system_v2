@@ -2,7 +2,7 @@ import { z } from "zod";
 import { formatDate } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
-import { documentWhere } from "@/lib/doc-access";
+import { DOC_ACCESS_SELECT, documentWhere, openableDocuments } from "@/lib/doc-access";
 import { fileResponse, zipFiles } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
 
@@ -41,11 +41,15 @@ export async function POST(req: Request) {
       fileName: { not: null },
     },
     orderBy: { generatedAt: "asc" },
-    select: { fileName: true, filePath: true },
+    select: { ...DOC_ACCESS_SELECT, id: true, fileName: true, filePath: true },
   });
-  const files = rows.flatMap((r) =>
-    r.fileName && r.filePath ? [{ fileName: r.fileName, filePath: r.filePath }] : [],
-  );
+  // 見られない情報を含む帳票は入れない（S31）
+  const openable = await openableDocuments(actor, rows);
+  const files = rows
+    .filter((r) => openable.has(r.id))
+    .flatMap((r) =>
+      r.fileName && r.filePath ? [{ fileName: r.fileName, filePath: r.filePath }] : [],
+    );
   const { zip, added, missing } = await zipFiles(files);
   if (added === 0) return jsonError(404, "file_missing", m.documents.downloadNone);
 

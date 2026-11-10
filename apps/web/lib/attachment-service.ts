@@ -145,19 +145,19 @@ export { isPreviewable };
 /**
  * 添付を見てよいか。**製品が見えて、組成を見られること**
  */
-export function canViewAttachments(
+export async function canViewAttachments(
   actor: Actor,
   product: Parameters<typeof canViewComposition>[1],
-): boolean {
+): Promise<boolean> {
   return canViewComposition(actor, product);
 }
 
 /** 添付を足す・消す・直してよいか。製品を編集でき、かつ組成を見られること */
-export function canEditAttachments(
+export async function canEditAttachments(
   actor: Actor,
-  product: Parameters<typeof canViewComposition>[1],
-): boolean {
-  return canEditProduct(actor, product) && canViewComposition(actor, product);
+  product: Parameters<typeof canEditProduct>[1] & Parameters<typeof canViewComposition>[1],
+): Promise<boolean> {
+  return canEditProduct(actor, product) && (await canViewComposition(actor, product));
 }
 
 /** その人が見られる製品（非公開の製品は、権限が無ければ null） */

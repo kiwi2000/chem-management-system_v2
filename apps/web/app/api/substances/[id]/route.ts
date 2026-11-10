@@ -1,7 +1,7 @@
 import { substanceSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
-import { countUsesOfSubstance } from "@/lib/composition-service";
+import { productsUsing, referencedMessage } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import {
   STAMP_SELECT,
@@ -111,7 +111,14 @@ export async function PUT(req: Request, { params }: Ctx) {
     const clash = await prisma.substance.findUnique({
       where: { codeNormalized: base.codeNormalized },
     });
-    if (clash) return jsonError(409, "duplicate_code", m.errors.duplicateCode(base.code));
+    if (clash) {
+      // 見えないものと重なるときは理由を言わない（S31 仕様 7 章）
+      const seen = await prisma.substance.count({
+        where: { id: clash.id, ...visibilityWhere(actor) },
+      });
+      const text = seen ? m.errors.duplicateCode(base.code) : m.owner.codeUnavailable;
+      return jsonError(409, "duplicate_code", text, { fieldErrors: { code: [text] } });
+    }
   }
 
   const children = childWrites(input);
@@ -258,9 +265,10 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   // 未公開のものは、作成者か専用の権限を持つ人だけが書き換えられる
   if (!canEditSubstance(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
 
-  const uses = await countUsesOfSubstance(id);
-  if (uses > 0) {
-    return jsonError(409, "referenced", m.composition.referencedByProducts(uses));
+  // 見えない製品で使われていれば、件数を言わない（S31 仕様 7 章）
+  const users = await productsUsing({ substanceId: id });
+  if (users.length > 0) {
+    return jsonError(409, "referenced", await referencedMessage(actor, users, m));
   }
 
   await prisma.substance.update({

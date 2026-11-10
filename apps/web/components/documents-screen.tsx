@@ -251,9 +251,10 @@ export function DocumentsScreen({
         kind: "date",
         width: 140,
         className: "whitespace-nowrap",
-        // 押すと、出したときの紙面をそのまま開く（作り直さない）。開ける権限が無い人には文字だけ
+        // 押すと、出したときの紙面をそのまま開く（作り直さない）。開ける権限が無い人には文字だけ。
+        // 見られない情報を含む帳票は、作った本人でも開けない（S31）
         render: (d) =>
-          d.mine || canOthers ? (
+          d.openable && (d.mine || canOthers) ? (
             <Link href={`/documents/saved/${d.id}`} className="underline underline-offset-2">
               {fmt(d.generatedAt, locale)}
             </Link>
@@ -332,7 +333,11 @@ export function DocumentsScreen({
         filterable: false,
         className: "text-xs",
         render: (d) =>
-          d.fileName ? (
+          !d.openable ? (
+            <span className="text-muted-foreground" title={m.documents.notOpenableHint}>
+              {m.documents.notOpenable}
+            </span>
+          ) : d.fileName ? (
             // 落とす権限が無い人には名前だけ（押せない）。紙面は日時の欄から画面で見られる
             d.mine || canOthers ? (
               <a
@@ -367,7 +372,8 @@ export function DocumentsScreen({
    */
   async function downloadSelected(targets: GeneratedDocumentDto[]) {
     setError(null);
-    const withFile = targets.filter((d) => d.fileName);
+    // 開けない帳票（S31）は落とさない
+    const withFile = targets.filter((d) => d.fileName && d.openable);
     if (withFile.length === 0) {
       setError(m.documents.downloadNone);
       return;

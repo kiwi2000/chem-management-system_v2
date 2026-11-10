@@ -1,5 +1,6 @@
 import { formatDate } from "@chem/shared";
 import { jsonError, requirePermission } from "@/lib/authz";
+import { DOC_ACCESS_SELECT, openableDocuments } from "@/lib/doc-access";
 import { prisma } from "@/lib/db";
 import { fileResponse, zipFiles } from "@/lib/doc-files";
 import { getServerMessages } from "@/lib/i18n";
@@ -25,20 +26,21 @@ export async function GET(_req: Request, { params }: Ctx) {
       createdAt: true,
       template: { select: { code: true } },
       documents: {
-        where: {
-          fileName: { not: null },
-          ...(actor.has("COMPOSITION_VIEW") ? {} : { hasComposition: false }),
-        },
+        where: { fileName: { not: null } },
         orderBy: { generatedAt: "asc" },
-        select: { fileName: true, filePath: true },
+        select: { ...DOC_ACCESS_SELECT, id: true, fileName: true, filePath: true },
       },
     },
   });
   if (!job) return jsonError(404, "not_found", m.errors.notFound);
 
-  const files = job.documents.flatMap((d) =>
-    d.fileName && d.filePath ? [{ fileName: d.fileName, filePath: d.filePath }] : [],
-  );
+  // 見られない情報を含む帳票は入れない（S31。作った本人でも）
+  const openable = await openableDocuments(actor, job.documents);
+  const files = job.documents
+    .filter((d) => openable.has(d.id))
+    .flatMap((d) =>
+      d.fileName && d.filePath ? [{ fileName: d.fileName, filePath: d.filePath }] : [],
+    );
   const { zip, added, missing } = await zipFiles(files);
   if (added === 0) return jsonError(404, "file_missing", m.documents.downloadNone);
 

@@ -1,5 +1,6 @@
 import { jsonError, requirePermission } from "@/lib/authz";
 import { getCurrentVersion } from "@/lib/current-version";
+import { filterCompositionVisible } from "@/lib/composition-access";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { visibilityWhere } from "@/lib/product-service";
@@ -35,18 +36,28 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   // 判定は法規制バージョンごとにあるので、現在のバージョンの行だけを見る
   const version = await getCurrentVersion();
+  if (!version) return Response.json({ items: [] });
+  /*
+    根拠（組成に近い情報）を見せるのは、組成を見られる製品だけ（S31 仕様 10 章の 3 つの条件。製品ごとに違う）
+  */
+  const visibility = visibilityWhere(actor);
+  const hitsFor: boolean | Set<string> = actor.isSystemAdmin
+    ? true
+    : await filterCompositionVisible(
+        actor,
+        (
+          await prisma.productJudgement.findMany({
+            where: {
+              categoryId: id,
+              versionId: version.id,
+              product: { deletedAt: null, ...visibility },
+            },
+            select: { productId: true },
+            distinct: ["productId"],
+          })
+        ).map((r) => r.productId),
+      );
   return Response.json({
-    /*
-      製品ごとの権限ではなく権限そのもので決まる（canViewComposition と同じ規則）。
-      ここは製品が複数なので、1件ずつ判断する形は取らない。
-    */
-    items: version
-      ? await toMatchedProducts(
-          id,
-          visibilityWhere(actor),
-          actor.has("COMPOSITION_VIEW"),
-          version.id,
-        )
-      : [],
+    items: await toMatchedProducts(id, visibility, hitsFor, version.id),
   });
 }

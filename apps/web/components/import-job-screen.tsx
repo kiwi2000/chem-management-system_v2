@@ -15,6 +15,7 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { fmtWhen, statusVariant } from "@/components/import-screen";
+import { OwnerSelect } from "@/components/owner-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import type { ImportAction, ImportJobDto, ImportRowDto } from "@/lib/import/dto"
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import type { ApiError, ListResponse } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { useOwnerChoices } from "@/lib/use-owner-choices";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "seq", direction: "asc" }]);
 const ACTIONS: ImportAction[] = ["ADD", "UPDATE", "CONFLICT", "UNCHANGED", "ERROR"];
@@ -60,6 +62,12 @@ export function ImportJobScreen({ id }: { id: string }) {
   const router = useRouter();
   const ask = useConfirm();
   const [job, setJob] = useState<ImportJobDto | null>(null);
+  // 所属先の決め方（S31）。製品・物質の取り込みだけ
+  const ownerTarget =
+    job?.kind === "PRODUCTS" ? "product" : job?.kind === "SUBSTANCES" ? "substance" : null;
+  const ownerChoices = useOwnerChoices(ownerTarget ?? "product", ownerTarget !== null);
+  const [ownerMode, setOwnerMode] = useState<"fixed" | "column">("fixed");
+  const [ownerGroupId, setOwnerGroupId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
   const [showUnchanged, setShowUnchanged] = useState(false);
@@ -277,7 +285,16 @@ export function ImportJobScreen({ id }: { id: string }) {
     setError(null);
     setActing(true);
     try {
-      const res = await fetch(`/api/import/${id}/${path}`, { method: "POST" });
+      // 製品・物質の読み取りは、所属先の決め方を一緒に送る（S31）
+      const res = await fetch(`/api/import/${id}/${path}`, {
+        method: "POST",
+        ...(path === "stage" && ownerTarget
+          ? {
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ownerMode, ownerGroupId: ownerGroupId || null }),
+            }
+          : {}),
+      });
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
@@ -463,11 +480,53 @@ export function ImportJobScreen({ id }: { id: string }) {
             </p>
           )}
 
+          {/* 製品・物質の取り込みは、所属先の決め方を選ぶ（S31 仕様 7 章） */}
+          {ownerTarget &&
+            (job.status === "UPLOADED" || job.status === "FAILED" || job.status === "STAGED") &&
+            !busy && (
+              <fieldset className="space-y-1.5 pt-1 text-sm">
+                <legend className="text-xs font-semibold">{m.owner.importHow}</legend>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="ownerMode"
+                    checked={ownerMode === "fixed"}
+                    onChange={() => setOwnerMode("fixed")}
+                  />
+                  {m.owner.importFixed}
+                </label>
+                {ownerMode === "fixed" && (
+                  <div className="pl-6">
+                    <OwnerSelect
+                      choices={ownerChoices}
+                      value={ownerGroupId}
+                      onChange={setOwnerGroupId}
+                    />
+                  </div>
+                )}
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="ownerMode"
+                    checked={ownerMode === "column"}
+                    onChange={() => setOwnerMode("column")}
+                  />
+                  {m.owner.importColumn}
+                </label>
+                <p className="text-muted-foreground text-xs">{m.owner.importHint}</p>
+              </fieldset>
+            )}
+
           {/* 操作。状態に合うものだけ */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {(job.status === "UPLOADED" || job.status === "FAILED" || job.status === "STAGED") &&
               !busy && (
-                <Button disabled={acting} onClick={() => void post("stage")}>
+                <Button
+                  disabled={
+                    acting || (ownerTarget !== null && ownerMode === "fixed" && !ownerGroupId)
+                  }
+                  onClick={() => void post("stage")}
+                >
                   <Play className="size-4" />
                   {job.status === "UPLOADED" ? m.importExport.doImport : m.importExport.reread}
                 </Button>

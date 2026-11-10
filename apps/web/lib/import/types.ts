@@ -1,4 +1,5 @@
 import type { ImportAction } from "@prisma/client";
+import { canOn, type Actor } from "@/lib/authz";
 
 /**
  * 取り込み（決定 0011）の中で使う型。
@@ -26,6 +27,49 @@ export type RowKind =
 
 /** 項目ごとの差 */
 export type Diff = Record<string, { current: unknown; next: unknown }>;
+
+/**
+ * 製品・物質の取り込みで、取り込む人と所属先の決め方（S31 仕様 7 章）
+ */
+export interface StageContext {
+  actor: Actor;
+  /** fixed = 画面で選んだ所属先、column = TSV の所属先の列 */
+  mode: "fixed" | "column";
+  /** fixed のときの所属先（権限グループの id） */
+  fixedOwner: string | null;
+  /** 所属先にできる権限グループ（システム管理グループを除く全部） */
+  owners: { id: string; code: string }[];
+}
+
+/**
+ * 1 行の所属先を決める。決められないときは理由の文を返す。
+ * - 新しく作る行: fixed は画面で選んだ所属先、column は列のコード。どちらも「編集」の印が要る
+ * - 既にある行: 今の所属先に「編集」の印が要る。column で別のコードなら移す（移す先にも印が要る）。
+ *   fixed は既にある行の所属先を変えない（target = null）
+ */
+export function resolveOwner(
+  ctx: StageContext,
+  current: string | null,
+  code: string,
+  mark: "productEdit" | "substanceEdit",
+): { target: string | null } | string {
+  if (current && !canOn(ctx.actor, mark, current)) return "編集できません";
+  let target: string | null;
+  if (ctx.mode === "fixed") {
+    target = current ? null : ctx.fixedOwner;
+    if (!current && !target) return "所属先が選ばれていません";
+  } else {
+    if (!code) return "所属先が空です";
+    const found = ctx.owners.find((o) => o.code === code);
+    if (!found) return `所属先「${code}」はありません`;
+    target = found.id;
+  }
+  if (target && target !== current && !canOn(ctx.actor, mark, target)) {
+    const label = ctx.owners.find((o) => o.id === target)?.code ?? "";
+    return `所属先「${label}」は編集できません`;
+  }
+  return { target: target === current ? null : target };
+}
 
 export interface StagedRow {
   kind: RowKind;

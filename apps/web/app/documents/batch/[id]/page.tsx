@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { DocumentBatchView } from "@/components/doc-editor/document-batch-view";
 import { PrintOrientation } from "@/components/doc-editor/print-orientation";
 import { getActor } from "@/lib/authz";
+import { DOC_ACCESS_SELECT, openableDocuments } from "@/lib/doc-access";
 import { prisma } from "@/lib/db";
 import type { RenderedDocument } from "@/lib/doc-render";
 
@@ -42,14 +43,15 @@ export default async function DocumentBatchResultPage({
       missed: true,
       template: { select: { code: true, nameJa: true, content: true } },
       documents: {
-        // 組成が載っているものは、権限のある人にだけ
-        where: actor.has("COMPOSITION_VIEW") ? {} : { hasComposition: false },
         orderBy: { generatedAt: "asc" },
-        select: { targetCode: true, content: true },
+        select: { ...DOC_ACCESS_SELECT, id: true, targetCode: true, content: true },
       },
     },
   });
   if (!job) notFound();
+  // 見られない情報を含む帳票は出さない（S31。作った本人でも）
+  const openable = await openableDocuments(actor, job.documents);
+  const documents = job.documents.filter((d) => openable.has(d.id));
 
   const orientation =
     (job.template.content as { orientation?: "portrait" | "landscape" } | null)?.orientation ??
@@ -59,7 +61,7 @@ export default async function DocumentBatchResultPage({
     <>
       <PrintOrientation orientation={orientation} />
       <DocumentBatchView
-        docs={job.documents.map((d) => ({
+        docs={documents.map((d) => ({
           code: d.targetCode,
           doc: d.content as unknown as RenderedDocument,
         }))}

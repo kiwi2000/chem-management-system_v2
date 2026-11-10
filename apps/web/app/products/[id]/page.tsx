@@ -8,7 +8,7 @@ import { ProductForm } from "@/components/product-form";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import { getActor } from "@/lib/authz";
 import { ProductAttachments } from "@/components/product-attachments";
-import { canEditAttachments, canViewAttachments } from "@/lib/attachment-service";
+import { canEditAttachments } from "@/lib/attachment-service";
 import { ProductJudgements } from "@/components/product-judgements";
 import { canEditComposition, canViewComposition } from "@/lib/composition-service";
 import { getCurrentVersion } from "@/lib/current-version";
@@ -48,6 +48,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   ]);
 
   if (!item) notFound();
+  // 組成の見え方（S31 仕様 10 章の 3 つの条件）。中身をたどって確かめるので、一度だけ求める
+  const [viewComposition, editComposition, editAttachments] = await Promise.all([
+    canViewComposition(actor, item),
+    canEditComposition(actor, item),
+    canEditAttachments(actor, item),
+  ]);
 
   return (
     <div className={PAGE_SHELL_STACKED}>
@@ -77,7 +83,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         useOptions={settings.productUseOptions}
         canEdit={canEditProduct(actor, item)}
         /* 非開示の組成は、そもそもこの節ごと出さない */
-        canViewComposition={canViewComposition(actor, item)}
+        canViewComposition={viewComposition}
         settings={settings}
         /*
           組成と備考のあいだに挟む。組成を見ながら考えたいので。
@@ -87,8 +93,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <>
             <ProductJudgements
               productId={item.id}
-              canEdit={canEditComposition(actor, item)}
-              canViewComposition={canViewComposition(actor, item)}
+              canEdit={editComposition}
+              canViewComposition={viewComposition}
               version={linkVersion?.code ?? null}
             />
             {/* モジュール（差込口）が足す欄（SDS 版の GHS 判定など）。モジュールが無ければ何も出ない */}
@@ -98,8 +104,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   key={`${mod.id}-${i}`}
                   productId={item.id}
                   locale={locale}
-                  canEdit={canEditComposition(actor, item)}
-                  canViewComposition={canViewComposition(actor, item)}
+                  canEdit={editComposition}
+                  canViewComposition={viewComposition}
                 />
               )),
             )}
@@ -107,10 +113,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               添付は組成を見られる人だけ。主な添付は原材料の SDS で、組成が書かれているため。
               見られない人には、この欄ごと出さない（2026-09-27 指示）
             */}
-            {canViewAttachments(actor, item) && (
+            {viewComposition && (
               <ProductAttachments
                 productId={item.id}
-                canEdit={canEditAttachments(actor, item)}
+                canEdit={editAttachments}
                 // 上限・形式・マクロ・種類の選択肢はシステム設定。設定の API は管理者専用なので、値だけ渡す
                 maxMb={settings.attachmentMaxMb}
                 allowMacros={settings.attachmentAllowMacros}

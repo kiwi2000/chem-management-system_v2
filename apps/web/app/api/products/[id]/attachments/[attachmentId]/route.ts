@@ -24,7 +24,7 @@ async function editable(id: string, attachmentId: string) {
   const m = await getServerMessages();
   const product = await visibleProduct(actor, id);
   if (!product) return { error: jsonError(404, "not_found", m.errors.notFound) } as const;
-  if (!canEditAttachments(actor, product)) {
+  if (!(await canEditAttachments(actor, product))) {
     return { error: jsonError(403, "forbidden", m.errors.forbidden) } as const;
   }
   const row = await prisma.productAttachment.findFirst({

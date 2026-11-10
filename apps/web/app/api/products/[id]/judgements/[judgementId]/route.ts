@@ -42,7 +42,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
   // 判定を動かすのは、組成を触れる人と同じ範囲に揃える
-  if (!canEditComposition(actor, product)) {
+  if (!(await canEditComposition(actor, product))) {
     return jsonError(403, "forbidden", m.composition.withheldEdit);
   }
 
