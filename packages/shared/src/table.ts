@@ -179,6 +179,14 @@ export function parseTableState(
     const parsed = parseFilter(kind, raw);
     if (parsed) filters[key] = parsed;
   }
+  /*
+    既定の絞り込み（S31: 製品・物質の一覧の「有効のみ」）。**URL にその列の条件が無いときだけ**当てる。
+    利用者が外したときは、空の条件（`f.status=`）を URL に残すので、ここでは当てない
+  */
+  for (const [key, f] of Object.entries(fallback.filters)) {
+    if (!byKey.has(key) || params.has(`${FILTER_PREFIX}${key}`)) continue;
+    filters[key] = f;
+  }
 
   const page = Math.max(1, Number(params.get("page") ?? "") || 1);
   const sizeRaw = Number(params.get("size") ?? "");
@@ -201,7 +209,14 @@ export function serializeTableState(state: TableState, fallback: TableState): UR
   if (sortStr !== fallbackSort) params.set("sort", sortStr);
 
   for (const [key, f] of Object.entries(state.filters)) {
+    // 既定の絞り込みと同じなら載せない（URL を短く保つ。読むときに既定が当たる）
+    const def = fallback.filters[key];
+    if (def && JSON.stringify(def) === JSON.stringify(f)) continue;
     params.set(`${FILTER_PREFIX}${key}`, serializeFilter(f));
+  }
+  // 既定の絞り込みを外したことは、空の条件で残す（載せないと既定が当たってしまう）
+  for (const key of Object.keys(fallback.filters)) {
+    if (!(key in state.filters)) params.set(`${FILTER_PREFIX}${key}`, "");
   }
   if (state.page > 1) params.set("page", String(state.page));
   /*
@@ -269,4 +284,15 @@ export function splitNumericTokens(raw: string): string[] {
     out.push(v);
   }
   return out;
+}
+
+/**
+ * 「有効のみ」を既定の絞り込みにした状態（S31 仕様 7 章: 無効は隠さず、一覧の既定を有効のみにする）。
+ * 製品・物質の一覧の画面と API で同じものを使う（画面と API で既定が食い違うと、件数が合わない）
+ */
+export function activeOnlyState(sort: SortRule[] = []): TableState {
+  return {
+    ...emptyTableState(sort),
+    filters: { status: { kind: "enum", values: ["ACTIVE"] } },
+  };
 }

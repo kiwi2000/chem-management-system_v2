@@ -1,12 +1,13 @@
 "use client";
 
-import { PUBLISH_STATES, emptyTableState, pickName, type TableState } from "@chem/shared";
+import { PUBLISH_STATES, pickName, type TableState, activeOnlyState } from "@chem/shared";
 import Link from "next/link";
 import { useMemo } from "react";
 import type { FilterLayoutRow } from "@/components/data-table/filter-panel";
 import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { useI18n } from "@/lib/i18n-client";
+import { useOwnerChoices } from "@/lib/use-owner-choices";
 import type { ProductListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 
@@ -17,13 +18,14 @@ import { useMe } from "@/lib/use-me";
  * 帳票を作る相手を探す条件は一覧と同じでよく、別に持つと片方だけ増えていく。
  */
 
-export const PRODUCT_DEFAULT_STATE: TableState = emptyTableState([
+// 既定は「有効のみ」（S31）。API（app/api/products）と同じ既定にする
+export const PRODUCT_DEFAULT_STATE: TableState = activeOnlyState([
   { column: "code", direction: "asc" },
 ]);
 
 /** フィルターの並び（1行に置く列キー）。指定しない列は下に既定の並びで続く */
 const FILTER_LAYOUT: string[][] = [
-  ["code", "status", "publishState", "usableAsMaterial", "postReaction"],
+  ["code", "owner", "status", "publishState", "usableAsMaterial", "postReaction"],
   ["nameJa"],
   ["nameEn"],
   ["modelValue", "uses"],
@@ -60,6 +62,8 @@ export function useProductListColumns({
   scope: "published" | "working" | "all";
 }) {
   const { m, locale } = useI18n();
+  // 所属先の絞り込みの選択肢（自分が見られる所属先。S31）
+  const ownerOptions = useOwnerChoices("product", true, "view");
   const { can } = useMe();
   // 組成をたどる絞り込み（CAS番号・物質名）は、組成を見られる人にだけ出す（サーバー側も同じ）
   const withComposition = can("COMPOSITION_VIEW");
@@ -107,6 +111,19 @@ export function useProductListColumns({
             {r.code}
           </Link>
         ),
+      },
+      {
+        // 所属先（S31）。権限グループのコードで絞る。選べるのは自分が見られる所属先
+        key: "owner",
+        header: m.owner.label,
+        kind: "enum",
+        width: 120,
+        className: "text-xs",
+        options: (ownerOptions?.items ?? []).map((o) => ({
+          value: o.code,
+          label: pickName(locale, o.nameJa, o.nameEn),
+        })),
+        render: (r) => pickName(locale, r.ownerNameJa, r.ownerNameEn),
       },
       {
         key: "nameJa",
@@ -384,7 +401,16 @@ export function useProductListColumns({
     ];
     // 公開済だけの表では、状態の列は出さない（全部同じ値になるため）
     return scope === "published" ? cols.filter((c) => c.key !== "publishState") : cols;
-  }, [m, locale, modelOptions, useOptions, judgementCategories, scope, withComposition]);
+  }, [
+    m,
+    locale,
+    ownerOptions,
+    modelOptions,
+    useOptions,
+    judgementCategories,
+    scope,
+    withComposition,
+  ]);
 
   // 組成の節だけは見出しに文言を使うので、ここで組み立てる
   const filterLayout = useMemo<FilterLayoutRow[]>(

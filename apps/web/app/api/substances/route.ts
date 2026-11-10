@@ -1,4 +1,4 @@
-import { emptyTableState, parseTableState, substanceSchema } from "@chem/shared";
+import { parseTableState, substanceSchema, activeOnlyState } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
@@ -26,7 +26,8 @@ import { getAppSettings } from "@/lib/settings";
 export const dynamic = "force-dynamic";
 
 /** 既定の並びはコード順 */
-const DEFAULT_STATE = emptyTableState([{ column: "code", direction: "asc" }]);
+// 既定は「有効のみ」（S31）。画面（components/*-list-columns.tsx）と同じ既定にする
+const DEFAULT_STATE = activeOnlyState([{ column: "code", direction: "asc" }]);
 
 /**
  * GET /api/substances — 一覧。

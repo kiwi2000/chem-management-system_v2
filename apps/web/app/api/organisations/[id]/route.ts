@@ -4,7 +4,12 @@ import { jsonError, requirePermission, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, StaleError, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
-import { ORG_INCLUDE, toOrganisationDto } from "@/lib/organisation-service";
+import {
+  ORG_INCLUDE,
+  toOrganisationDto,
+  setDefaultGroups,
+  validParent,
+} from "@/lib/organisation-service";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +62,11 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
   ) {
     return jsonError(409, "duplicate_code", m.organisations.duplicateCode(v.code));
   }
+  if (!(await validParent(id, v.parentId ?? null))) {
+    return jsonError(400, "validation_error", m.organisations.badParent, {
+      fieldErrors: { parentId: [m.organisations.badParent] },
+    });
+  }
 
   /*
     項目は消してから入れ直す。**差分で当てない。**
@@ -69,6 +79,10 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
         where: { id, ...stampWhere(lock) },
         data: {
           code: v.code,
+          // 種別と呼び名（2026-11-10 に保存していなかったのを直した）
+          kind: v.kind,
+          kindLabel: v.kind === "OTHER" ? (v.kindLabel ?? null) : null,
+          parentId: v.parentId ?? null,
           nameJa: v.nameJa,
           nameEn: v.nameEn ?? null,
           displayOrder: v.displayOrder,
@@ -96,6 +110,9 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     }
     throw err;
   }
+
+  // 最初に選ばれる権限グループはシステム設定の一部。システム管理グループの人が送ったときだけ（S31）
+  if (actor.isSystemAdmin && v.defaultGroupIds) await setDefaultGroups(id, v.defaultGroupIds);
 
   await writeAudit({
     entity: "organisations",
@@ -128,6 +145,10 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (!row) return jsonError(404, "not_found", m.errors.notFound);
   if (row._count.members > 0) {
     return jsonError(409, "in_use", m.organisations.inUse(row._count.members));
+  }
+  // 下の組織がある組織は消せない（S31。先に下の組織を移すか消す）
+  if (await prisma.organisation.count({ where: { parentId: id, deletedAt: null } })) {
+    return jsonError(409, "in_use", m.owner.usedElsewhere);
   }
 
   await prisma.organisation.update({ where: { id }, data: { deletedAt: new Date() } });

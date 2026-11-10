@@ -3,15 +3,16 @@
 import {
   IMPURITY_NONE,
   PUBLISH_STATES,
-  emptyTableState,
   pickName,
   type TableState,
+  activeOnlyState,
 } from "@chem/shared";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { useI18n } from "@/lib/i18n-client";
+import { useOwnerChoices } from "@/lib/use-owner-choices";
 import type { ImpurityTypeDto, ListResponse, SubstanceListItemDto } from "@/lib/types";
 
 /**
@@ -20,13 +21,14 @@ import type { ImpurityTypeDto, ListResponse, SubstanceListItemDto } from "@/lib/
  * **物質の一覧と、ドキュメント生成で相手を選ぶ表で同じものを使う**（2026-09-16 指示）。
  */
 
-export const SUBSTANCE_DEFAULT_STATE: TableState = emptyTableState([
+// 既定は「有効のみ」（S31）。API（app/api/substances）と同じ既定にする
+export const SUBSTANCE_DEFAULT_STATE: TableState = activeOnlyState([
   { column: "code", direction: "asc" },
 ]);
 
 /** フィルターの並び。ここに無い列は、この後ろに2列で並ぶ */
 export const SUBSTANCE_FILTER_LAYOUT: string[][] = [
-  ["code", "casRepresentative", "impurityTypeId", "status"],
+  ["code", "owner", "casRepresentative", "impurityTypeId", "status"],
   ["casNumber"],
   ["nameJa"],
   ["nameEn"],
@@ -47,6 +49,8 @@ export function useSubstanceListColumns({
   scope: "published" | "working" | "all";
 }) {
   const { m, locale } = useI18n();
+  // 所属先の絞り込みの選択肢（自分が見られる所属先。S31）
+  const ownerOptions = useOwnerChoices("substance", true, "view");
   /**
    * 不純物種別（S21）の選択肢。件数が知れているので全部引く。
    * 物質を見られる人なら引けるので、権限の出し分けは要らない
@@ -86,6 +90,19 @@ export function useSubstanceListColumns({
             {r.code}
           </Link>
         ),
+      },
+      {
+        // 所属先（S31）。権限グループのコードで絞る。選べるのは自分が見られる所属先
+        key: "owner",
+        header: m.owner.label,
+        kind: "enum",
+        width: 120,
+        className: "text-xs",
+        options: (ownerOptions?.items ?? []).map((o) => ({
+          value: o.code,
+          label: pickName(locale, o.nameJa, o.nameEn),
+        })),
+        render: (r) => pickName(locale, r.ownerNameJa, r.ownerNameEn),
       },
       {
         key: "casNumber",
@@ -294,7 +311,7 @@ export function useSubstanceListColumns({
     ];
     // 公開済だけの表では、状態の列は出さない（全部同じ値になるため）
     return scope === "published" ? cols.filter((c) => c.key !== "publishState") : cols;
-  }, [m, locale, scope, rankOptions, types]);
+  }, [m, locale, ownerOptions, scope, rankOptions, types]);
 
   return { columns, filterLayout: SUBSTANCE_FILTER_LAYOUT };
 }

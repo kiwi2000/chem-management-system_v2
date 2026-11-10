@@ -6,7 +6,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { PublishActions } from "@/components/publish-actions";
 import { ProductForm } from "@/components/product-form";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
-import { getActor } from "@/lib/authz";
+import { getActor, canOn } from "@/lib/authz";
 import { ProductAttachments } from "@/components/product-attachments";
 import { canEditAttachments } from "@/lib/attachment-service";
 import { ProductJudgements } from "@/components/product-judgements";
@@ -84,6 +84,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         canEdit={canEditProduct(actor, item)}
         /* 非開示の組成は、そもそもこの節ごと出さない */
         canViewComposition={viewComposition}
+        compositionHiddenReason={
+          !viewComposition &&
+          canOn(actor, "productView", item.ownerGroupId) &&
+          canOn(actor, "compositionView", item.ownerGroupId)
+            ? "contents"
+            : null
+        }
         settings={settings}
         /*
           組成と備考のあいだに挟む。組成を見ながら考えたいので。

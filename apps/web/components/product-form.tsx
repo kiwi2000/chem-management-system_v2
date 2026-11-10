@@ -12,6 +12,7 @@ import {
   type PropertyDraft,
 } from "@/components/property-fields";
 import { FieldError } from "@/components/field-error";
+import { OwnerField } from "@/components/owner-field";
 import { MultiSelect } from "@/components/multi-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditingBadge } from "@/components/editing-badge";
@@ -47,6 +48,11 @@ interface Props {
    */
   canViewComposition?: boolean;
   /**
+   * 組成を見せない理由（S31 仕様 10 章）。`contents` は、組成を見る印はあるが、
+   * 組成の中に見られない物質・原材料があるとき。組成の欄にその旨を出す
+   */
+  compositionHiddenReason?: "contents" | null;
+  /**
    * 組成と備考のあいだに挟むもの（法規制の判定）。
    * 組成を見ながら考えたいので、この順にする
    */
@@ -65,6 +71,7 @@ export function ProductForm({
   modelOptions,
   useOptions,
   canViewComposition = true,
+  compositionHiddenReason = null,
   afterComposition,
   settings,
 }: Props) {
@@ -87,6 +94,8 @@ export function ProductForm({
   const isEditing = (sec: Section) => (wizard ? true : canEdit && editingSection === sec);
 
   const [code, setCode] = useState(initial?.code ?? "");
+  // 所属先（S31）。作るときだけ選ぶ。既にあるものは「所属先の変更」で移す
+  const [ownerGroupId, setOwnerGroupId] = useState(initial?.ownerGroupId ?? "");
   const [nameJa, setNameJa] = useState(initial?.nameJa ?? "");
   const [nameEn, setNameEn] = useState(initial?.nameEn ?? "");
   const [status, setStatus] = useState(initial?.status ?? "ACTIVE");
@@ -136,6 +145,8 @@ export function ProductForm({
   function buildBody() {
     return {
       code,
+      // 所属先は作るときだけ送る（直すときはサーバーも無視する）
+      ...(targetId ? {} : { ownerGroupId: ownerGroupId || null }),
       nameJa,
       nameEn: nameEn || null,
       status,
@@ -418,6 +429,19 @@ export function ProductForm({
                       />
                       <FieldError message={fieldError("code")} />
                     </div>
+                    <OwnerField
+                      target="product"
+                      entityId={targetId ?? null}
+                      value={ownerGroupId}
+                      onChange={setOwnerGroupId}
+                      current={
+                        initial
+                          ? { nameJa: initial.ownerNameJa, nameEn: initial.ownerNameEn }
+                          : null
+                      }
+                      canMove={canEdit}
+                      error={fieldError("ownerGroupId")}
+                    />
                     {/* 見出しはチェックの状態そのもの（有効／無効）を出す */}
                     <div className="space-y-2">
                       <Label htmlFor="status" className="block text-center">
@@ -536,6 +560,12 @@ export function ProductForm({
           )}
 
           {blockedNotice("composition")}
+          {/* 組成を見る印はあるが、中に見られないものがある（S31 仕様 10 章の条件 3） */}
+          {!canViewComposition && compositionHiddenReason === "contents" && targetId && (
+            <Alert>
+              <AlertDescription>{m.composition.hiddenContents}</AlertDescription>
+            </Alert>
+          )}
           {/* 組成は備考より前に出す。開け閉めはこの節だけで完結する */}
           {(!wizard || step === 2) && canViewComposition && targetId && settings && (
             <CompositionEditor

@@ -1,3 +1,7 @@
+import { z } from "zod";
+import type { Messages } from "./i18n/ja";
+import { PERMISSIONS } from "./permissions";
+
 /**
  * 権限グループ（S31）の表の印。画面とサーバーの両方で使う。
  * 仕様は docs/steps/S31_組織管理_仕様案.md の 6 章。
@@ -104,3 +108,37 @@ export function hasAnyMark(marks: PermissionMarks): boolean {
 export function lacksSubstanceForComposition(marks: PermissionMarks): boolean {
   return marks.compositionView && !marks.substanceView;
 }
+
+/** 権限グループの登録・編集の入力（S31 画面設計 3 章） */
+export const permissionGroupSchema = (m: Messages) =>
+  z.object({
+    code: z.string().trim().min(1, m.validation.required).max(64, m.validation.tooLong(64)),
+    nameJa: z.string().trim().min(1, m.validation.required).max(100, m.validation.tooLong(100)),
+    nameEn: z
+      .string()
+      .trim()
+      .max(100, m.validation.tooLong(100))
+      .transform((v) => (v === "" ? null : v))
+      .nullable()
+      .optional(),
+    /** 表の行（相手の権限グループごとの 6 つの印）。連動はサーバーでも補う */
+    rows: z
+      .array(
+        z.object({
+          targetGroupId: z.string().trim().min(1),
+          productView: z.boolean(),
+          productEdit: z.boolean(),
+          compositionView: z.boolean(),
+          compositionEdit: z.boolean(),
+          substanceView: z.boolean(),
+          substanceEdit: z.boolean(),
+        }),
+      )
+      .max(1000),
+    /** 表とは別の権限 */
+    permissions: z.array(z.enum(PERMISSIONS)),
+  });
+export type PermissionGroupInput = z.infer<ReturnType<typeof permissionGroupSchema>>;
+
+/** 新しく作る権限グループの「自分」の行を指す仮の id（作った後に本当の id へ差し替える） */
+export const PERMISSION_GROUP_SELF = "__self";

@@ -52,3 +52,58 @@ export async function orgItemLabels(): Promise<string[]> {
   });
   return rows.map((x) => x.label);
 }
+
+/**
+ * 上の組織として選べるか（S31）。消された組織・自分・自分の下の組織は選べない（輪になるため）
+ */
+export async function validParent(
+  selfId: string | null,
+  parentId: string | null,
+): Promise<boolean> {
+  if (!parentId) return true;
+  if (parentId === selfId) return false;
+  const parent = await prisma.organisation.findFirst({
+    where: { id: parentId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!parent) return false;
+  if (!selfId) return true;
+  // 上の組織をたどって自分に当たれば、自分の下を選んでいる
+  let cur: string | null = parentId;
+  for (let i = 0; cur && i < 64; i++) {
+    if (cur === selfId) return false;
+    const row: { parentId: string | null } | null = await prisma.organisation.findUnique({
+      where: { id: cur },
+      select: { parentId: true },
+    });
+    cur = row?.parentId ?? null;
+  }
+  return true;
+}
+
+/**
+ * 最初に選ばれる権限グループを入れ替える（S31 仕様 8 章）。システム管理グループは選べないので落とす
+ */
+export async function setDefaultGroups(organisationId: string, groupIds: string[]): Promise<void> {
+  const valid = await prisma.permissionGroup.findMany({
+    where: { id: { in: [...new Set(groupIds)] }, isSystemAdmin: false },
+    select: { id: true },
+  });
+  await prisma.$transaction([
+    prisma.organisationDefaultGroup.deleteMany({ where: { organisationId } }),
+    prisma.organisationDefaultGroup.createMany({
+      data: valid.map((g) => ({ organisationId, groupId: g.id })),
+    }),
+  ]);
+}
+
+/** 組織ごとの最初に選ばれる権限グループ（管理者に返す一覧のため） */
+export async function defaultGroupsByOrg(): Promise<Map<string, string[]>> {
+  const rows = await prisma.organisationDefaultGroup.findMany({
+    select: { organisationId: true, groupId: true },
+  });
+  const out = new Map<string, string[]>();
+  for (const r of rows)
+    out.set(r.organisationId, [...(out.get(r.organisationId) ?? []), r.groupId]);
+  return out;
+}

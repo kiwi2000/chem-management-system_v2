@@ -52,6 +52,18 @@ export const organisationSchema = (m: Messages) =>
       .optional(),
     displayOrder: z.number().int().min(0).max(9999),
     activeFlag: z.boolean(),
+    /** 上の組織（S31）。空ならいちばん上 */
+    parentId: z
+      .string()
+      .trim()
+      .transform((v) => (v === "" ? null : v))
+      .nullable()
+      .optional(),
+    /**
+     * 最初に選ばれる権限グループ（S31 仕様 8 章）。**システム管理グループの人が送ったときだけ使う**
+     * （システム設定の一部。組織を直せるだけの人には欄を出さず、送られても無視する）。省略は「変えない」
+     */
+    defaultGroupIds: z.array(z.string().trim().min(1)).optional(),
     /*
       項目は**まるごと入れ替える。**1件ずつ足し引きする作りにすると、
       画面で消した行がサーバーに伝わらず、消したはずのものが帳票に出る

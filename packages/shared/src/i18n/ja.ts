@@ -90,7 +90,8 @@ export const ja = {
     home: "ホーム",
     news: "お知らせ",
     organisations: "組織",
-    groups: "グループ管理",
+    groups: "お知らせの分類",
+    permissionGroups: "権限グループ",
     users: "ユーザー管理",
     propertyDefs: "拡張属性",
     accessLog: "アクセス記録",
@@ -282,6 +283,58 @@ export const ja = {
     feedback: "フィードバック",
     system: "システム",
   },
+  /** 権限グループ（S31） */
+  permGroups: {
+    title: "権限グループ",
+    newTitle: "権限グループの登録",
+    editTitle: "権限グループ",
+    code: "コード",
+    nameJa: "名前",
+    nameEn: "英語名",
+    memberCount: "入っている人",
+    productCount: "所属する製品・原材料",
+    substanceCount: "所属する物質",
+    targets: "見られる相手",
+    targetsAll: "（すべて）",
+    systemAdmin: "システム管理",
+    systemAdminNote:
+      "このグループに入っている人はすべてのデータを見られ、直せます。表は持ちません。コードと名前は変えられず、削除もできません。最後の 1 人は外せません。",
+    systemAdminLocked: "システム管理グループは直せません",
+    duplicateCode: "このコードは使えません（ほかの権限グループと同じです）",
+    inUse: (code: string) => `「${code}」はほかで使われているため消せません`,
+    empty: "権限グループがありません",
+    basic: "基本",
+    tableTitle: "見られる・直せるデータ",
+    tableHint: "相手の権限グループごとに印を付ける",
+    targetHeader: "相手の権限グループ",
+    self: "（自分）",
+    productGroup: "製品・原材料",
+    compositionGroup: "組成",
+    substanceGroup: "物質",
+    view: "参照",
+    edit: "編集",
+    addTarget: "＋ 相手の権限グループを追加",
+    noTargetNote: "表に無い相手のデータは見えません",
+    removeRow: "行の削除",
+    autoMarkHint:
+      "薄い印は、ほかの印に連動して付いたものです（編集 → 参照、組成 参照 → 製品・原材料 参照）",
+    lacksSubstance: (name: string) =>
+      `${name}の行: 組成の参照を付けていますが、物質の参照が付いていません。${name}の物質が組成に入っている製品の組成は見えません。`,
+    permissionsTitle: "表とは別の権限",
+    permissionsHint: "どの権限グループのデータかに関係しない権限です",
+    membersTitle: "入っている人",
+    memberCountLabel: (n: number) => `${n} 人`,
+    addMember: "＋ 人を追加",
+    removeMember: "削除",
+    reason: "入った理由",
+    reasonDEFAULT: "組織から最初に選ばれた",
+    reasonMANUAL: "手で足した",
+    reasonMIGRATED: "移行で付いた",
+    membersImmediate: "人の追加・削除は、保存を待たずにその場で確定します",
+    membersAfterCreate: "人は、権限グループを保存したあとに追加できます",
+    lastMember: "最後の 1 人は外せません",
+    removeMemberConfirm: (who: string) => `${who} をこの権限グループから外しますか？`,
+  },
   /** データの所属先（S31） */
   owner: {
     label: "所属先",
@@ -289,6 +342,14 @@ export const ja = {
     notAllowed: "この所属先は選べません",
     usedElsewhere: "ほかで使われているため消せません",
     codeUnavailable: "このコードは使えません",
+    move: "所属先の変更",
+    moveTitle: "所属先の変更",
+    moveTo: "新しい所属先",
+    moveDo: "変更",
+    moveWarnMaterial: (n: number, from: string, to: string) =>
+      `この原材料は ${n} 件の製品の組成で使われています。所属先を「${from}」から「${to}」に変えると、${to}の原材料を見られない人は、その製品の組成を見られなくなることがあります。`,
+    moveWarnSubstance: (n: number, from: string, to: string) =>
+      `この物質は ${n} 件の製品の組成で使われています。所属先を「${from}」から「${to}」に変えると、${to}の物質を見られない人は、その製品の組成を見られなくなることがあります。`,
     choose: "（選んでください）",
     noChoices: "選べる所属先がありません（「編集」の印を持つ権限グループに入っていません）",
     importHow: "所属先の決め方",
@@ -2016,6 +2077,7 @@ export const ja = {
   },
 
   composition: {
+    hiddenContents: "見られない物質を含むため、組成を表示できません",
     title: "組成",
     kindSubstance: "物質",
     kindProduct: "原材料",
@@ -2365,7 +2427,8 @@ export const ja = {
   },
 
   groups: {
-    title: "グループ管理",
+    /** S31（2026-11）で「グループ管理」から改名。権限グループと取り違えないため */
+    title: "お知らせの分類",
     newTitle: "追加",
     editTitle: "編集",
     description: "ニュースグループと所属を登録します。ユーザーの編集画面で割り当てます。",
@@ -2885,6 +2948,13 @@ export const ja = {
     },
   },
   organisations: {
+    parent: "上の組織",
+    parentNone: "（なし。いちばん上）",
+    parentHint: "空ならいちばん上（会社・取引先など）。自分と自分の下の組織は選べません",
+    defaultGroups: "最初に選ばれる権限グループ",
+    defaultGroupsHint:
+      "この組織とその下の組織の人を登録するとき、最初から選ばれた状態になります。上の組織に設定したものも一緒に選ばれます。システム管理グループは選べません",
+    badParent: "この組織は上の組織に選べません（自分や自分の下の組織は選べません）",
     title: "組織",
     description:
       "会社・部署・取引先を登録しておく場所です。名称のほか、住所や担当者など必要な項目を自由に足せます。ここに入れたものは、ドキュメントの差出人や宛先として使えます。",

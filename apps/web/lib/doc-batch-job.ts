@@ -10,6 +10,7 @@ import {
   listRowTarget,
   targetIsList,
   pickName,
+  activeOnlyState,
 } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
@@ -124,7 +125,8 @@ async function heartbeat(jobId: string, data: Prisma.DocumentBatchJobUpdateManyM
 }
 
 /** 一覧の既定の並び（製品・物質とも コード順） */
-const LIST_DEFAULT = emptyTableState([{ column: "code", direction: "asc" }]);
+// 製品・物質の一覧と同じ既定（「有効のみ」。S31）。一覧で見ていた条件のまま帳票を作るため
+const LIST_DEFAULT = activeOnlyState([{ column: "code", direction: "asc" }]);
 
 /**
  * 作る相手の引きかた。

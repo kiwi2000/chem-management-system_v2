@@ -57,6 +57,8 @@ function nameWithAliases(
 export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   // コード・CAS は正規化列で突合する（全角や大小文字の違いを吸収するため）
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  // 所属先（S31）。権限グループのコードで絞り・並べる
+  { key: "owner", kind: "enum", field: "code", nested: "ownerGroup" },
   // CAS番号は複数まとめて（製品の組成のCAS番号と同じ入力欄。2026-09-11 指示）。値は正規化して完全一致
   { key: "casNumber", kind: "list", field: "casNormalized", normalize: normalizeCas },
   { key: "casRepresentative", kind: "enum", field: "isCasRepresentative", booleanEnum: true },
@@ -410,6 +412,8 @@ export function productColumns(
 /** 製品の一覧の列のうち、法規制バージョンに依らないもの */
 const PRODUCT_PLAIN_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
+  // 所属先（S31）。権限グループのコードで絞り・並べる
+  { key: "owner", kind: "enum", field: "code", nested: "ownerGroup" },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
   // 「別名も含む」にチェックしたとき、画面が名称の条件をこちらの鍵で送ってくる（2026-09-11 指示）
@@ -1049,6 +1053,8 @@ export const GROUP_COLUMNS: QueryColumn[] = [
 /** 組織（会社・事業所）。項目は表に出さないので、ここには入れない */
 export const ORGANISATION_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "code", caseInsensitive: true },
+  // 上の組織（S31）。値は組織の id
+  { key: "parentId", kind: "enum", field: "parentId", sortable: false },
   { key: "kind", kind: "enum", field: "kind" },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },

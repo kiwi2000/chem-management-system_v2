@@ -9,7 +9,13 @@ import { jsonError, requirePermission, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { ORGANISATION_COLUMNS } from "@/lib/list-columns";
-import { ORG_INCLUDE, toOrganisationDto } from "@/lib/organisation-service";
+import {
+  ORG_INCLUDE,
+  toOrganisationDto,
+  setDefaultGroups,
+  validParent,
+  defaultGroupsByOrg,
+} from "@/lib/organisation-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -43,8 +49,13 @@ export async function GET(req: Request) {
     prisma.organisation.count({ where }),
   ]);
 
+  // 最初に選ばれる権限グループはシステム設定の一部なので、システム管理グループの人にだけ返す（S31）
+  const defaults = actor.isSystemAdmin ? await defaultGroupsByOrg() : null;
   return Response.json({
-    items: items.map(toOrganisationDto),
+    items: items.map((o) => ({
+      ...toOrganisationDto(o),
+      ...(defaults ? { defaultGroupIds: defaults.get(o.id) ?? [] } : {}),
+    })),
     total,
     page: state.page,
     pageSize: state.pageSize,
@@ -76,10 +87,19 @@ export async function POST(req: Request) {
   if (await prisma.organisation.findFirst({ where: { code: v.code, deletedAt: null } })) {
     return jsonError(409, "duplicate_code", m.organisations.duplicateCode(v.code));
   }
+  if (!(await validParent(null, v.parentId ?? null))) {
+    return jsonError(400, "validation_error", m.organisations.badParent, {
+      fieldErrors: { parentId: [m.organisations.badParent] },
+    });
+  }
 
   const created = await prisma.organisation.create({
     data: {
       code: v.code,
+      // 種別と呼び名（2026-11-10 に保存していなかったのを直した）
+      kind: v.kind,
+      kindLabel: v.kind === "OTHER" ? (v.kindLabel ?? null) : null,
+      parentId: v.parentId ?? null,
       nameJa: v.nameJa,
       nameEn: v.nameEn ?? null,
       displayOrder: v.displayOrder,
@@ -89,6 +109,10 @@ export async function POST(req: Request) {
       },
     },
   });
+
+  // 最初に選ばれる権限グループはシステム設定の一部。システム管理グループの人が送ったときだけ（S31）
+  if (actor.isSystemAdmin && v.defaultGroupIds)
+    await setDefaultGroups(created.id, v.defaultGroupIds);
 
   await writeAudit({
     entity: "organisations",

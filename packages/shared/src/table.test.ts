@@ -143,3 +143,36 @@ describe("splitTextTokens", () => {
     expect(splitTextTokens("トルエン")).toEqual(["トルエン"]);
   });
 });
+
+describe("既定の絞り込み（S31: 製品・物質の一覧の「有効のみ」）", () => {
+  const WITH_DEFAULT: TableState = {
+    ...emptyTableState([{ column: "code", direction: "asc" }]),
+    filters: { status: { kind: "enum", values: ["ACTIVE"] } },
+  };
+  const trip = (state: TableState) =>
+    parseTableState(serializeTableState(state, WITH_DEFAULT), COLUMNS, WITH_DEFAULT);
+
+  it("URL に何も無ければ既定の絞り込みが当たる", () => {
+    expect(parseTableState(new URLSearchParams(), COLUMNS, WITH_DEFAULT).filters).toEqual(
+      WITH_DEFAULT.filters,
+    );
+  });
+
+  it("既定のままなら URL に何も付かない", () => {
+    expect(serializeTableState(WITH_DEFAULT, WITH_DEFAULT).toString()).toBe("");
+  });
+
+  it("既定の絞り込みを外したことが往復で残る（外したのに既定へ戻らない）", () => {
+    const cleared: TableState = { ...WITH_DEFAULT, filters: {} };
+    expect(serializeTableState(cleared, WITH_DEFAULT).toString()).toBe("f.status=");
+    expect(trip(cleared).filters).toEqual({});
+  });
+
+  it("既定と違う値を選んだときも往復で残る", () => {
+    const both: TableState = {
+      ...WITH_DEFAULT,
+      filters: { status: { kind: "enum", values: ["ACTIVE", "DISCONTINUED"] } },
+    };
+    expect(trip(both).filters).toEqual(both.filters);
+  });
+});

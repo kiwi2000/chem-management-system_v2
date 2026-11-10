@@ -21,12 +21,15 @@ const SAME_CAS_SHOWN = 10;
 /** 一覧に必要な関連（別名は件数だけ使う） */
 export const SUBSTANCE_LIST_INCLUDE = {
   _count: { select: { aliases: true } },
+  // 所属先（S31）
+  ownerGroup: { select: { code: true, nameJa: true, nameEn: true } },
   gazetteNumbers: { orderBy: { displayOrder: "asc" } },
 } satisfies Prisma.SubstanceInclude;
 
 /** 詳細取得で必要になる関連 */
 export const SUBSTANCE_INCLUDE = {
   _count: { select: { aliases: true } },
+  ownerGroup: { select: { code: true, nameJa: true, nameEn: true } },
   aliases: { orderBy: { displayOrder: "asc" } },
   gazetteNumbers: { orderBy: { displayOrder: "asc" } },
   properties: { include: { def: true } },
@@ -76,6 +79,10 @@ export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
   return {
     id: s.id,
     code: s.code,
+    ownerGroupId: s.ownerGroupId,
+    ownerCode: s.ownerGroup.code,
+    ownerNameJa: s.ownerGroup.nameJa,
+    ownerNameEn: s.ownerGroup.nameEn,
     casNumber: s.casNumber,
     casRepresentative: s.isCasRepresentative,
     impurityTypeId: s.impurityTypeId,

@@ -69,6 +69,54 @@ export interface UserSummaryDto {
   passkeyCount: number;
 }
 
+/** 権限グループの一覧の 1 行（S31） */
+export interface PermissionGroupListItemDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  isSystemAdmin: boolean;
+  memberCount: number;
+  /** 所属する製品・原材料の数（無効・未公開も含む） */
+  productCount: number;
+  substanceCount: number;
+  /** 表に行がある相手 */
+  targets: { id: string; code: string; nameJa: string; nameEn: string | null }[];
+}
+
+/** 権限グループの詳細（S31） */
+export interface PermissionGroupDetailDto {
+  stamp: string;
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  isSystemAdmin: boolean;
+  rows: ({
+    targetGroupId: string;
+    targetCode: string;
+    targetNameJa: string;
+    targetNameEn: string | null;
+  } & Record<
+    | "productView"
+    | "productEdit"
+    | "compositionView"
+    | "compositionEdit"
+    | "substanceView"
+    | "substanceEdit",
+    boolean
+  >)[];
+  permissions: Permission[];
+  members: {
+    userId: string;
+    email: string;
+    displayName: string | null;
+    activeFlag: boolean;
+    organisationPath: string | null;
+    reason: "DEFAULT" | "MANUAL" | "MIGRATED";
+  }[];
+}
+
 /** 作る・移す・取り込むときに選べる所属先（S31） */
 export interface OwnerChoicesDto {
   items: { id: string; code: string; nameJa: string; nameEn: string | null }[];
@@ -144,6 +192,8 @@ export interface OrganisationDto {
   activeFlag: boolean;
   /** 上の組織（S31）。null ならいちばん上 */
   parentId: string | null;
+  /** 最初に選ばれる権限グループ（S31）。システム管理グループの人にだけ返す */
+  defaultGroupIds?: string[];
   /** 項目名と値。どちらも自由入力 */
   items: { label: string; value: string }[];
   /** この組織に所属する人の数（消したときの影響を知らせるため） */
@@ -445,6 +495,11 @@ export interface ListResponse<T> {
 export interface SubstanceListItemDto {
   id: string;
   code: string;
+  /** 所属先（S31。権限グループ） */
+  ownerGroupId: string;
+  ownerCode: string;
+  ownerNameJa: string;
+  ownerNameEn: string | null;
   casNumber: string | null;
   /**
    * このCAS番号の代表か。同じCASの物質が複数あるとき、合算した行に出す名前を
@@ -512,6 +567,11 @@ export interface PropertyValueDto {
 export interface ProductListItemDto {
   id: string;
   code: string;
+  /** 所属先（S31。権限グループ） */
+  ownerGroupId: string;
+  ownerCode: string;
+  ownerNameJa: string;
+  ownerNameEn: string | null;
   nameJa: string;
   nameEn: string | null;
   status: ProductStatus;

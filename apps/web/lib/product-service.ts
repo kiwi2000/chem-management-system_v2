@@ -25,6 +25,8 @@ function judgementsInclude(versionId: string | null) {
 export function productListInclude(versionId: string | null) {
   return {
     _count: { select: { aliases: true } },
+    // 所属先（S31）
+    ownerGroup: { select: { code: true, nameJa: true, nameEn: true } },
     uses: { orderBy: { displayOrder: "asc" } },
     judgements: judgementsInclude(versionId),
     // 判定の行が 0 件でも「判定済み」と分かるように、最後に判定した版を見る
@@ -36,6 +38,7 @@ export function productListInclude(versionId: string | null) {
 export function productInclude(versionId: string | null) {
   return {
     _count: { select: { aliases: true } },
+    ownerGroup: { select: { code: true, nameJa: true, nameEn: true } },
     uses: { orderBy: { displayOrder: "asc" } },
     aliases: { orderBy: { displayOrder: "asc" } },
     properties: { include: { def: true } },
@@ -103,6 +106,10 @@ export function toListItem(p: ProductListRow, versionId: string | null): Product
   return {
     id: p.id,
     code: p.code,
+    ownerGroupId: p.ownerGroupId,
+    ownerCode: p.ownerGroup.code,
+    ownerNameJa: p.ownerGroup.nameJa,
+    ownerNameEn: p.ownerGroup.nameEn,
     nameJa: p.nameJa,
     nameEn: p.nameEn,
     status: p.status,

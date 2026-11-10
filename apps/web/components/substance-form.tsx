@@ -20,6 +20,7 @@ import {
 } from "@/components/property-fields";
 import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
+import { OwnerField } from "@/components/owner-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditingBadge } from "@/components/editing-badge";
 import { EditButton } from "@/components/edit-button";
@@ -77,6 +78,8 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
   const readOnly = !canEdit || !editing;
 
   const [code, setCode] = useState(initial?.code ?? "");
+  // 所属先（S31）。作るときだけ選ぶ。既にあるものは「所属先の変更」で移す
+  const [ownerGroupId, setOwnerGroupId] = useState(initial?.ownerGroupId ?? "");
   const [casNumber, setCasNumber] = useState(initial?.casNumber ?? "");
   /*
     **打っているそばから CAS 番号の形を見る**（2026-09-20 指示）。
@@ -205,6 +208,8 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
   function buildBody() {
     return {
       code,
+      // 所属先は作るときだけ送る（直すときはサーバーも無視する）
+      ...(initial ? {} : { ownerGroupId: ownerGroupId || null }),
       casNumber: casNumber || null,
       impurityTypeId,
       casRepresentative,
@@ -367,6 +372,17 @@ export function SubstanceForm({ initial, defs, settings, canEdit, numbers = [] }
                   <FieldError message={fieldError("code")} />
                   <p className="text-muted-foreground text-xs">{m.substances.codeHint}</p>
                 </div>
+                <OwnerField
+                  target="substance"
+                  entityId={initial?.id ?? null}
+                  value={ownerGroupId}
+                  onChange={setOwnerGroupId}
+                  current={
+                    initial ? { nameJa: initial.ownerNameJa, nameEn: initial.ownerNameEn } : null
+                  }
+                  canMove={canEdit}
+                  error={fieldError("ownerGroupId")}
+                />
                 <div className="space-y-2">
                   <Label htmlFor="cas">
                     {m.substances.casNumber}

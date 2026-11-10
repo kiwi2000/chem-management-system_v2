@@ -12,6 +12,11 @@ import {
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
+import { OrganisationSelect } from "@/components/organisation-select";
+import { PermissionGroupChips } from "@/components/permission-group-chips";
+import { descendantIds, flattenOrgTree, orgPathLabel } from "@/lib/org-tree";
+import { useOrganisations } from "@/lib/use-organisations";
+import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
 import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
@@ -46,6 +51,10 @@ const EMPTY_FORM = {
   nameEn: "",
   displayOrder: 0,
   activeFlag: true,
+  /** 上の組織（S31）。空ならいちばん上 */
+  parentId: "",
+  /** 最初に選ばれる権限グループ（S31。システム管理グループの人だけが直す） */
+  defaultGroupIds: [] as string[],
   items: [] as ItemDraft[],
 };
 
@@ -61,8 +70,17 @@ const EMPTY_FORM = {
  */
 export function OrganisationSection() {
   const { m, locale } = useI18n();
-  const { can } = useMe();
+  const { me, can } = useMe();
   const editable = can("ORG_EDIT");
+  // 最初に選ばれる権限グループは、システム管理グループの人にだけ出す（S31 画面設計 6 章）
+  const isAdmin = me?.isAdmin ?? false;
+  // 上の組織の選択肢と道筋のために、全部の組織を別に読む（一覧はページごとなので）
+  const allOrgs = useOrganisations();
+  const groupOptions = usePermissionGroupOptions(isAdmin);
+  const adminGroups = useMemo(
+    () => (groupOptions?.groups ?? []).filter((g) => !g.isSystemAdmin),
+    [groupOptions],
+  );
   /** 種別の呼び名。画面の言語で出す */
   const kindNames = useMemo(
     () => ({
@@ -138,6 +156,40 @@ export function OrganisationSection() {
         render: (o) => String(o.displayOrder),
       },
       {
+        // 上の組織（S31）。上からの道筋で出す
+        key: "parentId",
+        header: m.organisations.parent,
+        kind: "enum",
+        width: 200,
+        sortable: false,
+        className: "text-muted-foreground text-xs",
+        options: flattenOrgTree(allOrgs ?? []).map(({ org, depth }) => ({
+          value: org.id,
+          label: `${"\u3000".repeat(depth)}${pickName(locale, org.nameJa, org.nameEn)}`,
+        })),
+        render: (o) => (o.parentId ? orgPathLabel(allOrgs ?? [], o.parentId) : ""),
+      },
+      ...(isAdmin
+        ? [
+            {
+              // 最初に選ばれる権限グループ（S31。システム管理グループの人だけ）
+              key: "defaultGroups",
+              header: m.organisations.defaultGroups,
+              kind: "text" as const,
+              width: 220,
+              sortable: false,
+              filterable: false,
+              className: "text-xs",
+              render: (o: OrganisationDto) =>
+                (o.defaultGroupIds ?? [])
+                  .map((id) => adminGroups.find((g) => g.id === id))
+                  .filter((g) => g !== undefined)
+                  .map((g) => pickName(locale, g.nameJa, g.nameEn))
+                  .join(locale === "ja" ? "・" : ", "),
+            },
+          ]
+        : []),
+      {
         key: "activeFlag",
         header: m.common.activeHeader,
         kind: "enum",
@@ -157,7 +209,7 @@ export function OrganisationSection() {
         ),
       },
     ],
-    [m, locale, kindNames],
+    [m, locale, kindNames, allOrgs, isAdmin, adminGroups],
   );
 
   const { state, setState, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
@@ -205,6 +257,9 @@ export function OrganisationSection() {
           nameEn: form.nameEn,
           displayOrder: form.displayOrder,
           activeFlag: form.activeFlag,
+          parentId: form.parentId || null,
+          // システム設定の一部。システム管理グループの人だけが送る（ほかの人が送っても無視される）
+          ...(isAdmin ? { defaultGroupIds: form.defaultGroupIds } : {}),
           // 打ちかけの空行は送らない。項目名が無いものは項目として意味がない
           items: form.items.filter((x) => x.label.trim() !== ""),
         }),
@@ -377,6 +432,37 @@ export function OrganisationSection() {
                   {m.groups.activeFlag}
                 </label>
               </div>
+              {/* 上の組織（S31）。自分と自分の下は選べない */}
+              <div className="space-y-2">
+                <Label htmlFor="org-parent">{m.organisations.parent}</Label>
+                <OrganisationSelect
+                  id="org-parent"
+                  organisations={allOrgs}
+                  value={form.parentId}
+                  exclude={
+                    form.id
+                      ? new Set([form.id, ...descendantIds(allOrgs ?? [], form.id)])
+                      : undefined
+                  }
+                  noneLabel={m.organisations.parentNone}
+                  onChange={(v) => setForm({ ...form, parentId: v })}
+                />
+                <p className="text-muted-foreground text-xs">{m.organisations.parentHint}</p>
+              </div>
+              {isAdmin && (
+                <div className="space-y-2">
+                  <Label>{m.organisations.defaultGroups}</Label>
+                  <PermissionGroupChips
+                    options={adminGroups}
+                    value={form.defaultGroupIds}
+                    onChange={(v) => setForm({ ...form, defaultGroupIds: v })}
+                    emptyLabel={m.users.permissionGroupsNone}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    {m.organisations.defaultGroupsHint}
+                  </p>
+                </div>
+              )}
 
               {/* 項目。名前も値も打ってもらう */}
               <div className="space-y-2 border-t pt-4">
@@ -517,6 +603,8 @@ export function OrganisationSection() {
                     nameEn: o.nameEn ?? "",
                     displayOrder: o.displayOrder,
                     activeFlag: o.activeFlag,
+                    parentId: o.parentId ?? "",
+                    defaultGroupIds: o.defaultGroupIds ?? [],
                     items: o.items.map((x) => ({ ...x })),
                   });
                   setOpen(true);
