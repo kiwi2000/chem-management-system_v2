@@ -243,7 +243,7 @@ export function WizardDiagram() {
 /** 一覧が上下2つに分かれる */
 export function TwoTablesDiagram() {
   return (
-    <Figure caption="上は誰でも見られる公開済のもの。下は自分たちがまだ手を入れている最中のものです。">
+    <Figure caption="上は公開済のもの。下は自分たちがまだ手を入れている最中のものです。">
       <svg viewBox="0 0 420 190" width="100%" style={{ maxWidth: 420 }} role="img">
         <title>一覧が上下2つに分かれる</title>
 
@@ -252,7 +252,7 @@ export function TwoTablesDiagram() {
           （見出しなし）
         </text>
         <text x={16} y={46} {...SMALL}>
-          公開済のものだけ／見る権限があれば誰でも
+          公開済のものだけ／所属先を見られる人なら誰でも
         </text>
         <text x={16} y={66} {...SMALL}>
           組成の材料に選べるのは、ここにあるものです
@@ -263,7 +263,7 @@ export function TwoTablesDiagram() {
           作業中
         </text>
         <text x={16} y={141} {...SMALL}>
-          作成中・承認待・却下／未公開のものを扱える人だけ
+          作成中・承認待・却下／自分が作ったもの（承認する人は全員の分）
         </text>
         <text x={16} y={161} {...SMALL}>
           登録したのに見つからないときは、こちらを見てください
