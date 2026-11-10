@@ -342,14 +342,6 @@ export const en: Messages = {
     importHint:
       "This is the owner for new records. With “owner chosen here”, existing records keep their owner. With the column, they move to the code in the column (edit marks are needed on both the current and the new owner)",
   },
-  permissionPresets: {
-    label: "Common combinations",
-    viewer: "View only",
-    staff: "General staff",
-    regulation: "Regulatory staff",
-    admin: "System administrator",
-    clear: "Clear all",
-  },
 
   table: {
     filterPanel: "Filters",

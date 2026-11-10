@@ -123,6 +123,11 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
   - 環境変数は `compose.prod.yml` の `environment` に書かないと Docker のアプリに届かない（`.env.prod` は compose の `${}` を埋めるだけ）。
     見つけ方: `process.env.` を grep し、1 つずつ `compose.prod.yml` と `.env.*.example` にあるか
   - 道筋を `process.cwd()` から作らない（サービスは apps/web で動く）。`appRoot()`（`lib/doc-files.ts`）を使う。見つけ方: `process.cwd()` を grep
+- **見える範囲の条件（`visibilityWhere` など、ほかの条件と `...` で混ぜて使うもの）は、最上位に `AND` を使わない。**一覧の `buildWhere` も `AND` を返すので、
+  `{ ...visibilityWhere(actor), ...buildWhere(...) }` で後ろが前を上書きし、絞り込んだ途端に見えないものが出る（2026-11-10 S31 の途中で気づいた）。
+  所属先は `ownerGroupId`、公開の条件は `OR` のキーで返す。見つけ方: `...visibilityWhere(` / `...ownerWhere(` を grep し、同じ `{ }` に `AND` を返すものが混ざっていないか。`apps/web/lib/visibility.test.ts` が形を見張る
+- **入力の検証（Zod）で受け取った項目は、作成・更新の `data` に全部書く。**組織の種別は画面で選べ、検証も通るのに、API が書いておらず 2 か月以上保存されていなかった（2026-11-10 発見）。
+  見つけ方: 項目を足したら、`…Schema` の項目名を、その API の `create` / `update` / `updateMany` の `data` で 1 つずつ grep する。試験は「保存して読み直すと同じ値」を確かめる
 - **データソースの合算は「CAS ごとに最優先のデータソースを選び、その行は全部」。CAS ごとに 1 行にしない。**
   1 つの物質に番号が 2 つ以上ある（化審法番号など）。`DISTINCT ON (cas)` で 2 つ目以降が消え、合算が LOLI 単独より少なくなっていた（2026-10-16）。
   見つけ方: `DISTINCT ON` を grep し、残す単位が本当に 1 行でよいか確かめる。合算と各データソースの件数を比べる（合算 ≧ 最優先のソース）

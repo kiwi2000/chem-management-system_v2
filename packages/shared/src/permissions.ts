@@ -158,43 +158,6 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "system", permissions: ["ADMIN"] },
 ];
 
-/** よく使う組み合わせ。押すとチェックが一括で入る（その後の個別調整は自由） */
-export const PERMISSION_PRESETS: { key: string; permissions: readonly Permission[] }[] = [
-  {
-    key: "viewer",
-    permissions: ["PRODUCT_VIEW", "COMPOSITION_VIEW", "SUBSTANCE_VIEW", "REGULATION_VIEW"],
-  },
-  {
-    key: "staff",
-    permissions: [
-      "PRODUCT_VIEW",
-      "PRODUCT_EDIT",
-      "COMPOSITION_VIEW",
-      "SUBSTANCE_VIEW",
-      "SUBSTANCE_EDIT",
-      "REGULATION_VIEW",
-      "DATA_EXPORT",
-      "DOCUMENT_CREATE",
-      "DOCUMENT_DOWNLOAD",
-      "NEWS_POST",
-    ],
-  },
-  {
-    key: "regulation",
-    permissions: [
-      "PRODUCT_VIEW",
-      "COMPOSITION_VIEW",
-      "SUBSTANCE_VIEW",
-      "REGULATION_VIEW",
-      "REGULATION_EDIT",
-      "DATA_EXPORT",
-      "DOCUMENT_CREATE",
-      "DOCUMENT_DOWNLOAD",
-    ],
-  },
-  { key: "admin", permissions: PERMISSIONS },
-];
-
 /** 何かを編集できるか（画面の「参照のみ」表示に使う） */
 export function canEditAnything(granted: readonly Permission[]): boolean {
   return (
