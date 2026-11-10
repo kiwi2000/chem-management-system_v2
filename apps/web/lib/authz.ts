@@ -1,4 +1,14 @@
-import { canEditAnything, expandPermissions, isPermission, type Permission } from "@chem/shared";
+import {
+  canEditAnything,
+  DATA_PERMISSIONS,
+  expandPermissions,
+  GROUP_PERMISSIONS,
+  isPermission,
+  PERMISSION_MARKS,
+  PERMISSIONS,
+  type Permission,
+  type PermissionMark,
+} from "@chem/shared";
 import type { User as AppUser } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -11,14 +21,23 @@ import { getAppSettings } from "@/lib/settings";
  * 認可ポリシー（単一モジュールに集中: CLAUDE.md §4）。
  * すべての API Route Handler はここを必ず通すこと。クライアント側の制御だけに頼らない。
  *
- * 権限の含意（編集できるなら見られる 等）は保存時に展開済みなので、
- * ここでは集合に入っているかどうかだけを見る。
+ * S31 から、人の権限は入っている権限グループを合わせたもの（仕様 6-6）。
+ * - `permissions` / `has` … 表とは別の権限に、表の印から作った製品・組成・物質の 5 つと、
+ *   システム管理グループなら `ADMIN` を足したもの。**入口の確かめ（その画面・API に入れるか）に使う**
+ * - `scope` … 表の印ごとの「対象にできる所属先（権限グループの id）」。**どのデータかの確かめに使う**
+ *   （`ownerWhere` / `canOn`）。システム管理グループの人は `all`
  */
+
+/** 印ごとの対象にできる所属先。`all` はシステム管理グループ（印に関係なく全部） */
+export type ActorScope = "all" | Record<PermissionMark, ReadonlySet<string>>;
 
 export interface Actor {
   user: AppUser;
   permissions: Permission[];
   has: (p: Permission) => boolean;
+  /** システム管理グループに入っているか */
+  isSystemAdmin: boolean;
+  scope: ActorScope;
 }
 
 export function jsonError(
@@ -30,15 +49,71 @@ export function jsonError(
   return Response.json({ error: { code, message, details } }, { status });
 }
 
-async function loadPermissions(userId: string): Promise<Permission[]> {
-  const rows = await prisma.userPermission.findMany({
-    where: { userId },
-    select: { permission: true },
+/** 表の印から作る製品・組成・物質の権限（どこかの所属先に対して印を持てば付く） */
+const MARK_PERMISSION: Partial<Record<PermissionMark, Permission>> = {
+  productView: "PRODUCT_VIEW",
+  productEdit: "PRODUCT_EDIT",
+  compositionView: "COMPOSITION_VIEW",
+  substanceView: "SUBSTANCE_VIEW",
+  substanceEdit: "SUBSTANCE_EDIT",
+};
+
+/** 入っている権限グループから、その人の権限と印の対象を組み立てる */
+async function buildActor(user: AppUser): Promise<Actor> {
+  const memberships = await prisma.userPermissionGroup.findMany({
+    where: { userId: user.id },
+    select: {
+      group: {
+        select: {
+          isSystemAdmin: true,
+          permissions: { select: { permission: true } },
+          rows: {
+            select: {
+              targetGroupId: true,
+              productView: true,
+              productEdit: true,
+              compositionView: true,
+              compositionEdit: true,
+              substanceView: true,
+              substanceEdit: true,
+            },
+          },
+        },
+      },
+    },
   });
-  // 含意（製品を編集できる → 組成を見られる、など）は保存時に閉じているが、
-  // 直接書き込まれた行でも同じ答えになるよう、読むときにも閉じる。
-  // DB の enum にだけ残っている古い値（DOCUMENT_SENDER）は無いものとして扱う
-  return expandPermissions(rows.map((r) => r.permission).filter(isPermission));
+  const isSystemAdmin = memberships.some((m) => m.group.isSystemAdmin);
+  if (isSystemAdmin) {
+    // 何でもできる（仕様 9 章）
+    const permissions = [...PERMISSIONS];
+    return { user, permissions, has: () => true, isSystemAdmin, scope: "all" };
+  }
+
+  const scope = Object.fromEntries(PERMISSION_MARKS.map((k) => [k, new Set<string>()])) as Record<
+    PermissionMark,
+    Set<string>
+  >;
+  const granted = new Set<Permission>();
+  for (const { group } of memberships) {
+    for (const row of group.rows) {
+      for (const k of PERMISSION_MARKS) if (row[k]) scope[k].add(row.targetGroupId);
+    }
+    // DB の enum にだけ残っている古い値（無効・未公開、送り主）は無いものとして扱う。
+    // 製品・組成・物質と管理者の権限は、権限グループに付いていても使わない（表の印と管理グループで決まる）
+    for (const { permission } of group.permissions) {
+      if (isPermission(permission) && GROUP_PERMISSIONS.includes(permission)) {
+        granted.add(permission);
+      }
+    }
+  }
+  const fromGroups = expandPermissions(granted);
+  const fromMarks = PERMISSION_MARKS.flatMap((k) => {
+    const p = MARK_PERMISSION[k];
+    return p && scope[k].size > 0 ? [p] : [];
+  });
+  const set = new Set<Permission>([...fromGroups, ...fromMarks]);
+  const permissions = PERMISSIONS.filter((p) => set.has(p));
+  return { user, permissions, has: (p) => set.has(p), isSystemAdmin, scope };
 }
 
 /**
@@ -48,8 +123,7 @@ async function loadPermissions(userId: string): Promise<Permission[]> {
 export async function getActor(): Promise<Actor | null> {
   const user = await getSessionUser().catch(() => null);
   if (!user) return null;
-  const permissions = await loadPermissions(user.id);
-  return { user, permissions, has: (p) => permissions.includes(p) };
+  return buildActor(user);
 }
 
 /**
@@ -60,8 +134,7 @@ export async function getActor(): Promise<Actor | null> {
 export async function actorOf(userId: string): Promise<Actor | null> {
   const user = await prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
   if (!user || !user.activeFlag) return null;
-  const permissions = await loadPermissions(user.id);
-  return { user, permissions, has: (p) => permissions.includes(p) };
+  return buildActor(user);
 }
 
 /**
@@ -133,19 +206,59 @@ export function canEdit(actor: Actor): boolean {
 }
 
 /*
+  ── データの所属先（S31）───────────────────────────────
+  製品・原材料・物質は 1 つの権限グループに所属する。見られる・直せるかは、
+  その人の表の、所属先の行の印で決まる（仕様 6・7 章）。
+*/
+
+/**
+ * その印を持つ所属先に限る条件（Prisma の where に AND で足す）。
+ * システム管理グループは条件なし。**印が 1 つも無いときは何も当たらない条件**（`{}` にしない）
+ */
+export function ownerWhere(
+  actor: Actor,
+  mark: PermissionMark,
+): { ownerGroupId?: { in: string[] } } {
+  if (actor.scope === "all") return {};
+  return { ownerGroupId: { in: [...actor.scope[mark]] } };
+}
+
+/** その所属先のデータに、その印でできるか */
+export function canOn(actor: Actor, mark: PermissionMark, ownerGroupId: string): boolean {
+  if (actor.scope === "all") return true;
+  return actor.scope[mark].has(ownerGroupId);
+}
+
+/** その印を持つ所属先の id（システム管理グループは null = 全部） */
+export function scopeIds(actor: Actor, mark: PermissionMark): string[] | null {
+  if (actor.scope === "all") return null;
+  return [...actor.scope[mark]];
+}
+
+/** 製品・組成・物質の権限が、表の印から作られたものか（権限グループの欄には出さない） */
+export function isDataPermission(p: Permission): boolean {
+  return (DATA_PERMISSIONS as readonly Permission[]).includes(p);
+}
+
+/*
   ── PRTR 届出データの所属（S22）───────────────────────────
   権限 PRTR_ENTRY は「入力できる」、所属（利用者の組織）は「どこの分を」。
   PRTR の API は requirePermission の後に必ずここを通す（呼び忘れは authz-coverage.test.ts が見張る）
 */
 
-/** その人が届出データを入れられる組織（所属している組織）。PRTR_ENTRY が無ければ空 */
+/**
+ * その人が届出データを入れられる組織（所属している組織）。PRTR_ENTRY が無ければ空。
+ * S31 から人の組織は 1 つ。PRTR の分け方は別途検討（仕様 6-3）で、決まるまでは今の考え方のまま
+ */
 export async function prtrOrgsOf(actor: Actor): Promise<string[]> {
   if (!actor.has("PRTR_ENTRY")) return [];
-  const rows = await prisma.userOrganisation.findMany({
-    where: { userId: actor.user.id, organisation: { deletedAt: null } },
-    select: { organisationId: true },
+  const id = actor.user.organisationId;
+  if (!id) return [];
+  const org = await prisma.organisation.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true },
   });
-  return rows.map((r) => r.organisationId);
+  return org ? [org.id] : [];
 }
 
 /**

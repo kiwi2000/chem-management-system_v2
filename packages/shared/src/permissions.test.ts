@@ -1,17 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { PERMISSIONS, PERMISSION_GROUPS, dependentsOf, expandPermissions } from "./permissions";
+import {
+  DATA_PERMISSIONS,
+  GROUP_PERMISSIONS,
+  PERMISSIONS,
+  PERMISSION_GROUPS,
+  dependentsOf,
+  expandPermissions,
+} from "./permissions";
 
 describe("権限の含意", () => {
-  it("製品を編集できるなら、製品と組成が見られる", () => {
-    expect(expandPermissions(["PRODUCT_EDIT"])).toEqual([
-      "PRODUCT_VIEW",
-      "PRODUCT_EDIT",
-      "COMPOSITION_VIEW",
-    ]);
-  });
-
-  it("無効・未公開を編集できるなら、見ることもできる", () => {
-    expect(expandPermissions(["INACTIVE_EDIT"])).toEqual(["INACTIVE_VIEW", "INACTIVE_EDIT"]);
+  it("製品を編集できるなら製品を見られる。組成は別の印なので含まない（S31）", () => {
+    expect(expandPermissions(["PRODUCT_EDIT"])).toEqual(["PRODUCT_VIEW", "PRODUCT_EDIT"]);
   });
 
   it("他人のお知らせを編集できるなら、投稿もできる", () => {
@@ -25,8 +24,16 @@ describe("権限の含意", () => {
     expect(a).toEqual(PERMISSIONS.filter((p) => a.includes(p)));
   });
 
-  it("承認できるなら、他人の承認待ち（未公開）も見られる（2026-09-17）", () => {
-    expect(expandPermissions(["APPROVE"])).toEqual(["INACTIVE_VIEW", "APPROVE"]);
+  it("承認は何も含まない（未公開を見られるのは承認の中で扱う。S31）", () => {
+    expect(expandPermissions(["APPROVE"])).toEqual(["APPROVE"]);
+  });
+
+  it("権限グループに付ける権限は、製品・組成・物質と管理者を除いた全部（S31 仕様 6-3）", () => {
+    expect([...GROUP_PERMISSIONS, ...DATA_PERMISSIONS, "ADMIN"].sort()).toEqual(
+      [...PERMISSIONS].sort(),
+    );
+    expect(GROUP_PERMISSIONS).not.toContain("ADMIN");
+    expect(GROUP_PERMISSIONS).not.toContain("PRODUCT_VIEW");
   });
 
   it("テンプレートを編集できる・帳票を落とせる・他人のを見られるは、どれもドキュメントの画面に入れる", () => {
@@ -55,12 +62,10 @@ describe("権限の含意", () => {
   });
 
   it("依存の洗い出しは間接的なものも拾う", () => {
-    // COMPOSITION_VIEW を外すと、それを前提にしている PRODUCT_EDIT も外れる
-    expect(dependentsOf("COMPOSITION_VIEW")).toContain("PRODUCT_EDIT");
     // PRODUCT_VIEW を外すと PRODUCT_EDIT も外れる
     expect(dependentsOf("PRODUCT_VIEW")).toEqual(["PRODUCT_EDIT"]);
-    // 無効・未公開の閲覧を外すと、その編集と承認も外れる
-    expect(dependentsOf("INACTIVE_VIEW")).toEqual(["INACTIVE_EDIT", "APPROVE"]);
+    // ドキュメントの画面に入れなくなると、その中の権限も外れる
+    expect(dependentsOf("DOCUMENT_CREATE")).toContain("DOCUMENT_VIEW_ALL");
   });
 
   it("何も持たない状態は空のまま", () => {

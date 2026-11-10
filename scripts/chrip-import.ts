@@ -21,6 +21,7 @@
  */
 import { looksLikeCas, normalizeCas } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
+import { defaultOwnerGroupId } from "./lib/default-owner";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { parseDetail } from "./lib/chrip-detail.mjs";
 import { altNumbers, normalizeNumber, normalizeName } from "./lib/chrip-match.mjs";
@@ -329,6 +330,8 @@ async function main() {
       `物質は作らない（--links-only）: 物質マスタに無い ${newCas.length.toLocaleString()} 件`,
     );
   } else if (newCas.length) {
+    // 所属先（S31）。法規制データから作る物質は「全体」に置く
+    const ownerGroupId = await defaultOwnerGroupId(prisma);
     await prisma.substance.createMany({
       data: newCas.map((cas) => {
         const w = wantSubstance.get(cas)!;
@@ -342,6 +345,7 @@ async function main() {
           casNumber: w.casNumber,
           casNormalized: cas,
           publishState: "PUBLISHED" as const,
+          ownerGroupId,
         };
       }),
       skipDuplicates: true,

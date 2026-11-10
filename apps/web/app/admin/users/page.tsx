@@ -11,12 +11,20 @@ import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, UserSummaryDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { useOrganisations } from "@/lib/use-organisations";
+import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
+import { flattenOrgTree } from "@/lib/org-tree";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "email", direction: "asc" }]);
 
+/** 組織が空の人を選ぶ値（サーバーの ORGANISATION_NONE と同じ） */
+const ORGANISATION_NONE = "__none";
+
 export default function UsersPage() {
   const { m, locale } = useI18n();
+  const organisations = useOrganisations();
+  const groupOptions = usePermissionGroupOptions();
 
   const columns = useMemo<TableColumn<UserSummaryDto>[]>(
     () => [
@@ -45,18 +53,49 @@ export default function UsersPage() {
         render: (u) => u.displayName ?? "",
       },
       {
-        // 所属する組織を全部、表示順に並べる（種別を問わず何件でも）
-        key: "organisations",
+        // 組織（S31 から 1 つ）。上からの道筋で出す。絞り込みは組織図の並びで選ぶ
+        key: "organisation",
         header: m.users.organisation,
-        kind: "text",
-        width: 240,
+        kind: "enum",
+        width: 220,
         sortable: false,
-        filterable: false,
         className: "text-muted-foreground text-xs",
+        options: [
+          { value: ORGANISATION_NONE, label: m.users.permissionGroupsNone },
+          ...flattenOrgTree(organisations ?? []).map(({ org, depth }) => ({
+            value: org.id,
+            label: `${"\u3000".repeat(depth)}${pickName(locale, org.nameJa, org.nameEn)}`,
+          })),
+        ],
+        render: (u) => u.organisationPath ?? "",
+      },
+      {
+        // 入っている権限グループ（S31）。「権限」の列を置き換えた
+        key: "permissionGroups",
+        header: m.users.permissionGroups,
+        kind: "enum",
+        width: 260,
+        sortable: false,
+        options: (groupOptions?.groups ?? []).map((g) => ({
+          value: g.id,
+          label: pickName(locale, g.nameJa, g.nameEn),
+        })),
         render: (u) =>
-          u.organisations
-            .map((o) => pickName(locale, o.nameJa, o.nameEn))
-            .join(locale === "ja" ? "、" : ", "),
+          u.groups.length === 0 ? (
+            <span className="text-muted-foreground text-xs">{m.users.permissionGroupsNone}</span>
+          ) : (
+            <span className="flex flex-wrap gap-1">
+              {u.groups.map((g) => (
+                <Badge
+                  key={g.id}
+                  variant={g.isSystemAdmin ? "default" : "secondary"}
+                  className="px-1"
+                >
+                  {pickName(locale, g.nameJa, g.nameEn)}
+                </Badge>
+              ))}
+            </span>
+          ),
       },
       {
         key: "newsGroup",
@@ -67,24 +106,6 @@ export default function UsersPage() {
         filterable: false,
         className: "text-muted-foreground text-xs",
         render: (u) => pickName(locale, u.newsGroupName ?? "", u.newsGroupNameEn),
-      },
-      {
-        key: "permissions",
-        header: m.users.permissions,
-        kind: "text",
-        width: 120,
-        sortable: false,
-        filterable: false,
-        render: (u) =>
-          u.permissions.includes("ADMIN") ? (
-            <Badge variant="secondary" className="px-1">
-              {m.shell.admin}
-            </Badge>
-          ) : (
-            <span className="text-muted-foreground text-xs">
-              {m.users.permissionCount(u.permissions.length)}
-            </span>
-          ),
       },
       {
         key: "activeFlag",
@@ -139,7 +160,7 @@ export default function UsersPage() {
           u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString(locale) : m.users.never,
       },
     ],
-    [m, locale],
+    [m, locale, organisations, groupOptions],
   );
 
   const { state, setState, ready } = useTableState("chem.table.users", columns, DEFAULT_STATE);
@@ -191,7 +212,7 @@ export default function UsersPage() {
 
       <DataTable
         title={m.users.title}
-        storageKey="chem.table.users.v2"
+        storageKey="chem.table.users.v3"
         columns={columns}
         rows={data?.items ?? null}
         rowKey={(u) => u.id}

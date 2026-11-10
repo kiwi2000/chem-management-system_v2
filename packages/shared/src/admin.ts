@@ -2,7 +2,6 @@ import { z } from "zod";
 import { emailSchema, passwordSchema } from "./auth";
 import type { PasswordPolicy } from "./settings";
 import type { Messages } from "./i18n/ja";
-import { PERMISSIONS } from "./permissions";
 
 /** グループの割り当て。空文字は「未設定」として null に倒す */
 const groupId = z
@@ -13,34 +12,36 @@ const groupId = z
   .optional();
 
 /**
- * 所属する組織のid。**種別を問わず何件でも。**
+ * 所属する組織の id（S31。必ず 1 つ）
+ */
+const organisationId = (m: Messages) => z.string().trim().min(1, m.validation.required);
+
+/**
+ * 入る権限グループの id（S31。いくつでも、0 でもよい）。
  * 省略は「変えない」ではなく「無し」。画面は常に全部を送る
  */
-const organisationIds = z
-  .array(z.string().trim().min(1))
-  .transform((v) => [...new Set(v)])
-  .optional();
+const groupIds = z.array(z.string().trim().min(1)).transform((v) => [...new Set(v)]);
 
 /** 管理者によるユーザー作成。初期パスワードを発行し、初回ログイン時に変更を強制する */
 export const userCreateSchema = (m: Messages, policy?: PasswordPolicy) =>
   z.object({
     email: emailSchema(m),
     displayName: z.string().trim().max(200).nullable().optional(),
-    permissions: z.array(z.enum(PERMISSIONS)),
     initialPassword: passwordSchema(m, policy),
     newsGroupId: groupId,
-    organisationIds,
+    organisationId: organisationId(m),
+    groupIds,
   });
 export type UserCreateInput = z.infer<ReturnType<typeof userCreateSchema>>;
 
 /** 管理者によるユーザー更新（パスワードの再発行は別API） */
-export const userUpdateSchema = (_m: Messages) =>
+export const userUpdateSchema = (m: Messages) =>
   z.object({
     displayName: z.string().trim().max(200).nullable().optional(),
-    permissions: z.array(z.enum(PERMISSIONS)),
     activeFlag: z.boolean(),
     newsGroupId: groupId,
-    organisationIds,
+    organisationId: organisationId(m),
+    groupIds,
   });
 export type UserUpdateInput = z.infer<ReturnType<typeof userUpdateSchema>>;
 

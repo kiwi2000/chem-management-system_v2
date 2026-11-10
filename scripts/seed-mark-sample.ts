@@ -16,6 +16,7 @@
  *   同じCAS・同じ地域なので、**1つのセルに ※ と △ が並ぶ**。
  */
 import { PrismaClient } from "@prisma/client";
+import { defaultOwnerGroupId } from "./lib/default-owner";
 
 const prisma = new PrismaClient();
 
@@ -53,6 +54,7 @@ async function main() {
 
   const product = await prisma.product.create({
     data: {
+      ownerGroupId: await defaultOwnerGroupId(prisma),
       code: CODE,
       codeNormalized: CODE,
       nameJa: NAME,

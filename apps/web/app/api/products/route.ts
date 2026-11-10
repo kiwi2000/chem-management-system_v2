@@ -3,6 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { resolveOwnerForCreate } from "@/lib/owner-group";
 import { getCurrentVersion } from "@/lib/current-version";
 import { compositionScopeOf, productColumns, substanceNameWords } from "@/lib/list-columns";
 import {
@@ -104,10 +105,15 @@ export async function POST(req: Request) {
     return jsonError(409, "duplicate_code", m.errors.duplicateProductCode(base.code));
   }
 
+  // 所属先（S31）。「製品・原材料 編集」の印を持つ権限グループから
+  const owner = await resolveOwnerForCreate(actor, "productEdit", input.ownerGroupId);
+  if (owner instanceof Response) return owner;
+
   const children = childWrites(input);
   const created = await prisma.product.create({
     data: {
       ...base,
+      ownerGroupId: owner,
       createdBy: actor.user.id,
       updatedBy: actor.user.id,
       aliases: { create: children.aliases },

@@ -20,7 +20,7 @@ import { visibilityWhere as substanceVisibility } from "@/lib/substance-service"
 
 /** 見えない相手（製品・物質）の ID。未公開を見られない人にだけ要る */
 async function hiddenTargetIds(actor: Actor): Promise<string[]> {
-  if (actor.has("INACTIVE_VIEW")) return [];
+  if (actor.isSystemAdmin) return [];
   const [products, substances] = await Promise.all([
     prisma.product.findMany({
       where: { NOT: productVisibility(actor) },
@@ -40,7 +40,7 @@ const LIST_TARGETS: DocumentTarget[] = ["PRODUCT_LIST", "SUBSTANCE_LIST"];
 export async function documentWhere(actor: Actor): Promise<Prisma.GeneratedDocumentWhereInput> {
   const composition = actor.has("COMPOSITION_VIEW") ? {} : { hasComposition: false };
   if (!actor.has("DOCUMENT_VIEW_ALL")) return { generatedBy: actor.user.id, ...composition };
-  if (actor.has("INACTIVE_VIEW")) return composition;
+  if (actor.isSystemAdmin) return composition;
   const hidden = await hiddenTargetIds(actor);
   return {
     ...composition,
@@ -66,7 +66,7 @@ export async function canAccessDocument(
   if (doc.hasComposition && !actor.has("COMPOSITION_VIEW")) return false;
   if (doc.generatedBy === actor.user.id) return true;
   if (!actor.has("DOCUMENT_VIEW_ALL")) return false;
-  if (actor.has("INACTIVE_VIEW")) return true;
+  if (actor.isSystemAdmin) return true;
   // 組織・規制区分は誰でも見られ、対象なしは相手が無い
   if (
     doc.template.target === "ORGANISATION" ||

@@ -223,8 +223,6 @@ export const en: Messages = {
     COMPOSITION_VIEW: "View compositions",
     SUBSTANCE_VIEW: "View substances",
     SUBSTANCE_EDIT: "Edit substances",
-    INACTIVE_VIEW: "View inactive and unpublished data",
-    INACTIVE_EDIT: "Edit inactive and unpublished data",
     APPROVE: "Approve submissions",
     REGULATION_VIEW: "View regulations",
     REGULATION_EDIT: "Edit regulations",
@@ -246,12 +244,10 @@ export const en: Messages = {
       "TSV / JSON export on the data import/export screen. Grant only to those who need it",
     DATA_IMPORT:
       "Import our data sets or your own tables on the data import/export screen. It rewrites master data, so by default only system administrators",
-    INACTIVE_VIEW:
-      "See unpublished data and inactive products in lists and details (creators always see their own)",
     DOCUMENT_DOWNLOAD:
       "Open and print documents made by other people, and download their PDFs / zips. Without it, only the list (name, date, status) is visible for them. Opening on screen counts as taking the data out, since it can be printed to a file. Your own documents are always available to you",
     DOCUMENT_VIEW_ALL:
-      "Everyone's documents appear under Created documents and can be downloaded or deleted. Documents that contain composition still need “Can see composition”; documents for unpublished products or substances still need “Can see inactive/unpublished data”",
+      "Everyone's documents appear under Created documents and can be downloaded or deleted. Documents that contain products, substances or compositions you cannot see cannot be opened",
     NEWS_POST: "Announcements you posted can be edited and deleted by you",
     FEEDBACK_VIEW:
       "Shows Feedback in the left menu and lets you read posts and replies, with unread marks",
@@ -265,12 +261,17 @@ export const en: Messages = {
     product: "Products / Materials",
     composition: "Compositions",
     substance: "Substances",
-    inactive: "Inactive / unpublished data",
+    inactive: "Approval",
     regulation: "Regulations",
     data: "Data import / export",
     news: "Announcements",
     feedback: "Feedback",
     system: "System",
+  },
+  owner: {
+    label: "Owner",
+    required: "Choose the owner group",
+    notAllowed: "You cannot choose this owner group",
   },
   permissionPresets: {
     label: "Common combinations",
@@ -2244,13 +2245,21 @@ export const en: Messages = {
 
   users: {
     title: "Users",
-    organisation: "Organisations",
+    organisation: "Organisation",
     organisationHint:
-      "Any number, of any kind. The first one of kind Company is printed as the issuer of documents; the first one of kind Department is shown as the author's affiliation on announcements",
+      "Choose one from the organisation chart. Changing it re-selects the permission groups. Documents use the nearest Company above it as the issuer",
+    organisationNone: "(Choose one)",
     noOrganisations: "No organisations yet. Register them under Organisations in the menu",
+    permissionGroups: "Permission groups",
+    permissionGroupsHint:
+      "Dashed ones were chosen from the organisation's defaults. You may remove them. Saving with none is allowed (the person then sees no data)",
+    permissionGroupsNone: "(none)",
+    regroupedNotice:
+      "The organisation changed, so the permission groups were re-selected. Check them before saving",
     newsGroup: "News group",
     newsGroupHint: "Announcements this person posts appear under this heading on the home screen",
-    newsGroupDisabled: 'Turn on "Post announcements" to choose one',
+    newsGroupDisabled:
+      "Available once the person is in a permission group that can post announcements",
     newTitle: "New user",
     editTitle: "Edit user",
     email: "Email address",
@@ -2276,7 +2285,7 @@ export const en: Messages = {
     deleteConfirm: (email: string) => `Delete the user "${email}"?`,
     empty: "No users",
     permissionCount: (n: number) => `${n}`,
-    selfNote: "This is your own account. You cannot remove your own administrator permission",
+    selfNote: "This is your own account. You cannot remove it from the system administrators group",
     lastAdminNote: "This is the last system administrator. The permission cannot be removed",
   },
 
@@ -2342,8 +2351,8 @@ export const en: Messages = {
     notFound: "Not found",
     emailTaken: "That email address is already in use",
     displayNameRequired: "Enter a display name",
-    cannotRemoveOwnAdmin: "You cannot remove your own administrator permission",
-    cannotRemoveLastAdmin: "There must be at least one system administrator",
+    cannotRemoveOwnAdmin: "You cannot remove yourself from the system administrators group",
+    cannotRemoveLastAdmin: "The last member of the system administrators group cannot be removed",
     cannotDeleteSelf: "You cannot delete your own account",
     forbiddenNewsOther: "You cannot edit or delete announcements posted by others",
     forbidden: "You do not have permission to do this",

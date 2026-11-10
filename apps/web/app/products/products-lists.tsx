@@ -28,7 +28,7 @@ export function ProductsLists({
 }: Props) {
   const { m } = useI18n();
   const { can } = useMe();
-  const showWorking = can("INACTIVE_VIEW") || can("PRODUCT_EDIT") || can("APPROVE");
+  const showWorking = can("PRODUCT_EDIT") || can("APPROVE");
 
   // 状態を変えると下から上へ移るので、両方を読み直す
   const [reloadToken, setReloadToken] = useState(0);

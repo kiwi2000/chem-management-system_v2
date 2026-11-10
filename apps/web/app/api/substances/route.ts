@@ -4,6 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { recomputeScoreForSubstance } from "@/lib/score-store";
 import { getServerMessages } from "@/lib/i18n";
+import { resolveOwnerForCreate } from "@/lib/owner-group";
 import { SUBSTANCE_COLUMNS } from "@/lib/list-columns";
 import { listNumbersByCas } from "@/lib/substance-numbers";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
@@ -117,10 +118,15 @@ export async function POST(req: Request) {
     return jsonError(409, "duplicate_code", m.errors.duplicateCode(base.code));
   }
 
+  // 所属先（S31）。「物質 編集」の印を持つ権限グループから
+  const owner = await resolveOwnerForCreate(actor, "substanceEdit", input.ownerGroupId);
+  if (owner instanceof Response) return owner;
+
   const children = childWrites(input);
   const created = await prisma.substance.create({
     data: {
       ...base,
+      ownerGroupId: owner,
       createdBy: actor.user.id,
       updatedBy: actor.user.id,
       aliases: { create: children.aliases },

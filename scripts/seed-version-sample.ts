@@ -23,6 +23,7 @@
  */
 import { normalizeCode } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
+import { defaultOwnerGroupId } from "./lib/default-owner";
 
 const prisma = new PrismaClient();
 
@@ -159,6 +160,7 @@ async function main() {
   for (const p of PRODUCTS) {
     const product = await prisma.product.create({
       data: {
+        ownerGroupId: await defaultOwnerGroupId(prisma),
         code: p.code,
         codeNormalized: normalizeCode(p.code),
         nameJa: p.nameJa,

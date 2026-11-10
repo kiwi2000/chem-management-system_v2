@@ -9,6 +9,7 @@ import type {
   ThresholdBound,
 } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
+import { actorOf } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { expandProduct, findAffected, saveExpansion } from "@/lib/expansion-store";
 import { markDone, markRunning } from "@/lib/import/jobs";
@@ -17,6 +18,7 @@ import type { CompositionPayload, ProductPayload } from "@/lib/import/stage-prod
 import type { SubstancePayload } from "@/lib/import/stage-substances";
 import { importActor, type ApplySummary, type RowKind } from "@/lib/import/types";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
+import { ownerChoices } from "@/lib/owner-group";
 import { todayInJapan } from "@/lib/judgement-date";
 import { recomputeAllScores } from "@/lib/score-store";
 import { getAppSettings } from "@/lib/settings";
@@ -133,6 +135,22 @@ async function runApply(jobId: string, actorId: string) {
       data: { status: "FAILED", error: e instanceof Error ? e.message : String(e) },
     });
   }
+}
+
+/**
+ * 取り込みで新しく作るものの所属先（S31）。
+ * TODO(S31 段 2): 取り込みの画面で「画面で選んだ所属先」「TSV の所属先の列」を選べるようにする。
+ * それまでは、取り込んだ人が選べる所属先の先頭（コード順）にする
+ */
+async function importOwner(
+  actorId: string,
+  mark: "productEdit" | "substanceEdit",
+): Promise<string> {
+  const actor = await actorOf(actorId);
+  const choices = actor ? await ownerChoices(actor, mark) : [];
+  const first = choices[0];
+  if (!first) throw new Error("所属先にできる権限グループがありません");
+  return first.id;
 }
 
 interface Hooks {
@@ -724,6 +742,7 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
     createdBy: actorId,
     updatedBy: by,
     publishState: (settings.productApprovalRequired ? "DRAFT" : "PUBLISHED") as PublishState,
+    ownerGroupId: await importOwner(actorId, "productEdit"),
   };
   const products = new Map(
     (
@@ -840,6 +859,7 @@ async function applySubstances(jobId: string, actorId: string, h: Hooks) {
     createdBy: actorId,
     updatedBy: by,
     publishState: (settings.substanceApprovalRequired ? "DRAFT" : "PUBLISHED") as PublishState,
+    ownerGroupId: await importOwner(actorId, "substanceEdit"),
   };
   const existing = new Map(
     (

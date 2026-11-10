@@ -1,6 +1,10 @@
 /**
  * 権限。
- * 「役割」ではなく権限そのものをユーザーに持たせる（画面のプリセットで一括設定できる）。
+ * S31（2026-11）から、人ではなく権限グループに付ける。人の権限は、入っている権限グループを合わせたもの。
+ * - 製品・組成・物質の 5 つ（`DATA_PERMISSIONS`）は権限グループの表の印に置き換わった。
+ *   ログイン中の人が「どこかの所属先に対して印を持つか」を表す値として、入口の確かめに使い続ける
+ * - `ADMIN` はシステム管理グループに入っていることを表す（権限グループには付けない）
+ * - 残り（`GROUP_PERMISSIONS`）が「表とは別の権限」で、権限グループに付ける
  * 追加するときは Prisma の Permission enum・i18n の permissions ブロックも合わせて増やすこと。
  */
 export const PERMISSIONS = [
@@ -12,10 +16,11 @@ export const PERMISSIONS = [
   // 物質
   "SUBSTANCE_VIEW",
   "SUBSTANCE_EDIT",
-  // 未公開・無効のデータ（物質・製品で共通）
-  "INACTIVE_VIEW",
-  "INACTIVE_EDIT",
-  // 承認（申請されたものを公開してよいか判断する）
+  /*
+    「無効・未公開のデータも見られる／編集できる」（INACTIVE_VIEW / INACTIVE_EDIT）は S31 で無くした。
+    無効は全員に見え、未公開は承認する人と作った本人にだけ見える（S31 仕様 7 章）。DB の列挙にだけ残る
+  */
+  // 承認（申請されたものを公開してよいか判断する）。承認待ちを含む未公開のものも見られる
   "APPROVE",
   // 法規制（金属換算係数・情報源・リンクバージョンを含む）
   "REGULATION_VIEW",
@@ -80,13 +85,9 @@ export function isPermission(v: unknown): v is Permission {
  * 補った結果を保存するので、判定側は単純な集合の所属チェックで済む。
  */
 const IMPLIES: Partial<Record<Permission, readonly Permission[]>> = {
-  // 組成の編集は製品の編集に含まれるため、組成の閲覧も必要
-  PRODUCT_EDIT: ["PRODUCT_VIEW", "COMPOSITION_VIEW"],
+  // S31 から組成の編集は製品の編集と別の印（組成 編集）になった。製品を直せても組成は見られるとは限らない
+  PRODUCT_EDIT: ["PRODUCT_VIEW"],
   SUBSTANCE_EDIT: ["SUBSTANCE_VIEW"],
-  // 無効・未公開を編集できる人は、当然それを見られる
-  INACTIVE_EDIT: ["INACTIVE_VIEW"],
-  // 承認するには、他人の承認待ち（未公開）が見えないと始まらない（2026-09-17 指示）
-  APPROVE: ["INACTIVE_VIEW"],
   // テンプレートを直すには、ドキュメントの画面（メニューの束と一覧）に入れる必要がある（2026-09-17 指示）
   DOC_TEMPLATE_EDIT: ["DOCUMENT_CREATE"],
   // 開く・落とすには、帳票の画面そのものに入れる必要がある
@@ -143,7 +144,7 @@ export const PERMISSION_GROUPS: { key: string; permissions: readonly Permission[
   { key: "product", permissions: ["PRODUCT_VIEW", "PRODUCT_EDIT"] },
   { key: "composition", permissions: ["COMPOSITION_VIEW"] },
   { key: "substance", permissions: ["SUBSTANCE_VIEW", "SUBSTANCE_EDIT"] },
-  { key: "inactive", permissions: ["INACTIVE_VIEW", "INACTIVE_EDIT", "APPROVE"] },
+  { key: "inactive", permissions: ["APPROVE"] },
   { key: "regulation", permissions: ["REGULATION_VIEW", "REGULATION_EDIT"] },
   { key: "data", permissions: ["DATA_EXPORT", "DATA_IMPORT"] },
   {
@@ -202,3 +203,21 @@ export function canEditAnything(granted: readonly Permission[]): boolean {
     granted.includes("REGULATION_EDIT")
   );
 }
+
+/**
+ * 製品・組成・物質の権限（S31）。権限グループの表の印から作る値で、権限グループには付けない
+ */
+export const DATA_PERMISSIONS = [
+  "PRODUCT_VIEW",
+  "PRODUCT_EDIT",
+  "COMPOSITION_VIEW",
+  "SUBSTANCE_VIEW",
+  "SUBSTANCE_EDIT",
+] as const satisfies readonly Permission[];
+
+/**
+ * 権限グループに付ける「表とは別の権限」（S31 仕様 6-3）。製品・組成・物質と、システム管理を除いたもの
+ */
+export const GROUP_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
+  (p) => p !== "ADMIN" && !(DATA_PERMISSIONS as readonly Permission[]).includes(p),
+);

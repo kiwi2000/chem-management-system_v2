@@ -63,6 +63,11 @@ export const aliasesSchema = (m: Messages) =>
 export const substanceSchema = (m: Messages) =>
   z.object({
     code: z.string().trim().min(1, m.validation.required).max(20, m.validation.tooLong(20)),
+    /**
+     * 所属先の権限グループ（S31）。**作るときだけ使う**（直す画面では変えない。移すのは別の操作）。
+     * 省略したときは、選べるのが 1 つならそれに決まる
+     */
+    ownerGroupId: z.string().trim().min(1).nullable().optional(),
     /** CAS は任意（ポリマー・UVCB・企業秘密物質を登録できるようにするため） */
     casNumber: emptyToNull(z.string().trim().max(20, m.validation.tooLong(20))).optional(),
     status: z.enum(SUBSTANCE_STATUSES),

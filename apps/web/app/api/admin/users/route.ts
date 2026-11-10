@@ -13,13 +13,8 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { USER_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
-import {
-  resolveGroups,
-  setOrganisations,
-  setPermissions,
-  toUserSummary,
-  USER_INCLUDE,
-} from "@/lib/user-service";
+import { orgPathMap } from "@/lib/organisation-tree";
+import { resolveAssignments, setGroups, toUserSummary, USER_INCLUDE } from "@/lib/user-service";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +33,7 @@ export async function GET(req: Request) {
   );
   const where = { deletedAt: null, ...buildWhere(USER_COLUMNS, state.filters) };
 
-  const [users, total] = await Promise.all([
+  const [users, total, paths] = await Promise.all([
     prisma.user.findMany({
       where,
       orderBy: buildOrderBy(USER_COLUMNS, state.sort, { email: "asc" }),
@@ -47,10 +42,11 @@ export async function GET(req: Request) {
       take: state.pageSize,
     }),
     prisma.user.count({ where }),
+    orgPathMap(),
   ]);
 
   return Response.json({
-    items: users.map(toUserSummary),
+    items: users.map((u) => toUserSummary(u, paths)),
     total,
     page: state.page,
     pageSize: state.pageSize,
@@ -73,7 +69,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const { email, displayName, permissions, initialPassword, newsGroupId, organisationIds } =
+  const { email, displayName, initialPassword, newsGroupId, organisationId, groupIds } =
     parsed.data;
   const normalized = normalizeEmail(email);
 
@@ -81,8 +77,8 @@ export async function POST(req: Request) {
     return jsonError(409, "email_taken", m.errors.emailTaken);
   }
 
-  const groups = await resolveGroups(newsGroupId ?? null, permissions, organisationIds ?? []);
-  if (groups instanceof Response) return groups;
+  const assigned = await resolveAssignments(newsGroupId ?? null, organisationId, groupIds);
+  if (assigned instanceof Response) return assigned;
 
   const created = await prisma.user.create({
     data: {
@@ -90,18 +86,18 @@ export async function POST(req: Request) {
       displayName: displayName ?? null,
       passwordHash: await hashPassword(initialPassword),
       mustChangePassword: true,
-      newsGroupId: groups.newsGroupId,
+      newsGroupId: assigned.newsGroupId,
+      organisationId: assigned.organisationId,
     },
   });
-  await setOrganisations(created.id, groups.organisationIds);
-  const granted = await setPermissions(created.id, permissions, actor.user.id);
+  await setGroups(created.id, assigned.organisationId, assigned.groupIds, actor.user.id);
 
   await writeAudit({
     entity: "users",
     entityId: created.id,
     action: "create",
     actorId: actor.user.id,
-    diff: { email: normalized, permissions: granted },
+    diff: { email: normalized, organisationId, groupIds },
   });
-  return Response.json({ id: created.id, permissions: granted }, { status: 201 });
+  return Response.json({ id: created.id }, { status: 201 });
 }

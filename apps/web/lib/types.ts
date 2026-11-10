@@ -52,17 +52,49 @@ export interface UserSummaryDto {
   /** 2要素認証のやりかた。none（使わない）/ totp（認証アプリ） */
   mfaMethod: MfaMethod;
   lastLoginAt: string | null;
+  /** システム管理グループに入っているか（S31） */
+  isSystemAdmin: boolean;
+  /** 入っている権限グループから求めた権限（表示用。システム管理グループの人は空） */
   permissions: Permission[];
   newsGroupId: string | null;
   newsGroupName: string | null;
   newsGroupNameEn: string | null;
-  /**
-   * 所属する組織。種別を問わず何件でも。組織の表示順に並ぶ。
-   * 帳票の差出人には種別「会社」の先頭、お知らせの所属には「部署」の先頭が使われる
-   */
-  organisations: { id: string; kind: OrganisationKind; nameJa: string; nameEn: string | null }[];
+  /** 所属する組織（S31 から 1 つ。移行で組織の無かった人だけ null） */
+  organisationId: string | null;
+  /** 組織の上からの道筋（「営業部 › 営業1課」） */
+  organisationPath: string | null;
+  /** 入っている権限グループ（S31） */
+  groups: UserGroupRefDto[];
   /** 登録しているパスキーの数 */
   passkeyCount: number;
+}
+
+/** 人の画面で選べる権限グループ（S31） */
+export interface PermissionGroupOptionDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  isSystemAdmin: boolean;
+  /** お知らせを投稿できるか（お知らせの分類を選べるか） */
+  canPost: boolean;
+}
+
+export interface PermissionGroupOptionsDto {
+  groups: PermissionGroupOptionDto[];
+  /** 組織 id → その組織に設定した「最初に選ばれる権限グループ」（上の組織の分は含まない） */
+  orgDefaults: Record<string, string[]>;
+}
+
+/** 人が入っている権限グループ 1 つ（S31） */
+export interface UserGroupRefDto {
+  id: string;
+  code: string;
+  nameJa: string;
+  nameEn: string | null;
+  isSystemAdmin: boolean;
+  /** 入った理由 */
+  reason: "DEFAULT" | "MANUAL" | "MIGRATED";
 }
 
 /** ログイン中の利用者（生きているセッション）1行 */
@@ -103,6 +135,8 @@ export interface OrganisationDto {
   nameEn: string | null;
   displayOrder: number;
   activeFlag: boolean;
+  /** 上の組織（S31）。null ならいちばん上 */
+  parentId: string | null;
   /** 項目名と値。どちらも自由入力 */
   items: { label: string; value: string }[];
   /** この組織に所属する人の数（消したときの影響を知らせるため） */

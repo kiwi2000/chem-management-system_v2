@@ -24,8 +24,11 @@ datasource db {
 // ---------- Enum ----------
 
 /**
- * 権限。役割ではなく権限そのものをユーザーに持たせる。
- * packages/shared/src/permissions.ts の PERMISSIONS と必ず一致させること。
+ * 権限。S31（2026-11）から人ではなく権限グループに付ける（`permission_group_permissions`）。
+ * packages/shared/src/permissions.ts の PERMISSIONS と揃える。
+ * 製品・組成・物質の権限（PRODUCT_* / COMPOSITION_VIEW / SUBSTANCE_*）は権限グループの表の印に、
+ * ADMIN はシステム管理グループに置き換わり、権限グループには付けない（ログイン中の人の権限として画面と API が使う）。
+ * INACTIVE_VIEW / INACTIVE_EDIT / DOCUMENT_SENDER は使わなくなった値で、DB の列挙にだけ残す
  */
 enum Permission {
   PRODUCT_VIEW
@@ -185,6 +188,24 @@ enum GroupKind {
   ORG
 }
 
+/**
+ * 人が権限グループに入った理由（S31）
+ */
+enum PermissionGroupJoinReason {
+  /**
+   * 組織の「最初に選ばれる権限グループ」から入った
+   */
+  DEFAULT
+  /**
+   * 人の画面・権限グループの画面で手で足した
+   */
+  MANUAL
+  /**
+   * S31 の移行で付いた（今の権限から）
+   */
+  MIGRATED
+}
+
 // ---------- ユーザー・セッション ----------
 
 model User {
@@ -272,20 +293,25 @@ model User {
   updatedAt             DateTime  @updatedAt @map("updated_at")
   deletedAt             DateTime? @map("deleted_at")
 
-  sessions       Session[]
-  permissions    UserPermission[]
-  savedFilters   SavedFilter[]
-  news           News[]
-  passkeys       Passkey[]
-  newsGroup      Group?             @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
+  sessions         Session[]
+  savedFilters     SavedFilter[]
+  news             News[]
+  passkeys         Passkey[]
+  newsGroup        Group?                @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
   /**
-   * 所属する組織。**種別を問わず何件でも。**
-   * 帳票の差出人には種別「会社」の先頭、お知らせの所属には「部署」の先頭を使う
+   * 所属する組織（S31。必ず 1 つの決まり。移行で組織の無かった人だけ空）。**権限とは関係ない。**
+   * 帳票の差出人・お知らせの所属に使う
    */
-  organisations  UserOrganisation[]
-  approvalEvents ApprovalEvent[]
+  organisationId   String?               @map("organisation_id")
+  organisation     Organisation?         @relation(fields: [organisationId], references: [id])
+  /**
+   * 入っている権限グループ（S31）。その人に何ができるかは、これだけで決まる
+   */
+  permissionGroups UserPermissionGroup[]
+  approvalEvents   ApprovalEvent[]
 
   @@index([newsGroupId])
+  @@index([organisationId])
   @@map("users")
 }
 
@@ -361,18 +387,29 @@ model Organisation {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
+  /**
+   * 上の組織（S31）。空ならいちばん上（会社・取引先など）。表示順は同じ上の組織の中での並び
+   */
+  parentId     String?   @map("parent_id")
 
-  items       OrganisationItem[]
+  parent        Organisation?              @relation("OrganisationTree", fields: [parentId], references: [id])
+  children      Organisation[]             @relation("OrganisationTree")
+  items         OrganisationItem[]
   /**
    * この組織に所属する人
    */
-  members     UserOrganisation[]
+  members       User[]
+  /**
+   * 最初に選ばれる権限グループ（S31）。この組織とその下の組織の人を登録するとき、最初から選ばれた状態になる
+   */
+  defaultGroups OrganisationDefaultGroup[]
   /**
    * PRTR の届出データ（S22）。所属 × 年度
    */
-  prtrEntries PrtrEntry[]
+  prtrEntries   PrtrEntry[]
 
   @@index([displayOrder])
+  @@index([parentId])
   @@map("organisations")
 }
 
@@ -399,20 +436,19 @@ model OrganisationItem {
 }
 
 /**
- * ユーザーと組織の結び付き。**1人が種別を問わず何件でも持てる。**
- * 会社1つ・部署1つの2枠に分けていたのをやめた（2026-09-03）。
- * どれを帳票の差出人・お知らせの所属に使うかは、種別と組織の表示順で決める
+ * 最初に選ばれる権限グループ（S31）。組織ごとに、その組織の人を登録するとき最初から選んでおく権限グループ。
+ * 上の組織に設定したものも一緒に選ばれる。システム管理グループは選べない
  */
-model UserOrganisation {
-  userId         String @map("user_id")
+model OrganisationDefaultGroup {
   organisationId String @map("organisation_id")
+  groupId        String @map("group_id")
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisation Organisation    @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  group        PermissionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
-  @@id([userId, organisationId])
-  @@index([organisationId])
-  @@map("user_organisations")
+  @@id([organisationId, groupId])
+  @@index([groupId])
+  @@map("organisation_default_groups")
 }
 
 /**
@@ -444,20 +480,94 @@ model Group {
 }
 
 /**
- * ユーザーが持つ権限。
- * 含意（編集できるなら見られる 等）は保存前に展開しておくので、
- * 判定側はこの表に行があるかどうかだけを見ればよい。
+ * 権限グループ（S31）。人に何ができるかを決め、製品・原材料・物質の持ち主（所属先）にもなる。
+ * 上下は無く 1 列に並ぶ。コードは利用者が付ける全体で一意の記号で、TSV で所属先を指すのに使う（正規化して保存）。
+ * `isSystemAdmin` のものは最初からある 1 つだけ（システム管理グループ）。表を持たず、入っている人は何でもできる。
+ * 消せるのは、入っている人も所属するデータも無いものだけ（データは外部キーで守る）
  */
-model UserPermission {
-  userId     String     @map("user_id")
+model PermissionGroup {
+  id            String   @id @default(cuid())
+  code          String   @unique @db.VarChar(64)
+  nameJa        String   @map("name_ja")
+  nameEn        String?  @map("name_en")
+  isSystemAdmin Boolean  @default(false) @map("is_system_admin")
+  createdAt     DateTime @default(now()) @map("created_at")
+  createdBy     String?  @map("created_by")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  updatedBy     String?  @map("updated_by")
+
+  /**
+   * この権限グループの表（行 = 相手の権限グループ）
+   */
+  rows        PermissionGroupRow[]        @relation("PermissionGroupRowOwner")
+  /**
+   * ほかの権限グループの表で、相手としてこの権限グループを指している行
+   */
+  targetedBy  PermissionGroupRow[]        @relation("PermissionGroupRowTarget")
+  permissions PermissionGroupPermission[]
+  members     UserPermissionGroup[]
+  defaultFor  OrganisationDefaultGroup[]
+  products    Product[]
+  substances  Substance[]
+
+  @@map("permission_groups")
+}
+
+/**
+ * 権限グループの表の 1 行（S31）。「この権限グループ（group）は、相手（target）に所属するデータに何ができるか」の 6 つの印。
+ * 連動（編集 → 参照、組成 参照 → 製品・原材料 参照）は保存するときに補う。印が全部外れた行は残さない
+ */
+model PermissionGroupRow {
+  groupId         String  @map("group_id")
+  targetGroupId   String  @map("target_group_id")
+  productView     Boolean @default(false) @map("product_view")
+  productEdit     Boolean @default(false) @map("product_edit")
+  compositionView Boolean @default(false) @map("composition_view")
+  compositionEdit Boolean @default(false) @map("composition_edit")
+  substanceView   Boolean @default(false) @map("substance_view")
+  substanceEdit   Boolean @default(false) @map("substance_edit")
+
+  group  PermissionGroup @relation("PermissionGroupRowOwner", fields: [groupId], references: [id], onDelete: Cascade)
+  target PermissionGroup @relation("PermissionGroupRowTarget", fields: [targetGroupId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, targetGroupId])
+  @@index([targetGroupId])
+  @@map("permission_group_rows")
+}
+
+/**
+ * 権限グループの「表とは別の権限」（S31）。承認・法規制・出力・取り込み・ドキュメント・組織・お知らせ・フィードバック・PRTR。
+ * 含意（編集できるなら見られる 等）は保存前に展開しておく
+ */
+model PermissionGroupPermission {
+  groupId    String     @map("group_id")
   permission Permission
-  grantedAt  DateTime   @default(now()) @map("granted_at")
-  grantedBy  String?    @map("granted_by")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group PermissionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
-  @@id([userId, permission])
-  @@map("user_permissions")
+  @@id([groupId, permission])
+  @@map("permission_group_permissions")
+}
+
+/**
+ * 人が入っている権限グループ（S31）。いくつでも、0 でもよい
+ */
+model UserPermissionGroup {
+  userId    String                    @map("user_id")
+  groupId   String                    @map("group_id")
+  /**
+   * 入った理由（画面の「入った理由」の列）
+   */
+  reason    PermissionGroupJoinReason @default(MANUAL)
+  grantedAt DateTime                  @default(now()) @map("granted_at")
+  grantedBy String?                   @map("granted_by")
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group PermissionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+  @@index([groupId])
+  @@map("user_permission_groups")
 }
 
 /**
@@ -1113,6 +1223,11 @@ model Substance {
   updatedBy String?   @map("updated_by")
   deletedAt DateTime? @map("deleted_at")
 
+  /**
+   * 所属先の権限グループ（S31）。見られる・直せる人は、権限グループの表の印で決まる
+   */
+  ownerGroupId     String                   @map("owner_group_id")
+  ownerGroup       PermissionGroup          @relation(fields: [ownerGroupId], references: [id], onDelete: Restrict)
   aliases          SubstanceAlias[]
   gazetteNumbers   SubstanceGazetteNumber[]
   properties       SubstanceProperty[]
@@ -1125,6 +1240,7 @@ model Substance {
 
   @@index([casNormalized])
   @@index([impurityTypeId])
+  @@index([ownerGroupId])
   @@index([status])
   @@index([nameJa])
   @@index([nameEn])
@@ -1271,12 +1387,17 @@ model Product {
   nameJa String  @map("name_ja") @db.VarChar(500)
   nameEn String? @map("name_en") @db.VarChar(500)
 
-  status       ProductStatus @default(ACTIVE)
+  status       ProductStatus   @default(ACTIVE)
+  /**
+   * 所属先の権限グループ（S31）。見られる・直せる人は、権限グループの表の印で決まる
+   */
+  ownerGroupId String          @map("owner_group_id")
+  ownerGroup   PermissionGroup @relation(fields: [ownerGroupId], references: [id], onDelete: Restrict)
   /**
    * 公開の状態。公開済になるまで他の人には見せず、組成の候補にも出さない。
    * 有効／無効（status）とは別の軸。
    */
-  publishState PublishState  @default(DRAFT) @map("publish_state")
+  publishState PublishState    @default(DRAFT) @map("publish_state")
   /**
    * 備考（日本語のみ）。検索対象に含める
    */
@@ -1355,6 +1476,7 @@ model Product {
   @@index([nameJa])
   @@index([nameEn])
   @@index([status])
+  @@index([ownerGroupId])
   @@index([usableAsMaterial])
   @@index([publishState])
   @@index([modelValue])

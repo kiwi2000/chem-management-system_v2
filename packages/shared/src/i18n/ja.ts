@@ -238,8 +238,6 @@ export const ja = {
     COMPOSITION_VIEW: "組成を見られる",
     SUBSTANCE_VIEW: "物質を見られる",
     SUBSTANCE_EDIT: "物質を編集できる",
-    INACTIVE_VIEW: "無効・未公開のデータも見られる",
-    INACTIVE_EDIT: "無効・未公開のデータも編集できる",
     APPROVE: "承認できる",
     REGULATION_VIEW: "法規制を見られる",
     REGULATION_EDIT: "法規制を編集できる",
@@ -260,12 +258,10 @@ export const ja = {
     DATA_EXPORT: "データ入出力の TSV・JSON の書き出し。持ち出しになるので必要な人だけに",
     DATA_IMPORT:
       "データ入出力画面で、当方のデータセットや自分で作った表を取り込めます。本体を書き換えるので、既定はシステム管理者だけです",
-    INACTIVE_VIEW:
-      "未公開のデータと、無効にした製品を一覧・詳細で見られます（作成者は権限が無くても自分のぶんを見られます）",
     DOCUMENT_DOWNLOAD:
       "他の人が作った帳票の紙面を画面で開く・印刷する、PDF・zip を落とす。無い人は一覧（名前・日時・状態）までです。画面で開ければ印刷して保存できるので、開くのも持ち出しとして扱います。自分が作ったものは、この権限が無くても開けます",
     DOCUMENT_VIEW_ALL:
-      "生成済ドキュメントに全員のぶんが並び、落とす・消すこともできます。ただし組成が載ったものは「組成を見られる」、未公開の製品・物質のものは「無効・未公開のデータも見られる」が無ければ出ません",
+      "生成済ドキュメントに全員のぶんが並び、落とす・消すこともできます。ただし、見られない製品・物質・組成が載っているものは開けません",
     NEWS_POST: "自分が投稿したお知らせは編集・削除できます",
     FEEDBACK_VIEW:
       "左メニューに「フィードバック」が出て、書き込みと返信を読めます。未読の印も出ます",
@@ -279,12 +275,18 @@ export const ja = {
     product: "製品 / 原材料",
     composition: "組成",
     substance: "物質",
-    inactive: "無効・未公開のデータ",
+    inactive: "承認",
     regulation: "法規制",
     data: "データの持ち込み・持ち出し",
     news: "お知らせ",
     feedback: "フィードバック",
     system: "システム",
+  },
+  /** データの所属先（S31） */
+  owner: {
+    label: "所属先",
+    required: "所属先を選んでください",
+    notAllowed: "この所属先は選べません",
   },
   permissionPresets: {
     label: "よく使う組み合わせ",
@@ -2381,11 +2383,17 @@ export const ja = {
     title: "ユーザー管理",
     organisation: "組織",
     organisationHint:
-      "種別を問わず何件でも。帳票の差出人には、このうち種別「会社」の先頭のものが入ります。お知らせの投稿者の所属には「部署」の先頭のものが出ます",
+      "組織図から 1 つ選びます。変えると、権限グループを選び直します。帳票の差出人には、ここから上へたどって近い「会社」が入ります",
+    organisationNone: "（選んでください）",
     noOrganisations: "組織がまだ登録されていません。左メニューの「組織」で登録してください",
-    newsGroup: "ニュースグループ",
+    permissionGroups: "権限グループ",
+    permissionGroupsHint:
+      "点線のものは、組織から最初に選ばれたものです。外してもかまいません。1 つも無くても保存できます（その人はデータを見られません）",
+    permissionGroupsNone: "（なし）",
+    regroupedNotice: "組織を変えたので、権限グループを選び直しました。保存する前に見直してください",
+    newsGroup: "お知らせの分類",
     newsGroupHint: "投稿したお知らせが、ホームでこの見出しの下に並びます",
-    newsGroupDisabled: "「お知らせを投稿できる」を付けると指定できます",
+    newsGroupDisabled: "「お知らせを投稿できる」を持つ権限グループに入ると指定できます",
     newTitle: "ユーザーの新規登録",
     editTitle: "ユーザーの編集",
     email: "メールアドレス",
@@ -2411,7 +2419,7 @@ export const ja = {
     deleteConfirm: (email: string) => `ユーザー「${email}」を削除しますか？`,
     empty: "ユーザーがいません",
     permissionCount: (n: number) => `${n} 件`,
-    selfNote: "これはあなた自身のアカウントです。管理権限を外すことはできません",
+    selfNote: "これはあなた自身のアカウントです。システム管理グループから外すことはできません",
     lastAdminNote: "最後のシステム管理者です。管理権限を外すことはできません",
   },
 
@@ -2479,8 +2487,8 @@ export const ja = {
     notFound: "対象が見つかりません",
     emailTaken: "このメールアドレスは既に使われています",
     displayNameRequired: "表示名を入力してください",
-    cannotRemoveOwnAdmin: "自分自身から管理権限を外すことはできません",
-    cannotRemoveLastAdmin: "システム管理者が0人になる操作はできません",
+    cannotRemoveOwnAdmin: "自分をシステム管理グループから外すことはできません",
+    cannotRemoveLastAdmin: "システム管理グループの最後の 1 人は外せません",
     cannotDeleteSelf: "自分自身を削除することはできません",
     forbiddenNewsOther: "他の人が投稿したお知らせは編集・削除できません",
     forbidden: "この操作を行う権限がありません",

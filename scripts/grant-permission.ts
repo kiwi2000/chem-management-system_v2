@@ -1,18 +1,18 @@
 /**
- * ユーザーに権限を足す管理用スクリプト。
+ * 人を権限グループに入れる管理用スクリプト（S31 から。人に直接付ける権限は無くなった）。
  * 主な用途:
- *  - 権限の enum を入れ替えた直後に、必要な権限を配り直す
- *  - 画面にログインできる管理者がいないときの復旧
+ *  - 画面にログインできる管理者がいないときの復旧（システム管理グループに入れる）
+ *  - 入れたい権限グループに、画面を使わずに入れる
  *
  * 実行:
- *   npx tsx scripts/grant-permission.ts --list                                  一覧
- *   npx tsx scripts/grant-permission.ts <メール> <権限> [<権限> ...]              指定の人に足す
- *   npx tsx scripts/grant-permission.ts --admins <権限> [<権限> ...]              ADMIN を持つ人全員に足す
+ *   npx tsx scripts/grant-permission.ts --list                       人と入っている権限グループの一覧
+ *   npx tsx scripts/grant-permission.ts <メール>                      システム管理グループに入れる
+ *   npx tsx scripts/grant-permission.ts <メール> <コード> [<コード> ...] 指定の権限グループに入れる
  *
- * 足すだけで、既にある権限は外さない（画面の保存とは違い、置き換えではない）。
- * 含意（INACTIVE_EDIT なら INACTIVE_VIEW など）は画面と同じように自動で補う。
+ * 入れるだけで、既に入っている権限グループからは外さない（画面の保存とは違い、置き換えではない）。
+ * 入れたら、その人のセッションを切るため、ログインし直してもらう。
  */
-import { expandPermissions, isPermission, PERMISSIONS, type Permission } from "@chem/shared";
+import { normalizeCode } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -25,7 +25,7 @@ async function list() {
       email: true,
       displayName: true,
       activeFlag: true,
-      permissions: { select: { permission: true } },
+      permissionGroups: { select: { group: { select: { code: true } } } },
     },
   });
   if (users.length === 0) {
@@ -37,25 +37,9 @@ async function list() {
       email: u.email,
       名前: u.displayName ?? "-",
       有効: u.activeFlag,
-      権限: u.permissions.map((p) => p.permission).join(" "),
+      権限グループ: u.permissionGroups.map((p) => p.group.code).join(" "),
     })),
   );
-}
-
-/** 足りない分だけ書く。戻り値は実際に足した権限 */
-async function grant(userId: string, wanted: Permission[]): Promise<Permission[]> {
-  const current = (
-    await prisma.userPermission.findMany({ where: { userId }, select: { permission: true } })
-  ).map((r) => r.permission);
-  // 含意を展開してから、まだ持っていないものだけ足す
-  const toAdd = expandPermissions([...current, ...wanted]).filter((p) => !current.includes(p));
-  if (toAdd.length > 0) {
-    await prisma.userPermission.createMany({
-      data: toAdd.map((permission) => ({ userId, permission })),
-      skipDuplicates: true,
-    });
-  }
-  return toAdd;
 }
 
 async function main() {
@@ -63,58 +47,62 @@ async function main() {
   if (args.length === 0 || args[0] === "--list") {
     await list();
     if (args.length === 0) {
-      console.log("\n使い方: npx tsx scripts/grant-permission.ts <メールアドレス> <権限> ...");
-      console.log(`権限: ${PERMISSIONS.join(" ")}`);
+      console.log(
+        "\n使い方: npx tsx scripts/grant-permission.ts <メールアドレス> [<権限グループのコード> ...]",
+      );
+      console.log("コードを省くと、システム管理グループに入れます");
     }
     return;
   }
 
-  // 先頭は宛先（メールアドレスか --admins）、残りが足す権限
-  const toAdmins = args[0] === "--admins";
-  const wanted = args.slice(1).map((v) => v.trim().toUpperCase());
-
-  const bad = wanted.filter((v) => !isPermission(v));
-  if (wanted.length === 0 || bad.length > 0) {
-    console.error(
-      bad.length > 0 ? `知らない権限: ${bad.join(", ")}` : "権限を1つ以上指定してください",
-    );
-    console.error(`指定できる権限: ${PERMISSIONS.join(" ")}`);
-    process.exitCode = 1;
-    return;
-  }
-  const perms = wanted as Permission[];
-
-  const targets = toAdmins
-    ? await prisma.user.findMany({
-        where: {
-          deletedAt: null,
-          activeFlag: true,
-          permissions: { some: { permission: "ADMIN" } },
-        },
-        select: { id: true, email: true },
-      })
-    : await prisma.user.findMany({
-        where: { deletedAt: null, email: args[0].trim().toLowerCase() },
-        select: { id: true, email: true },
-      });
-
-  if (targets.length === 0) {
-    console.error(
-      toAdmins ? "ADMIN を持つ有効なユーザーがいません" : `ユーザーが見つかりません: ${args[0]}`,
-    );
+  const email = (args[0] ?? "").trim().toLowerCase();
+  const user = await prisma.user.findFirst({
+    where: { deletedAt: null, email },
+    select: { id: true, email: true },
+  });
+  if (!user) {
+    console.error(`ユーザーが見つかりません: ${args[0]}`);
     await list();
     process.exitCode = 1;
     return;
   }
 
-  for (const t of targets) {
-    const added = await grant(t.id, perms);
-    console.log(
-      added.length > 0
-        ? `${t.email}: ${added.join(" ")} を追加`
-        : `${t.email}: 追加なし（既に持っている）`,
+  const codes = args.slice(1).map((v) => normalizeCode(v));
+  const groups =
+    codes.length === 0
+      ? await prisma.permissionGroup.findMany({
+          where: { isSystemAdmin: true },
+          select: { id: true, code: true },
+        })
+      : await prisma.permissionGroup.findMany({
+          where: { code: { in: codes } },
+          select: { id: true, code: true },
+        });
+  const missing = codes.filter((c) => !groups.some((g) => g.code === c));
+  if (groups.length === 0 || missing.length > 0) {
+    console.error(
+      missing.length > 0
+        ? `知らない権限グループ: ${missing.join(", ")}`
+        : "システム管理グループがありません（移行が済んでいるか確かめてください）",
     );
+    process.exitCode = 1;
+    return;
   }
+
+  const r = await prisma.userPermissionGroup.createMany({
+    data: groups.map((g) => ({ userId: user.id, groupId: g.id, reason: "MANUAL" as const })),
+    skipDuplicates: true,
+  });
+  // 入った権限グループをその場で効かせるため、ログインし直してもらう
+  await prisma.session.updateMany({
+    where: { userId: user.id, endedAt: null },
+    data: { endedAt: new Date(), endedReason: "revoked" },
+  });
+  console.log(
+    r.count > 0
+      ? `${user.email}: ${groups.map((g) => g.code).join(" ")} に入れました`
+      : `${user.email}: 追加なし（既に入っている）`,
+  );
   console.log("");
   await list();
 }

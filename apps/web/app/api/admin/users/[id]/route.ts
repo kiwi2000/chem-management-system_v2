@@ -1,15 +1,16 @@
-import { expandPermissions, userUpdateSchema } from "@chem/shared";
+import { userUpdateSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { revokeAllSessions } from "@/lib/auth";
 import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
+import { orgPathMap } from "@/lib/organisation-tree";
 import {
   countActiveAdmins,
-  resolveGroups,
-  setOrganisations,
-  setPermissions,
+  resolveAssignments,
+  setGroups,
+  systemAdminGroupId,
   toUserSummary,
   USER_INCLUDE,
 } from "@/lib/user-service";
@@ -32,10 +33,10 @@ export async function GET(_req: Request, { params }: Ctx) {
     const m = await getServerMessages();
     return jsonError(404, "not_found", m.errors.notFound);
   }
-  return Response.json({ item: toUserSummary(user) });
+  return Response.json({ item: toUserSummary(user, await orgPathMap()) });
 }
 
-/** PUT /api/admin/users/[id] — 表示名・権限・有効/無効の更新 */
+/** PUT /api/admin/users/[id] — 表示名・組織・権限グループ・有効/無効の更新 */
 export async function PUT(req: Request, { params }: Ctx) {
   const actor = await requireAdmin();
   if (actor instanceof Response) return actor;
@@ -55,17 +56,17 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const { displayName, permissions, activeFlag, newsGroupId, organisationIds } = parsed.data;
+  const { displayName, activeFlag, newsGroupId, organisationId, groupIds } = parsed.data;
   // 楽観的ロックの印。無ければ 400
   const lock = parseEditStamp(body, m);
   if (lock instanceof Response) return lock;
-  const next = expandPermissions(permissions);
 
-  const groups = await resolveGroups(newsGroupId ?? null, next, organisationIds ?? []);
-  if (groups instanceof Response) return groups;
+  const assigned = await resolveAssignments(newsGroupId ?? null, organisationId, groupIds);
+  if (assigned instanceof Response) return assigned;
 
-  // 締め出し防止: 自分自身の管理権限は外せない。管理者が0人になる操作もできない
-  const losesAdmin = !next.includes("ADMIN") || !activeFlag;
+  // 締め出し防止: 自分をシステム管理グループから外せない。管理者が0人になる操作もできない
+  const adminGroup = await systemAdminGroupId();
+  const losesAdmin = !(adminGroup && assigned.groupIds.includes(adminGroup)) || !activeFlag;
   if (losesAdmin) {
     if (id === actor.user.id) {
       return jsonError(409, "cannot_remove_own_admin", m.errors.cannotRemoveOwnAdmin);
@@ -79,7 +80,12 @@ export async function PUT(req: Request, { params }: Ctx) {
   // 所属と権限は利用者の行を触らないので、ここを通ってから書く
   const hit = await prisma.user.updateMany({
     where: { id, ...stampWhere(lock) },
-    data: { displayName: displayName ?? null, activeFlag, newsGroupId: groups.newsGroupId },
+    data: {
+      displayName: displayName ?? null,
+      activeFlag,
+      newsGroupId: assigned.newsGroupId,
+      organisationId: assigned.organisationId,
+    },
   });
   if (hit.count === 0) {
     // 利用者は更新者を持たないので、時刻だけ添える
@@ -88,21 +94,26 @@ export async function PUT(req: Request, { params }: Ctx) {
       await prisma.user.findUnique({ where: { id }, select: { updatedAt: true } }),
     );
   }
-  await setOrganisations(id, groups.organisationIds);
-  const granted = await setPermissions(id, next, actor.user.id);
+  const groupsChanged = await setGroups(
+    id,
+    assigned.organisationId,
+    assigned.groupIds,
+    actor.user.id,
+  );
 
-  // 無効化・権限縮小をその場で効かせるため、対象ユーザーのセッションを切る
-  await revokeAllSessions(id);
+  // 無効化・入る権限グループの変更をその場で効かせるため、対象ユーザーのセッションを切る
+  // （S31 画面設計の決定 6。権限グループの表を直したときは切らない）
+  if (groupsChanged || !activeFlag) await revokeAllSessions(id);
 
   await writeAudit({
     entity: "users",
     entityId: id,
     action: "update",
     actorId: actor.user.id,
-    diff: { displayName, activeFlag, permissions: granted },
+    diff: { displayName, activeFlag, organisationId, groupIds },
   });
   const after = await prisma.user.findUniqueOrThrow({ where: { id }, select: { updatedAt: true } });
-  return Response.json({ ok: true, permissions: granted, stamp: rowStamp(after) });
+  return Response.json({ ok: true, stamp: rowStamp(after) });
 }
 
 /** DELETE /api/admin/users/[id] — 論理削除 */

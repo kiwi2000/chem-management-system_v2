@@ -7,12 +7,12 @@
  * 実行:
  *   npx tsx scripts/set-password.ts --list                             ユーザー一覧
  *   npx tsx scripts/set-password.ts <メール> <パスワード>                既存ユーザーに設定
- *   npx tsx scripts/set-password.ts <メール> <パスワード> --create      いなければ作る（全権限を付与）
+ *   npx tsx scripts/set-password.ts <メール> <パスワード> --create      いなければ作る（システム管理グループに入れる）
  *
  * 注意: 引数に渡したパスワードはシェル履歴に残る。共用端末では実行後に履歴を消すこと。
  */
 import { hash } from "@node-rs/argon2";
-import { Permission, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 const ARGON_OPTS = { memoryCost: 19456, timeCost: 2, parallelism: 1 } as const;
@@ -27,7 +27,7 @@ async function list() {
       passwordHash: true,
       mfaMethod: true,
       lastLoginAt: true,
-      permissions: { select: { permission: true } },
+      permissionGroups: { select: { group: { select: { code: true } } } },
     },
   });
   if (users.length === 0) {
@@ -37,7 +37,7 @@ async function list() {
   console.table(
     users.map((u) => ({
       email: u.email,
-      権限数: u.permissions.length,
+      権限グループ: u.permissionGroups.map((p) => p.group.code).join(" "),
       有効: u.activeFlag,
       パスワード: u.passwordHash ? "設定済み" : "未設定",
       MFA: u.mfaMethod === "totp" ? "認証アプリ" : "なし",
@@ -76,12 +76,17 @@ async function main() {
       return;
     }
     user = await prisma.user.create({ data: { email, displayName: null } });
-    // 初期セットアップ用なので全権限を付与する。過剰な分は画面から外せばよい
-    await prisma.userPermission.createMany({
-      data: Object.values(Permission).map((permission) => ({ userId: user!.id, permission })),
+    // 初期セットアップ用なのでシステム管理グループに入れる（何でもできる。S31）。
+    // 組織は空のまま（組織を登録してから画面で付ける）
+    const admins = await prisma.permissionGroup.findMany({
+      where: { isSystemAdmin: true },
+      select: { id: true },
+    });
+    await prisma.userPermissionGroup.createMany({
+      data: admins.map((g) => ({ userId: user!.id, groupId: g.id, reason: "MANUAL" as const })),
       skipDuplicates: true,
     });
-    console.log(`ユーザーを作成しました: ${email}（全権限を付与）`);
+    console.log(`ユーザーを作成しました: ${email}（システム管理グループに入れました）`);
   }
 
   await prisma.user.update({

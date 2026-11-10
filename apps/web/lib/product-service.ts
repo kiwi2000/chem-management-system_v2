@@ -1,6 +1,6 @@
 import { normalizeCode, type ProductInput, type PublishState } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
-import type { Actor } from "@/lib/authz";
+import { canOn, ownerWhere, type Actor } from "@/lib/authz";
 import { rowStamp } from "@/lib/edit-stamp";
 import { propertyWrites } from "@/lib/property-values";
 import type { ProductDetailDto, ProductListItemDto } from "@/lib/types";
@@ -53,19 +53,22 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
 }>;
 
 /**
- * 一覧・詳細に出してよい製品の条件。
+ * 一覧・詳細に出してよい製品の条件（S31 仕様 7 章）。
  *
- * 無効（廃番）と未公開のものは、作成者と `INACTIVE_VIEW` を持つ人にだけ見せる。
+ * - 所属先に「製品・原材料 参照」の印があるものだけ
+ * - 未公開のものは、作った本人と承認する人（`APPROVE`）にだけ見せる
+ * - 無効（廃番）は隠さない（一覧の絞り込みの既定を「有効のみ」にする）
+ *
  * 一覧・件数・詳細のすべてに同じ条件を掛けること
  * （詳細は 403 ではなく 404。403 だと「その ID の製品は在る」と分かってしまうため）。
  *
- * 組成の構成要素として名前を出す場面には掛けない。掛けると、無効な原材料を含む
- * 親製品の組成が読めなくなるため（S9 で決定）。
+ * 組成の構成要素として名前を出す場面には掛けない。組成を見られるかは組成の条件で決める（仕様 10 章）
  */
 export function visibilityWhere(actor: Actor): Prisma.ProductWhereInput {
-  if (actor.has("INACTIVE_VIEW")) return {};
+  const owner = ownerWhere(actor, "productView");
+  if (actor.has("APPROVE")) return owner;
   return {
-    OR: [{ status: "ACTIVE", publishState: "PUBLISHED" }, { createdBy: actor.user.id }],
+    AND: [owner, { OR: [{ publishState: "PUBLISHED" }, { createdBy: actor.user.id }] }],
   };
 }
 
@@ -74,17 +77,24 @@ export const publishedWhere: Prisma.ProductWhereInput = {
   publishState: "PUBLISHED",
 };
 
-/** 書き換えてよいか。見えるだけでは足りず、無効・未公開は専用の権限が要る */
+/**
+ * 書き換えてよいか（S31）。所属先に「製品・原材料 編集」の印が要る。
+ * 未公開のものは作った本人だけ（システム管理グループは別）。無効（廃番）は印どおりに直せる
+ */
 export function canEditProduct(
   actor: Actor,
-  target: { status: string; publishState: PublishState; createdBy: string | null },
+  target: {
+    status: string;
+    publishState: PublishState;
+    createdBy: string | null;
+    ownerGroupId: string;
+  },
 ): boolean {
-  if (!actor.has("PRODUCT_EDIT")) return false;
+  if (!canOn(actor, "productEdit", target.ownerGroupId)) return false;
   // 承認待は誰も書き換えられない。直すなら取り下げてから
   if (target.publishState === "PENDING") return false;
-  const restricted = target.status !== "ACTIVE" || target.publishState !== "PUBLISHED";
-  if (!restricted) return true;
-  return actor.has("INACTIVE_EDIT") || target.createdBy === actor.user.id;
+  if (target.publishState === "PUBLISHED") return true;
+  return actor.isSystemAdmin || target.createdBy === actor.user.id;
 }
 
 export function toListItem(p: ProductListRow, versionId: string | null): ProductListItemDto {

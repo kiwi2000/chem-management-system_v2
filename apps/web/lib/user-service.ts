@@ -1,42 +1,102 @@
-import { expandPermissions, isPermission, type MfaMethod, type Permission } from "@chem/shared";
-import type { Group, Organisation, Permission as DbPermission, User } from "@prisma/client";
+import {
+  expandPermissions,
+  GROUP_PERMISSIONS,
+  isPermission,
+  type MfaMethod,
+  type Permission,
+} from "@chem/shared";
+import type { Group, PermissionGroupJoinReason, User } from "@prisma/client";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { rowStamp } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
-import { sortOrganisations } from "@/lib/user-organisations";
+import { chainLabel, defaultGroupIdsFor, type OrgChainNode } from "@/lib/organisation-tree";
 
 /**
- * ユーザーと権限の読み書き。
- * 権限は含意を展開してから保存するので、判定側は単純な所属チェックで済む。
+ * ユーザーの読み書き。
+ * S31 から、人の権限は入っている権限グループで決まる（人に直接付ける権限は無い）。
+ * 組織は 1 つで、権限とは関係ない。
  */
 
-type OrganisationRef = Pick<Organisation, "id" | "kind" | "nameJa" | "nameEn" | "displayOrder">;
-
-export type UserWithPermissions = User & {
-  /** DB の enum のまま。画面へ出すときに、知らない値（古い DOCUMENT_SENDER）は落とす */
-  permissions: { permission: DbPermission }[];
+export type UserWithGroups = User & {
   newsGroup?: Pick<Group, "id" | "nameJa" | "nameEn"> | null;
-  /** 所属する組織。種別を問わず何件でも */
-  organisations?: { organisation: OrganisationRef }[];
+  permissionGroups: {
+    reason: PermissionGroupJoinReason;
+    group: {
+      id: string;
+      code: string;
+      nameJa: string;
+      nameEn: string | null;
+      isSystemAdmin: boolean;
+      permissions: { permission: string }[];
+      rows: {
+        productView: boolean;
+        productEdit: boolean;
+        compositionView: boolean;
+        substanceView: boolean;
+        substanceEdit: boolean;
+      }[];
+    };
+  }[];
   _count?: { passkeys: number };
 };
 
 /** 一覧・詳細で毎回同じものを読むので共通化する */
 export const USER_INCLUDE = {
-  permissions: { select: { permission: true } },
   newsGroup: { select: { id: true, nameJa: true, nameEn: true } },
-  organisations: {
+  permissionGroups: {
     select: {
-      organisation: {
-        select: { id: true, kind: true, nameJa: true, nameEn: true, displayOrder: true },
+      reason: true,
+      group: {
+        select: {
+          id: true,
+          code: true,
+          nameJa: true,
+          nameEn: true,
+          isSystemAdmin: true,
+          permissions: { select: { permission: true } },
+          rows: {
+            select: {
+              productView: true,
+              productEdit: true,
+              compositionView: true,
+              substanceView: true,
+              substanceEdit: true,
+            },
+          },
+        },
       },
     },
+    orderBy: { group: { code: "asc" } },
   },
   _count: { select: { passkeys: true } },
 } as const;
 
-export function toUserSummary(u: UserWithPermissions) {
+/**
+ * 入っている権限グループから、その人の権限を求める（一覧の表示用。判定は authz.ts の Actor で行う）
+ */
+function permissionsOf(u: UserWithGroups): Permission[] {
+  if (u.permissionGroups.some((m) => m.group.isSystemAdmin)) return [];
+  const set = new Set<Permission>();
+  for (const { group } of u.permissionGroups) {
+    for (const { permission } of group.permissions) {
+      if (isPermission(permission) && GROUP_PERMISSIONS.includes(permission)) set.add(permission);
+    }
+    for (const r of group.rows) {
+      if (r.productView) set.add("PRODUCT_VIEW");
+      if (r.productEdit) set.add("PRODUCT_EDIT");
+      if (r.compositionView) set.add("COMPOSITION_VIEW");
+      if (r.substanceView) set.add("SUBSTANCE_VIEW");
+      if (r.substanceEdit) set.add("SUBSTANCE_EDIT");
+    }
+  }
+  return expandPermissions(set);
+}
+
+export function toUserSummary(u: UserWithGroups, orgPaths: Map<string, OrgChainNode[]>) {
+  const chain = u.organisationId ? (orgPaths.get(u.organisationId) ?? []) : [];
+  const org = chain[0] ?? null;
+  const isSystemAdmin = u.permissionGroups.some((m) => m.group.isSystemAdmin);
   return {
     // 楽観的ロックの印（管理者の編集画面が保存時に送り返す）
     stamp: rowStamp(u),
@@ -47,36 +107,59 @@ export function toUserSummary(u: UserWithPermissions) {
     hasPassword: u.passwordHash !== null,
     mfaMethod: (u.mfaMethod as MfaMethod) ?? "none",
     lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
-    permissions: u.permissions.map((p) => p.permission).filter(isPermission),
+    isSystemAdmin,
+    permissions: permissionsOf(u),
     newsGroupId: u.newsGroupId,
     newsGroupName: u.newsGroup?.nameJa ?? null,
     newsGroupNameEn: u.newsGroup?.nameEn ?? null,
-    // 組織の表示順に並べて返す。画面はこの順で出し、先頭が「会社」「部署」の代表になる
-    organisations: sortOrganisations((u.organisations ?? []).map((x) => x.organisation)).map(
-      (o) => ({ id: o.id, kind: o.kind, nameJa: o.nameJa, nameEn: o.nameEn }),
-    ),
+    organisationId: org?.id ?? null,
+    /** 上からの道筋（「営業部 › 営業1課」） */
+    organisationPath: chain.length ? chainLabel(chain) : null,
+    groups: u.permissionGroups.map((m) => ({
+      id: m.group.id,
+      code: m.group.code,
+      nameJa: m.group.nameJa,
+      nameEn: m.group.nameEn,
+      isSystemAdmin: m.group.isSystemAdmin,
+      reason: m.reason,
+    })),
     // パスキーの数。2要素認証と同じく、入口の守りとして管理者に見せる
     passkeyCount: u._count?.passkeys ?? 0,
   };
 }
 
 /**
- * グループ・組織の割り当てを検証する。
+ * 組織・権限グループ・お知らせの分類の割り当てを検証する。
  *
- * - 存在しないID・用途が違うID は 400（画面から来ない値でも弾く）
+ * - 存在しない id は 400（画面から来ない値でも弾く）
  * - お知らせの分類は「お知らせを投稿できる」人だけが持てる。
- *   権限を外したのに分類だけ残ると、投稿できないのに見出しが割り当たった状態になるため
- * - 組織は**種別を問わず何件でも**。消された組織のidだけ弾く
+ *   入る権限グループでそれが無くなったのに分類だけ残ると、投稿できないのに見出しが割り当たった状態になるため
  */
-export async function resolveGroups(
+export async function resolveAssignments(
   newsGroupId: string | null,
-  wantedPermissions: Permission[],
-  organisationIds: string[],
-): Promise<{ newsGroupId: string | null; organisationIds: string[] } | Response> {
+  organisationId: string,
+  groupIds: string[],
+): Promise<{ newsGroupId: string | null; organisationId: string; groupIds: string[] } | Response> {
   const m = await getServerMessages();
-  const canPost = expandPermissions(wantedPermissions).includes("NEWS_POST");
-  const news = canPost ? newsGroupId : null;
+  const org = await prisma.organisation.findFirst({
+    where: { id: organisationId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!org) return jsonError(400, "validation_error", m.errors.validation);
 
+  const groups = await prisma.permissionGroup.findMany({
+    where: { id: { in: groupIds } },
+    select: { id: true, isSystemAdmin: true, permissions: { select: { permission: true } } },
+  });
+  if (groups.length !== groupIds.length) {
+    return jsonError(400, "validation_error", m.errors.validation);
+  }
+  const canPost =
+    groups.some((g) => g.isSystemAdmin) ||
+    expandPermissions(
+      groups.flatMap((g) => g.permissions.map((p) => p.permission)).filter(isPermission),
+    ).includes("NEWS_POST");
+  const news = canPost ? newsGroupId : null;
   if (news) {
     const found = await prisma.group.findFirst({
       where: { id: news, deletedAt: null },
@@ -84,72 +167,64 @@ export async function resolveGroups(
     });
     if (found?.kind !== "NEWS") return jsonError(400, "validation_error", m.errors.validation);
   }
-
-  if (organisationIds.length > 0) {
-    const found = await prisma.organisation.count({
-      where: { id: { in: organisationIds }, deletedAt: null },
-    });
-    if (found !== organisationIds.length) {
-      return jsonError(400, "validation_error", m.errors.validation);
-    }
-  }
-  return { newsGroupId: news, organisationIds };
+  return { newsGroupId: news, organisationId, groupIds };
 }
 
 /**
- * 所属する組織を指定の集合に置き換える。
- * まるごと入れ替える（画面で外したものがサーバーに伝わらない、を防ぐ）
+ * 入る権限グループを指定の集合に置き換える。
+ * 残るものは入った理由をそのまま残す。新しく入るものは、組織の「最初に選ばれる権限グループ」なら
+ * DEFAULT、そうでなければ MANUAL。**変わったかどうか**を返す（セッションを切るかの判断に使う）
  */
-export async function setOrganisations(userId: string, ids: string[]): Promise<void> {
-  await prisma.$transaction([
-    prisma.userOrganisation.deleteMany({ where: { userId } }),
-    ...(ids.length
-      ? [
-          prisma.userOrganisation.createMany({
-            data: ids.map((organisationId) => ({ userId, organisationId })),
-          }),
-        ]
-      : []),
-  ]);
-}
-
-/** 権限を指定の集合に置き換える（含意を展開したうえで差分だけ書く） */
-export async function setPermissions(
+export async function setGroups(
   userId: string,
-  wanted: Permission[],
+  organisationId: string,
+  wanted: string[],
   grantedBy: string,
-): Promise<Permission[]> {
-  const next = expandPermissions(wanted);
-  // DB の enum にだけ残っている古い値は、無いものとして扱う（次の保存で消える）
-  const current = (
-    await prisma.userPermission.findMany({ where: { userId }, select: { permission: true } })
-  )
-    .map((r) => r.permission)
-    .filter(isPermission);
-
-  const toAdd = next.filter((p) => !current.includes(p));
-  const toRemove = current.filter((p) => !next.includes(p));
-
+): Promise<boolean> {
+  const current = await prisma.userPermissionGroup.findMany({
+    where: { userId },
+    select: { groupId: true },
+  });
+  const have = new Set(current.map((r) => r.groupId));
+  const next = new Set(wanted);
+  const toAdd = wanted.filter((id) => !have.has(id));
+  const toRemove = [...have].filter((id) => !next.has(id));
+  if (toAdd.length === 0 && toRemove.length === 0) return false;
+  const defaults = new Set(await defaultGroupIdsFor(organisationId));
   await prisma.$transaction([
     ...(toRemove.length
-      ? [prisma.userPermission.deleteMany({ where: { userId, permission: { in: toRemove } } })]
+      ? [prisma.userPermissionGroup.deleteMany({ where: { userId, groupId: { in: toRemove } } })]
       : []),
     ...(toAdd.length
       ? [
-          prisma.userPermission.createMany({
-            data: toAdd.map((permission) => ({ userId, permission, grantedBy })),
+          prisma.userPermissionGroup.createMany({
+            data: toAdd.map((groupId) => ({
+              userId,
+              groupId,
+              grantedBy,
+              reason: defaults.has(groupId) ? ("DEFAULT" as const) : ("MANUAL" as const),
+            })),
           }),
         ]
       : []),
   ]);
-  return next;
+  return true;
+}
+
+/** システム管理グループの id */
+export async function systemAdminGroupId(): Promise<string | null> {
+  const g = await prisma.permissionGroup.findFirst({
+    where: { isSystemAdmin: true },
+    select: { id: true },
+  });
+  return g?.id ?? null;
 }
 
 /** 有効なシステム管理者の人数（最後の1人を守るために使う） */
 export async function countActiveAdmins(excludeUserId?: string): Promise<number> {
-  return prisma.userPermission.count({
+  return prisma.userPermissionGroup.count({
     where: {
-      permission: "ADMIN",
+      group: { isSystemAdmin: true },
       userId: excludeUserId ? { not: excludeUserId } : undefined,
       user: { activeFlag: true, deletedAt: null },
     },

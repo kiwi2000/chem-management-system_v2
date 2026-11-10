@@ -21,7 +21,7 @@ export function SubstancesLists({
 }) {
   const { m } = useI18n();
   const { can } = useMe();
-  const showWorking = can("INACTIVE_VIEW") || can("SUBSTANCE_EDIT") || can("APPROVE");
+  const showWorking = can("SUBSTANCE_EDIT") || can("APPROVE");
 
   // 状態を変えると下から上へ移るので、両方を読み直す
   const [reloadToken, setReloadToken] = useState(0);

@@ -9,7 +9,7 @@ import {
   type SubstanceInput,
 } from "@chem/shared";
 import type { Prisma } from "@prisma/client";
-import type { Actor } from "@/lib/authz";
+import { canOn, ownerWhere, type Actor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { rowStamp } from "@/lib/edit-stamp";
 import { propertyWrites } from "@/lib/property-values";
@@ -36,14 +36,18 @@ type SubstanceListRow = Prisma.SubstanceGetPayload<{ include: typeof SUBSTANCE_L
 type SubstanceWithRelations = Prisma.SubstanceGetPayload<{ include: typeof SUBSTANCE_INCLUDE }>;
 
 /**
- * 一覧・詳細に出してよい物質の条件。
+ * 一覧・詳細に出してよい物質の条件（S31 仕様 7 章）。
  *
- * 物質は「無効」でも隠さない（組成に使われているものが読めなくなるため）。
- * 隠すのは未公開のものだけで、作成者と `INACTIVE_VIEW` を持つ人にだけ見せる。
+ * - 所属先に「物質 参照」の印があるものだけ
+ * - 未公開のものは、作った本人と承認する人（`APPROVE`）にだけ見せる
+ * - 無効は隠さない（組成に使われているものが読めなくなるため）
  */
 export function visibilityWhere(actor: Actor): Prisma.SubstanceWhereInput {
-  if (actor.has("INACTIVE_VIEW")) return {};
-  return { OR: [{ publishState: "PUBLISHED" }, { createdBy: actor.user.id }] };
+  const owner = ownerWhere(actor, "substanceView");
+  if (actor.has("APPROVE")) return owner;
+  return {
+    AND: [owner, { OR: [{ publishState: "PUBLISHED" }, { createdBy: actor.user.id }] }],
+  };
 }
 
 /** 公開済のものだけを見せる条件（一覧の上の表・組成の候補） */
@@ -51,16 +55,19 @@ export const publishedWhere: Prisma.SubstanceWhereInput = {
   publishState: "PUBLISHED",
 };
 
-/** 書き換えてよいか。未公開のものは専用の権限か、作成者本人だけ */
+/**
+ * 書き換えてよいか（S31）。所属先に「物質 編集」の印が要る。
+ * 未公開のものは作った本人だけ（システム管理グループは別）
+ */
 export function canEditSubstance(
   actor: Actor,
-  target: { publishState: PublishState; createdBy: string | null },
+  target: { publishState: PublishState; createdBy: string | null; ownerGroupId: string },
 ): boolean {
-  if (!actor.has("SUBSTANCE_EDIT")) return false;
+  if (!canOn(actor, "substanceEdit", target.ownerGroupId)) return false;
   // 承認待は誰も書き換えられない。直すなら取り下げてから
   if (target.publishState === "PENDING") return false;
   if (target.publishState === "PUBLISHED") return true;
-  return actor.has("INACTIVE_EDIT") || target.createdBy === actor.user.id;
+  return actor.isSystemAdmin || target.createdBy === actor.user.id;
 }
 
 export function toListItem(s: SubstanceListRow): SubstanceListItemDto {

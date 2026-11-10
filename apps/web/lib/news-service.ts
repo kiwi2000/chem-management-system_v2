@@ -2,7 +2,6 @@ import type { Group, News, OrganisationKind, User } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
 import { rowStamp } from "@/lib/edit-stamp";
 import type { NewsDto } from "@/lib/types";
-import { pickOrganisation } from "@/lib/user-organisations";
 
 /** 日付だけを扱う（時刻は持たない）。掲載期間の比較は日単位で行う */
 export function parseDateOnly(v: string | null | undefined): Date | null {
@@ -18,8 +17,8 @@ type GroupName = Pick<Group, "id" | "nameJa" | "nameEn" | "displayOrder">;
 
 export type NewsWithAuthor = News & {
   author: Pick<User, "id" | "displayName" | "email"> & {
-    /** 所属する組織。「所属」として出すのは種別「部署」の先頭 */
-    organisations?: { organisation: GroupName & { kind: OrganisationKind } }[];
+    /** 所属する組織（S31 から 1 つ）。「所属」としてそのまま出す */
+    organisation?: (GroupName & { kind: OrganisationKind }) | null;
   };
   group?: GroupName | null;
 };
@@ -32,13 +31,9 @@ export const NEWS_INCLUDE = {
       displayName: true,
       email: true,
       // 一覧に「所属 / 氏名 / 日時」を出すので、投稿者の所属も一緒に読む。
-      // 「所属」は割り当てた組織のうち種別「部署」の先頭。利用者の編集画面で割り当てる
-      organisations: {
-        select: {
-          organisation: {
-            select: { id: true, kind: true, nameJa: true, nameEn: true, displayOrder: true },
-          },
-        },
+      // S31 から人の組織は 1 つなので、それをそのまま出す。利用者の編集画面で割り当てる
+      organisation: {
+        select: { id: true, kind: true, nameJa: true, nameEn: true, displayOrder: true },
       },
     },
   },
@@ -46,10 +41,7 @@ export const NEWS_INCLUDE = {
 } as const;
 
 export function toNewsDto(n: NewsWithAuthor, actor: Actor): NewsDto {
-  const department = pickOrganisation(
-    (n.author.organisations ?? []).map((x) => x.organisation),
-    "DEPARTMENT",
-  );
+  const department = n.author.organisation ?? null;
   return {
     stamp: rowStamp(n),
     id: n.id,

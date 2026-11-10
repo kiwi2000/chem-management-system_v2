@@ -23,6 +23,7 @@
  * 手で作ったデータは巻き込まない。
  */
 import { PrismaClient } from "@prisma/client";
+import { defaultOwnerGroupId } from "./lib/default-owner";
 
 const prisma = new PrismaClient();
 
@@ -531,7 +532,7 @@ async function seed() {
   await remove();
 
   const admin = await prisma.user.findFirst({
-    where: { deletedAt: null, permissions: { some: { permission: "ADMIN" } } },
+    where: { deletedAt: null, permissionGroups: { some: { group: { isSystemAdmin: true } } } },
     select: { id: true },
   });
   const createdBy = admin?.id ?? null;
@@ -540,6 +541,7 @@ async function seed() {
   for (const s of SUBSTANCES) {
     const row = await prisma.substance.create({
       data: {
+        ownerGroupId: await defaultOwnerGroupId(prisma),
         code: s.code,
         codeNormalized: normalize(s.code),
         nameJa: s.nameJa,
@@ -588,6 +590,7 @@ async function seed() {
   for (const p of PRODUCTS) {
     const row = await prisma.product.create({
       data: {
+        ownerGroupId: await defaultOwnerGroupId(prisma),
         code: p.code,
         codeNormalized: normalize(p.code),
         nameJa: p.nameJa,

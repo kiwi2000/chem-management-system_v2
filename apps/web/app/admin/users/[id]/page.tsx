@@ -1,13 +1,13 @@
 "use client";
 
-import { describePasswordPolicy, expandPermissions, type Permission } from "@chem/shared";
+import { describePasswordPolicy } from "@chem/shared";
 import { useRouter } from "next/navigation";
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
-import { OrganisationPicker } from "@/components/organisation-picker";
-import { PermissionPicker } from "@/components/permission-picker";
+import { OrganisationSelect } from "@/components/organisation-select";
+import { PermissionGroupChips } from "@/components/permission-group-chips";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditingBadge } from "@/components/editing-badge";
@@ -25,6 +25,8 @@ import { usePasswordPolicy } from "@/lib/use-password-policy";
 import type { ApiError, MeDto, UserSummaryDto } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
 import { useOrganisations } from "@/lib/use-organisations";
+import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
+import { ancestorIds } from "@/lib/org-tree";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
@@ -37,11 +39,15 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [me, setMe] = useState<MeDto | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [activeFlag, setActiveFlag] = useState(true);
-  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [newsGroupId, setNewsGroupId] = useState("");
-  const [organisationIds, setOrganisationIds] = useState<string[]>([]);
+  // S31: 組織は 1 つ、権限グループはいくつでも
+  const [organisationId, setOrganisationId] = useState("");
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+  /** 組織を変えたので権限グループを選び直した（保存前に見直してもらう） */
+  const [regrouped, setRegrouped] = useState(false);
   const groups = useGroups();
   const organisations = useOrganisations();
+  const groupOptions = usePermissionGroupOptions();
   const [editing, setEditing] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   // どの項目が悪いのかを、その欄の下に出す
@@ -70,8 +76,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setItem(u);
     setDisplayName(u.displayName ?? "");
     setActiveFlag(u.activeFlag);
-    setPermissions(u.permissions);
-    setOrganisationIds(u.organisations.map((o) => o.id));
+    setOrganisationId(u.organisationId ?? "");
+    setGroupIds(u.groups.map((g) => g.id));
+    setRegrouped(false);
     setNewsGroupId(u.newsGroupId ?? "");
     if (meRes.ok) setMe((await meRes.json()) as MeDto);
   }, [id, m]);
@@ -81,8 +88,35 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   }, [load]);
 
   const isSelf = me !== null && me.id === id;
-  // 「他人のお知らせも編集できる」を選ぶと投稿もできるので、含意を展開して見る
-  const canPost = expandPermissions(permissions).includes("NEWS_POST");
+  // 投稿できる権限グループに入っているときだけ、お知らせの分類を選べる
+  const canPost = (groupOptions?.groups ?? []).some((g) => g.canPost && groupIds.includes(g.id));
+  // 組織とその上の組織に設定した「最初に選ばれる権限グループ」（点線で見分ける）
+  const defaultsOf = useCallback(
+    (orgId: string) =>
+      new Set(
+        ancestorIds(organisations ?? [], orgId || null).flatMap(
+          (x) => groupOptions?.orgDefaults[x] ?? [],
+        ),
+      ),
+    [organisations, groupOptions],
+  );
+  const defaults = useMemo(() => defaultsOf(organisationId), [defaultsOf, organisationId]);
+  // 自分をシステム管理グループから外させない（締め出し防止。サーバーでも止める）
+  const locked = useMemo(
+    () =>
+      new Set(
+        isSelf ? (groupOptions?.groups ?? []).filter((g) => g.isSystemAdmin).map((g) => g.id) : [],
+      ),
+    [isSelf, groupOptions],
+  );
+
+  /** 異動: 組織を変えたら、権限グループを新しい組織の「最初に選ばれる権限グループ」で選び直す（仕様 8-2） */
+  function changeOrganisation(next: string) {
+    setOrganisationId(next);
+    const keep = groupIds.filter((g) => locked.has(g));
+    setGroupIds([...new Set([...keep, ...defaultsOf(next)])]);
+    setRegrouped(true);
+  }
 
   async function save(force = false) {
     setError(null);
@@ -98,10 +132,10 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           stamp: item?.stamp ?? "",
           force: force || undefined,
           displayName: displayName || null,
-          permissions,
           activeFlag,
-          organisationIds,
-          newsGroupId: newsGroupId || null,
+          organisationId,
+          groupIds,
+          newsGroupId: (canPost && newsGroupId) || null,
         }),
       });
       // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
@@ -248,40 +282,38 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 />
               </div>
               <div className="space-y-2">
-                <Label>{m.users.organisation}</Label>
-                {/* 種別を問わず何件でも。会社・部署の代表は種別と表示順で決まる */}
-                <OrganisationPicker
+                <Label htmlFor="organisation">{m.users.organisation}</Label>
+                <OrganisationSelect
+                  id="organisation"
                   organisations={organisations}
-                  value={organisationIds}
+                  value={organisationId}
                   disabled={!editing}
-                  onChange={setOrganisationIds}
+                  noneLabel={m.users.organisationNone}
+                  onChange={changeOrganisation}
                 />
                 <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
               </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={activeFlag}
-                  disabled={isSelf}
-                  onChange={(e) => setActiveFlag(e.target.checked)}
+              <div className="space-y-2">
+                <Label>{m.users.permissionGroups}</Label>
+                <PermissionGroupChips
+                  options={groupOptions?.groups ?? []}
+                  value={groupIds}
+                  onChange={setGroupIds}
+                  defaults={defaults}
+                  locked={locked}
+                  disabled={!editing}
+                  emptyLabel={m.users.permissionGroupsNone}
                 />
-                {m.users.activeFlag}
-              </label>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{m.users.permissions}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <PermissionPicker
-                value={permissions}
-                onChange={setPermissions}
-                disabled={saving}
-                adminLockedReason={isSelf ? m.users.selfNote : null}
-              />
-              {/* 投稿できる人にだけ意味があるので、権限が無いときは選ばせない */}
+                {regrouped && (
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    {m.users.regroupedNotice}
+                  </p>
+                )}
+                <p className="text-muted-foreground text-xs">
+                  {isSelf ? m.users.selfNote : m.users.permissionGroupsHint}
+                </p>
+              </div>
+              {/* 投稿できる人にだけ意味があるので、投稿できる権限グループに入っていないときは選ばせない */}
               <div className="space-y-2">
                 <Label htmlFor="newsGroup">{m.users.newsGroup}</Label>
                 <GroupSelect
@@ -298,6 +330,15 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   {canPost ? m.users.newsGroupHint : m.users.newsGroupDisabled}
                 </p>
               </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={activeFlag}
+                  disabled={isSelf}
+                  onChange={(e) => setActiveFlag(e.target.checked)}
+                />
+                {m.users.activeFlag}
+              </label>
             </CardContent>
           </Card>
         </fieldset>

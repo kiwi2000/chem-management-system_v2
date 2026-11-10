@@ -16,6 +16,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { normalizeCode } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
+import { defaultOwnerGroupId } from "./lib/default-owner";
 import ExcelJS from "exceljs";
 import iconv from "iconv-lite";
 
@@ -188,6 +189,7 @@ async function seed() {
         })
       : await prisma.product.create({
           data: {
+            ownerGroupId: await defaultOwnerGroupId(prisma),
             code: p.code,
             codeNormalized,
             nameJa: p.nameJa,

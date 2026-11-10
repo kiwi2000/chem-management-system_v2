@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   // 見えないものは対象にしない
   const targets = await prisma.substance.findMany({
     where: { id: { in: ids }, deletedAt: null, ...visibilityWhere(actor) },
-    select: { id: true, code: true, publishState: true, createdBy: true },
+    select: { id: true, code: true, publishState: true, createdBy: true, ownerGroupId: true },
   });
 
   const allowed: typeof targets = [];

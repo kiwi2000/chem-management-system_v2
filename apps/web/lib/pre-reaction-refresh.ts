@@ -28,6 +28,8 @@ const SYSTEM_ACTOR: Actor = {
   user: { id: "system" } as User,
   permissions: [],
   has: () => true,
+  isSystemAdmin: true,
+  scope: "all",
 };
 
 /** 反応前の写しの行（合算の根に渡す形） */

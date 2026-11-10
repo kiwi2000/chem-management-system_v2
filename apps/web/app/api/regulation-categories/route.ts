@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   // 結び付いた CAS・物質名の欄は、いま判定に使っている版の結び付きだけを見る
   const version = await getCurrentVersion();
   const columns = regulationCategoryColumns(version?.id ?? null, {
-    seeAll: actor.has("INACTIVE_VIEW"),
+    seeAll: actor.has("APPROVE"),
     userId: actor.user.id,
   });
   const state = parseTableState(

@@ -998,9 +998,38 @@ export function sessionColumns(now: Date, idleMs: number): QueryColumn[] {
   ];
 }
 
+/** 組織が空の人を選ぶ値（移行で組織の無かった人を探すため。S31 画面設計 13 章） */
+export const ORGANISATION_NONE = "__none";
+
 export const USER_COLUMNS: QueryColumn[] = [
   { key: "email", kind: "text", field: "email", caseInsensitive: true },
   { key: "displayName", kind: "text", field: "displayName", caseInsensitive: true },
+  // 組織（S31 から 1 つ）。値は組織の id。「（なし）」で組織の無い人
+  {
+    key: "organisation",
+    kind: "enum",
+    field: "organisationId",
+    sortable: false,
+    custom: (f) => {
+      if (f.kind !== "enum" || f.values.length === 0) return null;
+      const ids = f.values.filter((v) => v !== ORGANISATION_NONE);
+      const or: object[] = [];
+      if (ids.length > 0) or.push({ organisationId: { in: ids } });
+      if (f.values.includes(ORGANISATION_NONE)) or.push({ organisationId: null });
+      return { OR: or };
+    },
+  },
+  // 入っている権限グループ（S31）。値は権限グループの id。どれかに入っていれば当たる
+  {
+    key: "permissionGroups",
+    kind: "enum",
+    field: "groupId",
+    sortable: false,
+    custom: (f) =>
+      f.kind === "enum" && f.values.length > 0
+        ? { permissionGroups: { some: { groupId: { in: f.values } } } }
+        : null,
+  },
   { key: "activeFlag", kind: "enum", field: "activeFlag", booleanEnum: true },
   { key: "lastLoginAt", kind: "date", field: "lastLoginAt" },
 ];

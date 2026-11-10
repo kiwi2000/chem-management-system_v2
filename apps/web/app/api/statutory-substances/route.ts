@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   // 結び付きはいまの版だけを見る（古い版にしか無いものでは当てない）
   const version = await getCurrentVersion();
   const columns = statutorySubstanceColumns(version?.id ?? null, {
-    seeAll: actor.has("INACTIVE_VIEW"),
+    seeAll: actor.has("APPROVE"),
     userId: actor.user.id,
   });
   const state = parseTableState(

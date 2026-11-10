@@ -36,6 +36,7 @@ export * from "./prtr";
 export * from "./inventory";
 export * from "./metal-factor";
 export * from "./news";
+export * from "./permission-group";
 export * from "./permissions";
 export * from "./product";
 export * from "./publish-state";

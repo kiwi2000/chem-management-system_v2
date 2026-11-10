@@ -1,15 +1,15 @@
 "use client";
 
-import { describePasswordPolicy, expandPermissions, type Permission } from "@chem/shared";
+import { describePasswordPolicy } from "@chem/shared";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { FieldError } from "@/components/field-error";
 import { GroupSelect } from "@/components/group-select";
-import { OrganisationPicker } from "@/components/organisation-picker";
-import { PermissionPicker } from "@/components/permission-picker";
+import { OrganisationSelect } from "@/components/organisation-select";
+import { PermissionGroupChips } from "@/components/permission-group-chips";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
@@ -18,6 +18,8 @@ import { useI18n } from "@/lib/i18n-client";
 import { passwordProblem } from "@/lib/password-check";
 import { usePasswordPolicy } from "@/lib/use-password-policy";
 import { useOrganisations } from "@/lib/use-organisations";
+import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
+import { ancestorIds } from "@/lib/org-tree";
 import type { ApiError } from "@/lib/types";
 import { useGroups } from "@/lib/use-groups";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -28,9 +30,11 @@ export default function NewUserPage() {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [organisationIds, setOrganisationIds] = useState<string[]>([]);
+  // S31: 組織は 1 つ。選ぶと「最初に選ばれる権限グループ」が入った状態になる（仕様 8-2）
+  const [organisationId, setOrganisationId] = useState("");
+  const [groupIds, setGroupIds] = useState<string[]>([]);
   const organisations = useOrganisations();
+  const groupOptions = usePermissionGroupOptions();
   const [newsGroupId, setNewsGroupId] = useState("");
   const groups = useGroups();
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +47,24 @@ export default function NewUserPage() {
   // 打っている最中から決まりを見る。送ってから断られるより早く気づける
   const pwProblem = passwordProblem(initialPassword, m, policy);
 
-  // 「他人のお知らせも編集できる」を選ぶと投稿もできるので、含意を展開して見る
-  const canPost = expandPermissions(permissions).includes("NEWS_POST");
+  // 投稿できる権限グループに入るときだけ、お知らせの分類を選べる
+  const canPost = (groupOptions?.groups ?? []).some((g) => g.canPost && groupIds.includes(g.id));
+  // 組織とその上の組織に設定した「最初に選ばれる権限グループ」
+  const defaultsOf = useCallback(
+    (orgId: string) =>
+      new Set(
+        ancestorIds(organisations ?? [], orgId || null).flatMap(
+          (x) => groupOptions?.orgDefaults[x] ?? [],
+        ),
+      ),
+    [organisations, groupOptions],
+  );
+  const defaults = useMemo(() => defaultsOf(organisationId), [defaultsOf, organisationId]);
+
+  function changeOrganisation(next: string) {
+    setOrganisationId(next);
+    setGroupIds([...defaultsOf(next)]);
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,9 +79,9 @@ export default function NewUserPage() {
           email,
           displayName: displayName || null,
           initialPassword,
-          permissions,
-          organisationIds,
-          newsGroupId: newsGroupId || null,
+          organisationId,
+          groupIds,
+          newsGroupId: (canPost && newsGroupId) || null,
         }),
       });
       if (!res.ok) {
@@ -129,25 +149,29 @@ export default function NewUserPage() {
               <p className="text-muted-foreground text-xs">{describePasswordPolicy(m, policy)}</p>
             </div>
             <div className="space-y-2">
-              <Label>{m.users.organisation}</Label>
-              {/* 種別を問わず何件でも。会社・部署の代表は種別と表示順で決まる */}
-              <OrganisationPicker
+              <Label htmlFor="organisation">{m.users.organisation}</Label>
+              <OrganisationSelect
+                id="organisation"
                 organisations={organisations}
-                value={organisationIds}
-                onChange={setOrganisationIds}
+                value={organisationId}
+                noneLabel={m.users.organisationNone}
+                onChange={changeOrganisation}
               />
+              <FieldError message={fieldError("organisationId")} />
               <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{m.users.permissions}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <PermissionPicker value={permissions} onChange={setPermissions} disabled={saving} />
-            {/* 投稿できる人にだけ意味があるので、権限が無いときは選ばせない */}
+            <div className="space-y-2">
+              <Label>{m.users.permissionGroups}</Label>
+              <PermissionGroupChips
+                options={groupOptions?.groups ?? []}
+                value={groupIds}
+                onChange={setGroupIds}
+                defaults={defaults}
+                emptyLabel={m.users.permissionGroupsNone}
+              />
+              <p className="text-muted-foreground text-xs">{m.users.permissionGroupsHint}</p>
+            </div>
+            {/* 投稿できる人にだけ意味があるので、投稿できる権限グループに入らないときは選ばせない */}
             <div className="space-y-2">
               <Label htmlFor="newsGroup">{m.users.newsGroup}</Label>
               <GroupSelect

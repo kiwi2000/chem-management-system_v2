@@ -21,6 +21,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { normalizeCas, normalizeCode } from "@chem/shared";
 import { PrismaClient } from "@prisma/client";
+import { defaultOwnerGroupId } from "./lib/default-owner";
 
 const prisma = new PrismaClient();
 
@@ -140,8 +141,12 @@ async function main() {
 
   // 1回に全部入れると重いので、区切って入れる
   const CHUNK = 2000;
+  // 所属先（S31）。法規制データから作る物質は「全体」に置く
+  const ownerGroupId = await defaultOwnerGroupId(prisma);
   for (let i = 0; i < rows.length; i += CHUNK) {
-    await prisma.substance.createMany({ data: rows.slice(i, i + CHUNK) });
+    await prisma.substance.createMany({
+      data: rows.slice(i, i + CHUNK).map((r) => ({ ...r, ownerGroupId })),
+    });
     console.log(`  ${Math.min(i + CHUNK, rows.length)} / ${rows.length}`);
   }
   console.log(`物質マスタに ${rows.length} 件を足しました`);

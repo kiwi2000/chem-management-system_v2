@@ -25,7 +25,7 @@ import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { notDisabledIn } from "@/lib/enabled-sources";
 import { visibilityWhere } from "@/lib/product-service";
-import { pickOrganisation } from "@/lib/user-organisations";
+import { nearestOfKind, orgChain } from "@/lib/organisation-tree";
 import type { RenderInput } from "@/lib/doc-render";
 import { getCurrentVersion } from "@/lib/current-version";
 import { toJudgementDtos } from "@/lib/judgement-service";
@@ -105,23 +105,21 @@ async function orgValues(
   parties: DocParties | undefined,
 ): Promise<[string, string][]> {
   const recipientId = parties?.recipientId;
-  const me = await prisma.user.findUnique({
-    where: { id: actor.user.id },
-    select: {
-      organisations: {
-        select: {
-          organisation: { select: { ...ORG_SELECT, id: true, kind: true, displayOrder: true } },
-        },
-      },
-    },
-  });
   /*
-    所属は種別を問わず何件でもある。**会社は種別「会社」の先頭、所属は「部署」の先頭**を使う
-    （利用者の編集画面の並びと同じ）
+    S31 から人の組織は 1 つ。**会社は、自分の組織から上へたどっていちばん近い「会社」、
+    所属はいちばん近い「部署」**を使う（自分の組織がその種別なら自分）
   */
-  const mine = (me?.organisations ?? []).map((x) => x.organisation);
-  const org = pickOrganisation(mine, "COMPANY");
-  const department = pickOrganisation(mine, "DEPARTMENT");
+  const chain = await orgChain(actor.user.organisationId);
+  const companyId = nearestOfKind(chain, "COMPANY")?.id;
+  const departmentId = nearestOfKind(chain, "DEPARTMENT")?.id;
+  const [org, department] = await Promise.all([
+    companyId
+      ? prisma.organisation.findUnique({ where: { id: companyId }, select: ORG_SELECT })
+      : null,
+    departmentId
+      ? prisma.organisation.findUnique({ where: { id: departmentId }, select: ORG_SELECT })
+      : null,
+  ]);
   /*
     任意の会社・任意の部署。**種別が合わないものは捨てる**
     （URL に書けば部署の欄に会社が入る、という状態を作らない）。消された組織も捨てる

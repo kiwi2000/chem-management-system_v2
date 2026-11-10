@@ -25,6 +25,7 @@
  */
 import { normalizeCode } from "@chem/shared";
 import { Prisma, PrismaClient } from "@prisma/client";
+import { defaultOwnerGroupId } from "./lib/default-owner";
 
 /*
   トンネル越しに本番へ流すと往復が遅く、判定の 1 回のまとまり（既定 5 秒）に収まらない。
@@ -316,6 +317,7 @@ async function seed(orgNames: string[], fy: number, userName: string | undefined
         })
       : await prisma.product.create({
           data: {
+            ownerGroupId: await defaultOwnerGroupId(prisma),
             code: p.code,
             codeNormalized,
             nameJa: p.name,

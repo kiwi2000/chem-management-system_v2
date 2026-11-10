@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
   const version = await getCurrentVersion();
   const columns = regulationClassColumns(version?.id ?? null, {
-    seeAll: actor.has("INACTIVE_VIEW"),
+    seeAll: actor.has("APPROVE"),
     userId: actor.user.id,
   });
   const state = parseTableState(

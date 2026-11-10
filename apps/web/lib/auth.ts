@@ -202,8 +202,9 @@ export async function login(
 
 /** システム管理者か。メンテナンス中に入れる人を決めるために引く */
 export async function isAdminUser(userId: string): Promise<boolean> {
-  const row = await prisma.userPermission.findFirst({
-    where: { userId, permission: "ADMIN" },
+  // S31 から、システム管理者 = システム管理グループに入っている人
+  const row = await prisma.userPermissionGroup.findFirst({
+    where: { userId, group: { isSystemAdmin: true } },
     select: { userId: true },
   });
   return row !== null;
@@ -320,8 +321,8 @@ export async function endSessionById(id: string, reason: SessionEndReason): Prom
  * 入れないだけでは、すでに入っている人が作業を続けてしまう
  */
 export async function endNonAdminSessions(): Promise<number> {
-  const admins = await prisma.userPermission.findMany({
-    where: { permission: "ADMIN" },
+  const admins = await prisma.userPermissionGroup.findMany({
+    where: { group: { isSystemAdmin: true } },
     select: { userId: true },
   });
   const r = await prisma.session.updateMany({

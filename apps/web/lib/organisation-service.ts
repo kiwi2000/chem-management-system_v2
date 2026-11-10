@@ -29,6 +29,7 @@ export function toOrganisationDto(row: Row): OrganisationDto {
     nameEn: row.nameEn,
     displayOrder: row.displayOrder,
     activeFlag: row.activeFlag,
+    parentId: row.parentId,
     items: row.items.map((x) => ({ label: x.label, value: x.value })),
     // この組織に所属する人の数。消したときの影響を知らせるため
     memberCount: row._count.members,
