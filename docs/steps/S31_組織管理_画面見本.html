@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>組織管理の画面見本</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap">
+<style>
+/* S31 組織管理（2026-11-06 確定）を実装するときの画面の見本。図解（S31_組織管理_図解.html）と同じ色づかい。
+   1 つの section が 1 画面。中は「左のメニュー＋右の中身」で、実際の画面と同じ並び。
+   見本なので動かない。2026-11-09 に 7 つの確認点を決め、決定を「決めたこと」に残した */
+:root {
+  --bg: #f3f5f2; --surface: #ffffff; --ink: #1b2a2c; --muted: #5a6a6b; --line: #c9d3d0; --line-soft: #e4e9e7;
+  --reach: #0e7a71; --reach-soft: #d5eeea; --person: #b05d17; --person-soft: #f7e2cc;
+  --common: #3b4f9e; --common-soft: #e0e5f6; --perm: #6d3f8f; --perm-soft: #ece1f4; --no: #a23a3a; --no-soft: #f6dddd;
+  --f-display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131b1c; --surface: #1b2526; --ink: #e4ecea; --muted: #9db0ae; --line: #33433f; --line-soft: #26332f;
+    --reach: #4cc2b5; --reach-soft: #173a37; --person: #eaa25f; --person-soft: #43301c; --common: #9aaaf0; --common-soft: #232a4a;
+    --perm: #c79ae6; --perm-soft: #36254a; --no: #ef8b8b; --no-soft: #432323; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131b1c; --surface: #1b2526; --ink: #e4ecea; --muted: #9db0ae; --line: #33433f; --line-soft: #26332f;
+  --reach: #4cc2b5; --reach-soft: #173a37; --person: #eaa25f; --person-soft: #43301c; --common: #9aaaf0; --common-soft: #232a4a;
+  --perm: #c79ae6; --perm-soft: #36254a; --no: #ef8b8b; --no-soft: #432323; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.7; }
+.wrap { max-width: 1060px; margin: 0 auto; padding: 40px 16px 64px; display: grid; gap: 48px; }
+h1, h2, h3, h4 { font-family: var(--f-display); text-wrap: balance; line-height: 1.35; margin: 0; }
+h1 { font-size: clamp(26px, 4.5vw, 36px); font-weight: 900; letter-spacing: .02em; }
+h2 { font-size: 20px; font-weight: 700; }
+h2 small { font-family: var(--f-body); font-weight: 400; font-size: 13px; color: var(--muted); margin-left: 10px; }
+p { margin: 0; max-width: 72ch; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; color: var(--muted); font-weight: 700; }
+.lead { color: var(--muted); margin-top: 8px; }
+section { display: grid; gap: 12px; }
+.note { color: var(--muted); font-size: 13px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); align-items: center; }
+
+/* 画面の枠 */
+.app { display: grid; grid-template-columns: 184px 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.side { background: var(--bg); border-right: 1px solid var(--line-soft); padding: 12px 8px; font-size: 13px; display: grid; gap: 2px; align-content: start; }
+.side .brand { font-family: var(--f-display); font-weight: 900; font-size: 14px; padding: 4px 10px 10px; }
+.side .grp { color: var(--muted); font-size: 11px; letter-spacing: .08em; padding: 10px 10px 2px; font-weight: 700; }
+.side a { display: block; padding: 4px 10px; border-radius: 6px; color: var(--ink); text-decoration: none; }
+.side a.on { background: var(--surface); font-weight: 700; box-shadow: inset 0 0 0 1px var(--line-soft); }
+.side a.new::after { content: "新"; font-size: 10px; font-weight: 700; color: var(--surface); background: var(--person); border-radius: 3px; padding: 0 5px; margin-left: 6px; vertical-align: 2px; }
+.main { padding: 16px 22px 22px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.crumbs { font-size: 12px; color: var(--muted); }
+.crumbs b { color: var(--ink); font-weight: 400; }
+.title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.title h3 { font-size: 20px; font-weight: 700; }
+.badge { font-size: 11px; font-weight: 700; border-radius: 4px; padding: 1px 8px; border: 1px solid var(--line); color: var(--muted); }
+.badge.editing { background: var(--person-soft); color: var(--person); border-color: transparent; }
+.badge.admin { background: var(--perm-soft); color: var(--perm); border-color: transparent; }
+.spacer { flex: 1; }
+
+/* 部品 */
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 12px; font-size: 13px; font-weight: 700; background: var(--surface); color: var(--ink); line-height: 1.5; }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.icon { padding: 4px 8px; }
+.btn.off { opacity: .45; }
+.btn.danger { color: var(--no); }
+.input, .select { display: inline-block; border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; background: var(--surface); min-height: 30px; line-height: 1.5; font-size: 13px; }
+.select::after { content: "⌄"; float: right; color: var(--muted); margin-left: 10px; }
+.input.ro, .select.ro { background: var(--bg); border-color: var(--line-soft); }
+.input.ph, .select.ph { color: var(--muted); }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: 12px; font-weight: 700; }
+.field .hint { font-size: 12px; color: var(--muted); }
+.row { display: grid; gap: 14px; }
+.row.c2 { grid-template-columns: 1fr 1fr; }
+.row.c3 { grid-template-columns: 1fr 1fr 1fr; }
+.row.c4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.card { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.card > h4 { font-size: 14px; font-weight: 700; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; gap: 10px; }
+.card > h4 .tog { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 12px; }
+.card > .body { padding: 12px 14px; display: grid; gap: 12px; }
+.card.closed > h4 { border-bottom: 0; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.chk i { width: 15px; height: 15px; border: 1px solid var(--line); border-radius: 3px; display: inline-block; background: var(--surface); position: relative; }
+.chk i.on { background: var(--ink); border-color: var(--ink); }
+.chk i.on::after { content: "✓"; color: var(--bg); font-size: 11px; font-weight: 700; position: absolute; left: 2px; top: -4px; }
+.chk i.link { background: var(--reach-soft); border-color: var(--reach); }
+.chk i.link::after { content: "✓"; color: var(--reach); font-size: 11px; font-weight: 700; position: absolute; left: 2px; top: -4px; }
+.chk i.dis { background: var(--bg); border-color: var(--line-soft); }
+.radio { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.radio i { width: 15px; height: 15px; border: 1px solid var(--line); border-radius: 50%; display: inline-block; position: relative; }
+.radio i.on::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { border-radius: 999px; padding: 2px 10px; font-weight: 700; font-size: 12px; background: var(--reach-soft); color: var(--reach); }
+.chip.admin { background: var(--perm-soft); color: var(--perm); }
+.chip.auto { outline: 2px dashed var(--reach); outline-offset: 1px; }
+.chip .x { margin-left: 6px; opacity: .6; }
+.chip.add { background: transparent; border: 1px dashed var(--line); color: var(--muted); font-weight: 400; }
+.msg { border-radius: 6px; padding: 8px 12px; font-size: 13px; }
+.msg.warn { background: var(--person-soft); color: var(--person); }
+.msg.err { background: var(--no-soft); color: var(--no); }
+.msg.info { background: var(--common-soft); color: var(--common); }
+
+/* 表 */
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { border-bottom: 1px solid var(--line-soft); padding: 6px 10px; text-align: left; vertical-align: middle; white-space: nowrap; }
+th { font-size: 12px; color: var(--muted); font-weight: 700; background: var(--bg); }
+th .f { display: block; font-weight: 400; margin-top: 4px; }
+th .f .input, th .f .select { min-height: 24px; padding: 1px 6px; font-size: 11px; width: 100%; }
+td a { color: var(--common); text-decoration: underline; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.c, th.c { text-align: center; }
+tr.dim td { color: var(--muted); }
+.toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pager { font-size: 12px; color: var(--muted); display: flex; gap: 10px; align-items: center; justify-content: flex-end; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line-soft); border-radius: 8px; }
+.marks th.grp { text-align: center; border-left: 1px solid var(--line-soft); }
+.marks td.m { text-align: center; border-left: 1px solid var(--line-soft); }
+.marks td.m + td.m, .marks th.grp + th.grp { border-left: 0; }
+.marks th.sub { text-align: center; font-weight: 400; }
+
+/* 小窓 */
+.dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 16px 18px; display: grid; gap: 12px; max-width: 480px; box-shadow: 0 8px 28px rgba(0,0,0,.18); }
+.dialog h4 { font-size: 15px; }
+.dialog .acts { display: flex; justify-content: flex-end; gap: 8px; }
+.overlay { position: relative; }
+.overlay .dialog { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); z-index: 2; }
+.overlay::after { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,.22); border-radius: 10px; }
+.overlay .app { filter: blur(.4px); }
+
+/* 決めたこと */
+.q { display: inline-block; background: var(--person); color: var(--surface); font-size: 11px; font-weight: 900; border-radius: 999px; width: 18px; height: 18px; line-height: 18px; text-align: center; margin-left: 6px; vertical-align: 2px; }
+.questions { background: var(--person-soft); border-radius: 10px; padding: 14px 18px; display: grid; gap: 6px; font-size: 13px; }
+.questions b { color: var(--person); }
+.tree-opt { display: grid; gap: 2px; font-size: 13px; }
+.tree-opt div { padding: 2px 8px; border-radius: 4px; }
+.tree-opt .on { background: var(--common-soft); font-weight: 700; }
+.tree-opt .l1 { padding-left: 24px; } .tree-opt .l2 { padding-left: 40px; } .tree-opt .l3 { padding-left: 56px; }
+</style>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">S31 組織管理 ─ 画面見本（2026-11-09 決定版）</div>
+  <h1>組織管理の画面見本</h1>
+  <p class="lead">2026-11-06 に確定した仕様を、実際の画面の並び（左にメニュー、右に中身）で描いたもの。見本なので動かない。
+  2026-11-09 に、作る前に決めたい 7 点を決めた（最後の「決めたこと」）。項目・操作の細かな定義は <b>S31_組織管理_画面設計.md</b> にある。</p>
+  <div class="legend">
+    <span><span class="chk"><i class="on"></i></span> 自分で付けた印</span>
+    <span><span class="chk"><i class="link"></i></span> 連動して付いた印（編集を付けると参照も付く）</span>
+    <span><span class="chip auto">営業1課</span> 組織から最初に選ばれた権限グループ</span>
+    <span><span class="chip admin">システム管理</span> システム管理グループ</span>
+  </div>
+</header>
+
+<!-- ① 権限グループ一覧 -->
+<section aria-labelledby="g1">
+  <h2 id="g1">① 権限グループ ─ 一覧 <small>新しい画面。「システム」の下、ユーザー管理の次</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a>製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a>データ入出力</a>
+      <div class="grp">システム</div>
+      <a>組織</a><a>お知らせの分類</a><a>ユーザー管理</a><a class="on new">権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="crumbs">システム › <b>権限グループ</b></div>
+      <div class="title"><h3>権限グループ</h3><span class="spacer"></span><span class="btn icon danger" title="選んだものを削除">🗑</span><span class="btn primary">新規</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th class="c"><span class="chk"><i></i></span></th>
+          <th>コード<span class="f"><span class="input ph">絞り込み</span></span></th>
+          <th>名前<span class="f"><span class="input ph">絞り込み</span></span></th>
+          <th class="num">入っている人<span class="f"><span class="input ph">数</span></span></th>
+          <th class="num">所属する製品・原材料<span class="f"><span class="input ph">数</span></span></th>
+          <th class="num">所属する物質<span class="f"><span class="input ph">数</span></span></th>
+          <th>見られる相手<span class="f"><span class="select ph">すべて</span></span></th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="c"><span class="chk"><i class="dis"></i></span></td><td><a>SYSADMIN</a> <span class="badge admin">システム管理</span></td><td>システム管理グループ</td><td class="num">2</td><td class="num">0</td><td class="num">0</td><td class="note">（すべて）</td></tr>
+          <tr><td class="c"><span class="chk"><i></i></span></td><td><a>ALL</a></td><td>全体</td><td class="num">31</td><td class="num">1,204</td><td class="num">3,880</td><td>全体</td></tr>
+          <tr><td class="c"><span class="chk"><i></i></span></td><td><a>EIGYO1</a></td><td>営業1課</td><td class="num">6</td><td class="num">42</td><td class="num">0</td><td>営業1課・開発部・全体</td></tr>
+          <tr><td class="c"><span class="chk"><i></i></span></td><td><a>KAIHATSU</a></td><td>開発部</td><td class="num">9</td><td class="num">118</td><td class="num">260</td><td>開発部・全体</td></tr>
+          <tr><td class="c"><span class="chk"><i></i></span></td><td><a>HINSHITSU</a></td><td>品質管理部</td><td class="num">4</td><td class="num">0</td><td class="num">0</td><td>全体</td></tr>
+          <tr><td class="c"><span class="chk"><i></i></span></td><td><a>MIG1</a></td><td>移行 1</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>全体</td></tr>
+        </tbody>
+      </table></div>
+      <div class="pager">1 / 1 ・ 6 件</div>
+      <p class="note">削除は左のチェックでまとめて。所属する製品・原材料・物質が 1 件でもある権限グループは消せない（「ほかで使われているため消せません」）。システム管理グループは選べない。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ② 権限グループ詳細 -->
+<section aria-labelledby="g2">
+  <h2 id="g2">② 権限グループ ─ 詳細（編集中） <small>一覧のコードから。開いた直後は「表示のみ」、「編集」ボタンで書き換え</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a>製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a>データ入出力</a>
+      <div class="grp">システム</div>
+      <a>組織</a><a>お知らせの分類</a><a>ユーザー管理</a><a class="on">権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="crumbs">システム › 権限グループ › <b>EIGYO1</b></div>
+      <div class="title"><h3>営業1課</h3><span class="badge editing">編集中</span><span class="spacer"></span><span class="btn">キャンセル</span><span class="btn primary">保存</span></div>
+
+      <div class="card"><h4>基本</h4><div class="body">
+        <div class="row c3">
+          <div class="field"><label>コード</label><span class="input">EIGYO1</span><span class="hint">ほかの権限グループと同じコードは使えない</span></div>
+          <div class="field"><label>名前</label><span class="input">営業1課</span></div>
+          <div class="field"><label>英語名</label><span class="input ph">（任意）</span></div>
+        </div>
+      </div></div>
+
+      <div class="card"><h4>見られる・直せるデータ <span class="note">相手の権限グループごとに印を付ける</span></h4><div class="body">
+        <div class="tbl-wrap"><table class="marks">
+          <thead>
+            <tr><th rowspan="2">相手の権限グループ</th><th class="grp" colspan="2">製品・原材料</th><th class="grp" colspan="2">組成</th><th class="grp" colspan="2">物質</th><th rowspan="2"></th></tr>
+            <tr><th class="sub">参照</th><th class="sub">編集</th><th class="sub">参照</th><th class="sub">編集</th><th class="sub">参照</th><th class="sub">編集</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>営業1課（自分）</td><td class="m"><span class="chk"><i class="link"></i></span></td><td class="m"><span class="chk"><i class="on"></i></span></td><td class="m"><span class="chk"><i class="link"></i></span></td><td class="m"><span class="chk"><i class="on"></i></span></td><td class="m"><span class="chk"><i class="on"></i></span></td><td class="m"><span class="chk"><i></i></span></td><td><span class="btn icon" title="行の削除">✕</span></td></tr>
+            <tr><td>開発部</td><td class="m"><span class="chk"><i class="link"></i></span></td><td class="m"><span class="chk"><i></i></span></td><td class="m"><span class="chk"><i class="on"></i></span></td><td class="m"><span class="chk"><i></i></span></td><td class="m"><span class="chk"><i></i></span></td><td class="m"><span class="chk"><i></i></span></td><td><span class="btn icon">✕</span></td></tr>
+            <tr><td>全体</td><td class="m"><span class="chk"><i class="on"></i></span></td><td class="m"><span class="chk"><i></i></span></td><td class="m"><span class="chk"><i></i></span></td><td class="m"><span class="chk"><i></i></span></td><td class="m"><span class="chk"><i class="on"></i></span></td><td class="m"><span class="chk"><i></i></span></td><td><span class="btn icon">✕</span></td></tr>
+          </tbody>
+        </table></div>
+        <div class="toolbar"><span class="btn">＋ 相手の権限グループを追加</span><span class="note">（選択肢の小窓から。表に無い相手のデータは見えない）</span></div>
+        <div class="msg warn">開発部の行: 組成の参照を付けていますが、物質の参照が付いていません。開発部の物質が組成に入っている製品の組成は見えません。</div>
+      </div></div>
+
+      <div class="card"><h4>表とは別の権限 <span class="note">今はユーザーごとに付けている権限がここへ移る</span></h4><div class="body">
+        <div class="row c3">
+          <span class="chk"><i class="on"></i>承認できる</span>
+          <span class="chk"><i class="on"></i>法規制を見られる</span>
+          <span class="chk"><i></i>法規制を編集できる</span>
+          <span class="chk"><i class="on"></i>データを出力できる</span>
+          <span class="chk"><i></i>データを取り込める</span>
+          <span class="chk"><i class="on"></i>ドキュメントを作れる</span>
+          <span class="chk"><i class="on"></i>ドキュメントを開ける・落とせる</span>
+          <span class="chk"><i></i>他の人が作ったドキュメントも見られる</span>
+          <span class="chk"><i></i>テンプレートを編集できる</span>
+          <span class="chk"><i></i>組織を作れる・直せる</span>
+          <span class="chk"><i class="on"></i>お知らせを投稿できる</span>
+          <span class="chk"><i></i>他人のお知らせも編集・削除できる</span>
+          <span class="chk"><i class="on"></i>フィードバックを見られる</span>
+          <span class="chk"><i></i>フィードバックを書ける</span>
+          <span class="chk"><i></i>PRTR の届出データを入力できる</span>
+        </div>
+        <p class="note">製品・組成・物質の権限は上の表の印に、「無効・未公開のデータも…」は無くなり、「システム管理」はシステム管理グループに置き換わる。</p>
+      </div></div>
+
+      <div class="card"><h4>入っている人 <span class="note">6 人</span></h4><div class="body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>表示名</th><th>メールアドレス</th><th>組織</th><th>入った理由</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><a>山田 太郎</a></td><td>yamada@example.co.jp</td><td>営業部 › 営業1課</td><td>組織から最初に選ばれた</td><td><span class="btn icon">✕</span></td></tr>
+            <tr><td><a>佐藤 花子</a></td><td>sato@example.co.jp</td><td>営業部 › 営業1課</td><td>組織から最初に選ばれた</td><td><span class="btn icon">✕</span></td></tr>
+            <tr><td><a>鈴木 一郎</a></td><td>suzuki@example.co.jp</td><td>開発部</td><td>手で足した</td><td><span class="btn icon">✕</span></td></tr>
+            <tr class="dim"><td colspan="5">… ほか 3 人</td></tr>
+          </tbody>
+        </table></div>
+        <div class="toolbar"><span class="btn">＋ 人を追加</span></div>
+      </div></div>
+    </div>
+  </div>
+  <p class="note">決定（11-09）: 「入っている人」はこの画面でも追加・削除できる。ユーザーの画面から直したのと同じ結果になる。</p>
+</section>
+
+<!-- ②' システム管理グループの詳細 -->
+<section aria-labelledby="g2b">
+  <h2 id="g2b">②' 権限グループ ─ システム管理グループの詳細 <small>表のカードが無い。コードと名前は直せない。消せない</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a>製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a>データ入出力</a>
+      <div class="grp">システム</div>
+      <a>組織</a><a>お知らせの分類</a><a>ユーザー管理</a><a class="on">権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="crumbs">システム › 権限グループ › <b>SYSADMIN</b></div>
+      <div class="title"><h3>システム管理グループ</h3><span class="badge admin">システム管理</span><span class="badge">表示のみ</span><span class="spacer"></span><span class="btn">編集</span></div>
+      <div class="msg info">このグループに入っている人はすべてのデータを見られ、直せます。表は持ちません。コードと名前は変えられず、削除もできません。最後の 1 人は外せません。</div>
+      <div class="card"><h4>基本</h4><div class="body">
+        <div class="row c3">
+          <div class="field"><label>コード</label><span class="input ro">SYSADMIN</span></div>
+          <div class="field"><label>名前</label><span class="input ro">システム管理グループ</span></div>
+        </div>
+      </div></div>
+      <div class="card"><h4>入っている人 <span class="note">2 人</span></h4><div class="body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>表示名</th><th>メールアドレス</th><th>組織</th><th>入った理由</th></tr></thead>
+          <tbody>
+            <tr><td><a>森沢 克己</a></td><td>morisawa@example.co.jp</td><td>情報システム部</td><td>移行で付いた（管理者権限から）</td></tr>
+            <tr><td><a>高橋 次郎</a></td><td>takahashi@example.co.jp</td><td>情報システム部</td><td>手で足した</td></tr>
+          </tbody>
+        </table></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ③ ユーザー編集 -->
+<section aria-labelledby="g3">
+  <h2 id="g3">③ ユーザー管理 ─ 登録・編集 <small>組織は 1 つ。権限グループは組織から最初に選ばれたものが入った状態で出る</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a>製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a>データ入出力</a>
+      <div class="grp">システム</div>
+      <a>組織</a><a>お知らせの分類</a><a class="on">ユーザー管理</a><a>権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="crumbs">システム › ユーザー管理 › <b>山田 太郎</b></div>
+      <div class="title"><h3>山田 太郎</h3><span class="badge editing">編集中</span><span class="spacer"></span><span class="btn">キャンセル</span><span class="btn primary">保存</span></div>
+      <div class="card"><h4>基本</h4><div class="body">
+        <div class="row c2">
+          <div class="field"><label>メールアドレス</label><span class="input">yamada@example.co.jp</span></div>
+          <div class="field"><label>表示名</label><span class="input">山田 太郎</span></div>
+        </div>
+        <div class="row c2">
+          <div class="field"><label>組織</label><span class="select">営業部 › 営業1課</span><span class="hint">組織図から 1 つ選ぶ。変えると、権限グループを選び直す</span></div>
+          <div class="field"><label>お知らせの分類</label><span class="select">営業向け</span></div>
+        </div>
+        <div class="field"><label>権限グループ</label>
+          <div class="chips"><span class="chip auto">営業1課<span class="x">✕</span></span><span class="chip auto">全体<span class="x">✕</span></span><span class="chip">開発部<span class="x">✕</span></span><span class="chip add">＋ 追加</span></div>
+          <span class="hint">点線は、組織「営業部 › 営業1課」から最初に選ばれたもの。外してもよい。0 個でも保存できる（その人はデータを見られない）。システム管理グループもここで足す</span>
+        </div>
+        <div class="row c3">
+          <div class="field"><label>状態</label><span class="select">有効</span></div>
+        </div>
+      </div></div>
+      <div class="card closed"><h4>2要素認証 <span class="tog">▸</span></h4></div>
+      <div class="card closed"><h4>パスキー <span class="tog">▸</span></h4></div>
+      <div class="card closed"><h4>パスワード再発行 <span class="tog">▸</span></h4></div>
+      <p class="note">無くなるもの: 「権限」のカード（13 個のチェックと型）。「無効・未公開のデータも見られる／編集できる」も無くなる。</p>
+    </div>
+  </div>
+  <p class="note">組織の選択肢は階層のまま出す（下の②''）。</p>
+  <div class="row c2">
+    <div class="card"><h4>組織の選択肢（開いたところ）</h4><div class="body"><div class="tree-opt">
+      <div>サンプル化学 株式会社</div>
+      <div class="l1">営業部</div>
+      <div class="l2 on">営業1課</div>
+      <div class="l2">営業2課</div>
+      <div class="l1">開発部</div>
+      <div class="l1">品質管理部</div>
+      <div class="l1">情報システム部</div>
+      <div>（取引先）東洋濾紙 株式会社 </div>
+    </div></div></div>
+    <div class="card"><h4>権限グループの追加の小窓（option-checklist）</h4><div class="body">
+      <span class="input ph">探す</span>
+      <div class="chk"><i class="on"></i>営業1課</div><div class="chk"><i class="on"></i>全体</div><div class="chk"><i class="on"></i>開発部</div><div class="chk"><i></i>品質管理部</div><div class="chk"><i></i>移行 1</div><div class="chk"><i></i><span class="chip admin">システム管理グループ</span></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ④ ユーザー一覧 -->
+<section aria-labelledby="g4">
+  <h2 id="g4">④ ユーザー管理 ─ 一覧 <small>「組織」は 1 つ、「権限」列は「権限グループ」列に</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a>製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a>データ入出力</a>
+      <div class="grp">システム</div>
+      <a>組織</a><a>お知らせの分類</a><a class="on">ユーザー管理</a><a>権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="title"><h3>ユーザー管理</h3><span class="spacer"></span><span class="btn primary">新規</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th>メールアドレス<span class="f"><span class="input ph">絞り込み</span></span></th>
+          <th>表示名<span class="f"><span class="input ph">絞り込み</span></span></th>
+          <th>組織<span class="f"><span class="select ph">すべて</span></span></th>
+          <th>権限グループ<span class="f"><span class="select ph">すべて</span></span></th>
+          <th>お知らせの分類<span class="f"><span class="select ph">すべて</span></span></th>
+          <th>状態<span class="f"><span class="select">有効</span></span></th>
+          <th>最終ログイン</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><a>morisawa@example.co.jp</a></td><td>森沢 克己</td><td>情報システム部</td><td><span class="chip admin">システム管理</span></td><td>全社</td><td>有効</td><td>2026-11-07 09:12</td></tr>
+          <tr><td><a>yamada@example.co.jp</a></td><td>山田 太郎</td><td>営業部 › 営業1課</td><td><span class="chips"><span class="chip">営業1課</span><span class="chip">全体</span><span class="chip">開発部</span></span></td><td>営業向け</td><td>有効</td><td>2026-11-06 17:40</td></tr>
+          <tr><td><a>suzuki@example.co.jp</a></td><td>鈴木 一郎</td><td>開発部</td><td><span class="chips"><span class="chip">開発部</span><span class="chip">全体</span><span class="chip">営業1課</span></span></td><td>全社</td><td>有効</td><td>2026-11-05 10:03</td></tr>
+          <tr><td><a>tanaka@example.co.jp</a></td><td>田中 美咲</td><td>品質管理部</td><td><span class="chip">全体</span></td><td>全社</td><td>有効</td><td>2026-10-30 13:21</td></tr>
+          <tr><td><a>guest@toyo-roshi.example</a></td><td>東洋濾紙 担当</td><td>（取引先）東洋濾紙</td><td class="note">（なし）</td><td>（なし）</td><td>有効</td><td>─</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ⑤ 組織 -->
+<section aria-labelledby="g5">
+  <h2 id="g5">⑤ 組織 <small>階層が付く。いちばん上は会社。種別と項目（帳票の差し込み）はそのまま</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a>製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a>データ入出力</a>
+      <div class="grp">システム</div>
+      <a class="on">組織</a><a>お知らせの分類</a><a>ユーザー管理</a><a>権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="title"><h3>組織</h3><span class="spacer"></span><span class="btn">すべて開く</span><span class="btn">すべて閉じる</span><span class="btn primary">新規</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>組織</th><th>コード</th><th>種別</th><th class="num">人</th><th>最初に選ばれる権限グループ</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>▾ サンプル化学 株式会社</td><td><a>CO</a></td><td>会社</td><td class="num">2</td><td><span class="chip">全体</span></td><td><span class="btn icon">✎</span></td></tr>
+          <tr><td style="padding-left:28px">▾ 営業部</td><td><a>SALES</a></td><td>部署</td><td class="num">1</td><td class="note">（上と同じ）</td><td><span class="btn icon">✎</span></td></tr>
+          <tr><td style="padding-left:48px">営業1課</td><td><a>SALES1</a></td><td>部署</td><td class="num">6</td><td><span class="chip">営業1課</span> <span class="note">＋ 上の分</span></td><td><span class="btn icon">✎</span></td></tr>
+          <tr><td style="padding-left:48px">営業2課</td><td><a>SALES2</a></td><td>部署</td><td class="num">5</td><td><span class="chip">営業2課</span> <span class="note">＋ 上の分</span></td><td><span class="btn icon">✎</span></td></tr>
+          <tr><td style="padding-left:28px">開発部</td><td><a>RD</a></td><td>部署</td><td class="num">9</td><td><span class="chip">開発部</span> <span class="note">＋ 上の分</span></td><td><span class="btn icon">✎</span></td></tr>
+          <tr><td style="padding-left:28px">品質管理部</td><td><a>QA</a></td><td>部署</td><td class="num">4</td><td class="note">（上と同じ）</td><td><span class="btn icon">✎</span></td></tr>
+          <tr><td style="padding-left:28px">情報システム部</td><td><a>IT</a></td><td>部署</td><td class="num">2</td><td class="note">（上と同じ）</td><td><span class="btn icon">✎</span></td></tr>
+          <tr><td>東洋濾紙 株式会社</td><td><a>TOYO</a></td><td>取引先</td><td class="num">1</td><td class="note">（なし）</td><td><span class="btn icon">✎</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="card"><h4>組織の登録・編集（鉛筆から）</h4><div class="body">
+        <div class="row c4">
+          <div class="field"><label>コード</label><span class="input">SALES1</span></div>
+          <div class="field"><label>名称</label><span class="input">営業1課</span></div>
+          <div class="field"><label>種別</label><span class="select">部署</span></div>
+          <div class="field"><label>上の組織</label><span class="select">営業部</span></div>
+        </div>
+        <div class="row c2">
+          <div class="field"><label>表示順</label><span class="input">10</span></div>
+          <div class="field"><label>項目（帳票の差し込み）</label><span class="input ph">住所・電話番号など。今のまま</span></div>
+        </div>
+        <div class="field"><label>最初に選ばれる権限グループ</label>
+          <div class="chips"><span class="chip">営業1課<span class="x">✕</span></span><span class="chip add">＋ 追加</span></div>
+          <span class="hint">この組織とその下の組織の人を登録するとき、最初から選ばれた状態になる。上の組織の分（全体）も一緒に選ばれる。システム管理グループは選べない。この欄と一覧の列は、システム管理グループの人にだけ出る</span>
+        </div>
+      </div></div>
+    </div>
+  </div>
+  <p class="note">決定（11-09）: 階層は各組織の編集で「上の組織」を選んで作る。取引先は会社と同じ高さに並べる（自社の木とは別）。「最初に選ばれる権限グループ」はこの画面の編集で直す（設定画面には置かない）。</p>
+</section>
+
+<!-- ⑦ 製品の登録 -->
+<section aria-labelledby="g7">
+  <h2 id="g7">⑥ 製品 / 原材料 ─ 登録・編集 <small>「所属先」の欄。物質も同じ</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a class="on">製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a>データ入出力</a>
+      <div class="grp">システム</div>
+      <a>組織</a><a>お知らせの分類</a><a>ユーザー管理</a><a>権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="crumbs">製品 / 原材料 › <b>新規</b></div>
+      <div class="title"><h3>製品の登録</h3><span class="spacer"></span><span class="btn">キャンセル</span><span class="btn primary">保存</span></div>
+      <div class="card"><h4>基本</h4><div class="body">
+        <div class="row c4">
+          <div class="field"><label>製品コード</label><span class="input">PR-2026-118</span><span class="msg err" style="padding:2px 8px">このコードは使えません</span></div>
+          <div class="field"><label>所属先</label><span class="select">営業1課</span><span class="hint">自分が編集できる権限グループから選ぶ。1 つしか無ければ自動で入る</span></div>
+          <div class="field"><label>状態</label><span class="select">有効</span></div>
+          <div class="field"><label>原材料として使う</label><span class="chk"><i></i>使う</span></div>
+        </div>
+        <div class="row c2">
+          <div class="field"><label>日本語名</label><span class="input">サンプル洗浄剤 A</span></div>
+          <div class="field"><label>英語名</label><span class="input ph">（任意）</span></div>
+        </div>
+        <div class="row c2">
+          <div class="field"><label>型式</label><span class="input ph"></span></div>
+          <div class="field"><label>用途</label><span class="input ph"></span></div>
+        </div>
+      </div></div>
+      <div class="card closed"><h4>拡張属性 <span class="tog">▸</span></h4></div>
+      <div class="card closed"><h4>組成 <span class="tog">▸</span></h4></div>
+      <p class="note">所属先の選択肢: 自分の権限グループの表で、その相手に製品の「編集」が付いているもの。システム管理グループの人はすべての権限グループ（必ず選ぶ。自動では入らない）。コードが重なるときの文言は所属先を問わず「このコードは使えません」。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ⑧ 所属先を変える -->
+<section aria-labelledby="g8">
+  <h2 id="g8">⑦ 原材料の詳細 ─ 所属先の変更 <small>「表示のみ」の画面の操作。使っている製品の数を出して確かめる</small></h2>
+  <div class="overlay">
+    <div class="app">
+      <nav class="side">
+        <div class="brand">化学物質管理</div>
+        <a>ホーム</a><a>お知らせ</a><a class="on">製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a>データ入出力</a>
+        <div class="grp">システム</div>
+        <a>組織</a><a>お知らせの分類</a><a>ユーザー管理</a><a>権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+      </nav>
+      <div class="main">
+        <div class="crumbs">製品 / 原材料 › <b>MT-0042</b></div>
+        <div class="title"><h3>溶剤ベース B</h3><span class="badge">表示のみ</span><span class="badge">原材料</span><span class="spacer"></span><span class="btn">所属先の変更</span><span class="btn">編集</span></div>
+        <div class="card"><h4>基本</h4><div class="body">
+          <div class="row c4">
+            <div class="field"><label>製品コード</label><span class="input ro">MT-0042</span></div>
+            <div class="field"><label>所属先</label><span class="input ro">開発部</span></div>
+            <div class="field"><label>状態</label><span class="input ro">有効</span></div>
+            <div class="field"><label>公開状態</label><span class="input ro">公開</span></div>
+          </div>
+        </div></div>
+        <div class="card closed"><h4>組成 <span class="tog">▸</span></h4></div>
+        <div class="card closed"><h4>使われている製品 <span class="tog">▸</span></h4></div>
+      </div>
+    </div>
+    <div class="dialog">
+      <h4>所属先の変更</h4>
+      <div class="field"><label>新しい所属先</label><span class="select">営業1課</span></div>
+      <div class="msg warn">この原材料は 12 件の製品の組成で使われています。所属先を「開発部」から「営業1課」に変えると、営業1課の原材料を見られない人は、その 12 件の製品の組成を見られなくなります。</div>
+      <div class="acts"><span class="btn">キャンセル</span><span class="btn primary">変更</span></div>
+    </div>
+  </div>
+  <p class="note">製品（原材料でないもの）を移すときは件数の文が出ない。物質は「… 件の製品の組成で使われています」と同じ形。移す先の選択肢は ⑥ と同じ。</p>
+</section>
+
+<!-- ⑨ 製品一覧 -->
+<section aria-labelledby="g9">
+  <h2 id="g9">⑧ 製品 / 原材料 ─ 一覧 <small>「所属先」列と絞り込み。「状態」は「有効」が最初から入っている</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a class="on">製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a>データ入出力</a>
+      <div class="grp">システム</div>
+      <a>組織</a><a>お知らせの分類</a><a>ユーザー管理</a><a>権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="title"><h3>製品 / 原材料</h3><span class="spacer"></span><span class="btn icon danger">🗑</span><span class="btn primary">新規</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th class="c"><span class="chk"><i></i></span></th>
+          <th>製品コード<span class="f"><span class="input ph">絞り込み</span></span></th>
+          <th>日本語名<span class="f"><span class="input ph">絞り込み</span></span></th>
+          <th>所属先<span class="f"><span class="select ph">すべて</span></span></th>
+          <th>状態<span class="f"><span class="select">有効</span></span></th>
+          <th>公開状態<span class="f"><span class="select ph">すべて</span></span></th>
+          <th>原材料<span class="f"><span class="select ph">すべて</span></span></th>
+          <th>更新日時</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="c"><span class="chk"><i></i></span></td><td><a>PR-2026-117</a></td><td>サンプル洗浄剤 A</td><td>営業1課</td><td>有効</td><td>公開</td><td></td><td>2026-11-06</td></tr>
+          <tr><td class="c"><span class="chk"><i></i></span></td><td><a>PR-2026-098</a></td><td>防錆剤 R-2</td><td>営業1課</td><td>有効</td><td>承認待ち</td><td></td><td>2026-11-05</td></tr>
+          <tr><td class="c"><span class="chk"><i></i></span></td><td><a>MT-0042</a></td><td>溶剤ベース B</td><td>開発部</td><td>有効</td><td>公開</td><td class="c">●</td><td>2026-10-28</td></tr>
+          <tr><td class="c"><span class="chk"><i></i></span></td><td><a>PR-2019-003</a></td><td>旧 洗浄剤（全体）</td><td>全体</td><td>有効</td><td>公開</td><td></td><td>2026-09-01</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">見えるのは、自分の権限グループの表に「製品・原材料の参照」が付いている所属先のものだけ（システム管理グループはすべて）。無効のものは「状態」の絞り込みを「すべて」にすると出る。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ⑩ 取り込み -->
+<section aria-labelledby="g10">
+  <h2 id="g10">⑨ データ入出力 ─ インポート <small>製品・物質の取り込みに「所属先の決め方」</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a>製品 / 原材料</a><a>物質</a><a>法規制</a><a>ドキュメント</a><a class="on">データ入出力</a>
+      <div class="grp">システム</div>
+      <a>組織</a><a>お知らせの分類</a><a>ユーザー管理</a><a>権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="title"><h3>インポート</h3></div>
+      <div class="card"><h4>取り込みの内容</h4><div class="body">
+        <div class="row c3">
+          <div class="field"><label>種類</label><span class="select">製品 / 原材料</span></div>
+          <div class="field"><label>ファイル</label><span class="input ph">products_2026-11.tsv を選択</span></div>
+        </div>
+        <div class="field"><label>所属先の決め方</label>
+          <div class="radio"><i class="on"></i>画面で選んだ所属先にする　<span class="select">営業1課</span></div>
+          <div class="radio"><i></i>TSV の「所属先」の列（権限グループのコード）を使う</div>
+          <span class="hint">列を使うとき、コードが無い・自分が編集できない所属先の行は、その行だけエラーになり取り込まれない</span>
+        </div>
+        <div class="toolbar"><span class="btn primary">取り込み</span></div>
+      </div></div>
+      <div class="card"><h4>取り込み結果（前回）</h4><div class="body">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th class="num">行</th><th>製品コード</th><th>結果</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td class="num">2</td><td>PR-2026-120</td><td>追加</td><td></td></tr>
+            <tr><td class="num">3</td><td>PR-2026-121</td><td class="num" style="color:var(--no)">エラー</td><td>所属先「KAIHATSU」は編集できません</td></tr>
+            <tr><td class="num">4</td><td>PR-2026-122</td><td class="num" style="color:var(--no)">エラー</td><td>所属先「EIGY01」はありません</td></tr>
+            <tr><td class="num">5</td><td>PR-2026-123</td><td>更新</td><td></td></tr>
+          </tbody>
+        </table></div>
+      </div></div>
+      <p class="note">エクスポートの TSV には「所属先」（権限グループのコード）の列が付く。そのまま取り込みに使える。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ⑪ ドキュメント -->
+<section aria-labelledby="g11">
+  <h2 id="g11">⑩ ドキュメント ─ 開けないとき <small>見られない情報を含む帳票は、作った人でも開けない</small></h2>
+  <div class="app">
+    <nav class="side">
+      <div class="brand">化学物質管理</div>
+      <a>ホーム</a><a>お知らせ</a><a>製品 / 原材料</a><a>物質</a><a>法規制</a><a class="on">ドキュメント</a><a>データ入出力</a>
+      <div class="grp">システム</div>
+      <a>組織</a><a>お知らせの分類</a><a>ユーザー管理</a><a>権限グループ</a><a>拡張属性</a><a>アクセス記録</a><a>セッション管理</a><a>設定</a>
+    </nav>
+    <div class="main">
+      <div class="title"><h3>ドキュメント</h3><span class="spacer"></span><span class="btn primary">生成</span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>名前</th><th>対象</th><th>作った人</th><th>作成日時</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><a>SDS 風 組成表 PR-2026-117</a></td><td>PR-2026-117 サンプル洗浄剤 A</td><td>山田 太郎</td><td>2026-11-06 15:02</td><td><span class="btn">開く</span></td></tr>
+          <tr class="dim"><td>組成表 PR-2026-098</td><td>PR-2026-098 防錆剤 R-2</td><td>山田 太郎</td><td>2026-11-05 11:30</td><td><span class="btn off">開けません</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="msg err">このドキュメントには、あなたが見られない組成が含まれているため開けません。</div>
+    </div>
+  </div>
+  <p class="note">決定（11-09）: 開けない帳票も一覧に出し、「開けません」にする。名前・対象のコード・作った人・日時までは見える。</p>
+</section>
+
+<section>
+  <h2>決めたこと（2026-11-09）</h2>
+  <div class="questions">
+    <div><b>1</b> 権限グループの画面でも「入っている人」を追加・削除できる</div>
+    <div><b>2</b> 組織の階層は、各組織の編集で「上の組織」を選んで作る（引っ張って動かす作りにはしない）</div>
+    <div><b>3</b> 取引先は会社と同じ高さに並べる。自社の木とは別</div>
+    <div><b>4</b> 「最初に選ばれる権限グループ」は組織の画面の編集で直す。設定画面には置かない（管理者だけが直せるのは同じ）</div>
+    <div><b>5</b> 開けない帳票も一覧に出し、「開けません」にする</div>
+    <div><b>6</b> 権限グループの表や「表とは別の権限」を直しても、入っている人のセッションは切らない。次に開く画面から新しい表で動く。人を権限グループから外したとき・ユーザー自身の権限グループを変えたときは、今までどおりその人のセッションを切る</div>
+    <div><b>7</b> メニューの「グループ管理」は「お知らせの分類」に改名する（権限グループと取り違えないため）</div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
