@@ -98,16 +98,6 @@ export default function UsersPage() {
           ),
       },
       {
-        key: "newsGroup",
-        header: m.users.newsGroup,
-        kind: "text",
-        width: 140,
-        sortable: false,
-        filterable: false,
-        className: "text-muted-foreground text-xs",
-        render: (u) => pickName(locale, u.newsGroupName ?? "", u.newsGroupNameEn),
-      },
-      {
         key: "activeFlag",
         header: m.common.activeHeader,
         kind: "enum",

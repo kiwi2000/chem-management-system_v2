@@ -8,7 +8,8 @@ import type { NewsDto } from "@/lib/types";
 
 /**
  * ホームのお知らせ1件（2行）。
- *   1行目: タイトル                    所属 / 氏名 / 日時（右寄せ）
+ *   1行目: タイトル                    宛先 / 氏名 / 日時（右寄せ）
+ * 差出元は見出しに出ているので、行には宛先を出す（2026-11-11）。
  *   2行目: 本文の冒頭（1行に収まるところで切る）
  * ダブルクリックで全文を開く。
  */
@@ -18,7 +19,9 @@ export function NewsRow({ item }: { item: NewsDto }) {
 
   const title = pickName(locale, item.titleJa, item.titleEn);
   const body = pickName(locale, item.bodyJa, item.bodyEn);
-  const org = pickName(locale, item.authorOrgNameJa ?? "", item.authorOrgNameEn);
+  const to = item.toOrganisationId
+    ? m.news.toLabel(pickName(locale, item.toNameJa ?? "", item.toNameEn))
+    : m.news.toLabel(m.news.toAll);
   const date = item.publishFrom ?? new Date(item.updatedAt).toLocaleDateString(locale);
   // 冒頭は1行に収めたいので、改行は空白に潰してから省略記号で切る
   const preview = body.replace(/\s+/g, " ").trim();
@@ -45,7 +48,7 @@ export function NewsRow({ item }: { item: NewsDto }) {
           <span className="truncate text-sm font-medium">{title}</span>
         </div>
         <div className="text-muted-foreground shrink-0 text-right text-xs">
-          {org && <span className="mr-2">{org}</span>}
+          <span className="mr-2">{to}</span>
           <span className="mr-2">{item.authorName}</span>
           <span>{date}</span>
         </div>

@@ -9,7 +9,7 @@ import { useI18n } from "@/lib/i18n-client";
 import type { NewsDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 
-/** ホーム本文に出す「掲載中のお知らせ」。分類ごとに見出しを付けて並べる */
+/** ホーム本文に出す「掲載中のお知らせ」。差出元ごとに見出しを付けて並べる */
 export function HomeNews() {
   const { m, locale } = useI18n();
   // お知らせ一覧は投稿・編集のための画面なので、投稿できる人にだけ入口を出す
@@ -25,21 +25,21 @@ export function HomeNews() {
   }, []);
 
   /**
-   * 分類ごとにまとめる。
-   * APIが分類の表示順で並べて返すので、出てきた順にまとめれば見出しの順序もそのまま。
+   * 差出元ごとにまとめる。
+   * API が差出元を組織の木の順（上から）に並べて返すので、出てきた順にまとめれば見出しの順序もそのまま。
    */
   const sections = useMemo(() => {
     const out: { key: string; heading: string; items: NewsDto[] }[] = [];
     for (const n of items ?? []) {
-      const key = n.groupId ?? "";
+      const key = n.fromOrganisationId ?? "";
       const last = out[out.length - 1];
       if (last?.key === key) {
         last.items.push(n);
         continue;
       }
-      const heading = n.groupId
-        ? m.groups.newsHeading(pickName(locale, n.groupNameJa ?? "", n.groupNameEn))
-        : m.groups.newsUngrouped;
+      const heading = n.fromOrganisationId
+        ? m.news.fromHeading(pickName(locale, n.fromNameJa ?? "", n.fromNameEn))
+        : m.news.fromOther;
       out.push({ key, heading, items: [n] });
     }
     return out;

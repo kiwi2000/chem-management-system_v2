@@ -20,7 +20,6 @@ export * from "./doc-page";
 export * from "./doc-tags";
 export * from "./document";
 export * from "./feedback";
-export * from "./group";
 export * from "./organisation";
 export * from "./page-size";
 export * from "./table-match";

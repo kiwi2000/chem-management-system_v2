@@ -86,7 +86,6 @@ export const en: Messages = {
     home: "Home",
     news: "Announcements",
     organisations: "Organisations",
-    groups: "News categories",
     permissionGroups: "Permission groups",
     users: "Users",
     propertyDefs: "Custom properties",
@@ -2282,31 +2281,6 @@ export const en: Messages = {
         : `Re-judged ${judged.toLocaleString()} of ${requested.toLocaleString()} product(s) (those you cannot see were skipped)`,
   },
 
-  groups: {
-    title: "News categories",
-    newTitle: "Add",
-    editTitle: "Edit",
-    description: "News groups and affiliations. Assign them to people on the user edit screen.",
-    kind: "Used for",
-    kindNews: "News group",
-    kindOrg: "Affiliation",
-    kindNewsHint: "Announcements on the home screen are grouped under this heading",
-    kindOrgHint: "Represents a department or team",
-    nameJa: "Name (Japanese)",
-    nameEn: "Name (English)",
-    displayOrder: "Order",
-    displayOrderHint: "Lower comes first. Also orders the announcement headings",
-    activeFlag: "In use",
-    memberCount: "People",
-    members: (n: number) => `${n}`,
-    empty: "Nothing registered",
-    deleteConfirm: (name: string) => `Delete "${name}"?`,
-    inUse: "This is still assigned to someone. Remove the assignments first",
-    none: "(none)",
-    newsHeading: (name: string) => `Announcements from ${name}`,
-    newsUngrouped: "Other announcements",
-  },
-
   users: {
     title: "Users",
     organisation: "Organisation",
@@ -2320,10 +2294,6 @@ export const en: Messages = {
     permissionGroupsNone: "(none)",
     regroupedNotice:
       "The organisation changed, so the permission groups were re-selected. Check them before saving",
-    newsGroup: "News group",
-    newsGroupHint: "Announcements this person posts appear under this heading on the home screen",
-    newsGroupDisabled:
-      "Available once the person is in a permission group that can post announcements",
     newTitle: "New user",
     editTitle: "Edit user",
     email: "Email address",
@@ -2378,6 +2348,21 @@ export const en: Messages = {
     deleteConfirm: (title: string) => `Delete the announcement "${title}"?`,
     scheduled: "Scheduled",
     expired: "Expired",
+    from: "From",
+    fromHint:
+      "Who the announcement is from. Choose your organisation or one above it. On the home screen it appears under this heading",
+    to: "To",
+    toHint:
+      "Who the announcement is for. Only people in the chosen organisation and below can see it",
+    toAll: "Everyone",
+    toAllHint: '"Everyone" includes people in partner organisations',
+    toLabel: (name: string) => `To ${name}`,
+    fromHeading: (name: string) => `Announcements from ${name}`,
+    fromOther: "Other announcements",
+    noOrganisation:
+      "You cannot post announcements because you have no organisation. Ask a system administrator to set one",
+    orgNotAllowed: "This organisation cannot be chosen. Choose your organisation or one above it",
+    allNotAllowed: "Only people who can edit and delete others' announcements can address everyone",
   },
 
   errors: {
@@ -2785,6 +2770,7 @@ export const en: Messages = {
     },
   },
   organisations: {
+    activeFlag: "In use",
     parent: "Parent organisation",
     parentNone: "(none — top level)",
     parentHint:

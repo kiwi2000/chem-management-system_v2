@@ -173,22 +173,6 @@ enum OrganisationKind {
 }
 
 /**
- * グループの用途。
- * 用途ごとに表を分けず種別で持つのは、管理画面と操作をひとつにまとめられるため。
- */
-enum GroupKind {
-  /**
-   * ホームのお知らせを見出しで区切るための分類
-   */
-  NEWS
-  /**
-   * 使っていない。組織の所属は「組織」（Organisation）へ移した（2026-08-30）。
-   * 値を消すには移行が要るので残してある
-   */
-  ORG
-}
-
-/**
  * 人が権限グループに入った理由（S31）
  */
 enum PermissionGroupJoinReason {
@@ -284,10 +268,6 @@ model User {
    * 画面の高さも読みたい量も人によって違うので、決め打ちにしない
    */
   preferredPageSizes    String?   @map("preferred_page_sizes")
-  /**
-   * お知らせの分類。1人1つ。NEWS_POST を持つ人にだけ意味がある
-   */
-  newsGroupId           String?   @map("news_group_id")
   activeFlag            Boolean   @default(true) @map("active_flag")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
@@ -297,10 +277,9 @@ model User {
   savedFilters     SavedFilter[]
   news             News[]
   passkeys         Passkey[]
-  newsGroup        Group?                @relation("UserNewsGroup", fields: [newsGroupId], references: [id])
   /**
    * 所属する組織（S31。必ず 1 つの決まり。移行で組織の無かった人だけ空）。**権限とは関係ない。**
-   * 帳票の差出人・お知らせの所属に使う
+   * 帳票の差出人と、お知らせ（選べる差出元・宛先と、見えるお知らせ）に使う
    */
   organisationId   String?               @map("organisation_id")
   organisation     Organisation?         @relation(fields: [organisationId], references: [id])
@@ -310,7 +289,6 @@ model User {
   permissionGroups UserPermissionGroup[]
   approvalEvents   ApprovalEvent[]
 
-  @@index([newsGroupId])
   @@index([organisationId])
   @@map("users")
 }
@@ -407,6 +385,11 @@ model Organisation {
    * PRTR の届出データ（S22）。所属 × 年度
    */
   prtrEntries   PrtrEntry[]
+  /**
+   * この組織を差出元・宛先にしたお知らせ
+   */
+  newsFrom      News[]                     @relation("NewsFrom")
+  newsTo        News[]                     @relation("NewsTo")
 
   @@index([displayOrder])
   @@index([parentId])
@@ -449,34 +432,6 @@ model OrganisationDefaultGroup {
   @@id([organisationId, groupId])
   @@index([groupId])
   @@map("organisation_default_groups")
-}
-
-/**
- * グループ（お知らせの分類）。
- * 階層は持たない。並列に作り、表示順で並べる。
- */
-model Group {
-  id           String    @id @default(cuid())
-  kind         GroupKind
-  nameJa       String    @map("name_ja")
-  /**
-   * 英語は任意。未入力なら英語表示でも日本語を出す
-   */
-  nameEn       String?   @map("name_en")
-  /**
-   * 小さいほど先。お知らせの見出しの並び順にもなる
-   */
-  displayOrder Int       @default(0) @map("display_order")
-  activeFlag   Boolean   @default(true) @map("active_flag")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
-
-  newsMembers User[] @relation("UserNewsGroup")
-  news        News[]
-
-  @@index([kind, displayOrder])
-  @@map("groups")
 }
 
 /**
@@ -1723,43 +1678,49 @@ model MetalConversionFactor {
 
 /**
  * ログイン後のホームに出すお知らせ。
- * 閲覧は全ログインユーザー。投稿は NEWS_POST、他人の分の編集・削除は NEWS_MANAGE。
+ * 見られるのは宛先の組織とその下の人（宛先が空なら全員）。投稿は NEWS_POST、他人の分の編集・削除は NEWS_MANAGE。
  */
 model News {
-  id           String     @id @default(cuid())
-  titleJa      String     @map("title_ja")
-  bodyJa       String     @map("body_ja")
+  id                 String     @id @default(cuid())
+  titleJa            String     @map("title_ja")
+  bodyJa             String     @map("body_ja")
   /**
    * 英語は任意。未入力なら英語表示でも日本語を出す
    */
-  titleEn      String?    @map("title_en")
-  bodyEn       String?    @map("body_en")
-  status       NewsStatus @default(DRAFT)
+  titleEn            String?    @map("title_en")
+  bodyEn             String?    @map("body_en")
+  status             NewsStatus @default(DRAFT)
   /**
    * 重要なお知らせを一覧の先頭に固定する
    */
-  pinned       Boolean    @default(false)
+  pinned             Boolean    @default(false)
   /**
    * 掲載期間。null は「制限なし」
    */
-  publishFrom  DateTime?  @map("publish_from")
-  publishUntil DateTime?  @map("publish_until")
-  authorId     String     @map("author_id")
+  publishFrom        DateTime?  @map("publish_from")
+  publishUntil       DateTime?  @map("publish_until")
+  authorId           String     @map("author_id")
   /**
-   * ホームで見出しを分けるための分類。投稿時に投稿者のグループを写し取る。
-   * 写すのは、投稿者が異動しても過去の投稿が別の見出しへ移らないようにするため。
-   * null=分類なし（見出しの最後にまとめる）
+   * 差出元（どこからのお知らせか）。投稿者の組織かその上から選ぶ。ホームの見出しはこれで分ける。
+   * 投稿のときに決まり、投稿者が異動しても変わらない。null は 2026-11-11 より前の投稿で組織の無かった人の分（「その他」）
    */
-  groupId      String?    @map("group_id")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  fromOrganisationId String?    @map("from_organisation_id")
+  /**
+   * 宛先（だれ宛てのお知らせか）。**この組織とその下の人にだけ見える。null は全員宛て**（取引先の人も含む。選べるのは NEWS_MANAGE だけ）。
+   * 組織は印を付けて消すので、消しても null（全員）には広がらない。行ごと消す外部キーの動きも RESTRICT にしてある
+   */
+  toOrganisationId   String?    @map("to_organisation_id")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
 
-  author User   @relation(fields: [authorId], references: [id])
-  group  Group? @relation(fields: [groupId], references: [id])
+  author           User          @relation(fields: [authorId], references: [id])
+  fromOrganisation Organisation? @relation("NewsFrom", fields: [fromOrganisationId], references: [id], onDelete: Restrict)
+  toOrganisation   Organisation? @relation("NewsTo", fields: [toOrganisationId], references: [id], onDelete: Restrict)
 
   @@index([status, pinned, publishFrom])
   @@index([authorId])
-  @@index([groupId])
+  @@index([fromOrganisationId])
+  @@index([toOrganisationId])
   @@map("news")
 }
 

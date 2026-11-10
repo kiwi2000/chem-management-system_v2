@@ -5,7 +5,7 @@ import {
   type MfaMethod,
   type Permission,
 } from "@chem/shared";
-import type { Group, PermissionGroupJoinReason, User } from "@prisma/client";
+import type { PermissionGroupJoinReason, User } from "@prisma/client";
 import { jsonError } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { rowStamp } from "@/lib/edit-stamp";
@@ -19,7 +19,6 @@ import { chainLabel, defaultGroupIdsFor, type OrgChainNode } from "@/lib/organis
  */
 
 export type UserWithGroups = User & {
-  newsGroup?: Pick<Group, "id" | "nameJa" | "nameEn"> | null;
   permissionGroups: {
     reason: PermissionGroupJoinReason;
     group: {
@@ -43,7 +42,6 @@ export type UserWithGroups = User & {
 
 /** 一覧・詳細で毎回同じものを読むので共通化する */
 export const USER_INCLUDE = {
-  newsGroup: { select: { id: true, nameJa: true, nameEn: true } },
   permissionGroups: {
     select: {
       reason: true,
@@ -109,9 +107,6 @@ export function toUserSummary(u: UserWithGroups, orgPaths: Map<string, OrgChainN
     lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
     isSystemAdmin,
     permissions: permissionsOf(u),
-    newsGroupId: u.newsGroupId,
-    newsGroupName: u.newsGroup?.nameJa ?? null,
-    newsGroupNameEn: u.newsGroup?.nameEn ?? null,
     organisationId: org?.id ?? null,
     /** 上からの道筋（「営業部 › 営業1課」） */
     organisationPath: chain.length ? chainLabel(chain) : null,
@@ -129,17 +124,12 @@ export function toUserSummary(u: UserWithGroups, orgPaths: Map<string, OrgChainN
 }
 
 /**
- * 組織・権限グループ・お知らせの分類の割り当てを検証する。
- *
- * - 存在しない id は 400（画面から来ない値でも弾く）
- * - お知らせの分類は「お知らせを投稿できる」人だけが持てる。
- *   入る権限グループでそれが無くなったのに分類だけ残ると、投稿できないのに見出しが割り当たった状態になるため
+ * 組織・権限グループの割り当てを検証する。存在しない id は 400（画面から来ない値でも弾く）
  */
 export async function resolveAssignments(
-  newsGroupId: string | null,
   organisationId: string,
   groupIds: string[],
-): Promise<{ newsGroupId: string | null; organisationId: string; groupIds: string[] } | Response> {
+): Promise<{ organisationId: string; groupIds: string[] } | Response> {
   const m = await getServerMessages();
   const org = await prisma.organisation.findFirst({
     where: { id: organisationId, deletedAt: null },
@@ -149,25 +139,12 @@ export async function resolveAssignments(
 
   const groups = await prisma.permissionGroup.findMany({
     where: { id: { in: groupIds } },
-    select: { id: true, isSystemAdmin: true, permissions: { select: { permission: true } } },
+    select: { id: true },
   });
   if (groups.length !== groupIds.length) {
     return jsonError(400, "validation_error", m.errors.validation);
   }
-  const canPost =
-    groups.some((g) => g.isSystemAdmin) ||
-    expandPermissions(
-      groups.flatMap((g) => g.permissions.map((p) => p.permission)).filter(isPermission),
-    ).includes("NEWS_POST");
-  const news = canPost ? newsGroupId : null;
-  if (news) {
-    const found = await prisma.group.findFirst({
-      where: { id: news, deletedAt: null },
-      select: { kind: true },
-    });
-    if (found?.kind !== "NEWS") return jsonError(400, "validation_error", m.errors.validation);
-  }
-  return { newsGroupId: news, organisationId, groupIds };
+  return { organisationId, groupIds };
 }
 
 /**

@@ -4,7 +4,6 @@ import { describePasswordPolicy } from "@chem/shared";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { FieldError } from "@/components/field-error";
-import { GroupSelect } from "@/components/group-select";
 import { OrganisationSelect } from "@/components/organisation-select";
 import { PermissionGroupChips } from "@/components/permission-group-chips";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -21,12 +20,11 @@ import { useOrganisations } from "@/lib/use-organisations";
 import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
 import { ancestorIds } from "@/lib/org-tree";
 import type { ApiError } from "@/lib/types";
-import { useGroups } from "@/lib/use-groups";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
 export default function NewUserPage() {
   const router = useRouter();
-  const { m, locale } = useI18n();
+  const { m } = useI18n();
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
@@ -35,8 +33,6 @@ export default function NewUserPage() {
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const organisations = useOrganisations();
   const groupOptions = usePermissionGroupOptions();
-  const [newsGroupId, setNewsGroupId] = useState("");
-  const groups = useGroups();
   const [error, setError] = useState<string | null>(null);
   // どの項目が悪いのかを、その欄の下に出す
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -48,7 +44,6 @@ export default function NewUserPage() {
   const pwProblem = passwordProblem(initialPassword, m, policy);
 
   // 投稿できる権限グループに入るときだけ、お知らせの分類を選べる
-  const canPost = (groupOptions?.groups ?? []).some((g) => g.canPost && groupIds.includes(g.id));
   // 組織とその上の組織に設定した「最初に選ばれる権限グループ」
   const defaultsOf = useCallback(
     (orgId: string) =>
@@ -81,7 +76,6 @@ export default function NewUserPage() {
           initialPassword,
           organisationId,
           groupIds,
-          newsGroupId: (canPost && newsGroupId) || null,
         }),
       });
       if (!res.ok) {
@@ -170,23 +164,6 @@ export default function NewUserPage() {
                 emptyLabel={m.users.permissionGroupsNone}
               />
               <p className="text-muted-foreground text-xs">{m.users.permissionGroupsHint}</p>
-            </div>
-            {/* 投稿できる人にだけ意味があるので、投稿できる権限グループに入らないときは選ばせない */}
-            <div className="space-y-2">
-              <Label htmlFor="newsGroup">{m.users.newsGroup}</Label>
-              <GroupSelect
-                id="newsGroup"
-                kind="NEWS"
-                groups={groups}
-                value={newsGroupId}
-                locale={locale}
-                noneLabel={m.groups.none}
-                disabled={!canPost}
-                onChange={setNewsGroupId}
-              />
-              <p className="text-muted-foreground text-xs">
-                {canPost ? m.users.newsGroupHint : m.users.newsGroupDisabled}
-              </p>
             </div>
           </CardContent>
         </Card>

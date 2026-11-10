@@ -9,7 +9,6 @@ import type { MfaMethod } from "@chem/shared";
 import type { AsElementDto } from "@/lib/as-element";
 import type {
   GazetteLawKind,
-  GroupKind,
   Permission,
   ProductStatus,
   PublishState,
@@ -56,9 +55,6 @@ export interface UserSummaryDto {
   isSystemAdmin: boolean;
   /** 入っている権限グループから求めた権限（表示用。システム管理グループの人は空） */
   permissions: Permission[];
-  newsGroupId: string | null;
-  newsGroupName: string | null;
-  newsGroupNameEn: string | null;
   /** 所属する組織（S31 から 1 つ。移行で組織の無かった人だけ null） */
   organisationId: string | null;
   /** 組織の上からの道筋（「営業部 › 営業1課」） */
@@ -131,8 +127,6 @@ export interface PermissionGroupOptionDto {
   nameJa: string;
   nameEn: string | null;
   isSystemAdmin: boolean;
-  /** お知らせを投稿できるか（お知らせの分類を選べるか） */
-  canPost: boolean;
 }
 
 export interface PermissionGroupOptionsDto {
@@ -198,21 +192,6 @@ export interface OrganisationDto {
   items: { label: string; value: string }[];
   /** この組織に所属する人の数（消したときの影響を知らせるため） */
   memberCount: number;
-}
-
-export interface GroupDto {
-  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
-  stamp: string;
-  id: string;
-  kind: GroupKind;
-  nameJa: string;
-  nameEn: string | null;
-  displayOrder: number;
-  activeFlag: boolean;
-  /** 用途に応じた所属人数（削除の影響を知らせるため） */
-  memberCount: number;
-  /** この分類が付いたお知らせの数 */
-  newsCount: number;
 }
 
 /** 保存したフィルター。共有されたものは他人が作ったものも並ぶ */
@@ -1386,17 +1365,26 @@ export interface NewsDto {
   publishUntil: string | null;
   authorId: string;
   authorName: string;
-  /** 投稿者の所属（現在の所属。過去の投稿でも今の所属が出る） */
-  authorOrgNameJa: string | null;
-  authorOrgNameEn: string | null;
-  /** ホームの見出しを分けるための分類（投稿時に投稿者のグループを写し取る） */
-  groupId: string | null;
-  groupNameJa: string | null;
-  groupNameEn: string | null;
-  groupOrder: number | null;
+  /** 差出元（どこからのお知らせか）。ホームの見出しはこれで分ける。null は「その他」 */
+  fromOrganisationId: string | null;
+  fromNameJa: string | null;
+  fromNameEn: string | null;
+  /** 宛先（だれ宛てか）。null は全員宛て */
+  toOrganisationId: string | null;
+  toNameJa: string | null;
+  toNameEn: string | null;
   updatedAt: string;
   /** この閲覧者が編集できるか（サーバー側で判断済み） */
   editable: boolean;
+}
+
+/** お知らせの差出元・宛先に選べる組織（自分の組織とその上。上から順） */
+export interface NewsOrganisationChoicesDto {
+  choices: { id: string; nameJa: string; nameEn: string | null }[];
+  /** 自分の組織（差出元・宛先の最初の値）。組織の無い人は null で、投稿できない */
+  ownId: string | null;
+  /** 「全員」宛てを選べるか（他人のお知らせも編集・削除できる人） */
+  canAll: boolean;
 }
 
 /**

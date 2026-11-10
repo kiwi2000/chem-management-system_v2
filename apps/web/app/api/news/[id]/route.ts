@@ -4,13 +4,21 @@ import { jsonError, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
-import { canEditNews, NEWS_INCLUDE, parseDateOnly, toNewsDto } from "@/lib/news-service";
+import {
+  canEditNews,
+  canSeeNews,
+  checkNewsOrganisations,
+  NEWS_INCLUDE,
+  newsOrgChain,
+  parseDateOnly,
+  toNewsDto,
+} from "@/lib/news-service";
 
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** GET /api/news/[id] — 下書きは編集できる人だけが読める */
+/** GET /api/news/[id] — 下書きと宛先の外のものは、編集できる人だけが読める（ほかの人には 404） */
 export async function GET(_req: Request, { params }: Ctx) {
   const actor = await requireUser();
   if (actor instanceof Response) return actor;
@@ -19,7 +27,8 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   const item = await prisma.news.findUnique({ where: { id }, include: NEWS_INCLUDE });
   if (!item) return jsonError(404, "not_found", m.errors.notFound);
-  if (item.status === "DRAFT" && !canEditNews(actor, item.authorId)) {
+  const chainIds = (await newsOrgChain(actor)).map((o) => o.id);
+  if (!canSeeNews(actor, chainIds, item)) {
     return jsonError(404, "not_found", m.errors.notFound);
   }
   return Response.json({ item: toNewsDto(item, actor) });
@@ -56,6 +65,10 @@ export async function PUT(req: Request, { params }: Ctx) {
   // 楽観的ロックの印。無ければ 400
   const lock = parseEditStamp(body, m);
   if (lock instanceof Response) return lock;
+  // 差出元・宛先は、自分の組織かその上から。いま付いている値はそのまま残してよい
+  const chainIds = (await newsOrgChain(actor)).map((o) => o.id);
+  const bad = checkNewsOrganisations(actor, chainIds, v, item, m.news);
+  if (bad) return jsonError(400, "validation_error", bad);
 
   // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
   const hit = await prisma.news.updateMany({
@@ -69,6 +82,8 @@ export async function PUT(req: Request, { params }: Ctx) {
       pinned: v.pinned,
       publishFrom: parseDateOnly(v.publishFrom),
       publishUntil: parseDateOnly(v.publishUntil),
+      fromOrganisationId: v.fromOrganisationId,
+      toOrganisationId: v.toOrganisationId,
     },
   });
   if (hit.count === 0) {

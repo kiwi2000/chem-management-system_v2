@@ -90,7 +90,6 @@ export const ja = {
     home: "ホーム",
     news: "お知らせ",
     organisations: "組織",
-    groups: "お知らせの分類",
     permissionGroups: "権限グループ",
     users: "ユーザー管理",
     propertyDefs: "拡張属性",
@@ -2418,33 +2417,6 @@ export const ja = {
         : `${requested.toLocaleString()} 件のうち ${judged.toLocaleString()} 件を判定し直しました（見られない製品は飛ばしました）`,
   },
 
-  groups: {
-    /** S31（2026-11）で「グループ管理」から改名。権限グループと取り違えないため */
-    title: "お知らせの分類",
-    newTitle: "追加",
-    editTitle: "編集",
-    description: "ニュースグループと所属を登録します。ユーザーの編集画面で割り当てます。",
-    kind: "用途",
-    kindNews: "ニュースグループ",
-    kindOrg: "所属",
-    kindNewsHint: "ホームのお知らせを、この見出しで区切って並べます",
-    kindOrgHint: "所属部署などを表します",
-    nameJa: "名称（日本語）",
-    nameEn: "名称（English）",
-    displayOrder: "表示順",
-    displayOrderHint: "小さいほど先。お知らせの見出しの並び順にもなります",
-    activeFlag: "これを使う",
-    memberCount: "人数",
-    members: (n: number) => `${n} 人`,
-    empty: "登録がありません",
-    deleteConfirm: (name: string) => `「${name}」を削除しますか？`,
-    inUse: "使われているものは削除できません。先に割り当てを外してください",
-    /** 未所属・分類なしを表す選択肢 */
-    none: "（なし）",
-    newsHeading: (name: string) => `${name}からのお知らせ`,
-    newsUngrouped: "その他のお知らせ",
-  },
-
   users: {
     title: "ユーザー管理",
     organisation: "組織",
@@ -2457,9 +2429,6 @@ export const ja = {
       "点線のものは、組織から最初に選ばれたものです。外してもかまいません。1 つも無くても保存できます（その人はデータを見られません）",
     permissionGroupsNone: "（なし）",
     regroupedNotice: "組織を変えたので、権限グループを選び直しました。保存する前に見直してください",
-    newsGroup: "お知らせの分類",
-    newsGroupHint: "投稿したお知らせが、ホームでこの見出しの下に並びます",
-    newsGroupDisabled: "「お知らせを投稿できる」を持つ権限グループに入ると指定できます",
     newTitle: "ユーザーの新規登録",
     editTitle: "ユーザーの編集",
     email: "メールアドレス",
@@ -2515,6 +2484,21 @@ export const ja = {
     deleteConfirm: (title: string) => `お知らせ「${title}」を削除しますか？`,
     scheduled: "掲載前",
     expired: "掲載終了",
+    /** 差出元・宛先（2026-11-11。お知らせの分類をやめ、組織から選ぶ形にした） */
+    from: "差出元",
+    fromHint:
+      "どこからのお知らせか。自分の組織か、その上の組織から選びます。ホームではこの見出しの下に並びます",
+    to: "宛先",
+    toHint: "だれ宛てのお知らせか。選んだ組織とその下の人にだけ見えます",
+    toAll: "全員",
+    toAllHint: "「全員」は取引先の人も含めた全員に見えます",
+    toLabel: (name: string) => `${name}宛て`,
+    fromHeading: (name: string) => `${name}からのお知らせ`,
+    fromOther: "その他のお知らせ",
+    noOrganisation:
+      "組織が決まっていないため、お知らせを投稿できません。システム管理者に組織を設定してもらってください",
+    orgNotAllowed: "選べない組織です。自分の組織か、その上の組織を選んでください",
+    allNotAllowed: "「全員」宛ては、他人のお知らせも編集・削除できる人だけが選べます",
   },
 
   /** サーバーが返すエラー（APIのレスポンス文言） */
@@ -2940,6 +2924,7 @@ export const ja = {
     },
   },
   organisations: {
+    activeFlag: "これを使う",
     parent: "上の組織",
     parentNone: "（なし。いちばん上）",
     parentHint: "空ならいちばん上（会社・取引先など）。自分と自分の下の組織は選べません",

@@ -56,12 +56,12 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const { displayName, activeFlag, newsGroupId, organisationId, groupIds } = parsed.data;
+  const { displayName, activeFlag, organisationId, groupIds } = parsed.data;
   // 楽観的ロックの印。無ければ 400
   const lock = parseEditStamp(body, m);
   if (lock instanceof Response) return lock;
 
-  const assigned = await resolveAssignments(newsGroupId ?? null, organisationId, groupIds);
+  const assigned = await resolveAssignments(organisationId, groupIds);
   if (assigned instanceof Response) return assigned;
 
   // 締め出し防止: 自分をシステム管理グループから外せない。管理者が0人になる操作もできない
@@ -83,7 +83,6 @@ export async function PUT(req: Request, { params }: Ctx) {
     data: {
       displayName: displayName ?? null,
       activeFlag,
-      newsGroupId: assigned.newsGroupId,
       organisationId: assigned.organisationId,
     },
   });

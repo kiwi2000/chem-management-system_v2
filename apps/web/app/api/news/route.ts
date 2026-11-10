@@ -4,7 +4,16 @@ import { jsonError, requirePermission, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { NEWS_COLUMNS } from "@/lib/list-columns";
-import { NEWS_INCLUDE, parseDateOnly, publishedNowWhere, toNewsDto } from "@/lib/news-service";
+import {
+  addressedToWhere,
+  checkNewsOrganisations,
+  NEWS_INCLUDE,
+  newsOrgChain,
+  parseDateOnly,
+  publishedNowWhere,
+  toNewsDto,
+} from "@/lib/news-service";
+import { flattenOrgTree } from "@/lib/org-tree";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +29,8 @@ const DEFAULT_STATE = emptyTableState([
 
 /**
  * GET /api/news — お知らせ一覧。
- * 閲覧は全ログインユーザー。ただし下書きは、その投稿を編集できる人にしか見せない。
+ * 見えるのは、宛先が全員か、自分の組織かその上の組織宛てのもの（2026-11-11）。
+ * 下書きは、その投稿を編集できる人にしか見せない。お知らせを管理できる人には全部見える（ホームは宛先どおり）。
  * ?scope=home を付けると掲載中のものだけを返す（ホーム用・並べ替えやフィルターは効かない）。
  */
 export async function GET(req: Request) {
@@ -28,21 +38,26 @@ export async function GET(req: Request) {
   if (actor instanceof Response) return actor;
 
   const params = new URL(req.url).searchParams;
+  const chainIds = (await newsOrgChain(actor)).map((o) => o.id);
   if (params.get("scope") === "home") {
-    // 分類ごとの見出しで区切って出すので、まず分類の表示順で並べる。
-    // 分類なしは Postgres の既定どおり最後に来る（「その他のお知らせ」の位置）。
+    // ホームは、管理する人にも宛先どおりのものだけを出す
     const items = await prisma.news.findMany({
-      where: publishedNowWhere(new Date()),
-      orderBy: [
-        { group: { displayOrder: "asc" } },
-        { pinned: "desc" },
-        { publishFrom: "desc" },
-        { updatedAt: "desc" },
-      ],
+      where: { ...publishedNowWhere(new Date()), ...addressedToWhere(chainIds) },
+      orderBy: [{ pinned: "desc" }, { publishFrom: "desc" }, { updatedAt: "desc" }],
       include: NEWS_INCLUDE,
       take: HOME_LIMIT,
     });
-    return Response.json({ items: items.map((n) => toNewsDto(n, actor)) });
+    // 差出元ごとの見出しで区切って出すので、差出元を組織の木の順（上から）に並べ直す。
+    // 中の順は上の並びのまま。差出元の無いもの（「その他のお知らせ」）は最後
+    const orgs = await prisma.organisation.findMany({
+      select: { id: true, parentId: true, displayOrder: true, nameJa: true },
+    });
+    const order = new Map(flattenOrgTree(orgs).map((x, i) => [x.org.id, i]));
+    const rank = (id: string | null) => (id ? (order.get(id) ?? orgs.length) : orgs.length + 1);
+    const sorted = [...items].sort(
+      (a, b) => rank(a.fromOrganisationId) - rank(b.fromOrganisationId),
+    );
+    return Response.json({ items: sorted.map((n) => toNewsDto(n, actor)) });
   }
 
   const state = parseTableState(
@@ -51,10 +66,16 @@ export async function GET(req: Request) {
     DEFAULT_STATE,
   );
 
-  // 下書きは、その投稿を編集できる人にしか見せない
+  // 下書きと宛先の外のものは、その投稿を編集できる人にしか見せない。
+  // 最上位に AND を使わない（buildWhere の AND に上書きされるため）
   const visible = actor.has("NEWS_MANAGE")
     ? {}
-    : { OR: [{ status: "PUBLISHED" as const }, { authorId: actor.user.id }] };
+    : {
+        OR: [
+          { authorId: actor.user.id },
+          { status: "PUBLISHED" as const, ...addressedToWhere(chainIds) },
+        ],
+      };
 
   const where = { ...visible, ...buildWhere(NEWS_COLUMNS, state.filters) };
 
@@ -94,6 +115,11 @@ export async function POST(req: Request) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
+  // 差出元・宛先は、自分の組織かその上から。「全員」は管理する人だけ
+  const chainIds = (await newsOrgChain(actor)).map((o) => o.id);
+  if (chainIds.length === 0) return jsonError(400, "no_organisation", m.news.noOrganisation);
+  const bad = checkNewsOrganisations(actor, chainIds, v, null, m.news);
+  if (bad) return jsonError(400, "validation_error", bad);
 
   const created = await prisma.news.create({
     data: {
@@ -106,8 +132,8 @@ export async function POST(req: Request) {
       publishFrom: parseDateOnly(v.publishFrom),
       publishUntil: parseDateOnly(v.publishUntil),
       authorId: actor.user.id,
-      // 投稿時点の分類を写し取る。後で異動しても過去の投稿は動かない
-      groupId: actor.user.newsGroupId,
+      fromOrganisationId: v.fromOrganisationId,
+      toOrganisationId: v.toOrganisationId,
     },
   });
 

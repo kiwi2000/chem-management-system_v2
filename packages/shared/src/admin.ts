@@ -3,14 +3,6 @@ import { emailSchema, passwordSchema } from "./auth";
 import type { PasswordPolicy } from "./settings";
 import type { Messages } from "./i18n/ja";
 
-/** グループの割り当て。空文字は「未設定」として null に倒す */
-const groupId = z
-  .string()
-  .trim()
-  .transform((v) => (v === "" ? null : v))
-  .nullable()
-  .optional();
-
 /**
  * 所属する組織の id（S31。必ず 1 つ）
  */
@@ -28,7 +20,6 @@ export const userCreateSchema = (m: Messages, policy?: PasswordPolicy) =>
     email: emailSchema(m),
     displayName: z.string().trim().max(200).nullable().optional(),
     initialPassword: passwordSchema(m, policy),
-    newsGroupId: groupId,
     organisationId: organisationId(m),
     groupIds,
   });
@@ -39,7 +30,6 @@ export const userUpdateSchema = (m: Messages) =>
   z.object({
     displayName: z.string().trim().max(200).nullable().optional(),
     activeFlag: z.boolean(),
-    newsGroupId: groupId,
     organisationId: organisationId(m),
     groupIds,
   });

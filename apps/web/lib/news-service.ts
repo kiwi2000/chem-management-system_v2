@@ -1,5 +1,6 @@
-import type { Group, News, OrganisationKind, User } from "@prisma/client";
+import type { News, Organisation, User } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
+import { orgChain, type OrgChainNode } from "@/lib/organisation-tree";
 import { rowStamp } from "@/lib/edit-stamp";
 import type { NewsDto } from "@/lib/types";
 
@@ -13,35 +14,22 @@ export function formatDateOnly(d: Date | null): string | null {
   return d ? d.toISOString().slice(0, 10) : null;
 }
 
-type GroupName = Pick<Group, "id" | "nameJa" | "nameEn" | "displayOrder">;
+type OrgName = Pick<Organisation, "id" | "nameJa" | "nameEn">;
 
 export type NewsWithAuthor = News & {
-  author: Pick<User, "id" | "displayName" | "email"> & {
-    /** 所属する組織（S31 から 1 つ）。「所属」としてそのまま出す */
-    organisation?: (GroupName & { kind: OrganisationKind }) | null;
-  };
-  group?: GroupName | null;
+  author: Pick<User, "id" | "displayName" | "email">;
+  fromOrganisation?: OrgName | null;
+  toOrganisation?: OrgName | null;
 };
 
 /** 一覧・詳細で毎回同じものを読むので共通化する */
 export const NEWS_INCLUDE = {
-  author: {
-    select: {
-      id: true,
-      displayName: true,
-      email: true,
-      // 一覧に「所属 / 氏名 / 日時」を出すので、投稿者の所属も一緒に読む。
-      // S31 から人の組織は 1 つなので、それをそのまま出す。利用者の編集画面で割り当てる
-      organisation: {
-        select: { id: true, kind: true, nameJa: true, nameEn: true, displayOrder: true },
-      },
-    },
-  },
-  group: { select: { id: true, nameJa: true, nameEn: true, displayOrder: true } },
+  author: { select: { id: true, displayName: true, email: true } },
+  fromOrganisation: { select: { id: true, nameJa: true, nameEn: true } },
+  toOrganisation: { select: { id: true, nameJa: true, nameEn: true } },
 } as const;
 
 export function toNewsDto(n: NewsWithAuthor, actor: Actor): NewsDto {
-  const department = n.author.organisation ?? null;
   return {
     stamp: rowStamp(n),
     id: n.id,
@@ -55,12 +43,12 @@ export function toNewsDto(n: NewsWithAuthor, actor: Actor): NewsDto {
     publishUntil: formatDateOnly(n.publishUntil),
     authorId: n.authorId,
     authorName: n.author.displayName ?? n.author.email,
-    authorOrgNameJa: department?.nameJa ?? null,
-    authorOrgNameEn: department?.nameEn ?? null,
-    groupId: n.groupId,
-    groupNameJa: n.group?.nameJa ?? null,
-    groupNameEn: n.group?.nameEn ?? null,
-    groupOrder: n.group?.displayOrder ?? null,
+    fromOrganisationId: n.fromOrganisationId,
+    fromNameJa: n.fromOrganisation?.nameJa ?? null,
+    fromNameEn: n.fromOrganisation?.nameEn ?? null,
+    toOrganisationId: n.toOrganisationId,
+    toNameJa: n.toOrganisation?.nameJa ?? null,
+    toNameEn: n.toOrganisation?.nameEn ?? null,
     updatedAt: n.updatedAt.toISOString(),
     editable: canEditNews(actor, n.authorId),
   };
@@ -86,4 +74,68 @@ export function publishedNowWhere(now: Date) {
       { OR: [{ publishUntil: null }, { publishUntil: { gte: today } }] },
     ],
   };
+}
+
+/*
+  ── 差出元と宛先（2026-11-11）───────────────────────────
+  お知らせの分類をやめ、組織から選ぶ形にした。
+  差出元 … どこからのお知らせか。ホームの見出しはこれで分ける
+  宛先   … だれ宛てか。その組織とその下の人にだけ見える。null は全員宛て
+  選べるのは、投稿する人の組織とその上の組織だけ。「全員」は NEWS_MANAGE の人だけ
+*/
+
+/** その人の組織から上へたどった組織（自分の組織が先頭）。組織の無い人は空 */
+export function newsOrgChain(actor: Actor): Promise<OrgChainNode[]> {
+  return orgChain(actor.user.organisationId ?? null);
+}
+
+/**
+ * 宛先で見えるお知らせの条件。宛先が全員か、自分の組織かその上の組織のもの。
+ * **最上位に AND を使わない**（一覧の buildWhere の AND と `...` で混ぜるため。CLAUDE.md）
+ */
+export function addressedToWhere(chainIds: string[]) {
+  return {
+    OR: [{ toOrganisationId: null }, { toOrganisationId: { in: chainIds } }],
+  };
+}
+
+/** その人が見てよいお知らせか（1 件を開くとき）。編集できる人には下書きも宛先の外も見える */
+export function canSeeNews(
+  actor: Actor,
+  chainIds: string[],
+  n: Pick<News, "authorId" | "status" | "toOrganisationId">,
+): boolean {
+  if (canEditNews(actor, n.authorId)) return true;
+  if (n.status !== "PUBLISHED") return false;
+  return n.toOrganisationId === null || chainIds.includes(n.toOrganisationId);
+}
+
+/**
+ * 差出元・宛先として選べるかを確かめる。だめなら文言を返す。
+ * 直すときは、いま付いている値はそのまま残してよい（異動したあとや、管理する人が他人の分を直すとき）
+ */
+export function checkNewsOrganisations(
+  actor: Actor,
+  chainIds: string[],
+  v: { fromOrganisationId: string; toOrganisationId: string | null },
+  current: { fromOrganisationId: string | null; toOrganisationId: string | null } | null,
+  m: { orgNotAllowed: string; allNotAllowed: string },
+): string | null {
+  const keep = (id: string | null, now: string | null | undefined) =>
+    current !== null && id === now;
+  if (
+    !chainIds.includes(v.fromOrganisationId) &&
+    !keep(v.fromOrganisationId, current?.fromOrganisationId)
+  ) {
+    return m.orgNotAllowed;
+  }
+  if (v.toOrganisationId === null) {
+    if (!actor.has("NEWS_MANAGE") && !keep(null, current?.toOrganisationId)) return m.allNotAllowed;
+  } else if (
+    !chainIds.includes(v.toOrganisationId) &&
+    !keep(v.toOrganisationId, current?.toOrganisationId)
+  ) {
+    return m.orgNotAllowed;
+  }
+  return null;
 }

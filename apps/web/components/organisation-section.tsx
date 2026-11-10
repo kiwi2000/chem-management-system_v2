@@ -429,7 +429,7 @@ export function OrganisationSection() {
                     checked={form.activeFlag}
                     onChange={(e) => setForm({ ...form, activeFlag: e.target.checked })}
                   />
-                  {m.groups.activeFlag}
+                  {m.organisations.activeFlag}
                 </label>
               </div>
               {/* 上の組織（S31）。自分と自分の下は選べない */}

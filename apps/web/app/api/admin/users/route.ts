@@ -69,15 +69,14 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
-  const { email, displayName, initialPassword, newsGroupId, organisationId, groupIds } =
-    parsed.data;
+  const { email, displayName, initialPassword, organisationId, groupIds } = parsed.data;
   const normalized = normalizeEmail(email);
 
   if (await prisma.user.findUnique({ where: { email: normalized } })) {
     return jsonError(409, "email_taken", m.errors.emailTaken);
   }
 
-  const assigned = await resolveAssignments(newsGroupId ?? null, organisationId, groupIds);
+  const assigned = await resolveAssignments(organisationId, groupIds);
   if (assigned instanceof Response) return assigned;
 
   const created = await prisma.user.create({
@@ -86,7 +85,6 @@ export async function POST(req: Request) {
       displayName: displayName ?? null,
       passwordHash: await hashPassword(initialPassword),
       mustChangePassword: true,
-      newsGroupId: assigned.newsGroupId,
       organisationId: assigned.organisationId,
     },
   });

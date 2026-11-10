@@ -21,6 +21,10 @@ export const newsSchema = (m: Messages) =>
       pinned: z.boolean(),
       publishFrom: dateOnly,
       publishUntil: dateOnly,
+      /** 差出元（どこからのお知らせか）。投稿者の組織かその上 */
+      fromOrganisationId: z.string().trim().min(1, m.validation.required),
+      /** 宛先（だれ宛てか）。null は全員宛て（お知らせを管理できる人だけ選べる） */
+      toOrganisationId: z.string().trim().min(1).nullable(),
     })
     .refine((v) => !v.publishFrom || !v.publishUntil || v.publishFrom <= v.publishUntil, {
       message: m.validation.publishRangeReversed,

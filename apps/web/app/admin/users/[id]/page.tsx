@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
-import { GroupSelect } from "@/components/group-select";
 import { OrganisationSelect } from "@/components/organisation-select";
 import { PermissionGroupChips } from "@/components/permission-group-chips";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
@@ -23,7 +22,6 @@ import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { passwordProblem } from "@/lib/password-check";
 import { usePasswordPolicy } from "@/lib/use-password-policy";
 import type { ApiError, MeDto, UserSummaryDto } from "@/lib/types";
-import { useGroups } from "@/lib/use-groups";
 import { useOrganisations } from "@/lib/use-organisations";
 import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
 import { ancestorIds } from "@/lib/org-tree";
@@ -39,13 +37,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [me, setMe] = useState<MeDto | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [activeFlag, setActiveFlag] = useState(true);
-  const [newsGroupId, setNewsGroupId] = useState("");
   // S31: 組織は 1 つ、権限グループはいくつでも
   const [organisationId, setOrganisationId] = useState("");
   const [groupIds, setGroupIds] = useState<string[]>([]);
   /** 組織を変えたので権限グループを選び直した（保存前に見直してもらう） */
   const [regrouped, setRegrouped] = useState(false);
-  const groups = useGroups();
   const organisations = useOrganisations();
   const groupOptions = usePermissionGroupOptions();
   const [editing, setEditing] = useState(false);
@@ -79,7 +75,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setOrganisationId(u.organisationId ?? "");
     setGroupIds(u.groups.map((g) => g.id));
     setRegrouped(false);
-    setNewsGroupId(u.newsGroupId ?? "");
     if (meRes.ok) setMe((await meRes.json()) as MeDto);
   }, [id, m]);
 
@@ -89,7 +84,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
   const isSelf = me !== null && me.id === id;
   // 投稿できる権限グループに入っているときだけ、お知らせの分類を選べる
-  const canPost = (groupOptions?.groups ?? []).some((g) => g.canPost && groupIds.includes(g.id));
   // 組織とその上の組織に設定した「最初に選ばれる権限グループ」（点線で見分ける）
   const defaultsOf = useCallback(
     (orgId: string) =>
@@ -135,7 +129,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           activeFlag,
           organisationId,
           groupIds,
-          newsGroupId: (canPost && newsGroupId) || null,
         }),
       });
       // ほかの人が先に保存していた。入力はそのまま残し、見てから決めてもらう
@@ -311,23 +304,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 )}
                 <p className="text-muted-foreground text-xs">
                   {isSelf ? m.users.selfNote : m.users.permissionGroupsHint}
-                </p>
-              </div>
-              {/* 投稿できる人にだけ意味があるので、投稿できる権限グループに入っていないときは選ばせない */}
-              <div className="space-y-2">
-                <Label htmlFor="newsGroup">{m.users.newsGroup}</Label>
-                <GroupSelect
-                  id="newsGroup"
-                  kind="NEWS"
-                  groups={groups}
-                  value={newsGroupId}
-                  locale={locale}
-                  noneLabel={m.groups.none}
-                  disabled={!canPost}
-                  onChange={setNewsGroupId}
-                />
-                <p className="text-muted-foreground text-xs">
-                  {canPost ? m.users.newsGroupHint : m.users.newsGroupDisabled}
                 </p>
               </div>
               <label className="flex items-center gap-2 text-sm">

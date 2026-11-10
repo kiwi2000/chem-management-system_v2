@@ -1,4 +1,3 @@
-import { expandPermissions, isPermission } from "@chem/shared";
 import { requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import type { PermissionGroupOptionsDto } from "@/lib/types";
@@ -22,7 +21,6 @@ export async function GET() {
         nameJa: true,
         nameEn: true,
         isSystemAdmin: true,
-        permissions: { select: { permission: true } },
       },
     }),
     prisma.organisationDefaultGroup.findMany({
@@ -41,12 +39,6 @@ export async function GET() {
       nameJa: g.nameJa,
       nameEn: g.nameEn,
       isSystemAdmin: g.isSystemAdmin,
-      // お知らせの分類を選べるか（投稿できるか）
-      canPost:
-        g.isSystemAdmin ||
-        expandPermissions(g.permissions.map((p) => p.permission).filter(isPermission)).includes(
-          "NEWS_POST",
-        ),
     })),
     orgDefaults,
   };
