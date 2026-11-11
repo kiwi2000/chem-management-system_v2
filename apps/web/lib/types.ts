@@ -186,6 +186,11 @@ export interface OrganisationDto {
   activeFlag: boolean;
   /** 上の組織（S31）。null ならいちばん上 */
   parentId: string | null;
+  /**
+   * 木の中の深さ（いちばん上が 0）。一覧を木の順で返したとき（表示順の昇順・絞り込みなし）だけ付く。
+   * 画面はこれで名称を字下げする
+   */
+  depth?: number;
   /** 最初に選ばれる権限グループ（S31）。システム管理グループの人にだけ返す */
   defaultGroupIds?: string[];
   /** 項目名と値。どちらも自由入力 */

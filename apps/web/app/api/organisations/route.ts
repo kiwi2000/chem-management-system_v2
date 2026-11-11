@@ -16,6 +16,7 @@ import {
   validParent,
   defaultGroupsByOrg,
 } from "@/lib/organisation-service";
+import { flattenOrgTree, isOrgTreeOrder } from "@/lib/org-tree";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -37,23 +38,48 @@ export async function GET(req: Request) {
     DEFAULT_STATE,
   );
   const where = { ...buildWhere(ORGANISATION_COLUMNS, state.filters), deletedAt: null };
+  const skip = (state.page - 1) * state.pageSize;
 
-  const [items, total] = await Promise.all([
-    prisma.organisation.findMany({
+  /*
+    最初に開いたとき（表示順の昇順・絞り込みなし）は木の順で返し、深さも付ける（画面が名称を字下げする）。
+    組織は多くても数百なので、全部の上下を読んで並べてからページに切る
+  */
+  let items;
+  let total: number;
+  let depthOf: Map<string, number> | null = null;
+  if (isOrgTreeOrder(state)) {
+    const all = await prisma.organisation.findMany({
       where,
-      orderBy: buildOrderBy(ORGANISATION_COLUMNS, state.sort, { displayOrder: "asc" }),
+      select: { id: true, parentId: true, displayOrder: true, nameJa: true },
+    });
+    const page = flattenOrgTree(all).slice(skip, skip + state.pageSize);
+    depthOf = new Map(page.map((x) => [x.org.id, x.depth]));
+    const rows = await prisma.organisation.findMany({
+      where: { id: { in: page.map((x) => x.org.id) } },
       include: ORG_INCLUDE,
-      skip: (state.page - 1) * state.pageSize,
-      take: state.pageSize,
-    }),
-    prisma.organisation.count({ where }),
-  ]);
+    });
+    const byId = new Map(rows.map((o) => [o.id, o]));
+    items = page.map((x) => byId.get(x.org.id)).filter((o) => o !== undefined);
+    total = all.length;
+  } else {
+    [items, total] = await Promise.all([
+      prisma.organisation.findMany({
+        where,
+        orderBy: buildOrderBy(ORGANISATION_COLUMNS, state.sort, { displayOrder: "asc" }),
+        include: ORG_INCLUDE,
+        skip,
+        take: state.pageSize,
+      }),
+      prisma.organisation.count({ where }),
+    ]);
+  }
 
   // 最初に選ばれる権限グループはシステム設定の一部なので、システム管理グループの人にだけ返す（S31）
   const defaults = actor.isSystemAdmin ? await defaultGroupsByOrg() : null;
   return Response.json({
     items: items.map((o) => ({
       ...toOrganisationDto(o),
+      ...(depthOf ? { depth: depthOf.get(o.id) ?? 0 } : {}),
       ...(defaults ? { defaultGroupIds: defaults.get(o.id) ?? [] } : {}),
     })),
     total,

@@ -46,6 +46,23 @@ export function flattenOrgTree<T extends OrgTreeInput>(orgs: T[]): { org: T; dep
   return out;
 }
 
+/**
+ * 組織の一覧を木の順（上の組織のすぐ下に、その下の組織）で出すか。
+ * 表示順の昇順だけで並べ、絞り込みが無いとき（最初に開いたとき）だけ。
+ * ほかの並べ替え・絞り込みでは親子が離れるので、ふつうの一覧に戻す
+ */
+export function isOrgTreeOrder(state: {
+  sort: { column: string; direction: string }[];
+  filters: Record<string, unknown>;
+}): boolean {
+  return (
+    Object.keys(state.filters).length === 0 &&
+    state.sort.length === 1 &&
+    state.sort[0]!.column === "displayOrder" &&
+    state.sort[0]!.direction === "asc"
+  );
+}
+
 /** その組織から上へたどった id（自分が先頭） */
 export function ancestorIds<T extends OrgTreeInput>(orgs: T[], id: string | null): string[] {
   const byId = new Map(orgs.map((o) => [o.id, o]));

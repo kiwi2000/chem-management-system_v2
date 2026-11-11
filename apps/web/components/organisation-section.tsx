@@ -124,7 +124,21 @@ export function OrganisationSection() {
         header: m.organisations.nameJa,
         kind: "text",
         width: 240,
-        render: (o) => pickName(locale, o.nameJa, o.nameEn),
+        // 木の順で返ってきたとき（最初に開いたとき）は、深さに応じて字下げして親子を見せる
+        render: (o) =>
+          o.depth ? (
+            <span
+              className="inline-flex items-baseline"
+              style={{ paddingLeft: `${(o.depth - 1) * 1.25}em` }}
+            >
+              <span className="text-muted-foreground mr-1" aria-hidden>
+                └
+              </span>
+              {pickName(locale, o.nameJa, o.nameEn)}
+            </span>
+          ) : (
+            pickName(locale, o.nameJa, o.nameEn)
+          ),
       },
       {
         key: "itemCount",
