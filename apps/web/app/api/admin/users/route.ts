@@ -4,6 +4,7 @@ import {
   parseTableState,
   userCreateSchema,
   pickPasswordPolicy,
+  type TableState,
 } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { getAppSettings } from "@/lib/settings";
@@ -18,8 +19,11 @@ import { resolveAssignments, setGroups, toUserSummary, USER_INCLUDE } from "@/li
 
 export const dynamic = "force-dynamic";
 
-/** 既定はメールアドレス順 */
-const DEFAULT_STATE = emptyTableState([{ column: "email", direction: "asc" }]);
+/** 既定はメールアドレス順・有効な人だけ（S31 画面設計）。画面（app/admin/users/page.tsx）の既定と揃える */
+const DEFAULT_STATE: TableState = {
+  ...emptyTableState([{ column: "email", direction: "asc" }]),
+  filters: { activeFlag: { kind: "enum", values: ["true"] } },
+};
 
 /** GET /api/admin/users — ユーザー一覧 */
 export async function GET(req: Request) {

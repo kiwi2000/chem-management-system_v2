@@ -39,6 +39,8 @@ describe("isOrgTreeOrder", () => {
     expect(
       isOrgTreeOrder({ sort: [{ column: "displayOrder", direction: "desc" }], filters: {} }),
     ).toBe(false);
-    expect(isOrgTreeOrder({ sort: asc, filters: { kind: { op: "in" } } })).toBe(false);
+    expect(
+      isOrgTreeOrder({ sort: asc, filters: { kind: { kind: "enum", values: ["COMPANY"] } } }),
+    ).toBe(false);
   });
 });

@@ -16,7 +16,14 @@ import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
 import { flattenOrgTree } from "@/lib/org-tree";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 
-const DEFAULT_STATE: TableState = emptyTableState([{ column: "email", direction: "asc" }]);
+/**
+ * 既定はメールアドレス順・有効な人だけ（S31 画面設計）。
+ * API（app/api/admin/users/route.ts）の既定と揃える。揃えないと、外したつもりの絞り込みが片方だけで効く
+ */
+const DEFAULT_STATE: TableState = {
+  ...emptyTableState([{ column: "email", direction: "asc" }]),
+  filters: { activeFlag: { kind: "enum", values: ["true"] } },
+};
 
 /** 組織が空の人を選ぶ値（サーバーの ORGANISATION_NONE と同じ） */
 const ORGANISATION_NONE = "__none";

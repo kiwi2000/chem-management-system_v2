@@ -236,7 +236,7 @@ export const en: Messages = {
   },
   permissionHints: {
     PRTR_ENTRY:
-      'Only for the organisations set under "Organisation" on this screen. Without one, the screen opens but stays empty',
+      "Only for the organisation the person belongs to (set on the Users screen). Without one, the screen opens but stays empty",
     PRODUCT_VIEW: "Also allows running assessments and reverse lookup",
     PRODUCT_EDIT: "Includes editing compositions: create, change, delete, TSV import",
     REGULATION_EDIT: "Includes metal conversion factors, sources and link versions",
@@ -2810,9 +2810,9 @@ export const en: Messages = {
     moveDown: "Move down",
     noItems: "No items yet",
     empty: "Nothing registered yet",
-    confirmDelete: (n: number) => `Delete the ${n} selected? Members lose their company setting.`,
     duplicateCode: (code: string) => `The code "${code}" is already used`,
-    inUse: (n: number) => `${n} people belong to this organisation. Change their company first`,
+    inUse: (n: number) =>
+      `${n} people belong to this organisation. Change their organisation on the Users screen first`,
   },
 
   score: {
