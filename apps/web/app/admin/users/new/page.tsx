@@ -43,7 +43,6 @@ export default function NewUserPage() {
   // 打っている最中から決まりを見る。送ってから断られるより早く気づける
   const pwProblem = passwordProblem(initialPassword, m, policy);
 
-  // 投稿できる権限グループに入るときだけ、お知らせの分類を選べる
   // 組織とその上の組織に設定した「最初に選ばれる権限グループ」
   const defaultsOf = useCallback(
     (orgId: string) =>

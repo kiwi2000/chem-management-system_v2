@@ -40,7 +40,8 @@ export default function AccessLogPage() {
   const [users, setUsers] = useState<UserSummaryDto[]>([]);
   useEffect(() => {
     void (async () => {
-      const res = await fetch("/api/admin/users?size=200");
+      // 無効にした人の記録も絞り込めるよう、一覧の既定（有効のみ）を外して引く（`f.activeFlag=` が「外した」の印）
+      const res = await fetch("/api/admin/users?size=500&f.activeFlag=");
       if (res.ok) setUsers(((await res.json()) as ListResponse<UserSummaryDto>).items);
     })();
   }, []);

@@ -83,7 +83,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   }, [load]);
 
   const isSelf = me !== null && me.id === id;
-  // 投稿できる権限グループに入っているときだけ、お知らせの分類を選べる
   // 組織とその上の組織に設定した「最初に選ばれる権限グループ」（点線で見分ける）
   const defaultsOf = useCallback(
     (orgId: string) =>

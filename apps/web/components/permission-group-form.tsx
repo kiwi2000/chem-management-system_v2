@@ -119,7 +119,8 @@ export function PermissionGroupForm({ id }: { id: string | null }) {
 
   const load = useCallback(async () => {
     setError(null);
-    const listRes = await fetch("/api/admin/permission-groups?size=1000");
+    // 件数は受け付ける上限（PAGE_SIZE_MAX = 500）まで。超える数を頼むと黙って 15 件に落ちる（2026-11-12 に 1000 で起きた）
+    const listRes = await fetch("/api/admin/permission-groups?size=500");
     if (listRes.ok)
       setAll(((await listRes.json()) as ListResponse<PermissionGroupListItemDto>).items);
     if (isNew) {
@@ -611,7 +612,8 @@ function MembersCard({
 
   useEffect(() => {
     void (async () => {
-      const res = await fetch("/api/admin/users?size=1000");
+      // 足せるのは有効な人だけ（一覧の既定）。件数は受け付ける上限の 500 まで
+      const res = await fetch("/api/admin/users?size=500");
       if (res.ok) setUsers(((await res.json()) as ListResponse<UserSummaryDto>).items);
     })();
   }, []);

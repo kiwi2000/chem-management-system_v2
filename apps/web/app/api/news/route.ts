@@ -18,7 +18,7 @@ import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
 
-/** ホームに出す件数の上限。分類ごとに見出しを付けるので、5件では足りない */
+/** ホームに出す件数の上限。差出元ごとに見出しを付けるので、5件では足りない */
 const HOME_LIMIT = 30;
 
 /** 既定は重要なものを先に、次に掲載開始日の新しい順 */
