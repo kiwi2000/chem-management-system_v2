@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { countryOf } from "@/lib/ip-country";
+import { dayInJapan, hourInJapan } from "@/lib/judgement-date";
 import { SIGNIN_ACTIONS, TAKEOUT_ACTIONS } from "@/lib/access-log-shared";
 import type { AccessRiskKind, AccessStatsDto } from "@/lib/types";
 
@@ -13,7 +14,7 @@ const MAX_DAYS = 365;
 /** 「見慣れない場所」の基準。ここから外れたログイン成功を拾う */
 const HOME_PLACES = ["JP", "local"];
 
-/** 「夜」の範囲。22時から翌6時まで */
+/** 「夜」の範囲。22時から翌6時まで（日本の時刻） */
 const NIGHT_FROM = 22;
 const NIGHT_TO = 6;
 
@@ -77,7 +78,9 @@ export async function GET(req: Request) {
       reason?: string | null;
       lineCount?: number;
     };
-    const hour = l.at.getHours();
+    // 時間帯も日も日本の時刻で数える（2026-11-12）。サーバーの時計の地域（Docker・Railway は世界標準時）に任せると、
+    // 時間帯の棒と「夜間のログイン」が 9 時間ずれ、「1 日に開いた件数」の区切りが日本の朝 9 時になる
+    const hour = hourInJapan(l.at);
     const slot = byHour[hour] as { hour: number; login: number; failed: number; view: number };
     const who = (l.actorId ? nameOf.get(l.actorId) : null) ?? d.email ?? "（不明）";
 
@@ -105,7 +108,7 @@ export async function GET(req: Request) {
       slot.view += 1;
       const cur = viewsByUser.get(who) ?? { count: 0, lines: 0 };
       viewsByUser.set(who, { count: cur.count + 1, lines: cur.lines + (d.lineCount ?? 0) });
-      bump(viewsByUserDay, `${who}\t${l.at.toISOString().slice(0, 10)}`);
+      bump(viewsByUserDay, `${who}\t${dayInJapan(l.at)}`);
     }
   }
 

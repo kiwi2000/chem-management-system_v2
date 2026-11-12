@@ -140,7 +140,8 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
   見つけ方: `api/<名前>[?\`"]` を grep する。全部が要る所は、既定を外す印（`f.<列>=`）を付けて呼ぶ
 - **「今日」を日付だけで比べるときは、日本の日付（`lib/judgement-date.ts` の `todayInJapan()`。作成日時などの時刻から日付を作るときは `dayInJapan()`）で決める。**`new Date().toISOString().slice(0, 10)` は世界標準時の日付で、日本では朝 9 時まで前の日になる。
   お知らせの掲載期間がこれで 9 時間ずれていた（開始日の朝 9 時まで出ず、終了日の翌朝 9 時まで出続けた。2026-11-12 に直した）。
-  見つけ方: `new Date().toISOString().slice(0, 10)` と `now.toISOString().slice(0, 10)` を grep する（DB の日付だけの列を文字にする `列.toISOString().slice(0, 10)` は正しい）。試験は世界標準時の 15 時台（日本の翌日）で確かめる
+  見つけ方: `new Date().toISOString().slice(0, 10)` と `now.toISOString().slice(0, 10)` を grep する（DB の日付だけの列を文字にする `列.toISOString().slice(0, 10)` は正しい）。試験は世界標準時の 15 時台（日本の翌日）で確かめる。
+  **サーバー側で `getHours()` など時計の地域に任せる読み方も使わない**（`hourInJapan()`。Docker・Railway は世界標準時で動き、アクセス記録の集計の時間帯と「夜間」が 9 時間ずれていた。開発の PC は日本の時計で気づけない）。見つけ方: `app/api` と `lib` で `getHours()|toLocale` を grep する
 
 ## 5. 環境（Windows 11 + WSL2）— 過去に詰まった点
 

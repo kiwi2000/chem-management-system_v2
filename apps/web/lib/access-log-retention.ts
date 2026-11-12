@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { SIGNIN_ACTIONS, TAKEOUT_ACTIONS } from "@/lib/access-log-shared";
 import { writeAudit } from "@/lib/audit";
 import { ensureWritableDir, resolveOutputDir } from "@/lib/doc-files";
+import { dayInJapan, stampInJapan } from "@/lib/judgement-date";
 import { getAppSettings } from "@/lib/settings";
 
 /**
@@ -52,14 +53,16 @@ export interface RetentionResult {
   file: string | null;
 }
 
-/** ファイル名: access-log_<最初の日>_<最後の日>_<走った時刻>.tsv */
+/**
+ * ファイル名: access-log_<最初の日>_<最後の日>_<走った時刻>.tsv
+ * **日付も時刻も日本の時刻**（2026-11-12。世界標準時で付けていて、日本の 0〜9 時の記録が前の日になっていた）。
+ * 中の `at` の列は、今までどおり世界標準時（末尾に Z の付く形。読み違えない）
+ */
 export const ARCHIVE_FILE_PATTERN =
   /^access-log_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_\d{8}T\d{6}\.tsv$/;
 
 export function archiveFileName(from: Date, to: Date, ranAt: Date): string {
-  const day = (d: Date) => d.toISOString().slice(0, 10);
-  const stamp = ranAt.toISOString().replace(/[-:]/g, "").slice(0, 15);
-  return `access-log_${day(from)}_${day(to)}_${stamp}.tsv`;
+  return `access-log_${dayInJapan(from)}_${dayInJapan(to)}_${stampInJapan(ranAt)}.tsv`;
 }
 
 /** TSV の 1 マス。タブ・改行は空白にする（マスを壊さない） */

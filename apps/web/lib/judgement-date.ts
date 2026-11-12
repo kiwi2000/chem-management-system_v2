@@ -25,6 +25,30 @@ export function dayInJapan(at: Date): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo" }).format(at);
 }
 
+/** 日本は世界標準時より 9 時間早い（夏時間は無い） */
+const JAPAN_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/**
+ * 日本の時刻を、世界標準時の読み方（getUTC…・toISOString）でそのまま読める値にずらす。
+ * **ずらした値は「いつ」を表さない。**時・日付の数字を取り出すためだけに使う（何万件も数える集計で、1 件ずつ整形の道具を作らないため）
+ */
+function shiftedToJapan(at: Date): Date {
+  return new Date(at.getTime() + JAPAN_OFFSET_MS);
+}
+
+/**
+ * 日本の時刻の「時」（0〜23）。`getHours()` はサーバーの時計の地域で決まるので、
+ * 世界標準時で動くサーバー（Docker・Railway）では 9 時間ずれる
+ */
+export function hourInJapan(at: Date): number {
+  return shiftedToJapan(at).getUTCHours();
+}
+
+/** 日本の日時を、ファイル名に使える形（YYYYMMDDTHHMMSS）にする */
+export function stampInJapan(at: Date): string {
+  return shiftedToJapan(at).toISOString().replace(/[-:]/g, "").slice(0, 15);
+}
+
 /** YYYY-MM-DD の形で、実在する日付か */
 export function isDay(s: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;

@@ -11,7 +11,8 @@ describe("アクセス記録の書き出し", () => {
       new Date("2026-03-31T23:59:59Z"),
       new Date("2026-10-17T03:04:05Z"),
     );
-    expect(name).toBe("access-log_2026-01-05_2026-03-31_20261017T030405.tsv");
+    // 日付も時刻も日本の時刻。世界標準時 3/31 23:59 は日本の 4/1、3:04 は日本の 12:04
+    expect(name).toBe("access-log_2026-01-05_2026-04-01_20261017T120405.tsv");
     expect(ARCHIVE_FILE_PATTERN.test(name)).toBe(true);
     expect(ARCHIVE_FILE_PATTERN.test("../etc/passwd")).toBe(false);
   });
