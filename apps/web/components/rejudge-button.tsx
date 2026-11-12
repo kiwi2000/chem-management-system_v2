@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n-client";
+import { todayInJapan } from "@/lib/judgement-date";
 import { rejudgeProduct, useJudgementControls } from "@/lib/judgement-controls";
 
 /**
@@ -28,7 +29,7 @@ export function RejudgeButton({
   const controls = useJudgementControls();
   const [open, setOpen] = useState(false);
   const [asOf, setAsOf] = useState("");
-  const fallback = today ?? new Date().toISOString().slice(0, 10);
+  const fallback = today ?? todayInJapan();
 
   if (!open) {
     return (

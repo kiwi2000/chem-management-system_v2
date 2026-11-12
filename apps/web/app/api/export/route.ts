@@ -3,6 +3,7 @@ import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { getServerMessages } from "@/lib/i18n";
+import { todayInJapan } from "@/lib/judgement-date";
 import {
   exportDataSet,
   exportProducts,
@@ -33,7 +34,8 @@ export async function GET(req: Request) {
   if (!parsed.success)
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   const q = parsed.data;
-  const stamp = new Date().toISOString().slice(0, 10);
+  // ファイル名の日付は日本の日付（世界標準時だと、朝 9 時まで前の日になる）
+  const stamp = todayInJapan();
 
   let body: string | Buffer;
   let fileName: string;

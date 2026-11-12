@@ -14,7 +14,15 @@ export type Effective = "IN_FORCE" | "NOT_YET" | "EXPIRED";
  * サーバーの時計が UTC でも、施行日の朝に「施行前」と出さないため
  */
 export function todayInJapan(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo" }).format(now);
+  return dayInJapan(now);
+}
+
+/**
+ * 時刻を持つ値（作成日時など）を、日本の日付（YYYY-MM-DD）にする。
+ * `toISOString().slice(0, 10)` は世界標準時の日付で、日本の 0〜9 時のものが前の日になる
+ */
+export function dayInJapan(at: Date): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo" }).format(at);
 }
 
 /** YYYY-MM-DD の形で、実在する日付か */

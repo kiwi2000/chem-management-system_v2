@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
+import { todayInJapan } from "@/lib/judgement-date";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, LinkSetVersionDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -204,8 +205,8 @@ export function LinkVersionSection({
     setError(null);
     setCode("");
     setOriginal("");
-    // 基準日の既定は今日。取り込むデータの時点に合わせて直してもらう
-    const today = new Date().toISOString().slice(0, 10);
+    // 基準日の既定は今日（日本の日付）。取り込むデータの時点に合わせて直してもらう
+    const today = todayInJapan();
     setAsOf(today);
     setOriginalAsOf(today);
     setEditingId(NEW_ID);

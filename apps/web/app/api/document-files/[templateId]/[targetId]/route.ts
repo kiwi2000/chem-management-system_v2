@@ -13,6 +13,7 @@ import { collectFor } from "@/lib/doc-data";
 import { fillTemplateFile, inspectTemplateFile, TEMPLATE_EXT } from "@/lib/doc-fill";
 import { fileResponse } from "@/lib/doc-fill/response";
 import { getServerMessages } from "@/lib/i18n";
+import { todayInJapan } from "@/lib/judgement-date";
 import { orgItemLabels } from "@/lib/organisation-service";
 
 export const dynamic = "force-dynamic";
@@ -102,7 +103,8 @@ export async function GET(
         (t.startsWith("{judgement.") && data.judgementWithBasis),
     );
 
-  const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  // ファイル名の日付は日本の日付（世界標準時だと、朝 9 時まで前の日になる）
+  const day = todayInJapan().replace(/-/g, "");
   const name = `${row.code}_${data.code}_${day}${TEMPLATE_EXT[row.kind]}`;
 
   await Promise.all([

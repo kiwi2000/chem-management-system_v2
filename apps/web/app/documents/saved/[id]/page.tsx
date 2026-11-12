@@ -4,6 +4,7 @@ import { SavedFileNote } from "@/components/doc-editor/saved-file-note";
 import { ForbiddenNotice } from "@/components/forbidden-notice";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { dayInJapan } from "@/lib/judgement-date";
 import { canAccessDocument, canOpenDocument } from "@/lib/doc-access";
 import type { RenderedDocument } from "@/lib/doc-render";
 
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     select: { targetCode: true, generatedAt: true, template: { select: { code: true } } },
   });
   if (!row) return {};
-  const day = row.generatedAt.toISOString().slice(0, 10).replace(/-/g, "");
+  const day = dayInJapan(row.generatedAt).replace(/-/g, "");
   return { title: [row.template.code, row.targetCode, day].join("_") };
 }
 

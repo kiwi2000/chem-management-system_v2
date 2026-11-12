@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getActor } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { todayInJapan } from "@/lib/judgement-date";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { TemplateFileDownload } from "@/components/doc-editor/template-file-download";
 
@@ -34,7 +35,7 @@ export async function generateMetadata({
     prisma.organisation.findFirst({ where: { id: targetId }, select: { code: true } }),
     prisma.regulationCategory.findFirst({ where: { id: targetId }, select: { code: true } }),
   ]);
-  const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const day = todayInJapan().replace(/-/g, "");
   const target = product?.code ?? substance?.code ?? organisation?.code ?? category?.code ?? "";
   return { title: [template?.code, target, day].filter(Boolean).join("_") };
 }

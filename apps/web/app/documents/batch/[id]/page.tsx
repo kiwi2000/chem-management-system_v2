@@ -4,6 +4,7 @@ import { PrintOrientation } from "@/components/doc-editor/print-orientation";
 import { getActor } from "@/lib/authz";
 import { DOC_ACCESS_SELECT, openableDocuments } from "@/lib/doc-access";
 import { prisma } from "@/lib/db";
+import { dayInJapan } from "@/lib/judgement-date";
 import type { RenderedDocument } from "@/lib/doc-render";
 
 /**
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     select: { createdAt: true, template: { select: { code: true } } },
   });
   if (!job) return {};
-  const day = job.createdAt.toISOString().slice(0, 10).replace(/-/g, "");
+  const day = dayInJapan(job.createdAt).replace(/-/g, "");
   return { title: [job.template.code, "batch", day].join("_") };
 }
 
