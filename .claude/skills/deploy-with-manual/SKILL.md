@@ -277,5 +277,15 @@ ssh -i ~/.ssh/chem-eval -o BatchMode=yes -o ConnectTimeout=10 Administrator@192.
   （`node_modules/.bin/tsx` はシェルの薄皮なので `node` から直接は動かない）。
   終わったらトンネルを閉じ、一時ファイルを消す。
 
+  - **出力には DB の合言葉の行（`Password:` と `URL:`）がある。画面に出さない。**出力は一時フォルダーのファイルへ受け、
+    読むのは `Host` `Port` `Database` の行だけにする（2026-11-12、`head` で先頭を出して合言葉を表示してしまった）
+  - トンネルを閉じるときは、`railway.exe` だけでなく、入口を持っている `ssh.exe` も止める
+    （`Get-NetTCPConnection -LocalPort <ポート> -State Listen` の OwningProcess。`railway` を止めても残る）
+  - **表を作り替える移行を出す前は、控えを取って予行する**（2026-11-12 S31 でそうした）。
+    `docker run --rm -e PGPASSWORD postgres:18-alpine pg_dump -h host.docker.internal -p <ポート> -U postgres -d railway -Fc --no-owner > temp/<名前>.dump`
+    （3 GB 弱の DB で 20 分ほど。裏で流す）。控えを使い捨ての `postgres:18-alpine` のコンテナに `pg_restore` で戻し、
+    `DATABASE_URL=<そのコンテナ> npx prisma migrate deploy` を流して、結果を数で確かめる。
+    **トンネルは予行の前に閉じる**（向き先を間違えて本番に流さないため）。`prisma migrate status` の `Datasource` の行で向き先を見てから流す
+
   **本番に書き込む前に、必ず現状を読んで確かめる。**とくに、投入スクリプトが
   消す対象（`SB-` / `MT-` / `PR-` で始まるコード）に既存データが無いこと
