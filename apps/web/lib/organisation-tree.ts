@@ -16,6 +16,8 @@ export interface OrgChainNode {
   nameJa: string;
   nameEn: string | null;
   parentId: string | null;
+  /** 無効にした組織か。たどるのは無効でも止めない（使う側が見て決める） */
+  activeFlag: boolean;
 }
 
 const NODE_SELECT = {
@@ -25,6 +27,7 @@ const NODE_SELECT = {
   nameJa: true,
   nameEn: true,
   parentId: true,
+  activeFlag: true,
 } as const;
 
 /**

@@ -8,6 +8,8 @@ import {
   addressedToWhere,
   checkNewsOrganisations,
   NEWS_INCLUDE,
+  newsChoices,
+  newsOrgAudit,
   newsOrgChain,
   parseDateOnly,
   publishedNowWhere,
@@ -115,10 +117,12 @@ export async function POST(req: Request) {
     return jsonError(400, "validation_error", m.errors.validation, parsed.error.flatten());
   }
   const v = parsed.data;
-  // 差出元・宛先は、自分の組織かその上から。「全員」は管理する人だけ
-  const chainIds = (await newsOrgChain(actor)).map((o) => o.id);
-  if (chainIds.length === 0) return jsonError(400, "no_organisation", m.news.noOrganisation);
-  const bad = checkNewsOrganisations(actor, chainIds, v, null, m.news);
+  // 差出元・宛先は、自分の組織かその上から（無効にした組織は選べない）。「全員」は管理する人だけ。
+  // 組織の無い人は投稿できない（2026-11-12 利用者が確認。画面からは発生せず、最初の管理者と S31 より前の人だけ）
+  const chain = await newsOrgChain(actor);
+  if (chain.length === 0) return jsonError(400, "no_organisation", m.news.noOrganisation);
+  const choiceIds = newsChoices(chain).map((o) => o.id);
+  const bad = checkNewsOrganisations(actor, choiceIds, v, null, m.news);
   if (bad) return jsonError(400, "validation_error", bad);
 
   const created = await prisma.news.create({
@@ -142,7 +146,8 @@ export async function POST(req: Request) {
     entityId: created.id,
     action: "create",
     actorId: actor.user.id,
-    diff: { titleJa: v.titleJa, status: v.status },
+    // だれ宛てに出したかも残す（宛先で見える人が決まるため）
+    diff: { titleJa: v.titleJa, status: v.status, ...(await newsOrgAudit(v)) },
   });
   return Response.json({ id: created.id }, { status: 201 });
 }

@@ -1,5 +1,7 @@
 import type { News, Organisation, User } from "@prisma/client";
 import type { Actor } from "@/lib/authz";
+import { prisma } from "@/lib/db";
+import { todayInJapan } from "@/lib/judgement-date";
 import { orgChain, type OrgChainNode } from "@/lib/organisation-tree";
 import { rowStamp } from "@/lib/edit-stamp";
 import type { NewsDto } from "@/lib/types";
@@ -64,9 +66,11 @@ export function canEditNews(actor: Actor, authorId: string): boolean {
  * ホームに出す「今掲載中」の条件。
  * 公開済みで、掲載開始日が来ていて、掲載終了日を過ぎていないもの。
  * 掲載終了日は「その日いっぱい」を含む。
+ * **今日は日本の日付で決める**（2026-11-12。世界標準時の日付で比べていて、開始日の朝 9 時まで出ず、
+ * 終了日の翌朝 9 時まで出続けていた）。掲載日の列は、選んだ日付の UTC 0 時で入っている
  */
 export function publishedNowWhere(now: Date) {
-  const today = new Date(`${now.toISOString().slice(0, 10)}T00:00:00.000Z`);
+  const today = new Date(`${todayInJapan(now)}T00:00:00.000Z`);
   return {
     status: "PUBLISHED" as const,
     AND: [
@@ -87,6 +91,36 @@ export function publishedNowWhere(now: Date) {
 /** その人の組織から上へたどった組織（自分の組織が先頭）。組織の無い人は空 */
 export function newsOrgChain(actor: Actor): Promise<OrgChainNode[]> {
   return orgChain(actor.user.organisationId ?? null);
+}
+
+/**
+ * 差出元・宛先に新しく選べる組織（2026-11-12）。無効にした組織は選べない（ほかの画面の組織選びと同じ）。
+ * **見える範囲には使わない。**無効にした組織の人にも、その組織宛て・上の組織宛てのお知らせは今までどおり見える
+ */
+export function newsChoices<T extends { activeFlag: boolean }>(chain: T[]): T[] {
+  return chain.filter((o) => o.activeFlag);
+}
+
+/**
+ * 監査の記録に残す差出元・宛先（2026-11-12）。id だけでは読めないので名前も残す。
+ * 宛先の「全員」は、空ではなく印（ALL）で残す。見える範囲がいちばん広がる変更なので、はっきり分かるように
+ */
+export async function newsOrgAudit(v: {
+  fromOrganisationId: string | null;
+  toOrganisationId: string | null;
+}) {
+  const ids = [v.fromOrganisationId, v.toOrganisationId].filter((x): x is string => x !== null);
+  const rows = await prisma.organisation.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, nameJa: true },
+  });
+  const name = (id: string | null) => rows.find((r) => r.id === id)?.nameJa ?? null;
+  return {
+    fromOrganisationId: v.fromOrganisationId,
+    fromOrganisation: name(v.fromOrganisationId),
+    toOrganisationId: v.toOrganisationId,
+    toOrganisation: v.toOrganisationId === null ? "ALL" : name(v.toOrganisationId),
+  };
 }
 
 /**
@@ -112,11 +146,12 @@ export function canSeeNews(
 
 /**
  * 差出元・宛先として選べるかを確かめる。だめなら文言を返す。
- * 直すときは、いま付いている値はそのまま残してよい（異動したあとや、管理する人が他人の分を直すとき）
+ * `choiceIds` は選べる組織（自分の組織とその上のうち、無効でないもの。`newsChoices`）。
+ * 直すときは、いま付いている値はそのまま残してよい（異動したあと・管理する人が他人の分を直すとき・あとで無効にした組織）
  */
 export function checkNewsOrganisations(
   actor: Actor,
-  chainIds: string[],
+  choiceIds: string[],
   v: { fromOrganisationId: string; toOrganisationId: string | null },
   current: { fromOrganisationId: string | null; toOrganisationId: string | null } | null,
   m: { orgNotAllowed: string; allNotAllowed: string },
@@ -124,7 +159,7 @@ export function checkNewsOrganisations(
   const keep = (id: string | null, now: string | null | undefined) =>
     current !== null && id === now;
   if (
-    !chainIds.includes(v.fromOrganisationId) &&
+    !choiceIds.includes(v.fromOrganisationId) &&
     !keep(v.fromOrganisationId, current?.fromOrganisationId)
   ) {
     return m.orgNotAllowed;
@@ -132,7 +167,7 @@ export function checkNewsOrganisations(
   if (v.toOrganisationId === null) {
     if (!actor.has("NEWS_MANAGE") && !keep(null, current?.toOrganisationId)) return m.allNotAllowed;
   } else if (
-    !chainIds.includes(v.toOrganisationId) &&
+    !choiceIds.includes(v.toOrganisationId) &&
     !keep(v.toOrganisationId, current?.toOrganisationId)
   ) {
     return m.orgNotAllowed;

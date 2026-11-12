@@ -48,6 +48,24 @@ export default function NewsListPage() {
           </>
         ),
       },
+      // 差出元・宛先（2026-11-12）。管理する人が、だれ宛てのお知らせかを一覧で見分けられるように
+      {
+        key: "fromOrganisation",
+        header: m.news.from,
+        kind: "text",
+        width: 180,
+        render: (n) =>
+          n.fromOrganisationId ? pickName(locale, n.fromNameJa ?? "", n.fromNameEn) : "—",
+      },
+      {
+        key: "toOrganisation",
+        header: m.news.to,
+        kind: "text",
+        width: 180,
+        // 宛先の無いものは全員宛て（絞り込みでは「空白」）
+        render: (n) =>
+          n.toOrganisationId ? pickName(locale, n.toNameJa ?? "", n.toNameEn) : m.news.toAll,
+      },
       {
         key: "status",
         header: m.news.status,

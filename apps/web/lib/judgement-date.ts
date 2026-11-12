@@ -13,8 +13,8 @@ export type Effective = "IN_FORCE" | "NOT_YET" | "EXPIRED";
  * 今日の日付（YYYY-MM-DD）。**日本の日付で決める。**
  * サーバーの時計が UTC でも、施行日の朝に「施行前」と出さないため
  */
-export function todayInJapan(): string {
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo" }).format(new Date());
+export function todayInJapan(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo" }).format(now);
 }
 
 /** YYYY-MM-DD の形で、実在する日付か */

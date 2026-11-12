@@ -9,6 +9,8 @@ import {
   canSeeNews,
   checkNewsOrganisations,
   NEWS_INCLUDE,
+  newsChoices,
+  newsOrgAudit,
   newsOrgChain,
   parseDateOnly,
   toNewsDto,
@@ -65,9 +67,9 @@ export async function PUT(req: Request, { params }: Ctx) {
   // 楽観的ロックの印。無ければ 400
   const lock = parseEditStamp(body, m);
   if (lock instanceof Response) return lock;
-  // 差出元・宛先は、自分の組織かその上から。いま付いている値はそのまま残してよい
-  const chainIds = (await newsOrgChain(actor)).map((o) => o.id);
-  const bad = checkNewsOrganisations(actor, chainIds, v, item, m.news);
+  // 差出元・宛先は、自分の組織かその上から（無効にした組織は選べない）。いま付いている値はそのまま残してよい
+  const choiceIds = newsChoices(await newsOrgChain(actor)).map((o) => o.id);
+  const bad = checkNewsOrganisations(actor, choiceIds, v, item, m.news);
   if (bad) return jsonError(400, "validation_error", bad);
 
   // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
@@ -94,12 +96,21 @@ export async function PUT(req: Request, { params }: Ctx) {
     );
   }
 
+  // 差出元・宛先も残す。変えたときは、変える前も残す（宛先を変えると見える人が変わるため）
+  const orgChanged =
+    item.fromOrganisationId !== v.fromOrganisationId ||
+    item.toOrganisationId !== v.toOrganisationId;
   await writeAudit({
     entity: "news",
     entityId: id,
     action: "update",
     actorId: actor.user.id,
-    diff: { titleJa: v.titleJa, status: v.status },
+    diff: {
+      titleJa: v.titleJa,
+      status: v.status,
+      ...(await newsOrgAudit(v)),
+      ...(orgChanged ? { before: await newsOrgAudit(item) } : {}),
+    },
   });
   const after = await prisma.news.findUniqueOrThrow({ where: { id }, select: { updatedAt: true } });
   return Response.json({ ok: true, stamp: rowStamp(after) });

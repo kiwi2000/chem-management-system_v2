@@ -6,7 +6,15 @@ vi.mock("@/lib/db", () => ({ prisma: {} }));
 import type { Actor } from "@/lib/authz";
 import { visibilityWhere as productVisibility } from "@/lib/product-service";
 import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
-import { addressedToWhere, canSeeNews, checkNewsOrganisations } from "@/lib/news-service";
+import { NEWS_COLUMNS } from "@/lib/list-columns";
+import {
+  addressedToWhere,
+  canSeeNews,
+  checkNewsOrganisations,
+  newsChoices,
+  publishedNowWhere,
+} from "@/lib/news-service";
+import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 function actor(approve: boolean): Actor {
   const marks = {
@@ -103,5 +111,67 @@ describe("お知らせの宛先と差出元（2026-11-11）", () => {
     expect(
       checkNewsOrganisations(post(false), chain, { ...v, toOrganisationId: "sales" }, current, msg),
     ).toBe("org");
+  });
+
+  it("無効にした組織は新しく選べない。いま付いているものは残せる（2026-11-12）", () => {
+    // 品質保証部（qa）を無効にした。選べるのは全社（co）だけ
+    const orgs = [
+      { id: "qa", activeFlag: false },
+      { id: "co", activeFlag: true },
+    ];
+    const choices = newsChoices(orgs).map((o) => o.id);
+    expect(choices).toEqual(["co"]);
+    const v = { fromOrganisationId: "qa", toOrganisationId: "co" };
+    expect(checkNewsOrganisations(post(false), choices, v, null, msg)).toBe("org");
+    expect(
+      checkNewsOrganisations(post(false), choices, { ...v, fromOrganisationId: "co" }, null, msg),
+    ).toBeNull();
+    // 無効にする前に出したお知らせを直すときは、そのまま残せる
+    expect(checkNewsOrganisations(post(false), choices, v, v, msg)).toBeNull();
+    // 見える範囲は無効でも変えない（たどった組織を全部使う）
+    expect(addressedToWhere(orgs.map((o) => o.id))).toEqual({
+      OR: [{ toOrganisationId: null }, { toOrganisationId: { in: ["qa", "co"] } }],
+    });
+  });
+
+  it("掲載中かどうかは日本の日付で決める（2026-11-12）", () => {
+    // 世界標準時では 11/12 の 15:30 ＝ 日本では 11/13 の 0:30
+    const day = (now: string) => {
+      const w = publishedNowWhere(new Date(now)) as unknown as {
+        AND: { OR: { publishFrom?: { lte: Date } | null }[] }[];
+      };
+      return w.AND[0]!.OR[1]!.publishFrom!.lte.toISOString();
+    };
+    expect(day("2026-11-12T15:30:00Z")).toBe("2026-11-13T00:00:00.000Z");
+    expect(day("2026-11-12T14:59:59Z")).toBe("2026-11-12T00:00:00.000Z");
+  });
+
+  it("一覧の差出元・宛先の絞り込み。「空白」は組織の無いもの（宛先なら全員宛て）", () => {
+    expect(
+      buildWhere(NEWS_COLUMNS, { toOrganisation: { kind: "text", op: "empty", value: "" } }),
+    ).toEqual({ AND: [{ toOrganisationId: null }] });
+    expect(
+      buildWhere(NEWS_COLUMNS, { fromOrganisation: { kind: "text", op: "notEmpty", value: "" } }),
+    ).toEqual({ AND: [{ fromOrganisationId: { not: null } }] });
+    // 名前は日本語・英語のどちらかに当たればよい。条件は AND の中に入る（見える範囲の OR を上書きしない）
+    expect(
+      buildWhere(NEWS_COLUMNS, { toOrganisation: { kind: "text", op: "contains", value: "品質" } }),
+    ).toEqual({
+      AND: [
+        {
+          toOrganisation: {
+            OR: [
+              { nameJa: { contains: "品質", mode: "insensitive" } },
+              { nameEn: { contains: "品質", mode: "insensitive" } },
+            ],
+          },
+        },
+      ],
+    });
+    expect(
+      buildOrderBy(NEWS_COLUMNS, [{ column: "toOrganisation", direction: "asc" }], {
+        updatedAt: "desc",
+      }),
+    ).toEqual([{ toOrganisation: { nameJa: "asc" } }, { updatedAt: "desc" }]);
   });
 });

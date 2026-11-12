@@ -2361,7 +2361,8 @@ export const en: Messages = {
     fromOther: "Other announcements",
     noOrganisation:
       "You cannot post announcements because you have no organisation. Ask a system administrator to set one",
-    orgNotAllowed: "This organisation cannot be chosen. Choose your organisation or one above it",
+    orgNotAllowed:
+      "This organisation cannot be chosen. Choose your organisation or one above it (inactive organisations cannot be chosen)",
     allNotAllowed: "Only people who can edit and delete others' announcements can address everyone",
   },
 

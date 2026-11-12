@@ -917,8 +917,39 @@ export const APPROVAL_EVENT_COLUMNS: QueryColumn[] = [
   { key: "comment", kind: "text", field: "comment", caseInsensitive: true, sortable: false },
 ];
 
+/**
+ * お知らせの差出元・宛先（2026-11-12）。組織の名前で絞る。画面には日本語か英語のどちらかを出すので両方を見る。
+ * 「空白」は組織の付いていないもの（差出元なら「その他」、**宛先なら全員宛て**）。
+ * 選択肢から選ぶ形にしないのは、全部の組織の名前（ほかの取引先も）を、お知らせを読むだけの人に見せないため
+ */
+function newsOrgCondition(
+  relation: "fromOrganisation" | "toOrganisation",
+  f: ColumnFilter,
+): Record<string, unknown> | null {
+  if (f.kind !== "text") return null;
+  if (f.op === "empty") return { [`${relation}Id`]: null };
+  if (f.op === "notEmpty") return { [`${relation}Id`]: { not: null } };
+  const names = anyOfTextCondition(["nameJa", "nameEn"], f);
+  return names ? { [relation]: names } : null;
+}
+
 export const NEWS_COLUMNS: QueryColumn[] = [
   { key: "titleJa", kind: "text", field: "titleJa", caseInsensitive: true },
+  // 並べ替えは組織の名称（日本語）で
+  {
+    key: "fromOrganisation",
+    kind: "text",
+    field: "nameJa",
+    nested: "fromOrganisation",
+    custom: (f) => newsOrgCondition("fromOrganisation", f),
+  },
+  {
+    key: "toOrganisation",
+    kind: "text",
+    field: "nameJa",
+    nested: "toOrganisation",
+    custom: (f) => newsOrgCondition("toOrganisation", f),
+  },
   { key: "status", kind: "enum", field: "status" },
   { key: "pinned", kind: "enum", field: "pinned", booleanEnum: true },
   { key: "publishFrom", kind: "date", field: "publishFrom" },
