@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { dayInJapan, hourInJapan, stampInJapan, todayInJapan } from "./judgement-date";
+import {
+  dateTimeTextInJapan,
+  dayInJapan,
+  hourInJapan,
+  stampInJapan,
+  todayInJapan,
+} from "./judgement-date";
 
 /**
  * 「今日」と、時刻から作る日付は日本の日付で決める（2026-11-12）。
@@ -23,6 +29,14 @@ describe("日本の日付", () => {
     expect(hourInJapan(new Date("2026-11-12T15:00:00Z"))).toBe(0);
     expect(hourInJapan(new Date("2026-11-12T20:59:59Z"))).toBe(5);
     expect(stampInJapan(new Date("2026-12-31T15:04:05Z"))).toBe("20270101T000405");
+  });
+
+  it("帳票に印字する日時も日本の時刻", () => {
+    // 環境によって空白の種類が違うので、空白は 1 つに揃えて比べる
+    const text = (locale: string) =>
+      dateTimeTextInJapan(new Date("2026-11-12T15:04:05Z"), locale).replace(/\s+/g, " ");
+    expect(text("ja")).toBe("2026/11/13 0:04:05");
+    expect(text("en")).toBe("11/13/2026, 12:04:05 AM");
   });
 
   it("今日は、渡した時刻の日本の日付", () => {

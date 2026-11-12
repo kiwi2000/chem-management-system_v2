@@ -2,7 +2,6 @@ import { requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { countryOf } from "@/lib/ip-country";
 import { dayInJapan, hourInJapan } from "@/lib/judgement-date";
-import { SIGNIN_ACTIONS, TAKEOUT_ACTIONS } from "@/lib/access-log-shared";
 import type { AccessRiskKind, AccessStatsDto } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +22,14 @@ const REPEATED_FAILURE = 5;
 
 /** 1日にこれ以上の組成を開いていたら、まとめて持ち出しているとみなす */
 const BULK_VIEW = 30;
+
+/**
+ * 数える記録。ログイン・ログイン失敗と、**組成を見た記録（view）だけ**。
+ * 2026-11-12 まで、アクセス記録に出る種類を全部読み、ログインと失敗以外を「組成を見た」に数えていた。
+ * あとから足したログアウト・2 段階認証やパスキーの設定・出力・取り込みまで「組成を見た」に入り、
+ * 件数も「よく見ている人」も「1 日に多くの組成」の警告も水増しされていた
+ */
+const COUNTED_ACTIONS = ["login", "login_failed", "view"];
 
 /** 上位いくつまで出すか。並べすぎると、多いものが埋もれる */
 const TOP_N = 5;
@@ -45,7 +52,7 @@ export async function GET(req: Request) {
   const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
   const logs = await prisma.auditLog.findMany({
-    where: { at: { gte: from }, action: { in: [...SIGNIN_ACTIONS, ...TAKEOUT_ACTIONS] } },
+    where: { at: { gte: from }, action: { in: COUNTED_ACTIONS } },
     select: { at: true, action: true, actorId: true, diff: true },
   });
 
@@ -103,7 +110,8 @@ export async function GET(req: Request) {
         totals.lockouts += 1;
         bump(lockoutWho, who);
       }
-    } else {
+    } else if (l.action === "view") {
+      // 種類を名指しする。「それ以外」で受けると、種類を足したときに黙ってここへ入る
       totals.view += 1;
       slot.view += 1;
       const cur = viewsByUser.get(who) ?? { count: 0, lines: 0 };

@@ -44,6 +44,14 @@ export function hourInJapan(at: Date): number {
   return shiftedToJapan(at).getUTCHours();
 }
 
+/**
+ * 日本の日時を、紙面の言語の書き方にする（帳票に印字する作成日時）。
+ * 地域を決めずに `toLocaleString()` を使うと、世界標準時で動くサーバーでは 9 時間前の時刻になる
+ */
+export function dateTimeTextInJapan(at: Date, locale: string): string {
+  return at.toLocaleString(locale === "en" ? "en-US" : "ja-JP", { timeZone: "Asia/Tokyo" });
+}
+
 /** 日本の日時を、ファイル名に使える形（YYYYMMDDTHHMMSS）にする */
 export function stampInJapan(at: Date): string {
   return shiftedToJapan(at).toISOString().replace(/[-:]/g, "").slice(0, 15);

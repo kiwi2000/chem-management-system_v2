@@ -24,6 +24,7 @@ import { aggregateComposition, expandComposition } from "@/lib/composition-aggre
 import { canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { notDisabledIn } from "@/lib/enabled-sources";
+import { dateTimeTextInJapan } from "@/lib/judgement-date";
 import { visibilityWhere } from "@/lib/product-service";
 import { nearestOfKind, orgChain } from "@/lib/organisation-tree";
 import type { RenderInput } from "@/lib/doc-render";
@@ -224,8 +225,9 @@ async function commonValues(
 ): Promise<[string, string][]> {
   const now = new Date();
   return [
-    // 端末の時計ではなくサーバーの時刻。誰が作っても同じ値になる
-    ["doc.generatedAt", now.toLocaleString(locale === "en" ? "en-US" : "ja-JP")],
+    // 端末の時計ではなくサーバーの時刻。誰が作っても同じ値になる。
+    // **日本の時刻で印字する**（2026-11-12。サーバーの時計の地域に任せていて、世界標準時のサーバーでは 9 時間前の時刻が出ていた）
+    ["doc.generatedAt", dateTimeTextInJapan(now, locale)],
     ["doc.generatedBy", actor.user.displayName ?? actor.user.email],
     ["doc.version", versionCode ?? ""],
     ...(await orgValues(actor, locale, parties)),
