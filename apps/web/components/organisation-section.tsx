@@ -1,26 +1,31 @@
 "use client";
 
+import { kindLabelOf, ORGANISATION_KINDS, pickName, type OrganisationKind } from "@chem/shared";
 import {
-  emptyTableState,
-  kindLabelOf,
-  ORGANISATION_KINDS,
-  pickName,
-  serializeTableState,
-  type OrganisationKind,
-  type TableState,
-} from "@chem/shared";
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { DataTable } from "@/components/data-table/data-table";
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Handshake,
+  Plus,
+  Shapes,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
+import { TABLE_TITLE } from "@/components/data-table/data-table";
+import { EditButton } from "@/components/edit-button";
+import { EditingBadge } from "@/components/editing-badge";
 import { OrganisationSelect } from "@/components/organisation-select";
 import { PermissionGroupChips } from "@/components/permission-group-chips";
-import { descendantIds, flattenOrgTree, orgPathLabel } from "@/lib/org-tree";
+import { ancestorIds, descendantIds, flattenOrgTree, orgPathLabel } from "@/lib/org-tree";
 import { useOrganisationList } from "@/lib/use-organisations";
 import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
-import type { TableColumn } from "@/components/data-table/types";
 import { StatusIcon } from "@/components/status-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,11 +34,15 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { useMe } from "@/lib/use-me";
-import type { ApiError, ListResponse, OrganisationDto } from "@/lib/types";
-import { useTableState } from "@/lib/use-table-state";
+import type { ApiError, OrganisationDto } from "@/lib/types";
 
-const STORAGE_KEY = "chem.table.organisations";
-const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
+/** 種別ごとの絵。組織図で会社・部署・取引先を見分ける */
+const KIND_ICON = {
+  COMPANY: Building2,
+  DEPARTMENT: Users,
+  PARTNER: Handshake,
+  OTHER: Shapes,
+} as const;
 
 interface ItemDraft {
   label: string;
@@ -59,7 +68,11 @@ const EMPTY_FORM = {
 };
 
 /**
- * 組織。会社・部署・取引先・そのほかを、種別で見分けて1つの表に置く。
+ * 組織。会社・部署・取引先・そのほかを、組織図（木）で見せる（2026-11-13。利用者が選んだ案 A）。
+ * 左に組織図、右に選んだ組織の中身。まず表示のみで見せ、「編集」で書き換えられるようにする。
+ *
+ * **ここは一覧の共通の表（data-table）を使わない例外。**主役が上下の関係で、列で並べ替える場面がほとんど無い。
+ * 件数も少ない（多くても数百）ので、全部を 1 回で読み、名称・コードで探す欄だけを置く。
  *
  * **持つ項目を決めない。**名称・住所・電話・登録番号…と、
  * 求められるものが提出先によって違う。項目名も値も打ってもらう。
@@ -74,8 +87,7 @@ export function OrganisationSection() {
   const editable = can("ORG_EDIT");
   // 最初に選ばれる権限グループは、システム管理グループの人にだけ出す（S31 画面設計 6 章）
   const isAdmin = me?.isAdmin ?? false;
-  // 上の組織の選択肢と道筋のために、全部の組織を別に読む（一覧はページごとなので）
-  // 上の組織の選択肢と道筋のもと。この画面で組織を書き換えるので、保存・削除のたびに読み直す
+  // 組織図と、上の組織の選択肢のもと。この画面で組織を書き換えるので、保存・削除のたびに読み直す
   const { items: allOrgs, reload: reloadAllOrgs } = useOrganisationList();
   const groupOptions = usePermissionGroupOptions(isAdmin);
   const adminGroups = useMemo(
@@ -93,164 +105,114 @@ export function OrganisationSection() {
     [m],
   );
 
+  const ask = useConfirm();
   const [form, setForm] = useState({ ...EMPTY_FORM });
-  /* 書く欄は押されてから出す（フィードバックなどと同じ形） */
-  const [open, setOpen] = useState(false);
-  const [data, setData] = useState<ListResponse<OrganisationDto> | null>(null);
+  /** 開いたときの入力（書き換えたかどうかを見るため） */
+  const [formAtStart, setFormAtStart] = useState("");
+  /** 右側に出しているもの。view は表示のみ、edit は選んだ組織の編集、new は新規登録 */
+  const [mode, setMode] = useState<"view" | "edit" | "new">("view");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** 閉じている枝（下の組織を隠している組織の id）。最初は全部開いている */
+  const [closed, setClosed] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   /** ほかの人が先に保存していた知らせ */
   const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const columns = useMemo<TableColumn<OrganisationDto>[]>(
-    () => [
-      {
-        key: "code",
-        header: m.organisations.code,
-        kind: "text",
-        width: 120,
-        className: "font-mono text-xs",
-        render: (o) => o.code,
-      },
-      {
-        key: "kind",
-        header: m.organisations.kind,
-        kind: "enum",
-        width: 110,
-        options: ORGANISATION_KINDS.map((k) => ({ value: k, label: kindNames[k] })),
-        render: (o) => kindLabelOf(o.kind, o.kindLabel, kindNames),
-      },
-      {
-        key: "nameJa",
-        header: m.organisations.nameJa,
-        kind: "text",
-        width: 240,
-        // 木の順で返ってきたとき（最初に開いたとき）は、深さに応じて字下げして親子を見せる
-        render: (o) =>
-          o.depth ? (
-            <span
-              className="inline-flex items-baseline"
-              style={{ paddingLeft: `${(o.depth - 1) * 1.25}em` }}
-            >
-              <span className="text-muted-foreground mr-1" aria-hidden>
-                └
-              </span>
-              {pickName(locale, o.nameJa, o.nameEn)}
-            </span>
-          ) : (
-            pickName(locale, o.nameJa, o.nameEn)
-          ),
-      },
-      {
-        key: "itemCount",
-        header: m.organisations.itemCount,
-        kind: "number",
-        width: 88,
-        sortable: false,
-        filterable: false,
-        className: "text-right text-xs",
-        // 中身そのものは表に出さない。会社ごとに項目が違い、列にできない
-        render: (o) => String(o.items.length),
-      },
-      {
-        key: "memberCount",
-        header: m.organisations.memberCount,
-        kind: "number",
-        width: 96,
-        sortable: false,
-        filterable: false,
-        className: "text-right text-xs",
-        render: (o) => String(o.memberCount),
-      },
-      {
-        key: "displayOrder",
-        header: m.organisations.displayOrder,
-        kind: "number",
-        width: 88,
-        className: "text-right text-xs",
-        render: (o) => String(o.displayOrder),
-      },
-      {
-        // 上の組織（S31）。上からの道筋で出す
-        key: "parentId",
-        header: m.organisations.parent,
-        kind: "enum",
-        width: 200,
-        sortable: false,
-        className: "text-muted-foreground text-xs",
-        options: flattenOrgTree(allOrgs ?? []).map(({ org, depth }) => ({
-          value: org.id,
-          label: `${"\u3000".repeat(depth)}${pickName(locale, org.nameJa, org.nameEn)}`,
-        })),
-        render: (o) => (o.parentId ? orgPathLabel(allOrgs ?? [], o.parentId) : ""),
-      },
-      ...(isAdmin
-        ? [
-            {
-              // 最初に選ばれる権限グループ（S31。システム管理グループの人だけ）
-              key: "defaultGroups",
-              header: m.organisations.defaultGroups,
-              kind: "text" as const,
-              width: 220,
-              sortable: false,
-              filterable: false,
-              className: "text-xs",
-              render: (o: OrganisationDto) =>
-                (o.defaultGroupIds ?? [])
-                  .map((id) => adminGroups.find((g) => g.id === id))
-                  .filter((g) => g !== undefined)
-                  .map((g) => pickName(locale, g.nameJa, g.nameEn))
-                  .join(locale === "ja" ? "・" : ", "),
-            },
-          ]
-        : []),
-      {
-        key: "activeFlag",
-        header: m.common.activeHeader,
-        kind: "enum",
-        filterLabelHidden: true,
-        width: 72,
-        className: "text-center",
-        options: [
-          { value: "true", label: m.users.active },
-          { value: "false", label: m.users.inactive },
-        ],
-        render: (o) => (
-          <StatusIcon
-            active={o.activeFlag}
-            activeLabel={m.users.active}
-            inactiveLabel={m.users.inactive}
-          />
-        ),
-      },
-    ],
-    [m, locale, kindNames, allOrgs, isAdmin, adminGroups],
+  const orgs = useMemo(() => allOrgs ?? [], [allOrgs]);
+  const tree = useMemo(() => flattenOrgTree(orgs), [orgs]);
+  /** 下に組織を持つ組織 */
+  const parents = useMemo(
+    () => new Set(orgs.map((o) => o.parentId).filter((v): v is string => v !== null)),
+    [orgs],
   );
+  const selected = orgs.find((o) => o.id === selectedId) ?? null;
+  const name = (o: OrganisationDto) => pickName(locale, o.nameJa, o.nameEn);
 
-  const { state, setState, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
-  const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
-
-  const load = useCallback(async () => {
-    const res = await fetch(`/api/organisations?${query}`);
-    if (!res.ok) {
-      if (redirectIfUnauthorized(res)) return;
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.loadFailed(res.status));
-      return;
+  /** 組織図に出す行。探しているときは当たった組織とその上を出し、開閉は見ない */
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (q !== "") {
+      const keep = new Set<string>();
+      for (const o of orgs) {
+        if ([o.code, o.nameJa, o.nameEn ?? ""].some((s) => s.toLowerCase().includes(q))) {
+          for (const id of ancestorIds(orgs, o.id)) keep.add(id);
+        }
+      }
+      return tree.filter((x) => keep.has(x.org.id));
     }
-    setData((await res.json()) as ListResponse<OrganisationDto>);
-  }, [query, m]);
+    const out: typeof tree = [];
+    let hideBelow: number | null = null;
+    for (const x of tree) {
+      if (hideBelow !== null) {
+        if (x.depth > hideBelow) continue;
+        hideBelow = null;
+      }
+      out.push(x);
+      if (closed.has(x.org.id)) hideBelow = x.depth;
+    }
+    return out;
+  }, [tree, orgs, closed, search]);
 
-  useEffect(() => {
-    if (ready) void load();
-  }, [ready, load]);
+  /** 書きかけがあれば、捨ててよいか確かめる。進めてよければ true */
+  async function leaveEditing(): Promise<boolean> {
+    if (mode === "view") return true;
+    if (JSON.stringify(form) !== formAtStart) {
+      if (!(await ask({ message: m.organisations.discardConfirm }))) return false;
+    }
+    setMode("view");
+    setStale(null);
+    setError(null);
+    return true;
+  }
 
-  function startNew() {
+  async function select(id: string) {
+    if (id === selectedId && mode === "view") return;
+    if (!(await leaveEditing())) return;
+    setSelectedId(id);
+  }
+
+  function openForm(next: typeof EMPTY_FORM, nextMode: "edit" | "new") {
     setError(null);
     setStale(null);
-    setForm({ ...EMPTY_FORM, items: [] });
-    setOpen(true);
+    setForm(next);
+    setFormAtStart(JSON.stringify(next));
+    setMode(nextMode);
   }
+
+  async function startNew() {
+    if (!(await leaveEditing())) return;
+    openForm({ ...EMPTY_FORM, items: [] }, "new");
+  }
+
+  function startEdit(o: OrganisationDto) {
+    openForm(
+      {
+        id: o.id,
+        stamp: o.stamp,
+        code: o.code,
+        kind: o.kind,
+        kindLabel: o.kindLabel ?? "",
+        nameJa: o.nameJa,
+        nameEn: o.nameEn ?? "",
+        displayOrder: o.displayOrder,
+        activeFlag: o.activeFlag,
+        parentId: o.parentId ?? "",
+        defaultGroupIds: o.defaultGroupIds ?? [],
+        items: o.items.map((x) => ({ ...x })),
+      },
+      "edit",
+    );
+  }
+
+  const toggleBranch = (id: string) =>
+    setClosed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   async function save(force = false) {
     setError(null);
@@ -291,32 +253,33 @@ export function OrganisationSection() {
         setError(body?.error.message ?? m.errors.saveFailed(res.status));
         return;
       }
-      setForm({ ...EMPTY_FORM, items: [] });
-      setOpen(false);
-      void load();
-      void reloadAllOrgs();
+      // 新しく作ったものは、返ってきた id を選んだ状態にする
+      const savedId = editing
+        ? form.id
+        : (((await res.json().catch(() => null)) as { id?: string } | null)?.id ?? null);
+      await reloadAllOrgs();
+      if (savedId) setSelectedId(savedId);
+      setMode("view");
     } finally {
       setSaving(false);
     }
   }
 
-  async function onDeleteSelected(targets: OrganisationDto[]) {
-    setError(null);
-    for (const o of targets) {
-      const res = await fetch(`/api/organisations/${o.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-      if (form.id === o.id) {
-        setForm({ ...EMPTY_FORM, items: [] });
-        setOpen(false);
-      }
+  /** 選んだ組織を消す。人が所属している・下に組織がある、は API が断る */
+  async function remove(o: OrganisationDto) {
+    if (!(await ask({ message: m.organisations.deleteConfirm(name(o)), destructive: true }))) {
+      return;
     }
-    void load();
-    void reloadAllOrgs();
+    setError(null);
+    const res = await fetch(`/api/organisations/${o.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.deleteFailed);
+      return;
+    }
+    setSelectedId(null);
+    await reloadAllOrgs();
   }
 
   const setItem = (i: number, patch: Partial<ItemDraft>) =>
@@ -335,6 +298,14 @@ export function OrganisationSection() {
       return { ...f, items };
     });
 
+  const kindOf = (o: OrganisationDto) => kindLabelOf(o.kind, o.kindLabel, kindNames);
+  const groupNames = (ids: string[] | undefined) =>
+    (ids ?? [])
+      .map((id) => adminGroups.find((g) => g.id === id))
+      .filter((g) => g !== undefined)
+      .map((g) => pickName(locale, g.nameJa, g.nameEn))
+      .join(locale === "ja" ? "・" : ", ");
+
   return (
     <section className="space-y-3">
       <StaleEditNotice
@@ -349,288 +320,457 @@ export function OrganisationSection() {
         </Alert>
       )}
 
-      {open && (
-        <Card collapsible={false}>
-          <CardHeader>
-            <CardTitle className="text-base">
-              {form.id ? m.organisations.editTitle : m.organisations.newTitle}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void save();
-              }}
-              className="space-y-4"
-            >
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="org-code">{m.organisations.code}</Label>
-                  <Input
-                    id="org-code"
-                    value={form.code}
-                    maxLength={20}
-                    required
-                    onChange={(e) => setForm({ ...form, code: e.target.value })}
-                    className="w-32 font-mono"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="org-kind">{m.organisations.kind}</Label>
-                  <select
-                    id="org-kind"
-                    value={form.kind}
-                    onChange={(e) => setForm({ ...form, kind: e.target.value as OrganisationKind })}
-                    className="border-input bg-background h-9 w-32 rounded-none border px-2 text-sm"
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(280px,380px)_minmax(0,1fr)]">
+        {/* 左: 組織図。押すと右に中身が出る */}
+        <div className="bg-background space-y-2 rounded-md border p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className={TABLE_TITLE}>{m.organisations.title}</h2>
+            {editable && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-primary border-primary/40 hover:bg-primary/10 hover:text-primary size-8"
+                title={m.table.create}
+                aria-label={m.table.create}
+                onClick={() => void startNew()}
+              >
+                <Plus className="size-4" />
+              </Button>
+            )}
+            {/* 枝があるときだけ。開閉できるものを足したら、まとめて開け閉めできるようにする決まり */}
+            {parents.size > 0 && (
+              <span className="ml-auto flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={closed.size === 0}
+                  onClick={() => setClosed(new Set())}
+                >
+                  {m.organisations.expandAll}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={[...parents].every((id) => closed.has(id))}
+                  onClick={() => setClosed(new Set(parents))}
+                >
+                  {m.organisations.collapseAll}
+                </Button>
+              </span>
+            )}
+          </div>
+          <Input
+            type="search"
+            value={search}
+            placeholder={m.organisations.searchPlaceholder}
+            aria-label={m.organisations.searchPlaceholder}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {allOrgs === null ? (
+            <p className="text-muted-foreground p-2 text-sm">{m.common.loading}</p>
+          ) : orgs.length === 0 ? (
+            <p className="text-muted-foreground p-2 text-sm">{m.organisations.empty}</p>
+          ) : visible.length === 0 ? (
+            <p className="text-muted-foreground p-2 text-sm">{m.organisations.noMatch}</p>
+          ) : (
+            <ul aria-label={m.organisations.tree} className="space-y-0.5">
+              {visible.map(({ org, depth }) => {
+                const Icon = KIND_ICON[org.kind];
+                const isOpen = !closed.has(org.id);
+                const isSelected = org.id === selectedId;
+                return (
+                  <li
+                    key={org.id}
+                    className={`flex items-center gap-1 rounded-sm ${
+                      isSelected ? "bg-primary/10" : "hover:bg-muted/60"
+                    }`}
+                    style={{ paddingLeft: `${depth * 1.25}rem` }}
                   >
-                    {ORGANISATION_KINDS.map((k) => (
-                      <option key={k} value={k}>
-                        {kindNames[k]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {/* 呼び名は「そのほか」のときだけ。ほかの種別では置き場所も取らない */}
-                {form.kind === "OTHER" && (
+                    {/* 探しているときは、当たったものとその上を全部出すので、開閉は置かない */}
+                    {parents.has(org.id) && search.trim() === "" ? (
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground flex size-7 shrink-0 items-center justify-center"
+                        aria-expanded={isOpen}
+                        aria-label={
+                          isOpen ? m.organisations.closeBranch : m.organisations.openBranch
+                        }
+                        title={isOpen ? m.organisations.closeBranch : m.organisations.openBranch}
+                        onClick={() => toggleBranch(org.id)}
+                      >
+                        {isOpen ? (
+                          <ChevronDown className="size-4" />
+                        ) : (
+                          <ChevronRight className="size-4" />
+                        )}
+                      </button>
+                    ) : (
+                      <span className="size-7 shrink-0" aria-hidden />
+                    )}
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 items-center gap-2 py-1.5 pr-2 text-left text-sm"
+                      aria-current={isSelected ? "true" : undefined}
+                      title={`${kindOf(org)} ${org.code}`}
+                      onClick={() => void select(org.id)}
+                    >
+                      <Icon className="text-muted-foreground size-4 shrink-0" aria-hidden />
+                      <span
+                        className={`truncate ${isSelected ? "font-semibold" : ""} ${
+                          org.activeFlag ? "" : "text-muted-foreground line-through"
+                        }`}
+                      >
+                        {name(org)}
+                      </span>
+                      {!org.activeFlag && (
+                        <Badge variant="outline" className="shrink-0 px-1 text-[10px]">
+                          {m.users.inactive}
+                        </Badge>
+                      )}
+                      <span className="text-muted-foreground ml-auto shrink-0 text-xs tabular-nums">
+                        {m.organisations.people(org.memberCount)}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* 右: 選んだ組織。まず表示のみ、「編集」で書き換える */}
+        {mode !== "view" ? (
+          <Card collapsible={false}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-base">
+                {mode === "edit" ? m.organisations.editTitle : m.organisations.newTitle}
+                <EditingBadge />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void save();
+                }}
+                className="space-y-4"
+              >
+                <div className="flex flex-wrap items-end gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="org-kind-label">{m.organisations.kindLabel}</Label>
+                    <Label htmlFor="org-code">{m.organisations.code}</Label>
                     <Input
-                      id="org-kind-label"
-                      value={form.kindLabel}
-                      maxLength={30}
-                      onChange={(e) => setForm({ ...form, kindLabel: e.target.value })}
-                      className="w-40"
+                      id="org-code"
+                      value={form.code}
+                      maxLength={20}
+                      required
+                      onChange={(e) => setForm({ ...form, code: e.target.value })}
+                      className="w-32 font-mono"
                     />
                   </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="org-name-ja">{m.organisations.nameJa}</Label>
-                  <Input
-                    id="org-name-ja"
-                    value={form.nameJa}
-                    maxLength={100}
-                    required
-                    onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
-                    className="w-64"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="org-name-en">
-                    {m.organisations.nameEn}
-                    <span className="text-muted-foreground">{m.common.optional}</span>
-                  </Label>
-                  <Input
-                    id="org-name-en"
-                    value={form.nameEn}
-                    maxLength={100}
-                    onChange={(e) => setForm({ ...form, nameEn: e.target.value })}
-                    className="w-64"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="org-order">{m.organisations.displayOrder}</Label>
-                  <Input
-                    id="org-order"
-                    type="number"
-                    min={0}
-                    max={9999}
-                    value={form.displayOrder}
-                    onChange={(e) => setForm({ ...form, displayOrder: Number(e.target.value) })}
-                    className="w-24"
-                  />
-                </div>
-                <label className="flex h-9 items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={form.activeFlag}
-                    onChange={(e) => setForm({ ...form, activeFlag: e.target.checked })}
-                  />
-                  {m.organisations.activeFlag}
-                </label>
-              </div>
-              {/* 上の組織（S31）。自分と自分の下は選べない */}
-              <div className="space-y-2">
-                <Label htmlFor="org-parent">{m.organisations.parent}</Label>
-                <OrganisationSelect
-                  id="org-parent"
-                  organisations={allOrgs}
-                  value={form.parentId}
-                  exclude={
-                    form.id
-                      ? new Set([form.id, ...descendantIds(allOrgs ?? [], form.id)])
-                      : undefined
-                  }
-                  noneLabel={m.organisations.parentNone}
-                  onChange={(v) => setForm({ ...form, parentId: v })}
-                />
-                <p className="text-muted-foreground text-xs">{m.organisations.parentHint}</p>
-              </div>
-              {isAdmin && (
-                <div className="space-y-2">
-                  <Label>{m.organisations.defaultGroups}</Label>
-                  <PermissionGroupChips
-                    options={adminGroups}
-                    value={form.defaultGroupIds}
-                    onChange={(v) => setForm({ ...form, defaultGroupIds: v })}
-                    emptyLabel={m.users.permissionGroupsNone}
-                  />
-                  <p className="text-muted-foreground text-xs">
-                    {m.organisations.defaultGroupsHint}
-                  </p>
-                </div>
-              )}
-
-              {/* 項目。名前も値も打ってもらう */}
-              <div className="space-y-2 border-t pt-4">
-                <p className="text-sm font-medium">{m.organisations.items}</p>
-                <p className="text-muted-foreground text-xs">{m.organisations.itemsHint}</p>
-                {form.items.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">{m.organisations.noItems}</p>
-                ) : (
                   <div className="space-y-2">
-                    {form.items.map((it, i) => (
-                      <div key={i} className="flex flex-wrap items-end gap-2">
-                        <div className="space-y-1">
-                          <Label htmlFor={`org-label-${i}`} className="text-xs">
-                            {m.organisations.label}
-                          </Label>
-                          <Input
-                            id={`org-label-${i}`}
-                            value={it.label}
-                            maxLength={60}
-                            placeholder={m.organisations.labelPlaceholder}
-                            onChange={(e) => setItem(i, { label: e.target.value })}
-                            className="w-48"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`org-value-${i}`} className="text-xs">
-                            {m.organisations.value}
-                          </Label>
-                          <Input
-                            id={`org-value-${i}`}
-                            value={it.value}
-                            maxLength={500}
-                            placeholder={m.organisations.valuePlaceholder}
-                            onChange={(e) => setItem(i, { value: e.target.value })}
-                            className="w-96"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          title={m.organisations.moveUp}
-                          aria-label={m.organisations.moveUp}
-                          disabled={i === 0}
-                          onClick={() => moveItem(i, i - 1)}
-                        >
-                          <ChevronUp className="size-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          title={m.organisations.moveDown}
-                          aria-label={m.organisations.moveDown}
-                          disabled={i === form.items.length - 1}
-                          onClick={() => moveItem(i, i + 1)}
-                        >
-                          <ChevronDown className="size-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          title={m.common.delete}
-                          aria-label={m.common.delete}
-                          onClick={() =>
-                            setForm((f) => ({ ...f, items: f.items.filter((_, j) => j !== i) }))
-                          }
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    ))}
+                    <Label htmlFor="org-kind">{m.organisations.kind}</Label>
+                    <select
+                      id="org-kind"
+                      value={form.kind}
+                      onChange={(e) =>
+                        setForm({ ...form, kind: e.target.value as OrganisationKind })
+                      }
+                      className="border-input bg-background h-9 w-32 rounded-none border px-2 text-sm"
+                    >
+                      {ORGANISATION_KINDS.map((k) => (
+                        <option key={k} value={k}>
+                          {kindNames[k]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* 呼び名は「そのほか」のときだけ。ほかの種別では置き場所も取らない */}
+                  {form.kind === "OTHER" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="org-kind-label">{m.organisations.kindLabel}</Label>
+                      <Input
+                        id="org-kind-label"
+                        value={form.kindLabel}
+                        maxLength={30}
+                        onChange={(e) => setForm({ ...form, kindLabel: e.target.value })}
+                        className="w-40"
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="org-name-ja">{m.organisations.nameJa}</Label>
+                    <Input
+                      id="org-name-ja"
+                      value={form.nameJa}
+                      maxLength={100}
+                      required
+                      onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
+                      className="w-64"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="org-name-en">
+                      {m.organisations.nameEn}
+                      <span className="text-muted-foreground">{m.common.optional}</span>
+                    </Label>
+                    <Input
+                      id="org-name-en"
+                      value={form.nameEn}
+                      maxLength={100}
+                      onChange={(e) => setForm({ ...form, nameEn: e.target.value })}
+                      className="w-64"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="org-order">{m.organisations.displayOrder}</Label>
+                    <Input
+                      id="org-order"
+                      type="number"
+                      min={0}
+                      max={9999}
+                      value={form.displayOrder}
+                      onChange={(e) => setForm({ ...form, displayOrder: Number(e.target.value) })}
+                      className="w-24"
+                    />
+                  </div>
+                  <label className="flex h-9 items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.activeFlag}
+                      onChange={(e) => setForm({ ...form, activeFlag: e.target.checked })}
+                    />
+                    {m.organisations.activeFlag}
+                  </label>
+                </div>
+                {/* 上の組織（S31）。自分と自分の下は選べない */}
+                <div className="space-y-2">
+                  <Label htmlFor="org-parent">{m.organisations.parent}</Label>
+                  <OrganisationSelect
+                    id="org-parent"
+                    organisations={allOrgs}
+                    value={form.parentId}
+                    exclude={
+                      form.id
+                        ? new Set([form.id, ...descendantIds(allOrgs ?? [], form.id)])
+                        : undefined
+                    }
+                    noneLabel={m.organisations.parentNone}
+                    onChange={(v) => setForm({ ...form, parentId: v })}
+                  />
+                  <p className="text-muted-foreground text-xs">{m.organisations.parentHint}</p>
+                </div>
+                {isAdmin && (
+                  <div className="space-y-2">
+                    <Label>{m.organisations.defaultGroups}</Label>
+                    <PermissionGroupChips
+                      options={adminGroups}
+                      value={form.defaultGroupIds}
+                      onChange={(v) => setForm({ ...form, defaultGroupIds: v })}
+                      emptyLabel={m.users.permissionGroupsNone}
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      {m.organisations.defaultGroupsHint}
+                    </p>
                   </div>
                 )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={form.items.length >= 50}
-                  onClick={() =>
-                    setForm((f) => ({ ...f, items: [...f.items, { label: "", value: "" }] }))
-                  }
-                >
-                  {m.organisations.addItem}
-                </Button>
-              </div>
 
-              <div className="flex gap-2">
-                <Button type="submit" disabled={saving}>
-                  {saving ? m.common.saving : m.common.save}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setForm({ ...EMPTY_FORM, items: [] });
-                    setStale(null);
-                    setOpen(false);
-                  }}
-                >
-                  {m.common.discard}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+                {/* 項目。名前も値も打ってもらう */}
+                <div className="space-y-2 border-t pt-4">
+                  <p className="text-sm font-medium">{m.organisations.items}</p>
+                  <p className="text-muted-foreground text-xs">{m.organisations.itemsHint}</p>
+                  {form.items.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">{m.organisations.noItems}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {form.items.map((it, i) => (
+                        <div key={i} className="flex flex-wrap items-end gap-2">
+                          <div className="space-y-1">
+                            <Label htmlFor={`org-label-${i}`} className="text-xs">
+                              {m.organisations.label}
+                            </Label>
+                            <Input
+                              id={`org-label-${i}`}
+                              value={it.label}
+                              maxLength={60}
+                              placeholder={m.organisations.labelPlaceholder}
+                              onChange={(e) => setItem(i, { label: e.target.value })}
+                              className="w-48"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor={`org-value-${i}`} className="text-xs">
+                              {m.organisations.value}
+                            </Label>
+                            <Input
+                              id={`org-value-${i}`}
+                              value={it.value}
+                              maxLength={500}
+                              placeholder={m.organisations.valuePlaceholder}
+                              onChange={(e) => setItem(i, { value: e.target.value })}
+                              className="w-96 max-w-full"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            title={m.organisations.moveUp}
+                            aria-label={m.organisations.moveUp}
+                            disabled={i === 0}
+                            onClick={() => moveItem(i, i - 1)}
+                          >
+                            <ChevronUp className="size-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            title={m.organisations.moveDown}
+                            aria-label={m.organisations.moveDown}
+                            disabled={i === form.items.length - 1}
+                            onClick={() => moveItem(i, i + 1)}
+                          >
+                            <ChevronDown className="size-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            title={m.common.delete}
+                            aria-label={m.common.delete}
+                            onClick={() =>
+                              setForm((f) => ({ ...f, items: f.items.filter((_, j) => j !== i) }))
+                            }
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={form.items.length >= 50}
+                    onClick={() =>
+                      setForm((f) => ({ ...f, items: [...f.items, { label: "", value: "" }] }))
+                    }
+                  >
+                    {m.organisations.addItem}
+                  </Button>
+                </div>
 
-      <DataTable
-        title={m.organisations.title}
-        storageKey={STORAGE_KEY}
-        columns={columns}
-        rows={data?.items ?? null}
-        rowKey={(o) => o.id}
-        total={data?.total ?? 0}
-        state={state}
-        defaultState={DEFAULT_STATE}
-        onStateChange={setState}
-        emptyMessage={m.organisations.empty}
-        // 作る・直す・消すは権限のある人だけ。見るのは誰でもできる
-        create={open || !editable ? undefined : { onClick: startNew }}
-        selectable={editable}
-        onDeleteSelected={editable ? onDeleteSelected : undefined}
-        // この画面は詳細を別に持たないので、鉛筆で上のフォームに読み込む
-        rowAction={
-          editable
-            ? {
-                onClick: (o) => {
-                  setStale(null);
-                  setForm({
-                    id: o.id,
-                    stamp: o.stamp,
-                    code: o.code,
-                    kind: o.kind,
-                    kindLabel: o.kindLabel ?? "",
-                    nameJa: o.nameJa,
-                    nameEn: o.nameEn ?? "",
-                    displayOrder: o.displayOrder,
-                    activeFlag: o.activeFlag,
-                    parentId: o.parentId ?? "",
-                    defaultGroupIds: o.defaultGroupIds ?? [],
-                    items: o.items.map((x) => ({ ...x })),
-                  });
-                  setOpen(true);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                },
-              }
-            : undefined
-        }
-      />
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={saving}>
+                    {saving ? m.common.saving : m.common.save}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      // 書きかけを捨てて、表示に戻す
+                      setStale(null);
+                      setError(null);
+                      setMode("view");
+                    }}
+                  >
+                    {m.common.discard}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        ) : selected ? (
+          <Card collapsible={false}>
+            <CardHeader>
+              {selected.parentId && (
+                <p className="text-muted-foreground text-xs">
+                  {orgPathLabel(orgs, selected.parentId, name)}
+                </p>
+              )}
+              <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                {name(selected)}
+                <Badge variant="secondary" className="px-1.5">
+                  {kindOf(selected)}
+                </Badge>
+                {editable && (
+                  <span className="ml-auto flex gap-2">
+                    <EditButton onClick={() => startEdit(selected)} />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-sm"
+                      title={m.common.delete}
+                      aria-label={m.common.delete}
+                      onClick={() => void remove(selected)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2 text-sm">
+                <dt className="text-muted-foreground">{m.organisations.code}</dt>
+                <dd className="font-mono text-xs leading-5">{selected.code}</dd>
+                {selected.nameEn && (
+                  <>
+                    <dt className="text-muted-foreground">{m.organisations.nameEn}</dt>
+                    <dd>{selected.nameEn}</dd>
+                  </>
+                )}
+                <dt className="text-muted-foreground">{m.organisations.parent}</dt>
+                <dd>
+                  {selected.parentId
+                    ? orgPathLabel(orgs, selected.parentId, name)
+                    : m.organisations.parentNone}
+                </dd>
+                <dt className="text-muted-foreground">{m.organisations.memberCount}</dt>
+                <dd>{m.organisations.people(selected.memberCount)}</dd>
+                <dt className="text-muted-foreground">{m.organisations.displayOrder}</dt>
+                <dd>{selected.displayOrder}</dd>
+                <dt className="text-muted-foreground">{m.common.activeHeader}</dt>
+                <dd className="flex items-center gap-1">
+                  <StatusIcon
+                    active={selected.activeFlag}
+                    activeLabel={m.users.active}
+                    inactiveLabel={m.users.inactive}
+                  />
+                  {selected.activeFlag ? m.users.active : m.users.inactive}
+                </dd>
+                {isAdmin && (
+                  <>
+                    <dt className="text-muted-foreground">{m.organisations.defaultGroups}</dt>
+                    <dd>{groupNames(selected.defaultGroupIds) || m.users.permissionGroupsNone}</dd>
+                  </>
+                )}
+              </dl>
+              {/* 項目。帳票の差込項目になるもの */}
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-sm font-medium">{m.organisations.items}</p>
+                {selected.items.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">{m.organisations.noItems}</p>
+                ) : (
+                  <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2 text-sm">
+                    {selected.items.map((it, i) => (
+                      <div key={i} className="contents">
+                        <dt className="text-muted-foreground">{it.label}</dt>
+                        <dd className="break-words whitespace-pre-wrap">{it.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
+            {orgs.length === 0 ? m.organisations.empty : m.organisations.selectHint}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

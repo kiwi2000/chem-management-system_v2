@@ -2965,6 +2965,18 @@ export const ja = {
     noItems: "まだ項目がありません",
     empty: "まだ登録がありません",
     duplicateCode: (code: string) => `コード「${code}」は既に使われています`,
+    /** 組織図の形の画面（2026-11-13。左に組織図、右に選んだ組織） */
+    tree: "組織図",
+    searchPlaceholder: "名称・コードで探す",
+    people: (n: number) => `${n} 人`,
+    selectHint: "左の組織図で組織を選ぶと、ここに中身が出ます",
+    noMatch: "当てはまる組織がありません",
+    expandAll: "すべて開く",
+    collapseAll: "すべて閉じる",
+    openBranch: "下の組織を開く",
+    closeBranch: "下の組織を閉じる",
+    deleteConfirm: (name: string) => `組織「${name}」を削除しますか？`,
+    discardConfirm: "編集中の内容は保存されていません。破棄してよろしいですか？",
     inUse: (n: number) =>
       `この組織には ${n} 人が所属しています。先にユーザー管理の画面で、その人たちの所属を変えてください`,
   },
