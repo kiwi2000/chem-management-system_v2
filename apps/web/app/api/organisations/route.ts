@@ -32,11 +32,19 @@ export async function GET(req: Request) {
   const actor = await requireUser();
   if (actor instanceof Response) return actor;
 
-  const state = parseTableState(
-    new URL(req.url).searchParams,
-    ORGANISATION_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
-    DEFAULT_STATE,
-  );
+  const params = new URL(req.url).searchParams;
+  /*
+    `?all=1` は選択肢のための読み方（2026-11-13）。**件数で区切らず、全部を木の順で返す。**絞り込み・並べ替えは受けない。
+    一覧の読み方（1 回 500 件まで）に乗せていると、超えた分が黙って選択肢から消える。組織は多くても数百なので全部読んでよい
+  */
+  const wantAll = params.get("all") === "1";
+  const state = wantAll
+    ? DEFAULT_STATE
+    : parseTableState(
+        params,
+        ORGANISATION_COLUMNS.map((c) => ({ key: c.key, kind: c.kind })),
+        DEFAULT_STATE,
+      );
   const where = { ...buildWhere(ORGANISATION_COLUMNS, state.filters), deletedAt: null };
   const skip = (state.page - 1) * state.pageSize;
 
@@ -52,7 +60,8 @@ export async function GET(req: Request) {
       where,
       select: { id: true, parentId: true, displayOrder: true, nameJa: true },
     });
-    const page = flattenOrgTree(all).slice(skip, skip + state.pageSize);
+    const tree = flattenOrgTree(all);
+    const page = wantAll ? tree : tree.slice(skip, skip + state.pageSize);
     depthOf = new Map(page.map((x) => [x.org.id, x.depth]));
     const rows = await prisma.organisation.findMany({
       where: { id: { in: page.map((x) => x.org.id) } },
@@ -84,7 +93,7 @@ export async function GET(req: Request) {
     })),
     total,
     page: state.page,
-    pageSize: state.pageSize,
+    pageSize: wantAll ? Math.max(total, 1) : state.pageSize,
   });
 }
 

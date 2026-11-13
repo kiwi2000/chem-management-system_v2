@@ -15,7 +15,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { OrganisationSelect } from "@/components/organisation-select";
 import { PermissionGroupChips } from "@/components/permission-group-chips";
 import { descendantIds, flattenOrgTree, orgPathLabel } from "@/lib/org-tree";
-import { useOrganisations } from "@/lib/use-organisations";
+import { useOrganisationList } from "@/lib/use-organisations";
 import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
 import type { TableColumn } from "@/components/data-table/types";
@@ -75,7 +75,8 @@ export function OrganisationSection() {
   // 最初に選ばれる権限グループは、システム管理グループの人にだけ出す（S31 画面設計 6 章）
   const isAdmin = me?.isAdmin ?? false;
   // 上の組織の選択肢と道筋のために、全部の組織を別に読む（一覧はページごとなので）
-  const allOrgs = useOrganisations();
+  // 上の組織の選択肢と道筋のもと。この画面で組織を書き換えるので、保存・削除のたびに読み直す
+  const { items: allOrgs, reload: reloadAllOrgs } = useOrganisationList();
   const groupOptions = usePermissionGroupOptions(isAdmin);
   const adminGroups = useMemo(
     () => (groupOptions?.groups ?? []).filter((g) => !g.isSystemAdmin),
@@ -293,6 +294,7 @@ export function OrganisationSection() {
       setForm({ ...EMPTY_FORM, items: [] });
       setOpen(false);
       void load();
+      void reloadAllOrgs();
     } finally {
       setSaving(false);
     }
@@ -314,6 +316,7 @@ export function OrganisationSection() {
       }
     }
     void load();
+    void reloadAllOrgs();
   }
 
   const setItem = (i: number, patch: Partial<ItemDraft>) =>
