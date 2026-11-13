@@ -16,7 +16,7 @@ import {
   type StageContext,
   type StagedRow,
 } from "@/lib/import/types";
-import { visibilityWhere } from "@/lib/product-service";
+import { editableInState, visibilityWhere } from "@/lib/product-service";
 import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
 
 /**
@@ -53,6 +53,16 @@ export interface CompositionPayload {
     note: string | null;
     label: string;
   }[];
+}
+
+/**
+ * 公開の状態のせいで組成を直せないときの文（読み取りと反映で同じ文を出す）。
+ * 決まりは画面と同じ（lib/product-service.ts の editableInState）
+ */
+export function compositionStateRefusal(state: string): string {
+  return state === "PENDING"
+    ? "承認待のものの組成は直せません（申請を取り下げてから直します）"
+    : "公開前のものの組成は、作った本人しか直せません";
 }
 
 const PRODUCT_FIELDS = [
@@ -111,6 +121,8 @@ export async function stageProducts(
       note: true,
       updatedBy: true,
       ownerGroupId: true,
+      publishState: true,
+      createdBy: true,
       compositionLines: {
         select: { substanceId: true, childProductId: true, contentPct: true, note: true },
         orderBy: { displayOrder: "asc" },
@@ -335,6 +347,14 @@ export async function stageProducts(
       );
       if (!canOn(ctx.actor, "compositionEdit", ownerNow) || !okLines) {
         errors.push({ line: e.line, message: `製品「${e.product.code}」: 組成は直せません` });
+        continue;
+      }
+      // 公開の状態は画面と同じ決まり（承認待は誰も直せない。作成中・却下は作った本人だけ）
+      if (cur && !editableInState(ctx.actor, cur)) {
+        errors.push({
+          line: e.line,
+          message: `製品「${e.product.code}」: ${compositionStateRefusal(cur.publishState)}`,
+        });
         continue;
       }
       const payload: CompositionPayload = { productCode: e.product.code, lines: e.lines };

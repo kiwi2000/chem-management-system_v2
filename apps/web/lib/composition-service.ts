@@ -5,9 +5,9 @@ import {
   type Messages,
 } from "@chem/shared";
 import type { Prisma, Product } from "@prisma/client";
-import type { Actor } from "@/lib/authz";
+import { jsonError, type Actor } from "@/lib/authz";
 import { compositionAccess } from "@/lib/composition-access";
-import { visibilityWhere as productVisibility } from "@/lib/product-service";
+import { editableInState, visibilityWhere as productVisibility } from "@/lib/product-service";
 import { prisma } from "@/lib/db";
 import type { CompositionLineDto, CompositionResponse } from "@/lib/types";
 
@@ -58,12 +58,41 @@ export async function canViewComposition(
   return (await compositionAccess(actor, product.id)) !== "hidden";
 }
 
-/** 組成を書き換えられるか。所属先に「組成 編集」の印があり、中身が全部見えること */
+/**
+ * 組成を書き換えられるか。所属先に「組成 編集」の印があり、中身が全部見えること。
+ *
+ * **公開の状態も製品そのものと同じに見る**（2026-11-13 利用者が確認）。承認待は誰も直せず、
+ * 作成中・却下は作った本人だけ。以前は印しか見ておらず、承認する人がほかの人の公開前の組成を直せ、
+ * 承認待の組成も直せた。判定の確認・上書きもこの範囲に揃えてある（呼ぶ側の注釈）
+ */
 export async function canEditComposition(
   actor: Actor,
-  product: Pick<Product, "id">,
+  product: Pick<Product, "id" | "publishState" | "createdBy">,
 ): Promise<boolean> {
+  if (!editableInState(actor, product)) return false;
   return (await compositionAccess(actor, product.id)) === "edit";
+}
+
+/**
+ * 組成を書き換えられないときの返事（書き換えられるなら null）。**理由に合った文を返す**:
+ * 承認待 → 「承認待のものは、この操作の対象になりません」、公開前でほかの人のもの → 「権限がありません」、
+ * 印が無い・中身に見えないものがある → 「非開示のため編集できません」
+ */
+export async function compositionEditDenial(
+  actor: Actor,
+  product: Pick<Product, "id" | "publishState" | "createdBy">,
+  m: Messages,
+): Promise<Response | null> {
+  if (product.publishState === "PENDING") {
+    return jsonError(
+      403,
+      "forbidden",
+      m.errors.publishStateMismatch(m.common.publishStates.PENDING),
+    );
+  }
+  if (!editableInState(actor, product)) return jsonError(403, "forbidden", m.errors.forbidden);
+  if ((await compositionAccess(actor, product.id)) === "edit") return null;
+  return jsonError(403, "forbidden", m.composition.withheldEdit);
 }
 
 export function toLineDto(l: LineRow | PreLineRow): CompositionLineDto {

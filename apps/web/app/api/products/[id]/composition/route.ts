@@ -7,6 +7,7 @@ import {
   COMPOSITION_INCLUDE,
   PRE_REACTION_INCLUDE,
   canEditComposition,
+  compositionEditDenial,
   canViewComposition,
   lineWrites,
   toCompositionResponse,
@@ -116,9 +117,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!(await canEditComposition(actor, product))) {
-    return jsonError(403, "forbidden", m.composition.withheldEdit);
-  }
+  const denial = await compositionEditDenial(actor, product, m);
+  if (denial) return denial;
 
   let body: unknown;
   try {

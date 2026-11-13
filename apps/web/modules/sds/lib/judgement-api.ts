@@ -1,5 +1,5 @@
 import { jsonError, type Actor } from "@/lib/authz";
-import { canEditComposition, canViewComposition } from "@/lib/composition-service";
+import { compositionEditDenial, canViewComposition } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { visibilityWhere } from "@/lib/product-service";
@@ -52,9 +52,8 @@ export async function judgementApi(
   const full = await canViewComposition(actor, product);
 
   if (req.method === "POST") {
-    if (!(await canEditComposition(actor, product))) {
-      return jsonError(403, "forbidden", m.composition.withheldEdit);
-    }
+    const denial = await compositionEditDenial(actor, product, m);
+    if (denial) return denial;
     const dto = await computeProductJudgement(actor, productId, country);
     return Response.json({ item: full ? dto : withholdIngredients(dto) });
   }

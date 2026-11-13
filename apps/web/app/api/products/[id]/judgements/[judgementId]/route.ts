@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { parseEditStamp, StaleError, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
-import { canEditComposition } from "@/lib/composition-service";
+import { compositionEditDenial } from "@/lib/composition-service";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
@@ -42,9 +42,8 @@ export async function PUT(req: Request, { params }: Ctx) {
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
   // 判定を動かすのは、組成を触れる人と同じ範囲に揃える
-  if (!(await canEditComposition(actor, product))) {
-    return jsonError(403, "forbidden", m.composition.withheldEdit);
-  }
+  const denial = await compositionEditDenial(actor, product, m);
+  if (denial) return denial;
 
   let body: unknown;
   try {

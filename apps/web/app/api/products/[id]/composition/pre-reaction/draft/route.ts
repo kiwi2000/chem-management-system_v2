@@ -1,7 +1,7 @@
 import { recordCompositionView } from "@/lib/access-log";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
-import { canEditComposition } from "@/lib/composition-service";
+import { compositionEditDenial } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { loadPreRootLines, postStartLines } from "@/lib/pre-reaction-refresh";
@@ -29,9 +29,8 @@ export async function GET(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!(await canEditComposition(actor, product))) {
-    return jsonError(403, "forbidden", m.composition.withheldEdit);
-  }
+  const denial = await compositionEditDenial(actor, product, m);
+  if (denial) return denial;
   if (!product.preReactionAt) return jsonError(404, "not_found", m.errors.notFound);
 
   const rootLines = await loadPreRootLines(id);

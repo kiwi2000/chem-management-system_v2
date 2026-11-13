@@ -83,6 +83,20 @@ export const publishedWhere: Prisma.ProductWhereInput = {
 };
 
 /**
+ * 公開の状態から見て書き換えてよいか。**製品そのものと組成で同じ決まり**（2026-11-13 利用者が確認）。
+ * 承認待は誰も書き換えられない（直すなら取り下げてから）。作成中・却下は作った本人だけ（システム管理グループは別）。
+ * 印（管理グループの表）は別に確かめること
+ */
+export function editableInState(
+  actor: Actor,
+  target: { publishState: PublishState; createdBy: string | null },
+): boolean {
+  if (target.publishState === "PENDING") return false;
+  if (target.publishState === "PUBLISHED") return true;
+  return actor.isSystemAdmin || target.createdBy === actor.user.id;
+}
+
+/**
  * 書き換えてよいか（S31）。所属先に「製品・原材料 編集」の印が要る。
  * 未公開のものは作った本人だけ（システム管理グループは別）。無効（廃番）は印どおりに直せる
  */
@@ -96,10 +110,7 @@ export function canEditProduct(
   },
 ): boolean {
   if (!canOn(actor, "productEdit", target.ownerGroupId)) return false;
-  // 承認待は誰も書き換えられない。直すなら取り下げてから
-  if (target.publishState === "PENDING") return false;
-  if (target.publishState === "PUBLISHED") return true;
-  return actor.isSystemAdmin || target.createdBy === actor.user.id;
+  return editableInState(actor, target);
 }
 
 export function toListItem(p: ProductListRow, versionId: string | null): ProductListItemDto {

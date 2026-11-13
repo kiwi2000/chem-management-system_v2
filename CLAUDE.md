@@ -123,6 +123,9 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
   DTO に `stamp` を持たせ、画面は保存時に `stamp` を送り返し、サーバーは `parseEditStamp` → `updateMany({ where: { id, ...stampWhere(lock) } })` の件数で
   食い違いを見て 409 `stale_edit` を返す。画面は入力を残したまま `StaleEditNotice` を出す。
   見つけ方: `apps/web/lib/edit-stamp-coverage.test.ts` が PUT / PATCH の route.ts と、PUT / PATCH を送る画面の付け忘れを検出する。例外は理由を書いてそこに載せる
+- **「直してよいか」を決める判定は、印（管理グループの表）だけでなく公開の状態も見る**（`lib/product-service.ts` の `editableInState`。承認待はだれも直せない、作成中・却下は作った本人だけ）。
+  組成の判定が印しか見ておらず、承認待の組成が直せ、承認する人がほかの人の公開前の組成を直せた（2026-11-13。製品そのものは見ていた）。画面の保存だけでなく取り込み（`lib/import/`）にも同じ決まりを入れる。
+  見つけ方: `canOn(actor, "` の `…Edit` と `=== "edit"` を grep し、同じ判定の中で `editableInState` を通っているか見る。試験は `apps/web/lib/publish-state-edit.test.ts`
 - **画面に出る文字列を直接書かない。** `packages/shared/src/i18n/ja.ts` にキーを足し、
   `en.ts` にも英語を入れる（入れ忘れはビルドで落ちる）。使い方は `docs/steps/S18_多言語UI基盤.md`
 - **導入先で動く作りは、3 つの入れ方（Railway・Docker・Windows Server）で確かめる。**2026-10-16 に次の 3 つが見つかった

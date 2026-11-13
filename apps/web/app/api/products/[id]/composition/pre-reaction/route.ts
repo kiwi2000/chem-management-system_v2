@@ -1,7 +1,7 @@
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
-import { canEditComposition } from "@/lib/composition-service";
+import { compositionEditDenial } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { recomputeFrom } from "@/lib/expansion-store";
 import { getServerMessages } from "@/lib/i18n";
@@ -34,9 +34,8 @@ export async function POST(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!(await canEditComposition(actor, product))) {
-    return jsonError(403, "forbidden", m.composition.withheldEdit);
-  }
+  const denial = await compositionEditDenial(actor, product, m);
+  if (denial) return denial;
   if (product.preReactionAt) {
     return jsonError(409, "already_started", m.composition.postReaction.alreadyStarted);
   }
@@ -134,9 +133,8 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!(await canEditComposition(actor, product))) {
-    return jsonError(403, "forbidden", m.composition.withheldEdit);
-  }
+  const denial = await compositionEditDenial(actor, product, m);
+  if (denial) return denial;
   if (!product.preReactionAt) return jsonError(404, "not_found", m.errors.notFound);
 
   const snapshot = await prisma.productPreReactionLine.findMany({

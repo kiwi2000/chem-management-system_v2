@@ -1,6 +1,6 @@
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
-import { canEditComposition } from "@/lib/composition-service";
+import { compositionEditDenial } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { visibilityWhere } from "@/lib/product-service";
@@ -23,9 +23,8 @@ export async function POST(_req: Request, { params }: Ctx) {
     where: { id, deletedAt: null, ...visibilityWhere(actor) },
   });
   if (!product) return jsonError(404, "not_found", m.errors.notFound);
-  if (!(await canEditComposition(actor, product))) {
-    return jsonError(403, "forbidden", m.composition.withheldEdit);
-  }
+  const denial = await compositionEditDenial(actor, product, m);
+  if (denial) return denial;
   if (!product.preReactionAt) return jsonError(404, "not_found", m.errors.notFound);
 
   await prisma.product.update({ where: { id }, data: { preReactionChangedAt: null } });

@@ -14,10 +14,15 @@ import { prisma } from "@/lib/db";
 import { expandProduct, findAffected, saveExpansion } from "@/lib/expansion-store";
 import { markDone, markRunning } from "@/lib/import/jobs";
 import { USER_SOURCE_CODE } from "@/lib/import/read-regulation-list";
-import type { CompositionPayload, ProductPayload } from "@/lib/import/stage-products";
+import {
+  compositionStateRefusal,
+  type CompositionPayload,
+  type ProductPayload,
+} from "@/lib/import/stage-products";
 import type { SubstancePayload } from "@/lib/import/stage-substances";
 import { importActor, type ApplySummary, type RowKind } from "@/lib/import/types";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
+import { editableInState } from "@/lib/product-service";
 import { todayInJapan } from "@/lib/judgement-date";
 import { recomputeAllScores } from "@/lib/score-store";
 import { getAppSettings } from "@/lib/settings";
@@ -739,10 +744,20 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
   const actor = await applyActor(actorId);
   const all = await prisma.product.findMany({
     where: { deletedAt: null },
-    select: { id: true, codeNormalized: true, ownerGroupId: true },
+    select: {
+      id: true,
+      codeNormalized: true,
+      ownerGroupId: true,
+      publishState: true,
+      createdBy: true,
+    },
   });
   const products = new Map(all.map((p) => [p.codeNormalized, p.id]));
   const ownerOf = new Map(all.map((p) => [p.id, p.ownerGroupId]));
+  // 公開の状態と作った人（組成を直してよいかを、画面と同じ決まりで確かめるため）
+  const stateOf = new Map(
+    all.map((p) => [p.id, { publishState: p.publishState, createdBy: p.createdBy }]),
+  );
   const touched = new Set<string>();
 
   for await (const page of rowsOf(jobId, "product")) {
@@ -782,6 +797,8 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
         });
         products.set(codeN, c.id);
         ownerOf.set(c.id, target as string);
+        // この取り込みで作ったものは、反映した人が作った本人（続く組成の行が通るように覚えておく）
+        stateOf.set(c.id, { publishState: c.publishState, createdBy: c.createdBy });
         touched.add(c.id);
       } else {
         await prisma.product.update({
@@ -813,6 +830,15 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
       const owner = ownerOf.get(id);
       if (!owner || !canOn(actor, "compositionEdit", owner)) {
         await h.fail(row, `製品「${p.productCode}」の組成は直せません`);
+        continue;
+      }
+      // 読み取りのあとに申請・承認されていることがあるので、反映のときにも確かめる
+      const state = stateOf.get(id);
+      if (!state || !editableInState(actor, state)) {
+        await h.fail(
+          row,
+          `製品「${p.productCode}」: ${compositionStateRefusal(state?.publishState ?? "")}`,
+        );
         continue;
       }
       await prisma.$transaction([
