@@ -349,14 +349,6 @@ export async function stageProducts(
         errors.push({ line: e.line, message: `製品「${e.product.code}」: 組成は直せません` });
         continue;
       }
-      // 公開の状態は画面と同じ決まり（承認待は誰も直せない。作成中・却下は作った本人だけ）
-      if (cur && !editableInState(ctx.actor, cur)) {
-        errors.push({
-          line: e.line,
-          message: `製品「${e.product.code}」: ${compositionStateRefusal(cur.publishState)}`,
-        });
-        continue;
-      }
       const payload: CompositionPayload = { productCode: e.product.code, lines: e.lines };
       const sig = (
         ls: { substanceId: string | null; childProductId: string | null; contentPct: unknown }[],
@@ -366,6 +358,17 @@ export async function stageProducts(
           .sort()
           .join(";");
       const same = cur && sig(cur.compositionLines) === sig(e.lines);
+      /*
+        公開の状態は画面と同じ決まり（承認待は誰も直せない。作成中・却下は作った本人だけ）。
+        組成が今と同じなら断らない（出力したファイルをそのまま取り込み直しても誤りにしない）
+      */
+      if (cur && !same && !editableInState(ctx.actor, cur)) {
+        errors.push({
+          line: e.line,
+          message: `製品「${e.product.code}」: ${compositionStateRefusal(cur.publishState)}`,
+        });
+        continue;
+      }
       rows.push({
         kind: "composition",
         keyPath: `${e.product.code}/composition`,
