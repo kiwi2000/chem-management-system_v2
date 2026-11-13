@@ -319,10 +319,8 @@ export function PermissionGroupForm({ id }: { id: string | null }) {
         }}
         className="space-y-4"
       >
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{m.permGroups.basic}</CardTitle>
-          </CardHeader>
+        {/* コード・名前。見出しは置かず、閉じもしない（2026-11-13 指示。いつも見えているものなので） */}
+        <Card collapsible={false}>
           <CardContent className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="pg-code">{m.permGroups.code}</Label>

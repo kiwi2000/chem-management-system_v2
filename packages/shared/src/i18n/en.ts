@@ -282,12 +282,11 @@ export const en: Messages = {
     targetsAll: "(all)",
     systemAdmin: "System admin",
     systemAdminNote:
-      "Members of this group can see and edit all data. It has no table. Its code and name cannot be changed and it cannot be deleted. The last member cannot be removed.",
+      "Members of this group can view and edit all data. Its code and name cannot be changed, the group cannot be deleted, and the last member cannot be removed.",
     systemAdminLocked: "The system administrators group cannot be changed",
     duplicateCode: "This code cannot be used (another permission group has it)",
     inUse: (code: string) => `“${code}” is used elsewhere and cannot be deleted`,
     empty: "No permission groups",
-    basic: "Basic",
     tableTitle: "Data this group can see and edit",
     tableHint: "Set marks for each target permission group",
     targetHeader: "Target permission group",
