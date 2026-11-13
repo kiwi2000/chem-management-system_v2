@@ -9,7 +9,7 @@ import type { Messages } from "./i18n/ja";
 const organisationId = (m: Messages) => z.string().trim().min(1, m.validation.required);
 
 /**
- * 入る権限グループの id（S31。いくつでも、0 でもよい）。
+ * 入る管理グループの id（S31。いくつでも、0 でもよい）。
  * 省略は「変えない」ではなく「無し」。画面は常に全部を送る
  */
 const groupIds = z.array(z.string().trim().min(1)).transform((v) => [...new Set(v)]);

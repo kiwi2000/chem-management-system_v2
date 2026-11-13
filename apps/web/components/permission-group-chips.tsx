@@ -17,7 +17,7 @@ export interface GroupChipOption {
 }
 
 /**
- * 権限グループを丸い札で並べ、「＋ 追加」で選択肢の小窓を開いて足す（S31 画面設計 4 章）。
+ * 管理グループを丸い札で並べ、「＋ 追加」で選択肢の小窓を開いて足す（S31 画面設計 4 章）。
  * 札の ✕ で外す。点線の縁は「組織から最初に選ばれたもの」、紫はシステム管理グループ
  */
 export function PermissionGroupChips({
@@ -45,7 +45,7 @@ export function PermissionGroupChips({
   const close = useCallback(() => setOpen(false), []);
   const boxRef = useOutsideClose<HTMLDivElement>(open, close);
 
-  // 選択肢に無い id（消えた権限グループ）は出さない。並びは選択肢の並び（システム管理グループが先頭、あとはコード順）
+  // 選択肢に無い id（消えた管理グループ）は出さない。並びは選択肢の並び（システム管理グループが先頭、あとはコード順）
   const ordered = options.filter((o) => value.includes(o.id));
   const labelOf = (o: GroupChipOption) => pickName(locale, o.nameJa, o.nameEn);
 

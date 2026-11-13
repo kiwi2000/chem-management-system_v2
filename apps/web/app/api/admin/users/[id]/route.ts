@@ -36,7 +36,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   return Response.json({ item: toUserSummary(user, await orgPathMap()) });
 }
 
-/** PUT /api/admin/users/[id] — 表示名・組織・権限グループ・有効/無効の更新 */
+/** PUT /api/admin/users/[id] — 表示名・組織・管理グループ・有効/無効の更新 */
 export async function PUT(req: Request, { params }: Ctx) {
   const actor = await requireAdmin();
   if (actor instanceof Response) return actor;
@@ -100,8 +100,8 @@ export async function PUT(req: Request, { params }: Ctx) {
     actor.user.id,
   );
 
-  // 無効化・入る権限グループの変更をその場で効かせるため、対象ユーザーのセッションを切る
-  // （S31 画面設計の決定 6。権限グループの表を直したときは切らない）
+  // 無効化・入る管理グループの変更をその場で効かせるため、対象ユーザーのセッションを切る
+  // （S31 画面設計の決定 6。管理グループの表を直したときは切らない）
   if (groupsChanged || !activeFlag) await revokeAllSessions(id);
 
   await writeAudit({

@@ -37,7 +37,7 @@ async function list() {
   console.table(
     users.map((u) => ({
       email: u.email,
-      権限グループ: u.permissionGroups.map((p) => p.group.code).join(" "),
+      管理グループ: u.permissionGroups.map((p) => p.group.code).join(" "),
       有効: u.activeFlag,
       パスワード: u.passwordHash ? "設定済み" : "未設定",
       MFA: u.mfaMethod === "totp" ? "認証アプリ" : "なし",

@@ -29,7 +29,7 @@ export interface SubstancePayload {
   note: string | null;
   aliases: string[];
   /**
-   * 所属先（S31。権限グループの id）。新しく作るときは必ず入る。
+   * 所属先（S31。管理グループの id）。新しく作るときは必ず入る。
    * 既にある物質で null なら所属先を変えない（「画面で選んだ所属先」のとき）
    */
   ownerGroupId?: string | null;

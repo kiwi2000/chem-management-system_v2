@@ -21,10 +21,10 @@ import { getAppSettings } from "@/lib/settings";
  * 認可ポリシー（単一モジュールに集中: CLAUDE.md §4）。
  * すべての API Route Handler はここを必ず通すこと。クライアント側の制御だけに頼らない。
  *
- * S31 から、人の権限は入っている権限グループを合わせたもの（仕様 6-6）。
+ * S31 から、人の権限は入っている管理グループを合わせたもの（仕様 6-6）。
  * - `permissions` / `has` … 表とは別の権限に、表の印から作った製品・組成・物質の 5 つと、
  *   システム管理グループなら `ADMIN` を足したもの。**入口の確かめ（その画面・API に入れるか）に使う**
- * - `scope` … 表の印ごとの「対象にできる所属先（権限グループの id）」。**どのデータかの確かめに使う**
+ * - `scope` … 表の印ごとの「対象にできる所属先（管理グループの id）」。**どのデータかの確かめに使う**
  *   （`ownerWhere` / `canOn`）。システム管理グループの人は `all`
  */
 
@@ -58,7 +58,7 @@ const MARK_PERMISSION: Partial<Record<PermissionMark, Permission>> = {
   substanceEdit: "SUBSTANCE_EDIT",
 };
 
-/** 入っている権限グループから、その人の権限と印の対象を組み立てる */
+/** 入っている管理グループから、その人の権限と印の対象を組み立てる */
 async function buildActor(user: AppUser): Promise<Actor> {
   const memberships = await prisma.userPermissionGroup.findMany({
     where: { userId: user.id },
@@ -99,7 +99,7 @@ async function buildActor(user: AppUser): Promise<Actor> {
       for (const k of PERMISSION_MARKS) if (row[k]) scope[k].add(row.targetGroupId);
     }
     // DB の enum にだけ残っている古い値（無効・未公開、送り主）は無いものとして扱う。
-    // 製品・組成・物質と管理者の権限は、権限グループに付いていても使わない（表の印と管理グループで決まる）
+    // 製品・組成・物質と管理者の権限は、管理グループに付いていても使わない（表の印と管理グループで決まる）
     for (const { permission } of group.permissions) {
       if (isPermission(permission) && GROUP_PERMISSIONS.includes(permission)) {
         granted.add(permission);
@@ -207,7 +207,7 @@ export function canEdit(actor: Actor): boolean {
 
 /*
   ── データの所属先（S31）───────────────────────────────
-  製品・原材料・物質は 1 つの権限グループに所属する。見られる・直せるかは、
+  製品・原材料・物質は 1 つの管理グループに所属する。見られる・直せるかは、
   その人の表の、所属先の行の印で決まる（仕様 6・7 章）。
 */
 
@@ -240,7 +240,7 @@ export function scopeIds(actor: Actor, mark: PermissionMark): string[] | null {
   return [...actor.scope[mark]];
 }
 
-/** 製品・組成・物質の権限が、表の印から作られたものか（権限グループの欄には出さない） */
+/** 製品・組成・物質の権限が、表の印から作られたものか（管理グループの欄には出さない） */
 export function isDataPermission(p: Permission): boolean {
   return (DATA_PERMISSIONS as readonly Permission[]).includes(p);
 }

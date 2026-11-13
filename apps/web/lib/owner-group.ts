@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 
 /**
- * データの所属先（S31 仕様 7 章）。製品・原材料・物質は、1 件ごとに 1 つの権限グループに所属する。
+ * データの所属先（S31 仕様 7 章）。製品・原材料・物質は、1 件ごとに 1 つの管理グループに所属する。
  */
 
 export interface OwnerChoice {
@@ -15,10 +15,10 @@ export interface OwnerChoice {
 }
 
 /**
- * 作るとき・移すときに選べる所属先。「編集」の印を持つ権限グループだけ
+ * 作るとき・移すときに選べる所属先。「編集」の印を持つ管理グループだけ
  * （製品・原材料なら productEdit、物質なら substanceEdit）。
- * システム管理グループの人は、どの権限グループでも選べる（表が無いため。11-06）。
- * システム管理グループそのものはデータの持ち主にしない（ほかの権限グループの表の相手にならないため）
+ * システム管理グループの人は、どの管理グループでも選べる（表が無いため。11-06）。
+ * システム管理グループそのものはデータの持ち主にしない（ほかの管理グループの表の相手にならないため）
  */
 export async function ownerChoices(actor: Actor, mark: PermissionMark): Promise<OwnerChoice[]> {
   const ids = actor.scope === "all" ? null : [...actor.scope[mark]];
@@ -68,7 +68,7 @@ export function canMoveOwner(
 }
 
 /**
- * TSV の所属先の列（権限グループのコード）を id に直す。無いコードは null
+ * TSV の所属先の列（管理グループのコード）を id に直す。無いコードは null
  */
 export async function ownerIdsByCode(codes: string[]): Promise<Map<string, string>> {
   const rows = await prisma.permissionGroup.findMany({

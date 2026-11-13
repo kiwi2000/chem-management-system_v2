@@ -104,7 +104,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 /**
  * DELETE /api/admin/permission-groups/[id] — 消す（仕様 5 章）。
  * 消せるのは、入っている人も所属するデータも無いものだけ。システム管理グループは消せない。
- * 消すと、ほかの表のその行と、組織の「最初に選ばれる権限グループ」からも自動で外れる（外部キーで消える）
+ * 消すと、ほかの表のその行と、組織の「最初に選ばれる管理グループ」からも自動で外れる（外部キーで消える）
  */
 export async function DELETE(_req: Request, { params }: Ctx) {
   const actor = await requireAdmin();

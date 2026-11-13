@@ -16,14 +16,14 @@ description: 化学物質管理システム v2 の開発画面（:3001）に、�
 node --env-file=.env node_modules/tsx/dist/cli.mjs .cache/temp-session.ts <scratchpad>/tok.txt
 ```
 
-S31（2026-11）から権限は権限グループで決まる。既定はシステム管理グループに入れる（何でもできる）。
-ふつうの人として確かめるときは、入れる権限グループのコードと、別のメールアドレスを渡す（2 人を同時に作れる）。
+S31（2026-11）から権限は管理グループで決まる。既定はシステム管理グループに入れる（何でもできる）。
+ふつうの人として確かめるときは、入れる管理グループのコードと、別のメールアドレスを渡す（2 人を同時に作れる）。
 
 ```bash
 node --env-file=.env node_modules/tsx/dist/cli.mjs .cache/temp-session.ts <scratchpad>/tok_a.txt --group MIG3 --email spec-a@example.test
 ```
 
-所属先で見え方が変わるかを確かめるときは、2 つの権限グループと製品・物質を作る `.cache/s31-fixture.ts`（`--remove` で消す）を使う
+所属先で見え方が変わるかを確かめるときは、2 つの管理グループと製品・物質を作る `.cache/s31-fixture.ts`（`--remove` で消す）を使う
 
 - 合言葉（セッションの値）は scratchpad のファイルにだけ書く。**cat などで表示しない**（自動承認で止められる）。
   使うときは `$(< file)` でコマンドに渡すか、スクリプトの中で読む
@@ -34,7 +34,7 @@ node --env-file=.env node_modules/tsx/dist/cli.mjs .cache/temp-session.ts <scrat
 // .cache/temp-session.ts の中身（要点）
 const EMAIL = "spec-check@example.test";
 // 既存なら sessions / user_permission_groups / audit_logs / users の順に消す。--remove ならここで終わり
-// users に作成（組織は表示順の先頭）→ user_permission_groups に --group の権限グループ（無ければシステム管理グループ）
+// users に作成（組織は表示順の先頭）→ user_permission_groups に --group の管理グループ（無ければシステム管理グループ）
 // → sessions に { tokenHash: sha256(raw), expiresAt: 1 時間後 }
 // raw（randomBytes(32) の base64url）を引数のファイルに書く
 ```

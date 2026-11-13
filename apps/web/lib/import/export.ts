@@ -162,7 +162,7 @@ export async function exportRegulationList(filter: RegulationListFilter): Promis
 /**
  * 製品と組成。見られる製品だけ（visibilityWhere）。
  * 組成は、その製品の組成を見られるとき（S31 仕様 10 章の 3 つの条件）だけ出す。見られない製品は製品の行だけ。
- * 所属先（権限グループのコード）の列を含める（そのまま取り込みに使える）
+ * 所属先（管理グループのコード）の列を含める（そのまま取り込みに使える）
  */
 export async function exportProducts(actor: Actor): Promise<string> {
   const products = await prisma.product.findMany({

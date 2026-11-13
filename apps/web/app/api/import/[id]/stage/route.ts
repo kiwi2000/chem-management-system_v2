@@ -25,7 +25,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   /*
     製品・物質の取り込みは、所属先の決め方を選ぶ（S31 仕様 7 章）。
-    fixed = 画面で選んだ所属先（「編集」の印を持つ権限グループから）、column = TSV の所属先の列
+    fixed = 画面で選んだ所属先（「編集」の印を持つ管理グループから）、column = TSV の所属先の列
   */
   let ownerMode: string | null = null;
   let ownerGroupId: string | null = null;

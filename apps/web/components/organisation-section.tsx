@@ -62,7 +62,7 @@ const EMPTY_FORM = {
   activeFlag: true,
   /** 上の組織（S31）。空ならいちばん上 */
   parentId: "",
-  /** 最初に選ばれる権限グループ（S31。システム管理グループの人だけが直す） */
+  /** 最初に選ばれる管理グループ（S31。システム管理グループの人だけが直す） */
   defaultGroupIds: [] as string[],
   items: [] as ItemDraft[],
 };
@@ -85,7 +85,7 @@ export function OrganisationSection() {
   const { m, locale } = useI18n();
   const { me, can } = useMe();
   const editable = can("ORG_EDIT");
-  // 最初に選ばれる権限グループは、システム管理グループの人にだけ出す（S31 画面設計 6 章）
+  // 最初に選ばれる管理グループは、システム管理グループの人にだけ出す（S31 画面設計 6 章）
   const isAdmin = me?.isAdmin ?? false;
   // 組織図と、上の組織の選択肢のもと。この画面で組織を書き換えるので、保存・削除のたびに読み直す
   const { items: allOrgs, reload: reloadAllOrgs } = useOrganisationList();

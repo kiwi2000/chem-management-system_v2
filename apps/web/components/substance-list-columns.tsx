@@ -92,7 +92,7 @@ export function useSubstanceListColumns({
         ),
       },
       {
-        // 所属先（S31）。権限グループのコードで絞る。選べるのは自分が見られる所属先
+        // 所属先（S31）。管理グループのコードで絞る。選べるのは自分が見られる所属先
         key: "owner",
         header: m.owner.label,
         kind: "enum",

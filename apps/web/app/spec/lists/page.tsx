@@ -87,7 +87,7 @@ export default function ManualListsPage() {
                 公開済
               </StateChip>,
               "なし（画面の見出しがそのまま）",
-              "所属先を見られる人なら誰でも",
+              "管理グループを見られる人なら誰でも",
             ],
             [
               "下",

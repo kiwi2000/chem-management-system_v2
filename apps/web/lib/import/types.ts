@@ -35,9 +35,9 @@ export interface StageContext {
   actor: Actor;
   /** fixed = 画面で選んだ所属先、column = TSV の所属先の列 */
   mode: "fixed" | "column";
-  /** fixed のときの所属先（権限グループの id） */
+  /** fixed のときの所属先（管理グループの id） */
   fixedOwner: string | null;
-  /** 所属先にできる権限グループ（システム管理グループを除く全部） */
+  /** 所属先にできる管理グループ（システム管理グループを除く全部） */
   owners: { id: string; code: string }[];
 }
 
@@ -57,16 +57,16 @@ export function resolveOwner(
   let target: string | null;
   if (ctx.mode === "fixed") {
     target = current ? null : ctx.fixedOwner;
-    if (!current && !target) return "所属先が選ばれていません";
+    if (!current && !target) return "管理グループが選ばれていません";
   } else {
-    if (!code) return "所属先が空です";
+    if (!code) return "管理グループが空です";
     const found = ctx.owners.find((o) => o.code === code);
-    if (!found) return `所属先「${code}」はありません`;
+    if (!found) return `管理グループ「${code}」はありません`;
     target = found.id;
   }
   if (target && target !== current && !canOn(ctx.actor, mark, target)) {
     const label = ctx.owners.find((o) => o.id === target)?.code ?? "";
-    return `所属先「${label}」は編集できません`;
+    return `管理グループ「${label}」は編集できません`;
   }
   return { target: target === current ? null : target };
 }

@@ -16,7 +16,7 @@ import { orgPathMap, chainLabel } from "@/lib/organisation-tree";
 import type { PermissionGroupDetailDto, PermissionGroupListItemDto } from "@/lib/types";
 
 /**
- * 権限グループ（S31 仕様 5・6 章、画面設計 2・3 章）の読み書き。
+ * 管理グループ（S31 仕様 5・6 章、画面設計 2・3 章）の読み書き。
  */
 
 const LIST_SELECT = {
@@ -32,7 +32,7 @@ const LIST_SELECT = {
   },
 } satisfies Prisma.PermissionGroupSelect;
 
-/** 一覧の行（全部。権限グループは多くても数十なので、絞り込み・並べ替えは呼ぶ側がメモリで行う） */
+/** 一覧の行（全部。管理グループは多くても数十なので、絞り込み・並べ替えは呼ぶ側がメモリで行う） */
 export async function listPermissionGroups(): Promise<PermissionGroupListItemDto[]> {
   const rows = await prisma.permissionGroup.findMany({
     select: LIST_SELECT,
@@ -145,7 +145,7 @@ export async function normalizeRows(
   return out;
 }
 
-/** 表とは別の権限を正規化する（含意を補い、権限グループに付けないものを落とす） */
+/** 表とは別の権限を正規化する（含意を補い、管理グループに付けないものを落とす） */
 export function normalizeGroupPermissions(perms: Permission[]): Permission[] {
   return expandPermissions(perms).filter((p) => GROUP_PERMISSIONS.includes(p));
 }

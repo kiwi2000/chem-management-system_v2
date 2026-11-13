@@ -28,7 +28,7 @@ export default function NewUserPage() {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
-  // S31: 組織は 1 つ。選ぶと「最初に選ばれる権限グループ」が入った状態になる（仕様 8-2）
+  // S31: 組織は 1 つ。選ぶと「最初に選ばれる管理グループ」が入った状態になる（仕様 8-2）
   const [organisationId, setOrganisationId] = useState("");
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const organisations = useOrganisations();
@@ -43,7 +43,7 @@ export default function NewUserPage() {
   // 打っている最中から決まりを見る。送ってから断られるより早く気づける
   const pwProblem = passwordProblem(initialPassword, m, policy);
 
-  // 組織とその上の組織に設定した「最初に選ばれる権限グループ」
+  // 組織とその上の組織に設定した「最初に選ばれる管理グループ」
   const defaultsOf = useCallback(
     (orgId: string) =>
       new Set(

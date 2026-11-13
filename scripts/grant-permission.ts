@@ -1,15 +1,15 @@
 /**
- * 人を権限グループに入れる管理用スクリプト（S31 から。人に直接付ける権限は無くなった）。
+ * 人を管理グループに入れる管理用スクリプト（S31 から。人に直接付ける権限は無くなった）。
  * 主な用途:
  *  - 画面にログインできる管理者がいないときの復旧（システム管理グループに入れる）
- *  - 入れたい権限グループに、画面を使わずに入れる
+ *  - 入れたい管理グループに、画面を使わずに入れる
  *
  * 実行:
- *   npx tsx scripts/grant-permission.ts --list                       人と入っている権限グループの一覧
+ *   npx tsx scripts/grant-permission.ts --list                       人と入っている管理グループの一覧
  *   npx tsx scripts/grant-permission.ts <メール>                      システム管理グループに入れる
- *   npx tsx scripts/grant-permission.ts <メール> <コード> [<コード> ...] 指定の権限グループに入れる
+ *   npx tsx scripts/grant-permission.ts <メール> <コード> [<コード> ...] 指定の管理グループに入れる
  *
- * 入れるだけで、既に入っている権限グループからは外さない（画面の保存とは違い、置き換えではない）。
+ * 入れるだけで、既に入っている管理グループからは外さない（画面の保存とは違い、置き換えではない）。
  * 入れたら、その人のセッションを切るため、ログインし直してもらう。
  */
 import { normalizeCode } from "@chem/shared";
@@ -37,7 +37,7 @@ async function list() {
       email: u.email,
       名前: u.displayName ?? "-",
       有効: u.activeFlag,
-      権限グループ: u.permissionGroups.map((p) => p.group.code).join(" "),
+      管理グループ: u.permissionGroups.map((p) => p.group.code).join(" "),
     })),
   );
 }
@@ -48,7 +48,7 @@ async function main() {
     await list();
     if (args.length === 0) {
       console.log(
-        "\n使い方: npx tsx scripts/grant-permission.ts <メールアドレス> [<権限グループのコード> ...]",
+        "\n使い方: npx tsx scripts/grant-permission.ts <メールアドレス> [<管理グループのコード> ...]",
       );
       console.log("コードを省くと、システム管理グループに入れます");
     }
@@ -82,7 +82,7 @@ async function main() {
   if (groups.length === 0 || missing.length > 0) {
     console.error(
       missing.length > 0
-        ? `知らない権限グループ: ${missing.join(", ")}`
+        ? `知らない管理グループ: ${missing.join(", ")}`
         : "システム管理グループがありません（移行が済んでいるか確かめてください）",
     );
     process.exitCode = 1;
@@ -93,7 +93,7 @@ async function main() {
     data: groups.map((g) => ({ userId: user.id, groupId: g.id, reason: "MANUAL" as const })),
     skipDuplicates: true,
   });
-  // 入った権限グループをその場で効かせるため、ログインし直してもらう
+  // 入った管理グループをその場で効かせるため、ログインし直してもらう
   await prisma.session.updateMany({
     where: { userId: user.id, endedAt: null },
     data: { endedAt: new Date(), endedReason: "revoked" },

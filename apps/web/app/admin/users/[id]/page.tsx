@@ -37,10 +37,10 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [me, setMe] = useState<MeDto | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [activeFlag, setActiveFlag] = useState(true);
-  // S31: 組織は 1 つ、権限グループはいくつでも
+  // S31: 組織は 1 つ、管理グループはいくつでも
   const [organisationId, setOrganisationId] = useState("");
   const [groupIds, setGroupIds] = useState<string[]>([]);
-  /** 組織を変えたので権限グループを選び直した（保存前に見直してもらう） */
+  /** 組織を変えたので管理グループを選び直した（保存前に見直してもらう） */
   const [regrouped, setRegrouped] = useState(false);
   const organisations = useOrganisations();
   const groupOptions = usePermissionGroupOptions();
@@ -83,7 +83,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   }, [load]);
 
   const isSelf = me !== null && me.id === id;
-  // 組織とその上の組織に設定した「最初に選ばれる権限グループ」（点線で見分ける）
+  // 組織とその上の組織に設定した「最初に選ばれる管理グループ」（点線で見分ける）
   const defaultsOf = useCallback(
     (orgId: string) =>
       new Set(
@@ -103,7 +103,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     [isSelf, groupOptions],
   );
 
-  /** 異動: 組織を変えたら、権限グループを新しい組織の「最初に選ばれる権限グループ」で選び直す（仕様 8-2） */
+  /** 異動: 組織を変えたら、管理グループを新しい組織の「最初に選ばれる管理グループ」で選び直す（仕様 8-2） */
   function changeOrganisation(next: string) {
     setOrganisationId(next);
     const keep = groupIds.filter((g) => locked.has(g));

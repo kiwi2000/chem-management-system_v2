@@ -83,7 +83,7 @@ export async function GET(req: Request) {
     ]);
   }
 
-  // 最初に選ばれる権限グループはシステム設定の一部なので、システム管理グループの人にだけ返す（S31）
+  // 最初に選ばれる管理グループはシステム設定の一部なので、システム管理グループの人にだけ返す（S31）
   const defaults = actor.isSystemAdmin ? await defaultGroupsByOrg() : null;
   return Response.json({
     items: items.map((o) => ({
@@ -145,7 +145,7 @@ export async function POST(req: Request) {
     },
   });
 
-  // 最初に選ばれる権限グループはシステム設定の一部。システム管理グループの人が送ったときだけ（S31）
+  // 最初に選ばれる管理グループはシステム設定の一部。システム管理グループの人が送ったときだけ（S31）
   if (actor.isSystemAdmin && v.defaultGroupIds)
     await setDefaultGroups(created.id, v.defaultGroupIds);
 

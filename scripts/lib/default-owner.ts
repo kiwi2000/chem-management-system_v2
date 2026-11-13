@@ -3,7 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 /**
  * スクリプトが作る製品・物質の所属先（S31）。
  * 移行で作る「全体」（コード ALL）があればそれ、無ければシステム管理グループ以外のいちばん前のコード。
- * 権限グループが 1 つも無ければ止める（所属先の無いデータは作れない）
+ * 管理グループが 1 つも無ければ止める（所属先の無いデータは作れない）
  */
 export async function defaultOwnerGroupId(prisma: PrismaClient): Promise<string> {
   const all = await prisma.permissionGroup.findUnique({
@@ -18,7 +18,7 @@ export async function defaultOwnerGroupId(prisma: PrismaClient): Promise<string>
   });
   if (!first)
     throw new Error(
-      "所属先にできる権限グループがありません（画面の「権限グループ」で作ってください）",
+      "データを管理させる管理グループがありません（画面の「管理グループ」で作ってください）",
     );
   return first.id;
 }

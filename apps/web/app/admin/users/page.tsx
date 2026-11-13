@@ -77,7 +77,7 @@ export default function UsersPage() {
         render: (u) => u.organisationPath ?? "",
       },
       {
-        // 入っている権限グループ（S31）。「権限」の列を置き換えた
+        // 入っている管理グループ（S31）。「権限」の列を置き換えた
         key: "permissionGroups",
         header: m.users.permissionGroups,
         kind: "enum",

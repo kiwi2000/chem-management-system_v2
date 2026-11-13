@@ -57,7 +57,7 @@ function nameWithAliases(
 export const SUBSTANCE_COLUMNS: QueryColumn[] = [
   // コード・CAS は正規化列で突合する（全角や大小文字の違いを吸収するため）
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
-  // 所属先（S31）。権限グループのコードで絞り・並べる
+  // 所属先（S31）。管理グループのコードで絞り・並べる
   { key: "owner", kind: "enum", field: "code", nested: "ownerGroup" },
   // CAS番号は複数まとめて（製品の組成のCAS番号と同じ入力欄。2026-09-11 指示）。値は正規化して完全一致
   { key: "casNumber", kind: "list", field: "casNormalized", normalize: normalizeCas },
@@ -412,7 +412,7 @@ export function productColumns(
 /** 製品の一覧の列のうち、法規制バージョンに依らないもの */
 const PRODUCT_PLAIN_COLUMNS: QueryColumn[] = [
   { key: "code", kind: "text", field: "codeNormalized", normalize: normalizeCode },
-  // 所属先（S31）。権限グループのコードで絞り・並べる
+  // 所属先（S31）。管理グループのコードで絞り・並べる
   { key: "owner", kind: "enum", field: "code", nested: "ownerGroup" },
   { key: "nameJa", kind: "text", field: "nameJa", caseInsensitive: true },
   { key: "nameEn", kind: "text", field: "nameEn", caseInsensitive: true },
@@ -795,7 +795,7 @@ export interface LinkNameViewer {
   /** 公開前のものも見られる（承認する人） */
   seeAll: boolean;
   userId: string;
-  /** 見られる物質の所属先（権限グループの id）。null は全部（システム管理グループ） */
+  /** 見られる物質の所属先（管理グループの id）。null は全部（システム管理グループ） */
   ownerIds?: string[] | null;
 }
 
@@ -1058,7 +1058,7 @@ export const USER_COLUMNS: QueryColumn[] = [
       return { OR: or };
     },
   },
-  // 入っている権限グループ（S31）。値は権限グループの id。どれかに入っていれば当たる
+  // 入っている管理グループ（S31）。値は管理グループの id。どれかに入っていれば当たる
   {
     key: "permissionGroups",
     kind: "enum",

@@ -89,7 +89,7 @@ const PERMISSION_SECTIONS = PERMISSION_GROUPS.map((g) => ({
 })).filter((g) => g.permissions.length > 0);
 
 /**
- * 権限グループの登録・詳細（S31 画面設計 3 章）。
+ * 管理グループの登録・詳細（S31 画面設計 3 章）。
  * 既存は表示のみで開き、「編集」で書き換え可にする。人の追加・削除は保存を待たずに確定する
  */
 export function PermissionGroupForm({ id }: { id: string | null }) {
@@ -173,7 +173,7 @@ export function PermissionGroupForm({ id }: { id: string | null }) {
       ? `${nameJa || code || ""}${m.permGroups.self}`
       : `${nameOf(r)}（${r.code}）`;
 
-  // 相手に選べる権限グループ（表にまだ無いもの。システム管理グループは相手にならない）
+  // 相手に選べる管理グループ（表にまだ無いもの。システム管理グループは相手にならない）
   const addable = useMemo(() => {
     const have = new Set(rows.map((r) => r.targetGroupId));
     const opts = all
@@ -546,7 +546,7 @@ export function PermissionGroupForm({ id }: { id: string | null }) {
   );
 }
 
-/** 相手の権限グループを足す小窓（選択肢の小窓。components/option-checklist.tsx） */
+/** 相手の管理グループを足す小窓（選択肢の小窓。components/option-checklist.tsx） */
 function AddTargets({
   options,
   onAdd,

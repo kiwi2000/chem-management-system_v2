@@ -5,8 +5,8 @@ import type { PermissionGroupOptionsDto } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/admin/permission-groups/options — 人の画面で権限グループを選ぶための一覧（S31）。
- * 組織ごとの「最初に選ばれる権限グループ」も一緒に返す（画面が組織の上下をたどって合わせる）
+ * GET /api/admin/permission-groups/options — 人の画面で管理グループを選ぶための一覧（S31）。
+ * 組織ごとの「最初に選ばれる管理グループ」も一緒に返す（画面が組織の上下をたどって合わせる）
  */
 export async function GET() {
   const actor = await requireAdmin();

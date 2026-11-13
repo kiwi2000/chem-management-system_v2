@@ -52,7 +52,7 @@ function cellOf(g: PermissionGroupListItemDto, key: string): string {
 }
 
 /**
- * GET /api/admin/permission-groups — 権限グループの一覧（S31 画面設計 2 章）。
+ * GET /api/admin/permission-groups — 管理グループの一覧（S31 画面設計 2 章）。
  * 多くても数十なので、全部読んでから絞り込み・並べ替えをする。システム管理グループはいつも先頭
  */
 export async function GET(req: Request) {
@@ -81,7 +81,7 @@ export async function GET(req: Request) {
   });
 }
 
-/** POST /api/admin/permission-groups — 権限グループを作る（表・別の権限も一緒に） */
+/** POST /api/admin/permission-groups — 管理グループを作る（表・別の権限も一緒に） */
 export async function POST(req: Request) {
   const actor = await requireAdmin();
   if (actor instanceof Response) return actor;

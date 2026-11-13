@@ -200,7 +200,7 @@ const ITEMS: NavItem[] = [
 
 const ADMIN_ITEMS: NavItem[] = [
   { href: "/admin/users", key: "users", icon: UserCog, needs: "ADMIN", match: ["/admin/users"] },
-  // 権限グループ（S31）。人に何ができるかと、データの所属先を決める
+  // 管理グループ（S31）。人に何ができるかと、データの所属先を決める
   {
     href: "/admin/permission-groups",
     key: "permissionGroups",

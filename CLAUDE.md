@@ -48,6 +48,8 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 
 ## 4. 守るべきルール
 
+- **呼び名（2026-11-13 利用者が決めた）**: 画面とマニュアルでは、人が入り、製品・原材料・物質が属し、権限を付け合うまとまりを **「管理グループ」** と呼ぶ（前は「権限グループ」と、データの「所属先」）。人は「メンバー」、組織の上下は「上位組織」「最上位」。コードの識別子は `permissionGroup` / `ownerGroup` のまま。`docs/steps/S31_*` の古い記録と、ソースの注釈の「所属先」は当時の言葉のまま（同じものを指す）
+
 ### セキュリティ
 
 - **すべての API Route Handler は `lib/authz.ts` の `requireUser` / `requirePermission` / `requireAnyPermission` / `requireAdmin` を必ず通す。**

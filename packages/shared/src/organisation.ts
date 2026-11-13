@@ -60,7 +60,7 @@ export const organisationSchema = (m: Messages) =>
       .nullable()
       .optional(),
     /**
-     * 最初に選ばれる権限グループ（S31 仕様 8 章）。**システム管理グループの人が送ったときだけ使う**
+     * 最初に選ばれる管理グループ（S31 仕様 8 章）。**システム管理グループの人が送ったときだけ使う**
      * （システム設定の一部。組織を直せるだけの人には欄を出さず、送られても無視する）。省略は「変えない」
      */
     defaultGroupIds: z.array(z.string().trim().min(1)).optional(),

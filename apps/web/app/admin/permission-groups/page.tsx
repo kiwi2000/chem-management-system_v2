@@ -15,7 +15,7 @@ import { useTableState } from "@/lib/use-table-state";
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
 
 /**
- * 権限グループの一覧（S31 画面設計 2 章）。
+ * 管理グループの一覧（S31 画面設計 2 章）。
  * 詳細へは先頭のコードから。削除は左のチェックでまとめて（システム管理グループは選べない）
  */
 export default function PermissionGroupsPage() {

@@ -1,10 +1,10 @@
 /**
  * 権限。
- * S31（2026-11）から、人ではなく権限グループに付ける。人の権限は、入っている権限グループを合わせたもの。
- * - 製品・組成・物質の 5 つ（`DATA_PERMISSIONS`）は権限グループの表の印に置き換わった。
+ * S31（2026-11）から、人ではなく管理グループに付ける。人の権限は、入っている管理グループを合わせたもの。
+ * - 製品・組成・物質の 5 つ（`DATA_PERMISSIONS`）は管理グループの表の印に置き換わった。
  *   ログイン中の人が「どこかの所属先に対して印を持つか」を表す値として、入口の確かめに使い続ける
- * - `ADMIN` はシステム管理グループに入っていることを表す（権限グループには付けない）
- * - 残り（`GROUP_PERMISSIONS`）が「表とは別の権限」で、権限グループに付ける
+ * - `ADMIN` はシステム管理グループに入っていることを表す（管理グループには付けない）
+ * - 残り（`GROUP_PERMISSIONS`）が「表とは別の権限」で、管理グループに付ける
  * 追加するときは Prisma の Permission enum・i18n の permissions ブロックも合わせて増やすこと。
  */
 export const PERMISSIONS = [
@@ -168,7 +168,7 @@ export function canEditAnything(granted: readonly Permission[]): boolean {
 }
 
 /**
- * 製品・組成・物質の権限（S31）。権限グループの表の印から作る値で、権限グループには付けない
+ * 製品・組成・物質の権限（S31）。管理グループの表の印から作る値で、管理グループには付けない
  */
 export const DATA_PERMISSIONS = [
   "PRODUCT_VIEW",
@@ -179,7 +179,7 @@ export const DATA_PERMISSIONS = [
 ] as const satisfies readonly Permission[];
 
 /**
- * 権限グループに付ける「表とは別の権限」（S31 仕様 6-3）。製品・組成・物質と、システム管理を除いたもの
+ * 管理グループに付ける「表とは別の権限」（S31 仕様 6-3）。製品・組成・物質と、システム管理を除いたもの
  */
 export const GROUP_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
   (p) => p !== "ADMIN" && !(DATA_PERMISSIONS as readonly Permission[]).includes(p),

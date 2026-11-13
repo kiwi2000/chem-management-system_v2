@@ -24,10 +24,10 @@ datasource db {
 // ---------- Enum ----------
 
 /**
- * 権限。S31（2026-11）から人ではなく権限グループに付ける（`permission_group_permissions`）。
+ * 権限。S31（2026-11）から人ではなく管理グループに付ける（`permission_group_permissions`）。
  * packages/shared/src/permissions.ts の PERMISSIONS と揃える。
- * 製品・組成・物質の権限（PRODUCT_* / COMPOSITION_VIEW / SUBSTANCE_*）は権限グループの表の印に、
- * ADMIN はシステム管理グループに置き換わり、権限グループには付けない（ログイン中の人の権限として画面と API が使う）。
+ * 製品・組成・物質の権限（PRODUCT_* / COMPOSITION_VIEW / SUBSTANCE_*）は管理グループの表の印に、
+ * ADMIN はシステム管理グループに置き換わり、管理グループには付けない（ログイン中の人の権限として画面と API が使う）。
  * INACTIVE_VIEW / INACTIVE_EDIT / DOCUMENT_SENDER は使わなくなった値で、DB の列挙にだけ残す
  */
 enum Permission {
@@ -173,15 +173,15 @@ enum OrganisationKind {
 }
 
 /**
- * 人が権限グループに入った理由（S31）
+ * 人が管理グループに入った理由（S31）
  */
 enum PermissionGroupJoinReason {
   /**
-   * 組織の「最初に選ばれる権限グループ」から入った
+   * 組織の「最初に選ばれる管理グループ」から入った
    */
   DEFAULT
   /**
-   * 人の画面・権限グループの画面で手で足した
+   * 人の画面・管理グループの画面で手で足した
    */
   MANUAL
   /**
@@ -284,7 +284,7 @@ model User {
   organisationId   String?               @map("organisation_id")
   organisation     Organisation?         @relation(fields: [organisationId], references: [id])
   /**
-   * 入っている権限グループ（S31）。その人に何ができるかは、これだけで決まる
+   * 入っている管理グループ（S31）。その人に何ができるかは、これだけで決まる
    */
   permissionGroups UserPermissionGroup[]
   approvalEvents   ApprovalEvent[]
@@ -378,7 +378,7 @@ model Organisation {
    */
   members       User[]
   /**
-   * 最初に選ばれる権限グループ（S31）。この組織とその下の組織の人を登録するとき、最初から選ばれた状態になる
+   * 最初に選ばれる管理グループ（S31）。この組織とその下の組織の人を登録するとき、最初から選ばれた状態になる
    */
   defaultGroups OrganisationDefaultGroup[]
   /**
@@ -419,7 +419,7 @@ model OrganisationItem {
 }
 
 /**
- * 最初に選ばれる権限グループ（S31）。組織ごとに、その組織の人を登録するとき最初から選んでおく権限グループ。
+ * 最初に選ばれる管理グループ（S31）。組織ごとに、その組織の人を登録するとき最初から選んでおく管理グループ。
  * 上の組織に設定したものも一緒に選ばれる。システム管理グループは選べない
  */
 model OrganisationDefaultGroup {
@@ -435,7 +435,7 @@ model OrganisationDefaultGroup {
 }
 
 /**
- * 権限グループ（S31）。人に何ができるかを決め、製品・原材料・物質の持ち主（所属先）にもなる。
+ * 管理グループ（S31）。人に何ができるかを決め、製品・原材料・物質の持ち主（所属先）にもなる。
  * 上下は無く 1 列に並ぶ。コードは利用者が付ける全体で一意の記号で、TSV で所属先を指すのに使う（正規化して保存）。
  * `isSystemAdmin` のものは最初からある 1 つだけ（システム管理グループ）。表を持たず、入っている人は何でもできる。
  * 消せるのは、入っている人も所属するデータも無いものだけ（データは外部キーで守る）
@@ -452,11 +452,11 @@ model PermissionGroup {
   updatedBy     String?  @map("updated_by")
 
   /**
-   * この権限グループの表（行 = 相手の権限グループ）
+   * この管理グループの表（行 = 相手の管理グループ）
    */
   rows        PermissionGroupRow[]        @relation("PermissionGroupRowOwner")
   /**
-   * ほかの権限グループの表で、相手としてこの権限グループを指している行
+   * ほかの管理グループの表で、相手としてこの管理グループを指している行
    */
   targetedBy  PermissionGroupRow[]        @relation("PermissionGroupRowTarget")
   permissions PermissionGroupPermission[]
@@ -469,7 +469,7 @@ model PermissionGroup {
 }
 
 /**
- * 権限グループの表の 1 行（S31）。「この権限グループ（group）は、相手（target）に所属するデータに何ができるか」の 6 つの印。
+ * 管理グループの表の 1 行（S31）。「この管理グループ（group）は、相手（target）に所属するデータに何ができるか」の 6 つの印。
  * 連動（編集 → 参照、組成 参照 → 製品・原材料 参照）は保存するときに補う。印が全部外れた行は残さない
  */
 model PermissionGroupRow {
@@ -491,7 +491,7 @@ model PermissionGroupRow {
 }
 
 /**
- * 権限グループの「表とは別の権限」（S31）。承認・法規制・出力・取り込み・ドキュメント・組織・お知らせ・フィードバック・PRTR。
+ * 管理グループの「表とは別の権限」（S31）。承認・法規制・出力・取り込み・ドキュメント・組織・お知らせ・フィードバック・PRTR。
  * 含意（編集できるなら見られる 等）は保存前に展開しておく
  */
 model PermissionGroupPermission {
@@ -505,7 +505,7 @@ model PermissionGroupPermission {
 }
 
 /**
- * 人が入っている権限グループ（S31）。いくつでも、0 でもよい
+ * 人が入っている管理グループ（S31）。いくつでも、0 でもよい
  */
 model UserPermissionGroup {
   userId    String                    @map("user_id")
@@ -732,7 +732,7 @@ model ImportJob {
    */
   ownerMode    String?      @map("owner_mode") @db.VarChar(10)
   /**
-   * `fixed` のときの所属先（権限グループの id）
+   * `fixed` のときの所属先（管理グループの id）
    */
   ownerGroupId String?      @map("owner_group_id")
   /**
@@ -1191,7 +1191,7 @@ model Substance {
   deletedAt DateTime? @map("deleted_at")
 
   /**
-   * 所属先の権限グループ（S31）。見られる・直せる人は、権限グループの表の印で決まる
+   * 所属先の管理グループ（S31）。見られる・直せる人は、管理グループの表の印で決まる
    */
   ownerGroupId     String                   @map("owner_group_id")
   ownerGroup       PermissionGroup          @relation(fields: [ownerGroupId], references: [id], onDelete: Restrict)
@@ -1356,7 +1356,7 @@ model Product {
 
   status       ProductStatus   @default(ACTIVE)
   /**
-   * 所属先の権限グループ（S31）。見られる・直せる人は、権限グループの表の印で決まる
+   * 所属先の管理グループ（S31）。見られる・直せる人は、管理グループの表の印で決まる
    */
   ownerGroupId String          @map("owner_group_id")
   ownerGroup   PermissionGroup @relation(fields: [ownerGroupId], references: [id], onDelete: Restrict)

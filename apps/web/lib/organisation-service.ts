@@ -82,7 +82,7 @@ export async function validParent(
 }
 
 /**
- * 最初に選ばれる権限グループを入れ替える（S31 仕様 8 章）。システム管理グループは選べないので落とす
+ * 最初に選ばれる管理グループを入れ替える（S31 仕様 8 章）。システム管理グループは選べないので落とす
  */
 export async function setDefaultGroups(organisationId: string, groupIds: string[]): Promise<void> {
   const valid = await prisma.permissionGroup.findMany({
@@ -97,7 +97,7 @@ export async function setDefaultGroups(organisationId: string, groupIds: string[
   ]);
 }
 
-/** 組織ごとの最初に選ばれる権限グループ（管理者に返す一覧のため） */
+/** 組織ごとの最初に選ばれる管理グループ（管理者に返す一覧のため） */
 export async function defaultGroupsByOrg(): Promise<Map<string, string[]>> {
   const rows = await prisma.organisationDefaultGroup.findMany({
     select: { organisationId: true, groupId: true },

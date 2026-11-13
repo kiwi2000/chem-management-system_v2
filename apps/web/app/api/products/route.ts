@@ -128,7 +128,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // 所属先（S31）。「製品・原材料 編集」の印を持つ権限グループから
+  // 所属先（S31）。「製品・原材料 編集」の印を持つ管理グループから
   const owner = await resolveOwnerForCreate(actor, "productEdit", input.ownerGroupId);
   if (owner instanceof Response) return owner;
 

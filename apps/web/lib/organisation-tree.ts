@@ -91,7 +91,7 @@ export async function orgPathMap(): Promise<Map<string, OrgChainNode[]>> {
 }
 
 /**
- * その組織と上の組織に設定した「最初に選ばれる権限グループ」（仕様 8 章）。
+ * その組織と上の組織に設定した「最初に選ばれる管理グループ」（仕様 8 章）。
  * システム管理グループは選べないので除く
  */
 export async function defaultGroupIdsFor(organisationId: string | null): Promise<string[]> {

@@ -14,7 +14,7 @@ import { chainLabel, defaultGroupIdsFor, type OrgChainNode } from "@/lib/organis
 
 /**
  * ユーザーの読み書き。
- * S31 から、人の権限は入っている権限グループで決まる（人に直接付ける権限は無い）。
+ * S31 から、人の権限は入っている管理グループで決まる（人に直接付ける権限は無い）。
  * 組織は 1 つで、権限とは関係ない。
  */
 
@@ -71,7 +71,7 @@ export const USER_INCLUDE = {
 } as const;
 
 /**
- * 入っている権限グループから、その人の権限を求める（一覧の表示用。判定は authz.ts の Actor で行う）
+ * 入っている管理グループから、その人の権限を求める（一覧の表示用。判定は authz.ts の Actor で行う）
  */
 function permissionsOf(u: UserWithGroups): Permission[] {
   if (u.permissionGroups.some((m) => m.group.isSystemAdmin)) return [];
@@ -124,7 +124,7 @@ export function toUserSummary(u: UserWithGroups, orgPaths: Map<string, OrgChainN
 }
 
 /**
- * 組織・権限グループの割り当てを検証する。存在しない id は 400（画面から来ない値でも弾く）
+ * 組織・管理グループの割り当てを検証する。存在しない id は 400（画面から来ない値でも弾く）
  */
 export async function resolveAssignments(
   organisationId: string,
@@ -148,8 +148,8 @@ export async function resolveAssignments(
 }
 
 /**
- * 入る権限グループを指定の集合に置き換える。
- * 残るものは入った理由をそのまま残す。新しく入るものは、組織の「最初に選ばれる権限グループ」なら
+ * 入る管理グループを指定の集合に置き換える。
+ * 残るものは入った理由をそのまま残す。新しく入るものは、組織の「最初に選ばれる管理グループ」なら
  * DEFAULT、そうでなければ MANUAL。**変わったかどうか**を返す（セッションを切るかの判断に使う）
  */
 export async function setGroups(

@@ -8,7 +8,7 @@ import {
   NO_MARKS,
 } from "./permission-group";
 
-describe("権限グループの表の印の連動（S31 仕様 6-2）", () => {
+describe("管理グループの表の印の連動（S31 仕様 6-2）", () => {
   it("編集を付けると、同じ種類の参照も付く", () => {
     expect(linkMarks({ ...NO_MARKS, productEdit: true }).productView).toBe(true);
     expect(linkMarks({ ...NO_MARKS, substanceEdit: true }).substanceView).toBe(true);

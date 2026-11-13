@@ -252,7 +252,7 @@ export function TwoTablesDiagram() {
           （見出しなし）
         </text>
         <text x={16} y={46} {...SMALL}>
-          公開済のものだけ／所属先を見られる人なら誰でも
+          公開済のものだけ／管理グループを見られる人なら誰でも
         </text>
         <text x={16} y={66} {...SMALL}>
           組成の材料に選べるのは、ここにあるものです

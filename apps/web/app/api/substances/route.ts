@@ -134,7 +134,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // 所属先（S31）。「物質 編集」の印を持つ権限グループから
+  // 所属先（S31）。「物質 編集」の印を持つ管理グループから
   const owner = await resolveOwnerForCreate(actor, "substanceEdit", input.ownerGroupId);
   if (owner instanceof Response) return owner;
 

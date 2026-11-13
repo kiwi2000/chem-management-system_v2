@@ -111,7 +111,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     throw err;
   }
 
-  // 最初に選ばれる権限グループはシステム設定の一部。システム管理グループの人が送ったときだけ（S31）
+  // 最初に選ばれる管理グループはシステム設定の一部。システム管理グループの人が送ったときだけ（S31）
   if (actor.isSystemAdmin && v.defaultGroupIds) await setDefaultGroups(id, v.defaultGroupIds);
 
   await writeAudit({

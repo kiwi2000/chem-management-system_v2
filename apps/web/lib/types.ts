@@ -53,19 +53,19 @@ export interface UserSummaryDto {
   lastLoginAt: string | null;
   /** システム管理グループに入っているか（S31） */
   isSystemAdmin: boolean;
-  /** 入っている権限グループから求めた権限（表示用。システム管理グループの人は空） */
+  /** 入っている管理グループから求めた権限（表示用。システム管理グループの人は空） */
   permissions: Permission[];
   /** 所属する組織（S31 から 1 つ。移行で組織の無かった人だけ null） */
   organisationId: string | null;
   /** 組織の上からの道筋（「営業部 › 営業1課」） */
   organisationPath: string | null;
-  /** 入っている権限グループ（S31） */
+  /** 入っている管理グループ（S31） */
   groups: UserGroupRefDto[];
   /** 登録しているパスキーの数 */
   passkeyCount: number;
 }
 
-/** 権限グループの一覧の 1 行（S31） */
+/** 管理グループの一覧の 1 行（S31） */
 export interface PermissionGroupListItemDto {
   id: string;
   code: string;
@@ -80,7 +80,7 @@ export interface PermissionGroupListItemDto {
   targets: { id: string; code: string; nameJa: string; nameEn: string | null }[];
 }
 
-/** 権限グループの詳細（S31） */
+/** 管理グループの詳細（S31） */
 export interface PermissionGroupDetailDto {
   stamp: string;
   id: string;
@@ -120,7 +120,7 @@ export interface OwnerChoicesDto {
   autoPick: string | null;
 }
 
-/** 人の画面で選べる権限グループ（S31） */
+/** 人の画面で選べる管理グループ（S31） */
 export interface PermissionGroupOptionDto {
   id: string;
   code: string;
@@ -131,11 +131,11 @@ export interface PermissionGroupOptionDto {
 
 export interface PermissionGroupOptionsDto {
   groups: PermissionGroupOptionDto[];
-  /** 組織 id → その組織に設定した「最初に選ばれる権限グループ」（上の組織の分は含まない） */
+  /** 組織 id → その組織に設定した「最初に選ばれる管理グループ」（上の組織の分は含まない） */
   orgDefaults: Record<string, string[]>;
 }
 
-/** 人が入っている権限グループ 1 つ（S31） */
+/** 人が入っている管理グループ 1 つ（S31） */
 export interface UserGroupRefDto {
   id: string;
   code: string;
@@ -191,7 +191,7 @@ export interface OrganisationDto {
    * 画面はこれで名称を字下げする
    */
   depth?: number;
-  /** 最初に選ばれる権限グループ（S31）。システム管理グループの人にだけ返す */
+  /** 最初に選ばれる管理グループ（S31）。システム管理グループの人にだけ返す */
   defaultGroupIds?: string[];
   /** 項目名と値。どちらも自由入力 */
   items: { label: string; value: string }[];
@@ -479,7 +479,7 @@ export interface ListResponse<T> {
 export interface SubstanceListItemDto {
   id: string;
   code: string;
-  /** 所属先（S31。権限グループ） */
+  /** 所属先（S31。管理グループ） */
   ownerGroupId: string;
   ownerCode: string;
   ownerNameJa: string;
@@ -551,7 +551,7 @@ export interface PropertyValueDto {
 export interface ProductListItemDto {
   id: string;
   code: string;
-  /** 所属先（S31。権限グループ） */
+  /** 所属先（S31。管理グループ） */
   ownerGroupId: string;
   ownerCode: string;
   ownerNameJa: string;

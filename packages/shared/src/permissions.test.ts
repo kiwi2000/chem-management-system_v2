@@ -28,7 +28,7 @@ describe("権限の含意", () => {
     expect(expandPermissions(["APPROVE"])).toEqual(["APPROVE"]);
   });
 
-  it("権限グループに付ける権限は、製品・組成・物質と管理者を除いた全部（S31 仕様 6-3）", () => {
+  it("管理グループに付ける権限は、製品・組成・物質と管理者を除いた全部（S31 仕様 6-3）", () => {
     expect([...GROUP_PERMISSIONS, ...DATA_PERMISSIONS, "ADMIN"].sort()).toEqual(
       [...PERMISSIONS].sort(),
     );

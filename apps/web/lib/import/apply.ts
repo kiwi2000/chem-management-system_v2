@@ -766,7 +766,7 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
         (!current && !target) ||
         (target && !canOn(actor, "productEdit", target))
       ) {
-        await h.fail(row, `製品「${p.code}」は、この所属先では反映できません`);
+        await h.fail(row, `製品「${p.code}」は、この管理グループでは反映できません`);
         continue;
       }
       if (!id) {
@@ -902,7 +902,7 @@ async function applySubstances(jobId: string, actorId: string, h: Hooks) {
         (!current && !target) ||
         (target && !canOn(actor, "substanceEdit", target))
       ) {
-        await h.fail(row, `物質「${p.code}」は、この所属先では反映できません`);
+        await h.fail(row, `物質「${p.code}」は、この管理グループでは反映できません`);
         continue;
       }
       if (!id) {
