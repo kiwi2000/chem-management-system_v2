@@ -2774,7 +2774,7 @@ export const en: Messages = {
     parent: "Parent organisation",
     parentNone: "(none — top level)",
     parentHint:
-      "Empty means top level (companies, partners, …). It cannot be itself or one below it",
+      'With "none", this organisation becomes a top-level one (a company, for example). It cannot have itself or an organisation below it as its parent.',
     defaultGroups: "Default permission groups",
     defaultGroupsHint:
       "Chosen in advance when registering people of this organisation and those below it. Those set on parent organisations are chosen too. The system administrators group cannot be chosen",
