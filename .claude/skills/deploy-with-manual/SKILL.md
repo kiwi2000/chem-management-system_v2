@@ -281,6 +281,11 @@ ssh -i ~/.ssh/chem-eval -o BatchMode=yes -o ConnectTimeout=10 Administrator@192.
     読むのは `Host` `Port` `Database` の行だけにする（2026-11-12、`head` で先頭を出して合言葉を表示してしまった）
   - トンネルを閉じるときは、`railway.exe` だけでなく、入口を持っている `ssh.exe` も止める
     （`Get-NetTCPConnection -LocalPort <ポート> -State Listen` の OwningProcess。`railway` を止めても残る）
+  - **トンネル越しは 1 往復が遅く、長く流すと途中で切れる**（2026-11-13、テスト用データの投入で、製品 1 件の判定が
+    Prisma の既定の 5 秒の時間切れに当たり、流し直しの途中でトンネルも応答しなくなった。入口は開いたままで、繋ぐと「届かない」と出る）。
+    アプリの処理（判定など）をスクリプトから流すときは、`new PrismaClient({ transactionOptions: { timeout: … } })` を
+    `globalThis.prisma` に置いてから読み込む（`scripts/seed-group-sample.ts` が例）。長い処理は、済んだ分を飛ばして流し直せる作りにし、
+    バックグラウンドで流して記録をファイルに受ける。切れたら `ssh.exe` ごと閉じて開き直す（ポートは変わる）
   - **表を作り替える移行を出す前は、控えを取って予行する**（2026-11-12 S31 でそうした）。
     `docker run --rm -e PGPASSWORD postgres:18-alpine pg_dump -h host.docker.internal -p <ポート> -U postgres -d railway -Fc --no-owner > temp/<名前>.dump`
     （3 GB 弱の DB で 20 分ほど。裏で流す）。控えを使い捨ての `postgres:18-alpine` のコンテナに `pg_restore` で戻し、
