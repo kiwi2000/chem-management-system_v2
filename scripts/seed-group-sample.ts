@@ -318,7 +318,7 @@ const SUBSTANCES: SubstanceSeed[] = [
     nameJa: "開発中の物質（テスト用・作成中）",
     nameEn: "Substance under development (test, draft)",
     cas: null,
-    note: "作成中。作った本人（テスト 開発）と、承認する人（テスト 品証）だけに見える",
+    note: "作成中。作った本人（テスト 開発）にだけ見える。品証は承認する人だが、開発部の物質を参照する印が無いので見えない",
     state: "DRAFT",
     by: "tg-kaihatsu@example.com",
   },
@@ -382,7 +382,7 @@ const PRODUCTS: ProductSeed[] = [
     owner: "TG-A-ALL",
     nameJa: "共通洗浄液 A-1（テスト用）",
     nameEn: "Common cleaner A-1 (test)",
-    note: "A社 全体の製品。A社の人は全員見える。組成が見えるのは品証だけ（品証は組成を直せない）",
+    note: "A社 全体の製品。「テスト用A社 全体」のメンバーは全員見える。組成が見えるのは品証だけ（品証は組成を直せない）",
     by: "tg-hinsho@example.com",
     lines: [
       { material: "TG-MT-A-BASE", pct: "90" },
@@ -814,20 +814,20 @@ async function seed(): Promise<void> {
 
       /*
        * CAS ごとの代表物質。画面から登録すればアプリが立てるが、ここは直接書き込むので自分で立てる。
-       * すでに代表がいる CAS は触らない（もとからある物質の代表を奪わない）。決め方は seed-sample と同じ
+       * 決め方はアプリ（ensureCasRepresentative）と同じ。すでに代表がいる CAS は触らず、いなければ、
+       * 同じ CAS の有効な物質のうちいちばん古いものを立てる（もとからある物質があれば、そちらが代表になる）
        */
       let representatives = 0;
-      for (const s of SUBSTANCES) {
-        if (!s.cas) continue;
-        const cas = normalize(s.cas);
-        const taken = await tx.substance.findFirst({
-          where: { casNormalized: cas, deletedAt: null, isCasRepresentative: true },
-          select: { id: true },
+      for (const cas of new Set(SUBSTANCES.flatMap((s) => (s.cas ? [normalize(s.cas)] : [])))) {
+        const alive = await tx.substance.findMany({
+          where: { casNormalized: cas, impurityTypeId: "ip-none", deletedAt: null },
+          select: { id: true, status: true, isCasRepresentative: true },
+          orderBy: { createdAt: "asc" },
         });
-        if (taken) continue;
-        const id = substanceIds.get(s.code);
-        if (!id) continue;
-        await tx.substance.update({ where: { id }, data: { isCasRepresentative: true } });
+        if (alive.length === 0 || alive.some((s) => s.isCasRepresentative)) continue;
+        const next = alive.find((s) => s.status === "ACTIVE") ?? alive[0];
+        if (!next) continue;
+        await tx.substance.update({ where: { id: next.id }, data: { isCasRepresentative: true } });
         representatives += 1;
       }
 
