@@ -2977,6 +2977,12 @@ export const ja = {
     closeBranch: "下の組織を閉じる",
     deleteConfirm: (name: string) => `組織「${name}」を削除しますか？`,
     discardConfirm: "編集中の内容は保存されていません。破棄してよろしいですか？",
+    addChild: "下に組織を足す",
+    dragHint: "組織をつかんで別の組織の上に置くと、その下へ移せます",
+    dropTop: "ここに置くと、いちばん上の組織になります",
+    moveConfirm: (name: string, parent: string) => `「${name}」を「${parent}」の下へ移しますか？`,
+    moveToTopConfirm: (name: string) => `「${name}」を、いちばん上の組織にしますか？`,
+    moveLabel: "移す",
     inUse: (n: number) =>
       `この組織には ${n} 人が所属しています。先にユーザー管理の画面で、その人たちの所属を変えてください`,
   },

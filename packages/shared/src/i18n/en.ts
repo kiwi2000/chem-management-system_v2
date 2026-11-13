@@ -2823,6 +2823,12 @@ export const en: Messages = {
     closeBranch: "Hide organisations below",
     deleteConfirm: (name: string) => `Delete the organisation "${name}"?`,
     discardConfirm: "Your changes have not been saved. Discard them?",
+    addChild: "Add an organisation below",
+    dragHint: "Drag an organisation onto another to move it below that one",
+    dropTop: "Drop here to make it a top-level organisation",
+    moveConfirm: (name: string, parent: string) => `Move "${name}" below "${parent}"?`,
+    moveToTopConfirm: (name: string) => `Make "${name}" a top-level organisation?`,
+    moveLabel: "Move",
     inUse: (n: number) =>
       `${n} people belong to this organisation. Change their organisation on the Users screen first`,
   },

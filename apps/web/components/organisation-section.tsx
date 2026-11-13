@@ -115,6 +115,9 @@ export function OrganisationSection() {
   /** 閉じている枝（下の組織を隠している組織の id）。最初は全部開いている */
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  /** つかんで動かしている組織と、いま上に重なっている置き先（"" はいちばん上） */
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropId, setDropId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** ほかの人が先に保存していた知らせ */
   const [stale, setStale] = useState<StaleEditInfo | null>(null);
@@ -181,9 +184,15 @@ export function OrganisationSection() {
     setMode(nextMode);
   }
 
-  async function startNew() {
+  /** 新規登録。parent を渡すと、その組織の下に足す形で開く（上の組織が入り、種別は部署） */
+  async function startNew(parent?: OrganisationDto) {
     if (!(await leaveEditing())) return;
-    openForm({ ...EMPTY_FORM, items: [] }, "new");
+    openForm(
+      parent
+        ? { ...EMPTY_FORM, items: [], parentId: parent.id, kind: "DEPARTMENT" }
+        : { ...EMPTY_FORM, items: [] },
+      "new",
+    );
   }
 
   function startEdit(o: OrganisationDto) {
@@ -263,6 +272,84 @@ export function OrganisationSection() {
     } finally {
       setSaving(false);
     }
+  }
+
+  /*
+    つかんで動かす（2026-11-13）。置いた先の組織の下へ移す。"" に置くと、いちばん上にする。
+    探しているとき・編集中は動かさない（見えている形が組織図そのものでない・書きかけがある）。
+    指で触る端末ではつかめないので、編集の「上の組織」の欄も残してある
+  */
+  const canDrag = editable && mode === "view" && search.trim() === "";
+
+  /** その組織を置けない先（自分・自分の下・いまの上の組織）。上下が輪にならないように */
+  const blocked = useMemo(() => {
+    const out = new Set<string>();
+    const dragged = orgs.find((o) => o.id === dragId);
+    if (!dragged) return out;
+    out.add(dragged.id);
+    for (const id of descendantIds(orgs, dragged.id)) out.add(id);
+    // いまの上の組織に置いても何も変わらない
+    out.add(dragged.parentId ?? "");
+    return out;
+  }, [orgs, dragId]);
+
+  async function moveTo(o: OrganisationDto, parentId: string) {
+    const parent = orgs.find((x) => x.id === parentId);
+    const message = parent
+      ? m.organisations.moveConfirm(name(o), name(parent))
+      : m.organisations.moveToTopConfirm(name(o));
+    if (!(await ask({ message, confirmLabel: m.organisations.moveLabel }))) return;
+    setError(null);
+    // 上の組織だけを変えて、ほかは読み込んだときのまま送る（印も添える。楽観的ロック）
+    const res = await fetch(`/api/organisations/${o.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        stamp: o.stamp,
+        code: o.code,
+        kind: o.kind,
+        kindLabel: o.kind === "OTHER" ? o.kindLabel : null,
+        nameJa: o.nameJa,
+        nameEn: o.nameEn ?? "",
+        displayOrder: o.displayOrder,
+        activeFlag: o.activeFlag,
+        parentId: parentId || null,
+        ...(isAdmin ? { defaultGroupIds: o.defaultGroupIds ?? [] } : {}),
+        items: o.items,
+      }),
+    });
+    // ほかの人が先に直していたら、動かさずに読み直して知らせる
+    if (await readStaleEdit(res)) {
+      setError(m.errors.staleEdit);
+      await reloadAllOrgs();
+      return;
+    }
+    if (!res.ok) {
+      if (redirectIfUnauthorized(res)) return;
+      const body = (await res.json().catch(() => null)) as ApiError | null;
+      setError(body?.error.message ?? m.errors.saveFailed(res.status));
+      return;
+    }
+    // 移した先が閉じていたら開く（移したものが見えなくならないように）
+    if (parentId) {
+      setClosed((prev) => {
+        if (!prev.has(parentId)) return prev;
+        const next = new Set(prev);
+        next.delete(parentId);
+        return next;
+      });
+    }
+    await reloadAllOrgs();
+    setSelectedId(o.id);
+  }
+
+  /** 置いたとき。置けない先なら何もしない */
+  function onDropAt(targetId: string) {
+    const dragged = orgs.find((o) => o.id === dragId);
+    setDragId(null);
+    setDropId(null);
+    if (!dragged || blocked.has(targetId)) return;
+    void moveTo(dragged, targetId);
   }
 
   /** 選んだ組織を消す。人が所属している・下に組織がある、は API が断る */
@@ -366,6 +453,29 @@ export function OrganisationSection() {
             aria-label={m.organisations.searchPlaceholder}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {canDrag && orgs.length > 1 && (
+            <p className="text-muted-foreground px-1 text-xs">{m.organisations.dragHint}</p>
+          )}
+          {/* つかんでいる間だけ出す置き場。置くと、いちばん上の組織になる */}
+          {dragId !== null && !blocked.has("") && (
+            <div
+              data-drop-top
+              className={`rounded-sm border border-dashed px-2 py-2 text-xs ${
+                dropId === "" ? "border-primary bg-primary/10" : "text-muted-foreground"
+              }`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDropId("");
+              }}
+              onDragLeave={() => setDropId((v) => (v === "" ? null : v))}
+              onDrop={(e) => {
+                e.preventDefault();
+                onDropAt("");
+              }}
+            >
+              {m.organisations.dropTop}
+            </div>
+          )}
           {allOrgs === null ? (
             <p className="text-muted-foreground p-2 text-sm">{m.common.loading}</p>
           ) : orgs.length === 0 ? (
@@ -381,10 +491,35 @@ export function OrganisationSection() {
                 return (
                   <li
                     key={org.id}
+                    data-org-code={org.code}
                     className={`flex items-center gap-1 rounded-sm ${
                       isSelected ? "bg-primary/10" : "hover:bg-muted/60"
-                    }`}
+                    } ${dropId === org.id ? "ring-primary ring-2" : ""} ${
+                      dragId === org.id ? "opacity-50" : ""
+                    } ${canDrag ? "cursor-grab" : ""}`}
                     style={{ paddingLeft: `${depth * 1.25}rem` }}
+                    draggable={canDrag}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", org.code);
+                      setDragId(org.id);
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setDropId(null);
+                    }}
+                    onDragOver={(e) => {
+                      // 置ける先だけ受ける（受けないと、置けない印のまま）
+                      if (dragId === null || blocked.has(org.id)) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDropId(org.id);
+                    }}
+                    onDragLeave={() => setDropId((v) => (v === org.id ? null : v))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      onDropAt(org.id);
+                    }}
                   >
                     {/* 探しているときは、当たったものとその上を全部出すので、開閉は置かない */}
                     {parents.has(org.id) && search.trim() === "" ? (
@@ -696,6 +831,15 @@ export function OrganisationSection() {
                 </Badge>
                 {editable && (
                   <span className="ml-auto flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void startNew(selected)}
+                    >
+                      <Plus className="mr-1 size-3.5" />
+                      {m.organisations.addChild}
+                    </Button>
                     <EditButton onClick={() => startEdit(selected)} />
                     <Button
                       type="button"
