@@ -1,5 +1,6 @@
-import type { ImportAction } from "@prisma/client";
+import type { ImportAction, PublishState } from "@prisma/client";
 import { canOn, type Actor } from "@/lib/authz";
+import { editableInState } from "@/lib/product-service";
 
 /**
  * 取り込み（決定 0011）の中で使う型。
@@ -69,6 +70,23 @@ export function resolveOwner(
     return `管理グループ「${label}」は編集できません`;
   }
   return { target: target === current ? null : target };
+}
+
+/**
+ * 公開の状態のせいで直せないときの文（直せるなら null）。読み取りと反映で同じ文を出す。
+ * 決まりは画面と同じ（lib/product-service.ts の editableInState）: 承認待は誰も直せない、
+ * 作成中・却下は作った本人だけ（システム管理グループは別）。製品・原材料の項目、組成、物質のどれにも使う。
+ * what は「の組成」など（何が直せないのか）。印（管理グループの表）は別に確かめること
+ */
+export function stateRefusal(
+  actor: Actor,
+  target: { publishState: PublishState; createdBy: string | null } | undefined,
+  what = "",
+): string | null {
+  if (target && editableInState(actor, target)) return null;
+  return target?.publishState === "PENDING"
+    ? `承認待のもの${what}は直せません（申請を取り下げてから直します）`
+    : `公開前のもの${what}は、作った本人しか直せません`;
 }
 
 export interface StagedRow {

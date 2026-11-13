@@ -11,6 +11,7 @@ import {
   diffFields,
   editedByHuman,
   resolveOwner,
+  stateRefusal,
   type StageContext,
   type StagedRow,
 } from "@/lib/import/types";
@@ -74,6 +75,8 @@ export async function stageSubstances(
       casNumber: true,
       note: true,
       updatedBy: true,
+      publishState: true,
+      createdBy: true,
     },
   });
   /*
@@ -157,6 +160,15 @@ export async function stageSubstances(
         current: ownerCodeOf.get(cur.ownerGroupId) ?? "",
         next: ownerCodeOf.get(owner.target) ?? "",
       };
+    }
+    /*
+      公開の状態は画面と同じ決まり（承認待は誰も直せない。作成中・却下は作った本人だけ）。
+      項目が今と同じなら断らない。「画面で直されています」の行にする前に見る（反映に切り替えられないように）
+    */
+    const refusal = Object.keys(diff).length > 0 ? stateRefusal(ctx.actor, cur) : null;
+    if (refusal) {
+      errors.push({ line, message: `物質「${code}」: ${refusal}` });
+      return;
     }
     if (Object.keys(diff).length === 0) rows.push({ ...base, action: "UNCHANGED", apply: false });
     else if (editedByHuman(cur.updatedBy))

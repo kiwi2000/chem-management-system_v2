@@ -14,15 +14,10 @@ import { prisma } from "@/lib/db";
 import { expandProduct, findAffected, saveExpansion } from "@/lib/expansion-store";
 import { markDone, markRunning } from "@/lib/import/jobs";
 import { USER_SOURCE_CODE } from "@/lib/import/read-regulation-list";
-import {
-  compositionStateRefusal,
-  type CompositionPayload,
-  type ProductPayload,
-} from "@/lib/import/stage-products";
+import type { CompositionPayload, ProductPayload } from "@/lib/import/stage-products";
 import type { SubstancePayload } from "@/lib/import/stage-substances";
-import { importActor, type ApplySummary, type RowKind } from "@/lib/import/types";
+import { importActor, stateRefusal, type ApplySummary, type RowKind } from "@/lib/import/types";
 import { judgeProduct, loadFactors, loadRules } from "@/lib/judge-store";
-import { editableInState } from "@/lib/product-service";
 import { todayInJapan } from "@/lib/judgement-date";
 import { recomputeAllScores } from "@/lib/score-store";
 import { getAppSettings } from "@/lib/settings";
@@ -754,7 +749,7 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
   });
   const products = new Map(all.map((p) => [p.codeNormalized, p.id]));
   const ownerOf = new Map(all.map((p) => [p.id, p.ownerGroupId]));
-  // 公開の状態と作った人（組成を直してよいかを、画面と同じ決まりで確かめるため）
+  // 公開の状態と作った人（製品の項目と組成を直してよいかを、画面と同じ決まりで確かめるため）
   const stateOf = new Map(
     all.map((p) => [p.id, { publishState: p.publishState, createdBy: p.createdBy }]),
   );
@@ -782,6 +777,12 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
         (target && !canOn(actor, "productEdit", target))
       ) {
         await h.fail(row, `製品「${p.code}」は、この管理グループでは反映できません`);
+        continue;
+      }
+      // 公開の状態。読み取りのあとに申請されていることも、反映する人が別のこともあるので、ここでも確かめる
+      const refusal = id ? stateRefusal(actor, stateOf.get(id)) : null;
+      if (refusal) {
+        await h.fail(row, `製品「${p.code}」: ${refusal}`);
         continue;
       }
       if (!id) {
@@ -833,12 +834,9 @@ async function applyProducts(jobId: string, actorId: string, h: Hooks) {
         continue;
       }
       // 読み取りのあとに申請・承認されていることがあるので、反映のときにも確かめる
-      const state = stateOf.get(id);
-      if (!state || !editableInState(actor, state)) {
-        await h.fail(
-          row,
-          `製品「${p.productCode}」: ${compositionStateRefusal(state?.publishState ?? "")}`,
-        );
+      const lineRefusal = stateRefusal(actor, stateOf.get(id), "の組成");
+      if (lineRefusal) {
+        await h.fail(row, `製品「${p.productCode}」: ${lineRefusal}`);
         continue;
       }
       await prisma.$transaction([
@@ -903,10 +901,20 @@ async function applySubstances(jobId: string, actorId: string, h: Hooks) {
   const actor = await applyActor(actorId);
   const all = await prisma.substance.findMany({
     where: { deletedAt: null },
-    select: { id: true, codeNormalized: true, ownerGroupId: true },
+    select: {
+      id: true,
+      codeNormalized: true,
+      ownerGroupId: true,
+      publishState: true,
+      createdBy: true,
+    },
   });
   const existing = new Map(all.map((s) => [s.codeNormalized, s.id]));
   const ownerOf = new Map(all.map((s) => [s.id, s.ownerGroupId]));
+  // 公開の状態と作った人（製品と同じ確かめに使う）
+  const stateOf = new Map(
+    all.map((s) => [s.id, { publishState: s.publishState, createdBy: s.createdBy }]),
+  );
   for await (const page of rowsOf(jobId, "substance_master")) {
     for (const row of page) {
       const p = row.payload as SubstancePayload;
@@ -929,6 +937,12 @@ async function applySubstances(jobId: string, actorId: string, h: Hooks) {
         (target && !canOn(actor, "substanceEdit", target))
       ) {
         await h.fail(row, `物質「${p.code}」は、この管理グループでは反映できません`);
+        continue;
+      }
+      // 公開の状態（製品と同じ。読み取りのあとに変わっていることがあるので、ここでも確かめる）
+      const refusal = id ? stateRefusal(actor, stateOf.get(id)) : null;
+      if (refusal) {
+        await h.fail(row, `物質「${p.code}」: ${refusal}`);
         continue;
       }
       if (!id) {

@@ -13,10 +13,11 @@ import {
   diffFields,
   editedByHuman,
   resolveOwner,
+  stateRefusal,
   type StageContext,
   type StagedRow,
 } from "@/lib/import/types";
-import { editableInState, visibilityWhere } from "@/lib/product-service";
+import { visibilityWhere } from "@/lib/product-service";
 import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
 
 /**
@@ -53,16 +54,6 @@ export interface CompositionPayload {
     note: string | null;
     label: string;
   }[];
-}
-
-/**
- * 公開の状態のせいで組成を直せないときの文（読み取りと反映で同じ文を出す）。
- * 決まりは画面と同じ（lib/product-service.ts の editableInState）
- */
-export function compositionStateRefusal(state: string): string {
-  return state === "PENDING"
-    ? "承認待のものの組成は直せません（申請を取り下げてから直します）"
-    : "公開前のものの組成は、作った本人しか直せません";
 }
 
 const PRODUCT_FIELDS = [
@@ -328,6 +319,16 @@ export async function stageProducts(
           next: ownerCodeOf.get(owner.target) ?? "",
         };
       }
+      /*
+        公開の状態は画面と同じ決まり（承認待は誰も直せない。作成中・却下は作った本人だけ）。
+        項目が今と同じなら断らない（出力したファイルをそのまま取り込み直しても誤りにしない）。
+        「画面で直されています」の行にする前に見る（反映に切り替えられないように）
+      */
+      const refusal = Object.keys(diff).length > 0 ? stateRefusal(ctx.actor, cur) : null;
+      if (refusal) {
+        errors.push({ line: e.line, message: `製品「${e.product.code}」: ${refusal}` });
+        continue;
+      }
       if (Object.keys(diff).length === 0) rows.push({ ...base, action: "UNCHANGED", apply: false });
       else if (editedByHuman(cur.updatedBy))
         rows.push({
@@ -358,15 +359,10 @@ export async function stageProducts(
           .sort()
           .join(";");
       const same = cur && sig(cur.compositionLines) === sig(e.lines);
-      /*
-        公開の状態は画面と同じ決まり（承認待は誰も直せない。作成中・却下は作った本人だけ）。
-        組成が今と同じなら断らない（出力したファイルをそのまま取り込み直しても誤りにしない）
-      */
-      if (cur && !same && !editableInState(ctx.actor, cur)) {
-        errors.push({
-          line: e.line,
-          message: `製品「${e.product.code}」: ${compositionStateRefusal(cur.publishState)}`,
-        });
+      // 公開の状態（製品の項目と同じ決まり）。組成が今と同じなら断らない
+      const lineRefusal = cur && !same ? stateRefusal(ctx.actor, cur, "の組成") : null;
+      if (lineRefusal) {
+        errors.push({ line: e.line, message: `製品「${e.product.code}」: ${lineRefusal}` });
         continue;
       }
       rows.push({

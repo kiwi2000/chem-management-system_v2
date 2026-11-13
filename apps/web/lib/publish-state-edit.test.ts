@@ -7,6 +7,7 @@ vi.mock("@/lib/composition-access", () => ({ compositionAccess: async () => "edi
 
 import type { Actor } from "@/lib/authz";
 import { canEditComposition } from "@/lib/composition-service";
+import { stateRefusal } from "@/lib/import/types";
 import { canEditProduct } from "@/lib/product-service";
 
 const all = new Set(["g1"]);
@@ -71,5 +72,39 @@ describe("公開の状態と書き換え", () => {
       expect(canEditProduct(a, product("PUBLISHED"))).toBe(true);
       expect(await canEditComposition(a, product("PUBLISHED"))).toBe(true);
     }
+  });
+});
+
+/**
+ * 取り込みも画面と同じ決まり（製品の項目・組成・物質）。以前は印しか見ておらず、
+ * 承認待のものや、ほかの人の公開前のものを取り込みで書き換えられた（2026-11-14 に直した）
+ */
+describe("取り込みで断る文", () => {
+  it("承認待は、だれにも「取り下げてから」と出す", () => {
+    for (const a of [creator, approver, systemAdmin]) {
+      expect(stateRefusal(a, product("PENDING"))).toBe(
+        "承認待のものは直せません（申請を取り下げてから直します）",
+      );
+    }
+    expect(stateRefusal(creator, product("PENDING"), "の組成")).toBe(
+      "承認待のものの組成は直せません（申請を取り下げてから直します）",
+    );
+  });
+
+  it("作成中・却下は、作った本人とシステム管理グループの人は通り、ほかの人は断る", () => {
+    for (const state of ["DRAFT", "REJECTED"] as const) {
+      expect(stateRefusal(creator, product(state))).toBeNull();
+      expect(stateRefusal(systemAdmin, product(state))).toBeNull();
+      expect(stateRefusal(approver, product(state))).toBe(
+        "公開前のものは、作った本人しか直せません",
+      );
+    }
+  });
+
+  it("公開済は断らない。状態が分からないものは断る", () => {
+    for (const a of [creator, approver, systemAdmin]) {
+      expect(stateRefusal(a, product("PUBLISHED"))).toBeNull();
+    }
+    expect(stateRefusal(systemAdmin, undefined)).not.toBeNull();
   });
 });
