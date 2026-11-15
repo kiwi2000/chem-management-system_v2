@@ -65,8 +65,13 @@ const thresholdFields = (m: Messages) => ({
 });
 
 /** 下限が上限を超えていたら弾く。空（区分に従う）の側があるときは、ここでは比べない（区分の値は API 側で見る） */
-const withThresholdOrder = <T extends z.ZodTypeAny>(schema: T, m: Messages) =>
-  schema.superRefine((v: { thresholdLower: string | null; thresholdUpper: string | null }, ctx) => {
+const withThresholdOrder = <
+  T extends z.ZodType<{ thresholdLower: string | null; thresholdUpper: string | null }>,
+>(
+  schema: T,
+  m: Messages,
+) =>
+  schema.superRefine((v, ctx) => {
     if (
       v.thresholdLower !== null &&
       v.thresholdUpper !== null &&

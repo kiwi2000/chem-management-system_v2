@@ -90,6 +90,12 @@ describe("statutorySubstanceSchema の閾値", () => {
       thresholdUpper: "10",
     });
     expect(bad.success).toBe(false);
+    // 誤りは上限の欄に付く（画面はこの欄の下に文を出す）
+    if (!bad.success) {
+      expect(bad.error.flatten().fieldErrors).toEqual({
+        thresholdUpper: [m.validation.thresholdOrder],
+      });
+    }
     const half = statutorySubstanceSchema(m).safeParse({ ...base, thresholdLower: "50" });
     expect(half.success).toBe(true);
   });

@@ -128,7 +128,11 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
   見つけ方: `canOn(actor, "` の `…Edit` と `=== "edit"` を grep し、同じ判定の中で `editableInState` を通っているか見る。試験は `apps/web/lib/publish-state-edit.test.ts`
 - **最上位の `package.json` の scripts が直接呼ぶ道具は、最上位の devDependencies に書く。**`vitest` をワークスペースにしか書いておらず、たまたま最上位に置かれていたものを使っていた。
   `npm update` で置き場所が各ワークスペースの中へ移り、`npm run test:scripts`・`test:tools` が「vitest が見つからない」で落ちた（2026-11-15）。
-  見つけ方: 最上位の scripts に出てくるコマンド名を 1 つずつ、最上位の dependencies / devDependencies で探す。部品を上げたあとは `npm test` を最後まで（結果が 4 つ出るまで）見る
+  見つけ方: 最上位の scripts に出てくるコマンド名を 1 つずつ、最上位の dependencies / devDependencies で探す。部品を上げたあとは `npm test` を最後まで（結果が 4 つ出るまで）見る。
+  ワークスペースが `import` する部品も同じで、そのワークスペースの `package.json` に書く（`apps/web` が `zod` を書かずに使っていた。同じ日に足した）
+- **入れた値を織り込む検証の文は `superRefine` の `ctx.addIssue` で出し、文面と付く欄を試験で固定する。**zod を 4 系へ上げたとき、`refine` の 2 つ目に関数を渡す書き方が無くなり、
+  試験は全部通るのに設定の 3 つの文が英語の「Invalid input」に変わるところだった（2026-11-15。`packages/shared/src/settings.test.ts`）。
+  見つけ方: `\.refine\([^)]*,\s*\(` を grep する。検証の部品を上げるときは、同じ入力を新旧に当てて、通る・通らないと文を比べる
 - **画面に出る文字列を直接書かない。** `packages/shared/src/i18n/ja.ts` にキーを足し、
   `en.ts` にも英語を入れる（入れ忘れはビルドで落ちる）。使い方は `docs/steps/S18_多言語UI基盤.md`
 - **導入先で動く作りは、3 つの入れ方（Railway・Docker・Windows Server）で確かめる。**2026-10-16 に次の 3 つが見つかった

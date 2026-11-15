@@ -683,7 +683,12 @@ const ipRuleListSchema = (m: Messages) =>
           .string()
           .trim()
           .min(1, m.validation.required)
-          .refine(isValidIpRule, (v) => ({ message: m.settings.ipRuleInvalid(v) })),
+          // 値を織り込んだ文を出すので refine でなく superRefine（zod 4 から、refine の文は値を受け取れない）
+          .superRefine((v, ctx) => {
+            if (!isValidIpRule(v)) {
+              ctx.addIssue({ code: "custom", message: m.settings.ipRuleInvalid(v) });
+            }
+          }),
         note: z.string().trim().max(100, m.validation.tooLong(100)),
       }),
     )
@@ -759,10 +764,12 @@ export const settingsSchema = (m: Messages) =>
       .trim()
       .min(1, m.validation.required)
       .max(200, m.validation.tooLong(200))
-      .refine(
-        (v) => unknownFileNamePlaceholders(v).length === 0,
-        (v) => ({ message: m.settings.fileNamePatternUnknown(unknownFileNamePlaceholders(v)) }),
-      ),
+      .superRefine((v, ctx) => {
+        const unknown = unknownFileNamePlaceholders(v);
+        if (unknown.length > 0) {
+          ctx.addIssue({ code: "custom", message: m.settings.fileNamePatternUnknown(unknown) });
+        }
+      }),
     imageMaxEdgePx: z
       .number()
       .int()
@@ -788,14 +795,12 @@ export const settingsSchema = (m: Messages) =>
     attachmentExtensions: z
       .array(z.string())
       .max(100)
-      .refine(
-        (list) => list.every((e) => EXTENSION_PATTERN.test(e)),
-        (list) => ({
-          message: m.settings.attachmentExtensionsInvalid(
-            list.filter((e) => !EXTENSION_PATTERN.test(e)),
-          ),
-        }),
-      ),
+      .superRefine((list, ctx) => {
+        const bad = list.filter((e) => !EXTENSION_PATTERN.test(e));
+        if (bad.length > 0) {
+          ctx.addIssue({ code: "custom", message: m.settings.attachmentExtensionsInvalid(bad) });
+        }
+      }),
     appNameJa: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
     appNameEn: z.string().trim().max(APP_NAME_MAX, m.validation.tooLong(APP_NAME_MAX)),
     headerIconPosition: z.enum(HEADER_ICON_POSITIONS),
