@@ -35,7 +35,8 @@
     "prettier": "^3.9.9",
     "prisma": "^6.0.0",
     "tsx": "^4.23.15",
-    "typescript-eslint": "^8.71.1"
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.1.0"
   },
   "overrides": {
     "deepmerge-ts": "^8.0.2",
