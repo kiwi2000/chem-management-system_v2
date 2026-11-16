@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -28,10 +28,23 @@ export function UserAvatar({
    */
   override?: string | null;
 }) {
-  const [failed, setFailed] = useState(false);
+  // 取れなかった絵のアドレス。絵が変われば（登録・差し替え）、もう一度読みに行く
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const initial = name.trim().charAt(0) || "?";
   const stored = userId ? `/api/users/${userId}/avatar${version ? `?v=${version}` : ""}` : null;
   const src = override === undefined ? stored : override;
+  const failed = failedSrc === src;
+
+  /*
+    画面の準備が整う前に読み込みが失敗していると、onError は届かない
+    （サーバーが先に描いた絵は、準備の前に読み込みが終わることがある）。
+    整ったあとに、もう失敗していないかを見る
+  */
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) setFailedSrc(src);
+  }, [src]);
 
   return (
     <span
@@ -46,12 +59,15 @@ export function UserAvatar({
         // 画像の読み込みは next/image を通さない（DBから返す動的な絵で、最適化の対象にならない）
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          // 絵が変わったら作り直す（前の絵の「失敗」を、次の絵のものと取り違えないため）
+          key={src}
+          ref={imgRef}
           src={src}
           alt=""
           width={size}
           height={size}
           className="size-full object-cover"
-          onError={() => setFailed(true)}
+          onError={() => setFailedSrc(src)}
         />
       ) : (
         <span className="font-medium">{initial}</span>

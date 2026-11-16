@@ -116,6 +116,10 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 - **同じ画面で書き換えるデータを、選択肢用に別に読んでいるなら、保存・削除のたびに読み直す。**組織の画面は、一覧は保存のたびに読み直すのに、
   「上の組織」の選択肢のもとは開いたときの 1 回きりで、あとから足した組織が選べず、名称や上下を変えても古いままだった（2026-11-13。`useOrganisationList` の `reload`）。
   選択肢のための読み込みは件数で区切らない（`/api/organisations?all=1`）。見つけ方: 部品の中で `use…s()`（開いたときに読む処理）と、同じ API への `method: "POST"`・`PUT`・`DELETE` が両方ある所を探す
+- **サーバーが先に描く `<img>` の `onError` は、画面の準備より前の失敗を拾えない。**準備のあとに `complete && naturalWidth === 0` も見る。失敗の印は絵のアドレスごとに持つ
+  （`components/user-avatar.tsx`。写真の無い人の丸が壊れた絵の印のままになっていた。2026-11-16）。見つけ方: `<img` と `onError=` を grep する
+- **サーバー側の画面（`page.tsx`）から画面の部品へ、DB の行をそのまま渡さない。要る項目だけ並べるか `to…Dto` を通す。**Decimal・Date が混ざると開発中に警告が出る
+  （法文物質の詳細。2026-11-16）。見つけ方: `page.tsx` で `prisma.` を grep し、結果がそのまま部品の属性になっていないか見る。`<a>`・`Link` を `render` に渡す Button には `nativeButton={false}`（`render=\{\s*<(a|Link)` を grep）
 
 ### 実装
 

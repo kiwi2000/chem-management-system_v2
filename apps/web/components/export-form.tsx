@@ -147,7 +147,7 @@ export function ExportForm({ laws, sources }: { laws: ExportOption[]; sources: E
 
         <div>
           {/* download 属性は同じオリジンなので効く。サーバーがファイル名を付ける */}
-          <Button render={<a href={href} download />}>
+          <Button nativeButton={false} render={<a href={href} download />}>
             <Download className="size-4" />
             {m.importExport.download}
           </Button>

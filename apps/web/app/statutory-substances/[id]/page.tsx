@@ -64,11 +64,20 @@ export default async function StatutorySubstancePage({
       ? { href: `/statutory-substances/${s.id}`, label: s.nameJa ?? s.nameOriginal ?? s.code }
       : null;
 
+  // 画面へ渡すのは名前だけ。区分の閾値（Decimal）は画面の部品へそのまま渡せない
+  const cat = row.regulationClass.category;
+
   return (
     <SubstanceCasScreen
       substance={toStatutorySubstanceDto(row)}
-      category={row.regulationClass.category}
-      law={row.regulationClass.category.law}
+      category={{
+        id: cat.id,
+        code: cat.code,
+        nameOriginal: cat.nameOriginal,
+        nameJa: cat.nameJa,
+        nameEn: cat.nameEn,
+      }}
+      law={cat.law}
       prev={neighbour(siblings[at - 1])}
       next={neighbour(siblings[at + 1])}
     />
