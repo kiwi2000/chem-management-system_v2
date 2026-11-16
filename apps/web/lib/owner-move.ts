@@ -4,25 +4,35 @@ import { productsUsing } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { canMoveOwner } from "@/lib/owner-group";
-import { visibilityWhere as productVisibility } from "@/lib/product-service";
+import { editableInState, visibilityWhere as productVisibility } from "@/lib/product-service";
 import { visibilityWhere as substanceVisibility } from "@/lib/substance-service";
 
 /**
  * 所属先の変更（S31 仕様 7 章・画面設計 8 章）。
  * 今の所属先と移す先の両方に「編集」の印が要る（システム管理グループは印に関係なく移せる）。
+ * **公開の状態も、項目の編集・組成と同じに見る**（2026-11-17 利用者が確認）。承認待は誰も移せず、
+ * 作成中・却下は作った本人だけ。画面はボタンを出さないが、開いたままの古い画面から押せたので、ここでも確かめる。
  * 原材料・物質は、それを組成に使っている製品の数を出して確かめる（止めはしない）
  */
 export type OwnerTarget = "product" | "substance";
+
+const ROW_SELECT = {
+  id: true,
+  code: true,
+  ownerGroupId: true,
+  publishState: true,
+  createdBy: true,
+} as const;
 
 async function load(actor: Actor, target: OwnerTarget, id: string) {
   return target === "product"
     ? prisma.product.findFirst({
         where: { id, deletedAt: null, ...productVisibility(actor) },
-        select: { id: true, code: true, ownerGroupId: true },
+        select: ROW_SELECT,
       })
     : prisma.substance.findFirst({
         where: { id, deletedAt: null, ...substanceVisibility(actor) },
-        select: { id: true, code: true, ownerGroupId: true },
+        select: ROW_SELECT,
       });
 }
 
@@ -54,6 +64,15 @@ export async function moveOwner(actor: Actor, target: OwnerTarget, id: string, r
     return jsonError(403, "forbidden", m.owner.notAllowed);
   }
   if (to === row.ownerGroupId) return Response.json({ ok: true });
+  // 公開の状態。断る文は組成と同じ出し分け（承認待 → 対象にならない、ほかの人の公開前 → 権限が無い）
+  if (row.publishState === "PENDING") {
+    return jsonError(
+      403,
+      "forbidden",
+      m.errors.publishStateMismatch(m.common.publishStates.PENDING),
+    );
+  }
+  if (!editableInState(actor, row)) return jsonError(403, "forbidden", m.errors.forbidden);
   if (target === "product") {
     await prisma.product.update({
       where: { id },

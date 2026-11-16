@@ -129,7 +129,8 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
   見つけ方: `apps/web/lib/edit-stamp-coverage.test.ts` が PUT / PATCH の route.ts と、PUT / PATCH を送る画面の付け忘れを検出する。例外は理由を書いてそこに載せる
 - **「直してよいか」を決める判定は、印（管理グループの表）だけでなく公開の状態も見る**（`lib/product-service.ts` の `editableInState`。承認待はだれも直せない、作成中・却下は作った本人だけ）。
   組成の判定が印しか見ておらず、承認待の組成が直せ、承認する人がほかの人の公開前の組成を直せた（2026-11-13。製品そのものは見ていた）。画面の保存だけでなく取り込み（`lib/import/` の `stateRefusal`。製品の項目・組成・物質の、読み取りと反映の両方）にも同じ決まりを入れる。
-  見つけ方: `canOn(actor, "` の `…Edit` と `=== "edit"` を grep し、同じ判定の中で `editableInState` を通っているか見る。試験は `apps/web/lib/publish-state-edit.test.ts`
+  管理グループの変更（`lib/owner-move.ts`）も同じ穴だった（2026-11-17。画面はボタンを隠していたが、受ける側が見ていなかった。**画面で隠すだけにしない**）。
+  見つけ方: `canOn(actor, "` の `…Edit`・`canMoveOwner(`・`=== "edit"` を grep し、同じ判定の中で `editableInState` を通っているか見る。試験は `apps/web/lib/publish-state-edit.test.ts`・`owner-move.test.ts`
 - **最上位の `package.json` の scripts が直接呼ぶ道具は、最上位の devDependencies に書く。**`vitest` をワークスペースにしか書いておらず、たまたま最上位に置かれていたものを使っていた。
   `npm update` で置き場所が各ワークスペースの中へ移り、`npm run test:scripts`・`test:tools` が「vitest が見つからない」で落ちた（2026-11-15）。
   見つけ方: 最上位の scripts に出てくるコマンド名を 1 つずつ、最上位の dependencies / devDependencies で探す。部品を上げたあとは `npm test` を最後まで（結果が 4 つ出るまで）見る。
