@@ -18,6 +18,7 @@ import {
   type PermissionMark,
   type PermissionMarks,
 } from "@chem/shared";
+import { Popover } from "@base-ui/react/popover";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,7 +47,6 @@ import type {
   PermissionGroupListItemDto,
   UserSummaryDto,
 } from "@/lib/types";
-import { useOutsideClose } from "@/lib/use-outside-close";
 import { cn } from "@/lib/utils";
 
 /** 表の 1 行（画面の中）。manual は自分で付けた印。連動の印は表示のときに補う */
@@ -546,7 +546,12 @@ export function PermissionGroupForm({ id }: { id: string | null }) {
   );
 }
 
-/** 相手の管理グループを足す小窓（選択肢の小窓。components/option-checklist.tsx） */
+/**
+ * 相手の管理グループを足すウィンドウ（中身は components/option-checklist.tsx）。
+ * **画面のいちばん外側に重ねて開く（Popover）。**ボタンの下にそのまま置くと、ボタンが枠（Card）のいちばん下にあるので、
+ * 枠からはみ出した分が切られて選択肢が見えない（2026-11-17。ユーザーの画面の管理グループと同じ不具合）。
+ * 外側のクリック・Esc・ボタンで閉じると、選んだものを足す（前からの動き）
+ */
 function AddTargets({
   options,
   onAdd,
@@ -565,30 +570,26 @@ function AddTargets({
       return [];
     });
   }, [onAdd]);
-  const ref = useOutsideClose<HTMLDivElement>(open, close);
   return (
-    <div ref={ref} className="relative inline-block">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => (open ? close() : setOpen(true))}
-      >
+    <Popover.Root open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
+      <Popover.Trigger render={<Button type="button" variant="outline" size="sm" />}>
         {label}
-      </Button>
-      {open && (
-        <div className="bg-popover absolute z-20 mt-1 w-80 rounded-none border p-2 shadow-md">
-          <OptionChecklist
-            size="sm"
-            options={options}
-            isChecked={(v) => picked.includes(v)}
-            onToggle={(v, on) => setPicked((p) => (on ? [...p, v] : p.filter((x) => x !== v)))}
-            onSelectAll={(shown) => setPicked((p) => [...new Set([...p, ...shown])])}
-            onClearAll={(shown) => setPicked((p) => p.filter((x) => !shown.includes(x)))}
-          />
-        </div>
-      )}
-    </div>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner side="bottom" align="start" sideOffset={4} className="z-50">
+          <Popover.Popup className="bg-popover text-popover-foreground w-80 rounded-none border p-2 shadow-md outline-none">
+            <OptionChecklist
+              size="sm"
+              options={options}
+              isChecked={(v) => picked.includes(v)}
+              onToggle={(v, on) => setPicked((p) => (on ? [...p, v] : p.filter((x) => x !== v)))}
+              onSelectAll={(shown) => setPicked((p) => [...new Set([...p, ...shown])])}
+              onClearAll={(shown) => setPicked((p) => p.filter((x) => !shown.includes(x)))}
+            />
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
@@ -726,35 +727,52 @@ function MembersCard({
             </tbody>
           </table>
         </div>
-        <div className="relative inline-block">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => (open ? void add() : setOpen(true))}
+        <div>
+          {/*
+            画面のいちばん外側に重ねて開く（枠の下の端で切られないように。上の AddTargets と同じ理由）。
+            **外側のクリックや Esc では閉じない。**選んだ人を黙って捨てないため（閉じるのは「追加」「キャンセル」）。
+            開いているときにボタンを押したら、選んだ人を足す（どれも前からの動き）
+          */}
+          <Popover.Root
+            open={open}
+            onOpenChange={(next, details) => {
+              if (next) setOpen(true);
+              else if (details.reason === "trigger-press") void add();
+            }}
           >
-            {m.permGroups.addMember}
-          </Button>
-          {open && (
-            <div className="bg-popover absolute z-20 mt-1 w-96 rounded-none border p-2 shadow-md">
-              <OptionChecklist
-                size="sm"
-                options={options}
-                isChecked={(v) => picked.includes(v)}
-                onToggle={(v, on) => setPicked((p) => (on ? [...p, v] : p.filter((y) => y !== v)))}
-                onSelectAll={(shown) => setPicked((p) => [...new Set([...p, ...shown])])}
-                onClearAll={(shown) => setPicked((p) => p.filter((y) => !shown.includes(y)))}
-              />
-              <div className="mt-2 flex justify-end gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
-                  {m.common.cancel}
-                </Button>
-                <Button type="button" size="sm" onClick={() => void add()}>
-                  {m.common.add}
-                </Button>
-              </div>
-            </div>
-          )}
+            <Popover.Trigger render={<Button type="button" variant="outline" size="sm" />}>
+              {m.permGroups.addMember}
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Positioner side="bottom" align="start" sideOffset={4} className="z-50">
+                <Popover.Popup className="bg-popover text-popover-foreground w-96 rounded-none border p-2 shadow-md outline-none">
+                  <OptionChecklist
+                    size="sm"
+                    options={options}
+                    isChecked={(v) => picked.includes(v)}
+                    onToggle={(v, on) =>
+                      setPicked((p) => (on ? [...p, v] : p.filter((y) => y !== v)))
+                    }
+                    onSelectAll={(shown) => setPicked((p) => [...new Set([...p, ...shown])])}
+                    onClearAll={(shown) => setPicked((p) => p.filter((y) => !shown.includes(y)))}
+                  />
+                  <div className="mt-2 flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setOpen(false)}
+                    >
+                      {m.common.cancel}
+                    </Button>
+                    <Button type="button" size="sm" onClick={() => void add()}>
+                      {m.common.add}
+                    </Button>
+                  </div>
+                </Popover.Popup>
+              </Popover.Positioner>
+            </Popover.Portal>
+          </Popover.Root>
         </div>
         <p className="text-muted-foreground text-xs">{m.permGroups.membersImmediate}</p>
         {error && (
