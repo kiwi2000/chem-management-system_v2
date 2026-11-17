@@ -2428,12 +2428,14 @@ export const ja = {
     permissionGroupsHint:
       "点線のものは、組織から最初に選ばれたものです。外してもかまいません。1 つも無くても保存できます（その人はデータを見られません）",
     permissionGroupsNone: "（なし）",
-    regroupedNotice: "組織を変えたので、管理グループを選び直しました。保存する前に見直してください",
-    /** 組織を変えたとき、システム管理グループに入っている人なら外すかを聞く（2026-11-17 指示） */
-    dropSystemAdminConfirm:
-      "システム管理グループに所属していますが、外しますか？\n（組織を変えたので、ほかの管理グループは新しい組織のものに選び直します）",
-    dropSystemAdminYes: "外す",
-    dropSystemAdminNo: "外さない",
+    regroupedNotice:
+      "組織を変えたので、管理グループを選び直しました。変更前と見比べて、必要なら変更後を直してから保存してください",
+    /** 組織を変えたときの見比べ（2026-11-17 指示）。変更前は見るだけ、変更後は直せる */
+    groupsBefore: "変更前",
+    groupsAfter: "変更後",
+    groupsRemoved: "外れるもの",
+    groupsAdded: "加わるもの",
+    groupsSame: "変更前と同じです",
     newTitle: "ユーザーの新規登録",
     editTitle: "ユーザーの編集",
     email: "メールアドレス",

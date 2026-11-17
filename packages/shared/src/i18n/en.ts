@@ -2292,11 +2292,12 @@ export const en: Messages = {
       "Dashed ones were chosen from the organisation's defaults. You may remove them. Saving with none is allowed (the person then sees no data)",
     permissionGroupsNone: "(none)",
     regroupedNotice:
-      "The organisation changed, so the management groups were re-selected. Check them before saving",
-    dropSystemAdminConfirm:
-      "This person is in the system administrators group. Remove them from it?\n(The organisation changed, so the other management groups are re-selected from the new organisation.)",
-    dropSystemAdminYes: "Remove",
-    dropSystemAdminNo: "Keep",
+      "The organisation changed, so the management groups were re-selected. Compare with before, adjust the new set if needed, then save",
+    groupsBefore: "Before",
+    groupsAfter: "After",
+    groupsRemoved: "Removed",
+    groupsAdded: "Added",
+    groupsSame: "Same as before",
     newTitle: "New user",
     editTitle: "Edit user",
     email: "Email address",

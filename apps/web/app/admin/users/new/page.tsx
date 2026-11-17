@@ -6,6 +6,7 @@ import { useCallback, useMemo, useState } from "react";
 import { FieldError } from "@/components/field-error";
 import { OrganisationSelect } from "@/components/organisation-select";
 import { PermissionGroupChips } from "@/components/permission-group-chips";
+import { PermissionGroupCompare } from "@/components/permission-group-compare";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +32,8 @@ export default function NewUserPage() {
   // S31: 組織は 1 つ。選ぶと「最初に選ばれる管理グループ」が入った状態になる（仕様 8-2）
   const [organisationId, setOrganisationId] = useState("");
   const [groupIds, setGroupIds] = useState<string[]>([]);
+  /** 組織を選ぶ直前に選ばれていた管理グループ（見比べの「変更前」）。まだ組織を選んでいなければ null */
+  const [beforeGroups, setBeforeGroups] = useState<string[] | null>(null);
   const organisations = useOrganisations();
   const groupOptions = usePermissionGroupOptions();
   const [error, setError] = useState<string | null>(null);
@@ -55,8 +58,10 @@ export default function NewUserPage() {
   );
   const defaults = useMemo(() => defaultsOf(organisationId), [defaultsOf, organisationId]);
 
+  /** 組織を選ぶと管理グループを選び直す。黙って入れ替えず、直前の選択と並べて見せる（2026-11-17 指示） */
   function changeOrganisation(next: string) {
     setOrganisationId(next);
+    setBeforeGroups(groupIds);
     setGroupIds([...defaultsOf(next)]);
   }
 
@@ -155,13 +160,23 @@ export default function NewUserPage() {
             </div>
             <div className="space-y-2">
               <Label>{m.users.permissionGroups}</Label>
-              <PermissionGroupChips
-                options={groupOptions?.groups ?? []}
-                value={groupIds}
-                onChange={setGroupIds}
-                defaults={defaults}
-                emptyLabel={m.users.permissionGroupsNone}
-              />
+              {beforeGroups ? (
+                <PermissionGroupCompare
+                  options={groupOptions?.groups ?? []}
+                  before={beforeGroups}
+                  after={groupIds}
+                  onChange={setGroupIds}
+                  defaults={defaults}
+                />
+              ) : (
+                <PermissionGroupChips
+                  options={groupOptions?.groups ?? []}
+                  value={groupIds}
+                  onChange={setGroupIds}
+                  defaults={defaults}
+                  emptyLabel={m.users.permissionGroupsNone}
+                />
+              )}
               <p className="text-muted-foreground text-xs">{m.users.permissionGroupsHint}</p>
             </div>
           </CardContent>

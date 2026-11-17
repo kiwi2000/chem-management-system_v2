@@ -2,7 +2,7 @@
 
 import { Popover } from "@base-ui/react/popover";
 import { pickName } from "@chem/shared";
-import { X } from "lucide-react";
+import { ShieldCheck, X } from "lucide-react";
 import { OptionChecklist } from "@/components/option-checklist";
 import { useI18n } from "@/lib/i18n-client";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,8 @@ export interface GroupChipOption {
 
 /**
  * 管理グループを丸い札で並べ、「＋ 追加」で選択肢の小窓を開いて足す（S31 画面設計 4 章）。
- * 札の ✕ で外す。点線の縁は「組織から最初に選ばれたもの」、紫はシステム管理グループ。
+ * 札の ✕ で外す。点線の縁は「組織から最初に選ばれたもの」。
+ * **システム管理グループは、濃い紫に盾の印で目立たせる**（2026-11-17 指示。入っている・外れるを見落とさないため）。
  *
  * **小窓は画面のいちばん外側に重ねて開く（Popover）。**欄の下にそのまま置くと、欄が枠（Card）の下の端に近いとき、
  * 枠からはみ出した分が切られて一覧が見えない（2026-11-17、本番で「選択肢が出ない」と言われた）
@@ -30,6 +31,8 @@ export function PermissionGroupChips({
   locked,
   disabled,
   emptyLabel,
+  removed,
+  added,
 }: {
   options: GroupChipOption[];
   value: string[];
@@ -41,6 +44,10 @@ export function PermissionGroupChips({
   disabled?: boolean;
   /** 1 つも無いときの文言 */
   emptyLabel: string;
+  /** 見比べのとき、外れるもの（取り消し線と赤の縁） */
+  removed?: Set<string>;
+  /** 見比べのとき、加わるもの（緑の縁） */
+  added?: Set<string>;
 }) {
   const { m, locale } = useI18n();
 
@@ -61,11 +68,15 @@ export function PermissionGroupChips({
             className={cn(
               "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold",
               o.isSystemAdmin
-                ? "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200"
+                ? "bg-violet-600 px-3 py-1 text-sm text-white dark:bg-violet-500"
                 : "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200",
               isDefault && "outline-dashed outline-2 outline-offset-1 outline-teal-600",
+              (added?.has(o.id) ?? false) && "ring-2 ring-emerald-500 ring-offset-1",
+              (removed?.has(o.id) ?? false) &&
+                "line-through decoration-2 ring-2 ring-red-500 ring-offset-1",
             )}
           >
+            {o.isSystemAdmin && <ShieldCheck className="size-3.5" aria-hidden />}
             {labelOf(o)}
             {!disabled && !isLocked && (
               <button

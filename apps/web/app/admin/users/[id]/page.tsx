@@ -7,6 +7,7 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { OrganisationSelect } from "@/components/organisation-select";
 import { PermissionGroupChips } from "@/components/permission-group-chips";
+import { PermissionGroupCompare } from "@/components/permission-group-compare";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditingBadge } from "@/components/editing-badge";
@@ -40,7 +41,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   // S31: 組織は 1 つ、管理グループはいくつでも
   const [organisationId, setOrganisationId] = useState("");
   const [groupIds, setGroupIds] = useState<string[]>([]);
-  /** 組織を変えたので管理グループを選び直した（保存前に見直してもらう） */
+  /** 組織を変えたので管理グループを選び直した（変更前と変更後を並べて見せる） */
   const [regrouped, setRegrouped] = useState(false);
   const organisations = useOrganisations();
   const groupOptions = usePermissionGroupOptions();
@@ -105,26 +106,14 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
   /**
    * 異動: 組織を変えたら、管理グループを新しい組織の「最初に選ばれる管理グループ」で選び直す（仕様 8-2）。
-   * システム管理グループだけは黙って外さない。外すかを聞き、「外す」を選んだときだけ外す
+   * 黙って入れ替えず、組織の下に変更前（保存されているもの）と変更後を並べて見せる。変更後はその場で直せる
    * （2026-11-17 利用者の指示。部署を変えただけのつもりで、システム管理者が何も見られなくなった）
    */
-  async function changeOrganisation(next: string) {
+  function changeOrganisation(next: string) {
     setOrganisationId(next);
-    setRegrouped(true);
-    const adminIds = (groupOptions?.groups ?? []).filter((g) => g.isSystemAdmin).map((g) => g.id);
-    const held = groupIds.filter((g) => adminIds.includes(g));
-    // 自分のシステム管理グループは外せないので聞かない（locked）
-    const asked = held.filter((g) => !locked.has(g));
-    const drop =
-      asked.length > 0 &&
-      (await ask({
-        message: m.users.dropSystemAdminConfirm,
-        confirmLabel: m.users.dropSystemAdminYes,
-        cancelLabel: m.users.dropSystemAdminNo,
-        destructive: true,
-      }));
-    const keep = drop ? held.filter((g) => locked.has(g)) : held;
+    const keep = groupIds.filter((g) => locked.has(g));
     setGroupIds([...new Set([...keep, ...defaultsOf(next)])]);
+    setRegrouped(true);
   }
 
   async function save(force = false) {
@@ -297,25 +286,32 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   value={organisationId}
                   disabled={!editing}
                   noneLabel={m.users.organisationNone}
-                  onChange={(next) => void changeOrganisation(next)}
+                  onChange={changeOrganisation}
                 />
                 <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
               </div>
               <div className="space-y-2">
                 <Label>{m.users.permissionGroups}</Label>
-                <PermissionGroupChips
-                  options={groupOptions?.groups ?? []}
-                  value={groupIds}
-                  onChange={setGroupIds}
-                  defaults={defaults}
-                  locked={locked}
-                  disabled={!editing}
-                  emptyLabel={m.users.permissionGroupsNone}
-                />
-                {regrouped && (
-                  <p className="text-sm text-amber-700 dark:text-amber-400">
-                    {m.users.regroupedNotice}
-                  </p>
+                {regrouped ? (
+                  <PermissionGroupCompare
+                    options={groupOptions?.groups ?? []}
+                    before={item.groups.map((g) => g.id)}
+                    after={groupIds}
+                    onChange={setGroupIds}
+                    defaults={defaults}
+                    locked={locked}
+                    disabled={!editing}
+                  />
+                ) : (
+                  <PermissionGroupChips
+                    options={groupOptions?.groups ?? []}
+                    value={groupIds}
+                    onChange={setGroupIds}
+                    defaults={defaults}
+                    locked={locked}
+                    disabled={!editing}
+                    emptyLabel={m.users.permissionGroupsNone}
+                  />
                 )}
                 <p className="text-muted-foreground text-xs">
                   {isSelf ? m.users.selfNote : m.users.permissionGroupsHint}
