@@ -3,6 +3,7 @@
 import type { HeaderIconPosition } from "@chem/shared";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Settings, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { SidebarFooter } from "@/components/sidebar-footer";
@@ -69,6 +70,8 @@ interface Props {
   user: Pick<MeDto, "id" | "email" | "displayName" | "permissions" | "canEdit" | "isAdmin">;
   /** アバターの更新日時。変わると画像を取り直す */
   avatarVersion: number;
+  /** 先に済ませる用事（パスワードの変更・2要素認証の登録）の画面。無ければ null */
+  pendingPath: string | null;
   /** いま判定に使っている法規制バージョン。null は「現在のバージョンが決まっていない」 */
   version: { code: string; nameJa: string | null } | null;
   /** パスワードの期限まであと何日か。予告を出さないときは null */
@@ -86,12 +89,24 @@ interface Props {
 export function AppShellClient({
   user,
   avatarVersion,
+  pendingPath,
   version,
   passwordExpiresIn,
   headerIcon,
   children,
 }: Props) {
   const { m } = useI18n();
+  /*
+    用事が残っている人が、用事の画面のほかへ移ろうとした（メニューを押した）。
+    **中身を出さずに、いまのアドレスを画面ごと読み込み直す。**サーバーが、まだ用事が残っていれば用事の画面へ送り、
+    済んでいれば（登録を終えた直後など。ここへ渡された値は古い）そのまま開く。
+    中身を出すと、一覧が「先に済ませることがあります」とだけ出て、行き先が分からない
+  */
+  const pathname = usePathname();
+  const held = pendingPath !== null && pathname !== pendingPath;
+  useEffect(() => {
+    if (held) window.location.replace(window.location.href);
+  }, [held, pathname]);
   /** ロゴだけにする（ロゴがあるときだけ。名前は読み上げ用に Link の aria-label へ回す） */
   const hideName = headerIcon?.hideName === true;
   /*
@@ -397,8 +412,8 @@ export function AppShellClient({
                 </Alert>
               </div>
             )}
-            <CardToggleRow />
-            {children}
+            {!held && <CardToggleRow />}
+            {held ? null : children}
           </main>
         </div>
       </div>

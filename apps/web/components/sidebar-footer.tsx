@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { redirectIfPending } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 
 /**
@@ -31,6 +32,8 @@ export function SidebarFooter({
     let alive = true;
     const load = async () => {
       const res = await fetch("/api/sessions/count").catch(() => null);
+      // 画面を開いたまま用事ができた人を、移らなくても用事の画面へ送る（30 秒ごとの読み込みで気づく）
+      if (res && redirectIfPending(res)) return;
       if (!res?.ok || !alive) return;
       const body = (await res.json()) as {
         sessions: number;

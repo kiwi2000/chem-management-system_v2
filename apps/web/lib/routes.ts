@@ -31,3 +31,9 @@ export const EXPIRED_LOGIN_URL = "/login?expired=1";
 
 /** 放置による自動ログアウト。理由が分かっているときだけこちらを使う */
 export const IDLE_LOGIN_URL = "/login?expired=1&reason=idle";
+
+/**
+ * 先に済ませる用事（パスワードの変更・2要素認証の登録）が残っている人への断りに、行き先を載せるヘッダー。
+ * 画面の側（lib/auth-redirect.ts）がこれを見て、用事の画面へ送る
+ */
+export const PENDING_HEADER = "x-chem-pending";

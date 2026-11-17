@@ -67,6 +67,7 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
   モジュール（`apps/web/modules/`）の外に出ていないか見る。ソースの注釈・移行の SQL の注釈は残ってよい
 - **機密（非公開製品・非公開組成）はサーバー側で除外してから返す。** クライアントで隠すのは不可。TSV/ドキュメント出力にも同じマスキングを適用する
 - パスワードは Argon2id。セッションはトークン生値を httpOnly Cookie、DBには SHA-256 ハッシュのみ保存
+- **layout（と、その中の `components/app-shell.tsx`）で、画面の中からの読み込みに `redirect()` を投げない。**投げた状態で `router.refresh()` が走ると送り先を休みなく取りに行く（2026-11-17、本番でパスワードを変えた直後に 90 回。開発では 1,405 回）。layout は画面の中の移動では作り直されないので、layout の判定だけに頼ると、送るはずの人に画面が開く。直し方は `components/hard-redirect.tsx` と `lib/auth-redirect.ts`。見つけ方: `apps/web/lib/auth-redirect.test.ts` が検出する。確かめるときは、送り先の画面を取りに行く回数を数える（記録は `docs/steps/S16_システム設定.md`）
 - **「必須」「禁止」の設定は、入口を全部たどって効いているかを見る。**2要素認証を必須にしても、パスキーだけの人はパスワードだけで入れた（登録の有無だけを見て、パスワードの入口を見ていなかった。2026-11-17。`lib/login-passkey-required.test.ts`）。見つけ方: その設定の名前（`mfaRequired` など）を grep し、ログインの入口（`lib/auth.ts` の `login`・パスキーの route）の全部に出てくるかを見る
 
 ### データ

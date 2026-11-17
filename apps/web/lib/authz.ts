@@ -15,6 +15,7 @@ import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { hasPasskey } from "@/lib/passkey";
 import { PENDING_PATH, pendingStep } from "@/lib/pending-step";
+import { PENDING_HEADER } from "@/lib/routes";
 import { getAppSettings } from "@/lib/settings";
 
 /**
@@ -160,10 +161,12 @@ export async function requireUser(opts?: { allowPending?: boolean }): Promise<Ac
     );
     if (step) {
       const m = await getServerMessages();
-      // 行き先を添える。画面側はこれを見て、済ませる画面へ送る
-      return jsonError(403, "pending_setup", m.errors.pendingSetup, {
+      // 行き先を添える。画面の側は、ヘッダーのほうを見て用事の画面へ送る（lib/auth-redirect.ts）
+      const res = jsonError(403, "pending_setup", m.errors.pendingSetup, {
         path: PENDING_PATH[step],
       });
+      res.headers.set(PENDING_HEADER, PENDING_PATH[step]);
+      return res;
     }
   }
   return actor;
