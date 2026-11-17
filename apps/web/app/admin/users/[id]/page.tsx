@@ -298,7 +298,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     before={item.groups.map((g) => g.id)}
                     after={groupIds}
                     onChange={setGroupIds}
-                    defaults={defaults}
                     locked={locked}
                     disabled={!editing}
                   />
@@ -314,7 +313,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   />
                 )}
                 <p className="text-muted-foreground text-xs">
-                  {isSelf ? m.users.selfNote : m.users.permissionGroupsHint}
+                  {isSelf
+                    ? m.users.selfNote
+                    : regrouped
+                      ? m.users.groupsTableHint
+                      : m.users.permissionGroupsHint}
                 </p>
               </div>
               <label className="flex items-center gap-2 text-sm">

@@ -166,7 +166,6 @@ export default function NewUserPage() {
                   before={beforeGroups}
                   after={groupIds}
                   onChange={setGroupIds}
-                  defaults={defaults}
                 />
               ) : (
                 <PermissionGroupChips
@@ -177,7 +176,9 @@ export default function NewUserPage() {
                   emptyLabel={m.users.permissionGroupsNone}
                 />
               )}
-              <p className="text-muted-foreground text-xs">{m.users.permissionGroupsHint}</p>
+              <p className="text-muted-foreground text-xs">
+                {beforeGroups ? m.users.groupsTableHint : m.users.permissionGroupsHint}
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -2292,12 +2292,11 @@ export const en: Messages = {
       "Dashed ones were chosen from the organisation's defaults. You may remove them. Saving with none is allowed (the person then sees no data)",
     permissionGroupsNone: "(none)",
     regroupedNotice:
-      "The organisation changed, so the management groups were re-selected. Compare with before, adjust the new set if needed, then save",
+      "The organisation changed, so the management groups were re-selected. Click a row under After to switch it on or off",
     groupsBefore: "Before",
-    groupsAfter: "After",
-    groupsRemoved: "Removed",
-    groupsAdded: "Added",
-    groupsSame: "Same as before",
+    groupsAfter: "After (click to switch)",
+    groupsTableHint:
+      "What is saved is the After column. Saving with none selected is allowed (the person then sees no data)",
     newTitle: "New user",
     editTitle: "Edit user",
     email: "Email address",
