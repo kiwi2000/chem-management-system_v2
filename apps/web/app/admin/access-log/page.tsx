@@ -241,8 +241,11 @@ export default function AccessLogPage() {
     if (ready) void load();
   }, [ready, load]);
 
-  async function remove(body: { ids?: string[]; days?: number }, confirmText: string) {
-    if (!(await ask({ message: confirmText, destructive: true }))) return;
+  /*
+    消す処理だけ。**確かめはここで出さない**: 選んだ行は表の部品が、日数は下の `purge` が、それぞれ 1 回だけ尋ねる
+    （前はここでも尋ねていて、選んだ行を消すときだけ確かめのウィンドウが 2 回続けて出た。2026-11-17 利用者の指摘）
+  */
+  async function remove(body: { ids?: string[]; days?: number }) {
     setError(null);
     const res = await fetch("/api/admin/access-log", {
       method: "DELETE",
@@ -258,6 +261,11 @@ export default function AccessLogPage() {
     const { count } = (await res.json()) as { count: number };
     setNotice(m.accessLog.removed(count));
     await load();
+  }
+
+  async function purge(olderThan: number) {
+    if (!(await ask({ message: m.accessLog.confirmDays(olderThan), destructive: true }))) return;
+    await remove({ days: olderThan });
   }
 
   /*
@@ -306,9 +314,8 @@ export default function AccessLogPage() {
         onStateChange={setState}
         emptyMessage={m.accessLog.empty}
         selectable
-        onDeleteSelected={(rows) =>
-          void remove({ ids: rows.map((r) => r.id) }, m.accessLog.confirmSelected(rows.length))
-        }
+        onDeleteSelected={(rows) => remove({ ids: rows.map((r) => r.id) })}
+        deleteConfirmMessage={m.accessLog.confirmSelected}
         trailingActions={
           /*
             古い記録は溜まる一方なので、日数を打ってまとめて消せるようにする。
@@ -332,7 +339,7 @@ export default function AccessLogPage() {
               variant="outline"
               disabled={!daysOk}
               onClick={() => {
-                void remove({ days }, m.accessLog.confirmDays(days));
+                void purge(days);
                 setPurgeDays("");
               }}
             >

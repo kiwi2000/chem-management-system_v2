@@ -90,8 +90,14 @@ interface Props<T> {
    * 操作がいつも1行に対してのものなら、まとめて選ぶ意味が無い
    */
   singleSelect?: boolean;
-  /** 選択した行の削除。確認はこの部品が出すので、呼び出し側は消す処理だけ書く */
+  /**
+   * 選択した行の削除。確認はこの部品が出すので、呼び出し側は消す処理だけ書く。
+   * **呼び出し側でも確かめを出すと、同じことを 2 回尋ねる**（2026-11-17、アクセス記録の画面で起きていた）。
+   * 文を変えたいときは `deleteConfirmMessage` を渡す。付け忘れは `lib/delete-confirm-coverage.test.ts` が検出する
+   */
   onDeleteSelected?: (rows: T[]) => void | Promise<void>;
+  /** 選択した行を消す前の確かめの文。渡さなければ「選択した n 件を削除しますか？」 */
+  deleteConfirmMessage?: (n: number) => string;
   /**
    * 選ばれている行が変わったときに知らせる。
    * **表の外にボタンを置く画面で使う**（ドキュメント生成の「生成」など、
@@ -220,6 +226,7 @@ export function DataTable<T>({
   selectable = false,
   singleSelect = false,
   onDeleteSelected,
+  deleteConfirmMessage,
   onSelectionChange,
   selection,
   bulkAction,
@@ -468,8 +475,8 @@ export function DataTable<T>({
   async function deleteSelected() {
     const targets = visible.filter((r) => selected.has(rowKey(r)));
     if (targets.length === 0 || !onDeleteSelected) return;
-    if (!(await ask({ message: m.table.deleteSelectedConfirm(targets.length), destructive: true })))
-      return;
+    const message = (deleteConfirmMessage ?? m.table.deleteSelectedConfirm)(targets.length);
+    if (!(await ask({ message, destructive: true }))) return;
     setDeleting(true);
     try {
       await onDeleteSelected(targets);
