@@ -1,11 +1,10 @@
 "use client";
 
+import { Popover } from "@base-ui/react/popover";
 import { pickName } from "@chem/shared";
 import { X } from "lucide-react";
-import { useCallback, useState } from "react";
 import { OptionChecklist } from "@/components/option-checklist";
 import { useI18n } from "@/lib/i18n-client";
-import { useOutsideClose } from "@/lib/use-outside-close";
 import { cn } from "@/lib/utils";
 
 export interface GroupChipOption {
@@ -18,7 +17,10 @@ export interface GroupChipOption {
 
 /**
  * 管理グループを丸い札で並べ、「＋ 追加」で選択肢の小窓を開いて足す（S31 画面設計 4 章）。
- * 札の ✕ で外す。点線の縁は「組織から最初に選ばれたもの」、紫はシステム管理グループ
+ * 札の ✕ で外す。点線の縁は「組織から最初に選ばれたもの」、紫はシステム管理グループ。
+ *
+ * **小窓は画面のいちばん外側に重ねて開く（Popover）。**欄の下にそのまま置くと、欄が枠（Card）の下の端に近いとき、
+ * 枠からはみ出した分が切られて一覧が見えない（2026-11-17、本番で「選択肢が出ない」と言われた）
  */
 export function PermissionGroupChips({
   options,
@@ -41,9 +43,6 @@ export function PermissionGroupChips({
   emptyLabel: string;
 }) {
   const { m, locale } = useI18n();
-  const [open, setOpen] = useState(false);
-  const close = useCallback(() => setOpen(false), []);
-  const boxRef = useOutsideClose<HTMLDivElement>(open, close);
 
   // 選択肢に無い id（消えた管理グループ）は出さない。並びは選択肢の並び（システム管理グループが先頭、あとはコード順）
   const ordered = options.filter((o) => value.includes(o.id));
@@ -82,33 +81,34 @@ export function PermissionGroupChips({
         );
       })}
       {!disabled && (
-        <div ref={boxRef} className="relative">
-          <button
-            type="button"
-            aria-expanded={open}
-            onClick={() => setOpen((v) => !v)}
-            className="text-muted-foreground inline-flex items-center gap-1 rounded-full border border-dashed px-2.5 py-0.5 text-xs hover:bg-accent"
-          >
+        <Popover.Root>
+          <Popover.Trigger className="text-muted-foreground inline-flex items-center gap-1 rounded-full border border-dashed px-2.5 py-0.5 text-xs hover:bg-accent">
             {m.common.add}
-          </button>
-          {open && (
-            <div className="bg-popover absolute z-20 mt-1 w-72 rounded-none border p-2 shadow-md">
-              <OptionChecklist
-                size="sm"
-                options={options.map((o) => ({ value: o.id, label: `${labelOf(o)}（${o.code}）` }))}
-                isChecked={(v) => value.includes(v)}
-                onToggle={(v, checked) => {
-                  if (!checked && locked?.has(v)) return;
-                  onChange(checked ? [...value, v] : value.filter((x) => x !== v));
-                }}
-                onSelectAll={(shown) => onChange([...new Set([...value, ...shown])])}
-                onClearAll={(shown) =>
-                  onChange(value.filter((v) => !shown.includes(v) || (locked?.has(v) ?? false)))
-                }
-              />
-            </div>
-          )}
-        </div>
+          </Popover.Trigger>
+          <Popover.Portal>
+            {/* 下に入りきらなければ上へ開く。外側のクリックと Esc で閉じる */}
+            <Popover.Positioner side="bottom" align="start" sideOffset={4} className="z-50">
+              <Popover.Popup className="bg-popover text-popover-foreground w-72 rounded-none border p-2 shadow-md outline-none">
+                <OptionChecklist
+                  size="sm"
+                  options={options.map((o) => ({
+                    value: o.id,
+                    label: `${labelOf(o)}（${o.code}）`,
+                  }))}
+                  isChecked={(v) => value.includes(v)}
+                  onToggle={(v, checked) => {
+                    if (!checked && locked?.has(v)) return;
+                    onChange(checked ? [...value, v] : value.filter((x) => x !== v));
+                  }}
+                  onSelectAll={(shown) => onChange([...new Set([...value, ...shown])])}
+                  onClearAll={(shown) =>
+                    onChange(value.filter((v) => !shown.includes(v) || (locked?.has(v) ?? false)))
+                  }
+                />
+              </Popover.Popup>
+            </Popover.Positioner>
+          </Popover.Portal>
+        </Popover.Root>
       )}
     </div>
   );

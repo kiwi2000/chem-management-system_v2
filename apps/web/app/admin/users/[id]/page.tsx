@@ -103,12 +103,28 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     [isSelf, groupOptions],
   );
 
-  /** 異動: 組織を変えたら、管理グループを新しい組織の「最初に選ばれる管理グループ」で選び直す（仕様 8-2） */
-  function changeOrganisation(next: string) {
+  /**
+   * 異動: 組織を変えたら、管理グループを新しい組織の「最初に選ばれる管理グループ」で選び直す（仕様 8-2）。
+   * システム管理グループだけは黙って外さない。外すかを聞き、「外す」を選んだときだけ外す
+   * （2026-11-17 利用者の指示。部署を変えただけのつもりで、システム管理者が何も見られなくなった）
+   */
+  async function changeOrganisation(next: string) {
     setOrganisationId(next);
-    const keep = groupIds.filter((g) => locked.has(g));
-    setGroupIds([...new Set([...keep, ...defaultsOf(next)])]);
     setRegrouped(true);
+    const adminIds = (groupOptions?.groups ?? []).filter((g) => g.isSystemAdmin).map((g) => g.id);
+    const held = groupIds.filter((g) => adminIds.includes(g));
+    // 自分のシステム管理グループは外せないので聞かない（locked）
+    const asked = held.filter((g) => !locked.has(g));
+    const drop =
+      asked.length > 0 &&
+      (await ask({
+        message: m.users.dropSystemAdminConfirm,
+        confirmLabel: m.users.dropSystemAdminYes,
+        cancelLabel: m.users.dropSystemAdminNo,
+        destructive: true,
+      }));
+    const keep = drop ? held.filter((g) => locked.has(g)) : held;
+    setGroupIds([...new Set([...keep, ...defaultsOf(next)])]);
   }
 
   async function save(force = false) {
@@ -281,7 +297,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   value={organisationId}
                   disabled={!editing}
                   noneLabel={m.users.organisationNone}
-                  onChange={changeOrganisation}
+                  onChange={(next) => void changeOrganisation(next)}
                 />
                 <p className="text-muted-foreground text-xs">{m.users.organisationHint}</p>
               </div>

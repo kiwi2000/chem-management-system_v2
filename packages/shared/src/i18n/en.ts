@@ -2293,6 +2293,10 @@ export const en: Messages = {
     permissionGroupsNone: "(none)",
     regroupedNotice:
       "The organisation changed, so the management groups were re-selected. Check them before saving",
+    dropSystemAdminConfirm:
+      "This person is in the system administrators group. Remove them from it?\n(The organisation changed, so the other management groups are re-selected from the new organisation.)",
+    dropSystemAdminYes: "Remove",
+    dropSystemAdminNo: "Keep",
     newTitle: "New user",
     editTitle: "Edit user",
     email: "Email address",
