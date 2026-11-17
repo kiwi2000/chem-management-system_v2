@@ -1,7 +1,7 @@
 "use client";
 
 import { emptyTableState, serializeTableState, type TableState } from "@chem/shared";
-import { BarChart3, Trash2 } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -309,9 +309,14 @@ export default function AccessLogPage() {
         onDeleteSelected={(rows) =>
           void remove({ ids: rows.map((r) => r.id) }, m.accessLog.confirmSelected(rows.length))
         }
-        headerActions={
-          /* 古い記録は溜まる一方なので、日数を打ってまとめて消せるようにする */
+        trailingActions={
+          /*
+            古い記録は溜まる一方なので、日数を打ってまとめて消せるようにする。
+            **選んだ行を消すごみ箱のあとに、線で区切って置く。ごみ箱の絵は付けない**（2026-11-17 利用者の指摘。
+            前はごみ箱の前にあり、絵も 2 つ並んで、どちらが何を消すのか見ただけでは分からなかった）
+          */
           <div className="flex items-center gap-1.5">
+            <span className="bg-border mx-1 h-5 w-px" aria-hidden />
             <Input
               value={purgeDays}
               onChange={(e) => setPurgeDays(e.target.value.replace(/[^0-9]/g, ""))}
@@ -324,14 +329,13 @@ export default function AccessLogPage() {
             </span>
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               disabled={!daysOk}
               onClick={() => {
                 void remove({ days }, m.accessLog.confirmDays(days));
                 setPurgeDays("");
               }}
             >
-              <Trash2 className="mr-1 size-3.5" />
               {m.accessLog.purgeRun}
             </Button>
           </div>

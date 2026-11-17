@@ -1196,7 +1196,7 @@ export const ja = {
       "システム設定の保存期間で自動的に片づけたときに書き出したファイルです。開くと表計算ソフトで読めます",
     archiveEmpty: "書き出したファイルはありません",
     archiveSize: (kb: number) => `${kb} KB`,
-    purgeLabel: "日以上前を削除",
+    purgeLabel: "日以上前を",
     purgeDays: "日数",
     purgeRun: "削除",
     confirmDays: (d: number) =>

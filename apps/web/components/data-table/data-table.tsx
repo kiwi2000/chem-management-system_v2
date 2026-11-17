@@ -133,8 +133,13 @@ interface Props<T> {
     label?: string;
     disabled?: boolean;
   };
-  /** ＋・ごみ箱に続けて置くボタン（新規登録が2種類ある表など） */
+  /** ＋ に続けて、ごみ箱の前に置くボタン（新規登録が2種類ある表など） */
   headerActions?: ReactNode;
+  /**
+   * ごみ箱・まとめての操作のあとに置くもの（アクセス記録の「〜日以上前を削除」）。
+   * 選んだ行を消すごみ箱の前に、別の「消す」を置くと、どちらのごみ箱か分からなくなる（2026-11-17 利用者の指摘）
+   */
+  trailingActions?: ReactNode;
   /**
    * 行の右端に置く操作。いまは編集にだけ使っている。
    *
@@ -223,6 +228,7 @@ export function DataTable<T>({
   showFilters = true,
   create,
   headerActions,
+  trailingActions,
   rowAction,
   hintText,
   title,
@@ -552,11 +558,16 @@ export function DataTable<T>({
   ) : null;
 
   /**
-   * 表の操作。左から「新規登録（＋）→ その表だけのボタン → ごみ箱」の順に並べる。
+   * 表の操作。左から「新規登録（＋）→ その表だけのボタン → ごみ箱 → まとめての操作 → あとに置くもの」の順に並べる。
    * フィルターと同じ1行に置くので、行が2段になって空白の帯ができることがない。
    */
   const actions =
-    title || create || selectable || allBulkActions.length > 0 || headerActions ? (
+    title ||
+    create ||
+    selectable ||
+    allBulkActions.length > 0 ||
+    headerActions ||
+    trailingActions ? (
       <div className="flex flex-wrap items-center gap-2">
         {title && <h2 className={TABLE_TITLE}>{title}</h2>}
         {create && (
@@ -608,6 +619,7 @@ export function DataTable<T>({
             {m.table.selectedCount(selected.size)}
           </span>
         )}
+        {trailingActions}
       </div>
     ) : null;
 
