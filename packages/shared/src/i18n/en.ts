@@ -1073,7 +1073,7 @@ export const en: Messages = {
     notEnabled: "Not set up",
     required: "Two-step sign-in is required here",
     requiredHint:
-      "Turn this on only after everyone has set it up. Otherwise those who have not will be locked out",
+      "Turn this on only after everyone has registered. Otherwise those who have not are held at the set-up screen after signing in (registering an authenticator app or a passkey lets them through)",
     passwordToDisable: "Enter your current password to confirm",
     codeFormat: "Enter a 6-digit code",
     codeWrong: "That code does not match. Use the latest one shown in the app",
