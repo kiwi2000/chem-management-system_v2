@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
+import { hasPasskey } from "@/lib/passkey";
 import { passwordExpired } from "@/lib/pending-step";
 import { getAppSettings } from "@/lib/settings";
 import { clientIp } from "@/lib/ip-allow";
@@ -72,7 +73,14 @@ export function safeEqual(a: string, b: string): boolean {
 export interface LoginFailure {
   ok: false;
   /** 画面表示用（アカウントの存在を推測させない共通文言を使う） */
-  reason: "invalid" | "locked" | "inactive" | "mfa_required" | "mfa_invalid" | "maintenance";
+  reason:
+    | "invalid"
+    | "locked"
+    | "inactive"
+    | "mfa_required"
+    | "mfa_invalid"
+    | "passkey_required"
+    | "maintenance";
   lockedUntil?: Date;
 }
 export interface LoginSuccess {
@@ -169,6 +177,7 @@ export async function login(
     return lock ? { ok: false, reason: "locked" } : { ok: false, reason: "invalid" };
   }
 
+  const settings = await getAppSettings();
   // MFA（TOTP）が有効なら検証
   if (user.mfaMethod === "totp" && user.mfaSecret) {
     if (!totp) return { ok: false, reason: "mfa_required" };
@@ -178,9 +187,19 @@ export async function login(
       await auditLoginFailure(email, "bad_totp", user.id);
       return { ok: false, reason: "mfa_invalid" };
     }
+  } else if (settings.mfaRequired && (await hasPasskey(user.id))) {
+    /*
+      2要素認証が必須で、認証アプリは無く、パスキーだけを登録している人。
+      **パスワードだけでは入れない。パスキーで入ってもらう**（2026-11-17 利用者の指示）。
+      ここを通すと、必須にしていても、パスワードを知っているだけの相手が 2 つ目の確かめなしで入れる。
+
+      どちらも登録していない人は通す。登録の画面まで進んでもらうため（pending-step.ts）。
+      必須でないときも通す。パスキーは本人が任意で足した入口で、パスワードの入口を閉じる約束はしていない
+    */
+    await auditLoginFailure(email, "passkey_required", user.id);
+    return { ok: false, reason: "passkey_required" };
   }
 
-  const settings = await getAppSettings();
   // メンテナンス中は管理者しか入れない。パスワードが合ってから断る（合っているかは漏らさない）
   if (settings.maintenanceMode && !(await isAdminUser(user.id))) {
     await auditLoginFailure(email, "maintenance", user.id);

@@ -1128,6 +1128,7 @@ export const en: Messages = {
     reasonLockedNow: "Locked after repeated failures",
     reasonBadPassword: "Wrong password",
     reasonBadTotp: "Wrong verification code",
+    reasonPasskeyRequired: "Tried a password where a passkey is required",
     archiveTitle: "Archived access log files",
     archiveLead:
       "Files written when records were tidied automatically under the retention setting. They open in a spreadsheet",
@@ -1803,7 +1804,7 @@ export const en: Messages = {
       "When on, only system administrators can sign in, and everyone else is signed out at their next action (they see why). Use it while replacing data or re-judging, so nobody sees a half-finished state. Turn it off when done",
     sessionSection: "Automatic sign-out",
     sessionIdleMinutes: "Minutes of inactivity before signing out",
-    mfaRequired: "Require two-step sign-in",
+    mfaRequired: "Require two-step sign-in (authenticator app or passkey)",
     sessionIdleHint:
       "Stops an unattended device from staying signed in. Acting after this time returns you to the sign-in screen.",
     sessionIdleRange: "Choose between 1 and 480 minutes (8 hours)",
@@ -2392,6 +2393,8 @@ export const en: Messages = {
     invalidCredentials: "The email address or password is incorrect",
     locked: "Too many failed attempts. This account is temporarily locked; please try again later",
     mfaInvalid: "The authentication code is incorrect",
+    passkeyRequired:
+      "Two-step sign-in is required, so a password alone is not enough. Use Sign in with a passkey. To sign in from devices that cannot use the passkey, register an authenticator app after signing in",
     pendingSetup: "There is something to finish first. Complete it on the screen you are sent to.",
     unauthorized: "Please sign in",
     forbiddenEdit: "You do not have edit permission (you can view, run assessments and download)",

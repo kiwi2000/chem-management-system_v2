@@ -388,6 +388,7 @@ function reasonLabel(m: M, reason: string): string {
     locked_now: m.accessLog.reasonLockedNow,
     bad_password: m.accessLog.reasonBadPassword,
     bad_totp: m.accessLog.reasonBadTotp,
+    passkey_required: m.accessLog.reasonPasskeyRequired,
   };
   return table[reason] ?? reason;
 }

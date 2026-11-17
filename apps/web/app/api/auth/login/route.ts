@@ -39,6 +39,10 @@ export async function POST(req: Request) {
     if (result.reason === "mfa_invalid") {
       return jsonError(401, "mfa_invalid", m.errors.mfaInvalid, { mfaRequired: true });
     }
+    if (result.reason === "passkey_required") {
+      // パスワードは合っている。2要素認証が必須で、パスキーだけの人はパスキーで入ってもらう
+      return jsonError(403, "passkey_required", m.errors.passkeyRequired);
+    }
     if (result.reason === "locked") {
       return jsonError(423, "locked", m.errors.locked);
     }
