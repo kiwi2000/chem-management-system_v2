@@ -8,7 +8,13 @@ import { clientIp } from "@/lib/ip-allow";
 import { countryOf } from "@/lib/ip-country";
 import { computedIpCondition } from "@/lib/access-log-computed-filter";
 import { needsWhois, requestWhois, whoisFor } from "@/lib/ip-whois";
-import { ACCESS_LOG_COLUMNS, SIGNIN_ACTIONS, TAKEOUT_ACTIONS } from "@/lib/access-log-shared";
+import {
+  ACCESS_LOG_ACTIONS,
+  ACCESS_LOG_COLUMNS,
+  SETTINGS_ACTIONS,
+  TAKEOUT_ACTIONS,
+} from "@/lib/access-log-shared";
+import { previousOf, settingChanges } from "@/lib/settings-history";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import type { AccessLogDto } from "@/lib/types";
 
@@ -17,7 +23,7 @@ export const dynamic = "force-dynamic";
 /** 新しいものから。記録を追うときは、まず直近を見る */
 const DEFAULT_STATE = emptyTableState([{ column: "at", direction: "desc" }]);
 
-const ALL_ACTIONS = [...SIGNIN_ACTIONS, ...TAKEOUT_ACTIONS];
+const ALL_ACTIONS = ACCESS_LOG_ACTIONS;
 
 /**
  * GET /api/admin/access-log — アクセス記録。
@@ -98,6 +104,25 @@ export async function GET(req: Request) {
   requestWhois(pageIps.filter((ip) => !whois.get(ip) || whois.get(ip)!.stale));
   const productOf = new Map(products.map((p) => [p.id, p]));
 
+  /*
+    システム設定の保存は、何を変えたかを出す。記録には保存したあとの全部の値しか無いので、
+    1 つ前の保存を引いて見比べる。保存はめったに無いので、この画面に出ている分より前の保存を全部読む
+  */
+  const settingRows = logs.filter((l) => SETTINGS_ACTIONS.includes(l.action));
+  const prevSetting =
+    settingRows.length === 0
+      ? new Map<string, { id: string; diff: unknown } | null>()
+      : previousOf(
+          await prisma.auditLog.findMany({
+            where: {
+              action: { in: SETTINGS_ACTIONS },
+              at: { lte: new Date(Math.max(...settingRows.map((l) => l.at.getTime()))) },
+            },
+            orderBy: [{ at: "asc" }, { id: "asc" }],
+            select: { id: true, diff: true },
+          }),
+        );
+
   const items: AccessLogDto[] = logs.map((l) => {
     const u = l.actorId ? userOf.get(l.actorId) : undefined;
     const takeOut = TAKEOUT_ACTIONS.includes(l.action);
@@ -124,6 +149,9 @@ export async function GET(req: Request) {
       productName: p?.nameJa ?? null,
       lineCount: d.lineCount ?? null,
       expanded: d.expanded ?? null,
+      settingChanges: SETTINGS_ACTIONS.includes(l.action)
+        ? settingChanges(prevSetting.get(l.id)?.diff ?? null, l.diff)
+        : null,
       ip: d.ip ?? null,
       country: countryOf(d.ip ?? null),
       userAgent: d.userAgent ?? null,

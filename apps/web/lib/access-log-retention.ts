@@ -1,7 +1,7 @@
 import { appendFile, mkdir, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { prisma } from "@/lib/db";
-import { SIGNIN_ACTIONS, TAKEOUT_ACTIONS } from "@/lib/access-log-shared";
+import { ACCESS_LOG_ACTIONS } from "@/lib/access-log-shared";
 import { writeAudit } from "@/lib/audit";
 import { ensureWritableDir, resolveOutputDir } from "@/lib/doc-files";
 import { dayInJapan, stampInJapan } from "@/lib/judgement-date";
@@ -21,8 +21,6 @@ import { getAppSettings } from "@/lib/settings";
  * 走った印は DB（system_settings の行）で持ち、取り合いは updateMany の件数で決める
  * （next dev は共有モジュールを作り直すので、メモリの印は当てにしない）
  */
-
-export const ACCESS_LOG_ACTIONS = [...SIGNIN_ACTIONS, ...TAKEOUT_ACTIONS];
 
 /** 走った印の行（SETTING_DEFS には載せない。サーバーだけが書く） */
 export const RETENTION_STATE_KEY = "access_log.retention_state";

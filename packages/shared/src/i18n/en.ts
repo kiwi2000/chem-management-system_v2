@@ -1095,7 +1095,7 @@ export const en: Messages = {
 
   accessLog: {
     title: "Access records",
-    lead: "Who signed in, when, from where, and whose composition they opened — in one timeline. Filter by action to see just one kind.",
+    lead: "Who signed in, when, from where, whose composition they opened, and how the system settings were changed — in one timeline. Filter by action to see just one kind.",
     analysis: "Analysis",
     at: "When",
     action: "Action",
@@ -1122,6 +1122,14 @@ export const en: Messages = {
     actionViewExpanded: "Viewed full breakdown",
     actionExport: "Exported",
     actionImport: "Imported",
+    actionSettingsUpdate: "Changed system settings",
+    targetSettings: "System settings",
+    settingChanged: (name: string, from: string, to: string) => `${name}: ${from} → ${to}`,
+    settingChangedOnly: (name: string) => `${name} (changed)`,
+    settingOn: "on",
+    settingOff: "off",
+    settingNoChange: "No change (saved only)",
+    settingJoin: "; ",
     reasonUnknownUser: "No such address",
     reasonInactive: "User is disabled",
     reasonLockedOut: "Tried while locked out",

@@ -28,7 +28,9 @@ export async function writeAudit(params: {
     | "mfa_disable"
     /** パスキーの付け外し。認証アプリと同じく入口の守りが変わる */
     | "passkey_add"
-    | "passkey_remove";
+    | "passkey_remove"
+    /** システム設定の保存。決まりが変わった瞬間なので、アクセス記録に出す（2026-11-17） */
+    | "settings_update";
   actorId?: string;
   diff?: unknown;
 }): Promise<void> {

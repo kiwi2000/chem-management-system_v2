@@ -14,6 +14,8 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { countryName } from "@/lib/country-name";
 import type { ArchiveFileInfo } from "@/lib/access-log-retention";
 import { useI18n } from "@/lib/i18n-client";
+import { settingName } from "@/lib/setting-names";
+import type { SettingChange } from "@/lib/settings-history";
 import type { AccessLogDto, ApiError, ListResponse, UserSummaryDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 
@@ -71,7 +73,8 @@ export default function AccessLogPage() {
         key: "action",
         header: m.accessLog.action,
         kind: "enum",
-        width: 150,
+        // 「システム設定を変更」が切れない幅
+        width: 170,
         options: [
           { value: "login", label: m.accessLog.actionLogin },
           { value: "login_failed", label: m.accessLog.actionLoginFailed },
@@ -83,6 +86,7 @@ export default function AccessLogPage() {
           { value: "view", label: m.accessLog.actionView },
           { value: "export", label: m.accessLog.actionExport },
           { value: "import", label: m.accessLog.actionImport },
+          { value: "settings_update", label: m.accessLog.actionSettingsUpdate },
         ],
         render: (r) => (
           <span className={r.action === "login_failed" ? "text-destructive font-medium" : ""}>
@@ -99,7 +103,9 @@ export default function AccessLogPage() {
         width: 280,
         // ログインなら試されたアドレス、持ち出しなら対象の製品
         render: (r) =>
-          r.productName ? (
+          r.settingChanges ? (
+            m.accessLog.targetSettings
+          ) : r.productName ? (
             <span>
               <span className="text-muted-foreground mr-2 font-mono text-xs">{r.productCode}</span>
               {r.productName}
@@ -117,10 +123,13 @@ export default function AccessLogPage() {
         kind: "text",
         sortable: false,
         filterable: false,
-        width: 175,
-        // 失敗なら理由、持ち出しなら件数。列を分けるほどの中身ではない
+        // 設定の保存で変えた項目（「見出し › 項目: 入 → 切」）が読める幅
+        width: 300,
+        // 失敗なら理由、持ち出しなら件数、設定の保存なら変えた項目。列を分けるほどの中身ではない
         render: (r) =>
-          r.reason ? (
+          r.settingChanges ? (
+            settingChangeText(m, r.settingChanges)
+          ) : r.reason ? (
             reasonLabel(m, r.reason)
           ) : r.lineCount !== null ? (
             <span className="text-muted-foreground text-xs">
@@ -374,9 +383,32 @@ function actionLabel(m: M, r: AccessLogDto): string {
       return m.accessLog.actionExport;
     case "import":
       return m.accessLog.actionImport;
+    case "settings_update":
+      return m.accessLog.actionSettingsUpdate;
     default:
       return r.expanded ? m.accessLog.actionViewExpanded : m.accessLog.actionView;
   }
+}
+
+/** システム設定の保存で変えた項目。入切と数は前後の値を出し、文字や一覧は変えたことだけを出す */
+function settingChangeText(m: M, changes: SettingChange[]): string {
+  if (changes.length === 0) return m.accessLog.settingNoChange;
+  const onOff = (v: boolean | number | null) =>
+    v === null ? "" : v ? m.accessLog.settingOn : m.accessLog.settingOff;
+  return changes
+    .map((c) => {
+      const name = settingName(m, c.field);
+      if (c.kind === "bool") return m.accessLog.settingChanged(name, onOff(c.from), onOff(c.to));
+      if (c.kind === "number") {
+        return m.accessLog.settingChanged(
+          name,
+          c.from === null ? "" : String(c.from),
+          String(c.to),
+        );
+      }
+      return m.accessLog.settingChangedOnly(name);
+    })
+    .join(m.accessLog.settingJoin);
 }
 
 /** 失敗の理由。管理者が次に何をすべきかが分かる言葉にする */

@@ -147,11 +147,20 @@ export async function PUT(req: Request) {
   if (!before.maintenanceMode && next.maintenanceMode) {
     endedSessions = await endNonAdminSessions();
   }
+  /*
+    保存したあとの全部の値を残す。アクセス記録の画面は、1 つ前の保存と見比べて「何を変えたか」を出す
+    （lib/settings-history.ts）。どこから保存したかも、ログインの記録と同じ名前で残す
+  */
   await writeAudit({
     entity: "system_settings",
-    action: "update",
+    action: "settings_update",
     actorId: actor.user.id,
-    diff: { ...next, ...(endedSessions > 0 ? { endedSessions } : {}) },
+    diff: {
+      ...next,
+      ...(endedSessions > 0 ? { endedSessions } : {}),
+      ip: selfIp,
+      userAgent: req.headers.get("user-agent")?.slice(0, 200) ?? null,
+    },
   });
   return Response.json({ ok: true, settings: next, stamp: (await settingsStamp()).stamp });
 }

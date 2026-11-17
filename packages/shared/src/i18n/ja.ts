@@ -1147,7 +1147,7 @@ export const ja = {
   /** アクセス記録。入口の出来事と、データが外へ出る出来事を1つの並びで見る画面 */
   accessLog: {
     title: "アクセス記録",
-    lead: "いつ・誰が・どこからログインしたか、どの製品の組成を見たかが、時間順に並びます。操作で絞れば片方だけも見られます。",
+    lead: "いつ・誰が・どこからログインしたか、どの製品の組成を見たか、システム設定をどう変えたかが、時間順に並びます。操作で絞れば 1 種類だけも見られます。",
     analysis: "分析",
     at: "日時",
     action: "操作",
@@ -1175,6 +1175,15 @@ export const ja = {
     actionViewExpanded: "組成を展開して見た",
     actionExport: "出力した",
     actionImport: "取り込んだ",
+    /** システム設定の保存（2026-11-17）。対象の欄は「システム設定」、内訳の欄は変えた項目 */
+    actionSettingsUpdate: "システム設定を変更",
+    targetSettings: "システム設定",
+    settingChanged: (name: string, from: string, to: string) => `${name}: ${from} → ${to}`,
+    settingChangedOnly: (name: string) => `${name}（変更）`,
+    settingOn: "入",
+    settingOff: "切",
+    settingNoChange: "変更なし（保存のみ）",
+    settingJoin: "、",
     reasonUnknownUser: "そのアドレスは無い",
     reasonInactive: "停止中の利用者",
     reasonLockedOut: "ロック中に試された",

@@ -225,7 +225,7 @@ export interface SavedFilterDto {
 export interface AccessLogDto {
   id: string;
   at: string;
-  /** login / login_failed / logout / view / export / import */
+  /** login / login_failed / logout / view / export / import / settings_update など */
   action: string;
   actorId: string | null;
   actorName: string | null;
@@ -240,6 +240,8 @@ export interface AccessLogDto {
   lineCount: number | null;
   /** 末端の物質まで下ろした表かどうか */
   expanded: boolean | null;
+  /** システム設定の保存で変えた項目（1 つ前の保存との違い）。それ以外の記録では null */
+  settingChanges: import("@/lib/settings-history").SettingChange[] | null;
   ip: string | null;
   /** 接続元のおよその国（2文字）。"local" は自分自身、null は分からない */
   country: string | null;

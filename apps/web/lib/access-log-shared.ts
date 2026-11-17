@@ -21,6 +21,15 @@ export const SIGNIN_ACTIONS = [
 export const TAKEOUT_ACTIONS = ["view", "export", "import"];
 
 /**
+ * 決まりが変わる出来事。システム設定の保存（2026-11-17 利用者の指示。「設定変更は重要な内容なのでアクセス記録に出す」）。
+ * 入口の決まり（2要素認証の必須・接続元の制限・パスワードの規則）もここで変わるので、ログインと同じ並びに出す
+ */
+export const SETTINGS_ACTIONS = ["settings_update"];
+
+/** アクセス記録の画面に出す操作の全部。消す・書き出す・片づけるのも、ここに載っているものだけ */
+export const ACCESS_LOG_ACTIONS = [...SIGNIN_ACTIONS, ...TAKEOUT_ACTIONS, ...SETTINGS_ACTIONS];
+
+/**
  * アクセス記録の一覧で絞れるもの。
  * 対象や利用者の「名前」は別の表にあるので、ここでは絞り込めない
  * （監査ログは関連を張らず、あとから組み立てて見せる作りにしてある）。
