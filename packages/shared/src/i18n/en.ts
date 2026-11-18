@@ -203,6 +203,14 @@ export const en: Messages = {
     failed: (status: number) => `Could not change the password (${status})`,
     done: "Your password has been changed.",
     toHome: "Go to home",
+    usePasskey: "Forgot your password? You can confirm with a passkey instead",
+    usePassword: "Change with the current password",
+    passkeyNote:
+      "You will confirm it is you with this device's passkey (fingerprint, face or PIN). The current password is not needed.",
+    submitWithPasskey: "Confirm with passkey and change",
+    passkeyCancelled: "Passkey confirmation was cancelled. Your password has not changed",
+    passkeyNotYours: "Use a passkey registered to this account",
+    noPasskey: "No passkey is registered. Change it with the current password",
   },
 
   home: {

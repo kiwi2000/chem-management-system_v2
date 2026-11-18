@@ -217,6 +217,14 @@ export const ja = {
     failed: (status: number) => `変更できませんでした（${status}）`,
     done: "パスワードを変更しました。",
     toHome: "ホームへ",
+    usePasskey: "パスワードが分からないときは、パスキーで確かめて変更できます",
+    usePassword: "現在のパスワードで変更する",
+    passkeyNote:
+      "変更するときに、この端末のパスキー（指紋・顔・PIN など）で本人と確かめます。現在のパスワードは要りません。",
+    submitWithPasskey: "パスキーで確かめて変更",
+    passkeyCancelled: "パスキーでの確認をやめました。パスワードは変わっていません",
+    passkeyNotYours: "このアカウントに登録したパスキーで確かめてください",
+    noPasskey: "パスキーが登録されていません。現在のパスワードで変更してください",
   },
 
   home: {

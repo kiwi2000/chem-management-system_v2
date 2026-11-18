@@ -16,6 +16,8 @@ import { prisma } from "@/lib/db";
 /** 使い捨ての文字列を置く Cookie。登録用とログイン用で分ける */
 const REGISTER_COOKIE = "chem_passkey_reg";
 const LOGIN_COOKIE = "chem_passkey_login";
+/** ログイン中の人に、もう一度本人かを確かめるとき（パスワードの作り直し） */
+const REAUTH_COOKIE = "chem_passkey_reauth";
 
 /** 端末の操作が終わるまでの猶予。長く残しても使い道が無い */
 const CHALLENGE_SECONDS = 300;
@@ -45,8 +47,9 @@ export async function expectedOrigin(): Promise<string> {
 /** 見せる名前。認証アプリの一覧に出る */
 export const RP_NAME = "ケミカルコンプライアンス支援システム";
 
-type Kind = "register" | "login";
-const cookieName = (kind: Kind) => (kind === "register" ? REGISTER_COOKIE : LOGIN_COOKIE);
+type Kind = "register" | "login" | "reauth";
+const cookieName = (kind: Kind) =>
+  kind === "register" ? REGISTER_COOKIE : kind === "login" ? LOGIN_COOKIE : REAUTH_COOKIE;
 
 /** 使い捨ての文字列を覚えておく */
 export async function keepChallenge(kind: Kind, challenge: string): Promise<void> {

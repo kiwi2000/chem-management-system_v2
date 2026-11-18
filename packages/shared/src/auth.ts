@@ -105,6 +105,21 @@ export const changePasswordSchema = (m: Messages, policy?: PasswordPolicy) =>
     });
 export type ChangePasswordInput = z.infer<ReturnType<typeof changePasswordSchema>>;
 
+/**
+ * パスキーで本人と確かめて、今のパスワード無しで作り直すとき（2026-11-18 指示）。
+ * 今のパスワードを聞かないので、「今と同じではないか」はサーバーがパスキーを確かめたあとに見る
+ */
+export const passkeyPasswordSchema = (m: Messages, policy?: PasswordPolicy) =>
+  z
+    .object({
+      newPassword: passwordSchema(m, policy),
+      confirmPassword: z.string(),
+    })
+    .refine((v) => v.newPassword === v.confirmPassword, {
+      message: m.validation.passwordMismatch,
+      path: ["confirmPassword"],
+    });
+
 /** セキュリティ関連の定数（値の変更は運用ポリシーの変更を意味する） */
 export const AUTH_POLICY = {
   /** 連続失敗でロックする回数 */

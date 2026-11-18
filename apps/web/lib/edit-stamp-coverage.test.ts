@@ -21,6 +21,7 @@ const SERVER_ALLOWLIST = new Set([
   "auth/mfa/route.ts", // 本人の 2 要素認証。本人しか変えない
   "auth/passkey/login/route.ts", // ログインそのもの（パスキーの署名回数の更新）
   "auth/passkey/register/route.ts", // 本人のパスキーの登録
+  "auth/change-password/passkey/route.ts", // 本人のパスワード（パスキーで確かめて作り直す）
   // 取り込みの一時領域の「反映する」の印。取り込みを頼んだ本人が、反映前にだけ触る
   "import/[id]/rows/route.ts",
   // モジュール（SDS 版など）の API の中継。いまモジュールに更新の API は無い。
@@ -35,6 +36,7 @@ const CLIENT_ALLOWLIST = new Set([
   "components/page-size-section.tsx", // 個人設定（1 ページの件数）
   "components/mfa-section.tsx", // 本人の 2 要素認証
   "components/passkey-section.tsx", // 本人のパスキー
+  "components/change-password-form.tsx", // 本人のパスワード
   "app/login/page.tsx", // ログイン画面の言語・テーマ
   "components/import-job-screen.tsx", // 取り込みの一時領域（上の import/[id]/rows と同じ理由）
   "components/prtr-import-dialog.tsx", // 取り込み（PUT は使っていない。動詞を変数で持つだけ）
