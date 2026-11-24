@@ -67,6 +67,8 @@ export interface UserSummaryDto {
 
 /** 管理グループの一覧の 1 行（S31） */
 export interface PermissionGroupListItemDto {
+  /** 楽観的ロックの印。まとめて消すときに送り返す（lib/stamped-delete.ts） */
+  stamp: string;
   id: string;
   code: string;
   nameJa: string;
@@ -518,11 +520,14 @@ export interface SubstanceListItemDto {
    */
   numbers: { label: string; number: string }[];
   updatedAt: string;
+  /**
+   * 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す。
+   * 一覧でも持つ（まとめて消すときに送り返す。lib/stamped-delete.ts）
+   */
+  stamp: string;
 }
 
 export interface SubstanceDetailDto extends SubstanceListItemDto {
-  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
-  stamp: string;
   mainNameJa: string;
   mainNameEn: string | null;
   subNames: { nameJa: string | null; nameEn: string | null }[];
@@ -583,11 +588,14 @@ export interface ProductListItemDto {
   hitCount: number;
   /** 確認が残っている区分が1つでもあるか */
   needsReview: boolean;
+  /**
+   * 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す。
+   * 一覧でも持つ（まとめて消すときに送り返す。lib/stamped-delete.ts）
+   */
+  stamp: string;
 }
 
 export interface ProductDetailDto extends ProductListItemDto {
-  /** 楽観的ロックの印（lib/edit-stamp.ts）。編集の保存時にそのまま送り返す */
-  stamp: string;
   aliases: { nameJa: string | null; nameEn: string | null }[];
   properties: PropertyValueDto[];
 }

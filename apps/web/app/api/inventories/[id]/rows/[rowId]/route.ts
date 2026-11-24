@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { currentVersion } from "@/lib/inventory-service";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -56,29 +57,37 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string; row
   if (!row) return jsonError(404, "not_found", m.errors.notFound);
 
   const casNormalized = normalizeCas(v.casNumber);
-  const dup = await prisma.inventoryRow.findFirst({
-    where: {
-      versionId: version.id,
-      sourceId: v.sourceId,
-      inventoryId: id,
-      casNormalized,
-      value: v.value,
-      id: { not: rowId },
-    },
-    select: { id: true },
-  });
-  if (dup) return jsonError(409, "duplicate_row", m.inventories.duplicateRow);
+  const clash = async () => {
+    const dup = await prisma.inventoryRow.findFirst({
+      where: {
+        versionId: version.id,
+        sourceId: v.sourceId,
+        inventoryId: id,
+        casNormalized,
+        value: v.value,
+        id: { not: rowId },
+      },
+      select: { id: true },
+    });
+    return dup ? jsonError(409, "duplicate_row", m.inventories.duplicateRow) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const hit = await prisma.inventoryRow.updateMany({
-    where: { id: rowId, ...stampWhere(lock) },
-    data: {
-      sourceId: v.sourceId,
-      casNumber: v.casNumber,
-      casNormalized,
-      value: v.value,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じ行へほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const hit = await guardUnique(m, clash, () =>
+    prisma.inventoryRow.updateMany({
+      where: { id: rowId, ...stampWhere(lock) },
+      data: {
+        sourceId: v.sourceId,
+        casNumber: v.casNumber,
+        casNormalized,
+        value: v.value,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (hit instanceof Response) return hit;
   if (hit.count === 0) {
     return staleFromRow(
       m,
@@ -101,41 +110,4 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string; row
     select: { updatedAt: true },
   });
   return Response.json({ id: rowId, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/inventories/[id]/rows/[rowId] — 行を消す。
- *
- * **本当に消す。**インベントリの行は論理削除を持たない。
- * 「載っていない」ことに意味がある表なので、消したものが残っていると
- * 「載っているが無効」なのか「載っていない」のかが区別できなくなる。
- * 消した跡はアクセス記録に残る
- */
-export async function DELETE(
-  req: Request,
-  ctx: { params: Promise<{ id: string; rowId: string }> },
-) {
-  const actor = await requirePermission("REGULATION_EDIT");
-  if (actor instanceof Response) return actor;
-  const m = await getServerMessages();
-  const { id, rowId } = await ctx.params;
-
-  const { version, row } = await targetRow(req, id, rowId);
-  if (!version) return jsonError(409, "no_current_version", m.inventories.noCurrentVersion);
-  if (!row) return jsonError(404, "not_found", m.errors.notFound);
-
-  await prisma.inventoryRow.delete({ where: { id: rowId } });
-  await writeAudit({
-    entity: "inventory_rows",
-    entityId: rowId,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: {
-      inventoryId: id,
-      sourceId: row.sourceId,
-      casNumber: row.casNumber,
-      value: row.value,
-    },
-  });
-  return new Response(null, { status: 204 });
 }

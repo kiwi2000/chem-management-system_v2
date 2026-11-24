@@ -8,6 +8,7 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission, scopeIds } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 import {
   CATEGORY_THRESHOLD_SELECT,
   SUBSTANCE_INCLUDE,
@@ -17,6 +18,8 @@ import {
 import { getCurrentVersion } from "@/lib/current-version";
 import { statutorySubstanceColumns } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { statutorySubstanceDelete } from "@/lib/law-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
 
 export const dynamic = "force-dynamic";
 
@@ -90,36 +93,44 @@ export async function POST(req: Request) {
   const orderError = thresholdOrderError(v, cls.category, m);
   if (orderError) return orderError;
 
-  const live = await prisma.statutorySubstance.findFirst({
-    where: { classId: v.classId, codeNormalized, deletedAt: null },
-  });
-  if (live) {
-    return jsonError(409, "duplicate_substance_code", m.statutorySubstances.duplicateCode(v.code));
-  }
+  const clash = async () => {
+    const live = await prisma.statutorySubstance.findFirst({
+      where: { classId: v.classId, codeNormalized, deletedAt: null },
+    });
+    return live
+      ? jsonError(409, "duplicate_substance_code", m.statutorySubstances.duplicateCode(v.code))
+      : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const created = await prisma.statutorySubstance.create({
-    data: {
-      code: v.code,
-      codeNormalized,
-      classId: v.classId,
-      officialNumber: v.officialNumber ?? null,
-      nameOriginal: v.nameOriginal,
-      nameLang: v.nameLang,
-      nameJa: v.nameJa ?? null,
-      nameEn: v.nameEn ?? null,
-      thresholdLower: v.thresholdLower,
-      lowerBound: v.lowerBound,
-      thresholdUpper: v.thresholdUpper,
-      upperBound: v.upperBound,
-      effectiveFrom: toDate(v.effectiveFrom),
-      effectiveTo: toDate(v.effectiveTo),
-      displayOrder: v.displayOrder,
-      applicableCondition: v.applicableCondition ?? null,
-      note: v.note ?? null,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.statutorySubstance.create({
+      data: {
+        code: v.code,
+        codeNormalized,
+        classId: v.classId,
+        officialNumber: v.officialNumber ?? null,
+        nameOriginal: v.nameOriginal,
+        nameLang: v.nameLang,
+        nameJa: v.nameJa ?? null,
+        nameEn: v.nameEn ?? null,
+        thresholdLower: v.thresholdLower,
+        lowerBound: v.lowerBound,
+        thresholdUpper: v.thresholdUpper,
+        upperBound: v.upperBound,
+        effectiveFrom: toDate(v.effectiveFrom),
+        effectiveTo: toDate(v.effectiveTo),
+        displayOrder: v.displayOrder,
+        applicableCondition: v.applicableCondition ?? null,
+        note: v.note ?? null,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (created instanceof Response) return created;
 
   await writeAudit({
     entity: "statutory_substances",
@@ -129,4 +140,12 @@ export async function POST(req: Request) {
     diff: { code: v.code, nameOriginal: v.nameOriginal, classId: v.classId },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/** DELETE /api/statutory-substances — まとめて論理削除（lib/stamped-delete.ts） */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, statutorySubstanceDelete(actor));
 }

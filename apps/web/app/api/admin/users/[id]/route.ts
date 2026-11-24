@@ -77,21 +77,22 @@ export async function PUT(req: Request, { params }: Ctx) {
   }
 
   // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している。
-  // 所属と権限は利用者の行を触らないので、ここを通ってから書く
+  // 所属と権限は利用者の行を触らないので、ここを通ってから書く。
+  // 印は editedAt（管理者が直す中身を変えた時刻）。updatedAt はログインでも進むので比べない（2026-11-24）
+  const guard = stampWhere(lock).updatedAt;
   const hit = await prisma.user.updateMany({
-    where: { id, ...stampWhere(lock) },
+    where: { id, ...(guard ? { editedAt: guard } : {}) },
     data: {
       displayName: displayName ?? null,
       activeFlag,
       organisationId: assigned.organisationId,
+      editedAt: new Date(),
     },
   });
   if (hit.count === 0) {
     // 利用者は更新者を持たないので、時刻だけ添える
-    return staleFromRow(
-      m,
-      await prisma.user.findUnique({ where: { id }, select: { updatedAt: true } }),
-    );
+    const now = await prisma.user.findUnique({ where: { id }, select: { editedAt: true } });
+    return staleFromRow(m, now ? { updatedAt: now.editedAt } : null);
   }
   const groupsChanged = await setGroups(
     id,
@@ -111,38 +112,6 @@ export async function PUT(req: Request, { params }: Ctx) {
     actorId: actor.user.id,
     diff: { displayName, activeFlag, organisationId, groupIds },
   });
-  const after = await prisma.user.findUniqueOrThrow({ where: { id }, select: { updatedAt: true } });
-  return Response.json({ ok: true, stamp: rowStamp(after) });
-}
-
-/** DELETE /api/admin/users/[id] — 論理削除 */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requireAdmin();
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const user = await prisma.user.findFirst({ where: { id, deletedAt: null } });
-  if (!user) return jsonError(404, "not_found", m.errors.notFound);
-  if (id === actor.user.id) {
-    return jsonError(409, "cannot_delete_self", m.errors.cannotDeleteSelf);
-  }
-  if ((await countActiveAdmins(id)) === 0) {
-    return jsonError(409, "cannot_remove_last_admin", m.errors.cannotRemoveLastAdmin);
-  }
-
-  await prisma.user.update({
-    where: { id },
-    data: { deletedAt: new Date(), activeFlag: false },
-  });
-  await revokeAllSessions(id);
-
-  await writeAudit({
-    entity: "users",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { email: user.email },
-  });
-  return Response.json({ ok: true });
+  const after = await prisma.user.findUniqueOrThrow({ where: { id }, select: { editedAt: true } });
+  return Response.json({ ok: true, stamp: rowStamp({ updatedAt: after.editedAt }) });
 }

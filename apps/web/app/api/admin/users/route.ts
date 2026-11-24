@@ -16,6 +16,9 @@ import { USER_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import { orgPathMap } from "@/lib/organisation-tree";
 import { resolveAssignments, setGroups, toUserSummary, USER_INCLUDE } from "@/lib/user-service";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { userDelete } from "@/lib/user-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -76,22 +79,30 @@ export async function POST(req: Request) {
   const { email, displayName, initialPassword, organisationId, groupIds } = parsed.data;
   const normalized = normalizeEmail(email);
 
-  if (await prisma.user.findUnique({ where: { email: normalized } })) {
-    return jsonError(409, "email_taken", m.errors.emailTaken);
-  }
+  const clash = async () =>
+    (await prisma.user.findUnique({ where: { email: normalized } }))
+      ? jsonError(409, "email_taken", m.errors.emailTaken)
+      : null;
+  const clashed = await clash();
+  if (clashed) return clashed;
 
   const assigned = await resolveAssignments(organisationId, groupIds);
   if (assigned instanceof Response) return assigned;
 
-  const created = await prisma.user.create({
-    data: {
-      email: normalized,
-      displayName: displayName ?? null,
-      passwordHash: await hashPassword(initialPassword),
-      mustChangePassword: true,
-      organisationId: assigned.organisationId,
-    },
-  });
+  const passwordHash = await hashPassword(initialPassword);
+  // 同じメールアドレスをほぼ同時に登録されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.user.create({
+      data: {
+        email: normalized,
+        displayName: displayName ?? null,
+        passwordHash,
+        mustChangePassword: true,
+        organisationId: assigned.organisationId,
+      },
+    }),
+  );
+  if (created instanceof Response) return created;
   await setGroups(created.id, assigned.organisationId, assigned.groupIds, actor.user.id);
 
   await writeAudit({
@@ -102,4 +113,15 @@ export async function POST(req: Request) {
     diff: { email: normalized, organisationId, groupIds },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/**
+ * DELETE /api/admin/users — まとめて論理削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 自分は消せない。有効なシステム管理者が 1 人も残らなくなるなら断る。消した人のログインは全部切る
+ */
+export async function DELETE(req: Request) {
+  const actor = await requireAdmin();
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, userDelete(actor, m));
 }

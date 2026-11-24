@@ -9,9 +9,12 @@ import { jsonError, requirePermission, scopeIds } from "@/lib/authz";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 import { CLASS_INCLUDE, toClassDto } from "@/lib/law-service";
 import { regulationClassColumns } from "@/lib/list-columns";
 import { buildWhere } from "@/lib/table-query";
+import { regulationClassDelete } from "@/lib/law-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
 
 export const dynamic = "force-dynamic";
 
@@ -76,30 +79,38 @@ export async function POST(req: Request) {
   });
   if (!category) return jsonError(404, "not_found", m.errors.notFound);
 
-  const live = await prisma.regulationClass.findFirst({
-    where: { categoryId: v.categoryId, codeNormalized, deletedAt: null },
-  });
-  if (live) {
-    return jsonError(409, "duplicate_class_code", m.regulationClasses.duplicateCode(v.code));
-  }
+  const clash = async () => {
+    const live = await prisma.regulationClass.findFirst({
+      where: { categoryId: v.categoryId, codeNormalized, deletedAt: null },
+    });
+    return live
+      ? jsonError(409, "duplicate_class_code", m.regulationClasses.duplicateCode(v.code))
+      : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const created = await prisma.regulationClass.create({
-    data: {
-      code: v.code,
-      codeNormalized,
-      categoryId: v.categoryId,
-      nameOriginal: v.nameOriginal ?? null,
-      nameLang: v.nameLang ?? null,
-      nameJa: v.nameJa ?? null,
-      nameEn: v.nameEn ?? null,
-      displayOrder: v.displayOrder,
-      interactionGroup: v.interactionGroup ?? null,
-      rank: v.rank ?? null,
-      note: v.note ?? null,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.regulationClass.create({
+      data: {
+        code: v.code,
+        codeNormalized,
+        categoryId: v.categoryId,
+        nameOriginal: v.nameOriginal ?? null,
+        nameLang: v.nameLang ?? null,
+        nameJa: v.nameJa ?? null,
+        nameEn: v.nameEn ?? null,
+        displayOrder: v.displayOrder,
+        interactionGroup: v.interactionGroup ?? null,
+        rank: v.rank ?? null,
+        note: v.note ?? null,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (created instanceof Response) return created;
 
   await writeAudit({
     entity: "regulation_classes",
@@ -109,4 +120,15 @@ export async function POST(req: Request) {
     diff: { code: v.code, nameOriginal: v.nameOriginal ?? null, categoryId: v.categoryId },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/**
+ * DELETE /api/regulation-classes — まとめて論理削除（lib/stamped-delete.ts）。
+ * 配下の法文物質も一緒に消す。区分の分類が無くなったら既定の分類を作り直す
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, regulationClassDelete(actor));
 }

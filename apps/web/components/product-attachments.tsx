@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
@@ -90,6 +91,7 @@ export function ProductAttachments({
   const { m } = useI18n();
   const t = m.attachments;
   const base = `/api/products/${productId}/attachments`;
+  const removeRows = useStampedDelete();
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [data, setData] = useState<ListResponse<ProductAttachmentDto> | null>(null);
@@ -348,16 +350,13 @@ export function ProductAttachments({
   /** 確認は共通の表が出す */
   async function onDeleteSelected(targets: ProductAttachmentDto[]) {
     setError(null);
-    for (const a of targets) {
-      const res = await fetch(`${base}/${a.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-      if (editingId === a.id) stopEdit();
-    }
+    // 全部か、何もしないか（use-stamped-delete.ts）
+    const r = await removeRows(
+      base,
+      targets.map((a) => ({ id: a.id, stamp: a.stamp, label: a.title || a.fileName })),
+    );
+    if (r.error) setError(r.error);
+    if (editingId && r.deletedIds.includes(editingId)) stopEdit();
     void load();
   }
 

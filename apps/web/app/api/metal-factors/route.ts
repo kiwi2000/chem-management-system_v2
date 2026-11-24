@@ -6,6 +6,9 @@ import { getServerMessages } from "@/lib/i18n";
 import { METAL_FACTOR_COLUMNS } from "@/lib/list-columns";
 import { findSubstancesByCas, toMetalFactorDto } from "@/lib/metal-factor-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { metalFactorDelete } from "@/lib/metal-factor-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -82,6 +85,18 @@ export async function POST(req: Request) {
   });
 
   const warnings: string[] = [];
+  const clash = async () => {
+    const live = await prisma.metalConversionFactor.findFirst({
+      where: { casNormalized, metalElement: v.metalElement, deletedAt: null },
+    });
+    return live
+      ? jsonError(
+          409,
+          "duplicate_metal_factor",
+          m.errors.duplicateMetalFactor(casNormalized, v.metalElement),
+        )
+      : null;
+  };
   if (existing && existing.deletedAt === null) {
     return jsonError(
       409,
@@ -98,20 +113,23 @@ export async function POST(req: Request) {
     updatedBy: actor.user.id,
   };
 
-  let id: string;
-  if (existing) {
-    await prisma.metalConversionFactor.update({
-      where: { id: existing.id },
-      data: { ...data, deletedAt: null },
-    });
-    id = existing.id;
-    warnings.push(m.metalFactors.revived);
-  } else {
+  // 同じ組をほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const written = await guardUnique(m, clash, async () => {
+    if (existing) {
+      await prisma.metalConversionFactor.update({
+        where: { id: existing.id },
+        data: { ...data, deletedAt: null },
+      });
+      return existing.id;
+    }
     const created = await prisma.metalConversionFactor.create({
       data: { ...data, createdBy: actor.user.id },
     });
-    id = created.id;
-  }
+    return created.id;
+  });
+  if (written instanceof Response) return written;
+  const id = written;
+  if (existing) warnings.push(m.metalFactors.revived);
 
   // 物質として未登録の CAS でも登録できるが、打ち間違いに気づけるよう知らせる
   const matched = await findSubstancesByCas([casNormalized]);
@@ -127,4 +145,15 @@ export async function POST(req: Request) {
     diff: { casNumber: casNormalized, metalElement: v.metalElement, ratioPct: v.ratioPct },
   });
   return Response.json({ id, warnings }, { status: 201 });
+}
+
+/**
+ * DELETE /api/metal-factors — まとめて削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 金属換算係数。一覧を開いたあとでほかの人が変更していれば、何も消さずに知らせる
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, metalFactorDelete(actor));
 }

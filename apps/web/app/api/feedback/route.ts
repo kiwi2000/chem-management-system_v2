@@ -7,6 +7,8 @@ import { toFeedbackDtos } from "@/lib/feedback-service";
 import { getServerMessages } from "@/lib/i18n";
 import { FEEDBACK_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { feedbackDelete } from "@/lib/feedback-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
 
 export const dynamic = "force-dynamic";
 
@@ -97,4 +99,12 @@ export async function POST(req: Request) {
     diff: { title: v.title, kind: v.kind, priority: v.priority, status: v.status },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/** DELETE /api/feedback — まとめて論理削除（lib/stamped-delete.ts） */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("FEEDBACK_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, feedbackDelete(actor));
 }

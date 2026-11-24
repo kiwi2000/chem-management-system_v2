@@ -13,6 +13,9 @@ import { getServerMessages } from "@/lib/i18n";
 import { listCasLinks } from "@/lib/link-service";
 import type { StatutoryCasLinkDto } from "@/lib/types";
 import { ALL_SOURCES } from "@/lib/all-sources";
+import { statutoryCasLinkDelete } from "@/lib/statutory-cas-link-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -157,29 +160,37 @@ export async function POST(req: Request) {
   if (!version || !substance || !source) return jsonError(404, "not_found", m.errors.notFound);
 
   const casNormalized = normalizeCas(v.casNumber);
-  const dup = await prisma.statutoryCasLink.findFirst({
-    where: {
-      versionId: v.versionId,
-      statutorySubstanceId: v.statutorySubstanceId,
-      casNormalized,
-      sourceId: v.sourceId,
-    },
-  });
-  if (dup) return jsonError(409, "duplicate", m.casLinks.duplicate);
+  const clash = async () => {
+    const dup = await prisma.statutoryCasLink.findFirst({
+      where: {
+        versionId: v.versionId,
+        statutorySubstanceId: v.statutorySubstanceId,
+        casNormalized,
+        sourceId: v.sourceId,
+      },
+    });
+    return dup ? jsonError(409, "duplicate", m.casLinks.duplicate) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const created = await prisma.statutoryCasLink.create({
-    data: {
-      versionId: v.versionId,
-      statutorySubstanceId: v.statutorySubstanceId,
-      sourceId: v.sourceId,
-      casNumber: v.casNumber,
-      casNormalized,
-      excluded: v.excluded,
-      note: v.note ?? null,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じリンクをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.statutoryCasLink.create({
+      data: {
+        versionId: v.versionId,
+        statutorySubstanceId: v.statutorySubstanceId,
+        sourceId: v.sourceId,
+        casNumber: v.casNumber,
+        casNormalized,
+        excluded: v.excluded,
+        note: v.note ?? null,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (created instanceof Response) return created;
 
   await writeAudit({
     entity: "statutory_cas_links",
@@ -190,4 +201,15 @@ export async function POST(req: Request) {
   });
 
   return Response.json({ id: created.id });
+}
+
+/**
+ * DELETE /api/statutory-cas-links — まとめて削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 法文物質と CAS のリンク。一覧を開いたあとでほかの人が変更していれば、何も消さずに知らせる
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, statutoryCasLinkDelete(actor));
 }

@@ -6,6 +6,9 @@ import { rowStamp } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { ELEMENT_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { elementDelete } from "@/lib/element-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -67,14 +70,23 @@ export async function POST(req: Request) {
   }
   const v = parsed.data;
 
-  const [bySymbol, byNumber] = await Promise.all([
-    prisma.element.findUnique({ where: { symbol: v.symbol } }),
-    prisma.element.findUnique({ where: { atomicNumber: v.atomicNumber } }),
-  ]);
-  if (bySymbol) return jsonError(409, "duplicate", m.elements.duplicateSymbol(v.symbol));
-  if (byNumber) return jsonError(409, "duplicate", m.elements.duplicateNumber(v.atomicNumber));
+  const clash = async () => {
+    const [bySymbol, byNumber] = await Promise.all([
+      prisma.element.findUnique({ where: { symbol: v.symbol } }),
+      prisma.element.findUnique({ where: { atomicNumber: v.atomicNumber } }),
+    ]);
+    if (bySymbol) return jsonError(409, "duplicate", m.elements.duplicateSymbol(v.symbol));
+    if (byNumber) return jsonError(409, "duplicate", m.elements.duplicateNumber(v.atomicNumber));
+    return null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  await prisma.element.create({ data: { ...v, createdBy: actor.user.id } });
+  // 同じ記号・番号をほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.element.create({ data: { ...v, createdBy: actor.user.id } }),
+  );
+  if (created instanceof Response) return created;
 
   await writeAudit({
     entity: "elements",
@@ -84,4 +96,15 @@ export async function POST(req: Request) {
     diff: { symbol: v.symbol, nameJa: v.nameJa },
   });
   return Response.json({ id: v.symbol, warnings: [] }, { status: 201 });
+}
+
+/**
+ * DELETE /api/elements — まとめて削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 元素（id は元素記号）。一覧を開いたあとでほかの人が変更していれば、何も消さずに知らせる
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, elementDelete(actor, m));
 }

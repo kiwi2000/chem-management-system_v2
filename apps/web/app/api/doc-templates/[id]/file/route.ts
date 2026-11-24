@@ -120,14 +120,44 @@ export async function GET(_req: Request, { params }: Ctx) {
   return fileResponse(Buffer.from(row.fileData), row.fileName ?? "template", row.kind);
 }
 
-/** DELETE — 預けたファイルを外す */
-export async function DELETE(_req: Request, { params }: Ctx) {
+/**
+ * DELETE — 預けたファイルを外す。
+ * **画面を開いたあとでほかの人がひな形を直していたら、外さずに知らせる**（本文 `{ stamp, force? }`。ひな形の行の印。lib/edit-stamp.ts）。
+ * ほかの人が預け直したばかりのファイルを、黙って外さないため
+ */
+export async function DELETE(req: Request, { params }: Ctx) {
   const actor = await requirePermission("DOC_TEMPLATE_EDIT");
   if (actor instanceof Response) return actor;
   const { id } = await params;
-  await prisma.documentTemplate.update({
-    where: { id },
+  const m = await getServerMessages();
+
+  const row = await prisma.documentTemplate.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true, fileName: true },
+  });
+  if (!row) return jsonError(404, "not_found", m.errors.notFound);
+  // もう外してある（ほかの人が先に外した）
+  if (row.fileName === null) return jsonError(409, "already_deleted", m.errors.alreadyDeleted);
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError(400, "invalid_json", m.errors.invalidJson);
+  }
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
+
+  // 印が合う行だけを直す。当たらなければ、ほかの人が先に保存している
+  const hit = await prisma.documentTemplate.updateMany({
+    where: { id, deletedAt: null, ...stampWhere(lock) },
     data: { fileData: null, fileName: null, fileUpdatedAt: null, updatedBy: actor.user.id },
   });
+  if (hit.count === 0) {
+    return staleFromRow(
+      m,
+      await prisma.documentTemplate.findUnique({ where: { id }, select: STAMP_SELECT }),
+    );
+  }
   return Response.json({ ok: true });
 }

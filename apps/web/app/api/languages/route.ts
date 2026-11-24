@@ -4,6 +4,9 @@ import { jsonError, requireAdmin, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { toLanguageDto } from "@/lib/language-service";
+import { languageDelete } from "@/lib/language-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +45,12 @@ export async function POST(req: Request) {
   const v = parsed.data;
 
   const existing = await prisma.language.findUnique({ where: { code: v.code } });
+  const clash = async () => {
+    const live = await prisma.language.findFirst({ where: { code: v.code, deletedAt: null } });
+    return live
+      ? jsonError(409, "duplicate_language_code", m.languages.duplicateCode(v.code))
+      : null;
+  };
   if (existing && existing.deletedAt === null) {
     return jsonError(409, "duplicate_language_code", m.languages.duplicateCode(v.code));
   }
@@ -55,14 +64,17 @@ export async function POST(req: Request) {
   };
 
   // コードが一意なので、消したものはキーを退避させず復活で扱う
-  const id = existing
-    ? (
-        await prisma.language.update({
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const written = await guardUnique(m, clash, async () =>
+    existing
+      ? await prisma.language.update({
           where: { id: existing.id },
           data: { ...data, deletedAt: null },
         })
-      ).id
-    : (await prisma.language.create({ data: { ...data, createdBy: actor.user.id } })).id;
+      : await prisma.language.create({ data: { ...data, createdBy: actor.user.id } }),
+  );
+  if (written instanceof Response) return written;
+  const id = written.id;
 
   await writeAudit({
     entity: "languages",
@@ -72,4 +84,15 @@ export async function POST(req: Request) {
     diff: { code: v.code, nameJa: v.nameJa },
   });
   return Response.json({ id }, { status: 201 });
+}
+
+/**
+ * DELETE /api/languages — まとめて削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 言語（管理者だけ）。一覧を開いたあとでほかの人が変更していれば、何も消さずに知らせる
+ */
+export async function DELETE(req: Request) {
+  const actor = await requireAdmin();
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, languageDelete(actor, m));
 }

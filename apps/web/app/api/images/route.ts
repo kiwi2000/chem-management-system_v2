@@ -4,9 +4,11 @@ import { jsonError, requireAnyPermission, requirePermission } from "@/lib/authz"
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { IMAGE_INPUT_MIMES, IMAGE_UPLOAD_MAX, processImage } from "@/lib/image-process";
+import { imageDelete } from "@/lib/image-delete";
 import { IMAGE_SELECT, toImageDto, usageOf } from "@/lib/image-service";
 import { IMAGE_COLUMNS } from "@/lib/list-columns";
 import { getAppSettings } from "@/lib/settings";
+import { runStampedDelete } from "@/lib/stamped-delete";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -107,4 +109,15 @@ export async function POST(req: Request) {
     });
   }
   return Response.json({ added, rejected }, { status: added.length > 0 ? 201 : 400 });
+}
+
+/**
+ * DELETE /api/images — まとめて消す（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * **テンプレートで使っている画像は消せない**（紙面に穴が空く）。先にテンプレートから外してもらう
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("DOC_TEMPLATE_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, imageDelete(actor, m));
 }

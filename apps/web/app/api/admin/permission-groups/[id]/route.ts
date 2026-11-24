@@ -4,6 +4,7 @@ import { jsonError, requireAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 import {
   groupCode,
   loadPermissionGroup,
@@ -61,22 +62,28 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (lock instanceof Response) return lock;
   const input = parsed.data;
   const code = groupCode(input.code);
-  const clash = await prisma.permissionGroup.findFirst({
-    where: { code, id: { not: id } },
-    select: { id: true },
-  });
-  if (clash) {
-    return jsonError(409, "duplicate_code", m.permGroups.duplicateCode, {
-      fieldErrors: { code: [m.permGroups.duplicateCode] },
-    });
-  }
+  const clash = async () =>
+    (await prisma.permissionGroup.findFirst({
+      where: { code, id: { not: id } },
+      select: { id: true },
+    }))
+      ? jsonError(409, "duplicate_code", m.permGroups.duplicateCode, {
+          fieldErrors: { code: [m.permGroups.duplicateCode] },
+        })
+      : null;
+  const clashed = await clash();
+  if (clashed) return clashed;
   const rows = await normalizeRows(input.rows);
   const permissions = normalizeGroupPermissions(input.permissions);
 
-  const hit = await prisma.permissionGroup.updateMany({
-    where: { id, ...stampWhere(lock) },
-    data: { code, nameJa: input.nameJa, nameEn: input.nameEn ?? null, updatedBy: actor.user.id },
-  });
+  // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const hit = await guardUnique(m, clash, () =>
+    prisma.permissionGroup.updateMany({
+      where: { id, ...stampWhere(lock) },
+      data: { code, nameJa: input.nameJa, nameEn: input.nameEn ?? null, updatedBy: actor.user.id },
+    }),
+  );
+  if (hit instanceof Response) return hit;
   if (hit.count === 0) {
     return staleFromRow(
       m,
@@ -99,40 +106,4 @@ export async function PUT(req: Request, { params }: Ctx) {
     select: { updatedAt: true },
   });
   return Response.json({ ok: true, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/admin/permission-groups/[id] — 消す（仕様 5 章）。
- * 消せるのは、入っている人も所属するデータも無いものだけ。システム管理グループは消せない。
- * 消すと、ほかの表のその行と、組織の「最初に選ばれる管理グループ」からも自動で外れる（外部キーで消える）
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requireAdmin();
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-  const g = await prisma.permissionGroup.findUnique({
-    where: { id },
-    select: {
-      code: true,
-      isSystemAdmin: true,
-      _count: { select: { members: true, products: true, substances: true } },
-    },
-  });
-  if (!g) return jsonError(404, "not_found", m.errors.notFound);
-  if (g.isSystemAdmin) {
-    return jsonError(409, "system_admin_group", m.permGroups.systemAdminLocked);
-  }
-  if (g._count.members > 0 || g._count.products > 0 || g._count.substances > 0) {
-    return jsonError(409, "in_use", m.permGroups.inUse(g.code));
-  }
-  await prisma.permissionGroup.delete({ where: { id } });
-  await writeAudit({
-    entity: "permission_groups",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: g.code },
-  });
-  return Response.json({ ok: true });
 }

@@ -35,6 +35,7 @@ import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import { useMe } from "@/lib/use-me";
 import type { ApiError, OrganisationDto } from "@/lib/types";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 
 /** 種別ごとの絵。組織図で会社・部署・取引先を見分ける */
 const KIND_ICON = {
@@ -119,6 +120,7 @@ export function OrganisationSection() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const removeRows = useStampedDelete();
   /** ほかの人が先に保存していた知らせ */
   const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
@@ -358,14 +360,15 @@ export function OrganisationSection() {
       return;
     }
     setError(null);
-    const res = await fetch(`/api/organisations/${o.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      if (redirectIfUnauthorized(res)) return;
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.deleteFailed);
+    // ほかの人が変えていれば確かめてから消す・消してあれば知らせる（use-stamped-delete.ts）
+    const r = await removeRows("/api/organisations", [
+      { id: o.id, stamp: o.stamp, label: name(o) },
+    ]);
+    if (r.error) {
+      setError(r.error);
       return;
     }
-    setSelectedId(null);
+    if (r.deletedIds.includes(o.id)) setSelectedId(null);
     await reloadAllOrgs();
   }
 

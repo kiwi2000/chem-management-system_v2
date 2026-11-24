@@ -271,6 +271,11 @@ model User {
   activeFlag            Boolean   @default(true) @map("active_flag")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
+  /**
+   * 管理者が直す中身（表示名・有効・所属・管理グループ）を最後に変えた時刻。編集と削除の楽観的ロックの印に使う（2026-11-24）。
+   * updatedAt はログイン・ログインの失敗・個人設定でも進むので、印にすると、誰も変えていないのに「ほかの人が変更しています」になる
+   */
+  editedAt              DateTime  @default(now()) @map("edited_at")
   deletedAt             DateTime? @map("deleted_at")
 
   sessions         Session[]

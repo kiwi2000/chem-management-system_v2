@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, ElementDto, ListResponse } from "@/lib/types";
@@ -40,6 +41,7 @@ const CELL_INPUT = "h-7 w-full text-sm";
  */
 export function ElementSection() {
   const { m } = useI18n();
+  const removeRows = useStampedDelete();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -237,15 +239,16 @@ export function ElementSection() {
   /** 確認は共通テーブル側で出す。換算係数から使われているものはサーバーが 409 で断る */
   async function onDeleteSelected(targets: ElementDto[]) {
     setError(null);
+    // 全部か、何もしないか。ほかの人の変更・消せない理由は use-stamped-delete.ts が知らせる
+    const r = await removeRows(
+      "/api/elements",
+      targets.map((e) => ({ id: e.symbol, stamp: e.stamp, label: e.symbol })),
+    );
+    if (r.error) setError(r.error);
     for (const e of targets) {
-      const res = await fetch("/api/elements/" + e.symbol, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
+      if (r.deletedIds.includes(e.symbol)) {
+        if (editingId === e.symbol) stopEdit();
       }
-      if (editingId === e.symbol) stopEdit();
     }
     void load();
   }

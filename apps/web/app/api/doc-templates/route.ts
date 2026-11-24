@@ -7,10 +7,13 @@ import {
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
+import { docTemplateDelete } from "@/lib/doc-template-delete";
 import { DOC_TEMPLATE_SELECT, emptyContent, toDocTemplateDto } from "@/lib/doc-template-service";
 import { getServerMessages } from "@/lib/i18n";
 import { DOC_TEMPLATE_COLUMNS } from "@/lib/list-columns";
+import { runStampedDelete } from "@/lib/stamped-delete";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -79,28 +82,36 @@ export async function POST(req: Request) {
   const input = parsed.data;
   const codeNormalized = normalizeCode(input.code);
 
-  const dup = await prisma.documentTemplate.findUnique({ where: { codeNormalized } });
-  if (dup) return jsonError(409, "duplicate_code", m.docTemplates.duplicateCode(input.code));
+  const clash = async () => {
+    const dup = await prisma.documentTemplate.findUnique({ where: { codeNormalized } });
+    return dup ? jsonError(409, "duplicate_code", m.docTemplates.duplicateCode(input.code)) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const row = await prisma.documentTemplate.create({
-    data: {
-      code: input.code,
-      codeNormalized,
-      nameJa: input.nameJa,
-      nameEn: input.nameEn ?? null,
-      target: input.target,
-      kind: input.kind,
-      locale: input.locale,
-      active: input.active,
-      usesRecipient: input.usesRecipient,
-      note: input.note ?? null,
-      // Json の列なので、こちらの型のまま渡せない
-      content: emptyContent() as unknown as object,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-    select: DOC_TEMPLATE_SELECT,
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const row = await guardUnique(m, clash, () =>
+    prisma.documentTemplate.create({
+      data: {
+        code: input.code,
+        codeNormalized,
+        nameJa: input.nameJa,
+        nameEn: input.nameEn ?? null,
+        target: input.target,
+        kind: input.kind,
+        locale: input.locale,
+        active: input.active,
+        usesRecipient: input.usesRecipient,
+        note: input.note ?? null,
+        // Json の列なので、こちらの型のまま渡せない
+        content: emptyContent() as unknown as object,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+      select: DOC_TEMPLATE_SELECT,
+    }),
+  );
+  if (row instanceof Response) return row;
   await writeAudit({
     entity: "document_templates",
     entityId: row.id,
@@ -110,4 +121,12 @@ export async function POST(req: Request) {
   });
 
   return Response.json(toDocTemplateDto(row), { status: 201 });
+}
+
+/** DELETE /api/doc-templates — まとめて論理削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts） */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("DOC_TEMPLATE_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, docTemplateDelete(actor));
 }

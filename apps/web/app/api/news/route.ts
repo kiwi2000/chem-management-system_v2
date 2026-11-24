@@ -17,6 +17,8 @@ import {
 } from "@/lib/news-service";
 import { flattenOrgTree } from "@/lib/org-tree";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { newsDelete } from "@/lib/news-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
 
 export const dynamic = "force-dynamic";
 
@@ -150,4 +152,15 @@ export async function POST(req: Request) {
     diff: { titleJa: v.titleJa, status: v.status, ...(await newsOrgAudit(v)) },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/**
+ * DELETE /api/news — まとめて消す（lib/stamped-delete.ts）。
+ * ほかの人のお知らせは、すべてのお知らせを管理できる人だけが消せる
+ */
+export async function DELETE(req: Request) {
+  const actor = await requireUser();
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, newsDelete(actor, m));
 }

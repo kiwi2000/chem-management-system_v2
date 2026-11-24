@@ -18,7 +18,10 @@ import {
   toQuantityDto,
   updaterNames,
 } from "@/lib/prtr-service";
+import { prtrQuantityDelete } from "@/lib/prtr-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -119,12 +122,21 @@ export async function POST(req: Request, { params }: Ctx) {
     source: "MANUAL" as const,
     updatedBy: actor.user.id,
   };
-  const row = await prisma.prtrQuantity.upsert({
-    where: { entryId_method_productId: { entryId: id, method: v.method, productId: product.id } },
-    create: { entryId: id, method: v.method, productId: product.id, ...data },
-    update: data,
-    include: QUANTITY_INCLUDE,
-  });
+  // 同じ製品をほぼ同時に足されると、まれに一意の決まりで止まる。そのときは一般の文で返す
+  const row = await guardUnique(
+    m,
+    async () => null,
+    () =>
+      prisma.prtrQuantity.upsert({
+        where: {
+          entryId_method_productId: { entryId: id, method: v.method, productId: product.id },
+        },
+        create: { entryId: id, method: v.method, productId: product.id, ...data },
+        update: data,
+        include: QUANTITY_INCLUDE,
+      }),
+  );
+  if (row instanceof Response) return row;
   await writeAudit({
     entity: "prtr_quantities",
     entityId: row.id,
@@ -138,4 +150,22 @@ export async function POST(req: Request, { params }: Ctx) {
     },
   });
   return Response.json({ item: toQuantityDto(row, await updaterNames([row])) }, { status: 201 });
+}
+
+/**
+ * DELETE /api/prtr/entries/[id]/quantities — 取扱量の行をまとめて消す（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 届出の組織を受け持つ人だけ。確定中は断る
+ */
+export async function DELETE(req: Request, { params }: Ctx) {
+  const actor = await requirePermission("PRTR_ENTRY");
+  if (actor instanceof Response) return actor;
+  const { id } = await params;
+  const m = await getServerMessages();
+
+  const entry = await prisma.prtrEntry.findUnique({ where: { id } });
+  if (!entry) return jsonError(404, "not_found", m.errors.notFound);
+  const denied = await requirePrtrOrg(actor, entry.organisationId);
+  if (denied) return denied;
+  if (await isConfirmed(id)) return jsonError(409, "confirmed", m.prtr.locked);
+  return runStampedDelete(req, m, prtrQuantityDelete(actor, id));
 }

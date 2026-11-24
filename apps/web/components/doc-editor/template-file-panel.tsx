@@ -88,10 +88,40 @@ export function TemplateFilePanel({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/doc-templates/${template.id}/file`, { method: "DELETE" });
+      // 開いたときのひな形の印を添える（ほかの人が預け直したばかりのファイルを、黙って外さない）
+      let force = false;
+      let res: Response;
+      for (;;) {
+        res = await fetch(`/api/doc-templates/${template.id}/file`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stamp: template.stamp, force: force || undefined }),
+        });
+        const staleInfo = force ? null : await readStaleEdit(res);
+        if (!staleInfo) break;
+        const go = await ask({
+          title: m.errors.staleEdit,
+          message: m.errors.staleEditDetail(
+            staleInfo.byName ?? m.errors.staleEditSomeone,
+            staleInfo.at ? new Date(staleInfo.at).toLocaleString(locale) : "-",
+          ),
+          confirmLabel: m.errors.staleDeleteForce,
+          cancelLabel: m.errors.staleDeleteCancel,
+          destructive: true,
+        });
+        if (!go) {
+          // 何も外さずに読み直す
+          onChanged();
+          return;
+        }
+        force = true;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
-        setError(m.errors.deleteFailed);
+        const body = (await res.json().catch(() => null)) as ApiError | null;
+        setError(body?.error.message ?? m.errors.deleteFailed);
+        // もう外してあったときも、いまの状態を読み直す
+        if (body?.error.code === "already_deleted") onChanged();
         return;
       }
       onChanged();

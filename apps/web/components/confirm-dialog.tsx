@@ -37,6 +37,10 @@ export interface ConfirmOptions {
   confirmLabel?: string;
   /** 消す・戻せない操作なら true。進めるボタンが赤くなる */
   destructive?: boolean;
+  /** やめるボタンの言葉。省略すると「キャンセル」 */
+  cancelLabel?: string;
+  /** 知らせるだけで、選ぶことが無いとき true。やめるボタンを出さない（答えは常に true） */
+  noticeOnly?: boolean;
 }
 
 type Ask = (options: ConfirmOptions) => Promise<boolean>;
@@ -79,9 +83,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               {pending?.message}
             </AlertDialog.Description>
             <div className="mt-5 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => answer(false)} autoFocus>
-                {m.common.cancel}
-              </Button>
+              {!pending?.noticeOnly && (
+                <Button type="button" variant="outline" onClick={() => answer(false)} autoFocus>
+                  {pending?.cancelLabel ?? m.common.cancel}
+                </Button>
+              )}
               <Button
                 type="button"
                 variant={pending?.destructive ? "destructive" : "default"}

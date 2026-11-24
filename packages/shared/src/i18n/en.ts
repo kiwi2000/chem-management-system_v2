@@ -2396,6 +2396,20 @@ export const en: Messages = {
     staleEditSomeone: "another user",
     stampRequired:
       "This screen is out of date and cannot save. Reload the page (if that does not help, contact your administrator)",
+    staleDeleteTitle: "Someone else has changed these",
+    staleDelete: (lines: string) =>
+      `The following were changed by someone else after you opened the list.\n${lines}\n\n"Delete anyway" deletes everything you selected. "Cancel" deletes nothing and reloads the list.`,
+    staleDeleteLine: (label: string, who: string, at: string) => `- ${label} (${who}, ${at})`,
+    staleDeleteForce: "Delete anyway",
+    staleDeleteCancel: "Cancel",
+    alreadyDeleted: "This has already been deleted",
+    alreadyDeletedSome: (lines: string) =>
+      `The following had already been deleted. The others have been deleted.\n${lines}`,
+    alreadyDeletedLine: (label: string) => `- ${label}`,
+    alreadyDeletedAll: (lines: string) => `The following have already been deleted.\n${lines}`,
+    deleteRefused: (lines: string) => `Nothing was deleted, for the following reasons.\n${lines}`,
+    deleteRefusedLine: (label: string, reason: string) => `- ${label}: ${reason}`,
+    duplicateValue: "The same value already exists. Check your input",
     publishStateMismatch: (states: string) =>
       `This action does not apply to items that are ${states}`,
     pendingResolutionRequired:
@@ -2624,6 +2638,8 @@ export const en: Messages = {
     factorSaved: "Emission factor saved",
     note: "Note",
     headerSaved: "Saved",
+    entryExists: (organisation: string, year: number) =>
+      `Data for ${organisation}, fiscal year ${year}, already exists. Reload the page.`,
     locked:
       "The release summary is confirmed, so inputs cannot be changed. Press “Revert to draft” in the summary to edit",
     sources: { MANUAL: "Manual", IMPORT: "Imported" },

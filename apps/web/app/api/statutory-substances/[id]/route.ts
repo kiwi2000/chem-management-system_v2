@@ -4,6 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 import { CATEGORY_THRESHOLD_SELECT, thresholdOrderError } from "@/lib/law-service";
 
 export const dynamic = "force-dynamic";
@@ -46,42 +47,47 @@ export async function PUT(req: Request, { params }: Ctx) {
   const orderError = thresholdOrderError(v, cls.category, m);
   if (orderError) return orderError;
 
-  if (codeNormalized !== existing.codeNormalized || v.classId !== existing.classId) {
-    const clash = await prisma.statutorySubstance.findFirst({
-      where: { classId: v.classId, codeNormalized, deletedAt: null },
+  // 自分自身とは重ならない
+  const clash = async () => {
+    const other = await prisma.statutorySubstance.findFirst({
+      where: { classId: v.classId, codeNormalized, deletedAt: null, id: { not: id } },
     });
-    if (clash) {
-      return jsonError(
-        409,
-        "duplicate_substance_code",
-        m.statutorySubstances.duplicateCode(v.code),
-      );
-    }
+    return other
+      ? jsonError(409, "duplicate_substance_code", m.statutorySubstances.duplicateCode(v.code))
+      : null;
+  };
+  if (codeNormalized !== existing.codeNormalized || v.classId !== existing.classId) {
+    const clashed = await clash();
+    if (clashed) return clashed;
   }
 
-  const hit = await prisma.statutorySubstance.updateMany({
-    where: { id, ...stampWhere(lock) },
-    data: {
-      code: v.code,
-      codeNormalized,
-      classId: v.classId,
-      officialNumber: v.officialNumber ?? null,
-      nameOriginal: v.nameOriginal,
-      nameLang: v.nameLang,
-      nameJa: v.nameJa ?? null,
-      nameEn: v.nameEn ?? null,
-      thresholdLower: v.thresholdLower,
-      lowerBound: v.lowerBound,
-      thresholdUpper: v.thresholdUpper,
-      upperBound: v.upperBound,
-      effectiveFrom: toDate(v.effectiveFrom),
-      effectiveTo: toDate(v.effectiveTo),
-      displayOrder: v.displayOrder,
-      applicableCondition: v.applicableCondition ?? null,
-      note: v.note ?? null,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const hit = await guardUnique(m, clash, () =>
+    prisma.statutorySubstance.updateMany({
+      where: { id, ...stampWhere(lock) },
+      data: {
+        code: v.code,
+        codeNormalized,
+        classId: v.classId,
+        officialNumber: v.officialNumber ?? null,
+        nameOriginal: v.nameOriginal,
+        nameLang: v.nameLang,
+        nameJa: v.nameJa ?? null,
+        nameEn: v.nameEn ?? null,
+        thresholdLower: v.thresholdLower,
+        lowerBound: v.lowerBound,
+        thresholdUpper: v.thresholdUpper,
+        upperBound: v.upperBound,
+        effectiveFrom: toDate(v.effectiveFrom),
+        effectiveTo: toDate(v.effectiveTo),
+        displayOrder: v.displayOrder,
+        applicableCondition: v.applicableCondition ?? null,
+        note: v.note ?? null,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (hit instanceof Response) return hit;
   if (hit.count === 0) {
     return staleFromRow(
       m,
@@ -101,36 +107,4 @@ export async function PUT(req: Request, { params }: Ctx) {
     select: { updatedAt: true },
   });
   return Response.json({ ok: true, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/statutory-substances/[id] — 論理削除。
- * CASリンクはバージョンに属するので、ここでは触らない（バージョンの側で入れ直す）。
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("REGULATION_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.statutorySubstance.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-
-  await prisma.statutorySubstance.update({
-    where: { id },
-    data: {
-      deletedAt: new Date(),
-      updatedBy: actor.user.id,
-      codeNormalized: `${existing.codeNormalized}:${existing.id}`.slice(0, 64),
-    },
-  });
-
-  await writeAudit({
-    entity: "statutory_substances",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: existing.code, nameOriginal: existing.nameOriginal },
-  });
-  return Response.json({ ok: true });
 }

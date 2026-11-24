@@ -142,13 +142,13 @@ export function toListItem(p: ProductListRow, versionId: string | null): Product
         .map((j) => j.categoryId),
     ).size,
     needsReview: p.judgements.some((j) => j.needsReview),
+    stamp: rowStamp(p),
   };
 }
 
 export function toDetail(p: ProductWithRelations, versionId: string | null): ProductDetailDto {
   return {
     ...toListItem(p, versionId),
-    stamp: rowStamp(p),
     aliases: p.aliases.map((a) => ({ nameJa: a.nameJa, nameEn: a.nameEn })),
     properties: p.properties.map((v) => ({
       propertyDefId: v.propertyDefId,

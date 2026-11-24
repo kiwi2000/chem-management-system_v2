@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { STAMP_SELECT, parseEditStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { isConfirmed, loadEntry } from "@/lib/prtr-service";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -89,17 +90,33 @@ export async function PUT(req: Request) {
     }
     entryId = existing.id;
   } else {
-    const created = await prisma.prtrEntry.create({
-      data: {
-        organisationId: v.organisationId,
-        fiscalYear: v.fiscalYear,
-        factorPct,
-        note: v.note ?? null,
-        createdBy: actor.user.id,
-        updatedBy: actor.user.id,
+    /*
+      同じ組織・年度の頭をほぼ同時に作られたら、一意の決まりで止まる。
+      そのときは「（組織名）（年度）のデータは既に存在します。再読み込みしてください。」（2026-11-24 利用者が決めた文）
+    */
+    const created = await guardUnique(
+      m,
+      async () => {
+        const org = await prisma.organisation.findUnique({
+          where: { id: v.organisationId },
+          select: { nameJa: true },
+        });
+        return jsonError(409, "entry_exists", m.prtr.entryExists(org?.nameJa ?? "", v.fiscalYear));
       },
-      select: { id: true },
-    });
+      () =>
+        prisma.prtrEntry.create({
+          data: {
+            organisationId: v.organisationId,
+            fiscalYear: v.fiscalYear,
+            factorPct,
+            note: v.note ?? null,
+            createdBy: actor.user.id,
+            updatedBy: actor.user.id,
+          },
+          select: { id: true },
+        }),
+    );
+    if (created instanceof Response) return created;
     entryId = created.id;
   }
   await writeAudit({

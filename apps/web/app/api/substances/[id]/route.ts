@@ -1,8 +1,9 @@
 import { substanceSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
-import { productsUsing, referencedMessage } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
+import { substanceCodeClash } from "@/lib/substance-code-clash";
+import { guardUnique } from "@/lib/unique-violation";
 import {
   STAMP_SELECT,
   StaleError,
@@ -107,19 +108,10 @@ export async function PUT(req: Request, { params }: Ctx) {
   const casError = validateCas(base.casNormalized, settings, m);
   if (casError) return jsonError(400, "validation_error", casError);
 
-  if (base.codeNormalized !== existing.codeNormalized) {
-    const clash = await prisma.substance.findUnique({
-      where: { codeNormalized: base.codeNormalized },
-    });
-    if (clash) {
-      // 見えないものと重なるときは理由を言わない（S31 仕様 7 章）
-      const seen = await prisma.substance.count({
-        where: { id: clash.id, ...visibilityWhere(actor) },
-      });
-      const text = seen ? m.errors.duplicateCode(base.code) : m.owner.codeUnavailable;
-      return jsonError(409, "duplicate_code", text, { fieldErrors: { code: [text] } });
-    }
-  }
+  // 見えないものと重なるときは理由を言わない（S31 仕様 7 章）。自分自身とは重ならない
+  const clash = () => substanceCodeClash(actor, m, input, base, id);
+  const clashed = await clash();
+  if (clashed) return clashed;
 
   const children = childWrites(input);
   /*
@@ -127,26 +119,30 @@ export async function PUT(req: Request, { params }: Ctx) {
     門番が行をロックするので、同時に来た 2 つの保存のうち後の方は必ず食い違いになる
   */
   try {
-    await prisma.$transaction(async (tx) => {
-      const gate = await tx.substance.updateMany({
-        where: { id, ...stampWhere(lock) },
-        data: { updatedBy: actor.user.id },
-      });
-      if (gate.count === 0) throw new StaleError();
-      await tx.substanceAlias.deleteMany({ where: { substanceId: id } });
-      await tx.substanceGazetteNumber.deleteMany({ where: { substanceId: id } });
-      await tx.substanceProperty.deleteMany({ where: { substanceId: id } });
-      await tx.substance.update({
-        where: { id },
-        data: {
-          ...base,
-          updatedBy: actor.user.id,
-          aliases: { create: children.aliases },
-          gazetteNumbers: { create: children.gazetteNumbers },
-          properties: { create: children.properties },
-        },
-      });
-    });
+    // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+    const saved = await guardUnique(m, clash, () =>
+      prisma.$transaction(async (tx) => {
+        const gate = await tx.substance.updateMany({
+          where: { id, ...stampWhere(lock) },
+          data: { updatedBy: actor.user.id },
+        });
+        if (gate.count === 0) throw new StaleError();
+        await tx.substanceAlias.deleteMany({ where: { substanceId: id } });
+        await tx.substanceGazetteNumber.deleteMany({ where: { substanceId: id } });
+        await tx.substanceProperty.deleteMany({ where: { substanceId: id } });
+        await tx.substance.update({
+          where: { id },
+          data: {
+            ...base,
+            updatedBy: actor.user.id,
+            aliases: { create: children.aliases },
+            gazetteNumbers: { create: children.gazetteNumbers },
+            properties: { create: children.properties },
+          },
+        });
+      }),
+    );
+    if (saved instanceof Response) return saved;
   } catch (err) {
     if (err instanceof StaleError) {
       return staleFromRow(
@@ -245,51 +241,4 @@ export async function PUT(req: Request, { params }: Ctx) {
     select: { updatedAt: true },
   });
   return Response.json({ ok: true, warnings, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/substances/[id] — 論理削除。
- * 正規化コードを退避して、同じコードを再登録できるようにする（v1はできなかった）。
- * 組成から使われている場合は断る（消すと製品の組成が壊れるため）。
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("SUBSTANCE_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.substance.findFirst({
-    where: { id, deletedAt: null, ...visibilityWhere(actor) },
-  });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-  // 未公開のものは、作成者か専用の権限を持つ人だけが書き換えられる
-  if (!canEditSubstance(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
-
-  // 見えない製品で使われていれば、件数を言わない（S31 仕様 7 章）
-  const users = await productsUsing({ substanceId: id });
-  if (users.length > 0) {
-    return jsonError(409, "referenced", await referencedMessage(actor, users, m));
-  }
-
-  await prisma.substance.update({
-    where: { id },
-    data: {
-      deletedAt: new Date(),
-      updatedBy: actor.user.id,
-      isCasRepresentative: false,
-      // 一意制約を空けるための退避。原文の code はそのまま残す
-      codeNormalized: `${existing.codeNormalized}:${existing.id}`.slice(0, 64),
-    },
-  });
-  // 消したのが代表だった場合、そのCASの代表が空く。残っているものから埋め直す
-  await ensureCasRepresentative(prisma, existing.casNormalized, existing.impurityTypeId);
-
-  await writeAudit({
-    entity: "substances",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: existing.code },
-  });
-  return Response.json({ ok: true });
 }

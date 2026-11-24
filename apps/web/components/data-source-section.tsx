@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, LinkVersionSourceDto, ListResponse, SourceDto } from "@/lib/types";
@@ -59,6 +60,7 @@ export function DataSourceSection({
   preferredId?: string | null;
 }) {
   const { m, locale } = useI18n();
+  const removeRows = useStampedDelete();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -461,15 +463,16 @@ export function DataSourceSection({
 
   async function onDeleteSelected(targets: LinkVersionSourceDto[]) {
     setError(null);
+    // 全部か、何もしないか。ほかの人の変更・消せない理由は use-stamped-delete.ts が知らせる
+    const result = await removeRows(
+      "/api/link-version-sources",
+      targets.map((r) => ({ id: r.id, stamp: r.stamp, label: r.sourceCode })),
+    );
+    if (result.error) setError(result.error);
     for (const r of targets) {
-      const res = await fetch("/api/link-version-sources/" + r.id, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
+      if (result.deletedIds.includes(r.id)) {
+        if (selectedId === r.id) setSelectedId(null);
       }
-      if (selectedId === r.id) setSelectedId(null);
     }
     void load();
   }

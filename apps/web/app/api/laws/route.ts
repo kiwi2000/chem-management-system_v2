@@ -7,6 +7,7 @@ import { LAW_INCLUDE, toLawDto } from "@/lib/law-service";
 import { LAW_ORDER_BY, isNaturalOrder } from "@/lib/law-order";
 import { LAW_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -73,8 +74,12 @@ export async function POST(req: Request) {
   const country = await prisma.country.findFirst({ where: { id: v.countryId, deletedAt: null } });
   if (!country) return jsonError(404, "not_found", m.errors.notFound);
 
-  const live = await prisma.law.findFirst({ where: { codeNormalized, deletedAt: null } });
-  if (live) return jsonError(409, "duplicate_law_code", m.laws.duplicateCode(v.code));
+  const clash = async () => {
+    const live = await prisma.law.findFirst({ where: { codeNormalized, deletedAt: null } });
+    return live ? jsonError(409, "duplicate_law_code", m.laws.duplicateCode(v.code)) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
   const data = {
     code: v.code,
@@ -95,17 +100,24 @@ export async function POST(req: Request) {
 
   const warnings: string[] = [];
   let id: string;
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
   if (retired) {
-    await prisma.law.update({
-      where: { id: retired.id },
-      data: { ...data, codeNormalized, deletedAt: null },
-    });
+    const revived = await guardUnique(m, clash, () =>
+      prisma.law.update({
+        where: { id: retired.id },
+        data: { ...data, codeNormalized, deletedAt: null },
+      }),
+    );
+    if (revived instanceof Response) return revived;
     id = retired.id;
     warnings.push(m.laws.revived);
   } else {
-    const created = await prisma.law.create({
-      data: { ...data, codeNormalized, createdBy: actor.user.id },
-    });
+    const created = await guardUnique(m, clash, () =>
+      prisma.law.create({
+        data: { ...data, codeNormalized, createdBy: actor.user.id },
+      }),
+    );
+    if (created instanceof Response) return created;
     id = created.id;
   }
 

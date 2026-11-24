@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type {
@@ -51,6 +52,7 @@ const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: 
 
 export default function ImpurityTypesPage() {
   const { m, locale } = useI18n();
+  const removeRows = useStampedDelete();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -280,15 +282,16 @@ export default function ImpurityTypesPage() {
   /** まとめて削除。組み込み（0・1）はサーバーが断るので、そのまま知らせる */
   async function removeSelected(rows: ImpurityTypeDto[]) {
     setError(null);
+    // 全部か、何もしないか。ほかの人の変更・消せない理由は use-stamped-delete.ts が知らせる
+    const r = await removeRows(
+      "/api/impurity-types",
+      rows.map((p) => ({ id: p.id, stamp: p.stamp, label: p.code })),
+    );
+    if (r.error) setError(r.error);
     for (const p of rows) {
-      const res = await fetch(`/api/impurity-types/${p.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
+      if (r.deletedIds.includes(p.id)) {
+        if (selectedId === p.id) setSelectedId(null);
       }
-      if (selectedId === p.id) setSelectedId(null);
     }
     await loadTypes();
   }

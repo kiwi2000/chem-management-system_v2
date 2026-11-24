@@ -99,13 +99,13 @@ export function toListItem(s: SubstanceListRow): SubstanceListItemDto {
     // 各種番号はCASリンクから引くので、ここでは空。一覧・詳細で1回にまとめて詰める
     numbers: [],
     updatedAt: s.updatedAt.toISOString(),
+    stamp: rowStamp(s),
   };
 }
 
 export function toDetail(s: SubstanceWithRelations): SubstanceDetailDto {
   return {
     ...toListItem(s),
-    stamp: rowStamp(s),
     mainNameJa: s.nameJa,
     mainNameEn: s.nameEn,
     subNames: s.aliases.map((n) => ({ nameJa: n.nameJa, nameEn: n.nameEn })),

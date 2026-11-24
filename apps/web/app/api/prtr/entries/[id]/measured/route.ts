@@ -12,7 +12,10 @@ import {
   toMeasuredDto,
   updaterNames,
 } from "@/lib/prtr-service";
+import { prtrMeasuredDelete } from "@/lib/prtr-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -94,28 +97,36 @@ export async function POST(req: Request, { params }: Ctx) {
       fieldErrors: { substanceCode: [message] },
     });
   }
-  const dup = await prisma.prtrMeasured.findUnique({
-    where: {
-      entryId_statutorySubstanceId: {
+  const clash = async () => {
+    const dup = await prisma.prtrMeasured.findUnique({
+      where: {
+        entryId_statutorySubstanceId: {
+          entryId: id,
+          statutorySubstanceId: resolved.statutorySubstanceId,
+        },
+      },
+    });
+    return dup ? jsonError(409, "duplicate", m.prtr.measured.alreadyThere) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
+
+  // 同じ物質をほぼ同時に足されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const row = await guardUnique(m, clash, () =>
+    prisma.prtrMeasured.create({
+      data: {
         entryId: id,
         statutorySubstanceId: resolved.statutorySubstanceId,
+        substanceId: resolved.substance.id,
+        handledKg: v.handledKg == null ? null : new Prisma.Decimal(v.handledKg),
+        measuredKg: new Prisma.Decimal(v.measuredKg),
+        source: "MANUAL",
+        updatedBy: actor.user.id,
       },
-    },
-  });
-  if (dup) return jsonError(409, "duplicate", m.prtr.measured.alreadyThere);
-
-  const row = await prisma.prtrMeasured.create({
-    data: {
-      entryId: id,
-      statutorySubstanceId: resolved.statutorySubstanceId,
-      substanceId: resolved.substance.id,
-      handledKg: v.handledKg == null ? null : new Prisma.Decimal(v.handledKg),
-      measuredKg: new Prisma.Decimal(v.measuredKg),
-      source: "MANUAL",
-      updatedBy: actor.user.id,
-    },
-    include: MEASURED_INCLUDE,
-  });
+      include: MEASURED_INCLUDE,
+    }),
+  );
+  if (row instanceof Response) return row;
   await writeAudit({
     entity: "prtr_measured",
     entityId: row.id,
@@ -128,4 +139,22 @@ export async function POST(req: Request, { params }: Ctx) {
     },
   });
   return Response.json({ item: toMeasuredDto(row, await updaterNames([row])) }, { status: 201 });
+}
+
+/**
+ * DELETE /api/prtr/entries/[id]/measured — 実測値の行をまとめて消す（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 届出の組織を受け持つ人だけ。確定中は断る
+ */
+export async function DELETE(req: Request, { params }: Ctx) {
+  const actor = await requirePermission("PRTR_ENTRY");
+  if (actor instanceof Response) return actor;
+  const { id } = await params;
+  const m = await getServerMessages();
+
+  const entry = await prisma.prtrEntry.findUnique({ where: { id } });
+  if (!entry) return jsonError(404, "not_found", m.errors.notFound);
+  const denied = await requirePrtrOrg(actor, entry.organisationId);
+  if (denied) return denied;
+  if (await isConfirmed(id)) return jsonError(409, "confirmed", m.prtr.locked);
+  return runStampedDelete(req, m, prtrMeasuredDelete(actor, id));
 }

@@ -10,10 +10,12 @@ import {
   validationMessage,
   visibleProduct,
 } from "@/lib/attachment-service";
+import { attachmentDelete } from "@/lib/attachment-delete";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { ATTACHMENT_COLUMNS } from "@/lib/list-columns";
 import { getAppSettings } from "@/lib/settings";
+import { runStampedDelete } from "@/lib/stamped-delete";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 
 export const dynamic = "force-dynamic";
@@ -147,4 +149,21 @@ export async function POST(req: Request, { params }: Ctx) {
   });
   const [dto] = await toAttachmentDtos([row]);
   return Response.json(dto, { status: 201 });
+}
+
+/**
+ * DELETE — まとめて消す（元に戻せない。本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 製品が見えて、添付を直せる人だけ
+ */
+export async function DELETE(req: Request, { params }: Ctx) {
+  const actor = await requirePermission("PRODUCT_EDIT");
+  if (actor instanceof Response) return actor;
+  const { id } = await params;
+  const m = await getServerMessages();
+  const product = await visibleProduct(actor, id);
+  if (!product) return jsonError(404, "not_found", m.errors.notFound);
+  if (!(await canEditAttachments(actor, product))) {
+    return jsonError(403, "forbidden", m.errors.forbidden);
+  }
+  return runStampedDelete(req, m, attachmentDelete(actor, product));
 }

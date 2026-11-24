@@ -15,6 +15,7 @@ import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
@@ -47,6 +48,7 @@ function kb(n: number): string {
 export function ImageLibraryScreen() {
   const { m, locale } = useI18n();
   const { can } = useMe();
+  const removeRows = useStampedDelete();
   const editable = can("DOC_TEMPLATE_EDIT");
 
   const { state, setState, ready } = useTableState("chem.table.images", columnKinds, DEFAULT_STATE);
@@ -113,15 +115,12 @@ export function ImageLibraryScreen() {
 
   async function onDeleteSelected(targets: ImageAssetDto[]) {
     setError(null);
-    for (const img of targets) {
-      const res = await fetch(`/api/images/${img.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-    }
+    // 全部か、何もしないか（use-stamped-delete.ts）
+    const r = await removeRows(
+      "/api/images",
+      targets.map((img) => ({ id: img.id, stamp: img.stamp, label: img.name })),
+    );
+    if (r.error) setError(r.error);
     void load();
   }
 

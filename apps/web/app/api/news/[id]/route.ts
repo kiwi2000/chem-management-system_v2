@@ -115,31 +115,3 @@ export async function PUT(req: Request, { params }: Ctx) {
   const after = await prisma.news.findUniqueOrThrow({ where: { id }, select: { updatedAt: true } });
   return Response.json({ ok: true, stamp: rowStamp(after) });
 }
-
-/** DELETE /api/news/[id] */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requireUser();
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const item = await prisma.news.findUnique({ where: { id } });
-  if (!item) return jsonError(404, "not_found", m.errors.notFound);
-  if (!canEditNews(actor, item.authorId)) {
-    return jsonError(
-      403,
-      "forbidden",
-      actor.has("NEWS_POST") ? m.errors.forbiddenNewsOther : m.errors.forbidden,
-    );
-  }
-
-  await prisma.news.delete({ where: { id } });
-  await writeAudit({
-    entity: "news",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { titleJa: item.titleJa },
-  });
-  return Response.json({ ok: true });
-}

@@ -4,7 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
-import { ensureDefaultClass } from "@/lib/law-service";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -36,31 +36,40 @@ export async function PUT(req: Request, { params }: Ctx) {
   const lock = parseEditStamp(body, m);
   if (lock instanceof Response) return lock;
 
-  if (codeNormalized !== existing.codeNormalized) {
-    const clash = await prisma.regulationClass.findFirst({
-      where: { categoryId: existing.categoryId, codeNormalized, deletedAt: null },
+  // 自分自身とは重ならない
+  const clash = async () => {
+    const other = await prisma.regulationClass.findFirst({
+      where: { categoryId: existing.categoryId, codeNormalized, deletedAt: null, id: { not: id } },
     });
-    if (clash) {
-      return jsonError(409, "duplicate_class_code", m.regulationClasses.duplicateCode(v.code));
-    }
+    return other
+      ? jsonError(409, "duplicate_class_code", m.regulationClasses.duplicateCode(v.code))
+      : null;
+  };
+  if (codeNormalized !== existing.codeNormalized) {
+    const clashed = await clash();
+    if (clashed) return clashed;
   }
 
-  const hit = await prisma.regulationClass.updateMany({
-    where: { id, ...stampWhere(lock) },
-    data: {
-      code: v.code,
-      codeNormalized,
-      nameOriginal: v.nameOriginal ?? null,
-      nameLang: v.nameLang ?? null,
-      nameJa: v.nameJa ?? null,
-      nameEn: v.nameEn ?? null,
-      displayOrder: v.displayOrder,
-      interactionGroup: v.interactionGroup ?? null,
-      rank: v.rank ?? null,
-      note: v.note ?? null,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const hit = await guardUnique(m, clash, () =>
+    prisma.regulationClass.updateMany({
+      where: { id, ...stampWhere(lock) },
+      data: {
+        code: v.code,
+        codeNormalized,
+        nameOriginal: v.nameOriginal ?? null,
+        nameLang: v.nameLang ?? null,
+        nameJa: v.nameJa ?? null,
+        nameEn: v.nameEn ?? null,
+        displayOrder: v.displayOrder,
+        interactionGroup: v.interactionGroup ?? null,
+        rank: v.rank ?? null,
+        note: v.note ?? null,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (hit instanceof Response) return hit;
   if (hit.count === 0) {
     return staleFromRow(
       m,
@@ -80,47 +89,4 @@ export async function PUT(req: Request, { params }: Ctx) {
     select: { updatedAt: true },
   });
   return Response.json({ ok: true, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/regulation-classes/[id] — 論理削除。
- * ぶら下がる法文物質名も一緒に消える（画面で件数を示して確認したうえで呼ぶ）。
- * 消した結果0件になったら、名前のない分類を作り直す
- * （区分は必ず分類を1件以上持つ、という約束を保つため）。
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("REGULATION_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.regulationClass.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-
-  const now = new Date();
-  await prisma.$transaction([
-    prisma.statutorySubstance.updateMany({
-      where: { classId: id, deletedAt: null },
-      data: { deletedAt: now, updatedBy: actor.user.id },
-    }),
-    prisma.regulationClass.update({
-      where: { id },
-      data: {
-        deletedAt: now,
-        updatedBy: actor.user.id,
-        codeNormalized: `${existing.codeNormalized}:${existing.id}`.slice(0, 64),
-      },
-    }),
-  ]);
-
-  await ensureDefaultClass(existing.categoryId, actor.user.id);
-
-  await writeAudit({
-    entity: "regulation_classes",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: existing.code, nameOriginal: existing.nameOriginal },
-  });
-  return Response.json({ ok: true });
 }

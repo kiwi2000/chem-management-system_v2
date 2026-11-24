@@ -9,6 +9,7 @@ import {
   type ProductListOptions,
 } from "@/components/product-list-columns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { setBusyCursor } from "@/lib/busy-cursor";
 import { useI18n } from "@/lib/i18n-client";
@@ -43,6 +44,7 @@ export function ProductsTable({
   const { m } = useI18n();
   const { can } = useMe();
   const editable = can("PRODUCT_EDIT");
+  const removeRows = useStampedDelete();
 
   // 列と絞り込みは、ドキュメント生成の相手選びと共通（product-list-columns.tsx）
   const { columns, filterLayout } = useProductListColumns({
@@ -91,18 +93,14 @@ export function ProductsTable({
     if (ready) void load();
   }, [ready, load, reloadToken]);
 
-  /** 確認は共通テーブル側で出す。ここは消す処理だけ */
+  /** 確認は共通テーブル側で出す。ここは消す処理だけ（全部か、何もしないか。use-stamped-delete.ts） */
   async function onDeleteSelected(targets: ProductListItemDto[]) {
     setError(null);
-    for (const p of targets) {
-      const res = await fetch(`/api/products/${p.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-    }
+    const r = await removeRows(
+      "/api/products",
+      targets.map((p) => ({ id: p.id, stamp: p.stamp, label: p.code })),
+    );
+    if (r.error) setError(r.error);
     void load();
   }
 

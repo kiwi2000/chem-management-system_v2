@@ -18,6 +18,7 @@ import { LawForm } from "@/components/law-form";
 import { RegulationCategoryForm } from "@/components/regulation-category-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type {
@@ -91,6 +92,7 @@ export function LawTreeSection({
   const { m, locale } = useI18n();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
+  const removeRows = useStampedDelete();
 
   const [countries, setCountries] = useState<CountryDto[]>([]);
   const [data, setData] = useState<ListResponse<LawDto> | null>(null);
@@ -721,25 +723,26 @@ export function LawTreeSection({
     void refresh();
   }
 
+  /**
+   * 確認は共通テーブル側で出す。ここは消す処理だけ（use-stamped-delete.ts）。
+   * 法律・区分・分類を混ぜて選べるので、種類を付けて 1 回で送る（/api/law-tree）。
+   * 種類をまたいでも「全部か、何もしないか」。子から先に消すのはサーバーが行う
+   */
   async function onDeleteSelected(targets: Row[]) {
     setError(null);
-    for (const r of targets) {
-      const url =
-        r.kind === "law"
-          ? `/api/laws/${r.law.id}`
-          : r.kind === "category"
-            ? `/api/regulation-categories/${r.category.id}`
-            : `/api/regulation-classes/${r.klass.id}`;
-      const res = await fetch(url, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-      if (r.kind === "category" && selected?.id === r.category.id) onSelect(null);
-      if (r.kind === "law" && lawId === r.law.id) setLawId(null);
-    }
+    const items = targets.map((r) =>
+      r.kind === "law"
+        ? { id: `law:${r.law.id}`, stamp: r.law.stamp, label: r.law.code }
+        : r.kind === "category"
+          ? { id: `category:${r.category.id}`, stamp: r.category.stamp, label: r.category.code }
+          : { id: `class:${r.klass.id}`, stamp: r.klass.stamp, label: r.klass.code },
+    );
+    const r = await removeRows("/api/law-tree", items);
+    if (r.error) setError(r.error);
+    // 返る id は「種類:元の id」
+    const gone = new Set(r.deletedIds.map((id) => id.slice(id.indexOf(":") + 1)));
+    if (selected && gone.has(selected.id)) onSelect(null);
+    if (lawId && gone.has(lawId)) setLawId(null);
     void refresh();
   }
 

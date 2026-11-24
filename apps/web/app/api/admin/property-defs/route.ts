@@ -10,6 +10,9 @@ import {
   toPropertyDefDto,
 } from "@/lib/property-def-service";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { propertyDefDelete } from "@/lib/property-def-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -66,33 +69,41 @@ export async function POST(req: Request) {
   const v = parsed.data;
 
   // キーは用途ごとに一意。物質と製品で同じキーを使ってよい
-  const clash = await prisma.propertyDef.findUnique({
-    where: { target_key: { target: v.target, key: v.key } },
-  });
-  if (clash) return jsonError(409, "duplicate_key", m.errors.duplicateKey(v.key));
+  const clash = async () =>
+    (await prisma.propertyDef.findUnique({
+      where: { target_key: { target: v.target, key: v.key } },
+    }))
+      ? jsonError(409, "duplicate_key", m.errors.duplicateKey(v.key))
+      : null;
+  const clashed = await clash();
+  if (clashed) return clashed;
   if (v.dataType === "CHOICE" && v.valueOptions.length === 0) {
     return jsonError(400, "validation_error", m.propertyDefs.choiceNeedsOptions);
   }
 
   // 管理者が足す項目は、システムの項目にはならない（system_flag は移行で入れたものだけ）
-  const created = await prisma.$transaction(async (tx) => {
-    const def = await tx.propertyDef.create({
-      data: {
-        target: v.target,
-        key: v.key,
-        labelJa: v.labelJa,
-        labelEn: v.labelEn ?? null,
-        dataType: v.dataType,
-        defaultUnit: v.defaultUnit ?? null,
-        displayOrder: v.displayOrder,
-        activeFlag: v.activeFlag,
-        group: v.group,
-      },
-    });
-    if (v.dataType === "CHOICE") await syncPropertyOptions(tx, def, "VALUE", v.valueOptions);
-    await syncPropertyOptions(tx, def, "CONDITION", v.conditionOptions);
-    return def;
-  });
+  // 同じキーをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.$transaction(async (tx) => {
+      const def = await tx.propertyDef.create({
+        data: {
+          target: v.target,
+          key: v.key,
+          labelJa: v.labelJa,
+          labelEn: v.labelEn ?? null,
+          dataType: v.dataType,
+          defaultUnit: v.defaultUnit ?? null,
+          displayOrder: v.displayOrder,
+          activeFlag: v.activeFlag,
+          group: v.group,
+        },
+      });
+      if (v.dataType === "CHOICE") await syncPropertyOptions(tx, def, "VALUE", v.valueOptions);
+      await syncPropertyOptions(tx, def, "CONDITION", v.conditionOptions);
+      return def;
+    }),
+  );
+  if (created instanceof Response) return created;
 
   await writeAudit({
     entity: "property_defs",
@@ -102,4 +113,12 @@ export async function POST(req: Request) {
     diff: { target: v.target, key: v.key, labelJa: v.labelJa, dataType: v.dataType },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/** DELETE /api/admin/property-defs — まとめて消す（lib/stamped-delete.ts）。システムの項目は消せない */
+export async function DELETE(req: Request) {
+  const actor = await requireAdmin();
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, propertyDefDelete(actor, m));
 }

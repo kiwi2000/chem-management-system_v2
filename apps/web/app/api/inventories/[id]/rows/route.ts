@@ -8,7 +8,10 @@ import { currentVersion, findSubstanceByCas, sourcesOfVersion } from "@/lib/inve
 import { INVENTORY_ROW_COLUMNS } from "@/lib/list-columns";
 import { ALL_SOURCES } from "@/lib/all-sources";
 import { mergedPageQuery, type InventoryRowsMode, type MergedRow } from "@/lib/merged-rows-sql";
+import { inventoryRowDelete } from "@/lib/inventory-row-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
 import type { InventoryRowDto } from "@/lib/types";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -149,31 +152,39 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!inventory || !source) return jsonError(404, "not_found", m.errors.notFound);
 
   const casNormalized = normalizeCas(v.casNumber);
-  const dup = await prisma.inventoryRow.findFirst({
-    where: {
-      versionId: version.id,
-      sourceId: v.sourceId,
-      inventoryId: id,
-      casNormalized,
-      value: v.value,
-    },
-    select: { id: true },
-  });
-  if (dup) return jsonError(409, "duplicate_row", m.inventories.duplicateRow);
+  const clash = async () => {
+    const dup = await prisma.inventoryRow.findFirst({
+      where: {
+        versionId: version.id,
+        sourceId: v.sourceId,
+        inventoryId: id,
+        casNormalized,
+        value: v.value,
+      },
+      select: { id: true },
+    });
+    return dup ? jsonError(409, "duplicate_row", m.inventories.duplicateRow) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const created = await prisma.inventoryRow.create({
-    data: {
-      versionId: version.id,
-      sourceId: v.sourceId,
-      inventoryId: id,
-      casNumber: v.casNumber,
-      casNormalized,
-      value: v.value,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-    select: { id: true },
-  });
+  // 同じ行をほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.inventoryRow.create({
+      data: {
+        versionId: version.id,
+        sourceId: v.sourceId,
+        inventoryId: id,
+        casNumber: v.casNumber,
+        casNormalized,
+        value: v.value,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+      select: { id: true },
+    }),
+  );
+  if (created instanceof Response) return created;
 
   await writeAudit({
     entity: "inventory_rows",
@@ -193,4 +204,24 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const matched = await findSubstanceByCas([casNormalized]);
   const warnings = matched.has(casNormalized) ? [] : [m.inventories.warnUnknownCas];
   return Response.json({ id: created.id, warnings }, { status: 201 });
+}
+
+/**
+ * DELETE /api/inventories/[id]/rows — 行をまとめて消す（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 消す先は**画面で選んでいるバージョン**（`?versionId=`）。省かれたときは現在のバージョン
+ */
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  const { id } = await ctx.params;
+  const asked = new URL(req.url).searchParams.get("versionId");
+  const version = asked
+    ? await prisma.linkSetVersion.findFirst({
+        where: { id: asked, deletedAt: null },
+        select: { id: true },
+      })
+    : await currentVersion();
+  if (!version) return jsonError(409, "no_current_version", m.inventories.noCurrentVersion);
+  return runStampedDelete(req, m, inventoryRowDelete(actor, id, version.id));
 }

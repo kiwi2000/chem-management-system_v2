@@ -4,6 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -38,26 +39,37 @@ export async function PUT(req: Request, { params }: Ctx) {
   const country = await prisma.country.findFirst({ where: { id: v.countryId, deletedAt: null } });
   if (!country) return jsonError(404, "not_found", m.errors.notFound);
 
+  // 自分自身とは重ならない
+  const clash = async () => {
+    const other = await prisma.law.findFirst({
+      where: { codeNormalized, deletedAt: null, id: { not: id } },
+    });
+    return other ? jsonError(409, "duplicate_law_code", m.laws.duplicateCode(v.code)) : null;
+  };
   if (codeNormalized !== existing.codeNormalized) {
-    const clash = await prisma.law.findFirst({ where: { codeNormalized, deletedAt: null } });
-    if (clash) return jsonError(409, "duplicate_law_code", m.laws.duplicateCode(v.code));
+    const clashed = await clash();
+    if (clashed) return clashed;
   }
 
-  const hit = await prisma.law.updateMany({
-    where: { id, ...stampWhere(lock) },
-    data: {
-      code: v.code,
-      codeNormalized,
-      countryId: v.countryId,
-      nameOriginal: v.nameOriginal,
-      nameLang: v.nameLang,
-      nameJa: v.nameJa ?? null,
-      nameEn: v.nameEn ?? null,
-      displayOrder: v.displayOrder,
-      note: v.note ?? null,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const hit = await guardUnique(m, clash, () =>
+    prisma.law.updateMany({
+      where: { id, ...stampWhere(lock) },
+      data: {
+        code: v.code,
+        codeNormalized,
+        countryId: v.countryId,
+        nameOriginal: v.nameOriginal,
+        nameLang: v.nameLang,
+        nameJa: v.nameJa ?? null,
+        nameEn: v.nameEn ?? null,
+        displayOrder: v.displayOrder,
+        note: v.note ?? null,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (hit instanceof Response) return hit;
   if (hit.count === 0) {
     return staleFromRow(m, await prisma.law.findUnique({ where: { id }, select: STAMP_SELECT }));
   }
@@ -71,39 +83,4 @@ export async function PUT(req: Request, { params }: Ctx) {
   });
   const after = await prisma.law.findUniqueOrThrow({ where: { id }, select: { updatedAt: true } });
   return Response.json({ ok: true, stamp: rowStamp(after) });
-}
-
-/** DELETE /api/laws/[id] — 論理削除。区分が残っているものは消せない */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("REGULATION_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.law.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-
-  const categories = await prisma.regulationCategory.count({
-    where: { lawId: id, deletedAt: null },
-  });
-  if (categories > 0) return jsonError(409, "referenced", m.laws.inUse(categories));
-
-  await prisma.law.update({
-    where: { id },
-    data: {
-      deletedAt: new Date(),
-      updatedBy: actor.user.id,
-      // 一意制約を空けるための退避。原文の code はそのまま残す
-      codeNormalized: `${existing.codeNormalized}:${existing.id}`.slice(0, 64),
-    },
-  });
-
-  await writeAudit({
-    entity: "laws",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: existing.code, nameOriginal: existing.nameOriginal },
-  });
-  return Response.json({ ok: true });
 }

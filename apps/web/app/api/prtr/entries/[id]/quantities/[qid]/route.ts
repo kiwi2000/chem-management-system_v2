@@ -85,27 +85,3 @@ export async function PUT(req: Request, { params }: Ctx) {
   });
   return Response.json({ item: toQuantityDto(updated, await updaterNames([updated])) });
 }
-
-/** DELETE /api/prtr/entries/[id]/quantities/[qid] — 数量を消す。確定中は断る */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("PRTR_ENTRY");
-  if (actor instanceof Response) return actor;
-  const { id, qid } = await params;
-  const m = await getServerMessages();
-
-  const row = await load(id, qid);
-  if (!row) return jsonError(404, "not_found", m.errors.notFound);
-  const denied = await requirePrtrOrg(actor, row.entry.organisationId);
-  if (denied) return denied;
-  if (await isConfirmed(id)) return jsonError(409, "confirmed", m.prtr.locked);
-
-  await prisma.prtrQuantity.delete({ where: { id: qid } });
-  await writeAudit({
-    entity: "prtr_quantities",
-    entityId: qid,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { product: row.product.code, method: row.method },
-  });
-  return Response.json({ id: qid });
-}

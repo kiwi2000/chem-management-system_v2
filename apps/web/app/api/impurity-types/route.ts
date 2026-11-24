@@ -4,6 +4,9 @@ import { jsonError, requireAnyPermission, requirePermission } from "@/lib/authz"
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { countSubstancesByType, toImpurityTypeDto } from "@/lib/impurity-service";
+import { impurityTypeDelete } from "@/lib/impurity-type-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -51,8 +54,12 @@ export async function POST(req: Request) {
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
 
-  const dup = await prisma.impurityType.findFirst({ where: { codeNormalized } });
-  if (dup) return jsonError(409, "duplicate", m.impurityTypes.duplicateCode(v.code));
+  const clash = async () => {
+    const dup = await prisma.impurityType.findFirst({ where: { codeNormalized } });
+    return dup ? jsonError(409, "duplicate", m.impurityTypes.duplicateCode(v.code)) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
   const last = await prisma.impurityType.findFirst({
     where: { deletedAt: null },
@@ -60,18 +67,22 @@ export async function POST(req: Request) {
     select: { displayOrder: true },
   });
 
-  const created = await prisma.impurityType.create({
-    data: {
-      code: v.code,
-      codeNormalized,
-      nameJa: v.nameJa,
-      nameEn: v.nameEn ?? null,
-      note: v.note ?? null,
-      displayOrder: (last?.displayOrder ?? 0) + 1,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.impurityType.create({
+      data: {
+        code: v.code,
+        codeNormalized,
+        nameJa: v.nameJa,
+        nameEn: v.nameEn ?? null,
+        note: v.note ?? null,
+        displayOrder: (last?.displayOrder ?? 0) + 1,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (created instanceof Response) return created;
 
   await writeAudit({
     entity: "impurity_types",
@@ -81,4 +92,15 @@ export async function POST(req: Request) {
     diff: { code: v.code, nameJa: v.nameJa },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/**
+ * DELETE /api/impurity-types — まとめて削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 不純物の種類。一覧を開いたあとでほかの人が変更していれば、何も消さずに知らせる
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, impurityTypeDelete(actor, m));
 }

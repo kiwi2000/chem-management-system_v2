@@ -1,9 +1,11 @@
 import { productSchema } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
-import { countUsesAsMaterial, productsUsing, referencedMessage } from "@/lib/composition-service";
+import { countUsesAsMaterial } from "@/lib/composition-service";
 import { getCurrentVersion } from "@/lib/current-version";
 import { prisma } from "@/lib/db";
+import { productCodeClash } from "@/lib/product-code-clash";
+import { guardUnique } from "@/lib/unique-violation";
 import {
   STAMP_SELECT,
   StaleError,
@@ -97,18 +99,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     ...normalizeInput(input),
     ...(fixedAfterReject ? { publishState: "DRAFT" as const } : {}),
   };
+  // 見えないものと重なるときは理由を言わない（S31 仕様 7 章）
+  const clash = () => productCodeClash(actor, m, base, id);
   if (base.codeNormalized !== existing.codeNormalized) {
-    const clash = await prisma.product.findUnique({
-      where: { codeNormalized: base.codeNormalized },
-    });
-    if (clash) {
-      // 見えないものと重なるときは理由を言わない（S31 仕様 7 章）
-      const seen = await prisma.product.count({
-        where: { id: clash.id, ...visibilityWhere(actor) },
-      });
-      const text = seen ? m.errors.duplicateProductCode(base.code) : m.owner.codeUnavailable;
-      return jsonError(409, "duplicate_code", text, { fieldErrors: { code: [text] } });
-    }
+    const clashed = await clash();
+    if (clashed) return clashed;
   }
 
   const children = childWrites(input);
@@ -117,26 +112,30 @@ export async function PUT(req: Request, { params }: Ctx) {
     門番が行をロックするので、同時に来た 2 つの保存のうち後の方は必ず食い違いになる
   */
   try {
-    await prisma.$transaction(async (tx) => {
-      const gate = await tx.product.updateMany({
-        where: { id, ...stampWhere(lock) },
-        data: { updatedBy: actor.user.id },
-      });
-      if (gate.count === 0) throw new StaleError();
-      await tx.productAlias.deleteMany({ where: { productId: id } });
-      await tx.productUse.deleteMany({ where: { productId: id } });
-      await tx.productProperty.deleteMany({ where: { productId: id } });
-      await tx.product.update({
-        where: { id },
-        data: {
-          ...base,
-          updatedBy: actor.user.id,
-          aliases: { create: children.aliases },
-          uses: { create: children.uses },
-          properties: { create: children.properties },
-        },
-      });
-    });
+    // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+    const saved = await guardUnique(m, clash, () =>
+      prisma.$transaction(async (tx) => {
+        const gate = await tx.product.updateMany({
+          where: { id, ...stampWhere(lock) },
+          data: { updatedBy: actor.user.id },
+        });
+        if (gate.count === 0) throw new StaleError();
+        await tx.productAlias.deleteMany({ where: { productId: id } });
+        await tx.productUse.deleteMany({ where: { productId: id } });
+        await tx.productProperty.deleteMany({ where: { productId: id } });
+        await tx.product.update({
+          where: { id },
+          data: {
+            ...base,
+            updatedBy: actor.user.id,
+            aliases: { create: children.aliases },
+            uses: { create: children.uses },
+            properties: { create: children.properties },
+          },
+        });
+      }),
+    );
+    if (saved instanceof Response) return saved;
   } catch (err) {
     if (err instanceof StaleError) {
       return staleFromRow(
@@ -182,47 +181,4 @@ export async function PUT(req: Request, { params }: Ctx) {
     select: { updatedAt: true },
   });
   return Response.json({ ok: true, warnings, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/products/[id] — 論理削除。
- * 正規化コードを退避して、同じコードを再登録できるようにする（v1はできなかった）。
- * 他の組成から原材料として使われている場合は断る（消すと親の組成が壊れるため）。
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("PRODUCT_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.product.findFirst({
-    where: { id, deletedAt: null, ...visibilityWhere(actor) },
-  });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-  if (!canEditProduct(actor, existing)) return jsonError(403, "forbidden", m.errors.forbidden);
-
-  // 見えない製品で使われていれば、件数を言わない（S31 仕様 7 章）
-  const users = await productsUsing({ childProductId: id });
-  if (users.length > 0) {
-    return jsonError(409, "referenced", await referencedMessage(actor, users, m));
-  }
-
-  await prisma.product.update({
-    where: { id },
-    data: {
-      deletedAt: new Date(),
-      updatedBy: actor.user.id,
-      // 一意制約を空けるための退避。原文の code はそのまま残す
-      codeNormalized: `${existing.codeNormalized}:${existing.id}`.slice(0, 64),
-    },
-  });
-
-  await writeAudit({
-    entity: "products",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: existing.code },
-  });
-  return Response.json({ ok: true });
 }

@@ -31,6 +31,7 @@ import { useMe } from "@/lib/use-me";
 import type { ApiError, ListResponse } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 
 /** 直したものが上に来るほうが追いやすい */
 // 既定は通番の大きい順（後から書かれたものが上。2026-10-23 指示）
@@ -237,6 +238,7 @@ export default function FeedbackPage() {
   */
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const removeRows = useStampedDelete();
   const [saving, setSaving] = useState(false);
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
@@ -299,15 +301,12 @@ export default function FeedbackPage() {
   /** 確認は共通テーブル側で出す。ここは消す処理だけ */
   async function onDeleteSelected(targets: FeedbackDto[]) {
     setError(null);
-    for (const f of targets) {
-      const res = await fetch(`/api/feedback/${f.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-    }
+    // 全部か、何もしないか（use-stamped-delete.ts）
+    const r = await removeRows(
+      "/api/feedback",
+      targets.map((f) => ({ id: f.id, stamp: f.stamp, label: f.title })),
+    );
+    if (r.error) setError(r.error);
     void load();
   }
 

@@ -3,6 +3,7 @@ import { jsonError, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { toSavedFilterDto } from "@/lib/saved-filter-service";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -53,24 +54,32 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
 
-  const saved = await prisma.savedFilter.upsert({
-    where: {
-      tableKey_ownerId_title: {
-        tableKey: input.tableKey,
-        ownerId: actor.user.id,
-        title: input.title,
-      },
-    },
-    update: { query: input.query, shared: input.shared },
-    create: {
-      tableKey: input.tableKey,
-      title: input.title,
-      query: input.query,
-      shared: input.shared,
-      ownerId: actor.user.id,
-    },
-    include: { owner: { select: { displayName: true, email: true } } },
-  });
+  // 同じ名前を本人が別の画面からほぼ同時に保存すると、一意の決まりに当たることがある。
+  // 前もって調べる処理は無い（上書きするため）ので、一般の文の 409 で返す
+  const saved = await guardUnique(
+    m,
+    async () => null,
+    () =>
+      prisma.savedFilter.upsert({
+        where: {
+          tableKey_ownerId_title: {
+            tableKey: input.tableKey,
+            ownerId: actor.user.id,
+            title: input.title,
+          },
+        },
+        update: { query: input.query, shared: input.shared },
+        create: {
+          tableKey: input.tableKey,
+          title: input.title,
+          query: input.query,
+          shared: input.shared,
+          ownerId: actor.user.id,
+        },
+        include: { owner: { select: { displayName: true, email: true } } },
+      }),
+  );
+  if (saved instanceof Response) return saved;
 
   return Response.json({ item: toSavedFilterDto(saved, actor.user.id) }, { status: 201 });
 }

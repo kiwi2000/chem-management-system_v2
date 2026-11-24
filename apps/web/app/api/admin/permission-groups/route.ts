@@ -18,6 +18,9 @@ import {
   replaceRowsAndPermissions,
 } from "@/lib/permission-group-service";
 import type { PermissionGroupListItemDto } from "@/lib/types";
+import { permissionGroupDelete } from "@/lib/permission-group-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -98,22 +101,29 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
   const code = groupCode(input.code);
-  if (await prisma.permissionGroup.findUnique({ where: { code }, select: { id: true } })) {
-    return jsonError(409, "duplicate_code", m.permGroups.duplicateCode, {
-      fieldErrors: { code: [m.permGroups.duplicateCode] },
-    });
-  }
+  const clash = async () =>
+    (await prisma.permissionGroup.findUnique({ where: { code }, select: { id: true } }))
+      ? jsonError(409, "duplicate_code", m.permGroups.duplicateCode, {
+          fieldErrors: { code: [m.permGroups.duplicateCode] },
+        })
+      : null;
+  const clashed = await clash();
+  if (clashed) return clashed;
   const permissions = normalizeGroupPermissions(input.permissions);
-  const created = await prisma.permissionGroup.create({
-    data: {
-      code,
-      nameJa: input.nameJa,
-      nameEn: input.nameEn ?? null,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-    select: { id: true },
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.permissionGroup.create({
+      data: {
+        code,
+        nameJa: input.nameJa,
+        nameEn: input.nameEn ?? null,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+      select: { id: true },
+    }),
+  );
+  if (created instanceof Response) return created;
   // 自分の行を指すものは、作ったばかりの id に差し替える（画面は「自分」を仮の id で送る）
   const rows = await normalizeRows(
     input.rows.map((r) => ({
@@ -130,4 +140,15 @@ export async function POST(req: Request) {
     diff: { code, nameJa: input.nameJa, rows: rows.length, permissions },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/**
+ * DELETE /api/admin/permission-groups — まとめて消す（lib/stamped-delete.ts）。
+ * システム管理グループと、人・製品・原材料、物質が入っているものは消せない
+ */
+export async function DELETE(req: Request) {
+  const actor = await requireAdmin();
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, permissionGroupDelete(actor, m));
 }

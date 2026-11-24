@@ -9,6 +9,7 @@ import {
   type SubstanceListOptions,
 } from "@/components/substance-list-columns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, SubstanceListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
@@ -39,6 +40,7 @@ export function SubstancesTable({
 }: Props) {
   const { m } = useI18n();
   const { can } = useMe();
+  const removeRows = useStampedDelete();
   const editable = can("SUBSTANCE_EDIT");
 
   // 列と絞り込みは、ドキュメント生成の相手選びと共通（substance-list-columns.tsx）
@@ -81,18 +83,14 @@ export function SubstancesTable({
     if (ready) void load();
   }, [ready, load, reloadToken]);
 
-  /** 確認は共通テーブル側で出す。ここは消す処理だけ */
+  /** 確認は共通テーブル側で出す。ここは消す処理だけ（全部か、何もしないか。use-stamped-delete.ts） */
   async function onDeleteSelected(targets: SubstanceListItemDto[]) {
     setError(null);
-    for (const s of targets) {
-      const res = await fetch(`/api/substances/${s.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-    }
+    const r = await removeRows(
+      "/api/substances",
+      targets.map((s) => ({ id: s.id, stamp: s.stamp, label: s.code })),
+    );
+    if (r.error) setError(r.error);
     void load();
   }
 

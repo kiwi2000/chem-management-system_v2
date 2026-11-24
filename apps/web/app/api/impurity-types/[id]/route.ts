@@ -1,9 +1,10 @@
-import { IMPURITY_NONE, impurityTypeSchema, normalizeCode } from "@chem/shared";
+import { impurityTypeSchema, normalizeCode } from "@chem/shared";
 import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -39,22 +40,29 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (existing.builtin && codeNormalized !== existing.codeNormalized) {
     return jsonError(409, "builtin", m.impurityTypes.builtinCode);
   }
-  if (codeNormalized !== existing.codeNormalized) {
+  const clash = async () => {
+    if (codeNormalized === existing.codeNormalized) return null;
     const dup = await prisma.impurityType.findFirst({ where: { codeNormalized } });
-    if (dup) return jsonError(409, "duplicate", m.impurityTypes.duplicateCode(v.code));
-  }
+    return dup ? jsonError(409, "duplicate", m.impurityTypes.duplicateCode(v.code)) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const hit = await prisma.impurityType.updateMany({
-    where: { id, ...stampWhere(lock) },
-    data: {
-      code: v.code,
-      codeNormalized,
-      nameJa: v.nameJa,
-      nameEn: v.nameEn ?? null,
-      note: v.note ?? null,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const hit = await guardUnique(m, clash, () =>
+    prisma.impurityType.updateMany({
+      where: { id, ...stampWhere(lock) },
+      data: {
+        code: v.code,
+        codeNormalized,
+        nameJa: v.nameJa,
+        nameEn: v.nameEn ?? null,
+        note: v.note ?? null,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (hit instanceof Response) return hit;
   if (hit.count === 0) {
     return staleFromRow(
       m,
@@ -74,39 +82,4 @@ export async function PUT(req: Request, { params }: Ctx) {
     select: { updatedAt: true },
   });
   return Response.json({ id, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/impurity-types/[id] — 削除。
- *
- * 組み込み（0・1）は消せない。使っている物質があるときも、件数を示して断る。
- * 付け替えてから消してもらう（黙って物質の種別を 0 に戻すと、判定が静かに変わる）
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("REGULATION_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.impurityType.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-  if (existing.builtin || id === IMPURITY_NONE) {
-    return jsonError(409, "builtin", m.impurityTypes.builtinDelete);
-  }
-
-  const used = await prisma.substance.count({ where: { impurityTypeId: id, deletedAt: null } });
-  if (used > 0) return jsonError(409, "in_use", m.impurityTypes.inUse(used));
-
-  await prisma.impurityType.update({
-    where: { id },
-    data: { deletedAt: new Date(), updatedBy: actor.user.id },
-  });
-  await writeAudit({
-    entity: "impurity_types",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: existing.code },
-  });
-  return Response.json({ id });
 }

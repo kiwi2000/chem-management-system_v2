@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, CountryDto, ListResponse, RegionDto } from "@/lib/types";
@@ -49,6 +50,7 @@ const CELL_SELECT = "border-input bg-background h-7 w-full rounded-md border px-
  */
 export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
   const { m, locale } = useI18n();
+  const removeRows = useStampedDelete();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -333,15 +335,16 @@ export function CountrySection({ regionsVersion }: { regionsVersion: number }) {
 
   async function onDeleteSelected(targets: CountryDto[]) {
     setError(null);
+    // 全部か、何もしないか。ほかの人の変更・消せない理由は use-stamped-delete.ts が知らせる
+    const r = await removeRows(
+      "/api/countries",
+      targets.map((c) => ({ id: c.id, stamp: c.stamp, label: c.code })),
+    );
+    if (r.error) setError(r.error);
     for (const c of targets) {
-      const res = await fetch(`/api/countries/${c.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
+      if (r.deletedIds.includes(c.id)) {
+        if (editingId === c.id) stopEdit();
       }
-      if (editingId === c.id) stopEdit();
     }
     void load();
   }

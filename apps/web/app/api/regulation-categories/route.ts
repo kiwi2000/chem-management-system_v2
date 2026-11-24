@@ -14,6 +14,7 @@ import { countByCategory, ensureDefaultClass, toCategoryDto } from "@/lib/law-se
 import { regulationCategoryColumns } from "@/lib/list-columns";
 import { getAppSettings } from "@/lib/settings";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -87,12 +88,16 @@ export async function POST(req: Request) {
   const law = await prisma.law.findFirst({ where: { id: v.lawId, deletedAt: null } });
   if (!law) return jsonError(404, "not_found", m.errors.notFound);
 
-  const live = await prisma.regulationCategory.findFirst({
-    where: { lawId: v.lawId, codeNormalized, deletedAt: null },
-  });
-  if (live) {
-    return jsonError(409, "duplicate_category_code", m.regulationCategories.duplicateCode(v.code));
-  }
+  const clash = async () => {
+    const live = await prisma.regulationCategory.findFirst({
+      where: { lawId: v.lawId, codeNormalized, deletedAt: null },
+    });
+    return live
+      ? jsonError(409, "duplicate_category_code", m.regulationCategories.duplicateCode(v.code))
+      : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
   // スコアの範囲はシステム設定で決まる。画面に頼らずサーバーで確かめる
   const { categoryScoreMin, categoryScoreMax } = await getAppSettings();
@@ -107,32 +112,36 @@ export async function POST(req: Request) {
     });
   }
 
-  const created = await prisma.regulationCategory.create({
-    data: {
-      code: v.code,
-      codeNormalized,
-      lawId: v.lawId,
-      nameOriginal: v.nameOriginal,
-      nameLang: v.nameLang,
-      nameJa: v.nameJa ?? null,
-      nameEn: v.nameEn ?? null,
-      thresholdLower: v.thresholdLower,
-      lowerBound: v.lowerBound,
-      thresholdUpper: v.thresholdUpper,
-      upperBound: v.upperBound,
-      thresholdBasis: v.thresholdBasis,
-      judged: v.judged,
-      effectiveFrom: toDate(v.effectiveFrom),
-      effectiveTo: toDate(v.effectiveTo),
-      score: score.data,
-      interactionGroup: v.interactionGroup ?? null,
-      rank: v.rank ?? null,
-      displayOrder: v.displayOrder,
-      note: v.note ?? null,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.regulationCategory.create({
+      data: {
+        code: v.code,
+        codeNormalized,
+        lawId: v.lawId,
+        nameOriginal: v.nameOriginal,
+        nameLang: v.nameLang,
+        nameJa: v.nameJa ?? null,
+        nameEn: v.nameEn ?? null,
+        thresholdLower: v.thresholdLower,
+        lowerBound: v.lowerBound,
+        thresholdUpper: v.thresholdUpper,
+        upperBound: v.upperBound,
+        thresholdBasis: v.thresholdBasis,
+        judged: v.judged,
+        effectiveFrom: toDate(v.effectiveFrom),
+        effectiveTo: toDate(v.effectiveTo),
+        score: score.data,
+        interactionGroup: v.interactionGroup ?? null,
+        rank: v.rank ?? null,
+        displayOrder: v.displayOrder,
+        note: v.note ?? null,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (created instanceof Response) return created;
 
   await ensureDefaultClass(created.id, actor.user.id);
 

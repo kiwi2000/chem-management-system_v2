@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,7 @@ const GROUP_KEY = "chem.inventoryRows.group";
 export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
   const { m, locale } = useI18n();
   const { can } = useMe();
+  const removeRows = useStampedDelete();
   const editable = can("REGULATION_EDIT");
 
   const [inventory, setInventory] = useState<InventoryDto | null>(null);
@@ -309,19 +311,14 @@ export function InventoryRowsSection({ inventoryId }: { inventoryId: string }) {
   /** 確認は共通テーブル側で出す。ここは消す処理だけ */
   async function onDeleteSelected(targets: InventoryRowDto[]) {
     setError(null);
-    for (const r of targets) {
-      const q = picked?.versionId ? `?versionId=${picked.versionId}` : "";
-      const res = await fetch(`/api/inventories/${inventoryId}/rows/${r.id}${q}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-      if (editingId === r.id) stopEdit();
-    }
+    // 全部か、何もしないか（use-stamped-delete.ts）
+    const q = picked?.versionId ? `?versionId=${picked.versionId}` : "";
+    const r = await removeRows(
+      `/api/inventories/${inventoryId}/rows${q}`,
+      targets.map((row) => ({ id: row.id, stamp: row.stamp, label: row.casNumber })),
+    );
+    if (r.error) setError(r.error);
+    if (editingId && r.deletedIds.includes(editingId)) stopEdit();
     void load();
   }
 

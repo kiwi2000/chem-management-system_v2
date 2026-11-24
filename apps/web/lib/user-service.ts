@@ -96,8 +96,11 @@ export function toUserSummary(u: UserWithGroups, orgPaths: Map<string, OrgChainN
   const org = chain[0] ?? null;
   const isSystemAdmin = u.permissionGroups.some((m) => m.group.isSystemAdmin);
   return {
-    // 楽観的ロックの印（管理者の編集画面が保存時に送り返す）
-    stamp: rowStamp(u),
+    /*
+      楽観的ロックの印（管理者の編集画面が保存時に、一覧の削除が消すときに送り返す）。
+      更新時刻ではなく、管理者が直す中身を変えた時刻（editedAt）から作る。更新時刻はログインでも進むため
+    */
+    stamp: rowStamp({ updatedAt: u.editedAt }),
     id: u.id,
     email: u.email,
     displayName: u.displayName,

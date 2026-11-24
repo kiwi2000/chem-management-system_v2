@@ -130,7 +130,7 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
 - **編集の API（PUT / PATCH）には楽観的ロックを必ず入れる**（2026-10-18 指示。仕組みは `apps/web/lib/edit-stamp.ts`、記録は `docs/steps/S29_楽観的ロック.md`）。
   DTO に `stamp` を持たせ、画面は保存時に `stamp` を送り返し、サーバーは `parseEditStamp` → `updateMany({ where: { id, ...stampWhere(lock) } })` の件数で
   食い違いを見て 409 `stale_edit` を返す。画面は入力を残したまま `StaleEditNotice` を出す。
-  見つけ方: `apps/web/lib/edit-stamp-coverage.test.ts` が PUT / PATCH の route.ts と、PUT / PATCH を送る画面の付け忘れを検出する。例外は理由を書いてそこに載せる
+  見つけ方: `apps/web/lib/edit-stamp-coverage.test.ts` が PUT / PATCH の route.ts と、PUT / PATCH を送る画面の付け忘れを検出する。例外は理由を書いてそこに載せる。**削除も同じ**（2026-11-24 指示）: 一覧の API の DELETE は `lib/stamped-delete.ts` の `runStampedDelete`（全部か、何もしないか）、画面は `useStampedDelete`。付け忘れは `stamped-delete-coverage.test.ts` が検出する。**重なりを前もって調べる作成・更新は、書き込みを `guardUnique`（`lib/unique-violation.ts`）で包む**（同時に同じコードで保存されると、DB の一意の決まりで止まって 500 になっていた。見つけ方: `jsonError(409, "duplicate` を grep）
 - **「直してよいか」を決める判定は、印（管理グループの表）だけでなく公開の状態も見る**（`lib/product-service.ts` の `editableInState`。承認待はだれも直せない、作成中・却下は作った本人だけ）。
   組成の判定が印しか見ておらず、承認待の組成が直せ、承認する人がほかの人の公開前の組成を直せた（2026-11-13。製品そのものは見ていた）。画面の保存だけでなく取り込み（`lib/import/` の `stateRefusal`。製品の項目・組成・物質の、読み取りと反映の両方）にも同じ決まりを入れる。
   管理グループの変更（`lib/owner-move.ts`）も同じ穴だった（2026-11-17。画面はボタンを隠していたが、受ける側が見ていなかった。**画面で隠すだけにしない**）。

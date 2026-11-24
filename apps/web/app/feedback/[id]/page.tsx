@@ -29,6 +29,7 @@ import { useMe } from "@/lib/use-me";
 import { PAGE_SHELL } from "@/lib/page-shell";
 import type { ApiError } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 
 const SELECT_CLASS = "border-input bg-background h-9 rounded-none border px-2 text-sm";
 
@@ -56,6 +57,7 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
 
   const [detail, setDetail] = useState<FeedbackDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const removeRows = useStampedDelete();
 
   // 種別・重要度・ステータス。読み込んだ値から始め、変えたときだけ保存ボタンを効かせる
   const [state, setState] = useState<{
@@ -181,13 +183,11 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
   async function removeComment(c: FeedbackCommentDto) {
     if (!(await ask({ message: "この返信を消しますか？", destructive: true }))) return;
     setError(null);
-    const res = await fetch(`/api/feedback/${id}/comments/${c.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      if (redirectIfUnauthorized(res)) return;
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.deleteFailed);
-      return;
-    }
+    // 返信は直せないので、印は書いた時刻。消してあれば知らせる（use-stamped-delete.ts）
+    const r = await removeRows(`/api/feedback/${id}/comments`, [
+      { id: c.id, stamp: String(new Date(c.createdAt).getTime()), label: c.body ?? "" },
+    ]);
+    if (r.error) setError(r.error);
     void load();
   }
 

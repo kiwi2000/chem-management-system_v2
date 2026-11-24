@@ -17,6 +17,10 @@ import {
 import { lookupSubstanceNames } from "@/lib/substance-name-lookup";
 import { validatePropertyValues } from "@/lib/property-values";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { productCodeClash } from "@/lib/product-code-clash";
+import { productDelete } from "@/lib/product-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -109,41 +113,31 @@ export async function POST(req: Request) {
 
   // 新規登録は必ず作成中から始める（公開させるのは意識的な操作にする）
   const base = normalizeInput(input);
-  const clash = await prisma.product.findUnique({
-    where: { codeNormalized: base.codeNormalized },
-    select: { id: true },
-  });
-  if (clash) {
-    // 見えないものと重なるときは理由を言わない（S31 仕様 7 章。見えないものの存在を知らせない）
-    const seen = await prisma.product.count({ where: { id: clash.id, ...visibilityWhere(actor) } });
-    return jsonError(
-      409,
-      "duplicate_code",
-      seen ? m.errors.duplicateProductCode(base.code) : m.owner.codeUnavailable,
-      {
-        fieldErrors: {
-          code: [seen ? m.errors.duplicateProductCode(base.code) : m.owner.codeUnavailable],
-        },
-      },
-    );
-  }
+  // 見えないものと重なるときは理由を言わない（S31 仕様 7 章。見えないものの存在を知らせない）
+  const clash = () => productCodeClash(actor, m, base);
+  const clashed = await clash();
+  if (clashed) return clashed;
 
   // 所属先（S31）。「製品・原材料 編集」の印を持つ管理グループから
   const owner = await resolveOwnerForCreate(actor, "productEdit", input.ownerGroupId);
   if (owner instanceof Response) return owner;
 
   const children = childWrites(input);
-  const created = await prisma.product.create({
-    data: {
-      ...base,
-      ownerGroupId: owner,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-      aliases: { create: children.aliases },
-      uses: { create: children.uses },
-      properties: { create: children.properties },
-    },
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.product.create({
+      data: {
+        ...base,
+        ownerGroupId: owner,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+        aliases: { create: children.aliases },
+        uses: { create: children.uses },
+        properties: { create: children.properties },
+      },
+    }),
+  );
+  if (created instanceof Response) return created;
 
   await writeAudit({
     entity: "products",
@@ -155,4 +149,16 @@ export async function POST(req: Request) {
 
   // 警告の中身は組成（S8）ができてから増える
   return Response.json({ id: created.id, warnings: [] }, { status: 201 });
+}
+
+/**
+ * DELETE /api/products — まとめて論理削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 正規化コードを退避して、同じコードを再登録できるようにする（v1はできなかった）。
+ * 他の組成から原材料として使われている場合は断る（消すと親の組成が壊れるため）。いっしょに消す親は数えない
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("PRODUCT_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, productDelete(actor, m));
 }

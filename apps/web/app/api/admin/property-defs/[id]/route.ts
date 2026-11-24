@@ -98,29 +98,3 @@ export async function PUT(req: Request, { params }: Ctx) {
     stamp: rowStamp(after),
   });
 }
-
-/** DELETE — 入力済みの値も一緒に消える（画面で件数を見せて確認する） */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requireAdmin();
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.propertyDef.findUnique({ where: { id } });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-  // GHS 判定・SDS がキーで読むので、システムの項目は消させない（「使わない」にはできる）
-  if (existing.systemFlag) {
-    return jsonError(409, "system_property", m.propertyDefs.systemCannotDelete(existing.labelJa));
-  }
-
-  await prisma.propertyDef.delete({ where: { id } });
-
-  await writeAudit({
-    entity: "property_defs",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { target: existing.target, key: existing.key },
-  });
-  return Response.json({ ok: true });
-}

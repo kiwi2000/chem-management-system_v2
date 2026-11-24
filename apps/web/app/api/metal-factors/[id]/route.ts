@@ -12,6 +12,7 @@ import {
 } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
 import { findSubstancesByCas } from "@/lib/metal-factor-service";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,19 @@ export async function PUT(req: Request, { params }: Ctx) {
   const keyChanged =
     casNormalized !== existing.casNormalized || v.metalElement !== existing.metalElement;
   let clashId: string | null = null;
+  const clash = async () => {
+    if (!keyChanged) return null;
+    const live = await prisma.metalConversionFactor.findFirst({
+      where: { casNormalized, metalElement: v.metalElement, deletedAt: null, id: { not: id } },
+    });
+    return live
+      ? jsonError(
+          409,
+          "duplicate_metal_factor",
+          m.errors.duplicateMetalFactor(casNormalized, v.metalElement),
+        )
+      : null;
+  };
   if (keyChanged) {
     const clash = await prisma.metalConversionFactor.findUnique({
       where: { casNormalized_metalElement: { casNormalized, metalElement: v.metalElement } },
@@ -69,24 +83,28 @@ export async function PUT(req: Request, { params }: Ctx) {
     先頭の門番で食い違いを見る（食い違っていたら片付けもしない）
   */
   try {
-    await prisma.$transaction(async (tx) => {
-      const gate = await tx.metalConversionFactor.updateMany({
-        where: { id, ...stampWhere(lock) },
-        data: { updatedBy: actor.user.id },
-      });
-      if (gate.count === 0) throw new StaleError();
-      if (clashId) await tx.metalConversionFactor.delete({ where: { id: clashId } });
-      await tx.metalConversionFactor.update({
-        where: { id },
-        data: {
-          casNumber: casNormalized,
-          casNormalized,
-          metalElement: v.metalElement,
-          ratioPct: v.ratioPct,
-          updatedBy: actor.user.id,
-        },
-      });
-    });
+    // 同じ組へほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+    const saved = await guardUnique(m, clash, () =>
+      prisma.$transaction(async (tx) => {
+        const gate = await tx.metalConversionFactor.updateMany({
+          where: { id, ...stampWhere(lock) },
+          data: { updatedBy: actor.user.id },
+        });
+        if (gate.count === 0) throw new StaleError();
+        if (clashId) await tx.metalConversionFactor.delete({ where: { id: clashId } });
+        await tx.metalConversionFactor.update({
+          where: { id },
+          data: {
+            casNumber: casNormalized,
+            casNormalized,
+            metalElement: v.metalElement,
+            ratioPct: v.ratioPct,
+            updatedBy: actor.user.id,
+          },
+        });
+      }),
+    );
+    if (saved instanceof Response) return saved;
   } catch (err) {
     if (err instanceof StaleError) {
       return staleFromRow(
@@ -115,31 +133,4 @@ export async function PUT(req: Request, { params }: Ctx) {
     select: { updatedAt: true },
   });
   return Response.json({ ok: true, warnings, stamp: rowStamp(after) });
-}
-
-/** DELETE /api/metal-factors/[id] — 論理削除（同じキーで登録し直すと復活する） */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("REGULATION_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.metalConversionFactor.findFirst({
-    where: { id, deletedAt: null },
-  });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-
-  await prisma.metalConversionFactor.update({
-    where: { id },
-    data: { deletedAt: new Date(), updatedBy: actor.user.id },
-  });
-
-  await writeAudit({
-    entity: "metal_conversion_factors",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { casNumber: existing.casNumber, metalElement: existing.metalElement },
-  });
-  return Response.json({ ok: true });
 }

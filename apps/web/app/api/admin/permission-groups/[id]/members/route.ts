@@ -44,6 +44,9 @@ export async function POST(req: Request, { params }: Ctx) {
     })),
     skipDuplicates: true,
   });
+  // 入る管理グループはユーザーの編集画面の中身でもある。その画面を開いている人の保存・削除が食い違うように、
+  // 管理者が直す中身を変えた時刻を進める（2026-11-24）
+  await prisma.user.updateMany({ where: { id: { in: userIds } }, data: { editedAt: new Date() } });
   for (const userId of userIds) await revokeAllSessions(userId);
   await writeAudit({
     entity: "permission_groups",
@@ -84,6 +87,8 @@ export async function DELETE(req: Request, { params }: Ctx) {
   await prisma.userPermissionGroup.delete({
     where: { userId_groupId: { userId, groupId: id } },
   });
+  // ユーザーの編集画面の中身が変わったので、管理者が直す中身を変えた時刻を進める（上の追加と同じ）
+  await prisma.user.update({ where: { id: userId }, data: { editedAt: new Date() } });
   await revokeAllSessions(userId);
   await writeAudit({
     entity: "permission_groups",

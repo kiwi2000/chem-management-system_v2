@@ -12,6 +12,7 @@ import type { ApiError, ListResponse, NewsDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 
 const DEFAULT_STATE: TableState = emptyTableState([
   { column: "pinned", direction: "desc" },
@@ -128,6 +129,7 @@ export default function NewsListPage() {
 
   const [data, setData] = useState<ListResponse<NewsDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const removeRows = useStampedDelete();
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
@@ -151,15 +153,12 @@ export default function NewsListPage() {
   /** 確認は共通テーブル側で出す。自分が編集できないものは弾かれる */
   async function onDeleteSelected(targets: NewsDto[]) {
     setError(null);
-    for (const n of targets) {
-      const res = await fetch(`/api/news/${n.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-    }
+    // 全部か、何もしないか（use-stamped-delete.ts）
+    const r = await removeRows(
+      "/api/news",
+      targets.map((n) => ({ id: n.id, stamp: n.stamp, label: n.titleJa })),
+    );
+    if (r.error) setError(r.error);
     void load();
   }
 

@@ -4,7 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
-import { countByCategory } from "@/lib/law-service";
+import { guardUnique } from "@/lib/unique-violation";
 import { recomputeScoresForCategory } from "@/lib/score-store";
 import { getAppSettings } from "@/lib/settings";
 
@@ -60,45 +60,50 @@ export async function PUT(req: Request, { params }: Ctx) {
   const law = await prisma.law.findFirst({ where: { id: v.lawId, deletedAt: null } });
   if (!law) return jsonError(404, "not_found", m.errors.notFound);
 
-  if (codeNormalized !== existing.codeNormalized || v.lawId !== existing.lawId) {
-    const clash = await prisma.regulationCategory.findFirst({
-      where: { lawId: v.lawId, codeNormalized, deletedAt: null },
+  // 自分自身とは重ならない
+  const clash = async () => {
+    const other = await prisma.regulationCategory.findFirst({
+      where: { lawId: v.lawId, codeNormalized, deletedAt: null, id: { not: id } },
     });
-    if (clash) {
-      return jsonError(
-        409,
-        "duplicate_category_code",
-        m.regulationCategories.duplicateCode(v.code),
-      );
-    }
+    return other
+      ? jsonError(409, "duplicate_category_code", m.regulationCategories.duplicateCode(v.code))
+      : null;
+  };
+  if (codeNormalized !== existing.codeNormalized || v.lawId !== existing.lawId) {
+    const clashed = await clash();
+    if (clashed) return clashed;
   }
 
-  const hit = await prisma.regulationCategory.updateMany({
-    where: { id, ...stampWhere(lock) },
-    data: {
-      code: v.code,
-      codeNormalized,
-      lawId: v.lawId,
-      nameOriginal: v.nameOriginal,
-      nameLang: v.nameLang,
-      nameJa: v.nameJa ?? null,
-      nameEn: v.nameEn ?? null,
-      thresholdLower: v.thresholdLower,
-      lowerBound: v.lowerBound,
-      thresholdUpper: v.thresholdUpper,
-      upperBound: v.upperBound,
-      thresholdBasis: v.thresholdBasis,
-      judged: v.judged,
-      effectiveFrom: toDate(v.effectiveFrom),
-      effectiveTo: toDate(v.effectiveTo),
-      score: score.data,
-      interactionGroup: v.interactionGroup ?? null,
-      rank: v.rank ?? null,
-      displayOrder: v.displayOrder,
-      note: v.note ?? null,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const hit = await guardUnique(m, clash, () =>
+    prisma.regulationCategory.updateMany({
+      where: { id, ...stampWhere(lock) },
+      data: {
+        code: v.code,
+        codeNormalized,
+        lawId: v.lawId,
+        nameOriginal: v.nameOriginal,
+        nameLang: v.nameLang,
+        nameJa: v.nameJa ?? null,
+        nameEn: v.nameEn ?? null,
+        thresholdLower: v.thresholdLower,
+        lowerBound: v.lowerBound,
+        thresholdUpper: v.thresholdUpper,
+        upperBound: v.upperBound,
+        thresholdBasis: v.thresholdBasis,
+        judged: v.judged,
+        effectiveFrom: toDate(v.effectiveFrom),
+        effectiveTo: toDate(v.effectiveTo),
+        score: score.data,
+        interactionGroup: v.interactionGroup ?? null,
+        rank: v.rank ?? null,
+        displayOrder: v.displayOrder,
+        note: v.note ?? null,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (hit instanceof Response) return hit;
   if (hit.count === 0) {
     return staleFromRow(
       m,
@@ -127,50 +132,4 @@ export async function PUT(req: Request, { params }: Ctx) {
     select: { updatedAt: true },
   });
   return Response.json({ ok: true, rescored, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/regulation-categories/[id] — 論理削除。
- * 法文物質名が残っているものは消せない。名前のない分類は一緒に片付ける。
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("REGULATION_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.regulationCategory.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-
-  const counts = await countByCategory([id]);
-  const substances = counts.get(id)?.substances ?? 0;
-  if (substances > 0) {
-    return jsonError(409, "referenced", m.regulationCategories.inUse(substances));
-  }
-
-  const now = new Date();
-  await prisma.$transaction([
-    // 中身のない分類は、区分と一緒に片付ける（残しても使い道がない）
-    prisma.regulationClass.updateMany({
-      where: { categoryId: id, deletedAt: null },
-      data: { deletedAt: now, updatedBy: actor.user.id },
-    }),
-    prisma.regulationCategory.update({
-      where: { id },
-      data: {
-        deletedAt: now,
-        updatedBy: actor.user.id,
-        codeNormalized: `${existing.codeNormalized}:${existing.id}`.slice(0, 64),
-      },
-    }),
-  ]);
-
-  await writeAudit({
-    entity: "regulation_categories",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: existing.code, nameOriginal: existing.nameOriginal },
-  });
-  return Response.json({ ok: true });
 }

@@ -25,6 +25,7 @@ const LIST_SELECT = {
   nameJa: true,
   nameEn: true,
   isSystemAdmin: true,
+  updatedAt: true,
   _count: { select: { members: true, products: true, substances: true } },
   rows: {
     select: { target: { select: { id: true, code: true, nameJa: true, nameEn: true } } },
@@ -39,6 +40,7 @@ export async function listPermissionGroups(): Promise<PermissionGroupListItemDto
     orderBy: [{ isSystemAdmin: "desc" }, { code: "asc" }],
   });
   return rows.map((g) => ({
+    stamp: rowStamp(g),
     id: g.id,
     code: g.code,
     nameJa: g.nameJa,

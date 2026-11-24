@@ -18,6 +18,9 @@ import {
 } from "@/lib/organisation-service";
 import { flattenOrgTree, isOrgTreeOrder } from "@/lib/org-tree";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { organisationDelete } from "@/lib/organisation-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -119,31 +122,38 @@ export async function POST(req: Request) {
   if (dup.length > 0) {
     return jsonError(400, "validation_error", m.validation.duplicateLabel(dup[0]!));
   }
-  if (await prisma.organisation.findFirst({ where: { code: v.code, deletedAt: null } })) {
-    return jsonError(409, "duplicate_code", m.organisations.duplicateCode(v.code));
-  }
+  const clash = async () =>
+    (await prisma.organisation.findFirst({ where: { code: v.code, deletedAt: null } }))
+      ? jsonError(409, "duplicate_code", m.organisations.duplicateCode(v.code))
+      : null;
+  const clashed = await clash();
+  if (clashed) return clashed;
   if (!(await validParent(null, v.parentId ?? null))) {
     return jsonError(400, "validation_error", m.organisations.badParent, {
       fieldErrors: { parentId: [m.organisations.badParent] },
     });
   }
 
-  const created = await prisma.organisation.create({
-    data: {
-      code: v.code,
-      // 種別と呼び名（2026-11-10 に保存していなかったのを直した）
-      kind: v.kind,
-      kindLabel: v.kind === "OTHER" ? (v.kindLabel ?? null) : null,
-      parentId: v.parentId ?? null,
-      nameJa: v.nameJa,
-      nameEn: v.nameEn ?? null,
-      displayOrder: v.displayOrder,
-      activeFlag: v.activeFlag,
-      items: {
-        create: v.items.map((x, i) => ({ label: x.label, value: x.value, displayOrder: i })),
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.organisation.create({
+      data: {
+        code: v.code,
+        // 種別と呼び名（2026-11-10 に保存していなかったのを直した）
+        kind: v.kind,
+        kindLabel: v.kind === "OTHER" ? (v.kindLabel ?? null) : null,
+        parentId: v.parentId ?? null,
+        nameJa: v.nameJa,
+        nameEn: v.nameEn ?? null,
+        displayOrder: v.displayOrder,
+        activeFlag: v.activeFlag,
+        items: {
+          create: v.items.map((x, i) => ({ label: x.label, value: x.value, displayOrder: i })),
+        },
       },
-    },
-  });
+    }),
+  );
+  if (created instanceof Response) return created;
 
   // 最初に選ばれる管理グループはシステム設定の一部。システム管理グループの人が送ったときだけ（S31）
   if (actor.isSystemAdmin && v.defaultGroupIds)
@@ -157,4 +167,15 @@ export async function POST(req: Request) {
     diff: { code: v.code, nameJa: v.nameJa, items: v.items.length },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/**
+ * DELETE /api/organisations — まとめて論理削除（lib/stamped-delete.ts）。
+ * 人がいる組織と、下の組織がある組織は消せない（いっしょに消す下の組織は数えない）
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("ORG_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, organisationDelete(actor, m));
 }

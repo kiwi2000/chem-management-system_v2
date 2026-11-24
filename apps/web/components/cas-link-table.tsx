@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type {
@@ -110,6 +111,7 @@ export function CasLinkTable({
   onAgainstChange: (id: string | null) => void;
 }) {
   const { m, locale } = useI18n();
+  const removeRows = useStampedDelete();
   const { can } = useMe();
   const [data, setData] = useState<{
     items: Row[];
@@ -566,15 +568,16 @@ export function CasLinkTable({
 
   async function onDeleteSelected(targets: Row[]) {
     setError(null);
+    // 全部か、何もしないか。ほかの人の変更・消せない理由は use-stamped-delete.ts が知らせる
+    const result = await removeRows(
+      "/api/statutory-cas-links",
+      targets.map((r) => ({ id: r.id, stamp: r.stamp, label: r.casNumber })),
+    );
+    if (result.error) setError(result.error);
     for (const r of targets) {
-      const res = await fetch(`/api/statutory-cas-links/${r.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
+      if (result.deletedIds.includes(r.id)) {
+        if (editingId === r.id) setEditingId(null);
       }
-      if (editingId === r.id) setEditingId(null);
     }
     setReloadTick((n) => n + 1);
   }

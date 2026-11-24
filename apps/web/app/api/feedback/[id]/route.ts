@@ -91,28 +91,3 @@ export async function PUT(req: Request, { params }: Ctx) {
   });
   return Response.json({ ok: true, stamp: rowStamp(after) });
 }
-
-/** DELETE /api/feedback/[id] — 論理削除 */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("FEEDBACK_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.feedback.findFirst({ where: { id, deletedAt: null } });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-
-  await prisma.feedback.update({
-    where: { id },
-    data: { deletedAt: new Date(), updatedBy: actor.user.id },
-  });
-
-  await writeAudit({
-    entity: "feedbacks",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { title: existing.title },
-  });
-  return Response.json({ ok: true });
-}

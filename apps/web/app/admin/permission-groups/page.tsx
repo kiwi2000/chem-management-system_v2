@@ -11,6 +11,7 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, PermissionGroupListItemDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
 
@@ -97,6 +98,7 @@ export default function PermissionGroupsPage() {
   );
   const [data, setData] = useState<ListResponse<PermissionGroupListItemDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const removeRows = useStampedDelete();
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
   const load = useCallback(async () => {
@@ -119,16 +121,12 @@ export default function PermissionGroupsPage() {
   /** 確認は共通テーブル側で出す。消せないもの（人・データがある）はサーバーが断り、その理由を出す */
   async function onDeleteSelected(targets: PermissionGroupListItemDto[]) {
     setError(null);
-    const failed: string[] = [];
-    for (const g of targets) {
-      const res = await fetch(`/api/admin/permission-groups/${g.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        failed.push(body?.error.message ?? m.errors.deleteFailed);
-      }
-    }
-    if (failed.length > 0) setError(failed.join("\n"));
+    // 全部か、何もしないか。消せないものがあれば、その理由を並べて何も消さない（use-stamped-delete.ts）
+    const r = await removeRows(
+      "/api/admin/permission-groups",
+      targets.map((g) => ({ id: g.id, stamp: g.stamp, label: g.code })),
+    );
+    if (r.error) setError(r.error);
     void load();
   }
 

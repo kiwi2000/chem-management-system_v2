@@ -25,6 +25,7 @@ import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { Input } from "@/components/ui/input";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
@@ -108,6 +109,7 @@ export function StatutorySubstanceSection({
   const ask = useConfirm();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
+  const removeRows = useStampedDelete();
 
   const [classes, setClasses] = useState<RegulationClassDto[]>([]);
   const [activeClassId, setActiveClassId] = useState<string | null>(null);
@@ -463,26 +465,31 @@ export function StatutorySubstanceSection({
 
     setError(null);
     if (!force) setClassStale(null);
-    const res = await fetch(
-      `/api/regulation-classes/${classDraft.id}`,
-      last
-        ? {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              code: target.code,
-              categoryId: category.id,
-              nameOriginal: null,
-              nameLang: null,
-              nameJa: null,
-              nameEn: null,
-              displayOrder: target.displayOrder,
-              stamp: target.stamp,
-              force: force || undefined,
-            }),
-          }
-        : { method: "DELETE" },
-    );
+    // 最後の 1 つでなければ消す（ほかの人の変更の確かめは use-stamped-delete.ts が出す）
+    if (!last) {
+      const r = await removeRows("/api/regulation-classes", [
+        { id: target.id, stamp: target.stamp, label: label || target.code },
+      ]);
+      if (r.error) setError(r.error);
+      if (r.deletedIds.length > 0) setClassDraft(null);
+      await reloadClasses();
+      return;
+    }
+    const res = await fetch(`/api/regulation-classes/${classDraft.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: target.code,
+        categoryId: category.id,
+        nameOriginal: null,
+        nameLang: null,
+        nameJa: null,
+        nameEn: null,
+        displayOrder: target.displayOrder,
+        stamp: target.stamp,
+        force: force || undefined,
+      }),
+    });
     // 受け皿に戻す書き換えを、ほかの人の変更の上に重ねないための知らせ
     const staleInfo = await readStaleEdit(res);
     if (staleInfo) {
@@ -592,18 +599,15 @@ export function StatutorySubstanceSection({
     }
   }
 
+  /** 確認は共通テーブル側で出す。ここは消す処理だけ（全部か、何もしないか。use-stamped-delete.ts） */
   async function onDeleteSelected(targets: StatutorySubstanceDto[]) {
     setError(null);
-    for (const s of targets) {
-      const res = await fetch(`/api/statutory-substances/${s.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-      if (editingId === s.id) setEditingId(null);
-    }
+    const r = await removeRows(
+      "/api/statutory-substances",
+      targets.map((s) => ({ id: s.id, stamp: s.stamp, label: s.code })),
+    );
+    if (r.error) setError(r.error);
+    if (editingId && r.deletedIds.includes(editingId)) setEditingId(null);
     void load();
     void reloadClasses();
   }

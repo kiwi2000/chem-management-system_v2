@@ -340,9 +340,33 @@ export function CompositionEditor({
     setStarting(true);
     setErrors([]);
     try {
-      const res = await fetch(`/api/products/${productId}/composition/pre-reaction`, {
-        method: "DELETE",
-      });
+      // 開いたときの組成の印を添える（ほかの人が直したばかりの反応後の組成を、黙って捨てない）
+      let force = false;
+      let res: Response;
+      for (;;) {
+        res = await fetch(`/api/products/${productId}/composition/pre-reaction`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stamp: stamp ?? "", force: force || undefined }),
+        });
+        const staleInfo = force ? null : await readStaleEdit(res);
+        if (!staleInfo) break;
+        const go = await ask({
+          title: m.errors.staleEdit,
+          message: m.errors.staleEditDetail(
+            staleInfo.byName ?? m.errors.staleEditSomeone,
+            staleInfo.at ? new Date(staleInfo.at).toLocaleString(locale) : "-",
+          ),
+          confirmLabel: m.composition.postReaction.undoLabel,
+          cancelLabel: m.errors.staleDeleteCancel,
+          destructive: true,
+        });
+        if (!go) {
+          await load();
+          return;
+        }
+        force = true;
+      }
       if (!res.ok) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;

@@ -3,6 +3,8 @@ import { writeAudit } from "@/lib/audit";
 import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
+import { feedbackCommentDelete } from "@/lib/feedback-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
 
 export const dynamic = "force-dynamic";
 
@@ -61,4 +63,16 @@ export async function POST(req: Request, { params }: Ctx) {
     diff: { feedbackId: id, parentId: v.parentId },
   });
   return Response.json({ id: created.id }, { status: 201 });
+}
+
+/**
+ * DELETE /api/feedback/[id]/comments — 返信を消す（論理削除。lib/stamped-delete.ts）。
+ * 書いた本人か管理者だけ。返信は直せないので、書き損じはこれで消して書き直す
+ */
+export async function DELETE(req: Request, { params }: Ctx) {
+  const actor = await requirePermission("FEEDBACK_EDIT");
+  if (actor instanceof Response) return actor;
+  const { id } = await params;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, feedbackCommentDelete(actor, m, id));
 }

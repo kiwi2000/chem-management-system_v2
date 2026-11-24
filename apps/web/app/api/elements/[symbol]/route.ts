@@ -4,6 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, STAMP_SELECT, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -38,21 +39,28 @@ export async function PUT(req: Request, { params }: Ctx) {
   if (lock instanceof Response) return lock;
   if (v.symbol !== symbol) return jsonError(409, "immutable", m.elements.duplicateSymbol(v.symbol));
 
-  if (v.atomicNumber !== existing.atomicNumber) {
-    const clash = await prisma.element.findUnique({ where: { atomicNumber: v.atomicNumber } });
-    if (clash) return jsonError(409, "duplicate", m.elements.duplicateNumber(v.atomicNumber));
-  }
+  const clash = async () => {
+    if (v.atomicNumber === existing.atomicNumber) return null;
+    const other = await prisma.element.findUnique({ where: { atomicNumber: v.atomicNumber } });
+    return other ? jsonError(409, "duplicate", m.elements.duplicateNumber(v.atomicNumber)) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している
-  const hit = await prisma.element.updateMany({
-    where: { symbol, ...stampWhere(lock) },
-    data: {
-      atomicNumber: v.atomicNumber,
-      nameJa: v.nameJa,
-      nameEn: v.nameEn,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 印が合う行だけを更新する。当たらなければ、ほかの人が先に保存している。
+  // 同じ番号へほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const hit = await guardUnique(m, clash, () =>
+    prisma.element.updateMany({
+      where: { symbol, ...stampWhere(lock) },
+      data: {
+        atomicNumber: v.atomicNumber,
+        nameJa: v.nameJa,
+        nameEn: v.nameEn,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (hit instanceof Response) return hit;
   if (hit.count === 0) {
     return staleFromRow(
       m,
@@ -72,38 +80,4 @@ export async function PUT(req: Request, { params }: Ctx) {
     select: { updatedAt: true },
   });
   return Response.json({ ok: true, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/elements/[symbol] — 論理削除。
- * 換算係数から使われているものは消せない。引けなくなると寄与が0になり、
- * 「非該当」と黙って出てしまうため。
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("REGULATION_EDIT");
-  if (actor instanceof Response) return actor;
-  const { symbol } = await params;
-  const m = await getServerMessages();
-
-  const existing = await prisma.element.findUnique({ where: { symbol } });
-  if (!existing) return jsonError(404, "not_found", m.errors.notFound);
-
-  const used = await prisma.metalConversionFactor.count({
-    where: { metalElement: symbol, deletedAt: null },
-  });
-  if (used > 0) return jsonError(409, "referenced", m.elements.inUse(used));
-
-  await prisma.element.update({
-    where: { symbol },
-    data: { deletedAt: new Date(), updatedBy: actor.user.id },
-  });
-
-  await writeAudit({
-    entity: "elements",
-    entityId: symbol,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { symbol, nameJa: existing.nameJa },
-  });
-  return Response.json({ ok: true });
 }

@@ -4,6 +4,9 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { getServerMessages } from "@/lib/i18n";
 import { toLinkVersionSourceDto } from "@/lib/link-service";
+import { linkVersionSourceDelete } from "@/lib/link-version-source-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { isUniqueViolation } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -73,27 +76,45 @@ export async function POST(req: Request) {
   ]);
   if (!version || !source) return jsonError(404, "not_found", m.errors.notFound);
 
-  const dup = await prisma.linkVersionSource.findFirst({
-    where: { versionId: v.versionId, sourceId: v.sourceId },
-  });
-  if (dup) return jsonError(409, "duplicate", m.dataSources.duplicate);
+  const clash = async () => {
+    const dup = await prisma.linkVersionSource.findFirst({
+      where: { versionId: v.versionId, sourceId: v.sourceId },
+    });
+    return dup ? jsonError(409, "duplicate", m.dataSources.duplicate) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const last = await prisma.linkVersionSource.findFirst({
-    where: { versionId: v.versionId },
-    orderBy: { priority: "desc" },
-    select: { priority: true },
-  });
-
-  const created = await prisma.linkVersionSource.create({
-    data: {
-      versionId: v.versionId,
-      sourceId: v.sourceId,
-      note: v.note ?? null,
-      priority: (last?.priority ?? 0) + 1,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-  });
+  /*
+    優先順位は最大＋1。一意の決まりは 2 つある（版 × データソース、版 × 優先順位）。
+    同じデータソースをほぼ同時に足されたら、いつもの文で返す。別のデータソースが同時に足されて
+    優先順位だけが重なったときは、取り直してもう一度書く
+  */
+  let created: { id: string } | null = null;
+  for (let attempt = 0; attempt < 5 && !created; attempt++) {
+    const last = await prisma.linkVersionSource.findFirst({
+      where: { versionId: v.versionId },
+      orderBy: { priority: "desc" },
+      select: { priority: true },
+    });
+    try {
+      created = await prisma.linkVersionSource.create({
+        data: {
+          versionId: v.versionId,
+          sourceId: v.sourceId,
+          note: v.note ?? null,
+          priority: (last?.priority ?? 0) + 1,
+          createdBy: actor.user.id,
+          updatedBy: actor.user.id,
+        },
+      });
+    } catch (e) {
+      if (!isUniqueViolation(e)) throw e;
+      const again = await clash();
+      if (again) return again;
+    }
+  }
+  if (!created) return jsonError(409, "duplicate_value", m.errors.duplicateValue);
 
   await writeAudit({
     entity: "link_version_sources",
@@ -103,4 +124,15 @@ export async function POST(req: Request) {
     diff: { version: version.code, source: source.code },
   });
   return Response.json({ id: created.id, warnings: [] }, { status: 201 });
+}
+
+/**
+ * DELETE /api/link-version-sources — まとめて削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * バージョンに並べたデータソース。一覧を開いたあとでほかの人が変更していれば、何も消さずに知らせる
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, linkVersionSourceDelete(actor, m));
 }

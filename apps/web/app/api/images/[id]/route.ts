@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { writeAudit } from "@/lib/audit";
 import { jsonError, requireAnyPermission, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, staleFromRow, stampWhere } from "@/lib/edit-stamp";
@@ -91,30 +90,4 @@ export async function PUT(req: Request, { params }: Ctx) {
   const row = await prisma.imageAsset.findUniqueOrThrow({ where: { id }, select: IMAGE_SELECT });
   const used = await usageOf([id]);
   return Response.json(toImageDto(row, used.get(id) ?? []));
-}
-
-/**
- * DELETE /api/images/[id] — 消す。
- * **テンプレートで使っている画像は消せない**（紙面に穴が空く）。先にテンプレートから外してもらう
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("DOC_TEMPLATE_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const row = await prisma.imageAsset.findUnique({ where: { id }, select: { name: true } });
-  if (!row) return jsonError(404, "not_found", m.errors.notFound);
-  const used = ((await usageOf([id])).get(id) ?? []).length;
-  if (used > 0) return jsonError(409, "in_use", m.images.inUse(used));
-
-  await prisma.imageAsset.delete({ where: { id } });
-  await writeAudit({
-    entity: "image_assets",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { name: row.name },
-  });
-  return Response.json({ ok: true });
 }

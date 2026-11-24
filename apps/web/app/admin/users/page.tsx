@@ -15,6 +15,7 @@ import { useOrganisations } from "@/lib/use-organisations";
 import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
 import { flattenOrgTree } from "@/lib/org-tree";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 
 /**
  * 既定はメールアドレス順・有効な人だけ（S31 画面設計）。
@@ -164,6 +165,7 @@ export default function UsersPage() {
 
   const [data, setData] = useState<ListResponse<UserSummaryDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const removeRows = useStampedDelete();
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
@@ -184,18 +186,17 @@ export default function UsersPage() {
     if (ready) void load();
   }, [ready, load]);
 
-  /** 確認は共通テーブル側で出す。自分自身や最後の管理者はサーバーが弾く */
+  /**
+   * 確認は共通テーブル側で出す。自分自身や最後の管理者はサーバーが弾く。
+   * 全部か、何もしないか（components/use-stamped-delete.ts）
+   */
   async function onDeleteSelected(targets: UserSummaryDto[]) {
     setError(null);
-    for (const u of targets) {
-      const res = await fetch(`/api/admin/users/${u.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-    }
+    const r = await removeRows(
+      "/api/admin/users",
+      targets.map((u) => ({ id: u.id, stamp: u.stamp, label: u.email })),
+    );
+    if (r.error) setError(r.error);
     void load();
   }
 

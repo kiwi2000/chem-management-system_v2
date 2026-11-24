@@ -4,6 +4,7 @@ import { pickName } from "@chem/shared";
 import { Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ const CELL_INPUT = "h-7 w-full text-sm";
 export function LanguageSection() {
   const { m, locale } = useI18n();
   const ask = useConfirm();
+  const removeRows = useStampedDelete();
 
   const [items, setItems] = useState<LanguageDto[] | null>(null);
   /** 表を包む箱と、その高さの上限（px）。見出しと最初の 7 行を実際に測って決める */
@@ -155,14 +157,10 @@ export function LanguageSection() {
     const label = pickName(locale, l.nameJa, l.nameEn);
     if (!(await ask({ message: m.regions.deleteConfirm(label), destructive: true }))) return;
     setError(null);
-    const res = await fetch(`/api/languages/${l.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      if (redirectIfUnauthorized(res)) return;
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      setError(body?.error.message ?? m.errors.deleteFailed);
-      return;
-    }
-    if (editingId === l.id) stopEdit();
+    // ほかの人の変更・消せない理由は use-stamped-delete.ts が知らせる
+    const r = await removeRows("/api/languages", [{ id: l.id, stamp: l.stamp, label }]);
+    if (r.error) setError(r.error);
+    if (r.deletedIds.includes(l.id) && editingId === l.id) stopEdit();
     void load();
   }
 

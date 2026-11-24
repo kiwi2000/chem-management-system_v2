@@ -86,27 +86,3 @@ export async function PUT(req: Request, { params }: Ctx) {
   });
   return Response.json({ item: toMeasuredDto(updated, await updaterNames([updated])) });
 }
-
-/** DELETE /api/prtr/entries/[id]/measured/[mid] — 行を消す。確定中は断る */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("PRTR_ENTRY");
-  if (actor instanceof Response) return actor;
-  const { id, mid } = await params;
-  const m = await getServerMessages();
-
-  const row = await load(id, mid);
-  if (!row) return jsonError(404, "not_found", m.errors.notFound);
-  const denied = await requirePrtrOrg(actor, row.entry.organisationId);
-  if (denied) return denied;
-  if (await isConfirmed(id)) return jsonError(409, "confirmed", m.prtr.locked);
-
-  await prisma.prtrMeasured.delete({ where: { id: mid } });
-  await writeAudit({
-    entity: "prtr_measured",
-    entityId: mid,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { statutorySubstanceId: row.statutorySubstanceId },
-  });
-  return Response.json({ id: mid });
-}

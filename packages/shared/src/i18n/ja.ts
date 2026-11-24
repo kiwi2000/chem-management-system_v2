@@ -2539,6 +2539,24 @@ export const ja = {
     staleEditSomeone: "ほかの利用者",
     stampRequired:
       "この画面は古い作りのため保存できません。画面を読み直してください（直らないときはシステム管理者へ）",
+    /** 削除の食い違い（2026-11-24 指示。一覧を開いたあとでほかの人が変更したものは、確かめてから消す） */
+    staleDeleteTitle: "ほかの人が変更しています",
+    staleDelete: (lines: string) =>
+      `次のものは、一覧を開いたあとでほかの人が変更しています。\n${lines}\n\n「このまま削除する」を押すと、選んだものを全部削除します。「やめる」を押すと、何も削除せずに一覧を読み直します。`,
+    staleDeleteLine: (label: string, who: string, at: string) => `・${label}（${who}、${at}）`,
+    staleDeleteForce: "このまま削除する",
+    staleDeleteCancel: "やめる",
+    /** 消してあるものを消そうとしたとき */
+    alreadyDeleted: "すでに削除されています",
+    alreadyDeletedSome: (lines: string) =>
+      `次のものは、すでに削除されていました。ほかのものは削除しました。\n${lines}`,
+    alreadyDeletedLine: (label: string) => `・${label}`,
+    alreadyDeletedAll: (lines: string) => `次のものは、すでに削除されています。\n${lines}`,
+    /** まとめて消すとき、消せないものが 1 つでもあれば何も消さない */
+    deleteRefused: (lines: string) => `次の理由で削除できません。何も削除していません。\n${lines}`,
+    deleteRefusedLine: (label: string, reason: string) => `・${label}: ${reason}`,
+    /** 同じものを 2 人がほぼ同時に作ったとき、後の人の保存は一意の決まりで止まる */
+    duplicateValue: "同じ値のデータがすでにあります。入力を見直してください",
     publishStateMismatch: (states: string) => `${states}のものは、この操作の対象になりません`,
     pendingResolutionRequired: "承認待のものが残っています。扱いを選んでください",
     approvalRequired: "この種類のデータは承認が必要です",
@@ -2776,6 +2794,9 @@ export const ja = {
     factorSaved: "排出係数を保存しました",
     note: "備考",
     headerSaved: "保存しました",
+    /** 同じ組織・年度の頭を、ほかの人がほぼ同時に作っていたとき（2026-11-24 利用者が決めた文） */
+    entryExists: (organisation: string, year: number) =>
+      `${organisation} ${year} 年度のデータは既に存在します。再読み込みしてください。`,
     /** 集計が確定していて、入力を変えられない */
     locked:
       "排出量集計が確定しているので、入力は変えられません。直すときは集計の「未確定に戻す」を押してください",

@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { firstError, toFieldErrors, type FieldErrors } from "@/lib/field-errors";
 import { useI18n } from "@/lib/i18n-client";
@@ -772,6 +773,7 @@ function QuantitySection({
   onChanged: () => Promise<void>;
 }) {
   const { m, locale } = useI18n();
+  const removeRows = useStampedDelete();
   const t = m.prtr.quantities;
   const [data, setData] = useState<ListResponse<PrtrQuantityDto> | null>(null);
   // stamp は直している行の楽観的ロックの印（lib/edit-stamp.ts）。足すときは空
@@ -1014,17 +1016,12 @@ function QuantitySection({
 
   async function removeSelected(selected: PrtrQuantityDto[]) {
     setError(null);
-    for (const q of selected) {
-      const res = await fetch(`/api/prtr/entries/${entryId}/quantities/${q.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-    }
+    // 全部か、何もしないか（use-stamped-delete.ts）
+    const r = await removeRows(
+      `/api/prtr/entries/${entryId}/quantities`,
+      selected.map((q) => ({ id: q.id, stamp: q.stamp, label: q.productCode })),
+    );
+    if (r.error) setError(r.error);
     await changed();
   }
 
@@ -1276,6 +1273,7 @@ function MeasuredSection({
   onChanged: () => Promise<void>;
 }) {
   const { m, locale } = useI18n();
+  const removeRows = useStampedDelete();
   const t = m.prtr.measured;
   const [data, setData] = useState<ListResponse<PrtrMeasuredDto> | null>(null);
   // stamp は直している行の楽観的ロックの印（lib/edit-stamp.ts）。足すときは空
@@ -1526,17 +1524,16 @@ function MeasuredSection({
 
   async function removeSelected(selected: PrtrMeasuredDto[]) {
     setError(null);
-    for (const x of selected) {
-      const res = await fetch(`/api/prtr/entries/${entryId}/measured/${x.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-    }
+    // 全部か、何もしないか（use-stamped-delete.ts）
+    const r = await removeRows(
+      `/api/prtr/entries/${entryId}/measured`,
+      selected.map((x) => ({
+        id: x.id,
+        stamp: x.stamp,
+        label: x.substanceCode ?? x.statutoryNameJa ?? x.statutoryNameOriginal,
+      })),
+    );
+    if (r.error) setError(r.error);
     await changed();
   }
 

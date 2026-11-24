@@ -11,6 +11,9 @@ import { getServerMessages } from "@/lib/i18n";
 import { asOfDate, ensureCurrentVersion, toLinkSetVersionDto } from "@/lib/link-service";
 import { LINK_VERSION_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { linkVersionDelete } from "@/lib/link-version-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -74,21 +77,31 @@ export async function POST(req: Request) {
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
 
-  const live = await prisma.linkSetVersion.findFirst({
-    where: { codeNormalized, deletedAt: null },
-  });
-  if (live) return jsonError(409, "duplicate_version_code", m.linkVersions.duplicateCode(v.code));
+  const clash = async () => {
+    const live = await prisma.linkSetVersion.findFirst({
+      where: { codeNormalized, deletedAt: null },
+    });
+    return live
+      ? jsonError(409, "duplicate_version_code", m.linkVersions.duplicateCode(v.code))
+      : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const created = await prisma.linkSetVersion.create({
-    data: {
-      code: v.code,
-      codeNormalized,
-      // 基準日。省かれたら今日
-      asOf: asOfDate(v.asOf),
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.linkSetVersion.create({
+      data: {
+        code: v.code,
+        codeNormalized,
+        // 基準日。省かれたら今日
+        asOf: asOfDate(v.asOf),
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+    }),
+  );
+  if (created instanceof Response) return created;
 
   // 1件目なら自動で現在になる。指定が無ければ、基準日がより新しいものへ移る
   await ensureCurrentVersion(actor.user.id);
@@ -101,4 +114,15 @@ export async function POST(req: Request) {
     diff: { code: v.code },
   });
   return Response.json({ id: created.id, warnings: [] }, { status: 201 });
+}
+
+/**
+ * DELETE /api/link-versions — まとめて削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 法規制データのバージョン。一覧を開いたあとでほかの人が変更していれば、何も消さずに知らせる
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, linkVersionDelete(actor, m));
 }

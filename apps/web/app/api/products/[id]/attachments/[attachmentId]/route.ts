@@ -97,27 +97,3 @@ export async function PUT(req: Request, { params }: Ctx) {
   const [dto] = await toAttachmentDtos([updated]);
   return Response.json(dto);
 }
-
-/** DELETE — 消す（元に戻せない） */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const { id, attachmentId } = await params;
-  const got = await editable(id, attachmentId);
-  if ("error" in got) return got.error;
-  const { actor, product, row } = got;
-
-  await prisma.productAttachment.delete({ where: { id: row.id } });
-  await writeAudit({
-    entity: "product_attachment",
-    entityId: row.id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: {
-      productId: id,
-      productCode: product.code,
-      title: row.title,
-      fileName: row.fileName,
-      size: row.size,
-    },
-  });
-  return Response.json({ ok: true });
-}

@@ -4,6 +4,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -56,37 +57,46 @@ export async function POST(req: Request, { params }: Ctx) {
   const input = parsed.data;
 
   let code = input.code?.trim() ?? "";
-  if (code) {
+  const clash = async () => {
     const dup = await prisma.documentTemplate.findUnique({
       where: { codeNormalized: normalizeCode(code) },
     });
-    if (dup) return jsonError(409, "duplicate_code", m.docTemplates.duplicateCode(code));
+    return dup ? jsonError(409, "duplicate_code", m.docTemplates.duplicateCode(code)) : null;
+  };
+  if (code) {
+    const clashed = await clash();
+    if (clashed) return clashed;
   } else {
     code = await freeCopyCode(src.code);
   }
 
-  const row = await prisma.documentTemplate.create({
-    data: {
-      code,
-      codeNormalized: normalizeCode(code),
-      nameJa: input.nameJa,
-      // 英語名は聞かない。あれば「(copy)」を添えて、元と見分けがつくようにする
-      nameEn: src.nameEn ? `${src.nameEn} (copy)` : null,
-      target: src.target,
-      kind: src.kind,
-      content: src.content as object,
-      fileData: src.fileData,
-      fileName: src.fileName,
-      fileUpdatedAt: src.fileUpdatedAt,
-      locale: src.locale,
-      active: src.active,
-      usesRecipient: src.usesRecipient,
-      note: src.note,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-    },
-    select: DOC_TEMPLATE_SELECT,
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  // （空いている番号を自動で付けたときも同じ。その番号が「既に使われています」と出る）
+  const row = await guardUnique(m, clash, () =>
+    prisma.documentTemplate.create({
+      data: {
+        code,
+        codeNormalized: normalizeCode(code),
+        nameJa: input.nameJa,
+        // 英語名は聞かない。あれば「(copy)」を添えて、元と見分けがつくようにする
+        nameEn: src.nameEn ? `${src.nameEn} (copy)` : null,
+        target: src.target,
+        kind: src.kind,
+        content: src.content as object,
+        fileData: src.fileData,
+        fileName: src.fileName,
+        fileUpdatedAt: src.fileUpdatedAt,
+        locale: src.locale,
+        active: src.active,
+        usesRecipient: src.usesRecipient,
+        note: src.note,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+      },
+      select: DOC_TEMPLATE_SELECT,
+    }),
+  );
+  if (row instanceof Response) return row;
   await writeAudit({
     entity: "document_templates",
     entityId: row.id,

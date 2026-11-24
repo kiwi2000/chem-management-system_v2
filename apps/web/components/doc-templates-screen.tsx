@@ -17,6 +17,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { Input } from "@/components/ui/input";
 import { StaleEditNotice } from "@/components/stale-edit-notice";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
@@ -94,6 +95,7 @@ const columnKinds = [
 export function DocTemplatesScreen() {
   const { m, locale } = useI18n();
   const { can } = useMe();
+  const removeRows = useStampedDelete();
   const editable = can("DOC_TEMPLATE_EDIT");
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -208,15 +210,12 @@ export function DocTemplatesScreen() {
 
   async function onDeleteSelected(targets: DocumentTemplateDto[]) {
     setError(null);
-    for (const t of targets) {
-      const res = await fetch(`/api/doc-templates/${t.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-    }
+    // 全部か、何もしないか（use-stamped-delete.ts）
+    const r = await removeRows(
+      "/api/doc-templates",
+      targets.map((t) => ({ id: t.id, stamp: t.stamp, label: t.code })),
+    );
+    if (r.error) setError(r.error);
     void load();
   }
 

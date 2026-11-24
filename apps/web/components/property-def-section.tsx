@@ -25,6 +25,7 @@ import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, ListResponse, PropertyDefDto, PropertyOptionDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 
 /** 用途は節ごとに固定なので、並びは表示順だけでよい */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
@@ -96,6 +97,7 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
   );
   const [form, setForm] = useState({ ...emptyForm });
   const [error, setError] = useState<string | null>(null);
+  const removeRows = useStampedDelete();
   /** ほかの人が先に保存していた知らせ */
   const [stale, setStale] = useState<StaleEditInfo | null>(null);
   const [saving, setSaving] = useState(false);
@@ -284,21 +286,23 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
   /** 確認は共通テーブル側で出す（入力済みの値も消える点は画面の説明で伝える） */
   async function onDeleteSelected(targets: PropertyDefDto[]) {
     setError(null);
-    // システムの項目は消せない（サーバーも断る）。ほかの項目だけ消して、そのことを知らせる
+    // システムの項目は消せない（サーバーも断る）。まとめて消すときは全部か何もしないかなので、
+    // 1 つでも混ざっていれば何も消さずに知らせる
     const locked = targets.find((d) => d.systemFlag);
     if (locked) {
       setError(m.propertyDefs.systemCannotDelete(pickName(locale, locked.labelJa, locked.labelEn)));
+      return;
     }
-    for (const d of targets.filter((x) => !x.systemFlag)) {
-      const res = await fetch(`/api/admin/property-defs/${d.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
-      }
-      if (form.id === d.id) setForm({ ...emptyForm });
-    }
+    const r = await removeRows(
+      "/api/admin/property-defs",
+      targets.map((d) => ({
+        id: d.id,
+        stamp: d.stamp,
+        label: pickName(locale, d.labelJa, d.labelEn),
+      })),
+    );
+    if (r.error) setError(r.error);
+    if (r.deletedIds.includes(form.id ?? "")) setForm({ ...emptyForm });
     void load();
   }
 

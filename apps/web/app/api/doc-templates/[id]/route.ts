@@ -8,6 +8,7 @@ import { STAMP_SELECT, parseEditStamp, staleFromRow, stampWhere } from "@/lib/ed
 import { orgItemLabels } from "@/lib/organisation-service";
 import { DOC_TEMPLATE_SELECT, toDocTemplateDto } from "@/lib/doc-template-service";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -126,24 +127,33 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
   const input = parsed.data;
   const codeNormalized = normalizeCode(input.code);
-  const dup = await prisma.documentTemplate.findUnique({ where: { codeNormalized } });
-  if (dup && dup.id !== id) {
-    return jsonError(409, "duplicate_code", m.docTemplates.duplicateCode(input.code));
-  }
+  // 自分自身とは重ならない
+  const clash = async () => {
+    const dup = await prisma.documentTemplate.findUnique({ where: { codeNormalized } });
+    return dup && dup.id !== id
+      ? jsonError(409, "duplicate_code", m.docTemplates.duplicateCode(input.code))
+      : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
-  const row = await updateIfFresh({
-    code: input.code,
-    codeNormalized,
-    nameJa: input.nameJa,
-    nameEn: input.nameEn ?? null,
-    target: input.target,
-    kind: input.kind,
-    locale: input.locale,
-    active: input.active,
-    usesRecipient: input.usesRecipient,
-    note: input.note ?? null,
-    updatedBy: actor.user.id,
-  });
+  // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const row = await guardUnique(m, clash, () =>
+    updateIfFresh({
+      code: input.code,
+      codeNormalized,
+      nameJa: input.nameJa,
+      nameEn: input.nameEn ?? null,
+      target: input.target,
+      kind: input.kind,
+      locale: input.locale,
+      active: input.active,
+      usesRecipient: input.usesRecipient,
+      note: input.note ?? null,
+      updatedBy: actor.user.id,
+    }),
+  );
+  if (row instanceof Response) return row;
   if (!row) return stale();
   await writeAudit({
     entity: "document_templates",
@@ -153,35 +163,4 @@ export async function PATCH(req: Request, { params }: Ctx) {
     diff: { code: row.code, target: row.target },
   });
   return Response.json(toDocTemplateDto(row));
-}
-
-/**
- * DELETE /api/doc-templates/[id]。
- * **記録が残っているものも消せる。**生成の記録はテンプレートを指すが、
- * 消すのは印を付けるだけなので、記録から名前をたどれる状態は保たれる
- */
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const actor = await requirePermission("DOC_TEMPLATE_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await params;
-  const m = await getServerMessages();
-
-  const row = await prisma.documentTemplate.findFirst({
-    where: { id, deletedAt: null },
-    select: { id: true, code: true },
-  });
-  if (!row) return jsonError(404, "not_found", m.errors.notFound);
-
-  await prisma.documentTemplate.update({
-    where: { id },
-    data: { deletedAt: new Date(), updatedBy: actor.user.id },
-  });
-  await writeAudit({
-    entity: "document_templates",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: row.code },
-  });
-  return Response.json({ ok: true });
 }

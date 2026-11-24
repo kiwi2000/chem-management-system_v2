@@ -6,6 +6,9 @@ import { getServerMessages } from "@/lib/i18n";
 import { toSourceDto } from "@/lib/link-service";
 import { SOURCE_COLUMNS } from "@/lib/list-columns";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
+import { sourceDelete } from "@/lib/source-delete";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { guardUnique } from "@/lib/unique-violation";
 
 export const dynamic = "force-dynamic";
 
@@ -60,8 +63,12 @@ export async function POST(req: Request) {
   const v = parsed.data;
   const codeNormalized = normalizeCode(v.code);
 
-  const live = await prisma.source.findFirst({ where: { codeNormalized, deletedAt: null } });
-  if (live) return jsonError(409, "duplicate_source_code", m.sources.duplicateCode(v.code));
+  const clash = async () => {
+    const live = await prisma.source.findFirst({ where: { codeNormalized, deletedAt: null } });
+    return live ? jsonError(409, "duplicate_source_code", m.sources.duplicateCode(v.code)) : null;
+  };
+  const clashed = await clash();
+  if (clashed) return clashed;
 
   const data = {
     code: v.code,
@@ -76,21 +83,23 @@ export async function POST(req: Request) {
     orderBy: { deletedAt: "desc" },
   });
 
-  const warnings: string[] = [];
-  let id: string;
-  if (retired) {
-    await prisma.source.update({
-      where: { id: retired.id },
-      data: { ...data, codeNormalized, deletedAt: null },
-    });
-    id = retired.id;
-    warnings.push(m.sources.revived);
-  } else {
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const written = await guardUnique(m, clash, async () => {
+    if (retired) {
+      await prisma.source.update({
+        where: { id: retired.id },
+        data: { ...data, codeNormalized, deletedAt: null },
+      });
+      return { id: retired.id, revived: true };
+    }
     const created = await prisma.source.create({
       data: { ...data, codeNormalized, createdBy: actor.user.id },
     });
-    id = created.id;
-  }
+    return { id: created.id, revived: false };
+  });
+  if (written instanceof Response) return written;
+  const id = written.id;
+  const warnings: string[] = written.revived ? [m.sources.revived] : [];
 
   await writeAudit({
     entity: "sources",
@@ -100,4 +109,15 @@ export async function POST(req: Request) {
     diff: { code: v.code },
   });
   return Response.json({ id, warnings }, { status: 201 });
+}
+
+/**
+ * DELETE /api/sources — まとめて削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * データソース。一覧を開いたあとでほかの人が変更していれば、何も消さずに知らせる
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("REGULATION_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, sourceDelete(actor, m));
 }

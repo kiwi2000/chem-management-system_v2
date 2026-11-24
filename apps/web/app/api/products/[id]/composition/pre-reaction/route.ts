@@ -3,6 +3,7 @@ import { jsonError, requirePermission } from "@/lib/authz";
 import { aggregateComposition } from "@/lib/composition-aggregate";
 import { compositionEditDenial } from "@/lib/composition-service";
 import { prisma } from "@/lib/db";
+import { compositionStamp, parseEditStamp, staleResponse } from "@/lib/edit-stamp";
 import { recomputeFrom } from "@/lib/expansion-store";
 import { getServerMessages } from "@/lib/i18n";
 import { expansionRowsOf, postStartLines } from "@/lib/pre-reaction-refresh";
@@ -121,9 +122,12 @@ export async function POST(_req: Request, { params }: Ctx) {
  *
  * 写しを登録組成へ戻し、写しと印を消す。反応後に入れた内容は残らない（画面で確かめてから呼ぶ）。
  * 配合を直して反応後を作り直すときも、これで戻してから直し、もう一度「反応後の組成入力」を押す。
- * 展開結果は作り直す
+ * 展開結果は作り直す。
+ *
+ * **画面を開いたあとでほかの人が組成を直していたら、戻さずに知らせる**（本文 `{ stamp, force? }`。組成の印。lib/edit-stamp.ts）。
+ * 戻すと反応後の組成が消えるので、ほかの人が入れたばかりの内容を黙って捨てないため
  */
-export async function DELETE(_req: Request, { params }: Ctx) {
+export async function DELETE(req: Request, { params }: Ctx) {
   const actor = await requirePermission("PRODUCT_EDIT");
   if (actor instanceof Response) return actor;
   const { id } = await params;
@@ -136,6 +140,24 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   const denial = await compositionEditDenial(actor, product, m);
   if (denial) return denial;
   if (!product.preReactionAt) return jsonError(404, "not_found", m.errors.notFound);
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError(400, "invalid_json", m.errors.invalidJson);
+  }
+  const lock = parseEditStamp(body, m);
+  if (lock instanceof Response) return lock;
+  const before = await compositionStamp(id);
+  const stale = staleResponse(m, {
+    sent: lock.stamp,
+    now: before.stamp,
+    force: lock.force,
+    byName: before.byName,
+    at: before.at,
+  });
+  if (stale) return stale;
 
   const snapshot = await prisma.productPreReactionLine.findMany({
     where: { productId: id },

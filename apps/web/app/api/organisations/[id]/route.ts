@@ -4,6 +4,7 @@ import { jsonError, requirePermission, requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/db";
 import { parseEditStamp, rowStamp, StaleError, staleFromRow, stampWhere } from "@/lib/edit-stamp";
 import { getServerMessages } from "@/lib/i18n";
+import { guardUnique } from "@/lib/unique-violation";
 import {
   ORG_INCLUDE,
   toOrganisationDto,
@@ -56,12 +57,13 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
   }
   const current = await prisma.organisation.findFirst({ where: { id, deletedAt: null } });
   if (!current) return jsonError(404, "not_found", m.errors.notFound);
-  if (
+  const clash = async () =>
     v.code !== current.code &&
     (await prisma.organisation.findFirst({ where: { code: v.code, deletedAt: null } }))
-  ) {
-    return jsonError(409, "duplicate_code", m.organisations.duplicateCode(v.code));
-  }
+      ? jsonError(409, "duplicate_code", m.organisations.duplicateCode(v.code))
+      : null;
+  const clashed = await clash();
+  if (clashed) return clashed;
   if (!(await validParent(id, v.parentId ?? null))) {
     return jsonError(400, "validation_error", m.organisations.badParent, {
       fieldErrors: { parentId: [m.organisations.badParent] },
@@ -73,33 +75,37 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     画面で消した行がサーバーに残ると、消したはずのものが帳票に出る
   */
   try {
-    await prisma.$transaction(async (tx) => {
-      // 門番。印が合う行だけを更新し、当たらなければ（ほかの人が先に保存していれば）やめる
-      const gate = await tx.organisation.updateMany({
-        where: { id, ...stampWhere(lock) },
-        data: {
-          code: v.code,
-          // 種別と呼び名（2026-11-10 に保存していなかったのを直した）
-          kind: v.kind,
-          kindLabel: v.kind === "OTHER" ? (v.kindLabel ?? null) : null,
-          parentId: v.parentId ?? null,
-          nameJa: v.nameJa,
-          nameEn: v.nameEn ?? null,
-          displayOrder: v.displayOrder,
-          activeFlag: v.activeFlag,
-        },
-      });
-      if (gate.count === 0) throw new StaleError();
-      await tx.organisationItem.deleteMany({ where: { organisationId: id } });
-      await tx.organisationItem.createMany({
-        data: v.items.map((x, i) => ({
-          organisationId: id,
-          label: x.label,
-          value: x.value,
-          displayOrder: i,
-        })),
-      });
-    });
+    // 同じコードへほぼ同時に直されたら、一意の決まりで止まる。そのときもいつもの文で返す
+    const saved = await guardUnique(m, clash, () =>
+      prisma.$transaction(async (tx) => {
+        // 門番。印が合う行だけを更新し、当たらなければ（ほかの人が先に保存していれば）やめる
+        const gate = await tx.organisation.updateMany({
+          where: { id, ...stampWhere(lock) },
+          data: {
+            code: v.code,
+            // 種別と呼び名（2026-11-10 に保存していなかったのを直した）
+            kind: v.kind,
+            kindLabel: v.kind === "OTHER" ? (v.kindLabel ?? null) : null,
+            parentId: v.parentId ?? null,
+            nameJa: v.nameJa,
+            nameEn: v.nameEn ?? null,
+            displayOrder: v.displayOrder,
+            activeFlag: v.activeFlag,
+          },
+        });
+        if (gate.count === 0) throw new StaleError();
+        await tx.organisationItem.deleteMany({ where: { organisationId: id } });
+        await tx.organisationItem.createMany({
+          data: v.items.map((x, i) => ({
+            organisationId: id,
+            label: x.label,
+            value: x.value,
+            displayOrder: i,
+          })),
+        });
+      }),
+    );
+    if (saved instanceof Response) return saved;
   } catch (err) {
     if (err instanceof StaleError) {
       // 組織は更新者を持たないので、時刻だけ添える
@@ -126,38 +132,4 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     select: { updatedAt: true },
   });
   return Response.json({ ok: true, stamp: rowStamp(after) });
-}
-
-/**
- * DELETE /api/organisations/[id] — 消す（印だけ付ける）。
- * **人が属したままでは消せない。**帳票の差出人が黙って空になるため
- */
-export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const actor = await requirePermission("ORG_EDIT");
-  if (actor instanceof Response) return actor;
-  const { id } = await ctx.params;
-  const m = await getServerMessages();
-
-  const row = await prisma.organisation.findFirst({
-    where: { id, deletedAt: null },
-    include: { _count: { select: { members: true } } },
-  });
-  if (!row) return jsonError(404, "not_found", m.errors.notFound);
-  if (row._count.members > 0) {
-    return jsonError(409, "in_use", m.organisations.inUse(row._count.members));
-  }
-  // 下の組織がある組織は消せない（S31。先に下の組織を移すか消す）
-  if (await prisma.organisation.count({ where: { parentId: id, deletedAt: null } })) {
-    return jsonError(409, "in_use", m.owner.usedElsewhere);
-  }
-
-  await prisma.organisation.update({ where: { id }, data: { deletedAt: new Date() } });
-  await writeAudit({
-    entity: "organisations",
-    entityId: id,
-    action: "delete",
-    actorId: actor.user.id,
-    diff: { code: row.code, nameJa: row.nameJa },
-  });
-  return Response.json({ ok: true });
 }

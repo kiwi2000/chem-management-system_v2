@@ -7,6 +7,10 @@ import { getServerMessages } from "@/lib/i18n";
 import { resolveOwnerForCreate } from "@/lib/owner-group";
 import { SUBSTANCE_COLUMNS } from "@/lib/list-columns";
 import { listNumbersByCas } from "@/lib/substance-numbers";
+import { runStampedDelete } from "@/lib/stamped-delete";
+import { substanceCodeClash } from "@/lib/substance-code-clash";
+import { substanceDelete } from "@/lib/substance-delete";
+import { guardUnique } from "@/lib/unique-violation";
 import { buildOrderBy, buildWhere } from "@/lib/table-query";
 import {
   SUBSTANCE_LIST_INCLUDE,
@@ -115,41 +119,31 @@ export async function POST(req: Request) {
   const casError = validateCas(base.casNormalized, settings, m);
   if (casError) return jsonError(400, "validation_error", casError);
 
-  const clash = await prisma.substance.findUnique({
-    where: { codeNormalized: base.codeNormalized },
-    select: { id: true },
-  });
-  if (clash) {
-    // 見えないものと重なるときは理由を言わない（S31 仕様 7 章。見えないものの存在を知らせない）
-    const seen = await prisma.substance.count({
-      where: { id: clash.id, ...visibilityWhere(actor) },
-    });
-    return jsonError(
-      409,
-      "duplicate_code",
-      seen ? m.errors.duplicateCode(base.code) : m.owner.codeUnavailable,
-      {
-        fieldErrors: { code: [seen ? m.errors.duplicateCode(base.code) : m.owner.codeUnavailable] },
-      },
-    );
-  }
+  // 見えないものと重なるときは理由を言わない（S31 仕様 7 章。見えないものの存在を知らせない）
+  const clash = () => substanceCodeClash(actor, m, input, base);
+  const clashed = await clash();
+  if (clashed) return clashed;
 
   // 所属先（S31）。「物質 編集」の印を持つ管理グループから
   const owner = await resolveOwnerForCreate(actor, "substanceEdit", input.ownerGroupId);
   if (owner instanceof Response) return owner;
 
   const children = childWrites(input);
-  const created = await prisma.substance.create({
-    data: {
-      ...base,
-      ownerGroupId: owner,
-      createdBy: actor.user.id,
-      updatedBy: actor.user.id,
-      aliases: { create: children.aliases },
-      gazetteNumbers: { create: children.gazetteNumbers },
-      properties: { create: children.properties },
-    },
-  });
+  // 同じコードをほぼ同時に作られたら、一意の決まりで止まる。そのときもいつもの文で返す
+  const created = await guardUnique(m, clash, () =>
+    prisma.substance.create({
+      data: {
+        ...base,
+        ownerGroupId: owner,
+        createdBy: actor.user.id,
+        updatedBy: actor.user.id,
+        aliases: { create: children.aliases },
+        gazetteNumbers: { create: children.gazetteNumbers },
+        properties: { create: children.properties },
+      },
+    }),
+  );
+  if (created instanceof Response) return created;
 
   /*
    * 代表物質の割り当て。
@@ -188,4 +182,16 @@ export async function POST(req: Request) {
     base.impurityTypeId,
   );
   return Response.json({ id: created.id, warnings }, { status: 201 });
+}
+
+/**
+ * DELETE /api/substances — まとめて論理削除（本文 `{ items: [{ id, stamp }], force? }`。lib/stamped-delete.ts）。
+ * 正規化コードを退避して、同じコードを再登録できるようにする。
+ * 製品の組成で使われている物質は消せない（消すと組成が壊れるため）
+ */
+export async function DELETE(req: Request) {
+  const actor = await requirePermission("SUBSTANCE_EDIT");
+  if (actor instanceof Response) return actor;
+  const m = await getServerMessages();
+  return runStampedDelete(req, m, substanceDelete(actor, m));
 }

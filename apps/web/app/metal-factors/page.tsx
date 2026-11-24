@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useStampedDelete } from "@/components/use-stamped-delete";
 import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, ElementDto, ListResponse, MetalFactorDto } from "@/lib/types";
@@ -33,6 +34,7 @@ const EMPTY_FORM = { id: "", stamp: "", casNumber: "", metalElement: "", ratioPc
  */
 export default function MetalFactorsPage() {
   const { m, locale } = useI18n();
+  const removeRows = useStampedDelete();
   const { can } = useMe();
   const editable = can("REGULATION_EDIT");
 
@@ -202,15 +204,20 @@ export default function MetalFactorsPage() {
   /** 確認は共通テーブル側で出す。ここは消す処理だけ */
   async function onDeleteSelected(targets: MetalFactorDto[]) {
     setError(null);
+    // 全部か、何もしないか。ほかの人の変更・消せない理由は use-stamped-delete.ts が知らせる
+    const r = await removeRows(
+      "/api/metal-factors",
+      targets.map((f) => ({
+        id: f.id,
+        stamp: f.stamp,
+        label: `${f.casNumber} / ${f.metalElement}`,
+      })),
+    );
+    if (r.error) setError(r.error);
     for (const f of targets) {
-      const res = await fetch(`/api/metal-factors/${f.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (redirectIfUnauthorized(res)) return;
-        const body = (await res.json().catch(() => null)) as ApiError | null;
-        setError(body?.error.message ?? m.errors.deleteFailed);
-        break;
+      if (r.deletedIds.includes(f.id)) {
+        if (form.id === f.id) setForm({ ...EMPTY_FORM });
       }
-      if (form.id === f.id) setForm({ ...EMPTY_FORM });
     }
     void load();
   }
