@@ -144,7 +144,7 @@ v1（`../chem-management-system`）を、機能ごとに動作を確認しなが
   見つけ方: 4 系では型の確認（`npm run typecheck`）が拾う（grep は複数行の書き方を拾えない）。検証の部品を上げるときは、同じ入力を新旧に当てて、通る・通らないと文と値を比べる。**通る入力も作って当てる**（型の違う入力だけでは、できあがる値は比べられない）
 - **画面に出る文字列を直接書かない。** `packages/shared/src/i18n/ja.ts` にキーを足し、
   `en.ts` にも英語を入れる（入れ忘れはビルドで落ちる）。使い方は `docs/steps/S18_多言語UI基盤.md`
-- **導入先で動く作りは、3 つの入れ方（Railway・Docker・Windows Server）で確かめる。**2026-10-16 に次の 3 つが見つかった（`.dockerignore` に日本語を書くと Railway の組み立てが止まる件は `Dockerfile` の先頭。`lib/dockerignore-ascii.test.ts` が検出する）
+- **導入先で動く作りは、3 つの入れ方（Railway・Docker・Windows Server）で確かめる。**2026-10-16 に次の 3 つが見つかった（Railway へ送るものに日本語入りの `.dockerignore` が混ざると組み立てが止まる件は `Dockerfile` の先頭。`lib/dockerignore-ascii.test.ts` が検出する）
   - ファイルを書く場所は、更新で消えないこと（Windows は robocopy の `/XD`、Docker は保存領域）。
     見つけ方: `writeFile` / `mkdir` を grep し、書く先が `compose.prod.yml` の `volumes` と `update.ps1` の `/XD` に入っているか
   - 環境変数は `compose.prod.yml` の `environment` に書かないと Docker のアプリに届かない（`.env.prod` は compose の `${}` を埋めるだけ）。

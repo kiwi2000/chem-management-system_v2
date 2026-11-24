@@ -13,6 +13,8 @@ out
 **/out
 tools
 .cache
+# 作業用の写し（.claude/worktrees/）。中の日本語入りの .dockerignore が一緒に送られ、2026-11-24 に組み立てが止まった
+.claude
 temp
 scripts/data
 *.log

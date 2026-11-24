@@ -3,9 +3,12 @@
 #
 # イメージに含めないもの（機密・生成物・開発専用）は .dockerignore に並べる。
 # - /data は作った帳票の PDF の置き場所（実行時に書く。compose.prod.yml では保存領域 app-data）。apps/web/data は外さない
-# - **.dockerignore には注釈も含めて半角の英数字・記号だけを書く。**日本語の注釈があると、Railway の組み立てが
-#   「exclude-patterns contains value with non-printable ASCII characters」で止まる（2026-11-24。10 月から同じ注釈で
-#   通っていたのが、この日から止まった）。見つけ方: grep -nP '[^\x00-\x7F]' .dockerignore が 0 件であること
+# - **Railway へ送るものに、日本語入りの .dockerignore を混ぜない。**組み立てが「exclude-patterns contains value
+#   with non-printable ASCII characters」で止まる（2026-11-24。10 月から通っていたのが、この日から止まった）。
+#   送られていたのは、git の管理外にある作業用の写し .claude/worktrees/ の中の .dockerignore だった
+#   （.railwayignore に .claude を足して外した）。この .dockerignore も念のため半角だけで書く。
+#   見つけ方: 送る範囲（.gitignore・.railwayignore で外れないところ）に .dockerignore がほかに無いかを
+#   find . -name .dockerignore で見る。lib/dockerignore-ascii.test.ts が、この .dockerignore と .railwayignore を見張る
 
 # 土台は版まで書く（2026-10-22。「24 系の最新」の指定だと、ビルドする側が古い写しを使い回したときに
 # どの版で組まれたか外から分からない）。Node.js のセキュリティ更新が出たら、ここと
