@@ -1,4 +1,3 @@
-# イメージに含めないもの（機密・生成物・開発専用）
 node_modules
 **/node_modules
 .next
@@ -10,7 +9,6 @@ docs
 deploy
 out
 **/out
-# 作った帳票の PDF（実行時の置き場所。compose.prod.yml では保存領域 app-data）。apps/web/data は外さない
 /data
 *.log
 *.tsbuildinfo

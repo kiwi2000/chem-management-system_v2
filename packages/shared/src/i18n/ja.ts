@@ -1992,7 +1992,7 @@ export const ja = {
     kindSymbol: "記号",
     passwordSymbolChars: "記号とみなす文字",
     passwordSymbolCharsHint:
-      "ここに並べた文字だけを記号として数えます。空にすると、英数字と空白以外のすべてを記号として扱います",
+      "パスワードに使える記号です。英字・数字と、ここに並べた文字だけが使えます。記号を含めることを求めるときも、ここに並べた文字だけを数えます。空にすると、空白を除く半角の記号すべてが使えます（空白と全角の文字は使えません）",
     passwordSectionHint:
       "これから設定するパスワードにだけ効きます。いま使われているパスワードは、そのまま使えます",
     passwordMinLength: "最小の文字数",
@@ -3088,6 +3088,8 @@ export const ja = {
     passwordNeedsSymbol: "記号を1文字以上含めてください",
     passwordNeedsSymbolOf: (chars: string) => `記号（${chars}）を1文字以上含めてください`,
     passwordNeedsMixedCase: "英字の大文字と小文字を、それぞれ1文字以上含めてください",
+    passwordBadChars: (chars: string) => `パスワードに使えない文字（${chars}）が入っています`,
+    spaceChar: "空白",
     kindLetter: "英字",
     kindDigit: "数字",
     kindSymbol: "記号",

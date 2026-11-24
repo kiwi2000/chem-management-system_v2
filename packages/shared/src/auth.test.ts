@@ -46,6 +46,35 @@ describe("passwordSchema", () => {
       if (!r.success) expect(r.error.issues[0]?.message).toContain("!@#");
     });
   });
+
+  // 2026-11-24、`"` を入れたパスワードが設定できてしまい、本人が入れなかった
+  describe("使えない文字", () => {
+    const messages = (value: string, p: PasswordPolicy) => {
+      const r = check(value, p);
+      return r.success ? [] : r.error.issues.map((i) => i.message);
+    };
+
+    it("並べた記号に無い文字は、記号を求めないときも断り、その文字を示す", () => {
+      const p = policy({ passwordRequireSymbol: false });
+      expect(messages('abcdefgh1234"', p)).toEqual(['パスワードに使えない文字（"）が入っています']);
+      expect(check("abcdefgh1234!", p).success).toBe(true);
+    });
+
+    it("空白・全角の文字も断る。同じ文字は 1 回だけ示す", () => {
+      const p = policy();
+      expect(messages("abcd efgh 1234あ", p)).toEqual([
+        "パスワードに使えない文字（空白 あ）が入っています",
+      ]);
+      expect(check("ａｂｃｄｅｆｇｈ１２３４", p).success).toBe(false);
+    });
+
+    it("記号の欄が空なら、空白を除く半角の記号はすべて使える", () => {
+      const p = policy({ passwordSymbolChars: "" });
+      expect(check("abcdefgh1234\"'`~|\\<>", p).success).toBe(true);
+      expect(check("abcdefgh1234 ", p).success).toBe(false);
+      expect(check("abcdefgh1234！", p).success).toBe(false);
+    });
+  });
 });
 
 describe("describePasswordPolicy", () => {

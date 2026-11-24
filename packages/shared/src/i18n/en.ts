@@ -1889,7 +1889,7 @@ export const en: Messages = {
     kindSymbol: "Symbols",
     passwordSymbolChars: "Characters counted as symbols",
     passwordSymbolCharsHint:
-      "Only the characters listed here count as symbols. Leave it empty to count anything but letters, digits and spaces",
+      "The symbols a password may use. Only letters, digits and the characters listed here are allowed, and only these count when a symbol is required. Leave it empty to allow every half-width symbol except spaces (spaces and full-width characters are never allowed)",
     passwordSectionHint:
       "These apply only to passwords set from now on. Existing passwords keep working",
     passwordMinLength: "Minimum length",
@@ -2922,6 +2922,9 @@ export const en: Messages = {
     passwordNeedsSymbol: "Include at least one symbol",
     passwordNeedsSymbolOf: (chars: string) => `Include at least one of these symbols: ${chars}`,
     passwordNeedsMixedCase: "Include both upper and lower case letters",
+    passwordBadChars: (chars: string) =>
+      `The password contains characters that cannot be used: ${chars}`,
+    spaceChar: "space",
     kindLetter: "letters",
     kindDigit: "digits",
     kindSymbol: "symbols",

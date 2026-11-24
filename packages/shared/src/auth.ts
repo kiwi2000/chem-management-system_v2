@@ -27,6 +27,19 @@ function hasSymbol(value: string, chars: string): boolean {
 }
 
 /**
+ * 使えない文字を、出てきた順に重ねずに返す。
+ * 使えるのは英字・数字と、設定の「記号とみなす文字」に並べた文字だけ。
+ * 設定が空なら、空白を除く半角の記号すべて（空白・全角の文字・制御文字は使えない）。
+ * 2026-11-24、`"` を入れたパスワードが設定できてしまい、記号の一覧を見て `"` を除いて入れた人が入れなかった
+ */
+function badPasswordChars(value: string, chars: string): string[] {
+  const list = [...chars];
+  const ok = (c: string) =>
+    /[A-Za-z0-9]/.test(c) || (list.length === 0 ? /[!-~]/.test(c) : list.includes(c));
+  return [...new Set([...value].filter((c) => !ok(c)))];
+}
+
+/**
  * パスワードの決まり。長さと文字種はシステム設定で決める。
  * 決まりを渡さないときは既定（12文字以上・英字と数字）で見る。
  *
@@ -41,6 +54,14 @@ export const passwordSchema = (m: Messages, policy?: PasswordPolicy) => {
     .max(200, m.validation.passwordMax)
     .superRefine((v, ctx) => {
       const add = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+      const bad = badPasswordChars(v, p.passwordSymbolChars);
+      if (bad.length > 0) {
+        add(
+          m.validation.passwordBadChars(
+            bad.map((c) => (/\s/.test(c) ? m.validation.spaceChar : c)).join(" "),
+          ),
+        );
+      }
       if (p.passwordRequireLetter && !/[A-Za-z]/.test(v)) add(m.validation.passwordNeedsLetter);
       if (p.passwordRequireDigit && !/[0-9]/.test(v)) add(m.validation.passwordNeedsDigit);
       if (p.passwordRequireSymbol && !hasSymbol(v, p.passwordSymbolChars)) {
