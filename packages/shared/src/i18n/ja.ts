@@ -642,7 +642,7 @@ export const ja = {
     periodicTable: "周期表",
     periodicNote: "元素でないもの（900番台）は周期表に出ません",
     unregistered: "未登録",
-    guide: "マスの見方",
+    guide: "凡例",
     legend: "分類",
     group: "族",
     period: "周期",

@@ -610,7 +610,7 @@ export const en: Messages = {
     periodicTable: "Periodic table",
     periodicNote: "Things that are not elements (900s) do not appear here",
     unregistered: "Not registered",
-    guide: "How to read a cell",
+    guide: "Legend",
     legend: "Categories",
     group: "Group",
     period: "Period",
