@@ -1,7 +1,7 @@
 "use client";
 
 import type { Locale } from "@chem/shared";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import type { ApiError } from "@/lib/types";
 import type { AdoptionRuleDto } from "@/lib/ghs/data-dto";
 import { countryName } from "@/lib/ghs/countries";
 import { ghsMessages } from "@/lib/ghs/messages";
+import { useI18n } from "@/lib/i18n-client";
+import { cn } from "@/lib/utils";
 
 interface RulesDto {
   country: string;
@@ -39,6 +41,10 @@ export function GhsAdoptionRules({
   onSaved?: () => void;
 }) {
   const t = ghsMessages(locale).data.rules;
+  const { m } = useI18n();
+  // つかんでいる行と、いま落とそうとしている行（ほかの一覧と同じ動き。components/data-table）
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [overKey, setOverKey] = useState<string | null>(null);
   const [data, setData] = useState<RulesDto | null>(null);
   const [rules, setRules] = useState<AdoptionRuleDto[]>([]);
   const [dirty, setDirty] = useState(false);
@@ -66,11 +72,16 @@ export function GhsAdoptionRules({
     void load();
   }, [load]);
 
-  const move = (i: number, d: -1 | 1) => {
-    const j = i + d;
-    if (j < 0 || j >= rules.length) return;
-    const next = [...rules];
-    [next[i], next[j]] = [next[j]!, next[i]!];
+  /** 引いた行を、落とした行の位置へ移す（ほかの一覧の並べ替えと同じ決まり。例: api/countries/[id]/move） */
+  const move = (fromKey: string, toKey: string) => {
+    const moving = rules.find((r) => r.sourceCode === fromKey);
+    if (!moving || fromKey === toKey) return;
+    const next = rules.filter((r) => r.sourceCode !== fromKey);
+    next.splice(
+      next.findIndex((r) => r.sourceCode === toKey),
+      0,
+      moving,
+    );
     setRules(next);
     setDirty(true);
   };
@@ -152,47 +163,73 @@ export function GhsAdoptionRules({
           </Alert>
         )}
         <ol className="divide-y border">
-          {rules.map((r, i) => (
-            <li key={r.sourceCode} className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
-              <span className="text-muted-foreground w-5 tabular-nums">{i + 1}</span>
-              <span className="min-w-40 font-medium">{nameOf(r.sourceCode)}</span>
-              {isAdmin && (
-                <span className="flex items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={t.up}
-                    title={t.up}
-                    disabled={i === 0 || busy}
-                    onClick={() => move(i, -1)}
+          {rules.map((r, i) => {
+            const key = r.sourceCode;
+            const canDrop = isAdmin && !busy && dragKey !== null && dragKey !== key;
+            return (
+              <li
+                key={key}
+                // 落とし先になれるよう、重ねているあいだは既定の動きを止める
+                onDragOver={
+                  canDrop
+                    ? (e) => {
+                        e.preventDefault();
+                        setOverKey(key);
+                      }
+                    : undefined
+                }
+                onDrop={
+                  canDrop
+                    ? (e) => {
+                        e.preventDefault();
+                        const from = dragKey;
+                        setDragKey(null);
+                        setOverKey(null);
+                        move(from, key);
+                      }
+                    : undefined
+                }
+                className={cn(
+                  "flex flex-wrap items-center gap-3 px-3 py-2 text-sm",
+                  // いま落とそうとしている行が分かるよう、上端に線を引く
+                  overKey === key && dragKey && "border-primary border-t-2",
+                  dragKey === key && "opacity-50",
+                )}
+              >
+                {isAdmin && (
+                  <span
+                    draggable={!busy}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = "move";
+                      // Firefox は中身を入れないと掴めない
+                      e.dataTransfer.setData("text/plain", key);
+                      setDragKey(key);
+                    }}
+                    onDragEnd={() => {
+                      setDragKey(null);
+                      setOverKey(null);
+                    }}
+                    title={m.table.reorder}
+                    aria-label={m.table.reorder}
+                    className="text-muted-foreground hover:text-foreground flex cursor-grab justify-center active:cursor-grabbing"
                   >
-                    <ArrowUp className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={t.down}
-                    title={t.down}
-                    disabled={i === rules.length - 1 || busy}
-                    onClick={() => move(i, 1)}
-                  >
-                    <ArrowDown className="size-4" />
-                  </Button>
-                </span>
-              )}
-              <label className="text-muted-foreground flex items-center gap-1 text-xs">
-                <input
-                  type="checkbox"
-                  checked={r.fillCannotClassify}
-                  disabled={!isAdmin || busy}
-                  onChange={(e) => toggleFill(i, e.target.checked)}
-                />
-                {t.fill}
-              </label>
-            </li>
-          ))}
+                    <GripVertical className="size-4" />
+                  </span>
+                )}
+                <span className="text-muted-foreground w-5 tabular-nums">{i + 1}</span>
+                <span className="min-w-40 font-medium">{nameOf(r.sourceCode)}</span>
+                <label className="text-muted-foreground flex items-center gap-1 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={r.fillCannotClassify}
+                    disabled={!isAdmin || busy}
+                    onChange={(e) => toggleFill(i, e.target.checked)}
+                  />
+                  {t.fill}
+                </label>
+              </li>
+            );
+          })}
         </ol>
         {isAdmin && (
           <div className="flex justify-end">

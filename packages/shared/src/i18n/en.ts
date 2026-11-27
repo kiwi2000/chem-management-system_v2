@@ -3008,8 +3008,6 @@ export const en: Messages = {
       rules: {
         title: "Source order",
         lead: "Sources are consulted top to bottom; the first one that addresses a class is adopted. Only classes a source says nothing about fall through to the next source.",
-        up: "Up",
-        down: "Down",
         fill: "Also fall through when the source says “classification not possible”",
         save: "Save",
         saved: "Source order saved.",
