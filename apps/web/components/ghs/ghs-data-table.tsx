@@ -25,6 +25,7 @@ import { ghsMessages } from "@/lib/ghs/messages";
 import { GhsAdoptionRules } from "./ghs-adoption-rules";
 import { GhsOverrideEditor } from "./ghs-override-editor";
 import { GhsLayerChip, type GhsLayerMarks } from "./ghs-marks";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "code", direction: "asc" }]);
 const STORAGE_KEY = "chem.table.sdsGhsData";
@@ -247,20 +248,26 @@ export function GhsDataTable({
 
   const { state, setState, ready } = useTableState(STORAGE_KEY, columns, DEFAULT_STATE);
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     const res = await fetch(
       `/api/ghs-data?${query}&country=${encodeURIComponent(country)}&layers=${encodeURIComponent([...layers].join(","))}`,
     );
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
     setError(null);
-    setData((await res.json()) as ListResponse<GhsDataRowDto>);
-  }, [query, country, layers, m]);
+    const loaded = (await res.json()) as ListResponse<GhsDataRowDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [query, country, layers, m, beginRequest]);
   useEffect(() => {
     if (ready) void load();
   }, [ready, load]);

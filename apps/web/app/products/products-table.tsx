@@ -16,6 +16,7 @@ import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, ProductListItemDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 const DEFAULT_STATE = PRODUCT_DEFAULT_STATE;
 
@@ -74,20 +75,26 @@ export function ProductsTable({
     // 文字列にしてから依存させることで、同じ条件での再取得を防ぐ
   }, [state, scope]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch(`/api/products?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: state.pageSize });
       return;
     }
-    setData((await res.json()) as ListResponse<ProductListItemDto>);
+    const loaded = (await res.json()) as ListResponse<ProductListItemDto>;
+    if (!isLatest()) return;
+    setData(loaded);
     // state.pageSize はエラー時の表示にしか使わないので依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, m]);
+  }, [query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

@@ -32,6 +32,7 @@ import type { ApiError, ListResponse } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
 import { useStampedDelete } from "@/components/use-stamped-delete";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /** 直したものが上に来るほうが追いやすい */
 // 既定は通番の大きい順（後から書かれたものが上。2026-10-23 指示）
@@ -243,20 +244,26 @@ export default function FeedbackPage() {
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch(`/api/feedback?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: state.pageSize });
       return;
     }
-    setData((await res.json()) as ListResponse<FeedbackDto>);
+    const loaded = (await res.json()) as ListResponse<FeedbackDto>;
+    if (!isLatest()) return;
+    setData(loaded);
     // state.pageSize はエラー時の表示にしか使わないので依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, m]);
+  }, [query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

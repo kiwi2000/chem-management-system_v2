@@ -13,6 +13,7 @@ import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useStampedDelete } from "@/components/use-stamped-delete";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 const DEFAULT_STATE: TableState = emptyTableState([
   { column: "pinned", direction: "desc" },
@@ -133,18 +134,24 @@ export default function NewsListPage() {
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch(`/api/news?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setData((await res.json()) as ListResponse<NewsDto>);
-  }, [query, m]);
+    const loaded = (await res.json()) as ListResponse<NewsDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

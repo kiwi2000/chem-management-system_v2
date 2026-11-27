@@ -23,6 +23,7 @@ import { useI18n } from "@/lib/i18n-client";
 import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, ListResponse, ProductAttachmentDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /** 既定は並べ替えなし（サーバーが新しいものを上にする） */
 const DEFAULT_STATE: TableState = emptyTableState([]);
@@ -240,17 +241,23 @@ export function ProductAttachments({
   );
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     const res = await fetch(`${base}?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setData((await res.json()) as ListResponse<ProductAttachmentDto>);
-  }, [base, query, m]);
+    const loaded = (await res.json()) as ListResponse<ProductAttachmentDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [base, query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

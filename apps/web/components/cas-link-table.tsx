@@ -508,9 +508,11 @@ export function CasLinkTable({
       }
       if (diffAgainst) {
         const body = (await res.json()) as DiffResponse;
+        if (wantKey.current !== url) return;
         setData({ items: body.items, total: body.total, run: body.run });
       } else {
         const body = (await res.json()) as ListResponse<CasLinkRowDto>;
+        if (wantKey.current !== url) return;
         setData({ items: body.items, total: body.total, run: null });
       }
     })();

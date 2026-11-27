@@ -33,6 +33,7 @@ import type {
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /**
  * 不純物種別（S21）。
@@ -627,23 +628,28 @@ function ExceptionsDialog({
   const [query, setQuery] = useState("");
   const [onlyExceptions, setOnlyExceptions] = useState(false);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     const params = new URLSearchParams({ size: "200", "f.categoryId": `in:${category.id}` });
     if (query.trim() !== "") params.set("f.nameJa", `contains:${query.trim()}`);
     const [s, e] = await Promise.all([
       fetch(`/api/statutory-substances?${params.toString()}`).catch(() => null),
       fetch(`/api/impurity-types/${type.id}/exemptions`).catch(() => null),
     ]);
-    if (s?.ok) {
-      const body = (await s.json()) as ListResponse<StatutorySubstanceDto>;
+    const sBody = s?.ok ? ((await s.json()) as ListResponse<StatutorySubstanceDto>) : null;
+    const eBody = e?.ok ? ((await e.json()) as ImpurityExemptionsDto) : null;
+    if (!isLatest()) return;
+    if (sBody) {
+      const body = sBody;
       setItems(body.items);
       setTotal(body.total);
     }
-    if (e?.ok) {
-      const body = (await e.json()) as ImpurityExemptionsDto;
+    if (eBody) {
+      const body = eBody;
       setOverrides(new Map(body.substances.map((x) => [x.statutorySubstanceId, x.excluded])));
     }
-  }, [category.id, type.id, query]);
+  }, [category.id, type.id, query, beginRequest]);
 
   useEffect(() => {
     void load();

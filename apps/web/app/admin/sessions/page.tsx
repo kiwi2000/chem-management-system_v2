@@ -10,6 +10,7 @@ import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useI18n } from "@/lib/i18n-client";
 import type { ApiError, ListResponse, SessionDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /** 状態の色。信号と同じ緑・黄・赤。表の丸と絞り込みのボタンで同じ色を使う */
 const STATUS_COLOR = {
@@ -195,20 +196,26 @@ export default function SessionsPage() {
   const [error, setError] = useState<string | null>(null);
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch(`/api/admin/sessions?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: state.pageSize });
       return;
     }
-    setData((await res.json()) as ListResponse<SessionDto>);
+    const loaded = (await res.json()) as ListResponse<SessionDto>;
+    if (!isLatest()) return;
+    setData(loaded);
     // state.pageSize はエラー時の表示にしか使わないので依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, m]);
+  }, [query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

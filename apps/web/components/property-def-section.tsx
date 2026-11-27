@@ -26,6 +26,7 @@ import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, ListResponse, PropertyDefDto, PropertyOptionDto } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 import { useStampedDelete } from "@/components/use-stamped-delete";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /** 用途は節ごとに固定なので、並びは表示順だけでよい */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
@@ -219,18 +220,24 @@ export function PropertyDefSection({ target, title, hint, storageKey, keyPlaceho
     return params.toString();
   }, [state, target]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch(`/api/admin/property-defs?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setData((await res.json()) as ListResponse<PropertyDefDto>);
-  }, [query, m]);
+    const loaded = (await res.json()) as ListResponse<PropertyDefDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

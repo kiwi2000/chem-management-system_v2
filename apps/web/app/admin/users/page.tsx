@@ -16,6 +16,7 @@ import { usePermissionGroupOptions } from "@/lib/use-permission-group-options";
 import { flattenOrgTree } from "@/lib/org-tree";
 import { redirectIfUnauthorized } from "@/lib/auth-redirect";
 import { useStampedDelete } from "@/components/use-stamped-delete";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /**
  * 既定はメールアドレス順・有効な人だけ（S31 画面設計）。
@@ -169,18 +170,24 @@ export default function UsersPage() {
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch(`/api/admin/users?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setData((await res.json()) as ListResponse<UserSummaryDto>);
-  }, [query, m]);
+    const loaded = (await res.json()) as ListResponse<UserSummaryDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

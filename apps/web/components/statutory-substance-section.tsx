@@ -42,6 +42,7 @@ import type {
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
@@ -291,22 +292,28 @@ export function StatutorySubstanceSection({
     );
   }, [category, fetchClasses]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     if (!activeClassId) {
       setData(null);
       return;
     }
     setError(null);
     const res = await fetch(`/api/statutory-substances?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setData((await res.json()) as ListResponse<StatutorySubstanceDto>);
-  }, [query, activeClassId, m]);
+    const loaded = (await res.json()) as ListResponse<StatutorySubstanceDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [query, activeClassId, m, beginRequest]);
 
   /**
    * 区分の切り替え。分類と1ページ目を裏で読み終えてから、まとめて差し替える。

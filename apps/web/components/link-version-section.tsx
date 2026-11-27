@@ -18,6 +18,7 @@ import type { ApiError, LinkSetVersionDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { cn } from "@/lib/utils";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 // 件数が知れているので1ページに全部出し、ページ送りは置かない
 const DEFAULT_STATE: TableState = {
@@ -176,18 +177,24 @@ export function LinkVersionSection({
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch("/api/link-versions?" + query);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setData((await res.json()) as ListResponse<LinkSetVersionDto>);
-  }, [query, m]);
+    const loaded = (await res.json()) as ListResponse<LinkSetVersionDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

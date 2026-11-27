@@ -26,6 +26,7 @@ import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, DocumentTemplateDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /** 既定は通番の順。作った順に並ぶ */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "seq", direction: "asc" }]);
@@ -116,18 +117,24 @@ export function DocTemplatesScreen() {
   );
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch(`/api/doc-templates?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setData((await res.json()) as ListResponse<DocumentTemplateDto>);
-  }, [query, m]);
+    const loaded = (await res.json()) as ListResponse<DocumentTemplateDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

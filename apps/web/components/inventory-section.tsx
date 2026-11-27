@@ -15,6 +15,7 @@ import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, CountryDto, InventoryDto, ListResponse } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /** 既定の並びは、物質の画面に出す順。設定した並びをそのまま確かめられる */
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "numberOrder", direction: "asc" }]);
@@ -214,12 +215,16 @@ export function InventorySection() {
 
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch(`/api/inventories?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
@@ -227,9 +232,10 @@ export function InventorySection() {
     const body = (await res.json()) as ListResponse<InventoryDto> & {
       version: { code: string } | null;
     };
+    if (!isLatest()) return;
     setData(body);
     setVersion(body.version?.code ?? null);
-  }, [query, m]);
+  }, [query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

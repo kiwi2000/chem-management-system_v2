@@ -43,6 +43,7 @@ import type {
 } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /**
  * 数値欄（取扱量・出荷量・排出量・排出係数）は 0 以上の数だけ受け付ける（2026-10-02 指示）。
@@ -167,26 +168,31 @@ export function PrtrEntryScreen() {
     })();
   }, []);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     if (!orgId) return;
     setError(null);
     setTick((n) => n + 1);
     const params = new URLSearchParams({ organisationId: orgId, fiscalYear: String(fiscalYear) });
     const res = await fetch(`/api/prtr/entries?${params.toString()}`).catch(() => null);
+    if (!isLatest()) return;
     if (!res?.ok) {
       if (res) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
+        if (!isLatest()) return;
         setError(body?.error.message ?? m.errors.loadFailed(res.status));
       }
       return;
     }
     const body = (await res.json()) as PrtrEntryDto;
+    if (!isLatest()) return;
     setData(body);
     setFactorPct(body.entry?.factorPct ?? "");
     setNote(body.entry?.note ?? "");
     setHeadErrors({});
-  }, [orgId, fiscalYear, m]);
+  }, [orgId, fiscalYear, m, beginRequest]);
 
   useEffect(() => {
     void load();
@@ -582,18 +588,25 @@ function SummarySection({
 
   // 行を、表の状態（絞り込み・並べ替え・ページ）で読む。保存した集計を見ているときはその行
   useEffect(() => {
+    // 条件が変わったあとに届いたものは捨てる（後から頼んだものが勝つ。use-latest-request.ts）
+    let cancelled = false;
     void (async () => {
       const params = serializeTableState(state, S_STATE);
       if (viewSaved) params.set("saved", "1");
       const res = await fetch(`/api/prtr/entries/${entryId}/summary?${params.toString()}`).catch(
         () => null,
       );
+      if (cancelled) return;
       if (!res?.ok) {
         await showError(res);
         return;
       }
-      setData((await res.json()) as PrtrSummaryDto);
+      const loaded = (await res.json()) as PrtrSummaryDto;
+      if (!cancelled) setData(loaded);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [entryId, state, computed, viewSaved, showError]);
 
   /** 保存・確定・未確定に戻す */
@@ -942,22 +955,28 @@ function QuantitySection({
     method === "FACTOR" ? "qf" : "qb",
   );
 
+  const beginRequest = useLatestRequest();
   const loadRows = useCallback(async () => {
+    const isLatest = beginRequest();
     const params = serializeTableState(state, Q_STATE);
     params.set("method", method);
     const res = await fetch(`/api/prtr/entries/${entryId}/quantities?${params.toString()}`).catch(
       () => null,
     );
+    if (!isLatest()) return;
     if (!res?.ok) {
       if (res) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
+        if (!isLatest()) return;
         setError(body?.error.message ?? m.errors.loadFailed(res.status));
       }
       return;
     }
-    setData((await res.json()) as ListResponse<PrtrQuantityDto>);
-  }, [entryId, method, state, m]);
+    const loaded = (await res.json()) as ListResponse<PrtrQuantityDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [entryId, method, state, m, beginRequest]);
 
   useEffect(() => {
     void loadRows();
@@ -1446,20 +1465,26 @@ function MeasuredSection({
   );
   const { state, setState } = useTableState(M_KEY, columns, M_STATE, "m");
 
+  const beginRequest = useLatestRequest();
   const loadRows = useCallback(async () => {
+    const isLatest = beginRequest();
     const res = await fetch(
       `/api/prtr/entries/${entryId}/measured?${serializeTableState(state, M_STATE).toString()}`,
     ).catch(() => null);
+    if (!isLatest()) return;
     if (!res?.ok) {
       if (res) {
         if (redirectIfUnauthorized(res)) return;
         const body = (await res.json().catch(() => null)) as ApiError | null;
+        if (!isLatest()) return;
         setError(body?.error.message ?? m.errors.loadFailed(res.status));
       }
       return;
     }
-    setData((await res.json()) as ListResponse<PrtrMeasuredDto>);
-  }, [entryId, state, m]);
+    const loaded = (await res.json()) as ListResponse<PrtrMeasuredDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [entryId, state, m, beginRequest]);
 
   useEffect(() => {
     void loadRows();

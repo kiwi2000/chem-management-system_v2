@@ -26,6 +26,7 @@ import { PAGE_SHELL_STACKED } from "@/lib/page-shell";
 import type { ApiError, ListResponse } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
 import { useOwnerChoices } from "@/lib/use-owner-choices";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "seq", direction: "asc" }]);
 const ACTIONS: ImportAction[] = ["ADD", "UPDATE", "CONFLICT", "UNCHANGED", "ERROR"];
@@ -214,19 +215,25 @@ export function ImportJobScreen({ id }: { id: string }) {
   const [rows, setRows] = useState<ListResponse<ImportRowDto> | null>(null);
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
 
+  const beginRequest = useLatestRequest();
   const loadRows = useCallback(async () => {
+    const isLatest = beginRequest();
     const res = await fetch(
       `/api/import/${id}/rows?${query}${showUnchanged ? "&showUnchanged=1" : ""}`,
     );
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setRows({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
-    setRows((await res.json()) as ListResponse<ImportRowDto>);
-  }, [id, query, showUnchanged, m]);
+    const loaded = (await res.json()) as ListResponse<ImportRowDto>;
+    if (!isLatest()) return;
+    setRows(loaded);
+  }, [id, query, showUnchanged, m, beginRequest]);
 
   const hasRows = job?.status === "STAGED" || job?.status === "DONE" || job?.status === "APPLYING";
   useEffect(() => {

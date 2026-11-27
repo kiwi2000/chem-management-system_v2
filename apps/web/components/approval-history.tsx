@@ -6,6 +6,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import type { TableColumn } from "@/components/data-table/types";
 import { useI18n } from "@/lib/i18n-client";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 interface Event {
   id: string;
@@ -103,10 +104,13 @@ export function ApprovalHistory({
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
   const filtering = Object.keys(state.filters).length > 0;
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     const res = await fetch(
       `/api/approval-events?entity=${entity}&entityId=${encodeURIComponent(entityId)}&${query}`,
     );
+    if (!isLatest()) return;
     if (!res.ok) {
       setForbidden(true);
       setItems([]);
@@ -114,10 +118,11 @@ export function ApprovalHistory({
       return;
     }
     const body = (await res.json()) as { items: Event[]; total: number };
+    if (!isLatest()) return;
     setItems(body.items);
     setTotal(body.total);
     setLoadedFiltering(filtering);
-  }, [entity, entityId, query, filtering]);
+  }, [entity, entityId, query, filtering, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();

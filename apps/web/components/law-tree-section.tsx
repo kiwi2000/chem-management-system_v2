@@ -33,6 +33,7 @@ import type {
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
 import { cn } from "@/lib/utils";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 const DEFAULT_STATE: TableState = emptyTableState([{ column: "displayOrder", direction: "asc" }]);
 
@@ -439,7 +440,9 @@ export function LawTreeSection({
     [tableState],
   );
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const params = new URLSearchParams(listQuery);
     /*
@@ -455,19 +458,22 @@ export function LawTreeSection({
       params.set("f.id", `any:${hitLawKey}`);
     }
     const res = await fetch(`/api/laws?${params.toString()}`);
+    if (!isLatest()) return null;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return null;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return null;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return null;
     }
     const body = (await res.json()) as ListResponse<LawDto>;
+    if (!isLatest()) return null;
     setData(body);
     return body;
     // tableState.pageSize は空の結果を作るときだけ使う（引き直しの合図にはしない）
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listQuery, hitLawKey, m]);
+  }, [listQuery, hitLawKey, m, beginRequest]);
 
   useEffect(() => {
     // 区分で絞っているあいだは、当たった区分が分かるまで引かない

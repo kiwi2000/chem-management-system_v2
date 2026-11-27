@@ -101,7 +101,15 @@ export function useTableState(
     一覧の条件はどの画面もサーバー側では読まず、画面がデータを取りに行くので、Next.js を通す必要がない。
     直接書いても `useSearchParams` には Next.js が届けてくれる
   */
-  const [pending, setPending] = useState<{ query: string; state: TableState } | null>(null);
+  /*
+    覚えておく条件。書き換えたときは条件そのもの（state）、前回の条件を戻したときは URL に書く形（params）で持つ。
+    戻したほうを条件に読み替えるのは描くとき（件数の既定は、その人の設定を読み終えてから決まるため）
+  */
+  const [pending, setPending] = useState<{
+    query: string;
+    state?: TableState;
+    params?: URLSearchParams;
+  } | null>(null);
   const ownQuery = sortedQuery(ownParams);
   useEffect(() => {
     if (pending && pending.query === ownQuery) setPending(null);
@@ -112,7 +120,20 @@ export function useTableState(
     window.addEventListener("popstate", drop);
     return () => window.removeEventListener("popstate", drop);
   }, []);
-  const state = pending?.state ?? urlState;
+  const pendingParams = pending?.params;
+  const restoredState = useMemo(
+    () =>
+      pendingParams
+        ? parseTableState(pendingParams, columnDefs, {
+            ...fallback,
+            pageSize: wantsPreferred ? prefs.defaultSize : fallback.pageSize,
+          })
+        : null,
+    // fallback は呼び出し側で毎回作られる可能性があるため、依存に入れない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pendingParams, columnDefs, prefs.defaultSize, wantsPreferred],
+  );
+  const state = pending?.state ?? restoredState ?? urlState;
 
   /** 他の表のクエリを残したまま、この表のぶんだけ書き換える */
   const buildUrl = useCallback(
@@ -160,7 +181,15 @@ export function useTableState(
     if (!hasUrlState) {
       const saved = window.localStorage.getItem(storageKey);
       if (saved) {
-        window.history.replaceState(null, "", buildUrl(new URLSearchParams(saved)));
+        const own = new URLSearchParams(saved);
+        /*
+          **戻した条件は、URL に届く前から返す**（2026-11-27）。
+          URL の書き換えは少し遅れて届くので、そのまま「準備できた」にすると、条件なしでいったん取りに行き、
+          届いたあとに条件ありでもう一度取りに行っていた。物質の一覧では条件なしの 6 万件を数えるほうが
+          遅く、あとから届いて表を上書きし、「欄には前回の条件が出ているのに、表は条件なし」になった
+        */
+        setPending({ query: sortedQuery(own), params: own });
+        window.history.replaceState(null, "", buildUrl(own));
         setReady(true);
         return;
       }

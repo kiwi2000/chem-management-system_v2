@@ -17,6 +17,7 @@ import { readStaleEdit, type StaleEditInfo } from "@/lib/stale-edit";
 import type { ApiError, LinkVersionSourceDto, ListResponse, SourceDto } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 // 件数が知れているので1ページに全部出し、ページ送りは置かない
 const DEFAULT_STATE: TableState = {
@@ -201,22 +202,28 @@ export function DataSourceSection({
     "ds",
   );
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     if (!versionId) {
       setItems([]);
       return;
     }
     setError(null);
     const res = await fetch("/api/link-version-sources?versionId=" + versionId);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setItems([]);
       return;
     }
-    setItems(((await res.json()) as ListResponse<LinkVersionSourceDto>).items);
-  }, [m, versionId]);
+    const loaded = (await res.json()) as ListResponse<LinkVersionSourceDto>;
+    if (!isLatest()) return;
+    setItems(loaded.items);
+  }, [m, versionId, beginRequest]);
 
   /** 登録の欄で選ばせるので、種別は全部引いておく（件数が知れている） */
   const loadChoices = useCallback(async () => {

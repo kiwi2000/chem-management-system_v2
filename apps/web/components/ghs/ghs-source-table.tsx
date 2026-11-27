@@ -15,6 +15,7 @@ import type { GhsSourceRowDto } from "@/lib/ghs/data-dto";
 import { ghsMessages } from "@/lib/ghs/messages";
 import { categoryText } from "./ghs-data-table";
 import { GhsLayerChip, type GhsLayerMarks } from "./ghs-marks";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 const DEFAULT_STATE: TableState = emptyTableState([
   { column: "sourceKey", direction: "asc" },
@@ -165,20 +166,26 @@ export function GhsSourceTable({
 
   const { state, setState, ready } = useTableState(storageKey, columns, DEFAULT_STATE, "src");
   const query = useMemo(() => serializeTableState(state, DEFAULT_STATE).toString(), [state]);
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     const res = await fetch(
       `/api/ghs-data/source?sourceCode=${encodeURIComponent(sourceCode)}&${query}`,
     );
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 50 });
       return;
     }
     setError(null);
-    setData((await res.json()) as ListResponse<GhsSourceRowDto>);
-  }, [sourceCode, query, m]);
+    const loaded = (await res.json()) as ListResponse<GhsSourceRowDto>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [sourceCode, query, m, beginRequest]);
   useEffect(() => {
     if (ready) void load();
   }, [ready, load]);

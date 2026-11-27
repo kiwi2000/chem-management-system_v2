@@ -41,6 +41,7 @@ import type {
   SubstanceListItemDto,
 } from "@/lib/types";
 import { useTableState } from "@/lib/use-table-state";
+import { useLatestRequest } from "@/lib/use-latest-request";
 
 /**
  * 帳票を作る相手を選ぶ表。
@@ -374,18 +375,24 @@ function PickerTable<
   const [data, setData] = useState<ListResponse<T> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const beginRequest = useLatestRequest();
   const load = useCallback(async () => {
+    const isLatest = beginRequest();
     setError(null);
     const res = await fetch(`${endpoint}?${query}`);
+    if (!isLatest()) return;
     if (!res.ok) {
       if (redirectIfUnauthorized(res)) return;
       const body = (await res.json().catch(() => null)) as ApiError | null;
+      if (!isLatest()) return;
       setError(body?.error.message ?? m.errors.loadFailed(res.status));
       setData({ items: [], total: 0, page: 1, pageSize: 25 });
       return;
     }
-    setData((await res.json()) as ListResponse<T>);
-  }, [endpoint, query, m]);
+    const loaded = (await res.json()) as ListResponse<T>;
+    if (!isLatest()) return;
+    setData(loaded);
+  }, [endpoint, query, m, beginRequest]);
 
   useEffect(() => {
     if (ready) void load();
