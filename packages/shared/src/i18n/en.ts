@@ -2956,7 +2956,7 @@ export const en: Messages = {
     data: {
       title: "GHS classification data",
       lead: "For each substance, the GHS classification adopted under the selected country's source order. Use the pencil at the end of a row to register your own classification (it takes precedence over the sources).",
-      country: "Country whose classification to adopt",
+      country: "Target region / country",
       columns: { code: "Substance code", name: "Name", cas: "CAS number" },
       empty: "No matching substances",
       sourceShort: { NITE: "NITE", EU_ANNEX_VI: "EU", LOLI: "LOLI", OVERRIDE: "own" },
