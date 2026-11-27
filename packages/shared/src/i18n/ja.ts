@@ -3286,7 +3286,7 @@ export const ja = {
         clearOverride: "上書きを消す",
         needsReview: "要確認",
         reviewHint: (items: string) =>
-          `条件付きの項目があります（機械では決めていません）: ${items}`,
+          `条件付きの項目があります（システムでは決めていません）: ${items}`,
         notAdopted: "採用していない値",
         adoptedMark: "採用",
         overrideReason: (reason: string) => `自社判定の理由: ${reason}`,
